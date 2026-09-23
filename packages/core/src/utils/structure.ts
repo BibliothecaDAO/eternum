@@ -1,3 +1,4 @@
+import { structureMapPosition } from "./expeditions";
 import {
   StructureTypeToNameMapping,
   getMinePresentation,
@@ -37,7 +38,7 @@ export const getStructure = (
     entityId,
     structure,
     owner: structure.owner,
-    position: { alt: structure.base.alt, x: structure.base.coord_x, y: structure.base.coord_y },
+    position: structureMapPosition(store, structure),
     isMine: structure.owner === playerAddress,
     isMercenary: structure.owner === 0n,
     ownerName: addressName ? shortString.decodeShortString(addressName.name.toString()) : BANDITS_NAME,

@@ -2,9 +2,8 @@ import type { ID, TileOpt, TroopTier, TroopType } from "@bibliothecadao/types";
 import { TileOccupier } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { expeditionRealmSite, isExpeditionRealm, readExpeditionRules } from "../utils/expeditions";
+import { isExpeditionRealm, readExpeditionRules, structureMapPosition } from "../utils/expeditions";
 import { isTileOccupierStructure } from "../utils/map/hex";
-import { getBlockTimestamp } from "../utils/timestamp";
 import { tileOptToTile } from "../utils/tile-opt";
 
 /** A map hex on one layer: `alt` is false on the surface and true on the ethereal layer, as in TileOpt. */
@@ -232,9 +231,9 @@ const resolveExpeditionRealmRenderable = (
   structure: NativeRows["Structure"] | undefined,
 ): StructureSpatialRenderable | undefined => {
   if (!structure || !isExpeditionRealm(structure)) return undefined;
-  const rules = readExpeditionRules(store, structure.game_id);
-  if (!rules) return undefined;
-  const site = expeditionRealmSite(rules, structure, getBlockTimestamp().currentBlockTimestamp);
+  if (!readExpeditionRules(store, structure.game_id)) return undefined;
+  const position = structureMapPosition(store, structure);
+  const site = { col: position.x, row: position.y };
   const level = Math.min(3, Math.max(0, structure.base.level));
   const occupierType =
     (structure.metadata.has_wonder ? TileOccupier.RealmWonderLevel1 : TileOccupier.RealmRegularLevel1) + level;

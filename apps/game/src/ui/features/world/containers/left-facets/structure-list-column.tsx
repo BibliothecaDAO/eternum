@@ -14,7 +14,7 @@ import {
   useStructureCategoryFilter,
 } from "@/ui/features/world/containers/left-facets/structure-category-filter";
 import { filterStructures, sortStructures } from "@/ui/features/world/containers/structure-list-utils";
-import { Position } from "@bibliothecadao/eternum";
+import { Position, structureMapPosition } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { type ID } from "@bibliothecadao/types";
@@ -66,14 +66,10 @@ export const StructureListColumn = memo(() => {
   const handleSelectStructure = useCallback(
     (entityId: ID) => {
       const target = playerStructures.find((structure) => structure.entityId === entityId);
-      const coords = target?.structure?.base;
-      if (coords && coords.coord_x !== undefined && coords.coord_y !== undefined) {
-        const col = Number(coords.coord_x);
-        const row = Number(coords.coord_y);
-        if (Number.isFinite(col) && Number.isFinite(row)) {
-          setSelectedHex({ col, row });
-        }
-        void goToStructure(entityId, new Position({ x: coords.coord_x, y: coords.coord_y }), isMapView);
+      if (target?.structure) {
+        const position = structureMapPosition(store, target.structure);
+        setSelectedHex({ col: position.x, row: position.y });
+        void goToStructure(entityId, new Position(position), isMapView);
       } else {
         setStructureEntityId(entityId);
       }

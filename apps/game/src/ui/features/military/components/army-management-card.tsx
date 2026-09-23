@@ -1,6 +1,6 @@
 import { ArrowRight, Lock as LockIcon, Pen } from "@/ui/design-system/atoms/game-icons";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
-import { Position as PositionInterface } from "@bibliothecadao/eternum";
+import { Position as PositionInterface, structureMapPosition } from "@bibliothecadao/eternum";
 
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
@@ -122,25 +122,27 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
     setSelectedTier(tier);
   };
 
+  // Spawn hexes surround the structure's map position: for a Frontier realm the day's site, as the contract spawns.
+  const structurePosition = useMemo(
+    () => (structure ? structureMapPosition(store, structure) : undefined),
+    [store, structure],
+  );
   const neighborHexes = useMemo(
-    () => (structure ? getNeighborHexes(structure.base.coord_x, structure.base.coord_y) : []),
-    [structure?.base.coord_x, structure?.base.coord_y],
+    () => (structurePosition ? getNeighborHexes(structurePosition.x, structurePosition.y) : []),
+    [structurePosition],
   );
   const neighborTiles = useWorldSpatialTiles(neighborHexes);
   const freeDirections = useMemo(
     () =>
-      structure
+      structurePosition
         ? neighborTiles
             .filter((tile) => Number(tile.occupierId) === 0)
             .map((tile) =>
-              getDirectionBetweenAdjacentHexes(
-                { col: structure.base.coord_x, row: structure.base.coord_y },
-                tile.hexCoords,
-              ),
+              getDirectionBetweenAdjacentHexes({ col: structurePosition.x, row: structurePosition.y }, tile.hexCoords),
             )
             .filter((direction): direction is Direction => direction !== null)
         : [],
-    [neighborTiles, structure],
+    [neighborTiles, structurePosition],
   );
 
   useEffect(() => {
@@ -156,7 +158,7 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
         army?.position && army?.structure
           ? getDirectionBetweenAdjacentHexes(
               { col: army.position.x, row: army.position.y },
-              { col: army.structure.base.coord_x, row: army.structure.base.coord_y },
+              (({ x, y }) => ({ col: x, row: y }))(structureMapPosition(store, army.structure)),
             )
           : null;
 

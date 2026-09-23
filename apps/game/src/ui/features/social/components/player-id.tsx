@@ -1,7 +1,7 @@
 import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { ArrowLeft, MapPin } from "@/ui/design-system/atoms/game-icons";
-import { Position as PositionType } from "@bibliothecadao/eternum";
+import { Position as PositionType, structureMapPosition } from "@bibliothecadao/eternum";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { useFactView } from "@/hooks/use-fact-view";
 import { gameStructuresView } from "@/sync/fact-views";
@@ -54,11 +54,12 @@ export const PlayerId = ({
       structures.flatMap((structure) => {
         if (structure.owner !== selectedPlayer) return [];
 
+        const position = structureMapPosition(store, structure);
         return [
           {
             entity_id: Number(structure.entity_id),
-            coord_x: Number(structure.base.coord_x),
-            coord_y: Number(structure.base.coord_y),
+            coord_x: position.x,
+            coord_y: position.y,
             category: Number(structure.base.category) as StructureType,
             realm_id: Number(structure.metadata.realm_id),
             has_wonder: Boolean(structure.metadata.has_wonder),

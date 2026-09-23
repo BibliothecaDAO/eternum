@@ -11,7 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — module resolution handled by bundler at runtime
-import { Position, displayPlayerName, getAddressName } from "@bibliothecadao/eternum";
+import { Position, displayPlayerName, getAddressName, structureMapPosition } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 // @ts-ignore
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
@@ -117,7 +117,7 @@ export function NewsHeadlineBridge() {
           icon: isHyperstructure ? "hyper-capture" : "realm-fall",
           title: resolveCaptureTitle(isHyperstructure, current.owner === player, previous.owner === player),
           description: `${captor} took ${structureName} from ${previousOwner}`,
-          location: { x: current.base.coord_x, y: current.base.coord_y, entityId: current.entity_id },
+          location: { ...structureMapPosition(setup.store, current), entityId: current.entity_id },
           timestamp: Date.now(),
         });
       }

@@ -1,16 +1,15 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
   configManager,
-  expeditionRealmSite,
   getBlockTimestamp,
   isExpeditionRealm,
   readExpeditionRules,
   StaminaManager,
+  structureMapPosition,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -35,8 +34,8 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
   if (!explorer || !home || !rules || !isExpeditionRealm(home) || !account) return null;
   if (home.owner !== BigInt(account.address) || home.metadata.attunement === 0) return null;
 
-  const site = expeditionRealmSite(rules, home, useChainTimeStore.getState().getNowSeconds());
-  const besideSpire = getNeighborHexes(site.col, site.row).some(
+  const site = structureMapPosition(store, home);
+  const besideSpire = getNeighborHexes(site.x, site.y).some(
     (hex) => hex.col === explorer.coord.x && hex.row === explorer.coord.y,
   );
   const stamina = Number(StaminaManager.getStamina(explorer.troops, getBlockTimestamp().currentArmiesTick).amount);

@@ -9,7 +9,7 @@ import { LeftView } from "@/types";
 import { buildRealmBuilding } from "@/ui/features/settlement/construction/realm-build-actions";
 import { ProductionModal } from "@/ui/features/settlement";
 import { useRealmActions } from "@/ui/modules/entity-details/hooks/use-realm-actions";
-import { getRealmInfo, Position } from "@bibliothecadao/eternum";
+import { getRealmInfo, Position, structureMapPosition } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { type BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/types";
@@ -38,14 +38,10 @@ export const useSuggestionActions = () => {
   const focusRealm = useCallback(
     async (realmId: ID, forceMap = false) => {
       const target = playerStructures.find((structure) => structure.entityId === realmId);
-      const coords = target?.structure?.base;
-      if (coords && coords.coord_x !== undefined && coords.coord_y !== undefined) {
-        const col = Number(coords.coord_x);
-        const row = Number(coords.coord_y);
-        if (Number.isFinite(col) && Number.isFinite(row)) {
-          setSelectedHex({ col, row });
-        }
-        await goToStructure(realmId, new Position({ x: coords.coord_x, y: coords.coord_y }), forceMap || isMapView);
+      if (target?.structure) {
+        const position = structureMapPosition(setup.store, target.structure);
+        setSelectedHex({ col: position.x, row: position.y });
+        await goToStructure(realmId, new Position(position), forceMap || isMapView);
       } else {
         setStructureEntityId(realmId);
       }

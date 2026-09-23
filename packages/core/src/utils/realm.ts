@@ -1,3 +1,4 @@
+import { structureMapPosition } from "./expeditions";
 import { ID, RealmInfo } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { configManager, getAddressNameFromEntity, ResourceManager } from "..";
@@ -36,7 +37,7 @@ export function getRealmInfo(entity: ID, store: NativeFactStore): RealmInfo | un
       resources,
       order,
       storehouses: resourceManager.getStoreCapacityKg(),
-      position: { alt: structure.base.alt, x: structure.base.coord_x, y: structure.base.coord_y },
+      position: structureMapPosition(store, structure),
       population: structureBuildings?.population.current,
       capacity: structureBuildings?.population.max,
       hasCapacity:

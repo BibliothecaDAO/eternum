@@ -13,6 +13,7 @@ import {
   getGuardSlotCooldownRemaining,
   getGuardsByStructure,
   getTroopResourceId,
+  structureMapPosition,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -236,8 +237,10 @@ export const useArmyCreation = ({
     (selectedGuardCategory === selectedTroopCombo.type && selectedGuardTier === selectedTroopCombo.tier);
   const isDefenseSlotCreationBlocked = !isSelectedSlotOccupied && !canCreateDefenseArmy;
   const selectedSlotCooldown = selectedGuard?.cooldownRemaining ?? 0;
-  const structureCoordX = structureBase?.coord_x;
-  const structureCoordY = structureBase?.coord_y;
+  // Spawn hexes surround the structure's map position: for a Frontier realm the day's site, as the contract spawns.
+  const structurePosition = structureComponent ? structureMapPosition(store, structureComponent) : undefined;
+  const structureCoordX = structurePosition?.x;
+  const structureCoordY = structurePosition?.y;
 
   useEffect(() => {
     if (armyType || fixedContext) {

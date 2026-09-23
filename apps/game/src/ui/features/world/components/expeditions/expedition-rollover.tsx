@@ -42,6 +42,8 @@ export const ExpeditionRollover = () => {
         ? [...setup.store.structuresOwnedBy(gameId, BigInt(address))].find(isExpeditionRealm)
         : undefined;
       if (!realm) return;
+      // The rollover fires on chain time, which runs ahead of the last block's timestamp, so the announced site is
+      // computed for the day that is beginning rather than read through structureMapPosition's block clock.
       const site = expeditionRealmSite(rules, realm, now);
       toast.info("A new expedition has begun", {
         description: "Fresh fog around your realm. Yesterday's armies are spent; today's muster is open.",

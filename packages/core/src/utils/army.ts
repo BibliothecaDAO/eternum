@@ -1,3 +1,4 @@
+import { structureMapPosition } from "./expeditions";
 import {
   type ArmyInfo,
   type ContractAddress,
@@ -27,6 +28,7 @@ export const formatArmies = (
     const keys = { game_id: explorer.game_id, entity_id: explorer.explorer_id };
     const weight = store.get("ResourceWeight", keys);
     const structure = store.get("Structure", { ...keys, entity_id: explorer.owner });
+    const home = structure && structureMapPosition(store, structure);
     const owner = getExplorerOwner(store, explorer);
     return {
       entityId: explorer.explorer_id,
@@ -42,9 +44,7 @@ export const formatArmies = (
       explorer,
       isMine: owner === playerAddress,
       isMercenary: owner === 0n,
-      isHome:
-        structure !== undefined &&
-        isArmyAdjacentToStructure(explorer.coord, structure.base.coord_x, structure.base.coord_y, structure.base.alt),
+      isHome: home !== undefined && isArmyAdjacentToStructure(explorer.coord, home.x, home.y, home.alt),
       name: getArmyName(explorer.explorer_id, store),
       hasAdjacentStructure: hasAdjacentOwnedStructure(explorer.coord, playerAddress, store),
     };
@@ -187,8 +187,9 @@ export const isArmyAdjacentToStructure = (
 export const getFreeDirectionsAroundStructure = (structureEntityId: ID, store: NativeFactStore): Direction[] => {
   const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structureEntityId });
   if (!structure) return [];
-  return getLayerNeighborHexes(structure.base.coord_x, structure.base.coord_y, structure.base.alt)
-    .filter((hex) => getTileAt(store, structure.base.alt, hex.col, hex.row)?.occupier_id === 0)
+  const home = structureMapPosition(store, structure);
+  return getLayerNeighborHexes(home.x, home.y, home.alt)
+    .filter((hex) => getTileAt(store, home.alt, hex.col, hex.row)?.occupier_id === 0)
     .map((hex) => hex.direction);
 };
 

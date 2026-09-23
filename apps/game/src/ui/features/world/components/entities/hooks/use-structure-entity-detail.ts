@@ -12,6 +12,7 @@ import {
   getRealmCountPerHyperstructure,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
+  structureMapPosition,
 } from "@bibliothecadao/eternum";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
@@ -178,8 +179,8 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
 
   const handleViewStructure = useCallback(() => {
     if (!structure) return;
-    goToStructure(structureEntityId, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), false);
-  }, [goToStructure, structure, structureEntityId]);
+    goToStructure(structureEntityId, new Position(structureMapPosition(store, structure)), false);
+  }, [goToStructure, store, structure, structureEntityId]);
 
   return {
     structureEntityId,

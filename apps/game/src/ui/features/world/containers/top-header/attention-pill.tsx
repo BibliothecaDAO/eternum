@@ -1,7 +1,7 @@
 import { Bell } from "@/ui/design-system/atoms/game-icons";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, structureMapPosition } from "@bibliothecadao/eternum";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { memo, useMemo, useRef } from "react";
@@ -59,7 +59,7 @@ function AttentionCycle() {
     previousKey.current = next.key;
     const target = structures.find((structure) => structure.entityId === next.realmId);
     if (!target) return;
-    const { coord_x, coord_y } = target.structure.base;
+    const position = structureMapPosition(setup.store, target.structure);
     if (next.suggestionId) {
       usePopoverStore.getState().openSurface({
         id: "suggestions",
@@ -68,7 +68,7 @@ function AttentionCycle() {
         mapClick: "dismiss",
       });
     } else {
-      void goToStructure(target.entityId, new Position({ x: coord_x, y: coord_y }), true);
+      void goToStructure(target.entityId, new Position(position), true);
       usePopoverStore.getState().close("suggestions");
     }
   };

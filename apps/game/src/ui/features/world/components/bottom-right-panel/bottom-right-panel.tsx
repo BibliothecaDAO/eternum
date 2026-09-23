@@ -29,6 +29,7 @@ import {
   isTileOccupierChest,
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
+  structureMapPosition,
 } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { useGame } from "@/hooks/context/game-context";
@@ -738,10 +739,10 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
   const activeRealmHex = useMemo(() => {
     if (isMapView) return null;
     const active = playerStructures.find((entry) => entry.entityId === structureEntityId);
-    const base = active?.structure?.base;
-    if (!base || base.coord_x === undefined || base.coord_y === undefined) return null;
-    return { col: Number(base.coord_x), row: Number(base.coord_y) };
-  }, [isMapView, playerStructures, structureEntityId]);
+    if (!active?.structure) return null;
+    const position = structureMapPosition(store, active.structure);
+    return { col: position.x, row: position.y };
+  }, [isMapView, playerStructures, store, structureEntityId]);
 
   const focusHex = activeRealmHex ?? cameraTargetHex;
   const focusSelectedHex = activeRealmHex ?? selectedHex;

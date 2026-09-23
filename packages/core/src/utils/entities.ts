@@ -1,3 +1,4 @@
+import { structureMapPosition } from "./expeditions";
 import {
   CapacityConfig,
   ContractAddress,
@@ -68,7 +69,7 @@ export const getEntityInfo = (
     position: explorer
       ? { x: explorer.coord.x, y: explorer.coord.y }
       : structure
-        ? { x: structure.base.coord_x, y: structure.base.coord_y }
+        ? structureMapPosition(store, structure)
         : undefined,
     owner,
     isMine: owner !== undefined && ContractAddress(owner) === playerAccount,

@@ -1,5 +1,9 @@
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { StructureType } from "@bibliothecadao/types";
+import { getBlockTimestamp } from "./timestamp";
+
+const EXPEDITION_SENTINEL_ROW = 0xffffffff;
 
 type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 
@@ -36,7 +40,30 @@ export const isCurrentExpeditionArmy = (
 
 /** A Frontier realm keeps no map coordinate of its own: the contract parks it at a sentinel and raises it daily. */
 export const isExpeditionRealm = (structure: NativeRows["Structure"]): boolean =>
-  !structure.base.alt && structure.base.coord_y === 0xffffffff;
+  !structure.base.alt && structure.base.coord_y === EXPEDITION_SENTINEL_ROW;
+
+/**
+ * Where a structure stands on the world map. In a game with expeditions (epoch_seconds set, the contract's own
+ * condition) a realm stands on the site the contract raises it on today; every other structure stands on its own
+ * coordinate. This is the one rule for a structure's map position; the raw coordinate stays the key of its buildings
+ * and tiles, never a place to point a camera at.
+ */
+export const structureMapPosition = (
+  store: Pick<NativeFactStore, "get" | "require">,
+  structure: NativeRows["Structure"],
+): { x: number; y: number; alt: boolean } => {
+  const rules = readExpeditionRules(store, structure.game_id);
+  if (rules && structure.base.category === StructureType.Realm && !structure.base.alt) {
+    const site = expeditionRealmSite(rules, structure, getBlockTimestamp().currentBlockTimestamp);
+    return { x: site.col, y: site.row, alt: false };
+  }
+  if (isExpeditionRealm(structure)) {
+    throw new Error(
+      `Structure ${structure.entity_id} is parked at the expedition sentinel in a game without expeditions`,
+    );
+  }
+  return { x: structure.base.coord_x, y: structure.base.coord_y, alt: structure.base.alt };
+};
 
 /** Where the realm stands on today's surface region: the site the contract computes for (realm, day, depth 0). */
 export const expeditionRealmSite = (
