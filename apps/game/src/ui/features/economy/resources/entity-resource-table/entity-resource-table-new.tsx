@@ -3,7 +3,8 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ResourceTransferPopover } from "@/ui/features/economy/resources/resource-transfer-popover";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView, RESOURCE_FACTS } from "@/sync/fact-views";
 import { Button } from "@/ui/design-system/atoms";
 import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -21,7 +22,7 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useGame, useQuery, useResourceManager } from "@bibliothecadao/react";
+import { useGame, useNativeRevision, useQuery, useResourceManager } from "@bibliothecadao/react";
 import {
   CapacityConfig,
   findResourceById,
@@ -152,7 +153,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     () => localStorage.getItem("pinSelectedColumn") === "true",
   );
 
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
   const openSurface = usePopoverStore((state) => state.openSurface);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
@@ -226,7 +227,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   }, [store, structureColumns]);
 
   // The resources revision is the recompute signal; only the columns' own rows are read, never every Resource row.
-  const resourcesRevision = useWorldSlicesStore((state) => state.resourcesRevision);
+  const resourcesRevision = useNativeRevision(RESOURCE_FACTS);
 
   const resourcesByStructure = useMemo(() => {
     const map = new Map<number, ResourceManager>();

@@ -1,4 +1,8 @@
+import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
+import { configManager } from "@bibliothecadao/eternum";
 import { ID } from "@bibliothecadao/types";
 import React, { useCallback, useEffect, useState } from "react";
 import { ViewToggle } from "./view-toggle";
@@ -8,9 +12,17 @@ type TableComponent = React.ComponentType<{
   disableButtons?: boolean;
 }>;
 
+/** Resource actions need the selected structure to be the player's own, and the main phase to have begun. */
+const useResourceActionsDisabled = (): boolean => {
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const ownsSelected = useFactView(playerStructuresView).some((structure) => structure.entityId === structureEntityId);
+  const nowSeconds = useCurrentBlockTimestamp();
+  return !ownsSelected || configManager.getSeasonConfig().startMainAt > nowSeconds;
+};
+
 export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | undefined }) => {
   const [useNewVersion, setUseNewVersion] = useState(() => localStorage.getItem("useNewResourceTable") === "true");
-  const disableButtons = useUIStore((state) => state.disableButtons);
+  const disableButtons = useResourceActionsDisabled();
 
   const [hasInteractedWithToggle, setHasInteractedWithToggle] = useState(
     () => localStorage.getItem("hasUsedResourceTableToggle") === "true",

@@ -1,4 +1,6 @@
 import { canIssueOrders } from "@/utils/can-issue-orders";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -28,8 +30,8 @@ export interface StructureAction {
  */
 export function useStructureActions(): StructureAction[] | null {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const isOwnStructure = useUIStore((state) =>
-    state.playerStructures.some((structure) => structure.entityId === structureEntityId),
+  const isOwnStructure = useFactView(playerStructuresView).some(
+    (structure) => structure.entityId === structureEntityId,
   );
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);

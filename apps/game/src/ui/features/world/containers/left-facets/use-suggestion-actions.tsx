@@ -1,4 +1,6 @@
 import { canIssueOrders } from "@/utils/can-issue-orders";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
@@ -24,7 +26,7 @@ export const useSuggestionActions = () => {
 
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const openSurface = usePopoverStore((state) => state.openSurface);
   const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);

@@ -1,7 +1,6 @@
 import {
   fetchHeraldGameDirectory,
   fetchHeraldGameLeaderboard,
-  fetchHeraldGameSnapshot,
   type GameRef,
   type Shard,
 } from "@bibliothecadao/eternum/shard";
@@ -62,32 +61,6 @@ export const useLeaderboard = (game: GameRef | null) =>
       fetchHeraldGameLeaderboard(await requireOpenShard((game as GameRef).chainId), (game as GameRef).gameId),
     enabled: game !== null,
     refetchInterval: 30_000,
-    retry: 1,
-  });
-
-/** A Cairo short string, as Herald serialises the felt: hex or decimal digits. */
-const decodeShortString = (felt: unknown): string => {
-  const hex = BigInt(String(felt)).toString(16);
-  const bytes = hex.length % 2 ? `0${hex}` : hex;
-  return (bytes.match(/../g) ?? []).map((byte) => String.fromCharCode(Number.parseInt(byte, 16))).join("");
-};
-
-const fetchGameNames = async (game: GameRef): Promise<Map<string, string>> => {
-  const shard = await requireOpenShard(game.chainId);
-  const snapshot = await fetchHeraldGameSnapshot(shard, game.gameId, ["AddressName"]);
-  const rows = snapshot.models.find((model) => model.model === "AddressName")?.rows ?? [];
-  return new Map(
-    rows.map((row) => [`0x${BigInt(String(row.value.address)).toString(16)}`, decodeShortString(row.value.name)]),
-  );
-};
-
-/** The names players registered in the game, keyed by normalized address; the shell shows these before identity. */
-export const useGameNames = (game: GameRef | null) =>
-  useQuery({
-    queryKey: ["shell", "names", game?.chainId, game?.gameId],
-    queryFn: () => fetchGameNames(game as GameRef),
-    enabled: game !== null,
-    staleTime: 60_000,
     retry: 1,
   });
 

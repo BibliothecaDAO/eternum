@@ -82,6 +82,7 @@ import { IS_FLAT_MODE } from "@/ui/config";
 import { ProductionModal } from "@/ui/features/settlement";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { requireActiveGameClient } from "@/sync/active-game-client";
+import { playerStructuresView, readFactView, watchFactView } from "@/sync/fact-views";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {
   ActionType,
@@ -317,13 +318,9 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     // Store all Zustand subscriptions for cleanup on destroy
+    this.updatePlayerStructures(readFactView(game.store, playerStructuresView));
     this.storeUnsubscribes.push(
-      useUIStore.subscribe(
-        (state) => state.playerStructures,
-        (playerStructures) => {
-          this.updatePlayerStructures(playerStructures);
-        },
-      ),
+      watchFactView(game.store, playerStructuresView, (structures) => this.updatePlayerStructures(structures)),
     );
 
     this.storeUnsubscribes.push(

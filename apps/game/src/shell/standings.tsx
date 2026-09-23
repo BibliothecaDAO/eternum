@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 
 import { formatPoints, ordinal, sameAddress, shortAddress } from "./format";
-import { useGameNames, useLeaderboard } from "./herald";
+import { useLeaderboard } from "./herald";
 import { ErrorPanel, Loading } from "./kit";
 import { useProfiles } from "./profiles";
 import { portraitUrl } from "./identity-chip";
@@ -10,7 +10,6 @@ import { portraitUrl } from "./identity-chip";
 /** A game's standings from Herald: live points while it runs, the recorded result once it is settled. */
 export const Standings = ({ game, highlight, limit }: { game: GameRef; highlight?: string | null; limit?: number }) => {
   const leaderboard = useLeaderboard(game);
-  const names = useGameNames(game);
   const entries = (leaderboard.data?.entries ?? []).slice(0, limit);
   const profileOf = useProfiles(entries.map((entry) => entry.address));
 
@@ -32,9 +31,7 @@ export const Standings = ({ game, highlight, limit }: { game: GameRef; highlight
             </span>
             <img src={portraitUrl(profile?.portrait ?? null)} alt="" className="h-7 w-7 rounded object-cover" />
             <Link to={`/p/${entry.address}`} className="min-w-0 flex-1 truncate font-semibold hover:text-gold">
-              {names.data?.get(`0x${BigInt(entry.address).toString(16)}`) ??
-                profile?.name ??
-                shortAddress(entry.address)}
+              {entry.name ?? profile?.name ?? shortAddress(entry.address)}
             </Link>
             <span className="font-mono text-[12px] tabular-nums text-gold">{formatPoints(entry.totalPoints)} VP</span>
           </li>

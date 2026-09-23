@@ -1,4 +1,6 @@
 import { ChevronDown, Flame, Search, ShieldCheck, X } from "@/ui/design-system/atoms/game-icons";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -50,7 +52,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     return resourceManager.balanceWithProduction(tick, resource).balance;
   }, [resourceManager, tick, resource]);
 
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
 
   const selectedStructure = useNativeRow("Structure", {
     game_id: configManager.getActiveGameId(),

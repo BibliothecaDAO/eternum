@@ -38,7 +38,8 @@ import { useWorldsAvailability } from "@/hooks/use-world-availability";
 
 import { submitSettlement } from "@/services/settlement";
 import {
-  createHeraldPreSessionReader,
+  fetchPlayerStructures,
+  fetchSettlementSnapshot,
   type PlayerStructure,
   type SettlementSnapshot,
 } from "@/runtime/world/herald-pre-session-reader";
@@ -50,7 +51,7 @@ import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { getShard, requireShard, type GameRef } from "@bibliothecadao/eternum/game-client";
+import { getShard, type GameRef } from "@bibliothecadao/eternum/game-client";
 import { Account } from "starknet";
 import {
   isGameEntryPreflightComplete,
@@ -926,10 +927,6 @@ export const GameEntryModal = ({
   const navigationEntryContext = entryContext;
   // The availability query opens the game's shard, so it is open once the game's meta is known.
   const selectedWorldRpcUrl = worldMeta ? (getShard(game.chainId)?.rpcUrl ?? null) : null;
-  const getSelectedWorldReader = useCallback(
-    () => createHeraldPreSessionReader(requireShard(game.chainId), game.gameId),
-    [game],
-  );
   const villagePassAddress = worldMeta?.villagePassAddress || null;
   const {
     villagePassBalance,
@@ -953,9 +950,8 @@ export const GameEntryModal = ({
     enabled: isOpen && Boolean(worldMeta?.gameId) && Boolean(account?.address),
     queryFn: async () => {
       if (!account?.address) return [];
-      return await getSelectedWorldReader().fetchPlayerStructures(account.address);
+      return await fetchPlayerStructures(game, account.address);
     },
-    staleTime: 10_000,
   });
   const ownedStructuresError = ownedStructuresErrorRaw instanceof Error ? ownedStructuresErrorRaw.message : null;
   const villagePassInventoryWarning = useMemo(() => {
@@ -1215,8 +1211,8 @@ export const GameEntryModal = ({
 
   const readSettlementSnapshot = useCallback(async (): Promise<SettlementSnapshot | null> => {
     if (!account?.address || !worldMeta?.gameId) return null;
-    return getSelectedWorldReader().fetchSettlementSnapshot(account.address);
-  }, [account?.address, getSelectedWorldReader, worldMeta?.gameId]);
+    return fetchSettlementSnapshot(game, account.address);
+  }, [account?.address, game, worldMeta?.gameId]);
 
   const syncSettlementStateFromSnapshot = useCallback(
     (snapshot: SettlementSnapshot) => {
@@ -1238,7 +1234,6 @@ export const GameEntryModal = ({
         ...game,
         description: "settlement indexing",
         isTarget: ({ status }) => status != null && status.settledCount >= Math.max(1, targetSettleCount),
-        modelNames: ["BlitzSettlement", "Structure"],
         onSlow: (elapsedMs) => {},
         read: async () => {
           const snapshot = await readSettlementSnapshot();
@@ -1271,10 +1266,9 @@ export const GameEntryModal = ({
         ...game,
         description: "village resource indexing",
         isTarget: (reveal) => reveal != null,
-        modelNames: ["Structure"],
         onSlow: (elapsedMs) => {},
         read: async () => {
-          const structures = await getSelectedWorldReader().fetchPlayerStructures(ownerAddress);
+          const structures = await fetchPlayerStructures(game, ownerAddress);
           const newVillage = structures
             .filter(
               (structure) =>
@@ -1302,7 +1296,7 @@ export const GameEntryModal = ({
       }
       return result;
     },
-    [beginEntityWait, game, getSelectedWorldReader],
+    [beginEntityWait, game],
   );
 
   // Check settlement status after bootstrap completes

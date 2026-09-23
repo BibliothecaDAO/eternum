@@ -1,4 +1,6 @@
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { StructureSelect } from "@/ui/design-system/molecules/structure-select";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
@@ -64,7 +66,7 @@ export const StructureSidebar = memo(
     const {
       setup: { store },
     } = useGame();
-    const playerStructures = useUIStore((state) => state.playerStructures);
+    const playerStructures = useFactView(playerStructuresView);
     const structureNameVersion = useUIStore((state) => state.structureNameVersion);
     const leftListSort = useUIStore((state) => state.leftListSort);
     const { favorites } = useFavoriteStructures();

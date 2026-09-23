@@ -286,7 +286,7 @@ export const fetchGameReviewData = async (input: {
   const source = await loadReviewSource(input.game);
   const finalization = buildFinalization(source);
   const activity = await fetchHeraldGameLeaderboard(source.world, source.gameId);
-  const leaderboard = buildLandingLeaderboard(source.snapshot, activity.entries);
+  const leaderboard = buildLandingLeaderboard(activity.entries);
   const playerAddress = parseAddress(input.playerAddress);
   const personalScore = playerAddress ? (leaderboard.find((entry) => entry.address === playerAddress) ?? null) : null;
   const structures = modelRows(source.snapshot, "Structure");

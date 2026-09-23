@@ -232,3 +232,10 @@ export const useStoryEvents = (limit: number = 100, story?: string, owner?: stri
 
   return { ...query, data };
 };
+
+/** The season's winner once its SeasonEnded story is in history; null until then. */
+export const useSeasonWinner = (): bigint | null => {
+  const { data: ended } = useStoryEvents(1, "SeasonEnded");
+  const winner = ended[0]?.owner;
+  return winner ? BigInt(winner) : null;
+};

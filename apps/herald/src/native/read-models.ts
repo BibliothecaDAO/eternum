@@ -3,6 +3,7 @@ import {
   type HeraldGameDirectory,
   type HeraldGameDirectoryEntry,
   type HeraldLeaderboard,
+  type HeraldPlayerStructure,
   type PlayerActivityBreakdown,
   type ShareAllocation,
   sharePointCutoff,
@@ -97,6 +98,9 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
           registered: gameRows(entries, game.game_id).some((row) => address(row.player) === player),
           settled: realms.some((row) => address(row.owner) === player),
           roster_member: roster.some((row) => address(row.owner) === player),
+          structures: gameRows(structures, game.game_id)
+            .filter((row) => address(row.owner) === player)
+            .map(playerStructure),
         }
       : null,
     roster_count: roster.length,
@@ -112,6 +116,18 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
   };
 }
 
+function playerStructure(row: Row): HeraldPlayerStructure {
+  const base = record(row.base);
+  return {
+    entity_id: number(row.entity_id),
+    category: number(base.category),
+    realm_id: number(record(row.metadata).realm_id),
+    coord_x: number(base.coord_x),
+    coord_y: number(base.coord_y),
+    resources_packed: integer(row.resources_packed).toString(),
+  };
+}
+
 export function buildNativeLeaderboard(
   modelRows: (model: string) => FoldRow[],
   gameId: string,
@@ -122,17 +138,30 @@ export function buildNativeLeaderboard(
   const game = required(modelRows("GameRegistry"), gameId, "GameRegistry");
   const rules = required(modelRows("SliceRules"), gameId, "SliceRules");
   const result = rows("BlitzResult")[0];
-  if (result?.complete === true) return finalStandings(gameId, result, activity);
+  const names = modelRows("AddressName");
+  if (result?.complete === true) return withRegisteredNames(finalStandings(gameId, result, activity), names);
   const points = registeredPlayerPoints(rows("PlayerEntry"), rows("PlayerPoints"));
   addUnclaimedSharePoints(points, rows("HyperstructureShares"), game, rules, timestamp);
-  return rankPlayers(gameId, points, activity);
+  return withRegisteredNames(rankPlayers(gameId, points, activity), names);
+}
+
+type UnnamedLeaderboard = Omit<HeraldLeaderboard, "entries"> & {
+  entries: Omit<HeraldLeaderboard["entries"][number], "name">[];
+};
+
+function withRegisteredNames(leaderboard: UnnamedLeaderboard, addressNames: FoldRow[]): HeraldLeaderboard {
+  const names = new Map(addressNames.map(({ value }) => [address(value.address), shortString(value.name) || null]));
+  return {
+    ...leaderboard,
+    entries: leaderboard.entries.map((entry) => ({ ...entry, name: names.get(entry.address) ?? null })),
+  };
 }
 
 function finalStandings(
   gameId: string,
   result: Row,
   activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
-): HeraldLeaderboard {
+): UnnamedLeaderboard {
   return {
     game_id: integer(gameId).toString(),
     entries: (result.players as Row[]).map((player) => ({
@@ -177,7 +206,7 @@ function rankPlayers(
   gameId: string,
   points: Map<string, bigint>,
   activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
-): HeraldLeaderboard {
+): UnnamedLeaderboard {
   const ranked = [...points].sort(([left, a], [right, b]) => (a === b ? left.localeCompare(right) : a > b ? -1 : 1));
   const entries = ranked.map(([player, value], index) => ({
     address: player,

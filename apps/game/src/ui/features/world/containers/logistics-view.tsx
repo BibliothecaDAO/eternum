@@ -1,4 +1,6 @@
 import { StructureWorkspace } from "@/ui/design-system/molecules/structure-workspace";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { EntityResourceTable } from "@/ui/features/economy/resources";
@@ -35,7 +37,7 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
   const activeTabKey = useUIStore((state) => state.logisticsActiveTab);
   const setActiveTabKey = useUIStore((state) => state.setLogisticsActiveTab);
   const transferPanelSourceId = useUIStore((state) => state.transferPanelSourceId);
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
 

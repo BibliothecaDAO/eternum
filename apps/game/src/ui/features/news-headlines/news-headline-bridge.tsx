@@ -1,4 +1,7 @@
 import { getScopedGameId } from "@bibliothecadao/eternum/game-client";
+import { useSeasonWinner } from "@/hooks/store/use-story-events-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { seasonClockView } from "@/sync/fact-views";
 import { resolveGameEndHeadline } from "./game-end-headline";
 import { createBuildingMilestones } from "./building-milestones";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -36,7 +39,7 @@ export function NewsHeadlineBridge() {
   const { setup } = useGame();
   const { isMapView } = useQuery();
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
-  const gameWinner = useUIStore((state) => state.gameWinner);
+  const winner = useSeasonWinner();
   const endRevision = useNativeRevision(["GameRegistry", "BlitzResult", "AddressName"]);
   const goToStructure = useGoToStructure(setup);
   const navigateToMapView = useNavigateToMapView();
@@ -46,7 +49,7 @@ export function NewsHeadlineBridge() {
   }, [setup.store]);
 
   const address = useAccountStore((state) => state.account?.address);
-  const startAt = useUIStore((state) => state.gameStartMainAt);
+  const startAt = useFactView(seasonClockView).gameStartMainAt;
   const nowSeconds = useCurrentBlockTimestamp();
   const wasBeforeStart = useRef(false);
 
@@ -164,15 +167,11 @@ export function NewsHeadlineBridge() {
 
   // --- Game end detection ---
   useEffect(() => {
-    const headline = resolveGameEndHeadline(
-      setup.store,
-      getScopedGameId(),
-      nowSeconds,
-      gameWinner?.address ?? null,
-      (address) => displayPlayerName(address, getAddressName(address, setup.store)),
+    const headline = resolveGameEndHeadline(setup.store, getScopedGameId(), nowSeconds, winner, (address) =>
+      displayPlayerName(address, getAddressName(address, setup.store)),
     );
     if (headline) enqueue(headline);
-  }, [setup.store, nowSeconds, gameWinner, endRevision, enqueue]);
+  }, [setup.store, nowSeconds, winner, endRevision, enqueue]);
 
   // --- Navigation handler ---
   const handleNavigate = useCallback(

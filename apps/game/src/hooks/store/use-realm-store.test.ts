@@ -2,8 +2,11 @@
 
 import { describe, expect, it, vi } from "vitest";
 import { configManager } from "@bibliothecadao/eternum";
-import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
+import type { Structure } from "@bibliothecadao/types";
 import type { RealmStore } from "./use-realm-store";
+
+const ownedStructures = vi.hoisted(() => ({ current: [] as Structure[] }));
+vi.mock("@/sync/fact-views", () => ({ readActivePlayerStructures: () => ownedStructures.current }));
 
 vi.mock("@bibliothecadao/types", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@bibliothecadao/types")>();
@@ -34,7 +37,6 @@ const { createRealmStoreSlice } = await import("./use-realm-store");
 vi.spyOn(configManager, "getMapCenter").mockReturnValue(2010831280);
 
 type RealmStoreState = RealmStore;
-type PlayerStructure = RealmStoreState["playerStructures"][number];
 
 const createRealmStoreTestHarness = () => {
   let state = {} as RealmStoreState;
@@ -64,7 +66,7 @@ const makeStructure = (
   ({
     entityId,
     category,
-  }) as unknown as PlayerStructure;
+  }) as unknown as Structure;
 
 describe("use-realm-store spectator lifecycle", () => {
   it("enters spectator mode while preserving last controlled owned structure", () => {
@@ -72,8 +74,8 @@ describe("use-realm-store spectator lifecycle", () => {
     harness.setState({
       structureEntityId: 101,
       isSpectating: false,
-      playerStructures: [makeStructure(101), makeStructure(202)],
     });
+    ownedStructures.current = [makeStructure(101), makeStructure(202)];
 
     harness.getState().setStructureEntityId(303, {
       spectator: true,
@@ -92,8 +94,8 @@ describe("use-realm-store spectator lifecycle", () => {
     harness.setState({
       structureEntityId: 101,
       isSpectating: false,
-      playerStructures: [makeStructure(101), makeStructure(202)],
     });
+    ownedStructures.current = [makeStructure(101), makeStructure(202)];
 
     harness.getState().setStructureEntityId(303, {
       spectator: true,
@@ -102,23 +104,6 @@ describe("use-realm-store spectator lifecycle", () => {
 
     const next = harness.getState();
     expect(next.worldMapReturnPosition).toEqual({ col: 6, row: -2 });
-  });
-
-  it("recovers from startup spectator state when player structures become available", () => {
-    const harness = createRealmStoreTestHarness();
-    harness.setState({
-      isSpectating: true,
-      structureEntityId: 999,
-      lastControlledStructureEntityId: UNDEFINED_STRUCTURE_ENTITY_ID,
-      playerStructures: [],
-    });
-
-    harness.getState().setPlayerStructures([makeStructure(777), makeStructure(888, StructureType.Village)]);
-
-    const next = harness.getState();
-    expect(next.isSpectating).toBe(false);
-    expect(next.structureEntityId).toBe(777);
-    expect(next.lastControlledStructureEntityId).toBe(777);
   });
 
   it("exits spectator mode using last controlled structure fallback", () => {

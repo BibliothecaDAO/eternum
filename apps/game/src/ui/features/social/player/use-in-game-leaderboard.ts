@@ -1,10 +1,9 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
-import { useGame } from "@bibliothecadao/react";
+import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { buildFinalizedBlitzStandingLookup, normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";
@@ -62,13 +61,21 @@ const buildFinalizedBlitzLeaderboard = (store: NativeFactStore): InGameLeaderboa
   };
 };
 
+const LEADERBOARD_FACTS = [
+  "Hyperstructure",
+  "HyperstructureShares",
+  "BlitzResult",
+  "PlayerPoints",
+  "GameRegistry",
+] as const;
+
 export const useInGameLeaderboard = (): InGameLeaderboard => {
   const {
     setup: { store },
   } = useGame();
   const isBlitz = useResolvedWorldGameMode() === "blitz";
   const leaderboardTick = useCoarseCurrentDefaultTick(LEADERBOARD_UPDATE_INTERVAL / 1_000);
-  const leaderboardRevision = useWorldSlicesStore((state) => state.leaderboardRevision);
+  const leaderboardRevision = useNativeRevision(LEADERBOARD_FACTS);
 
   return useMemo(() => {
     // Both are recompute signals, not inputs: the revision for leaderboard writes reaching the native store, the tick for

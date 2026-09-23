@@ -1,4 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView, selectableArmiesView } from "@/sync/fact-views";
 import { FELT_CENTER } from "@/ui/config";
 import { requireBiomeColor, resolveBiomeTypeFromId } from "@/three/managers/biome-colors";
 import {
@@ -209,8 +211,8 @@ interface HexMinimapProps {
 export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetHex }: HexMinimapProps) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 800, height: 600 });
-  const playerStructures = useUIStore((state) => state.playerStructures);
-  const selectableArmies = useUIStore((state) => state.selectableArmies);
+  const playerStructures = useFactView(playerStructuresView);
+  const selectableArmies = useFactView(selectableArmiesView);
   const cameraDistance = useUIStore((state) => state.cameraDistance);
 
   const ownedStructureIds = useMemo(() => {

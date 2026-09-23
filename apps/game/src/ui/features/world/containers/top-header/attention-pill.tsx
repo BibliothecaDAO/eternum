@@ -1,4 +1,6 @@
 import { Bell } from "@/ui/design-system/atoms/game-icons";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { configManager } from "@bibliothecadao/eternum";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -24,7 +26,7 @@ AttentionPill.displayName = "AttentionPill";
 function AttentionCycle() {
   const { setup } = useGame();
   const goToStructure = useGoToStructure(setup);
-  const structures = useUIStore((state) => state.playerStructures);
+  const structures = useFactView(playerStructuresView);
   const arrivedIds = useUIStore((state) => state.arrivedArrivalStructureIds);
   const suggestions = useEmpireSuggestions();
   const previousKey = useRef<string | null>(null);

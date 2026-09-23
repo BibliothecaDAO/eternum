@@ -2,7 +2,6 @@ import { BattleViewInfo, LeftView } from "@/types";
 import { useTooltipStore } from "./use-tooltip-store";
 import { ContextMenuState } from "@/types/context-menu";
 import { clampCycleProgress, type DebugCycleProgressOverride } from "@/utils/cycle-progress";
-import { SelectableArmy } from "@bibliothecadao/eternum";
 import { BiomeType, ContractAddress, Direction, StructureType } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
@@ -39,18 +38,6 @@ type PendingMilitaryAction = {
 };
 
 interface UIStore {
-  disableButtons: boolean;
-  setDisableButtons: (disable: boolean) => void;
-  gameWinner: { address: ContractAddress; name: string; guildName: string } | null;
-  setGameWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) => void;
-  gameEndAt: number | null;
-  setGameEndAt: (seasonEndAt: number | null) => void;
-  gameStartMainAt: number | null;
-  setGameStartMainAt: (seasonStartMainAt: number | null) => void;
-  // season_config.dev_mode_on — when set, the chain bypasses settling/main-phase
-  // start gates (see SeasonConfigImpl). Finite end timers still close dev games.
-  devModeOn: boolean;
-  setDevModeOn: (devModeOn: boolean) => void;
   showBlurOverlay: boolean;
   setShowBlurOverlay: (show: boolean) => void;
   showBlankOverlay: boolean;
@@ -134,9 +121,6 @@ interface UIStore {
   setIsFollowingArmy: (following: boolean) => void;
   followingArmyMessage: string | null;
   setFollowingArmyMessage: (message: string | null) => void;
-  // shortcut navigation
-  selectableArmies: SelectableArmy[];
-  setSelectableArmies: (armies: SelectableArmy[]) => void;
   // cycle timing for storm effects
   cycleProgress: number;
   setCycleProgress: (progress: number) => void;
@@ -179,17 +163,6 @@ const readLeftListSort = (): LeftListSort => {
 
 export const useUIStore = create(
   subscribeWithSelector<AppStore>((set, get) => ({
-    disableButtons: false,
-    setDisableButtons: (disable: boolean) => set({ disableButtons: disable }),
-    gameWinner: null,
-    setGameWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) =>
-      set({ gameWinner: winner }),
-    gameEndAt: null,
-    setGameEndAt: (seasonEndAt: number | null) => set({ gameEndAt: seasonEndAt }),
-    gameStartMainAt: null,
-    setGameStartMainAt: (seasonStartMainAt: number | null) => set({ gameStartMainAt: seasonStartMainAt }),
-    devModeOn: false,
-    setDevModeOn: (devModeOn: boolean) => set({ devModeOn }),
     showBlurOverlay: false,
     setShowBlurOverlay: (show) => set({ showBlurOverlay: show }),
     showBlankOverlay: true,
@@ -324,9 +297,6 @@ export const useUIStore = create(
     setFollowingArmyMessage: (message: string | null) => {
       set({ followingArmyMessage: message });
     },
-    // shortcut navigation - dummy data for now
-    selectableArmies: [],
-    setSelectableArmies: (armies: SelectableArmy[]) => set({ selectableArmies: armies }),
     // cycle timing for storm effects
     cycleProgress: 0,
     setCycleProgress: (progress: number) => set({ cycleProgress: clampCycleProgress(progress) }),

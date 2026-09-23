@@ -27,7 +27,6 @@ import { RelicCrateOpenings } from "../features/military/chest/relic-crate-openi
 import { ChestOpenings } from "../features/military/chest/chest-openings";
 import { ExpeditionRollover } from "../features/world/components/expeditions/expedition-rollover";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { NativeStoreBridge } from "./native-store-bridge";
 import { FLIGHT_TRACE_ENABLED, traceFlightCommit } from "@/three/flight-trace";
 import { Profiler } from "react";
 import { PlayOverlayManager } from "./play-overlay-manager";
@@ -79,7 +78,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
  */
 const BackgroundSystems = () => (
   <>
-    <NativeStoreBridge />
     <LeaderboardActivitySync />
     <ActionRunners />
     <RelicCrateOpenings />

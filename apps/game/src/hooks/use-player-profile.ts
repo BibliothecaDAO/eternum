@@ -1,29 +1,72 @@
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { identityProfiles } from "@/services/identity/player-profiles";
+import { getActiveGameStore } from "@/sync/active-game-client";
+import { readPlayerProfile, readPlayers } from "@/sync/fact-views";
 import { displayPlayerName } from "@bibliothecadao/eternum";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import type { ContractAddress, Player } from "@bibliothecadao/types";
+import { useMemo, useSyncExternalStore } from "react";
 
 /** What every surface shows for a player: the resolved name (or nothing) and the portrait. */
 type PlayerProfile = Pick<Player, "name" | "portrait">;
 
 const NO_PROFILE: PlayerProfile = { name: null, portrait: null };
 const PORTRAIT_COUNT = 12;
+const PLAYER_NAME_FACTS = ["AddressName"] as const;
 
 const toAddress = (address: string | bigint): ContractAddress => BigInt(address);
 
 /**
- * The one player resolver. Names and portraits come from the players slice, where the bridge merges identity's
- * profile over the chain name; nothing re-derives a name from the chain or the URL.
+ * The one player resolver: identity's profile over the chain name, read from the native store and identity's
+ * answers; nothing re-derives a name from the chain or the URL. Before a game boots no address has a chain name.
  */
 const getPlayerProfile = (address: string | bigint): PlayerProfile => {
-  const owner = toAddress(address);
-  return useWorldSlicesStore.getState().players.find((player) => player.address === owner) ?? NO_PROFILE;
+  const store = getActiveGameStore();
+  return store ? readPlayerProfile(store, toAddress(address)) : NO_PROFILE;
+};
+
+/** Changes whenever a name source changes: a chain name, an identity answer, or the signed-in session. */
+const useProfileRevision = () => {
+  const names = useNativeRevision(PLAYER_NAME_FACTS);
+  const profiles = useSyncExternalStore(identityProfiles.subscribe, identityProfiles.getVersion);
+  const user = useIdentitySessionStore((state) => state.session?.user);
+  const account = useAccountStore((state) => state.account?.address);
+  return [names, profiles, user, account] as const;
+};
+
+/** Calls `onChange` whenever a player name may have changed: a chain name, an identity answer, or the session. */
+export const watchPlayerNames = (store: NativeFactStore, onChange: () => void): (() => void) => {
+  const stopNames = store.subscribe((changes) => {
+    if (changes.some((change) => change.model === "AddressName")) onChange();
+  });
+  const stopProfiles = identityProfiles.subscribe(onChange);
+  const stopSession = useIdentitySessionStore.subscribe((state, previous) => {
+    if (state.session?.user !== previous.session?.user) onChange();
+  });
+  return () => {
+    stopNames();
+    stopProfiles();
+    stopSession();
+  };
+};
+
+export const usePlayers = (): Player[] => {
+  const {
+    setup: { store },
+  } = useGame();
+  const revision = useProfileRevision();
+  return useMemo(() => readPlayers(store), [store, ...revision]);
 };
 
 export const usePlayerProfile = (address: string | bigint | null | undefined): PlayerProfile => {
+  const {
+    setup: { store },
+  } = useGame();
+  const revision = useProfileRevision();
   const owner = address === null || address === undefined ? null : toAddress(address);
-  return useWorldSlicesStore((state) =>
-    owner === null ? NO_PROFILE : (state.players.find((player) => player.address === owner) ?? NO_PROFILE),
-  );
+  return useMemo(() => (owner === null ? NO_PROFILE : readPlayerProfile(store, owner)), [store, owner, ...revision]);
 };
 
 /** The resolved name alone, for callers that keep their own fallback (the story formatter shortens itself). */

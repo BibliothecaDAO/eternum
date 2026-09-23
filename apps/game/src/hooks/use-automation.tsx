@@ -26,7 +26,6 @@ import {
   type ResourceAutomationPercentages,
   type RealmAutomationExecutionSummary,
 } from "./store/use-automation-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { calculatePresetAllocations, getAutomationOverallocation } from "@bibliothecadao/eternum/automation";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@bibliothecadao/react";
@@ -117,7 +116,6 @@ export const useAutomation = () => {
   }));
   const setNextRunTimestampRef = useRef(setNextRunTimestamp);
   const playerStructures = useOwnedProductionStructureInfos();
-  const gameEndAt = useUIStore((state) => state.gameEndAt);
   const mode = useGameModeConfig();
   const realmResourcesSignatureRef = useRef<string>("");
   const initialAutomationTimestampMsRef = useRef<number | null>(null);
@@ -141,32 +139,11 @@ export const useAutomation = () => {
     setNextRunTimestampRef.current(null);
   }, []);
 
-  const isGameOver = useCallback(
-    (blockTimestampSeconds?: number) => {
-      // The registry status flips to Ended/Settled the moment a season-close
-      // or settle tx lands — including EARLY closes (points win before end_at)
-      // — so it must win over the timestamp check, and it also covers unscoped
-      // boots where the UI store's gameEndAt never hydrated. This closes the
-      // "Season is over" revert loop from automation submitting into an ended
-      // game.
-      if (configManager.isGameOver()) {
-        return true;
-      }
-      if (typeof gameEndAt !== "number") {
-        return false;
-      }
-      const timestamp =
-        typeof blockTimestampSeconds === "number" ? blockTimestampSeconds : getBlockTimestamp().currentBlockTimestamp;
-      return timestamp >= gameEndAt;
-    },
-    [gameEndAt],
-  );
-
   useEffect(() => {
-    if (isGameOver()) {
+    if (configManager.isGameOver()) {
       stopAutomation();
     }
-  }, [isGameOver, stopAutomation]);
+  }, [stopAutomation]);
 
   useEffect(() => {
     if (!store) {
@@ -226,7 +203,7 @@ export const useAutomation = () => {
   const processRealms = useCallback(async (): Promise<ProcessRealmsResult> => {
     if (processingRef.current) return { ran: false, anyExecuted: false };
 
-    if (isGameOver()) {
+    if (configManager.isGameOver()) {
       verboseLog("Automation: Game has ended. Skipping automation pass.");
       return { ran: false, anyExecuted: false };
     }
@@ -285,7 +262,7 @@ export const useAutomation = () => {
           continue;
         }
 
-        if (isGameOver()) {
+        if (configManager.isGameOver()) {
           skipRemainingRealmsMessage = "Game has ended";
           recordRealmSkippedStatus({
             realmId: realmConfig.realmId,
@@ -448,7 +425,7 @@ export const useAutomation = () => {
           continue;
         }
 
-        if (isGameOver()) {
+        if (configManager.isGameOver()) {
           skipRemainingRealmsMessage = "Game has ended";
           recordRealmSkippedStatus({
             realmId: activeRealmConfig.realmId,
@@ -558,22 +535,14 @@ export const useAutomation = () => {
     }
 
     return { ran: true, anyExecuted };
-  }, [
-    store,
-    execute_realm_production_plan,
-    recordExecution,
-    recordStatus,
-    starknetSignerAccount,
-    getRealmConfig,
-    isGameOver,
-  ]);
+  }, [store, execute_realm_production_plan, recordExecution, recordStatus, starknetSignerAccount, getRealmConfig]);
 
   const runAutomationIfDue = useCallback(async () => {
     const { currentBlockTimestamp } = getBlockTimestamp();
     // Use wall clock time for scheduling so stale chain time cannot freeze automation.
     const nowMs = Date.now();
 
-    if (isGameOver(currentBlockTimestamp)) {
+    if (configManager.isGameOver()) {
       stopAutomation();
       return;
     }
@@ -604,10 +573,10 @@ export const useAutomation = () => {
       pruneDuringProcessingRef.current = false;
       scheduleNextCheckRef.current?.();
     }
-  }, [isGameOver, setNextRunTimestampRef, stopAutomation]);
+  }, [setNextRunTimestampRef, stopAutomation]);
 
   const scheduleNextCheck = useCallback(() => {
-    if (isGameOver()) {
+    if (configManager.isGameOver()) {
       stopAutomation();
       return;
     }
@@ -618,7 +587,7 @@ export const useAutomation = () => {
     automationTimeoutIdRef.current = window.setTimeout(() => {
       void runAutomationIfDue();
     }, delay);
-  }, [isGameOver, runAutomationIfDue, stopAutomation]);
+  }, [runAutomationIfDue, stopAutomation]);
 
   useEffect(() => {
     processRealmsRef.current = processRealms;
@@ -635,7 +604,7 @@ export const useAutomation = () => {
   useEffect(() => {
     const unsub = useAutomationStore.subscribe((state, prevState) => {
       if (state.realms === prevState.realms) return;
-      if (isGameOver()) return;
+      if (configManager.isGameOver()) return;
 
       const newSignature = computeAutomationConfigSignature(state.realms);
       if (newSignature !== realmResourcesSignatureRef.current) {
@@ -658,10 +627,10 @@ export const useAutomation = () => {
       }
     });
     return unsub;
-  }, [isGameOver]);
+  }, []);
 
   useEffect(() => {
-    if (isGameOver()) {
+    if (configManager.isGameOver()) {
       stopAutomation();
       return () => {
         if (automationTimeoutIdRef.current !== null) {
@@ -677,5 +646,5 @@ export const useAutomation = () => {
         window.clearTimeout(automationTimeoutIdRef.current);
       }
     };
-  }, [isGameOver, scheduleNextCheck, stopAutomation]);
+  }, [scheduleNextCheck, stopAutomation]);
 };

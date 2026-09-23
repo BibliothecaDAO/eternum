@@ -1,4 +1,5 @@
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { guildsView } from "@/sync/fact-views";
 import { LORDS_PRIZE_POOL, STRK_PRIZE_POOL } from "@/ui/constants";
 import { Button, TextInput } from "@/ui/design-system/atoms";
 import { CreateGuildButton } from "./create-guild-button";
@@ -44,7 +45,7 @@ export const Guilds = ({
   const [guildName, setGuildName] = useState("");
 
   // The guilds slice is the subscription; the bridge publishes it once per ingest slice and on account change.
-  const guilds = useWorldSlicesStore((state) => state.guilds);
+  const guilds = useFactView(guildsView);
   const guildInvites = usePlayerWhitelist(ContractAddress(account.address));
   const playerGuild = useMemo(
     () => getGuildFromPlayerAddress(ContractAddress(account.address), store),

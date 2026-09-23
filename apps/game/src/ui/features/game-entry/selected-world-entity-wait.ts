@@ -1,6 +1,5 @@
 import { requireOpenShard } from "@/runtime/world/shards";
-import { buildHeraldGameStreamUrl, nativeModelDefinition, type GameRef } from "@bibliothecadao/eternum/game-client";
-import { HeraldGameSyncTransport } from "@bibliothecadao/eternum/game-sync";
+import { subscribeHeraldDirectory, type GameRef } from "@bibliothecadao/eternum/game-client";
 
 interface WaitForEntitySubscriptionStateInput<T> {
   description: string;
@@ -12,10 +11,7 @@ interface WaitForEntitySubscriptionStateInput<T> {
   subscribe: (onChange: () => void) => Promise<() => void>;
 }
 
-interface WaitForSelectedWorldEntityStateInput<T>
-  extends Omit<WaitForEntitySubscriptionStateInput<T>, "subscribe">, GameRef {
-  modelNames: readonly string[];
-}
+type WaitForSelectedWorldEntityStateInput<T> = Omit<WaitForEntitySubscriptionStateInput<T>, "subscribe"> & GameRef;
 
 const createAbortError = (): Error => {
   const error = new Error("Selected-world entity wait was cancelled");
@@ -122,35 +118,13 @@ export const waitForEntitySubscriptionState = async <T>(input: WaitForEntitySubs
   });
 };
 
+/** Re-reads the player's directory row whenever Herald says the directory changed, until it reaches the target. */
 export const waitForSelectedWorldEntityState = async <T>(
   input: WaitForSelectedWorldEntityStateInput<T>,
 ): Promise<T> => {
   const shard = await requireOpenShard(input.chainId);
-  // The compiled bindings load when a game is entered, never with the landing.
-  const { nativeBindings } = await import("@/runtime/world/native-bindings");
-  const transport = new HeraldGameSyncTransport({
-    modelDefinition: nativeModelDefinition(nativeBindings),
-    url: buildHeraldGameStreamUrl(shard.url, input.gameId),
-  });
-  const watchedModels = new Set(input.modelNames);
   return waitForEntitySubscriptionState({
     ...input,
-    subscribe: async (onChange) => {
-      const ignore = () => undefined;
-      const subscription = await transport.subscribe({
-        onFacts: ({ facts }) => {
-          if (facts.some((fact) => watchedModels.has(fact.model))) onChange();
-        },
-        onSnapshotStart: ignore,
-        onSnapshotModel: ignore,
-        onSnapshotEnd: ignore,
-        onScope: ignore,
-        onEvent: ignore,
-        onHead: ignore,
-        onTransaction: ignore,
-        onStartFailure: ignore,
-      });
-      return subscription.cancel;
-    },
+    subscribe: async (onChange) => subscribeHeraldDirectory(shard, onChange),
   });
 };

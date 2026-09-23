@@ -1,4 +1,7 @@
 import { completeNativeBatches } from "@bibliothecadao/provider";
+import { useSeasonWinner } from "@/hooks/store/use-story-events-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { seasonClockView } from "@/sync/fact-views";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import Button from "@/ui/design-system/atoms/button";
@@ -27,12 +30,12 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
   const [showCongratsPopup, setShowCongratsPopup] = useState(false);
   const setTooltip = useTooltipStore((state) => state.setTooltip);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const gameEndAt = useUIStore((state) => state.gameEndAt);
+  const { gameEndAt } = useFactView(seasonClockView);
   const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
-  const seasonWinner = useUIStore((state) => state.gameWinner);
+  const seasonWinner = useSeasonWinner();
   const hasFiniteGameEnd = useMemo(() => hasFiniteSeasonEnd(gameEndAt), [gameEndAt]);
 
-  const isSeasonOver = Boolean(seasonWinner);
+  const isSeasonOver = seasonWinner !== null;
 
   const pointsForWin = configManager.getHyperstructureConfig().pointsForWin;
 

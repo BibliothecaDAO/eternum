@@ -1,5 +1,6 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { buildingTilesView } from "@/sync/fact-views";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import { useStructureGroups } from "@/ui/features/world/containers/top-header/structure-groups";
 import {
@@ -63,8 +64,8 @@ export const useStructuresWithMetadata = ({
     [structures],
   );
   const trackedStructureIds = useMemo(() => new Set(structureTileStatIds), [structureTileStatIds]);
-  // The bridge publishes every building tile once per ingest slice; the picker only counts the tracked ones.
-  const buildings = useWorldSlicesStore((state) => state.buildings);
+  // Every building tile of the game is read when one changes; the picker only counts the tracked ones.
+  const buildings = useFactView(buildingTilesView);
   const buildingTileCountsByStructure = useMemo(
     () => countOccupiedBuildingTilesByStructure({ trackedStructureIds, buildings }),
     [buildings, trackedStructureIds],

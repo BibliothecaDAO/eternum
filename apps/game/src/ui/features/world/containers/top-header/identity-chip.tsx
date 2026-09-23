@@ -2,7 +2,9 @@ import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { identityUsername, IDENTITY_POPOVER_ID, useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { usePlayers } from "@/hooks/use-player-profile";
+import { gameStructuresView } from "@/sync/fact-views";
 import { resetBootstrap } from "@/init/bootstrap";
 import { buildEntryHref } from "@/play/navigation/play-route";
 import { getActiveGame } from "@/runtime/world";
@@ -35,8 +37,8 @@ const useIdentityChipState = (): IdentityChipState => {
   const { status, session } = useIdentitySession();
   const gameplayAddress = useAccountStore((state) => state.account?.address ?? null);
   const provisioningError = useAccountStore((state) => state.provisioningError);
-  const players = useWorldSlicesStore((state) => state.players);
-  const structures = useWorldSlicesStore((state) => state.structures);
+  const players = usePlayers();
+  const structures = useFactView(gameStructuresView);
   const { standingsByAddress } = useInGameLeaderboard();
 
   return useMemo(() => {

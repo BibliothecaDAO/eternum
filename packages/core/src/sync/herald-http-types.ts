@@ -28,6 +28,24 @@ export interface HeraldGameSettlementConfig {
   two_player_mode: boolean;
 }
 
+/** One structure the requesting player owns in the game. */
+export interface HeraldPlayerStructure {
+  entity_id: number;
+  category: number;
+  realm_id: number;
+  coord_x: number;
+  coord_y: number;
+  resources_packed: string;
+}
+
+/** The requesting player's standing in one game: everything the entry screens read before the player joins. */
+export interface HeraldPlayerGameState {
+  registered: boolean;
+  settled: boolean;
+  roster_member: boolean;
+  structures: HeraldPlayerStructure[];
+}
+
 export interface HeraldGameDirectoryEntry {
   ready: boolean;
   clock: HeraldGameClock;
@@ -36,7 +54,7 @@ export interface HeraldGameDirectoryEntry {
   mode: "blitz" | "eternum" | "frontier" | "duel" | null;
   name: string;
   player_count: number;
-  player_state: { registered: boolean; settled: boolean; roster_member: boolean } | null;
+  player_state: HeraldPlayerGameState | null;
   /** Players on a Blitz game's fixed roster; 0 for open-entry games. */
   roster_count: number;
   preset_id: number;
@@ -108,7 +126,12 @@ export interface HeraldTransactionCount {
   game_id: string;
 }
 
+/** A ranked player with the name they registered in the game, or null before they register one. */
+export interface HeraldLeaderboardEntry extends PlayerLeaderboardActivityEntry {
+  name: string | null;
+}
+
 export interface HeraldLeaderboard {
   game_id: string;
-  entries: PlayerLeaderboardActivityEntry[];
+  entries: HeraldLeaderboardEntry[];
 }

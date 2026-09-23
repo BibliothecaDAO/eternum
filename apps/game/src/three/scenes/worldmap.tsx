@@ -8281,6 +8281,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     this.storeSubscriptions = registerWorldmapStoreBridge({
+      facts: this.game.store,
       onSelectableArmiesChanged: (selectableArmies) => this.updateSelectableArmies(selectableArmies),
       onPlayerStructuresChanged: (playerStructures) => this.updatePlayerStructures(playerStructures),
       onIncomingTroopArrivalsChanged: (publicIncomingTroopArrivalsByStructure) => {
@@ -8405,6 +8406,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private syncStateFromStore() {
     syncWorldmapStoreBridgeState({
+      facts: this.game.store,
       isInteractionOwner: this.isInteractionOwner(),
       onSkippedWithoutOwnership: () => {
         this.logInteractionDebug("sync_state_from_store_skipped_without_ownership", {

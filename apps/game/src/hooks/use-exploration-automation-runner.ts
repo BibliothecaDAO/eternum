@@ -21,7 +21,6 @@ import {
   DEFAULT_STRATEGY_ID,
   useExplorationAutomationStore,
 } from "@/hooks/store/use-exploration-automation-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import {
   computeEffectiveStaminaCost,
@@ -49,8 +48,6 @@ export const useExplorationAutomationRunner = () => {
   const scheduleNext = useExplorationAutomationStore((s) => s.scheduleNext);
   const remove = useExplorationAutomationStore((s) => s.remove);
   const pruneForGame = useExplorationAutomationStore((s) => s.pruneForGame);
-  const gameEndAt = useUIStore((state) => state.gameEndAt);
-  const gameWinner = useUIStore((state) => state.gameWinner);
 
   const processingRef = useRef(false);
   const processRef = useRef<() => Promise<void>>(async () => {});
@@ -80,19 +77,6 @@ export const useExplorationAutomationRunner = () => {
     }
   }, []);
 
-  const isSeasonOver = useCallback(
-    (blockTimestampSeconds?: number) => {
-      if (gameWinner) return true;
-      if (typeof gameEndAt !== "number") {
-        return false;
-      }
-      const timestamp =
-        typeof blockTimestampSeconds === "number" ? blockTimestampSeconds : getBlockTimestamp().currentBlockTimestamp;
-      return timestamp >= gameEndAt;
-    },
-    [gameEndAt, gameWinner],
-  );
-
   useEffect(() => {
     if (!store) {
       return;
@@ -105,7 +89,7 @@ export const useExplorationAutomationRunner = () => {
   }, [store, pruneForGame]);
 
   const scheduleNextCheck = useCallback(() => {
-    if (isSeasonOver()) {
+    if (configManager.isGameOver()) {
       stopAutomation();
       return;
     }
@@ -120,11 +104,11 @@ export const useExplorationAutomationRunner = () => {
     timeoutIdRef.current = window.setTimeout(() => {
       void processRef.current();
     }, delay);
-  }, [isSeasonOver, stopAutomation]);
+  }, [stopAutomation]);
 
   useEffect(() => {
     processRef.current = async () => {
-      if (isSeasonOver()) {
+      if (configManager.isGameOver()) {
         stopAutomation();
         return;
       }
@@ -151,7 +135,7 @@ export const useExplorationAutomationRunner = () => {
       }
 
       const { currentBlockTimestamp, currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
-      if (isSeasonOver(currentBlockTimestamp)) {
+      if (configManager.isGameOver()) {
         stopAutomation();
         return;
       }
@@ -332,17 +316,7 @@ export const useExplorationAutomationRunner = () => {
         scheduleNextCheck();
       }
     };
-  }, [
-    account,
-    store,
-    isSeasonOver,
-    scheduleNext,
-    scheduleNextCheck,
-    stopAutomation,
-    remove,
-    resolveExplorerEntity,
-    update,
-  ]);
+  }, [account, store, scheduleNext, scheduleNextCheck, stopAutomation, remove, resolveExplorerEntity, update]);
 
   useEffect(() => {
     scheduleNextCheck();

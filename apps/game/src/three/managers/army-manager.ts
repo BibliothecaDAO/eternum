@@ -3,8 +3,7 @@ import { activeMapLayer } from "@/three/map-layer";
 import { arePlayersAllied } from "@/utils/entity-ownership";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
-import { getPlayerDisplayName } from "@/hooks/use-player-profile";
+import { getPlayerDisplayName, watchPlayerNames } from "@/hooks/use-player-profile";
 import { gameWorkerManager } from "@/managers/game-worker-manager";
 import type { ProceduralMeleeContactEvent, ProceduralRangedReleaseEvent } from "@/three/characters";
 import type { ArrowImpactEvent } from "@/three/projectiles/arrow-projectile-system";
@@ -370,9 +369,7 @@ export class ArmyManager {
       this.recheckOwnership();
     });
     // Identity names arrive after the armies spawned: every label re-reads its owner through the one resolver.
-    this.unsubscribePlayers = useWorldSlicesStore.subscribe((state, previous) => {
-      if (state.players !== previous.players) this.refreshOwnerNames();
-    });
+    this.unsubscribePlayers = this.store && watchPlayerNames(this.store, () => this.refreshOwnerNames());
 
     // Initialize the last known armies tick to current tick
     this.lastKnownArmiesTick = getBlockTimestamp().currentArmiesTick;

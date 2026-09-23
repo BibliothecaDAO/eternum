@@ -1,6 +1,7 @@
 import { hasGameEnded } from "@bibliothecadao/eternum/game-sync";
+import { useFactView } from "@/hooks/use-fact-view";
+import { seasonClockView } from "@/sync/fact-views";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -82,9 +83,7 @@ const isProvisionLoadingState = (provisionActionState: RealmProvisionActionStatu
 export const useBlitzRealmProvision = (structureEntityId: number | null): StructureProvisionResult | null => {
   const { setup, account } = useGame();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
-  const gameStartMainAt = useUIStore((state) => state.gameStartMainAt);
-  const gameEndAt = useUIStore((state) => state.gameEndAt);
-  const devModeOn = useUIStore((state) => state.devModeOn);
+  const { gameStartMainAt, gameEndAt, devModeOn } = useFactView(seasonClockView);
   const resolvedWorldGameMode = useResolvedWorldGameMode();
   const [provisionActionState, setProvisionActionState] = useState<RealmProvisionActionStatus>("idle");
 

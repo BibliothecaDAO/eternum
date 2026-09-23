@@ -14,10 +14,9 @@ import {
   Trophy,
 } from "@/ui/design-system/atoms/game-icons";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Position } from "@bibliothecadao/eternum";
-import { useGame } from "@bibliothecadao/react";
+import { configManager, Position } from "@bibliothecadao/eternum";
+import { useGame, useNativeRow } from "@bibliothecadao/react";
 import type { CSSProperties, ReactNode } from "react";
 import type { HeadlineType } from "../news-headlines/headline-types";
 import {
@@ -86,8 +85,9 @@ function useFeedRowTarget(row: ImportantFeedRow): Position | null {
   const {
     setup: { store },
   } = useGame();
-  const structure = useWorldSlicesStore((state) =>
-    row.kind === "arrival" ? state.structures.find((entry) => entry.entity_id === row.structureEntityId) : undefined,
+  const structure = useNativeRow(
+    "Structure",
+    row.kind === "arrival" ? { game_id: configManager.getActiveGameId(), entity_id: row.structureEntityId } : undefined,
   );
   if (row.kind === "headline") {
     return row.headline.location ? new Position({ x: row.headline.location.x, y: row.headline.location.y }) : null;

@@ -3,7 +3,7 @@ import { configManager, getRealmCountPerHyperstructure } from "@bibliothecadao/e
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
-import { getPlayerDisplayName } from "@/hooks/use-player-profile";
+import { getPlayerDisplayName, watchPlayerNames } from "@/hooks/use-player-profile";
 import { RewardTileModel } from "../rewards/reward-tile-model";
 import { resolveRewardNightAmount } from "../rewards/reward-lighting";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -13,7 +13,6 @@ import { resolveSettlementRelationship } from "../structures/settlement-appearan
 import { RiftModelPath, VILLAGE_MODEL_PATH, isSettlementModelPath } from "../constants/scene-constants";
 import { arePlayersAllied } from "@/utils/entity-ownership";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
@@ -382,12 +381,13 @@ export class StructureManager {
       this.structureInfoCache.clear();
       this.requestVisibleStructuresRefresh({ refreshExisting: true });
     });
-    this.unsubscribePlayers = useWorldSlicesStore.subscribe((state, previous) => {
-      if (state.players === previous.players) return;
-      // Owner names are folded into every cached record; a profile landing after the label re-resolves them.
-      this.structureInfoCache.clear();
-      this.requestVisibleStructuresRefresh({ refreshExisting: true });
-    });
+    // Owner names are folded into every cached record; a profile landing after the label re-resolves them.
+    this.unsubscribePlayers =
+      this.store &&
+      watchPlayerNames(this.store, () => {
+        this.structureInfoCache.clear();
+        this.requestVisibleStructuresRefresh({ refreshExisting: true });
+      });
 
     this.compactLabelRenderer = compactLabelRenderer;
 

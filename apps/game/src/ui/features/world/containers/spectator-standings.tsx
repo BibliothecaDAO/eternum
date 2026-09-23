@@ -4,7 +4,9 @@ import { StructureType } from "@bibliothecadao/types";
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { usePlayers } from "@/hooks/use-player-profile";
+import { gameStructuresView } from "@/sync/fact-views";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -38,8 +40,8 @@ function StandingsRows() {
   const { data, isError } = useLeaderboardActivity();
   const tick = useCurrentArmiesTick();
   const [history, setHistory] = useState<StandingsTick | null>(null);
-  const structures = useWorldSlicesStore((state) => state.structures);
-  const players = useWorldSlicesStore((state) => state.players);
+  const structures = useFactView(gameStructuresView);
+  const players = usePlayers();
   const selectedId = useUIStore((state) => state.structureEntityId);
   const navigate = useNavigateToMapView();
   useEffect(() => {

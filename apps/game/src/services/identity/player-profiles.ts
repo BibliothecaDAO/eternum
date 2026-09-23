@@ -15,6 +15,7 @@ const createIdentityProfiles = (deps: IdentityProfilesDeps) => {
   const profiles = new Map<string, IdentityProfile>();
   const requested = new Set<string>();
   const listeners = new Set<Listener>();
+  const pending: string[] = [];
   let version = 0;
 
   const notify = () => {
@@ -42,12 +43,13 @@ const createIdentityProfiles = (deps: IdentityProfilesDeps) => {
 
   return {
     get: (account: string | bigint): IdentityProfile | undefined => profiles.get(normalize(account)),
-    /** Asks identity for every address not asked before; the listeners fire when an answer lands. */
+    /** Asks identity for every address not asked before, in one batch per task; the listeners fire when an answer lands. */
     request: (accounts: Iterable<string | bigint>): void => {
       const fresh = [...accounts].map(normalize).filter((account) => !requested.has(account));
       if (fresh.length === 0) return;
       fresh.forEach((account) => requested.add(account));
-      void load(fresh);
+      if (pending.length === 0) queueMicrotask(() => void load(pending.splice(0)));
+      pending.push(...fresh);
     },
     subscribe: (listener: Listener): (() => void) => {
       listeners.add(listener);

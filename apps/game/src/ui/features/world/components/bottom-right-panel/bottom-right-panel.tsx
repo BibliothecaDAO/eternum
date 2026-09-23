@@ -1,4 +1,6 @@
 import { Factory, Hammer, Info, Pause as PauseIcon, Pickaxe, Play, Trash2 } from "@/ui/design-system/atoms/game-icons";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { getMinePresentation } from "@bibliothecadao/types";
 import { HUD_COLUMN_WIDTH } from "@/ui/features/world/containers/hud-layout";
 import { RightHudColumn } from "@/ui/features/world/containers/right-hud-column";
@@ -186,7 +188,7 @@ const LocalTilePanel = () => {
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
   const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
   const setTooltip = useTooltipStore((state) => state.setTooltip);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
@@ -726,7 +728,7 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
   const navigationTarget = useUIStore((state) => state.navigationTarget);
   const cameraTargetHex = useUIStore((state) => state.cameraTargetHex);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
 
   // Local mode: lock the minimap to the active realm's coords so the player
   // keeps a stable reference while they're zoomed into one keep. World mode

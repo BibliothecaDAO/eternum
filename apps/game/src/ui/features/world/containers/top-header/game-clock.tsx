@@ -1,4 +1,6 @@
 import { DAY_PHASES, resolveDayPhase, type DayPhaseName } from "@/utils/cycle-progress";
+import { useFactView } from "@/hooks/use-fact-view";
+import { seasonClockView } from "@/sync/fact-views";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { memo, useEffect } from "react";
 import { Clock, Moon, MoonStar, Sun, SunDim, Sunrise, Sunset } from "@/ui/design-system/atoms/game-icons";
@@ -23,8 +25,7 @@ const PHASE_ICONS: Record<DayPhaseName, typeof Sun> = {
 
 export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
   const dayPhase = resolveDayPhase(useUIStore((state) => state.cycleProgress));
-  const startAt = useUIStore((state) => state.gameStartMainAt);
-  const endAt = useUIStore((state) => state.gameEndAt);
+  const { gameStartMainAt: startAt, gameEndAt: endAt } = useFactView(seasonClockView);
   const now = useCurrentBlockTimestamp();
   const armyTickSeconds = configManager.getTick(TickIds.Armies);
   const clock = resolveGameClock({ startAt, endAt, now, armyTickSeconds });

@@ -1,4 +1,6 @@
 import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView, seasonClockView } from "@/sync/fact-views";
 import {
   ArrowUpCircle,
   Building2,
@@ -90,11 +92,9 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const revision = useNativeRevision(["Guard", "ResourceBalance", "ResourceProduction", "ResourceWeight"]);
   const resolvedWorldGameMode = useResolvedWorldGameMode();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
   const structureNameVersion = useUIStore((state) => state.structureNameVersion);
-  const gameStartMainAt = useUIStore((state) => state.gameStartMainAt);
-  const gameEndAt = useUIStore((state) => state.gameEndAt);
-  const devModeOn = useUIStore((state) => state.devModeOn);
+  const { gameStartMainAt, gameEndAt, devModeOn } = useFactView(seasonClockView);
   const metadata = useStructuresWithMetadata({
     structures: playerStructures,
     store,

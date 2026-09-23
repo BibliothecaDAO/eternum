@@ -56,7 +56,15 @@ describe("native directory and leaderboard", () => {
       mode: "blitz",
       status: "Live",
       player_count: 1,
-      player_state: { registered: true, settled: true, roster_member: true },
+      player_state: {
+        registered: true,
+        settled: true,
+        roster_member: true,
+        structures: [
+          { entity_id: 7, category: 1, realm_id: 0, coord_x: 0, coord_y: 0, resources_packed: "0" },
+          { entity_id: 8, category: 5, realm_id: 0, coord_x: 0, coord_y: 0, resources_packed: "0" },
+        ],
+      },
       roster_count: 2,
       registration: { count: 2, max: 96, start_at: 5 },
       settled_realms_count: 1,
@@ -121,14 +129,15 @@ describe("native directory and leaderboard", () => {
       receipt([
         rowEvent("PlayerPoints", ["1", "0x111"], [String(huge)]),
         rowEvent("PlayerPoints", ["1", "0x222"], [String(huge + 1n)]),
+        rowEvent("AddressName", ["0x111"], ["0x416c696365"]),
       ]),
       11,
       0,
     );
     const result = buildNativeLeaderboard((name) => fold.modelRows(name), "1", 30, new Map());
-    expect(result.entries.map(({ address, rank }) => [address, rank])).toEqual([
-      ["0x222", 1],
-      ["0x111", 2],
+    expect(result.entries.map(({ address, rank, name }) => [address, rank, name])).toEqual([
+      ["0x222", 1, null],
+      ["0x111", 2, "Alice"],
     ]);
   });
 

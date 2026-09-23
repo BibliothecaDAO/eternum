@@ -1,23 +1,8 @@
-import { feltEquals, fetchHeraldGameSnapshot, snapshotModelRows } from "@bibliothecadao/eternum/game-client";
-import type { Shard } from "@bibliothecadao/eternum/game-client";
+import { fetchHeraldGameDirectory, type GameRef } from "@bibliothecadao/eternum/game-client";
+import type { HeraldPlayerGameState, HeraldPlayerStructure } from "@bibliothecadao/eternum/game-sync";
+import { requireOpenShard } from "./shards";
 
-export interface PlayerStructure {
-  category: number;
-  coord_x: number;
-  coord_y: number;
-  entity_id: number;
-  has_wonder: boolean | null;
-  level: number;
-  realm_id: number | null;
-  resources_packed: string;
-}
-
-interface StructureLocation {
-  coord_x: number;
-  coord_y: number;
-  entity_id: number;
-  owner: string;
-}
+export type PlayerStructure = HeraldPlayerStructure;
 
 export interface SettlementSnapshot {
   hasSettlementRecord: boolean;
@@ -25,98 +10,25 @@ export interface SettlementSnapshot {
   settledCount: number;
 }
 
-interface HeraldPreSessionReader {
-  fetchAddressName: (address: string) => Promise<unknown | null>;
-  fetchPlayerStructures: (owner: string) => Promise<PlayerStructure[]>;
-  fetchRealmSettlements: () => Promise<StructureLocation[]>;
-  fetchSettlementSnapshot: (player: string) => Promise<SettlementSnapshot>;
-}
-
-const toNumber = (value: unknown, field: string): number => {
-  try {
-    const number = Number(BigInt(value as string | number | bigint));
-    if (Number.isSafeInteger(number)) return number;
-  } catch {
-    // Use the field-specific failure below.
-  }
-  throw new Error(`Herald pre-session reader expected ${field} to be a safe integer`);
+/** Before a player joins a game, the entry screens read only their own row of Herald's directory. */
+const fetchPlayerGameState = async (game: GameRef, player: string): Promise<HeraldPlayerGameState> => {
+  const shard = await requireOpenShard(game.chainId);
+  const directory = await fetchHeraldGameDirectory(shard, player);
+  const state = directory.games.find((entry) => entry.game_id === game.gameId)?.player_state;
+  if (!state) throw new Error(`Herald ${shard.url} lists no game ${game.gameId} for player ${player}`);
+  return state;
 };
 
-const toRecord = (value: unknown, field: string): Record<string, unknown> => {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new Error(`Herald pre-session reader expected ${field} to be an object`);
-  }
-  return value as Record<string, unknown>;
-};
+export const fetchPlayerStructures = async (game: GameRef, owner: string): Promise<PlayerStructure[]> =>
+  (await fetchPlayerGameState(game, owner)).structures.toSorted(
+    (left, right) => left.category - right.category || left.entity_id - right.entity_id,
+  );
 
-const toAddress = (value: unknown): string => `0x${BigInt(value as string | number | bigint).toString(16)}`;
-
-const structureDetails = (row: Record<string, unknown>) => {
-  const base = toRecord(row.base, "Structure.base");
-  const metadata = toRecord(row.metadata, "Structure.metadata");
-  return { base, metadata };
-};
-
-const structureCategory = (row: Record<string, unknown>): number => {
-  const { base } = structureDetails(row);
-  return toNumber(base.category, "Structure.base.category");
-};
-
-const toPlayerStructure = (row: Record<string, unknown>): PlayerStructure => {
-  const { base, metadata } = structureDetails(row);
+export const fetchSettlementSnapshot = async (game: GameRef, player: string): Promise<SettlementSnapshot> => {
+  const { registered, structures } = await fetchPlayerGameState(game, player);
   return {
-    category: structureCategory(row),
-    coord_x: toNumber(base.coord_x, "Structure.base.coord_x"),
-    coord_y: toNumber(base.coord_y, "Structure.base.coord_y"),
-    entity_id: toNumber(row.entity_id, "Structure.entity_id"),
-    has_wonder: typeof metadata.has_wonder === "boolean" ? metadata.has_wonder : null,
-    level: toNumber(base.level, "Structure.base.level"),
-    realm_id: metadata.realm_id == null ? null : toNumber(metadata.realm_id, "Structure.metadata.realm_id"),
-    resources_packed: String(row.resources_packed),
+    hasSettlementRecord: registered,
+    hasSettledStructure: structures.length > 0,
+    settledCount: structures.length,
   };
 };
-
-const toStructureLocation = (row: Record<string, unknown>): StructureLocation => {
-  const { base } = structureDetails(row);
-  return {
-    coord_x: toNumber(base.coord_x, "Structure.base.coord_x"),
-    coord_y: toNumber(base.coord_y, "Structure.base.coord_y"),
-    entity_id: toNumber(row.entity_id, "Structure.entity_id"),
-    owner: toAddress(row.owner),
-  };
-};
-
-export const createHeraldPreSessionReader = (world: Shard, gameId: number): HeraldPreSessionReader => ({
-  fetchAddressName: async (address) => {
-    const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["AddressName"]);
-    return snapshotModelRows(snapshot, "AddressName").find((row) => feltEquals(row.address, address))?.name ?? null;
-  },
-
-  fetchPlayerStructures: async (owner) => {
-    const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["Structure"]);
-    return snapshotModelRows(snapshot, "Structure")
-      .filter((row) => feltEquals(row.owner, owner))
-      .map(toPlayerStructure)
-      .sort((left, right) => left.category - right.category || left.entity_id - right.entity_id);
-  },
-
-  fetchRealmSettlements: async () => {
-    const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["Structure"]);
-    return snapshotModelRows(snapshot, "Structure")
-      .filter((row) => structureCategory(row) === 1)
-      .map(toStructureLocation);
-  },
-
-  fetchSettlementSnapshot: async (player) => {
-    const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["PlayerEntry", "Structure"]);
-    const settlement = snapshotModelRows(snapshot, "PlayerEntry").find((row) => feltEquals(row.player, player));
-    const ownedStructureCount = snapshotModelRows(snapshot, "Structure").filter((row) =>
-      feltEquals(row.owner, player),
-    ).length;
-    return {
-      hasSettlementRecord: settlement !== undefined,
-      hasSettledStructure: ownedStructureCount > 0,
-      settledCount: ownedStructureCount,
-    };
-  },
-});

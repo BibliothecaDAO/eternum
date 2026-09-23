@@ -1,4 +1,6 @@
 import { StructureSelect } from "@/ui/design-system/molecules/structure-select";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCompactLane, type CompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useMarketStore } from "@/hooks/store/use-market-store";
@@ -256,7 +258,7 @@ const TradingStructureHeader = ({
   onSelect: (entityId: ID) => void;
 }) => {
   const mode = useGameModeConfig();
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
   const { currentDefaultTick } = getBlockTimestamp();
   const resourceManager = useResourceManager(structureEntityId);
   const balances = useMemo(() => {

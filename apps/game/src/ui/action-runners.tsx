@@ -5,7 +5,8 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView, readFactView, resourceArrivalsView, seasonClockView } from "@/sync/fact-views";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
   createRealmProvisionRunner,
@@ -32,16 +33,14 @@ const getArrivalKey = (arrival: ResourceArrivalInfo) =>
 
 /**
  * Claims the player's ready arrivals on the chain clock and keeps the arrived/pending counters current. Arrivals
- * come from the bridge's slice; this runner owns only the claim timer and its retry memory.
+ * are read from the native store; this runner owns only the claim timer and its retry memory.
  */
 const ResourceArrivalAutoClaim = () => {
   const setArrivalIndicators = useUIStore((state) => state.setArrivalIndicators);
-  const playerStructures = useUIStore((state) => state.playerStructures);
-  const gameEndAt = useUIStore((state) => state.gameEndAt);
-  const gameWinner = useUIStore((state) => state.gameWinner);
+  const playerStructures = useFactView(playerStructuresView);
   const chainNowMs = useChainTimeStore((state) => state.nowMs);
   const getChainNowSeconds = useChainTimeStore((state) => state.getNowSeconds);
-  const resourceArrivals = useWorldSlicesStore((state) => state.resourceArrivals);
+  const resourceArrivals = useFactView(resourceArrivalsView);
   const {
     account: { account },
     setup: { store, systemCalls },
@@ -64,16 +63,6 @@ const ResourceArrivalAutoClaim = () => {
     isAutoClaimingRef.current = false;
   }, []);
 
-  const isSeasonOver = useCallback(
-    (nowSeconds?: number) => {
-      if (gameWinner) return true;
-      if (typeof gameEndAt !== "number") return false;
-      const timestamp = typeof nowSeconds === "number" ? nowSeconds : getChainNowSeconds();
-      return timestamp >= gameEndAt;
-    },
-    [gameEndAt, gameWinner, getChainNowSeconds],
-  );
-
   const updateArrivalIndicators = useCallback(
     (arrivals: ResourceArrivalInfo[], nowOverride?: number) => {
       const now = nowOverride ?? getChainNowSeconds();
@@ -84,7 +73,7 @@ const ResourceArrivalAutoClaim = () => {
   );
 
   const scheduleNextAutoClaim = useCallback(() => {
-    if (isSeasonOver()) {
+    if (configManager.isGameOver()) {
       stopAutoClaim();
       return;
     }
@@ -99,7 +88,7 @@ const ResourceArrivalAutoClaim = () => {
     autoClaimTimeoutIdRef.current = window.setTimeout(() => {
       void processAutoClaimRef.current();
     }, delay);
-  }, [isSeasonOver, stopAutoClaim]);
+  }, [stopAutoClaim]);
 
   useEffect(() => {
     updateArrivalIndicators(playerResourceArrivals, Math.floor(chainNowMs / 1000));
@@ -108,7 +97,7 @@ const ResourceArrivalAutoClaim = () => {
   useEffect(() => {
     processAutoClaimRef.current = async () => {
       const seasonNow = getChainNowSeconds();
-      if (isSeasonOver(seasonNow)) {
+      if (configManager.isGameOver()) {
         stopAutoClaim();
         return;
       }
@@ -193,7 +182,6 @@ const ResourceArrivalAutoClaim = () => {
     account,
     store,
     getChainNowSeconds,
-    isSeasonOver,
     playerResourceArrivals,
     playerStructures,
     scheduleNextAutoClaim,
@@ -218,9 +206,8 @@ const AutoProvisionRealms = () => {
     if (!isBlitzWorld || !account?.address || account.address === "0x0") return;
 
     const readRealms = (): ProvisionableRealm[] =>
-      useUIStore
-        .getState()
-        .playerStructures.filter((structure) => structure.category === StructureType.Realm)
+      readFactView(store, playerStructuresView)
+        .filter((structure) => structure.category === StructureType.Realm)
         .flatMap((structure) => {
           const buildings = store.get("StructureBuildings", {
             game_id: configManager.getActiveGameId(),
@@ -243,7 +230,7 @@ const AutoProvisionRealms = () => {
     const runner = createRealmProvisionRunner({
       readRealms,
       readPhase: () => {
-        const { gameStartMainAt, gameEndAt, devModeOn } = useUIStore.getState();
+        const { gameStartMainAt, gameEndAt, devModeOn } = readFactView(store, seasonClockView);
         return { mainStartsAt: gameStartMainAt ?? null, endsAt: gameEndAt ?? null, devModeOn };
       },
       nowSeconds: () => useChainTimeStore.getState().getNowSeconds(),

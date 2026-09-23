@@ -10,7 +10,6 @@ import { type SystemCallAuthHandler } from "@bibliothecadao/types";
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "@/game-entry/context";
 import { applyGameSelection, type GameProfile } from "@/runtime/world";
 import { requireOpenShard } from "@/runtime/world/shards";
-import useSettlementStore from "../hooks/store/use-settlement-store";
 import { useSyncStore } from "../hooks/store/use-sync-store";
 import { useTransactionStore } from "../hooks/store/use-transaction-store";
 import { useUIStore } from "../hooks/store/use-ui-store";
@@ -255,12 +254,6 @@ const clearBootstrapWorldData = () => {
 const resetBootstrapUiState = () => {
   const uiStore = useUIStore.getState();
   uiStore.setStructureEntityId(0, { spectator: false, worldMapPosition: undefined });
-  uiStore.setSelectableArmies([]);
 
   useTransactionStore.getState().clearAllTransactions();
-
-  useSettlementStore.setState({
-    selectedLocation: null,
-    selectedCoords: null,
-  });
 };

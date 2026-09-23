@@ -3,7 +3,8 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { ArrowLeft, MapPin } from "@/ui/design-system/atoms/game-icons";
 import { Position as PositionType } from "@bibliothecadao/eternum";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { gameStructuresView } from "@/sync/fact-views";
 
 import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
@@ -43,7 +44,7 @@ export const PlayerId = ({
 
   const mode = useGameModeConfig();
   // The world slices are the subscription: the bridge publishes them once per ingest slice.
-  const structures = useWorldSlicesStore((state) => state.structures);
+  const structures = useFactView(gameStructuresView);
   const revision = useNativeRevision(["HyperstructureShares", "PlayerPoints", "AddressName"]);
   const now = useCoarseNowSeconds(30);
 

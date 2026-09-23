@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { currencyFormat } from "@/ui/utils/utils";
 import { useGame, useNativeRevision } from "@bibliothecadao/react";
@@ -179,8 +180,7 @@ export const RelicActivationSelector = ({
   const mode = useGameModeConfig();
   const revision = useNativeRevision(["Structure", "ExplorerTroops"]);
 
-  const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
 
   const [activatingHolderId, setActivatingHolderId] = useState<string | null>(null);
   const [activationError, setActivationError] = useState<{ holderId: string | null; message: string | null }>({
@@ -309,7 +309,6 @@ export const RelicActivationSelector = ({
         relic_resource_id: resourceId,
         recipient_type: relicInfo.recipientTypeParam,
       });
-      triggerRelicsRefresh();
 
       setActivationError({ holderId: null, message: null });
       onClose();

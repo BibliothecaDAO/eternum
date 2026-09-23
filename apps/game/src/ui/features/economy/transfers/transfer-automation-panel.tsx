@@ -1,7 +1,8 @@
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
 import { useTransferPanelDraftStore } from "@/hooks/store/use-transfer-panel-draft-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
   canTransferMilitaryInventoryBetweenStructures,
   canTransferMilitaryInventoryFromStructure,
@@ -101,7 +102,7 @@ interface TransferAutomationPanelProps {
 }
 
 export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationPanelProps) => {
-  const playerStructures = useUIStore((s) => s.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
   const currentDefaultTick = useCurrentDefaultTick();
   const mode = useGameModeConfig();
   const { favorites } = useFavoriteStructures();

@@ -1,7 +1,6 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
@@ -182,7 +181,6 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
   const mode = useGameModeConfig();
   const revision = useNativeRevision(["Structure"]);
 
-  const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
   const currentDefaultTick = useBlockTimestampStore((state) => state.currentDefaultTick);
   const nowSeconds = useChainTimeStore((state) => Math.floor(state.nowMs / 1000));
 
@@ -284,7 +282,6 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
       const craftedRelic = extractCraftedRelicId(receipt, structureId);
       setCraftedRelicId(craftedRelic);
       setCraftedWithoutReveal(craftedRelic === null);
-      triggerRelicsRefresh();
     } catch (craftError) {
       setError(mapCraftRelicError(craftError));
     } finally {

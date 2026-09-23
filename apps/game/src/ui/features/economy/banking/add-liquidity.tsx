@@ -1,5 +1,6 @@
 import { configManager } from "@bibliothecadao/eternum";
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ConfirmationPopup } from "./confirmation-popup";
@@ -36,7 +37,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
   ]);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
 
   const playerStructureIds = playerStructures.map((structure) => structure.structure.entity_id);
 
