@@ -2,6 +2,11 @@ import type { GameType } from "./types";
 
 export interface NativePreset {
   id: number;
+  /**
+   * A fixture preset's season clocks run this many times faster than its mode's: the day, army ticks and production.
+   * The harness registers a fixture preset on first use; the launcher never offers one.
+   */
+  clockScale?: number;
   gameType: GameType;
   environmentGameType: GameType;
   bitcoinEnabled: boolean;

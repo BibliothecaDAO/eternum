@@ -16,6 +16,7 @@ import type { NativeFactStore } from "../client/native-fact-store";
 import { troopStaminaLimits } from "./troop-stamina";
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
 import { getBlockTimestamp } from "../utils/timestamp";
+import { nativeGameModeOf } from "../utils/native-preset-mode";
 import { Biome, type BiomeClimateConfig } from "../utils/biome";
 
 const MAP_CENTER = 2147483646;
@@ -328,7 +329,8 @@ export class ClientConfigManager {
   }
   getExploreReward() {
     const rules = this.rules();
-    const reward_resource = this.game().preset_id !== 3 ? ResourcesIds.Essence : ResourcesIds.AncientFragment;
+    const reward_resource =
+      nativeGameModeOf(this.game().preset_id) === "eternum" ? ResourcesIds.AncientFragment : ResourcesIds.Essence;
     const resource_amount = rules.map_config.reward_resource_amount;
     return {
       reward_resource,

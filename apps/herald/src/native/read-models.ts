@@ -9,6 +9,7 @@ import {
   sharePointCutoff,
   unclaimedSharePoints,
 } from "@bibliothecadao/eternum/game-sync";
+import { nativeGameModeOf } from "@bibliothecadao/eternum";
 import { resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 
@@ -71,10 +72,7 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
 
 function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput): HeraldGameDirectoryEntry {
   const { settlementRules, progress, structures, entries, rosters } = facts;
-  const mode = ({ 1: "frontier", 2: "blitz", 3: "eternum", 4: "duel" } as const)[
-    number(game.preset_id) as 1 | 2 | 3 | 4
-  ];
-  if (!mode) throw new Error("Unknown native game mode");
+  const mode = nativeGameModeOf(number(game.preset_id));
   const settlement = required(settlementRules, game.game_id, "SettlementRules");
   const state = gameRows(progress, game.game_id)[0];
   const settlements = gameRows(structures, game.game_id).filter(

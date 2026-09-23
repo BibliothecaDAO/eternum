@@ -23,6 +23,8 @@ import {
 import type { NativeCommand } from "../../../contracts/l3/world-native/schema/commands.gen";
 import type { NativeRows } from "../../../contracts/l3/world-native/schema/client.gen";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
+import { nativePresetForId } from "../../../config/source/native";
+import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { createRegistrarGame } from "../../../config/deployer/clean/registrar/calls";
 import {
   buildNativeGameParams,
@@ -35,23 +37,14 @@ import { createRpcMetrics, trackTransaction, type TrackedTransaction, type Workl
 import type { HarnessGame } from "./harness-game";
 import type { HarnessProvider } from "./provider";
 
-const ACCELERATED_EPOCH_SECONDS = 720;
 const PRODUCTION_EPOCH_SECONDS = 86400;
 const precision = BigInt(RESOURCE_PRECISION);
 
-interface FrontierSeasonOptions {
-  presetId: number;
-  /** The design run plays whole days in twelve minutes; the capacity shape keeps production-length days. */
-  accelerated: boolean;
-}
-
-/** The existing preset and registrar path; the design run registers the preset with accelerated clocks first. */
-export async function launchFrontierSeason(
-  provider: HarnessProvider,
-  gameName: string,
-  minutes: number,
-  { presetId, accelerated }: FrontierSeasonOptions,
-) {
+/**
+ * Creates a Frontier season from a registered preset. The design run creates from the accelerated fixture preset, which
+ * it registers on first use; presets are immutable, so no run ever edits a mode's own preset to change its clocks.
+ */
+export async function launchFrontierSeason(provider: HarnessProvider, gameName: string, minutes: number, presetId: number) {
   const manifest = process.env.NATIVE_WORLD_MANIFEST;
   const address = process.env.DEPLOYER_ACCOUNT_ADDRESS;
   const privateKey = process.env.DEPLOYER_PRIVATE_KEY;
@@ -59,9 +52,8 @@ export async function launchFrontierSeason(
     throw new Error("Frontier launch requires the isolated manifest and authority");
   const account = createOperatorAccount(provider, address, privateKey);
   const config = loadNativePresetConfiguration("madara.frontier", presetId);
-  const canonical = buildNativePreset(config, presetId);
   const preset = buildNativePreset(config, presetId);
-  if (accelerated) accelerateSeasonClocks(preset);
+  if (nativePresetForId(presetId).clockScale) await registerFixturePreset(account, presetId, manifest, preset);
   const startAt = Math.floor(Date.now() / 1000) + 60;
   const params = buildNativeGameParams(config, {
     gameName,
@@ -74,62 +66,37 @@ export async function launchFrontierSeason(
     twoPlayerMode: false,
     useMapOverride: false,
   });
-  const create = async () => {
-    const created = await createRegistrarGame(account, params, "madara.frontier", preset);
-    if (!created.gameId) throw new Error("Frontier registrar did not emit a game id");
-    console.log(
-      JSON.stringify({
-        frontierSeason: created.gameId,
-        epochSeconds: preset.rules.epoch_seconds,
-        createTransaction: created.transactionHash,
-      }),
-    );
-    // Open entry: Frontier has no settlement burst at start; players settle themselves during play.
-    return { gameId: created.gameId, gameName, startAt, settlementTransactions: 0 };
-  };
-  return accelerated ? withAcceleratedPreset(account, presetId, manifest, canonical, preset, create) : create();
+  const created = await createRegistrarGame(account, params, "madara.frontier", preset);
+  if (!created.gameId) throw new Error("Frontier registrar did not emit a game id");
+  console.log(
+    JSON.stringify({
+      frontierSeason: created.gameId,
+      presetId,
+      epochSeconds: preset.rules.epoch_seconds,
+      createTransaction: created.transactionHash,
+    }),
+  );
+  // Open entry: Frontier has no settlement burst at start; players settle themselves during play.
+  return { gameId: created.gameId, gameName, startAt, settlementTransactions: 0 };
 }
 
-/** Registers the accelerated variant under the same preset id for the creation, then restores the canonical one. */
-async function withAcceleratedPreset<T>(
+/** Registers a fixture preset's definition under its own id; an already registered one is left as it is. */
+async function registerFixturePreset(
   account: Account,
   presetId: number,
   manifest: string,
-  canonical: ReturnType<typeof buildNativePreset>,
-  accelerated: ReturnType<typeof buildNativePreset>,
-  create: () => Promise<T>,
-): Promise<T> {
-  const canonicalRegistration = buildNativePresetRegistration(canonical, presetId, manifest);
-  const acceleratedRegistration = buildNativePresetRegistration(accelerated, presetId, manifest);
-  try {
-    const registered = await registerNativePreset(account, presetId, acceleratedRegistration);
-    console.log(
-      JSON.stringify({ acceleratedPreset: presetId, commitment: acceleratedRegistration.commitment, transaction: registered }),
-    );
-    return await create();
-  } finally {
-    const restored = await registerNativePreset(account, presetId, canonicalRegistration);
-    console.log(
-      JSON.stringify({ restoredPreset: presetId, commitment: canonicalRegistration.commitment, transaction: restored }),
-    );
-  }
+  definition: ReturnType<typeof buildNativePreset>,
+): Promise<void> {
+  const registration = buildNativePresetRegistration(definition, presetId, manifest);
+  const transaction = await registerNativePreset(account, presetId, registration);
+  console.log(JSON.stringify({ fixturePreset: presetId, commitment: registration.commitment, transaction }));
 }
 
-function accelerateSeasonClocks(accelerated: ReturnType<typeof buildNativePreset>): void {
-  const TIME_SCALE = PRODUCTION_EPOCH_SECONDS / ACCELERATED_EPOCH_SECONDS;
-  accelerated.rules.epoch_seconds = ACCELERATED_EPOCH_SECONDS;
-  accelerated.rules.tick_config.armies_tick_in_seconds /= TIME_SCALE;
-  for (const resource of accelerated.resources.resources) {
-    resource.realm_rate *= BigInt(TIME_SCALE);
-    resource.village_rate *= BigInt(TIME_SCALE);
-  }
-  const board = accelerated.structures.board.unwrap();
-  if (!board || typeof board !== "object" || !("workshop_rate" in board) || typeof board.workshop_rate !== "bigint")
-    throw new Error("Frontier preset requires a workshop rate");
-  board.workshop_rate *= BigInt(TIME_SCALE);
-  for (const depth of accelerated.settlement.depths) depth.mine_rate *= BigInt(TIME_SCALE);
-  for (const mine of accelerated.resources.mine_kinds) mine.config.production_rate *= BigInt(TIME_SCALE);
-}
+/** A design run's day: the accelerated fixture preset's, which the season it plays must match. */
+const acceleratedEpochSeconds = (): number => {
+  const preset = nativePresetForId(FRONTIER_ACCELERATED_PRESET_ID);
+  return preset.epochSeconds / preset.clockScale!;
+};
 
 type Army = NativeRows["ExplorerTroops"];
 type Home = NativeRows["Structure"];
@@ -200,7 +167,7 @@ interface RunFrontierOptions {
 export async function runFrontierWorkload(options: RunFrontierOptions): Promise<WorkloadResult> {
   const { client, game, accounts, provider } = options;
   const epochSeconds = epochSecondsOf(client);
-  if (options.accelerated !== (epochSeconds === ACCELERATED_EPOCH_SECONDS))
+  if (options.accelerated !== (epochSeconds === acceleratedEpochSeconds()))
     throw new Error(`Frontier ${options.accelerated ? "design run" : "capacity shape"} does not match the season's day length (${epochSeconds} s)`);
   await game.waitUntilPlaying();
   const players: Player[] = [];

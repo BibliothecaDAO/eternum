@@ -127,6 +127,11 @@ describe("Madara harness workload", () => {
       presetId: 1,
       functional: false,
     });
+    // The design run plays the accelerated fixture preset; it never edits Frontier's own preset 1.
+    expect(parseHarnessArgs(["--game-type", "frontier", "--bots", "2", "--functional"])).toMatchObject({
+      presetId: 101,
+      functional: true,
+    });
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--bots", "1", "--functional"])).toThrow(
       "both player profiles",
     );

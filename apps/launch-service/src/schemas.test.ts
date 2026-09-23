@@ -1,5 +1,6 @@
+import { Schema } from "effect";
 import { describe, expect, it } from "vitest";
-import { applyDurableLaunchDefaults, type CreateGameRequest } from "./schemas";
+import { applyDurableLaunchDefaults, CreateGameRequestSchema, type CreateGameRequest } from "./schemas";
 
 const gameRequest = (devModeOn?: boolean): CreateGameRequest => ({
   environment: "madara.blitz",
@@ -28,4 +29,10 @@ it("selects the Eternum preset and rejects cross-mode presets", () => {
   expect(applyDurableLaunchDefaults("game", request).version).toBe("3");
   expect(() => applyDurableLaunchDefaults("game", { ...request, version: "2" })).toThrow();
   expect(() => applyDurableLaunchDefaults("game", { ...gameRequest(), version: "1" })).toThrow();
+});
+
+it("never launches the accelerated Frontier fixture preset", () => {
+  const decode = Schema.decodeUnknownSync(CreateGameRequestSchema);
+  expect(() => decode({ environment: "madara.blitz", gameName: "fixture", version: "101" })).toThrow();
+  expect(decode({ environment: "madara.blitz", gameName: "blitz", version: "2" }).version).toBe("2");
 });

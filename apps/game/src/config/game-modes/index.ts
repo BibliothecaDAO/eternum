@@ -1,5 +1,11 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { configManager, getEntityInfo, getStructureName, getStructureTypeName } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  getEntityInfo,
+  getStructureName,
+  getStructureTypeName,
+  nativeGameModeOf,
+} from "@bibliothecadao/eternum";
 import {
   BuildingType,
   type ContractAddress,
@@ -231,16 +237,14 @@ const duelConfig: GameModeConfig = {
   displayName: "Duel",
   labels: { ...blitzConfig.labels, shareEventLabel: "Realms Duel", endgameCardTitle: "Realms Duel" },
 };
-const GAME_MODE_BY_ID: Record<number, GameModeConfig> = {
-  1: frontierConfig,
-  2: blitzConfig,
-  3: eternumConfig,
-  4: duelConfig,
+const GAME_MODE_CONFIGS: Record<GameModeId, GameModeConfig> = {
+  frontier: frontierConfig,
+  blitz: blitzConfig,
+  eternum: eternumConfig,
+  duel: duelConfig,
 };
 
 export function getGameModeConfig(presetId = configManager.getPresetId()): GameModeConfig {
-  const config = GAME_MODE_BY_ID[presetId];
-  if (!config) throw new Error(`Unknown native preset ${presetId}`);
-  return config;
+  return GAME_MODE_CONFIGS[nativeGameModeOf(presetId)];
 }
 export const getGameModeId = (): GameModeId => getGameModeConfig().id;

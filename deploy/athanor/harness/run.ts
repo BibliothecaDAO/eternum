@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { launchFrontierSeason, runFrontierWorkload } from "./frontier";
+import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { createBuildOrderWorkload } from "./build-order";
 import { runLayerRoundTrip } from "./layer-round-trip";
 import { closeHarnessSeason } from "./season-lifecycle";
@@ -102,9 +103,9 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     throw new Error("--workload must be build-order, burst, cadence or frontier");
   if ((gameType === "frontier") !== (workload === "frontier"))
     throw new Error("Frontier requires the frontier workload");
-  const presetId = values.preset === undefined ? nativePresetIdFor(gameType) : positiveInteger(values.preset, "preset");
-  nativePresetForId(presetId);
   const functional = values.functional === "true";
+  const presetId = values.preset === undefined ? defaultPresetFor(gameType, functional) : positiveInteger(values.preset, "preset");
+  nativePresetForId(presetId);
   if (gameType === "frontier" && functional && bots < 2)
     throw new Error("Frontier design run requires both player profiles");
   if (gameType === "eternum" && workload === "build-order") throw new Error("Build-order workload requires Blitz");
@@ -300,10 +301,7 @@ async function resolveHarnessGame(options: HarnessCliOptions, rosterAccounts: st
   if (options.gameType === "frontier") {
     const provider = createHarnessProvider(options.rpcUrl);
     try {
-      return await launchFrontierSeason(provider, gameName, options.minutes, {
-        presetId: options.presetId,
-        accelerated: options.functional,
-      });
+      return await launchFrontierSeason(provider, gameName, options.minutes, options.presetId);
     } finally {
       provider.dispose();
     }
@@ -571,6 +569,11 @@ async function waitForWorkloadStart(): Promise<void> {
     });
     parentPort!.postMessage({ type: "ready" });
   });
+}
+
+/** A Frontier design run plays the accelerated fixture preset; every other run plays its mode's own. */
+function defaultPresetFor(gameType: HarnessGameType, functional: boolean): number {
+  return gameType === "frontier" && functional ? FRONTIER_ACCELERATED_PRESET_ID : nativePresetIdFor(gameType);
 }
 
 function requiredEnvironmentValue(name: string, context: string): string {
