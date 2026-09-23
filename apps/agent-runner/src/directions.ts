@@ -1,6 +1,7 @@
 import { watch, type FSWatcher } from "node:fs";
 import { mkdir, readdir, readFile, rename } from "node:fs/promises";
 import path from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
 
 /** Where owner directions come from. M3 backs this with the gateway; until then a directory or a script. */
 export interface DirectionSource {
@@ -11,10 +12,12 @@ export interface DirectionSource {
 
 const DIRECTION_EXTENSION = ".md";
 const DONE_DIRECTORY = "done";
+/** A watch event can be dropped or delayed by the kernel; a dropped file still waits at most this long. */
+const RESCAN_INTERVAL_MS = 1_000;
 
 /**
  * Every `*.md` dropped into the directory is one direction, taken in name order and moved to `done/` once read, so a
- * restarted runner never replays it.
+ * restarted runner never replays it. The watch wakes the wait early; the periodic rescan is what guarantees delivery.
  */
 export const createFileDirectionSource = (directory: string): DirectionSource => {
   let watcher: FSWatcher | null = null;
@@ -40,7 +43,7 @@ export const createFileDirectionSource = (directory: string): DirectionSource =>
           onChange = null;
           return direction;
         }
-        await changed;
+        await Promise.race([changed, sleep(RESCAN_INTERVAL_MS, undefined, { ref: false })]);
       }
       return null;
     },
