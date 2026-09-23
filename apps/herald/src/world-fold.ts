@@ -94,14 +94,9 @@ const orderSnapshotModelsForStreaming = <TDefinition extends { name: string }>(
 };
 
 const SCOPE_RULE_MODELS = new Set(["SliceRules", "GameRegistry", "SettlementRules"]);
+const SCOPE_INDEXED_MODELS = new Set(["PlayerEntry", "Structure", "ExplorerTroops", "ProductionReceiver"]);
 /** Every model subscriptionScope reads: a change to any other model never moves a scope. */
-export const SCOPE_INPUT_MODELS = new Set([
-  ...SCOPE_RULE_MODELS,
-  "PlayerEntry",
-  "Structure",
-  "ExplorerTroops",
-  "ProductionReceiver",
-]);
+export const SCOPE_INPUT_MODELS = new Set([...SCOPE_RULE_MODELS, ...SCOPE_INDEXED_MODELS]);
 
 /** Whether a changed row can move this scope: the rows subscriptionScope reads that concern its actor. */
 export function touchesSubscriptionScope(scope: GameSyncScope, row: FoldSet): boolean {
@@ -129,6 +124,24 @@ export function touchesSubscriptionScope(scope: GameSyncScope, row: FoldSet): bo
   return false;
 }
 
+/** The lookups subscriptionScope makes, as `field:value` keys per row; a region key needs the game's spacing. */
+const scopeIndexKeys = (model: string, row: StoredModelRow, spacing: number): string[] => {
+  const field = (name: string) => row.key[name] ?? row.value[name];
+  if (model === "PlayerEntry") return [`player:${syncScalar(field("player"))}`];
+  if (model === "ExplorerTroops") return [`owner:${syncScalar(field("owner"))}`];
+  if (model === "ProductionReceiver") return [`home:${syncScalar(field("home"))}`];
+  if (model !== "Structure") return [];
+  const base = field("base") as DecodedRecord;
+  const region = gameSyncRegion({ alt: base.alt, x: base.coord_x, y: base.coord_y }, spacing);
+  return [`owner:${syncScalar(field("owner"))}`, ...(region === undefined ? [] : [`region:${region}`])];
+};
+
+interface ScopeIndex {
+  spacing: number;
+  /** Entity ids per `model:field:value`. */
+  entityIds: Map<string, Set<string>>;
+}
+
 export class WorldFold {
   private readonly registry: ModelRegistry;
 
@@ -137,6 +150,9 @@ export class WorldFold {
   private readonly rowsByModel = new Map<string, Map<string, StoredModelRow | null>>();
 
   private readonly entityIdsByGameByModel = new Map<string, Map<string, Set<string>>>();
+
+  /** Built for a game on its first expedition scope and kept current as rows change, so a scope costs its actor's rows. */
+  private readonly scopeIndexes = new Map<string, ScopeIndex>();
 
   constructor(registry: ModelRegistry, parent?: WorldFold) {
     this.registry = registry;
@@ -262,8 +278,9 @@ export class WorldFold {
     confirmedBlock: number,
     models?: readonly string[],
     actor?: string,
+    include?: (model: string, row: DecodedRecord) => boolean,
   ): GameSnapshot {
-    const snapshot = this.snapshotRows(gameId, confirmedBlock, models);
+    const snapshot = this.snapshotRows(gameId, confirmedBlock, models, include);
     if (actor === undefined) return snapshot;
     const account = BigInt(actor);
     if (account <= 0n || account >= (1n << 251n) - 256n) throw new Error("Invalid gameplay account");
@@ -303,20 +320,22 @@ export class WorldFold {
     };
     const epoch = expeditionEpoch(expedition, timestamp);
     const owners = new Set<string>(actor === undefined ? [] : [syncScalar(actor)]);
-    for (const { value } of this.gameRows("PlayerEntry", gameId)) {
-      if (actor !== undefined && syncScalar(value.player) === syncScalar(actor)) owners.add(syncScalar(value.owner));
-    }
-    const structures = this.gameRows("Structure", gameId);
-    const homes = structures.filter(
-      ({ value }) => owners.has(syncScalar(value.owner)) && Number((value.base as DecodedRecord).category) === 1,
-    );
+    if (actor !== undefined)
+      for (const { value } of this.scopeRows("PlayerEntry", gameId, spacing, [`player:${syncScalar(actor)}`]))
+        owners.add(syncScalar(value.owner));
+    const homes = this.scopeRows(
+      "Structure",
+      gameId,
+      spacing,
+      [...owners].map((owner) => `owner:${owner}`),
+    ).filter(({ value }) => Number((value.base as DecodedRecord).category) === 1);
     const realms = new Set(homes.map(({ value }) => syncScalar(value.entity_id)));
+    const realmKeys = [...realms].map((realm) => `owner:${realm}`);
     const realmTraits = new Set(homes.map(({ value }) => syncScalar((value.metadata as DecodedRecord).realm_id)));
     const regions = new Set<string>();
-    const armies = this.gameRows("ExplorerTroops", gameId).filter(({ value }) => {
+    const armies = this.scopeRows("ExplorerTroops", gameId, spacing, realmKeys).filter(({ value }) => {
       const coord = value.coord as DecodedRecord;
       return (
-        realms.has(syncScalar(value.owner)) &&
         BigInt((value.troops as DecodedRecord).count as string) > 0n &&
         isCurrentExpeditionArmy(
           expedition,
@@ -333,16 +352,17 @@ export class WorldFold {
       if (region !== undefined) regions.add(region);
     }
     const entities = new Set([...realms, ...armies.map(({ value }) => syncScalar(value.explorer_id))]);
-    for (const { value } of structures) {
-      const base = value.base as DecodedRecord;
-      const region = gameSyncRegion({ alt: base.alt, x: base.coord_x, y: base.coord_y }, spacing);
-      if (Number(base.category) !== 1 && region !== undefined && regions.has(region))
-        entities.add(syncScalar(value.entity_id));
+    const regionKeys = [...regions].map((region) => `region:${region}`);
+    for (const { value } of this.scopeRows("Structure", gameId, spacing, regionKeys)) {
+      if (Number((value.base as DecodedRecord).category) !== 1) entities.add(syncScalar(value.entity_id));
     }
     const productionSources = new Set(
-      this.gameRows("ProductionReceiver", gameId)
-        .filter(({ value }) => realms.has(syncScalar(value.home)))
-        .map(({ value }) => syncScalar(value.entity_id)),
+      this.scopeRows(
+        "ProductionReceiver",
+        gameId,
+        spacing,
+        [...realms].map((realm) => `home:${realm}`),
+      ).map(({ value }) => syncScalar(value.entity_id)),
     );
     scope.expedition = { epoch, spacing, owners, realms, realmTraits, regions, entities, productionSources };
     return scope;
@@ -363,19 +383,14 @@ export class WorldFold {
     scope: GameSyncScope,
     models?: readonly string[],
   ): GameSnapshot {
-    const snapshot = this.snapshot(
+    // Filtering before rows are serialized and ordered keeps a scoped snapshot's cost near its own rows.
+    return this.snapshot(
       gameId,
       block,
       models,
       models && !models.includes("ActionNonce") ? undefined : scope.actor,
+      (model, row) => rowInGameSyncScope(model, row, scope),
     );
-    return {
-      ...snapshot,
-      models: snapshot.models.map(({ model, rows }) => ({
-        model,
-        rows: rows.filter(({ value }) => rowInGameSyncScope(model, value, scope)),
-      })),
-    };
   }
 
   public finalizedGameIds(): readonly string[] {
@@ -410,7 +425,7 @@ export class WorldFold {
     gameIdInput: string | number | bigint,
     confirmedBlock: number,
     requestedModels?: readonly string[],
-    _actor?: string,
+    include?: (model: string, row: DecodedRecord) => boolean,
   ): GameSnapshot {
     const gameId = BigInt(gameIdInput);
     const definitions = this.snapshotDefinitions(requestedModels);
@@ -420,6 +435,7 @@ export class WorldFold {
           ? this.materializedRows(definition.name)
           : this.materializedGameRows(definition.name, gameId);
       const gameRows = [...rows.entries()]
+        .filter(([, row]) => !include || include(definition.name, { ...row.key, ...row.value }))
         .map(([key, row]): FoldRow => ({ key, value: asJsonRecord({ ...row.key, ...row.value }) }))
         .sort(compareEntityKeys);
       return { model: definition.name, rows: gameRows };
@@ -443,6 +459,61 @@ export class WorldFold {
     const missing = [...requested].filter((model) => !available.has(model));
     if (missing.length > 0) throw new Error(`Unknown snapshot models: ${missing.join(", ")}`);
     return orderSnapshotModelsForStreaming(definitions.filter(({ name }) => requested.has(name)));
+  }
+
+  /** The game's rows of a scope model matching any of these `field:value` keys. */
+  private scopeRows(model: string, gameId: string, spacing: number, keys: readonly string[]): FoldRow[] {
+    return [...this.scopeEntityIds(model, gameId, spacing, keys)].map((key) => {
+      const row = this.storedRow(model, key)!;
+      return { key, value: asJsonRecord({ ...row.key, ...row.value }) };
+    });
+  }
+
+  private scopeEntityIds(model: string, gameId: string, spacing: number, keys: readonly string[]): Set<string> {
+    if (!this.parent) {
+      const index = this.scopeIndex(gameId, spacing);
+      return new Set(keys.flatMap((key) => [...(index.get(`${model}:${key}`) ?? [])]));
+    }
+    // An overlay corrects its parent's answer with the few rows it changed.
+    const entityIds = this.parent.scopeEntityIds(model, gameId, spacing, keys);
+    const rows = this.rowsByModel.get(model)!;
+    for (const entityId of this.entityIdsByGameByModel.get(model)?.get(gameId) ?? []) {
+      const row = rows.get(entityId);
+      entityIds.delete(entityId);
+      if (row && scopeIndexKeys(model, row, spacing).some((key) => keys.includes(key))) entityIds.add(entityId);
+    }
+    return entityIds;
+  }
+
+  private scopeIndex(gameId: string, spacing: number): Map<string, Set<string>> {
+    const existing = this.scopeIndexes.get(gameId);
+    if (existing?.spacing === spacing) return existing.entityIds;
+    const index: ScopeIndex = { spacing, entityIds: new Map() };
+    this.scopeIndexes.set(gameId, index);
+    for (const model of SCOPE_INDEXED_MODELS)
+      for (const [entityId, row] of this.materializedGameRows(model, BigInt(gameId)))
+        this.addToScopeIndex(model, entityId, row);
+    return index.entityIds;
+  }
+
+  private addToScopeIndex(model: string, entityId: string, row: StoredModelRow): void {
+    const index = this.scopeIndexes.get(scalarGameId(row.key, model));
+    if (!index) return;
+    for (const key of scopeIndexKeys(model, row, index.spacing)) {
+      const entityIds = index.entityIds.get(`${model}:${key}`) ?? new Set<string>();
+      entityIds.add(entityId);
+      index.entityIds.set(`${model}:${key}`, entityIds);
+    }
+  }
+
+  private removeFromScopeIndex(model: string, entityId: string, row: StoredModelRow): void {
+    const index = this.scopeIndexes.get(scalarGameId(row.key, model));
+    if (!index) return;
+    for (const key of scopeIndexKeys(model, row, index.spacing)) {
+      const entityIds = index.entityIds.get(`${model}:${key}`);
+      entityIds?.delete(entityId);
+      if (entityIds?.size === 0) index.entityIds.delete(`${model}:${key}`);
+    }
   }
 
   private eventGameId(event: DecodedWorldEvent, existing?: StoredModelRow): string | undefined {
@@ -505,6 +576,9 @@ export class WorldFold {
 
     if (previous) this.removeEntityFromGameIndex(model, entityId, previous);
     if (current) this.addEntityToGameIndex(model, entityId, current);
+    if (!SCOPE_INDEXED_MODELS.has(model)) return;
+    if (previous) this.removeFromScopeIndex(model, entityId, previous);
+    if (current) this.addToScopeIndex(model, entityId, current);
   }
 
   private addEntityToGameIndex(model: string, entityId: string, row: StoredModelRow): void {
