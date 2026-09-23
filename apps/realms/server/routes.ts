@@ -5,7 +5,7 @@ import { handleAdmitShard, handleDirectory, handleShardStatus } from "./director
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
 import { handleNotificationPreferences } from "./notification-preferences";
-import { handleProfile } from "./profiles";
+import { handleProfile, handleProfiles } from "./profiles";
 import { handlePushSubscriptions } from "./push-notifications";
 
 /** What the Worker reaches outside its bindings: the colo cache and the shards' Heralds. */
@@ -33,6 +33,10 @@ export const routeIdentityRequest = async (
       guardian: env.GUARDIAN,
       accountClassHash: env.ACCOUNT_CLASS_HASH,
     });
+  }
+  if (pathname === "/api/profiles" && request.method === "GET") {
+    if (!(await withinPublicBudget(env, "profiles", request))) return json({ error: "too_many_requests" }, 429);
+    return handleProfiles(env.DB, new URL(request.url).searchParams.get("accounts"));
   }
   if (pathname.startsWith("/api/profiles/") && request.method === "GET") {
     if (!(await withinPublicBudget(env, "profiles", request))) return json({ error: "too_many_requests" }, 429);

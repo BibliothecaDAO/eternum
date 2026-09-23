@@ -245,6 +245,25 @@ describe("identity Worker", () => {
     expect((await browser.request("/api/devices", { body: newDevice })).status).toBe(200);
   });
 
+  it("names an account only through our guardian's approval, never through the Realms id it claims", async () => {
+    const browser = createBrowser();
+    await browser.request("/api/auth/sign-in/anonymous", { body: {} });
+    expect((await registerPasskey(browser)).status).toBe(200);
+    expect((await browser.request("/api/auth/update-user", { body: { name: "Ser Galen" } })).status).toBe(200);
+    const realmsId = (await browser.session())!.user.realmsId;
+    const approved = deviceChangeFor(realmsId, { counter: 1 });
+    expect((await browser.request("/api/devices", { body: approved })).status).toBe(200);
+
+    // Anyone can deploy an account under their own guardian that claims this Realms id; it gets no name.
+    const impostor = realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, ec.starkCurve.getStarkKey("0x5eed"));
+    const stranger = createBrowser();
+    const response = await stranger.request(`/api/profiles?accounts=${approved.account},${impostor}`);
+    expect(await response.json()).toEqual({ profiles: { [approved.account]: { name: "Ser Galen", portrait: null } } });
+
+    const tooMany = Array.from({ length: 201 }, (_, index) => `0x${(index + 1).toString(16)}`).join(",");
+    expect((await stranger.request(`/api/profiles?accounts=${tooMany}`)).status).toBe(400);
+  });
+
   it("saves preferences by revision, caps devices per account and revokes a device only with its token", async () => {
     const browser = createBrowser();
     await browser.request("/api/auth/sign-in/anonymous", { body: {} });
