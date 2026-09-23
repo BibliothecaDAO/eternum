@@ -96,7 +96,8 @@ describe("node action subscriptions", () => {
       order: 7,
       transaction_hash: "0x99",
       succeeded: false,
-      reason: "0x2",
+      status_class: "0x47414d45504c41595f52454a4543544544",
+      reason: "not enough stamina",
       nonce_consumed: true,
     });
     await expect(pending).resolves.toEqual({ transaction_hash: "0x99", order: 7n });

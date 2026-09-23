@@ -197,16 +197,16 @@ fn forged_signature_actor_game_and_replayed_intent_are_rejected() {
         .unwrap();
     let results = IRecordedExecutionViewsDispatcher { contract_address: deployment.games };
     gateway.execute(action, context(), array![unknown.public_key, unknown_r, unknown_s].span()).unwrap();
-    assert_eq!(results.recorded_outcome(1, 1).unwrap().reason, 'INVALID_SIGNATURE');
+    assert_eq!(results.recorded_outcome(1, 1).unwrap().status_class, 'INVALID_SIGNATURE');
     let mut forged = action;
     forged.actor = 0x999.try_into().unwrap();
     gateway.execute(forged, context(), signed).unwrap();
-    assert_eq!(results.recorded_outcome(1, 2).unwrap().reason, 'INVALID_ACTOR');
+    assert_eq!(results.recorded_outcome(1, 2).unwrap().status_class, 'INVALID_ACTOR');
     forged = action;
     forged.game_id = 2;
     gateway.execute(forged, context(), signed).unwrap();
     // The forged game's action is recorded on that game's own chain.
-    assert_eq!(results.recorded_outcome(2, 1).unwrap().reason, 'INVALID_SIGNATURE');
+    assert_eq!(results.recorded_outcome(2, 1).unwrap().status_class, 'INVALID_SIGNATURE');
     assert!(!results.recorded_outcome(1, 1).unwrap().nonce_consumed);
     assert!(!results.recorded_outcome(1, 2).unwrap().nonce_consumed);
     assert!(!results.recorded_outcome(2, 1).unwrap().nonce_consumed);
@@ -218,7 +218,7 @@ fn forged_signature_actor_game_and_replayed_intent_are_rejected() {
     gateway.execute(successor, context(), signed).unwrap();
     assert_eq!(results.recorded_outcome(1, 3).unwrap().status, 1);
     gateway.execute(successor, context(), signed).unwrap();
-    assert_eq!(results.recorded_outcome(1, 4).unwrap().reason, 'STALE_NONCE');
+    assert_eq!(results.recorded_outcome(1, 4).unwrap().status_class, 'STALE_NONCE');
     assert_eq!(
         IGamesAuthenticationDispatcher { contract_address: deployment.games }.next_nonce(1, deployment.actor), 1,
     );
@@ -289,17 +289,17 @@ fn signatures_are_bound_to_deployment_command_nonce_and_deadline() {
     let mut changed = action;
     changed.command = Command::CloseSeason;
     gateway.execute(changed, context(), signed).unwrap();
-    assert_eq!(results.recorded_outcome(1, 1).unwrap().reason, 'INVALID_SIGNATURE');
+    assert_eq!(results.recorded_outcome(1, 1).unwrap().status_class, 'INVALID_SIGNATURE');
     changed = action;
     changed.nonce = 1;
     gateway.execute(changed, context(), signed).unwrap();
-    assert_eq!(results.recorded_outcome(1, 2).unwrap().reason, 'INVALID_SIGNATURE');
+    assert_eq!(results.recorded_outcome(1, 2).unwrap().status_class, 'INVALID_SIGNATURE');
     changed = action;
     assert!(!results.recorded_outcome(1, 1).unwrap().nonce_consumed);
     assert!(!results.recorded_outcome(1, 2).unwrap().nonce_consumed);
     changed.deadline = 99;
     gateway.execute(changed, context(), signature(first, changed)).unwrap();
-    assert_eq!(results.recorded_outcome(1, 3).unwrap().reason, 'INVALID_ACCEPTANCE');
+    assert_eq!(results.recorded_outcome(1, 3).unwrap().status_class, 'INVALID_ACCEPTANCE');
     assert!(gateway.execute(action, ExecutionContext { raw_root: 1, timestamp: 101 }, signed).is_err());
     // Both deployments use the same test key; address binding still changes the digest.
     assert!(

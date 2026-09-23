@@ -7,11 +7,12 @@ pub trait IGameplay<T> {
         command: crate::commands::Command,
         nonce: u64,
         context: crate::commands::ExecutionContext,
-    ) -> Result<Span<felt252>, felt252>;
+    ) -> Result<Span<felt252>, eternum_randomness_protocol::recording::Rejection>;
 }
 
 #[starknet::contract]
 pub mod SeasonLogic {
+    use eternum_randomness_protocol::recording::{Rejection, rejection, short_reason};
     use games_storage::release::LogicClasses;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_tx_info};
@@ -497,6 +498,23 @@ pub mod SeasonLogic {
         starknet::syscalls::library_call_syscall(target, selector, calldata.span())
     }
 
+    // Cairo assertions encode strings as ByteArray; expect/panic_with_felt252 use one short string.
+    // The syscall appends ENTRYPOINT_FAILED after the original panic data.
+    fn domain_rejection(error: Array<felt252>) -> Rejection {
+        let mut fields = error.span();
+        let reason = match fields.pop_front() {
+            Some(word) => {
+                if *word == core::byte_array::BYTE_ARRAY_MAGIC {
+                    Serde::<ByteArray>::deserialize(ref fields).expect('malformed domain reason')
+                } else {
+                    short_reason(*word)
+                }
+            },
+            None => "empty domain panic",
+        };
+        Rejection { status_class: 'GAMEPLAY_REJECTED', reason }
+    }
+
     #[abi(embed_v0)]
     impl Gameplay of super::IGameplay<ContractState> {
         fn execute_gameplay(
@@ -506,22 +524,22 @@ pub mod SeasonLogic {
             command: Command,
             nonce: u64,
             context: DomainContext,
-        ) -> Result<Span<felt252>, felt252> {
+        ) -> Result<Span<felt252>, eternum_randomness_protocol::recording::Rejection> {
             if crate::commands::command_items(command) > crate::commands::MAX_COMMAND_ITEMS {
-                return Err('INVALID_COMMAND');
+                return Err(rejection('INVALID_COMMAND'));
             }
             let rules = crate::logic::game::rules(game_id);
             let mut command_fields = array![];
             command.serialize(ref command_fields);
             let command_index: u128 = (*command_fields.at(0)).try_into().unwrap();
             if !crate::rules::command_enabled(rules.command_mask, command_index) {
-                return Err('COMMAND_DISABLED');
+                return Err(rejection('COMMAND_DISABLED'));
             }
             if !crate::logic::game::game(game_id).ready && command != Command::SettleBlitzRoster {
-                return Err('ROSTER_NOT_READY');
+                return Err(rejection('ROSTER_NOT_READY'));
             }
             let result = dispatch(self.release.classes(game_id), game_id, actor, command, context)
-                .map_err(|_error| 'GAMEPLAY_REJECTED')?;
+                .map_err(|error| domain_rejection(error))?;
             match command {
                 Command::SettleBlitzRoster | Command::CloseSeason | Command::MarkGameSettled |
                 Command::ClaimBitcoinPhase(_) |

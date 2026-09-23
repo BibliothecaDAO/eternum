@@ -275,7 +275,7 @@ fn raid_mode_owner_range_and_resource_failures_preserve_the_armies() {
     let result = IRecordedExecutionViewsDispatcher { contract_address: blitz.games }
         .recorded_outcome(3, super::recorded::head(blitz.games, 3).order)
         .unwrap();
-    assert_eq!(result.reason, 'COMMAND_DISABLED');
+    assert_eq!(result.status_class, 'COMMAND_DISABLED');
 }
 
 #[test]

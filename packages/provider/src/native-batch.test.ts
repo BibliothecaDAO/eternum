@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { hash, type GetTransactionReceiptResponse } from "starknet";
+import { byteArray, CallData, hash, shortString, type GetTransactionReceiptResponse } from "starknet";
 import {
   completeNativeBatches,
   nativeExecutionOutcomes,
@@ -13,7 +13,7 @@ function events(remaining = "1") {
     {
       from_address: "0x77",
       keys: [hash.getSelectorFromName("ExecutionRecorded")],
-      data: ["7", "291", "3", "1", "8", "1", "0"],
+      data: ["7", "291", "3", "1", "8", "1", "0", "0", "0", "0"],
     },
   ];
 }
@@ -48,7 +48,16 @@ describe("recorded batch results", () => {
     second[1].data[0] = "9";
     second[1].data[1] = "292";
     const rejected = events()[1];
-    rejected.data = ["7", "293", "3", "0", "10", "2", "0x5354414c455f4e4f4e4345"];
+    rejected.data = [
+      "7",
+      "293",
+      "3",
+      "0",
+      "10",
+      "2",
+      "0x5354414c455f4e4f4e4345",
+      ...CallData.compile(byteArray.byteArrayFromString("STALE_NONCE")),
+    ];
     const outcomes = nativeExecutionOutcomes([...events("9"), rejected, ...second], "0x77");
     expect(requireNativeExecutionOutcome(outcomes, ticket)).toMatchObject({ status: "SUCCEEDED", batchRemaining: "9" });
     expect(requireNativeExecutionOutcome(outcomes, { ...ticket, gameId: "9", actor: "292" })).toMatchObject({
@@ -60,6 +69,27 @@ describe("recorded batch results", () => {
       reason: "STALE_NONCE",
       nonceConsumed: false,
     });
+  });
+  it("keeps the domain reason separate from its class and refuses malformed reason frames", () => {
+    const event = events()[1];
+    const reason = "actor does not own the explorer being moved";
+    event.data = [
+      "7",
+      "291",
+      "3",
+      "1",
+      "8",
+      "2",
+      shortString.encodeShortString("GAMEPLAY_REJECTED"),
+      ...CallData.compile(byteArray.byteArrayFromString(reason)),
+    ];
+    expect(nativeExecutionOutcomes([event], "0x77")[0]).toMatchObject({
+      status: "REVERTED",
+      statusClass: "GAMEPLAY_REJECTED",
+      reason,
+    });
+    event.data.push("0");
+    expect(() => nativeExecutionOutcomes([event], "0x77")).toThrow("Malformed");
   });
   it("requires the accepted order, game, actor and nonce to match", () => {
     const outcomes = nativeExecutionOutcomes(events(), "0x77");

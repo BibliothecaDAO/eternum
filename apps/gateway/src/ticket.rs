@@ -61,11 +61,31 @@ impl RecordedTicket {
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(tag = "status", rename_all = "snake_case")]
 pub enum ActionStatus {
-    Queued { action: Felt },
-    Accepted { action: Felt, order: u64 },
-    Submitted { action: Felt, order: u64, transaction_hash: Felt },
-    Recorded { action: Felt, order: u64, transaction_hash: Felt, succeeded: bool, reason: Felt, nonce_consumed: bool },
-    Refused { action: Felt, reason: String },
+    Queued {
+        action: Felt,
+    },
+    Accepted {
+        action: Felt,
+        order: u64,
+    },
+    Submitted {
+        action: Felt,
+        order: u64,
+        transaction_hash: Felt,
+    },
+    Recorded {
+        action: Felt,
+        order: u64,
+        transaction_hash: Felt,
+        succeeded: bool,
+        status_class: Felt,
+        reason: String,
+        nonce_consumed: bool,
+    },
+    Refused {
+        action: Felt,
+        reason: String,
+    },
 }
 
 impl ActionStatus {

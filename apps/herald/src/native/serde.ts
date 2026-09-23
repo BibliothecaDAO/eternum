@@ -52,6 +52,17 @@ class SerdeReader {
       for (let index = 0n; index < count; index++) this.read(span[1]);
       return;
     }
+    if (type === "core::byte_array::ByteArray") {
+      const count = this.scalar();
+      if (count > BigInt(this.felts.length - this.offset - 2)) throw new Error("Native ByteArray exceeds frame");
+      for (let index = 0n; index < count; index++) {
+        if (this.scalar() >= 1n << 248n) throw new Error("Invalid native ByteArray word");
+      }
+      const pending = this.scalar();
+      const length = this.scalar();
+      if (length >= 31n || pending >= 1n << (8n * length)) throw new Error("Invalid native ByteArray tail");
+      return;
+    }
     if (type.startsWith("(")) {
       tupleTypes(type).forEach((member) => this.read(member));
       return;

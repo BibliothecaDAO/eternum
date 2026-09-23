@@ -129,7 +129,7 @@ describe("shared client submission barrier", () => {
           hashes.push(hash);
           return barrier.then(() => ({
             status: "ACCEPTED_ON_L2",
-            executions: [{ gameId: "1", actor: "0xabc", nonce: "0", order: "1", status: "SUCCEEDED", reason: "" }],
+            executions: [{ gameId: "1", actor: "0xabc", nonce: "0", order: "1", status: "SUCCEEDED", statusClass: "", reason: "" }],
           }));
         },
       },

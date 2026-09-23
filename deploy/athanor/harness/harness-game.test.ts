@@ -45,8 +45,8 @@ test("setup waits for the confirmed start and roster readiness in every game mod
 
 test("a mixed transaction completes only the successful bot's own ticket", async () => {
   const provider = new EventEmitter();
-  const successful = { gameId: "1", actor: "1", nonce: "2", order: "3", status: "SUCCEEDED", reason: "" };
-  const rejected = { gameId: "1", actor: "2", nonce: "2", order: "4", status: "REVERTED", reason: "GAMEPLAY_REJECTED" };
+  const successful = { gameId: "1", actor: "1", nonce: "2", order: "3", status: "SUCCEEDED", statusClass: "", reason: "" };
+  const rejected = { gameId: "1", actor: "2", nonce: "2", order: "4", status: "REVERTED", statusClass: "GAMEPLAY_REJECTED", reason: "not enough stamina" };
   const game = createHarnessGame({
     gameId: 1,
     setup: { store: {}, systemCalls: {}, network: { provider } },
@@ -56,7 +56,7 @@ test("a mixed transaction completes only the successful bot's own ticket", async
     const submission = await game.submit({ address: ticket.actor } as Account, async () => {
       provider.emit("transactionSubmitted", { signerAddress: ticket.actor, transactionHash: "0x123", ticket });
     });
-    if (ticket === rejected) await expect(submission.confirmed).rejects.toThrow("GAMEPLAY_REJECTED");
+    if (ticket === rejected) await expect(submission.confirmed).rejects.toThrow("GAMEPLAY_REJECTED: not enough stamina");
     else await expect(submission.confirmed).resolves.toBeUndefined();
   }
 });

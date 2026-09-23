@@ -214,7 +214,7 @@ fn definitive_execution_failure_consumes_only_its_ticket_then_successor_executes
         );
     let view = IRecordedExecutionViewsDispatcher { contract_address: d.games };
     assert_eq!(view.recorded_outcome(1, 1).unwrap().status, 2);
-    assert_eq!(view.recorded_outcome(1, 1).unwrap().reason, 'EXECUTION_FAILED');
+    assert_eq!(view.recorded_outcome(1, 1).unwrap().status_class, 'EXECUTION_FAILED');
     let season = IGamesAuthenticationDispatcher { contract_address: d.games };
     assert_eq!(season.next_nonce(1, d.actor), 1);
     assert_eq!(head(d.games, 1).order, 1);
@@ -280,7 +280,7 @@ fn oversized_command_is_terminal_and_the_next_ticket_executes() {
     super::execute(d, action);
     let view = IRecordedExecutionViewsDispatcher { contract_address: d.games };
     assert_eq!(view.recorded_outcome(1, 1).unwrap().status, 2);
-    assert_eq!(view.recorded_outcome(1, 1).unwrap().reason, 'INVALID_COMMAND');
+    assert_eq!(view.recorded_outcome(1, 1).unwrap().status_class, 'INVALID_COMMAND');
     let season = IGamesAuthenticationDispatcher { contract_address: d.games };
     assert_eq!(season.next_nonce(1, d.actor), 1);
     super::execute(d, FixtureAction { nonce: 1, ..super::intent(d, 1) });
@@ -372,7 +372,7 @@ fn assert_oversized_loot_terminal(raid: bool) {
     let d = super::setup(true);
     super::execute(d, FixtureAction { command, ..super::intent(d, 1) });
     let view = IRecordedExecutionViewsDispatcher { contract_address: d.games };
-    assert_eq!(view.recorded_outcome(1, 1).unwrap().reason, 'INVALID_COMMAND');
+    assert_eq!(view.recorded_outcome(1, 1).unwrap().status_class, 'INVALID_COMMAND');
     assert_eq!(IFixtureDispatcher { contract_address: d.games }.received_root(), 0);
     super::execute(d, FixtureAction { nonce: 1, ..super::intent(d, 1) });
     assert_eq!(view.recorded_outcome(1, 2).unwrap().status, 1);

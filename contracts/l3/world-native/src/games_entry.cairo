@@ -7,6 +7,7 @@ pub mod GamesEntry {
         RecordedAction, accepted_context_matches, authenticate_submission,
     };
     use eternum_randomness_protocol::epochs::{IRandomnessEpochsDispatcher, IRandomnessEpochsDispatcherTrait};
+    use eternum_randomness_protocol::recording::{Rejection, rejection};
     use eternum_randomness_protocol::{Envelope, Intent, action_identity, decode_envelope};
     use games_storage::release::LogicClasses;
     use starknet::storage::{
@@ -116,7 +117,7 @@ pub mod GamesEntry {
             assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
             let consumed = self.consume_action_nonce(@intent).is_ok();
             let mut recording = get_dep_component_mut!(ref self, Recording);
-            recording.record(@intent, @envelope, consumed, Err('EXECUTION_FAILED'));
+            recording.record(@intent, @envelope, consumed, Err(rejection('EXECUTION_FAILED')));
         }
     }
 
@@ -169,7 +170,7 @@ pub mod GamesEntry {
             };
             let outcome = match consumed {
                 Ok((game_id, actor)) => self.execute_action(@intent, @envelope, game_id, actor),
-                Err(reason) => Err(reason),
+                Err(reason) => Err(rejection(reason)),
             };
             get_dep_component_mut!(ref self, Recording).record(@intent, @envelope, consumed.is_ok(), outcome);
         }
@@ -258,15 +259,15 @@ pub mod GamesEntry {
             envelope: @Envelope,
             game_id: u32,
             actor: ContractAddress,
-        ) -> Result<Span<felt252>, felt252> {
-            self.validate_action(intent, envelope, game_id)?;
+        ) -> Result<Span<felt252>, Rejection> {
+            self.validate_action(intent, envelope, game_id).map_err(|code| rejection(code))?;
             if intent.arguments.len() > 256 {
-                return Err('INVALID_COMMAND');
+                return Err(rejection('INVALID_COMMAND'));
             }
             let mut committed = array!['ETERNUM_COMMAND', 1];
             committed.append_span(intent.arguments.span());
             if poseidon_hash_span(committed.span()) != *intent.command {
-                return Err('INVALID_COMMAND');
+                return Err(rejection('INVALID_COMMAND'));
             }
             // SeasonLogic's typed entrypoint decodes the command; Games forwards its existing wire fields.
             let mut calldata = array![game_id.into(), actor.into()];
@@ -278,7 +279,7 @@ pub mod GamesEntry {
                 selector!("execute_gameplay"),
                 calldata.span(),
             )
-                .map_err(|_error| 'INVALID_COMMAND')?;
+                .map_err(|_error| rejection('INVALID_COMMAND'))?;
             Serde::deserialize(ref result).expect('invalid gameplay result')
         }
         fn consume_action_nonce(

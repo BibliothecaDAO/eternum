@@ -243,7 +243,7 @@ describe("Madara harness workload", () => {
   });
 
   it("reports a game rule refusing a move apart from chain or driver failures", () => {
-    const rejected = new Error("Herald confirmation failed: Native action rejected: GAMEPLAY_REJECTED");
+    const rejected = new Error("Herald confirmation failed: Native action rejected: GAMEPLAY_REJECTED: not enough stamina");
     expect(classifyWorkloadFailure(rejected)).toBe("gameplay_rejection");
     expect(classifyWorkloadFailure(new Error("Native action rejected: COMMAND_DISABLED"))).toBe("gameplay_rejection");
     expect(classifyWorkloadFailure(new Error("Native action rejected: INVALID_ACTOR"))).toBe("chain_or_driver");

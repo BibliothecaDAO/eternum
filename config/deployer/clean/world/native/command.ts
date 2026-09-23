@@ -70,7 +70,8 @@ export async function executeNativeAdminCommand(
     nonce: nonce.toString(),
     order: accepted.order.toString(),
   });
-  if (outcome.status === "REVERTED") throw new Error(`Native command rejected: ${outcome.reason}`);
+  if (outcome.status === "REVERTED")
+    throw new Error(`Native command rejected: ${outcome.statusClass}: ${outcome.reason}`);
   const remaining = outcome.batchRemaining;
   if (
     (repeatableBatches.has(input.command.kind) || input.command.kind === "RecordBlitzResults") &&

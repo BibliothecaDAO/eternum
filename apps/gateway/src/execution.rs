@@ -218,7 +218,7 @@ pub(crate) fn receipt_outcomes<'a>(
         .into_iter()
         .zip(events)
         .map(|(ticket, event)| {
-            let [game, actor, nonce, consumed, order, status, reason] = event.data.as_slice() else {
+            let [game, actor, nonce, consumed, order, status, status_class, reason @ ..] = event.data.as_slice() else {
                 anyhow::bail!("malformed execution event");
             };
             ensure!(
@@ -232,16 +232,45 @@ pub(crate) fn receipt_outcomes<'a>(
                 [Felt::ZERO, Felt::ONE].contains(consumed) && [Felt::ONE, Felt::TWO].contains(status),
                 "invalid execution result"
             );
+            let reason = decode_reason(reason)?;
+            ensure!(
+                if *status == Felt::ONE {
+                    *status_class == Felt::ZERO && reason.is_empty()
+                } else {
+                    *status_class != Felt::ZERO && !reason.is_empty()
+                },
+                "execution classification disagrees with reason"
+            );
             Ok(ActionStatus::Recorded {
                 action: ticket.envelope.action,
                 order: ticket.envelope.order,
                 transaction_hash: hash,
                 succeeded: *status == Felt::ONE,
-                reason: *reason,
+                status_class: *status_class,
+                reason,
                 nonce_consumed: *consumed == Felt::ONE,
             })
         })
         .collect()
+}
+
+/// Replaces the one-felt reason read with the complete, strictly framed Cairo ByteArray.
+fn decode_reason(fields: &[Felt]) -> anyhow::Result<String> {
+    let (count, rest) = fields.split_first().context("missing execution reason")?;
+    let count = usize::try_from(*count).map_err(|_| anyhow::anyhow!("invalid reason word count"))?;
+    ensure!(rest.len().checked_sub(2) == Some(count), "malformed execution reason");
+    let mut bytes = Vec::with_capacity(count * 31 + 30);
+    for word in &rest[..count] {
+        let word = word.to_bytes_be();
+        ensure!(word[0] == 0, "invalid reason word");
+        bytes.extend_from_slice(&word[1..]);
+    }
+    let pending = rest[count].to_bytes_be();
+    let length = usize::try_from(rest[count + 1]).map_err(|_| anyhow::anyhow!("invalid reason tail length"))?;
+    ensure!(length < 31, "invalid reason tail length");
+    ensure!(pending[..32 - length].iter().all(|byte| *byte == 0), "invalid reason tail");
+    bytes.extend_from_slice(&pending[32 - length..]);
+    String::from_utf8(bytes).context("execution reason is not UTF-8")
 }
 
 #[cfg(test)]
@@ -322,7 +351,10 @@ mod tests {
                             Felt::ONE,
                             ticket.envelope.order.into(),
                             if rejection { Felt::TWO } else { Felt::ONE },
-                            if rejection { Felt::from(99) } else { Felt::ZERO },
+                            if rejection { Felt::from_bytes_be_slice(b"EXECUTION_FAILED") } else { Felt::ZERO },
+                            Felt::ZERO,
+                            if rejection { Felt::from_bytes_be_slice(b"EXECUTION_FAILED") } else { Felt::ZERO },
+                            if rejection { Felt::from(16) } else { Felt::ZERO },
                         ],
                     });
                     if !rejection {
@@ -432,6 +464,41 @@ mod tests {
         }
         (slots, tickets, statuses)
     }
+    #[test]
+    fn receipt_keeps_the_domain_reason_and_rejects_malformed_byte_arrays() {
+        let (_, tickets, _) = pending(1);
+        let ticket = &tickets[0].record;
+        let class = Felt::from_bytes_be_slice(b"GAMEPLAY_REJECTED");
+        let message = b"structure is already at max level";
+        let mut receipt = Receipt {
+            transaction_hash: Felt::from(99),
+            execution_status: ExecutionStatus::Succeeded,
+            revert_reason: None,
+            events: vec![Event {
+                from_address: ticket.intent.deployment,
+                keys: vec![selector("RecordingEvent"), selector("ExecutionRecorded")],
+                data: vec![
+                    ticket.intent.game,
+                    ticket.intent.actor,
+                    ticket.intent.nonce.into(),
+                    Felt::ONE,
+                    ticket.envelope.order.into(),
+                    Felt::TWO,
+                    class,
+                    Felt::ONE,
+                    Felt::from_bytes_be_slice(&message[..31]),
+                    Felt::from_bytes_be_slice(&message[31..]),
+                    Felt::TWO,
+                ],
+            }],
+        };
+        let outcomes = receipt_outcomes(std::iter::once(ticket), receipt.transaction_hash, &receipt).unwrap();
+        assert!(matches!(&outcomes[0], ActionStatus::Recorded { succeeded: false, status_class, reason, .. }
+            if *status_class == class && reason == "structure is already at max level"));
+        receipt.events[0].data.push(Felt::ZERO);
+        assert!(receipt_outcomes(std::iter::once(ticket), receipt.transaction_hash, &receipt).is_err());
+    }
+
     fn recorded_once(statuses: &[watch::Receiver<ActionStatus>]) -> bool {
         statuses
             .iter()

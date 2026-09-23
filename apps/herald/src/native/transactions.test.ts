@@ -1,5 +1,5 @@
 import { WorldFold } from "../world-fold";
-import { CallData, hash, shortString, type RawArgs } from "starknet";
+import { CallData, byteArray, hash, shortString, type RawArgs } from "starknet";
 import { describe, expect, it, vi } from "vitest";
 import { LiveWorld } from "../live-world";
 import type { MadaraRpc } from "../madara-rpc";
@@ -20,6 +20,7 @@ function executionEvent(status: number, nonceConsumed = true, nonce = 0, order =
       String(order),
       String(status),
       status === 2 ? shortString.encodeShortString("GAMEPLAY_REJECTED") : "0",
+      ...CallData.compile(byteArray.byteArrayFromString(status === 2 ? "settlement geometry exhausted" : "")),
     ],
   };
 }
@@ -255,6 +256,7 @@ describe("native transaction receipt routing", () => {
         executions: [expect.objectContaining({ status: "REVERTED" })],
       });
       expect(JSON.stringify(transactions)).toContain("GAMEPLAY_REJECTED");
+      expect(JSON.stringify(transactions)).toContain("settlement geometry exhausted");
       expect(rejected.execution_status).toBe("SUCCEEDED");
       native.applyReceipt(fold, rejected, 10, 0);
       expect(BigInt(String(fold.modelRows("ActionNonce")[0].value.next_nonce))).toBe(1n);
@@ -265,7 +267,13 @@ describe("native transaction receipt routing", () => {
           "1",
           expect.objectContaining({
             execution_status: "SUCCEEDED",
-            executions: [expect.objectContaining({ status: "REVERTED", reason: "GAMEPLAY_REJECTED" })],
+            executions: [
+              expect.objectContaining({
+                status: "REVERTED",
+                statusClass: "GAMEPLAY_REJECTED",
+                reason: "settlement geometry exhausted",
+              }),
+            ],
           }),
         );
       } else expect(historyStore.recordTransaction).not.toHaveBeenCalled();

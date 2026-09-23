@@ -787,7 +787,10 @@ export class EternumProvider extends EventEmitter {
       transaction = {
         ...transaction,
         status: outcome.status === "REVERTED" ? "REVERTED" : transaction.status,
-        revertReason: outcome.status === "REVERTED" ? `Native action rejected: ${outcome.reason}` : undefined,
+        revertReason:
+          outcome.status === "REVERTED"
+            ? `Native action rejected: ${outcome.statusClass}: ${outcome.reason}`
+            : undefined,
         batchRemaining: outcome.batchRemaining,
       };
     }

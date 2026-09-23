@@ -29,7 +29,30 @@ pub impl HeadPacking of starknet::storage_access::StorePacking<ExecutionHead, Pa
     }
 }
 
-#[derive(Copy, Drop, Serde, starknet::Event)]
+#[derive(Drop, Serde)]
+pub struct Rejection {
+    pub status_class: felt252,
+    pub reason: ByteArray,
+}
+
+// Replaces the single felt that used to conflate classification and the domain reason.
+pub fn rejection(code: felt252) -> Rejection {
+    Rejection { status_class: code, reason: short_reason(code) }
+}
+
+pub fn short_reason(word: felt252) -> ByteArray {
+    let mut remaining: u256 = word.into();
+    let mut len = 0;
+    while remaining != 0 {
+        remaining = remaining / 256;
+        len += 1;
+    }
+    let mut reason = "";
+    reason.append_word(word, len);
+    reason
+}
+
+#[derive(Drop, Serde, starknet::Event)]
 pub struct ExecutionRecorded {
     pub game_id: felt252,
     pub actor: felt252,
@@ -37,16 +60,17 @@ pub struct ExecutionRecorded {
     pub nonce_consumed: bool,
     pub order: u64,
     pub status: u8,
-    pub reason: felt252,
+    pub status_class: felt252,
+    pub reason: ByteArray,
 }
 
-pub fn following_state(previous_state: felt252, envelope: @Envelope, event: ExecutionRecorded) -> felt252 {
-    poseidon_hash_span(
-        array![
-            previous_state, envelope_binding(envelope), event.status.into(), event.reason, event.nonce_consumed.into(),
-        ]
-            .span(),
-    )
+pub fn following_state(previous_state: felt252, envelope: @Envelope, event: @ExecutionRecorded) -> felt252 {
+    let mut fields = array![
+        previous_state, envelope_binding(envelope), (*event.status).into(), *event.status_class,
+        (*event.nonce_consumed).into(),
+    ];
+    event.reason.serialize(ref fields);
+    poseidon_hash_span(fields.span())
 }
 
 // Shared by hosts of the protocol; the protocol owns its recording layout.
@@ -61,7 +85,7 @@ pub mod RecordedState {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::entrypoint::timestamp_in_bounds;
     use crate::{Envelope, Intent};
-    use super::{ExecutionHead, ExecutionRecorded, HeadPacking, following_state};
+    use super::{ExecutionHead, ExecutionRecorded, HeadPacking, Rejection, following_state};
 
     /// Each game keeps its own recorded chain, so one game's actions replay and verify alone.
     #[storage]
@@ -89,11 +113,11 @@ pub mod RecordedState {
             intent: @Intent,
             envelope: @Envelope,
             nonce_consumed: bool,
-            outcome: Result<Span<felt252>, felt252>,
+            outcome: Result<Span<felt252>, Rejection>,
         ) {
-            let (status, reason) = match outcome {
-                Ok(_) => (1_u8, 0),
-                Err(reason) => (2_u8, reason),
+            let (status, status_class, reason) = match outcome {
+                Ok(_) => (1_u8, 0, ""),
+                Err(error) => (2_u8, error.status_class, error.reason),
             };
             let event = ExecutionRecorded {
                 game_id: *intent.game_id,
@@ -102,6 +126,7 @@ pub mod RecordedState {
                 nonce_consumed,
                 order: *envelope.order,
                 status,
+                status_class,
                 reason,
             };
             let previous = self.data.heads.read(*intent.game_id);
@@ -113,7 +138,7 @@ pub mod RecordedState {
                     ExecutionHead {
                         order: *envelope.order,
                         timestamp: *envelope.timestamp,
-                        state: following_state(previous.state, envelope, event),
+                        state: following_state(previous.state, envelope, @event),
                     },
                 );
             self.emit(event);

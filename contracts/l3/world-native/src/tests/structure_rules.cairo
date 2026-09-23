@@ -1,3 +1,4 @@
+use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::commands::Command;
 use crate::discovery::{Discovery, ethereal, surface};
@@ -7,6 +8,7 @@ use crate::resources::{ResourceAmount, ResourceKey};
 use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
 use crate::tests::state::{MapObservationTrait, StructureObservationTrait};
 use crate::upgrades::{IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait, UpgradeLimits, UpgradeRecipe};
+use super::recorded_receipts::RecordedReceiptsTrait;
 use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture, setup, setup_with_rules};
 
 fn record(d: super::Deployment, key: ResourceKey) -> StructureRecord {
@@ -65,6 +67,12 @@ fn level_up_rejects_unowned_missing_wrong_category_unfunded_and_maximum_structur
     assert_eq!(map.tile(location).unwrap().data, tile.data + 2);
     assert_terminal_rejection(d, Command::LevelUp(home.entity_id), 80);
     assert_eq!(record(d, home).base.level, 1);
+    let outcome = IRecordedExecutionViewsDispatcher { contract_address: d.games }
+        .recorded_outcome(3, super::recorded::head(d.games, 3).order)
+        .unwrap();
+    assert_eq!(outcome.status_class, 'GAMEPLAY_REJECTED');
+    // This nested library assertion is longer than a felt short string.
+    assert_eq!(outcome.reason, "structure is already at max level");
 }
 
 #[test]

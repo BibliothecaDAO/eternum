@@ -582,7 +582,7 @@ fn recorded_roster_batches_block_early_play_and_report_ticket_progress() {
     let season = IGamesAuthenticationDispatcher { contract_address: d.games };
     let receipts = IRecordedExecutionViewsDispatcher { contract_address: d.games };
     assert_eq!(
-        receipts.recorded_outcome(game_id.into(), super::recorded::head(d.games, game_id).order).unwrap().reason,
+        receipts.recorded_outcome(game_id.into(), super::recorded::head(d.games, game_id).order).unwrap().status_class,
         'ROSTER_NOT_READY',
     );
     assert_eq!(season.next_nonce(game_id, d.actor), 1);
@@ -590,7 +590,7 @@ fn recorded_roster_batches_block_early_play_and_report_ticket_progress() {
     assert!(!IGameDispatcher { contract_address: d.games }.game(game_id).ready);
     assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::CloseSeason, 206, 206));
     assert_eq!(
-        receipts.recorded_outcome(game_id.into(), super::recorded::head(d.games, game_id).order).unwrap().reason,
+        receipts.recorded_outcome(game_id.into(), super::recorded::head(d.games, game_id).order).unwrap().status_class,
         'ROSTER_NOT_READY',
     );
     assert_eq!(season.next_nonce(game_id, d.actor), 3);

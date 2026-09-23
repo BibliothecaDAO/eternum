@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, mock } from "bun:test";
-import { ec, hash, type RpcProvider } from "starknet";
+import { byteArray, CallData, ec, hash, type RpcProvider } from "starknet";
 import schema from "../../../../../contracts/l3/world-native/schema/schema.json";
 import { completeNativeAdminCommand, executeNativeAdminCommand } from "./command";
 import type { NativeWorldManifest } from "./types";
@@ -17,7 +17,7 @@ function setup(outcome?: string[]) {
       {
         from_address: "0x77",
         keys: [hash.getSelectorFromName("ExecutionRecorded")],
-        data: outcome ?? ["7", "291", "3", "1", "8", "1", "0"],
+        data: outcome ?? ["7", "291", "3", "1", "8", "1", "0", "0", "0", "0"],
       },
     ],
   };
@@ -63,7 +63,8 @@ function setup(outcome?: string[]) {
                 transaction_hash: "0x55",
                 succeeded: true,
                 nonce_consumed: true,
-                reason: "0x0",
+                status_class: "0x0",
+                reason: "",
               },
             },
           }),
@@ -164,11 +165,20 @@ describe("native administrative command", () => {
     expect(requests).toHaveLength(2);
   });
   it("rejects a receipt for another ticket", async () => {
-    const { input } = setup(["7", "291", "3", "1", "9", "1", "0"]);
+    const { input } = setup(["7", "291", "3", "1", "9", "1", "0", "0", "0", "0"]);
     await expect(executeNativeAdminCommand(input)).rejects.toThrow("Missing or ambiguous");
   });
   it("reports the recorded rejection reason", async () => {
-    const { input, receipt } = setup(["7", "291", "3", "1", "8", "2", "0x52454a4543544544"]);
+    const { input, receipt } = setup([
+      "7",
+      "291",
+      "3",
+      "1",
+      "8",
+      "2",
+      "0x52454a4543544544",
+      ...CallData.compile(byteArray.byteArrayFromString("REJECTED")),
+    ]);
     receipt.events.shift();
     await expect(executeNativeAdminCommand(input)).rejects.toThrow("Native command rejected: REJECTED");
   });
@@ -177,7 +187,16 @@ describe("native administrative command", () => {
     receipt.events.unshift({
       from_address: "0x77",
       keys: [hash.getSelectorFromName("ExecutionRecorded")],
-      data: ["7", "292", "0", "1", "7", "2", "0x52454a4543544544"],
+      data: [
+        "7",
+        "292",
+        "0",
+        "1",
+        "7",
+        "2",
+        "0x52454a4543544544",
+        ...CallData.compile(byteArray.byteArrayFromString("REJECTED")),
+      ],
     });
     expect(await executeNativeAdminCommand(input)).toEqual({ transactionHash: "0x55", remaining: "0" });
   });

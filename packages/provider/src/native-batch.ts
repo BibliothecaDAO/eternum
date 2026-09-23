@@ -1,4 +1,4 @@
-import { hash, shortString, type GetTransactionReceiptResponse } from "starknet";
+import { byteArray, hash, shortString, type GetTransactionReceiptResponse } from "starknet";
 
 import type { BatchTransactionReceipt, NativeExecutionOutcome, NativeTicketIdentity } from "@bibliothecadao/types";
 
@@ -8,8 +8,8 @@ const executionRecordedSelector = BigInt(hash.getSelectorFromName("ExecutionReco
 type Event = { from_address: string; keys: string[]; data: string[] };
 
 /** Every accepted ticket has its own outcome, even when several share a transaction. */
-export function nativeExecutionOutcomes(events: readonly Event[], season: string): NativeExecutionOutcome[] {
-  const own = events.filter((event) => BigInt(event.from_address) === BigInt(season));
+export function nativeExecutionOutcomes(events: readonly Event[], games: string): NativeExecutionOutcome[] {
+  const own = events.filter((event) => BigInt(event.from_address) === BigInt(games));
   const outcomes = own
     .filter((event) => BigInt(event.keys.at(-1) ?? "0") === executionRecordedSelector)
     .map(decodeExecution);
@@ -23,15 +23,17 @@ export function nativeExecutionOutcomes(events: readonly Event[], season: string
 }
 
 function decodeExecution(event: Event): NativeExecutionOutcome {
-  if (event.data.length !== 7) throw new Error("Malformed native execution outcome");
-  const [game, actor, nonce, consumed, order, status, reason] = event.data.map(BigInt);
+  if (event.data.length < 10) throw new Error("Malformed native execution outcome");
+  const [game, actor, nonce, consumed, order, status, statusClass] = event.data.slice(0, 7).map(BigInt);
+  const reason = decodeReason(event.data.slice(7));
   if (
     nonce < 0n ||
     nonce >= 2n ** 64n ||
     order <= 0n ||
     order >= 2n ** 64n ||
     (consumed !== 0n && consumed !== 1n) ||
-    (status !== 1n && status !== 2n)
+    (status !== 1n && status !== 2n) ||
+    (status === 1n ? statusClass !== 0n || reason !== "" : statusClass === 0n || reason === "")
   )
     throw new Error("Invalid native execution outcome");
   return {
@@ -41,8 +43,28 @@ function decodeExecution(event: Event): NativeExecutionOutcome {
     order: order.toString(),
     nonceConsumed: consumed === 1n,
     status: status === 1n ? "SUCCEEDED" : "REVERTED",
-    reason: reason === 0n ? "" : shortString.decodeShortString(`0x${reason.toString(16)}`),
+    statusClass: statusClass === 0n ? "" : shortString.decodeShortString(`0x${statusClass.toString(16)}`),
+    reason,
   };
+}
+
+/** Replaces the old one-felt reason decoder; validate the entire Cairo ByteArray before decoding it. */
+function decodeReason(fields: string[]): string {
+  const count = Number(BigInt(fields[0]));
+  if (!Number.isSafeInteger(count) || count < 0 || fields.length !== count + 3)
+    throw new Error("Malformed native rejection reason");
+  const data = fields.slice(1, count + 1);
+  const pending = BigInt(fields[count + 1]);
+  const length = BigInt(fields[count + 2]);
+  if (
+    data.some((word) => BigInt(word) < 0n || BigInt(word) >= 1n << 248n) ||
+    length < 0n ||
+    length >= 31n ||
+    pending < 0n ||
+    pending >= 1n << (8n * length)
+  )
+    throw new Error("Invalid native rejection reason");
+  return byteArray.stringFromByteArray({ data, pending_word: pending.toString(), pending_word_len: Number(length) });
 }
 
 function attachBatchProgress(outcomes: NativeExecutionOutcome[], event: Event): void {

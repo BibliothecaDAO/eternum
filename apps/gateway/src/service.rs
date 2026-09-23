@@ -481,7 +481,10 @@ mod tests {
                         Felt::ONE,
                         ticket.envelope.order.into(),
                         if rejection { Felt::TWO } else { Felt::ONE },
-                        if rejection { Felt::from(99) } else { Felt::ZERO },
+                        if rejection { Felt::from_bytes_be_slice(b"EXECUTION_FAILED") } else { Felt::ZERO },
+                        Felt::ZERO,
+                        if rejection { Felt::from_bytes_be_slice(b"EXECUTION_FAILED") } else { Felt::ZERO },
+                        if rejection { Felt::from(16) } else { Felt::ZERO },
                     ],
                 });
             }

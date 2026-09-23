@@ -254,8 +254,13 @@
               "kind": "data"
             },
             {
-              "name": "reason",
+              "name": "status_class",
               "type": "core::felt252",
+              "kind": "data"
+            },
+            {
+              "name": "reason",
+              "type": "core::byte_array::ByteArray",
               "kind": "data"
             }
           ]
@@ -9955,7 +9960,7 @@
         "season"
       ],
       "scope": "deployment",
-      "version": 1,
+      "version": 2,
       "event": {
         "type": "event",
         "name": "eternum_randomness_protocol::recording::ExecutionRecorded",
@@ -9992,8 +9997,13 @@
             "kind": "data"
           },
           {
-            "name": "reason",
+            "name": "status_class",
             "type": "core::felt252",
+            "kind": "data"
+          },
+          {
+            "name": "reason",
+            "type": "core::byte_array::ByteArray",
             "kind": "data"
           }
         ]
@@ -10533,6 +10543,24 @@
         }
       ]
     },
+    "core::byte_array::ByteArray": {
+      "type": "struct",
+      "name": "core::byte_array::ByteArray",
+      "members": [
+        {
+          "name": "data",
+          "type": "core::array::Array::<core::bytes_31::bytes31>"
+        },
+        {
+          "name": "pending_word",
+          "type": "core::felt252"
+        },
+        {
+          "name": "pending_word_len",
+          "type": "core::internal::bounded_int::BoundedInt::<0, 30>"
+        }
+      ]
+    },
     "core::integer::u256": {
       "type": "struct",
       "name": "core::integer::u256",
@@ -10715,9 +10743,9 @@
         }
       ]
     },
-    "core::result::Result::<core::array::Span::<core::felt252>, core::felt252>": {
+    "core::result::Result::<core::array::Span::<core::felt252>, eternum_randomness_protocol::recording::Rejection>": {
       "type": "enum",
-      "name": "core::result::Result::<core::array::Span::<core::felt252>, core::felt252>",
+      "name": "core::result::Result::<core::array::Span::<core::felt252>, eternum_randomness_protocol::recording::Rejection>",
       "variants": [
         {
           "name": "Ok",
@@ -10725,7 +10753,7 @@
         },
         {
           "name": "Err",
-          "type": "core::felt252"
+          "type": "eternum_randomness_protocol::recording::Rejection"
         }
       ]
     },
@@ -10848,6 +10876,20 @@
         {
           "name": "state",
           "type": "core::felt252"
+        }
+      ]
+    },
+    "eternum_randomness_protocol::recording::Rejection": {
+      "type": "struct",
+      "name": "eternum_randomness_protocol::recording::Rejection",
+      "members": [
+        {
+          "name": "status_class",
+          "type": "core::felt252"
+        },
+        {
+          "name": "reason",
+          "type": "core::byte_array::ByteArray"
         }
       ]
     },
@@ -15738,5 +15780,5 @@
       ]
     }
   },
-  "identity": "3f516829bed4c50a4a156003700bee585fb6e19ef1506286d752e436627ad0c0"
+  "identity": "596b6aa0f1c5d451eeb0dcf3654475373654bc2c2e262ba379df46f252e998e2"
 }

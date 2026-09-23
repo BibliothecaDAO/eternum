@@ -18,7 +18,7 @@ pub mod RecordedExecutionStub {
         accepted_context_matches, authenticate_submission,
     };
     use crate::epochs::{IRandomnessEpochsDispatcher, IRandomnessEpochsDispatcherTrait};
-    use crate::recording::{ExecutionHead, HeadPacking, RecordedState};
+    use crate::recording::{ExecutionHead, HeadPacking, RecordedState, rejection};
     use crate::{Intent, action_identity, decode_envelope};
     component!(path: RecordedState, storage: recording, event: RecordingEvent);
     impl RecordingInternal = RecordedState::InternalImpl<ContractState>;
@@ -81,7 +81,7 @@ pub mod RecordedExecutionStub {
             };
             let consumed = authentication.is_ok() && self.consume_nonce(@intent);
             let outcome = match reason {
-                Some(code) => Err(code),
+                Some(code) => Err(rejection(code)),
                 None => {
                     self.root.write(envelope.root);
                     Ok(array![(envelope.root.low % 2).into()].span())
@@ -101,7 +101,7 @@ pub mod RecordedExecutionStub {
             self.authenticate_action(@intent, @envelope, signature).expect('unauthenticated action');
             assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
             let consumed = self.consume_nonce(@intent);
-            self.recording.record(@intent, @envelope, consumed, Err('EXECUTION_FAILED'));
+            self.recording.record(@intent, @envelope, consumed, Err(rejection('EXECUTION_FAILED')));
         }
     }
 

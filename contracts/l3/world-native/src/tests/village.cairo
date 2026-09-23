@@ -271,7 +271,8 @@ fn exhausted_geometry_records_rejection_and_keeps_the_pass() {
     let result = IRecordedExecutionViewsDispatcher { contract_address: deployment.games }
         .recorded_outcome(3, 1)
         .unwrap();
-    assert!(result.status == 2 && result.reason == 'GAMEPLAY_REJECTED');
+    assert!(result.status == 2 && result.status_class == 'GAMEPLAY_REJECTED');
+    assert_eq!(result.reason, "settlement geometry exhausted");
     assert!(super::recorded::head(deployment.games, 3).order == 1 && season.next_nonce(3, deployment.actor) == 1);
 }
 

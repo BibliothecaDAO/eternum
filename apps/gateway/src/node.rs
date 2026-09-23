@@ -417,6 +417,9 @@ mod tests {
                         ticket.envelope.order.into(),
                         Felt::ONE,
                         Felt::ZERO,
+                        Felt::ZERO,
+                        Felt::ZERO,
+                        Felt::ZERO,
                     ],
                 })
                 .collect(),

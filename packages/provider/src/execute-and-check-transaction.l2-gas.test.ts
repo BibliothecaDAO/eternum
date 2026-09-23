@@ -90,7 +90,8 @@ describe("provider submission boundary", () => {
         ...ticket,
         nonceConsumed: true,
         status: index === 0 ? "REVERTED" : "SUCCEEDED",
-        reason: index === 0 ? "GAMEPLAY_REJECTED" : "",
+        statusClass: index === 0 ? "GAMEPLAY_REJECTED" : "",
+        reason: index === 0 ? "not enough stamina" : "",
         batchRemaining: "0",
       })),
     });
@@ -101,7 +102,7 @@ describe("provider submission boundary", () => {
       signerAddress: "0x111",
       stage: "revert",
       transactionHash: "0xabc",
-      message: expect.stringContaining("GAMEPLAY_REJECTED"),
+      message: expect.stringContaining("not enough stamina"),
     });
     expect(submitted.mock.calls.map(([event]) => event.ticket)).toEqual(tickets);
   });
@@ -137,7 +138,7 @@ describe("provider submission boundary", () => {
       hash: "0xabc",
       block: 5,
       status: "PRE_CONFIRMED",
-      executions: [{ ...ticket, nonceConsumed: true, status: "SUCCEEDED", reason: "" }],
+      executions: [{ ...ticket, nonceConsumed: true, status: "SUCCEEDED", statusClass: "", reason: "" }],
     });
     await Promise.all([slow, next]);
     expect(submit).toHaveBeenCalledTimes(2);

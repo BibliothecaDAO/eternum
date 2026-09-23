@@ -154,9 +154,18 @@ const standalone = {
   },
   ExecutionRecorded: {
     keys: [],
-    data: ["1", "17", "2", "0", "9", "2", "77"],
+    data: ["1", "17", "2", "0", "9", "2", "77", "0", "0x646f6d61696e2072656a6563746564", "15"],
     key: {},
-    value: { game_id: 1n, actor: 17n, nonce: 2n, nonce_consumed: false, order: 9n, status: 2n, reason: 77n },
+    value: {
+      game_id: 1n,
+      actor: 17n,
+      nonce: 2n,
+      nonce_consumed: false,
+      order: 9n,
+      status: 2n,
+      status_class: 77n,
+      reason: "domain rejected",
+    },
   },
   PointsAwarded: {
     keys: ["1", "1", "17"],

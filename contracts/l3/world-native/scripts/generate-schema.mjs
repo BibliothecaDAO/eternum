@@ -1,5 +1,5 @@
 import { eventLayouts, uniqueEventLayouts } from "./event-layouts.mjs";
-import { defineFactModels, factWireTypes, syncScopes } from "../schema/fact-models.mjs";
+import { defineFactModels, factWireTypes, syncScopes, executionRecordedVersion } from "../schema/fact-models.mjs";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -202,7 +202,7 @@ const schema = {
       name: "ExecutionRecorded",
       owners: ["season"],
       scope: "deployment",
-      version: 1,
+      version: executionRecordedVersion,
       event: artifacts.season.find(
         (item) => item.type === "event" && item.name === "eternum_randomness_protocol::recording::ExecutionRecorded",
       ),

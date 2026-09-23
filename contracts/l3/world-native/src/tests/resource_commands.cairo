@@ -433,7 +433,7 @@ pub fn assert_terminal_rejection(deployment: Deployment, command: Command, times
         .recorded_outcome(3, order + 1)
         .unwrap();
     assert_eq!(result.status, 2);
-    assert!(result.reason != 0);
+    assert!(result.reason.len() != 0);
 }
 
 #[test]

@@ -122,32 +122,37 @@ Each consumed action writes its actor nonce and its game's execution head. A gam
 `order + timestamp * 2^64` and a running transcript commitment. A stale or unrepresentable nonce is not written. There
 is no per-order result map.
 
-One `ExecutionRecorded` event carries seven data felts:
+The schema v2 `ExecutionRecorded` event separates the status class from the rejection message:
 
-| Field           | Type                                         |
-| --------------- | -------------------------------------------- |
-| game_id         | felt                                         |
-| actor           | felt                                         |
-| submitted nonce | u64                                          |
-| nonce consumed  | bool                                         |
-| order in game   | u64                                          |
-| status          | u8: 1 applied, 2 rejected                    |
-| reason          | felt: zero for applied, nonzero for rejected |
+| Field           | Type                                                                        |
+| --------------- | --------------------------------------------------------------------------- |
+| game_id         | felt                                                                        |
+| actor           | felt                                                                        |
+| submitted nonce | u64                                                                         |
+| nonce consumed  | bool                                                                        |
+| order in game   | u64                                                                         |
+| status          | u8: 1 applied, 2 rejected                                                   |
+| status_class    | felt: zero for applied, named class for rejected                            |
+| reason          | ByteArray: empty for applied, full domain or admission message for rejected |
 
 Herald validates the event codec and derives `ActionNonce.next_nonce = submitted nonce + 1` only when consumption is
 true. It folds every ticket in a transaction atomically and retains ticket-scoped status keyed by game and order. A
 transaction hash alone does not identify an action. Gameplay rows remain authoritative for effects.
 
-The running commitment is `poseidon_hash_span([previous_head(game).state, binding, status, reason, nonce_consumed])`. It
+The running commitment is
+`poseidon_hash_span([previous_head(game).state, binding, status, status_class, nonce_consumed, ...Serde(reason)])`. It
 commits each action, root, time and outcome without making the next envelope wait for it. `get_admission(game, actor)`
 refuses an actor without the configured account class and returns rules identity, execution configuration identity,
 actor nonce, the game's next order and current block timestamp. The timestamp is an admission observation, not a
 previous ticket's acceptance time. `get_head(game)` returns the game's order, recorded timestamp and state. Outcomes
 come from receipts matched to the accepted ticket.
 
-Terminal reasons include `INVALID_GAME`, `INVALID_ACTOR`, `STALE_NONCE`, `NONCE_EXHAUSTED`, `FOREIGN_CHAIN`,
+Terminal status classes include `INVALID_GAME`, `INVALID_ACTOR`, `STALE_NONCE`, `NONCE_EXHAUSTED`, `FOREIGN_CHAIN`,
 `FOREIGN_DEPLOYMENT`, `INVALID_RULES`, `INVALID_SIGNATURE`, `INVALID_ACCEPTANCE`, `INVALID_COMMAND`, `GAMEPLAY_REJECTED`
-and `EXECUTION_FAILED`. Domain reverts roll back domain effects before recording a rejection.
+and `EXECUTION_FAILED`. Domain reverts roll back domain effects before recording a rejection. `GAMEPLAY_REJECTED` is the
+class; its reason is the original Cairo assertion or short-string panic message, including messages longer than 31
+bytes. Admission rejections keep their named code as the reason. Both class and reason are committed by the recorded
+head.
 
 ## Retry and restart
 

@@ -1,3 +1,6 @@
+// ExecutionRecorded v2 separates the rejection class from the full domain reason.
+export const executionRecordedVersion = 2;
+
 // Fact-only Cairo wire types replace the removed fixture getter ABIs.
 // Production definitions, when present, must agree exactly with these fields.
 export const factWireTypes = [

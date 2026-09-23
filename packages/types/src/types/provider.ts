@@ -13,6 +13,7 @@ export interface NativeTicketIdentity {
 export interface NativeExecutionOutcome extends NativeTicketIdentity {
   nonceConsumed: boolean;
   status: "SUCCEEDED" | "REVERTED";
+  statusClass: string;
   reason: string;
   batchRemaining?: string;
 }
