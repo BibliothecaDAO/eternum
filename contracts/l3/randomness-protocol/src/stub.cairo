@@ -176,7 +176,7 @@ pub mod RecordedExecutionStub {
     impl Views of crate::entrypoint::IRecordedExecutionViews<ContractState> {
         fn get_admission(self: @ContractState, game: felt252, actor: felt252) -> Admission {
             assert!(fixture_game(game) && actor == self.actor.read(), "unknown fixture actor or game");
-            let head = self.recording.heads.read(game);
+            let head = self.recording.data.heads.read(game);
             Admission {
                 rules: 789,
                 execution_config: 987,
@@ -186,7 +186,7 @@ pub mod RecordedExecutionStub {
             }
         }
         fn get_head(self: @ContractState, game: felt252) -> ExecutionHead {
-            self.recording.heads.read(game)
+            self.recording.data.heads.read(game)
         }
     }
 

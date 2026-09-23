@@ -10,7 +10,7 @@ pub mod GamesEntry {
     use eternum_randomness_protocol::{Envelope, Intent, action_identity, decode_envelope};
     use games_storage::release::LogicClasses;
     use starknet::storage::{
-        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_caller_address, get_contract_address, get_tx_info};
     use crate::commands::ExecutionContext as DomainContext;
@@ -27,8 +27,8 @@ pub mod GamesEntry {
     pub struct Storage {
         #[flat]
         data: crate::state::Storage,
-        authentication: Authentication,
-        nonces: Map<(u32, ContractAddress), u64>,
+        #[flat]
+        authentication_state: games_storage::authentication::AuthenticationStorage<Authentication>,
     }
 
     #[event]
@@ -58,10 +58,10 @@ pub mod GamesEntry {
         }
 
         fn authentication(self: @ComponentState<TContractState>) -> Authentication {
-            self.authentication.read()
+            self.authentication_state.authentication.read()
         }
         fn next_nonce(self: @ComponentState<TContractState>, game_id: u32, actor: ContractAddress) -> u64 {
-            self.nonces.read((game_id, actor))
+            self.authentication_state.nonces.read((game_id, actor))
         }
     }
 
@@ -132,17 +132,17 @@ pub mod GamesEntry {
             let game_id: u32 = game.try_into().expect('invalid game id');
             let actor: ContractAddress = actor.try_into().expect('invalid actor');
             self.approved_account(actor).expect('unregistered actor');
-            let head = get_dep_component!(self, Recording).heads.read(game);
+            let head = get_dep_component!(self, Recording).data.heads.read(game);
             Admission {
                 rules: self.rules_identity(game_id),
                 execution_config: self.execution_config(),
-                nonce: self.nonces.read((game_id, actor)),
+                nonce: self.authentication_state.nonces.read((game_id, actor)),
                 order: head.order + 1,
                 timestamp: starknet::get_block_timestamp(),
             }
         }
         fn get_head(self: @ComponentState<TContractState>, game: felt252) -> ExecutionHead {
-            get_dep_component!(self, Recording).heads.read(game)
+            get_dep_component!(self, Recording).data.heads.read(game)
         }
     }
 
@@ -191,7 +191,7 @@ pub mod GamesEntry {
         fn write_authentication(ref self: ComponentState<TContractState>, authentication: Authentication) {
             assert!(authentication.submitter.is_non_zero(), "zero authentication");
             assert!(authentication.account_class.is_non_zero(), "zero account class");
-            self.authentication.write(authentication);
+            self.authentication_state.authentication.write(authentication);
             let mut values = array![];
             authentication.serialize(ref values);
             self
@@ -218,7 +218,7 @@ pub mod GamesEntry {
 
         fn approved_account(self: @ComponentState<TContractState>, actor: ContractAddress) -> Result<(), felt252> {
             let class = starknet::syscalls::get_class_hash_at_syscall(actor).map_err(|_error| 'INVALID_ACTOR')?;
-            if class != self.authentication.read().account_class {
+            if class != self.authentication_state.authentication.read().account_class {
                 return Err('INVALID_ACTOR');
             }
             Ok(())
@@ -241,13 +241,13 @@ pub mod GamesEntry {
             Ok(())
         }
         fn randomness_epoch(self: @ComponentState<TContractState>) -> u64 {
-            IRandomnessEpochsDispatcher { contract_address: self.authentication.read().submitter }
+            IRandomnessEpochsDispatcher { contract_address: self.authentication_state.authentication.read().submitter }
                 .current_randomness_epoch()
         }
         fn authenticate_ticket(
             self: @ComponentState<TContractState>, intent: @Intent, envelope: @Envelope, epoch: u64,
         ) {
-            authenticate_submission(self.authentication.read().submitter);
+            authenticate_submission(self.authentication_state.authentication.read().submitter);
             assert!(*envelope.action == action_identity(intent), "altered action");
             assert!(*envelope.execution_config == self.execution_config(), "execution config mismatch");
             get_dep_component!(self, Recording).require_next(intent, envelope, epoch);
@@ -292,7 +292,7 @@ pub mod GamesEntry {
             if actor.is_zero() {
                 return Err('INVALID_ACTOR');
             }
-            if *intent.nonce != self.nonces.read((game_id, actor)) {
+            if *intent.nonce != self.authentication_state.nonces.read((game_id, actor)) {
                 return Err('STALE_NONCE');
             }
             // The last u64 value cannot represent a successor and is never admitted.
@@ -335,7 +335,7 @@ pub mod GamesEntry {
         #[inline(never)]
         fn consume_nonce(ref self: ComponentState<TContractState>, game_id: u32, actor: ContractAddress, nonce: u64) {
             let next_nonce = nonce + 1;
-            self.nonces.write((game_id, actor), next_nonce);
+            self.authentication_state.nonces.write((game_id, actor), next_nonce);
         }
         fn assert_authority(self: @ComponentState<TContractState>) {
             assert!(starknet::get_caller_address() == self.data.authority.read(), "only domain authority");

@@ -1,4 +1,5 @@
 pub mod arrivals;
+pub mod authentication;
 pub mod bitcoin;
 pub mod blitz_results;
 pub mod bridge;

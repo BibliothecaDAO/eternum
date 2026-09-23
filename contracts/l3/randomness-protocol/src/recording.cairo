@@ -49,10 +49,16 @@ pub fn following_state(previous_state: felt252, envelope: @Envelope, event: Exec
     )
 }
 
+// Shared by hosts of the protocol; the protocol owns its recording layout.
+#[starknet::storage_node]
+pub struct RecordingStorage {
+    pub heads: starknet::storage::Map<felt252, ExecutionHead>,
+}
+
 #[starknet::component]
 pub mod RecordedState {
     use starknet::get_block_timestamp;
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::entrypoint::timestamp_in_bounds;
     use crate::{Envelope, Intent};
     use super::{ExecutionHead, ExecutionRecorded, HeadPacking, following_state};
@@ -60,7 +66,8 @@ pub mod RecordedState {
     /// Each game keeps its own recorded chain, so one game's actions replay and verify alone.
     #[storage]
     pub struct Storage {
-        pub heads: Map<felt252, ExecutionHead>,
+        #[flat]
+        pub data: super::RecordingStorage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -71,7 +78,7 @@ pub mod RecordedState {
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         /// The action is its own game's next, no earlier than that game's head, drawn from the open epoch.
         fn require_next(self: @ComponentState<TContractState>, intent: @Intent, envelope: @Envelope, epoch: u64) {
-            let head = self.heads.read(*intent.game_id);
+            let head = self.data.heads.read(*intent.game_id);
             assert!(*envelope.order == head.order + 1, "out of order");
             assert!(timestamp_in_bounds(*envelope.timestamp, get_block_timestamp()), "future execution time");
             assert!(*envelope.timestamp >= head.timestamp, "backwards execution time");
@@ -97,8 +104,9 @@ pub mod RecordedState {
                 status,
                 reason,
             };
-            let previous = self.heads.read(*intent.game_id);
+            let previous = self.data.heads.read(*intent.game_id);
             self
+                .data
                 .heads
                 .write(
                     *intent.game_id,

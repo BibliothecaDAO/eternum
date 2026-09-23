@@ -60,3 +60,92 @@ fn shared_storage_reads_the_same_game_tile_across_classes() {
     assert_eq!(fixture.read_with_class(map_class, key), Some(TileOpt { data: value }));
     assert_eq!(fixture.read_with_class(map_class, TileKey { game_id: 8, ..key }), None);
 }
+
+#[starknet::interface]
+trait IAuthenticationLayout<T> {
+    fn seed(
+        ref self: T,
+        game: u32,
+        actor: starknet::ContractAddress,
+        authentication: crate::games::Authentication,
+        nonce: u64,
+        head: crate::recording::ExecutionHead,
+    );
+    fn read_with_class(
+        self: @T, class_hash: ClassHash, game: u32, actor: starknet::ContractAddress,
+    ) -> (crate::games::Authentication, u64, crate::recording::ExecutionHead);
+}
+
+// The original component fields check that flattening shared nodes preserves their addresses and packing.
+#[starknet::contract]
+mod OriginalAuthenticationLayout {
+    use eternum_randomness_protocol::entrypoint::{
+        IRecordedExecutionViewsDispatcherTrait, IRecordedExecutionViewsLibraryDispatcher,
+    };
+    use starknet::storage::{Map, StorageMapWriteAccess, StoragePointerWriteAccess};
+    use starknet::{ClassHash, ContractAddress};
+    use crate::games::{Authentication, IGamesAuthenticationDispatcherTrait, IGamesAuthenticationLibraryDispatcher};
+    use crate::recording::{ExecutionHead, HeadPacking};
+
+    #[storage]
+    struct Storage {
+        authentication: Authentication,
+        nonces: Map<(u32, ContractAddress), u64>,
+        heads: Map<felt252, ExecutionHead>,
+    }
+
+    #[abi(embed_v0)]
+    impl Layout of super::IAuthenticationLayout<ContractState> {
+        fn seed(
+            ref self: ContractState,
+            game: u32,
+            actor: ContractAddress,
+            authentication: Authentication,
+            nonce: u64,
+            head: ExecutionHead,
+        ) {
+            self.authentication.write(authentication);
+            self.nonces.write((game, actor), nonce);
+            self.heads.write(game.into(), head);
+        }
+        fn read_with_class(
+            self: @ContractState, class_hash: ClassHash, game: u32, actor: ContractAddress,
+        ) -> (Authentication, u64, ExecutionHead) {
+            let authentication = IGamesAuthenticationLibraryDispatcher { class_hash };
+            (
+                authentication.authentication(),
+                authentication.next_nonce(game, actor),
+                IRecordedExecutionViewsLibraryDispatcher { class_hash }.get_head(game.into()),
+            )
+        }
+    }
+}
+
+#[test]
+fn shared_authentication_nonces_and_heads_keep_the_original_layout() {
+    let (contract_address, _) = declare("OriginalAuthenticationLayout")
+        .unwrap()
+        .contract_class()
+        .deploy(@array![])
+        .unwrap();
+    let original = IAuthenticationLayoutDispatcher { contract_address };
+    let games = *declare("Games").unwrap().contract_class().class_hash;
+    let actor = 9.try_into().unwrap();
+    let authentication = crate::games::Authentication {
+        submitter: 11.try_into().unwrap(), account_class: 13.try_into().unwrap(),
+    };
+    let head = crate::recording::ExecutionHead { order: 17, timestamp: 0x100000001, state: 19 };
+    original.seed(7, actor, authentication, 23, head);
+    let (actual, nonce, recorded) = original.read_with_class(games, 7, actor);
+    assert_eq!(actual.submitter, authentication.submitter);
+    assert_eq!(actual.account_class, authentication.account_class);
+    assert_eq!(nonce, 23);
+    assert_eq!(recorded.order, head.order);
+    assert_eq!(recorded.timestamp, head.timestamp);
+    assert_eq!(recorded.state, head.state);
+    let (_, other_nonce, other_head) = original.read_with_class(games, 8, actor);
+    assert_eq!(other_nonce, 0);
+    assert_eq!(other_head.order, 0);
+    assert_eq!(other_head.timestamp, 0);
+    assert_eq!(other_head.state, 0);
+}
