@@ -4,7 +4,7 @@ import { RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 
 import { divideByPrecision, formatTime } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useArrivalsByStructure } from "@bibliothecadao/react";
+import { useArrivalsByStructure } from "@/hooks/helpers/use-resource-arrivals";
 import { ResourcesIds, Structure } from "@bibliothecadao/types";
 import { Loader2, Clock3, Check } from "@/ui/design-system/atoms/game-icons";
 import { memo, useMemo } from "react";

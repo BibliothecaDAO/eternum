@@ -1,7 +1,8 @@
 import { completeNativeBatches } from "@bibliothecadao/provider";
 import { useState } from "react";
 import { configManager, ResourceManager } from "@bibliothecadao/eternum";
-import { useGame, useNativeRow, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import Button from "@/ui/design-system/atoms/button";

@@ -8,7 +8,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { ResultsPanel } from "@/ui/features/results";
 import { getPlayerInfo } from "@bibliothecadao/eternum";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { Shapes, Sparkles, Users } from "@/ui/design-system/atoms/game-icons";
 import { ReactNode, useCallback, useEffect, useMemo } from "react";

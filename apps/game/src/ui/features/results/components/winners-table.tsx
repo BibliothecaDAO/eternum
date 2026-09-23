@@ -1,5 +1,6 @@
 import { configManager, displayPlayerName, getAddressName } from "@bibliothecadao/eternum";
-import { useGame, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
 

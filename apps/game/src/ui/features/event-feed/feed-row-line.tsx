@@ -16,7 +16,8 @@ import {
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager, Position } from "@bibliothecadao/eternum";
-import { useGame, useNativeRow } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import type { CSSProperties, ReactNode } from "react";
 import type { HeadlineType } from "../news-headlines/headline-types";
 import {

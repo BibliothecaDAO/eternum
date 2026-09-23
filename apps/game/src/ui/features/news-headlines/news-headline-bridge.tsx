@@ -16,7 +16,9 @@ import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 // @ts-ignore
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 // @ts-ignore
-import { useGame, useQuery, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useQuery } from "@/hooks/helpers/use-query";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";

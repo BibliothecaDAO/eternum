@@ -1,7 +1,7 @@
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceManager } from "@bibliothecadao/eternum";
-import { useBuildings } from "@bibliothecadao/react";
+import { useBuildings } from "@/hooks/helpers/use-buildings";
 import { ResourcesIds, getProducedResource } from "@bibliothecadao/types";
 import { useMemo } from "react";
 

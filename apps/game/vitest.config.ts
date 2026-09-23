@@ -65,7 +65,6 @@ export default defineConfig({
         "../../packages/provider/src/classify-transaction-error.ts",
       ),
       "@bibliothecadao/provider": path.resolve(__dirname, "../../packages/provider/src/index.ts"),
-      "@bibliothecadao/react": path.resolve(__dirname, "../../packages/react/src/index.ts"),
       "@bibliothecadao/types/terrain": path.resolve(__dirname, "../../packages/types/src/terrain.ts"),
       "@bibliothecadao/types": path.resolve(__dirname, "../../packages/types/src/index.ts"),
       "@pm": path.resolve(__dirname, "./src/pm"),

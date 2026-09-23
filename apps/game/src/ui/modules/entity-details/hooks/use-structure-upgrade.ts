@@ -1,6 +1,8 @@
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { configManager, divideByPrecision, getBalance, getRealmInfo } from "@bibliothecadao/eternum";
-import { useArrivalsByStructure, useGame, useNativeRevision, useNativeRow } from "@bibliothecadao/react";
+import { useArrivalsByStructure } from "@/hooks/helpers/use-resource-arrivals";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, getLevelName } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
 

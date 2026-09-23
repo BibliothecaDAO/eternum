@@ -11,7 +11,7 @@ import {
   readExpeditionRules,
 } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { useEffect, useRef } from "react";
 
 /**

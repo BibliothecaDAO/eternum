@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import { divideByPrecision } from "@bibliothecadao/eternum";
-import { useResourceManager } from "@bibliothecadao/react";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import {
   findResourceById,
   getRelicInfo,

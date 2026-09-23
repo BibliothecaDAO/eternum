@@ -6,7 +6,8 @@ import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import Button from "@/ui/design-system/atoms/button";
 import { currencyFormat } from "@/ui/utils/utils";
-import { useGame, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, EntityType, ID, RelicRecipientType, Troops } from "@bibliothecadao/types";
 
 import { TroopChip } from "@/ui/features/military/components/troop-chip";

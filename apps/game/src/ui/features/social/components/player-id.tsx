@@ -16,7 +16,8 @@ import {
   LeaderboardManager,
   toHexString,
 } from "@bibliothecadao/eternum";
-import { useGame, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 

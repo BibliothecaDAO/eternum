@@ -19,7 +19,7 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useNativeRevision, useNativeRow } from "@bibliothecadao/react";
+import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import {
   ID,
   RelicEffectWithEndTick,

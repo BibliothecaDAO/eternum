@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { configManager, getHyperstructureTotalContributableAmounts, ResourceManager } from "@bibliothecadao/eternum";
-import { useGame, useNativeRevision, useNativeRow } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import Button from "@/ui/design-system/atoms/button";

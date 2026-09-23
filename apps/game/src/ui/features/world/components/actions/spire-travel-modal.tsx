@@ -3,7 +3,8 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import Button from "@/ui/design-system/atoms/button";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { getTileAt, configManager } from "@bibliothecadao/eternum";
-import { useGame, useNativeRow, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import type { ID } from "@bibliothecadao/types";
 import { resolveSpireCrossing } from "./spire-crossing";
 

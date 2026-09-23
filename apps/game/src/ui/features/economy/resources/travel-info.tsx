@@ -3,7 +3,7 @@ import { calculateArrivalTime, formatArrivalTime } from "@/ui/utils/utils";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 
 import { calculateDonkeysNeeded, divideByPrecision, getTotalResourceWeightKg } from "@bibliothecadao/eternum";
-import { useResourceManager } from "@bibliothecadao/react";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ResourcesIds, type ID, type Resource } from "@bibliothecadao/types";
 import { useEffect } from "react";
 

@@ -9,7 +9,8 @@ import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { Position, configManager } from "@bibliothecadao/eternum";
-import { useGame, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { formatFeedTime } from "./important-feed-rows";
 
 export function resolveStoryEventPosition(event: ProcessedStoryEvent, store: NativeFactStore): Position | null {

@@ -5,7 +5,7 @@ import {
   TransactionLifecycleMeta,
   TransactionType,
 } from "@bibliothecadao/provider";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import {
   addClientTransactionBreadcrumb,
   reportClientTransactionFailure,

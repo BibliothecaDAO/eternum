@@ -786,7 +786,7 @@ export class StructureManager {
     if (this.isDestroyed) return;
     const terrain = this.resolveTerrainSurface();
     for (const [entityId, bindings] of this.structureInstanceBindings) {
-      // Every page completion visits every bound structure: sample from the binding and touch RECS only on a change.
+      // Every page completion visits every bound structure: sample from the binding and read the store only on a change.
       const height = terrain.sampleSurface(bindings[0].worldX, bindings[0].worldZ).height;
       if (bindings.every((binding) => binding.terrainHeight === height)) continue;
       const structure = this.resolveStructureInfoByEntityId(entityId);
@@ -1103,7 +1103,6 @@ export class StructureManager {
     const defaultModelKey = typeof enumName === "string" ? enumName : String(input.structureType);
 
     return resolveStructureCosmetic({
-      attributes: [],
       owner: input.owner,
       structureType: input.structureType,
       stage: input.stage,
@@ -1211,19 +1210,6 @@ export class StructureManager {
 
   public getStructureManagerMetrics(): StructureManagerMetrics {
     return { ...this.metrics };
-  }
-
-  public refreshCosmeticsForOwner(owner: string | bigint): void {
-    const normalizedOwner = BigInt(owner);
-    const refreshEntityIds = this.worldSpatialProjection.getStructures(activeMapLayer()).flatMap((renderable) => {
-      if (renderable.reserved || !this.store) return [];
-      const matchesOwner =
-        this.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: renderable.entityId })
-          ?.owner === normalizedOwner;
-      return matchesOwner ? [renderable.entityId] : [];
-    });
-    refreshEntityIds.forEach((entityId) => this.invalidateStructureInfo(entityId));
-    this.requestVisibleStructuresRefreshForEntities(refreshEntityIds);
   }
 
   // Component rows change facts, not positions: only structures inside the window need a pass.

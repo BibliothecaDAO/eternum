@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useGame, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import {
   type BuildingTiles,
   boardBonusesFor,

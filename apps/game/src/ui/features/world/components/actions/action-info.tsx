@@ -11,7 +11,8 @@ import {
   getBalance,
   getBlockTimestamp,
 } from "@bibliothecadao/eternum";
-import { useGame, useNativeRow, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { memo, useCallback, useMemo } from "react";
 
 import { TooltipContent, type ActionFoodCosts } from "./tooltip-content";

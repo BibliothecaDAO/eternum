@@ -1,6 +1,6 @@
 import { toast } from "@/ui/features/event-feed/notify";
 import { configManager, WorldUpdateListener } from "@bibliothecadao/eternum";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { useEffect } from "react";
 
 const QUALITY = ["Common", "Uncommon", "Rare", "Epic"];

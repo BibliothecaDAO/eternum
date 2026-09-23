@@ -1055,7 +1055,7 @@ put deployment private keys in the browser environment.
 
 ## Read current facts
 
-`useGame` from `@bibliothecadao/react` exposes the active `setup.store` and account. `useNativeRevision` subscribes a
+`useGame` (`apps/game/src/hooks/context/game-context.tsx`) exposes the active `setup.store` and account. `useNativeRevision` subscribes a
 component to the models it renders. Read rows by their native keys; game-scoped keys begin with `game_id`.
 
 The generated `NativeFactStore` holds typed rows with bigints and enums. It provides maps per model, game and owner

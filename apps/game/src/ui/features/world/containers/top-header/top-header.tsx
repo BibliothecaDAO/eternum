@@ -14,7 +14,8 @@ import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameClock } from "./game-clock";
 import { AttentionPill } from "./attention-pill";
 import { IdentityChip } from "./identity-chip";
-import { useGame, useNativeRow } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 export const TopHeader = memo(() => {

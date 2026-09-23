@@ -5,7 +5,9 @@ import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-conf
 import { toast } from "@/ui/features/event-feed/notify";
 import { useCallback, useMemo, useState } from "react";
 import { configManager, getBuildingCount, getRealmInfo } from "@bibliothecadao/eternum";
-import { useBuildings, useGame, useNativeRow, useNativeRevision } from "@bibliothecadao/react";
+import { useBuildings } from "@/hooks/helpers/use-buildings";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { BuildingType, ContractAddress, StructureType } from "@bibliothecadao/types";
 import { resolveRealmBootstrapErrorMessage } from "./realm-bootstrap-error";
 

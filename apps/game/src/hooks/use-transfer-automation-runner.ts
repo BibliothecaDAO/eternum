@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import {
   configManager,

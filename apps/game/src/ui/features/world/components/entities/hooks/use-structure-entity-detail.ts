@@ -14,7 +14,9 @@ import {
   getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
-import { useGame, useNativeRow, useNativeRevision, useResourceManager } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ContractAddress, ID, BANDITS_NAME, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 

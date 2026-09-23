@@ -12,7 +12,8 @@ import {
   LeaderboardManager,
   toHexString,
 } from "@bibliothecadao/eternum";
-import { useGame, usePlayerWhitelist } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { usePlayerWhitelist } from "@/hooks/helpers/use-guilds";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { ChevronRight, Download } from "@/ui/design-system/atoms/game-icons";
 import { useMemo, useState } from "react";

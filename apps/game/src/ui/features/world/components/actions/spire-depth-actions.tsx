@@ -12,7 +12,8 @@ import {
   readExpeditionRules,
   StaminaManager,
 } from "@bibliothecadao/eternum";
-import { useGame, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { getNeighborHexes, type ID } from "@bibliothecadao/types";
 import { useState } from "react";
 import type { Account } from "starknet";

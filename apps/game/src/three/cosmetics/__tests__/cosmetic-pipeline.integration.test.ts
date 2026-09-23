@@ -35,85 +35,23 @@ vi.mock("../asset-cache", () => ({
 
 import { ModelType } from "../../types/army";
 import { StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
-import { playerCosmeticsStore } from "../player-cosmetics-store";
 import { clearRegistry, seedDefaultCosmetics } from "../registry";
 import { resolveArmyCosmetic, resolveStructureCosmetic } from "../resolver";
 
 describe("cosmetic pipeline integration", () => {
   beforeEach(() => {
-    playerCosmeticsStore.clear();
     clearRegistry();
     seedDefaultCosmetics({ force: true });
   });
 
-  it("applies the pending loadout to the army skin", () => {
-    playerCosmeticsStore.setPendingBlitzLoadout("blitz:mainnet:alpha", "0x123", {
-      tokenIds: ["0xabc"],
-      selectedBySlot: {
-        armor: {
-          tokenId: "0xabc",
-          cosmeticIds: ["army:Knight:T3:legacy"],
-        },
-      },
-    });
-
-    playerCosmeticsStore.markAppliedBlitzLoadout("blitz:mainnet:alpha", "0x123");
-
-    const result = resolveArmyCosmetic({
-      attributes: [0x107050201n, 0x4050301n],
-      owner: "0x123",
-      troopType: TroopType.Knight,
-      tier: TroopTier.T3,
-      defaultModelType: ModelType.Knight3,
-    });
-
-    expect(result.skin.cosmeticId).toBe("army:Knight:T3:legacy");
-    expect(result.skin.isFallback).toBe(false);
-  });
-
-  it("hydrates ownership-driven structure cosmetics and attachments", () => {
-    playerCosmeticsStore.setSnapshot({
-      owner: "0x999",
-      version: 1,
-      ownership: {
-        owner: "0x999",
-        version: 1,
-        ownedAttrs: ["0x3040101", "0x2040401"],
-        eligibleCosmeticIds: ["structure:realm:castle-s1-lvl2", "attachment:structure:aura-legacy"],
-      },
-      selection: {
-        structures: {
-          "structure:Realm:2": {
-            skin: "structure:realm:castle-s1-lvl2",
-          },
-        },
-        globalAttachments: ["attachment:structure:aura-legacy"],
-      },
-    });
-
-    const result = resolveStructureCosmetic({
-      attributes: [0x3040101n, 0x2040401n],
-      owner: "0x999",
-      structureType: StructureType.Realm,
-      stage: 2,
-      defaultModelKey: "Realm",
-    });
-
-    expect(result.skin.cosmeticId).toBe("structure:realm:castle-s1-lvl2");
-    expect(result.skin.isFallback).toBe(false);
-    expect(result.attachments).toEqual([expect.objectContaining({ id: "legacy-realm-aura" })]);
-  });
-
-  it("keeps fallback semantics for owners without a custom loadout", () => {
+  it("resolves every army and structure to its default skin", () => {
     const army = resolveArmyCosmetic({
-      attributes: [0x107050201n, 0x4050301n],
       owner: "0x0",
       troopType: TroopType.Knight,
       tier: TroopTier.T1,
       defaultModelType: ModelType.Knight1,
     });
     const structure = resolveStructureCosmetic({
-      attributes: [0x3040101n, 0x2040401n],
       owner: "0x0",
       structureType: StructureType.Realm,
       defaultModelKey: "Realm",

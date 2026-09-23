@@ -1,6 +1,6 @@
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { ActionPath, configManager } from "@bibliothecadao/eternum";
-import { useStaminaManager } from "@bibliothecadao/react";
+import { useStaminaManager } from "@/hooks/helpers/use-stamina";
 import { ID } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { memo, useMemo } from "react";

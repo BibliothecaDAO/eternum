@@ -9,7 +9,9 @@ import {
   getArmyRelicEffects,
   getGuildFromPlayerAddress,
 } from "@bibliothecadao/eternum";
-import { useGame, useNativeRow, useResourceManager, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ContractAddress, ID } from "@bibliothecadao/types";
 import { buildProjectedStaminaDisplayModel } from "@/lib/army-stamina/presentation";
 import type { ArmyStaminaPresentation } from "@/lib/army-stamina/types";

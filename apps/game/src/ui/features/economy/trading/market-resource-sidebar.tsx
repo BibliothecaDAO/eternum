@@ -3,7 +3,8 @@ import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { resolveBestPrices } from "./best-prices";
 import { MarketResourceRow } from "./market-resource-row";
 import { MarketManager } from "@bibliothecadao/eternum";
-import { useGame, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { findResourceById, ID, MarketInterface, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 

@@ -13,7 +13,9 @@ import {
   getTroopResourceId,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
-import { useGame, useNativeRow, useResourceManager, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import {
   ActorType,
   DISPLAYED_SLOT_NUMBER_MAP,

@@ -28,7 +28,7 @@ import {
 } from "./store/use-automation-store";
 import { calculatePresetAllocations, getAutomationOverallocation } from "@bibliothecadao/eternum/automation";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { getAutomationProjectionTick, getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";

@@ -5,7 +5,8 @@ import { getActiveGameStore } from "@/sync/active-game-client";
 import { readPlayerProfile, readPlayers } from "@/sync/fact-views";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { useGame, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import type { ContractAddress, Player } from "@bibliothecadao/types";
 import { useMemo, useSyncExternalStore } from "react";
 

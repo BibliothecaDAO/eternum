@@ -5,7 +5,7 @@ import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { SelectResource } from "@/ui/design-system/molecules/select-resource";
 import { TradeHistoryEvent, TradeHistoryRowHeader, type TradeEvent } from "./trade-history-event";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { memo, useEffect, useMemo, useState } from "react";
 

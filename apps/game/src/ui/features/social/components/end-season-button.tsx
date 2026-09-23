@@ -10,7 +10,8 @@ import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
-import { useGame, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
 

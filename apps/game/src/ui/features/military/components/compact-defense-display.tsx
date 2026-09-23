@@ -16,7 +16,7 @@ import {
   getGuardsByStructure,
   getTroopResourceId,
 } from "@bibliothecadao/eternum";
-import { useNativeRow } from "@bibliothecadao/react";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import {
   DISPLAYED_SLOT_NUMBER_MAP,
   GUARD_SLOT_NAMES,

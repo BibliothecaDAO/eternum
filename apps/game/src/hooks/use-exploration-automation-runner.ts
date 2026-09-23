@@ -8,7 +8,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "@/ui/features/event-feed/notify";

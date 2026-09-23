@@ -5,7 +5,9 @@ import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp
 import { ResourceChip } from "@/ui/features/economy/resources";
 
 import { configManager, getRealmInfo, getStructureRelicEffects } from "@bibliothecadao/eternum";
-import { useGame, useNativeRow, useResourceManager } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { Building, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
 

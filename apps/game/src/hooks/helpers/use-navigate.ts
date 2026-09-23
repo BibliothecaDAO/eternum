@@ -4,7 +4,7 @@ import { Position } from "@bibliothecadao/eternum";
 
 import { buildPlayHref, parsePlayRoute, type PlayScene } from "@/play/navigation/play-route";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
-import { useQuery } from "@bibliothecadao/react";
+import { useQuery } from "@/hooks/helpers/use-query";
 import { ID } from "@bibliothecadao/types";
 import { useUIStore } from "../store/use-ui-store";
 

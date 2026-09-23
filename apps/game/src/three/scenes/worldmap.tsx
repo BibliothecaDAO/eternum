@@ -146,7 +146,6 @@ import type { TerrainRoadAnchor, TerrainSettlementAnchor } from "@/three/terrain
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
 import { env } from "../../../env";
-import { playerCosmeticsStore } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager, type HoverLabelReconcileResult } from "../managers/hover-label-manager";
 import { resolveWorldmapHoverLabelEntity } from "./worldmap-hover-label-entities";
@@ -978,7 +977,6 @@ export default class WorldmapScene extends WarpTravel {
 
   private worldUpdateUnsubscribes: Array<() => void> = [];
   private visibilityChangeHandler?: () => void;
-  private cosmeticsSubscriptionCleanup?: () => void;
   private unregisterWorldmapRecoveryHandle: (() => void) | null = null;
   private readonly hoverLabelRaycaster: Raycaster;
   private currentHoverLabelHex: HexPosition | null = null;
@@ -1235,15 +1233,6 @@ export default class WorldmapScene extends WarpTravel {
       this.requestChunkRefresh(true, "visibility_recovery");
     };
     document.addEventListener("visibilitychange", this.visibilityChangeHandler);
-
-    this.cosmeticsSubscriptionCleanup = playerCosmeticsStore.subscribe((owner) => {
-      if (!owner) {
-        return;
-      }
-
-      this.armyManager.refreshCosmeticsForOwner(owner);
-      this.structureManager.refreshCosmeticsForOwner(owner);
-    });
   }
 
   private initializeWorldmapSupportManagers(): void {
@@ -7929,8 +7918,6 @@ export default class WorldmapScene extends WarpTravel {
       document.removeEventListener("visibilitychange", this.visibilityChangeHandler);
       this.visibilityChangeHandler = undefined;
     }
-    this.cosmeticsSubscriptionCleanup?.();
-    this.cosmeticsSubscriptionCleanup = undefined;
     this.chunkWorkQueue.dispose();
     this.proceduralTerrain.dispose();
     this.strategicMarkers.dispose();

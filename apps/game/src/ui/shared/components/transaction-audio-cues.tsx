@@ -1,5 +1,5 @@
 import { classifyTransactionError } from "@bibliothecadao/provider";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { useEffect } from "react";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { formatReadableErrorForConsole } from "@/utils/error-message";

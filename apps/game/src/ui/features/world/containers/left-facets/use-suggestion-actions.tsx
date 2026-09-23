@@ -10,7 +10,8 @@ import { buildRealmBuilding } from "@/ui/features/settlement/construction/realm-
 import { ProductionModal } from "@/ui/features/settlement";
 import { useRealmActions } from "@/ui/modules/entity-details/hooks/use-realm-actions";
 import { getRealmInfo, Position } from "@bibliothecadao/eternum";
-import { useGame, useQuery } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useQuery } from "@/hooks/helpers/use-query";
 import { type BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useRef, useState } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";

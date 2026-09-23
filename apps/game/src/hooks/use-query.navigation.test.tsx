@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it } from "vitest";
-import { useQuery } from "../../../../packages/react/src/hooks/helpers/use-query";
+import { useQuery } from "@/hooks/helpers/use-query";
 
 function navigate(path: string) {
   window.history.pushState({}, "", path);

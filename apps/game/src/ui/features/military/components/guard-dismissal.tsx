@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { configManager } from "@bibliothecadao/eternum";
-import { useGame, useNativeRow } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { DISPLAYED_SLOT_NUMBER_MAP, type GuardSlot } from "@bibliothecadao/types";
 import Button from "@/ui/design-system/atoms/button";
 import { toast } from "@/ui/features/event-feed/notify";

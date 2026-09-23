@@ -13,7 +13,8 @@ import {
   getClosestBank,
   isMilitaryResource,
 } from "@bibliothecadao/eternum";
-import { useGame, useNativeRevision, useNativeRow } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, ID, ResourcesIds, StructureType, resources } from "@bibliothecadao/types";
 import React, { useCallback, useMemo, useState } from "react";
 

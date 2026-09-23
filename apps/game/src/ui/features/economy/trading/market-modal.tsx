@@ -16,7 +16,8 @@ import { REQUIREMENT_CHIP } from "@/ui/design-system/molecules/requirement-chips
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
-import { useMarket, useResourceManager } from "@bibliothecadao/react";
+import { useMarket } from "@/hooks/helpers/use-trade";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { findResourceById, ID, MarketInterface, ResourcesIds } from "@bibliothecadao/types";
 import { Store } from "@/ui/design-system/atoms/game-icons";
 import { lazy, Suspense, useMemo, useState } from "react";

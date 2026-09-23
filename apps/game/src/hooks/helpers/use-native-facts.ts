@@ -1,6 +1,6 @@
 import type { NativeKeys, NativeModelName, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useCallback, useSyncExternalStore } from "react";
-import { useGame } from "../context";
+import { useGame } from "@/hooks/context/game-context";
 
 export const useNativeRevision = (models: readonly NativeModelName[]): number => {
   const {

@@ -1,5 +1,7 @@
 import { getRealmInfo } from "@bibliothecadao/eternum";
-import { useGame, useNativeRevision, usePlayerStructures } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { usePlayerStructures } from "@/hooks/helpers/use-structures";
 import { RealmInfo } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";

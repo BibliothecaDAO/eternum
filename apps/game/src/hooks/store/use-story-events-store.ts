@@ -10,7 +10,7 @@ import {
   type GameSyncEventConfirmation,
   type StoryEventScope,
 } from "@bibliothecadao/eternum/game-sync";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { create } from "zustand";

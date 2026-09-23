@@ -3,7 +3,8 @@ import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-conf
 import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
-import { useGame, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { buildFinalizedBlitzStandingLookup, normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";

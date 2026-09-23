@@ -22,7 +22,10 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useGame, useNativeRevision, useQuery, useResourceManager } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useQuery } from "@/hooks/helpers/use-query";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import {
   CapacityConfig,
   findResourceById,

@@ -8,7 +8,7 @@ import { getTierStyle } from "@/ui/utils/tier-styles";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
-import { useExplorersByStructure } from "@bibliothecadao/react";
+import { useExplorersByStructure } from "@/hooks/helpers/use-armies";
 import { type ArmyInfo, type ID, resources, type TroopTier, type TroopType } from "@bibliothecadao/types";
 import { Check, Compass, Crosshair, Loader2, Trash2, X } from "@/ui/design-system/atoms/game-icons";
 import { memo, useMemo, useState } from "react";

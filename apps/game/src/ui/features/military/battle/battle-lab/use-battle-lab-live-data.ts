@@ -1,6 +1,7 @@
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { Biome, configManager, divideByPrecision, getGuardsByStructure, StaminaManager } from "@bibliothecadao/eternum";
-import { useGame, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import {
   BiomeType,
   DISPLAYED_SLOT_NUMBER_MAP,

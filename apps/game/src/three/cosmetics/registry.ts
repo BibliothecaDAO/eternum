@@ -36,7 +36,7 @@ export function formatArmyCosmeticTarget(troopType: TroopType, tier: TroopTier):
   return `army:${troopType}:${tier}`;
 }
 
-export function formatArmyCosmeticFamily(troopType: TroopType): string {
+function formatArmyCosmeticFamily(troopType: TroopType): string {
   return `army:${troopType}`;
 }
 

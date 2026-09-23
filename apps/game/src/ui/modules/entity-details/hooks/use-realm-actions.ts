@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { type ID } from "@bibliothecadao/types";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 

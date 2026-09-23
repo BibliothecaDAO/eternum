@@ -20,7 +20,7 @@ import {
 import { useMemo } from "react";
 import type { StructureWithMetadata } from "./chip";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { useNativeRevision } from "@bibliothecadao/react";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 
 const readPackedCount = (value: bigint | number | string | undefined): bigint => {
   if (value === undefined || value === null) return 0n;

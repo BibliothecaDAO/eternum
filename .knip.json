@@ -87,20 +87,6 @@
         ]
       }
     },
-    "packages/react": {
-      "project": [
-        "src/**/*.{ts,tsx}"
-      ],
-      "includeEntryExports": true,
-      "paths": {
-        "@bibliothecadao/eternum": [
-          "../core/src/index.ts"
-        ],
-        "@bibliothecadao/types": [
-          "../types/src/index.ts"
-        ]
-      }
-    },
     "packages/types": {
       "project": [
         "src/**/*.ts"
@@ -126,9 +112,6 @@
         ],
         "@bibliothecadao/provider": [
           "../../packages/provider/src/index.ts"
-        ],
-        "@bibliothecadao/react": [
-          "../../packages/react/src/index.ts"
         ],
         "@bibliothecadao/types": [
           "../../packages/types/src/index.ts"
@@ -194,9 +177,6 @@
       "types"
     ],
     "packages/db/src/int8range.ts": [
-      "exports"
-    ],
-    "packages/react/src/hooks/helpers/use-realm.ts": [
       "exports"
     ],
     "apps/web/src/gql/snapshot/graphql.ts": [

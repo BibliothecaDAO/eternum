@@ -11,7 +11,9 @@ import {
   StaminaManager,
   tileOptToTile,
 } from "@bibliothecadao/eternum";
-import { useGame, useNativeRow, useNativeRevision, useResourceManager } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { STEALABLE_RESOURCES, type ID, type RelicEffectWithEndTick, type StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 

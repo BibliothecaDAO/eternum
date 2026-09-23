@@ -1,7 +1,7 @@
 import { readResourceManager } from "@bibliothecadao/eternum";
 import type { ID } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import { useGame } from "../context";
+import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "./use-native-facts";
 
 export const useResourceManager = (entityId: ID) => {

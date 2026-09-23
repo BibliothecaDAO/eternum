@@ -1,5 +1,5 @@
 import { configManager, Position, tileOptToTile } from "@bibliothecadao/eternum";
-import { useNativeRow } from "@bibliothecadao/react";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import type { Tile } from "@bibliothecadao/types";
 import { useMemo } from "react";
 

@@ -15,7 +15,8 @@ import {
 } from "@/ui/features/world/containers/left-facets/structure-category-filter";
 import { filterStructures, sortStructures } from "@/ui/features/world/containers/structure-list-utils";
 import { Position } from "@bibliothecadao/eternum";
-import { useGame, useQuery } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useQuery } from "@/hooks/helpers/use-query";
 import { type ID } from "@bibliothecadao/types";
 import { memo, useCallback, useMemo } from "react";
 

@@ -1,5 +1,5 @@
 import { configManager } from "@bibliothecadao/eternum";
-import { useNativeRow } from "@bibliothecadao/react";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 
 export function useProductionBonuses(entityId: number) {

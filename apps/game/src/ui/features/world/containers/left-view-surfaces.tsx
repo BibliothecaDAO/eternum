@@ -11,7 +11,7 @@ import { MilitaryModal } from "@/ui/features/world/containers/military-modal";
 import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
 import { useStructureGroups } from "@/ui/features/world/containers/top-header/structure-groups";
 import { setEntityNameLocalStorage, configManager } from "@bibliothecadao/eternum";
-import { useNativeRow } from "@bibliothecadao/react";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { type ID } from "@bibliothecadao/types";
 import { memo, useCallback } from "react";
 

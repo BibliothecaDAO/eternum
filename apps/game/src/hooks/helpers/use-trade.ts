@@ -1,6 +1,6 @@
 import { readMarket, readOpenTrades } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
-import { useGame } from "../context";
+import { useGame } from "@/hooks/context/game-context";
 import { usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "./use-realm";
 import { useNativeRevision } from "./use-native-facts";
 

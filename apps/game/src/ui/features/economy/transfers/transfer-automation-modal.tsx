@@ -3,7 +3,7 @@ import { useTransferAutomationStore, type TransferAutomationEntry } from "@/hook
 import Button from "@/ui/design-system/atoms/button";
 import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { ResourceManager, getTotalResourceWeightKg, calculateDonkeysNeeded } from "@bibliothecadao/eternum";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { toast } from "@/ui/features/event-feed/notify";
 const formatResourceSummary = (entry: TransferAutomationEntry): string => {
   if (Array.isArray(entry.resourceConfigs) && entry.resourceConfigs.length > 0) {

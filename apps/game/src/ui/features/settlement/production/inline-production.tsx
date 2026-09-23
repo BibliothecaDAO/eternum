@@ -1,4 +1,5 @@
-import { useGame, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { configManager, getRealmInfo } from "@bibliothecadao/eternum";
 import { ResourcesIds, ContractAddress } from "@bibliothecadao/types";
 import { useUIStore } from "@/hooks/store/use-ui-store";

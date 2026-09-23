@@ -18,7 +18,8 @@ import {
   getTroopName,
   getTroopResourceId,
 } from "@bibliothecadao/eternum";
-import { useGame, useNativeRow, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import {
   ArmyInfo,
   Direction,

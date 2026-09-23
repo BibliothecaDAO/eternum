@@ -94,7 +94,6 @@ import type { HoverLabelShowResult } from "./hover-label-show-result";
 import { removeArmyAttachmentsIfTracked, syncArmyAttachmentState } from "./army-attachment-state";
 import { syncArmyAttachmentTransformState } from "./army-attachment-transforms";
 import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifecycle";
-import { refreshVisibleArmyCosmeticsByOwner } from "./army-cosmetics-refresh";
 import { FXManager } from "./fx-manager";
 import {
   buildArmyLabelLayoutDataKey,
@@ -1239,7 +1238,6 @@ export class ArmyManager {
     this.armyModel.assignModelToEntity(numericId, modelType);
 
     const cosmeticPresentation = resolveArmyCosmeticPresentation({
-      attributes: [],
       army,
       modelType,
       reResolveCosmetics,
@@ -1849,7 +1847,6 @@ export class ArmyManager {
     const baseModelType = this.armyModel.getModelTypeForEntity(numericEntityId, params.category, params.tier, biome);
 
     const cosmetic = resolveArmyCosmetic({
-      attributes: [],
       owner: ownerAddress,
       troopType: params.category,
       tier: params.tier,
@@ -2103,18 +2100,6 @@ export class ArmyManager {
       interactionCount += 1;
     }
     target.length = interactionCount;
-  }
-
-  public refreshCosmeticsForOwner(owner: string | bigint): void {
-    refreshVisibleArmyCosmeticsByOwner({
-      owner,
-      armies: this.armyPresentations,
-      visibleArmyIndices: this.visibleArmyIndices,
-      getAssignedModelType: (entityId) => this.armyModel.getAssignedModelType(entityId),
-      toNumericId: (entityId) => this.toNumericId(entityId),
-      refreshArmyInstance: (army, slot, assignedModelType, reResolveCosmetics) =>
-        this.refreshArmyInstance(army, slot, assignedModelType, reResolveCosmetics),
-    });
   }
 
   public getActivePathCount(): number {

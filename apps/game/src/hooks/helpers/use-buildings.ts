@@ -1,7 +1,7 @@
 import { readBuildings } from "@bibliothecadao/eternum";
 
 import { useMemo } from "react";
-import { useGame } from "../context";
+import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "./use-native-facts";
 
 export const useBuildings = (col: number, row: number, alt = false) => {

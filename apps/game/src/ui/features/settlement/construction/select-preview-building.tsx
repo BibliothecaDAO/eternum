@@ -44,7 +44,10 @@ import {
   ResourceIdToMiningType,
 } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
-import { useGame, useQuery, useNativeRow, useResourceManager, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useQuery } from "@/hooks/helpers/use-query";
+import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import {
   BiomeType,
   BuildingType,

@@ -31,7 +31,9 @@ import {
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
-import { useGame, useQuery, useNativeRevision, useNativeRow } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useQuery } from "@/hooks/helpers/use-query";
+import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import {
   BUILDINGS_CENTER,
   BuildingType,

@@ -4,7 +4,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getRelativeTimeString } from "@/ui/utils/time-utils";
 import { currencyIntlFormat, formatNumber } from "@/ui/utils/utils";
 import { divideByPrecision, getAddressName } from "@bibliothecadao/eternum";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress, Resource, ResourcesIds } from "@bibliothecadao/types";
 
 export interface TradeEvent {

@@ -1,5 +1,5 @@
 import { configManager } from "@bibliothecadao/eternum";
-import { useNativeRow } from "@bibliothecadao/react";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { useMemo } from "react";
 import { getGameModeConfig } from "./index";
 import { type ResolvedGameMode } from "./resolved-mode";

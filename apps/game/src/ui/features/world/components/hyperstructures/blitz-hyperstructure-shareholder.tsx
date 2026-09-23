@@ -2,7 +2,8 @@ import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
-import { useGame, useOwnedHyperstructuresEntityIds } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useOwnedHyperstructuresEntityIds } from "@/hooks/helpers/use-hyperstructures";
 import { ContractAddress, type ID } from "@bibliothecadao/types";
 import React, { useEffect, useRef } from "react";
 

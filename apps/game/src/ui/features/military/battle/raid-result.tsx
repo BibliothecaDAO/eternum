@@ -4,7 +4,7 @@ import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-butto
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getAddressName, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress, ID, RESOURCE_PRECISION, resources } from "@bibliothecadao/types";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";

@@ -13,7 +13,8 @@ import { normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "./use-in-game-leaderboard";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import { configManager, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
-import { useGame, useNativeRevision } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, BANDITS_NAME, PlayerInfo } from "@bibliothecadao/types";
 import { KeyboardEvent, useEffect, useMemo, useState } from "react";
 

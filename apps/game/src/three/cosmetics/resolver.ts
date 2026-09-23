@@ -1,8 +1,6 @@
-import { buildSelectionFromCosmeticIds, resolveEligibleCosmeticIds } from "./ownership";
 import type { ModelType } from "../types/army";
 import { cosmeticDebugController, type DebugOverrideParams } from "./debug-controller";
 import { ensureCosmeticAsset } from "./asset-cache";
-import { playerCosmeticsStore } from "./player-cosmetics-store";
 import {
   ArmyCosmeticParams,
   CosmeticAttachmentTemplate,
@@ -11,13 +9,7 @@ import {
   ResolvedCosmeticSkin,
   StructureCosmeticParams,
 } from "./types";
-import {
-  findCosmeticById,
-  formatArmyCosmeticFamily,
-  formatArmyCosmeticTarget,
-  formatStructureCosmeticTarget,
-  getCosmeticRegistry,
-} from "./registry";
+import { formatArmyCosmeticTarget, formatStructureCosmeticTarget, getCosmeticRegistry } from "./registry";
 
 const OWNER_ZERO = "0x0";
 
@@ -49,15 +41,6 @@ const findFallbackEntry = (
 
     return entry.appliesTo.some((target) => targets.includes(target)) && (entry.ownershipKeys?.length ?? 0) === 0;
   });
-};
-
-const isCompatibleSkinEntry = (
-  entry: CosmeticRegistryEntry | undefined,
-  category: "army-skin" | "structure-skin",
-  target: string,
-): entry is CosmeticRegistryEntry => {
-  if (!entry) return false;
-  return entry.category === category && entry.appliesTo.includes(target);
 };
 
 const cloneTemplate = (template: CosmeticAttachmentTemplate, fallbackSlot?: string): CosmeticAttachmentTemplate => {
@@ -108,156 +91,52 @@ const buildSkin = (
   };
 };
 
-const collectAttachmentEntries = (
-  ids: readonly string[] | undefined,
-  allowedTargets: readonly string[],
-  eligibleCosmeticIds: readonly string[] | undefined,
-): CosmeticRegistryEntry[] => {
-  if (!ids || ids.length === 0) return [];
-  const uniques = new Set<string>();
-
-  return ids
-    .map((id) => {
-      if (uniques.has(id)) return undefined;
-      const entry = findCosmeticById(id);
-      if (!entry || entry.category !== "attachment") {
-        return undefined;
-      }
-      if (entry.ownershipKeys?.length && !eligibleCosmeticIds?.includes(id)) {
-        return undefined;
-      }
-      if (!entry.appliesTo.some((value) => allowedTargets.includes(value))) {
-        return undefined;
-      }
-
-      uniques.add(id);
-      ensureCosmeticAsset(entry);
-      return entry;
-    })
-    .filter((entry): entry is CosmeticRegistryEntry => Boolean(entry));
+/** A default skin with its own attachments; player cosmetics return with plan 08. */
+const defaultCosmetic = (
+  entry: CosmeticRegistryEntry | undefined,
+  fallbackId: string,
+  fallbackModelKey: string,
+  fallbackModelType: ModelType | undefined,
+): CosmeticResolutionResult => {
+  const attachments: CosmeticAttachmentTemplate[] = [];
+  upsertAttachments(attachments, entry?.attachments, entry?.attachmentSlot);
+  return {
+    skin: buildSkin(entry, fallbackId, fallbackModelKey, fallbackModelType, true),
+    attachments,
+    metadata: entry?.metadata,
+  };
 };
 
+/** An army wears its default skin unless the debug controller overrides it. */
 export function resolveArmyCosmetic(params: ArmyCosmeticParams): CosmeticResolutionResult {
-  const owner = normalizeOwner(params.owner);
   const target = formatArmyCosmeticTarget(params.troopType, params.tier);
-  const fallbackEntry = findFallbackEntry("army-skin", [target]);
-
-  const snapshot = playerCosmeticsStore.getSnapshot(owner);
-  const eligibleCosmeticIds = resolveEligibleCosmeticIds(params.attributes.map((value) => `0x${value.toString(16)}`));
-  const selection = snapshot?.selection ?? buildSelectionFromCosmeticIds(eligibleCosmeticIds);
-  const armySelection = selection.armies?.[target];
-  const selectionSkinId = typeof armySelection === "string" ? armySelection : armySelection?.skin;
-  const selectionAttachments =
-    typeof armySelection === "object" && armySelection ? (armySelection.attachments ?? []) : [];
-
   const debugOverride = cosmeticDebugController.resolveOverride({
-    owner,
+    owner: normalizeOwner(params.owner),
     kind: "army",
     baseType: params.troopType,
     variant: params.tier,
     target,
   } satisfies DebugOverrideParams);
-
-  if (debugOverride) {
-    return debugOverride;
-  }
-
-  const selectedEntry = selectionSkinId ? findCosmeticById(selectionSkinId) : undefined;
-  const resolvedEntry =
-    isCompatibleSkinEntry(selectedEntry, "army-skin", target) && eligibleCosmeticIds.includes(selectedEntry.id)
-      ? selectedEntry
-      : fallbackEntry;
-
-  const attachments: CosmeticAttachmentTemplate[] = [];
-
-  const allowedTargets = [target, formatArmyCosmeticFamily(params.troopType)];
-  upsertAttachments(attachments, resolvedEntry?.attachments, resolvedEntry?.attachmentSlot);
-
-  const globalAttachments = selection.globalAttachments ?? [];
-
-  const attachmentEntries = [
-    ...collectAttachmentEntries(globalAttachments, allowedTargets, eligibleCosmeticIds),
-    ...collectAttachmentEntries(selectionAttachments, allowedTargets, eligibleCosmeticIds),
-  ];
-
-  attachmentEntries.forEach((entry) => {
-    upsertAttachments(attachments, entry.attachments, entry.attachmentSlot);
-  });
-
-  const skin = buildSkin(
-    resolvedEntry,
+  if (debugOverride) return debugOverride;
+  return defaultCosmetic(
+    findFallbackEntry("army-skin", [target]),
     `${target}:default`,
     target,
     params.defaultModelType,
-    !resolvedEntry || resolvedEntry.id === fallbackEntry?.id,
   );
-  return {
-    skin,
-    attachments,
-    metadata: resolvedEntry?.metadata,
-  };
 }
 
+/** A structure wears its default skin unless the debug controller overrides it. */
 export function resolveStructureCosmetic(params: StructureCosmeticParams): CosmeticResolutionResult {
-  const owner = normalizeOwner(params.owner);
   const target = formatStructureCosmeticTarget(params.structureType, params.stage);
-  const fallbackEntry = findFallbackEntry("structure-skin", [
-    formatStructureCosmeticTarget(params.structureType),
-    target,
-  ]);
-
-  const snapshot = playerCosmeticsStore.getSnapshot(owner);
-  const eligibleCosmeticIds = resolveEligibleCosmeticIds(params.attributes.map((value) => `0x${value.toString(16)}`));
-  const selection = snapshot?.selection ?? buildSelectionFromCosmeticIds(eligibleCosmeticIds);
-  const structureSelection = selection.structures?.[target];
-  const selectionSkinId = typeof structureSelection === "string" ? structureSelection : structureSelection?.skin;
-  const selectionAttachments =
-    typeof structureSelection === "object" && structureSelection ? (structureSelection.attachments ?? []) : [];
-
   const debugOverride = cosmeticDebugController.resolveOverride({
-    owner,
+    owner: normalizeOwner(params.owner),
     kind: "structure",
     baseType: params.structureType,
     variant: params.stage ?? 0,
     target,
   } satisfies DebugOverrideParams);
-
-  if (debugOverride) {
-    return debugOverride;
-  }
-
-  const selectedEntry = selectionSkinId ? findCosmeticById(selectionSkinId) : undefined;
-  const resolvedEntry =
-    isCompatibleSkinEntry(selectedEntry, "structure-skin", target) && eligibleCosmeticIds.includes(selectedEntry.id)
-      ? selectedEntry
-      : fallbackEntry;
-
-  const attachments: CosmeticAttachmentTemplate[] = [];
-  const allowedTargets = [target, formatStructureCosmeticTarget(params.structureType)];
-
-  upsertAttachments(attachments, resolvedEntry?.attachments, resolvedEntry?.attachmentSlot);
-
-  const globalAttachments = selection.globalAttachments ?? [];
-
-  const attachmentEntries = [
-    ...collectAttachmentEntries(globalAttachments, allowedTargets, eligibleCosmeticIds),
-    ...collectAttachmentEntries(selectionAttachments, allowedTargets, eligibleCosmeticIds),
-  ];
-
-  attachmentEntries.forEach((entry) => {
-    upsertAttachments(attachments, entry.attachments, entry.attachmentSlot);
-  });
-
-  const skin = buildSkin(
-    resolvedEntry,
-    `${target}:default`,
-    params.defaultModelKey,
-    undefined,
-    !resolvedEntry || resolvedEntry.id === fallbackEntry?.id,
-  );
-  return {
-    skin,
-    attachments,
-    metadata: resolvedEntry?.metadata,
-  };
+  if (debugOverride) return debugOverride;
+  const entry = findFallbackEntry("structure-skin", [formatStructureCosmeticTarget(params.structureType), target]);
+  return defaultCosmetic(entry, `${target}:default`, params.defaultModelKey, undefined);
 }

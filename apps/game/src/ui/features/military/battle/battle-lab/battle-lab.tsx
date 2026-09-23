@@ -15,7 +15,7 @@ import {
   getAddressName,
   getGuildFromPlayerAddress,
 } from "@bibliothecadao/eternum";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { ActorType, BiomeType, ContractAddress, getLayeredAttackDistance, ID } from "@bibliothecadao/types";
 import { Swords } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useMemo, useState } from "react";

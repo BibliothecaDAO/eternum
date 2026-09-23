@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 
 import { useStructureUpgrade } from "./use-structure-upgrade";
 import { useBlitzRealmProvision } from "./use-blitz-realm-provision";

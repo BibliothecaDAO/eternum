@@ -16,7 +16,7 @@ import {
 } from "@/ui/features/settlement/construction/realm-build-actions";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import { divideByPrecision, getRealmInfo, ResourceManager } from "@bibliothecadao/eternum";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import {
   BuildingType,
   EntityType,

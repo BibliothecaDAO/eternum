@@ -24,7 +24,7 @@ import {
   getStructureName,
   ResourceArrivalManager,
 } from "@bibliothecadao/eternum";
-import { useGame } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { BuildingType, StructureType, type ResourceArrivalInfo } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
