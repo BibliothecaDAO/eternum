@@ -9,6 +9,9 @@ use serde_json::Value;
 use starknet_types_core::felt::Felt;
 use std::{collections::VecDeque, ops::Range, sync::Arc, time::Duration};
 
+/// How long one submission may stay unresolved before the run reconciles it.
+pub(crate) const SUBMISSION_TIMEOUT: Duration = Duration::from_secs(30);
+
 pub(crate) struct PendingTicket {
     pub record: RecordedTicket,
     pub permit: Permit,
@@ -72,6 +75,8 @@ fn authentication_revert(reason: &str) -> bool {
     .any(|message| reason.contains(message))
 }
 
+const ATTEMPTS: usize = 3;
+
 /// A failed batch is bisected in order. Only a single definitively failed ticket is
 /// rejected; successful siblings execute normally, retaining their original contexts.
 pub(crate) async fn execute(node: Arc<impl ExecutionNode>, tickets: Vec<PendingTicket>) -> anyhow::Result<()> {
@@ -102,7 +107,7 @@ async fn execute_range(node: &impl ExecutionNode, tickets: &[PendingTicket], rej
     // A transient retry resubmits the exact transaction. Only a proven failed
     // batch creates new transactions when bisected or terminally rejected.
     let (hash, transaction) = node.prepare(node.deployment(), entrypoint, payload).await?;
-    for attempt in 0..3 {
+    for attempt in 0..ATTEMPTS {
         for ticket in tickets {
             ticket.permit.resolve(ActionStatus::Submitted {
                 action: ticket.record.envelope.action,
@@ -110,7 +115,7 @@ async fn execute_range(node: &impl ExecutionNode, tickets: &[PendingTicket], rej
                 transaction_hash: hash,
             });
         }
-        let result = tokio::time::timeout(Duration::from_secs(30), node.execute(hash, transaction.clone())).await;
+        let result = tokio::time::timeout(SUBMISSION_TIMEOUT, node.execute(hash, transaction.clone())).await;
         let observed = match result {
             Ok(Ok(outcome)) => Some(outcome),
             Ok(Err(error)) => {
@@ -144,6 +149,12 @@ async fn execute_range(node: &impl ExecutionNode, tickets: &[PendingTicket], rej
                 failed(tickets, &reason);
                 return Ok(false);
             }
+            // The node no longer knows a refused transaction, so it can never land: after the last
+            // retry it counts as failed, and bisection isolates and rejects the ticket that caused it.
+            Some(Execution::Refused(reason)) if attempt == ATTEMPTS - 1 => {
+                failed(tickets, &reason);
+                return Ok(false);
+            }
             Some(Execution::Refused(reason)) => {
                 tracing::warn!(target: "gateway", %hash, attempt, reason, "transaction dropped; resubmitting");
             }
@@ -159,7 +170,7 @@ async fn execute_range(node: &impl ExecutionNode, tickets: &[PendingTicket], rej
         // Wait for node state to move after a transient refusal, not a receipt poll.
         node.wait_for_state_change().await;
     }
-    anyhow::bail!("game submission paused after three unresolved attempts; node state remains authoritative")
+    anyhow::bail!("game submission paused after {ATTEMPTS} unresolved attempts; node state remains authoritative")
 }
 
 /// Each ticket of a definitively failed transaction logs the failure's reason; the ticket that
