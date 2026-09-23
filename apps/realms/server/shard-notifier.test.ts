@@ -2,6 +2,7 @@ import { beforeAll, expect, it } from "vitest";
 
 import preset from "../../../contracts/l3/world-native/fixtures/preset-3.json";
 import explorerFixture from "../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+import recordedPages from "./fixtures/staging-story-pages.json";
 import { realmsIdOf } from "./realms-id";
 import {
   buildWorkerBundle,
@@ -55,20 +56,25 @@ beforeAll(() => {
 
 const armiesTick = () => Math.floor(Date.now() / 1000 / ARMIES_TICK_SECONDS);
 
-interface HistoryRow {
-  block_number: number;
-  transaction_index: number;
-  event_index: number;
-  model: string;
-  value: object;
-}
+/**
+ * Story history as staging's Herald served it: every row the fake Herald serves is a recorded row with only the game,
+ * players, entities and times changed, so the fake cannot serve a model or story Herald does not.
+ */
+type RecordedItem = (typeof recordedPages.pages)[number]["page"]["items"][number];
+const recordedItem = (model: string, story?: string): RecordedItem => {
+  const item = recordedPages.pages
+    .flatMap(({ page }) => page.items)
+    .find((row) => row.model === model && (!story || story in ((row.value as { story?: object }).story ?? {})));
+  if (!item) throw new Error(`No recorded ${model}${story ? ` ${story}` : ""} in the staging pages`);
+  return structuredClone(item);
+};
 
 /**
  * One shard's Herald: a history log that grows, the game's phase, and the player's army as its snapshot shows it now.
  * Like Herald, it no longer serves a settled game's armies.
  */
 const createHerald = () => {
-  const log: HistoryRow[] = [];
+  const log: RecordedItem[] = [];
   const state = {
     army: null as null | { amount: number; updatedTick: number; day: number },
     /** The neighbour's army, spent whenever the player acts, so it rests alongside the player's. */
@@ -103,35 +109,48 @@ const createHerald = () => {
       next_cursor: last
         ? { block: last.block_number, transaction: last.transaction_index, event: last.event_index }
         : { block, transaction, event },
-      items: items.map((row) => ({ ...row, game_id: String(GAME_ID), transaction_hash: `0x${row.block_number}` })),
+      items,
     };
   };
-  const append = (model: string, eventIndex: number, value: object) =>
-    log.push({ block_number: 11 + log.length, transaction_index: 0, event_index: eventIndex, model, value });
-  /** The player acts: a recorded execution on the next block, their army's stamina spent at this tick. */
+  const append = (recorded: RecordedItem, value: object) => {
+    const block = 11 + log.length;
+    log.push({
+      ...recorded,
+      block_number: block,
+      transaction_index: 0,
+      game_id: String(GAME_ID),
+      transaction_hash: `0x${block}`,
+      value,
+    } as RecordedItem);
+  };
+  /** The player acts: an explore story on the next block, their army's stamina spent at this tick. */
   const act = (stamina: number, day = TODAY) => {
     state.army = { amount: stamina, updatedTick: armiesTick(), day };
     state.neighbourArmy = { ...state.army };
-    append("ExecutionRecorded", 1, {
+    const explore = recordedItem("StoryEvent", "ExplorationReward");
+    const reward = (explore.value as { story: { ExplorationReward: object } }).story.ExplorationReward;
+    append(explore, {
+      ...explore.value,
       game_id: GAME_ID,
-      actor: PLAYER_ACCOUNT,
-      nonce: log.length,
-      nonce_consumed: true,
-      order: log.length,
-      status: 1,
-      reason: 0,
+      owner: PLAYER_ACCOUNT,
+      timestamp: Math.floor(Date.now() / 1000),
+      story: { ExplorationReward: { ...reward, explorer_id: ARMY, receiver: HOME } },
     });
   };
-  const battle = () =>
-    append("BattleEvent", 3, {
+  const battle = () => {
+    const recorded = recordedItem("BattleEvent");
+    const fight = recorded.value as { attacker: object; defender: object };
+    append(recorded, {
+      ...recorded.value,
       game_id: GAME_ID,
       attacker_id: ARMY,
       defender_id: 9,
       winner_id: ARMY,
-      attacker: { player: PLAYER_ACCOUNT },
-      defender: { player: "0x0" },
+      attacker: { ...fight.attacker, player: PLAYER_ACCOUNT },
+      defender: { ...fight.defender, player: "0x0" },
       timestamp: Math.floor(Date.now() / 1000),
     });
+  };
   return { answer, act, battle, state };
 };
 

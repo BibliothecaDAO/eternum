@@ -1,0 +1,243 @@
+{
+  "recordedFrom": "GET /history/story-events on staging shard A (https://staging-herald.realms.party), 2026-09-23: frontier-staging game 8 with the K4 gate accounts, and frontier-fixture game 1's first battle",
+  "pages": [
+    {
+      "url": "https://staging-herald.realms.party/history/story-events?limit=4&after=20042:2147483647:2147483647",
+      "page": {
+        "chain": "0x5245414c4d535f53544147494e475f415f3230323630393233",
+        "world_address": "0x34442f2946e6289b478fb0030cad949c1cc40dd74a8cecff21c3023f70262bb",
+        "complete_through_block": 20342,
+        "next_cursor": {
+          "block": 20088,
+          "transaction": 0,
+          "event": 11
+        },
+        "items": [
+          {
+            "block_number": 20043,
+            "transaction_index": 0,
+            "event_index": 11,
+            "game_id": "8",
+            "model": "StoryEvent",
+            "transaction_hash": "0x4a9cd10a7855c9f043b06fdb1d0a6f6521ab9945e3d2d573e4d7132a2a1b9ae",
+            "value": {
+              "id": "0x1f",
+              "owner": "0x9938c9e4f7816203bb6b26221b4fbcf1d02495502c5986818f434b2c8b586a",
+              "story": {
+                "ExplorationReward": {
+                  "coord": {
+                    "x": "0x449dc",
+                    "y": "0xb22",
+                    "alt": false
+                  },
+                  "amount": "0x1a8aedf400",
+                  "receiver": "0x11",
+                  "explorer_id": "0x19",
+                  "resource_type": "0x26"
+                }
+              },
+              "game_id": "0x8",
+              "tx_hash": "0x4a9cd10a7855c9f043b06fdb1d0a6f6521ab9945e3d2d573e4d7132a2a1b9ae",
+              "entity_id": "0x19",
+              "timestamp": "0x6ab44704",
+              "event_position": {
+                "event_index": 11,
+                "transaction_hash": "0x4a9cd10a7855c9f043b06fdb1d0a6f6521ab9945e3d2d573e4d7132a2a1b9ae"
+              }
+            }
+          },
+          {
+            "block_number": 20043,
+            "transaction_index": 1,
+            "event_index": 12,
+            "game_id": "8",
+            "model": "StoryEvent",
+            "transaction_hash": "0x7af1af37abe9c85d54db3bc5f0bf13235a1f747703f2ed5219150139b979fdf",
+            "value": {
+              "id": "0x22",
+              "owner": "0x54edaa736e44ee5d5101d6269a1c7aec6da91176ca239302b2b1876a4f3c6be",
+              "story": {
+                "ExplorationReward": {
+                  "coord": {
+                    "x": "0xb743c",
+                    "y": "0xb22",
+                    "alt": false
+                  },
+                  "amount": "0x19254d3800",
+                  "receiver": "0x15",
+                  "explorer_id": "0x1b",
+                  "resource_type": "0x1a"
+                }
+              },
+              "game_id": "0x8",
+              "tx_hash": "0x7af1af37abe9c85d54db3bc5f0bf13235a1f747703f2ed5219150139b979fdf",
+              "entity_id": "0x1b",
+              "timestamp": "0x6ab44704",
+              "event_position": {
+                "event_index": 12,
+                "transaction_hash": "0x7af1af37abe9c85d54db3bc5f0bf13235a1f747703f2ed5219150139b979fdf"
+              }
+            }
+          },
+          {
+            "block_number": 20048,
+            "transaction_index": 0,
+            "event_index": 21,
+            "game_id": "8",
+            "model": "StoryEvent",
+            "transaction_hash": "0x1ea23c0562d894dfbf3ea5808d623156bcd86fdff4e3313076c8ed7cc78ba6b",
+            "value": {
+              "id": "0x28",
+              "owner": "0x9938c9e4f7816203bb6b26221b4fbcf1d02495502c5986818f434b2c8b586a",
+              "story": {
+                "ExplorationReward": {
+                  "coord": {
+                    "x": "0x449dd",
+                    "y": "0xb22",
+                    "alt": false
+                  },
+                  "amount": "0x3a70c40e00",
+                  "receiver": "0x11",
+                  "explorer_id": "0x19",
+                  "resource_type": "0x26"
+                }
+              },
+              "game_id": "0x8",
+              "tx_hash": "0x1ea23c0562d894dfbf3ea5808d623156bcd86fdff4e3313076c8ed7cc78ba6b",
+              "entity_id": "0x19",
+              "timestamp": "0x6ab4470e",
+              "event_position": {
+                "event_index": 21,
+                "transaction_hash": "0x1ea23c0562d894dfbf3ea5808d623156bcd86fdff4e3313076c8ed7cc78ba6b"
+              }
+            }
+          },
+          {
+            "block_number": 20088,
+            "transaction_index": 0,
+            "event_index": 11,
+            "game_id": "8",
+            "model": "StoryEvent",
+            "transaction_hash": "0x7049fdb7c56a57b86e482a8d06c8b377696ab35136e6dcc6c9ec60581f05d4c",
+            "value": {
+              "id": "0x2b",
+              "owner": "0x54edaa736e44ee5d5101d6269a1c7aec6da91176ca239302b2b1876a4f3c6be",
+              "story": {
+                "ExplorationReward": {
+                  "coord": {
+                    "x": "0xb743d",
+                    "y": "0xb22",
+                    "alt": false
+                  },
+                  "amount": "0x3e660b7800",
+                  "receiver": "0x15",
+                  "explorer_id": "0x1b",
+                  "resource_type": "0x26"
+                }
+              },
+              "game_id": "0x8",
+              "tx_hash": "0x7049fdb7c56a57b86e482a8d06c8b377696ab35136e6dcc6c9ec60581f05d4c",
+              "entity_id": "0x1b",
+              "timestamp": "0x6ab4475e",
+              "event_position": {
+                "event_index": 11,
+                "transaction_hash": "0x7049fdb7c56a57b86e482a8d06c8b377696ab35136e6dcc6c9ec60581f05d4c"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "url": "https://staging-herald.realms.party/history/story-events?limit=2&after=2002:2147483647:2147483647",
+      "page": {
+        "chain": "0x5245414c4d535f53544147494e475f415f3230323630393233",
+        "world_address": "0x34442f2946e6289b478fb0030cad949c1cc40dd74a8cecff21c3023f70262bb",
+        "complete_through_block": 20342,
+        "next_cursor": {
+          "block": 2004,
+          "transaction": 0,
+          "event": 18
+        },
+        "items": [
+          {
+            "block_number": 2003,
+            "transaction_index": 2,
+            "event_index": 3,
+            "game_id": "1",
+            "model": "BattleEvent",
+            "transaction_hash": "0xafe0f3a58311c399a6b025e1d72a061062b468dc452049ea481c2c22cd6fcc",
+            "value": {
+              "coord": {
+                "x": "0xdb61",
+                "y": "0x1c2",
+                "alt": false
+              },
+              "game_id": "0x1",
+              "attacker": {
+                "roll": "0x0",
+                "tier": "T1",
+                "after": "0x719f111000",
+                "before": "0x12b6b92bc00",
+                "player": "0x61bcfa17802a5593f82f69564ab0ef721a600817c32591ee56e5d10f78188cb",
+                "category": "Knight"
+              },
+              "defender": {
+                "roll": "0x0",
+                "tier": "T1",
+                "after": "0xfa4afe3e00",
+                "before": "0x15d035cce00",
+                "player": "0x0",
+                "category": "Crossbowman"
+              },
+              "timestamp": "0x6ab3aa03",
+              "winner_id": "0x0",
+              "max_reward": [],
+              "attacker_id": "0x3f",
+              "defender_id": "0x86",
+              "attacker_owner": "0x5",
+              "defender_owner": "0x0",
+              "event_position": {
+                "event_index": 3,
+                "transaction_hash": "0xafe0f3a58311c399a6b025e1d72a061062b468dc452049ea481c2c22cd6fcc"
+              }
+            }
+          },
+          {
+            "block_number": 2004,
+            "transaction_index": 0,
+            "event_index": 18,
+            "game_id": "1",
+            "model": "StoryEvent",
+            "transaction_hash": "0xe3786da5eb3f071bb00cfc23b579ea50df652a7ae1b8c20dd077b2ad5c1bad",
+            "value": {
+              "id": "0xa5",
+              "owner": "0x61bcfa17802a5593f82f69564ab0ef721a600817c32591ee56e5d10f78188cb",
+              "story": {
+                "ExplorationReward": {
+                  "coord": {
+                    "x": "0xdb5e",
+                    "y": "0x1c3",
+                    "alt": false
+                  },
+                  "amount": "0x508f350400",
+                  "receiver": "0x5",
+                  "explorer_id": "0x53",
+                  "resource_type": "0x17"
+                }
+              },
+              "game_id": "0x1",
+              "tx_hash": "0xe3786da5eb3f071bb00cfc23b579ea50df652a7ae1b8c20dd077b2ad5c1bad",
+              "entity_id": "0x53",
+              "timestamp": "0x6ab3aa05",
+              "event_position": {
+                "event_index": 18,
+                "transaction_hash": "0xe3786da5eb3f071bb00cfc23b579ea50df652a7ae1b8c20dd077b2ad5c1bad"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -57,14 +57,26 @@ export const partitionByRunningGame = async <Entry extends { gameId: number }>(
   };
 };
 
-/** Every player who acted in this page, once per game: one recorded action or many cost one read. */
+/**
+ * Every player whose armies this page may have changed, once per game: one story or many cost one read. Herald's story
+ * history carries the chain's stories, not its execution records: a player's own actions arrive as stories they own
+ * (an explore as its reward, a march, a new army), and fights as battle or raid events naming their players.
+ */
 export const actorsWhoActed = (page: HeraldStoryHistoryPage): { gameId: number; actor: string }[] => {
   const acted = new Map<string, { gameId: number; actor: string }>();
-  for (const item of page.items) {
-    if (item.model !== "ExecutionRecorded") continue;
-    const actor = `0x${BigInt(item.value.actor as string).toString(16)}`;
-    const gameId = Number(item.value.game_id);
+  const add = (gameId: number, player: unknown) => {
+    if (typeof player !== "string" && typeof player !== "bigint" && typeof player !== "number") return;
+    if (BigInt(player) === 0n) return;
+    const actor = `0x${BigInt(player).toString(16)}`;
     acted.set(`${gameId}:${actor}`, { gameId, actor });
+  };
+  for (const { model, value } of page.items) {
+    const gameId = Number(value.game_id);
+    if (model === "StoryEvent") add(gameId, value.owner);
+    if (model === "BattleEvent")
+      for (const side of [value.attacker, value.defender])
+        add(gameId, (side as { player?: unknown } | undefined)?.player);
+    if (model === "RaidEvent") add(gameId, value.player);
   }
   return [...acted.values()];
 };
