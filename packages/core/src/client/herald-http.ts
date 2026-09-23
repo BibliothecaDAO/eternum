@@ -34,12 +34,16 @@ export const fetchHeraldGameDirectory = async (
   return fetchHeraldJson(url.toString(), `Herald directory for ${shard.url}`);
 };
 
-/** One game's current facts for these models; with an actor, only what that player's scope holds. */
+/**
+ * One game's current facts for these models; with an actor, only what that player's scope holds. With an owner, every
+ * model that carries an owner narrows to that account's rows and those of its structures, such as its armies.
+ */
 export const fetchHeraldGameSnapshot = async (
   shard: Pick<Shard, "url">,
   gameId: number,
   models: readonly string[],
   actor?: string,
+  owner?: string,
 ): Promise<HeraldGameSnapshot> => {
   if (!Number.isSafeInteger(gameId) || gameId <= 0) {
     throw new Error(`Herald snapshot requires a positive game id; received ${gameId}`);
@@ -49,6 +53,7 @@ export const fetchHeraldGameSnapshot = async (
   const url = new URL(buildHeraldUrl(shard, `/games/${gameId}/snapshot`));
   url.searchParams.set("models", [...new Set(models)].join(","));
   if (actor) url.searchParams.set("actor", actor);
+  if (owner) url.searchParams.set("owner", owner);
   return fetchHeraldJson(url.toString(), `Herald snapshot for ${shard.url} game ${gameId}`);
 };
 

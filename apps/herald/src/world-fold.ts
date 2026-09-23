@@ -382,6 +382,29 @@ export class WorldFold {
     );
   }
 
+  /**
+   * Narrows every model with an `owner` to one account's rows: those it owns, and those owned by one of its structures
+   * (an army's owner is its home structure). An account is a felt far above any structure id, so one rule covers both.
+   * Models without an owner pass whole.
+   */
+  public ownedBy(gameId: string, snapshot: GameSnapshot, account: string): GameSnapshot {
+    const owner = BigInt(account);
+    if (owner <= 0n || owner >= (1n << 251n) - 256n) throw new Error("Invalid owner account");
+    const structures = new Set(
+      [...this.materializedGameRows("Structure", BigInt(gameId)).values()]
+        .filter(({ value }) => BigInt(value.owner as bigint) === owner)
+        .map(({ key }) => BigInt(key.entity_id as bigint)),
+    );
+    const owns = (value: DecodedRecord) =>
+      value.owner === undefined ||
+      BigInt(value.owner as string) === owner ||
+      structures.has(BigInt(value.owner as string));
+    return {
+      ...snapshot,
+      models: snapshot.models.map(({ model, rows }) => ({ model, rows: rows.filter(({ value }) => owns(value)) })),
+    };
+  }
+
   /** How this game's changed rows reach subscriptions: rowStreamKeys at the game's spacing. */
   public streamKeys(gameId: string): (row: FoldSet) => readonly string[] | "everyone" {
     const spacing = Number(this.gameRows("SettlementRules", gameId)[0]?.value.spacing ?? 0);

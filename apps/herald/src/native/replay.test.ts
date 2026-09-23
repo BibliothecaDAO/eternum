@@ -269,7 +269,10 @@ it("halts a live confirmed fold atomically while leaving the process available",
     confirmedBlock: () => live.confirmedBlock,
     chainTimestamp: () => live.chainTimestamp,
     decodedModelCount: decoder.registry.bySelector.size,
-    fold,
+    fold: {
+      modelRows: (model) => fold.modelRows(model),
+      snapshot: (game, block, models) => fold.snapshot(game, block, models),
+    },
     metrics,
     undecodableEventCount: () => native.receiptFailures,
     ingestionFailure: () =>

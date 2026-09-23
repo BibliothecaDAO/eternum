@@ -1,7 +1,7 @@
 import { toJsonValue } from "../model-registry";
 import { CallData, CairoCustomEnum } from "starknet";
 import { describe, expect, it } from "vitest";
-import { raw, schema, setup, manifest } from "./fixtures";
+import { raw, receipt, rowEvent, rulesEvent, schema, setup, manifest } from "./fixtures";
 
 function faithStory() {
   const layout = schema.domains.prizes.events.find((event) => event.name === "StoryEvent")!;
@@ -39,5 +39,26 @@ describe("native ownership projections", () => {
       const values = codec.compile("command_commitment", { command });
       expect(values.slice(1)).toEqual(["3", "1110"]);
     }
+  });
+  it("narrows a snapshot to one account's rows: its structures, their armies, and every model without an owner", () => {
+    const { fold, native } = setup();
+    const structure = (id: string, owner: string) =>
+      rowEvent("Structure", ["1", id], [owner, ...Array.from({ length: 19 }, () => "0")]);
+    const army = (id: string, home: string) =>
+      rowEvent("ExplorerTroops", ["1", id], [home, ...Array.from({ length: 17 }, () => "0")]);
+    native.applyReceipt(
+      fold,
+      receipt([rulesEvent(), structure("7", "0xaaa"), structure("8", "0xbbb"), army("70", "7"), army("80", "8")]),
+      10,
+      0,
+    );
+    const snapshot = fold.snapshot("1", 10, ["SliceRules", "Structure", "ExplorerTroops"]);
+    const owned = fold.ownedBy("1", snapshot, "0xaaa");
+    const ids = (model: string, field: string) =>
+      owned.models.find((entry) => entry.model === model)!.rows.map(({ value }) => Number(value[field]));
+    expect(ids("Structure", "entity_id")).toEqual([7]);
+    expect(ids("ExplorerTroops", "explorer_id")).toEqual([70]);
+    expect(owned.models.find((entry) => entry.model === "SliceRules")!.rows).toHaveLength(1);
+    expect(() => fold.ownedBy("1", snapshot, "0x0")).toThrow("Invalid owner account");
   });
 });

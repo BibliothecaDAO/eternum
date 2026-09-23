@@ -157,7 +157,7 @@ const main = async (): Promise<void> => {
     decodedModelCount: registry.bySelector.size,
     fold: {
       modelRows: (model) => live.modelRows(model),
-      snapshot: (gameId, _confirmedBlock, models, actor) => live.snapshot(gameId, models, actor),
+      snapshot: (gameId, _confirmedBlock, models, actor, owner) => live.snapshot(gameId, models, actor, owner),
     },
     history: historyStore,
     metrics: loaded.metrics,

@@ -7,7 +7,13 @@ import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
 
 interface SnapshotSource {
   modelRows: (model: string) => FoldRow[];
-  snapshot: (gameId: string, confirmedBlock: number, models?: readonly string[], actor?: string) => GameSnapshot;
+  snapshot: (
+    gameId: string,
+    confirmedBlock: number,
+    models?: readonly string[],
+    actor?: string,
+    owner?: string,
+  ) => GameSnapshot;
 }
 
 interface WorldReadModels {
@@ -206,6 +212,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
         state.confirmedBlock(),
         models,
         url.searchParams.get("actor") ?? undefined,
+        url.searchParams.get("owner") ?? undefined,
       );
       return jsonResponse(selectModels(snapshot, models));
     } catch (error) {

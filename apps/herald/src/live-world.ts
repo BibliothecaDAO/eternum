@@ -129,13 +129,15 @@ export class LiveWorld {
     return this.preconfirmedBlockValue;
   }
 
-  public snapshot(gameId: string, models?: readonly string[], actor?: string): GameSnapshot {
-    return this.confirmedFold.subscriptionSnapshot(
+  /** A game's facts as the actor sees them; with an owner, models that carry an owner narrow to that account's rows. */
+  public snapshot(gameId: string, models?: readonly string[], actor?: string, owner?: string): GameSnapshot {
+    const snapshot = this.confirmedFold.subscriptionSnapshot(
       gameId,
       this.confirmedBlockValue,
       this.confirmedFold.subscriptionScope(gameId, actor, this.lastClockTimestamp),
       models,
     );
+    return owner === undefined ? snapshot : this.confirmedFold.ownedBy(gameId, snapshot, owner);
   }
 
   public modelRows(model: string) {
