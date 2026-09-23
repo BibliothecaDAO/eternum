@@ -1,4 +1,4 @@
-import { Resources } from "../types";
+import type { Resources } from "../types";
 import { ResourcesIds } from "./resource-ids";
 
 export const STEALABLE_RESOURCES = [

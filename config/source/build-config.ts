@@ -40,7 +40,7 @@ export async function buildConfig(options: BuildConfigOptions): Promise<Config> 
     chainConfigByMode[options.gameType](options.chain, environmentContext),
   );
   const durationSeconds =
-    options.durationSeconds ?? (options.durationMinutes === undefined ? undefined : options.durationMinutes * 60);
+    options.durationSeconds ?? (options.durationMinutes == null ? undefined : options.durationMinutes * 60);
   if (durationSeconds !== undefined) baseConfig.season.durationSeconds = durationSeconds;
   return baseConfig;
 }

@@ -1,7 +1,7 @@
-import { Account, AccountInterface, BigNumberish } from "starknet";
+import { Account, AccountInterface, type BigNumberish } from "starknet";
 import { ResourcesIds } from "../constants";
 import { BuildingType } from "../constants/structures";
-import { Resource } from "./common";
+import type { Resource } from "./common";
 
 export interface NativeTicketIdentity {
   gameId: string;
