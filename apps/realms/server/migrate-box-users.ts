@@ -1,7 +1,9 @@
 /**
  * The one-time move of Realms users from the box's Postgres into an identity D1 database: every user with their
  * linked wallet, name and portrait, each given the Realms id its user id derives. Sessions are not moved; players sign
- * in again. The move fails unless the target then holds exactly as many users as the source.
+ * in again. The source is read in a read-only transaction. A user already in the target is left as it is, so a second
+ * run writes nothing. The move fails unless every source user is then in the target, and names each one that is not
+ * by the unique field another target user already holds.
  *
  *   DATABASE_URL=postgres://… bun server/migrate-box-users.ts staging
  */
@@ -24,8 +26,16 @@ interface BoxUser {
   address: string | null;
 }
 
+interface TargetUser {
+  id: string;
+  name: string;
+  email: string;
+  address: string | null;
+}
+
 const sqlText = (value: string | null) => (value === null ? "NULL" : `'${value.replaceAll("'", "''")}'`);
 
+/** Any unique field already taken (the id on a rerun, or a name, email or wallet another user holds) skips the row. */
 const insertUser = (user: BoxUser) =>
   `INSERT INTO "user" ("id", "name", "email", "emailVerified", "image", "createdAt", "updatedAt", "address", "realmsId") VALUES (${[
     sqlText(user.id),
@@ -37,10 +47,10 @@ const insertUser = (user: BoxUser) =>
     sqlText(user.updated_at.toISOString()),
     sqlText(user.address),
     sqlText(realmsIdOf(user.id)),
-  ].join(", ")});`;
+  ].join(", ")}) ON CONFLICT DO NOTHING;`;
 
 const readBoxUsers = async (databaseUrl: string): Promise<BoxUser[]> => {
-  const client = new pg.Client({ connectionString: databaseUrl });
+  const client = new pg.Client({ connectionString: databaseUrl, options: "-c default_transaction_read_only=on" });
   await client.connect();
   try {
     const { rows } = await client.query<BoxUser>(
@@ -77,8 +87,25 @@ const importUsers = (environment: string, users: BoxUser[]) => {
   }
 };
 
-const targetUserCount = (environment: string) =>
-  Number(d1(environment, "--command", 'SELECT count(*) AS "users" FROM "user"')[0]?.results[0]?.users);
+const readTargetUsers = (environment: string) =>
+  d1(environment, "--command", 'SELECT "id", "name", "email", "address" FROM "user"')[0]!
+    .results as unknown as TargetUser[];
+
+/** The unique fields a source user could not take because another target user holds them. */
+const conflictsOf = (user: BoxUser, target: readonly TargetUser[]): string[] => {
+  const others = target.filter(({ id }) => id !== user.id);
+  return [
+    others.some(({ name }) => name.toLowerCase() === user.name.toLowerCase()) ? "name" : null,
+    others.some(({ email }) => email === user.email) ? "email" : null,
+    user.address !== null && others.some(({ address }) => address === user.address) ? "wallet" : null,
+  ].filter((field): field is string => field !== null);
+};
+
+const countsOf = (users: readonly { name: string; address: string | null }[]) => ({
+  users: users.length,
+  wallets: users.filter(({ address }) => address !== null).length,
+  names: users.filter(({ name }) => name.length > 0).length,
+});
 
 const environment = process.argv[2];
 const databaseUrl = process.env.DATABASE_URL;
@@ -86,11 +113,27 @@ if (environment !== "staging" && environment !== "production")
   throw new Error("name the environment: staging or production");
 if (!databaseUrl) throw new Error("DATABASE_URL must name the box's identity database");
 
-const users = await readBoxUsers(databaseUrl);
-importUsers(environment, users);
-const imported = targetUserCount(environment);
-console.info(JSON.stringify({ environment, source: users.length, target: imported }));
-if (imported !== users.length) {
-  console.error(`user count mismatch: source ${users.length}, ${environment} ${imported}`);
+const source = await readBoxUsers(databaseUrl);
+const sourceIds = new Set(source.map(({ id }) => id));
+const presentBefore = readTargetUsers(environment).filter(({ id }) => sourceIds.has(id)).length;
+importUsers(environment, source);
+const target = readTargetUsers(environment);
+const moved = target.filter(({ id }) => sourceIds.has(id));
+const movedIds = new Set(moved.map(({ id }) => id));
+const skipped = source
+  .filter(({ id }) => !movedIds.has(id))
+  .map((user) => ({ id: user.id, heldByAnotherUser: conflictsOf(user, target) }));
+
+console.info(
+  JSON.stringify({
+    environment,
+    source: countsOf(source),
+    target: countsOf(moved),
+    insertedThisRun: moved.length - presentBefore,
+    skipped,
+  }),
+);
+if (skipped.length > 0) {
+  console.error(`${skipped.length} of ${source.length} users are not in ${environment}`);
   process.exit(1);
 }
