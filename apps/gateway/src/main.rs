@@ -25,6 +25,10 @@ async fn main() -> anyhow::Result<()> {
         max_connections: required("GATEWAY_MAX_CONNECTIONS")?
             .parse()
             .context("GATEWAY_MAX_CONNECTIONS is not a connection count")?,
+        player_capacity: required("GATEWAY_PLAYER_CAPACITY")?
+            .parse()
+            .context("GATEWAY_PLAYER_CAPACITY is not a player count")?,
+        authority: felt("GATEWAY_AUTHORITY")?,
         epoch_secret: required("RANDOMNESS_EPOCH_SECRET")?.into(),
     })
     .await

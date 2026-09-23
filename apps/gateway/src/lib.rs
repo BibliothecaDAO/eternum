@@ -18,6 +18,7 @@ use hyper::{
 };
 use jsonrpsee::server::{stop_channel, Server};
 pub use node::NodeConfig;
+use starknet_types_core::felt::Felt;
 use std::{net::SocketAddr, path::PathBuf};
 
 pub struct GatewayConfig {
@@ -25,13 +26,17 @@ pub struct GatewayConfig {
     pub listen: SocketAddr,
     /// The shard's admission connection budget, derived from its player capacity by the shard runner.
     pub max_connections: u32,
+    /// Players the shard hosts; it bounds their pending tickets.
+    pub player_capacity: usize,
+    /// The operator account whose administrative work has its own allowance.
+    pub authority: Felt,
     pub epoch_secret: PathBuf,
 }
 
 /// Serves `game_subscribeAction` and runs admission until the process stops.
 pub async fn run(config: GatewayConfig) -> anyhow::Result<()> {
     let node = node::Node::connect(config.node).await?;
-    let api = service::GameApi::new(node);
+    let api = service::GameApi::new(node, admission::AdmissionSlots::new(config.player_capacity, config.authority));
     tokio::spawn(api.clone().run_forever(config.epoch_secret));
     serve(api, config.listen, config.max_connections).await
 }

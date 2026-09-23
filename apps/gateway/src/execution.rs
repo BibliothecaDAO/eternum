@@ -369,7 +369,7 @@ mod tests {
     }
     /// Tickets alternate between games 1 and 2, each numbering its own orders from one.
     fn pending(count: u64) -> (AdmissionSlots, Vec<PendingTicket>, Vec<watch::Receiver<ActionStatus>>) {
-        let slots = AdmissionSlots::default();
+        let slots = AdmissionSlots::new(96, Felt::ZERO);
         let mut tickets = vec![];
         let mut statuses = vec![];
         for index in 0..count {
@@ -388,7 +388,9 @@ mod tests {
                 arguments: if index == 1 { vec![Felt::ONE; 254] } else { vec![] },
             };
             let action = intent.identity().unwrap();
-            let Slot::New(permit) = slots.reserve(intent.actor, action).unwrap() else { panic!("new actor") };
+            let Slot::New(permit) = slots.reserve(intent.game, intent.actor, action).unwrap() else {
+                panic!("new actor")
+            };
             statuses.push(permit.subscribe());
             tickets.push(PendingTicket {
                 record: RecordedTicket {
@@ -440,7 +442,7 @@ mod tests {
                 matches!(*status.borrow(), ActionStatus::Recorded { order, succeeded, nonce_consumed: true, .. } if order == index as u64 / 2 + 1 && succeeded == (index != 1))
             );
         }
-        assert!(matches!(slots.reserve(Felt::from(101), Felt::from(999)), Ok(Slot::New(_))));
+        assert!(matches!(slots.reserve(Felt::TWO, Felt::from(101), Felt::from(999)), Ok(Slot::New(_))));
     }
     #[tokio::test]
     async fn lost_receipt_after_execution_adopts_outcome_without_duplicate_or_rejection() {

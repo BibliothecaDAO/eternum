@@ -19,7 +19,6 @@ use std::{
 };
 use tokio::sync::{mpsc, watch};
 
-const QUEUE_CAPACITY: usize = 128;
 const MAX_BATCH: usize = 16;
 const PACK_DELAY: Duration = Duration::from_millis(10);
 const EPOCH_TICKETS: u64 = 100_000;
@@ -45,13 +44,8 @@ struct Shared {
 pub struct GameApi(Arc<Shared>);
 
 impl GameApi {
-    pub(crate) fn new(node: Arc<Node>) -> Self {
-        Self(Arc::new(Shared {
-            node,
-            slots: AdmissionSlots::default(),
-            sender: Mutex::new(None),
-            ip_limits: Mutex::new(IpLimits::default()),
-        }))
+    pub(crate) fn new(node: Arc<Node>, slots: AdmissionSlots) -> Self {
+        Self(Arc::new(Shared { node, slots, sender: Mutex::new(None), ip_limits: Mutex::new(IpLimits::default()) }))
     }
 
     async fn admit(&self, peer: IpAddr, action: ActionRequest) -> anyhow::Result<watch::Receiver<ActionStatus>> {
@@ -75,7 +69,7 @@ impl GameApi {
             }
             anyhow::bail!("actor nonce is not current; no matching action in reconnect history");
         }
-        match self.0.slots.reserve(intent.actor, digest).map_err(anyhow::Error::msg)? {
+        match self.0.slots.reserve(intent.game, intent.actor, digest).map_err(anyhow::Error::msg)? {
             Slot::Existing(receiver) => Ok(receiver),
             Slot::New(permit) => {
                 let receiver = permit.subscribe();
@@ -156,7 +150,8 @@ async fn run(api: GameApi, path: &Path) -> anyhow::Result<()> {
     // Account transactions execute in nonce order, so the start-up epoch commands land only after
     // every transaction the node retained from a previous run has executed or been dropped.
     let mut assignments = Assignments::start(node.as_ref(), path).await?;
-    let (sender, mut requests) = mpsc::channel(QUEUE_CAPACITY);
+    // Each queued request holds a slot, so a channel of the slot bound never refuses one as full.
+    let (sender, mut requests) = mpsc::channel(api.0.slots.bound());
     *api.0.sender.lock().expect("admission sender poisoned") = Some(sender);
     tracing::info!(target: "gateway", epoch = assignments.epoch.epoch, "admission open");
     let mut queue = Vec::new();
@@ -383,7 +378,7 @@ mod tests {
             last_order: 1000,
             arguments: vec![],
         };
-        let Slot::New(permit) = slots.reserve(intent.actor, intent.identity().unwrap()).unwrap() else {
+        let Slot::New(permit) = slots.reserve(game, intent.actor, intent.identity().unwrap()).unwrap() else {
             panic!("new actor")
         };
         Request { intent, signature: vec![Felt::ONE, Felt::TWO], permit, received: Instant::now() }
@@ -399,7 +394,7 @@ mod tests {
         let path = directory.path().join("epoch.json");
         let chain = TestChain::default();
         chain.0.lock().unwrap().heads.insert(GAME_A, 5);
-        let slots = AdmissionSlots::default();
+        let slots = AdmissionSlots::new(96, Felt::ZERO);
         let mut assignments = Assignments::start(&chain, &path).await.unwrap();
         let mut records = vec![];
         for (game, actor) in [(GAME_A, 1), (GAME_B, 2), (GAME_A, 3)] {
@@ -417,7 +412,7 @@ mod tests {
         let directory = tempfile::tempdir().unwrap();
         let path = directory.path().join("epoch.json");
         let chain = TestChain::default();
-        let slots = AdmissionSlots::default();
+        let slots = AdmissionSlots::new(96, Felt::ZERO);
         let mut before = Assignments::start(&chain, &path).await.unwrap();
         let mut queued = vec![];
         for (game, actor) in [(GAME_A, 1), (GAME_A, 2), (GAME_B, 3)] {

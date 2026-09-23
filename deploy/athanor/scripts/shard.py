@@ -258,13 +258,15 @@ def prepare_runtime_files(directory, environment):
     })
 
 
-# The gateway starts once the world exists: it signs as the sequencing account for that world.
+# The gateway starts once the world exists: it signs as the sequencing account for that world, and
+# reserves the operator's administrative work beside the players' capacity.
 def write_gateway_environment(config, directory, environment, authority, world):
     write_private_environment(directory / "gateway.env", {
         "RANDOMNESS_ACCOUNT": authority, "RANDOMNESS_DEPLOYMENT": world,
         "RANDOMNESS_PRIVATE_KEY": environment["RANDOMNESS_PRIVATE_KEY"],
         "RANDOMNESS_EPOCH_SECRET": "/data/game-epoch-secret.json", "RUST_LOG": "info",
         "GATEWAY_LISTEN": "0.0.0.0:9950", "GATEWAY_MAX_CONNECTIONS": admission_connections(config),
+        "GATEWAY_PLAYER_CAPACITY": config["player_capacity"], "GATEWAY_AUTHORITY": environment["DEPLOYER_ACCOUNT_ADDRESS"],
         "NODE_RPC_URL": "http://madara:9944/rpc/v0_10_2", "NODE_WS_URL": "ws://madara:9944/rpc/v0_10_2",
     })
 
