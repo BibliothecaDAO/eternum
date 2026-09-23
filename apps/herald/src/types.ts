@@ -83,15 +83,17 @@ export interface DecodedRecord {
 interface DecodedWorldEventBase {
   model: GameSyncModelDefinition;
   entityId: Felt;
+  /** Every native event carries its keys, so a row's game is known even when the fold no longer holds the row. */
+  key: DecodedRecord;
   position: EventPosition;
 }
 
 export type DecodedWorldEvent =
-  | (DecodedWorldEventBase & { kind: "set"; key: DecodedRecord; value: DecodedRecord })
+  | (DecodedWorldEventBase & { kind: "set"; value: DecodedRecord })
   | (DecodedWorldEventBase & { kind: "update"; value: DecodedRecord })
   | (DecodedWorldEventBase & { kind: "update-member"; member: string; value: unknown })
   | (DecodedWorldEventBase & { kind: "delete" })
-  | (DecodedWorldEventBase & { kind: "event"; key: DecodedRecord; value: DecodedRecord });
+  | (DecodedWorldEventBase & { kind: "event"; value: DecodedRecord });
 
 export interface FoldRow {
   key: Felt;

@@ -1,7 +1,7 @@
 import { WorldFold } from "../world-fold";
 import { describe, expect, it } from "vitest";
 import { buildNativeDirectory, buildNativeLeaderboard } from "./read-models";
-import { receipt, rowEvent, rulesEvent, setup } from "./fixtures";
+import { manifest, receipt, rowEvent, rulesEvent, schema, setup } from "./fixtures";
 
 function gameEvent(game = "1", settled = "0", dev = "0", preset = "2") {
   return rowEvent(
@@ -173,4 +173,55 @@ it("waits for the complete result before freezing and restores tied standings fr
     { address: "0x111", rank: 1, totalPoints: 9.5 },
     { address: "0x222", rank: 1, totalPoints: 9.5 },
   ]);
+});
+
+it("evicts a finalized game to its directory and standings, the same way live and on replay, and keeps a running season", () => {
+  const tileData = (game: string) => {
+    const model = schema.models.find(({ name }) => name === "TileOpt")!;
+    const layout = schema.domains[model.owners[0]].events.find(({ name }) => name === "RowMemberSet")!;
+    return {
+      from_address: manifest.native.domains[model.owners[0]].address,
+      keys: [...layout.prefix, "1", model.identity, model.members[0].id!],
+      data: ["4", game, "0", "5", "5", "1", "2"],
+    };
+  };
+  const finalized = [
+    structure("7", "1", "0x111"),
+    rowEvent("TileOpt", ["1", "0", "5", "5"], ["1"]),
+    rowEvent("TileOpt", ["2", "0", "5", "5"], ["1"]),
+    gameEvent("2", "0", "0", "1"),
+    gameEvent("1", "1"),
+    rowEvent("BlitzResult", ["1"], ["2", "0x111", "9500000", "1", "0x222", "9000000", "2", "1", "123"]),
+  ];
+  const readModels = (fold: WorldFold) => ({
+    directory: buildNativeDirectory({
+      chain: "madara",
+      confirmedBlock: 11,
+      timestamp: 500,
+      fold,
+      playerAddress: "0x111",
+    }),
+    standings: buildNativeLeaderboard((name) => fold.modelRows(name), "1", 500, null),
+  });
+
+  const live = world();
+  live.native.applyReceipt(live.fold, receipt(finalized), 11, 0);
+  const before = readModels(live.fold);
+  live.fold.evictFinalizedGames();
+  live.native.applyReceipt(live.fold, receipt([tileData("1"), tileData("2")]), 12, 0);
+  expect(readModels(live.fold)).toEqual(before);
+  expect(live.fold.gameRows("TileOpt", "1")).toEqual([]);
+  expect(live.fold.gameRows("TileOpt", "2")[0].value.data).toBe("0x2");
+  expect(() => live.fold.snapshot("1", 12)).toThrow("Game 1 is finalized");
+  expect(live.fold.snapshot("1", 12, ["GameRegistry", "BlitzResult"]).models).toHaveLength(2);
+
+  const replay = world();
+  replay.native.applyReceipt(replay.fold, receipt(finalized), 11, 0);
+  replay.native.applyReceipt(replay.fold, receipt([tileData("1"), tileData("2")]), 12, 0);
+  replay.fold.evictFinalizedGames();
+  expect(replay.fold.checkpoint()).toEqual(live.fold.checkpoint());
+
+  const restored = WorldFold.restore(live.decoder.registry, live.fold.checkpoint());
+  live.native.applyReceipt(restored, receipt([tileData("1")]), 13, 0);
+  expect(restored.checkpoint()).toEqual(live.fold.checkpoint());
 });

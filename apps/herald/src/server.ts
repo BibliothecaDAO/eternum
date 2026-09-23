@@ -109,7 +109,7 @@ const main = async (): Promise<void> => {
     rpc,
   };
   const live = ingestion.createLive(liveInput);
-  await live.freezeFinalizedReviewSnapshots();
+  await live.archiveFinalizedGames();
   let server: ReturnType<typeof Bun.serve<HeraldSocketData>> | undefined;
   let shuttingDown = false;
 

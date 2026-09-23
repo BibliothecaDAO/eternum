@@ -8,6 +8,7 @@ import {
 import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { hash } from "starknet";
 import { normalizeFelt, toJsonValue, type ModelRegistry } from "./model-registry";
+import { FINALIZED_GAME_MODELS } from "./native/read-models";
 import type {
   DecodedRecord,
   DecodedWorldEvent,
@@ -154,6 +155,9 @@ export class WorldFold {
   /** Built for a game on its first expedition scope and kept current as rows change, so a scope costs its actor's rows. */
   private readonly scopeIndexes = new Map<string, ScopeIndex>();
 
+  /** Finalized games whose other rows are evicted: later writes to those rows are dropped the same way. */
+  private readonly evictedGames = new Set<string>();
+
   constructor(registry: ModelRegistry, parent?: WorldFold) {
     this.registry = registry;
     this.parent = parent;
@@ -181,6 +185,8 @@ export class WorldFold {
         fold.addEntityToGameIndex(model.model, row.entity_id, stored);
       }
     }
+    // A checkpoint may predate a game's eviction, but no write after its finalization is kept.
+    for (const gameId of fold.finalizedGameIds()) fold.evictedGames.add(gameId);
     return fold;
   }
 
@@ -201,9 +207,10 @@ export class WorldFold {
     const rows = this.rowsByModel.get(event.model.name);
     if (!rows) throw new Error(`Store event ${event.model.name} is not a persistent sync model`);
 
+    const gameId = this.eventGameId(event);
+    if (gameId !== undefined && this.isEvicted(gameId, event.model.name)) return undefined;
     const existing = this.storedRow(event.model.name, event.entityId);
     if (event.kind === "delete" && !existing) return undefined;
-    const gameId = event.model.scope === "game" ? this.eventGameId(event, existing) : undefined;
 
     if (event.kind === "set") {
       rows.set(event.entityId, { key: event.key, value: event.value });
@@ -252,8 +259,9 @@ export class WorldFold {
     return new WorldFold(this.registry, this);
   }
 
+  /** Every row the fold holds for the game, even one already marked for eviction: a review is frozen before eviction. */
   public reviewSnapshot(gameId: string | number | bigint, confirmedBlock: number): GameSnapshot {
-    return this.snapshot(gameId, confirmedBlock, persistentModelNames(this.registry));
+    return this.snapshotRows(gameId, confirmedBlock, persistentModelNames(this.registry));
   }
 
   public retainedRowCount(): number {
@@ -280,6 +288,7 @@ export class WorldFold {
     actor?: string,
     include?: (model: string, row: DecodedRecord) => boolean,
   ): GameSnapshot {
+    this.refuseEvictedModels(BigInt(gameId).toString(), models);
     const snapshot = this.snapshotRows(gameId, confirmedBlock, models, include);
     if (actor === undefined) return snapshot;
     const account = BigInt(actor);
@@ -413,6 +422,21 @@ export class WorldFold {
       .map(({ value }) => BigInt(value.game_id as string).toString());
   }
 
+  /** Drops each finalized game's rows beyond its directory and standings; call once its review snapshot is frozen. */
+  public evictFinalizedGames(): void {
+    if (this.parent) throw new Error("Only the confirmed fold evicts finalized games");
+    for (const gameId of this.finalizedGameIds()) {
+      this.evictedGames.add(gameId);
+      this.scopeIndexes.delete(gameId);
+      for (const [model, games] of this.entityIdsByGameByModel) {
+        if (FINALIZED_GAME_MODELS.has(model)) continue;
+        const rows = this.rowsByModel.get(model)!;
+        for (const entityId of games.get(gameId) ?? []) rows.delete(entityId);
+        games.delete(gameId);
+      }
+    }
+  }
+
   public gameplayAccounts(gameId: string | number | bigint): ReadonlySet<string> {
     return new Set(
       this.modelRows("PlayerEntry")
@@ -516,14 +540,25 @@ export class WorldFold {
     }
   }
 
-  private eventGameId(event: DecodedWorldEvent, existing?: StoredModelRow): string | undefined {
+  private eventGameId(event: DecodedWorldEvent): string | undefined {
     if (event.kind === "event" && event.value.game_id !== undefined) return scalarGameId(event.value, event.model.name);
     if (event.model.scope === "deployment") return undefined;
-    if (event.kind === "set" || event.kind === "event") return scalarGameId(event.key, event.model.name);
-    if (!existing) {
-      throw new Error(`${event.kind} for ${event.model.name}:${event.entityId} has no preceding RowSet`);
-    }
-    return scalarGameId(existing.key, event.model.name);
+    return scalarGameId(event.key, event.model.name);
+  }
+
+  private refuseEvictedModels(gameId: string, models?: readonly string[]): void {
+    const evicted = this.snapshotDefinitions(models).filter(
+      ({ name, scope }) => scope === "game" && this.isEvicted(gameId, name),
+    );
+    if (evicted.length > 0)
+      throw new Error(
+        `Game ${gameId} is finalized; its review snapshot holds ${evicted.map(({ name }) => name).join(", ")}`,
+      );
+  }
+
+  private isEvicted(gameId: string, model: string): boolean {
+    const evicted = this.parent ? this.parent.isEvicted(gameId, model) : this.evictedGames.has(gameId);
+    return evicted && !FINALIZED_GAME_MODELS.has(model);
   }
 
   private storedRow(model: string, entityId: string): StoredModelRow | undefined {

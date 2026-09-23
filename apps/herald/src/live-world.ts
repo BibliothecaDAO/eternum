@@ -141,7 +141,8 @@ export class LiveWorld {
     return this.confirmedFold.modelRows(model);
   }
 
-  public async freezeFinalizedReviewSnapshots(): Promise<void> {
+  /** Freezes each finalized game's review snapshot, then evicts the rows only that snapshot still needs. */
+  public async archiveFinalizedGames(): Promise<void> {
     if (!this.input.historyStore) return;
     await Promise.all(
       this.confirmedFold
@@ -152,6 +153,7 @@ export class LiveWorld {
           ),
         ),
     );
+    this.confirmedFold.evictFinalizedGames();
   }
 
   public attach(gameId: string, socket: StreamSocket, actor?: string): GameStreamSession {
@@ -274,7 +276,7 @@ export class LiveWorld {
     const startedAt = performance.now();
 
     const confirmed = await this.applyConfirmedThrough(head.block_number);
-    await this.freezeFinalizedReviewSnapshots();
+    await this.archiveFinalizedGames();
     let publishedChanges = false;
     for (const [block, changes] of confirmed.changes) {
       this.broadcastConfirmedChanges(changes, block);

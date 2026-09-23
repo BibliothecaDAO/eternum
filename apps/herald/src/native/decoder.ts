@@ -93,6 +93,7 @@ export class NativeDecoder {
     const base = {
       model: definition(model.name, model.scope),
       entityId: normalizeFelt(hash.computePoseidonHashOnElements(frame.keys)),
+      key,
       position,
     };
     if (layout.name === "RowDeleted") return { ...base, kind: "delete" };
@@ -103,7 +104,7 @@ export class NativeDecoder {
       return { ...base, kind: "update-member", member: member.name, value: value[member.name] };
     }
     const value = decodeMembers(schema, model.members, frame.values);
-    return { ...base, kind: "set", key, value };
+    return { ...base, kind: "set", value };
   }
 }
 

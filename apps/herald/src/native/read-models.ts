@@ -12,6 +12,20 @@ import {
 import { resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 
+/** The game-scoped facts a finalized game's directory entry and standings read; its review snapshot keeps the rest. */
+export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
+  "GameRegistry",
+  "SliceRules",
+  "SettlementRules",
+  "SettlementProgress",
+  "Structure",
+  "PlayerEntry",
+  "BlitzRoster",
+  "BlitzResult",
+  "PlayerPoints",
+  "HyperstructureShares",
+]);
+
 type Row = Record<string, unknown>;
 const integer = (value: unknown): bigint => BigInt(value as string | number | bigint);
 const number = (value: unknown): number => {
