@@ -6,7 +6,6 @@ import { requireOpenShard } from "@/runtime/world/shards";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import { DeviceRemovedError, getOrCreateDeviceKey, joinRealmsAccount } from "@bibliothecadao/eternum";
-import { IdentityRequestError } from "@realms-world/identity";
 import type { Shard } from "@bibliothecadao/eternum/game-client";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
@@ -43,7 +42,7 @@ const useGameplayShard = (onError: (message: string) => void): Shard | null => {
  * account is deployed on first play, or this device is added to it, each with the guardian's approval.
  */
 export function GameplayAccountSync({ children }: { children: ReactNode }) {
-  // Keyed by the session object, not only the Realms id: a refreshed session (a passkey just added) retries the join.
+  // Keyed by the session object, not only the Realms id: a new sign-in retries the join.
   const { session } = useIdentitySession();
   const setGameplayAccount = useAccountStore((state) => state.setGameplayAccount);
   const reportShardFailure = useCallback(
@@ -85,19 +84,13 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-/** The account states a player resolves themselves; they are not failures and are not logged as errors. */
-export const ACCOUNT_NOT_SECURED = "account_not_secured";
+/** The account state a player resolves themselves; it is not a failure and is not logged as an error. */
 const DEVICE_REMOVED = "device_removed";
 
-export const isAccountStatePrompt = (provisioningError: string | null): boolean =>
-  provisioningError === ACCOUNT_NOT_SECURED || provisioningError === DEVICE_REMOVED;
+export const isAccountStatePrompt = (provisioningError: string | null): boolean => provisioningError === DEVICE_REMOVED;
 
 // Every surface shows the provisioning error to the player as is, so a failure is stored as one sentence and its
 // detail (an RPC dump, a transaction's params) goes to the console only.
 const ACCOUNT_SETUP_FAILED = "Your account could not be set up for this game. Try again in a moment.";
 
-const accountStateOf = (error: unknown): string | null => {
-  if (error instanceof IdentityRequestError && error.code === ACCOUNT_NOT_SECURED) return ACCOUNT_NOT_SECURED;
-  if (error instanceof DeviceRemovedError) return DEVICE_REMOVED;
-  return null;
-};
+const accountStateOf = (error: unknown): string | null => (error instanceof DeviceRemovedError ? DEVICE_REMOVED : null);

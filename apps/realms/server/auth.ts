@@ -1,7 +1,6 @@
-import { passkey } from "@better-auth/passkey";
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
-import { anonymous, emailOTP } from "better-auth/plugins";
+import { emailOTP } from "better-auth/plugins";
 import { RpcProvider, verifyMessageInStarknet } from "starknet";
 
 import type { IdentityEnv } from "./env";
@@ -47,13 +46,22 @@ const assignRealmsIdentity = async (user: Record<string, unknown>) => {
   return { data: { ...user, id, name: id, image: null, realmsId: realmsIdOf(id) } };
 };
 
-/** A player's way back in is a passkey: a linked wallet only recovers an account that has none, once. */
-export const hasPasskey = async (db: D1Database, userId: string): Promise<boolean> =>
-  (await db.prepare('SELECT 1 FROM "passkey" WHERE "userId" = ? LIMIT 1').bind(userId).first()) !== null;
+/**
+ * An account a player signed in to through Discord or an email code they received. Only such an account approves a
+ * device; an account from before those were the only ways in does not.
+ */
+export const hasVerifiedSignIn = async (db: D1Database, userId: string): Promise<boolean> =>
+  (await db
+    .prepare(
+      `SELECT 1 FROM "user" WHERE "id" = ?1 AND "emailVerified" = 1
+       UNION SELECT 1 FROM "account" WHERE "userId" = ?1 AND "providerId" = 'discord' LIMIT 1`,
+    )
+    .bind(userId)
+    .first()) !== null;
 
 /**
- * The identity service: passkey sign-in, passkey-first sign-up through an anonymous session that the passkey is then
- * added to, so the user and its Realms id stay the same, and wallets linked to an account. Name changes pass one chokepoint: the
+ * The identity service: sign-in with Discord or an emailed code, the first of which creates the account, and wallets
+ * linked to an account. Name changes pass one chokepoint: the
  * update hook validates format and pre-checks uniqueness for every writer; the unique index on lower(name) is the
  * race-proof guarantee.
  */
@@ -120,13 +128,7 @@ export const createIdentityAuth = (
           await services.sendSignInCode(email, otp);
         },
       }),
-      siws({
-        origin: env.BASE_URL,
-        verifySignature: services.verifyWalletSignature,
-        hasPasskey: (userId) => hasPasskey(env.DB, userId),
-      }),
-      passkey({ rpID: new URL(env.BASE_URL).hostname, rpName: "Realms", origin: env.BASE_URL }),
-      anonymous({ emailDomainName: new URL(env.BASE_URL).hostname, disableDeleteAnonymousUser: true }),
+      siws({ origin: env.BASE_URL, verifySignature: services.verifyWalletSignature }),
     ],
   });
 

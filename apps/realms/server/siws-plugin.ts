@@ -14,7 +14,6 @@ interface SiwsPluginOptions {
   /** The app's origin: a signed message must name its host. */
   origin: string;
   verifySignature: VerifyWalletSignature;
-  hasPasskey: (userId: string) => Promise<boolean>;
 }
 
 const SiwsProof = z.object({
@@ -24,15 +23,13 @@ const SiwsProof = z.object({
 });
 
 const NONCE_LIFETIME_MS = 15 * 60 * 1000;
-// Long enough to add a passkey, and no longer: the recovered player signs in with that passkey afterwards.
-const RECOVERY_SESSION_MS = 15 * 60 * 1000;
 
 const unauthorized = (reason: string) => new APIError("UNAUTHORIZED", { message: `Unauthorized: ${reason}` });
 
 /**
- * A wallet is linked to a Realms account, never a way to sign in: players sign in with a passkey. A wallet belongs to
- * at most one account and an account to at most one wallet; the unique `address` column is the race-proof truth. A
- * player migrated with a linked wallet and no passkey recovers once through that wallet, only to add a passkey.
+ * A wallet is linked to a Realms account, never a way to sign in: players sign in with Discord or an emailed code. A
+ * wallet belongs to at most one account and an account to at most one wallet; the unique `address` column is the
+ * race-proof truth.
  */
 export const siws = (options: SiwsPluginOptions) => {
   const expectedHost = new URL(options.origin).host;
@@ -94,21 +91,6 @@ export const siws = (options: SiwsPluginOptions) => {
           return { nonce };
         },
       ),
-      recover: createAuthEndpoint("/siws/recover", { method: "POST", body: SiwsProof }, async (ctx) => {
-        const owner = await verifyProof(ctx, ctx.body);
-        const linked = await findUserByWallet(ctx, owner);
-        const user = linked && (await ctx.context.internalAdapter.findUserById(linked.id));
-        if (!user) throw new APIError("NOT_FOUND", { message: "NO_LINKED_ACCOUNT" });
-        if (await options.hasPasskey(user.id)) throw new APIError("CONFLICT", { message: "RECOVERY_NOT_NEEDED" });
-        const session = await ctx.context.internalAdapter.createSession(
-          user.id,
-          false,
-          { expiresAt: new Date(Date.now() + RECOVERY_SESSION_MS) },
-          true,
-        );
-        await setSessionCookie(ctx, { session, user });
-        return ctx.json({ token: session.token });
-      }),
       link: createAuthEndpoint(
         "/siws/link",
         { method: "POST", body: SiwsProof, use: [sessionMiddleware] },

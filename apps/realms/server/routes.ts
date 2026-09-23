@@ -24,9 +24,6 @@ export const routeIdentityRequest = async (
   platform: WorkerPlatform,
 ) => {
   const { pathname } = new URL(request.url);
-  if (pathname === "/api/auth/sign-in/anonymous" && !(await withinPublicBudget(env, "anonymous", request))) {
-    return json({ error: "too_many_requests" }, 429);
-  }
   if (pathname === "/api/auth/email-otp/send-verification-otp" && !(await withinSignInCodeBudget(env, request))) {
     return json({ error: "too_many_codes" }, 429);
   }

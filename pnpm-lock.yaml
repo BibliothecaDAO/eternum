@@ -786,9 +786,6 @@ importers:
 
   apps/realms:
     dependencies:
-      '@better-auth/passkey':
-        specifier: 1.5.3
-        version: 1.5.3(@better-auth/core@1.5.3(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(@cloudflare/workers-types@5.20260922.1)(better-call@1.3.2(zod@4.3.6))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.5.2))(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-auth@1.5.3(28026cbf9453529ba31fa167ffd560f8))(better-call@1.3.2(zod@4.3.6))(nanostores@1.5.2)
       '@bibliothecadao/eternum':
         specifier: workspace:*
         version: link:../../packages/core
@@ -826,9 +823,6 @@ importers:
       '@realms-world/guardian':
         specifier: workspace:*
         version: link:../guardian
-      '@simplewebauthn/server':
-        specifier: 13.3.3
-        version: 13.3.3
       '@types/node':
         specifier: ^22.19.13
         version: 22.20.1

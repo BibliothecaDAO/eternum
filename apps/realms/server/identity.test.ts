@@ -1,5 +1,4 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { isoBase64URL, isoCBOR } from "@simplewebauthn/server/helpers";
 import { buildSiwsMessage } from "@realms-world/identity";
 import { deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
 import { createGuardian } from "@realms-world/guardian";
@@ -141,7 +140,7 @@ const createBrowser = (parentDomainCookies: string[] = []) => {
 };
 
 /** Proves a wallet to the identity service, to link it or to recover the account it is linked to. */
-const proveWallet = async (browser: ReturnType<typeof createBrowser>, address: string, path: "link" | "recover") => {
+const proveWallet = async (browser: ReturnType<typeof createBrowser>, address: string, path: "link") => {
   const { nonce } = (await (await browser.request("/api/auth/siws/nonce", { body: { address } })).json()) as {
     nonce: string;
   };
@@ -155,78 +154,15 @@ const proveWallet = async (browser: ReturnType<typeof createBrowser>, address: s
   });
 };
 
-/** A player migrated from the box: an account with a linked wallet and no passkey. */
-const migratedPlayer = async () => {
+/** A signed-in player who linked a wallet from the account page. */
+const playerWithWallet = async (email: string) => {
   const browser = createBrowser();
-  await browser.request("/api/auth/sign-in/anonymous", { body: {} });
+  await signInWithCode(browser, email);
   const wallet = createWallet();
   expect((await proveWallet(browser, wallet, "link")).status).toBe(200);
   const linked = (await browser.session())!.user;
   expect(BigInt(linked.address ?? 0)).toBe(BigInt(wallet));
   return { wallet, userId: linked.id };
-};
-
-/** A platform authenticator with a P-256 key, answering one registration ceremony with a "none" attestation. */
-const registerPasskey = async (browser: ReturnType<typeof createBrowser>) => {
-  const options = (await (await browser.request("/api/auth/passkey/generate-register-options")).json()) as {
-    challenge: string;
-  };
-  const keys = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
-    "sign",
-  ])) as CryptoKeyPair;
-  const jwk = (await crypto.subtle.exportKey("jwk", keys.publicKey)) as JsonWebKey;
-  const publicKey = isoCBOR.encode(
-    new Map<number, number | Uint8Array>([
-      [1, 2],
-      [3, -7],
-      [-1, 1],
-      [-2, isoBase64URL.toBuffer(jwk.x!)],
-      [-3, isoBase64URL.toBuffer(jwk.y!)],
-    ]),
-  );
-  const credentialId = crypto.getRandomValues(new Uint8Array(16));
-  const rpIdHash = new Uint8Array(
-    await crypto.subtle.digest("SHA-256", new TextEncoder().encode("staging.realms.party")),
-  );
-  const authData = new Uint8Array([
-    ...rpIdHash,
-    0x45, // user present, user verified, attested credential data
-    0,
-    0,
-    0,
-    0,
-    ...new Uint8Array(16),
-    0,
-    credentialId.length,
-    ...credentialId,
-    ...publicKey,
-  ]);
-  const clientDataJSON = new Uint8Array(
-    new TextEncoder().encode(JSON.stringify({ type: "webauthn.create", challenge: options.challenge, origin: ORIGIN })),
-  );
-  const attestationObject = isoCBOR.encode(
-    new Map<string, unknown>([
-      ["fmt", "none"],
-      ["attStmt", new Map()],
-      ["authData", authData],
-    ]) as never,
-  );
-  const id = isoBase64URL.fromBuffer(credentialId);
-  return browser.request("/api/auth/passkey/verify-registration", {
-    body: {
-      response: {
-        id,
-        rawId: id,
-        type: "public-key",
-        clientExtensionResults: {},
-        response: {
-          clientDataJSON: isoBase64URL.fromBuffer(clientDataJSON),
-          attestationObject: isoBase64URL.fromBuffer(attestationObject),
-          transports: ["internal"],
-        },
-      },
-    },
-  });
 };
 
 /** Asks for a sign-in code and signs in with it, as the sign-in screen does. */
@@ -375,19 +311,21 @@ describe("identity Worker", () => {
     expect(response.status).toBe(401);
   });
 
-  it("keeps the anonymous user when its passkey is added, approves only its own account's exact change, and never re-adds a revoked key", async () => {
+  it("refuses a device approval to an account without a verified sign-in", async () => {
     const browser = createBrowser();
-    expect((await browser.request("/api/auth/sign-in/anonymous", { body: {} })).status).toBe(200);
-    const before = await browser.session();
-    expect(before?.user.realmsId).toBe(realmsIdOf(before!.user.id));
+    await signInWithCode(browser, "unverified@realms.test");
+    const user = (await browser.session())!.user;
+    // An account from before Discord and email codes were the only ways in.
+    await proxy.env.DB.prepare('UPDATE "user" SET "emailVerified" = 0 WHERE "id" = ?').bind(user.id).run();
+    const refused = await browser.request("/api/devices", { body: deviceChangeFor(user.realmsId) });
+    expect(refused.status).toBe(403);
+    expect(await refused.json()).toEqual({ error: "account_not_secured" });
+  });
 
-    const unsecured = await browser.request("/api/devices", { body: deviceChangeFor(before!.user.realmsId) });
-    expect(unsecured.status).toBe(403);
-
-    expect((await registerPasskey(browser)).status).toBe(200);
+  it("approves only a verified account's own exact change, and never re-adds a revoked key", async () => {
+    const browser = createBrowser();
+    expect((await signInWithCode(browser, "approver@realms.test")).status).toBe(200);
     const after = await browser.session();
-    expect(after?.user.id).toBe(before?.user.id);
-    expect(after?.user.realmsId).toBe(before?.user.realmsId);
 
     const fieldPrime = `0x${(2n ** 251n + 17n * 2n ** 192n + 1n).toString(16)}`;
     const unreduced = { ...deviceChangeFor(after!.user.realmsId), deviceKey: fieldPrime };
@@ -428,8 +366,7 @@ describe("identity Worker", () => {
 
   it("names an account only through our guardian's approval, never through the Realms id it claims", async () => {
     const browser = createBrowser();
-    await browser.request("/api/auth/sign-in/anonymous", { body: {} });
-    expect((await registerPasskey(browser)).status).toBe(200);
+    await signInWithCode(browser, "galen@realms.test");
     expect((await browser.request("/api/auth/update-user", { body: { name: "Ser Galen" } })).status).toBe(200);
     const realmsId = (await browser.session())!.user.realmsId;
     const approved = deviceChangeFor(realmsId, { counter: 1 });
@@ -447,7 +384,7 @@ describe("identity Worker", () => {
 
   it("saves preferences by revision, caps devices per account and revokes a device only with its token", async () => {
     const browser = createBrowser();
-    await browser.request("/api/auth/sign-in/anonymous", { body: {} });
+    await signInWithCode(browser, "preferences@realms.test");
     const owner = (await browser.session())!.user.realmsId;
 
     const save = (revision: number) =>
@@ -532,47 +469,23 @@ describe("identity Worker", () => {
   });
 
   it("refuses to link a wallet that already belongs to another Realms account", async () => {
-    const { wallet } = await migratedPlayer();
+    const { wallet } = await playerWithWallet("holder@realms.test");
 
     const other = createBrowser();
-    await other.request("/api/auth/sign-in/anonymous", { body: {} });
+    await signInWithCode(other, "other@realms.test");
     const refused = await proveWallet(other, wallet, "link");
     expect(refused.status).toBe(409);
     expect(((await refused.json()) as { message: string }).message).toBe("WALLET_LINKED_ELSEWHERE");
     expect((await other.session())?.user.address ?? null).toBeNull();
   });
 
-  it("signs no one in with a wallet: it recovers a linked account without a passkey, once, only to add one", async () => {
+  it("offers no way in but Discord and an emailed code", async () => {
     const stranger = createBrowser();
-    const unlinked = await proveWallet(stranger, createWallet(), "recover");
-    expect(unlinked.status).toBe(404);
-    expect(((await unlinked.json()) as { message: string }).message).toBe("NO_LINKED_ACCOUNT");
+    for (const path of ["/api/auth/sign-in/anonymous", "/api/auth/siws/verify", "/api/auth/siws/recover"]) {
+      expect((await stranger.request(path, { body: {} })).status).toBe(404);
+    }
+    expect((await stranger.request("/api/auth/passkey/generate-authenticate-options")).status).toBe(404);
     expect(await stranger.session()).toBeNull();
-    expect((await stranger.request("/api/auth/siws/verify", { body: {} })).status).toBe(404);
-
-    const { wallet, userId } = await migratedPlayer();
-    const returning = createBrowser();
-    const forged = await proveWallet(returning, createWallet(), "recover");
-    expect(forged.status).toBe(404);
-    expect((await proveWallet(returning, wallet, "recover")).status).toBe(200);
-    const recovered = (await (await returning.request("/api/auth/get-session")).json()) as {
-      user: { id: string; realmsId: string };
-      session: { expiresAt: string };
-    };
-    expect(recovered.user.id).toBe(userId);
-    expect(new Date(recovered.session.expiresAt).getTime() - Date.now()).toBeLessThanOrEqual(15 * 60 * 1000);
-
-    // Until it adds a passkey, the recovered session cannot approve a device, so it cannot play.
-    const change = deviceChangeFor(recovered.user.realmsId);
-    const unsecured = await returning.request("/api/devices", { body: change });
-    expect(unsecured.status).toBe(403);
-    expect(await unsecured.json()).toEqual({ error: "account_not_secured" });
-    expect((await registerPasskey(returning)).status).toBe(200);
-    expect((await returning.request("/api/devices", { body: change })).status).toBe(200);
-
-    const again = await proveWallet(createBrowser(), wallet, "recover");
-    expect(again.status).toBe(409);
-    expect(((await again.json()) as { message: string }).message).toBe("RECOVERY_NOT_NEEDED");
   });
 });
 

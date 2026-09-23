@@ -2,7 +2,7 @@ import { Data, Effect, Schema } from "effect";
 import { realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
 import type { Guardian } from "@realms-world/guardian";
 
-import { hasPasskey, type IdentityAuth } from "./auth";
+import { hasVerifiedSignIn, type IdentityAuth } from "./auth";
 import { json } from "./http";
 import { recordApprovedAccount } from "./realms-accounts";
 
@@ -33,8 +33,8 @@ interface DeviceChangeDependencies {
 
 /**
  * POST /api/devices: the guardian's approval for one device change on the caller's own account. The account must be
- * the one the caller's Realms id places on every shard, and the caller must have a way back in, a passkey, so neither
- * an abandoned anonymous sign-up nor a wallet recovery that skipped its passkey obtains an approval.
+ * the one the caller's Realms id places on every shard, and the caller must have signed in through Discord or an email
+ * code, so no account without a verified way in obtains an approval.
  */
 export const handleDeviceChange = (request: Request, dependencies: DeviceChangeDependencies): Promise<Response> =>
   Effect.runPromise(
@@ -54,7 +54,7 @@ const approveDeviceChange = (request: Request, { auth, db, guardian, accountClas
     const realmsId = session.user.realmsId;
     if (!realmsId) return yield* Effect.die(new Error(`user ${session.user.id} has no Realms id`));
     const change = yield* readDeviceChange(request);
-    if (!(yield* Effect.promise(() => hasPasskey(db, session.user.id)))) {
+    if (!(yield* Effect.promise(() => hasVerifiedSignIn(db, session.user.id)))) {
       return yield* new DeviceRequestError({ code: "account_not_secured", status: 403 });
     }
     const guardianPublicKey = yield* Effect.promise(() => guardian.publicKey());

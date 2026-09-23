@@ -6,9 +6,12 @@ import { Miniflare } from "miniflare";
 
 /**
  * The Worker as Cloudflare runs it, for tests: the bundle wrangler would deploy, its Durable Objects, alarms and D1 in
- * workerd, over storage that survives a restart. Only the network is faked, by `outbound`.
+ * workerd, over storage that survives a restart. Only the network is faked: the email provider by the harness, which
+ * keeps each sign-in code it is asked to send, and everything else by `outbound`.
  */
 export const WORKER_NAME = "identity";
+const ORIGIN = "https://staging.realms.party";
+const EMAIL_PROVIDER = "https://api.resend.com/emails";
 
 export const buildWorkerBundle = (): string => {
   const bundle = join(mkdtempSync(join(tmpdir(), "identity-bundle-")), "bundle");
@@ -60,10 +63,39 @@ export const startWorker = async (options: {
       WEB_PUSH_VAPID_SUBJECT: "mailto:ops@realms.party",
       SHARD_NOTIFIER_POLL_MS: String(options.notifierPollMs ?? 3_000),
     },
-    outboundService: options.outbound,
+    outboundService: async (request: Request) => {
+      if (request.url !== EMAIL_PROVIDER) return options.outbound(request);
+      const email = (await request.json()) as { to: string[]; text: string };
+      inbox.set(email.to[0]!, email.text.match(/\b\d{6}\b/)![0]);
+      return Response.json({ id: "sent" });
+    },
   });
+  const inbox = new Map<string, string>();
+  const signedIn = (response: { headers: { getSetCookie(): string[] } }) =>
+    response.headers
+      .getSetCookie()
+      .map((header) => header.split(";")[0])
+      .join("; ");
+  /** A player in a browser, signed in with an emailed code: its session cookie and Realms id. */
+  const signInWithEmailCode = async (email: string) => {
+    const post = (path: string, body: unknown) =>
+      mf.dispatchFetch(`${ORIGIN}${path}`, {
+        method: "POST",
+        headers: { origin: ORIGIN, "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    await post("/api/auth/email-otp/send-verification-otp", { email, type: "sign-in" });
+    const cookie = signedIn(await post("/api/auth/sign-in/email-otp", { email, otp: inbox.get(email) }));
+    const session = (await (
+      await mf.dispatchFetch(`${ORIGIN}/api/auth/get-session`, { headers: { cookie } })
+    ).json()) as {
+      user: { realmsId: string };
+    };
+    return { cookie, realmsId: session.user.realmsId };
+  };
   return {
     mf,
+    signInWithEmailCode,
     db: (await mf.getD1Database("DB")) as unknown as D1Database,
     dispose: () => mf.dispose(),
     runCron: async () => (await mf.getWorker()).scheduled({ cron: "* * * * *" }),

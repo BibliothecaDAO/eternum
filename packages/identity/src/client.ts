@@ -20,7 +20,7 @@ export interface DeviceChangeRequest {
   counter: number;
 }
 
-/** A refusal the identity service names, such as `account_not_secured` or `WALLET_LINKED_ELSEWHERE`. */
+/** A refusal the identity service names, such as `INVALID_OTP` or `WALLET_LINKED_ELSEWHERE`. */
 export class IdentityRequestError extends Error {
   constructor(
     readonly status: number,
@@ -166,57 +166,6 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     return started.url;
   };
 
-  /**
-   * Recovers a migrated account that has a linked wallet and no passkey: the wallet proves it once, and the short
-   * session it gets is only for adding a passkey. The service never creates an account here.
-   */
-  const recoverWithWallet = async (options: SignInOptions): Promise<Session> => {
-    await readJson(
-      await request("/auth/siws/recover", { method: "POST", body: JSON.stringify(await siwsProof(options)) }),
-    );
-    return requireSession();
-  };
-
-  /** A new Realms account with no way back in yet; it must add a passkey before it can approve a device. */
-  const signInAnonymously = async (): Promise<Session> => {
-    await readJson(await request("/auth/sign-in/anonymous", { method: "POST", body: JSON.stringify({}) }));
-    return requireSession();
-  };
-
-  /** Secures the signed-in account with a passkey on this device. */
-  const registerPasskey = async (credentials: CredentialsContainer = navigator.credentials): Promise<void> => {
-    const options = await readJson<PublicKeyCredentialCreationOptionsJSON>(
-      await request("/auth/passkey/generate-register-options", { method: "GET" }),
-    );
-    const credential = (await credentials.create({
-      publicKey: PublicKeyCredential.parseCreationOptionsFromJSON(options),
-    })) as PublicKeyCredential | null;
-    if (!credential) throw new Error("Passkey registration was cancelled");
-    await readJson(
-      await request("/auth/passkey/verify-registration", {
-        method: "POST",
-        body: JSON.stringify({ response: credential.toJSON() }),
-      }),
-    );
-  };
-
-  const signInWithPasskey = async (credentials: CredentialsContainer = navigator.credentials): Promise<Session> => {
-    const options = await readJson<PublicKeyCredentialRequestOptionsJSON>(
-      await request("/auth/passkey/generate-authenticate-options", { method: "GET" }),
-    );
-    const assertion = (await credentials.get({
-      publicKey: PublicKeyCredential.parseRequestOptionsFromJSON(options),
-    })) as PublicKeyCredential | null;
-    if (!assertion) throw new Error("Passkey sign-in was cancelled");
-    await readJson(
-      await request("/auth/passkey/verify-authentication", {
-        method: "POST",
-        body: JSON.stringify({ response: assertion.toJSON() }),
-      }),
-    );
-    return requireSession();
-  };
-
   /** The guardian's `[r, s]` over one device change on the signed-in player's own account. */
   const approveDeviceChange = async (change: DeviceChangeRequest): Promise<string[]> => {
     const approved = await readJson<{ signature: string[] }>(
@@ -256,11 +205,7 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
   return {
     getSession,
     signIn,
-    signInAnonymously,
-    registerPasskey,
-    signInWithPasskey,
     linkWallet,
-    recoverWithWallet,
     sendSignInCode,
     signInWithCode,
     discordSignInUrl,

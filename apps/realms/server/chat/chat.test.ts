@@ -29,22 +29,9 @@ beforeAll(() => {
 
 type Worker = Awaited<ReturnType<typeof startWorker>>;
 
-/** A player in a browser: an anonymous Realms account and its session cookie. */
-const signIn = async (worker: Worker) => {
-  const response = await worker.mf.dispatchFetch(`${ORIGIN}/api/auth/sign-in/anonymous`, {
-    method: "POST",
-    headers: { origin: ORIGIN, "content-type": "application/json" },
-    body: "{}",
-  });
-  const cookie = response.headers
-    .getSetCookie()
-    .map((header) => header.split(";")[0])
-    .join("; ");
-  const session = (await (
-    await worker.mf.dispatchFetch(`${ORIGIN}/api/auth/get-session`, { headers: { cookie } })
-  ).json()) as { user: { realmsId: string } };
-  return { cookie, realmsId: session.user.realmsId };
-};
+/** A new player in a browser, signed in with an emailed code. */
+let players = 0;
+const signIn = (worker: Worker) => worker.signInWithEmailCode(`player-${(players += 1)}@realms.test`);
 
 /** A socket to a chat path, with every message it receives. */
 const connect = async (worker: Worker, cookie: string, path: string) => {
