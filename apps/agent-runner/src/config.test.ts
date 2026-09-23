@@ -52,11 +52,6 @@ describe("runner config", () => {
     [["--game-id", "1", "--signer", "none"], {}, "--shard-url (or SHARD_URL"],
     [["--signer", "none"], FULL_ENV, "Missing --game-id or --game-name"],
     [["--game-id", "1"], FULL_ENV, "Missing --signer"],
-    [
-      ["--game-id", "1", "--signer", "guest"],
-      FULL_ENV,
-      "--binding-authority-private-key (or BINDING_AUTHORITY_PRIVATE_KEY",
-    ],
     [["--game-id", "1", "--signer", "key"], FULL_ENV, "--gameplay-private-key (or GAMEPLAY_PRIVATE_KEY"],
     [
       ["--game-id", "1", "--signer", "key"],
@@ -75,10 +70,7 @@ describe("runner config", () => {
   });
 
   it("carries the guest and key credentials it was given", () => {
-    const guest = resolve(["--game-id", "1", "--signer", "guest"], {
-      ...FULL_ENV,
-      BINDING_AUTHORITY_PRIVATE_KEY: "0xa",
-    });
+    const guest = resolve(["--game-id", "1", "--signer", "guest"], FULL_ENV);
     const key = resolve([
       "--game-id",
       "1",
@@ -90,7 +82,7 @@ describe("runner config", () => {
       "0xc",
     ]);
 
-    expect(guest.signer).toEqual({ mode: "guest", bindingAuthorityPrivateKey: "0xa" });
+    expect(guest.signer).toEqual({ mode: "guest" });
     expect(key.signer).toEqual({ mode: "key", gameplayPrivateKey: "0xb", gameplayAccountAddress: "0xc" });
   });
 });

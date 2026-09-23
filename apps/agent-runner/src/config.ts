@@ -12,7 +12,7 @@ export type RunnerGameSelector = { id: number } | { name: string };
 
 export type RunnerSigner =
   | { mode: "none" }
-  | { mode: "guest"; bindingAuthorityPrivateKey: string }
+  | { mode: "guest" }
   | { mode: "key"; gameplayPrivateKey: string; gameplayAccountAddress: string };
 
 export interface RunnerConfig {
@@ -105,13 +105,7 @@ const resolveSigner = (args: RunnerArgs, env: Env): RunnerSigner => {
     case "none":
       return { mode };
     case "guest":
-      return {
-        mode,
-        bindingAuthorityPrivateKey: requireValue(args, env, {
-          flag: "binding-authority-private-key",
-          envVars: ["BINDING_AUTHORITY_PRIVATE_KEY"],
-        }),
-      };
+      return { mode };
     case "key":
       return {
         mode,

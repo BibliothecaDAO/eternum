@@ -1,21 +1,18 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
-  bindGameplayAccounts,
-  connectGameplayAccount,
-  ensureGameplayAccount,
+  DeviceSigner,
+  deviceKeyOf,
+  joinRealmsAccount,
+  keyGuardian,
   signGameplayIntent,
+  type DeviceKey,
   type GameClient,
 } from "@bibliothecadao/eternum";
 import { configureGameplayAccountSubmits, type Shard } from "@bibliothecadao/eternum/game-client";
-import { Account, BlockTag, ec, RpcProvider, stark, type AccountInterface } from "starknet";
+import { Account, BlockTag, RpcProvider, stark, type AccountInterface } from "starknet";
 
 import { resolveDataDir, type RunnerConfig, type RunnerSigner } from "./config";
-
-interface GameplayKey {
-  privateKey: string;
-  publicKey: string;
-}
 
 const GUEST_KEY_FILE = "guest-key.json";
 
@@ -30,8 +27,8 @@ export async function resolveRunnerSigner(
   const provider = new RpcProvider({ nodeUrl: shard.rpcUrl, blockIdentifier: BlockTag.PRE_CONFIRMED });
   const account =
     config.signer.mode === "guest"
-      ? await connectGuestAccount(shard, config.signer, provider, dataDir)
-      : await connectKeyAccount(shard, config.signer, provider);
+      ? await connectGuestAccount(shard, provider, dataDir)
+      : connectKeyAccount(config.signer, provider);
   // Every send, raw or through the client's provider, takes the gameplay nonce and fee path.
   const signer = configureGameplayAccountSubmits(account, shard.chainId);
   client.connect(signer);
@@ -39,67 +36,39 @@ export async function resolveRunnerSigner(
 }
 
 /**
- * A guest owns itself: the account deploys with no owner and is bound to its own address, which is what settlement
- * keys on. The key persists under the data dir so a restarted runner is the same player.
+ * A guest is a Realms account that guards itself: its one key is its guardian and its only device, and its public key
+ * names it. The key persists under the data dir so a restarted runner is the same player.
  */
-const connectGuestAccount = async (
-  shard: Shard,
-  signer: Extract<RunnerSigner, { mode: "guest" }>,
-  provider: RpcProvider,
-  dataDir: string,
-): Promise<Account> => {
+const connectGuestAccount = async (shard: Shard, provider: RpcProvider, dataDir: string): Promise<Account> => {
   const key = await loadOrMintGuestKey(dataDir);
-  const authority = requireShardContract(shard, "bindingAuthority");
-  const account = await ensureGameplayAccount({
-    authority,
-    classHash: shard.accountClassHash,
-    owner: "0x0",
-    privateKey: key.privateKey,
+  return joinRealmsAccount({
     provider,
-    publicKey: key.publicKey,
+    shard: { chainId: shard.chainId, accountClassHash: shard.accountClassHash, guardianPublicKey: key.publicKey },
+    realmsId: key.publicKey,
+    device: key,
+    approve: keyGuardian(key.privateKey),
   });
-  await bindGameplayAccounts({
-    accounts: [{ owner: account.address, address: account.address }],
-    authority: new Account({
-      provider,
-      address: authority,
-      signer: signer.bindingAuthorityPrivateKey,
-    }),
-    playerRegistryAddress: requireShardContract(shard, "playerRegistry"),
-    provider,
-  });
-  return account;
 };
 
-const connectKeyAccount = (
-  shard: Shard,
-  signer: Extract<RunnerSigner, { mode: "key" }>,
-  provider: RpcProvider,
-): Promise<Account> =>
-  connectGameplayAccount({
+const connectKeyAccount = (signer: Extract<RunnerSigner, { mode: "key" }>, provider: RpcProvider): Account =>
+  new Account({
+    provider,
     address: signer.gameplayAccountAddress,
-    classHash: shard.accountClassHash,
-    privateKey: signer.gameplayPrivateKey,
-    provider,
+    signer: new DeviceSigner(deviceKeyOf(signer.gameplayPrivateKey)),
+    cairoVersion: "1",
   });
 
-const requireShardContract = (shard: Shard, name: string): string => {
-  const address = shard.contracts[name];
-  if (!address) throw new Error(`Shard ${shard.url} names no ${name} contract`);
-  return address;
-};
-
-const loadOrMintGuestKey = async (dataDir: string): Promise<GameplayKey> => {
+const loadOrMintGuestKey = async (dataDir: string): Promise<DeviceKey> => {
   const file = path.join(dataDir, GUEST_KEY_FILE);
   const stored = await readStoredKey(file);
   if (stored) return stored;
-  const key = gameplayKey(stark.randomAddress());
+  const key = deviceKeyOf(stark.randomAddress());
   await mkdir(dataDir, { recursive: true });
   await writeFile(file, JSON.stringify({ privateKey: key.privateKey }), { mode: 0o600 });
   return key;
 };
 
-const readStoredKey = async (file: string): Promise<GameplayKey | null> => {
+const readStoredKey = async (file: string): Promise<DeviceKey | null> => {
   let raw: string;
   try {
     raw = await readFile(file, "utf8");
@@ -108,13 +77,8 @@ const readStoredKey = async (file: string): Promise<GameplayKey | null> => {
   }
   const record = JSON.parse(raw) as { privateKey?: unknown };
   if (typeof record.privateKey !== "string") throw new Error(`Guest key file ${file} has no privateKey`);
-  return gameplayKey(record.privateKey);
+  return deviceKeyOf(record.privateKey);
 };
-
-const gameplayKey = (privateKey: string): GameplayKey => ({
-  privateKey,
-  publicKey: ec.starkCurve.getStarkKey(privateKey),
-});
 
 /** The same persisted gameplay key signs action commitments; no separate action key is created. */
 export async function signRunnerIntent(

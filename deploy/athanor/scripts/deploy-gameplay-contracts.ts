@@ -4,7 +4,7 @@ import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Account, addAddressPadding, ec, hash, RpcProvider } from "starknet";
-import { ensureGameplayAccount, bindGameplayAccounts } from "@bibliothecadao/eternum";
+import { deviceKeyOf, joinRealmsAccount, keyGuardian } from "@bibliothecadao/eternum";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import type { ShardRecord } from "../../../apps/herald/src/shard-manifest";
@@ -27,8 +27,8 @@ const OUTPUT_PATH = resolve(requiredEnvironment("GAMEPLAY_CONTRACTS_PATH"));
 const RPC_URL = requiredEnvironment("RPC_URL");
 const DEPLOYER_ADDRESS = requiredEnvironment("DEPLOYER_ACCOUNT_ADDRESS");
 const DEPLOYER_PRIVATE_KEY = requiredEnvironment("DEPLOYER_PRIVATE_KEY");
+// The registry stays deployed only because Authentication still names one; nothing reads it.
 const BINDING_AUTHORITY_ADDRESS = requiredEnvironment("BINDING_AUTHORITY_ADDRESS");
-const BINDING_AUTHORITY_PRIVATE_KEY = requiredEnvironment("BINDING_AUTHORITY_PRIVATE_KEY");
 
 function requiredEnvironment(name: string): string {
   const value = process.env[name]?.trim();
@@ -36,13 +36,11 @@ function requiredEnvironment(name: string): string {
   return value;
 }
 
-const PLAYER_ACCOUNT_ARTIFACT = "realms_player_account_RealmsPlayerAccount.contract_class.json";
+const PLAYER_ACCOUNT_ARTIFACT = "realms_player_account_RealmsAccount.contract_class.json";
 const PLAYER_REGISTRY_ARTIFACT = "realms_player_account_PlayerRegistry.contract_class.json";
-const REALMS_ACCOUNT_ARTIFACT = "realms_player_account_RealmsAccount.contract_class.json";
 
 interface GameplayDeploymentResult {
   operatorAccountAddress: string;
-  bindingAuthorityAddress: string;
   playerAccountClassHash: string;
   playerRegistryAddress: string;
   playerRegistryClassHash: string;
@@ -66,14 +64,14 @@ function buildGameplayContracts(): void {
 }
 
 async function declareGameplayContracts(account: Account, accountClassHash: string) {
-  const artifacts = [PLAYER_ACCOUNT_ARTIFACT, PLAYER_REGISTRY_ARTIFACT, REALMS_ACCOUNT_ARTIFACT].map((name) =>
+  const artifacts = [PLAYER_ACCOUNT_ARTIFACT, PLAYER_REGISTRY_ARTIFACT].map((name) =>
     readClassArtifact(
       resolve(ARTIFACT_DIRECTORY, name),
       resolve(ARTIFACT_DIRECTORY, name.replace(".contract_class.json", ".compiled_contract_class.json")),
     ),
   );
-  if (BigInt(artifacts[2].classHash) !== BigInt(accountClassHash)) {
-    throw new Error(`RealmsAccount class ${artifacts[2].classHash} differs from guardian class ${accountClassHash}`);
+  if (BigInt(artifacts[0].classHash) !== BigInt(accountClassHash)) {
+    throw new Error(`RealmsAccount class ${artifacts[0].classHash} differs from guardian class ${accountClassHash}`);
   }
   for (const artifact of artifacts) {
     await declareClass(account, artifact, (transactionHash) => {
@@ -144,10 +142,9 @@ async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
 
   await deployPlayerRegistryIfNeeded(account, playerRegistryClassHash, playerRegistryAddress);
 
-  const operatorAccountAddress = await prepareOperator(provider, playerAccountClassHash, playerRegistryAddress);
+  const operatorAccountAddress = await prepareOperator(provider, playerAccountClassHash);
   const result = {
     operatorAccountAddress,
-    bindingAuthorityAddress: addAddressPadding(BINDING_AUTHORITY_ADDRESS),
     playerAccountClassHash,
     playerRegistryAddress,
     playerRegistryClassHash,
@@ -157,26 +154,20 @@ async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
   return result;
 }
 
-async function prepareOperator(
-  provider: RpcProvider,
-  classHash: string,
-  playerRegistryAddress: string,
-): Promise<string> {
-  const operator = await ensureGameplayAccount({
+/** The operator's Realms account, named by its deployer address; its one key is its own guardian and device. */
+async function prepareOperator(provider: RpcProvider, classHash: string): Promise<string> {
+  const operator = await joinRealmsAccount({
     provider,
-    authority: BINDING_AUTHORITY_ADDRESS,
-    classHash,
-    owner: DEPLOYER_ADDRESS,
-    privateKey: DEPLOYER_PRIVATE_KEY,
-    publicKey: ec.starkCurve.getStarkKey(DEPLOYER_PRIVATE_KEY),
+    shard: {
+      chainId: await provider.getChainId(),
+      accountClassHash: classHash,
+      guardianPublicKey: ec.starkCurve.getStarkKey(DEPLOYER_PRIVATE_KEY),
+    },
+    realmsId: DEPLOYER_ADDRESS,
+    device: deviceKeyOf(DEPLOYER_PRIVATE_KEY),
+    approve: keyGuardian(DEPLOYER_PRIVATE_KEY),
   });
-  await bindGameplayAccounts({
-    accounts: [{ address: operator.address, owner: DEPLOYER_ADDRESS }],
-    authority: createMadaraAccount(provider, BINDING_AUTHORITY_ADDRESS, BINDING_AUTHORITY_PRIVATE_KEY),
-    playerRegistryAddress,
-    provider,
-  });
-  return operator.address;
+  return addAddressPadding(operator.address);
 }
 
 deployGameplayContracts()

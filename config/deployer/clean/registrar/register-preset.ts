@@ -1,6 +1,7 @@
 import { nativePresetForId } from "../../../source/native";
 import { buildNativePreset } from "../config/native-preset";
-import { Account, RpcProvider } from "starknet";
+import { RpcProvider } from "starknet";
+import { createOperatorAccount } from "../shared/madara-account";
 import { readShardManifest } from "@realms-world/chain/shard-manifest";
 import { assertProviderChain } from "@realms-world/chain";
 import { DEPLOYMENT_ENVIRONMENTS } from "../constants";
@@ -99,11 +100,7 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
     privateKey: process.env.DEPLOYER_PRIVATE_KEY,
     context: `${options.environmentId} preset registration`,
   });
-  const account = new Account({
-    provider,
-    address: credentials.accountAddress,
-    signer: credentials.privateKey,
-  });
+  const account = createOperatorAccount(provider, credentials.accountAddress, credentials.privateKey);
 
   const transaction = await registerNativePreset(account, options.presetId, registration.native);
   console.log(

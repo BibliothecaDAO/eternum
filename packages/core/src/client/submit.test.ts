@@ -133,30 +133,6 @@ describe("gameplay account submits", () => {
       "configured for 0x1, not 0x2",
     );
   });
-
-  it("recovers the signer once on an invalid signature and retries the same calls", async () => {
-    const account = createAccount("0x654", ["0x2", "0x3"], async () => ({ transaction_hash: "0x6" }));
-    const rawExecute = account.execute.mockRejectedValueOnce(invalidSignature());
-    const recoverSigner = vi.fn().mockResolvedValue(true);
-    const configured = configureGameplayAccountSubmits(account as unknown as AccountInterface, "0x1", recoverSigner);
-
-    await expect(configured.execute(CALL)).resolves.toEqual({ transaction_hash: "0x6" });
-    expect(recoverSigner).toHaveBeenCalledOnce();
-    expect(rawExecute.mock.calls.map(([calls]) => calls)).toEqual([CALL, CALL]);
-  });
-
-  it("does not retry an invalid signature the recovery could not fix", async () => {
-    const account = createAccount("0x655", ["0x2"], async () => {
-      throw invalidSignature();
-    });
-    const rawExecute = account.execute;
-    const recoverSigner = vi.fn().mockResolvedValue(false);
-    const configured = configureGameplayAccountSubmits(account as unknown as AccountInterface, "0x1", recoverSigner);
-
-    await expect(configured.execute(CALL)).rejects.toThrow("Validate failure");
-    expect(recoverSigner).toHaveBeenCalledOnce();
-    expect(rawExecute).toHaveBeenCalledOnce();
-  });
 });
 
 function createAccount(
@@ -174,9 +150,6 @@ function createAccount(
     }),
   };
 }
-
-const invalidSignature = () =>
-  Object.assign(new Error("Validate failure"), { code: 55, data: { error: "Account: invalid signature" } });
 
 /** Flushes every pending microtask without firing a faked timer. */
 function endOfMacrotask(): Promise<void> {

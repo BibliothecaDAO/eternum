@@ -59,7 +59,8 @@ RPC against the manifest before submitting. Both images must be pinned by digest
 execution and compilation mode. The runner refuses existing project state and CPUs outside `athanor.slice`.
 
 Supply `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_KEY` from the isolated devnet. The runner creates private
-credentials and volumes, deploys identity, binds a gameplay operator and deploys the native world under it, registers
+credentials and volumes, deploys the Realms account class (refusing one that differs from the class the identity service approves devices
+for) and the operator's own Realms account, deploys the native world under it, registers
 the Frontier and Regular Blitz presets and starts Herald. Each shard exports upstream node metrics through its own
 pinned OTLP collector into its private run directory; `harness.env` points the existing block reporter at that output.
 The run directory holds its compose configuration, manifest, logs and private `harness.env`. It starts no live services.
@@ -126,7 +127,7 @@ manifests before handing the candidate to the other streams. Leave the live stac
 
 Load credentials from a private, gitignored environment file under `.lab/`. The current deployment commands require
 `RPC_URL`, `DEPLOYER_ACCOUNT_ADDRESS`, `DEPLOYER_PRIVATE_KEY`, `BINDING_AUTHORITY_ADDRESS`, `RANDOMNESS_PRIVATE_KEY`,
-`NATIVE_AUTHORITY_FILE`, `GAMEPLAY_CONTRACTS_PATH`, `BINDING_AUTHORITY_PRIVATE_KEY` and `NATIVE_WORLD_MANIFEST`. The
+`NATIVE_AUTHORITY_FILE`, `GAMEPLAY_CONTRACTS_PATH` and `NATIVE_WORLD_MANIFEST`. The
 sequencing authority output contains its signing credential; keep it private. `NATIVE_WORLD_MANIFEST` must point to the
 isolated shard's output. For manual initialization, write the nested shard record with the unique ASCII chain ID's hex
 encoding and the `guardianPublicKey` and `accountClassHash` returned by the identity service. The deployer asserts the

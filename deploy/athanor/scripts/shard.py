@@ -205,7 +205,6 @@ def deployment_environment(config, directory):
         "COMPOSE_PROJECT_NAME": f"athanor-{config['shard']}",
         "CHAIN_CONFIG_PATH": str(directory / "chain-config.yaml"),
         "BINDING_AUTHORITY_ADDRESS": credentials["DEPLOYER_ACCOUNT_ADDRESS"],
-        "BINDING_AUTHORITY_PRIVATE_KEY": credentials["DEPLOYER_PRIVATE_KEY"],
         "RANDOMNESS_PRIVATE_KEY": "0x" + secrets.token_hex(31),
         "NATIVE_AUTHORITY_FILE": str(directory / "authority.json"),
         "NATIVE_WORLD_MANIFEST": str(directory / "native-world.json"),
@@ -245,7 +244,7 @@ def prepare_runtime_files(directory, environment):
 def save_harness_environment(directory, environment):
     keys = (
         "DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY", "RPC_URL", "ADMISSION_URL", "HERALD_URL",
-        "BINDING_AUTHORITY_ADDRESS", "BINDING_AUTHORITY_PRIVATE_KEY", "RANDOMNESS_PRIVATE_KEY",
+        "BINDING_AUTHORITY_ADDRESS", "RANDOMNESS_PRIVATE_KEY",
         "NATIVE_AUTHORITY_FILE", "NATIVE_WORLD_MANIFEST", "GAMEPLAY_CONTRACTS_PATH",
         "MADARA_METRICS_FILE",
         "COMPOSE_PROJECT_NAME", "CHAIN_CONFIG_PATH",

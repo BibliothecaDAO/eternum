@@ -6,10 +6,10 @@ export interface SignedNativeIntent {
   signature: string[];
 }
 
-/** The signature layout of the shard's current gameplay account class: a bare `[r, s]` from its one key. */
+/** A Realms account device's signature, as `is_valid_signature` reads it: `[device_key, r, s]`. */
 export function signGameplayIntent(digest: string, privateKey: string): string[] {
   const { r, s } = ec.starkCurve.sign(digest, privateKey);
-  return [`0x${r.toString(16)}`, `0x${s.toString(16)}`];
+  return [ec.starkCurve.getStarkKey(privateKey), `0x${r.toString(16)}`, `0x${s.toString(16)}`];
 }
 
 type RecordedTransaction = { transaction_hash: string; order: bigint };

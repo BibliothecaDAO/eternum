@@ -1,5 +1,5 @@
 import { ec, stark, type Account, type RpcProvider } from "starknet";
-import { ensureGameplayAccount } from "@bibliothecadao/eternum";
+import { deviceKeyOf, joinRealmsAccount, keyGuardian } from "@bibliothecadao/eternum";
 import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
 
 export interface HarnessAccount {
@@ -14,7 +14,6 @@ export interface HarnessAccount {
 }
 
 interface CreateHarnessAccountsOptions {
-  authority: string;
   classHash: string;
   concurrency?: number;
   count: number;
@@ -24,8 +23,8 @@ interface CreateHarnessAccountsOptions {
 
 const DEFAULT_DEPLOY_CONCURRENCY = 12;
 
+/** Bots are Realms accounts under one throwaway guardian per run; our guardian never approves a bot. */
 export async function createHarnessAccounts({
-  authority,
   classHash,
   concurrency = DEFAULT_DEPLOY_CONCURRENCY,
   count,
@@ -33,22 +32,23 @@ export async function createHarnessAccounts({
   provider,
 }: CreateHarnessAccountsOptions): Promise<HarnessAccount[]> {
   const chainId = await provider.getChainId();
+  const guardianKey = stark.randomAddress();
+  const shard = { chainId, accountClassHash: classHash, guardianPublicKey: ec.starkCurve.getStarkKey(guardianKey) };
   const botIds = Array.from({ length: count }, (_, botId) => botId);
   return mapWithConcurrency(botIds, concurrency, async (botId) => {
     const privateKey = stark.randomAddress();
-    const publicKey = ec.starkCurve.getStarkKey(privateKey);
+    const device = deviceKeyOf(privateKey);
     const startedAt = performance.now();
 
     try {
       // Every send a bot makes, raw or through the client's provider, takes the client's nonce and fee path.
       const account = configureGameplayAccountSubmits(
-        await ensureGameplayAccount({
-          authority,
-          classHash,
-          owner: "0x0",
-          privateKey,
+        await joinRealmsAccount({
           provider,
-          publicKey,
+          shard,
+          realmsId: stark.randomAddress(),
+          device,
+          approve: keyGuardian(guardianKey),
         }),
         chainId,
       );
@@ -61,7 +61,7 @@ export async function createHarnessAccounts({
         gameId,
         owner: account.address,
         privateKey,
-        publicKey,
+        publicKey: device.publicKey,
       };
     } catch (error) {
       throw new Error(`Failed to deploy gameplay account for bot ${botId}`, { cause: error });

@@ -20,8 +20,8 @@ Three signer modes, from the repository root:
 # Spectate: no key, act refuses to submit.
 pnpm --filter @bibliothecadao/agent-runner start -- --game-id 5 --signer none
 
-# Guest: a self-bound account minted on first run and kept in <data dir>/guest-key.json.
-BINDING_AUTHORITY_PRIVATE_KEY=... pnpm --filter @bibliothecadao/agent-runner start -- --game-name blitz-daily-0003 --signer guest
+# Guest: a Realms account that guards itself, minted on first run and kept in <data dir>/guest-key.json.
+pnpm --filter @bibliothecadao/agent-runner start -- --game-name blitz-daily-0003 --signer guest
 
 # Key: an existing gameplay account.
 GAMEPLAY_PRIVATE_KEY=... GAMEPLAY_ACCOUNT_ADDRESS=... pnpm --filter @bibliothecadao/agent-runner start -- --game-id 5 --signer key
@@ -36,7 +36,6 @@ model (`src/model-profiles.ts`). Flags win over environment variables; every fla
 | Environment variable                               | Flag                                                   | Meaning                                         |
 | -------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------- |
 | `SHARD_URL`                                        | `--shard-url`                                          | The shard's Herald; its manifest names the rest |
-| `BINDING_AUTHORITY_PRIVATE_KEY`                    | `--binding-authority-private-key`                      | Guest mode: binds the minted account            |
 | `GAMEPLAY_PRIVATE_KEY`, `GAMEPLAY_ACCOUNT_ADDRESS` | `--gameplay-private-key`, `--gameplay-account-address` | Key mode                                        |
 | `OPENROUTER_API_KEY`                               |                                                        | Live model calls (read by pi-ai)                |
 | `MODEL_PROFILE`                                    | `--model-profile`                                      | `cheap`, `balanced` (default), or `strong`      |
@@ -80,7 +79,7 @@ Blitz under a measured cost envelope"; the envelope is whatever that manifest re
 until a run has produced one.
 
 ```sh
-OPENROUTER_API_KEY=... BINDING_AUTHORITY_PRIVATE_KEY=... SHARD_URL=... apps/agent-runner/scripts/play-blitz.sh --model-profile balanced
+OPENROUTER_API_KEY=... SHARD_URL=... apps/agent-runner/scripts/play-blitz.sh --model-profile balanced
 ```
 
 It has not been run yet: the OpenRouter key and the binding authority key live on the lab box.

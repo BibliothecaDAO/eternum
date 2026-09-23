@@ -5,10 +5,10 @@
 # not past its end), with a chosen model profile, until the game ends. Then prints the manifest path and its cost
 # line. No cost figure is asserted here: the number is whatever the manifest of a real run records.
 #
-# Environment: OPENROUTER_API_KEY, BINDING_AUTHORITY_PRIVATE_KEY, and SHARD_URL, the shard's Herald.
+# Environment: OPENROUTER_API_KEY and SHARD_URL, the shard's Herald.
 #
 # Usage, from anywhere:
-#   OPENROUTER_API_KEY=... BINDING_AUTHORITY_PRIVATE_KEY=... SHARD_URL=... \
+#   OPENROUTER_API_KEY=... SHARD_URL=... \
 #     apps/agent-runner/scripts/play-blitz.sh [--game-name <name>] [--model-profile cheap|balanced|strong] [--data-dir <dir>]
 set -euo pipefail
 
@@ -19,7 +19,7 @@ DATA_DIR=""
 
 main() {
   parse_args "$@"
-  require_env OPENROUTER_API_KEY BINDING_AUTHORITY_PRIVATE_KEY SHARD_URL
+  require_env OPENROUTER_API_KEY SHARD_URL
   local game_id data_dir log
   game_id=$(resolve_game_id)
   data_dir=${DATA_DIR:-$RUNNER_DIR/.agent-data/$game_id}

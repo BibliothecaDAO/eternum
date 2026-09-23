@@ -24,11 +24,15 @@ describe("signRunnerIntent", () => {
     signer: { mode: "key", gameplayAccountAddress: "0x123", gameplayPrivateKey: privateKey },
   } as RunnerConfig;
 
-  it("signs with the gameplay key in the account's [r, s] layout", async () => {
+  it("signs as the Realms account's device: [device_key, r, s]", async () => {
     const digest = "0x456";
     const signature = await signRunnerIntent(config, 1, { address: "0x123" } as AccountInterface, digest);
     const expected = ec.starkCurve.sign(digest, privateKey);
-    expect(signature).toEqual([`0x${expected.r.toString(16)}`, `0x${expected.s.toString(16)}`]);
+    expect(signature).toEqual([
+      ec.starkCurve.getStarkKey(privateKey),
+      `0x${expected.r.toString(16)}`,
+      `0x${expected.s.toString(16)}`,
+    ]);
   });
 
   it("rejects a changed gameplay identity before signing", async () => {

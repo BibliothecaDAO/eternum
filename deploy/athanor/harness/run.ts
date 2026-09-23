@@ -7,7 +7,7 @@ import { defaultPresetForEnvironment } from "../../../config/deployer/clean/cons
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { Worker, isMainThread, parentPort, workerData, threadId } from "node:worker_threads";
 import path from "node:path";
-import { bindGameplayAccounts, signGameplayIntent } from "@bibliothecadao/eternum";
+import { DeviceSigner, deviceKeyOf, signGameplayIntent } from "@bibliothecadao/eternum";
 import { splitPlaytestRoster } from "../../../apps/launch-service/src/slots";
 import { configureGameplayAccountSubmits, openShard } from "@bibliothecadao/eternum/game-client";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
@@ -139,9 +139,6 @@ async function main(): Promise<void> {
     openShard(options.heraldUrl, bindings.schemaIdentity),
   ]);
   assertChainId(chainId, { shard }, "RPC_URL");
-  if (BigInt(gameplayContracts.playerRegistryAddress) !== 0n) {
-    requiredEnvironmentValue("BINDING_AUTHORITY_PRIVATE_KEY", "harness with PlayerRegistry");
-  }
   const prepared = options.preparedGamePath
     ? await readJson<PreparedGame>(path.resolve(options.preparedGamePath))
     : await prepareGames(options, gameplayContracts, provider);
@@ -156,7 +153,7 @@ async function main(): Promise<void> {
   const accounts: HarnessAccount[] = prepared.accounts.map((account) => ({
     ...account,
     account: configureGameplayAccountSubmits(
-      new Account({ provider, address: account.address, signer: account.privateKey }),
+      new Account({ provider, address: account.address, signer: new DeviceSigner(deviceKeyOf(account.privateKey)) }),
       chainId,
     ),
   }));
@@ -370,21 +367,10 @@ async function prepareGames(
   provider: HarnessProvider,
 ): Promise<PreparedGame | PreparedGame[]> {
   const accounts = await createHarnessAccounts({
-    authority: contracts.bindingAuthorityAddress,
     classHash: contracts.playerAccountClassHash,
     concurrency: options.setupConcurrency,
     count: options.bots,
     gameId: 0,
-    provider,
-  });
-  await bindGameplayAccounts({
-    accounts: accounts.map(({ address, owner }) => ({ address, owner })),
-    authority: new Account({
-      provider,
-      address: contracts.bindingAuthorityAddress,
-      signer: requiredEnvironmentValue("BINDING_AUTHORITY_PRIVATE_KEY", "harness"),
-    }),
-    playerRegistryAddress: contracts.playerRegistryAddress,
     provider,
   });
   const groups =

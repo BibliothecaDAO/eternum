@@ -1,5 +1,4 @@
-export * from "./account/bind-gameplay-accounts";
-export * from "./account/gameplay-account";
+export * from "./account/realms-account";
 export * from "./account/transaction-resource-bounds";
 export * from "./data";
 export * from "./managers";

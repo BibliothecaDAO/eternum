@@ -22,7 +22,6 @@ describe("native deployment target is explicit", () => {
     DEPLOYER_ACCOUNT_ADDRESS: "0x1",
     DEPLOYER_PRIVATE_KEY: "0x2",
     BINDING_AUTHORITY_ADDRESS: "0x3",
-    BINDING_AUTHORITY_PRIVATE_KEY: "0x4",
   };
 
   for (const name of Object.keys(target)) {

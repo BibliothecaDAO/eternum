@@ -13,9 +13,7 @@ import type { NativeWorldBindings } from "@bibliothecadao/types";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
 export interface HarnessGameplayContracts {
-  bindingAuthorityAddress: string;
   playerAccountClassHash: string;
-  playerRegistryAddress: string;
 }
 
 interface ConnectHarnessGameClientOptions {

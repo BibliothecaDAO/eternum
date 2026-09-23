@@ -10,7 +10,9 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { NotificationSettings } from "@/ui/modules/settings/notification-settings";
 import type { Session } from "@realms-world/identity";
 
+import { DevicesPanel } from "./devices";
 import { shortAddress } from "./format";
+import { SecureAccountPrompt } from "./secure-account";
 import { displayName, PORTRAITS, portraitUrl } from "./identity-chip";
 import { GhostButton, GoldButton, Loading, Panel, PanelTitle } from "./kit";
 
@@ -133,9 +135,16 @@ const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () =
           </div>
         ) : null}
         <div className="space-y-2">
+          <SecureAccountPrompt />
           <div className="flex items-center justify-between gap-2.5 rounded-lg border border-gold/20 bg-black/40 px-3 py-2.5 text-[13px]">
             <span className="text-gold/60">Wallet</span>
-            <b className="font-mono text-[12px]">{shortAddress(session.user.id)}</b>
+            {session.user.address ? (
+              <b className="font-mono text-[12px]">{shortAddress(session.user.address)}</b>
+            ) : (
+              <GhostButton onClick={() => usePopoverStore.getState().open(IDENTITY_POPOVER_ID)}>
+                Link a wallet
+              </GhostButton>
+            )}
           </div>
           {hasName ? (
             <details className="rounded-lg border border-gold/20 bg-black/40 px-3 py-2.5">
@@ -149,6 +158,9 @@ const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () =
             <GhostButton onClick={() => usePopoverStore.getState().open(IDENTITY_POPOVER_ID)}>Sign out</GhostButton>
           </div>
         </div>
+      </Panel>
+      <Panel>
+        <DevicesPanel realmsId={session.user.realmsId} />
       </Panel>
       <Panel>
         <NotificationSettings />
@@ -167,7 +179,8 @@ export const AccountPage = () => {
       <Panel className="max-w-lg">
         <PanelTitle>Your account</PanelTitle>
         <p className="mb-3 text-[13.5px] text-gold/70">
-          Sign in with a Starknet wallet. One signature signs you in, no password, no email. Then claim your name.
+          Create a Realms account with a passkey, or sign in with a Starknet wallet. No password, no email. Then claim
+          your name.
         </p>
         <GoldButton onClick={() => requestSignIn({ redirectTo: "/account" })}>Sign in</GoldButton>
       </Panel>

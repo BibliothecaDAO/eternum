@@ -3,7 +3,7 @@ import { createBrowserScheduler } from "@/sync/browser-scheduler";
 import {
   createGameClient,
   createNativeTicketSubmission,
-  getStoredGameplayKey,
+  getOrCreateDeviceKey,
   signGameplayIntent,
 } from "@bibliothecadao/eternum";
 
@@ -23,12 +23,10 @@ export async function createBrowserGameClient(input: BrowserGameInput) {
       bindings: nativeBindings,
       chainId,
       signIntent: async (actor, digest) => {
-        const { account, owner } = useAccountStore.getState();
-        if (!account || !owner || BigInt(account.address) !== BigInt(actor.address))
+        const { account } = useAccountStore.getState();
+        if (!account || BigInt(account.address) !== BigInt(actor.address))
           throw new Error("Gameplay identity changed before signing");
-        const key = getStoredGameplayKey({ storage: localStorage, chainId, owner });
-        if (!key) throw new Error("Gameplay signing key is unavailable");
-        return signGameplayIntent(digest, key.privateKey);
+        return signGameplayIntent(digest, getOrCreateDeviceKey(localStorage).privateKey);
       },
       submitIntent: createNativeTicketSubmission(input.shard.admissionUrl),
     },

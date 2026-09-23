@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useGame } from "@/hooks/context/game-context";
+import { IDENTITY_POPOVER_ID, useIdentitySession } from "@/hooks/context/identity-session";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
@@ -34,10 +36,13 @@ export function NativeBridgePanel({ structureId }: { structureId: number }) {
   const [amount, setAmount] = useState("");
   const [recipient, setRecipient] = useState("");
   const [pending, setPending] = useState(false);
+  // Value leaves the game only to a wallet the player linked to their Realms account.
+  const linkedWallet = useIdentitySession().session?.user.address ?? null;
   if (mode !== "eternum" || !ordersAllowed || !structure || structure.owner !== BigInt(account.address)) return null;
   const token = tokens.find((row) => row.resource_type === Number(resource));
   const bridge = async (deposit: boolean) => {
-    if (!token) return;
+    const withdrawTo = recipient || linkedWallet;
+    if (!token || (!deposit && !withdrawTo)) return;
     setPending(true);
     try {
       const [precision] = deposit
@@ -64,7 +69,7 @@ export function NativeBridgePanel({ structureId }: { structureId: number }) {
         await systemCalls.bridge_withdraw_from_realm({
           signer: account,
           from_structure_id: structureId,
-          recipient_address: recipient || account.address,
+          recipient_address: withdrawTo ?? "",
           client_fee_recipient: 0,
           resources,
         });
@@ -95,7 +100,7 @@ export function NativeBridgePanel({ structureId }: { structureId: number }) {
       />
       <input
         aria-label="Withdrawal recipient"
-        placeholder="Recipient (your account by default)"
+        placeholder="Recipient (your linked wallet by default)"
         value={recipient}
         onChange={(event) => setRecipient(event.target.value)}
       />
@@ -104,9 +109,15 @@ export function NativeBridgePanel({ structureId }: { structureId: number }) {
         <Button disabled={!token || pending} isLoading={pending} onClick={() => void bridge(true)}>
           Deposit
         </Button>
-        <Button disabled={!token || pending} onClick={() => void bridge(false)}>
-          Withdraw
-        </Button>
+        {linkedWallet ? (
+          <Button disabled={!token || pending} onClick={() => void bridge(false)}>
+            Withdraw
+          </Button>
+        ) : (
+          <Button onClick={() => usePopoverStore.getState().open(IDENTITY_POPOVER_ID)}>
+            Link a wallet to withdraw
+          </Button>
+        )}
       </div>
     </section>
   );

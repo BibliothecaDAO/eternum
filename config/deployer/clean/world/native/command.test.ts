@@ -48,9 +48,10 @@ function setup(outcome?: string[]) {
         const [signed] = request.params;
         requests.push(signed);
         const action = hash.computePoseidonHashOnElements(signed.intent);
+        expect(BigInt(signed.signature[0])).toBe(BigInt(ec.starkCurve.getStarkKey("0x1234")));
         expect(
           ec.starkCurve.verify(
-            new ec.starkCurve.Signature(BigInt(signed.signature[0]), BigInt(signed.signature[1])),
+            new ec.starkCurve.Signature(BigInt(signed.signature[1]), BigInt(signed.signature[2])),
             action,
             ec.starkCurve.getPublicKey("0x1234"),
           ),

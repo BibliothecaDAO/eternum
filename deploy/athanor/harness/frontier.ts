@@ -1,5 +1,5 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import { Account } from "starknet";
+import { createOperatorAccount } from "../../../config/deployer/clean/shared/madara-account";
 import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
 import {
   createGameActions,
@@ -44,7 +44,7 @@ export async function launchFrontierSeason(provider: HarnessProvider, gameName: 
   const privateKey = process.env.DEPLOYER_PRIVATE_KEY;
   if (!manifest || !address || !privateKey)
     throw new Error("Frontier launch requires the isolated manifest and authority");
-  const account = new Account({ provider, address, signer: privateKey });
+  const account = createOperatorAccount(provider, address, privateKey);
   const config = loadNativePresetConfiguration("madara.frontier", 1);
   const canonical = buildNativePreset(config, 1);
   const accelerated = buildNativePreset(config, 1);

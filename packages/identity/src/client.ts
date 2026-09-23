@@ -11,6 +11,25 @@ import type { IdentityChainId, Session } from "./types";
 
 export type SignTypedData = (message: SiwsTypedData) => Promise<string[]>;
 
+/** One device change on the player's gameplay account on one shard, for the guardian to approve. */
+export interface DeviceChangeRequest {
+  chainId: string;
+  account: string;
+  action: "ADD" | "REVOKE";
+  deviceKey: string;
+  counter: number;
+}
+
+/** A refusal the identity service names, such as `account_not_secured` or `WALLET_LINKED_ELSEWHERE`. */
+export class IdentityRequestError extends Error {
+  constructor(
+    readonly status: number,
+    readonly code: string | undefined,
+  ) {
+    super(code ?? `Identity request failed with status ${status}`);
+  }
+}
+
 export interface IdentityClientOptions {
   /** The identity API root: `/api` when it is served under the page's own origin, or an absolute URL. */
   apiUrl: string;
@@ -28,7 +47,12 @@ export interface SignInOptions {
 
 const readJson = async <T>(response: Response): Promise<T> => {
   if (!response.ok) {
-    throw new Error(`Identity request failed with status ${response.status}`);
+    const payload = (await response.json().catch(() => null)) as {
+      error?: string;
+      message?: string;
+      code?: string;
+    } | null;
+    throw new IdentityRequestError(response.status, payload?.error ?? payload?.message ?? payload?.code);
   }
   return (await response.json()) as T;
 };
@@ -70,29 +94,88 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     }
   };
 
-  const signIn = async (options: SignInOptions): Promise<Session> => {
+  const requireSession = async (): Promise<Session> => {
+    const session = await getSession();
+    if (!session) throw new Error("Identity session was not created");
+    return session;
+  };
+
+  /** A Sign in with Starknet proof: the server's nonce in a SNIP-12 message the wallet signs. */
+  const siwsProof = async (options: SignInOptions) => {
     const nonceResponse = await request("/auth/siws/nonce", {
       method: "POST",
       body: JSON.stringify({ address: options.address }),
     });
     const { nonce } = await readJson<{ nonce: string }>(nonceResponse);
     const message = buildSiwsMessage({ ...options, nonce });
-    const signature = await options.signTypedData(message);
+    return {
+      address: options.address,
+      message: JSON.stringify(message),
+      signature: await options.signTypedData(message),
+    };
+  };
 
+  const signIn = async (options: SignInOptions): Promise<Session> => {
     await readJson(
-      await request("/auth/siws/verify", {
+      await request("/auth/siws/verify", { method: "POST", body: JSON.stringify(await siwsProof(options)) }),
+    );
+    return requireSession();
+  };
+
+  /** Links the wallet to the signed-in Realms account; the server refuses a wallet already linked elsewhere. */
+  const linkWallet = async (options: SignInOptions): Promise<string> => {
+    const linked = await readJson<{ address: string }>(
+      await request("/auth/siws/link", { method: "POST", body: JSON.stringify(await siwsProof(options)) }),
+    );
+    return linked.address;
+  };
+
+  /** A new Realms account with no way back in yet; it must add a passkey or a wallet before it can approve a device. */
+  const signInAnonymously = async (): Promise<Session> => {
+    await readJson(await request("/auth/sign-in/anonymous", { method: "POST", body: JSON.stringify({}) }));
+    return requireSession();
+  };
+
+  /** Secures the signed-in account with a passkey on this device. */
+  const registerPasskey = async (credentials: CredentialsContainer = navigator.credentials): Promise<void> => {
+    const options = await readJson<PublicKeyCredentialCreationOptionsJSON>(
+      await request("/auth/passkey/generate-register-options", { method: "GET" }),
+    );
+    const credential = (await credentials.create({
+      publicKey: PublicKeyCredential.parseCreationOptionsFromJSON(options),
+    })) as PublicKeyCredential | null;
+    if (!credential) throw new Error("Passkey registration was cancelled");
+    await readJson(
+      await request("/auth/passkey/verify-registration", {
         method: "POST",
-        body: JSON.stringify({
-          address: options.address,
-          message: JSON.stringify(message),
-          signature,
-        }),
+        body: JSON.stringify({ response: credential.toJSON() }),
       }),
     );
+  };
 
-    const session = await getSession();
-    if (!session) throw new Error("Identity session was not created");
-    return session;
+  const signInWithPasskey = async (credentials: CredentialsContainer = navigator.credentials): Promise<Session> => {
+    const options = await readJson<PublicKeyCredentialRequestOptionsJSON>(
+      await request("/auth/passkey/generate-authenticate-options", { method: "GET" }),
+    );
+    const assertion = (await credentials.get({
+      publicKey: PublicKeyCredential.parseRequestOptionsFromJSON(options),
+    })) as PublicKeyCredential | null;
+    if (!assertion) throw new Error("Passkey sign-in was cancelled");
+    await readJson(
+      await request("/auth/passkey/verify-authentication", {
+        method: "POST",
+        body: JSON.stringify({ response: assertion.toJSON() }),
+      }),
+    );
+    return requireSession();
+  };
+
+  /** The guardian's `[r, s]` over one device change on the signed-in player's own account. */
+  const approveDeviceChange = async (change: DeviceChangeRequest): Promise<string[]> => {
+    const approved = await readJson<{ signature: string[] }>(
+      await request("/devices", { method: "POST", body: JSON.stringify(change) }),
+    );
+    return approved.signature;
   };
 
   const getNotificationPreferences = async (): Promise<NotificationPreferences> =>
@@ -126,6 +209,11 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
   return {
     getSession,
     signIn,
+    signInAnonymously,
+    registerPasskey,
+    signInWithPasskey,
+    linkWallet,
+    approveDeviceChange,
     signOut,
     updateUser,
     getNotificationPreferences,

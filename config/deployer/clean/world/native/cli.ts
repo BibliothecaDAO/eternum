@@ -4,7 +4,7 @@ import { RpcProvider } from "starknet";
 import { readShardManifest } from "@realms-world/chain/shard-manifest";
 import { assertProviderChain } from "@realms-world/chain";
 import type { CliArgs } from "../../cli/args";
-import { createMadaraAccount } from "../../shared/madara-account";
+import { createMadaraAccount, createOperatorAccount } from "../../shared/madara-account";
 import { writeWorldOutputs } from "./write";
 import { loadNativeWorld } from "./artifacts";
 import { buildNativeManifest } from "./manifest";
@@ -17,7 +17,7 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
   const seed = required(args, "seed");
   const identity = JSON.parse(readFileSync(required(args, "identity"), "utf8"));
   const authority = identity.operatorAccountAddress;
-  if (!authority) throw new Error("Identity deployment requires a bound operatorAccountAddress");
+  if (!authority) throw new Error("Identity deployment requires an operatorAccountAddress");
   const provider = new RpcProvider({ nodeUrl: args["rpc-url"] ?? requiredEnvironment("RPC_URL") });
   const manifest = readShardManifest<NativeWorldManifest>(manifestPath);
   await assertProviderChain(provider, manifest, "RPC_URL");
@@ -42,7 +42,7 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
     if (!plan.synced) process.exitCode = 1;
     return;
   }
-  const account = createMadaraAccount(provider, authority, requiredEnvironment("DEPLOYER_PRIVATE_KEY"));
+  const account = createOperatorAccount(provider, authority, requiredEnvironment("DEPLOYER_PRIVATE_KEY"));
   const declarer = createMadaraAccount(
     provider,
     requiredEnvironment("DEPLOYER_ACCOUNT_ADDRESS"),
@@ -57,7 +57,7 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
   const shard = {
     chainId: manifest.shard.chainId,
     accountClassHash: manifest.shard.accountClassHash,
-    contracts: { playerRegistry: identity.playerRegistryAddress, bindingAuthority: identity.bindingAuthorityAddress },
+    contracts: {},
     guardianPublicKey: manifest.shard.guardianPublicKey,
   };
   writeWorldOutputs(

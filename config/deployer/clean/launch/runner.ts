@@ -3,7 +3,8 @@ import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schem
 import { buildNativeGameParams, loadNativePresetConfiguration } from "../registrar/native-preset";
 import { buildNativePreset } from "../config/native-preset";
 import { setTimeout as sleep } from "node:timers/promises";
-import { Account, RpcProvider, shortString } from "starknet";
+import { type Account, RpcProvider, shortString } from "starknet";
+import { createOperatorAccount } from "../shared/madara-account";
 import { assertProviderChain } from "@realms-world/chain";
 import { applyDeploymentConfigOverrides } from "../config/config-loader";
 import {
@@ -159,11 +160,7 @@ function launchCredentials(launch: PreparedLaunch) {
 
 function createLaunchAccount(launch: PreparedLaunch): Account {
   const credentials = launchCredentials(launch);
-  return new Account({
-    provider: launch.runtime.provider,
-    address: credentials.accountAddress,
-    signer: credentials.privateKey,
-  });
+  return createOperatorAccount(launch.runtime.provider, credentials.accountAddress, credentials.privateKey);
 }
 
 async function assertLaunchChainTargets(launch: PreparedLaunch): Promise<void> {

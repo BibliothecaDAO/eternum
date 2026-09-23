@@ -9,6 +9,7 @@ import { IdentityLogin } from "@/ui/modules/identity/identity-login";
 import type { Session } from "@realms-world/identity";
 
 import { displayName, useIdentityPanelSlot } from "./identity-chip";
+import { SecureAccountPrompt } from "./secure-account";
 import { shortAddress } from "./format";
 
 /**
@@ -55,8 +56,17 @@ function SignedInPanel({ session }: { session: Session }) {
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
         <span className="text-sm font-semibold text-gold">{displayName(session)}</span>
-        <span className="font-mono text-xs text-gold/60">{shortAddress(session.user.id)}</span>
+        {session.user.address ? (
+          <span className="font-mono text-xs text-gold/60">{shortAddress(session.user.address)}</span>
+        ) : null}
       </div>
+      <SecureAccountPrompt />
+      {session.user.address ? null : (
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-gold/60">Link a wallet to claim prizes and withdraw.</span>
+          <IdentityLogin mode="link" className="items-start" />
+        </div>
+      )}
       <button
         type="button"
         disabled={signingOut}
@@ -73,8 +83,8 @@ function SignedInPanel({ session }: { session: Session }) {
 const SignInPanel = () => (
   <div className="flex flex-col gap-3">
     <p className="text-sm text-gold/85">
-      Sign in with your Starknet wallet. One signature, no password. Your gameplay account is prepared automatically
-      after sign-in.
+      A Realms account needs no wallet: a passkey on this device signs you in. Your gameplay account is prepared
+      automatically when you play.
     </p>
     <IdentityLogin className="items-start" />
   </div>
