@@ -1292,7 +1292,7 @@ export default class WorldmapScene extends WarpTravel {
       { selfHealEnabled: WORLDMAP_ZOOM_HARDENING.terrainSelfHeal },
       {
         isBoxVisible: (box) => this.visibilityManager.isBoxVisible(box),
-        getVisibleCellCount: () => this.proceduralTerrain.getVisibleCellCount(),
+        getPresentedCellCount: () => this.proceduralTerrain.getPresentedCellCount(),
         requestChunkRefresh: (force, reason) => this.requestChunkRefresh(force, reason),
         waitForRequestedChunkRefresh: (token) => this.waitForRequestedChunkRefresh(token),
         emitTelemetry: (event, payload) => this.emitZoomHardeningTelemetry(event, payload),
