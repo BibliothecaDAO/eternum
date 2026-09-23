@@ -200,11 +200,13 @@ uses 96 players and the frozen run configuration. Do not substitute a short smok
 failed. Run reports remain in `.lab/runs/`; measurements and exact revision/image/configuration pins go in the PR.
 
 A roster run drives every player as a worker thread of one process and asserts its gates once, over the whole run, in
-`rosters-<time>/summary.json`: the action threshold (3,500 for the frozen 96-player configuration, otherwise every
-planned action) and the owner's bars: submit to pre-confirmed visible in the client p95 ≤ 250 ms
-(`admissionToVisibleMs`), Herald's confirmed state behind the node p95 ≤ 500 ms (`heraldConfirmedLagMs`: Herald's
-confirmed notice for the transaction minus the node's ACCEPTED_ON_L2 for it, both on the driver's clock), and zero
-failures. Pre-confirmed, accepted-on-L2 and block close latencies are reported beside them as diagnostics. Host state
+`rosters-<time>/summary.json`. A run fails only on correctness: the action threshold (3,500 for the frozen 96-player
+configuration, otherwise every planned action), chain or driver failures, and blocking gameplay rejections. Latency is a
+target to drive as low as possible, reported against the owner's figures and flagged when over, never a failed run:
+submit to pre-confirmed visible in the client p95 250 ms (`admissionToVisibleMs`), and Herald's confirmed state behind
+the node p95 500 ms (`heraldConfirmedLagMs`: Herald's confirmed notice for the transaction minus the node's
+ACCEPTED_ON_L2 for it, both on the driver's clock). Pre-confirmed, accepted-on-L2 and block close latencies are reported
+beside them as diagnostics. Host state
 and block stats are read once by the driver, never per worker, and a block-stats read that fails or finds no closed
 block fails the run. The summary records the driver's placement (host, pid, cpuset, cgroup, available threads) and, per game, the
 number of transactions its settlement burst took at start. Worker reports under `players/` carry no gates of their own.

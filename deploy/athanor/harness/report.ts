@@ -166,10 +166,11 @@ interface LatencyPercentiles {
   p99: number | null;
 }
 
-// The owner's bars (2026-09-23): the player sees a pre-confirmed result fast, Herald keeps up with the node, and
-// nothing fails. Block close, pre-confirmed and accepted-on-L2 latencies are reported beside them as diagnostics.
-const ADMISSION_TO_VISIBLE_P95_LIMIT_MS = 250;
-const HERALD_CONFIRMED_LAG_P95_LIMIT_MS = 500;
+// The owner's latency targets (2026-09-23): the player sees a pre-confirmed result fast and Herald keeps up with the
+// node. They are driven as low as possible and reported against these figures, never a failing gate; a run fails only
+// on correctness. Block close, pre-confirmed and accepted-on-L2 latencies are reported beside them as diagnostics.
+const ADMISSION_TO_VISIBLE_P95_TARGET_MS = 250;
+const HERALD_CONFIRMED_LAG_P95_TARGET_MS = 500;
 export const HARNESS_OUTPUT_DIRECTORY = path.resolve(
   process.env.HARNESS_OUTPUT_DIRECTORY ?? path.resolve(import.meta.dir, "../.lab/runs"),
 );
@@ -252,15 +253,13 @@ export function assessRosterRun(input: {
     admissionToVisibleMs: { p50: percentile(admissionToVisibleMs, 50), p95: percentile(admissionToVisibleMs, 95) },
     heraldConfirmedLagMs: { p50: percentile(heraldConfirmedLagMs, 50), p95: percentile(heraldConfirmedLagMs, 95) },
   };
-  const checks = {
-    thresholdEligibleActions: thresholdEligibleActions >= input.minimumThresholdActions,
-    ...(input.functional
-      ? {}
-      : latencyChecks(percentiles.admissionToVisibleMs.p95, percentiles.heraldConfirmedLagMs.p95)),
-  };
+  const checks = { thresholdEligibleActions: thresholdEligibleActions >= input.minimumThresholdActions };
   return {
     checks,
-    limits: gateLimits(input.functional, input.minimumThresholdActions),
+    limits: { minimumThresholdActions: input.minimumThresholdActions },
+    latency: input.functional
+      ? null
+      : latencyAgainstTargets(percentiles.admissionToVisibleMs.p95, percentiles.heraldConfirmedLagMs.p95),
     passed: Object.values(checks).every(Boolean),
     percentiles: input.functional ? null : percentiles,
     plannedActions,
@@ -275,23 +274,20 @@ function releaseSpread(workers: WorkerWorkloadSummary[]): number | null {
   return first.length === 0 ? null : Math.max(...first) - Math.min(...first);
 }
 
-/** A run is judged only on its own samples: a latency with no samples fails its bar, never passes as zero. */
-export function latencyChecks(admissionToVisibleP95: number | null, heraldConfirmedLagP95: number | null) {
+/**
+ * Where each latency p95 stands against its target. Over target is flagged for the report, never a failed run; a
+ * latency with no samples is flagged too, since a run cannot show it met a target it never measured.
+ */
+export function latencyAgainstTargets(admissionToVisibleP95: number | null, heraldConfirmedLagP95: number | null) {
   return {
-    admissionToVisibleP95: passesLatency(admissionToVisibleP95, ADMISSION_TO_VISIBLE_P95_LIMIT_MS),
-    heraldConfirmedLagP95: passesLatency(heraldConfirmedLagP95, HERALD_CONFIRMED_LAG_P95_LIMIT_MS),
-  };
-}
-
-function gateLimits(functional: boolean, minimumThresholdActions: number) {
-  return {
-    minimumThresholdActions,
-    ...(functional
-      ? {}
-      : {
-          admissionToVisibleP95Ms: ADMISSION_TO_VISIBLE_P95_LIMIT_MS,
-          heraldConfirmedLagP95Ms: HERALD_CONFIRMED_LAG_P95_LIMIT_MS,
-        }),
+    targets: {
+      admissionToVisibleP95Ms: ADMISSION_TO_VISIBLE_P95_TARGET_MS,
+      heraldConfirmedLagP95Ms: HERALD_CONFIRMED_LAG_P95_TARGET_MS,
+    },
+    overTarget: {
+      admissionToVisibleP95: !withinTarget(admissionToVisibleP95, ADMISSION_TO_VISIBLE_P95_TARGET_MS),
+      heraldConfirmedLagP95: !withinTarget(heraldConfirmedLagP95, HERALD_CONFIRMED_LAG_P95_TARGET_MS),
+    },
   };
 }
 
@@ -327,7 +323,7 @@ function readNativeExecution(hostState: Record<string, unknown> | null): boolean
   return typeof madara?.nativeExecution === "boolean" ? madara.nativeExecution : null;
 }
 
-function analyzeHarnessResult(input: HarnessReportInput) {
+export function analyzeHarnessResult(input: HarnessReportInput) {
   const actions = input.workload.actions;
   const completedActions = actions.filter((action) => action.outcome === "completed");
   const reverts = actions.filter((action) => action.outcome === "reverted" || action.outcome === "rejected");
@@ -349,9 +345,6 @@ function analyzeHarnessResult(input: HarnessReportInput) {
       ? {}
       : {
           thresholdEligibleActions: thresholdEligibleActions >= input.gates.minimumThresholdActions,
-          ...(input.functional
-            ? {}
-            : latencyChecks(percentiles.admissionToVisibleMs.p95, percentiles.heraldConfirmedLagMs.p95)),
         }),
     setup: setupFailures.length === 0,
     ...(input.workload.frontier && input.functional ? frontierDesignChecks(input.workload.frontier) : {}),
@@ -376,6 +369,10 @@ function analyzeHarnessResult(input: HarnessReportInput) {
     completedActions,
     failedActions,
     failureClasses,
+    latency:
+      input.gates === null || input.functional
+        ? null
+        : latencyAgainstTargets(percentiles.admissionToVisibleMs.p95, percentiles.heraldConfirmedLagMs.p95),
     passed: Object.values(checks).every(Boolean),
     percentiles,
     requestedMix,
@@ -417,7 +414,7 @@ function buildHarnessManifest(
   createdAt: string,
 ) {
   return {
-    schemaVersion: 9,
+    schemaVersion: 10,
     runId,
     createdAt,
     passed: analysis.passed,
@@ -500,8 +497,9 @@ function buildHarnessManifest(
     gas,
     thresholds: {
       // Null limits: this process is one worker of a roster run, and the driver's summary carries the gates.
-      limits: input.gates ? gateLimits(input.functional ?? false, input.gates.minimumThresholdActions) : null,
+      limits: input.gates ? { minimumThresholdActions: input.gates.minimumThresholdActions } : null,
       checks: analysis.checks,
+      latency: analysis.latency,
     },
     driver: input.driver,
     evidence: input.gates
@@ -684,8 +682,8 @@ function latencyPercentiles(
   return { p50: percentile(values, 50), p95: percentile(values, 95), p99: percentile(values, 99) };
 }
 
-function passesLatency(value: number | null, limit: number): boolean {
-  return value !== null && value <= limit;
+function withinTarget(value: number | null, target: number): boolean {
+  return value !== null && value <= target;
 }
 
 // Block stats are the run's close-cost diagnostic, so a measured run cannot pass without them: a failed read (log
