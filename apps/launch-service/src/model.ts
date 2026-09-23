@@ -21,6 +21,8 @@ export interface LaunchRun {
   request: LaunchJobRequest;
   status: LaunchJobStatus;
   attempts: number;
+  /** When a queued run is next due: now for a new or retried run, its game's end for a result. */
+  dueAt: string;
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
@@ -41,13 +43,20 @@ export const launchName = (kind: LaunchKind, request: LaunchJobRequest): string 
   throw new Error(`Request does not match launch kind ${kind}`);
 };
 
-const publicStatus = (status: LaunchJobStatus): "running" | "attention" | "complete" =>
-  status === "complete" ? "complete" : status === "failed" ? "attention" : "running";
+/** The stored status as the page shows it: a failed run asks a launcher's attention. */
+const publicStatus = (status: LaunchJobStatus): Exclude<LaunchJobStatus, "failed"> | "attention" =>
+  status === "failed" ? "attention" : status;
 
 const stepStatus = (status: LaunchJobStatus, index: number): "pending" | "running" | "succeeded" | "failed" => {
   if (status === "complete") return "succeeded";
-  if (index > 0) return "pending";
+  if (index > 0 || status === "queued") return "pending";
   return status === "failed" ? "failed" : "running";
+};
+
+const latestEvent = (run: LaunchRun): string => {
+  if (run.errorMessage) return run.errorMessage;
+  if (run.status === "complete") return "Completed";
+  return run.status === "queued" ? `Queued until ${run.dueAt}` : "Running on the launch service";
 };
 
 export const toFactoryRunRecord = (run: LaunchRun) => {
@@ -61,6 +70,7 @@ export const toFactoryRunRecord = (run: LaunchRun) => {
     chain: "madara",
     gameType: resolveDeploymentEnvironment(run.environment).gameType,
     status: publicStatus(run.status),
+    ...(run.status === "queued" ? { dueAt: run.dueAt } : {}),
     executionMode: "fast_trial",
     requestedLaunchStep: "full",
     inputPath: launchRunPath(run.id),
@@ -75,7 +85,7 @@ export const toFactoryRunRecord = (run: LaunchRun) => {
       title,
       status: stepStatus(run.status, index),
       workflowStepName: title,
-      latestEvent: run.errorMessage ?? (run.status === "complete" ? "Completed" : "Queued on the launch service"),
+      latestEvent: latestEvent(run),
       ...(run.status === "failed" ? { errorMessage: run.errorMessage } : {}),
     })),
     recovery: {

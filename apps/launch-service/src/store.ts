@@ -14,6 +14,7 @@ interface LaunchRunRow {
   request: string;
   status: LaunchRun["status"];
   attempts: number;
+  available_at: number;
   error_message: string | null;
   summary: string | null;
   created_at: number;
@@ -54,6 +55,7 @@ const toRun = (row: LaunchRunRow): LaunchRun => ({
   request: JSON.parse(row.request) as LaunchJobRequest,
   status: row.status,
   attempts: row.attempts,
+  dueAt: iso(row.available_at),
   createdAt: iso(row.created_at),
   updatedAt: iso(row.updated_at),
   ...(row.completed_at ? { completedAt: iso(row.completed_at) } : {}),

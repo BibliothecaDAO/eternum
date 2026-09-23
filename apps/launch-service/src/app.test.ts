@@ -243,7 +243,10 @@ describe("launch service authorization", () => {
     expect(await created.json()).toMatchObject({
       environment: "madara.blitz",
       gameName: "bltz-effect-test",
-      status: "running",
+      // A queued run reads as queued, with when it is due, never as running.
+      status: "queued",
+      dueAt: expect.any(String),
+      steps: [{ id: "create-world", status: "pending", latestEvent: expect.stringMatching(/^Queued until /) }, {}],
       workflow: { workflowName: "box-native" },
     });
 
