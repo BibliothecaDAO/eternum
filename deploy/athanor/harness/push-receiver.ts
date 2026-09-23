@@ -91,27 +91,47 @@ export async function decryptPush(body: Uint8Array, keys: ReceiverKeys): Promise
 
 /**
  * Registers with the push service for one application server key and calls `onPush` for each push, decrypted and
- * acknowledged. Resolves with the subscription to give the identity Worker.
+ * acknowledged. Resolves with the subscription to give the identity Worker. The push service closes idle connections;
+ * the receiver reconnects under the same uaid and channel, so its subscription keeps delivering, queued pushes
+ * included, until `close`.
  */
 export async function receivePushes(
   applicationServerKey: string,
   onPush: (push: ReceivedPush) => void,
+  service = PUSH_SERVICE,
 ): Promise<{ subscription: PushSubscriptionKeys; close: () => void }> {
   const keys = await createReceiverKeys();
-  const socket = new WebSocket(PUSH_SERVICE);
   const channelID = crypto.randomUUID();
-  const endpoint = await new Promise<string>((resolve, reject) => {
+  let uaid = "";
+  let socket: WebSocket;
+  let closed = false;
+  let registered!: (endpoint: string) => void;
+  let failed!: (error: Error) => void;
+  const endpoint = new Promise<string>((resolve, reject) => {
+    registered = resolve;
+    failed = reject;
+  });
+  const connect = () => {
+    socket = new WebSocket(service);
     socket.addEventListener("open", () =>
-      socket.send(JSON.stringify({ messageType: "hello", use_webpush: true, uaid: "" })),
+      socket.send(JSON.stringify({ messageType: "hello", use_webpush: true, uaid, channelIDs: uaid ? [channelID] : [] })),
     );
-    socket.addEventListener("error", () => reject(new Error("Push service connection failed")));
+    socket.addEventListener("error", () => failed(new Error("Push service connection failed")));
+    socket.addEventListener("close", () => {
+      if (!closed) setTimeout(connect, 1_000);
+    });
     socket.addEventListener("message", async (event) => {
       const message = JSON.parse(String(event.data));
       if (message.messageType === "hello") {
-        socket.send(JSON.stringify({ messageType: "register", channelID, key: applicationServerKey }));
+        if (uaid === "") {
+          uaid = message.uaid;
+          socket.send(JSON.stringify({ messageType: "register", channelID, key: applicationServerKey }));
+        } else if (message.uaid !== uaid) {
+          console.error(JSON.stringify({ pushReceiverLost: { uaid, now: message.uaid } }));
+        }
       } else if (message.messageType === "register") {
-        if (message.status !== 200) reject(new Error(`Push service refused registration: ${message.status}`));
-        else resolve(message.pushEndpoint);
+        if (message.status !== 200) failed(new Error(`Push service refused registration: ${message.status}`));
+        else registered(message.pushEndpoint);
       } else if (message.messageType === "notification") {
         socket.send(
           JSON.stringify({ messageType: "ack", updates: [{ channelID: message.channelID, version: message.version }] }),
@@ -122,10 +142,17 @@ export async function receivePushes(
         onPush({ receivedAt: Date.now(), payload });
       }
     });
-  });
+  };
+  connect();
   return {
-    subscription: { endpoint, keys: { p256dh: base64url.encode(keys.publicKey), auth: base64url.encode(keys.authSecret) } },
-    close: () => socket.close(),
+    subscription: {
+      endpoint: await endpoint,
+      keys: { p256dh: base64url.encode(keys.publicKey), auth: base64url.encode(keys.authSecret) },
+    },
+    close: () => {
+      closed = true;
+      socket.close();
+    },
   };
 }
 
