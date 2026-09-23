@@ -16,8 +16,12 @@ use jsonrpsee::{
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::{json, Value};
 use starknet_types_core::felt::Felt;
-use std::{sync::Arc, time::Duration};
-use tokio::sync::{watch, Mutex};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+    time::Duration,
+};
+use tokio::sync::{oneshot, watch};
 
 const TRANSACTION_HASH_NOT_FOUND: i32 = 29;
 /// SNIP-6's accepting return value, `'VALID'`.
@@ -41,9 +45,8 @@ pub struct NodeConfig {
 /// A stock Madara node reached over JSON-RPC and WebSocket. Nothing here reads node internals.
 pub(crate) struct Node {
     http: HttpClient,
-    ws_url: String,
-    socket: Mutex<Option<Arc<NodeSocket>>>,
     head: watch::Receiver<Head>,
+    receipts: Arc<ReceiptWaiters>,
     pub chain: Felt,
     pub deployment: Felt,
     pub account: Felt,
@@ -86,15 +89,35 @@ pub(crate) enum Execution {
     Refused(String),
 }
 
-#[derive(Deserialize)]
-struct StatusUpdate {
-    status: TransactionStatus,
+/// Submissions waiting for their receipt from the sequencing account's receipt stream. A waiter is
+/// registered before its transaction is sent, so the receipt cannot arrive unclaimed.
+#[derive(Default)]
+struct ReceiptWaiters(Mutex<HashMap<Felt, oneshot::Sender<Receipt>>>);
+
+impl ReceiptWaiters {
+    fn wait_for(self: &Arc<Self>, hash: Felt) -> ReceiptWait {
+        let (sender, receiver) = oneshot::channel();
+        self.0.lock().expect("receipt waiters poisoned").insert(hash, sender);
+        ReceiptWait { hash, receiver, waiters: self.clone() }
+    }
+
+    fn deliver(&self, receipt: Receipt) {
+        if let Some(waiter) = self.0.lock().expect("receipt waiters poisoned").remove(&receipt.transaction_hash) {
+            waiter.send(receipt).ok();
+        }
+    }
 }
 
-#[derive(Deserialize)]
-struct TransactionStatus {
-    #[serde(default)]
-    execution_status: Option<ExecutionStatus>,
+struct ReceiptWait {
+    hash: Felt,
+    receiver: oneshot::Receiver<Receipt>,
+    waiters: Arc<ReceiptWaiters>,
+}
+
+impl Drop for ReceiptWait {
+    fn drop(&mut self) {
+        self.waiters.0.lock().expect("receipt waiters poisoned").remove(&self.hash);
+    }
 }
 
 impl Node {
@@ -104,11 +127,12 @@ impl Node {
         let latest: Head = http.request("starknet_getBlockWithTxHashes", rpc_params!["latest"]).await?;
         let (sender, head) = watch::channel(latest);
         tokio::spawn(follow_heads(config.ws_url.clone(), sender));
+        let receipts = Arc::new(ReceiptWaiters::default());
+        tokio::spawn(follow_receipts(config.ws_url, config.account, Arc::downgrade(&receipts)));
         Ok(Arc::new(Self {
             http,
-            ws_url: config.ws_url,
-            socket: Mutex::new(None),
             head,
+            receipts,
             chain,
             deployment: config.deployment,
             account: config.account,
@@ -194,49 +218,31 @@ impl Node {
         }
     }
 
-    async fn status_updates(&self, hash: Felt) -> anyhow::Result<Notifications<StatusUpdate>> {
-        let socket = self.socket().await?;
-        socket.subscribe("starknet_subscribeTransactionStatus", json!({ "transaction_hash": hash })).await
-    }
-
-    async fn socket(&self) -> anyhow::Result<Arc<NodeSocket>> {
-        let mut socket = self.socket.lock().await;
-        if let Some(open) = socket.as_ref().filter(|open| open.is_open()) {
-            return Ok(open.clone());
-        }
-        let connected = Arc::new(NodeSocket::connect(&self.ws_url).await?);
-        *socket = Some(connected.clone());
-        Ok(connected)
-    }
-
-    /// Subscribe before submitting, so an inclusion between the two cannot be missed.
+    /// The receipt arrives from the account's pre-confirmed receipt stream. Only a failed send or a
+    /// silent stream asks the node directly: a retry of a transaction the node already holds, or a
+    /// stream that dropped while reconnecting.
     pub async fn execute(&self, hash: Felt, transaction: Value) -> anyhow::Result<Execution> {
-        let mut updates = self.status_updates(hash).await?;
-        if let Some(receipt) = self.receipt(hash).await? {
-            return Ok(Execution::Included(Box::new(receipt)));
-        }
-        if !self.known(hash).await? {
-            let submitted: anyhow::Result<Value> =
-                self.request("starknet_addInvokeTransaction", rpc_params![transaction.clone()]).await;
-            match submitted {
-                Ok(accepted) => ensure!(
-                    accepted["transaction_hash"].as_str().and_then(|hash| Felt::from_hex(hash).ok()) == Some(hash),
-                    "node accepted a different transaction hash"
-                ),
-                Err(error) if !self.known(hash).await? => return Err(error),
-                Err(_) => {} // Submission completed even though its response was lost.
+        let mut wait = self.receipts.wait_for(hash);
+        let submitted: anyhow::Result<Value> =
+            self.request("starknet_addInvokeTransaction", rpc_params![transaction.clone()]).await;
+        match submitted {
+            Ok(accepted) => ensure!(
+                accepted["transaction_hash"].as_str().and_then(|hash| Felt::from_hex(hash).ok()) == Some(hash),
+                "node accepted a different transaction hash"
+            ),
+            Err(error) => {
+                if let Some(receipt) = self.receipt(hash).await? {
+                    return Ok(Execution::Included(Box::new(receipt)));
+                }
+                if !self.known(hash).await? {
+                    return Err(error);
+                }
             }
         }
         loop {
-            match tokio::time::timeout(QUIET, updates.next()).await {
-                Ok(Some(update)) => {
-                    if update?.status.execution_status.is_some() {
-                        if let Some(receipt) = self.receipt(hash).await? {
-                            return Ok(Execution::Included(Box::new(receipt)));
-                        }
-                    }
-                }
-                Ok(None) => anyhow::bail!("node transaction status stream closed"),
+            match tokio::time::timeout(QUIET, &mut wait.receiver).await {
+                Ok(Ok(receipt)) => return Ok(Execution::Included(Box::new(receipt))),
+                Ok(Err(_)) => anyhow::bail!("node receipt stream closed"),
                 Err(_) => {
                     if let Some(receipt) = self.receipt(hash).await? {
                         return Ok(Execution::Included(Box::new(receipt)));
@@ -308,6 +314,31 @@ struct CarriedTransaction {
 }
 
 /// Keeps the latest confirmed head: the admission clock and the signal that chain state moved.
+/// Delivers each pre-confirmed receipt of the sequencing account's transactions to its waiter, for as
+/// long as the node lives.
+async fn follow_receipts(url: String, account: Felt, waiters: std::sync::Weak<ReceiptWaiters>) {
+    let filter = json!({ "finality_status": ["PRE_CONFIRMED"], "sender_address": [account] });
+    loop {
+        let followed = async {
+            let socket = NodeSocket::connect(&url).await?;
+            let mut receipts: Notifications<Receipt> =
+                socket.subscribe("starknet_subscribeNewTransactionReceipts", filter.clone()).await?;
+            while let Some(receipt) = receipts.next().await {
+                let Some(waiters) = waiters.upgrade() else { return anyhow::Ok(()) };
+                waiters.deliver(receipt?);
+            }
+            anyhow::Ok(())
+        };
+        if let Err(error) = followed.await {
+            tracing::warn!(target: "gateway", %error, "receipt subscription lost; reconnecting");
+        }
+        if waiters.strong_count() == 0 {
+            return;
+        }
+        tokio::time::sleep(Duration::from_secs(1)).await;
+    }
+}
+
 async fn follow_heads(url: String, sender: watch::Sender<Head>) {
     loop {
         let followed = async {
