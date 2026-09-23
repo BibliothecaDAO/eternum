@@ -23,9 +23,12 @@ export default {
     await Effect.runPromise(
       runLaunchSchedule(new D1LaunchStore(env.DB), new D1SlotStore(env.DB), new D1CalendarStore(env.DB), new Date()),
     );
-    await env.REGISTRAR.get(env.REGISTRAR.idFromName("registrar")).wake();
+    // The backstop: whatever a tick queued, and anything due that no queueing path armed, runs now.
+    await registrarOf(env).armFor(Date.now());
   },
 };
+
+const registrarOf = (env: LaunchEnv) => env.REGISTRAR.get(env.REGISTRAR.idFromName("registrar"));
 
 export { Registrar } from "./registrar";
 
@@ -41,6 +44,7 @@ const launchAppOf = (env: LaunchEnv) =>
     store: new D1LaunchStore(env.DB),
     slots: new D1SlotStore(env.DB),
     calendar: new D1CalendarStore(env.DB),
+    registrar: { armFor: (dueAt) => registrarOf(env).armFor(dueAt) },
     playerAccount: async (realmsId) => {
       const { shard } = await readLaunchShard(env.SHARD_URL);
       return realmsAccountAddress(realmsId, shard.accountClassHash, shard.guardianPublicKey);

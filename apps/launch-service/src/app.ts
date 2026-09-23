@@ -19,6 +19,8 @@ interface LaunchAppDependencies {
   store: LaunchServiceStore;
   slots: SlotStore;
   calendar: CalendarStore;
+  /** The registrar that executes runs: every run queued here arms it for the run's due time. */
+  registrar: { armFor(dueAt: number): Promise<void> };
   /** The gameplay account a Realms account has on the shard slots launch on. */
   playerAccount: (realmsId: string) => Promise<string>;
 }
@@ -35,12 +37,14 @@ const readEnvironment = (value: string | undefined): GameEnvironmentId => {
 
 const respondWithRun = async (
   context: Context,
-  store: LaunchServiceStore,
+  { store, registrar }: Pick<LaunchAppDependencies, "store" | "registrar">,
   kind: LaunchKind,
   request: LaunchJobRequest,
 ) => {
   try {
     const run = await store.enqueue(kind, request);
+    // A queued run is due now.
+    await registrar.armFor(Date.now());
     return context.json(toFactoryRunRecord(run), 202);
   } catch (error) {
     return context.json({ error: error instanceof Error ? error.message : String(error) }, 500);
@@ -53,11 +57,16 @@ const findRun = async (context: Context, store: LaunchServiceStore, kind: Launch
   return run ? context.json(toFactoryRunRecord(run)) : context.json({ error: "Launch run not found." }, 404);
 };
 
-const continueRun = async (context: Context, store: LaunchServiceStore, kind: LaunchKind, name: string) => {
+const continueRun = async (
+  context: Context,
+  dependencies: Pick<LaunchAppDependencies, "store" | "registrar">,
+  kind: LaunchKind,
+  name: string,
+) => {
   const environment = readEnvironment(context.req.param("environment"));
-  const run = await store.find(kind, environment, name);
+  const run = await dependencies.store.find(kind, environment, name);
   if (!run) return context.json({ error: "Launch run not found." }, 404);
-  return respondWithRun(context, store, kind, run.request);
+  return respondWithRun(context, dependencies, kind, run.request);
 };
 
 const deleteRun = async (context: Context, store: LaunchServiceStore, kind: LaunchKind, name: string) => {
@@ -106,7 +115,7 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   app.post("/api/factory/runs", async (context) => {
     try {
       const request = await decodeBody(context, CreateGameRequestSchema);
-      return respondWithRun(context, dependencies.store, "game", request);
+      return respondWithRun(context, dependencies, "game", request);
     } catch (error) {
       return context.json({ error: String(error) }, 400);
     }
@@ -116,14 +125,14 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
     findRun(context, dependencies.store, "game", context.req.param("name")),
   );
   app.post("/api/factory/runs/:environment/:name/actions/continue", (context) =>
-    continueRun(context, dependencies.store, "game", context.req.param("name")),
+    continueRun(context, dependencies, "game", context.req.param("name")),
   );
   app.post("/api/factory/runs/:environment/:name/actions/delete", (context) =>
     deleteRun(context, dependencies.store, "game", context.req.param("name")),
   );
 
   app.post("/api/factory/results/:environment/:name/actions/continue", (context) =>
-    continueRun(context, dependencies.store, "result", context.req.param("name")),
+    continueRun(context, dependencies, "result", context.req.param("name")),
   );
   return app;
 };

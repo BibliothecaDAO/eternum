@@ -11,9 +11,13 @@ import { D1LaunchStore, databaseLayer } from "./store";
  * on the next alarm, because creation, roster settlement and result batches each check the chain before writing.
  */
 export class Registrar extends DurableObject<Record<string, unknown>> {
-  /** Runs due launches soon; an alarm already set is left as it is. */
-  async wake(): Promise<void> {
-    if ((await this.ctx.storage.getAlarm()) === null) await this.ctx.storage.setAlarm(Date.now());
+  /**
+   * Arms the alarm for a run due at `dueAt`. Every path that queues a run calls this, so the alarm is always the
+   * earliest due run, whoever queued it: a ready run never waits behind a result sleeping until its game's end.
+   */
+  async armFor(dueAt: number): Promise<void> {
+    const alarm = await this.ctx.storage.getAlarm();
+    if (alarm === null || alarm > dueAt) await this.ctx.storage.setAlarm(dueAt);
   }
 
   override async alarm(): Promise<void> {

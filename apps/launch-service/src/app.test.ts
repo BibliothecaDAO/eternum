@@ -47,6 +47,8 @@ const createApp = (
       store,
       slots,
       calendar: new D1CalendarStore(database.db),
+      // The registrar runs in workerd (worker.test.ts); here a queued run only needs somewhere to arm.
+      registrar: { armFor: async () => {} },
       playerAccount,
     }),
     store,
