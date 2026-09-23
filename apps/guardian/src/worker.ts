@@ -11,6 +11,12 @@ interface GuardianEnv {
  * the identity Worker reaches it through a service binding, and only the owner deploys it and sets its key.
  */
 export default class GuardianWorker extends WorkerEntrypoint<GuardianEnv> implements Guardian {
+  // Cloudflare refuses to upload a script with no event handler (error 10068), and RPC methods do not count. Nothing
+  // routes here, so this answers only a direct fetch through the binding, and it answers nothing.
+  override fetch(): Response {
+    return new Response(null, { status: 404 });
+  }
+
   publicKey() {
     return this.guardian().publicKey();
   }
