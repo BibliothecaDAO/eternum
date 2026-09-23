@@ -7,7 +7,7 @@ const ACTION_TAG: Felt = Felt::from_hex_unchecked("0x455445524e554d5f414354494f4
 const ENVELOPE_TAG: Felt = Felt::from_hex_unchecked("0x455445524e554d5f454e54524f5059");
 const EPOCH_TAG: Felt = Felt::from_hex_unchecked("0x455445524e554d5f45504f4348");
 const VERSION: Felt = Felt::ONE;
-pub const ENVELOPE_VERSION: u64 = 4;
+pub const ENVELOPE_VERSION: u64 = 5;
 pub(crate) const MAX_ARGUMENTS: usize = 256;
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]

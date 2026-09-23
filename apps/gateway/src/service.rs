@@ -29,8 +29,7 @@ const RESTART_DELAY: Duration = Duration::from_secs(2);
 
 struct Request {
     intent: Intent,
-    signature: [Felt; 2],
-    public_key: Felt,
+    signature: Vec<Felt>,
     permit: Permit,
     received: Instant,
 }
@@ -61,12 +60,13 @@ impl GameApi {
             "request rate exceeded"
         );
         let node = &self.0.node;
-        let intent = action.verify(node.chain, node.deployment)?;
+        let intent = action.decode(node.chain, node.deployment)?;
         let digest = intent.identity()?;
-        // An attacker signing with their own key cannot occupy another actor's slot.
+        // get_admission refuses an actor that does not run the shard's account class.
         let fields = node.call(node.deployment, "get_admission", vec![intent.game, intent.actor]).await?;
-        let [key, _, _, nonce, _, _] = fields.as_slice() else { anyhow::bail!("malformed admission view") };
-        ensure!(*key == action.public_key, "unregistered gameplay key");
+        let [_, _, nonce, _, _] = fields.as_slice() else { anyhow::bail!("malformed admission view") };
+        // A forged or revoked key never takes the actor's slot.
+        ensure!(node.signed_by(intent.actor, digest, &action.signature).await?, "invalid player signature");
         if *nonce != Felt::from(intent.nonce) {
             if *nonce > Felt::from(intent.nonce) {
                 if let Some(outcome) = node.recorded_action(&intent).await? {
@@ -87,13 +87,7 @@ impl GameApi {
                     .clone()
                     .context("game admission is unavailable")?;
                 sender
-                    .try_send(Request {
-                        intent,
-                        signature: [action.r, action.s],
-                        public_key: action.public_key,
-                        permit,
-                        received: Instant::now(),
-                    })
+                    .try_send(Request { intent, signature: action.signature, permit, received: Instant::now() })
                     .map_err(|_| anyhow::anyhow!("game admission queue is full or unavailable"))?;
                 Ok(receiver)
             }
@@ -278,17 +272,14 @@ async fn accept(
 ) -> anyhow::Result<RecordedTicket> {
     let intent = &request.intent;
     let fields = node.admission(intent.game, intent.actor).await?;
-    let [key, rules, config, nonce, recorded_next, observed_time] = fields.as_slice() else {
+    let [rules, config, nonce, recorded_next, observed_time] = fields.as_slice() else {
         anyhow::bail!("malformed admission view")
     };
     let order = match orders.get(&intent.game) {
         Some(order) => *order,
         None => (*recorded_next).try_into()?,
     };
-    ensure!(
-        *key == request.public_key && *rules == intent.rules && *nonce == Felt::from(intent.nonce),
-        "admission state changed"
-    );
+    ensure!(*rules == intent.rules && *nonce == Felt::from(intent.nonce), "admission state changed");
     let timestamp = node.timestamp();
     let now: u64 = (*observed_time).try_into()?;
     ensure!(context_matches(intent, order, timestamp) && now <= intent.valid_until, "intent expired before acceptance");
@@ -302,8 +293,7 @@ async fn accept(
             epoch: epoch.epoch,
             root: epoch.root(intent.game, order),
         },
-        r: request.signature[0],
-        s: request.signature[1],
+        signature: request.signature.clone(),
     })
 }
 
@@ -335,7 +325,6 @@ async fn rotate_epoch(node: &impl AssignmentNode, path: &Path) -> anyhow::Result
 mod tests {
     use super::*;
 
-    const KEY: Felt = Felt::from_hex_unchecked("0x5");
     const RULES: Felt = Felt::from_hex_unchecked("0x7");
     const GAME_A: Felt = Felt::ONE;
     const GAME_B: Felt = Felt::TWO;
@@ -355,7 +344,7 @@ mod tests {
     impl AssignmentNode for TestChain {
         async fn admission(&self, game: Felt, _: Felt) -> anyhow::Result<Vec<Felt>> {
             let next = self.0.lock().unwrap().heads.get(&game).copied().unwrap_or_default() + 1;
-            Ok(vec![KEY, RULES, Felt::ONE, Felt::ZERO, next.into(), Felt::from(100)])
+            Ok(vec![RULES, Felt::ONE, Felt::ZERO, next.into(), Felt::from(100)])
         }
         fn timestamp(&self) -> u64 {
             100
@@ -397,7 +386,7 @@ mod tests {
         let Slot::New(permit) = slots.reserve(intent.actor, intent.identity().unwrap()).unwrap() else {
             panic!("new actor")
         };
-        Request { intent, signature: [Felt::ONE, Felt::TWO], public_key: KEY, permit, received: Instant::now() }
+        Request { intent, signature: vec![Felt::ONE, Felt::TWO], permit, received: Instant::now() }
     }
 
     fn assigned(record: &RecordedTicket) -> (Felt, u64, u64) {

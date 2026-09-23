@@ -20,6 +20,8 @@ use std::{sync::Arc, time::Duration};
 use tokio::sync::{watch, Mutex};
 
 const TRANSACTION_HASH_NOT_FOUND: i32 = 29;
+/// SNIP-6's accepting return value, `'VALID'`.
+const VALID: Felt = Felt::from_hex_unchecked("0x56414c4944");
 /// Reconnect catch-up searches this many recent blocks; older nonces fail closed.
 const RECONNECT_BLOCKS: u64 = 256;
 /// Madara's largest `starknet_getEvents` page.
@@ -124,6 +126,13 @@ impl Node {
         let call =
             json!({ "contract_address": contract, "entry_point_selector": selector(entrypoint), "calldata": args });
         self.request("starknet_call", rpc_params![call, "pre_confirmed"]).await
+    }
+
+    /// SNIP-6 on the actor: the account decides which device keys sign for it.
+    pub async fn signed_by(&self, actor: Felt, action: Felt, signature: &[Felt]) -> anyhow::Result<bool> {
+        let mut args = vec![action, Felt::from(signature.len() as u64)];
+        args.extend(signature);
+        Ok(self.call(actor, "is_valid_signature", args).await? == [VALID])
     }
 
     pub async fn is_deployed(&self, contract: Felt) -> anyhow::Result<bool> {
@@ -379,8 +388,7 @@ mod tests {
                 root: [123; 32],
             },
             intent: intent.clone(),
-            r: Felt::ONE,
-            s: Felt::TWO,
+            signature: vec![Felt::ONE, Felt::TWO],
         };
         // Another game at the same order: attribution follows the intent, never the order alone.
         let mut second = first.clone();
