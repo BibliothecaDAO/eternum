@@ -64,11 +64,8 @@ const chooseInitialStructure = (setup: SetupResult, state: AppStore): void => {
   // A spectator fallback yields only to the player's own realm.
   if (hasSelection && ownedStructures.length === 0) return;
 
-  const firstGlobalStructure = ownedStructures.length > 0 ? null : (readInitialSelectableStructures(setup)[0] ?? null);
-  const { selectedStructure, spectator } = resolveInitialStructureSelection({
-    ownedStructures,
-    firstGlobalStructure,
-  });
+  const globalStructures = ownedStructures.length > 0 ? [] : readInitialSelectableStructures(setup);
+  const { selectedStructure, spectator } = resolveInitialStructureSelection({ ownedStructures, globalStructures });
   if (!selectedStructure) return;
 
   state.setStructureEntityId(selectedStructure.entity_id, {
