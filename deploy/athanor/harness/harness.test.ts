@@ -138,6 +138,13 @@ describe("Madara harness workload", () => {
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--workload", "burst"])).toThrow(
       "Frontier requires the frontier workload",
     );
+    expect(parseHarnessArgs(["--slot", "cap-96", "--launch-url", "https://staging.example"])).toMatchObject({
+      slot: { name: "cap-96", launchUrl: "https://staging.example", closesInSeconds: 120 },
+    });
+    expect(() => parseHarnessArgs(["--slot", "cap-96", "--launch-url", "https://x", "--games", "4"])).toThrow(
+      "omit --games",
+    );
+    expect(() => parseHarnessArgs(["--launch-url", "https://x"])).toThrow("require --slot");
     expect(() => parseHarnessArgs(["--game-type", "unknown"])).toThrow("--game-type must be blitz, eternum or frontier");
     expect(() => parseHarnessArgs(["--game-type", "eternum", "--ledger"])).toThrow(
       "Unsupported harness option --ledger",

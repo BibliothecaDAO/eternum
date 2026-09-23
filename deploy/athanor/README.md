@@ -213,6 +213,12 @@ the latency and close-cost gates. `--game-type frontier --functional` is FR11's 
 created with twelve-minute days so the bots play through rollovers, and the design gates (token cap, fresh armies
 after at least three rollovers) apply while the latency gates do not.
 
+The slot shape proper registers the bots the way players register: `--slot <name> --launch-url <app origin>` with
+`OPERATOR_TOKEN` in the environment creates the slot closing `--slot-closes-in-seconds` ahead (default 120), registers
+every bot's account into it, waits for the cron to freeze it and for each `<slot>-<gameNumber>` launch run to
+complete, and then drives the games the launch service split, created and settled. The harness creates nothing
+itself in this mode; a failed launch run fails the harness run with the launch service's reason.
+
 For a node with OTLP export, set `MADARA_METRICS_FILE` to the collector's JSON-lines output. The existing
 `scripts/block-stats.py` combines close-block data with upstream counter deltas, excluding process resets. Report
 latency separately from gas and execution resources. Admission-to-visible includes queue wait and the Herald barrier.

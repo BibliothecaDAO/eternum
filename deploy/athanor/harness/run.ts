@@ -22,6 +22,7 @@ import { connectHarnessGameClient, type HarnessGameplayContracts } from "./game-
 import { createHarnessGame } from "./harness-game";
 import { HarnessProvider, measureHarnessRequests } from "./provider";
 import { prepareHarnessBots, runWorkload, type HarnessGameType, type TrackedTransaction } from "./driver";
+import { registerBotsThroughSlot } from "./slot-registration";
 import {
   HARNESS_OUTPUT_DIRECTORY,
   assessRosterRun,
@@ -46,6 +47,8 @@ interface HarnessCliOptions {
   gameId?: number;
   preparedGamePath?: string;
   gameName?: string;
+  /** The slot shape: bots register into this free Blitz slot and the launch service creates the games. */
+  slot?: { name: string; launchUrl: string; closesInSeconds: number };
   intervalSeconds: number;
   minutes: number;
   rpcUrl: string;
@@ -116,6 +119,7 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   if (gameId !== undefined && !values["game-name"]) {
     values["game-name"] = `game-${gameId}`;
   }
+  const slot = resolveSlotOptions(values, gameType, games);
 
   return {
     gameType,
@@ -128,6 +132,7 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     gameId,
     preparedGamePath: values["prepared-game"],
     gameName: values["game-name"],
+    slot,
     intervalSeconds,
     minutes,
     rpcUrl: values["rpc-url"] ?? process.env.RPC_URL ?? DEFAULT_RPC_URL,
@@ -325,6 +330,28 @@ async function resolveHarnessGame(options: HarnessCliOptions, rosterAccounts: st
   return { gameId: summary.gameId, gameName, startAt, settlementTransactions: summary.settlementTransactions ?? 0 };
 }
 
+function resolveSlotOptions(
+  values: Record<string, string>,
+  gameType: HarnessGameType,
+  games: number | undefined,
+): HarnessCliOptions["slot"] {
+  if (values.slot === undefined) {
+    if (values["launch-url"] !== undefined || values["slot-closes-in-seconds"] !== undefined)
+      throw new Error("--launch-url and --slot-closes-in-seconds require --slot");
+    return undefined;
+  }
+  if (gameType !== "blitz") throw new Error("--slot registers into a free Blitz slot; use --game-type blitz");
+  if (games !== undefined || values["game-name"] !== undefined)
+    throw new Error("--slot lets the launch service split and name the games; omit --games and --game-name");
+  const launchUrl = values["launch-url"] ?? process.env.LAUNCH_URL;
+  if (!launchUrl) throw new Error("--slot requires --launch-url or LAUNCH_URL (the app origin the launch API is served under)");
+  return {
+    name: values.slot,
+    launchUrl,
+    closesInSeconds: positiveInteger(values["slot-closes-in-seconds"] ?? "120", "slot-closes-in-seconds"),
+  };
+}
+
 function resolveMinimumThresholdActions(options: HarnessCliOptions, plannedActions: number): number {
   const isAcceptanceRun = options.bots === 96 && options.minutes === 10 && options.intervalSeconds === 15;
   return isAcceptanceRun ? 3_500 : plannedActions;
@@ -354,6 +381,9 @@ function parseFlags(args: string[]): Record<string, string> {
         "games",
         "accounts-per-game",
         "preset",
+        "slot",
+        "launch-url",
+        "slot-closes-in-seconds",
       ].includes(name)
     ) {
       throw new Error(`Unsupported harness option --${name}`);
@@ -387,6 +417,7 @@ async function prepareGames(
     gameId: 0,
     provider,
   });
+  if (options.slot) return prepareSlotGames(options.slot, accounts);
   const groups =
     options.games !== undefined
       ? Array.from({ length: options.games }, (_, index) =>
@@ -409,6 +440,25 @@ async function prepareGames(
     });
   }
   return prepared.length === 1 ? prepared[0] : prepared;
+}
+
+/** The slot shape: the launch service splits, names, creates and settles the games; the harness drives what it made. */
+async function prepareSlotGames(
+  slot: NonNullable<HarnessCliOptions["slot"]>,
+  accounts: HarnessAccount[],
+): Promise<PreparedGame[]> {
+  const games = await registerBotsThroughSlot(
+    { origin: slot.launchUrl, token: requiredEnvironmentValue("OPERATOR_TOKEN", "harness slot registration") },
+    { slotName: slot.name, accounts: accounts.map(({ address }) => address), closesInSeconds: slot.closesInSeconds },
+  );
+  const byAddress = new Map(accounts.map((account) => [BigInt(account.address), account]));
+  return games.map(({ gameId, gameName, settlementTransactions, accounts: roster }) => ({
+    game: { gameId, gameName, settlementTransactions },
+    accounts: roster.map((address) => {
+      const { account: _account, ...entry } = byAddress.get(BigInt(address))!;
+      return { ...entry, gameId };
+    }),
+  }));
 }
 
 interface GameWorkerReport {
@@ -611,6 +661,10 @@ Usage: bun deploy/athanor/harness/run.ts [options]
   --setup-concurrency <count>    default: 6
   --workload <build-order|burst|cadence|frontier> default: the game type’s workload; burst submits every plan at once
   --preset <id>                  preset new games are created from; default: the game type’s preset
+  --slot <name>                  register the bots into this free Blitz slot through the launch API instead of
+                                 creating games; needs OPERATOR_TOKEN and --launch-url or LAUNCH_URL
+  --launch-url <origin>          the app origin the launch API is served under, e.g. https://staging.realms.party
+  --slot-closes-in-seconds <s>   with --slot; default: 120; the cron freezes the slot within a minute of closing
   --functional                  omit capacity collection and latency gates; for Frontier, the accelerated design run
   --prepared-game <path>         resume a prepared roster using its private account file
   --game-id <id>                 use an existing Eternum game
