@@ -30,7 +30,11 @@ export { Registrar } from "./registrar";
 
 const launchAppOf = (env: LaunchEnv) =>
   createLaunchApp({
-    config: { allowedOrigins: new Set([new URL(env.BASE_URL).origin]), launcherAllowlist: env.launchers },
+    config: {
+      allowedOrigins: new Set([new URL(env.BASE_URL).origin]),
+      launcherAllowlist: env.launchers,
+      operatorToken: env.OPERATOR_TOKEN,
+    },
     deployment: { environment: env.ENVIRONMENT, version: env.VERSION.id },
     identity: createIdentityResolver(env.BASE_URL, (url, init) => env.IDENTITY.fetch(url, init)),
     store: new D1LaunchStore(env.DB),

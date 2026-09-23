@@ -11,6 +11,7 @@ const ALLOWED_ORIGIN = "https://play.realms.party";
 const ALLOWED_ADDRESS = "0x123";
 
 const PLAYER = "0x7";
+const OPERATOR_TOKEN = "operator-test-token";
 const PLAYER_ACCOUNT = "0xacc";
 
 /** A signed-in Realms account, with the wallet linked to it, if any. */
@@ -38,6 +39,7 @@ const createApp = (
       config: {
         allowedOrigins: new Set([ALLOWED_ORIGIN]),
         launcherAllowlist: new Set([ALLOWED_ADDRESS]),
+        operatorToken: OPERATOR_TOKEN,
       },
       deployment: { environment: "staging", version: "test" },
       identity: resolver,
@@ -92,6 +94,67 @@ describe("free slot registration", () => {
     request.headers.set("origin", "https://untrusted.example");
     expect((await app.request(request)).status).toBe(403);
     expect(await slots.list()).toEqual([]);
+  });
+});
+
+describe("launcher rosters and off-timetable slots", () => {
+  const post = (path: string, body: unknown, auth: { cookie?: string; token?: string } = { cookie: "session=valid" }) =>
+    new Request(`https://play.realms.party${path}`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(auth.cookie ? { origin: ALLOWED_ORIGIN, cookie: auth.cookie } : {}),
+        ...(auth.token ? { authorization: `Bearer ${auth.token}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+  const soon = () => new Date(Date.now() + 60_000).toISOString();
+
+  test("a launcher creates a slot and registers accounts beside a player, once each, until it closes", async () => {
+    const { app, slots } = createApp(signedIn(ALLOWED_ADDRESS));
+    const closesAt = soon();
+    expect((await app.request(post("/api/slots", { name: "campaign-1", closesAt }))).status).toBe(200);
+    expect((await app.request(post("/api/slots", { name: "campaign-1", closesAt: soon() + "x" }))).status).toBe(400);
+    const moved = new Date(Date.parse(closesAt) + 60_000).toISOString();
+    expect((await app.request(post("/api/slots", { name: "campaign-1", closesAt: moved }))).status).toBe(409);
+
+    const accounts = { accounts: ["0xb07", "0xb08"] };
+    expect((await app.request(post("/api/slots/campaign-1/register", accounts))).status).toBe(200);
+    expect((await app.request(post("/api/slots/campaign-1/register", accounts))).status).toBe(200);
+    expect((await app.request(post("/api/slots/campaign-1/register", {}))).status).toBe(200);
+    expect((await slots.list())[0]!.registrations).toEqual([
+      { realmsId: null, account: "0xb07", position: 1, gameNumber: null },
+      { realmsId: null, account: "0xb08", position: 2, gameNumber: null },
+      { realmsId: PLAYER, account: PLAYER_ACCOUNT, position: 3, gameNumber: null },
+    ]);
+
+    await database.db
+      .prepare("UPDATE playtest_slots SET closes_at = ?")
+      .bind(Date.now() - 1_000)
+      .run();
+    const late = await app.request(post("/api/slots/campaign-1/register", { accounts: ["0xb09"] }));
+    expect(late.status).toBe(409);
+    expect(await late.json()).toEqual({ error: "Registration is closed" });
+  });
+
+  test("the operator token acts as a launcher, and nobody else registers accounts or creates slots", async () => {
+    const operator = createApp(signedOut);
+    const token = { token: OPERATOR_TOKEN };
+    expect((await operator.app.request(post("/api/slots", { name: "bots", closesAt: soon() }, token))).status).toBe(
+      200,
+    );
+    const bots = await operator.app.request(post("/api/slots/bots/register", { accounts: ["0xb07"] }, token));
+    expect(bots.status).toBe(200);
+    expect((await operator.app.request(post("/api/slots/bots/register", {}, token))).status).toBe(400);
+    expect(
+      (await operator.app.request(post("/api/slots", { name: "x", closesAt: soon() }, { token: "wrong" }))).status,
+    ).toBe(401);
+
+    const player = createApp(signedIn());
+    expect((await player.app.request(post("/api/slots", { name: "mine", closesAt: soon() }))).status).toBe(403);
+    expect((await player.app.request(post("/api/slots/bots/register", { accounts: ["0xb08"] }))).status).toBe(403);
+    const tooMany = { accounts: Array.from({ length: 97 }, (_, index) => `0x${(index + 1).toString(16)}`) };
+    expect((await operator.app.request(post("/api/slots/bots/register", tooMany, token))).status).toBe(400);
   });
 });
 

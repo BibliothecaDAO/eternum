@@ -1,3 +1,5 @@
+import { presentsOperatorToken } from "@realms-world/identity";
+
 import type { IdentityAuth } from "./auth";
 import { routeChat } from "./chat/routes";
 import { handleDeviceChange } from "./devices";
@@ -69,13 +71,4 @@ const withinPublicBudget = async (env: IdentityEnv, route: string, request: Requ
   return (await env.PUBLIC_RATE_LIMIT.limit({ key: `${route}:${client}` })).success;
 };
 
-/** The operator's bearer token, compared by digest so the comparison time says nothing about the token. */
-const isOperator = async (env: IdentityEnv, request: Request) => {
-  const presented = request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
-  const [expected, actual] = await Promise.all(
-    [env.DIRECTORY_ADMIN_TOKEN, presented].map(async (value) =>
-      [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)))].join(","),
-    ),
-  );
-  return presented.length > 0 && expected === actual;
-};
+const isOperator = (env: IdentityEnv, request: Request) => presentsOperatorToken(request, env.OPERATOR_TOKEN);

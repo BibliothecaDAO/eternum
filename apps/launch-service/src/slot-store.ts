@@ -18,7 +18,7 @@ interface SlotRow {
 
 interface RegistrationRow {
   slot_name: string;
-  realms_id: string;
+  realms_id: string | null;
   account: string;
   position: number;
   game_number: number | null;
@@ -32,11 +32,18 @@ interface RegistrationRow {
 export class D1SlotStore implements SlotStore {
   constructor(private readonly db: D1Database) {}
 
-  async create(name: string, closesAt: string): Promise<void> {
+  async create(name: string, closesAt: string): Promise<PlaytestSlot> {
+    const closes = Date.parse(closesAt);
     await this.db
-      .prepare("INSERT INTO playtest_slots (name, closes_at) VALUES (?, ?) ON CONFLICT (name) DO NOTHING")
-      .bind(name, Date.parse(closesAt))
+      .prepare("INSERT INTO playtest_slots (name, closes_at) SELECT ?1, ?2 WHERE ?2 > ?3 ON CONFLICT (name) DO NOTHING")
+      .bind(name, closes, Date.now())
       .run();
+    const slot = await this.readSlot(name).catch((error: unknown) => {
+      if (error instanceof SlotNotFound) throw new SlotConflict("Registration deadline has passed");
+      throw error;
+    });
+    if (Date.parse(slot.closesAt) !== closes) throw new SlotConflict("Slot schedule is immutable");
+    return slot;
   }
 
   async list(): Promise<PlaytestSlot[]> {
@@ -48,25 +55,35 @@ export class D1SlotStore implements SlotStore {
     return (slots!.results as SlotRow[]).map((row) => toSlot(row, rosters.get(row.name) ?? [], Date.now()));
   }
 
-  async register(name: string, player: SlotPlayer): Promise<PlaytestSlot> {
-    const realmsId = normalizeAddress(player.realmsId);
-    const account = normalizeAddress(player.account);
-    if (BigInt(account) === 0n) throw new SlotConflict("A gameplay account is required");
+  async register(name: string, players: readonly SlotPlayer[]): Promise<PlaytestSlot> {
+    const entries = players.map(({ realmsId, account }) => ({
+      realmsId: realmsId === null ? null : normalizeAddress(realmsId),
+      account: normalizeAddress(account),
+    }));
+    if (entries.some(({ account }) => BigInt(account) === 0n)) throw new SlotConflict("Invalid roster account");
+    // One round trip: the inserts (each written only while the slot is open) and the slot as they left it.
     const now = Date.now();
-    if (!isOpen(await this.readSlot(name), now)) throw new SlotConflict("Registration is closed");
-    await this.db
+    const results = await this.db.batch<SlotRow | RegistrationRow>([
+      ...entries.map((entry) => this.registration(name, entry, now)),
+      ...this.slotReads(name),
+    ]);
+    const slot = slotFrom(results.slice(-2), now);
+    const registered = new Set(slot.registrations.map(({ account }) => account));
+    if (!isOpen(slot, now) || !entries.every(({ account }) => registered.has(account)))
+      throw new SlotConflict("Registration is closed");
+    return slot;
+  }
+
+  /** One registration, written only while the slot is open, after every earlier one; a repeat changes nothing. */
+  private registration(name: string, { realmsId, account }: SlotPlayer, now: number) {
+    return this.db
       .prepare(
         `INSERT INTO playtest_registrations (slot_name, realms_id, account, position)
          SELECT ?1, ?2, ?3, COALESCE((SELECT MAX(position) FROM playtest_registrations WHERE slot_name = ?1), 0) + 1
          WHERE EXISTS (SELECT 1 FROM playtest_slots WHERE name = ?1 AND frozen_at IS NULL AND closes_at > ?4)
-         ON CONFLICT (slot_name, realms_id) DO NOTHING`,
+         ON CONFLICT DO NOTHING`,
       )
-      .bind(name, realmsId, account, now)
-      .run();
-    const slot = await this.readSlot(name);
-    if (!slot.registrations.some((registration) => registration.realmsId === realmsId))
-      throw new SlotConflict("Registration is closed");
-    return slot;
+      .bind(name, realmsId, account, now);
   }
 
   async freeze(name: string): Promise<PlaytestSlot> {
@@ -75,7 +92,7 @@ export class D1SlotStore implements SlotStore {
     if (!slot.closed) throw new SlotConflict("Registration is still open");
     const groups = splitPlaytestRoster(slot.registrations);
     await this.db.batch([
-      ...groups.flatMap((group, index) => group.map(({ realmsId }) => this.assignGame(name, realmsId, index + 1))),
+      ...groups.map((group, index) => this.assignGame(name, group, index + 1)),
       ...groups.map((group, index) => this.queueSlotGame(slot, index + 1, group)),
       this.db
         .prepare("UPDATE playtest_slots SET frozen_at = ? WHERE name = ? AND frozen_at IS NULL")
@@ -97,10 +114,13 @@ export class D1SlotStore implements SlotStore {
     if (due) await this.freeze(due.name);
   }
 
-  private assignGame(slotName: string, realmsId: string, gameNumber: number) {
+  /** One statement numbers a whole game: its positions travel as one JSON list, whatever order grouped them. */
+  private assignGame(slotName: string, group: readonly SlotRegistration[], gameNumber: number) {
     return this.db
-      .prepare("UPDATE playtest_registrations SET game_number = ? WHERE slot_name = ? AND realms_id = ?")
-      .bind(gameNumber, slotName, realmsId);
+      .prepare(
+        "UPDATE playtest_registrations SET game_number = ? WHERE slot_name = ? AND position IN (SELECT value FROM json_each(?))",
+      )
+      .bind(gameNumber, slotName, JSON.stringify(group.map(({ position }) => position)));
   }
 
   private queueSlotGame(slot: PlaytestSlot, gameNumber: number, players: readonly SlotRegistration[]) {
@@ -125,15 +145,23 @@ export class D1SlotStore implements SlotStore {
   }
 
   private async readSlot(name: string): Promise<PlaytestSlot> {
-    const [slots, registrations] = await this.db.batch<SlotRow | RegistrationRow>([
+    return slotFrom(await this.db.batch<SlotRow | RegistrationRow>(this.slotReads(name)), Date.now());
+  }
+
+  private slotReads(name: string) {
+    return [
       this.db.prepare("SELECT * FROM playtest_slots WHERE name = ?").bind(name),
       this.db.prepare("SELECT * FROM playtest_registrations WHERE slot_name = ? ORDER BY position").bind(name),
-    ]);
-    const row = slots!.results[0] as SlotRow | undefined;
-    if (!row) throw new SlotNotFound("Playtest slot not found");
-    return toSlot(row, (registrations!.results as RegistrationRow[]).map(toRegistration), Date.now());
+    ];
   }
 }
+
+/** A slot from the two reads of slotReads, in order. */
+const slotFrom = (results: D1Result<SlotRow | RegistrationRow>[], now: number): PlaytestSlot => {
+  const row = results[0]!.results[0] as SlotRow | undefined;
+  if (!row) throw new SlotNotFound("Playtest slot not found");
+  return toSlot(row, (results[1]!.results as RegistrationRow[]).map(toRegistration), now);
+};
 
 const isOpen = (slot: PlaytestSlot, now: number) => !slot.frozenAt && Date.parse(slot.closesAt) > now;
 

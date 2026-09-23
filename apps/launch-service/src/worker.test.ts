@@ -39,6 +39,7 @@ beforeAll(async () => {
       SHARD_URL,
       DEPLOYER_ACCOUNT_ADDRESS: "0x456",
       DEPLOYER_PRIVATE_KEY: "0x1",
+      OPERATOR_TOKEN: "operator-test-token",
       VERSION: { id: "workerd-test", tag: "", timestamp: "" },
     },
     outboundService: (request: Request) =>

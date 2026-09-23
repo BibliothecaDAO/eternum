@@ -11,7 +11,9 @@ import { ErrorPanel } from "./kit";
 /** A slot's players are Realms accounts, so the signed-in account finds itself by its Realms id. */
 function registrationFor(slot: PlaytestSlot, realmsId: string | undefined) {
   if (!realmsId) return undefined;
-  return slot.registrations.find((registration) => BigInt(registration.realmsId) === BigInt(realmsId));
+  return slot.registrations.find(
+    (registration) => registration.realmsId !== null && BigInt(registration.realmsId) === BigInt(realmsId),
+  );
 }
 
 export const BlitzSlots = () => {

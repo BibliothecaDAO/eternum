@@ -5,7 +5,8 @@ name: Deploy Workers
 # and secrets. The guardian Worker is deployed by the owner alone and is not listed here. The launch Worker targets the
 # shard its environment's LAUNCH_SHARD_URL names (the shard's Herald, whose /manifest says the rest), with
 # LAUNCH_DEPLOYER_ACCOUNT_ADDRESS, LAUNCHER_ALLOWLIST and, where Frontier runs, FRONTIER_SEASON_START, and signs with its
-# LAUNCH_DEPLOYER_PRIVATE_KEY secret.
+# LAUNCH_DEPLOYER_PRIVATE_KEY secret. Both Workers accept the environment's one OPERATOR_TOKEN secret from operator
+# automation.
 on:
   push:
     branches: [native-services, native-world-foundation]
@@ -92,13 +93,13 @@ jobs:
         env:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           IDENTITY_RPC_URL: ${{ secrets.CLIENT_IDENTITY_RPC_URL }}
-          DIRECTORY_ADMIN_TOKEN: ${{ secrets.DIRECTORY_ADMIN_TOKEN }}
+          OPERATOR_TOKEN: ${{ secrets.OPERATOR_TOKEN }}
           WEB_PUSH_VAPID_PUBLIC_KEY: ${{ secrets.WEB_PUSH_VAPID_PUBLIC_KEY }}
           WEB_PUSH_VAPID_PRIVATE_KEY: ${{ secrets.WEB_PUSH_VAPID_PRIVATE_KEY }}
           WEB_PUSH_VAPID_SUBJECT: ${{ secrets.WEB_PUSH_VAPID_SUBJECT }}
         run: |
           set -euo pipefail
-          names="BETTER_AUTH_SECRET IDENTITY_RPC_URL DIRECTORY_ADMIN_TOKEN WEB_PUSH_VAPID_PUBLIC_KEY WEB_PUSH_VAPID_PRIVATE_KEY WEB_PUSH_VAPID_SUBJECT"
+          names="BETTER_AUTH_SECRET IDENTITY_RPC_URL OPERATOR_TOKEN WEB_PUSH_VAPID_PUBLIC_KEY WEB_PUSH_VAPID_PRIVATE_KEY WEB_PUSH_VAPID_SUBJECT"
           for name in $names; do
             [ -n "${!name}" ] || { echo "::error::$name is not set for the $TARGET environment"; exit 1; }
           done
@@ -110,10 +111,13 @@ jobs:
         working-directory: ${{ matrix.worker }}
         env:
           DEPLOYER_PRIVATE_KEY: ${{ secrets.LAUNCH_DEPLOYER_PRIVATE_KEY }}
+          OPERATOR_TOKEN: ${{ secrets.OPERATOR_TOKEN }}
         run: |
           set -euo pipefail
           [ -n "$DEPLOYER_PRIVATE_KEY" ] || { echo "::error::LAUNCH_DEPLOYER_PRIVATE_KEY is not set for the $TARGET environment"; exit 1; }
-          jq -n '{DEPLOYER_PRIVATE_KEY: env.DEPLOYER_PRIVATE_KEY}' | pnpm exec wrangler secret bulk --env "$TARGET"
+          [ -n "$OPERATOR_TOKEN" ] || { echo "::error::OPERATOR_TOKEN is not set for the $TARGET environment"; exit 1; }
+          jq -n '{DEPLOYER_PRIVATE_KEY: env.DEPLOYER_PRIVATE_KEY, OPERATOR_TOKEN: env.OPERATOR_TOKEN}' |
+            pnpm exec wrangler secret bulk --env "$TARGET"
 
       - name: Deploy
         if: matrix.worker != 'apps/launch-service'

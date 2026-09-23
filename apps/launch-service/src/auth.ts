@@ -1,3 +1,4 @@
+import { presentsOperatorToken } from "@realms-world/identity";
 import { Effect, Result, Schema } from "effect";
 import type { MiddlewareHandler } from "hono";
 import { normalizeAddress } from "./address";
@@ -16,16 +17,35 @@ export interface IdentityResolver {
   resolve(cookie: string): Effect.Effect<SessionIdentity | null, IdentityUnavailable | BoundaryDecodeError>;
 }
 
-export type LaunchAppEnv = { Variables: { identity: SessionIdentity } };
+/**
+ * Who is calling: a signed-in Realms account (a player, and a launcher when its linked wallet is allowlisted), or the
+ * environment's operator automation, which presents the operator token and has no Realms account.
+ */
+export type Caller = { kind: "session"; realmsId: string; wallet: string | null } | { kind: "operator" };
+
+export type LaunchAppEnv = { Variables: { caller: Caller } };
 export interface LaunchAccess {
   allowedOrigins: ReadonlySet<string>;
   launcherAllowlist: ReadonlySet<string>;
+  operatorToken: string;
 }
+
+/** Launchers are the operator and allowlisted wallets: one rule for games and for rosters. */
+export const isLauncher = (caller: Caller, config: Pick<LaunchAccess, "launcherAllowlist">): boolean =>
+  caller.kind === "operator" || (caller.wallet !== null && config.launcherAllowlist.has(caller.wallet));
 
 export const requireIdentity =
   (identity: IdentityResolver, config: LaunchAccess): MiddlewareHandler<LaunchAppEnv> =>
   async (context, next) => {
     if (context.req.method === "GET" || context.req.method === "OPTIONS") return next();
+    // A bearer token is operator automation, which runs server-side with no Origin; a browser never sends one on its
+    // own, so only the session cookie needs the origin check.
+    if (context.req.header("authorization")) {
+      if (!(await presentsOperatorToken(context.req.raw, config.operatorToken)))
+        return context.json({ error: "Invalid operator token." }, 401);
+      context.set("caller", { kind: "operator" });
+      return next();
+    }
     const origin = context.req.header("origin");
     if (!origin || !config.allowedOrigins.has(origin))
       return context.json({ error: "Launch origin is not allowed." }, 403);
@@ -34,7 +54,7 @@ export const requireIdentity =
     const result = await Effect.runPromise(Effect.result(identity.resolve(cookie)));
     if (Result.isFailure(result)) return context.json({ error: "Identity service unavailable." }, 503);
     if (!result.success) return context.json({ error: "Authenticated Realms session required." }, 401);
-    context.set("identity", result.success);
+    context.set("caller", { kind: "session", ...result.success });
     return next();
   };
 
@@ -42,8 +62,7 @@ export const requireLauncher =
   (config: LaunchAccess): MiddlewareHandler<LaunchAppEnv> =>
   async (context, next) => {
     if (context.req.method === "GET" || context.req.method === "OPTIONS") return next();
-    const { wallet } = context.get("identity");
-    if (!wallet || !config.launcherAllowlist.has(wallet)) {
+    if (!isLauncher(context.get("caller"), config)) {
       return context.json({ error: "This identity is not allowed to launch games." }, 403);
     }
     return next();

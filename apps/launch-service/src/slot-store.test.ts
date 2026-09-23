@@ -30,18 +30,23 @@ test("registration and frozen groups survive concurrency, an interrupted freeze 
   const slots = new D1SlotStore(database.db);
   const closesAt = new Date(Date.now() + 60_000).toISOString();
   await slots.create("friday", closesAt);
-  await slots.create("friday", new Date(Date.now() + 120_000).toISOString());
+  expect(await slots.create("friday", closesAt)).toMatchObject({ name: "friday", closesAt });
+  await expect(slots.create("friday", new Date(Date.now() + 120_000).toISOString())).rejects.toThrow("immutable");
+  await expect(slots.create("late", new Date(Date.now() - 1_000).toISOString())).rejects.toThrow("deadline");
   expect((await slots.list()).map((slot) => slot.closesAt)).toEqual([closesAt]);
   await expect(slots.freeze("friday")).rejects.toThrow("still open");
-  for (let index = 1; index <= 25; index++) await slots.register("friday", player(index));
-  await Promise.all(Array.from({ length: 10 }, () => slots.register("friday", player("0x01"))));
+  await slots.register(
+    "friday",
+    Array.from({ length: 25 }, (_, index) => player(index + 1)),
+  );
+  await Promise.all(Array.from({ length: 10 }, () => slots.register("friday", [player("0x01")])));
   const [registered] = await slots.list();
   expect(registered!.registrations.map(({ realmsId, account }) => ({ realmsId, account }))).toEqual(
     Array.from({ length: 25 }, (_, index) => player(index + 1)),
   );
   expect(registered!.registrations.every(({ gameNumber }) => gameNumber === null)).toBe(true);
   await closeSlots();
-  await expect(slots.register("friday", player(26))).rejects.toThrow("closed");
+  await expect(slots.register("friday", [player(26)])).rejects.toThrow("closed");
 
   await database.db
     .prepare(
@@ -75,7 +80,7 @@ test("registration and frozen groups survive concurrency, an interrupted freeze 
   expect((await launches.list("madara.blitz", "game")).map(({ id }) => id).sort()).toEqual(
     queued.map(({ id }) => id).sort(),
   );
-  await expect(restarted.register("friday", player(1))).rejects.toThrow("closed");
+  await expect(restarted.register("friday", [player(1)])).rejects.toThrow("closed");
 });
 
 test("every tick names the same next slot and a frozen slot is pruned when the next one freezes", async () => {
@@ -96,7 +101,7 @@ test("every tick names the same next slot and a frozen slot is pruned when the n
     .prepare("UPDATE playtest_slots SET closes_at = ?")
     .bind(Date.now() + 60_000)
     .run();
-  await slots.register("blitz-20261001-2000", player(1));
+  await slots.register("blitz-20261001-2000", [player(1)]);
   await closeSlots();
   await slots.freezeNextDue();
   await tick(new Date("2026-10-01T20:00:01Z"));
@@ -114,7 +119,7 @@ test("the schedule freezes zero and single-player slots without inventing player
   const closesAt = new Date(Date.now() + 60_000).toISOString();
   await slots.create("empty", closesAt);
   await slots.create("solo", closesAt);
-  await slots.register("solo", player("0x123"));
+  await slots.register("solo", [player("0x123")]);
   await closeSlots();
   await slots.freezeNextDue();
   expect((await slots.list()).map(({ name, frozenAt }) => [name, frozenAt !== null])).toEqual([

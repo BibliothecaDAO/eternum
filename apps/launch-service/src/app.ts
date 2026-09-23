@@ -76,7 +76,7 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   app.use("*", logger());
   app.use("/api/*", requireIdentity(dependencies.identity, dependencies.config));
   app.use("/api/factory/*", requireLauncher(dependencies.config));
-  app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.playerAccount));
+  app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.playerAccount, dependencies.config));
 
   // A failed launch stays failed until a launcher continues it, a Frontier season included: the schedule creates the
   // season once and never requeues it. Health names every failed run so that wait is never silent.

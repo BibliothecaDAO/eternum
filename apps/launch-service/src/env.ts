@@ -3,8 +3,8 @@ import { normalizeAddress } from "./address";
 
 /**
  * The launch Worker's environment, decoded loudly so a misconfigured deployment fails on its first request or tick.
- * The shard it launches on and its launchers are set per environment at deploy; `DEPLOYER_PRIVATE_KEY` is a secret and
- * is never committed.
+ * The shard it launches on and its launchers are set per environment at deploy; `DEPLOYER_PRIVATE_KEY` and
+ * `OPERATOR_TOKEN` are secrets and are never committed.
  */
 const LaunchVars = Schema.Struct({
   ENVIRONMENT: Schema.Literals(["staging", "production"]),
@@ -16,6 +16,8 @@ const LaunchVars = Schema.Struct({
   SHARD_URL: Schema.NonEmptyString,
   DEPLOYER_ACCOUNT_ADDRESS: Schema.NonEmptyString,
   DEPLOYER_PRIVATE_KEY: Schema.NonEmptyString,
+  /** The environment's one operator token, which operator automation presents as a launcher. */
+  OPERATOR_TOKEN: Schema.NonEmptyString,
   /** The current Frontier season's start, as an ISO UTC time; absent on a shard that hosts no Frontier. */
   FRONTIER_SEASON_START: Schema.optional(Schema.String),
 });

@@ -1,6 +1,9 @@
-/** A player in a slot: their Realms account, and the gameplay account it has on the shard the slot launches on. */
+/**
+ * A player in a slot: the gameplay account it has on the shard the slot launches on, and the Realms account that
+ * registered it, or null for an account a launcher registered (a harness bot or an invited roster).
+ */
 export interface SlotPlayer {
-  realmsId: string;
+  realmsId: string | null;
   account: string;
 }
 
@@ -18,10 +21,11 @@ export interface PlaytestSlot {
 }
 
 export interface SlotStore {
-  /** Creates the slot once; the timetable names a slot by its closing time, so a repeat is the same slot. */
-  create(name: string, closesAt: string): Promise<void>;
+  /** Creates the slot once; a repeat with the same closing time is the same slot, another closing time a conflict. */
+  create(name: string, closesAt: string): Promise<PlaytestSlot>;
   list(): Promise<PlaytestSlot[]>;
-  register(name: string, player: SlotPlayer): Promise<PlaytestSlot>;
+  /** Registers players while registration is open; a player already registered stays as they were. */
+  register(name: string, players: readonly SlotPlayer[]): Promise<PlaytestSlot>;
   freeze(name: string): Promise<PlaytestSlot>;
   freezeNextDue(): Promise<void>;
 }

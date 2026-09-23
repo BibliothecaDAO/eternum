@@ -15,6 +15,12 @@ Configuration, per environment (see `wrangler.jsonc` and `.github/workflows/depl
 - `LAUNCHER_ALLOWLIST` — comma-separated Starknet addresses; a wildcard is refused
 - `FRONTIER_SEASON_START` — the current Frontier season's start as an ISO UTC time; omit where no Frontier runs
 
+Launchers are allowlisted wallets and the operator: automation that presents the environment's one `OPERATOR_TOKEN`
+secret as a bearer token, the same token the identity Worker's directory routes accept. A launcher can also create a
+slot off the timetable (`POST /api/slots {name, closesAt}`) and register gameplay accounts into it directly
+(`POST /api/slots/:name/register {accounts}`, at most 96 per call) for harness runs and invited rosters, under the same
+duplicate and close-time rules as a player. A slot freezes at the first cron tick after it closes.
+
 Runs and slots live in D1 (`migrations/`). A cron tick every minute creates the Frontier season named by
 `FRONTIER_SEASON_START` (`frontier-<unix seconds>`) and the next free Blitz slot, freezes a slot whose registration has
 closed into queued games, and wakes the registrar. Slots close daily at 11:00 and 20:00 UTC and are named by their

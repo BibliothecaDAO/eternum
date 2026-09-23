@@ -46,7 +46,7 @@ export const startWorker = async (options: {
       ACCOUNT_CLASS_HASH: "0x1",
       BETTER_AUTH_SECRET: "workerd-test-secret-workerd-test-secret",
       IDENTITY_RPC_URL: "http://127.0.0.1:1",
-      DIRECTORY_ADMIN_TOKEN: "unused",
+      OPERATOR_TOKEN: "unused",
       WEB_PUSH_VAPID_PUBLIC_KEY: options.vapid.publicKey,
       WEB_PUSH_VAPID_PRIVATE_KEY: options.vapid.privateKey,
       WEB_PUSH_VAPID_SUBJECT: "mailto:ops@realms.party",

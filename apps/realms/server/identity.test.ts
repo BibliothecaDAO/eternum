@@ -47,7 +47,7 @@ beforeAll(async () => {
     ACCOUNT_CLASS_HASH,
     BETTER_AUTH_SECRET: "identity-test-secret-identity-test-secret",
     IDENTITY_RPC_URL: "http://127.0.0.1:1",
-    DIRECTORY_ADMIN_TOKEN: OPERATOR_TOKEN,
+    OPERATOR_TOKEN: OPERATOR_TOKEN,
     WEB_PUSH_VAPID_PUBLIC_KEY: "unused",
     WEB_PUSH_VAPID_PRIVATE_KEY: "unused",
     WEB_PUSH_VAPID_SUBJECT: "mailto:ops@realms.party",
