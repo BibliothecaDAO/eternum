@@ -1,5 +1,7 @@
 /// <reference lib="webworker" />
 
+import type { HexPosition } from "@bibliothecadao/types";
+import { setWorldOrigin } from "../world-origin";
 import { prepareTerrainPage } from "./terrain-page-builder";
 import { buildTerrainFogMask, type TerrainFogMask } from "./terrain-fog-mask";
 import {
@@ -13,7 +15,7 @@ import {
 
 type TerrainPageWorkerRequest =
   | { id: number; kind: "fog-mask"; instances: TerrainShroudInstance[] }
-  | { id: number; kind: "terrain-page"; request: TerrainPageRequest };
+  | { id: number; kind: "terrain-page"; origin: HexPosition; request: TerrainPageRequest };
 
 interface TerrainPageWorkerResponse {
   error?: string;
@@ -31,6 +33,7 @@ self.onmessage = (event: MessageEvent<TerrainPageWorkerRequest>) => {
       self.postMessage(response, fogMask ? [fogMask.data.buffer as ArrayBuffer] : []);
       return;
     }
+    setWorldOrigin(event.data.origin);
     const page = prepareTerrainPage(event.data.request);
     const response: TerrainPageWorkerResponse = { id: event.data.id, kind: "terrain-page", page };
     self.postMessage(response, collectTransferables(page));

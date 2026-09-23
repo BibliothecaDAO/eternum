@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { configManager, Position } from "@bibliothecadao/eternum";
+import { configManager, NEUTRAL_BIOME_CLIMATE, Position } from "@bibliothecadao/eternum";
+import { BiomeType } from "@bibliothecadao/types";
+import { createHexceptionTerrainRequest } from "./scenes/hexception-terrain";
 import { hexCellKey, hexCellFromKey } from "./terrain/hex-cell-key";
 import { findNearestTerrainHex, terrainHexToWorld } from "./terrain/terrain-coordinates";
 import { localHexPosition } from "./scenes/hexception-layout";
@@ -59,5 +61,34 @@ describe("world origin", () => {
 
     expect(slots.map(localHexPosition)).toEqual(atZero);
     expect(slots.map((slot) => getWorldPositionForHex(slot))).not.toEqual(worldAtZero);
+  });
+
+  it("lays the local realm scene's ground under its buildings when the world origin moves", () => {
+    setWorldOrigin({ col: -2146912832, row: -2147482432 });
+    const slots = [
+      { col: 10, row: 10 },
+      { col: 11, row: 9 },
+      { col: 7, row: 13 },
+    ];
+    const request = createHexceptionTerrainRequest(
+      slots.map((slot) => ({
+        ...slot,
+        biome: BiomeType.Grassland,
+        explored: true,
+        occupied: false,
+        previewBiome: BiomeType.Grassland,
+      })),
+      NEUTRAL_BIOME_CLIMATE,
+      "hexception:test",
+    );
+
+    for (const slot of slots) {
+      const cell = request.cells.find((entry) => {
+        const ground = terrainHexToWorld(entry.col, entry.row);
+        const building = localHexPosition(slot);
+        return Math.abs(ground.x - building.x) < 1e-6 && Math.abs(ground.z - building.z) < 1e-6;
+      });
+      expect(cell).toBeDefined();
+    }
   });
 });
