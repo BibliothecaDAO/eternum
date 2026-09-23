@@ -1,50 +1,51 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { StructureType, getLayerNeighborHexes } from "@bibliothecadao/types";
-import { configManager } from "../managers/config-manager";
+import { StructureType } from "@bibliothecadao/types";
 import * as timestamp from "./timestamp";
-import { getFreeDirectionsAroundStructure } from "./army";
+import { openSpawnDirections } from "./army";
 
-const parkedRealm = {
-  game_id: 7,
-  entity_id: 42,
-  base: { coord_x: 0xffffffff - 3, coord_y: 0xffffffff, alt: false, category: StructureType.Realm },
-  metadata: { realm_id: 3 },
-};
-const site = { col: 25, row: 45 };
+const realm = (coord: { x: number; y: number }) =>
+  ({
+    game_id: 7,
+    entity_id: 42,
+    base: { coord_x: coord.x, coord_y: coord.y, alt: false, category: StructureType.Realm },
+    metadata: { realm_id: 3 },
+  }) as never;
 
-const storeWith = (rules: Record<string, unknown>) => {
-  const freeHexes = new Set(getLayerNeighborHexes(site.col, site.row, false).map(({ col, row }) => `${col},${row}`));
-  return {
-    get: (model: string, key: Record<string, unknown>) => {
-      if (model === "Structure") return parkedRealm;
-      if (model === "TileOpt") return freeHexes.has(`${key.col},${key.row}`) ? { data: 0n } : undefined;
-      return rules[model];
-    },
+const storeWith = (rules: Record<string, unknown>) =>
+  ({
+    get: (model: string) => rules[model],
     require: (model: string) => {
       if (!(model in rules)) throw new Error(`missing ${model}`);
       return rules[model];
     },
-  } as never;
-};
+  }) as never;
 
-describe("getFreeDirectionsAroundStructure", () => {
+const frontier = {
+  SliceRules: { epoch_seconds: 86400 },
+  SettlementRules: { spacing: 10 },
+  GameRegistry: { start_main_at: 86400n },
+};
+const nothingExplored = () => undefined;
+
+describe("openSpawnDirections", () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it("offers the spawn directions around a Frontier realm's site, where the contract spawns", () => {
-    vi.spyOn(configManager, "getActiveGameId").mockReturnValue(7);
+  it("offers all six hexes around a realm in a fresh Frontier region, which the contract reveals as it musters", () => {
     vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: 86400 * 2 + 10 } as never);
-    const store = storeWith({
-      SliceRules: { epoch_seconds: 86400 },
-      SettlementRules: { spacing: 10 },
-      GameRegistry: { start_main_at: 86400n },
-    });
-    expect(getFreeDirectionsAroundStructure(42, store)).toHaveLength(6);
+    const parked = realm({ x: 0xffffffff - 3, y: 0xffffffff });
+    expect(openSpawnDirections(storeWith(frontier), parked, nothingExplored)).toHaveLength(6);
   });
 
-  it("refuses to look for spawn hexes around the parking coordinate", () => {
-    vi.spyOn(configManager, "getActiveGameId").mockReturnValue(7);
-    expect(() => getFreeDirectionsAroundStructure(42, storeWith({ SliceRules: { epoch_seconds: 0 } }))).toThrow(
-      "parked at the expedition sentinel",
-    );
+  it("keeps an occupied explored hex closed in a Frontier region", () => {
+    vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: 86400 * 2 + 10 } as never);
+    const parked = realm({ x: 0xffffffff - 3, y: 0xffffffff });
+    const occupiedFirst = (hex: { col: number; row: number }) => (hex.col === 26 && hex.row === 45 ? 99 : undefined);
+    expect(openSpawnDirections(storeWith(frontier), parked, occupiedFirst)).toHaveLength(5);
+  });
+
+  it("offers only explored free hexes where the game has no expeditions", () => {
+    const home = realm({ x: 100, y: 100 });
+    expect(openSpawnDirections(storeWith({ SliceRules: { epoch_seconds: 0 } }), home, nothingExplored)).toEqual([]);
+    expect(openSpawnDirections(storeWith({ SliceRules: { epoch_seconds: 0 } }), home, () => 0)).toHaveLength(6);
   });
 });

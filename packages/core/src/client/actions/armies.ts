@@ -1,17 +1,21 @@
-import type {
-  BiomeType,
-  ContractAddress,
-  Direction,
-  HexEntityInfo,
-  HexPosition,
-  ID,
-  TroopTier,
-  TroopType,
+import {
+  getTroopAttackRange,
+  type BiomeType,
+  type ContractAddress,
+  type Direction,
+  type HexEntityInfo,
+  type ID,
+  type TroopTier,
+  type TroopType,
 } from "@bibliothecadao/types";
+import type { NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 
 import { ArmyActionManager } from "../../managers/army-action-manager";
 import { ArmyManager } from "../../managers/army-manager";
+import { configManager } from "../../managers/config-manager";
 import { StructureActionManager } from "../../managers/structure-action-manager";
+import { getGuardsByStructure } from "../../utils/army";
+import { readExpeditionRules, structureMapPosition } from "../../utils/expeditions";
 import { type ActionPath, ActionPaths, ActionType } from "../../utils/action-paths";
 import { type ActionClient, requireSigner } from "./signer";
 
@@ -31,12 +35,11 @@ export interface ArmyPathsInput {
 }
 
 export interface StructurePathsInput {
-  /** The structure's contract hex. */
-  hex: HexPosition;
+  /** The structure whose guards plan; its map hex, guard reach, and spawn rule are read from the store. */
+  structureId: ID;
   armyHexes: HexIndex<HexEntityInfo>;
   exploredHexes: HexIndex<BiomeType>;
   playerAddress: ContractAddress;
-  attackRange: number;
 }
 
 export interface MoveArmyInput {
@@ -88,13 +91,30 @@ export const findArmyPaths = (client: ActionClient, input: ArmyPathsInput): Acti
     input.playerAddress,
   );
 
-export const findStructurePaths = (input: StructurePathsInput): ActionPaths =>
-  new StructureActionManager().findActionPaths(
-    input.hex,
+export const findStructurePaths = (client: ActionClient, input: StructurePathsInput): ActionPaths => {
+  const { store } = client.setup;
+  const structure = store.require("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: input.structureId,
+  });
+  const home = structureMapPosition(store, structure);
+  return new StructureActionManager().findActionPaths(
+    { col: home.x, row: home.y },
     input.armyHexes,
     input.exploredHexes,
     input.playerAddress,
-    input.attackRange,
+    guardAttackRange(store, structure),
+    readExpeditionRules(store, structure.game_id) !== null,
+  );
+};
+
+/** The reach of the strongest-ranged guard with troops. */
+const guardAttackRange = (store: ActionClient["setup"]["store"], structure: NativeRows["Structure"]): number =>
+  Math.max(
+    0,
+    ...getGuardsByStructure(structure, store)
+      .filter((guard) => Number(guard.troops.count) > 0)
+      .map((guard) => getTroopAttackRange(guard.troops.category as TroopType)),
   );
 
 /** A Move path travels over explored tiles; any other path reveals its destination. Spire travel is routed by the manager. */

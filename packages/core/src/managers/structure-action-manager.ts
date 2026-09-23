@@ -30,12 +30,13 @@ export class StructureActionManager {
     exploredHexes: Map<number, Map<number, BiomeType>>,
     playerAddress: ContractAddress,
     attackRange = 1,
+    expedition = false,
   ): ActionPaths {
     const actionPaths = new ActionPaths();
 
     const position = { col: contractPosition.col, row: contractPosition.row };
 
-    this.addAdjacentSupportActionPaths(actionPaths, position, armyHexes, exploredHexes, playerAddress);
+    this.addAdjacentSupportActionPaths(actionPaths, position, armyHexes, exploredHexes, playerAddress, expedition);
     this.addAttackActionPaths(actionPaths, position, armyHexes, exploredHexes, playerAddress, attackRange);
 
     return actionPaths;
@@ -47,13 +48,15 @@ export class StructureActionManager {
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
     playerAddress: ContractAddress,
+    expedition: boolean,
   ) {
     const neighbors = getNeighborHexes(position.col, position.row);
 
     for (const { col, row } of neighbors) {
       const isExplored = exploredHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
 
-      if (!isExplored) continue;
+      // An unexplored neighbour can only take a new army, and only where the contract reveals it (see isOpenSpawnHex).
+      if (!isExplored && !expedition) continue;
 
       const hasArmy = armyHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
       const isArmyMine =

@@ -68,7 +68,7 @@ export const createGameActions = (client: GameClient, options: CreateGameActions
   const actor = options.signer ? actingAs(client, options.signer) : client;
   return {
     armyPaths: (input) => findArmyPaths(actor, input),
-    structurePaths: (input) => findStructurePaths(input),
+    structurePaths: (input) => findStructurePaths(actor, input),
     moveArmy: (input) => moveArmy(actor, input),
     createExplorerArmy: (input) => createExplorerArmy(actor, input),
     addTroopsToExplorer: (input) => addTroopsToExplorer(actor, input),

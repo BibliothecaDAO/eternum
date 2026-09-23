@@ -52,7 +52,13 @@ import { type RenderVisualProfile } from "@/three/render-profile";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
-import { configManager, NEUTRAL_BIOME_CLIMATE, Position } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  NEUTRAL_BIOME_CLIMATE,
+  Position,
+  isOpenSpawnHex,
+  readExpeditionRules,
+} from "@bibliothecadao/eternum";
 import {
   requireActiveGameSyncRuntime,
   getActiveGameSyncRuntime,
@@ -97,7 +103,6 @@ import {
   BattleEventSystemUpdate,
   ExplorerRewardSystemUpdate,
   getBlockTimestamp,
-  getGuardsByStructure,
   getTileAt,
   recordArmyMovementLatencyPhase,
   SelectableArmy,
@@ -110,7 +115,6 @@ import {
   Direction,
   findResourceById,
   getDirectionBetweenAdjacentHexes,
-  getTroopAttackRange,
   HexEntityInfo,
   HexPosition,
   ID,
@@ -3119,15 +3123,6 @@ export default class WorldmapScene extends WarpTravel {
       game_id: configManager.getActiveGameId(),
       entity_id: selectedEntityId,
     });
-    const attackRange = structureData
-      ? Math.max(
-          0,
-          ...getGuardsByStructure(structureData, this.game.store)
-            .filter((guard) => Number(guard.troops.count) > 0)
-            .map((guard) => getTroopAttackRange(guard.troops.category)),
-        )
-      : 0;
-
     const playerAddress = useAccountStore.getState().account?.address;
 
     const canIssueStructureOrders =
@@ -3139,19 +3134,19 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    const structureContract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const actionPaths = requireActiveGameClient().actions.structurePaths({
-      hex: { col: structureContract.x, row: structureContract.y },
+      structureId: selectedEntityId,
       armyHexes: this.buildProjectedArmyActionIndex(),
       exploredHexes: this.buildProjectedExploredTileIndex(),
       playerAddress: ContractAddress(playerAddress),
-      attackRange,
     });
+    const expedition = readExpeditionRules(this.game.store, configManager.getActiveGameId()) !== null;
 
     for (const [key, path] of actionPaths.getPaths()) {
       const destination = path[path.length - 1].hex;
       const tile = this.worldSpatialProjection.getTileAtHex({ ...destination, alt: activeMapLayer() });
-      if (ActionPaths.getActionType(path) === ActionType.CreateArmy && (!tile || Number(tile.occupierId) !== 0)) {
+      const occupierId = tile ? Number(tile.occupierId) : undefined;
+      if (ActionPaths.getActionType(path) === ActionType.CreateArmy && !isOpenSpawnHex(occupierId, expedition)) {
         actionPaths.getPaths().delete(key);
       }
     }

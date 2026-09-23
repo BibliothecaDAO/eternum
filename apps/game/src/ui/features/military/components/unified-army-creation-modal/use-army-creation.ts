@@ -14,13 +14,13 @@ import {
   getGuardsByStructure,
   getTroopResourceId,
   structureMapPosition,
+  openSpawnDirections,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import {
   Direction,
   DISPLAYED_SLOT_NUMBER_MAP,
-  getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
   GUARD_SLOT_NAMES,
   GuardSlot,
@@ -282,13 +282,15 @@ export const useArmyCreation = ({
   const neighborTiles = useWorldSpatialTiles(neighborHexes);
   const freeDirections = useMemo(
     () =>
-      neighborTiles
-        .filter((tile) => Number(tile.occupierId) === 0)
-        .map((tile) =>
-          getDirectionBetweenAdjacentHexes({ col: structureCoordX ?? 0, row: structureCoordY ?? 0 }, tile.hexCoords),
-        )
-        .filter((candidate): candidate is Direction => candidate !== null),
-    [neighborTiles, structureCoordX, structureCoordY],
+      structureComponent
+        ? openSpawnDirections(store, structureComponent, (hex) => {
+            const tile = neighborTiles.find(
+              (candidate) => candidate.hexCoords.col === hex.col && candidate.hexCoords.row === hex.row,
+            );
+            return tile ? Number(tile.occupierId) : undefined;
+          })
+        : [],
+    [neighborTiles, store, structureComponent],
   );
 
   const isDefenseTroopLocked = !armyType && isSelectedSlotOccupied;

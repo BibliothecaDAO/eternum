@@ -1,6 +1,6 @@
 import { ArrowRight, Lock as LockIcon, Pen } from "@/ui/design-system/atoms/game-icons";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
-import { Position as PositionInterface, structureMapPosition } from "@bibliothecadao/eternum";
+import { Position as PositionInterface, structureMapPosition, openSpawnDirections } from "@bibliothecadao/eternum";
 
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
@@ -134,15 +134,15 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
   const neighborTiles = useWorldSpatialTiles(neighborHexes);
   const freeDirections = useMemo(
     () =>
-      structurePosition
-        ? neighborTiles
-            .filter((tile) => Number(tile.occupierId) === 0)
-            .map((tile) =>
-              getDirectionBetweenAdjacentHexes({ col: structurePosition.x, row: structurePosition.y }, tile.hexCoords),
-            )
-            .filter((direction): direction is Direction => direction !== null)
+      structure
+        ? openSpawnDirections(store, structure, (hex) => {
+            const tile = neighborTiles.find(
+              (candidate) => candidate.hexCoords.col === hex.col && candidate.hexCoords.row === hex.row,
+            );
+            return tile ? Number(tile.occupierId) : undefined;
+          })
         : [],
-    [neighborTiles, structurePosition],
+    [neighborTiles, store, structure],
   );
 
   useEffect(() => {

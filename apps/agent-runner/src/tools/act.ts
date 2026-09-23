@@ -2,12 +2,11 @@ import {
   ActionPaths,
   buildArmyPathIndexes,
   getBlockTimestamp,
-  getGuardsByStructure,
   type ActionPath,
   type GameClient,
 } from "@bibliothecadao/eternum";
 import { classifyTransactionError, type ClassifiedTransactionError } from "@bibliothecadao/provider/errors";
-import { getTroopAttackRange, type HexPosition, type ID, type TroopType } from "@bibliothecadao/types";
+import type { HexPosition, ID } from "@bibliothecadao/types";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type, type Static } from "typebox";
 import { Value } from "typebox/value";
@@ -96,29 +95,9 @@ const armyPaths = (client: GameClient, explorerId: ID): ActionPaths => {
 };
 
 const structurePaths = (client: GameClient, structureId: ID): ActionPaths => {
-  const structure = structureRow(client, structureId);
-  if (!structure) throw new Error(`Structure ${structureId} is not in the native store`);
   const { armyHexes, exploredHexes } = buildArmyPathIndexes(client);
-  return client.actions.structurePaths({
-    hex: { col: structure.base.coord_x, row: structure.base.coord_y },
-    armyHexes,
-    exploredHexes,
-    playerAddress: viewerOf(client),
-    attackRange: guardAttackRange(client, structure),
-  });
+  return client.actions.structurePaths({ structureId, armyHexes, exploredHexes, playerAddress: viewerOf(client) });
 };
-
-/** The reach of the strongest-ranged guard with troops, as the worldmap computes it on structure selection. */
-const guardAttackRange = (client: GameClient, structure: NonNullable<ReturnType<typeof structureRow>>): number =>
-  Math.max(
-    0,
-    ...getGuardsByStructure(structure, client.setup.store)
-      .filter((guard) => Number(guard.troops.count) > 0)
-      .map((guard) => getTroopAttackRange(guard.troops.category as TroopType)),
-  );
-
-const structureRow = (client: GameClient, structureId: ID) =>
-  client.setup.store.get("Structure", { game_id: client.gameId, entity_id: structureId });
 
 // Submitting actions
 
