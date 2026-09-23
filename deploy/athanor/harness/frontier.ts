@@ -1,4 +1,5 @@
 import { setTimeout as sleep } from "node:timers/promises";
+import type { Account } from "starknet";
 import { createOperatorAccount } from "../../../config/deployer/clean/shared/madara-account";
 import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
 import {
@@ -33,62 +34,89 @@ import { createRpcMetrics, trackTransaction, type TrackedTransaction, type Workl
 import type { HarnessGame } from "./harness-game";
 import type { HarnessProvider } from "./provider";
 
-const EPOCH_SECONDS = 720;
-const TIME_SCALE = 86400 / EPOCH_SECONDS;
+const ACCELERATED_EPOCH_SECONDS = 720;
+const PRODUCTION_EPOCH_SECONDS = 86400;
 const precision = BigInt(RESOURCE_PRECISION);
 
-/** The existing preset and registrar path, with only clocks accelerated for the design run. */
-export async function launchFrontierSeason(provider: HarnessProvider, gameName: string, minutes: number) {
+interface FrontierSeasonOptions {
+  presetId: number;
+  /** The design run plays whole days in twelve minutes; the capacity shape keeps production-length days. */
+  accelerated: boolean;
+}
+
+/** The existing preset and registrar path; the design run registers the preset with accelerated clocks first. */
+export async function launchFrontierSeason(
+  provider: HarnessProvider,
+  gameName: string,
+  minutes: number,
+  { presetId, accelerated }: FrontierSeasonOptions,
+) {
   const manifest = process.env.NATIVE_WORLD_MANIFEST;
   const address = process.env.DEPLOYER_ACCOUNT_ADDRESS;
   const privateKey = process.env.DEPLOYER_PRIVATE_KEY;
   if (!manifest || !address || !privateKey)
     throw new Error("Frontier launch requires the isolated manifest and authority");
   const account = createOperatorAccount(provider, address, privateKey);
-  const config = loadNativePresetConfiguration("madara.frontier", 1);
-  const canonical = buildNativePreset(config, 1);
-  const accelerated = buildNativePreset(config, 1);
-  accelerateSeasonClocks(accelerated);
-  const canonicalRegistration = buildNativePresetRegistration(canonical, 1, manifest);
-  const acceleratedRegistration = buildNativePresetRegistration(accelerated, 1, manifest);
+  const config = loadNativePresetConfiguration("madara.frontier", presetId);
+  const canonical = buildNativePreset(config, presetId);
+  const preset = buildNativePreset(config, presetId);
+  if (accelerated) accelerateSeasonClocks(preset);
   const startAt = Math.floor(Date.now() / 1000) + 60;
   const params = buildNativeGameParams(config, {
     gameName,
-    presetId: 1,
+    presetId,
     startMainAt: startAt,
     chainTimestamp: startAt - 60,
-    durationSeconds: Math.ceil(minutes * 60) + EPOCH_SECONDS,
+    durationSeconds: Math.ceil(minutes * 60) + preset.rules.epoch_seconds,
     devModeOn: false,
     singleRealmMode: true,
     twoPlayerMode: false,
     useMapOverride: false,
   });
-  try {
-    const registered = await registerNativePreset(account, 1, acceleratedRegistration);
-    const created = await createRegistrarGame(account, params, "madara.frontier", accelerated);
+  const create = async () => {
+    const created = await createRegistrarGame(account, params, "madara.frontier", preset);
     if (!created.gameId) throw new Error("Frontier registrar did not emit a game id");
     console.log(
       JSON.stringify({
         frontierSeason: created.gameId,
-        epochSeconds: EPOCH_SECONDS,
-        timeScale: TIME_SCALE,
-        presetCommitment: acceleratedRegistration.commitment,
-        registerTransaction: registered,
+        epochSeconds: preset.rules.epoch_seconds,
         createTransaction: created.transactionHash,
       }),
     );
     // Open entry: Frontier has no settlement burst at start; players settle themselves during play.
     return { gameId: created.gameId, gameName, startAt, settlementTransactions: 0 };
-  } finally {
-    const restored = await registerNativePreset(account, 1, canonicalRegistration);
+  };
+  return accelerated ? withAcceleratedPreset(account, presetId, manifest, canonical, preset, create) : create();
+}
+
+/** Registers the accelerated variant under the same preset id for the creation, then restores the canonical one. */
+async function withAcceleratedPreset<T>(
+  account: Account,
+  presetId: number,
+  manifest: string,
+  canonical: ReturnType<typeof buildNativePreset>,
+  accelerated: ReturnType<typeof buildNativePreset>,
+  create: () => Promise<T>,
+): Promise<T> {
+  const canonicalRegistration = buildNativePresetRegistration(canonical, presetId, manifest);
+  const acceleratedRegistration = buildNativePresetRegistration(accelerated, presetId, manifest);
+  try {
+    const registered = await registerNativePreset(account, presetId, acceleratedRegistration);
     console.log(
-      JSON.stringify({ restoredPreset: 1, commitment: canonicalRegistration.commitment, transaction: restored }),
+      JSON.stringify({ acceleratedPreset: presetId, commitment: acceleratedRegistration.commitment, transaction: registered }),
+    );
+    return await create();
+  } finally {
+    const restored = await registerNativePreset(account, presetId, canonicalRegistration);
+    console.log(
+      JSON.stringify({ restoredPreset: presetId, commitment: canonicalRegistration.commitment, transaction: restored }),
     );
   }
 }
 
 function accelerateSeasonClocks(accelerated: ReturnType<typeof buildNativePreset>): void {
-  accelerated.rules.epoch_seconds = EPOCH_SECONDS;
+  const TIME_SCALE = PRODUCTION_EPOCH_SECONDS / ACCELERATED_EPOCH_SECONDS;
+  accelerated.rules.epoch_seconds = ACCELERATED_EPOCH_SECONDS;
   accelerated.rules.tick_config.armies_tick_in_seconds /= TIME_SCALE;
   for (const resource of accelerated.resources.resources) {
     resource.realm_rate *= BigInt(TIME_SCALE);
@@ -157,6 +185,7 @@ export interface FrontierEvidence {
   >;
 }
 interface RunFrontierOptions {
+  accelerated: boolean;
   onReady?: () => Promise<void>;
   client: GameClient;
   game: HarnessGame;
@@ -169,8 +198,9 @@ interface RunFrontierOptions {
 /** Decisions use the same synchronized native facts and command submission as a player. */
 export async function runFrontierWorkload(options: RunFrontierOptions): Promise<WorkloadResult> {
   const { client, game, accounts, provider } = options;
-  const rules = client.setup.store.require("SliceRules", { game_id: game.gameId });
-  if (rules.epoch_seconds !== EPOCH_SECONDS) throw new Error("Frontier design run requires its accelerated season");
+  const epochSeconds = epochSecondsOf(client);
+  if (options.accelerated !== (epochSeconds === ACCELERATED_EPOCH_SECONDS))
+    throw new Error(`Frontier ${options.accelerated ? "design run" : "capacity shape"} does not match the season's day length (${epochSeconds} s)`);
   await game.waitUntilPlaying();
   const players: Player[] = [];
   for (const identity of accounts) players.push(await settleFrontierPlayer(options, identity));
@@ -185,7 +215,7 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
     await Promise.all(
       players.map(async (player) => {
         observeDay(client, game, player);
-        if (now() < player.nextActionAt || !inSession(player)) return;
+        if (now() < player.nextActionAt || !inSession(client, player)) return;
         const action = chooseAction(client, game, player);
         if (!action) return;
         const result = await trackTransaction({
@@ -226,8 +256,8 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
   for (const player of players) currentDay(player).endedAt = now();
   const chests = await readChestHistory(client, Math.max(0, ...actions.map((action) => action.acceptedOnL2Block ?? 0)));
   const evidence: FrontierEvidence = {
-    epochSeconds: EPOCH_SECONDS,
-    timeScale: TIME_SCALE,
+    epochSeconds,
+    timeScale: PRODUCTION_EPOCH_SECONDS / epochSeconds,
     tokenCap: client.setup.store.require("ChestRules", { game_id: game.gameId }).token_cap,
     players: players.map(({ identity, siteExchanges: _exchanges, nextActionAt: _next, ...player }) => ({
       ...player,
@@ -331,9 +361,13 @@ function activeArmies(client: GameClient, player: Player): Army[] {
       Math.floor(army.coord.y / spacing / 4) === currentDay(player).epoch,
   );
 }
+function epochSecondsOf(client: GameClient): number {
+  return client.setup.store.require("SliceRules", { game_id: client.gameId }).epoch_seconds;
+}
 function currentEpoch(client: GameClient): number {
   const registry = client.setup.store.require("GameRegistry", { game_id: client.gameId });
-  return Math.floor(now() / EPOCH_SECONDS) - Math.floor(Number(registry.start_main_at) / EPOCH_SECONDS);
+  const epochSeconds = epochSecondsOf(client);
+  return Math.floor(now() / epochSeconds) - Math.floor(Number(registry.start_main_at) / epochSeconds);
 }
 function observeDay(client: GameClient, game: HarnessGame, player: Player) {
   const epoch = currentEpoch(client);
@@ -375,12 +409,15 @@ function observeDay(client: GameClient, game: HarnessGame, player: Player) {
   });
   observeProgress(client, game, player);
 }
-function session(player: Player): number {
-  return Math.floor((now() % EPOCH_SECONDS) / (EPOCH_SECONDS / (player.profile === "check-in" ? 3 : 9)));
+function sessionPeriod(client: GameClient, player: Player): number {
+  return epochSecondsOf(client) / (player.profile === "check-in" ? 3 : 9);
 }
-function inSession(player: Player): boolean {
-  const period = EPOCH_SECONDS / (player.profile === "check-in" ? 3 : 9);
-  return now() % EPOCH_SECONDS >= 2 && (now() - player.settledAt < period / 3 || now() % period < period / 3);
+function session(client: GameClient, player: Player): number {
+  return Math.floor((now() % epochSecondsOf(client)) / sessionPeriod(client, player));
+}
+function inSession(client: GameClient, player: Player): boolean {
+  const period = sessionPeriod(client, player);
+  return now() % epochSecondsOf(client) >= 2 && (now() - player.settledAt < period / 3 || now() % period < period / 3);
 }
 interface Action {
   kind: string;
@@ -651,7 +688,7 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       return attack;
     }
     const limit = player.profile === "check-in" ? 6 : 5;
-    const currentSession = session(player);
+    const currentSession = session(client, player);
     if ((day.sessionExplores[currentSession] ?? 0) >= limit) continue;
     const frontier = neighbors
       .filter(

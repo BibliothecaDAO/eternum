@@ -116,6 +116,22 @@ describe("Madara harness workload", () => {
   it("selects Eternum and rejects deferred ledger options", () => {
     expect(parseHarnessArgs([]).gameType).toBe("blitz");
     expect(parseHarnessArgs(["--game-type", "eternum"]).gameType).toBe("eternum");
+    expect(parseHarnessArgs(["--game-type", "eternum"])).toMatchObject({ presetId: 3, functional: false });
+    expect(parseHarnessArgs(["--preset", "4", "--workload", "burst"])).toMatchObject({
+      presetId: 4,
+      workload: "burst",
+    });
+    expect(() => parseHarnessArgs(["--preset", "9"])).toThrow("Unsupported native preset 9");
+    expect(parseHarnessArgs(["--game-type", "frontier", "--bots", "1"])).toMatchObject({
+      presetId: 1,
+      functional: false,
+    });
+    expect(() => parseHarnessArgs(["--game-type", "frontier", "--bots", "1", "--functional"])).toThrow(
+      "both player profiles",
+    );
+    expect(() => parseHarnessArgs(["--game-type", "frontier", "--workload", "burst"])).toThrow(
+      "Frontier requires the frontier workload",
+    );
     expect(() => parseHarnessArgs(["--game-type", "unknown"])).toThrow("--game-type must be blitz, eternum or frontier");
     expect(() => parseHarnessArgs(["--game-type", "eternum", "--ledger"])).toThrow(
       "Unsupported harness option --ledger",
@@ -412,12 +428,17 @@ describe("Madara harness reporting", () => {
   });
 
   it("asserts the action threshold and the latency bars over every worker of a roster run", () => {
-    const worker = (thresholdEligibleActions: number, preConfirmedMs: number[]): WorkerWorkloadSummary => ({
+    const worker = (
+      thresholdEligibleActions: number,
+      preConfirmedMs: number[],
+      firstSubmitAt: string | null = "2026-09-23T00:00:00.000Z",
+    ): WorkerWorkloadSummary => ({
       gameId: 1,
       startedAt: "2026-09-23T00:00:00.000Z",
       endedAt: "2026-09-23T00:10:00.000Z",
       plannedActions: 40,
       thresholdEligibleActions,
+      firstSubmitAt,
       preConfirmedMs,
       acceptedOnL2Ms: preConfirmedMs.map((value) => value + 100),
     });
@@ -426,7 +447,7 @@ describe("Madara harness reporting", () => {
     // One bot short of its own plan does not fail the run while the total clears the bar.
     const passing = assessRosterRun({
       functional: false,
-      workers: [worker(40, [200, 900]), worker(30, [300, 400])],
+      workers: [worker(40, [200, 900]), worker(30, [300, 400], "2026-09-23T00:00:00.250Z")],
       minimumThresholdActions: 70,
       evidence: evidence(299),
     });
@@ -436,7 +457,12 @@ describe("Madara harness reporting", () => {
       preConfirmedP95: true,
       closeBlockP95: true,
     });
-    expect(passing).toMatchObject({ passed: true, plannedActions: 80, thresholdEligibleActions: 70 });
+    expect(passing).toMatchObject({
+      passed: true,
+      plannedActions: 80,
+      thresholdEligibleActions: 70,
+      releaseSpreadMs: 250,
+    });
     expect(passing.percentiles?.preConfirmedMs.p95).toBe(900);
 
     expect(

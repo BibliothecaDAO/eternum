@@ -198,6 +198,15 @@ stats are read once by the driver, never per worker, and a block-stats read that
 the run. The summary records the driver's placement (host, pid, cpuset, cgroup, available threads) and, per game, the
 number of transactions its settlement burst took at start. Worker reports under `players/` carry no gates of their own.
 
+The capacity campaign's shapes are run configurations of the same harness. `--preset <id>` names the preset new games
+are created from (default: the game type's). The slot shape's start burst is `--bots 96 --workload burst`: four games of
+24, every bot releasing its whole plan at the same instant and its next action as soon as the previous one lands; the
+summary's `releaseSpreadMs` shows how tight the release was. The Frontier shape is `--game-type frontier` without
+`--functional`: production-length days, every player settling then mustering and exploring in the first minutes, with
+the latency and close-cost gates. `--game-type frontier --functional` is FR11's design run instead: the season is
+created with twelve-minute days so the bots play through rollovers, and the design gates (token cap, fresh armies
+after at least three rollovers) apply while the latency gates do not.
+
 For a node with OTLP export, set `MADARA_METRICS_FILE` to the collector's JSON-lines output. The existing
 `scripts/block-stats.py` combines close-block data with upstream counter deltas, excluding process resets. Report
 latency separately from gas and execution resources. Admission-to-visible includes queue wait and the Herald barrier.

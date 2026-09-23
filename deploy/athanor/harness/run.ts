@@ -3,7 +3,7 @@ import { launchFrontierSeason, runFrontierWorkload } from "./frontier";
 import { createBuildOrderWorkload } from "./build-order";
 import { runLayerRoundTrip } from "./layer-round-trip";
 import { closeHarnessSeason } from "./season-lifecycle";
-import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
+import { nativePresetForId, nativePresetIdFor } from "../../../config/source/native";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { Worker, isMainThread, parentPort, workerData, threadId } from "node:worker_threads";
 import path from "node:path";
@@ -34,9 +34,11 @@ import {
 } from "./report";
 
 interface HarnessCliOptions {
-  workload: "build-order" | "cadence" | "frontier";
+  workload: "build-order" | "burst" | "cadence" | "frontier";
   functional: boolean;
   gameType: HarnessGameType;
+  /** The preset new games are created from; the campaign names one per configuration. */
+  presetId: number;
   bots: number;
   games?: number;
   accountsPerGame?: number;
@@ -96,10 +98,15 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   const workload =
     values.workload ??
     { frontier: "frontier", eternum: "cadence", blitz: "build-order" }[values["game-type"] ?? "blitz"];
-  if (workload !== "build-order" && workload !== "cadence" && workload !== "frontier")
-    throw new Error("--workload must be build-order, cadence or frontier");
+  if (workload !== "build-order" && workload !== "burst" && workload !== "cadence" && workload !== "frontier")
+    throw new Error("--workload must be build-order, burst, cadence or frontier");
   if ((gameType === "frontier") !== (workload === "frontier"))
     throw new Error("Frontier requires the frontier workload");
+  const presetId = values.preset === undefined ? nativePresetIdFor(gameType) : positiveInteger(values.preset, "preset");
+  nativePresetForId(presetId);
+  const functional = values.functional === "true";
+  if (gameType === "frontier" && functional && bots < 2)
+    throw new Error("Frontier design run requires both player profiles");
   if (gameType === "eternum" && workload === "build-order") throw new Error("Build-order workload requires Blitz");
   if (gameType !== "blitz" && games !== undefined) throw new Error("--games requires Regular Blitz");
   if (gameType === "blitz" && gameId !== undefined)
@@ -112,7 +119,8 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   return {
     gameType,
     workload,
-    functional: values.functional === "true" || workload === "frontier",
+    functional,
+    presetId,
     bots,
     games,
     accountsPerGame,
@@ -129,8 +137,6 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
 
 async function main(): Promise<void> {
   const options = parseHarnessArgs(process.argv.slice(2));
-  if (isMainThread && options.workload === "frontier" && options.bots < 2)
-    throw new Error("Frontier design run requires both player profiles");
   const gameplayContractsPath = requiredEnvironmentValue("GAMEPLAY_CONTRACTS_PATH", "native harness");
   process.env.HERALD_URL = options.heraldUrl;
 
@@ -193,6 +199,7 @@ async function main(): Promise<void> {
     const workload =
       options.workload === "frontier"
         ? await runFrontierWorkload({
+            accelerated: options.functional,
             client,
             game: harnessGame,
             provider,
@@ -204,6 +211,7 @@ async function main(): Promise<void> {
         : await runWorkload({
             bots,
             buildOrder: options.workload === "build-order" ? createBuildOrderWorkload(client, harnessGame) : undefined,
+            burst: options.workload === "burst",
             game: harnessGame,
             intervalSeconds: options.intervalSeconds,
             minutes: options.minutes,
@@ -291,7 +299,10 @@ async function resolveHarnessGame(options: HarnessCliOptions, rosterAccounts: st
   if (options.gameType === "frontier") {
     const provider = createHarnessProvider(options.rpcUrl);
     try {
-      return await launchFrontierSeason(provider, gameName, options.minutes);
+      return await launchFrontierSeason(provider, gameName, options.minutes, {
+        presetId: options.presetId,
+        accelerated: options.functional,
+      });
     } finally {
       provider.dispose();
     }
@@ -309,7 +320,7 @@ async function resolveHarnessGame(options: HarnessCliOptions, rosterAccounts: st
     privateKey: process.env.DEPLOYER_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
     rpcUrl: options.rpcUrl,
     startTime: startAt,
-    version: defaultPresetForEnvironment(options.gameType === "eternum" ? "madara.eternum" : "madara.blitz"),
+    version: String(options.presetId),
   });
   if (!summary.gameId) throw new Error(`Registrar did not return a game id for ${gameName}`);
   return { gameId: summary.gameId, gameName, startAt, settlementTransactions: summary.settlementTransactions ?? 0 };
@@ -343,6 +354,7 @@ function parseFlags(args: string[]): Record<string, string> {
         "herald-url",
         "games",
         "accounts-per-game",
+        "preset",
       ].includes(name)
     ) {
       throw new Error(`Unsupported harness option --${name}`);
@@ -505,6 +517,8 @@ function startGameWorker(options: HarnessCliOptions, game: PreparedGame, file: s
       String(options.setupConcurrency),
       "--workload",
       options.workload,
+      "--preset",
+      String(options.presetId),
       "--rpc-url",
       options.rpcUrl,
       "--herald-url",
@@ -592,8 +606,9 @@ Usage: bun deploy/athanor/harness/run.ts [options]
   --minutes <minutes>            default: 10
   --interval-seconds <seconds>   default: 15
   --setup-concurrency <count>    default: 6
-  --workload <build-order|cadence|frontier> default: the game type’s workload
-  --functional                  omit capacity collection and latency gates (always on for Frontier)
+  --workload <build-order|burst|cadence|frontier> default: the game type’s workload; burst submits every plan at once
+  --preset <id>                  preset new games are created from; default: the game type’s preset
+  --functional                  omit capacity collection and latency gates; for Frontier, the accelerated design run
   --prepared-game <path>         resume a prepared roster using its private account file
   --game-id <id>                 use an existing Eternum game
   --game-name <name>             name for a new game or report label for --game-id

@@ -87,7 +87,7 @@ export interface HarnessBot {
 }
 
 export interface WorkloadResult {
-  profile?: "build-order" | "cadence" | "frontier";
+  profile?: "build-order" | "burst" | "cadence" | "frontier";
   frontier?: FrontierEvidence;
   actions: TrackedTransaction[];
   endedAt: string;
@@ -127,6 +127,8 @@ interface PrepareHarnessBotsOptions {
 
 interface RunWorkloadOptions {
   buildOrder?: BuildOrderWorkload;
+  /** Every bot submits its whole plan at once, each next action as soon as the previous one lands. */
+  burst?: boolean;
   bots: HarnessBot[];
   game: HarnessGame;
   intervalSeconds: number;
@@ -404,6 +406,7 @@ export async function runWorkload({
   onReady,
   provider,
   buildOrder,
+  burst = false,
 }: RunWorkloadOptions): Promise<WorkloadResult> {
   const ticks = resolveWorkloadTicks(minutes, intervalSeconds);
   const overheadRpc = createRpcMetrics();
@@ -414,13 +417,12 @@ export async function runWorkload({
   const actions: TrackedTransaction[] = [];
   const botQueues = new Map(bots.map((bot) => [bot.botId, Promise.resolve()]));
   const nextAutomation = new Map(bots.map((bot) => [bot.botId, workloadStartedAtMs]));
-  const botSpacingMs = (intervalSeconds * 1_000) / bots.length;
   const pathReservations = new PathReservations(bots, game);
 
   for (let tick = 0; tick < ticks; tick += 1) {
+    const scheduledAtMs = burst ? workloadStartedAtMs : workloadStartedAtMs + tick * intervalSeconds * 1_000;
+    await sleepUntil(scheduledAtMs);
     for (const [botIndex, bot] of bots.entries()) {
-      const scheduledAtMs = workloadStartedAtMs + tick * intervalSeconds * 1_000 + botIndex * botSpacingMs;
-      await sleepUntil(scheduledAtMs);
       const actionIndex = tick * bots.length + botIndex;
       const previous = botQueues.get(bot.botId)!;
       botQueues.set(
@@ -464,7 +466,7 @@ export async function runWorkload({
   actions.sort((left, right) => left.submitStartedAt.localeCompare(right.submitStartedAt));
 
   return {
-    profile: buildOrder ? "build-order" : "cadence",
+    profile: buildOrder ? "build-order" : burst ? "burst" : "cadence",
     actions,
     endedAt: new Date().toISOString(),
     overheadRpc,

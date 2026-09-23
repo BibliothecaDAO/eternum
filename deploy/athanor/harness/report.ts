@@ -1,4 +1,4 @@
-import { summarizeFrontierDesign } from "./frontier";
+import { summarizeFrontierDesign, type FrontierEvidence } from "./frontier";
 import type { HarnessRpcRequests } from "./provider";
 import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import type { LayerRoundTripEvidence } from "./layer-round-trip";
@@ -115,6 +115,8 @@ export interface WorkerWorkloadSummary {
   endedAt: string;
   plannedActions: number;
   thresholdEligibleActions: number;
+  /** When this worker's first action left, so the driver can show how tight the release was. */
+  firstSubmitAt: string | null;
   preConfirmedMs: number[];
   acceptedOnL2Ms: number[];
 }
@@ -217,6 +219,7 @@ function summarizeWorkerWorkload(
     endedAt: input.workload.endedAt,
     plannedActions: input.workload.plannedActions,
     thresholdEligibleActions: analysis.thresholdEligibleActions,
+    firstSubmitAt: analysis.actions[0]?.submitStartedAt ?? null,
     preConfirmedMs: latencies("preConfirmedMs"),
     acceptedOnL2Ms: latencies("acceptedOnL2Ms"),
   };
@@ -248,7 +251,14 @@ export function assessRosterRun(input: {
     percentiles: input.functional ? null : percentiles,
     plannedActions,
     thresholdEligibleActions,
+    releaseSpreadMs: releaseSpread(input.workers),
   };
+}
+
+/** Milliseconds between the first and the last worker's first submission: the width of the burst's release. */
+function releaseSpread(workers: WorkerWorkloadSummary[]): number | null {
+  const first = workers.flatMap((worker) => (worker.firstSubmitAt ? [Date.parse(worker.firstSubmitAt)] : []));
+  return first.length === 0 ? null : Math.max(...first) - Math.min(...first);
 }
 
 /** A run is judged only on its own samples: a latency with no samples fails its budget, never passes as zero. */
@@ -304,29 +314,7 @@ function analyzeHarnessResult(input: HarnessReportInput) {
             : latencyChecks(percentiles.acceptedOnL2Ms.p95, percentiles.preConfirmedMs.p95, input.gates.evidence)),
         }),
     setup: setupFailures.length === 0,
-    frontierTokenCap:
-      !input.workload.frontier ||
-      input.workload.frontier.players.every((player) =>
-        player.days.every(
-          (day) =>
-            player.chests.filter(
-              (chest) =>
-                chest.epoch === Math.floor(day.startedAt / input.workload.frontier!.epochSeconds) &&
-                chest.kind === "Token",
-            ).length <= input.workload.frontier!.tokenCap,
-        ),
-      ),
-
-    frontierRollovers:
-      !input.workload.frontier ||
-      input.workload.frontier.players.every(
-        (player) =>
-          player.rollovers.filter((rollover) => rollover.currentArmies.length > 0).length >= 3 &&
-          player.rollovers.every((rollover) =>
-            rollover.currentArmies.every((id) => !rollover.previousArmies.includes(id)),
-          ),
-      ),
-
+    ...(input.workload.frontier && input.functional ? frontierDesignChecks(input.workload.frontier) : {}),
     playerProgress:
       input.workload.profile !== "build-order" ||
       summarizePlayerProgress(
@@ -357,6 +345,27 @@ function analyzeHarnessResult(input: HarnessReportInput) {
     setupFailures,
     thresholdEligibleActions,
     tileContentionReverts,
+  };
+}
+
+/** FR11's design gates: only the accelerated design run plays enough days for them to mean anything. */
+function frontierDesignChecks(frontier: FrontierEvidence) {
+  return {
+    frontierTokenCap: frontier.players.every((player) =>
+      player.days.every(
+        (day) =>
+          player.chests.filter(
+            (chest) => chest.epoch === Math.floor(day.startedAt / frontier.epochSeconds) && chest.kind === "Token",
+          ).length <= frontier.tokenCap,
+      ),
+    ),
+    frontierRollovers: frontier.players.every(
+      (player) =>
+        player.rollovers.filter((rollover) => rollover.currentArmies.length > 0).length >= 3 &&
+        player.rollovers.every((rollover) =>
+          rollover.currentArmies.every((id) => !rollover.previousArmies.includes(id)),
+        ),
+    ),
   };
 }
 
