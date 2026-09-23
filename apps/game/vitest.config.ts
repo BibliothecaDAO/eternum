@@ -40,6 +40,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // As in vite.config.ts: public assets precede the source root, since alias matching is first-match.
+      "@/assets": path.resolve(__dirname, "./public/assets"),
       "@": path.resolve(__dirname, "./src"),
       "@config": path.resolve(__dirname, "../../config/utils/utils"),
       "@config-deployer": path.resolve(__dirname, "../../config/deployer"),

@@ -1,5 +1,5 @@
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
-import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 
 import { divideByPrecision, formatTime } from "@bibliothecadao/eternum";
@@ -31,7 +31,7 @@ function isDefined<T>(value: T | null | undefined): value is T {
 }
 
 export const StructureArrivals = memo(({ structure, now: nowOverride }: { structure: Structure; now?: number }) => {
-  const chainNowMs = useChainTimeStore((state) => state.nowMs);
+  const chainNowMs = useNowMs();
   const arrivals = useArrivalsByStructure(structure.entityId);
 
   const now = nowOverride ?? Math.floor(chainNowMs / 1000);

@@ -11,6 +11,7 @@ import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "@/game-e
 import { applyGameSelection, type GameProfile } from "@/runtime/world";
 import { requireOpenShard } from "@/runtime/world/shards";
 import { useSyncStore } from "../hooks/store/use-sync-store";
+import { bindChainTime } from "../sync/chain-time-binding";
 import { useTransactionStore } from "../hooks/store/use-transaction-store";
 import { useUIStore } from "../hooks/store/use-ui-store";
 import { disposeGameSyncSession, installActiveGameClient } from "../sync/active-game-client";
@@ -215,6 +216,7 @@ const createEntryGameClient = async (input: EntryGameClientInput): Promise<GameC
   markGameEntryMilestone("setup-started");
   const reportProgress = createInitialSyncProgressReporter(useSyncStore.getState().setInitialSyncProgress);
   reportProgress(0);
+  bindChainTime();
   const client = await createBrowserGameClient({
     shard: await requireOpenShard(input.profile.chainId),
     gameId: input.profile.gameId,

@@ -1,6 +1,6 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
-import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
@@ -184,7 +184,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
   const revision = useNativeRevision(["Structure"]);
 
   const currentDefaultTick = useBlockTimestampStore((state) => state.currentDefaultTick);
-  const nowSeconds = useChainTimeStore((state) => Math.floor(state.nowMs / 1000));
+  const nowSeconds = useNowSeconds();
 
   const [isCrafting, setIsCrafting] = useState(false);
   const [error, setError] = useState<string | null>(null);

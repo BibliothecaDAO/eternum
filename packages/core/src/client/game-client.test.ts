@@ -32,7 +32,14 @@ class FakeSocket implements HeraldSocket {
   }
 }
 
-const hello = { confirmed_block: 12, epoch: "epoch-a", preconfirmed_block: null, seq: 0, type: "hello" };
+const hello = {
+  confirmed_block: 12,
+  confirmed_timestamp: 1_790_000_000,
+  epoch: "epoch-a",
+  preconfirmed_block: null,
+  seq: 0,
+  type: "hello",
+};
 const rulesSnapshot = {
   type: "snapshot",
   epoch: "epoch-a",
@@ -129,6 +136,31 @@ describe("createGameClient", () => {
     expect(vi.getTimerCount()).toBe(0);
     await vi.advanceTimersByTimeAsync(20_000);
     expect(harness.sockets).toHaveLength(1);
+  });
+
+  it("waits for a confirmed head before the client is ready, so nothing reads chain time before it is known", async () => {
+    const harness = createHarness();
+    let ready = false;
+    const creation = createGameClient(harness.input).then((client) => {
+      ready = true;
+      return client;
+    });
+    await vi.waitFor(() => expect(harness.sockets).toHaveLength(1));
+    // A Herald yet to see a confirmed head names no time in its hello.
+    harness.sockets[0]!.receive({ ...hello, confirmed_timestamp: null });
+    await flushMicrotasks();
+    harness.sockets[0]!.receive(rulesSnapshot);
+    harness.sockets[0]!.receive(snapshotEnd);
+    for (let round = 0; round < 20; round += 1) {
+      harness.input.scheduler!.flushNext();
+      await flushMicrotasks();
+    }
+    expect(ready).toBe(false);
+
+    harness.sockets[0]!.receive({ type: "head", epoch: "epoch-a", seq: 1, block: 13, timestamp: 1_790_000_010 });
+    const client = await harness.settle(creation);
+    expect(ready).toBe(true);
+    client.dispose();
   });
 
   it("tearing down the active runtime fails a subscribe that never resolved and leaves no timer", async () => {

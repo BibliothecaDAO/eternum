@@ -2,6 +2,7 @@ import {
   ClientConfigManager,
   createGameActions,
   createGameViews,
+  setBlockTimestampSource,
   type GameActions,
   type GameClient,
 } from "@bibliothecadao/eternum";
@@ -38,6 +39,8 @@ interface FakeGame extends RunnerGame {
  */
 export const createFakeGame = (signer: AccountInterface | null = PLAYER_SIGNER): FakeGame => {
   ClientConfigManager.instance().setActiveGame(GAME_ID, 0);
+  // A booted client always has chain time from a confirmed head; this fake chain's clock is the test's wall clock.
+  setBlockTimestampSource(() => Date.now() / 1_000);
   const store = new NativeFactStore();
   writeFact(store, "SliceRules", [GAME_ID], { ...preset.rules, game_id: GAME_ID, map_center_offset: 2147483646 });
   writeFact(store, "SettlementRules", [GAME_ID], {

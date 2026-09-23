@@ -3,6 +3,7 @@ import { resolveResourceArrivalIndicators } from "@/ui/utils/resource-arrival-in
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
@@ -38,7 +39,7 @@ const getArrivalKey = (arrival: ResourceArrivalInfo) =>
 const ResourceArrivalAutoClaim = () => {
   const setArrivalIndicators = useUIStore((state) => state.setArrivalIndicators);
   const playerStructures = useFactView(playerStructuresView);
-  const chainNowMs = useChainTimeStore((state) => state.nowMs);
+  const chainNowMs = useNowMs();
   const getChainNowSeconds = useChainTimeStore((state) => state.getNowSeconds);
   const resourceArrivals = useFactView(resourceArrivalsView);
   const {
