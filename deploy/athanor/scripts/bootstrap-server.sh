@@ -102,31 +102,22 @@ render_tunnel_config() {
 }
 
 install_units() {
-  log "systemd units (herald, realms identity, realms chat, realms launch)"
+  log "systemd units (herald)"
   install -m 0644 "$LAB_DIR/systemd/herald.service" /etc/systemd/system/herald.service
-  install -m 0644 "$LAB_DIR/systemd/realms-identity.service" /etc/systemd/system/realms-identity.service
-  install -m 0644 "$LAB_DIR/systemd/realms-chat.service" /etc/systemd/system/realms-chat.service
-  install -m 0644 "$LAB_DIR/systemd/realms-launch.service" /etc/systemd/system/realms-launch.service
   systemctl daemon-reload
-  if systemctl list-unit-files web.service --no-legend | grep -q '^web.service'; then
-    systemctl disable --now web.service >/dev/null
-  fi
-  systemctl enable herald realms-identity realms-chat realms-launch >/dev/null
+  systemctl enable herald >/dev/null
 }
 
 harden() {
-  log "firewall: ssh from anywhere; herald/identity reachable only from the docker networks (the tunnel), nothing else"
+  log "firewall: ssh from anywhere; herald reachable only from the docker networks (the tunnel), nothing else"
   ufw --force reset >/dev/null
   ufw default deny incoming >/dev/null
   ufw default allow outgoing >/dev/null
   ufw allow OpenSSH >/dev/null
-  # cloudflared runs in a docker network and proxies to herald (:3003) and apps/realms (:3000) on the host via
-  # host.docker.internal. That container→host traffic hits the INPUT chain, so allow the docker ranges to those
-  # ports — otherwise the tunnel reaches rpc (container→container) but times out on herald/app (Cloudflare 52x).
+  # cloudflared runs in a docker network and proxies to herald (:3003) on the host via host.docker.internal. That
+  # container→host traffic hits the INPUT chain, so allow the docker ranges to that port — otherwise the tunnel
+  # reaches rpc (container→container) but times out on herald (Cloudflare 52x).
   ufw allow from 172.16.0.0/12 to any port 3003 proto tcp >/dev/null
-  ufw allow from 172.16.0.0/12 to any port 3000 proto tcp >/dev/null
-  ufw allow from 172.16.0.0/12 to any port 3005 proto tcp >/dev/null
-  ufw allow from 172.16.0.0/12 to any port 3006 proto tcp >/dev/null
   ufw --force enable >/dev/null
 }
 

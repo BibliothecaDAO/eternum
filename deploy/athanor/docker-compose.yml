@@ -177,13 +177,13 @@ services:
     volumes:
       - ./.lab/cloudflared:/etc/cloudflared:ro
     extra_hosts:
-      - "host.docker.internal:host-gateway"   # herald and apps/realms run on the host as systemd units
+      - "host.docker.internal:host-gateway"   # herald runs on the host as a systemd unit
     depends_on:
       madara:
         condition: service_healthy
     restart: unless-stopped
 
-  # Session store for apps/realms (better-auth over Drizzle). DATABASE_URL in README.
+  # Postgres for the host services that keep a database (Herald's DATABASE_URL in README).
   postgres:
     image: ${POSTGRES_IMAGE:-postgres:17-alpine}
     profiles: ["web"]

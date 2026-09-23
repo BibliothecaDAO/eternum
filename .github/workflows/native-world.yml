@@ -151,7 +151,6 @@ jobs:
           done
       - name: Test fail-closed deployment paths
         run: |
-          node --test deploy/athanor/scripts/validate-native-target.test.mjs
           python3 -m unittest discover -s deploy/athanor/scripts -p "test_*.py" -v
 
   native-provider:

@@ -12,17 +12,6 @@
 	tls /certs/realms.test.pem /certs/realms.test-key.pem
 }
 
-# apps/realms identity SPA and API (plain HTTP on the host, REALMS_SERVER_PORT=3000)
-realms.test {
-	import lab_tls
-	reverse_proxy host.docker.internal:3000 {
-		# Preserve the browser's Host: Vite checks it (allowedHosts) on the HMR websocket path and
-		# rejects the docker-internal upstream name with a 400, which sends the client into a reload loop.
-		header_up Host {host}
-	}
-}
-
-# apps/game dev server (Vite mkcert plugin serves HTTPS on the host; the hop is loopback, so its cert is not checked)
 play.realms.test {
 	import lab_tls
 	reverse_proxy https://host.docker.internal:5173 {
