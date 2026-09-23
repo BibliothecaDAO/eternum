@@ -5,7 +5,6 @@ import { useGame } from "@bibliothecadao/react";
 
 import { useStructureUpgrade } from "./use-structure-upgrade";
 import { useBlitzRealmProvision } from "./use-blitz-realm-provision";
-import { withRealmActionSubmitTimeout } from "./realm-action-submit-timeout";
 import { resolveRealmBootstrapErrorMessage } from "./realm-bootstrap-error";
 
 interface RealmUpgradeAndProvisionResult {
@@ -45,9 +44,7 @@ export const useRealmUpgradeAndProvision = (structureEntityId: number | null): R
 
     setIsPending(true);
     try {
-      await withRealmActionSubmitTimeout(
-        systemCalls.provision_realm({ signer: account.account, realm_entity_id: structureEntityId, upgrade: true }),
-      );
+      await systemCalls.provision_realm({ signer: account.account, realm_entity_id: structureEntityId, upgrade: true });
     } catch (error) {
       console.warn("realm_bootstrap_failed", { message: resolveRealmBootstrapErrorMessage(error) });
       toast.error(resolveRealmBootstrapErrorMessage(error));

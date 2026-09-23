@@ -3,7 +3,13 @@ import type { NativeTicketIdentity } from "@bibliothecadao/types";
 export { completeNativeBatches, nativeExecutionOutcomes, requireNativeExecutionOutcome } from "./native-batch";
 export type { BatchTransactionReceipt, NativeExecutionOutcome } from "@bibliothecadao/types";
 import { requireBatchReceipt } from "./native-batch";
-export { createNativeTicketSubmission, signGameplayIntent } from "./native-ticket";
+export {
+  ActionOutcomeUnknownError,
+  createNativeTicketSubmission,
+  signGameplayIntent,
+  StaleActionNonceError,
+} from "./native-ticket";
+import { ActionOutcomeUnknownError } from "./native-ticket";
 export type { SignedNativeIntent } from "./native-ticket";
 export { encodeNativeCommand, frameNativeIntent, nativeTaggedHash } from "./native-command";
 export type { NativeCommand, NativeCommandPayloads } from "./native-command";
@@ -92,24 +98,8 @@ const DEFAULT_FEE_ESTIMATE_TIMEOUT_MS = 5_000;
 // A failed fee estimate carries the full Cairo trace before any gas is spent;
 // keep it briefly so the eventual submit/confirmation failure can surface it.
 const ESTIMATE_ERROR_TTL_MS = 60_000;
-const DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
-export const SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE =
-  "Submission timed out before a tx hash was returned. Check wallet/activity before retrying.";
 const formatTimeoutDuration = (timeoutMs: number): string =>
   timeoutMs >= 1_000 ? `${Math.round(timeoutMs / 1_000)}s` : `${timeoutMs}ms`;
-
-class TransactionSubmissionTimeoutError extends Error {
-  constructor(timeoutMs: number) {
-    super(
-      `Transaction submission timed out after ${formatTimeoutDuration(timeoutMs)} before a transaction hash was returned`,
-    );
-    this.name = "TransactionSubmissionTimeoutError";
-  }
-}
-
-const isTransactionSubmissionTimeoutError = (error: unknown): boolean => {
-  return error instanceof TransactionSubmissionTimeoutError;
-};
 
 const matchesDestroyedConnectionError = (error: unknown): boolean => {
   const message = extractErrorMessage(error, "").toLowerCase();
@@ -124,9 +114,9 @@ const classifySubmitFailure = (
   hasTxHash: boolean;
   retrySafety: TransactionRetrySafety;
 } => {
-  if (isTransactionSubmissionTimeoutError(error)) {
+  if (error instanceof ActionOutcomeUnknownError) {
     return {
-      failureKind: "submission_timeout_no_hash",
+      failureKind: "action_outcome_unknown",
       providerState: "unknown",
       hasTxHash: false,
       retrySafety: "unsafe_until_wallet_checked",
@@ -228,8 +218,6 @@ export class EternumProvider extends EventEmitter {
   readonly contracts: ProviderContracts;
   readonly provider: RpcProvider;
   promiseQueue: PromiseQueue;
-  private readonly TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
-  private readonly TRANSACTION_SUBMIT_TIMEOUT_MS = DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS;
   private readonly FEE_ESTIMATE_TIMEOUT_MS = DEFAULT_FEE_ESTIMATE_TIMEOUT_MS;
   private pendingActorExecutionLocks = new Map<string, ActorExecutionLock>();
   private lastEstimateError?: { error: unknown; atMs: number };
@@ -520,16 +508,6 @@ export class EternumProvider extends EventEmitter {
     await guard(context);
   }
 
-  private async waitForTransactionSubmission(
-    submitPromise: Promise<SubmittedTransaction>,
-  ): Promise<SubmittedTransaction> {
-    return await this.withTimeout(
-      submitPromise,
-      this.TRANSACTION_SUBMIT_TIMEOUT_MS,
-      () => new TransactionSubmissionTimeoutError(this.TRANSACTION_SUBMIT_TIMEOUT_MS),
-    );
-  }
-
   private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, buildError: () => Error): Promise<T> {
     if (timeoutMs <= 0) {
       return await promise;
@@ -602,54 +580,6 @@ export class EternumProvider extends EventEmitter {
     });
   }
 
-  private observeLateSubmittedTransaction(
-    submitPromise: Promise<SubmittedTransaction>,
-    transactionMeta: TransactionLifecycleMeta,
-    releaseActorExecutionLock?: () => void,
-  ): void {
-    void submitPromise
-      .then((tx) => {
-        const recoveredTransactionMeta = {
-          ...transactionMeta,
-          recoveredFromSubmissionTimeout: true,
-        };
-        const recoveredTransactionMetaWithHash = {
-          ...recoveredTransactionMeta,
-          transactionHash: tx.transaction_hash,
-        };
-
-        this.emitTransactionSubmitted(tx.transaction_hash, recoveredTransactionMeta, tx.ticket);
-        this.emitTransactionPending(tx.transaction_hash, recoveredTransactionMeta);
-        if (!this.transactionStreamWaiter) return;
-
-        return this.waitForTransactionWithCheckInternal(
-          tx.transaction_hash,
-          recoveredTransactionMetaWithHash,
-          tx.ticket,
-        )
-          .then((receipt) => {
-            this.emit("transactionComplete", {
-              details: receipt,
-              ...recoveredTransactionMeta,
-            });
-          })
-          .catch((error) => {
-            this.emitTransactionFailure({
-              ...recoveredTransactionMetaWithHash,
-              message: extractErrorMessage(error),
-              stage: resolveTransactionFailureStage(error, "background_confirmation"),
-              ...buildFailureDiagnostics(error),
-            });
-          });
-      })
-      .catch(() => {
-        // The original timeout path already emitted the submit failure.
-      })
-      .finally(() => {
-        releaseActorExecutionLock?.();
-      });
-  }
-
   /**
    * Execute a transaction and check its result
    *
@@ -718,8 +648,7 @@ export class EternumProvider extends EventEmitter {
       }
     }
 
-    let tx;
-    let submitPromise: Promise<SubmittedTransaction> | undefined;
+    let tx: SubmittedTransaction;
     try {
       // Resolved inside the try so a preflight abort (the estimate proved a
       // deterministic revert) rides the same failure emission and actor-lock
@@ -741,18 +670,12 @@ export class EternumProvider extends EventEmitter {
           signerAddress: transactionMeta.signerAddress,
         });
       }
-      submitPromise = this.submitTransaction(signer, transactionDetails, executionDetails);
-      tx = await this.waitForTransactionSubmission(submitPromise);
+      tx = await this.submitTransaction(signer, transactionDetails, executionDetails);
     } catch (error) {
       const message = extractErrorMessage(error);
       const submitFailure = classifySubmitFailure(error);
-      if (submitPromise && submitFailure.failureKind === "submission_timeout_no_hash") {
-        this.observeLateSubmittedTransaction(submitPromise, transactionMeta, releaseActorExecutionLock);
-        releaseActorExecutionLock = undefined;
-      } else {
-        releaseActorExecutionLock?.();
-        releaseActorExecutionLock = undefined;
-      }
+      releaseActorExecutionLock?.();
+      releaseActorExecutionLock = undefined;
       // Throw the resolved error too: when the submit error decoded to
       // nothing actionable, callers (automation's revert classifier, toasts)
       // need the stashed estimate trace as much as the diagnostics do.
@@ -789,22 +712,13 @@ export class EternumProvider extends EventEmitter {
       transactionMetaWithHash,
       tx.ticket,
     );
-    const waitPromiseWithoutLockRelease = this.nativeSubmission
-      ? this.withTimeout(
-          streamReceipt,
-          this.TRANSACTION_CONFIRM_TIMEOUT_MS,
-          () =>
-            new Error(
-              `Herald did not apply transaction ${tx.transaction_hash} within ${formatTimeoutDuration(this.TRANSACTION_CONFIRM_TIMEOUT_MS)}; the command barrier was released. Check sync before retrying.`,
-            ),
-        )
-      : streamReceipt;
+    // The actor's next command signs only after Herald applies this one, so it never carries a stale nonce.
     const waitPromise = releaseActorExecutionLock
-      ? waitPromiseWithoutLockRelease.finally(() => {
+      ? streamReceipt.finally(() => {
           releaseActorExecutionLock?.();
           releaseActorExecutionLock = undefined;
         })
-      : waitPromiseWithoutLockRelease;
+      : streamReceipt;
 
     if (!waitForConfirmation) {
       this.emitTransactionPending(tx.transaction_hash, transactionMeta);
@@ -831,9 +745,9 @@ export class EternumProvider extends EventEmitter {
       } as any;
     }
 
-    let waitResult: { status: "confirmed"; receipt: GetTransactionReceiptResponse } | { status: "pending" };
+    let receipt: GetTransactionReceiptResponse;
     try {
-      waitResult = await this.waitForTransactionWithTimeout(waitPromise, this.TRANSACTION_CONFIRM_TIMEOUT_MS);
+      receipt = await waitPromise;
     } catch (error) {
       this.emitTransactionFailure({
         ...transactionMetaWithHash,
@@ -844,63 +758,12 @@ export class EternumProvider extends EventEmitter {
       throw error;
     }
 
-    if (waitResult.status === "pending") {
-      this.emitTransactionPending(tx.transaction_hash, transactionMeta);
-      void waitPromise
-        .then((receipt) => {
-          this.emit("transactionComplete", {
-            details: receipt,
-            ...transactionMeta,
-          });
-        })
-        .catch((error) => {
-          console.error(`Error waiting for transaction ${tx.transaction_hash}`, error);
-          this.emitTransactionFailure({
-            ...transactionMetaWithHash,
-            message: extractErrorMessage(error),
-            stage: resolveTransactionFailureStage(error, "background_confirmation"),
-            ...buildFailureDiagnostics(error),
-          });
-        });
-
-      return {
-        statusReceipt: "PENDING",
-        transaction_hash: tx.transaction_hash,
-      } as any;
-    }
-
     this.emit("transactionComplete", {
-      details: waitResult.receipt,
+      details: receipt,
       ...transactionMeta,
     });
 
-    return waitResult.receipt;
-  }
-
-  private async waitForTransactionWithTimeout(
-    waitPromise: Promise<GetTransactionReceiptResponse>,
-    timeoutMs: number,
-  ): Promise<{ status: "confirmed"; receipt: GetTransactionReceiptResponse } | { status: "pending" }> {
-    if (timeoutMs <= 0) {
-      return { status: "confirmed", receipt: await waitPromise };
-    }
-
-    let timeoutId: NodeJS.Timeout | null = null;
-    const timeoutPromise = new Promise<"timeout">((resolve) => {
-      timeoutId = setTimeout(() => resolve("timeout"), timeoutMs);
-    });
-
-    const result = await Promise.race([waitPromise, timeoutPromise]);
-
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-
-    if (result === "timeout") {
-      return { status: "pending" };
-    }
-
-    return { status: "confirmed", receipt: result };
+    return receipt;
   }
 
   private async waitForTransactionWithCheckInternal(

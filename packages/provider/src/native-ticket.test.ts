@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import { createNativeTicketSubmission } from "./native-ticket";
+import { ActionOutcomeUnknownError, createNativeTicketSubmission, StaleActionNonceError } from "./native-ticket";
 
 const channels = vi.hoisted(
   () =>
@@ -102,11 +102,11 @@ describe("node action subscriptions", () => {
     await expect(pending).resolves.toEqual({ transaction_hash: "0x99", order: 7n });
   });
 
-  it("does not poll while waiting for an outcome", async () => {
+  it("holds a ticket for 30 s with no timeout and no poll", async () => {
     vi.useFakeTimers();
     const pending = transport()(signed);
     connected();
-    await vi.advanceTimersByTimeAsync(20_000);
+    await vi.advanceTimersByTimeAsync(30_000);
     expect(channels[0].sent).toHaveLength(1);
     status({ status: "recorded", order: 7, transaction_hash: "0x99" });
     await expect(pending).resolves.toEqual({ transaction_hash: "0x99", order: 7n });
@@ -172,14 +172,46 @@ describe("node action subscriptions", () => {
     await expect(submit(signed)).rejects.toThrow("disposed");
   });
 
-  it("retries the identical signed intent once before timing out loudly", async () => {
+  it("sends the same signed intent once more at 60 s and fails with a named error at 120 s", async () => {
     vi.useFakeTimers();
     const pending = transport()(signed);
     connected();
-    const rejected = expect(pending).rejects.toThrow("outcome timed out");
-    await vi.advanceTimersByTimeAsync(120_000);
-    await rejected;
+    let failure: unknown;
+    pending.catch((error) => (failure = error));
+    await vi.advanceTimersByTimeAsync(59_999);
+    expect(channels[0].sent).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1);
     expect(channels[0].sent).toHaveLength(2);
-    expect(channels[0].sent[0].params).toEqual(channels[0].sent[1].params);
+    expect(channels[0].sent[1].params).toEqual(channels[0].sent[0].params);
+    await vi.advanceTimersByTimeAsync(59_999);
+    expect(failure).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(failure).toBeInstanceOf(ActionOutcomeUnknownError);
+    expect(channels[0].sent).toHaveLength(2);
+  });
+
+  it("retries a busy admission with backoff inside the window, not as the resubmission", async () => {
+    vi.useFakeTimers();
+    const pending = transport()(signed);
+    channels[0].open();
+    channels[0].message({ id: 0, error: { code: -32001, message: "game admission queue is full or unavailable" } });
+    await vi.advanceTimersByTimeAsync(500);
+    channels[0].message({ id: 1, error: { code: -32001, message: "request rate exceeded" } });
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(channels[0].sent.map(({ params }) => params)).toEqual([[signed], [signed], [signed]]);
+    channels[0].message({ id: 2, result: "ticket-1" });
+    status({ status: "recorded", order: 7, transaction_hash: "0x99" });
+    await expect(pending).resolves.toEqual({ transaction_hash: "0x99", order: 7n });
+  });
+
+  it("fails an intent signed against a nonce the sequencer has moved past, without re-signing", async () => {
+    const pending = transport()(signed);
+    channels[0].open();
+    channels[0].message({
+      id: 0,
+      error: { code: -32001, message: "actor nonce is not current; no matching action in reconnect history" },
+    });
+    await expect(pending).rejects.toBeInstanceOf(StaleActionNonceError);
+    expect(channels[0].sent).toHaveLength(1);
   });
 });

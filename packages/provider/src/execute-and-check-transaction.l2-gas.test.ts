@@ -1,7 +1,7 @@
 import type { Abi, AccountInterface, Call, ResourceBoundsBN } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
-import { EternumProvider } from "./index";
+import { ActionOutcomeUnknownError, EternumProvider } from "./index";
 import type { TransactionStreamWaiter } from "./types";
 
 const makeResourceBounds = (l2GasMaxAmount: bigint): ResourceBoundsBN => ({
@@ -106,68 +106,56 @@ describe("provider submission boundary", () => {
     expect(submitted.mock.calls.map(([event]) => event.ticket)).toEqual(tickets);
   });
 
-  it("keeps the next command behind a late admission until its recorded outcome", async () => {
+  it("keeps a slow action pending with no timeout and signs the next only after Herald applies it", async () => {
     vi.useFakeTimers();
     const provider = makeProvider();
     const ticket = { gameId: "7", actor: "0x111", nonce: "0", order: "1" };
     let admit!: (value: { transaction_hash: string; ticket: typeof ticket }) => void;
-    const pending = new Promise<{ transaction_hash: string; ticket: typeof ticket }>((resolve) => {
+    const admission = new Promise<{ transaction_hash: string; ticket: typeof ticket }>((resolve) => {
       admit = resolve;
     });
-    const submit = vi.fn().mockReturnValueOnce(pending).mockResolvedValue({ transaction_hash: "0xdef" });
+    const submit = vi.fn().mockReturnValueOnce(admission).mockResolvedValue({ transaction_hash: "0xdef" });
     provider.setNativeSubmission(submit, bindings.commandAbi as Abi, () => 9);
-    let confirm!: (value: Awaited<ReturnType<TransactionStreamWaiter>>) => void;
+    let apply!: (value: Awaited<ReturnType<TransactionStreamWaiter>>) => void;
     provider.setTransactionStreamWaiter(async (hash) =>
       hash === "0xabc"
         ? new Promise((resolve) => {
-            confirm = resolve;
+            apply = resolve;
           })
-        : { hash, block: 5, status: "PRE_CONFIRMED" },
+        : { hash, block: 6, status: "PRE_CONFIRMED" },
     );
-    const submitted = vi.fn(),
-      failed = vi.fn();
-    provider.on("transactionSubmitted", submitted);
+    const failed = vi.fn();
     provider.on("transactionFailed", failed);
     const signer = { address: "0x111" } as AccountInterface;
-    const rejected = expect(provider.claim_wonder_points({ signer, value: 1 })).rejects.toThrow("timed out");
-    await vi.advanceTimersByTimeAsync(20_001);
-    await rejected;
+    const slow = provider.claim_wonder_points({ signer, value: 1 });
+    const next = provider.claim_wonder_points({ signer, value: 2 });
+    await vi.advanceTimersByTimeAsync(70_000);
     admit({ transaction_hash: "0xabc", ticket });
     await vi.advanceTimersByTimeAsync(0);
-    expect(submitted).toHaveBeenCalledWith(expect.objectContaining({ transactionHash: "0xabc", ticket }));
-    const next = provider.claim_wonder_points({ signer, value: 2 });
-    await vi.advanceTimersByTimeAsync(0);
     expect(submit).toHaveBeenCalledOnce();
-    confirm({
+    apply({
       hash: "0xabc",
       block: 5,
       status: "PRE_CONFIRMED",
       executions: [{ ...ticket, nonceConsumed: true, status: "SUCCEEDED", reason: "" }],
     });
-    await vi.advanceTimersByTimeAsync(0);
-    await next;
+    await Promise.all([slow, next]);
     expect(submit).toHaveBeenCalledTimes(2);
-    expect(failed.mock.calls[0][0].failureKind).toBe("submission_timeout_no_hash");
+    expect(failed).not.toHaveBeenCalled();
   });
-  it("releases a stalled stream barrier and reports the failure before another command", async () => {
-    vi.useFakeTimers();
+
+  it("reports an intent with no outcome as unknown, never as a failed submit to retry", async () => {
     const provider = makeProvider();
-    const submit = vi.fn(async () => ({ transaction_hash: "0xabc" }));
-    provider.setNativeSubmission(submit, bindings.commandAbi as Abi, () => 9);
-    provider.setTransactionStreamWaiter(() => new Promise(() => {}));
+    provider.setNativeSubmission(
+      vi.fn().mockRejectedValue(new ActionOutcomeUnknownError("0x1")),
+      bindings.commandAbi as Abi,
+      () => 9,
+    );
     const failed = vi.fn();
     provider.on("transactionFailed", failed);
-    const signer = { address: "0x111" } as AccountInterface;
-    const first = provider.claim_wonder_points({ signer, value: 1 });
-    await vi.advanceTimersByTimeAsync(0);
-    await first;
-    const next = provider.claim_wonder_points({ signer, value: 2 });
-    await vi.advanceTimersByTimeAsync(0);
-    expect(submit).toHaveBeenCalledOnce();
-    await vi.advanceTimersByTimeAsync(10_001);
-    await next;
-    expect(submit).toHaveBeenCalledTimes(2);
-    expect(failed.mock.calls.some(([event]) => event.message.includes("Herald"))).toBe(true);
-    await vi.advanceTimersByTimeAsync(10_001);
+    await expect(
+      provider.claim_wonder_points({ signer: { address: "0x111" } as AccountInterface, value: 1 }),
+    ).rejects.toThrow(ActionOutcomeUnknownError);
+    expect(failed.mock.calls[0][0]).toMatchObject({ stage: "submit", failureKind: "action_outcome_unknown" });
   });
 });

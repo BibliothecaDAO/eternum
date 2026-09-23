@@ -4,17 +4,14 @@ import { seasonClockView } from "@/sync/fact-views";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { toast } from "@/ui/features/event-feed/notify";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { configManager, getBuildingCount, getRealmInfo } from "@bibliothecadao/eternum";
 import { useBuildings, useGame, useNativeRow, useNativeRevision } from "@bibliothecadao/react";
 import { BuildingType, ContractAddress, StructureType } from "@bibliothecadao/types";
-import { withRealmActionSubmitTimeout } from "./realm-action-submit-timeout";
 import { resolveRealmBootstrapErrorMessage } from "./realm-bootstrap-error";
 
-const REALM_PROVISION_SYNC_TIMEOUT_MS = 30_000;
-
 type LiveRealmInfo = NonNullable<ReturnType<typeof getRealmInfo>>;
-type RealmProvisionActionStatus = "idle" | "submitting" | "syncing" | "syncTimeout";
+type RealmProvisionActionStatus = "idle" | "submitting";
 type StructureBuildingsCounts = {
   packed_counts_1?: bigint | number | string;
   packed_counts_2?: bigint | number | string;
@@ -77,9 +74,6 @@ const isAlreadyProvisionedError = (error: unknown): boolean => {
 const hasMainStarted = (currentBlockTimestamp: number, gameStartMainAt: number | null) =>
   typeof gameStartMainAt === "number" && currentBlockTimestamp >= gameStartMainAt;
 
-const isProvisionLoadingState = (provisionActionState: RealmProvisionActionStatus) =>
-  provisionActionState === "submitting" || provisionActionState === "syncing";
-
 export const useBlitzRealmProvision = (structureEntityId: number | null): StructureProvisionResult | null => {
   const { setup, account } = useGame();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
@@ -109,31 +103,8 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
   const isSeasonOver = hasGameEnded("Live", gameEndAt ?? 0, currentBlockTimestamp);
   const canProvision = Boolean(isBlitzWorld && isRealm && isOwner && isMainPhase && !isSeasonOver && !isProvisioned);
   const needsBootstrap = Boolean(isBlitzWorld && isRealm && isOwner && !isSeasonOver && !isProvisioned);
-  const isProvisionLoading = isProvisionLoadingState(provisionActionState);
+  const isProvisionLoading = provisionActionState === "submitting";
   const isProvisionLocked = isProvisionLoading;
-
-  useEffect(() => {
-    if (!isProvisioned || provisionActionState === "idle") {
-      return;
-    }
-
-    setProvisionActionState("idle");
-  }, [isProvisioned, provisionActionState]);
-
-  useEffect(() => {
-    if (provisionActionState !== "syncing" || isProvisioned) {
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      setProvisionActionState("syncTimeout");
-      toast.error("Provision confirmed. Waiting for synced realm data before enabling the button again.");
-    }, REALM_PROVISION_SYNC_TIMEOUT_MS);
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [isProvisioned, provisionActionState]);
 
   const handleProvision = useCallback(async () => {
     if (!structureInfo || !canProvision) {
@@ -142,21 +113,15 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
 
     setProvisionActionState("submitting");
 
+    // The provider resolves once Herald has applied the action, so the store already shows the provisioned realm.
     try {
-      await withRealmActionSubmitTimeout(
-        setup.systemCalls.provision_realm({ signer: account.account, realm_entity_id: structureInfo.entityId }),
-      );
-
-      setProvisionActionState("syncing");
+      await setup.systemCalls.provision_realm({ signer: account.account, realm_entity_id: structureInfo.entityId });
     } catch (error) {
-      if (isAlreadyProvisionedError(error)) {
-        setProvisionActionState("syncing");
-        return;
-      }
-
-      setProvisionActionState("idle");
+      if (isAlreadyProvisionedError(error)) return;
       toast.error(resolveRealmBootstrapErrorMessage(error));
       throw error;
+    } finally {
+      setProvisionActionState("idle");
     }
   }, [account.account, canProvision, structureInfo, setup.systemCalls]);
 

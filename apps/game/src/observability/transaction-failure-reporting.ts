@@ -207,7 +207,7 @@ const buildFingerprint = ({
 }) => {
   if (
     stage === "submit" &&
-    (failureKind === "provider_connection_destroyed" || failureKind === "submission_timeout_no_hash")
+    (failureKind === "provider_connection_destroyed" || failureKind === "action_outcome_unknown")
   ) {
     return ["client-transaction-submission", failureKind, surface, transactionType ?? operation];
   }

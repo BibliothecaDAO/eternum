@@ -10,10 +10,7 @@ export interface BatchedTransactionDetail {
 
 export type TransactionFailureStage = "submit" | "confirmation" | "revert" | "background_confirmation";
 
-export type TransactionSubmitFailureKind =
-  | "provider_connection_destroyed"
-  | "submission_timeout_no_hash"
-  | "submit_failed";
+export type TransactionSubmitFailureKind = "provider_connection_destroyed" | "action_outcome_unknown" | "submit_failed";
 
 export type TransactionProviderState = "ready" | "destroyed" | "unavailable" | "unknown";
 
@@ -27,7 +24,6 @@ export interface TransactionLifecycleMeta {
   batchDetails?: BatchedTransactionDetail[];
   entrypoints?: string[];
   contractAddresses?: string[];
-  recoveredFromSubmissionTimeout?: boolean;
 }
 
 export interface TransactionFailedPayload extends TransactionLifecycleMeta {

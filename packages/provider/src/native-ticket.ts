@@ -20,9 +20,39 @@ type PendingAction = {
   resolve: (value: RecordedTransaction) => void;
   reject: (error: Error) => void;
   timer: ReturnType<typeof setTimeout>;
+  busyRetries: number;
 };
 
-/** One node connection follows concurrent intents to their own recorded outcomes. */
+/** No outcome after the resubmission window. The intent may still be recorded; the store shows it if it is. */
+export class ActionOutcomeUnknownError extends Error {
+  constructor(action: string) {
+    super(
+      `Action ${action} has no recorded outcome after ${(2 * OUTCOME_WINDOW_MS) / 1_000}s; it may still be recorded`,
+    );
+    this.name = "ActionOutcomeUnknownError";
+  }
+}
+
+/** The sequencer holds a newer nonce for the actor than the intent carries, and recorded nothing for it. */
+export class StaleActionNonceError extends Error {
+  constructor(action: string) {
+    super(`Action ${action} was signed against a nonce the sequencer has moved past; nothing was recorded`);
+    this.name = "StaleActionNonceError";
+  }
+}
+
+/** How long one submission of a signed intent waits for its outcome before the one resubmission, then the failure. */
+const OUTCOME_WINDOW_MS = 60_000;
+const BUSY_BACKOFF_MS = [500, 1_000, 2_000, 4_000, 8_000];
+const isAdmissionBusy = (message: string) => /queue is full|request rate exceeded/i.test(message);
+const isStaleNonce = (message: string) => message.includes("actor nonce is not current");
+
+/**
+ * One node connection follows concurrent intents to their own recorded outcomes. This is the only timer on the native
+ * path: an intent waits one window for its outcome, is sent again once (the sequencer reuses a pending ticket, so this
+ * never creates a second action), and fails with ActionOutcomeUnknownError after a second window. A busy admission is
+ * retried with backoff inside the window; a reopened socket re-sends every pending intent so its outcome is followed.
+ */
 export function createNativeTicketSubmission(baseUrl: string) {
   const url = new URL(baseUrl);
   if (!["http:", "https:", "ws:", "wss:"].includes(url.protocol)) throw new Error("Invalid admission URL");
@@ -60,7 +90,7 @@ export function createNativeTicketSubmission(baseUrl: string) {
       const pending = requests.get(message.id);
       if (!pending) return;
       requests.delete(message.id);
-      if (message.error) finish(pending, new Error(`Action admission rejected: ${message.error.message}`));
+      if (message.error) refuseAdmission(pending, String(message.error.message));
       else if (typeof message.result === "string" || typeof message.result === "number")
         subscriptions.set(String(message.result), pending);
       else finish(pending, new Error("Admission returned an invalid subscription"));
@@ -84,6 +114,15 @@ export function createNativeTicketSubmission(baseUrl: string) {
     } catch (error) {
       finish(pending, error instanceof Error ? error : new Error(String(error)));
     }
+  };
+
+  const refuseAdmission = (pending: PendingAction, reason: string) => {
+    if (isAdmissionBusy(reason)) {
+      const delay = BUSY_BACKOFF_MS[Math.min(pending.busyRetries, BUSY_BACKOFF_MS.length - 1)];
+      pending.busyRetries += 1;
+      setTimeout(() => actions.get(pending.action) === pending && subscribe(pending), delay);
+    } else if (isStaleNonce(reason)) finish(pending, new StaleActionNonceError(pending.action));
+    else finish(pending, new Error(`Action admission rejected: ${reason}`));
   };
 
   const connect = () => {
@@ -119,13 +158,11 @@ export function createNativeTicketSubmission(baseUrl: string) {
       resolve,
       reject,
       timer: setTimeout(() => {
-        console.warn(`Action ${action} outcome timed out; reconciling the same signed intent once`);
+        console.warn(`Action ${action} has no outcome yet; sending the same signed intent once more`);
         subscribe(pending);
-        pending.timer = setTimeout(
-          () => finish(pending, new Error(`Action ${action} outcome timed out; reconnect to reconcile`)),
-          60_000,
-        );
-      }, 60_000),
+        pending.timer = setTimeout(() => finish(pending, new ActionOutcomeUnknownError(action)), OUTCOME_WINDOW_MS);
+      }, OUTCOME_WINDOW_MS),
+      busyRetries: 0,
     };
     actions.set(action, pending);
     connect();

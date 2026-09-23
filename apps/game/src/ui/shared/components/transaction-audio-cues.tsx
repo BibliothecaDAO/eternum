@@ -35,7 +35,7 @@ export function TransactionAudioCues() {
     };
 
     const handleTransactionFailed = (payload: TransactionFailurePayload) => {
-      if (payload.failureKind === "submission_timeout_no_hash") {
+      if (payload.failureKind === "action_outcome_unknown") {
         AudioManager.getInstance().play("ui.tx_fail");
         return;
       }
