@@ -77,7 +77,7 @@ export async function registerNativePreset(
 export function buildNativeGameParams(
   config: Config,
   input: CreateGamePayloadInput,
-  roster: readonly { owner: string; account: string }[] = [],
+  roster: readonly { account: string }[] = [],
 ) {
   const preset = nativePresetForId(input.presetId);
   if (preset.entryRule === nativeRuleConstants.ENTRY_ROSTER) {

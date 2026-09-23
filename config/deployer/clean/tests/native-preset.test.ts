@@ -189,10 +189,7 @@ describe("fixed Regular Blitz rosters", () => {
     expect(buildNativeGameParams(config, input, players).roster).toEqual(players);
   });
   test("a roster is its players' accounts in registration order, each once", () => {
-    expect(blitzRosterOf(["0x02", "0x1"])).toEqual([
-      { owner: "0x2", account: "0x2" },
-      { owner: "0x1", account: "0x1" },
-    ]);
+    expect(blitzRosterOf(["0x02", "0x1"])).toEqual([{ account: "0x2" }, { account: "0x1" }]);
     expect(() => blitzRosterOf(["0x01", "0x1"])).toThrow("Duplicate");
     expect(() => blitzRosterOf(["0x0"])).toThrow("Invalid");
     expect(() => blitzRosterOf([])).toThrow("1 to 24");

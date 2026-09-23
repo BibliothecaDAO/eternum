@@ -21,7 +21,6 @@ describe("native deployment target is explicit", () => {
     RPC_URL: "http://127.0.0.1:1",
     DEPLOYER_ACCOUNT_ADDRESS: "0x1",
     DEPLOYER_PRIVATE_KEY: "0x2",
-    BINDING_AUTHORITY_ADDRESS: "0x3",
   };
 
   for (const name of Object.keys(target)) {

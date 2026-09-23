@@ -3,18 +3,13 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type Account, addAddressPadding, ec, hash, RpcProvider } from "starknet";
+import { type Account, addAddressPadding, ec, RpcProvider } from "starknet";
 import { deviceKeyOf, joinRealmsAccount, keyGuardian } from "@bibliothecadao/eternum";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import type { ShardRecord } from "../../../apps/herald/src/shard-manifest";
 
-import {
-  declareClass,
-  readClassArtifact,
-  rpcErrorCode,
-  waitForSuccess,
-} from "../../../config/deployer/clean/shared/declare";
+import { declareClass, readClassArtifact } from "../../../config/deployer/clean/shared/declare";
 
 import { createMadaraAccount } from "../../../config/deployer/clean/shared/madara-account";
 
@@ -27,8 +22,6 @@ const OUTPUT_PATH = resolve(requiredEnvironment("GAMEPLAY_CONTRACTS_PATH"));
 const RPC_URL = requiredEnvironment("RPC_URL");
 const DEPLOYER_ADDRESS = requiredEnvironment("DEPLOYER_ACCOUNT_ADDRESS");
 const DEPLOYER_PRIVATE_KEY = requiredEnvironment("DEPLOYER_PRIVATE_KEY");
-// The registry stays deployed only because Authentication still names one; nothing reads it.
-const BINDING_AUTHORITY_ADDRESS = requiredEnvironment("BINDING_AUTHORITY_ADDRESS");
 
 function requiredEnvironment(name: string): string {
   const value = process.env[name]?.trim();
@@ -37,13 +30,10 @@ function requiredEnvironment(name: string): string {
 }
 
 const PLAYER_ACCOUNT_ARTIFACT = "realms_player_account_RealmsAccount.contract_class.json";
-const PLAYER_REGISTRY_ARTIFACT = "realms_player_account_PlayerRegistry.contract_class.json";
 
 interface GameplayDeploymentResult {
   operatorAccountAddress: string;
   playerAccountClassHash: string;
-  playerRegistryAddress: string;
-  playerRegistryClassHash: string;
   rpcUrl: string;
 }
 
@@ -63,62 +53,19 @@ function buildGameplayContracts(): void {
   runCommand("scarb", ["build"], CONTRACT_DIRECTORY);
 }
 
-async function declareGameplayContracts(account: Account, accountClassHash: string) {
-  const artifacts = [PLAYER_ACCOUNT_ARTIFACT, PLAYER_REGISTRY_ARTIFACT].map((name) =>
-    readClassArtifact(
-      resolve(ARTIFACT_DIRECTORY, name),
-      resolve(ARTIFACT_DIRECTORY, name.replace(".contract_class.json", ".compiled_contract_class.json")),
-    ),
+/** The one account class every player, bot and operator runs: the class the identity service approves devices for. */
+async function declareAccountClass(account: Account, accountClassHash: string): Promise<string> {
+  const artifact = readClassArtifact(
+    resolve(ARTIFACT_DIRECTORY, PLAYER_ACCOUNT_ARTIFACT),
+    resolve(ARTIFACT_DIRECTORY, PLAYER_ACCOUNT_ARTIFACT.replace(".contract_class.json", ".compiled_contract_class.json")),
   );
-  if (BigInt(artifacts[0].classHash) !== BigInt(accountClassHash)) {
-    throw new Error(`RealmsAccount class ${artifacts[0].classHash} differs from guardian class ${accountClassHash}`);
+  if (BigInt(artifact.classHash) !== BigInt(accountClassHash)) {
+    throw new Error(`RealmsAccount class ${artifact.classHash} differs from guardian class ${accountClassHash}`);
   }
-  for (const artifact of artifacts) {
-    await declareClass(account, artifact, (transactionHash) => {
-      console.error(
-        JSON.stringify({ event: "gameplay_class_declared", classHash: artifact.classHash, transactionHash }),
-      );
-    });
-  }
-  return { playerAccountClassHash: artifacts[0].classHash, playerRegistryClassHash: artifacts[1].classHash };
-}
-
-function resolvePlayerRegistryAddress(classHash: string): string {
-  return addAddressPadding(hash.calculateContractAddressFromHash("0x0", classHash, [BINDING_AUTHORITY_ADDRESS], "0x0"));
-}
-
-async function isExpectedContractDeployed(provider: RpcProvider, address: string, classHash: string): Promise<boolean> {
-  try {
-    const deployedClassHash = await provider.getClassHashAt(address);
-    if (BigInt(deployedClassHash) !== BigInt(classHash)) {
-      throw new Error(`Contract ${address} has class ${deployedClassHash}, expected ${classHash}`);
-    }
-    return true;
-  } catch (error) {
-    if (rpcErrorCode(error) === 20) return false;
-    throw error;
-  }
-}
-
-async function deployPlayerRegistryIfNeeded(provider: Account, classHash: string, address: string): Promise<void> {
-  if (await isExpectedContractDeployed(provider, address, classHash)) {
-    return;
-  }
-
-  const result = await provider.deployContract(
-    {
-      classHash,
-      salt: "0x0",
-      constructorCalldata: [BINDING_AUTHORITY_ADDRESS],
-      unique: false,
-    },
-    { tip: 0 },
-  );
-  await waitForSuccess(provider, result.transaction_hash);
-
-  if (!(await isExpectedContractDeployed(provider, address, classHash))) {
-    throw new Error(`PlayerRegistry deployment did not produce the expected contract at ${address}`);
-  }
+  await declareClass(account, artifact, (transactionHash) => {
+    console.error(JSON.stringify({ event: "gameplay_class_declared", classHash: artifact.classHash, transactionHash }));
+  });
+  return artifact.classHash;
 }
 
 function writeDeploymentResult(result: GameplayDeploymentResult): void {
@@ -134,20 +81,11 @@ async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
   await assertProviderChain(provider, manifest, "RPC_URL");
   buildGameplayContracts();
   const account = createMadaraAccount(provider, DEPLOYER_ADDRESS, DEPLOYER_PRIVATE_KEY);
-  const { playerAccountClassHash, playerRegistryClassHash } = await declareGameplayContracts(
-    account,
-    manifest.shard.accountClassHash,
-  );
-  const playerRegistryAddress = resolvePlayerRegistryAddress(playerRegistryClassHash);
-
-  await deployPlayerRegistryIfNeeded(account, playerRegistryClassHash, playerRegistryAddress);
-
+  const playerAccountClassHash = await declareAccountClass(account, manifest.shard.accountClassHash);
   const operatorAccountAddress = await prepareOperator(provider, playerAccountClassHash);
   const result = {
     operatorAccountAddress,
     playerAccountClassHash,
-    playerRegistryAddress,
-    playerRegistryClassHash,
     rpcUrl: RPC_URL,
   } satisfies GameplayDeploymentResult;
   writeDeploymentResult(result);

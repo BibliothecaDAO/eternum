@@ -18,7 +18,6 @@ pub struct CreateGameParams {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct RosterPlayer {
-    pub owner: ContractAddress,
     pub account: ContractAddress,
 }
 

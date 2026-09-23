@@ -25,7 +25,7 @@ function world() {
       rowEvent("PlayerEntry", ["1", "0xaaa"], ["0x111"]),
       rowEvent("PlayerEntry", ["1", "0xbbb"], ["0x222"]),
       rowEvent("PlayerEntry", ["2", "0xccc"], ["0x333"]),
-      rowEvent("BlitzRoster", ["1"], ["2", "0x111", "0xaaa", "0x222", "0xbbb"]),
+      rowEvent("BlitzRoster", ["1"], ["2", "0x111", "0x222"]),
     ]),
     10,
     0,

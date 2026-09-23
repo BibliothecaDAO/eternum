@@ -38,7 +38,7 @@ fn setup(scores: Span<u128>) -> super::Deployment {
             d.peers.registry,
             selector!("roster_players"),
             array![3, index.into()].span(),
-            RosterPlayer { owner: player(index), account: player(index) },
+            RosterPlayer { account: player(index) },
         );
         set_fixture(
             d.peers.season, selector!("player_points"), array![3, player(index).into()].span(), *scores.at(index),
@@ -189,10 +189,7 @@ fn results_are_game_scoped_and_an_absent_roster_rejects() {
     assert!(safe.blitz_result(4).is_err());
     set_fixture(d.peers.registry, selector!("roster_sizes"), array![4].span(), 1_u32);
     set_fixture(
-        d.peers.registry,
-        selector!("roster_players"),
-        array![4, 0].span(),
-        RosterPlayer { owner: player(0), account: player(0) },
+        d.peers.registry, selector!("roster_players"), array![4, 0].span(), RosterPlayer { account: player(0) },
     );
     let other = view(d).blitz_result(4);
     assert!(other.players.is_empty());

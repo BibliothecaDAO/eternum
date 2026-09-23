@@ -187,8 +187,7 @@ export async function findRegistrarGame(
 
 /**
  * A Blitz roster is its players' gameplay accounts: the contract authenticates each command through the account, so an
- * account needs no registry binding and need not be deployed yet. The roster keeps an owner field until the registry
- * goes; it carries the account.
+ * account needs no registry binding and need not be deployed yet.
  */
 export function blitzRosterOf(accounts: readonly string[]) {
   if (accounts.length < 1 || accounts.length > 24) throw new Error("Blitz requires 1 to 24 registered players");
@@ -197,7 +196,7 @@ export function blitzRosterOf(accounts: readonly string[]) {
     return `0x${BigInt(account).toString(16)}`;
   });
   if (new Set(normalized).size !== normalized.length) throw new Error("Duplicate roster account");
-  return normalized.map((account) => ({ owner: account, account }));
+  return normalized.map((account) => ({ account }));
 }
 
 export function resolveRegistrarWorldAddress(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): string {

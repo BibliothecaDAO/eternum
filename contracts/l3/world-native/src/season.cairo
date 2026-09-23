@@ -3,15 +3,12 @@ use starknet::{ClassHash, ContractAddress};
 #[derive(Copy, Drop, Serde, starknet::Store)]
 pub struct Authentication {
     pub submitter: ContractAddress,
-    pub registry: ContractAddress,
     pub account_class: ClassHash,
 }
 
 #[starknet::interface]
 pub trait ISeason<T> {
-    fn set_authentication(
-        ref self: T, submitter: ContractAddress, registry: ContractAddress, approved_account_class: ClassHash,
-    );
+    fn set_authentication(ref self: T, submitter: ContractAddress, approved_account_class: ClassHash);
     fn command_commitment(self: @T, command: crate::commands::Command) -> felt252;
     fn rules_commitment(self: @T, rules: crate::rules::SliceRules) -> felt252;
     fn authentication(self: @T) -> Authentication;
@@ -213,13 +210,10 @@ pub mod SeasonDomain {
     #[abi(embed_v0)]
     impl Season of super::ISeason<ContractState> {
         fn set_authentication(
-            ref self: ContractState,
-            submitter: ContractAddress,
-            registry: ContractAddress,
-            approved_account_class: starknet::ClassHash,
+            ref self: ContractState, submitter: ContractAddress, approved_account_class: starknet::ClassHash,
         ) {
             assert!(get_caller_address() == self.lifecycle.domain_state().authority, "only domain authority");
-            self.write_authentication(Authentication { submitter, registry, account_class: approved_account_class });
+            self.write_authentication(Authentication { submitter, account_class: approved_account_class });
         }
         fn command_commitment(self: @ContractState, command: Command) -> felt252 {
             crate::commands::command_commitment(command)
@@ -377,9 +371,7 @@ pub mod SeasonDomain {
             IGameDispatcher { contract_address: self.lifecycle.require_active().registry }
         }
         fn write_authentication(ref self: ContractState, authentication: Authentication) {
-            assert!(
-                authentication.submitter.is_non_zero() && authentication.registry.is_non_zero(), "zero authentication",
-            );
+            assert!(authentication.submitter.is_non_zero(), "zero authentication");
             assert!(authentication.account_class.is_non_zero(), "zero account class");
             self.authentication.write(authentication);
             let mut values = array![];

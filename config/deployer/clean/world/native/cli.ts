@@ -32,7 +32,6 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
     previous,
     authentication: {
       submitter: required(args, "submitter"),
-      registry: identity.playerRegistryAddress,
       account_class: manifest.shard.accountClassHash,
     },
   });

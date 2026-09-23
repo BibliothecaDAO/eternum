@@ -125,13 +125,10 @@ pub fn setup() -> ContractAddress {
     if starknet::syscalls::get_class_hash_at_syscall(actor).unwrap() == 0.try_into().unwrap() {
         player_class.deploy_at(@array![pair().public_key], actor).unwrap();
     }
-    // Authentication still carries a registry address until the registry is deleted; nothing reads it.
-    let registry: ContractAddress = 0x333.try_into().unwrap();
     let signer: StarkCurveKeyPair = KeyPairTrait::from_secret_key(54321);
     let account = deploy("SequencingAccount", @array![administrator.into(), signer.public_key]);
     let season = deploy(
-        "SeasonDomain",
-        @array![administrator.into(), account.into(), registry.into(), (*player_class.class_hash).into()],
+        "SeasonDomain", @array![administrator.into(), account.into(), (*player_class.class_hash).into()],
     );
     let peers = Peers {
         season,

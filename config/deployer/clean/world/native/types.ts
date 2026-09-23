@@ -28,7 +28,6 @@ export interface RegistrarWorld {
 
 export interface NativeAuthentication {
   submitter: string;
-  registry: string;
   account_class: string;
 }
 export interface NativeDomain extends ClassArtifact {

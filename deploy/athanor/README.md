@@ -130,7 +130,7 @@ manifests before handing the candidate to the other streams. Leave the live stac
 ## Native deployment
 
 Load credentials from a private, gitignored environment file under `.lab/`. The current deployment commands require
-`RPC_URL`, `DEPLOYER_ACCOUNT_ADDRESS`, `DEPLOYER_PRIVATE_KEY`, `BINDING_AUTHORITY_ADDRESS`, `RANDOMNESS_PRIVATE_KEY`,
+`RPC_URL`, `DEPLOYER_ACCOUNT_ADDRESS`, `DEPLOYER_PRIVATE_KEY`, `RANDOMNESS_PRIVATE_KEY`,
 `NATIVE_AUTHORITY_FILE`, `GAMEPLAY_CONTRACTS_PATH` and `NATIVE_WORLD_MANIFEST`. The
 sequencing authority output contains its signing credential; keep it private. `NATIVE_WORLD_MANIFEST` must point to the
 isolated shard's output. For manual initialization, write the nested shard record with the unique ASCII chain ID's hex

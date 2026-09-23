@@ -8,7 +8,7 @@ const document = {
   shard: {
     chainId: "0x4c4142",
     accountClassHash: "0x456",
-    contracts: { playerRegistry: "0x789" },
+    contracts: { bridge: "0x789" },
     guardianPublicKey: "0xabc",
   },
 };
@@ -24,7 +24,7 @@ it("serves the shard's chain, release, endpoints and every contract a client cal
     accountClassHash: "0x456",
     guardianPublicKey: "0xabc",
   });
-  expect(served.contracts).toMatchObject({ season: manifest.native.domains.season.address, playerRegistry: "0x789" });
+  expect(served.contracts).toMatchObject({ season: manifest.native.domains.season.address, bridge: "0x789" });
 });
 
 it("refuses a shard record without a guardian public key", () => {

@@ -33,7 +33,6 @@ import { Route as DelegateProfileRouteImport } from './routes/delegate.profile'
 import { Route as DelegateListRouteImport } from './routes/delegate.list'
 import { Route as StatsRewardsIndexRouteImport } from './routes/stats.rewards.index'
 import { Route as StatsRewardsTabRouteImport } from './routes/stats.rewards.$tab'
-import { Route as ApiGameplayAccountActionRouteImport } from './routes/api/gameplay-account/$action'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const SeasonpassRoute = SeasonpassRouteImport.update({
@@ -156,12 +155,6 @@ const StatsRewardsTabRoute = StatsRewardsTabRouteImport.update({
   path: '/stats/rewards/$tab',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiGameplayAccountActionRoute =
-  ApiGameplayAccountActionRouteImport.update({
-    id: '/api/gameplay-account/$action',
-    path: '/api/gameplay-account/$action',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -192,7 +185,6 @@ export interface FileRoutesByFullPath {
   '/stats/': typeof StatsIndexRoute
   '/velords/': typeof VelordsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/gameplay-account/$action': typeof ApiGameplayAccountActionRoute
   '/stats/rewards/$tab': typeof StatsRewardsTabRoute
   '/stats/rewards/': typeof StatsRewardsIndexRoute
 }
@@ -220,7 +212,6 @@ export interface FileRoutesByTo {
   '/stats': typeof StatsIndexRoute
   '/velords': typeof VelordsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/gameplay-account/$action': typeof ApiGameplayAccountActionRoute
   '/stats/rewards/$tab': typeof StatsRewardsTabRoute
   '/stats/rewards': typeof StatsRewardsIndexRoute
 }
@@ -249,7 +240,6 @@ export interface FileRoutesById {
   '/stats/': typeof StatsIndexRoute
   '/velords/': typeof VelordsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/gameplay-account/$action': typeof ApiGameplayAccountActionRoute
   '/stats/rewards/$tab': typeof StatsRewardsTabRoute
   '/stats/rewards/': typeof StatsRewardsIndexRoute
 }
@@ -279,7 +269,6 @@ export interface FileRouteTypes {
     | '/stats/'
     | '/velords/'
     | '/api/auth/$'
-    | '/api/gameplay-account/$action'
     | '/stats/rewards/$tab'
     | '/stats/rewards/'
   fileRoutesByTo: FileRoutesByTo
@@ -307,7 +296,6 @@ export interface FileRouteTypes {
     | '/stats'
     | '/velords'
     | '/api/auth/$'
-    | '/api/gameplay-account/$action'
     | '/stats/rewards/$tab'
     | '/stats/rewards'
   id:
@@ -335,7 +323,6 @@ export interface FileRouteTypes {
     | '/stats/'
     | '/velords/'
     | '/api/auth/$'
-    | '/api/gameplay-account/$action'
     | '/stats/rewards/$tab'
     | '/stats/rewards/'
   fileRoutesById: FileRoutesById
@@ -364,7 +351,6 @@ export interface RootRouteChildren {
   StatsIndexRoute: typeof StatsIndexRoute
   VelordsIndexRoute: typeof VelordsIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiGameplayAccountActionRoute: typeof ApiGameplayAccountActionRoute
   StatsRewardsTabRoute: typeof StatsRewardsTabRoute
   StatsRewardsIndexRoute: typeof StatsRewardsIndexRoute
 }
@@ -539,13 +525,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StatsRewardsTabRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/gameplay-account/$action': {
-      id: '/api/gameplay-account/$action'
-      path: '/api/gameplay-account/$action'
-      fullPath: '/api/gameplay-account/$action'
-      preLoaderRoute: typeof ApiGameplayAccountActionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -580,7 +559,6 @@ const rootRouteChildren: RootRouteChildren = {
   StatsIndexRoute: StatsIndexRoute,
   VelordsIndexRoute: VelordsIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiGameplayAccountActionRoute: ApiGameplayAccountActionRoute,
   StatsRewardsTabRoute: StatsRewardsTabRoute,
   StatsRewardsIndexRoute: StatsRewardsIndexRoute,
 }

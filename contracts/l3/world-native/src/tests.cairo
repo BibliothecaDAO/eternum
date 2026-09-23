@@ -92,11 +92,7 @@ fn setup_with_domains(activate: bool, structures_class: ByteArray, troops_class:
     let pair = keypair(12345);
     recorded::deploy_submitter(submitter());
     let (actor, account_class) = deploy("AccountFixture", @array![pair.public_key]);
-    // Authentication still carries the registry address until the registry itself is deleted; nothing reads it.
-    let registry: starknet::ContractAddress = 0x333.try_into().unwrap();
-    let (season, _) = deploy(
-        "SeasonDomain", @array![authority().into(), submitter().into(), registry.into(), account_class.into()],
-    );
+    let (season, _) = deploy("SeasonDomain", @array![authority().into(), submitter().into(), account_class.into()]);
     let (map, _) = deploy("MapDomain", @array![authority().into()]);
     let (structures, _) = deploy(structures_class, @array![authority().into()]);
     let (troops, _) = deploy(troops_class, @array![authority().into()]);
@@ -407,12 +403,9 @@ fn signatures_are_bound_to_deployment_command_nonce_and_deadline() {
 fn registered_account_with_unapproved_class_is_rejected_before_key_read() {
     let pair = keypair(12345);
     let (actor, _) = deploy("AccountFixture", @array![pair.public_key]);
-    // Authentication still carries the registry address until the registry itself is deleted; nothing reads it.
-    let registry: starknet::ContractAddress = 0x333.try_into().unwrap();
     let wrong_class = declare("MapUpgradeFixture").unwrap().contract_class();
     let (season, _) = deploy(
-        "SeasonDomain",
-        @array![authority().into(), submitter().into(), registry.into(), (*wrong_class.class_hash).into()],
+        "SeasonDomain", @array![authority().into(), submitter().into(), (*wrong_class.class_hash).into()],
     );
     let (map, _) = deploy("MapDomain", @array![authority().into()]);
     let (structures, _) = deploy("MapDomain", @array![authority().into()]);
@@ -482,12 +475,11 @@ fn authority_rotates_authentication_without_replacing_the_domain() {
     let safe = ISeasonSafeDispatcher { contract_address: deployment.peers.season };
     let previous = gateway.authentication();
     let replacement = crate::season::Authentication { submitter: 0x777.try_into().unwrap(), ..previous };
-    assert!(safe.set_authentication(replacement.submitter, replacement.registry, replacement.account_class).is_err());
+    assert!(safe.set_authentication(replacement.submitter, replacement.account_class).is_err());
     start_cheat_caller_address(deployment.peers.season, authority());
-    gateway.set_authentication(replacement.submitter, replacement.registry, replacement.account_class);
+    gateway.set_authentication(replacement.submitter, replacement.account_class);
     let current = gateway.authentication();
     assert_eq!(current.submitter, replacement.submitter);
-    assert_eq!(current.registry, previous.registry);
     assert_eq!(current.account_class, previous.account_class);
     recorded::deploy_submitter(replacement.submitter);
     let action = intent(deployment, 1);
@@ -514,7 +506,7 @@ fn approved_account_class_can_follow_a_player_account_upgrade() {
     assert!(recorded::admission(deployment.peers.season, deployment.actor).is_err());
     let authentication = crate::season::Authentication { account_class: *class.class_hash, ..season.authentication() };
     start_cheat_caller_address(deployment.peers.season, authority());
-    season.set_authentication(authentication.submitter, authentication.registry, authentication.account_class);
+    season.set_authentication(authentication.submitter, authentication.account_class);
     start_cheat_caller_address(deployment.peers.season, submitter());
     assert!(recorded::admission(deployment.peers.season, deployment.actor).is_ok());
     season.execute(action, context(), signed);
@@ -527,11 +519,10 @@ fn admission_rejects_a_non_account_and_authentication_row_keeps_its_shape() {
     let deployment = setup(true);
     assert!(recorded::admission(deployment.peers.season, 0x999.try_into().unwrap()).is_err());
     let season = ISeasonDispatcher { contract_address: deployment.peers.season };
-    let registry: starknet::ContractAddress = 0x444.try_into().unwrap();
     let authentication = season.authentication();
     start_cheat_caller_address(deployment.peers.season, authority());
     let mut spy = spy_events();
-    season.set_authentication(authentication.submitter, registry, authentication.account_class);
+    season.set_authentication(authentication.submitter, authentication.account_class);
     let events = spy.get_events().emitted_by(deployment.peers.season);
     assert_eq!(events.events.len(), 1);
     let (_, event) = events.events.at(0);
@@ -539,8 +530,7 @@ fn admission_rejects_a_non_account_and_authentication_row_keeps_its_shape() {
     assert_eq!(
         event.data.span(),
         array![
-            1, deployment.peers.season.into(), 3, authentication.submitter.into(), registry.into(),
-            authentication.account_class.into(),
+            1, deployment.peers.season.into(), 2, authentication.submitter.into(), authentication.account_class.into(),
         ]
             .span(),
     );

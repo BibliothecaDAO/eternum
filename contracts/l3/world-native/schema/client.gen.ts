@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "ec0f117915ea10ac327ec5b184a301f797abc84932bcd529673b7094c9abed60";
+export const nativeFactSchemaIdentity = "55b011d27627d45b774b472650f7bc55fd9aaf7629d94e56bd286642a468829c";
 export const nativeRuleConstants = {
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
@@ -63,7 +63,7 @@ export interface NativeRows {
   MinePool: { readonly game_id: number; readonly weights: readonly ({ readonly kind: number; readonly weight: number })[] };
   RealmTraits: { readonly realm_id: number; readonly wonder: number; readonly order: number; readonly resources: readonly (number)[] };
   BlitzSettlementOrder: { readonly game_id: number; readonly players: readonly (number)[] };
-  BlitzRoster: { readonly game_id: number; readonly players: readonly ({ readonly owner: bigint; readonly account: bigint })[] };
+  BlitzRoster: { readonly game_id: number; readonly players: readonly ({ readonly account: bigint })[] };
   RealmCatalogue: { readonly address: bigint; readonly initialized: number; readonly digest: bigint };
   RealmGrants: { readonly game_id: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly starting_troops: readonly ("Knight" | "Paladin" | "Crossbowman")[]; readonly realm_resources: readonly (number)[] };
   HyperstructureReservations: { readonly game_id: number; readonly placed: number };
@@ -112,7 +112,7 @@ export interface NativeRows {
   PointsTotal: { readonly game_id: number; readonly total: bigint };
   DomainState: { readonly address: bigint; readonly authority: bigint; readonly peers: { readonly season: bigint; readonly map: bigint; readonly structures: bigint; readonly troops: bigint; readonly settlement: bigint; readonly resources: bigint; readonly economy: bigint; readonly prizes: bigint; readonly registry: bigint; readonly combat: bigint; readonly bridge: bigint; readonly relics: bigint }; readonly active: boolean };
   DomainClass: { readonly address: bigint; readonly class_hash: bigint };
-  Authentication: { readonly address: bigint; readonly submitter: bigint; readonly registry: bigint; readonly account_class: bigint };
+  Authentication: { readonly address: bigint; readonly submitter: bigint; readonly account_class: bigint };
   OwnershipRulesReady: { readonly game_id: number; readonly ready: boolean };
   ActionNonce: { readonly game_id: number; readonly actor: bigint; readonly next_nonce: bigint };
 }
@@ -787,7 +787,6 @@ export const nativeFactModels = {
       "game_id": "u32",
       "players": [
         {
-          "owner": "felt",
           "account": "felt"
         }
       ]
@@ -1771,7 +1770,6 @@ export const nativeFactModels = {
     "fields": {
       "address": "felt",
       "submitter": "felt",
-      "registry": "felt",
       "account_class": "felt"
     }
   },

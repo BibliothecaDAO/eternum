@@ -445,10 +445,6 @@
               "type": "core::starknet::contract_address::ContractAddress"
             },
             {
-              "name": "registry",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
               "name": "approved_account_class",
               "type": "core::starknet::class_hash::ClassHash"
             }
@@ -12334,12 +12330,6 @@
           "feltLength": 1
         },
         {
-          "name": "registry",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x7265676973747279",
-          "feltLength": 1
-        },
-        {
           "name": "account_class",
           "type": "core::starknet::class_hash::ClassHash",
           "id": "0x6163636f756e745f636c617373",
@@ -12347,7 +12337,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 3
+      "valueLength": 2
     },
     {
       "name": "OwnershipRulesReady",
@@ -16434,10 +16424,6 @@
       "name": "world_native::registrar::RosterPlayer",
       "members": [
         {
-          "name": "owner",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
           "name": "account",
           "type": "core::starknet::contract_address::ContractAddress"
         }
@@ -17341,10 +17327,6 @@
       "members": [
         {
           "name": "submitter",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "registry",
           "type": "core::starknet::contract_address::ContractAddress"
         },
         {
@@ -18352,5 +18334,5 @@
       ]
     }
   },
-  "identity": "ec0f117915ea10ac327ec5b184a301f797abc84932bcd529673b7094c9abed60"
+  "identity": "55b011d27627d45b774b472650f7bc55fd9aaf7629d94e56bd286642a468829c"
 }

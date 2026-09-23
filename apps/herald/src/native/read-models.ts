@@ -111,7 +111,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
       ? {
           registered: gameRows(entries, game.game_id).some((row) => address(row.player) === player),
           settled: realms.some((row) => address(row.owner) === player),
-          roster_member: roster.some((row) => address(row.owner) === player),
+          roster_member: roster.some((row) => address(row.account) === player),
           structures: gameRows(structures, game.game_id)
             .filter((row) => address(row.owner) === player)
             .map(playerStructure),

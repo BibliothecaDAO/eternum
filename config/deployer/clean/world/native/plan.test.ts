@@ -12,7 +12,7 @@ mock.module("../../shared/transaction", () => ({
   confirmedTransactionReceipt: mock(async () => ({ block_number: 42, execution_status: "SUCCEEDED" })),
 }));
 
-const authentication = { submitter: "0x99", registry: "0x88", account_class: "0x77" };
+const authentication = { submitter: "0x99", account_class: "0x77" };
 function fixture() {
   const domains = Object.keys(schemaJson.domains).map((name, index) => ({
     name,

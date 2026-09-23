@@ -154,13 +154,7 @@ fn definition(blitz: bool) -> PresetDefinition {
 fn roster(count: u32) -> Span<RosterPlayer> {
     let mut players = array![];
     for index in 1..count + 1 {
-        players
-            .append(
-                RosterPlayer {
-                    owner: Into::<u32, felt252>::into(1000 + index).try_into().unwrap(),
-                    account: Into::<u32, felt252>::into(2000 + index).try_into().unwrap(),
-                },
-            );
+        players.append(RosterPlayer { account: Into::<u32, felt252>::into(2000 + index).try_into().unwrap() });
     }
     players.span()
 }
@@ -417,7 +411,7 @@ fn fixed_blitz_rosters_require_unique_accounts_and_regular_mode() {
     registry(d).register_preset(1, preset);
     let player = *roster(1).at(0);
     for players in array![
-        array![player, player].span(), array![RosterPlayer { account: 0.try_into().unwrap(), ..player }].span(),
+        array![player, player].span(), array![RosterPlayer { account: 0.try_into().unwrap() }].span(),
     ] {
         assert!(
             safe(d, super::authority())
