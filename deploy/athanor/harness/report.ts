@@ -180,10 +180,7 @@ function analyzeHarnessResult(input: HarnessReportInput) {
   const checks = {
     ...(input.functional
       ? {}
-      : {
-          acceptedOnL2P95: passesLatency(percentiles.acceptedOnL2Ms.p95, ACCEPTED_ON_L2_P95_LIMIT_MS),
-          preConfirmedP95: passesLatency(percentiles.preConfirmedMs.p95, PRECONFIRMED_P95_LIMIT_MS),
-        }),
+      : latencyChecks(percentiles)),
     thresholdEligibleActions: thresholdEligibleActions >= input.minimumThresholdActions,
     setup: setupFailures.length === 0,
     frontierTokenCap:
@@ -516,6 +513,14 @@ function latencyPercentiles(
 ): LatencyPercentiles {
   const values = actions.flatMap((action) => (action[field] === undefined ? [] : [action[field]]));
   return { p50: percentile(values, 50), p95: percentile(values, 95), p99: percentile(values, 99) };
+}
+
+/** A run is judged only on its own samples: a latency with no samples fails its budget, never passes as zero. */
+export function latencyChecks(percentiles: Pick<PercentileSummary, "acceptedOnL2Ms" | "preConfirmedMs">) {
+  return {
+    acceptedOnL2P95: passesLatency(percentiles.acceptedOnL2Ms.p95, ACCEPTED_ON_L2_P95_LIMIT_MS),
+    preConfirmedP95: passesLatency(percentiles.preConfirmedMs.p95, PRECONFIRMED_P95_LIMIT_MS),
+  };
 }
 
 function passesLatency(value: number | null, limit: number): boolean {

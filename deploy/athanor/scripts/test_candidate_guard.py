@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from candidate_guard import budget_failures, pause_candidate
+from candidate_guard import budget_failures, pause_candidate, unmeasured_budgets
 
 
 class CandidateGuardTests(unittest.TestCase):
@@ -32,15 +32,15 @@ class CandidateGuardTests(unittest.TestCase):
             with self.subTest(digests=digests):
                 self.assertEqual(budget_failures(self.budget, self.health, digests, 20, 200, streaks), expected)
 
-    def test_confirmed_diffs_without_preconfirmed_samples_fail_after_two_windows(self):
+    def test_live_windows_without_preconfirmed_samples_are_unmeasured_never_failed(self):
         streaks = {}
         empty = [{"kind": "preconfirmed", "count": 0}, {"kind": "confirmed", "count": 30, "p95Ms": 100}]
-        self.assertEqual(budget_failures(self.budget, self.health, empty, 20, 200, streaks), [])
-        self.assertEqual(budget_failures(self.budget, self.health, [], 20, 200, streaks), [])
-        self.assertEqual(budget_failures(self.budget, self.health, empty, 20, 200, streaks),
-                         ["live preconfirmed digest empty"])
+        for _ in range(3):
+            self.assertEqual(budget_failures(self.budget, self.health, empty, 20, 200, streaks), [])
+        self.assertEqual(unmeasured_budgets(empty), ["live preconfirmed p95"])
         sampled = [{"kind": "preconfirmed", "count": 30, "p95Ms": 20}, {"kind": "confirmed", "count": 30, "p95Ms": 100}]
-        self.assertEqual(budget_failures(self.budget, self.health, sampled, 20, 200, streaks), [])
+        self.assertEqual(unmeasured_budgets(sampled), [])
+        self.assertEqual(unmeasured_budgets([]), [])
 
     def test_lag_health_and_disk_exceedance_requires_two_windows_and_resets(self):
         streaks = {}

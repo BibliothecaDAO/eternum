@@ -25,6 +25,7 @@ import {
 import type { Coord, ExplorerRow, HarnessGame, ProductionState } from "./harness-game";
 import {
   isThresholdBlockingFailure,
+  latencyChecks,
   percentile,
   summarizeCompletedMix,
   summarizePlayerProgress,
@@ -403,6 +404,13 @@ describe("Madara harness workload", () => {
 });
 
 describe("Madara harness reporting", () => {
+  it("fails a run's pre-confirmed budget when the run has no pre-confirmed samples", () => {
+    const sampled = { p50: 20, p95: 40, p99: 60 };
+    const unsampled = { p50: null, p95: null, p99: null };
+    expect(latencyChecks({ acceptedOnL2Ms: sampled, preConfirmedMs: unsampled }).preConfirmedP95).toBe(false);
+    expect(latencyChecks({ acceptedOnL2Ms: sampled, preConfirmedMs: sampled }).preConfirmedP95).toBe(true);
+  });
+
   it("uses nearest-rank percentiles", () => {
     expect(percentile([5, 1, 4, 2, 3], 50)).toBe(3);
     expect(percentile([5, 1, 4, 2, 3], 95)).toBe(5);

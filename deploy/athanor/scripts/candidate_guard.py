@@ -6,6 +6,7 @@ from decimal import Decimal
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import time
 from urllib.request import Request, urlopen
 
@@ -64,16 +65,22 @@ def budget_failures(budget, health, digests, disk_free, root_free, streaks):
         (f"live {event['kind']} p95", event["p95Ms"] > budget["digest_p95_ms"][event["kind"]])
         for event in digests if event["count"] > 0
     )
-    # Herald digests every kind together; confirmed diffs with no pre-confirmed samples mean that budget measures nothing.
-    counts = {event["kind"]: event["count"] for event in digests}
-    if counts.get("confirmed", 0) > 0:
-        observations.append(("live preconfirmed digest empty", counts.get("preconfirmed", 0) == 0))
     failures = []
     for reason, exceeded in observations:
         streaks[reason] = streaks.get(reason, 0) + 1 if exceeded else 0
         if streaks[reason] >= 2 and reason not in failures:
             failures.append(reason)
     return failures
+
+
+def unmeasured_budgets(digests):
+    """Budgets a live window could not measure. Herald digests every kind together, so confirmed diffs without
+    pre-confirmed samples mean the live Herald does not sample them (it may predate that). The live guard reports it and
+    never fails on it; a run's own measurement is what must refuse an empty pre-confirmed window."""
+    counts = {event["kind"]: event["count"] for event in digests}
+    if counts.get("confirmed", 0) > 0 and counts.get("preconfirmed", 0) == 0:
+        return ["live preconfirmed p95"]
+    return []
 
 
 def pause_candidate(reasons):
@@ -107,6 +114,10 @@ def monitor(budget):
         unavailable_windows = 0
         print(json.dumps({"event": "candidate_live_health", "at": next_since,
                           **health, "digests": digests}), flush=True)
+        unmeasured = unmeasured_budgets(digests)
+        if unmeasured:
+            print(json.dumps({"event": "candidate_live_unmeasured", "at": next_since, "budgets": unmeasured}),
+                  file=sys.stderr, flush=True)
         if failures:
             pause_candidate(failures)
             return 1
