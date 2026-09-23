@@ -7,6 +7,7 @@ import type {
   FoldChange,
   RpcBlockTransaction,
   RpcBlockWithReceipts,
+  RpcEvent,
   RpcReceipt,
   RpcTransaction,
 } from "../types";
@@ -22,6 +23,24 @@ export class NativeReceiptRejected extends Error {
     super(cause instanceof Error ? cause.message : String(cause), { cause });
   }
 }
+
+/** A receipt's native events as the overlay decoded them while the receipt was pre-confirmed. */
+export interface PreconfirmedDecode {
+  events: readonly RpcEvent[];
+  decoded: readonly DecodedWorldEvent[];
+}
+
+const sameFelts = (left: readonly string[], right: readonly string[]) =>
+  left.length === right.length && left.every((felt, index) => felt === right[index]);
+
+const sameEvents = (left: readonly RpcEvent[], right: readonly RpcEvent[]) =>
+  left.length === right.length &&
+  left.every(
+    (event, index) =>
+      event.from_address === right[index]!.from_address &&
+      sameFelts(event.keys, right[index]!.keys) &&
+      sameFelts(event.data, right[index]!.data),
+  );
 
 export class NativeIngestion {
   receiptFailures = 0;
@@ -83,6 +102,8 @@ export class NativeIngestion {
     rpc: Pick<MadaraRpc, "getBlockWithReceipts">;
     fromBlock: number;
     toBlock: number;
+    /** The overlay's decode of a receipt it holds, reused when the confirmed receipt repeats its events. */
+    preconfirmed?: (receipt: RpcReceipt) => PreconfirmedDecode | undefined;
   }) {
     if (this.halted) throw this.halted;
     const preview = input.fold.overlay();
@@ -99,7 +120,7 @@ export class NativeIngestion {
       pages++;
       block.transactions.forEach(({ receipt, transaction }, index) => {
         try {
-          events.push(...this.validateReceipt(preview, receipt, number, index));
+          events.push(...this.validateReceipt(preview, receipt, number, index, input.preconfirmed?.(receipt)));
           transactions.push({
             transaction,
             receipt: this.executionReceipt({ ...receipt, block_number: number }),
@@ -142,22 +163,42 @@ export class NativeIngestion {
     receipt: RpcReceipt,
     blockNumber: number | null,
     transactionIndex: number,
+    earlier?: PreconfirmedDecode,
   ): DecodedWorldEvent[] {
     if (receipt.execution_status === "REVERTED") return [];
-    const decoded: DecodedWorldEvent[] = [];
-    receipt.events.forEach((raw, eventIndex) => {
-      if (!this.decoder.owns(raw.from_address)) return;
-      const event = this.decoder.decode({
-        ...raw,
-        block_number: blockNumber,
-        transaction_hash: normalizeFelt(receipt.transaction_hash),
-        transaction_index: transactionIndex,
-        event_index: eventIndex,
-      });
-      fold.apply(event);
-      decoded.push(event);
-    });
+    const decoded = this.decodeReceipt(receipt, blockNumber, transactionIndex, earlier);
+    decoded.forEach((event) => fold.apply(event));
     return decoded;
+  }
+
+  /**
+   * A receipt's native events. Decoding hashes every row, and a transaction's confirmed receipt repeats its
+   * pre-confirmed events, so an earlier decode of the same events is reused at this receipt's position.
+   */
+  private decodeReceipt(
+    receipt: RpcReceipt,
+    blockNumber: number | null,
+    transactionIndex: number,
+    earlier?: PreconfirmedDecode,
+  ): DecodedWorldEvent[] {
+    if (earlier && sameEvents(earlier.events, receipt.events))
+      return earlier.decoded.map((event) => ({
+        ...event,
+        position: { ...event.position, blockNumber, transactionIndex },
+      }));
+    return receipt.events.flatMap((raw, eventIndex) =>
+      this.decoder.owns(raw.from_address)
+        ? [
+            this.decoder.decode({
+              ...raw,
+              block_number: blockNumber,
+              transaction_hash: normalizeFelt(receipt.transaction_hash),
+              transaction_index: transactionIndex,
+              event_index: eventIndex,
+            }),
+          ]
+        : [],
+    );
   }
   private commit(fold: WorldFold, events: DecodedWorldEvent[]) {
     return events.flatMap((event) => {

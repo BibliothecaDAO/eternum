@@ -149,6 +149,42 @@ describe("native confirmed replay and transaction delivery", () => {
   });
 });
 
+it("confirms a receipt from its pre-confirmed decode at the confirmed position, and decodes afresh when its events differ", async () => {
+  const { native, decoder, fold } = setup();
+  const [genesis] = wireHistory();
+  await native.replay({ fold, rpc: { getBlockWithReceipts: async () => genesis! }, fromBlock: 10, toBlock: 10 });
+  const pending = receipt([setFixture.raw, rowEvent("PlayerPoints", ["1", "0x111"], ["200"])], "0xb1");
+  const earlier = { events: pending.events, decoded: native.applyReceipt(fold.overlay(), pending, null, 0).events };
+  const confirmed: RpcBlockWithReceipts = {
+    block_number: 11,
+    timestamp: 2161,
+    transactions: [
+      { receipt: receipt([rowEvent("PlayerPoints", ["1", "0x222"], ["5"])], "0xa1"), transaction: { type: "INVOKE" } },
+      { receipt: pending, transaction: { type: "INVOKE" } },
+    ],
+  };
+  const confirm = (preconfirmed?: () => typeof earlier) => {
+    const copy = WorldFold.restore(decoder.registry, fold.checkpoint());
+    const rpc = { getBlockWithReceipts: async () => confirmed };
+    return native
+      .replay({ fold: copy, rpc, fromBlock: 11, toBlock: 11, preconfirmed })
+      .then((result) => ({ copy, result }));
+  };
+  const fresh = await confirm();
+  const decode = vi.spyOn(decoder, "decode");
+
+  const reused = await confirm(() => earlier);
+  expect(decode).toHaveBeenCalledTimes(1);
+  expect(reused.result.events).toEqual(fresh.result.events);
+  expect(reused.result.events.at(-1)!.position).toMatchObject({ blockNumber: 11, transactionIndex: 1, eventIndex: 1 });
+  expect(reused.copy.checkpoint()).toEqual(fresh.copy.checkpoint());
+
+  decode.mockClear();
+  const differing = await confirm(() => ({ ...earlier, events: [setFixture.raw] }));
+  expect(decode).toHaveBeenCalledTimes(3);
+  expect(differing.result.events).toEqual(fresh.result.events);
+});
+
 it("rebuilds state and history from genesis in one replay when history lags the checkpoint", async () => {
   const { native, decoder } = setup();
   const blocks = wireHistory();

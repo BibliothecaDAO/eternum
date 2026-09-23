@@ -1,5 +1,5 @@
 import { GameSubscription } from "./game-subscription";
-import { NativeReceiptRejected, type NativeIngestion } from "./native/ingestion";
+import { NativeReceiptRejected, type NativeIngestion, type PreconfirmedDecode } from "./native/ingestion";
 import { normalizeFelt, type ModelRegistry } from "./model-registry";
 import type { CheckpointStore } from "./checkpoint-store";
 import { DiffLatencyMonitor } from "./diff-latency";
@@ -85,7 +85,8 @@ export class LiveWorld {
 
   private readonly knownGames = new Set<string>();
 
-  private readonly overlayEvents = new Set<string>();
+  /** Receipts the overlay holds, with the decode that confirmation reuses; cleared at each confirmed head. */
+  private readonly overlayReceipts = new Map<string, PreconfirmedDecode>();
 
   private readonly transactionSenders = new Map<string, string | null>();
 
@@ -312,7 +313,7 @@ export class LiveWorld {
 
   private resetOverlay(): void {
     this.overlayFold = this.confirmedFold.overlay();
-    this.overlayEvents.clear();
+    this.overlayReceipts.clear();
     this.overlayTransactions.length = 0;
     this.overlayLedger.reset();
     for (const gameId of this.knownGames) this.hub.publishOverlayReset(gameId, this.confirmedBlockValue);
@@ -440,6 +441,7 @@ export class LiveWorld {
       rpc: this.input.rpc,
       fromBlock: this.confirmedBlockValue + 1,
       toBlock: target,
+      preconfirmed: (receipt) => this.overlayReceipts.get(overlayIdentity(receipt)),
     });
     await this.input.historyStore?.appendEvents(
       result.events.filter((event) => event.kind === "event"),
@@ -461,7 +463,7 @@ export class LiveWorld {
   /** Applies a pre-confirmed receipt to the overlay, recording its arrival-to-publish latency the first time. */
   private publishPreconfirmedReceipt(receipt: RpcReceipt): boolean {
     const arrivedAt = performance.now();
-    const firstArrival = !this.overlayEvents.has(overlayIdentity(receipt));
+    const firstArrival = !this.overlayReceipts.has(overlayIdentity(receipt));
     if (!this.applyOverlayReceipt(receipt, null, 0)) return false;
     if (firstArrival) this.diffLatency.record("preconfirmed", performance.now() - arrivedAt);
     return true;
@@ -469,7 +471,7 @@ export class LiveWorld {
 
   private applyOverlayReceipt(receipt: RpcReceipt, block: number | null, index: number): boolean {
     const identity = overlayIdentity(receipt);
-    if (this.overlayEvents.has(identity)) return true;
+    if (this.overlayReceipts.has(identity)) return true;
     let result: ReturnType<NativeIngestion["applyReceipt"]>;
     try {
       result = this.native.applyReceipt(this.overlayFold, receipt, block, index);
@@ -477,7 +479,7 @@ export class LiveWorld {
       this.native.rejectReceipt(receipt, block, error, false);
       return false;
     }
-    this.overlayEvents.add(identity);
+    this.overlayReceipts.set(identity, { events: receipt.events, decoded: result.events });
     this.publishOverlayTransaction({
       block,
       changes: result.changes.flatMap(({ change }) => (change ? [change] : [])),
