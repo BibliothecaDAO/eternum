@@ -6,6 +6,8 @@ import {
   type PlaytestSlot,
 } from "@/ui/features/factory-v2/api/factory-worker";
 
+import { ErrorPanel } from "./kit";
+
 /** A slot's players are Realms accounts, so the signed-in account finds itself by its Realms id. */
 function registrationFor(slot: PlaytestSlot, realmsId: string | undefined) {
   if (!realmsId) return undefined;
@@ -21,17 +23,25 @@ export const BlitzSlots = () => {
     mutationFn: registerPlaytestSlot,
     onSuccess: () => client.invalidateQueries({ queryKey: ["playtestSlots"] }),
   });
-  const error = register.error ?? slots.error;
   const visible = slots.data?.slots.filter((slot) => !slot.frozenAt || registrationFor(slot, session?.user.realmsId));
-  if (!visible?.length && !error) return null;
+  if (!visible?.length && !slots.isError && !register.isError) return null;
   return (
     <section className="space-y-3 rounded-2xl border border-gold/30 bg-black/40 p-4 text-gold">
       <h2 className="font-cinzel text-lg">Free Blitz slots</h2>
-      {error && (
-        <p role="alert" className="text-red-400">
-          {error.message}
-        </p>
-      )}
+      {slots.isError ? (
+        <ErrorPanel
+          message="Blitz slots are unavailable right now."
+          error={slots.error}
+          retry={() => void slots.refetch()}
+        />
+      ) : null}
+      {register.isError ? (
+        <ErrorPanel
+          message="Registration did not go through. Try again."
+          error={register.error}
+          retry={() => register.reset()}
+        />
+      ) : null}
       {visible?.map((slot) => {
         const registration = registrationFor(slot, session?.user.realmsId);
         const closed = slot.closed;

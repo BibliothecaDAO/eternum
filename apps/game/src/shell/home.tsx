@@ -122,7 +122,14 @@ export const HomePage = () => {
   const now = useNowSeconds();
   const directory = useDirectory(player);
 
-  if (directory.isError) return <ErrorPanel error={directory.error} retry={() => void directory.refetch()} />;
+  if (directory.isError)
+    return (
+      <ErrorPanel
+        message="Games are unavailable right now."
+        error={directory.error}
+        retry={() => void directory.refetch()}
+      />
+    );
   if (directory.isPending || status === "loading") return <Loading />;
   const games = directory.data.games;
   if (status === "signed-in") return <Dashboard games={games} now={now} />;

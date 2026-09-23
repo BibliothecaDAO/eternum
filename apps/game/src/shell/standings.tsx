@@ -13,7 +13,14 @@ export const Standings = ({ game, highlight, limit }: { game: GameRef; highlight
   const entries = (leaderboard.data?.entries ?? []).slice(0, limit);
   const profileOf = useProfiles(entries.map((entry) => entry.address));
 
-  if (leaderboard.isError) return <ErrorPanel error={leaderboard.error} retry={() => void leaderboard.refetch()} />;
+  if (leaderboard.isError)
+    return (
+      <ErrorPanel
+        message="Standings are unavailable right now."
+        error={leaderboard.error}
+        retry={() => void leaderboard.refetch()}
+      />
+    );
   if (leaderboard.isPending) return <Loading />;
   if (entries.length === 0) return <p className="py-2 text-[13px] text-gold/60">No points recorded yet.</p>;
   return (

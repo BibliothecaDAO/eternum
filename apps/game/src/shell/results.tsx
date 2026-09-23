@@ -27,7 +27,14 @@ export const ResultsPage = () => {
   const [openId, setOpenId] = useState<number | null>(null);
   const [review, setReview] = useState<ReviewedGame | null>(null);
 
-  if (directory.isError) return <ErrorPanel error={directory.error} retry={() => void directory.refetch()} />;
+  if (directory.isError)
+    return (
+      <ErrorPanel
+        message="Results are unavailable right now."
+        error={directory.error}
+        retry={() => void directory.refetch()}
+      />
+    );
   if (directory.isPending) return <Loading />;
   const games = finishedGames(directory.data.games);
   const expanded = openId ?? games[0]?.game_id ?? null;

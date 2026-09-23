@@ -104,7 +104,13 @@ export const PlayPage = () => {
       <FrontierSeason games={games} />
       <BlitzSlots />
       {directory.isPending ? <Loading /> : null}
-      {directory.isError ? <ErrorPanel error={directory.error} retry={() => void directory.refetch()} /> : null}
+      {directory.isError ? (
+        <ErrorPanel
+          message="Games are unavailable right now."
+          error={directory.error}
+          retry={() => void directory.refetch()}
+        />
+      ) : null}
       <div className="grid items-start gap-4 lg:grid-cols-[300px_1fr]">
         <div>
           {listed.map((game) => (

@@ -56,7 +56,13 @@ export const PlayerPage = () => {
       <Panel>
         <PanelTitle>Match history</PanelTitle>
         {directory.isPending ? <Loading /> : null}
-        {directory.isError ? <ErrorPanel error={directory.error} retry={() => void directory.refetch()} /> : null}
+        {directory.isError ? (
+          <ErrorPanel
+            message="This player's games are unavailable right now."
+            error={directory.error}
+            retry={() => void directory.refetch()}
+          />
+        ) : null}
         {directory.isSuccess && games.length === 0 ? (
           <p className="text-sm text-gold/60">No finished games on record.</p>
         ) : null}
