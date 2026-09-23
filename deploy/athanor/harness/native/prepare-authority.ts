@@ -3,7 +3,7 @@ import { assertProviderChain } from "../../../../packages/chain/chain-guard.js";
 import { readShardManifest } from "../../../../packages/chain/shard-manifest.js";
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { ec, hash, RpcProvider, uint256 } from "starknet";
+import { ec, hash, RpcProvider } from "starknet";
 import { createMadaraAccount } from "../../../../config/deployer/clean/shared/madara-account";
 import {
   declareClass,
@@ -17,7 +17,6 @@ const rpcUrl = process.env.RPC_URL;
 const authorityFile = process.env.NATIVE_AUTHORITY_FILE;
 if (!SIGNING_KEY || !rpcUrl || !authorityFile)
   throw new Error("RANDOMNESS_PRIVATE_KEY, RPC_URL and NATIVE_AUTHORITY_FILE are required");
-const STRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
 const root = resolve(import.meta.dir, "../../../..");
 const output = resolve(authorityFile);
 const provider = new RpcProvider({ nodeUrl: rpcUrl });
@@ -36,7 +35,6 @@ const address = hash.calculateContractAddressFromHash(salt, artifact.classHash, 
 
 await assertProviderChain(provider, readShardManifest(process.argv[3] ?? process.env.NATIVE_WORLD_MANIFEST), "RPC_URL");
 await prepareAccount();
-await fundAccount();
 if (process.argv[3]) await bindWorld(process.argv[3]);
 await writeFile(
   output,
@@ -56,22 +54,6 @@ async function prepareAccount() {
   }
   const transaction = await admin.deployContract(
     { classHash: artifact.classHash, salt, constructorCalldata, unique: false },
-    { tip: 0 },
-  );
-  await record(transaction.transaction_hash);
-}
-
-async function fundAccount() {
-  const [low, high] = await provider.callContract(
-    { contractAddress: STRK, entrypoint: "balanceOf", calldata: [address] },
-    "latest",
-  );
-  const balance = BigInt(low) + (BigInt(high) << 128n);
-  const minimum = 10n ** 18n;
-  if (balance >= minimum) return;
-  const amount = uint256.bnToUint256(minimum - balance);
-  const transaction = await admin.execute(
-    { contractAddress: STRK, entrypoint: "transfer", calldata: [address, amount.low, amount.high] },
     { tip: 0 },
   );
   await record(transaction.transaction_hash);

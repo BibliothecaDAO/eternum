@@ -51,7 +51,7 @@ docker build -t realms-gateway:REVISION apps/gateway
 ```
 
 Use the node, gateway and Herald release digests with `scripts/shard.py CONFIGURATION RUN_DIRECTORY`. The configuration
-names `shard`, `chain_id`, `port_base` (four free loopback ports above 27999), `cpuset`, `node_memory_mib`,
+names `shard`, `chain_id`, `port_base` (free loopback ports at base through base+3 and base+5 above 27999), `cpuset`, `node_memory_mib`,
 `player_capacity`, `madara_image`, `gateway_image`, `herald_image`, `chain_config`, `node_flags`, `guardian_url`,
 `public_rpc_url` and `public_admission_url`. Behind a tunnel or reverse proxy, also set `trusted_proxy` to the address
 the gateway sees for it: the gateway then limits each client by the last `X-Forwarded-For` entry, the one that proxy
@@ -63,13 +63,50 @@ template; initialize it through the runner before starting a node. For the basel
 RPC against the manifest before submitting. Every image must be pinned by digest. Flags explicitly select native
 execution and compilation mode. The runner refuses existing project state and CPUs outside `athanor.slice`.
 
-Supply `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_KEY` from the isolated devnet. The runner creates private
-credentials and volumes, deploys the Realms account class (refusing one that differs from the class the identity service approves devices
+The runner generates the host's deployer and sequencing keys into private `host-keys.json`; inherited deployer
+credentials are not used. It starts the pinned upstream node with `--devnet --devnet-contracts=0`: genesis contains
+only the UDC and the two fee tokens, with the standard account class declared but no seeded accounts. This replaces
+the ten accounts derived from Madara's public seed. The host's account deploys itself under `--no-charge-fee`, and its
+address becomes the node's sequencer address. No bootstrap account or balance transfer is needed.
+This requires fresh chain state; existing candidate chains are not rewritten or migrated by initialization.
+
+The runner creates private volumes, deploys the Realms account class (refusing one that differs from the class the identity service approves devices
 for) and the operator's own Realms account, deploys the native world under it, registers
 the Frontier and Regular Blitz presets and starts Herald. Each shard exports upstream node metrics through its own
 pinned OTLP collector into its private run directory; `harness.env` points the existing block reporter at that output.
 The run directory holds its compose configuration, manifest, logs and private `harness.env`. It starts no live services.
 Failed runs retain their volumes for inspection; choose a fresh shard id for a new run.
+
+Before starting admission, the runner checks genesis and every shard role against `host-accounts.json` and the node:
+the deployer, sequencing account and its administrator, operator and each domain's authority.
+It refuses a seeded devnet address, a different key or the central guardian key used as a shard key. Repeat the read-only check with
+`bun deploy/athanor/scripts/inspect-shard-roles.ts RUN_DIRECTORY RPC_URL`; it prints public role holders only.
+
+Public RPC must forward to the shard's `rpc` service on `port_base+5`, never directly to the node on `port_base`.
+The RPC proxy replaces unrestricted tunnel forwarding: it permits named reads and exactly three Realms account
+operations with tip zero. Deploys must use the manifest's account class and guardian, with salt equal to realms id.
+Invokes must come from that account class and contain one self-call: `is_device` with a five-felt join signature, or
+`revoke_device` with a three-felt signature. Other writes and node WebSocket upgrades remain refused. Public state
+streams use Herald. Fee estimation is limited to those same shapes; the SDK's unsigned query form requires
+`SKIP_VALIDATE`. Simulation is refused. The gateway remains the public path for gameplay.
+
+Set `trusted_proxy` to the tunnel's actual socket peer in the shard configuration, matching stream C's gateway
+setting. Only that peer may name a client, using the last `X-Forwarded-For` entry; otherwise the socket peer is used.
+The proxy permits 30 account requests per client per minute, including estimates and refused attempts. This boundary is required
+because `--no-charge-fee` would otherwise let anyone deploy an account and bypass admission.
+The runner checks its proxy on startup. After configuring a public hostname, repeat from outside the host:
+
+```bash
+bun deploy/athanor/scripts/inspect-shard-roles.ts --public-rpc https://RPC_HOST/rpc/v0_10_2
+```
+
+The check requires a working chain identity read and method-not-found rejection for unshaped submissions,
+both singly and in mixed batches; it also refuses an exposed WebSocket upgrade. Invalid-params errors fail the check.
+For the account-operation smoke, run `bun deploy/athanor/scripts/account-rpc-smoke.ts RUN_DIRECTORY PUBLIC_RPC_URL`.
+It refuses foreign account classes, guardian keys, targets, selectors and multi-calls, then joins and revokes a
+temporary device on the host operator through the public endpoint. The temporary key stays private in the run directory.
+
+The harness requires explicit `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_KEY`, including for resumed runs.
 
 For ordered trials, use `scripts/shard.py --matrix MATRIX_JSON RUN_DIRECTORY`. The matrix contains `configurations` (an
 ordered list of shard configurations), `workload` (`games`, `accounts_per_game`, `minutes`, `interval_seconds`,
@@ -157,8 +194,8 @@ bun config/deployer/clean/registrar/register-preset.ts \
 ```
 
 The deployer declares classes through `DEPLOYER_ACCOUNT_ADDRESS` and administers the world through identity's bound
-`operatorAccountAddress`, which uses the same signing key. Keep the original deployer account for sequencing authority
-preparation, funding and repeat world deployments; switch to the operator for preset registration and launch commands.
+`operatorAccountAddress`, which uses the same signing key. Keep the original host deployer account for sequencing authority
+preparation and repeat world deployments; switch to the operator for preset registration and launch commands.
 Set `SEQUENCING_SUBMITTER_ADDRESS` to the address produced by authority preparation. Repeat deployment with the same
 seed, identity, submitter and manifest to check that an unchanged world submits zero transactions. Add `--inspect` to
 check class hashes, configuration and activation without mutation. Inspection does not prove storage compatibility; a

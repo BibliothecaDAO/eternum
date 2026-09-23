@@ -43,14 +43,14 @@ class ShardTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             template = root / "template.yaml"
-            template.write_text('chain_name: "Template"\nchain_id: "OLD_SHARD"\n')
+            template.write_text('chain_name: "Template"\nchain_id: "OLD_SHARD"\nsequencer_address: "0x123"\n')
             for name in ("SHARD_A", "SHARD_B"):
                 directory = root / name
                 directory.mkdir()
                 config = {**configuration(), "chain_id": name, "chain_config": str(template)}
                 guardian = {"publicKey": "0x123", "accountClassHash": "0x456"}
                 with patch("urllib.request.OpenerDirector.open", return_value=io.StringIO(json.dumps(guardian))):
-                    shard.initialize_shard_identity(config, directory)
+                    shard.initialize_shard_identity(config, directory, "0x789")
                 manifest = json.loads((directory / "native-world.json").read_text())
                 self.assertEqual(bytes.fromhex(manifest["shard"]["chainId"][2:]).decode(), name)
                 self.assertEqual(manifest["shard"]["guardianPublicKey"], guardian["publicKey"])
@@ -59,6 +59,8 @@ class ShardTest(unittest.TestCase):
                 self.assertEqual(config.count("chain_id:"), 1)
                 self.assertIn(f'chain_id: "{name}"', config)
                 self.assertNotIn("OLD_SHARD", config)
+                self.assertEqual(config.count("sequencer_address:"), 1)
+                self.assertIn('sequencer_address: "0x789"', config)
 
     def test_initialization_refuses_missing_or_invalid_guardian_identity(self):
         for value in ({}, {"publicKey": "0x0", "accountClassHash": "0x1"},
@@ -67,7 +69,7 @@ class ShardTest(unittest.TestCase):
                 directory = Path(temporary)
                 with patch("urllib.request.OpenerDirector.open", return_value=io.StringIO(json.dumps(value))):
                     with self.assertRaises((KeyError, ValueError)):
-                        shard.initialize_shard_identity(configuration(), directory)
+                        shard.initialize_shard_identity(configuration(), directory, "0x789")
                 self.assertFalse((directory / "native-world.json").exists())
 
     def test_shards_have_distinct_projects_ports_volumes_and_databases(self):
@@ -101,6 +103,9 @@ class ShardTest(unittest.TestCase):
     def test_private_outputs_exclude_inherited_credentials(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
+            (directory / "host-keys.json").write_text(json.dumps({
+                "deployerAddress": "0x789", "deployerPrivateKey": "0xabc", "sequencingPrivateKey": "0xdef",
+            }))
             with patch.dict(shard.os.environ, {
                 "DEPLOYER_ACCOUNT_ADDRESS": "0x123", "DEPLOYER_PRIVATE_KEY": "0x456",
                 "UNRELATED_SECRET": "not-for-this-shard",
@@ -111,6 +116,8 @@ class ShardTest(unittest.TestCase):
             values = dict(line.split("=", 1) for line in output.read_text().splitlines())
             self.assertEqual(output.stat().st_mode & 0o777, 0o600)
             self.assertNotIn("UNRELATED_SECRET", values)
+            self.assertEqual(values["DEPLOYER_ACCOUNT_ADDRESS"], "0x789")
+            self.assertEqual(values["DEPLOYER_PRIVATE_KEY"], "0xabc")
             self.assertEqual(values["RPC_URL"], "http://127.0.0.1:28050/rpc/v0_10_2")
             self.assertEqual(values["GAMEPLAY_CONTRACTS_PATH"], str(directory / "gameplay-contracts.json"))
             self.assertEqual(values["MADARA_METRICS_FILE"], str(directory / "metrics" / "metrics.jsonl"))

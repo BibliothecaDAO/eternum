@@ -58,6 +58,22 @@ afterAll(() => {
 });
 
 describe("Madara harness workload", () => {
+  it("refuses missing host credentials before contacting a shard", async () => {
+    for (const missing of ["DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY"]) {
+      const environment: NodeJS.ProcessEnv = { ...process.env, DEPLOYER_ACCOUNT_ADDRESS: "0x123", DEPLOYER_PRIVATE_KEY: "0x456" };
+      delete environment[missing];
+      const child = Bun.spawn([process.execPath, new URL("./run.ts", import.meta.url).pathname], {
+        env: environment,
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      const stderr = await new Response(child.stderr).text();
+      expect(await child.exited).toBe(1);
+      expect(stderr).toContain(missing);
+      expect(stderr).toContain("native harness");
+    }
+  });
+
   it("collects other game reports after a worker reports a failed coverage gate", async () => {
     const workers = [new EventEmitter(), new EventEmitter()];
     const reports: Parameters<typeof waitForGameWorkers>[1] = [];

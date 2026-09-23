@@ -24,6 +24,12 @@
   ],
   "workspaces": {
     ".": {
+      "entry": [
+        "deploy/athanor/scripts/host-accounts.ts",
+        "deploy/athanor/scripts/inspect-shard-roles.ts",
+        "deploy/athanor/scripts/read-rpc.ts",
+        "deploy/athanor/scripts/account-rpc-smoke.ts"
+      ],
       "paths": {
         "@bibliothecadao/eternum": [
           "packages/core/src/index.ts"
@@ -71,6 +77,9 @@
     },
     "packages/db": {
       "drizzle": false
+    },
+    "packages/identity": {
+      "entry": ["src/index.ts", "src/account.ts"]
     },
     "packages/core": {
       "project": [

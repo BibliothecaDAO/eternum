@@ -23,6 +23,7 @@ import candidate_guard
 ROOT = Path(__file__).resolve().parents[3]
 POSTGRES_IMAGE = "postgres@sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73"
 METRICS_IMAGE = "otel/opentelemetry-collector-contrib@sha256:fd328de2552466ad78385e1b1289c3f2402b1c45f265b252aab1955b42845ac1"
+BUN_IMAGE = "oven/bun@sha256:e0ee68d16ccb9927bf02aa7dd8fd4bf3369ee6d46da04faa72b05ce8bfd135f6"
 DOCKER = ["sudo", "-n", "docker"]
 # Admission connections: each player holds about two (a 100-connection node refused a 96-player slot at its
 # 48th player), plus a fixed allowance for the sequencing authority, Herald and tooling.
@@ -64,8 +65,8 @@ def validate_configuration(config, allowed_cpus):
     if "trusted_proxy" in config:
         ipaddress.ip_address(config["trusted_proxy"])
     port = config["port_base"]
-    if not isinstance(port, int) or not 28000 <= port <= 65532:
-        raise ValueError("reserve four isolated ports above 27999")
+    if not isinstance(port, int) or not 28000 <= port <= 65530:
+        raise ValueError("reserve isolated ports base through base+3 and base+5 above 27999")
     if not cpu_numbers(config["cpuset"]) <= allowed_cpus:
         raise ValueError("cpuset exceeds the native slice allocation")
     if not isinstance(config["node_memory_mib"], int) or not 1024 <= config["node_memory_mib"] <= 28672:
@@ -121,7 +122,7 @@ def compose_configuration(config, directory):
         "logging": {"driver": "json-file", "options": {"max-size": "20m", "max-file": "3"}},
     }
     node_command = [
-        f"--name={project}", "--devnet", "--base-path=/data", "--db-fsync", "--db-wal",
+        f"--name={project}", "--devnet", "--devnet-contracts=0", "--base-path=/data", "--db-fsync", "--db-wal",
         "--chain-config-path=/config/chain-config.yaml", "--rpc-external", "--rpc-cors=all",
         "--rpc-port=9944", f"--rpc-max-connections={admission_connections(config)}", "--no-charge-fee",
         "--l1-sync-disabled",
@@ -159,6 +160,15 @@ def compose_configuration(config, directory):
                 "depends_on": {"postgres": {"condition": "service_healthy"}},
             },
             "gateway": gateway_service(config, directory, budget),
+            "rpc": {
+                **budget, "image": BUN_IMAGE, "mem_limit": "256m", "memswap_limit": "256m",
+                "restart": "on-failure", "command": ["bun", "/app/read-rpc.js"],
+                "environment": {"NODE_RPC_URL": "http://madara:9944", "NATIVE_WORLD_MANIFEST": "/config/native-world.json",
+                                **({"RPC_TRUSTED_PROXY": config["trusted_proxy"]} if "trusted_proxy" in config else {})},
+                "volumes": [f"{directory / 'read-rpc.js'}:/app/read-rpc.js:ro",
+                            f"{directory / 'native-world.json'}:/config/native-world.json:ro"],
+                "ports": [f"127.0.0.1:{base + 5}:8080"],
+            },
         },
         "volumes": {"chain": {}, "postgres": {}, "gateway": {}},
     }
@@ -170,7 +180,7 @@ def ensure_fresh_project(config):
     for command in (["ps", "-aq", "--filter", label], ["volume", "ls", "-q", "--filter", label]):
         if read([*DOCKER, *command]):
             raise ValueError(f"{project} already owns state; choose a fresh shard id")
-    for port in range(config["port_base"], config["port_base"] + 4):
+    for port in [config["port_base"] + offset for offset in (0, 1, 2, 3, 5)]:
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", port))
 
@@ -222,7 +232,9 @@ def deploy_world(config, directory, environment):
 
 
 def deployment_environment(config, directory):
-    credentials = {key: os.environ[key] for key in ("DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY")}
+    keys = json.loads((directory / "host-keys.json").read_text())
+    credentials = {"DEPLOYER_ACCOUNT_ADDRESS": keys["deployerAddress"],
+                   "DEPLOYER_PRIVATE_KEY": keys["deployerPrivateKey"]}
     base = config["port_base"]
     return {
         **os.environ, **credentials, "RPC_URL": f"http://127.0.0.1:{base}/rpc/v0_10_2",
@@ -232,7 +244,8 @@ def deployment_environment(config, directory):
         "HERALD_PUBLIC_ADMISSION_URL": config["public_admission_url"],
         "COMPOSE_PROJECT_NAME": f"athanor-{config['shard']}",
         "CHAIN_CONFIG_PATH": str(directory / "chain-config.yaml"),
-        "RANDOMNESS_PRIVATE_KEY": "0x" + secrets.token_hex(31),
+        "RANDOMNESS_PRIVATE_KEY": keys["sequencingPrivateKey"],
+        "SHARD_HOST_ACCOUNTS": str(directory / "host-accounts.json"),
         "NATIVE_AUTHORITY_FILE": str(directory / "authority.json"),
         "NATIVE_WORLD_MANIFEST": str(directory / "native-world.json"),
         "GAMEPLAY_CONTRACTS_PATH": str(directory / "gameplay-contracts.json"),
@@ -287,6 +300,7 @@ def save_harness_environment(directory, environment):
     keys = (
         "DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY", "RPC_URL", "ADMISSION_URL", "HERALD_URL",
         "RANDOMNESS_PRIVATE_KEY",
+        "SHARD_HOST_ACCOUNTS",
         "NATIVE_AUTHORITY_FILE", "NATIVE_WORLD_MANIFEST", "GAMEPLAY_CONTRACTS_PATH",
         "MADARA_METRICS_FILE", "MADARA_IMAGE", "MADARA_CONTAINER",
         "COMPOSE_PROJECT_NAME", "CHAIN_CONFIG_PATH",
@@ -323,14 +337,16 @@ def read_guardian_identity(url):
     return identity
 
 
-def initialize_shard_identity(config, directory):
+def initialize_shard_identity(config, directory, deployer_address):
     identity = read_guardian_identity(config["guardian_url"])
     chain_id = "0x" + config["chain_id"].encode("ascii").hex()
     write_json(directory / "native-world.json", {"shard": {"chainId": chain_id, **identity}})
     template = Path(config["chain_config"]).read_text()
     # Identity belongs to the initialized shard, not to a benchmark template.
-    template = re.sub(r"^chain_id:.*\n?", "", template, flags=re.MULTILINE)
-    (directory / "chain-config.yaml").write_text(template + f'\nchain_id: "{config["chain_id"]}"\n')
+    template = re.sub(r"^(chain_id|sequencer_address):.*\n?", "", template, flags=re.MULTILINE)
+    (directory / "chain-config.yaml").write_text(
+        template + f'\nchain_id: "{config["chain_id"]}"\nsequencer_address: "{deployer_address}"\n'
+    )
 
 
 def start_shard(config, directory):
@@ -340,11 +356,15 @@ def start_shard(config, directory):
     if os.environ.get("LEDGER_ADDRESS") or os.environ.get("LEDGER_RPC_URL"):
         raise ValueError("shard preparation does not deploy or configure the deferred ledger")
     directory = directory.resolve()
-    environment = deployment_environment(config, directory)
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
-    initialize_shard_identity(config, directory)
+    accounts = "deploy/athanor/scripts/host-accounts.ts"
+    run(["bun", accounts, "initialize", str(directory)], directory, "host-accounts-initialize")
+    environment = deployment_environment(config, directory)
+    initialize_shard_identity(config, directory, environment["DEPLOYER_ACCOUNT_ADDRESS"])
     write_json(directory / "configuration.json", config)
     prepare_runtime_files(directory, environment)
+    run(["bun", "build", "deploy/athanor/scripts/read-rpc.ts", "--target=bun",
+         "--outfile", str(directory / "read-rpc.js")], directory, "read-rpc-build")
     compose = compose_configuration(config, directory)
     # Compose resolves every service's env_file, even when up names only the bootstrap services.
     bootstrap_services = ("metrics", "madara", "postgres")
@@ -354,14 +374,22 @@ def start_shard(config, directory):
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
     run([*command, "up", "-d", *bootstrap_services], directory, "bootstrap-start")
     wait_for_endpoint(environment["RPC_URL"], rpc=True)
+    run(["bun", accounts, "deploy", str(directory)], directory, "host-account-deploy", environment)
     authority = deploy_world(config, directory, environment)
+    run(["bun", "deploy/athanor/scripts/inspect-shard-roles.ts", str(directory), environment["RPC_URL"]],
+        directory, "shard-roles", environment)
     manifest = json.loads((directory / "native-world.json").read_text())
     write_gateway_environment(config, directory, environment, authority, manifest["world"]["address"])
     write_json(directory / "compose.json", compose)
-    run([*command, "up", "-d", "herald", "gateway"], directory, "shard-start")
+    run([*command, "up", "-d", "herald", "gateway", "rpc"], directory, "shard-start")
     rpc_rtt = wait_for_endpoint(environment["RPC_URL"], rpc=True)
     herald_rtt = wait_for_endpoint(environment["HERALD_URL"] + "/health")
+    wait_for_endpoint(f"http://127.0.0.1:{config['port_base'] + 5}/rpc/v0_10_2", rpc=True)
+    run(["bun", "deploy/athanor/scripts/inspect-shard-roles.ts", "--public-rpc",
+         f"http://127.0.0.1:{config['port_base'] + 5}/rpc/v0_10_2"], directory, "public-rpc-check")
     save_harness_environment(directory, environment)
+    run(["bun", "deploy/athanor/scripts/account-rpc-smoke.ts", str(directory),
+         f"http://127.0.0.1:{config['port_base'] + 5}/rpc/v0_10_2"], directory, "account-rpc-smoke")
     result = deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rtt)
     write_json(directory / "manifest.json", result)
     return result

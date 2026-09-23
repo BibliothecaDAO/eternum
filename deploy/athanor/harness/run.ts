@@ -65,8 +65,6 @@ interface LaunchedGame extends Omit<HarnessGameInstance, "botCount"> {
 }
 
 const REPOSITORY_ROOT = path.resolve(import.meta.dir, "../../..");
-const MADARA_ADMIN_ADDRESS = "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d";
-const MADARA_ADMIN_PRIVATE_KEY = "0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07";
 
 logger.setLogLevel("FATAL");
 
@@ -141,6 +139,8 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
 
 async function main(): Promise<void> {
   const options = parseHarnessArgs(process.argv.slice(2));
+  requiredEnvironmentValue("DEPLOYER_ACCOUNT_ADDRESS", "native harness");
+  requiredEnvironmentValue("DEPLOYER_PRIVATE_KEY", "native harness");
   const gameplayContractsPath = requiredEnvironmentValue("GAMEPLAY_CONTRACTS_PATH", "native harness");
   process.env.HERALD_URL = options.heraldUrl;
 
@@ -314,13 +314,13 @@ async function resolveHarnessGame(options: HarnessCliOptions, rosterAccounts: st
   const summary = await launchGame({
     manifest: readShardManifest<NativeWorldManifest>(process.env.NATIVE_WORLD_MANIFEST),
     heraldUrl: options.heraldUrl,
-    accountAddress: process.env.DEPLOYER_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS,
+    accountAddress: requiredEnvironmentValue("DEPLOYER_ACCOUNT_ADDRESS", "native harness"),
     devModeOn: false,
     durationSeconds: Math.ceil(options.minutes * 60) + 3_600,
     environmentId: options.gameType === "eternum" ? "madara.eternum" : "madara.blitz",
     gameName,
     rosterAccounts: options.gameType === "blitz" ? rosterAccounts : undefined,
-    privateKey: process.env.DEPLOYER_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
+    privateKey: requiredEnvironmentValue("DEPLOYER_PRIVATE_KEY", "native harness"),
     rpcUrl: options.rpcUrl,
     startTime: startAt,
     version: String(options.presetId),

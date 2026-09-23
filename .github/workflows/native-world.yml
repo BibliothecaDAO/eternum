@@ -149,6 +149,8 @@ jobs:
           for file in config/deployer/clean/world/native/*.test.ts config/deployer/clean/tests/*.test.ts; do
             bun test "$file"
           done
+      - name: Check the public RPC boundary
+        run: bun test deploy/athanor/scripts/read-rpc.test.ts
       - name: Test fail-closed deployment paths
         run: |
           python3 -m unittest discover -s deploy/athanor/scripts -p "test_*.py" -v
