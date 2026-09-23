@@ -1,16 +1,24 @@
-import { fetchHeraldGameSnapshot, NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import {
+  fetchHeraldGameDirectory,
+  fetchHeraldGameSnapshot,
+  NativeFactStore,
+} from "@bibliothecadao/eternum/game-client";
 import type { HeraldStoryHistoryPage } from "@bibliothecadao/eternum/game-sync";
 import { isCurrentExpeditionArmy, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { fullAtTick, staminaAt, troopStaminaLimits } from "@bibliothecadao/eternum/troop-stamina";
 import type { TroopTier, TroopType } from "@bibliothecadao/types";
 
-/** When one army of one player will be rested; replaced by the player's next action, dropped when the army is gone. */
+/**
+ * When one army of one player will be rested; replaced by the player's next action, dropped when the army is gone.
+ * `attempts` counts wakes that failed to read it.
+ */
 export interface RestWatch {
   gameId: number;
   actor: string;
   owner: string;
   armyId: number;
   fullAt: number;
+  attempts: number;
 }
 
 /** One player in one game whose armies are worth watching: they act, and a device of theirs wants game alerts. */
@@ -28,6 +36,26 @@ interface ActorArmy {
 
 export const restWatchKey = (watch: { gameId: number; actor: string; armyId?: number }) =>
   `rest:${watch.gameId}:${watch.actor}:${watch.armyId ?? ""}`;
+
+/**
+ * Splits entries by whether their game still runs, by Herald's phase for it at its chain clock. An ended game's armies
+ * cannot act, so they are never read or alerted; a finalized game's Herald no longer serves them at all. One directory
+ * read covers every entry, and none is made for none.
+ */
+export const partitionByRunningGame = async <Entry extends { gameId: number }>(
+  shardUrl: string,
+  entries: readonly Entry[],
+): Promise<{ running: Entry[]; ended: Entry[] }> => {
+  if (entries.length === 0) return { running: [], ended: [] };
+  const { games } = await fetchHeraldGameDirectory({ url: shardUrl });
+  const running = new Set(
+    games.filter(({ status }) => status !== "Ended" && status !== "Settled").map(({ game_id }) => game_id),
+  );
+  return {
+    running: entries.filter(({ gameId }) => running.has(gameId)),
+    ended: entries.filter(({ gameId }) => !running.has(gameId)),
+  };
+};
 
 /** Every player who acted in this page, once per game: one recorded action or many cost one read. */
 export const actorsWhoActed = (page: HeraldStoryHistoryPage): { gameId: number; actor: string }[] => {
@@ -88,5 +116,5 @@ export const readActorArmies = async (
 /** A player's armies that are still recovering become watches; a rested or gone army has none. */
 export const restWatchesOf = (actor: RestingActor, armies: ActorArmy[]): RestWatch[] =>
   armies.flatMap((army) =>
-    army.full || army.fullAt === null ? [] : [{ ...actor, armyId: army.armyId, fullAt: army.fullAt }],
+    army.full || army.fullAt === null ? [] : [{ ...actor, armyId: army.armyId, fullAt: army.fullAt, attempts: 0 }],
   );

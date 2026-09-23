@@ -54,13 +54,31 @@ interface HistoryRow {
   value: object;
 }
 
-/** One shard's Herald: a history log that grows, and the player's army as its snapshot shows it now. */
+/**
+ * One shard's Herald: a history log that grows, the game's phase, and the player's army as its snapshot shows it now.
+ * Like Herald, it no longer serves a settled game's armies.
+ */
 const createHerald = () => {
   const log: HistoryRow[] = [];
-  const state = { army: null as null | { amount: number; updatedTick: number; day: number } };
+  const state = {
+    army: null as null | { amount: number; updatedTick: number; day: number },
+    status: "Live" as "Live" | "Settled",
+    /** Snapshot reads answered, and whether this Herald is failing them. */
+    snapshotReads: 0,
+    snapshotFails: false,
+  };
   const answer = (url: URL): unknown => {
     if (url.pathname === "/manifest") return { version: 1, chainId: CHAIN_ID, contracts: { season: "0x5e45" } };
-    if (url.pathname === "/games") return { chain: CHAIN_ID, games: [{ game_id: GAME_ID, name: "frontier-a" }] };
+    if (url.pathname === "/games")
+      return { chain: CHAIN_ID, games: [{ game_id: GAME_ID, name: "frontier-a", status: state.status }] };
+    if (url.pathname === `/games/${GAME_ID}/snapshot`) state.snapshotReads++;
+    if (url.pathname === `/games/${GAME_ID}/snapshot` && state.snapshotFails)
+      return Response.json({ error: "snapshot unavailable" }, { status: 500 });
+    if (url.pathname === `/games/${GAME_ID}/snapshot` && state.status === "Settled")
+      return Response.json(
+        { error: `Game ${GAME_ID} is finalized; its review snapshot holds GameRegistry` },
+        { status: 409 },
+      );
     if (url.pathname === `/games/${GAME_ID}/snapshot`) return snapshot(state.army);
     const page = { chain: CHAIN_ID, world_address: "0x5e45", complete_through_block: 10 + log.length };
     const after = url.searchParams.get("after");
@@ -229,7 +247,10 @@ const createHarness = async (level: "important" | "standard") => {
       vapid,
       outbound: (request) => {
         const url = new URL(request.url);
-        if (url.origin === SHARD) return Response.json(herald.answer(url));
+        if (url.origin === SHARD) {
+          const answer = herald.answer(url);
+          return answer instanceof Response ? answer : Response.json(answer);
+        }
         if (url.href === PUSH_ENDPOINT) {
           push.received.push(push.status);
           return new Response(null, { status: push.status });
@@ -316,3 +337,41 @@ it("alerts once when an army is rested, not if it acted again first, nor once it
   expect(push.received).toEqual([201, 201]);
   await worker.dispose();
 }, 240_000);
+
+it("a game that ends while an army rests alerts nothing for it, and every other alert still flows", async () => {
+  const { herald, push, worker } = await createHarness("standard");
+  await worker.runCron();
+  await pause(4_000); // the notifier reaches the shard's head
+
+  herald.act(0);
+  await pause(ARMIES_TICK_SECONDS * 1000);
+  herald.state.status = "Settled"; // the game ends before the army is rested, and Herald drops its armies
+  await pause(7 * ARMIES_TICK_SECONDS * 1000 + 4_000);
+  expect(push.received).toEqual([]);
+
+  herald.act(0); // an action folded late, in the ended game
+  herald.battle();
+  await waitUntil(() => push.received.length >= 1, 20_000);
+  await pause(4_000);
+  expect(push.received).toEqual([201]);
+  await worker.dispose();
+}, 90_000);
+
+it("a wake that keeps failing is retried, then dropped, and every other alert still flows", async () => {
+  const { herald, push, worker } = await createHarness("standard");
+  await worker.runCron();
+  await pause(4_000); // the notifier reaches the shard's head
+
+  herald.act(0);
+  await pause(4_000); // the action is read and its army watched
+  herald.state.snapshotFails = true;
+  await pause(6 * ARMIES_TICK_SECONDS * 1000 + 24_000); // the wake comes due, fails, and is retried up to its cap
+  herald.battle();
+  await waitUntil(() => push.received.length >= 1, 20_000);
+  expect(push.received).toEqual([201]);
+
+  const reads = herald.state.snapshotReads;
+  await pause(8_000);
+  expect(herald.state.snapshotReads).toBe(reads); // the watch was given up, not retried forever
+  await worker.dispose();
+}, 120_000);

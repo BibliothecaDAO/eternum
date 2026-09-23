@@ -24,6 +24,7 @@ import {
 
 import {
   actorsWhoActed,
+  partitionByRunningGame,
   readActorArmies,
   restWatchesOf,
   restWatchKey,
@@ -81,14 +82,13 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     const shard = await this.ctx.storage.get<WatchedShard>("shard");
     if (!shard) return;
     const env = decodeIdentityEnv(this.env);
+    // Each stage stands alone: one that fails is logged and the others still run.
+    const watched = await runStage(shard, "manifest", () => this.withWorldAddress(shard));
     let morePages = false;
-    try {
-      const watched = await this.withWorldAddress(shard);
-      await this.wakeRestedArmies(env, watched);
-      await this.deliverDue(env);
-      morePages = await this.readStories(env, watched);
-    } catch (error) {
-      console.error("shard_notifier_failed", shard.url, error);
+    if (watched) {
+      await runStage(shard, "wake", () => this.wakeRestedArmies(env, watched));
+      await runStage(shard, "deliver", () => this.deliverDue(env));
+      morePages = (await runStage(shard, "stories", () => this.readStories(env, watched))) ?? false;
     }
     await this.ctx.storage.setAlarm(Date.now() + (morePages ? 0 : POLL_MS));
   }
@@ -113,8 +113,14 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
       cursor ? `/history/story-events?limit=${STORY_PAGE}&after=${cursor}` : "/history/story-events?limit=1",
     );
     if (BigInt(page.chain) !== BigInt(shard.chainId)) throw new Error(`${shard.url} served chain ${page.chain}`);
-    const entries = cursor ? await planAlerts(env, shard, page) : [];
-    const resting = cursor ? await watchRestingArmies(env, shard, page) : [];
+    let entries: OutboxEntry[] = [];
+    let resting: { actor: RestingActor; watches: RestWatch[] }[] = [];
+    try {
+      entries = cursor ? await planAlerts(env, shard, page) : [];
+      resting = cursor ? await watchRestingArmies(env, shard, page) : [];
+    } catch (error) {
+      if (!(await this.givesUpPage(shard, cursor!, page, error))) return false;
+    }
     await this.ctx.storage.transaction(async (txn) => {
       for (const entry of entries) await txn.put(outboxKey(entry), entry);
       // A player's action replaces every wake time of theirs: a moved army gets a new one, a gone army none.
@@ -123,36 +129,100 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
         for (const watch of watches) await txn.put(restWatchKey(watch), watch);
       }
       await txn.put("cursor", encodeStoryHistoryCursor(page.next_cursor));
+      await txn.delete("pageAttempts");
     });
     return cursor !== undefined && page.items.length === STORY_PAGE;
   }
 
   /**
+   * A page whose alerts cannot be planned is read again on the next polls; after MAX_ATTEMPTS it is skipped, loudly,
+   * so one bad page never holds back every story after it. True when the page is given up.
+   */
+  private async givesUpPage(
+    shard: WatchedShard,
+    cursor: string,
+    page: HeraldStoryHistoryPage,
+    error: unknown,
+  ): Promise<boolean> {
+    const previous = await this.ctx.storage.get<{ cursor: string; attempts: number }>("pageAttempts");
+    const attempts = (previous?.cursor === cursor ? previous.attempts : 0) + 1;
+    const exhausted = attempts >= MAX_ATTEMPTS;
+    console.error(
+      exhausted ? "shard_notifier_page_dropped" : "shard_notifier_page_retry",
+      shard.url,
+      `after ${cursor}`,
+      `${page.items.length} stories`,
+      `attempt ${attempts}`,
+      error,
+    );
+    if (!exhausted) await this.ctx.storage.put("pageAttempts", { cursor, attempts });
+    return exhausted;
+  }
+
+  /**
    * Each army whose wake time has come is read again: still there and full, it gets one alert; still recovering, a new
-   * wake time; gone, nothing.
+   * wake time; gone, or its game over, nothing.
    */
   private async wakeRestedArmies(env: IdentityEnv, shard: Required<WatchedShard>): Promise<void> {
     const now = Date.now();
-    const due = [...(await this.ctx.storage.list<RestWatch>({ prefix: "rest:" })).values()].filter(
-      (watch) => watch.fullAt <= now,
+    const { running: due, ended } = await partitionByRunningGame(
+      shard.url,
+      [...(await this.ctx.storage.list<RestWatch>({ prefix: "rest:" })).values()].filter(
+        (watch) => wakeAt(watch) <= now,
+      ),
     );
+    await this.ctx.storage.transaction(async (txn) => {
+      for (const watch of ended) await txn.delete(restWatchKey(watch));
+    });
     const byActor = new Map<string, RestWatch[]>();
-    for (const watch of due) byActor.set(restWatchKey(watch), [...(byActor.get(restWatchKey(watch)) ?? []), watch]);
-    for (const watches of byActor.values()) {
-      const armies = await readActorArmies(shard.url, watches[0]!.gameId, watches[0]!.actor, now);
-      const alerts: OutboxEntry[] = [];
-      const renewed: RestWatch[] = [];
-      for (const watch of watches) {
-        const army = armies.find((candidate) => candidate.armyId === watch.armyId);
-        if (army?.full) alerts.push(...(await restedAlerts(env, shard, watch, now)));
-        else if (army?.fullAt) renewed.push({ ...watch, fullAt: army.fullAt });
-      }
-      await this.ctx.storage.transaction(async (txn) => {
-        for (const watch of watches) await txn.delete(restWatchKey(watch));
-        for (const watch of renewed) await txn.put(restWatchKey(watch), watch);
-        for (const entry of alerts) await txn.put(outboxKey(entry), entry);
-      });
+    for (const watch of due) {
+      const actorKey = restWatchKey({ gameId: watch.gameId, actor: watch.actor });
+      byActor.set(actorKey, [...(byActor.get(actorKey) ?? []), watch]);
     }
+    for (const watches of byActor.values()) {
+      try {
+        await this.wakeActor(env, shard, watches, now);
+      } catch (error) {
+        await this.retryWatches(shard, watches, now, error);
+      }
+    }
+  }
+
+  private async wakeActor(env: IdentityEnv, shard: Required<WatchedShard>, watches: RestWatch[], now: number) {
+    const armies = await readActorArmies(shard.url, watches[0]!.gameId, watches[0]!.actor, now);
+    const alerts: OutboxEntry[] = [];
+    const renewed: RestWatch[] = [];
+    for (const watch of watches) {
+      const army = armies.find((candidate) => candidate.armyId === watch.armyId);
+      if (army?.full) alerts.push(...(await restedAlerts(env, shard, watch, now)));
+      else if (army?.fullAt) renewed.push({ ...watch, fullAt: army.fullAt, attempts: 0 });
+    }
+    await this.ctx.storage.transaction(async (txn) => {
+      for (const watch of watches) await txn.delete(restWatchKey(watch));
+      for (const watch of renewed) await txn.put(restWatchKey(watch), watch);
+      for (const entry of alerts) await txn.put(outboxKey(entry), entry);
+    });
+  }
+
+  /** Watches a wake could not read wait and are tried again, then are dropped loudly: never retried forever. */
+  private async retryWatches(shard: WatchedShard, watches: RestWatch[], now: number, error: unknown) {
+    const { gameId, actor, attempts } = watches[0]!;
+    const exhausted = attempts + 1 >= MAX_ATTEMPTS;
+    console.error(
+      exhausted ? "shard_notifier_watch_dropped" : "shard_notifier_watch_retry",
+      shard.url,
+      `game ${gameId}`,
+      `actor ${actor}`,
+      `armies ${watches.map(({ armyId }) => armyId).join(",")}`,
+      `attempt ${attempts + 1}`,
+      error,
+    );
+    await this.ctx.storage.transaction(async (txn) => {
+      for (const watch of watches) {
+        if (exhausted) await txn.delete(restWatchKey(watch));
+        else await txn.put(restWatchKey(watch), { ...watch, attempts: watch.attempts + 1 });
+      }
+    });
   }
 
   private async deliverDue(env: IdentityEnv): Promise<void> {
@@ -161,7 +231,17 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
       ([, entry]) => entry.dueAt <= now,
     );
     for (const [key, entry] of due) {
-      const next = await deliver(env, entry, now);
+      const next = await deliver(env, entry, now).catch((error: unknown) => {
+        const retry = retryLater(entry, now);
+        console.error(
+          retry ? "shard_notifier_delivery_retry" : "shard_notifier_delivery_dropped",
+          entry.envelope.notification.id,
+          `device ${entry.subscriptionId}`,
+          `attempt ${entry.attempts + 1}`,
+          error,
+        );
+        return retry;
+      });
       if (next) await this.ctx.storage.put(key, next);
       else await this.ctx.storage.delete(key);
     }
@@ -229,8 +309,7 @@ const deliver = (env: IdentityEnv, entry: OutboxEntry, now: number) =>
       if (!device || !wantsGameAlerts(device, now) || (levels.get(entry.owner) ?? "off") === "off") return null;
       const outcome = yield* Effect.promise(() => sendPush(vapidKeysOf(env), device, entry.envelope));
       if (outcome === "expired") yield* store.expire(entry.owner, entry.subscriptionId);
-      if (outcome !== "retry" || entry.attempts + 1 >= MAX_ATTEMPTS) return null;
-      return { ...entry, attempts: entry.attempts + 1, dueAt: now + 2 ** entry.attempts * 1_000 };
+      return outcome === "retry" ? retryLater(entry, now) : null;
     }).pipe(
       Effect.provide(NotificationPreferenceStore.layer(env.DB)),
       Effect.provide(PushSubscriptionStore.layer(env.DB)),
@@ -247,6 +326,27 @@ const historyStoryIdentity = (scope: StoryEventScope, item: HeraldHistoryEvent) 
     : `${storyEventScopeKey(scope)}:0x${BigInt(item.transaction_hash).toString(16)}:${item.model}:${item.event_index}`;
 
 const outboxKey = (entry: OutboxEntry) => `outbox:${entry.envelope.notification.id}:${entry.subscriptionId}`;
+
+/** A failed attempt waits 1 s, 2 s, 4 s, 8 s; after MAX_ATTEMPTS the entry is dropped (null). */
+const retryLater = (entry: OutboxEntry, now: number): OutboxEntry | null =>
+  entry.attempts + 1 >= MAX_ATTEMPTS
+    ? null
+    : { ...entry, attempts: entry.attempts + 1, dueAt: now + backoffMs(entry.attempts) };
+
+const backoffMs = (attempts: number) => 2 ** attempts * 1_000;
+
+/** A watch wakes at its army's full time; after each failed read it wakes later, by the delivery backoff, from then. */
+const wakeAt = (watch: RestWatch) => watch.fullAt + (watch.attempts === 0 ? 0 : backoffMs(watch.attempts - 1));
+
+/** Runs one stage of the alarm; a failure is logged with its shard and stage, and returns undefined. */
+const runStage = async <T>(shard: WatchedShard, stage: string, run: () => Promise<T>): Promise<T | undefined> => {
+  try {
+    return await run();
+  } catch (error) {
+    console.error("shard_notifier_stage_failed", shard.url, stage, error);
+    return undefined;
+  }
+};
 
 /** An alert for each of the owner's opted-in devices that consented before the moment it reports. */
 const alertsForDevices = (
@@ -269,7 +369,7 @@ const alertsForDevices = (
 const watchRestingArmies = (env: IdentityEnv, shard: Required<WatchedShard>, page: HeraldStoryHistoryPage) =>
   Effect.runPromise(
     Effect.gen(function* () {
-      const acted = actorsWhoActed(page);
+      const { running: acted } = yield* Effect.promise(() => partitionByRunningGame(shard.url, actorsWhoActed(page)));
       const realmsIds = yield* Effect.promise(() =>
         realmsIdsOfAccounts(
           env.DB,
@@ -291,12 +391,29 @@ const watchRestingArmies = (env: IdentityEnv, shard: Required<WatchedShard>, pag
         const owner = realmsIds.get(actor);
         return owner && wanted.has(owner) ? [{ gameId, actor, owner }] : [];
       });
-      return yield* Effect.forEach(resting, (actor) =>
-        Effect.promise(async () => ({
-          actor,
-          watches: restWatchesOf(actor, await readActorArmies(shard.url, actor.gameId, actor.actor, now)),
-        })),
+      // A player whose armies cannot be read keeps the watches they had; the rest of the page goes on.
+      const watched = yield* Effect.forEach(resting, (actor) =>
+        Effect.promise(async () => {
+          try {
+            return [
+              {
+                actor,
+                watches: restWatchesOf(actor, await readActorArmies(shard.url, actor.gameId, actor.actor, now)),
+              },
+            ];
+          } catch (error) {
+            console.error(
+              "shard_notifier_armies_unread",
+              shard.url,
+              `game ${actor.gameId}`,
+              `actor ${actor.actor}`,
+              error,
+            );
+            return [];
+          }
+        }),
       );
+      return watched.flat();
     }).pipe(
       Effect.provide(NotificationPreferenceStore.layer(env.DB)),
       Effect.provide(PushSubscriptionStore.layer(env.DB)),
