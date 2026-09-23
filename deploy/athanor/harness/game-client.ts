@@ -43,7 +43,6 @@ export interface HarnessGameClient {
 export async function connectHarnessGameClient(options: ConnectHarnessGameClientOptions): Promise<HarnessGameClient> {
   const presetId = await waitForHeraldToListGame(options.shard, options.gameId);
   const heraldConfirmations = createHeraldConfirmations();
-  const clock = createLoggingObserver(options.gameId, heraldConfirmations);
   const client = await createGameClient({
     actor: options.actor,
     shard: options.shard,
@@ -56,15 +55,10 @@ export async function connectHarnessGameClient(options: ConnectHarnessGameClient
       submitIntent: createNativeTicketSubmission(options.shard.admissionUrl),
     },
     scheduler: createMicrotaskGameSyncScheduler(),
-    observer: clock.observer,
+    observer: createLoggingObserver(options.gameId, heraldConfirmations),
   });
-  try {
-    await clock.ready();
-    return { client, heraldConfirmations };
-  } catch (error) {
-    client.dispose();
-    throw error;
-  }
+  // The client resolves only once it has a confirmed head, so the clock below is bound before anything reads it.
+  return { client, heraldConfirmations };
 }
 
 function createHeraldConfirmations() {
@@ -104,7 +98,6 @@ async function waitForHeraldToListGame(world: Shard, gameId: number): Promise<nu
 
 const createLoggingObserver = (gameId: number, confirmations: ReturnType<typeof createHeraldConfirmations>) => {
   let confirmedTimestamp: number | null = null;
-  let onConfirmed: (() => void) | undefined;
   setChainProvenTimestampSource(() => confirmedTimestamp);
   setBlockTimestampSource(() => {
     if (confirmedTimestamp === null) throw new Error("Herald has not supplied a confirmed timestamp");
@@ -112,10 +105,7 @@ const createLoggingObserver = (gameId: number, confirmations: ReturnType<typeof 
   });
   const observer: GameClientObserver = {
     onHead: (head) => {
-      if (!head.preconfirmed) {
-        confirmedTimestamp = head.timestamp;
-        onConfirmed?.();
-      }
+      if (!head.preconfirmed) confirmedTimestamp = head.timestamp;
     },
     onTransaction: (transaction) => confirmations.record(transaction),
     onSubscriptionActive: () => console.log(`Game client subscribed to game ${gameId}`),
@@ -123,19 +113,5 @@ const createLoggingObserver = (gameId: number, confirmations: ReturnType<typeof 
       console.log(`Game client snapshot ${phase} completed in ${Math.round(durationMs)} ms`),
     onLiveApplyFailed: (error) => console.error(`Game client live apply failed: ${error.message}`),
   };
-  const ready = (): Promise<void> => {
-    if (confirmedTimestamp !== null) return Promise.resolve();
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        onConfirmed = undefined;
-        reject(new Error("Herald did not supply a confirmed timestamp within 10 seconds"));
-      }, 10_000);
-      onConfirmed = () => {
-        clearTimeout(timeout);
-        onConfirmed = undefined;
-        resolve();
-      };
-    });
-  };
-  return { observer, ready };
+  return observer;
 };

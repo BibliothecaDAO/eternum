@@ -90,6 +90,8 @@ export class GameSyncRuntime {
   private writer: GameSyncWriter | null = null;
   private status: GameSyncRuntimeStatus = "idle";
   private session: GameSyncSessionStart | null = null;
+  /** Settles on the session's first confirmed head: chain time is unknown before it, so nothing reads the clock. */
+  private confirmedHead: Deferred = createDeferred();
   private ingestQueue: FactIngestQueue | null = null;
   /** The running start's wait for its first snapshot; a newer session or dispose ends it. */
   private firstSnapshot: Deferred | null = null;
@@ -154,6 +156,8 @@ export class GameSyncRuntime {
   public async startSession(input: GameSyncSessionStart): Promise<void> {
     this.disposeWorldSpatialProjection();
     this.session = input;
+    this.confirmedHead.reject(new Error("Game sync session was replaced"));
+    this.confirmedHead = createDeferred();
     this.recentEventIdentities.clear();
     this.rejectTransactionWaiters("Game sync session was replaced");
     this.recentTransactions.clear();
@@ -174,6 +178,11 @@ export class GameSyncRuntime {
   public cancelGlobalWriter(): void {
     if (this.isStarting()) return;
     this.cancelWriterImmediately();
+  }
+
+  /** Resolves once the session has a confirmed head, the moment chain time becomes known. */
+  public waitForConfirmedHead(): Promise<void> {
+    return this.confirmedHead.promise;
   }
 
   public installWorldSpatialProjection(projection: WorldSpatialProjection): void {
@@ -234,6 +243,7 @@ export class GameSyncRuntime {
     this.ingestQueue = null;
     this.session = null;
     this.rejectTransactionWaiters("Game sync runtime stopped");
+    this.confirmedHead.reject(new Error("Game sync runtime stopped"));
     this.recentTransactions.clear();
     this.localTransactions.clear();
     this.status = "stopped";
@@ -348,7 +358,9 @@ export class GameSyncRuntime {
         this.enqueueEventOnce(event, confirmation);
       },
       onHead: (head) => {
-        if (current()) session.onHead?.(head);
+        if (!current()) return;
+        session.onHead?.(head);
+        if (!head.preconfirmed) this.confirmedHead.resolve();
       },
       onTransaction: (transaction) => {
         if (!current()) return;

@@ -21,7 +21,6 @@ import { TopHeader } from "../features/world/containers/top-header/top-header";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { GameCycleEffects } from "../shared/components/game-cycle-effects";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
-import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { ActionRunners } from "../action-runners";
 import { RelicCrateOpenings } from "../features/military/chest/relic-crate-openings";
 import { ChestOpenings } from "../features/military/chest/chest-openings";
@@ -83,7 +82,6 @@ const BackgroundSystems = () => (
     <RelicCrateOpenings />
     <BlockTimestampPoller />
     <GameCycleEffects />
-    <ChainTimePoller />
     <BlitzSetHyperstructureShareholdersTo100 />
     <AutomationSystems />
     <ChestOpenings />

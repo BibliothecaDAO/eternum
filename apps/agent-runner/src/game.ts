@@ -1,6 +1,7 @@
 import {
   createGameClient,
   createNativeTicketSubmission,
+  setBlockTimestampSource,
   setChainProvenTimestampSource,
   type GameClient,
 } from "@bibliothecadao/eternum";
@@ -85,8 +86,9 @@ const describeSelector = (selector: RunnerGameSelector): string =>
   "id" in selector ? `id ${selector.id}` : `named "${selector.name}"`;
 
 /**
- * One JSON line per sync milestone, and two side effects the runner needs from the stream: confirmed heads anchor
- * the chain-proven clock production math reads, and story events feed the bounded ring the `events` focus shows.
+ * One JSON line per sync milestone, and the side effects the runner needs from the stream: heads are its chain clock,
+ * confirmed heads anchor the chain-proven clock production math reads, and story events feed the bounded ring the
+ * `events` focus shows. Before the first head there is no chain time, and a reader fails by name.
  */
 const createRunnerObserver = (
   gameId: number,
@@ -94,6 +96,11 @@ const createRunnerObserver = (
   syncFailures: Set<(error: Error) => void>,
 ): GameClientObserver => {
   let confirmedHeadTimestamp: number | null = null;
+  let clockTimestamp: number | null = null;
+  setBlockTimestampSource(() => {
+    if (clockTimestamp === null) throw new Error("Chain time is not known yet: no head has arrived");
+    return clockTimestamp;
+  });
   setChainProvenTimestampSource(() => confirmedHeadTimestamp);
   return {
     onSubscriptionActive: () => logSync("subscribed", { gameId }),
@@ -103,6 +110,7 @@ const createRunnerObserver = (
       syncFailures.forEach((listener) => listener(error));
     },
     onHead: (head) => {
+      clockTimestamp = Math.max(clockTimestamp ?? 0, head.timestamp);
       if (!head.preconfirmed) confirmedHeadTimestamp = head.timestamp;
     },
     onStoryEvent: (event) => events.push(event),
