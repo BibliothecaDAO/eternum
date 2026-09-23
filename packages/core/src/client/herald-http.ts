@@ -8,7 +8,7 @@ import type {
 
 import type { Shard } from "./shard";
 
-const buildHeraldUrl = (shard: Shard, pathname: string): string => {
+const buildHeraldUrl = (shard: Pick<Shard, "url">, pathname: string): string => {
   const url = new URL(shard.url);
   const prefix = url.pathname.replace(/\/+$/, "");
   url.pathname = `${prefix}${pathname}`;
@@ -31,10 +31,12 @@ export const fetchHeraldGameDirectory = async (shard: Shard, playerAddress?: str
   return fetchHeraldJson(url.toString(), `Herald directory for ${shard.url}`);
 };
 
+/** One game's current facts for these models; with an actor, only what that player's scope holds. */
 export const fetchHeraldGameSnapshot = async (
-  shard: Shard,
+  shard: Pick<Shard, "url">,
   gameId: number,
   models: readonly string[],
+  actor?: string,
 ): Promise<HeraldGameSnapshot> => {
   if (!Number.isSafeInteger(gameId) || gameId <= 0) {
     throw new Error(`Herald snapshot requires a positive game id; received ${gameId}`);
@@ -43,6 +45,7 @@ export const fetchHeraldGameSnapshot = async (
 
   const url = new URL(buildHeraldUrl(shard, `/games/${gameId}/snapshot`));
   url.searchParams.set("models", [...new Set(models)].join(","));
+  if (actor) url.searchParams.set("actor", actor);
   return fetchHeraldJson(url.toString(), `Herald snapshot for ${shard.url} game ${gameId}`);
 };
 

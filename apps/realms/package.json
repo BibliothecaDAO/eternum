@@ -17,7 +17,8 @@
     "starknet": "catalog:web",
     "zod": "catalog:web",
     "@bibliothecadao/notifications": "workspace:*",
-    "@bibliothecadao/eternum": "workspace:*"
+    "@bibliothecadao/eternum": "workspace:*",
+    "@bibliothecadao/types": "workspace:*"
   },
   "devDependencies": {
     "@realms-world/eslint-config": "workspace:*",

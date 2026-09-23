@@ -780,6 +780,9 @@ importers:
       '@bibliothecadao/notifications':
         specifier: workspace:*
         version: link:../../packages/notifications
+      '@bibliothecadao/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@block65/webcrypto-web-push':
         specifier: 2.0.0
         version: 2.0.0

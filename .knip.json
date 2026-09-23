@@ -51,7 +51,11 @@
       ],
       "ignore": [
         "dist/**"
-      ]
+      ],
+      "paths": {
+        "@bibliothecadao/eternum/expeditions": ["../../packages/core/src/utils/expeditions.ts"],
+        "@bibliothecadao/eternum/troop-stamina": ["../../packages/core/src/managers/troop-stamina.ts"]
+      }
     },
     "apps/indexer": {
       "drizzle": false,

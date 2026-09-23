@@ -14,6 +14,14 @@
       "types": "./dist/managers/game-entity-keys.d.ts",
       "import": "./dist/managers/game-entity-keys.js"
     },
+    "./troop-stamina": {
+      "types": "./dist/managers/troop-stamina.d.ts",
+      "import": "./dist/managers/troop-stamina.js"
+    },
+    "./expeditions": {
+      "types": "./dist/utils/expeditions.d.ts",
+      "import": "./dist/utils/expeditions.js"
+    },
     "./game-client": {
       "types": "./dist/client/index.d.ts",
       "import": "./dist/client/index.js"

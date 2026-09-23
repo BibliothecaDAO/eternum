@@ -21,6 +21,19 @@ export const readExpeditionRules = (
 export const expeditionEpoch = (rules: ExpeditionRules, nowSeconds: number): number =>
   Math.floor(nowSeconds / rules.epochSeconds) - Math.floor(rules.startMainAt / rules.epochSeconds);
 
+/**
+ * An army belongs to today's expedition only while it stands in today's region, as the contract's `is_current` decides;
+ * an army from an earlier day may remain a fact, but every command refuses it.
+ */
+export const isCurrentExpeditionArmy = (
+  rules: ExpeditionRules,
+  coord: { x: number; y: number; alt: boolean },
+  nowSeconds: number,
+): boolean =>
+  !coord.alt &&
+  nowSeconds >= rules.startMainAt &&
+  Math.floor(Math.floor(coord.y / rules.spacing) / 4) === expeditionEpoch(rules, nowSeconds);
+
 /** A Frontier realm keeps no map coordinate of its own: the contract parks it at a sentinel and raises it daily. */
 export const isExpeditionRealm = (structure: NativeRows["Structure"]): boolean =>
   !structure.base.alt && structure.base.coord_y === 0xffffffff;

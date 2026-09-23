@@ -11,14 +11,25 @@ import {
   type StoryEventScope,
 } from "@bibliothecadao/eternum/game-sync";
 import {
+  buildArmyRestedNotification,
   buildStoryNotification,
   gamePath,
+  includesArmyRestedNotification,
   includesStoryNotification,
   readHistoryStory,
   storyRecipients,
+  type LocalNotificationPayload,
   type PushEnvelope,
 } from "@bibliothecadao/notifications";
 
+import {
+  actorsWhoActed,
+  readActorArmies,
+  restWatchesOf,
+  restWatchKey,
+  type RestingActor,
+  type RestWatch,
+} from "./army-rest";
 import { decodeIdentityEnv, vapidKeysOf, type IdentityEnv } from "./env";
 import { NotificationPreferenceStore } from "./notification-preference-store";
 import { PushSubscriptionStore, type PushSubscriptionRow } from "./push-subscription-store";
@@ -72,8 +83,10 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     const env = decodeIdentityEnv(this.env);
     let morePages = false;
     try {
+      const watched = await this.withWorldAddress(shard);
+      await this.wakeRestedArmies(env, watched);
       await this.deliverDue(env);
-      morePages = await this.readStories(env, await this.withWorldAddress(shard));
+      morePages = await this.readStories(env, watched);
     } catch (error) {
       console.error("shard_notifier_failed", shard.url, error);
     }
@@ -101,13 +114,45 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     );
     if (BigInt(page.chain) !== BigInt(shard.chainId)) throw new Error(`${shard.url} served chain ${page.chain}`);
     const entries = cursor ? await planAlerts(env, shard, page) : [];
+    const resting = cursor ? await watchRestingArmies(env, shard, page) : [];
     await this.ctx.storage.transaction(async (txn) => {
-      for (const entry of entries) {
-        await txn.put(`outbox:${entry.envelope.notification.id}:${entry.subscriptionId}`, entry);
+      for (const entry of entries) await txn.put(outboxKey(entry), entry);
+      // A player's action replaces every wake time of theirs: a moved army gets a new one, a gone army none.
+      for (const { actor, watches } of resting) {
+        await txn.delete([...(await txn.list({ prefix: restWatchKey(actor) })).keys()]);
+        for (const watch of watches) await txn.put(restWatchKey(watch), watch);
       }
       await txn.put("cursor", encodeStoryHistoryCursor(page.next_cursor));
     });
     return cursor !== undefined && page.items.length === STORY_PAGE;
+  }
+
+  /**
+   * Each army whose wake time has come is read again: still there and full, it gets one alert; still recovering, a new
+   * wake time; gone, nothing.
+   */
+  private async wakeRestedArmies(env: IdentityEnv, shard: Required<WatchedShard>): Promise<void> {
+    const now = Date.now();
+    const due = [...(await this.ctx.storage.list<RestWatch>({ prefix: "rest:" })).values()].filter(
+      (watch) => watch.fullAt <= now,
+    );
+    const byActor = new Map<string, RestWatch[]>();
+    for (const watch of due) byActor.set(restWatchKey(watch), [...(byActor.get(restWatchKey(watch)) ?? []), watch]);
+    for (const watches of byActor.values()) {
+      const armies = await readActorArmies(shard.url, watches[0]!.gameId, watches[0]!.actor, now);
+      const alerts: OutboxEntry[] = [];
+      const renewed: RestWatch[] = [];
+      for (const watch of watches) {
+        const army = armies.find((candidate) => candidate.armyId === watch.armyId);
+        if (army?.full) alerts.push(...(await restedAlerts(env, shard, watch, now)));
+        else if (army?.fullAt) renewed.push({ ...watch, fullAt: army.fullAt });
+      }
+      await this.ctx.storage.transaction(async (txn) => {
+        for (const watch of watches) await txn.delete(restWatchKey(watch));
+        for (const watch of renewed) await txn.put(restWatchKey(watch), watch);
+        for (const entry of alerts) await txn.put(outboxKey(entry), entry);
+      });
+    }
   }
 
   private async deliverDue(env: IdentityEnv): Promise<void> {
@@ -161,20 +206,7 @@ const planAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, page: Heral
             target: gamePath({ chainId: shard.chainId, gameId }),
             now,
           });
-          if (!notification) return [];
-          return devices
-            .filter(
-              (device) => device.owner === owner && (device.gameAlertsEnabledAt ?? Infinity) <= notification.createdAt,
-            )
-            .map(
-              (device): OutboxEntry => ({
-                owner,
-                subscriptionId: device.id,
-                envelope: { version: 1, kind: "game", subscriptionId: device.id, notification },
-                attempts: 0,
-                dueAt: now,
-              }),
-            );
+          return notification ? alertsForDevices(owner, devices, notification, now) : [];
         }),
       );
     }).pipe(
@@ -213,6 +245,87 @@ const historyStoryIdentity = (scope: StoryEventScope, item: HeraldHistoryEvent) 
   item.model === "StoryEvent"
     ? storyEventIdentity(scope, item.value)
     : `${storyEventScopeKey(scope)}:0x${BigInt(item.transaction_hash).toString(16)}:${item.model}:${item.event_index}`;
+
+const outboxKey = (entry: OutboxEntry) => `outbox:${entry.envelope.notification.id}:${entry.subscriptionId}`;
+
+/** An alert for each of the owner's opted-in devices that consented before the moment it reports. */
+const alertsForDevices = (
+  owner: string,
+  devices: readonly PushSubscriptionRow[],
+  notification: LocalNotificationPayload,
+  now: number,
+): OutboxEntry[] =>
+  devices
+    .filter((device) => device.owner === owner && (device.gameAlertsEnabledAt ?? Infinity) <= notification.createdAt)
+    .map((device) => ({
+      owner,
+      subscriptionId: device.id,
+      envelope: { version: 1, kind: "game", subscriptionId: device.id, notification },
+      attempts: 0,
+      dueAt: now,
+    }));
+
+/** Players who acted in this page and want rested-army alerts, each with fresh wake times for their armies. */
+const watchRestingArmies = (env: IdentityEnv, shard: Required<WatchedShard>, page: HeraldStoryHistoryPage) =>
+  Effect.runPromise(
+    Effect.gen(function* () {
+      const acted = actorsWhoActed(page);
+      const realmsIds = yield* Effect.promise(() =>
+        realmsIdsOfAccounts(
+          env.DB,
+          acted.map(({ actor }) => actor),
+        ),
+      );
+      const owners = [...new Set(realmsIds.values())];
+      const levels = yield* (yield* NotificationPreferenceStore).levels(owners);
+      const devices = yield* (yield* PushSubscriptionStore).gameAlertDevices(owners);
+      const wanted = new Set(
+        owners.filter(
+          (owner) =>
+            includesArmyRestedNotification(levels.get(owner) ?? "off") &&
+            devices.some((device) => device.owner === owner),
+        ),
+      );
+      const now = Date.now();
+      const resting = acted.flatMap(({ gameId, actor }): RestingActor[] => {
+        const owner = realmsIds.get(actor);
+        return owner && wanted.has(owner) ? [{ gameId, actor, owner }] : [];
+      });
+      return yield* Effect.forEach(resting, (actor) =>
+        Effect.promise(async () => ({
+          actor,
+          watches: restWatchesOf(actor, await readActorArmies(shard.url, actor.gameId, actor.actor, now)),
+        })),
+      );
+    }).pipe(
+      Effect.provide(NotificationPreferenceStore.layer(env.DB)),
+      Effect.provide(PushSubscriptionStore.layer(env.DB)),
+    ),
+  );
+
+/** The rested-army alert for one watch, if the owner still wants it, to each of their opted-in devices. */
+const restedAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, watch: RestWatch, now: number) =>
+  Effect.runPromise(
+    Effect.gen(function* () {
+      const levels = yield* (yield* NotificationPreferenceStore).levels([watch.owner]);
+      if (!includesArmyRestedNotification(levels.get(watch.owner) ?? "off")) return [];
+      const devices = yield* (yield* PushSubscriptionStore).gameAlertDevices([watch.owner]);
+      const games = yield* Effect.promise(() => gameNames(shard.url));
+      const notification = buildArmyRestedNotification({
+        chainId: shard.chainId,
+        gameId: watch.gameId,
+        armyId: watch.armyId,
+        fullAt: watch.fullAt,
+        owner: watch.owner,
+        gameName: games.get(watch.gameId) ?? `Game ${watch.gameId}`,
+        now,
+      });
+      return notification ? alertsForDevices(watch.owner, devices, notification, now) : [];
+    }).pipe(
+      Effect.provide(NotificationPreferenceStore.layer(env.DB)),
+      Effect.provide(PushSubscriptionStore.layer(env.DB)),
+    ),
+  );
 
 const wantsGameAlerts = (device: PushSubscriptionRow, now: number) =>
   device.gameAlertsEnabledAt !== null && (device.gameForegroundUntil === null || device.gameForegroundUntil <= now);

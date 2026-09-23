@@ -13,6 +13,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
+import { troopStaminaLimits } from "./troop-stamina";
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
 import { getBlockTimestamp } from "../utils/timestamp";
 import { Biome, type BiomeClimateConfig } from "../utils/biome";
@@ -498,15 +499,10 @@ export class ClientConfigManager {
     };
   }
   getTroopStaminaConfig(troopType: TroopType, troopTier: TroopTier) {
-    const config = this.rules().troop_stamina_config;
-    const maximum = {
-      [TroopType.Knight]: config.stamina_knight_max,
-      [TroopType.Crossbowman]: config.stamina_crossbowman_max,
-      [TroopType.Paladin]: config.stamina_paladin_max,
-    }[troopType];
-    const tier = [TroopTier.T1, TroopTier.T2, TroopTier.T3].indexOf(troopTier);
-    if (maximum === undefined || tier < 0) throw new Error("Unknown troop category or tier");
-    return { staminaInitial: config.stamina_initial, staminaMax: maximum + tier * 20 };
+    return troopStaminaLimits(this.getTroopStaminaRules(), troopType, troopTier);
+  }
+  getTroopStaminaRules() {
+    return this.rules().troop_stamina_config;
   }
   getResourcePrecision() {
     return RESOURCE_PRECISION;
