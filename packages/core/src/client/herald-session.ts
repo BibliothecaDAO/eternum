@@ -44,6 +44,8 @@ export interface GameClientObserver {
   onSnapshotProgress?: (progress: GameSyncSnapshotProgress) => void;
   onSnapshotPhaseStarted?: (phase: GameSyncSnapshotPhase) => void;
   onSnapshotPhaseCompleted?: (phase: GameSyncSnapshotPhase, durationMs: number) => void;
+  /** The first snapshot is in the store: its size, its transfer time and the time from its first frame to coherence. */
+  onSnapshotCoherent?: (transfer: { bytes: number; transferMs: number; coherentMs: number }) => void;
 }
 
 export interface CreateHeraldGameSyncSessionInput {
@@ -65,17 +67,26 @@ const createSnapshotProgressObserver = (
   observer: GameClientObserver,
 ): ((progress: GameSyncSnapshotProgress) => void) => {
   const startedAt = new Map<GameSyncSnapshotPhase, number>();
-  const completed = new Set<GameSyncSnapshotPhase>();
+  const durations = new Map<GameSyncSnapshotPhase, number>();
+  let bytes = 0;
 
   return (progress) => {
     if (!startedAt.has(progress.phase)) {
       startedAt.set(progress.phase, performance.now());
       observer.onSnapshotPhaseStarted?.(progress.phase);
     }
+    bytes = progress.bytesReceived ?? bytes;
     const phaseDone = !progress.streaming && progress.total > 0 && progress.completed >= progress.total;
-    if (phaseDone && !completed.has(progress.phase)) {
-      completed.add(progress.phase);
-      observer.onSnapshotPhaseCompleted?.(progress.phase, performance.now() - startedAt.get(progress.phase)!);
+    if (phaseDone && !durations.has(progress.phase)) {
+      const now = performance.now();
+      durations.set(progress.phase, now - startedAt.get(progress.phase)!);
+      observer.onSnapshotPhaseCompleted?.(progress.phase, durations.get(progress.phase)!);
+      if (progress.phase === "applying")
+        observer.onSnapshotCoherent?.({
+          bytes,
+          transferMs: durations.get("receiving") ?? 0,
+          coherentMs: now - (startedAt.get("receiving") ?? startedAt.get("applying")!),
+        });
     }
     observer.onSnapshotProgress?.(progress);
   };

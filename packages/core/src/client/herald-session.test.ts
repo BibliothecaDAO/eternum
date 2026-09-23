@@ -41,13 +41,18 @@ describe("buildHeraldGameStreamUrl", () => {
 });
 
 describe("createHeraldGameSyncSession", () => {
-  it("reports each snapshot phase once, with its duration, and forwards real progress", () => {
+  it("reports each snapshot phase once, with its duration, the coherent store, and forwards real progress", () => {
     const onSnapshotProgress = vi.fn();
-    const observer = { onSnapshotPhaseStarted: vi.fn(), onSnapshotPhaseCompleted: vi.fn(), onSnapshotProgress };
+    const observer = {
+      onSnapshotPhaseStarted: vi.fn(),
+      onSnapshotPhaseCompleted: vi.fn(),
+      onSnapshotCoherent: vi.fn(),
+      onSnapshotProgress,
+    };
     const session = createSession({ observer });
 
-    session.onSnapshotProgress?.({ completed: 1, phase: "receiving", streaming: true, total: 2 });
-    session.onSnapshotProgress?.({ completed: 2, phase: "receiving", streaming: false, total: 2 });
+    session.onSnapshotProgress?.({ bytesReceived: 400, completed: 1, phase: "receiving", streaming: true, total: 2 });
+    session.onSnapshotProgress?.({ bytesReceived: 900, completed: 2, phase: "receiving", streaming: false, total: 2 });
     session.onSnapshotProgress?.({ completed: 2, phase: "receiving", streaming: false, total: 2 });
     session.onSnapshotProgress?.({ completed: 3, phase: "applying", streaming: false, total: 3 });
 
@@ -57,6 +62,9 @@ describe("createHeraldGameSyncSession", () => {
     observer.onSnapshotPhaseCompleted.mock.calls.forEach(([, durationMs]) => {
       expect(durationMs).toBeGreaterThanOrEqual(0);
     });
+    expect(observer.onSnapshotCoherent.mock.calls).toEqual([
+      [{ bytes: 900, transferMs: expect.any(Number), coherentMs: expect.any(Number) }],
+    ]);
   });
 
   it("resets story events when the session is created and forwards stream facts to the observer", () => {

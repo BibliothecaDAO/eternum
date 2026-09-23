@@ -45,6 +45,15 @@ export interface GameStreamSession {
   overlay?: SnapshotOverlayDiff[];
   snapshot?: GameSnapshot;
   socket: StreamSocket;
+  traffic: SubscriberTraffic;
+}
+
+/** What one subscriber was sent, for the capacity campaign's per-subscriber bandwidth. */
+interface SubscriberTraffic {
+  attachedAt: number;
+  bytes: number;
+  frames: number;
+  snapshots: number;
 }
 
 interface AttachInput {
@@ -63,7 +72,10 @@ export class GameStreamHub {
   public readonly epoch: string;
   private readonly games = new Map<string, GameStreamState>();
 
-  constructor(epoch: string = randomUUID()) {
+  constructor(
+    epoch: string = randomUUID(),
+    private readonly log: Pick<Console, "info"> = console,
+  ) {
     this.epoch = epoch;
   }
 
@@ -75,6 +87,7 @@ export class GameStreamHub {
       boundary: state.seq,
       gameId: input.gameId,
       socket: input.socket,
+      traffic: { attachedAt: Date.now(), bytes: 0, frames: 0, snapshots: 0 },
     };
     state.subscribers.add(session);
     try {
@@ -84,7 +97,7 @@ export class GameStreamHub {
       state.subscribers.delete(session);
       throw error;
     }
-    this.send(session.socket, {
+    this.send(session, {
       confirmed_block: input.confirmedBlock,
       epoch: this.streamEpoch(input.gameId, input.actor),
       preconfirmed_block: input.preconfirmedBlock,
@@ -104,11 +117,24 @@ export class GameStreamHub {
 
     session.active = true;
     for (const entry of state.ring) {
-      if (entry.seq > resumeFrom) session.socket.send(entry.serialized);
+      if (entry.seq > resumeFrom) this.transmit(session, entry.serialized);
     }
   }
 
   public detach(session: GameStreamSession): void {
+    this.leave(session);
+    const { attachedAt, ...traffic } = session.traffic;
+    this.log.info(
+      JSON.stringify({
+        ...traffic,
+        connectedMs: Date.now() - attachedAt,
+        event: "herald_subscriber_traffic",
+        gameId: session.gameId,
+      }),
+    );
+  }
+
+  private leave(session: GameStreamSession): void {
     this.games.get(this.streamKey(session.gameId, session.actor))?.subscribers.delete(session);
   }
 
@@ -117,11 +143,12 @@ export class GameStreamHub {
     const state = this.game(input);
     const snapshot = input.snapshot();
     const overlay = input.overlay();
-    this.detach(session);
+    this.leave(session);
     session.actor = input.actor;
     session.boundary = state.seq;
     state.subscribers.add(session);
-    this.send(session.socket, {
+    const sent = this.measure(session);
+    this.send(session, {
       type: "scope",
       epoch: this.streamEpoch(input.gameId, input.actor),
       seq: state.seq,
@@ -132,13 +159,14 @@ export class GameStreamHub {
       ),
     });
     for (const diff of overlay)
-      this.send(session.socket, {
+      this.send(session, {
         ...diff,
         type: "diff",
         preconfirmed: true,
         epoch: this.streamEpoch(input.gameId, input.actor),
         seq: state.seq,
       });
+    this.logSnapshotSent(session, "scope", sent);
   }
 
   public publishDiff(
@@ -175,7 +203,7 @@ export class GameStreamHub {
         const serialized = JSON.stringify(message);
         state.ring.push({ recordedAt: Date.now(), seq: message.seq, serialized });
         this.pruneRing(state);
-        for (const subscriber of state.subscribers) if (subscriber.active) subscriber.socket.send(serialized);
+        for (const subscriber of state.subscribers) if (subscriber.active) this.transmit(subscriber, serialized);
       }
     }
   }
@@ -219,8 +247,9 @@ export class GameStreamHub {
 
   private sendSnapshot(session: GameStreamSession): void {
     if (!session.snapshot) throw new Error("Stream session has no snapshot boundary");
+    const sent = this.measure(session);
     for (const model of session.snapshot.models) {
-      this.send(session.socket, {
+      this.send(session, {
         epoch: this.streamEpoch(session.gameId, session.actor),
         model: model.model,
         rows: model.rows,
@@ -228,13 +257,13 @@ export class GameStreamHub {
         type: "snapshot",
       });
     }
-    this.send(session.socket, {
+    this.send(session, {
       epoch: this.streamEpoch(session.gameId, session.actor),
       seq: session.boundary,
       type: "snapshot_end",
     });
     for (const overlay of session.overlay ?? []) {
-      this.send(session.socket, {
+      this.send(session, {
         ...overlay,
         epoch: this.streamEpoch(session.gameId, session.actor),
         preconfirmed: true,
@@ -242,6 +271,30 @@ export class GameStreamHub {
         type: "diff",
       });
     }
+    this.logSnapshotSent(session, "snapshot", sent);
+  }
+
+  /** The traffic counters as they stand, so a snapshot's own frames and bytes can be told apart afterwards. */
+  private measure(session: GameStreamSession) {
+    return { bytes: session.traffic.bytes, frames: session.traffic.frames, startedAt: performance.now() };
+  }
+
+  private logSnapshotSent(
+    session: GameStreamSession,
+    kind: "snapshot" | "scope",
+    before: ReturnType<GameStreamHub["measure"]>,
+  ): void {
+    session.traffic.snapshots += 1;
+    this.log.info(
+      JSON.stringify({
+        bytes: session.traffic.bytes - before.bytes,
+        durationMs: Math.round(performance.now() - before.startedAt),
+        event: "herald_snapshot_sent",
+        frames: session.traffic.frames - before.frames,
+        gameId: session.gameId,
+        kind,
+      }),
+    );
   }
 
   private pruneRing(state: GameStreamState): void {
@@ -249,7 +302,14 @@ export class GameStreamHub {
     while (state.ring.length > RING_MIN_MESSAGES && state.ring[0]!.recordedAt < cutoff) state.ring.shift();
   }
 
-  private send(socket: StreamSocket, message: HeraldStreamMessage): void {
-    socket.send(JSON.stringify(message));
+  private send(session: GameStreamSession, message: HeraldStreamMessage): void {
+    this.transmit(session, JSON.stringify(message));
+  }
+
+  /** Every frame a subscriber receives passes here, so its traffic counters cover the whole stream. */
+  private transmit(session: GameStreamSession, serialized: string): void {
+    session.traffic.frames += 1;
+    session.traffic.bytes += Buffer.byteLength(serialized);
+    session.socket.send(serialized);
   }
 }

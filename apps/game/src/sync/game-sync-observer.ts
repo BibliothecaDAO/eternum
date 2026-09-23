@@ -81,4 +81,8 @@ export const createGameSyncObserver = (input: GameSyncObserverInput): GameClient
     markGameEntryMilestone(`${milestone}-completed`);
     recordGameEntryDuration(milestone, durationMs);
   },
+  onSnapshotCoherent: (transfer) => {
+    recordGameEntryDuration("snapshot-coherent", transfer.coherentMs);
+    console.info(JSON.stringify({ event: "client_snapshot_coherent", ...transfer }));
+  },
 });

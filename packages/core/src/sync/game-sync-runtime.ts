@@ -4,6 +4,7 @@ import type {
   GameSyncEventConfirmation,
   GameSyncFact,
   GameSyncRuntimeMetrics,
+  GameSyncSnapshotChunkProgress,
   GameSyncSessionStart,
   GameSyncSubscriptionHandlers,
   GameSyncTransaction,
@@ -283,7 +284,7 @@ export class GameSyncRuntime {
         if (!current() || !snapshot) return;
         this.metrics.snapshotPageCount += 1;
         this.metrics.snapshotEntityCount += facts.length;
-        this.reportSnapshotReceived(session, progress.modelsReceived);
+        this.reportSnapshotReceived(session, progress);
         const keys = snapshot.retained.get(model) ?? new Set<string>();
         snapshot.retained.set(model, keys);
         facts.forEach((fact) => keys.add(fact.key));
@@ -355,8 +356,12 @@ export class GameSyncRuntime {
       .catch((error) => this.stopAfterLiveBatchFailure(generation, error));
   }
 
-  private reportSnapshotReceived(session: GameSyncSessionStart, modelsReceived: number): void {
+  private reportSnapshotReceived(
+    session: GameSyncSessionStart,
+    { bytesReceived, modelsReceived }: GameSyncSnapshotChunkProgress,
+  ): void {
     session.onSnapshotProgress?.({
+      bytesReceived,
       completed: Math.min(modelsReceived, session.snapshotModels.length),
       phase: "receiving",
       streaming: modelsReceived < session.snapshotModels.length,

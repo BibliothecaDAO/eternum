@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { GameStreamHub, type StreamSocket } from "./game-stream";
 import type { GameSnapshot } from "./types";
@@ -41,6 +41,33 @@ describe("GameStreamHub", () => {
       ["head", 1],
     ]);
     expect(socket.messages.every(({ epoch }) => epoch === "epoch-a:7:")).toBe(true);
+  });
+
+  it("counts every frame and byte a subscriber is sent, and each snapshot's own", () => {
+    const log = { info: vi.fn() };
+    const hub = new GameStreamHub("epoch-a", log);
+    const sent: string[] = [];
+    const session = hub.attach({
+      confirmedBlock: 12,
+      gameId: "7",
+      overlay: () => [],
+      preconfirmedBlock: 13,
+      snapshot: () => snapshot,
+      socket: { send: (data) => sent.push(data) },
+    });
+    hub.resume(session, { epoch: "", seq: 0, type: "resume" });
+    hub.publishHead("7", 13, 100);
+    hub.detach(session);
+
+    const bytes = (frames: string[]) => frames.reduce((total, frame) => total + Buffer.byteLength(frame), 0);
+    const [snapshotSent, traffic] = log.info.mock.calls.map(([line]) => JSON.parse(line as string));
+    expect(snapshotSent).toMatchObject({
+      event: "herald_snapshot_sent",
+      kind: "snapshot",
+      frames: 2,
+      bytes: bytes(sent.slice(1, 3)),
+    });
+    expect(traffic).toMatchObject({ event: "herald_subscriber_traffic", frames: 4, bytes: bytes(sent), snapshots: 1 });
   });
 
   it("resumes a killed socket by sequence and snapshots after an epoch change", () => {
