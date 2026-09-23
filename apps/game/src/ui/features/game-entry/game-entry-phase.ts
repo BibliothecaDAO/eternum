@@ -106,11 +106,11 @@ export const resolveGameEntryBlockingError = ({
   }
 
   if (isWorldAvailable === false) {
-    return new Error("The selected world is currently unavailable.");
+    return new Error("This game is not on its shard.");
   }
 
   if (!hasWorldMeta || worldMode === "unknown") {
-    return new Error("The selected world metadata could not be loaded.");
+    return new Error("The game's settings could not be loaded.");
   }
 
   return null;

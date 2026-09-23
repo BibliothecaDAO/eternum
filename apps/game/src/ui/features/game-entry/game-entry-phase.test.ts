@@ -39,7 +39,7 @@ describe("game entry phase resolution", () => {
     });
 
     expect(error).toBeInstanceOf(Error);
-    expect(error?.message).toContain("metadata");
+    expect(error?.message).toContain("settings");
   });
 
   it("keeps the modal in loading while bootstrap is incomplete", () => {
