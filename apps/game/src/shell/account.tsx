@@ -16,63 +16,11 @@ import { shortAddress } from "./format";
 import { AccountStatePrompt } from "./account-state";
 import { displayName, PORTRAITS, portraitUrl } from "./identity-chip";
 import { GhostButton, GoldButton, Loading, Panel, PanelTitle } from "./kit";
+import { NameClaim } from "./name-claim";
 
 const WalletLink = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletLink })),
 );
-
-const NAME_RULES = "3–20 characters · unique across the realms · shown everywhere";
-
-/** Claims or changes the display name; a new player starts from the name suggested at their first sign-in. */
-const NameClaim = ({
-  currentName,
-  suggestion = null,
-  onDone,
-}: {
-  currentName: string | null;
-  suggestion?: string | null;
-  onDone: () => void;
-}) => {
-  const [name, setName] = useState(currentName ?? suggestion ?? "");
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const claim = async () => {
-    setPending(true);
-    setError(null);
-    try {
-      await identityClient.updateUser({ name: name.trim() });
-      onDone();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The name was not saved.");
-    } finally {
-      setPending(false);
-    }
-  };
-  return (
-    <form
-      onSubmit={(event) => {
-        event.preventDefault();
-        void claim();
-      }}
-    >
-      <div className="flex flex-wrap items-center gap-2.5">
-        <input
-          type="text"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="Choose your name"
-          maxLength={20}
-          className="w-56 rounded-lg border border-gold/30 bg-black/40 px-3 py-2.5 text-[14px] text-gold outline-none placeholder:text-gold/40 focus:border-gold"
-        />
-        <GoldButton type="submit" disabled={pending || name.trim().length < 3}>
-          {pending ? "Saving…" : currentName ? "Change name" : "Claim name"}
-        </GoldButton>
-      </div>
-      <div className="mt-1.5 text-[11.5px] text-gold/50">{NAME_RULES}</div>
-      {error ? <div className="mt-2 text-[12.5px] text-danger">{error}</div> : null}
-    </form>
-  );
-};
 
 const PortraitPicker = ({ current, onDone }: { current: string | null; onDone: () => void }) => {
   const [error, setError] = useState<string | null>(null);
@@ -225,24 +173,22 @@ const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () =
             />
           </div>
         ) : null}
-        {!hasName ? (
-          <div className="mb-3 rounded-lg border border-dashed border-gold/50 p-3">
-            <p className="mb-2 font-serif text-[15px] italic text-gold/70">Every lord bears a name. Claim yours.</p>
-            <NameClaim currentName={null} suggestion={session.user.suggestedName ?? null} onDone={refresh} />
-          </div>
-        ) : null}
         <div className="space-y-2">
           <AccountStatePrompt />
           <SignInMethods session={session} />
           <WalletRow session={session} refresh={refresh} />
-          {hasName ? (
-            <details className="rounded-lg border border-gold/20 bg-black/40 px-3 py-2.5">
-              <summary className="cursor-pointer text-[13px] text-gold/60">Change name</summary>
-              <div className="pt-2.5">
-                <NameClaim currentName={displayName(session)} onDone={refresh} />
-              </div>
-            </details>
-          ) : null}
+          <details className="rounded-lg border border-gold/20 bg-black/40 px-3 py-2.5">
+            <summary className="cursor-pointer text-[13px] text-gold/60">
+              {hasName ? "Change name" : "Choose your name"}
+            </summary>
+            <div className="pt-2.5">
+              <NameClaim
+                currentName={hasName ? displayName(session) : null}
+                suggestion={session.user.suggestedName ?? null}
+                onDone={refresh}
+              />
+            </div>
+          </details>
           <div className="pt-1">
             <GhostButton onClick={() => usePopoverStore.getState().open(IDENTITY_POPOVER_ID)}>Sign out</GhostButton>
           </div>
