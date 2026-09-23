@@ -20,7 +20,10 @@ use std::{
 };
 use tokio::sync::{mpsc, watch};
 
-const MAX_BATCH: usize = 16;
+/// Player tickets per batch. One transaction may execute 1.1e9 Sierra gas (versioned constants
+/// 0.14.2); the costliest player action in single-ticket receipts, an explore, took 171.5M L2 gas
+/// with the batch wrapper, so six fit where sixteen reverted out of gas in the 96-player run.
+const MAX_BATCH: usize = 6;
 const PACK_DELAY: Duration = Duration::from_millis(10);
 const EPOCH_TICKETS: u64 = 100_000;
 /// After a failed run (node restart, lost connection, an epoch command waiting on earlier account
@@ -192,24 +195,21 @@ async fn run<N: GatewayNode>(api: GameApi<N>, path: &Path) -> anyhow::Result<()>
     let (sender, mut requests) = mpsc::channel(api.0.slots.bound());
     *api.0.sender.lock().expect("admission sender poisoned") = Some(sender);
     tracing::info!(target: "gateway", epoch = assignments.epoch.epoch, "admission open");
-    let mut queue: Vec<PendingTicket> = Vec::new();
+    let mut packer = Packer::new(api.0.slots.authority());
     let mut flight: Option<BoxFuture<'static, anyhow::Result<()>>> = None;
-    let mut deadline = tokio::time::Instant::now() + PACK_DELAY;
     loop {
-        if flight.is_none()
-            && !queue.is_empty()
-            && (queue.len() >= MAX_BATCH || tokio::time::Instant::now() >= deadline)
-        {
-            for ticket in &queue {
+        if flight.is_none() && packer.ready() {
+            let batch = packer.take();
+            for ticket in &batch {
                 METRICS.left_queue_after(ticket.received.elapsed());
             }
-            flight = Some(execution::execute(node.clone(), std::mem::take(&mut queue)).boxed());
+            flight = Some(execution::execute(node.clone(), batch).boxed());
         }
-        if flight.is_none() && queue.is_empty() && assignments.rotation_due() {
+        if flight.is_none() && packer.is_empty() && assignments.rotation_due() {
             assignments.rotate(node.as_ref(), path).await?;
         }
         tokio::select! {
-            request = requests.recv(), if queue.len() < MAX_BATCH && !assignments.rotation_due() => {
+            request = requests.recv(), if !packer.full() && !assignments.rotation_due() => {
                 let request = request.context("game request queue closed")?;
                 let action = request.intent.identity()?;
                 match assignments.assign(node.as_ref(), &request).await {
@@ -219,8 +219,7 @@ async fn run<N: GatewayNode>(api: GameApi<N>, path: &Path) -> anyhow::Result<()>
                         METRICS.accepted();
                         tracing::debug!(target: "gateway", %action, %game, order,
                             admission_ms = request.received.elapsed().as_secs_f64() * 1000.0, "game_action_accepted");
-                        if queue.is_empty() { deadline = tokio::time::Instant::now() + PACK_DELAY; }
-                        queue.push(PendingTicket { record, permit: request.permit, received: request.received });
+                        packer.push(PendingTicket { record, permit: request.permit, received: request.received });
                     }
                     Err(error) => request.permit.resolve(ActionStatus::Refused { action, reason: format!("{error:#}") }),
                 }
@@ -229,8 +228,66 @@ async fn run<N: GatewayNode>(api: GameApi<N>, path: &Path) -> anyhow::Result<()>
                 result?;
                 flight = None;
             }
-            _ = tokio::time::sleep_until(deadline), if flight.is_none() && !queue.is_empty() => {}
+            _ = tokio::time::sleep_until(packer.deadline), if flight.is_none() && !packer.is_empty() => {}
         }
+    }
+}
+
+/// Batches that fit one transaction's execution cap: up to `MAX_BATCH` player tickets, or one
+/// authority ticket alone, since each administrative command is sized by its contract to fill a
+/// transaction (a roster settlement step took about 650M L2 gas).
+struct Packer {
+    batch: Vec<PendingTicket>,
+    /// An authority ticket accepted behind player tickets starts the next batch, keeping order.
+    next: Option<PendingTicket>,
+    authority: Felt,
+    deadline: tokio::time::Instant,
+}
+
+impl Packer {
+    fn new(authority: Felt) -> Self {
+        Self { batch: vec![], next: None, authority, deadline: tokio::time::Instant::now() }
+    }
+
+    fn is_empty(&self) -> bool {
+        self.batch.is_empty()
+    }
+
+    fn full(&self) -> bool {
+        self.next.is_some()
+            || self.batch.len() >= MAX_BATCH
+            || self.batch.first().is_some_and(|ticket| self.is_authority(ticket))
+    }
+
+    fn ready(&self) -> bool {
+        !self.batch.is_empty() && (self.full() || tokio::time::Instant::now() >= self.deadline)
+    }
+
+    fn push(&mut self, ticket: PendingTicket) {
+        if self.is_authority(&ticket) && !self.batch.is_empty() {
+            self.next = Some(ticket);
+        } else {
+            self.open(ticket);
+        }
+    }
+
+    fn take(&mut self) -> Vec<PendingTicket> {
+        let batch = std::mem::take(&mut self.batch);
+        if let Some(ticket) = self.next.take() {
+            self.open(ticket);
+        }
+        batch
+    }
+
+    fn open(&mut self, ticket: PendingTicket) {
+        if self.batch.is_empty() {
+            self.deadline = tokio::time::Instant::now() + PACK_DELAY;
+        }
+        self.batch.push(ticket);
+    }
+
+    fn is_authority(&self, ticket: &PendingTicket) -> bool {
+        ticket.record.intent.actor == self.authority
     }
 }
 
@@ -616,22 +673,34 @@ mod tests {
     }
 
     #[tokio::test(start_paused = true)]
-    async fn queued_tickets_pack_in_each_games_order_within_the_batch_bound() {
+    async fn queued_tickets_pack_in_each_games_order_and_authority_work_travels_alone() {
         let shard = Shard::open(TestChain::default()).await;
         let mut updates = vec![];
         for actor in 0..40 {
             let game = if actor % 2 == 0 { GAME_A } else { GAME_B };
             updates.push(shard.submit(signed(&intent(game, 100 + actor, 0), &VALID_SIGNATURE)).await.unwrap());
+            if actor == 12 {
+                let settlement = signed(&intent(GAME_A, 7, 0), &VALID_SIGNATURE);
+                updates.push(shard.submit(settlement).await.unwrap());
+            }
         }
-        for update in updates {
-            assert!(succeeded(&outcome(update).await));
+        let mut authority_order = None;
+        for (index, update) in updates.into_iter().enumerate() {
+            let status = outcome(update).await;
+            assert!(succeeded(&status));
+            if index == 13 {
+                let Some(ActionStatus::Recorded { order, .. }) = status else { unreachable!() };
+                authority_order = Some(order);
+            }
         }
         let chain = shard.chain.0.lock().unwrap();
         assert!(chain.batches.len() > 1 && chain.batches.iter().all(|batch| batch.len() <= MAX_BATCH));
-        for game in [GAME_A, GAME_B] {
+        let settlement = (GAME_A, authority_order.unwrap());
+        assert!(chain.batches.contains(&vec![settlement]), "the authority's ticket shared a batch");
+        for (game, count) in [(GAME_A, 21), (GAME_B, 20)] {
             let orders: Vec<_> =
                 chain.batches.iter().flatten().filter(|(of, _)| *of == game).map(|(_, order)| *order).collect();
-            assert_eq!(orders, (1..=20).collect::<Vec<_>>());
+            assert_eq!(orders, (1..=count).collect::<Vec<_>>());
         }
     }
 

@@ -77,6 +77,11 @@ impl AdmissionSlots {
         admissions.players.limit + admissions.authority_work.limit
     }
 
+    /// The operator whose administrative work has its own allowance.
+    pub fn authority(&self) -> Felt {
+        self.0.lock().expect("admission slots poisoned").authority
+    }
+
     /// Tickets admitted and not yet recorded.
     pub fn held(&self) -> usize {
         let admissions = self.0.lock().expect("admission slots poisoned");
