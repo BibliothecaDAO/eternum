@@ -33,6 +33,9 @@ const RESTART_DELAY: Duration = Duration::from_secs(2);
 struct Request {
     intent: Intent,
     signature: Vec<Felt>,
+    /// The admission view read when the ticket was admitted. Its slot holds the actor's nonce, and
+    /// execution refuses a changed head or rules, so assignment reuses it instead of reading again.
+    admission: Vec<Felt>,
     permit: Permit,
     received: Instant,
 }
@@ -118,7 +121,13 @@ impl<N: GatewayNode> GameApi<N> {
                     .clone()
                     .context("game admission is unavailable")?;
                 sender
-                    .try_send(Request { intent, signature: action.signature, permit, received: Instant::now() })
+                    .try_send(Request {
+                        intent,
+                        signature: action.signature,
+                        admission: fields,
+                        permit,
+                        received: Instant::now(),
+                    })
                     .map_err(|_| anyhow::anyhow!("game admission queue is full or unavailable"))?;
                 Ok(receiver)
             }
@@ -212,7 +221,7 @@ async fn run<N: GatewayNode>(api: GameApi<N>, path: &Path) -> anyhow::Result<()>
             request = requests.recv(), if !packer.full() && !assignments.rotation_due() => {
                 let request = request.context("game request queue closed")?;
                 let action = request.intent.identity()?;
-                match assignments.assign(node.as_ref(), &request).await {
+                match assignments.assign(node.as_ref(), &request) {
                     Ok(record) => {
                         let (game, order) = (record.intent.game, record.envelope.order);
                         request.permit.resolve(ActionStatus::Accepted { action, order });
@@ -350,23 +359,22 @@ impl Assignments {
         Ok(())
     }
 
-    async fn assign(&mut self, node: &impl AssignmentNode, request: &Request) -> anyhow::Result<RecordedTicket> {
-        let record = accept(node, &self.epoch, &self.orders, request).await?;
+    fn assign(&mut self, node: &impl AssignmentNode, request: &Request) -> anyhow::Result<RecordedTicket> {
+        let record = accept(node, &self.epoch, &self.orders, request)?;
         self.orders.insert(record.intent.game, record.envelope.order + 1);
         self.admitted += 1;
         Ok(record)
     }
 }
 
-async fn accept(
+fn accept(
     node: &impl AssignmentNode,
     epoch: &EpochSecret,
     orders: &HashMap<Felt, u64>,
     request: &Request,
 ) -> anyhow::Result<RecordedTicket> {
     let intent = &request.intent;
-    let fields = node.admission(intent.game, intent.actor).await?;
-    let [rules, config, nonce, recorded_next, observed_time] = fields.as_slice() else {
+    let [rules, config, nonce, recorded_next, observed_time] = request.admission.as_slice() else {
         anyhow::bail!("malformed admission view")
     };
     let order = match orders.get(&intent.game) {
@@ -762,7 +770,7 @@ mod tests {
         assert!(error.to_string().contains("did not land"), "{error}");
     }
 
-    fn request(slots: &AdmissionSlots, game: Felt, actor: u64) -> Request {
+    async fn request(chain: &TestChain, slots: &AdmissionSlots, game: Felt, actor: u64) -> Request {
         let intent = Intent {
             chain: Felt::ONE,
             deployment: Felt::TWO,
@@ -779,7 +787,8 @@ mod tests {
         let Slot::New(permit) = slots.reserve(game, intent.actor, intent.identity().unwrap()).unwrap() else {
             panic!("new actor")
         };
-        Request { intent, signature: vec![Felt::ONE, Felt::TWO], permit, received: Instant::now() }
+        let admission = chain.admission(game, intent.actor).await.unwrap();
+        Request { intent, signature: vec![Felt::ONE, Felt::TWO], admission, permit, received: Instant::now() }
     }
 
     fn assigned(record: &RecordedTicket) -> (Felt, u64, u64) {
@@ -796,7 +805,7 @@ mod tests {
         let mut assignments = Assignments::start(&chain, &path).await.unwrap();
         let mut records = vec![];
         for (game, actor) in [(GAME_A, 1), (GAME_B, 2), (GAME_A, 3)] {
-            records.push(assignments.assign(&chain, &request(&slots, game, actor)).await.unwrap());
+            records.push(assignments.assign(&chain, &request(&chain, &slots, game, actor).await).unwrap());
         }
         assert_eq!(records.iter().map(assigned).collect::<Vec<_>>(), [(GAME_A, 6, 1), (GAME_B, 1, 1), (GAME_A, 7, 1)]);
         for record in &records {
@@ -814,7 +823,7 @@ mod tests {
         let mut before = Assignments::start(&chain, &path).await.unwrap();
         let mut queued = vec![];
         for (game, actor) in [(GAME_A, 1), (GAME_A, 2), (GAME_B, 3)] {
-            queued.push(before.assign(&chain, &request(&slots, game, actor)).await.unwrap());
+            queued.push(before.assign(&chain, &request(&chain, &slots, game, actor).await).unwrap());
         }
         // Game B's ticket was recorded; game A's two tickets were lost in the restart.
         chain.0.lock().unwrap().heads.insert(GAME_B, 1);
@@ -824,8 +833,8 @@ mod tests {
         let commands = chain.0.lock().unwrap().commands.iter().map(|(name, _)| *name).collect::<Vec<_>>();
         assert_eq!(commands, ["open_randomness_epoch", "reveal_randomness_epoch", "open_randomness_epoch"]);
         assert_eq!(chain.0.lock().unwrap().commands[1].1, revealed);
-        let game_a = after.assign(&chain, &request(&slots, GAME_A, 4)).await.unwrap();
-        let game_b = after.assign(&chain, &request(&slots, GAME_B, 5)).await.unwrap();
+        let game_a = after.assign(&chain, &request(&chain, &slots, GAME_A, 4).await).unwrap();
+        let game_b = after.assign(&chain, &request(&chain, &slots, GAME_B, 5).await).unwrap();
         assert_eq!([assigned(&game_a), assigned(&game_b)], [(GAME_A, 1, 2), (GAME_B, 2, 2)]);
         // The lost order is reassigned with a root from the new secret, never the revealed one.
         assert_ne!(game_a.envelope.root, queued[0].envelope.root);
