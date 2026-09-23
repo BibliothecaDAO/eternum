@@ -38,7 +38,6 @@ export interface GameModeConfig {
     showEndSeasonButton: boolean;
     showExplorerCapacity: boolean;
     villageIconKey: VillageIconKey;
-    showTradeMenu: boolean;
     showGuildsTab: boolean;
     showAutomation: boolean;
     /** Shown on the army muster when the mode spends committed troops for good. */
@@ -134,7 +133,6 @@ const blitzConfig: GameModeConfig = {
     showEndSeasonButton: false,
     showExplorerCapacity: false,
     villageIconKey: "tent",
-    showTradeMenu: false,
     showGuildsTab: false,
     showAutomation: true,
     musterNotice: null,
@@ -178,7 +176,6 @@ const eternumConfig: GameModeConfig = {
     showEndSeasonButton: true,
     showExplorerCapacity: true,
     villageIconKey: "castle",
-    showTradeMenu: true,
     showGuildsTab: true,
     showAutomation: true,
     musterNotice: null,
