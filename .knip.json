@@ -49,10 +49,7 @@
       ]
     },
     "apps/realms": {
-      "entry": [
-        "server/worker.ts",
-        "server/migrate-box-users.ts"
-      ],
+      "entry": ["server/worker.ts"],
       "ignoreDependencies": [
         "cloudflare"
       ],
