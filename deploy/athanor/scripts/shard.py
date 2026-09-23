@@ -47,7 +47,7 @@ def validate_configuration(config, allowed_cpus):
         url = urlparse(config[key])
         if url.scheme not in ("http", "https") or not url.netloc or url.username or url.password:
             raise ValueError(f"{key} must be an explicit HTTP endpoint without credentials")
-    for key in ("madara_image", "herald_image"):
+    for key in ("madara_image", "herald_image", *(["gateway_image"] if "gateway_image" in config else [])):
         if not re.fullmatch(r"(?:[^\s]+@)?sha256:[a-f0-9]{64}", config[key]):
             raise ValueError(f"{key} must be pinned by digest")
     port = config["port_base"]
@@ -88,6 +88,21 @@ def write_private_environment(path, values):
         stream.write("".join(f"{key}={value}\n" for key, value in values.items()))
 
 
+# Temporary until C3 decides between the fork's embedded admission and the gateway beside stock
+# Madara: with `gateway_image`, admission runs in its own container on the fourth reserved port.
+def admission_url(config):
+    port = config["port_base"] + (3 if "gateway_image" in config else 0)
+    return f"http://127.0.0.1:{port}" + ("" if "gateway_image" in config else "/rpc/v0_10_2")
+
+
+def gateway_service(config, directory, budget):
+    return {
+        **budget, "image": config["gateway_image"], "mem_limit": "1g", "memswap_limit": "1g",
+        "env_file": [str(directory / "gateway.env")], "ports": [f"127.0.0.1:{config['port_base'] + 3}:9950"],
+        "volumes": ["gateway:/data"], "restart": "on-failure",
+    }
+
+
 def compose_configuration(config, directory):
     project = f"athanor-{config['shard']}"
     base = config["port_base"]
@@ -124,6 +139,7 @@ def compose_configuration(config, directory):
                 "healthcheck": {"test": ["CMD", "pg_isready", "-U", "herald", "-d", "herald"],
                                 "interval": "2s", "timeout": "3s", "retries": 30},
             },
+            # Herald exits when it loses the node and replays from its checkpoint on restart.
             "herald": {
                 **budget, "image": config["herald_image"], "mem_limit": "6g", "memswap_limit": "6g",
                 "restart": "on-failure",
@@ -131,8 +147,9 @@ def compose_configuration(config, directory):
                 "volumes": [f"{directory / 'native-world.json'}:/config/native-world.json:ro"],
                 "depends_on": {"postgres": {"condition": "service_healthy"}},
             },
+            **({"gateway": gateway_service(config, directory, budget)} if "gateway_image" in config else {}),
         },
-        "volumes": {"chain": {}, "postgres": {}},
+        "volumes": {"chain": {}, "postgres": {}, **({"gateway": {}} if "gateway_image" in config else {})},
     }
 
 
@@ -142,7 +159,7 @@ def ensure_fresh_project(config):
     for command in (["ps", "-aq", "--filter", label], ["volume", "ls", "-q", "--filter", label]):
         if read([*DOCKER, *command]):
             raise ValueError(f"{project} already owns state; choose a fresh shard id")
-    for port in range(config["port_base"], config["port_base"] + 3):
+    for port in range(config["port_base"], config["port_base"] + (4 if "gateway_image" in config else 3)):
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", port))
 
@@ -198,7 +215,7 @@ def deployment_environment(config, directory):
     base = config["port_base"]
     return {
         **os.environ, **credentials, "RPC_URL": f"http://127.0.0.1:{base}/rpc/v0_10_2",
-        "ADMISSION_URL": f"http://127.0.0.1:{base}/rpc/v0_10_2",
+        "ADMISSION_URL": admission_url(config),
         "HERALD_URL": f"http://127.0.0.1:{base + 1}",
         "HERALD_PUBLIC_RPC_URL": config["public_rpc_url"],
         "HERALD_PUBLIC_ADMISSION_URL": config["public_admission_url"],
@@ -260,7 +277,8 @@ def deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rt
                          for name in ("cpu.max", "memory.max", "memory.high", "memory.swap.max")},
         "chain_config_sha256": hashlib.sha256((directory / "chain-config.yaml").read_bytes()).hexdigest(),
         "node_command": compose["services"]["madara"]["command"], "rpc_url": f"http://127.0.0.1:{config['port_base']}/rpc/v0_10_2",
-        "herald_url": f"http://127.0.0.1:{config['port_base'] + 1}", "rtt_ms": {"rpc": rpc_rtt, "herald": herald_rtt},
+        "herald_url": f"http://127.0.0.1:{config['port_base'] + 1}", "admission_url": admission_url(config),
+        "rtt_ms": {"rpc": rpc_rtt, "herald": herald_rtt},
         "world": manifest["world"]["address"], "native_schema": manifest["native"]["activeSchema"],
     }
 
@@ -310,7 +328,16 @@ def start_shard(config, directory):
     manifest = json.loads((directory / "native-world.json").read_text())
     node_environment.update(RANDOMNESS_ACCOUNT=authority, RANDOMNESS_DEPLOYMENT=manifest["world"]["address"])
     write_private_environment(directory / "node.env", node_environment)
-    run([*command, "up", "-d", "--force-recreate", "madara", "herald"], directory, "shard-start")
+    services = ["madara", "herald"]
+    if "gateway_image" in config:
+        write_private_environment(directory / "gateway.env", {
+            **{key: node_environment[key] for key in ("RANDOMNESS_ACCOUNT", "RANDOMNESS_DEPLOYMENT",
+                                                      "RANDOMNESS_PRIVATE_KEY", "RUST_LOG")},
+            "RANDOMNESS_EPOCH_SECRET": "/data/game-epoch-secret.json", "GATEWAY_LISTEN": "0.0.0.0:9950",
+            "NODE_RPC_URL": "http://madara:9944/rpc/v0_10_2", "NODE_WS_URL": "ws://madara:9944/rpc/v0_10_2",
+        })
+        services.append("gateway")
+    run([*command, "up", "-d", "--force-recreate", *services], directory, "shard-start")
     rpc_rtt = wait_for_endpoint(environment["RPC_URL"], rpc=True)
     herald_rtt = wait_for_endpoint(environment["HERALD_URL"] + "/health")
     save_harness_environment(directory, environment)
