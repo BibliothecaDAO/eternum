@@ -26,7 +26,12 @@
     ".": {
       "entry": [
         "deploy/athanor/scripts/deploy-box-plan.mjs"
-      ]
+      ],
+      "paths": {
+        "@bibliothecadao/eternum": [
+          "packages/core/src/index.ts"
+        ]
+      }
     },
     "apps/guardian": {
       "entry": [
