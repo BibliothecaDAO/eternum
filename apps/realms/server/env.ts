@@ -32,6 +32,9 @@ export interface IdentityEnv extends Schema.Schema.Type<typeof IdentityVars> {
   VERSION: WorkerVersionMetadata;
   /** One notifier per listed shard, named by the shard's URL. */
   SHARD_NOTIFIER: DurableObjectNamespace<import("./shard-notifier").ShardNotifier>;
+  /** One chat room per room id, and one direct-message inbox per Realms account. */
+  CHAT_ROOM: DurableObjectNamespace<import("./chat/chat-room").ChatRoom>;
+  CHAT_INBOX: DurableObjectNamespace<import("./chat/chat-inbox").ChatInbox>;
 }
 
 const decodeIdentityVars = Schema.decodeUnknownSync(IdentityVars, { onExcessProperty: "ignore" });
@@ -43,6 +46,8 @@ export const decodeIdentityEnv = (raw: Record<string, unknown>): IdentityEnv => 
   PUBLIC_RATE_LIMIT: raw.PUBLIC_RATE_LIMIT as RateLimit,
   VERSION: raw.VERSION as WorkerVersionMetadata,
   SHARD_NOTIFIER: raw.SHARD_NOTIFIER as IdentityEnv["SHARD_NOTIFIER"],
+  CHAT_ROOM: raw.CHAT_ROOM as IdentityEnv["CHAT_ROOM"],
+  CHAT_INBOX: raw.CHAT_INBOX as IdentityEnv["CHAT_INBOX"],
 });
 
 export const vapidKeysOf = (env: IdentityEnv) => ({

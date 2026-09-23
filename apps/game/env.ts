@@ -15,12 +15,6 @@ const envSchema = z.object({
   VITE_PUBLIC_CONTROLLER_RPC_URL: z.string().url().optional(),
   VITE_PUBLIC_LAUNCH_SERVICE_URL: optionalUrlOrEmpty.default(""),
   VITE_PUBLIC_EXPLORER_URL: optionalUrlOrEmpty.default(""),
-  // Empty = no realtime-server for this deployment; consumers skip their
-  // calls instead of hammering a dead endpoint.
-  VITE_PUBLIC_REALTIME_URL: optionalUrlOrEmpty.default(""),
-  // Empty = chat is deliberately unavailable for this environment. Chat has
-  // its own endpoint and must never inherit the deployment/realtime service.
-  VITE_PUBLIC_CHAT_URL: optionalUrlOrEmpty.default(""),
   VITE_PUBLIC_ENABLE_SQL_CACHE: z
     .string()
     .transform((v) => v === "true")

@@ -75,7 +75,7 @@
     "knip": "NODE_OPTIONS=--max-old-space-size=8192 pnpm dlx knip@5.80.0 --config knip.config.ts --exclude binaries,dependencies",
     "lint": "pnpm --recursive run lint",
     "lint:fix": "pnpm --recursive run lint:fix",
-    "typecheck": "pnpm --dir ./apps/game typecheck && pnpm --dir ./apps/realtime-server typecheck",
+    "typecheck": "pnpm --dir ./apps/game typecheck",
     "test": "pnpm --recursive run test",
     "check:forbidden-hosts": "node --test scripts/check-forbidden-hosts.test.mjs && node scripts/check-forbidden-hosts.mjs",
     "lab:deploy-gameplay": "bun deploy/athanor/scripts/deploy-gameplay-contracts.ts",

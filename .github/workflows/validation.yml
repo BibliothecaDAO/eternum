@@ -59,7 +59,6 @@ jobs:
                   "apps/realms/**",
                   "apps/guardian/**",
                   "apps/web/**",
-                  "apps/realtime-server/**",
                   "packages/**",
                   "config/**",
                   "contracts/l3/world-native/schema/**"

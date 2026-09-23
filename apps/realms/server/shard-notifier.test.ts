@@ -1,13 +1,18 @@
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { Miniflare } from "miniflare";
-import { afterAll, beforeAll, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 
 import preset from "../../../contracts/l3/world-native/fixtures/preset-3.json";
 import explorerFixture from "../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { realmsIdOf } from "./realms-id";
+import {
+  buildWorkerBundle,
+  deviceKeys,
+  migrationStatements,
+  newStorage,
+  pause,
+  startWorker,
+  vapidKeys,
+  waitUntil,
+} from "./workerd-harness";
 
 /**
  * The shard notifier runs as it does on Cloudflare: the bundled Worker with its Durable Object, alarms and D1 in
@@ -34,26 +39,11 @@ const SEASON_START = (Math.floor(Date.now() / 1000 / DAY_SECONDS) - 1) * DAY_SEC
 const TODAY = 1;
 
 let bundle: string;
-const roots: string[] = [];
 
 beforeAll(() => {
-  const root = mkdtempSync(join(tmpdir(), "shard-notifier-bundle-"));
-  roots.push(root);
-  bundle = join(root, "bundle");
-  execFileSync("pnpm", ["exec", "wrangler", "deploy", "--dry-run", "--env", "staging", "--outdir", bundle], {
-    cwd: new URL("..", import.meta.url).pathname,
-    stdio: "ignore",
-  });
+  bundle = buildWorkerBundle();
 }, 180_000);
 
-afterAll(() => roots.forEach((root) => rmSync(root, { recursive: true, force: true })));
-
-const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const waitUntil = async (condition: () => boolean, timeoutMs: number) => {
-  const deadline = Date.now() + timeoutMs;
-  while (!condition() && Date.now() < deadline) await pause(250);
-};
-const base64url = (bytes: ArrayBuffer | Uint8Array) => Buffer.from(bytes as ArrayBuffer).toString("base64url");
 const armiesTick = () => Math.floor(Date.now() / 1000 / ARMIES_TICK_SECONDS);
 
 interface HistoryRow {
@@ -228,33 +218,16 @@ const homeStructure = {
 
 /** The Worker in workerd over storage that survives a restart, a fake Herald, and a push service answering `status`. */
 const createHarness = async (level: "important" | "standard") => {
-  const root = mkdtempSync(join(tmpdir(), "shard-notifier-"));
-  roots.push(root);
+  const storage = newStorage();
   const herald = createHerald();
   const push = { status: 201, received: [] as number[] };
   const vapid = await vapidKeys();
-  const start = async () => {
-    const mf = new Miniflare({
-      modulesRoot: bundle,
-      modules: [{ type: "ESModule", path: join(bundle, "worker.js") }],
-      compatibilityDate: "2026-07-30",
-      compatibilityFlags: ["nodejs_compat"],
-      d1Databases: { DB: "identity" },
-      d1Persist: join(root, "d1"),
-      durableObjects: { SHARD_NOTIFIER: { className: "ShardNotifier", useSQLite: true } },
-      durableObjectsPersist: join(root, "do"),
-      bindings: {
-        ENVIRONMENT: "staging",
-        BASE_URL: "https://staging.realms.party",
-        ACCOUNT_CLASS_HASH: "0x1",
-        BETTER_AUTH_SECRET: "notifier-test-secret-notifier-test-secret",
-        IDENTITY_RPC_URL: "http://127.0.0.1:1",
-        DIRECTORY_ADMIN_TOKEN: "unused",
-        WEB_PUSH_VAPID_PUBLIC_KEY: vapid.publicKey,
-        WEB_PUSH_VAPID_PRIVATE_KEY: vapid.privateKey,
-        WEB_PUSH_VAPID_SUBJECT: "mailto:ops@realms.party",
-      },
-      outboundService: async (request: Request) => {
+  const start = () =>
+    startWorker({
+      bundle,
+      storage,
+      vapid,
+      outbound: (request) => {
         const url = new URL(request.url);
         if (url.origin === SHARD) return Response.json(herald.answer(url));
         if (url.href === PUSH_ENDPOINT) {
@@ -264,47 +237,14 @@ const createHarness = async (level: "important" | "standard") => {
         return new Response("unexpected outbound request", { status: 599 });
       },
     });
-    return {
-      dispose: () => mf.dispose(),
-      runCron: async () => (await mf.getWorker()).scheduled({ cron: "* * * * *" }),
-      db: (await mf.getD1Database("DB")) as unknown as D1Database,
-    };
-  };
   const worker = await start();
   await seed(worker.db, level, await deviceKeys());
   return { herald, push, start, worker };
 };
 
-const vapidKeys = async () => {
-  const keys = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
-    "sign",
-  ])) as CryptoKeyPair;
-  const jwk = (await crypto.subtle.exportKey("jwk", keys.privateKey)) as JsonWebKey;
-  const raw = (await crypto.subtle.exportKey("raw", keys.publicKey)) as ArrayBuffer;
-  return { publicKey: base64url(raw), privateKey: jwk.d! };
-};
-
-const deviceKeys = async () => {
-  const keys = (await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, [
-    "deriveBits",
-  ])) as CryptoKeyPair;
-  return {
-    p256dh: base64url((await crypto.subtle.exportKey("raw", keys.publicKey)) as ArrayBuffer),
-    auth: base64url(crypto.getRandomValues(new Uint8Array(16))),
-  };
-};
-
 /** The player's account, level, opted-in device and the shard, as sign-in, /devices, settings and the operator leave them. */
 const seed = async (db: D1Database, level: string, device: { p256dh: string; auth: string }) => {
-  const migrations = new URL("../migrations/", import.meta.url);
-  const statements = readdirSync(migrations)
-    .sort()
-    .map((file) => readFileSync(new URL(file, migrations), "utf8"))
-    .join(";\n")
-    .replace(/^--.*$/gm, "")
-    .split(";")
-    .map((statement) => statement.trim())
-    .filter(Boolean);
+  const statements = migrationStatements();
   const now = Date.now();
   await db.batch([
     ...statements.map((statement) => db.prepare(statement)),

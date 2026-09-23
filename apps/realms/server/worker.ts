@@ -21,6 +21,8 @@ export default {
   },
 };
 
+export { ChatInbox } from "./chat/chat-inbox";
+export { ChatRoom } from "./chat/chat-room";
 export { ShardNotifier } from "./shard-notifier";
 
 // One auth instance per isolate and environment; better-auth holds no per-request state.

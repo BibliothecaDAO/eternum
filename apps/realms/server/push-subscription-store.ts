@@ -46,6 +46,18 @@ function createPushSubscriptionStore(db: D1Database) {
           .all<PushSubscriptionRow>();
         return results;
       }),
+    /** Devices of this account that opted in to direct messages and have no game window in the foreground. */
+    directMessageDevices: (owner: string, now: number) =>
+      storeEffect(async () => {
+        const { results } = await db
+          .prepare(
+            `SELECT * FROM "notification_push_subscriptions" WHERE "owner" = ? AND "directMessagesEnabledAt" IS NOT NULL
+               AND ("gameForegroundUntil" IS NULL OR "gameForegroundUntil" <= ?)`,
+          )
+          .bind(owner, now)
+          .all<PushSubscriptionRow>();
+        return results;
+      }),
     /** A push service reported the endpoint gone. */
     expire: (owner: string, id: string) =>
       storeEffect(async () => {

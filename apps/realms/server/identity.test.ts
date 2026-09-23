@@ -52,6 +52,8 @@ beforeAll(async () => {
     WEB_PUSH_VAPID_PRIVATE_KEY: "unused",
     WEB_PUSH_VAPID_SUBJECT: "mailto:ops@realms.party",
     SHARD_NOTIFIER: {} as IdentityEnv["SHARD_NOTIFIER"],
+    CHAT_ROOM: {} as IdentityEnv["CHAT_ROOM"],
+    CHAT_INBOX: {} as IdentityEnv["CHAT_INBOX"],
     DB: proxy.env.DB,
     GUARDIAN: createGuardian(GUARDIAN_KEY),
     PUBLIC_RATE_LIMIT: { limit: async () => ({ success: true }) },

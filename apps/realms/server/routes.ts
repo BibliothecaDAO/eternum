@@ -1,4 +1,5 @@
 import type { IdentityAuth } from "./auth";
+import { routeChat } from "./chat/routes";
 import { handleDeviceChange } from "./devices";
 import { handleAdmitShard, handleDirectory, handleShardStatus } from "./directory";
 import type { IdentityEnv } from "./env";
@@ -13,7 +14,7 @@ interface WorkerPlatform {
   fetchShard: typeof fetch;
 }
 
-/** Every /api route: identity under /api/auth, then devices, profiles, notification settings and the directory. */
+/** Every /api route: identity under /api/auth, then devices, profiles, chat, notification settings and the directory. */
 export const routeIdentityRequest = async (
   request: Request,
   env: IdentityEnv,
@@ -37,6 +38,7 @@ export const routeIdentityRequest = async (
     if (!(await withinPublicBudget(env, "profiles", request))) return json({ error: "too_many_requests" }, 429);
     return handleProfile(env.DB, pathname.slice("/api/profiles/".length));
   }
+  if (pathname.startsWith("/api/chat/")) return routeChat(request, env, auth, pathname);
   if (pathname === "/api/notifications/preferences") return handleNotificationPreferences(request, auth, env.DB);
   if (pathname.startsWith("/api/notifications/push/")) return handlePushSubscriptions(request, auth, env);
   if (pathname === "/api/directory" && request.method === "GET") {

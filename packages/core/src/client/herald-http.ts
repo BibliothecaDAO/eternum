@@ -25,7 +25,10 @@ const fetchHeraldJson = async <Payload>(url: string, description: string): Promi
   return (await response.json()) as Payload;
 };
 
-export const fetchHeraldGameDirectory = async (shard: Shard, playerAddress?: string): Promise<HeraldGameDirectory> => {
+export const fetchHeraldGameDirectory = async (
+  shard: Pick<Shard, "url">,
+  playerAddress?: string,
+): Promise<HeraldGameDirectory> => {
   const url = new URL(buildHeraldUrl(shard, "/games"));
   if (playerAddress) url.searchParams.set("player", playerAddress);
   return fetchHeraldJson(url.toString(), `Herald directory for ${shard.url}`);

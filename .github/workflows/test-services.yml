@@ -48,8 +48,6 @@ jobs:
         run: pnpm --dir apps/realms test
       - name: Test launch lifecycle and PostgreSQL stores
         run: pnpm --dir apps/launch-service test
-      - name: Test chat access and delivery
-        run: pnpm --dir apps/realtime-server test
       - name: Initialize the portal test database
         run: pnpm --dir packages/db exec drizzle-kit push --force
       - name: Test account portal calculations and authentication
@@ -59,4 +57,3 @@ jobs:
           pnpm --dir apps/realms typecheck
           pnpm --dir apps/guardian typecheck
           pnpm --dir apps/launch-service typecheck
-          pnpm --dir apps/realtime-server typecheck

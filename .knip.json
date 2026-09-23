@@ -146,13 +146,6 @@
         ]
       }
     },
-    "apps/realtime-server": {
-      "paths": {
-        "@bibliothecadao/types": [
-          "../../packages/types/src/index.ts"
-        ]
-      }
-    },
     "apps/game-docs": {
       "paths": {
         "@bibliothecadao/types": [

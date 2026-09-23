@@ -17,7 +17,7 @@ const ACTIONS = ["subscribe", "status", "foreground", "revoke", "test"];
 
 /**
  * GET /api/notifications/push/config and POST /api/notifications/push/:action — a device's push subscription for the
- * signed-in account. Game alerts are sent by each shard's notifier; direct messages come with chat.
+ * signed-in account. Game alerts are sent by each shard's notifier, direct messages by the recipient's chat inbox.
  */
 export function handlePushSubscriptions(request: Request, auth: IdentityAuth, env: IdentityEnv): Promise<Response> {
   return Effect.runPromise(
@@ -37,7 +37,7 @@ function servePushRequest(request: Request, auth: IdentityAuth, env: IdentityEnv
         enabled: true,
         publicKey: env.WEB_PUSH_VAPID_PUBLIC_KEY,
         gameAlerts: true,
-        directMessages: false,
+        directMessages: true,
       };
       return json(configuration);
     }

@@ -18,6 +18,6 @@ describe("RealtimeClient identity transport", () => {
       },
     });
 
-    expect(openedUrl).toBe("wss://chat.realms.party/ws");
+    expect(openedUrl).toBe("wss://chat.realms.party/api/chat/inbox");
   });
 });

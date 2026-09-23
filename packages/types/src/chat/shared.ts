@@ -1,10 +1,10 @@
 import { z } from "zod";
 
-export const ENTITY_ID_MAX_LENGTH = 191;
-export const PLAYER_ID_MAX_LENGTH = 191;
-export const ZONE_ID_MAX_LENGTH = 128;
-export const DISPLAY_NAME_MAX_LENGTH = 64;
-export const MESSAGE_MAX_LENGTH = 2000;
+const ENTITY_ID_MAX_LENGTH = 191;
+const PLAYER_ID_MAX_LENGTH = 191;
+const ZONE_ID_MAX_LENGTH = 128;
+const DISPLAY_NAME_MAX_LENGTH = 64;
+const MESSAGE_MAX_LENGTH = 2000;
 const METADATA_MAX_KEYS = 20;
 const METADATA_MAX_BYTES = 4096;
 const METADATA_MAX_DEPTH = 3;
@@ -62,6 +62,3 @@ export const metadataSchema = z.record(z.string(), z.unknown()).superRefine((val
     context.addIssue({ code: "custom", message: `Metadata cannot exceed depth ${METADATA_MAX_DEPTH}.` });
   }
 });
-
-export interface MapLocation extends z.infer<typeof mapLocationSchema> {}
-export interface EntityMetadata extends z.infer<typeof metadataSchema> {}
