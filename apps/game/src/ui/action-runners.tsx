@@ -230,8 +230,8 @@ const AutoProvisionRealms = () => {
     const runner = createRealmProvisionRunner({
       readRealms,
       readPhase: () => {
-        const { gameStartMainAt, gameEndAt, devModeOn } = readFactView(store, seasonClockView);
-        return { mainStartsAt: gameStartMainAt ?? null, endsAt: gameEndAt ?? null, devModeOn };
+        const { gameStartMainAt, devModeOn } = readFactView(store, seasonClockView);
+        return { mainStartsAt: gameStartMainAt ?? null, over: configManager.isGameOver(), devModeOn };
       },
       nowSeconds: () => useChainTimeStore.getState().getNowSeconds(),
       hasSigner: () => Boolean(useAccountStore.getState().account) && canIssueOrders(),

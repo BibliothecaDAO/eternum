@@ -1,4 +1,3 @@
-import { hasGameEnded } from "@bibliothecadao/eternum/game-sync";
 /**
  * Provisions every owned realm that the chain still reports unprovisioned, once the main phase has started. The
  * chain's own definition of "provisioned" is a labor building on the realm, so the candidates read that count from
@@ -15,7 +14,8 @@ export interface RealmProvisionCandidate {
 
 export interface RealmProvisionPhase {
   mainStartsAt: number | null;
-  endsAt: number | null;
+  /** The registry's one answer to "is the season over", closed early or past its end. */
+  over: boolean;
   devModeOn: boolean;
 }
 
@@ -59,8 +59,7 @@ export function createRealmProvisionRunner(deps: RealmProvisionRunnerDeps): Real
     const phase = deps.readPhase();
     const now = deps.nowSeconds();
     const started = phase.devModeOn || (phase.mainStartsAt !== null && now >= phase.mainStartsAt);
-    const over = hasGameEnded("Live", phase.endsAt ?? 0, now);
-    return started && !over;
+    return started && !phase.over;
   };
 
   const selectRealmsToProvision = (): RealmProvisionCandidate[] =>

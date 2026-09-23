@@ -10,12 +10,11 @@ import {
   Sparkles,
   Wheat,
 } from "@/ui/design-system/atoms/game-icons";
-import { hasGameEnded } from "@bibliothecadao/eternum/game-sync";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
-import { TileManager } from "@bibliothecadao/eternum";
+import { configManager, TileManager } from "@bibliothecadao/eternum";
 import { useGame, useNativeRevision } from "@bibliothecadao/react";
 import { StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
@@ -53,20 +52,18 @@ const resolveBlitzActivity = ({
   resolvedWorldGameMode,
   currentBlockTimestamp,
   gameStartMainAt,
-  gameEndAt,
+  gameOver,
   devModeOn,
 }: {
   resolvedWorldGameMode: string;
   currentBlockTimestamp: number;
   gameStartMainAt?: number | null;
-  gameEndAt?: number | null;
+  gameOver: boolean;
   devModeOn: boolean;
 }) => {
   const isBlitzWorld = resolvedWorldGameMode === "blitz";
   const isMainPhase = devModeOn || (typeof gameStartMainAt === "number" && currentBlockTimestamp >= gameStartMainAt);
-  const isSeasonOver = hasGameEnded("Live", gameEndAt ?? 0, currentBlockTimestamp);
-
-  return isBlitzWorld && isMainPhase && !isSeasonOver;
+  return isBlitzWorld && isMainPhase && !gameOver;
 };
 
 const decorateSuggestion = (draft: BlitzSuggestionDraft): EmpireSuggestion => {
@@ -94,7 +91,7 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const playerStructures = useFactView(playerStructuresView);
   const structureNameVersion = useUIStore((state) => state.structureNameVersion);
-  const { gameStartMainAt, gameEndAt, devModeOn } = useFactView(seasonClockView);
+  const { gameStartMainAt, devModeOn } = useFactView(seasonClockView);
   const metadata = useStructuresWithMetadata({
     structures: playerStructures,
     store,
@@ -105,7 +102,7 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
     resolvedWorldGameMode,
     currentBlockTimestamp,
     gameStartMainAt,
-    gameEndAt,
+    gameOver: configManager.isGameOver(),
     devModeOn,
   });
 

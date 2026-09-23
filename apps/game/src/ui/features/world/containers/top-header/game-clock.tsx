@@ -28,7 +28,7 @@ export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
   const { gameStartMainAt: startAt, gameEndAt: endAt } = useFactView(seasonClockView);
   const now = useCurrentBlockTimestamp();
   const armyTickSeconds = configManager.getTick(TickIds.Armies);
-  const clock = resolveGameClock({ startAt, endAt, now, armyTickSeconds });
+  const clock = resolveGameClock({ startAt, endAt, now, armyTickSeconds, gameOver: configManager.isGameOver() });
   const remaining = clock.phase === "live" && endAt ? endAt - now : Infinity;
   const urgency = remaining <= 30 ? "final" : remaining <= 120 ? "critical" : remaining <= 300 ? "warning" : null;
   useEffect(() => {
