@@ -8,8 +8,10 @@ on:
 permissions:
   contents: read
 
+# A push run scopes itself from the previous push, so it must never be cancelled or replaced: each push is its own
+# group. A pull request scopes from its base, so its newest run covers everything and older ones cancel.
 concurrency:
-  group: validation-${{ github.event.pull_request.number || github.ref }}
+  group: validation-${{ github.event.pull_request.number || format('{0}@{1}', github.ref, github.sha) }}
   cancel-in-progress: true
 
 jobs:
