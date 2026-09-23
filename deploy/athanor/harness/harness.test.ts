@@ -29,6 +29,7 @@ import {
   latencyChecks,
   percentile,
   summarizeCompletedMix,
+  summarizeFailureClasses,
   summarizePlayerProgress,
   summarizeRequestedMix,
   summarizeRevertReasons,
@@ -189,6 +190,20 @@ describe("Madara harness workload", () => {
       "chain_or_driver",
     );
     expect(classifyWorkloadFailure(new Error("Herald snapshot timed out"))).toBe("chain_or_driver");
+  });
+
+  it("reports a game rule refusing a move apart from chain or driver failures", () => {
+    const rejected = new Error("Herald confirmation failed: Native action rejected: GAMEPLAY_REJECTED");
+    expect(classifyWorkloadFailure(rejected)).toBe("gameplay_rejection");
+    expect(classifyWorkloadFailure(new Error("Native action rejected: COMMAND_DISABLED"))).toBe("gameplay_rejection");
+    expect(classifyWorkloadFailure(new Error("Native action rejected: INVALID_ACTOR"))).toBe("chain_or_driver");
+    expect(
+      summarizeFailureClasses([
+        { failureClass: "gameplay_rejection" },
+        { failureClass: "gameplay_rejection" },
+        { failureClass: "chain_or_driver" },
+      ]),
+    ).toEqual({ gameRuleLimit: 0, harnessPathing: 0, gameplayRejection: 2, chainOrDriver: 1 });
   });
 
   it("records a lost Herald clock without fetching a block per action", async () => {

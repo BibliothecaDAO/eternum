@@ -20,7 +20,7 @@ import {
 export type WorkloadActionKind = "move" | "explore" | "produce";
 export type TransactionStage = "setup" | "workload";
 export type MeasuredRpcMethod = "estimateInvokeFee" | "getBlock" | "getTransactionReceipt" | "getTransactionStatus";
-export type WorkloadFailureClass = "game_rule_limit" | "harness_pathing" | "chain_or_driver";
+export type WorkloadFailureClass = "game_rule_limit" | "harness_pathing" | "gameplay_rejection" | "chain_or_driver";
 export type WorkloadRevertReason = "tile_contention" | "stamina" | "labor" | "other";
 export type TransactionOutcome =
   | "completed"
@@ -718,7 +718,7 @@ async function runProductionAction({
   } catch (error) {
     transaction.outcome = "driver_failed";
     transaction.error = errorMessage(error);
-    transaction.failureClass = "chain_or_driver";
+    transaction.failureClass = classifyWorkloadFailure(error);
   }
   return transaction;
 }
@@ -781,7 +781,7 @@ async function runExplorerAction({
     pathReservations.complete(reservation, plan.target);
     transaction.outcome = "driver_failed";
     transaction.error = errorMessage(error);
-    transaction.failureClass = "chain_or_driver";
+    transaction.failureClass = classifyWorkloadFailure(error);
   }
   return transaction;
 }
@@ -988,7 +988,11 @@ async function waitForConfirmation(
     const failure = await confirmed;
     return failure === undefined
       ? { ...result, ...visibility }
-      : { ...result, outcome: "driver_failed" as const, error: `Herald confirmation failed: ${failure}` };
+      : {
+          ...result,
+          outcome: isGameplayRejection(failure) ? ("rejected" as const) : ("driver_failed" as const),
+          error: `Herald confirmation failed: ${failure}`,
+        };
   });
   try {
     return await Promise.race([complete, deadline]);
@@ -1229,9 +1233,20 @@ function driverFailure({
   };
 }
 
+/**
+ * The season contract's named refusals of a well-formed intent: a game rule said no to the move. INVALID_ACTOR and
+ * INVALID_COMMAND are malformed intents, which are the driver's fault, so they stay chain-or-driver failures.
+ */
+const GAMEPLAY_REJECTION = /Native action rejected: (?:GAMEPLAY_REJECTED|COMMAND_DISABLED|ROSTER_NOT_READY)\b/;
+
+export function isGameplayRejection(error: unknown): boolean {
+  return GAMEPLAY_REJECTION.test(errorMessage(error));
+}
+
 export function classifyWorkloadFailure(error: unknown): WorkloadFailureClass {
   if (error instanceof GameRuleLimitError) return "game_rule_limit";
   if (error instanceof HarnessPathingError) return "harness_pathing";
+  if (isGameplayRejection(error)) return "gameplay_rejection";
   const message = errorMessage(error);
   if (
     /(?:insufficient|not enough|requires?).*stamina|no explorer has \d+ stamina|stamina.*(?:depleted|required)/i.test(

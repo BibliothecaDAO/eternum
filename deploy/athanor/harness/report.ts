@@ -495,11 +495,12 @@ function summarizeGameWorkload(
   };
 }
 
-function summarizeFailureClasses(actions: readonly TrackedTransaction[]) {
-  const counts = { gameRuleLimit: 0, harnessPathing: 0, chainOrDriver: 0 };
+export function summarizeFailureClasses(actions: readonly Pick<TrackedTransaction, "failureClass">[]) {
+  const counts = { gameRuleLimit: 0, harnessPathing: 0, gameplayRejection: 0, chainOrDriver: 0 };
   for (const action of actions) {
     if (action.failureClass === "game_rule_limit") counts.gameRuleLimit += 1;
     else if (action.failureClass === "harness_pathing") counts.harnessPathing += 1;
+    else if (action.failureClass === "gameplay_rejection") counts.gameplayRejection += 1;
     else counts.chainOrDriver += 1;
   }
   return counts;
