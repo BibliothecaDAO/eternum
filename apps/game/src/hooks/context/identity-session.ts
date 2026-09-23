@@ -18,9 +18,12 @@ export const IDENTITY_POPOVER_ID = "identity";
 
 export type IdentitySessionStatus = "loading" | "anonymous" | "signed-in";
 
-/** A surface that needs a signed-in identity asks for one; the identity chip replays the redirect after sign-in. */
+/**
+ * A surface that needs a signed-in identity asks for one. A request without a redirect means "sign in here": the
+ * chip opens the sign-in view and stays on the page; with one, the chip replays the redirect after sign-in.
+ */
 interface SignInRequest {
-  redirectTo: string;
+  redirectTo?: string;
   redirectState?: Record<string, unknown>;
 }
 
@@ -57,8 +60,8 @@ export const useIdentitySessionStore = create<IdentitySessionStore>()((set) => (
       set({ session: null, status: "anonymous" });
     }
   },
-  requestSignIn: (request) => {
-    set({ signInRequest: request ?? null });
+  requestSignIn: (request = {}) => {
+    set({ signInRequest: request });
     usePopoverStore.getState().open(IDENTITY_POPOVER_ID);
   },
   clearSignInRequest: () => set({ signInRequest: null }),

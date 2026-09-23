@@ -42,12 +42,14 @@ export const IdentityChip = () => {
   const navigate = useNavigate();
   const needsRuntime = status === "signed-in" || signInRequest !== null;
 
-  // A surface that asked for a session gets its redirect replayed once the session lands.
+  // Once the session lands, the request is done; a surface that asked for a redirect gets it replayed.
   useEffect(() => {
     if (status !== "signed-in" || !signInRequest) return;
     clearSignInRequest();
     usePopoverStore.getState().close(IDENTITY_POPOVER_ID);
-    navigate(signInRequest.redirectTo, { replace: true, state: signInRequest.redirectState });
+    if (signInRequest.redirectTo) {
+      navigate(signInRequest.redirectTo, { replace: true, state: signInRequest.redirectState });
+    }
   }, [clearSignInRequest, navigate, signInRequest, status]);
 
   const toggle = () => {
