@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { statusSubscription } from "./test-observations";
 import type { HarnessProvider } from "./provider";
-import { afterEach, describe, expect, it, mock, spyOn } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, it, mock, spyOn } from "bun:test";
 import { ActionPaths, ActionType, configManager, type GameActions } from "@bibliothecadao/eternum";
 import type { Account } from "starknet";
 import { mapWithConcurrency, type HarnessAccount } from "./account-factory";
@@ -41,6 +41,16 @@ import { BlockTag } from "starknet";
 import { EventEmitter } from "node:events";
 import type { Worker } from "node:worker_threads";
 import { waitForGameWorkers } from "./run";
+
+const TEST_ENDPOINTS = { RPC_URL: "http://127.0.0.1:28310/rpc/v0_10_2", HERALD_URL: "http://127.0.0.1:28311" };
+const savedEndpoints = { RPC_URL: process.env.RPC_URL, HERALD_URL: process.env.HERALD_URL };
+beforeAll(() => Object.assign(process.env, TEST_ENDPOINTS));
+afterAll(() => {
+  for (const [name, value] of Object.entries(savedEndpoints)) {
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
+});
 
 describe("Madara harness workload", () => {
   it("collects other game reports after a worker reports a failed coverage gate", async () => {
@@ -675,6 +685,22 @@ describe("Madara harness reporting", () => {
 });
 
 describe("Madara harness CLI and concurrency", () => {
+  it("requires the shard's endpoints instead of falling back to a lab port", () => {
+    delete process.env.RPC_URL;
+    delete process.env.HERALD_URL;
+    try {
+      expect(() => parseHarnessArgs([])).toThrow("--rpc-url or RPC_URL is required");
+      expect(() => parseHarnessArgs(["--rpc-url", TEST_ENDPOINTS.RPC_URL])).toThrow(
+        "--herald-url or HERALD_URL is required",
+      );
+      expect(
+        parseHarnessArgs(["--rpc-url", TEST_ENDPOINTS.RPC_URL, "--herald-url", TEST_ENDPOINTS.HERALD_URL]),
+      ).toMatchObject({ rpcUrl: TEST_ENDPOINTS.RPC_URL, heraldUrl: TEST_ENDPOINTS.HERALD_URL });
+    } finally {
+      Object.assign(process.env, TEST_ENDPOINTS);
+    }
+  });
+
   it("parses an explicit smoke-run configuration", () => {
     expect(
       parseHarnessArgs([

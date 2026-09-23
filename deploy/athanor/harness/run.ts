@@ -65,8 +65,6 @@ interface LaunchedGame extends Omit<HarnessGameInstance, "botCount"> {
 }
 
 const REPOSITORY_ROOT = path.resolve(import.meta.dir, "../../..");
-const DEFAULT_RPC_URL = "http://127.0.0.1:5050/rpc/v0_9_0";
-const DEFAULT_HERALD_URL = "http://127.0.0.1:3003";
 const MADARA_ADMIN_ADDRESS = "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d";
 const MADARA_ADMIN_PRIVATE_KEY = "0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07";
 
@@ -135,9 +133,9 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     slot,
     intervalSeconds,
     minutes,
-    rpcUrl: values["rpc-url"] ?? process.env.RPC_URL ?? DEFAULT_RPC_URL,
+    rpcUrl: requiredEndpoint(values["rpc-url"], "rpc-url", "RPC_URL"),
     setupConcurrency,
-    heraldUrl: values["herald-url"] ?? process.env.HERALD_URL ?? DEFAULT_HERALD_URL,
+    heraldUrl: requiredEndpoint(values["herald-url"], "herald-url", "HERALD_URL"),
   };
 }
 
@@ -626,6 +624,13 @@ function defaultPresetFor(gameType: HarnessGameType, functional: boolean): numbe
   return gameType === "frontier" && functional ? FRONTIER_ACCELERATED_PRESET_ID : nativePresetIdFor(gameType);
 }
 
+/** A shard endpoint has no default: a lab port that answers for the wrong shard is worse than a loud stop. */
+function requiredEndpoint(flagValue: string | undefined, flag: string, environmentName: string): string {
+  const value = flagValue ?? process.env[environmentName]?.trim();
+  if (!value) throw new Error(`--${flag} or ${environmentName} is required`);
+  return value;
+}
+
 function requiredEnvironmentValue(name: string, context: string): string {
   const value = process.env[name]?.trim();
   if (!value) throw new Error(`${name} is required for ${context}`);
@@ -669,8 +674,8 @@ Usage: bun deploy/athanor/harness/run.ts [options]
   --prepared-game <path>         resume a prepared roster using its private account file
   --game-id <id>                 use an existing Eternum game
   --game-name <name>             name for a new game or report label for --game-id
-  --rpc-url <url>                default: ${DEFAULT_RPC_URL}
-  --herald-url <url>             default: ${DEFAULT_HERALD_URL}
+  --rpc-url <url>                required, or RPC_URL; the node's internal URL, never the public RPC
+  --herald-url <url>             required, or HERALD_URL
 `);
 }
 

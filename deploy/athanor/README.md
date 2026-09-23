@@ -186,9 +186,14 @@ schemas are explicit ingestion faults and require a planned release. Historical 
 The harness uses the shared client, native fact store, recorded admission and node transaction subscriptions:
 
 ```bash
+RPC_URL=http://127.0.0.1:<node-port>/rpc/v0_10_2 HERALD_URL=http://127.0.0.1:<herald-port> \
 bun deploy/athanor/harness/run.ts \
   --bots 6 --minutes 2.5 --interval-seconds 15 --setup-concurrency 6 --workload build-order
 ```
+
+The node and Herald URLs are required (`--rpc-url`/`RPC_URL`, `--herald-url`/`HERALD_URL`) and have no default. Use
+the node's internal URL on the box, as the shard's `harness.env` records it: the public RPC refuses writes and
+WebSockets, and the harness confirms over the node's WebSocket.
 
 Every bot follows build-order suggestions, updates automation each minute and explores. The full acceptance workload
 uses 96 players and the frozen run configuration. Do not substitute a short smoke for it. Keep failed runs labeled
