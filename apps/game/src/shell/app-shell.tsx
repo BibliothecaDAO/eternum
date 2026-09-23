@@ -21,6 +21,11 @@ const FOOTER_LINKS = [
   { to: "/privacy", label: "Privacy" },
 ] as const;
 
+const shardsSummary = (shards: readonly { available: boolean }[]): string => {
+  const unavailable = shards.filter((shard) => !shard.available).length;
+  return `${shards.length} listed${unavailable ? `, ${unavailable} unavailable` : ""}`;
+};
+
 /**
  * The app shell: every screen outside a game. It carries no three.js and no game asset; a game loads only under
  * `/g/:chain/:game`.
@@ -67,7 +72,7 @@ export const AppShell = () => {
         <span>
           <span className={directory.isSuccess ? "text-green" : "text-danger"}>●</span> Shards
           {directory.isSuccess
-            ? ` · ${directory.data.shards.map((shard) => `#${directory.data.confirmedBlocks[shard.chainId]}`).join(" ")}`
+            ? ` · ${shardsSummary(directory.data.shards)}`
             : directory.isError
               ? " · unreachable"
               : ""}

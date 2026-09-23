@@ -1,50 +1,79 @@
-import {
-  fetchHeraldGameDirectory,
-  fetchHeraldGameLeaderboard,
-  type GameRef,
-  type Shard,
-} from "@bibliothecadao/eternum/shard";
+import { fetchHeraldGameDirectory, fetchHeraldGameLeaderboard, type GameRef } from "@bibliothecadao/eternum/shard";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import { useQuery } from "@tanstack/react-query";
 
-import { listOpenShards, openKnownShards, requireOpenShard } from "@/runtime/world/shards";
+import { fetchDirectory, type DirectoryShard } from "@/runtime/world/directory";
+import { listPastedShards, openPastedShards, requireOpenShard } from "@/runtime/world/shards";
 
 /** A directory entry with the shard it came from, so the shell can address the game as (chain id, game id). */
 export interface DirectoryGame extends HeraldGameDirectoryEntry {
   chainId: string;
 }
 
+/** A shard the shell shows: one our directory lists, or one the player pasted. */
+interface ShardListing {
+  url: string;
+  chainId: string;
+  status: "active" | "draining" | "pasted";
+  available: boolean;
+}
+
 interface ShardDirectory {
   games: DirectoryGame[];
-  shards: Shard[];
-  /** Shards this client knows but could not open, by URL and reason; never hidden behind an empty list. */
+  shards: ShardListing[];
+  /** Shards known but not readable, by URL and reason: the directory's own, and pasted ones that would not open. */
   failures: { url: string; error: Error }[];
-  confirmedBlocks: Record<string, number>;
 }
 
 export const DIRECTORY_QUERY_KEY = ["shell", "directory"] as const;
 
-const fetchDirectories = async (player: string | null): Promise<ShardDirectory> => {
-  const failures = await openKnownShards();
-  const shards = listOpenShards();
-  const directories = await Promise.all(
-    shards.map((shard) =>
+/**
+ * Our directory from the Worker (its games, its caching, its per-shard partial failures), plus the directories of the
+ * shards the player pasted, read from those shards themselves since our directory does not list them. No listed
+ * shard's Herald is contacted here: a game's shard opens only when the game is entered.
+ */
+export const fetchDirectories = async (player: string | null): Promise<ShardDirectory> => {
+  const [listing, pastedFailures] = await Promise.all([fetchDirectory(player), openPastedShards()]);
+  const listed = listing.filter(
+    (shard): shard is DirectoryShard & { status: "active" | "draining" } => shard.status !== "retired",
+  );
+  const pasted = listPastedShards().filter((shard) => !listed.some((entry) => entry.url === shard.url));
+  const pastedDirectories = await Promise.all(
+    pasted.map((shard) =>
       fetchHeraldGameDirectory(shard, player ?? undefined).then((directory) => ({ shard, directory })),
     ),
   );
   return {
-    shards,
-    failures,
-    games: directories.flatMap(({ shard, directory }) =>
-      directory.games.map((game) => ({ ...game, chainId: shard.chainId })),
-    ),
-    confirmedBlocks: Object.fromEntries(
-      directories.map(({ shard, directory }) => [shard.chainId, directory.confirmed_block]),
-    ),
+    games: [
+      ...listed.flatMap((shard) => (shard.games ?? []).map((game) => ({ ...game, chainId: shard.chainId }))),
+      ...pastedDirectories.flatMap(({ shard, directory }) =>
+        directory.games.map((game) => ({ ...game, chainId: shard.chainId })),
+      ),
+    ],
+    shards: [
+      ...listed.map((shard) => ({
+        url: shard.url,
+        chainId: shard.chainId,
+        status: shard.status,
+        available: shard.games !== null,
+      })),
+      ...pasted.map((shard) => ({
+        url: shard.url,
+        chainId: shard.chainId,
+        status: "pasted" as const,
+        available: true,
+      })),
+    ],
+    failures: [
+      ...listed
+        .filter((shard) => shard.games === null)
+        .map((shard) => ({ url: shard.url, error: new Error("unavailable right now") })),
+      ...pastedFailures,
+    ],
   };
 };
 
-/** Every open shard's directory; with a gameplay account, each game also says whether that player is registered. */
+/** Every listed and pasted shard's games; a pasted shard also says whether the gameplay account is registered. */
 export const useDirectory = (player: string | null = null) =>
   useQuery({
     queryKey: [...DIRECTORY_QUERY_KEY, player],

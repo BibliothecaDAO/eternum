@@ -10,13 +10,14 @@ Build the workspace packages, then point the client at an isolated native deploy
 ```sh
 pnpm install --frozen-lockfile
 pnpm run build:packages
-VITE_PUBLIC_SHARD_URL=https://herald.example pnpm --dir apps/game dev
+pnpm --dir apps/game dev
 ```
 
-The shard URL is its Herald. The client reads the chain id, node and admission endpoints, contracts and release from the
-shard's `/manifest`, and refuses a shard whose schema differs from the client's generated bindings. Players can open
-further shards by URL from the games list. See `deploy/athanor/README.md` for the complete isolated stack setup. Do not
-put deployment private keys in the browser environment.
+The app reads our directory at `/api/directory` (proxied to staging in development) and opens every shard it lists; a
+shard's URL is its Herald. The client reads the chain id, node and admission endpoints, contracts and release from the
+shard's `/manifest`, and refuses a shard whose schema differs from the client's generated bindings. Players open a shard
+the directory does not list, such as a local one, by pasting its URL into the games list. See `deploy/athanor/README.md`
+for the complete isolated stack setup. Do not put deployment private keys in the browser environment.
 
 ## Read current facts
 

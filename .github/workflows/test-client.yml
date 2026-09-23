@@ -8,13 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      # Placeholder endpoints, baked in by env parsing during tests.
-      # The live renderer smokes moved to deploy-client.yml: a PR gate must
-      # stay hermetic — external infra (a live node blip) must not be
-      # able to fail it — and "does the built artifact boot" is a question
-      # answered where the artifact ships.
-      VITE_PUBLIC_SHARD_URL: "https://herald.realms.test"
+    # The live renderer smokes moved to deploy-client.yml: a PR gate must
+    # stay hermetic — external infra (a live node blip) must not be
+    # able to fail it — and "does the built artifact boot" is a question
+    # answered where the artifact ships.
 
     steps:
       - name: Checkout repository

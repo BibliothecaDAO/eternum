@@ -171,8 +171,9 @@ Create a separate PostgreSQL database and configure `HERALD_RPC_URL`, `HERALD_PU
 `HERALD_PUBLIC_ADMISSION_URL`, `DATABASE_URL` and `NATIVE_WORLD_MANIFEST`. Start Herald with `pnpm --dir apps/herald start`, or package its real workspace graph with
 `deploy/athanor/release/build-herald.py`. The candidate service must use that same manifest and chain.
 
-Wait for `/health` and the confirmed snapshot before connecting the client. Set `VITE_PUBLIC_SHARD_URL` to the isolated
-Herald, then run `pnpm --dir apps/game dev`. Use the client HTTPS configuration when
+Wait for `/health` and the confirmed snapshot before connecting the client. Run `pnpm --dir apps/game dev`; the app
+reads our directory (`/api/directory`, proxied to staging in development) and lists every shard on it, and a shard the
+directory does not list is opened by pasting its Herald URL into the games list. Use the client HTTPS configuration when
 signing through a browser wallet. Current facts come through Herald, never a second direct state fetch.
 
 The shard manifest is served at `/manifest` and the directory at `/games`. Compatible class upgrades do not require a Herald restart. Incompatible
