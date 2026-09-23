@@ -55,14 +55,14 @@ def validate_configuration(config, allowed_cpus):
         url = urlparse(config[key])
         if url.scheme not in ("http", "https") or not url.netloc or url.username or url.password:
             raise ValueError(f"{key} must be an explicit HTTP endpoint without credentials")
-    for key in ("madara_image", "herald_image", *(["gateway_image"] if "gateway_image" in config else [])):
+    for key in ("madara_image", "herald_image", "gateway_image"):
         if not re.fullmatch(r"(?:[^\s]+@)?sha256:[a-f0-9]{64}", config[key]):
             raise ValueError(f"{key} must be pinned by digest")
     if not isinstance(config["player_capacity"], int) or not 1 <= config["player_capacity"] <= 1024:
         raise ValueError("player_capacity must be the shard's player count, 1 to 1024")
     port = config["port_base"]
     if not isinstance(port, int) or not 28000 <= port <= 65532:
-        raise ValueError("reserve three isolated ports above 27999")
+        raise ValueError("reserve four isolated ports above 27999")
     if not cpu_numbers(config["cpuset"]) <= allowed_cpus:
         raise ValueError("cpuset exceeds the native slice allocation")
     if not isinstance(config["node_memory_mib"], int) or not 1024 <= config["node_memory_mib"] <= 28672:
@@ -98,11 +98,8 @@ def write_private_environment(path, values):
         stream.write("".join(f"{key}={value}\n" for key, value in values.items()))
 
 
-# Temporary until C3 decides between the fork's embedded admission and the gateway beside stock
-# Madara: with `gateway_image`, admission runs in its own container on the fourth reserved port.
 def admission_url(config):
-    port = config["port_base"] + (3 if "gateway_image" in config else 0)
-    return f"http://127.0.0.1:{port}" + ("" if "gateway_image" in config else "/rpc/v0_10_2")
+    return f"http://127.0.0.1:{config['port_base'] + 3}"
 
 
 def gateway_service(config, directory, budget):
@@ -138,7 +135,7 @@ def compose_configuration(config, directory):
             },
             "madara": {
                 **budget, "image": config["madara_image"], "entrypoint": ["tini", "--", "/bin/madara"],
-                "command": node_command, "env_file": [str(directory / "node.env")],
+                "command": node_command,
                 "mem_limit": f"{config['node_memory_mib']}m", "memswap_limit": f"{config['node_memory_mib']}m",
                 "ports": [f"127.0.0.1:{base}:9944"],
                 "volumes": ["chain:/data", f"{directory / 'chain-config.yaml'}:/config/chain-config.yaml:ro"],
@@ -158,9 +155,9 @@ def compose_configuration(config, directory):
                 "volumes": [f"{directory / 'native-world.json'}:/config/native-world.json:ro"],
                 "depends_on": {"postgres": {"condition": "service_healthy"}},
             },
-            **({"gateway": gateway_service(config, directory, budget)} if "gateway_image" in config else {}),
+            "gateway": gateway_service(config, directory, budget),
         },
-        "volumes": {"chain": {}, "postgres": {}, **({"gateway": {}} if "gateway_image" in config else {})},
+        "volumes": {"chain": {}, "postgres": {}, "gateway": {}},
     }
 
 
@@ -170,7 +167,7 @@ def ensure_fresh_project(config):
     for command in (["ps", "-aq", "--filter", label], ["volume", "ls", "-q", "--filter", label]):
         if read([*DOCKER, *command]):
             raise ValueError(f"{project} already owns state; choose a fresh shard id")
-    for port in range(config["port_base"], config["port_base"] + (4 if "gateway_image" in config else 3)):
+    for port in range(config["port_base"], config["port_base"] + 4):
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", port))
 
@@ -248,14 +245,7 @@ def prepare_runtime_files(directory, environment):
         "exporters": {"file": {"path": "/data/metrics.jsonl", "rotation": {"max_megabytes": 100, "max_backups": 2}}},
         "service": {"pipelines": {"metrics": {"receivers": ["otlp"], "exporters": ["file"]}}},
     })
-    # The node waits for the game deployment while ordinary declaration remains available.
-    node_environment = {
-        "RANDOMNESS_ACCOUNT": "0x0", "RANDOMNESS_DEPLOYMENT": "0x0",
-        "RANDOMNESS_PRIVATE_KEY": environment["RANDOMNESS_PRIVATE_KEY"],
-        "RANDOMNESS_EPOCH_SECRET": "/data/game-epoch-secret.json", "RUST_LOG": "info",
-    }
     password = secrets.token_hex(24)
-    write_private_environment(directory / "node.env", node_environment)
     write_private_environment(directory / "postgres.env", {
         "POSTGRES_USER": "herald", "POSTGRES_DB": "herald", "POSTGRES_PASSWORD": password,
     })
@@ -266,7 +256,17 @@ def prepare_runtime_files(directory, environment):
         "NATIVE_WORLD_MANIFEST": "/config/native-world.json",
         "DATABASE_URL": f"postgres://herald:{password}@postgres:5432/herald",
     })
-    return node_environment
+
+
+# The gateway starts once the world exists: it signs as the sequencing account for that world.
+def write_gateway_environment(config, directory, environment, authority, world):
+    write_private_environment(directory / "gateway.env", {
+        "RANDOMNESS_ACCOUNT": authority, "RANDOMNESS_DEPLOYMENT": world,
+        "RANDOMNESS_PRIVATE_KEY": environment["RANDOMNESS_PRIVATE_KEY"],
+        "RANDOMNESS_EPOCH_SECRET": "/data/game-epoch-secret.json", "RUST_LOG": "info",
+        "GATEWAY_LISTEN": "0.0.0.0:9950", "GATEWAY_MAX_CONNECTIONS": admission_connections(config),
+        "NODE_RPC_URL": "http://madara:9944/rpc/v0_10_2", "NODE_WS_URL": "ws://madara:9944/rpc/v0_10_2",
+    })
 
 
 def save_harness_environment(directory, environment):
@@ -329,7 +329,7 @@ def start_shard(config, directory):
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
     initialize_shard_identity(config, directory)
     write_json(directory / "configuration.json", config)
-    node_environment = prepare_runtime_files(directory, environment)
+    prepare_runtime_files(directory, environment)
     compose = compose_configuration(config, directory)
     write_json(directory / "compose.json", compose)
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
@@ -337,19 +337,8 @@ def start_shard(config, directory):
     wait_for_endpoint(environment["RPC_URL"], rpc=True)
     authority = deploy_world(config, directory, environment)
     manifest = json.loads((directory / "native-world.json").read_text())
-    node_environment.update(RANDOMNESS_ACCOUNT=authority, RANDOMNESS_DEPLOYMENT=manifest["world"]["address"])
-    write_private_environment(directory / "node.env", node_environment)
-    services = ["madara", "herald"]
-    if "gateway_image" in config:
-        write_private_environment(directory / "gateway.env", {
-            **{key: node_environment[key] for key in ("RANDOMNESS_ACCOUNT", "RANDOMNESS_DEPLOYMENT",
-                                                      "RANDOMNESS_PRIVATE_KEY", "RUST_LOG")},
-            "RANDOMNESS_EPOCH_SECRET": "/data/game-epoch-secret.json", "GATEWAY_LISTEN": "0.0.0.0:9950",
-            "GATEWAY_MAX_CONNECTIONS": admission_connections(config),
-            "NODE_RPC_URL": "http://madara:9944/rpc/v0_10_2", "NODE_WS_URL": "ws://madara:9944/rpc/v0_10_2",
-        })
-        services.append("gateway")
-    run([*command, "up", "-d", "--force-recreate", *services], directory, "shard-start")
+    write_gateway_environment(config, directory, environment, authority, manifest["world"]["address"])
+    run([*command, "up", "-d", "herald", "gateway"], directory, "shard-start")
     rpc_rtt = wait_for_endpoint(environment["RPC_URL"], rpc=True)
     herald_rtt = wait_for_endpoint(environment["HERALD_URL"] + "/health")
     save_harness_environment(directory, environment)

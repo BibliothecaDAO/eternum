@@ -1,11 +1,35 @@
 #!/usr/bin/env python3
 """Build Herald's real workspace graph from one pinned source revision."""
 
+import hashlib
 import json
 from pathlib import Path
 import shutil
+import subprocess
 import sys
-from build_tools import digest, prepare_source, read, run
+import tarfile
+
+
+def prepare_source(repository, revision, source):
+    with subprocess.Popen(['git', 'archive', revision], cwd=repository, stdout=subprocess.PIPE) as archive:
+        with tarfile.open(fileobj=archive.stdout, mode='r|') as bundle:
+            bundle.extractall(source, filter='data')
+        if archive.wait() != 0:
+            raise SystemExit('could not archive the selected source revision')
+
+
+def read(command, directory=None):
+    return subprocess.check_output(command, cwd=directory, text=True).strip()
+
+
+def run(command, log, directory=None):
+    with log.open('w') as stream:
+        subprocess.run(command, cwd=directory, stdout=stream, stderr=subprocess.STDOUT, check=True)
+
+
+def digest(path):
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
 def build_workspace(source, output):
@@ -26,7 +50,7 @@ def build_image(source, output, revision, runtime):
     context.mkdir()
     shutil.copyfile(output / 'herald.js', context / 'herald.js')
     tag = f'athanor-herald:{revision}'
-    dockerfile = source / 'deploy/athanor/randomness/release/Herald.Dockerfile'
+    dockerfile = source / 'deploy/athanor/release/Herald.Dockerfile'
     run(['docker', 'build', '-f', str(dockerfile), '--build-arg', f'BUN_IMAGE={runtime}',
          '-t', tag, str(context)], output / 'image-build.log', source)
     return json.loads(read(['docker', 'image', 'inspect', tag]))[0]['Id']
@@ -35,7 +59,7 @@ def build_image(source, output, revision, runtime):
 def main():
     if len(sys.argv) != 4:
         raise SystemExit('usage: build-herald.py NATIVE_REVISION BUN_RUNTIME_DIGEST OUTPUT_DIRECTORY')
-    repository = Path(__file__).resolve().parents[4]
+    repository = Path(__file__).resolve().parents[3]
     revision = read(['git', 'rev-parse', '--verify', f'{sys.argv[1]}^{{commit}}'], repository)
     runtime = sys.argv[2]
     if '@sha256:' not in runtime:

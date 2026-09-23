@@ -14,6 +14,7 @@ def configuration():
         "shard": "smoke", "chain_id": "SHARD_A", "port_base": 28050, "cpuset": "8-11,20-23", "node_memory_mib": 16384,
         "player_capacity": 96,
         "madara_image": "sha256:" + "a" * 64, "herald_image": "sha256:" + "b" * 64,
+        "gateway_image": "sha256:" + "c" * 64,
         "chain_config": "/tmp/chain-config.yaml",
         "guardian_url": "https://identity.test/api/guardian",
         "public_rpc_url": "https://rpc.test/rpc/v0_10_2",
@@ -30,7 +31,7 @@ class ShardTest(unittest.TestCase):
         for key, value in (
             ("chain_id", ""), ("chain_id", "a" * 32), ("chain_id", "a\nb"),
             ("port_base", 5050), ("cpuset", "0-23"), ("node_memory_mib", 65536), ("player_capacity", 0),
-            ("madara_image", "madara:latest"), ("shard", "../live"),
+            ("madara_image", "madara:latest"), ("gateway_image", "gateway:latest"), ("shard", "../live"),
             ("node_flags", ["--base-path=/live"]),
             ("node_flags", ["--enable-native-execution=true"]),
         ):
@@ -76,14 +77,14 @@ class ShardTest(unittest.TestCase):
         b = shard.compose_configuration(second, Path("/runs/b"))
         self.assertEqual(first, original)
         self.assertNotEqual(a["name"], b["name"])
-        for name in ("madara", "herald", "postgres"):
+        for name in ("madara", "herald", "postgres", "gateway"):
             service = a["services"][name]
             self.assertEqual(service["cgroup_parent"], "athanor.slice")
             self.assertEqual(service["cpuset"], "8-11,20-23")
             self.assertNotEqual(service["ports"], b["services"][name]["ports"])
             self.assertTrue(service["ports"][0].startswith("127.0.0.1:"))
         self.assertEqual(a["services"]["postgres"]["volumes"], ["postgres:/var/lib/postgresql/data"])
-        self.assertEqual(a["volumes"], {"chain": {}, "postgres": {}})
+        self.assertEqual(a["volumes"], {"chain": {}, "postgres": {}, "gateway": {}})
         self.assertIn("--db-wal", a["services"]["madara"]["command"])
         self.assertIn("--db-fsync", a["services"]["madara"]["command"])
         self.assertIn("--otel-collector-endpoint=http://metrics:4317", a["services"]["madara"]["command"])
@@ -116,8 +117,7 @@ class ShardTest(unittest.TestCase):
     def test_collector_output_is_the_harness_metrics_input(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
-            environment = {"RANDOMNESS_PRIVATE_KEY": "0x1", "HERALD_PUBLIC_RPC_URL": "https://rpc.test",
-                           "HERALD_PUBLIC_ADMISSION_URL": "https://admission.test"}
+            environment = {"HERALD_PUBLIC_RPC_URL": "https://rpc.test", "HERALD_PUBLIC_ADMISSION_URL": "https://admission.test"}
             shard.prepare_runtime_files(directory, environment)
             config = json.loads((directory / "collector.json").read_text())
             self.assertEqual(config["service"]["pipelines"]["metrics"], {
@@ -130,7 +130,7 @@ class ShardTest(unittest.TestCase):
 
     def test_environment_rejects_line_injection(self):
         with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError):
-            shard.write_private_environment(Path(temporary) / "node.env", {"KEY": "value\nOTHER=bad"})
+            shard.write_private_environment(Path(temporary) / "gateway.env", {"KEY": "value\nOTHER=bad"})
 
     def test_matrix_runs_in_order_and_stops_only_its_own_projects(self):
         for failure in (None, RuntimeError("live budget exceeded")):

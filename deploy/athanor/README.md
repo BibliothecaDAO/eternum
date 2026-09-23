@@ -1,7 +1,7 @@
 # ATHANOR
 
 A shard hosts games on one sequencer, one installation of the native game contracts and one Herald. Madara is the
-sequencer; Herald serves the shard manifest, game directory, snapshots and ordered diffs. Game contracts live in
+sequencer and the admission gateway orders signed actions beside it; Herald serves the shard manifest, game directory, snapshots and ordered diffs. Game contracts live in
 `contracts/l3/world-native`, and clients consume Herald through the shared native fact store.
 
 ATHANOR contains the isolated box deployment and gameplay harness. `scripts/shard.py` initializes a fresh shard from
@@ -41,21 +41,23 @@ execution: declare and execute the generated classes on the selected node image 
 
 ## Isolated node and release
 
-Build a selected fork revision through the upstream Dockerfile and existing build cache:
+A shard runs the upstream Madara image unmodified. The current pin is
+`ghcr.io/madara-alliance/madara@sha256:efaa800354602ad89fa2f22492e55188f50b0fc5675f66cba8184f0e261394f5`
+(`nightly-802086d`, the revision C3 measured). Admission runs beside it in the gateway, built from the same checkout:
 
 ```bash
-python3 deploy/athanor/randomness/release/build.py /path/to/madara REVISION BUILDX_BUILDER OUTPUT_DIRECTORY
+docker build -t realms-gateway:REVISION apps/gateway
 ```
 
-Use that node digest and a Herald release digest with `scripts/shard.py CONFIGURATION RUN_DIRECTORY`. The configuration
-names `shard`, `chain_id`, `port_base` (three free loopback ports above 27999), `cpuset`, `node_memory_mib`,
-`madara_image`, `herald_image`, `chain_config`, `node_flags`, `guardian_url`, `public_rpc_url` and
-`public_admission_url`. Choose a unique `chain_id` of 1–31 ASCII letters,
+Use the node, gateway and Herald release digests with `scripts/shard.py CONFIGURATION RUN_DIRECTORY`. The configuration
+names `shard`, `chain_id`, `port_base` (four free loopback ports above 27999), `cpuset`, `node_memory_mib`,
+`player_capacity`, `madara_image`, `gateway_image`, `herald_image`, `chain_config`, `node_flags`, `guardian_url`,
+`public_rpc_url` and `public_admission_url`. Choose a unique `chain_id` of 1–31 ASCII letters,
 digits, underscores or hyphens, beginning with a letter. The runner writes its hex encoding to `native-world.json` at `shard.chainId`
 before deployment and renders the node configuration with the same identity. The checked-in chain configuration is a
 template; initialize it through the runner before starting a node. For the baseline compose profiles, set
 `CHAIN_CONFIG_PATH` to that rendered file; compose refuses to start without it. Deployment, preset and harness commands check their
-RPC against the manifest before submitting. Both images must be pinned by digest. Flags explicitly select native
+RPC against the manifest before submitting. Every image must be pinned by digest. Flags explicitly select native
 execution and compilation mode. The runner refuses existing project state and CPUs outside `athanor.slice`.
 
 Supply `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_KEY` from the isolated devnet. The runner creates private
@@ -86,14 +88,14 @@ the matrix aborts. A healthy observation resets that condition. Digest streams a
 and zero-count digests neither advance nor reset their streaks. Monitoring errors also require two consecutive failed
 polls. The guard logs the pause timestamp; after investigating, restart the guard and thaw only `athanor.slice`.
 
-The node initially waits for its game deployment while declarations remain available. After deployment, the runner
-recreates only that new shard's node with its sequencing account and world address. The node persists its epoch secret
-in its own data volume. Pending assignments are volatile across restart; recorded nonces prevent duplicate gameplay
-effects. Keep WAL and fsync enabled for comparable runs. Never request fsync with WAL disabled.
+The runner starts the gateway after deployment with the new world's sequencing account and address. The gateway
+persists its epoch secret in its own volume. Pending assignments are volatile across restart; recorded nonces prevent
+duplicate gameplay effects. The node always runs with WAL and fsync enabled; never request fsync with WAL disabled
+(upstream issue #1257).
 
 `docker-compose.yml` preserves the earlier infrastructure profiles and their pinned baseline image. That image is not
-the native candidate. Do not start that profile over an existing stack or treat its pin as acceptance of the current
-fork. Reserve disjoint ports and resource limits before starting a candidate. Caddy's local TLS routes require the host
+the native candidate. Do not start that profile over an existing stack or treat its pin as acceptance of a shard's
+node. Reserve disjoint ports and resource limits before starting a candidate. Caddy's local TLS routes require the host
 entries and certificates produced by `scripts/issue-certs.sh`; keep private files under `.lab/`.
 
 ### Staging candidate
@@ -106,8 +108,8 @@ matches that published hash, and the game's authentication and Herald use the sa
 with the repository root's declared toolchain before starting the shard runner; build the game with its workspace's
 toolchain.
 
-Use the v5 fork at `3b0f3717ceb17ba94f1d893011a5d708e3cf5e99` until the C3 decision. Set each shard's public RPC and
-admission URLs to its staging tunnel hostname, not its loopback deployment endpoint. Herald has a 6 GiB memory limit:
+Run the pinned upstream node image with the gateway, as above. Set each shard's public RPC and admission URLs to
+its staging tunnel hostnames, not its loopback deployment endpoints; the admission hostname routes to the gateway. Herald has a 6 GiB memory limit:
 the 96-player run was OOM-killed at 2 GiB; stream D will size it from C3's measured peak. Herald restarts on failure so a
 node restart does not leave it down. The app uses `staging.realms.party`, whose `/api/*` routes remain on K's staging
 Worker. The temporary launch service uses that identity origin and an explicit address allowlist; never `*`.
@@ -161,13 +163,13 @@ populated upgrade needs its own read/mutate check. The event-codec cutover requi
 
 Player identity deployment writes the explicit `GAMEPLAY_CONTRACTS_PATH`. No deployment output or private credential
 belongs in a tracked configuration file. The launch service and administrative commands use `ADMISSION_URL` for recorded
-execution; the client reads that same node's public admission URL from Herald's `/manifest`.
+execution; the client reads the gateway's public admission URL from Herald's `/manifest`.
 
 ## Herald and client
 
 Create a separate PostgreSQL database and configure `HERALD_RPC_URL`, `HERALD_PUBLIC_RPC_URL`,
 `HERALD_PUBLIC_ADMISSION_URL`, `DATABASE_URL` and `NATIVE_WORLD_MANIFEST`. Start Herald with `pnpm --dir apps/herald start`, or package its real workspace graph with
-`deploy/athanor/randomness/release/build-herald.py`. The candidate service must use that same manifest and chain.
+`deploy/athanor/release/build-herald.py`. The candidate service must use that same manifest and chain.
 
 Wait for `/health` and the confirmed snapshot before connecting the client. Set `VITE_PUBLIC_SHARD_URL` to the isolated
 Herald, then run `pnpm --dir apps/game dev`. Use the client HTTPS configuration when
