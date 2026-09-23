@@ -1,7 +1,7 @@
 import { utils as starknetKeyUtils } from "@scure/starknet";
 import { signGameplayIntent } from "@bibliothecadao/provider";
 import { deviceChangeHash, realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
-import { Account, ec, hash, num, Signer, type ProviderInterface } from "starknet";
+import { Account, BlockTag, ec, hash, num, Signer, type ProviderInterface } from "starknet";
 
 /**
  * A player's gameplay account on a shard: `RealmsAccount` (contracts/l3/player-account), deployed from no deployer with
@@ -12,6 +12,9 @@ import { Account, ec, hash, num, Signer, type ProviderInterface } from "starknet
  */
 
 const CONTRACT_NOT_FOUND = 20;
+// The account's own state is read where its transactions land: a deployment or device change is pre-confirmed within
+// the block, and a read of the last closed block would ask the guardian again with a stale counter.
+const ACCOUNT_STATE = BlockTag.PRE_CONFIRMED;
 const DEVICE_KEY_STORAGE_KEY = "realms:device-key";
 const RECEIPT_POLL_MS = 250;
 
@@ -136,7 +139,7 @@ async function deviceChanges(provider: ProviderInterface, address: string) {
       address,
       keys: [[DEVICE_ADDED, DEVICE_REVOKED]],
       from_block: { block_number: 0 },
-      to_block: "latest",
+      to_block: ACCOUNT_STATE,
       chunk_size: 100,
       ...(continuationToken ? { continuation_token: continuationToken } : {}),
     });
@@ -199,19 +202,22 @@ const isDeviceCall = (address: string, deviceKey: string) => ({
 });
 
 async function isDevice(provider: ProviderInterface, address: string, deviceKey: string): Promise<boolean> {
-  const [result] = await provider.callContract(isDeviceCall(address, deviceKey));
+  const [result] = await provider.callContract(isDeviceCall(address, deviceKey), ACCOUNT_STATE);
   return BigInt(result ?? 0) === 1n;
 }
 
 async function deviceChangeCounter(provider: ProviderInterface, address: string): Promise<number> {
-  const [counter] = await provider.callContract({ contractAddress: address, entrypoint: "device_change_counter" });
+  const [counter] = await provider.callContract(
+    { contractAddress: address, entrypoint: "device_change_counter" },
+    ACCOUNT_STATE,
+  );
   if (counter === undefined) throw new Error(`Realms account ${address} returned no device counter`);
   return Number(BigInt(counter));
 }
 
 async function isAccountDeployed(provider: ProviderInterface, address: string, classHash: string): Promise<boolean> {
   try {
-    const deployed = await provider.getClassHashAt(address);
+    const deployed = await provider.getClassHashAt(address, ACCOUNT_STATE);
     if (BigInt(deployed) !== BigInt(classHash))
       throw new Error(`Account ${address} runs class ${deployed}, expected ${classHash}`);
     return true;
