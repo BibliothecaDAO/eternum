@@ -112,9 +112,12 @@ const isResourceActiveInSnapshot = (snapshot: RealmResourceSnapshot, resourceId:
 
 type AutomationEntityType = RealmAutomationConfig["entityType"];
 
-const warnedDependencyCycles = new Set<string>();
-
-const buildResourceDependencyOrder = (
+/**
+ * Producers run inputs before their consumers. Recipes are cyclic by design (Coal, Wood and Copper each consume the
+ * other two), so when every remaining resource waits on another, the smallest one by planning order goes next and its
+ * dependants follow; the acyclic edges (troops after Copper) still hold.
+ */
+export const buildResourceDependencyOrder = (
   resourceIds: ResourcesIds[],
   entityType: AutomationEntityType,
 ): ResourcesIds[] => {
@@ -172,28 +175,22 @@ const buildResourceDependencyOrder = (
   }
 
   const order: ResourcesIds[] = [];
-  while (ready.length) {
+  const ordered = new Set<ResourcesIds>();
+  while (order.length < resourceIds.length) {
+    if (ready.length === 0) {
+      const waiting = resourceIds.filter((id) => !ordered.has(id)).sort(compareAutomationResources);
+      dependsOn.get(waiting[0]!)!.clear();
+      ready.push(waiting[0]!);
+    }
     const current = ready.shift()!;
     order.push(current);
+    ordered.add(current);
     const downstream = Array.from(dependents.get(current) ?? []).sort(compareAutomationResources);
     for (const dependent of downstream) {
       const deps = dependsOn.get(dependent)!;
       deps.delete(current);
-      if (deps.size === 0) insertSorted(ready, dependent);
+      if (deps.size === 0 && !ordered.has(dependent) && !ready.includes(dependent)) insertSorted(ready, dependent);
     }
-  }
-
-  if (order.length !== resourceIds.length) {
-    const missing = resourceIds.filter((id) => !order.includes(id));
-    // The cycle is a property of the production config, so it re-detects on
-    // every evaluation — warn once per distinct cycle, not once per tick
-    // (one run logged the identical line 111 times).
-    const cycleSignature = [...missing].sort((a, b) => a - b).join(",");
-    if (!warnedDependencyCycles.has(cycleSignature)) {
-      warnedDependencyCycles.add(cycleSignature);
-      console.warn("[Automation] Resource dependency cycle detected; falling back to numeric order", { missing });
-    }
-    return [...resourceIds].sort(compareAutomationResources);
   }
 
   return order;
@@ -447,9 +444,8 @@ export const buildRealmProductionPlan = ({
   });
 
   // Pre-allocate shared-input budget proportionally. Without this, consumers processed
-  // first drain the 90% cap and later consumers (especially troops under the cycle-fallback
-  // numeric ordering) get crumbs. Each input's scale factor caps every consumer's
-  // requested share so total reservations fit within the budget.
+  // first drain the 90% cap and later consumers get crumbs. Each input's scale factor caps
+  // every consumer's requested share so total reservations fit within the budget.
   const totalDemandByInput = new Map<ResourcesIds, number>();
   const addDemand = (inputId: ResourcesIds, percent: number) => {
     if (!(percent > 0)) return;
