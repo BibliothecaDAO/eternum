@@ -16,7 +16,7 @@
     "dev:webgpu": "pnpm --dir ./apps/game dev:webgpu",
     "dev:docs": "pnpm --dir ./apps/game-docs dev",
     "preview": "pnpm --dir ./apps/game preview",
-    "config:sync:madara:blitz": "pnpm --dir ./config run sync:madara:blitz",
+    "config:generate": "pnpm --dir ./config run config:generate",
     "marketplace:migrate:local": "cd ./contracts/l2/marketplace && ./ext/scripts/migrate.sh",
     "seasonpass:deploy:local": "cd ./contracts/l2/season_pass/ext/scripts && ./deploy.sh",
     "villagepass:deploy:local": "cd ./contracts/l2/village_pass/ext/scripts && ./deploy.sh",

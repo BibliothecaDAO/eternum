@@ -13,26 +13,26 @@ function bigIntReplacer(_key: string, value: unknown) {
   return typeof value === "bigint" ? value.toString() : value;
 }
 
-export async function saveResolvedConfigJson(chain: ConfigurationNetwork, gameType: GameType) {
-  const configurationJson = await buildConfig({
-    chain,
-    gameType,
-  });
+const GENERATED_CONFIG_DIRECTORY = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../generated");
 
-  const dataDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../generated");
-  const targetPath = `${dataDir}/${gameType}.${chain}.json`;
+export const resolvedConfigPath = (chain: ConfigurationNetwork, gameType: GameType): string =>
+  path.join(GENERATED_CONFIG_DIRECTORY, `${gameType}.${chain}.json`);
 
-  const jsonFileContent = `{
+/** The generated config file's exact contents, composed from the config source. */
+export async function renderResolvedConfigJson(chain: ConfigurationNetwork, gameType: GameType): Promise<string> {
+  const configurationJson = await buildConfig({ chain, gameType });
+  return `{
       "generatedFromTsFile": true,
       "message": "This file was generated from the composed config source and should not be edited manually",
       "configuration": ${JSON.stringify(configurationJson, bigIntReplacer, 2)}
     }`;
+}
 
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
+export async function saveResolvedConfigJson(chain: ConfigurationNetwork, gameType: GameType) {
+  const targetPath = resolvedConfigPath(chain, gameType);
+  fs.mkdirSync(GENERATED_CONFIG_DIRECTORY, { recursive: true });
   const tmpPath = `${targetPath}.tmp`;
-  fs.writeFileSync(tmpPath, jsonFileContent);
+  fs.writeFileSync(tmpPath, await renderResolvedConfigJson(chain, gameType));
   fs.renameSync(tmpPath, targetPath);
 }
 

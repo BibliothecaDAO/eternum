@@ -67,6 +67,8 @@ jobs:
               "native": [
                   "apps/gateway/**",
                   "contracts/l3/**",
+                  "contracts/common/addresses/**",
+                  "contracts/utils/**",
                   "packages/**",
                   "config/**",
                   "deploy/athanor/**",

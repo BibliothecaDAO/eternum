@@ -1,10 +1,9 @@
 {
   "name": "eternum-config-deploy",
   "scripts": {
-    "sync:madara:blitz": "bun run ./scripts/run-sync.ts madara blitz",
+    "config:generate": "bun run ./scripts/generate.ts",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "sync:madara:eternum": "bun run ./scripts/run-sync.ts madara eternum"
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@bibliothecadao/eternum": "workspace:*",

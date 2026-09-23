@@ -140,6 +140,8 @@ jobs:
         run: pnpm run build:packages
       - name: Check canonical realm metadata
         run: python3 scripts/generate-realm-metadata.py --check
+      - name: Check generated configs match the config source
+        run: pnpm run config:generate --check
       - name: Test native deployment and registrar
         run: |
           for file in config/deployer/clean/world/native/*.test.ts config/deployer/clean/tests/*.test.ts; do
