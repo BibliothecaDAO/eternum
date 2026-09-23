@@ -1,5 +1,6 @@
 use crate::{
     admission::Permit,
+    metrics::METRICS,
     node::{Execution, ExecutionStatus, Node, Receipt},
     ticket::{ActionStatus, RecordedTicket},
     transaction::selector,
@@ -7,7 +8,12 @@ use crate::{
 use anyhow::{ensure, Context};
 use serde_json::Value;
 use starknet_types_core::felt::Felt;
-use std::{collections::VecDeque, ops::Range, sync::Arc, time::Duration};
+use std::{
+    collections::VecDeque,
+    ops::Range,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 /// How long one submission may stay unresolved before the run reconciles it.
 pub(crate) const SUBMISSION_TIMEOUT: Duration = Duration::from_secs(30);
@@ -15,6 +21,7 @@ pub(crate) const SUBMISSION_TIMEOUT: Duration = Duration::from_secs(30);
 pub(crate) struct PendingTicket {
     pub record: RecordedTicket,
     pub permit: Permit,
+    pub received: Instant,
 }
 
 #[async_trait::async_trait]
@@ -132,6 +139,9 @@ async fn execute_range(node: &impl ExecutionNode, tickets: &[PendingTicket], rej
                 let reason = receipt.revert_reason.as_deref().unwrap_or("reverted");
                 match receipt.execution_status {
                     ExecutionStatus::Succeeded => {
+                        if !rejection {
+                            METRICS.executed(tickets.len());
+                        }
                         let outcomes = receipt_outcomes(tickets.iter().map(|ticket| &ticket.record), hash, &receipt)?;
                         for (ticket, outcome) in tickets.iter().zip(outcomes) {
                             ticket.permit.resolve(outcome);
@@ -417,6 +427,7 @@ mod tests {
                     signature: vec![Felt::ONE, Felt::TWO],
                 },
                 permit,
+                received: Instant::now(),
             });
         }
         (slots, tickets, statuses)

@@ -122,7 +122,7 @@ class ShardTest(unittest.TestCase):
             shard.prepare_runtime_files(directory, environment)
             config = json.loads((directory / "collector.json").read_text())
             self.assertEqual(config["service"]["pipelines"]["metrics"], {
-                "receivers": ["otlp"], "exporters": ["file"],
+                "receivers": ["otlp", "prometheus"], "exporters": ["file"],
             })
             self.assertEqual(config["exporters"]["file"]["path"], "/data/metrics.jsonl")
             self.assertEqual((directory / "metrics").stat().st_mode & 0o777, 0o700)

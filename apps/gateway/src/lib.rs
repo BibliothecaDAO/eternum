@@ -4,6 +4,7 @@
 mod admission;
 mod epoch;
 mod execution;
+mod metrics;
 mod node;
 pub mod protocol;
 mod service;
@@ -61,9 +62,13 @@ async fn serve(
         let (api, builder, stop) = (api.clone(), builder.clone(), stop.clone());
         async move {
             Ok::<_, std::io::Error>(service_fn(move |request: hyper::Request<hyper::Body>| {
+                let metrics = (request.uri().path() == "/metrics").then(|| api.metrics());
                 let module = api.rpc(client_address(peer, trusted_proxy, request.headers()));
                 let (builder, stop) = (builder.clone(), stop.clone());
                 async move {
+                    if let Some(metrics) = metrics {
+                        return Ok(hyper::Response::new(hyper::Body::from(metrics)));
+                    }
                     let mut service = builder.build(module?, stop);
                     hyper::service::Service::call(&mut service, request).await
                 }

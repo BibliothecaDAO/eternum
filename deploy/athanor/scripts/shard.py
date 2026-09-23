@@ -243,10 +243,15 @@ def deployment_environment(config, directory):
 
 def prepare_runtime_files(directory, environment):
     (directory / "metrics").mkdir(mode=0o700)
+    # The node pushes OTLP; the collector scrapes the gateway's admission metrics into the same file.
+    gateway = {"job_name": "gateway", "scrape_interval": "5s", "static_configs": [{"targets": ["gateway:9950"]}]}
     write_json(directory / "collector.json", {
-        "receivers": {"otlp": {"protocols": {"grpc": {"endpoint": "0.0.0.0:4317"}}}},
+        "receivers": {
+            "otlp": {"protocols": {"grpc": {"endpoint": "0.0.0.0:4317"}}},
+            "prometheus": {"config": {"scrape_configs": [gateway]}},
+        },
         "exporters": {"file": {"path": "/data/metrics.jsonl", "rotation": {"max_megabytes": 100, "max_backups": 2}}},
-        "service": {"pipelines": {"metrics": {"receivers": ["otlp"], "exporters": ["file"]}}},
+        "service": {"pipelines": {"metrics": {"receivers": ["otlp", "prometheus"], "exporters": ["file"]}}},
     })
     password = secrets.token_hex(24)
     write_private_environment(directory / "postgres.env", {

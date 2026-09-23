@@ -2,6 +2,7 @@ use crate::{
     admission::{AdmissionSlots, IpLimits, Permit, Slot},
     epoch::EpochSecret,
     execution::{self, ExecutionNode, PendingTicket, SUBMISSION_TIMEOUT},
+    metrics::METRICS,
     node::{Execution, ExecutionStatus, Node},
     protocol::{Envelope, Intent},
     ticket::{context_matches, ActionRequest, ActionStatus, RecordedTicket},
@@ -121,6 +122,10 @@ impl<N: GatewayNode> GameApi<N> {
         }
     }
 
+    pub fn metrics(&self) -> String {
+        METRICS.render(self.0.slots.held())
+    }
+
     /// The client address is the TCP peer's, or the trusted proxy's own forwarded entry.
     pub fn rpc(&self, peer: IpAddr) -> anyhow::Result<RpcModule<Self>> {
         let mut module = RpcModule::new(self.clone());
@@ -187,7 +192,7 @@ async fn run<N: GatewayNode>(api: GameApi<N>, path: &Path) -> anyhow::Result<()>
     let (sender, mut requests) = mpsc::channel(api.0.slots.bound());
     *api.0.sender.lock().expect("admission sender poisoned") = Some(sender);
     tracing::info!(target: "gateway", epoch = assignments.epoch.epoch, "admission open");
-    let mut queue = Vec::new();
+    let mut queue: Vec<PendingTicket> = Vec::new();
     let mut flight: Option<BoxFuture<'static, anyhow::Result<()>>> = None;
     let mut deadline = tokio::time::Instant::now() + PACK_DELAY;
     loop {
@@ -195,6 +200,9 @@ async fn run<N: GatewayNode>(api: GameApi<N>, path: &Path) -> anyhow::Result<()>
             && !queue.is_empty()
             && (queue.len() >= MAX_BATCH || tokio::time::Instant::now() >= deadline)
         {
+            for ticket in &queue {
+                METRICS.left_queue_after(ticket.received.elapsed());
+            }
             flight = Some(execution::execute(node.clone(), std::mem::take(&mut queue)).boxed());
         }
         if flight.is_none() && queue.is_empty() && assignments.rotation_due() {
@@ -208,10 +216,11 @@ async fn run<N: GatewayNode>(api: GameApi<N>, path: &Path) -> anyhow::Result<()>
                     Ok(record) => {
                         let (game, order) = (record.intent.game, record.envelope.order);
                         request.permit.resolve(ActionStatus::Accepted { action, order });
+                        METRICS.accepted();
                         tracing::debug!(target: "gateway", %action, %game, order,
                             admission_ms = request.received.elapsed().as_secs_f64() * 1000.0, "game_action_accepted");
                         if queue.is_empty() { deadline = tokio::time::Instant::now() + PACK_DELAY; }
-                        queue.push(PendingTicket { record, permit: request.permit });
+                        queue.push(PendingTicket { record, permit: request.permit, received: request.received });
                     }
                     Err(error) => request.permit.resolve(ActionStatus::Refused { action, reason: format!("{error:#}") }),
                 }

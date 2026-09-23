@@ -77,6 +77,12 @@ impl AdmissionSlots {
         admissions.players.limit + admissions.authority_work.limit
     }
 
+    /// Tickets admitted and not yet recorded.
+    pub fn held(&self) -> usize {
+        let admissions = self.0.lock().expect("admission slots poisoned");
+        admissions.players.held + admissions.authority_work.held
+    }
+
     /// A retry of a pending ticket reuses it and holds nothing more.
     pub fn reserve(&self, game: Felt, actor: Felt, action: Felt) -> Result<Slot, String> {
         let mut admissions = self.0.lock().expect("admission slots poisoned");
