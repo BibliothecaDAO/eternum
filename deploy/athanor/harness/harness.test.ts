@@ -464,7 +464,7 @@ describe("Madara harness reporting", () => {
         { ...blockRow(11, 3, 30), timestamp: "2026-09-19T00:00:02Z" },
         { ...blockRow(12, 9, 90), timestamp: "2026-09-19T00:00:04Z" },
       ],
-      [],
+      [metricsRow(Date.parse("2026-09-19T00:00:02Z") * 1_000_000, 0, 0, 1, 1)],
       ["--since", "2026-09-19T00:00:01Z", "--until", "2026-09-19T00:00:03Z"],
     );
     expect(output.blocks).toEqual({ count: 1, busy: 1, first: 11, last: 11 });
@@ -489,6 +489,69 @@ describe("Madara harness reporting", () => {
     });
     const idle = await readBlockStats([], [metricsRow(1, 0, 0, 100, 90), metricsRow(2, 0, 0, 100, 90)]);
     expect(idle.executionAmplification.attemptsPerCommitted).toBeNull();
+  });
+  it("fails the read when a required series or block field is missing, and requires a pair's counters only for it", async () => {
+    const withoutMempool = [metricsRow(1, 0, 0, 1, 1)].map((row) => ({
+      resourceMetrics: [
+        {
+          scopeMetrics: [
+            {
+              metrics: row.resourceMetrics[0]!.scopeMetrics[0]!.metrics.filter(
+                ({ name }) => name !== "mempool_ready_transactions",
+              ),
+            },
+          ],
+        },
+      ],
+    }));
+    const noMempool = await runBlockStats([blockRow(10, 1, 10)], withoutMempool);
+    expect(noMempool.exitCode).toBe(1);
+    expect(noMempool.output.missingRequired).toEqual(["mempool_ready_transactions"]);
+
+    const { bouncer_sierra_gas: _gas, ...gasless } = blockRow(10, 1, 10);
+    const noGas = await runBlockStats([gasless], [metricsRow(1, 0, 0, 1, 1)]);
+    expect(noGas.output.missingRequired).toEqual(["bouncer_sierra_gas"]);
+
+    const serial = await runBlockStats([blockRow(10, 1, 10)], [metricsRow(1, 0, 0, 1, 1)], ["--pair", "concurrency"]);
+    expect(serial.exitCode).toBe(1);
+    expect(serial.output.missingRequired).toEqual([
+      "blockifier_transactions_total",
+      "blockifier_validation_attempts_total",
+      "blockifier_aborts_total",
+      "blockifier_commit_phase_aborts_total",
+    ]);
+  });
+  it("reads a pair's counters as window deltas, per cache kind for the hash cache", async () => {
+    const counters = (time: number, calls: number, hits: number, transactions: number) => ({
+      resourceMetrics: [
+        {
+          scopeMetrics: [
+            {
+              metrics: [
+                ...metricsRow(time, 0, 0, 10 + transactions, 10 + transactions).resourceMetrics[0]!.scopeMetrics[0]!
+                  .metrics,
+                ...["blockifier_transactions_total", "blockifier_validation_attempts_total", "blockifier_aborts_total"]
+                  .concat("blockifier_commit_phase_aborts_total")
+                  .map((name) => counterMetric(name, time, name === "blockifier_transactions_total" ? transactions : 0)),
+                counterMetric("exec_hash_cache_calls_total", time, calls, "pedersen_pair"),
+                counterMetric("exec_hash_cache_hits_total", time, hits, "pedersen_pair"),
+                counterMetric("exec_hash_cache_misses_total", time, calls - hits, "pedersen_pair"),
+                counterMetric("exec_hash_cache_capacity_clears_total", time, 0, "pedersen_pair"),
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const output = await readBlockStats([blockRow(10, 1, 10)], [counters(1, 100, 60, 5), counters(2, 140, 90, 9)], [
+      "--pair",
+      "hash-cache",
+    ]);
+    expect(output.missingRequired).toEqual([]);
+    expect(output.blockifier).toEqual({ transactions: 4, validationAttempts: 0, aborts: 0, commitPhaseAborts: 0 });
+    expect(output.hashCache).toEqual({
+      pedersen_pair: { calls: 40, hits: 30, misses: 10, capacityClears: 0, hitRate: 0.75 },
+    });
   });
 });
 
@@ -686,7 +749,7 @@ function blockRow(blockNumber: number, transactions: number, blockProductionMs: 
     bouncer_sierra_gas: transactions * 100,
     batches_executed: 1,
     block_production_ms: blockProductionMs,
-    close_block_total_ms: blockProductionMs + 1,
+    close_end_to_end_ms: blockProductionMs + 1,
     merklization_ms: 2,
     db_write_ms: 1,
   };
@@ -707,6 +770,7 @@ function metricsRow(time: number, transactions: number, ready: number, attempts:
             metrics: [
               metric("mempool_current_size", transactions),
               metric("mempool_ready_transactions", ready),
+              metric("mempool_preconfirmed_transaction_statuses", 0),
               metric("blockifier_execution_attempts_total", attempts, true),
               metric("blockifier_committed_transactions_total", committed, true),
             ],
@@ -717,24 +781,45 @@ function metricsRow(time: number, transactions: number, ready: number, attempts:
   };
 }
 
-async function readBlockStats(rows: unknown[], metrics: unknown[], window: string[] = []) {
+function counterMetric(name: string, time: number, value: number, kind?: string) {
+  return {
+    name,
+    sum: {
+      dataPoints: [
+        {
+          asInt: String(value),
+          timeUnixNano: String(time),
+          startTimeUnixNano: "1",
+          ...(kind ? { attributes: [{ key: "kind", value: { stringValue: kind } }] } : {}),
+        },
+      ],
+    },
+  };
+}
+
+async function runBlockStats(rows: unknown[], metrics: unknown[], options: string[] = []) {
   const directory = await mkdtemp(join(tmpdir(), "node-metrics-"));
   try {
     const metricsPath = join(directory, "metrics.jsonl");
     await writeFile(metricsPath, metrics.map((row) => JSON.stringify(row)).join("\n"));
     const child = Bun.spawn(
-      ["python3", `${import.meta.dir}/../scripts/block-stats.py`, "--json", "--metrics", metricsPath, ...window],
+      ["python3", `${import.meta.dir}/../scripts/block-stats.py`, "--json", "--metrics", metricsPath, ...options],
       {
         stdin: new Blob([rows.map((row) => JSON.stringify(row)).join("\n")]),
         stdout: "pipe",
       },
     );
     const output = await new Response(child.stdout).json();
-    expect(await child.exited).toBe(0);
-    return output;
+    return { output, exitCode: await child.exited };
   } finally {
     await rm(directory, { recursive: true });
   }
+}
+
+async function readBlockStats(rows: unknown[], metrics: unknown[], options: string[] = []) {
+  const { output, exitCode } = await runBlockStats(rows, metrics, options);
+  expect(exitCode).toBe(0);
+  return output;
 }
 
 afterEach(() => mock.restore());

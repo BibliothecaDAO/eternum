@@ -20,6 +20,12 @@ interface BlockStats {
   closeBlockMs: MetricSummary;
   dbWriteMs: { max: number | null };
   merklizationMs: { max: number | null };
+  pair: "concurrency" | "hash-cache" | null;
+  /** Required node series or block fields the window lacked; the read failed if any are listed. */
+  missingRequired: string[];
+  blockifier: Record<"transactions" | "validationAttempts" | "aborts" | "commitPhaseAborts", number | null>;
+  hashCache: Record<string, { calls?: number | null; hits?: number | null; hitRate: number | null }>;
+  l2GasPerBusyBlock: MetricSummary;
   executionAmplification: {
     attempts: number | null;
     committed: number | null;
@@ -32,6 +38,7 @@ interface BlockStats {
     lastObservedTransactions: number | null;
     maxReadyTransactions: number | null;
     maxTransactions: number | null;
+    maxPreconfirmedStatuses: number | null;
     samples: number;
   };
   sierraGasPerBusyBlock: MetricSummary;

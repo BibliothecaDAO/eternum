@@ -4,6 +4,9 @@
 #   deploy/athanor/scripts/block-stats.sh
 #   deploy/athanor/scripts/block-stats.sh --since 2026-08-26T10:00:00Z --until 2026-08-26T10:10:00Z
 #   deploy/athanor/scripts/block-stats.sh --since 10m --json
+#   deploy/athanor/scripts/block-stats.sh --since 10m --json --pair concurrency
+#
+# A required node series or block field that is missing exits 1; --pair makes that lever pair's counters required too.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,7 +19,7 @@ fi
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --since|--until)
+    --since|--until|--pair)
       [[ $# -ge 2 ]] || { echo "missing value for $1" >&2; exit 2; }
       PYTHON_ARGS+=("$1" "$2")
       shift 2
