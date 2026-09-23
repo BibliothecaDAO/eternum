@@ -1,7 +1,7 @@
 import { type GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-models";
-import { hash } from "starknet";
 import { normalizeFelt, type ModelCodec, type ModelRegistry } from "../model-registry";
 import type { DecodedWorldEvent, RawWorldEvent, RpcEvent } from "../types";
+import { nativeEntityId } from "./entity-id";
 import { decodeMembers } from "./serde";
 import {
   schemaIdentity,
@@ -92,7 +92,7 @@ export class NativeDecoder {
       throw new Error("Native row names a foreign emitter");
     const base = {
       model: definition(model.name, model.scope),
-      entityId: normalizeFelt(hash.computePoseidonHashOnElements(frame.keys)),
+      entityId: nativeEntityId(frame.keys),
       key,
       position,
     };
@@ -185,7 +185,7 @@ function decodeEvent(
       scope: projection.scope,
       deletion: "event-ephemeral",
     },
-    entityId: normalizeFelt(hash.computePoseidonHashOnElements([position.transactionHash, position.eventIndex])),
+    entityId: nativeEntityId([position.transactionHash, position.eventIndex]),
     position,
     key,
     value: {

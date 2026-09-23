@@ -9,9 +9,9 @@ import {
   type GameSyncScope,
 } from "@bibliothecadao/eternum/game-sync-models";
 import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
-import { hash } from "starknet";
-import { normalizeFelt, toJsonValue, type ModelRegistry } from "./model-registry";
+import { toJsonValue, type ModelRegistry } from "./model-registry";
 import { FINALIZED_GAME_MODELS } from "./native/read-models";
+import { nativeEntityId } from "./native/entity-id";
 import { rowStreamKeys, scopeInputKeys } from "./subscription-keys";
 import type {
   DecodedRecord,
@@ -270,7 +270,7 @@ export class WorldFold {
     if (account <= 0n || account >= (1n << 251n) - 256n) throw new Error("Invalid gameplay account");
     const nonces = snapshot.models.find(({ model }) => model === "ActionNonce");
     if (!nonces) throw new Error("Actor snapshot requires ActionNonce");
-    const key = normalizeFelt(hash.computePoseidonHashOnElements([gameId, account]));
+    const key = nativeEntityId([gameId, account]);
     if (!nonces.rows.some((row) => BigInt(row.key) === BigInt(key))) {
       // Complete confirmed history establishes the initial nonce; the overlay follows this snapshot.
       nonces.rows.push({ key, value: { game_id: BigInt(gameId).toString(), actor, next_nonce: "0" } });
@@ -711,7 +711,7 @@ export class WorldFold {
     const change = this.apply({
       kind: "set",
       model: codec.definition,
-      entityId: normalizeFelt(hash.computePoseidonHashOnElements([game, account])),
+      entityId: nativeEntityId([game, account]),
       position: event.position,
       key: { game_id: game, actor: account },
       value: { next_nonce: submitted + 1n },
