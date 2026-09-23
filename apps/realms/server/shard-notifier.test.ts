@@ -24,6 +24,9 @@ const GAME_ID = 1;
 const PLAYER_ACCOUNT = "0x4b1d";
 const HOME = 5;
 const ARMY = 7;
+/** Another player on the shard, with no devices, whose army rests too: only an owner-narrowed read leaves it out. */
+const NEIGHBOUR_HOME = 6;
+const NEIGHBOUR_ARMY = 8;
 const PUSH_ENDPOINT = "https://fcm.googleapis.com/fcm/send/player-device";
 const DEVICE_ID = "00000000-0000-4000-8000-000000000001";
 const OWNER = realmsIdOf("player-one");
@@ -68,6 +71,8 @@ const createHerald = () => {
   const log: HistoryRow[] = [];
   const state = {
     army: null as null | { amount: number; updatedTick: number; day: number },
+    /** The neighbour's army, spent whenever the player acts, so it rests alongside the player's. */
+    neighbourArmy: null as null | { amount: number; updatedTick: number; day: number },
     status: "Live" as "Live" | "Settled",
     /** Snapshot reads answered, and whether this Herald is failing them. */
     snapshotReads: 0,
@@ -85,7 +90,8 @@ const createHerald = () => {
         { error: `Game ${GAME_ID} is finalized; its review snapshot holds GameRegistry` },
         { status: 409 },
       );
-    if (url.pathname === `/games/${GAME_ID}/snapshot`) return snapshot(state.army);
+    if (url.pathname === `/games/${GAME_ID}/snapshot`)
+      return snapshot(state.army, state.neighbourArmy, url.searchParams.get("owner"));
     const page = { chain: CHAIN_ID, world_address: "0x5e45", complete_through_block: 10 + log.length };
     const after = url.searchParams.get("after");
     if (!after) return { ...page, next_cursor: { block: 10, transaction: 2147483647, event: 2147483647 }, items: [] };
@@ -105,6 +111,7 @@ const createHerald = () => {
   /** The player acts: a recorded execution on the next block, their army's stamina spent at this tick. */
   const act = (stamina: number, day = TODAY) => {
     state.army = { amount: stamina, updatedTick: armiesTick(), day };
+    state.neighbourArmy = { ...state.army };
     append("ExecutionRecorded", 1, {
       game_id: GAME_ID,
       actor: PLAYER_ACCOUNT,
@@ -129,7 +136,15 @@ const createHerald = () => {
 };
 
 /** The game's rules with a short armies tick, the player's home realm, and their army if it still exists. */
-const snapshot = (army: null | { amount: number; updatedTick: number; day: number }) => ({
+type ArmyState = { amount: number; updatedTick: number; day: number };
+
+/** Structure owners, so the fake narrows armies to one account's as Herald's owner filter does. */
+const STRUCTURE_OWNERS = new Map([
+  [HOME, PLAYER_ACCOUNT],
+  [NEIGHBOUR_HOME, "0x7e1"],
+]);
+
+const snapshot = (army: ArmyState | null, neighbour: ArmyState | null, owner: string | null) => ({
   confirmed_block: 10,
   game_id: String(GAME_ID),
   models: [
@@ -188,61 +203,32 @@ const snapshot = (army: null | { amount: number; updatedTick: number; day: numbe
         },
       ],
     },
-    { model: "Structure", rows: [{ key: "0x2", value: homeStructure }] },
     {
       model: "ExplorerTroops",
-      rows: army
-        ? [
-            {
-              key: "0x3",
-              value: {
-                ...explorerFixture.expected.value,
-                game_id: GAME_ID,
-                explorer_id: ARMY,
-                owner: HOME,
-                // An army stands in the region of the day it marched out on.
-                coord: { x: REGION_SPACING / 2, y: army.day * 4 * REGION_SPACING + REGION_SPACING / 2, alt: false },
-                troops: {
-                  ...explorerFixture.expected.value.troops,
-                  count: "0x64",
-                  stamina: { amount: army.amount, updated_tick: army.updatedTick },
-                },
-              },
-            },
-          ]
-        : [],
+      rows: [
+        ...(army ? [armyRow(ARMY, HOME, army)] : []),
+        ...(neighbour ? [armyRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME, neighbour)] : []),
+      ].filter(({ value }) => owner === null || BigInt(STRUCTURE_OWNERS.get(value.owner)!) === BigInt(owner)),
     },
   ],
 });
 
-const homeStructure = {
-  game_id: GAME_ID,
-  entity_id: HOME,
-  owner: PLAYER_ACCOUNT,
-  base: {
-    coord_x: 12,
-    coord_y: 34,
-    alt: false,
-    level: 1,
-    category: 1,
-    troop_explorer_count: 1,
-    troop_max_explorer_count: 2,
-    troop_max_guard_count: 0,
-    created_at: 0,
-    starting_troops_granted: true,
+const armyRow = (explorerId: number, home: number, army: ArmyState) => ({
+  key: `0x${explorerId.toString(16)}`,
+  value: {
+    ...explorerFixture.expected.value,
+    game_id: GAME_ID,
+    explorer_id: explorerId,
+    owner: home,
+    // An army stands in the region of the day it marched out on.
+    coord: { x: REGION_SPACING / 2, y: army.day * 4 * REGION_SPACING + REGION_SPACING / 2, alt: false },
+    troops: {
+      ...explorerFixture.expected.value.troops,
+      count: "0x64",
+      stamina: { amount: army.amount, updated_tick: army.updatedTick },
+    },
   },
-  metadata: {
-    realm_id: 1,
-    order: 1,
-    has_wonder: false,
-    village_realm: 0,
-    mine_kind: 0,
-    attunement: 0,
-    barracks_tier: 0,
-  },
-  troop_explorers: [],
-  resources_packed: "0x0",
-};
+});
 
 /** The Worker in workerd over storage that survives a restart, a fake Herald, and a push service answering `status`. */
 const createHarness = async (level: "important" | "standard") => {

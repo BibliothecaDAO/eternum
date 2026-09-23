@@ -70,7 +70,8 @@ export const actorsWhoActed = (page: HeraldStoryHistoryPage): { gameId: number; 
 };
 
 /**
- * A player's armies in one game and when each is full, from the shard's own rules for that game. In a game of daily
+ * A player's armies in one game and when each is full, from the shard's own rules for that game. Herald narrows the
+ * read to the armies the player's structures own, so its cost is one player's, not the game's. In a game of daily
  * expeditions an army from an earlier day is no army any more, whether or not its row remains.
  */
 export const readActorArmies = async (
@@ -82,7 +83,8 @@ export const readActorArmies = async (
   const snapshot = await fetchHeraldGameSnapshot(
     { url: shardUrl },
     gameId,
-    ["SliceRules", "SettlementRules", "GameRegistry", "Structure", "ExplorerTroops"],
+    ["SliceRules", "SettlementRules", "GameRegistry", "ExplorerTroops"],
+    actor,
     actor,
   );
   const store = new NativeFactStore();
@@ -93,9 +95,7 @@ export const readActorArmies = async (
   const tickSeconds = Number(rules.tick_config.armies_tick_in_seconds);
   const currentTick = Math.floor(now / 1000 / tickSeconds);
   const expedition = readExpeditionRules(store, gameId);
-  const homes = new Set([...store.structuresOwnedBy(gameId, BigInt(actor))].map((structure) => structure.entity_id));
   return [...store.inGame("ExplorerTroops", gameId)]
-    .filter((army) => homes.has(army.owner))
     .filter((army) => !expedition || isCurrentExpeditionArmy(expedition, army.coord, now / 1000))
     .map((army) => {
       const stamina = staminaAt(army.troops, currentTick, rules.troop_stamina_config);
