@@ -2,8 +2,9 @@ import { Effect } from "effect";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createLaunchApp } from "./app";
 import type { IdentityResolver } from "./auth";
-import { createLaunchTestStore } from "./test-store";
-import { PostgresSlotStore } from "./slot-store";
+import { D1SlotStore } from "./slot-store";
+import { D1LaunchStore } from "./store";
+import { createLaunchTestDatabase } from "./test-database";
 
 const ALLOWED_ORIGIN = "https://play.realms.party";
 const ALLOWED_ADDRESS = "0x123";
@@ -12,9 +13,9 @@ const identity = (address: string | null): IdentityResolver => ({
   resolve: () => Effect.succeed(address ? { address } : null),
 });
 
-let database: Awaited<ReturnType<typeof createLaunchTestStore>>;
+let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
-  database = await createLaunchTestStore();
+  database = await createLaunchTestDatabase();
 });
 afterEach(async () => {
   await database.close();
@@ -22,28 +23,31 @@ afterEach(async () => {
 
 const createApp = (
   resolver: IdentityResolver,
-  store = database.store,
-  slots = new PostgresSlotStore(store.pool),
+  slots = new D1SlotStore(database.db),
   verifyPlayer = vi.fn(async (_owner: string) => {}),
-) => ({
-  app: createLaunchApp({
-    config: {
-      allowedOrigins: new Set([ALLOWED_ORIGIN]),
-      launcherAllowlist: new Set([ALLOWED_ADDRESS]),
-    },
-    identity: resolver,
+) => {
+  const store = new D1LaunchStore(database.db);
+  return {
+    app: createLaunchApp({
+      config: {
+        allowedOrigins: new Set([ALLOWED_ORIGIN]),
+        launcherAllowlist: new Set([ALLOWED_ADDRESS]),
+      },
+      deployment: { environment: "staging", version: "test" },
+      identity: resolver,
+      store,
+      slots,
+      verifyPlayer,
+    }),
     store,
     slots,
     verifyPlayer,
-  }),
-  store,
-  slots,
-  verifyPlayer,
-});
+  };
+};
 
 describe("free slot registration", () => {
   const registerRequest = () =>
-    new Request("http://launch.test/api/slots/friday/register", {
+    new Request("https://play.realms.party/api/slots/friday/register", {
       method: "POST",
       headers: {
         origin: ALLOWED_ORIGIN,
@@ -55,7 +59,7 @@ describe("free slot registration", () => {
 
   test("binds registration to the verified identity, without requiring launcher privileges", async () => {
     const { app, slots, verifyPlayer } = createApp(identity("0x456"));
-    await slots.create("friday", "2099-01-01T00:00:00Z");
+    await slots.create("friday", "2099-01-01T00:00:00.000Z");
     const response = await app.request(registerRequest());
     expect(response.status).toBe(200);
     expect((await slots.list())[0].registrations.map(({ owner }) => owner)).toEqual(["0x456"]);
@@ -63,10 +67,9 @@ describe("free slot registration", () => {
   });
 
   test("does not freeze an unbound identity into the roster", async () => {
-    const slots = new PostgresSlotStore(database.store.pool);
+    const slots = new D1SlotStore(database.db);
     const { app } = createApp(
       identity("0x456"),
-      database.store,
       slots,
       vi.fn(async () => {
         throw new Error("Identity has no gameplay account");
@@ -87,7 +90,7 @@ describe("free slot registration", () => {
 });
 
 const launchRequest = () =>
-  new Request("http://launch.test/api/factory/runs", {
+  new Request("https://play.realms.party/api/factory/runs", {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -132,7 +135,7 @@ describe("launch service authorization", () => {
     );
     expect(response.status).toBe(202);
     expect(await response.json()).toMatchObject({ gameType: "eternum", environment: "madara.eternum" });
-    const listed = await app.request("http://launch.test/api/factory/runs?environment=madara.eternum");
+    const listed = await app.request("https://play.realms.party/api/factory/runs?environment=madara.eternum");
     expect(await listed.json()).toMatchObject({ runs: [{ gameType: "eternum", gameName: "eternum-factory-test" }] });
   });
 
@@ -147,24 +150,9 @@ describe("launch service authorization", () => {
       workflow: { workflowName: "box-native" },
     });
 
-    const listed = await app.request("http://launch.test/api/factory/runs?environment=madara.blitz");
+    const listed = await app.request("https://play.realms.party/api/factory/runs?environment=madara.blitz");
     expect(listed.status).toBe(200);
     expect(await listed.json()).toMatchObject({ runs: [{ gameName: "bltz-effect-test" }] });
-  });
-
-  test("exposes public reads only to allowlisted browser origins", async () => {
-    const { app } = createApp(identity(null));
-    const allowed = await app.request("http://launch.test/api/factory/runs?environment=madara.blitz", {
-      headers: { origin: ALLOWED_ORIGIN },
-    });
-    const disallowed = await app.request("http://launch.test/api/factory/runs?environment=madara.blitz", {
-      headers: { origin: "https://attacker.example" },
-    });
-
-    expect(allowed.status).toBe(200);
-    expect(allowed.headers.get("access-control-allow-origin")).toBe(ALLOWED_ORIGIN);
-    expect(disallowed.status).toBe(200);
-    expect(disallowed.headers.get("access-control-allow-origin")).toBeNull();
   });
 
   test("rejects Duel and unregistered presets at the schema", async () => {

@@ -4,21 +4,20 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "bun run src/main.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "dotenv": "^16.4.5",
+    "@realms-world/chain": "workspace:*",
     "effect": "4.0.0-rc.108",
-    "hono": "^4.9.12",
-    "pg": "^8.18.0"
+    "hono": "^4.9.12"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "5.20260922.1",
     "@types/node": "^22.13.5",
-    "@types/pg": "^8.16.0",
-    "bun-types": "catalog:web",
+    "miniflare": "4.20260730.0",
     "typescript": "^5.8.2",
-    "vitest": "^2.1.9"
+    "vitest": "^2.1.9",
+    "wrangler": "4.136.3"
   }
 }

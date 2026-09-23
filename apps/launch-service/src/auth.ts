@@ -1,6 +1,5 @@
-import { Context, Effect, Layer, Result, Schema } from "effect";
+import { Effect, Result, Schema } from "effect";
 import type { MiddlewareHandler } from "hono";
-import type { LaunchServiceConfig } from "./config";
 import { normalizeAddress } from "./address";
 import { BoundaryDecodeError, IdentityUnavailable } from "./errors";
 
@@ -13,7 +12,10 @@ export interface IdentityResolver {
 }
 
 export type LaunchAppEnv = { Variables: { launcherAddress: string } };
-type LaunchAccess = Pick<LaunchServiceConfig, "allowedOrigins" | "launcherAllowlist">;
+export interface LaunchAccess {
+  allowedOrigins: ReadonlySet<string>;
+  launcherAllowlist: ReadonlySet<string>;
+}
 
 export const requireIdentity =
   (identity: IdentityResolver, config: LaunchAccess): MiddlewareHandler<LaunchAppEnv> =>
@@ -41,18 +43,19 @@ export const requireLauncher =
     return next();
   };
 
-export class VerifiedIdentity extends Context.Service<VerifiedIdentity, IdentityResolver>()(
-  "launch/VerifiedIdentity",
-) {}
-
+// A launcher or a slot's player is the Starknet wallet linked to the Realms account; an account with no linked wallet
+// has no launch identity.
 const IdentitySessionSchema = Schema.Struct({
   session: Schema.Struct({ id: Schema.NonEmptyString }),
-  user: Schema.Struct({ id: Schema.String.pipe(Schema.check(Schema.isPattern(/^0x[0-9a-fA-F]+$/))) }),
+  user: Schema.Struct({
+    address: Schema.optional(Schema.NullOr(Schema.String.pipe(Schema.check(Schema.isPattern(/^0x[0-9a-fA-F]+$/))))),
+  }),
 });
 
+/** Asks the identity Worker, over its service binding, whose session a cookie carries. */
 export const createIdentityResolver = (
   identityUrl: string,
-  fetchSession: typeof fetch = globalThis.fetch,
+  fetchSession: (url: URL, init: RequestInit) => Promise<Response>,
 ): IdentityResolver => ({
   resolve: (cookie) =>
     Effect.tryPromise({
@@ -73,12 +76,9 @@ export const createIdentityResolver = (
       Effect.flatMap((payload) => {
         if (payload === null) return Effect.succeed(null);
         return Schema.decodeUnknownEffect(IdentitySessionSchema)(payload).pipe(
-          Effect.map((session) => ({ address: normalizeAddress(session.user.id) })),
+          Effect.map((session) => (session.user.address ? { address: normalizeAddress(session.user.address) } : null)),
           Effect.mapError((cause) => new BoundaryDecodeError({ boundary: "identity-session", cause })),
         );
       }),
     ),
 });
-
-export const identityLayer = (identityUrl: string): Layer.Layer<VerifiedIdentity> =>
-  Layer.succeed(VerifiedIdentity, createIdentityResolver(identityUrl));

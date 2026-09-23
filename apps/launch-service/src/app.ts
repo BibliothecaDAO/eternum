@@ -1,10 +1,8 @@
 import { isGameEnvironmentId, type GameEnvironmentId } from "../../../config/shared/game-environments";
 import { Effect, Schema } from "effect";
 import { Hono, type Context } from "hono";
-import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import type { LaunchServiceConfig } from "./config";
-import { requireIdentity, requireLauncher, type IdentityResolver, type LaunchAppEnv } from "./auth";
+import { requireIdentity, requireLauncher, type IdentityResolver, type LaunchAccess, type LaunchAppEnv } from "./auth";
 import { createSlotRoutes } from "./slot-routes";
 import type { SlotStore } from "./slots";
 import { toFactoryRunRecord } from "./model";
@@ -12,7 +10,9 @@ import { CreateGameRequestSchema, type LaunchJobRequest, type LaunchKind } from 
 import type { LaunchServiceStore } from "./store";
 
 interface LaunchAppDependencies {
-  config: Pick<LaunchServiceConfig, "allowedOrigins" | "launcherAllowlist">;
+  config: LaunchAccess;
+  /** What the health route reports, so a deploy can tell its own answers from its predecessor's. */
+  deployment: { environment: string; version: string };
   identity: IdentityResolver;
   store: LaunchServiceStore;
   slots: SlotStore;
@@ -65,23 +65,14 @@ const deleteRun = async (context: Context, store: LaunchServiceStore, kind: Laun
 export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   const app = new Hono<LaunchAppEnv>();
   app.use("*", logger());
-  app.use(
-    "/api/*",
-    cors({
-      origin: (origin) => (dependencies.config.allowedOrigins.has(origin) ? origin : ""),
-      allowHeaders: ["Content-Type"],
-      allowMethods: ["GET", "POST", "OPTIONS"],
-      credentials: true,
-    }),
-  );
   app.use("/api/*", requireIdentity(dependencies.identity, dependencies.config));
   app.use("/api/factory/*", requireLauncher(dependencies.config));
   app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.verifyPlayer));
 
-  app.get("/health", async (context) => {
+  app.get("/api/factory/health", async (context) => {
     try {
       await dependencies.store.list("madara.blitz");
-      return context.json({ status: "ok", timestamp: new Date().toISOString() });
+      return context.json({ service: "launch", ...dependencies.deployment });
     } catch {
       return context.json({ status: "unavailable" }, 503);
     }

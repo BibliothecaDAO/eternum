@@ -14,6 +14,8 @@ import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { Account, logger } from "starknet";
 import { assertChainId } from "../../../packages/chain/chain-guard.js";
 import { launchGame } from "../../../config/deployer/clean/launch/runner";
+import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
+import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { createHarnessAccounts, type HarnessAccount } from "./account-factory";
 import { connectHarnessGameClient, type HarnessGameplayContracts } from "./game-client";
 import { createHarnessGame } from "./harness-game";
@@ -296,6 +298,8 @@ async function resolveHarnessGame(options: HarnessCliOptions, rosterOwners: stri
   }
   const startAt = Math.floor(Date.now() / 1_000) + 60;
   const summary = await launchGame({
+    manifest: readShardManifest<NativeWorldManifest>(process.env.NATIVE_WORLD_MANIFEST),
+    heraldUrl: options.heraldUrl,
     accountAddress: process.env.DEPLOYER_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS,
     devModeOn: false,
     durationSeconds: Math.ceil(options.minutes * 60) + 3_600,

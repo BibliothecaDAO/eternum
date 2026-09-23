@@ -2,6 +2,8 @@
 import { buildLaunchGameRequest, parseArgs } from "./launch-request";
 import { DEFAULT_MADARA_PRESET_ID } from "../constants";
 import { launchGame } from "../launch/runner";
+import { readShardManifest } from "@realms-world/chain/shard-manifest";
+import type { NativeWorldManifest } from "../world/native/types";
 
 function usage(): void {
   console.log(
@@ -10,6 +12,8 @@ function usage(): void {
       "Usage:",
       "  bun config/deployer/clean/cli/create.ts --environment madara.blitz --game <world-name> --start-time <unix|iso>",
       "  bun config/deployer/clean/cli/create.ts --config-path <path-to-launch.yaml>",
+      "",
+      "Required env: NATIVE_WORLD_MANIFEST (the shard's deployment document)",
       "",
       "Optional env or flags:",
       "  GAME_LAUNCH_CONFIG_PATH / --config-path",
@@ -42,7 +46,10 @@ async function main() {
     return;
   }
 
-  const summary = await launchGame(buildLaunchGameRequest(args));
+  const summary = await launchGame({
+    ...buildLaunchGameRequest(args),
+    manifest: readShardManifest<NativeWorldManifest>(process.env.NATIVE_WORLD_MANIFEST),
+  });
   console.log(JSON.stringify(summary, null, 2));
 }
 

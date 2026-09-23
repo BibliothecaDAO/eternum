@@ -4,7 +4,6 @@ import { buildNativeGameParams, loadNativePresetConfiguration } from "../registr
 import { buildNativePreset } from "../config/native-preset";
 import { setTimeout as sleep } from "node:timers/promises";
 import { Account, RpcProvider, shortString } from "starknet";
-import { readShardManifest } from "@realms-world/chain/shard-manifest";
 import { assertProviderChain } from "@realms-world/chain";
 import { applyDeploymentConfigOverrides } from "../config/config-loader";
 import {
@@ -17,7 +16,6 @@ import {
   assertRegistrarAvailable,
   createRegistrarGame,
   settleBlitzRoster,
-  resolveRegistrarEnvironmentId,
   resolveBlitzRoster,
   findRegistrarGame,
   resolveRegistrarWorldAddress,
@@ -169,15 +167,13 @@ function createLaunchAccount(launch: PreparedLaunch): Account {
 }
 
 async function assertLaunchChainTargets(launch: PreparedLaunch): Promise<void> {
-  await assertProviderChain(launch.runtime.provider, readShardManifest(process.env.NATIVE_WORLD_MANIFEST), "RPC_URL");
+  await assertProviderChain(launch.runtime.provider, launch.request.manifest, "RPC_URL");
 }
 
 async function buildRegistrarGameParams(launch: PreparedLaunch) {
   const owners = launch.request.rosterOwners ?? [];
   const fixedRoster = nativePresetForId(launch.runtime.presetId).entryRule === nativeRuleConstants.ENTRY_ROSTER;
-  const roster = fixedRoster
-    ? await resolveBlitzRoster(launch.runtime.provider, owners, launch.runtime.environment.id)
-    : [];
+  const roster = fixedRoster ? await resolveBlitzRoster(launch.runtime.provider, owners, launch.request.manifest) : [];
   if (!fixedRoster && owners.length) throw new Error("Eternum does not use a fixed roster");
   const block = await launch.runtime.provider.getBlock("latest");
   return buildNativeGameParams(
@@ -200,14 +196,13 @@ async function buildRegistrarGameParams(launch: PreparedLaunch) {
 }
 
 function applyGameIdentity(launch: PreparedLaunch, gameId: number): void {
-  const environmentId = resolveRegistrarEnvironmentId(launch.runtime.environment.id);
   launch.summary.gameId = gameId;
-  launch.summary.worldAddress = resolveRegistrarWorldAddress(environmentId);
+  launch.summary.worldAddress = resolveRegistrarWorldAddress(launch.request.manifest);
 }
 
 async function findExistingGame(launch: PreparedLaunch) {
   try {
-    return await findRegistrarGame(launch.runtime.provider, launch.request.gameName, launch.runtime.environment.id);
+    return await findRegistrarGame(launch.runtime.provider, launch.request.gameName, launch.request.manifest);
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     throw new Error(
@@ -234,8 +229,7 @@ async function resolveCreatedGameId(launch: PreparedLaunch, emittedGameId?: numb
 }
 
 async function createGame(launch: PreparedLaunch): Promise<void> {
-  const environmentId = resolveRegistrarEnvironmentId(launch.runtime.environment.id);
-  assertRegistrarAvailable(environmentId);
+  assertRegistrarAvailable(launch.request.manifest);
 
   const existingGame = await findExistingGame(launch);
   if (existingGame) {
@@ -253,9 +247,9 @@ async function createGame(launch: PreparedLaunch): Promise<void> {
       createRegistrarGame(
         createLaunchAccount(launch),
         params,
-        environmentId,
+        launch.request.manifest,
         buildNativePreset(
-          loadNativePresetConfiguration(environmentId, launch.runtime.presetId),
+          loadNativePresetConfiguration(launch.runtime.environment.id, launch.runtime.presetId),
           launch.runtime.presetId,
         ),
       ),
@@ -283,14 +277,14 @@ async function resolveGameId(launch: PreparedLaunch): Promise<number> {
 }
 
 async function waitForGameIndex(launch: PreparedLaunch): Promise<void> {
-  const environmentId = resolveRegistrarEnvironmentId(launch.runtime.environment.id);
-  assertRegistrarAvailable(environmentId);
+  assertRegistrarAvailable(launch.request.manifest);
   const gameId = await resolveGameId(launch);
   const row = await launch.runtime.progress.run(
     "wait for game indexing",
     () =>
       waitForGameRegistryById({
         gameId,
+        heraldUrl: launch.request.heraldUrl,
         timeoutMs: launch.request.waitForFactoryIndexTimeoutMs ?? DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
         pollIntervalMs: launch.request.waitForFactoryIndexPollMs ?? DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
         onRetry: (attempt, elapsedMs) =>
@@ -318,7 +312,7 @@ async function createAndSettleGame(launch: PreparedLaunch): Promise<void> {
     launch.runtime.provider,
     await resolveGameId(launch),
     launchCredentials(launch),
-    launch.runtime.environment.id,
+    launch.request.manifest,
     admissionUrl!,
   );
 }

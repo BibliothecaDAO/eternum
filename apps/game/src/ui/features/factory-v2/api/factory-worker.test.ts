@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { createEternumGame, fetchFactoryRuns, registerPlaytestSlot, retryFactoryRun } from "./factory-worker";
-vi.mock("../../../../../env", () => ({ env: { VITE_PUBLIC_LAUNCH_SERVICE_URL: "https://launch.test/" } }));
+vi.mock("@/hooks/context/identity-session", () => ({ identityOrigin: () => "https://launch.test" }));
 afterEach(() => vi.unstubAllGlobals());
 it("sends free-slot and Eternum requests through the authenticated service", async () => {
   const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });

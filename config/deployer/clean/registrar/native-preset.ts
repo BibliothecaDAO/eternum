@@ -1,7 +1,11 @@
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { resolveDeploymentEnvironment } from "../environment";
 import { nativePresetForId } from "../../../source/native";
-import { loadConfiguration } from "../config/config-loader";
+import { configurationOf, type StoredConfiguration } from "../config/config-loader";
+import blitz from "../../../generated/blitz.madara.json";
+import duel from "../../../generated/duel.madara.json";
+import eternum from "../../../generated/eternum.madara.json";
+import frontier from "../../../generated/frontier.madara.json";
 import type { DeploymentEnvironmentId } from "../types";
 import { readFileSync } from "node:fs";
 import { CallData, CairoOption, CairoOptionVariant, hash, shortString, type Account } from "starknet";
@@ -93,10 +97,15 @@ export function buildNativeGameParams(
   };
 }
 
+// Imported rather than read from disk, so the launch Worker carries the same preset configurations as the CLIs. Each
+// load is a copy, as a file read was: launches apply their overrides to the configuration they get.
+const NATIVE_CONFIGURATIONS = { blitz, duel, eternum, frontier } as unknown as Record<string, StoredConfiguration>;
+
 export function loadNativePresetConfiguration(environment: DeploymentEnvironmentId, presetId: number): Config {
   const target = resolveDeploymentEnvironment(environment);
   const preset = nativePresetForId(presetId);
-  if (preset.environmentGameType !== target.gameType)
+  const stored = target.chain === "madara" ? NATIVE_CONFIGURATIONS[preset.gameType] : undefined;
+  if (preset.environmentGameType !== target.gameType || !stored)
     throw new Error(`No native preset definition for ${environment} preset ${presetId}`);
-  return loadConfiguration(`config/generated/${preset.gameType}.${target.chain}.json`);
+  return configurationOf(structuredClone(stored), `config/generated/${preset.gameType}.madara.json`);
 }

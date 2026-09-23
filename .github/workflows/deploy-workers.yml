@@ -2,13 +2,18 @@ name: Deploy Workers
 
 # Deploys the central-service Workers to Cloudflare. Staging, which the isolated box stack uses, deploys on every push to
 # the native branches; production deploys only by dispatch, at the cutover. Each environment has its own D1 databases
-# and secrets. The guardian Worker is deployed by the owner alone and is not listed here.
+# and secrets. The guardian Worker is deployed by the owner alone and is not listed here. The launch Worker targets the
+# shard its environment's variables name (LAUNCH_RPC_URL, LAUNCH_ADMISSION_URL, LAUNCH_HERALD_URL,
+# LAUNCH_WORLD_MANIFEST_URL, LAUNCH_DEPLOYER_ACCOUNT_ADDRESS, LAUNCHER_ALLOWLIST and, where Frontier runs,
+# FRONTIER_SEASON_START) and signs with its LAUNCH_DEPLOYER_PRIVATE_KEY secret.
 on:
   push:
     branches: [native-services, native-world-foundation]
     paths:
       - "apps/realms/**"
       - "apps/guardian/**"
+      - "apps/launch-service/**"
+      - "config/**"
       - "packages/identity/**"
       - "packages/notifications/**"
       - "pnpm-lock.yaml"
@@ -41,6 +46,11 @@ jobs:
           - worker: apps/realms
             package: "@realms-world/realms"
             database: realms-identity
+            health: /api/health
+          - worker: apps/launch-service
+            package: "@bibliothecadao/launch-service"
+            database: realms-launch
+            health: /api/factory/health
     env:
       TARGET: ${{ inputs.environment || 'staging' }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -95,14 +105,48 @@ jobs:
           jq -n --arg names "$names" 'env as $env | $names | split(" ") | map({(.): $env[.]}) | add' |
             pnpm exec wrangler secret bulk --env "$TARGET"
 
+      - name: Set launch secrets
+        if: matrix.worker == 'apps/launch-service'
+        working-directory: ${{ matrix.worker }}
+        env:
+          DEPLOYER_PRIVATE_KEY: ${{ secrets.LAUNCH_DEPLOYER_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          [ -n "$DEPLOYER_PRIVATE_KEY" ] || { echo "::error::LAUNCH_DEPLOYER_PRIVATE_KEY is not set for the $TARGET environment"; exit 1; }
+          jq -n '{DEPLOYER_PRIVATE_KEY: env.DEPLOYER_PRIVATE_KEY}' | pnpm exec wrangler secret bulk --env "$TARGET"
+
       - name: Deploy
+        if: matrix.worker != 'apps/launch-service'
         working-directory: ${{ matrix.worker }}
         env:
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
         run: pnpm exec wrangler deploy --env "$TARGET"
 
-      # The deploy record names the Worker's route pattern and the version it deployed; the route must answer
-      # /api/health from that version, not from the one it replaced.
+      # The shard a launch writes to is the environment's decision, set beside the shard, not code.
+      - name: Deploy the launch Worker at its shard
+        if: matrix.worker == 'apps/launch-service'
+        working-directory: ${{ matrix.worker }}
+        env:
+          WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
+          RPC_URL: ${{ vars.LAUNCH_RPC_URL }}
+          ADMISSION_URL: ${{ vars.LAUNCH_ADMISSION_URL }}
+          HERALD_URL: ${{ vars.LAUNCH_HERALD_URL }}
+          NATIVE_WORLD_MANIFEST_URL: ${{ vars.LAUNCH_WORLD_MANIFEST_URL }}
+          DEPLOYER_ACCOUNT_ADDRESS: ${{ vars.LAUNCH_DEPLOYER_ACCOUNT_ADDRESS }}
+          LAUNCHER_ALLOWLIST: ${{ vars.LAUNCHER_ALLOWLIST }}
+          FRONTIER_SEASON_START: ${{ vars.FRONTIER_SEASON_START }}
+        run: |
+          set -euo pipefail
+          args=()
+          for name in RPC_URL ADMISSION_URL HERALD_URL NATIVE_WORLD_MANIFEST_URL DEPLOYER_ACCOUNT_ADDRESS LAUNCHER_ALLOWLIST; do
+            [ -n "${!name}" ] || { echo "::error::the $TARGET environment has no variable for $name"; exit 1; }
+            args+=(--var "$name:${!name}")
+          done
+          if [ -n "$FRONTIER_SEASON_START" ]; then args+=(--var "FRONTIER_SEASON_START:$FRONTIER_SEASON_START"); fi
+          pnpm exec wrangler deploy --env "$TARGET" "${args[@]}"
+
+      # The deploy record names the Worker's route pattern and the version it deployed; the route must answer its health
+      # path from that version, not from the one it replaced.
       - name: Verify the deployed version answers
         env:
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
@@ -114,7 +158,7 @@ jobs:
           host=${target#https://}
           host=${host%%/*}
           for attempt in $(seq 1 20); do
-            if curl -fsS "https://$host/api/health" > health.json &&
+            if curl -fsS "https://$host${{ matrix.health }}" > health.json &&
               jq -e --arg env "$TARGET" --arg version "$version" \
                 '.environment == $env and .version == $version' health.json > /dev/null; then
               cat health.json
@@ -122,6 +166,6 @@ jobs:
             fi
             sleep 3
           done
-          echo "::error::https://$host/api/health did not answer from version $version"
+          echo "::error::https://$host${{ matrix.health }} did not answer from version $version"
           cat health.json || true
           exit 1

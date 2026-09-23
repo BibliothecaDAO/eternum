@@ -1,4 +1,4 @@
-import { useIdentitySession } from "@/hooks/context/identity-session";
+import { identityOrigin, useIdentitySession } from "@/hooks/context/identity-session";
 import { resolveChatSenderName } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY } from "@/ui/design-system/atoms/hud-typography";
@@ -31,7 +31,7 @@ export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenCha
     state.activeZoneId === gameZoneId ? gameZoneId : GLOBAL_CHAT_CHANNEL_ID,
   );
   const initializer = useMemo<InitializeRealtimeClientParams | null>(
-    () => (signedIn ? { baseUrl: window.location.origin, joinZones: gameZoneId ? [gameZoneId] : [] } : null),
+    () => (signedIn ? { baseUrl: identityOrigin(), joinZones: gameZoneId ? [gameZoneId] : [] } : null),
     [signedIn, gameZoneId],
   );
   useRealtimeChatInitializer(initializer);

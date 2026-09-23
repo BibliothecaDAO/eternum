@@ -11,7 +11,7 @@ import { resolveDeploymentEnvironment } from "../environment";
 import { loadRepoJsonFile } from "../shared/repo";
 import type { DeploymentEnvironmentId } from "../types";
 
-interface StoredConfiguration {
+export interface StoredConfiguration {
   configuration?: EternumConfig;
 }
 
@@ -100,9 +100,12 @@ const BIOME_CLIMATE_OVERRIDE_LIMITS = {
 } satisfies Record<keyof FactoryBiomeClimateOverrides, number>;
 
 export function loadConfiguration(configPath: string): EternumConfig {
-  const parsed = loadRepoJsonFile<StoredConfiguration>(configPath);
-  if (!parsed.configuration) throw new Error(`No configuration object found in ${configPath}`);
-  return applyBiomeClimateDefaults(parsed.configuration);
+  return configurationOf(loadRepoJsonFile<StoredConfiguration>(configPath), configPath);
+}
+
+export function configurationOf(stored: StoredConfiguration, source: string): EternumConfig {
+  if (!stored.configuration) throw new Error(`No configuration object found in ${source}`);
+  return applyBiomeClimateDefaults(stored.configuration);
 }
 
 function resolveDurationSeconds(baseConfig: EternumConfig, overrides: ConfigOverrides): number | undefined {

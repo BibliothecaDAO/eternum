@@ -33,6 +33,10 @@
         ]
       }
     },
+    "apps/launch-service": {
+      "entry": ["src/worker.ts"],
+      "ignoreDependencies": ["cloudflare"]
+    },
     "apps/guardian": {
       "entry": [
         "src/worker.ts"
@@ -348,10 +352,6 @@
       "types"
     ],
     "packages/types/src/chat/direct-messages.ts": [
-      "exports",
-      "types"
-    ],
-    "packages/types/src/chat/notes.ts": [
       "exports",
       "types"
     ],

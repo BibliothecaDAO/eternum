@@ -13,7 +13,6 @@ const envSchema = z.object({
   // Optional public mainnet RPC handed to the cross-origin Controller keychain, which cannot fetch
   // a loopback host (Private Network Access); the lab therefore points it at a public node.
   VITE_PUBLIC_CONTROLLER_RPC_URL: z.string().url().optional(),
-  VITE_PUBLIC_LAUNCH_SERVICE_URL: optionalUrlOrEmpty.default(""),
   VITE_PUBLIC_EXPLORER_URL: optionalUrlOrEmpty.default(""),
   VITE_PUBLIC_ENABLE_SQL_CACHE: z
     .string()

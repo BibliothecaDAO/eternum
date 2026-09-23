@@ -1,12 +1,12 @@
-import { env } from "../../../../../env";
+import { identityOrigin } from "@/hooks/context/identity-session";
 import type { PlaytestSlot } from "../../../../../../../apps/launch-service/src/slots";
 import type { toFactoryRunRecord } from "../../../../../../../apps/launch-service/src/model";
 export type { PlaytestSlot };
 type FactoryRun = ReturnType<typeof toFactoryRunRecord>;
 
+/** The launch routes are served beside identity, on its origin, so the session cookie reaches them. */
 async function request<T>(path: string, body?: unknown): Promise<T> {
-  if (!env.VITE_PUBLIC_LAUNCH_SERVICE_URL) throw new Error("Launch service is not configured");
-  const response = await fetch(`${env.VITE_PUBLIC_LAUNCH_SERVICE_URL.replace(/\/$/, "")}${path}`, {
+  const response = await fetch(`${identityOrigin()}${path}`, {
     method: body === undefined ? "GET" : "POST",
     credentials: "include",
     ...(body === undefined ? {} : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),

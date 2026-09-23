@@ -24,7 +24,6 @@ jobs:
     env:
       DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/identity_test
       DATABASE_SSL: "false"
-      LAUNCH_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/identity_test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,7 +45,7 @@ jobs:
         run: pnpm --dir packages/identity test
       - name: Test the identity Worker on D1
         run: pnpm --dir apps/realms test
-      - name: Test launch lifecycle and PostgreSQL stores
+      - name: Test the launch Worker on D1
         run: pnpm --dir apps/launch-service test
       - name: Initialize the portal test database
         run: pnpm --dir packages/db exec drizzle-kit push --force

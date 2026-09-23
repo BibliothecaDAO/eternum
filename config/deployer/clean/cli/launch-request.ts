@@ -210,7 +210,7 @@ function resolveSharedLaunchRequestOptions(args: Args, environment: DeploymentEn
   };
 }
 
-export function buildLaunchGameRequest(args: Args): LaunchGameRequest {
+export function buildLaunchGameRequest(args: Args): Omit<LaunchGameRequest, "manifest"> {
   const resolvedArgs = resolveLaunchRequestArgs(args);
   if (resolvedArgs["launch-kind"] && resolvedArgs["launch-kind"] !== "game") {
     throw new Error("Only game launches are supported; use free slots for Blitz rosters");

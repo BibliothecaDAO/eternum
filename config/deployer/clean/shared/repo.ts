@@ -2,13 +2,10 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-export const repoRoot = path.resolve(__dirname, "../../../../");
-
+// Resolved on use, not at import: modules that never touch the repository (the launch Worker) import this file too, and
+// a Worker has no file URL.
 export function resolveRepoPath(relativePath: string): string {
-  return path.resolve(repoRoot, relativePath);
+  return path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../../", relativePath);
 }
 
 export function ensureRepoDirectory(relativePath: string): string {

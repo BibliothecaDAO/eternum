@@ -13,7 +13,8 @@ export interface PlaytestSlot {
 }
 
 export interface SlotStore {
-  create(name: string, closesAt: string): Promise<PlaytestSlot>;
+  /** Creates the slot once; the timetable names a slot by its closing time, so a repeat is the same slot. */
+  create(name: string, closesAt: string): Promise<void>;
   list(): Promise<PlaytestSlot[]>;
   register(name: string, owner: string): Promise<PlaytestSlot>;
   freeze(name: string): Promise<PlaytestSlot>;

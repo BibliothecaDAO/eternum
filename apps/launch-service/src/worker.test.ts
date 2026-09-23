@@ -1,134 +1,93 @@
-import { Effect, Layer } from "effect";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { LaunchExecutionFailure } from "./errors";
-import { LaunchExecutor } from "./executor";
-import type { ClaimedLaunchRun } from "./model";
-import { GameNotEnded } from "./results";
-import { databaseLayer } from "./store";
-import { createLaunchTestStore } from "./test-store";
-import { processNextLaunch } from "./worker";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { Miniflare } from "miniflare";
+import { afterAll, beforeAll, expect, it } from "vitest";
 
-let database: Awaited<ReturnType<typeof createLaunchTestStore>>;
-beforeEach(async () => {
-  database = await createLaunchTestStore();
-});
-afterEach(async () => {
-  await database.close();
-});
+/**
+ * The Worker as Cloudflare runs it: the bundle wrangler deploys, its cron tick, its registrar Durable Object and D1 in
+ * workerd. Identity and the shard are faked at the network edge.
+ */
+const ORIGIN = "https://staging.realms.party";
+const LAUNCHER = "0x123";
+const MANIFEST_URL = "https://shard.test/native-world.json";
 
-const request = {
-  environment: "madara.blitz" as const,
-  gameName: "bltz-recovery-test",
-};
+let mf: Miniflare;
+let db: D1Database;
 
-describe("durable launch worker", () => {
-  test("reclaims an expired lease without creating a second run", async () => {
-    const store = database.store;
-    const queued = await store.enqueue("game", request);
-    const abandoned = await store.claim(1);
-    expect(abandoned?.id).toBe(queued.id);
+beforeAll(async () => {
+  const bundle = join(mkdtempSync(join(tmpdir(), "launch-bundle-")), "bundle");
+  execFileSync("pnpm", ["exec", "wrangler", "deploy", "--dry-run", "--env", "staging", "--outdir", bundle], {
+    cwd: new URL("..", import.meta.url).pathname,
+    stdio: "ignore",
+  });
+  mf = new Miniflare({
+    modulesRoot: bundle,
+    modules: [{ type: "ESModule", path: join(bundle, "worker.js") }],
+    compatibilityDate: "2026-07-30",
+    compatibilityFlags: ["nodejs_compat"],
+    d1Databases: { DB: "launch" },
+    durableObjects: { REGISTRAR: { className: "Registrar", useSQLite: true } },
+    serviceBindings: {
+      IDENTITY: () => Response.json({ session: { id: "s1" }, user: { id: "u1", address: LAUNCHER } }),
+    },
+    bindings: {
+      ENVIRONMENT: "staging",
+      BASE_URL: ORIGIN,
+      LAUNCHER_ALLOWLIST: LAUNCHER,
+      RPC_URL: "https://shard.test/rpc",
+      ADMISSION_URL: "https://shard.test/admission",
+      HERALD_URL: "https://shard.test/herald",
+      NATIVE_WORLD_MANIFEST_URL: MANIFEST_URL,
+      DEPLOYER_ACCOUNT_ADDRESS: "0x456",
+      DEPLOYER_PRIVATE_KEY: "0x1",
+      VERSION: { id: "workerd-test", tag: "", timestamp: "" },
+    },
+    outboundService: (request: Request) =>
+      new Response(`${request.url} unavailable`, { status: request.url === MANIFEST_URL ? 503 : 599 }),
+  });
+  db = (await mf.getD1Database("DB")) as unknown as D1Database;
+  const migrations = new URL("../migrations/", import.meta.url);
+  const statements = readdirSync(migrations)
+    .map((file) => readFileSync(new URL(file, migrations), "utf8").replace(/^--.*$/gm, ""))
+    .join(";")
+    .split(";")
+    .map((statement) => statement.trim())
+    .filter(Boolean);
+  await db.batch(statements.map((statement) => db.prepare(statement)));
+}, 180_000);
 
-    await new Promise((resolve) => setTimeout(resolve, 5));
-    const recovered = await store.claim(60_000);
-    expect(recovered).toMatchObject({ id: queued.id, attempts: 2, status: "running" });
-    expect(await store.list("madara.blitz")).toHaveLength(1);
+afterAll(() => mf?.dispose());
+
+it("ticks the schedule, queues an authorized launch and records the registrar's attempt", async () => {
+  await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
+  const slots = (await (await mf.dispatchFetch(`${ORIGIN}/api/slots`)).json()) as { slots: { name: string }[] };
+  expect(slots.slots.map(({ name }) => name)).toEqual([expect.stringMatching(/^blitz-\d{8}-(11|20)00$/)]);
+
+  expect(await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()).toMatchObject({
+    service: "launch",
+    environment: "staging",
+    version: "workerd-test",
   });
 
-  test("interrupts execution when a revoked lease is requeued and reclaimed without overwriting its new owner", async () => {
-    const store = database.store;
-    const queued = await store.enqueue("game", request);
-    let interrupted = false;
-    let successorLeaseToken: string | undefined;
-    const executor = {
-      execute: (run: ClaimedLaunchRun) =>
-        Effect.promise(async () => {
-          await store.retry(run.id, run.leaseToken, "lease revoked", 0);
-          const successor = await store.claim(60_000);
-          expect(successor).toMatchObject({ id: queued.id, attempts: 2, status: "running" });
-          successorLeaseToken = successor!.leaseToken;
-          expect(successorLeaseToken).not.toBe(run.leaseToken);
-        }).pipe(
-          Effect.uninterruptible,
-          Effect.andThen(Effect.never),
-          Effect.onInterrupt(() =>
-            Effect.sync(() => {
-              interrupted = true;
-            }),
-          ),
-        ),
-    };
-    const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, executor));
-
-    await Effect.runPromise(processNextLaunch(300).pipe(Effect.provide(services)));
-
-    expect(interrupted).toBe(true);
-    expect(await store.find("game", "madara.blitz", request.gameName)).toMatchObject({
-      id: queued.id,
-      status: "running",
-      attempts: 2,
-      leaseToken: successorLeaseToken,
-      errorMessage: "lease revoked",
-    });
-    expect(await store.list("madara.blitz")).toHaveLength(1);
+  const launched = await mf.dispatchFetch(`${ORIGIN}/api/factory/runs`, {
+    method: "POST",
+    headers: { origin: ORIGIN, cookie: "better-auth.session_token=s1", "content-type": "application/json" },
+    body: JSON.stringify({ environment: "madara.blitz", gameName: "bltz-workerd" }),
   });
+  expect(launched.status).toBe(202);
 
-  test("persists the default start time once so retries cannot move it", async () => {
-    const store = database.store;
-    const queued = await store.enqueue("game", request);
-    const persistedStart = "gameStartTime" in queued.request ? queued.request.gameStartTime : undefined;
-    const abandoned = await store.claim(1);
-
-    await new Promise((resolve) => setTimeout(resolve, 5));
-    const recovered = await store.claim(60_000);
-
-    expect(abandoned?.request).toMatchObject({ gameStartTime: persistedStart });
-    expect(recovered?.request).toMatchObject({ gameStartTime: persistedStart });
+  await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
+  const deadline = Date.now() + 10_000;
+  let run: { status: string; attempts: number; error_message: string | null } | null = null;
+  while (Date.now() < deadline && !run?.error_message) {
+    run = await db.prepare("SELECT status, attempts, error_message FROM launch_runs").first();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  expect(run).toMatchObject({
+    status: "queued",
+    attempts: 1,
+    error_message: `World manifest ${MANIFEST_URL} answered 503`,
   });
-
-  test("defers a result job to the chain's end time without spending an attempt", async () => {
-    const store = database.store;
-    await store.enqueue("result", { environment: "madara.blitz", gameName: "bltz-early", gameId: 4 });
-    const services = Layer.mergeAll(
-      databaseLayer(store),
-      Layer.succeed(LaunchExecutor, {
-        execute: (run) => Effect.fail(new LaunchExecutionFailure({ runId: run.id, cause: new GameNotEnded(90) })),
-      }),
-    );
-
-    await Effect.runPromise(processNextLaunch(60_000).pipe(Effect.provide(services)));
-
-    expect(await store.find("result", "madara.blitz", "bltz-early")).toMatchObject({ status: "queued", attempts: 0 });
-    expect(await store.claim(60_000)).toBeNull();
-  });
-
-  test("completes a claimed launch through the injected executor and store", async () => {
-    const store = database.store;
-    await store.enqueue("game", request);
-    const executor = {
-      execute: () =>
-        Effect.succeed({
-          environment: "madara.blitz" as const,
-          chain: "madara" as const,
-          gameType: "blitz" as const,
-          gameName: request.gameName,
-          startTime: 1,
-          startTimeIso: "1970-01-01T00:00:01.000Z",
-          rpcUrl: "http://rpc.test",
-          configMode: "batched" as const,
-          configSteps: [],
-          dryRun: false,
-          gameId: 62,
-          finalizeAt: 3_000_000_000,
-        }),
-    };
-    const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, executor));
-
-    await Effect.runPromise(processNextLaunch(60_000).pipe(Effect.provide(services)));
-
-    expect(await store.find("game", "madara.blitz", request.gameName)).toMatchObject({
-      status: "complete",
-      attempts: 1,
-      summary: { gameId: 62 },
-    });
-  });
-});
+}, 60_000);

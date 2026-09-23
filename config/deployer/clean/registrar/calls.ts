@@ -185,9 +185,8 @@ export async function findRegistrarGame(
   return value === 0n ? null : { gameId: Number(value) };
 }
 
-export function createRosterVerifier(rpcUrl: string, manifestPath: string) {
+export function createRosterVerifier(rpcUrl: string, manifest: RegistrarManifest) {
   const provider = new RpcProvider({ nodeUrl: rpcUrl });
-  const manifest = loadRepoJsonFile<RegistrarManifest>(manifestPath);
   return async (owner: string): Promise<void> => {
     await resolveBlitzRoster(provider, [owner], manifest);
   };
@@ -253,10 +252,6 @@ export function resolveRegistrarWorldAddress(target: RegistrarTarget = DEFAULT_E
     throw new Error("World address is missing from the selected manifest");
   }
   return worldAddress;
-}
-
-export function resolveRegistrarEnvironmentId(environmentId: DeploymentEnvironmentId): RegistrarEnvironmentId {
-  return environmentId;
 }
 
 export function assertRegistrarAvailable(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): void {

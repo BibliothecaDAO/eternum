@@ -1,10 +1,33 @@
+import { Effect } from "effect";
 import { frontierSeasonRequest } from "./schemas";
 import type { SlotStore } from "./slots";
-import type { LaunchServiceStore } from "./store";
+import { databaseOperation, type LaunchServiceStore } from "./store";
 
-/** Scheduling is a no-op once the season's run exists, whatever its status, so restarts never create a second game. */
+/**
+ * One cron tick: the Frontier season and the next Blitz slot exist, and a slot whose registration closed is frozen
+ * into queued games. `now` names the next slot; whether a slot has closed is the store's clock, as registration's is.
+ * Every step is idempotent, so overlapping ticks agree.
+ */
+export const runLaunchSchedule = (
+  store: LaunchServiceStore,
+  slots: SlotStore,
+  seasonStart: string | undefined,
+  now: Date,
+) =>
+  Effect.gen(function* () {
+    if (seasonStart)
+      yield* databaseOperation("schedule frontier season", () => scheduleFrontierSeason(store, seasonStart));
+    const slot = nextBlitzSlot(now);
+    yield* databaseOperation("schedule blitz slot", () => slots.create(slot.name, slot.closesAt));
+    yield* databaseOperation("freeze playtest roster", () => slots.freezeNextDue());
+  });
+
+/**
+ * The season is created once, whatever becomes of its run, so a tick never resets a launch in progress; a season whose
+ * launch failed is continued by a launcher like any failed run.
+ */
 export const scheduleFrontierSeason = (store: LaunchServiceStore, seasonStart: string) =>
-  store.enqueue("game", frontierSeasonRequest(seasonStart));
+  store.schedule("game", frontierSeasonRequest(seasonStart));
 
 /** Free Blitz slots close at these UTC hours every day; registration is open from the previous close. */
 const BLITZ_SLOT_HOURS_UTC = [11, 20] as const;
@@ -20,15 +43,4 @@ export const nextBlitzSlot = (now: Date): { name: string; closesAt: string } => 
   const closesAt = new Date(closings.find((closing) => closing > now.getTime())!);
   const day = `${closesAt.getUTCFullYear()}${pad(closesAt.getUTCMonth() + 1)}${pad(closesAt.getUTCDate())}`;
   return { name: `blitz-${day}-${pad(closesAt.getUTCHours())}00`, closesAt: closesAt.toISOString() };
-};
-
-/** Creates the next slot once per process; the store's insert is idempotent, so concurrent workers still make one. */
-export const createBlitzTimetable = (slots: SlotStore) => {
-  let ensured: string | undefined;
-  return async (now = new Date()): Promise<void> => {
-    const slot = nextBlitzSlot(now);
-    if (slot.name === ensured) return;
-    await slots.create(slot.name, slot.closesAt);
-    ensured = slot.name;
-  };
 };

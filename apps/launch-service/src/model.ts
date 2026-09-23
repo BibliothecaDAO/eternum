@@ -10,7 +10,7 @@ export interface FinalizedGameSummary {
   resultCommitment: string;
 }
 
-export type LaunchJobStatus = "queued" | "running" | "complete" | "failed" | "cancelled";
+export type LaunchJobStatus = "queued" | "running" | "complete" | "failed";
 export type LaunchSummary = LaunchGameSummary | FinalizedGameSummary;
 
 export interface LaunchRun {
@@ -23,18 +23,13 @@ export interface LaunchRun {
   attempts: number;
   createdAt: string;
   updatedAt: string;
-  claimedUntil?: string;
-  leaseToken?: string;
   completedAt?: string;
   errorMessage?: string;
   summary?: LaunchSummary;
 }
 
-export interface ClaimedLaunchRun extends LaunchRun {
-  status: "running";
-  claimedUntil: string;
-  leaseToken: string;
-}
+/** Where a run's request and summary live, as the factory page names them. */
+export const launchRunPath = (runId: string) => `d1://launch_runs/${runId}`;
 
 const GAME_STEPS = [
   ["create-world", "Create game"],
@@ -47,7 +42,7 @@ export const launchName = (kind: LaunchKind, request: LaunchJobRequest): string 
 };
 
 const publicStatus = (status: LaunchJobStatus): "running" | "attention" | "complete" =>
-  status === "complete" ? "complete" : status === "failed" || status === "cancelled" ? "attention" : "running";
+  status === "complete" ? "complete" : status === "failed" ? "attention" : "running";
 
 const stepStatus = (status: LaunchJobStatus, index: number): "pending" | "running" | "succeeded" | "failed" => {
   if (status === "complete") return "succeeded";
@@ -68,7 +63,7 @@ export const toFactoryRunRecord = (run: LaunchRun) => {
     status: publicStatus(run.status),
     executionMode: "fast_trial",
     requestedLaunchStep: "full",
-    inputPath: `postgres://launch_runs/${run.id}`,
+    inputPath: launchRunPath(run.id),
     latestLaunchRequestId: run.id,
     currentStepId: run.status === "complete" ? null : stepDefinitions[0][0],
     createdAt: run.createdAt,

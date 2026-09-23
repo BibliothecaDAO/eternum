@@ -5,7 +5,6 @@ import {
 } from "../../../config/deployer/clean/world/native/command";
 import { nativeDomainAbi } from "../../../config/deployer/clean/world/native/manifest";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
-import { loadRepoJsonFile } from "../../../config/deployer/clean/shared/repo";
 import type { NativeCommand } from "../../../packages/provider/src/native-command";
 import type { FinalizedGameSummary } from "./model";
 import type { FinalizeGameRequest } from "./schemas";
@@ -88,14 +87,13 @@ function view<T>(
 export async function finalizeGame(
   request: FinalizeGameRequest,
   rpc: { url: string; admissionUrl: string },
-  credentials: { manifestPath: string; accountAddress: string; privateKey: string },
+  credentials: { manifest: NativeWorldManifest; accountAddress: string; privateKey: string },
 ): Promise<FinalizedGameSummary> {
   const target: ResultTarget = {
     ...credentials,
     admissionUrl: rpc.admissionUrl,
     gameId: request.gameId,
     provider: new RpcProvider({ nodeUrl: rpc.url }),
-    manifest: loadRepoJsonFile<NativeWorldManifest>(credentials.manifestPath),
   };
   const commitment = await completeBlitzResults(resultOperations(target));
   return { ...request, resultCommitment: `0x${commitment.toString(16)}` };

@@ -749,34 +749,34 @@ importers:
 
   apps/launch-service:
     dependencies:
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.6.1
+      '@realms-world/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
       effect:
         specifier: 4.0.0-rc.108
         version: 4.0.0-rc.108
       hono:
         specifier: ^4.9.12
         version: 4.11.10
-      pg:
-        specifier: ^8.18.0
-        version: 8.18.0
     devDependencies:
+      '@cloudflare/workers-types':
+        specifier: 5.20260922.1
+        version: 5.20260922.1
       '@types/node':
         specifier: ^22.13.5
         version: 22.20.1
-      '@types/pg':
-        specifier: ^8.16.0
-        version: 8.16.0
-      bun-types:
-        specifier: catalog:web
-        version: 1.4.2
+      miniflare:
+        specifier: 4.20260730.0
+        version: 4.20260730.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       typescript:
         specifier: ^5.8.2
         version: 5.9.3
       vitest:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@22.20.1)(@vitest/ui@2.1.9)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)
+      wrangler:
+        specifier: 4.136.3
+        version: 4.136.3(@cloudflare/workers-types@5.20260922.1)(@types/node@22.20.1)(bufferutil@4.1.0)(utf-8-validate@5.0.10)
 
   apps/realms:
     dependencies:
