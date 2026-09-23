@@ -1,13 +1,14 @@
 # ATHANOR
 
-ATHANOR is the infrastructure that runs Realms game worlds: the Madara sequencer with embedded recorded randomness,
-Herald, the launch service, identity, host bootstrap, local TLS, deployment and the gameplay harness. Native game
-contracts live in `contracts/l3/world-native`; the game clients consume Herald's snapshots and ordered diffs through the
-shared native fact store. Madara is the upstream sequencer inside this stack.
+A shard hosts games on one sequencer, one installation of the native game contracts and one Herald. Madara is the
+sequencer; Herald serves the shard manifest, game directory, snapshots and ordered diffs. Game contracts live in
+`contracts/l3/world-native`, and clients consume Herald through the shared native fact store.
 
-The future shard model assigns each world to one isolated node and Herald, with shared identity and directory routing.
-Shard placement, fan-in, ledger integration and proving are deferred. The current cutover validates one shard before
-selecting its supported capacity.
+ATHANOR contains the isolated box deployment and gameplay harness. `scripts/shard.py` initializes a fresh shard from
+pinned images, an explicit chain identity and the published guardian identity, then starts its compose project. See
+"Isolated node and release" below for the inputs. The staging candidate also runs a static client and temporary launch
+service beside the shards; identity and the other central services use the staging Workers. The public compose package
+follows in E3, and launch moves to its Worker in K7 before the release deployment.
 
 ## Live holdovers
 
@@ -48,7 +49,8 @@ python3 deploy/athanor/randomness/release/build.py /path/to/madara REVISION BUIL
 
 Use that node digest and a Herald release digest with `scripts/shard.py CONFIGURATION RUN_DIRECTORY`. The configuration
 names `shard`, `chain_id`, `port_base` (three free loopback ports above 27999), `cpuset`, `node_memory_mib`,
-`madara_image`, `herald_image`, `chain_config` and `node_flags`. Choose a unique `chain_id` of 1–31 ASCII letters,
+`madara_image`, `herald_image`, `chain_config`, `node_flags`, `guardian_url`, `public_rpc_url` and
+`public_admission_url`. Choose a unique `chain_id` of 1–31 ASCII letters,
 digits, underscores or hyphens, beginning with a letter. The runner writes its hex encoding to `native-world.json` at `shard.chainId`
 before deployment and renders the node configuration with the same identity. The checked-in chain configuration is a
 template; initialize it through the runner before starting a node. For the baseline compose profiles, set
@@ -93,14 +95,42 @@ the native candidate. Do not start that profile over an existing stack or treat 
 fork. Reserve disjoint ports and resource limits before starting a candidate. Caddy's local TLS routes require the host
 entries and certificates produced by `scripts/issue-certs.sh`; keep private files under `.lab/`.
 
+### Staging candidate
+
+Initialize both browser-gate shards with `guardian_url=https://staging.realms.party/api/guardian`. Initialization fetches
+the guardian's public key and account class hash and records them in `shard.guardianPublicKey` and
+`shard.accountClassHash`. An unavailable endpoint or invalid identity stops initialization; candidate and release
+configurations never supply substitute values. The deployer declares `RealmsAccount` only when its locally built class
+matches that published hash, and the game's authentication and Herald use the same manifest class. Build the account
+with the repository root's declared toolchain before starting the shard runner; build the game with its workspace's
+toolchain.
+
+Use the v5 fork at `3b0f3717ceb17ba94f1d893011a5d708e3cf5e99` until the C3 decision. Set each shard's public RPC and
+admission URLs to its staging tunnel hostname, not its loopback deployment endpoint. Herald has a 6 GiB memory limit:
+the 96-player run was OOM-killed at 2 GiB; stream D will size it from C3's measured peak. Herald restarts on failure so a
+node restart does not leave it down. The app uses `staging.realms.party`, whose `/api/*` routes remain on K's staging
+Worker. The temporary launch service uses that identity origin and an explicit address allowlist; never `*`.
+`candidate-services.yml` replaces the old candidate's Vite dev server and launch host unit with a static client and
+an allowlisted launch container. Build the app with
+`VITE_PUBLIC_LAUNCH_SERVICE_URL=https://staging.realms.party/launch`; the static server strips `/launch` before proxying
+to the service, so the browser sends its existing identity cookie. The owner-approved staging launcher is
+`0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d` only. Further launchers require the owner's word.
+The private launch environment supplies its separate database URL, operator credentials and season start; its shard
+network, checkout, manifest directory, user IDs and runtime image digests are explicit compose inputs.
+
+Use a separate staging tunnel connector, disjoint ports and fresh volumes for both shards. Hold the shared
+`/opt/athanor/isolated-stack.lock` during deployment and verification. Verify the app, launch service and both public
+manifests before handing the candidate to the other streams. Leave the live stack and its tunnel connector running.
+
 ## Native deployment
 
 Load credentials from a private, gitignored environment file under `.lab/`. The current deployment commands require
 `RPC_URL`, `DEPLOYER_ACCOUNT_ADDRESS`, `DEPLOYER_PRIVATE_KEY`, `BINDING_AUTHORITY_ADDRESS`, `RANDOMNESS_PRIVATE_KEY`,
 `NATIVE_AUTHORITY_FILE`, `GAMEPLAY_CONTRACTS_PATH`, `BINDING_AUTHORITY_PRIVATE_KEY` and `NATIVE_WORLD_MANIFEST`. The
 sequencing authority output contains its signing credential; keep it private. `NATIVE_WORLD_MANIFEST` must point to the
-isolated shard's output. For manual initialization, write `{ "shard": { "chainId": "0x..." } }` there first, using the hex encoding
-of the unique ASCII chain ID in the node configuration. The deployer asserts the node reports this identity, then preserves it in `shard.chainId` alongside
+isolated shard's output. For manual initialization, write the nested shard record with the unique ASCII chain ID's hex
+encoding and the `guardianPublicKey` and `accountClassHash` returned by the identity service. The deployer asserts the
+node reports this identity, then preserves it in `shard.chainId` alongside
 `shard.accountClassHash` and `shard.contracts`. Only fresh shards are supported: manifests without
 `shard.chainId`, including the earlier top-level `chainId` shape, must be replaced by a fresh initialization with new
 node state. E1 provides no migration of an existing chain.

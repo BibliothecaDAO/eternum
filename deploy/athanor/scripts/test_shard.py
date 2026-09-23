@@ -1,4 +1,5 @@
 import copy
+import io
 import json
 from pathlib import Path
 import tempfile
@@ -13,6 +14,9 @@ def configuration():
         "shard": "smoke", "chain_id": "SHARD_A", "port_base": 28050, "cpuset": "8-11,20-23", "node_memory_mib": 16384,
         "madara_image": "sha256:" + "a" * 64, "herald_image": "sha256:" + "b" * 64,
         "chain_config": "/tmp/chain-config.yaml",
+        "guardian_url": "https://identity.test/api/guardian",
+        "public_rpc_url": "https://rpc.test/rpc/v0_10_2",
+        "public_admission_url": "https://rpc.test/rpc/v0_10_2",
         "node_flags": ["--enable-native-execution=true", "--native-compilation-mode=async"],
     }
 
@@ -40,13 +44,28 @@ class ShardTest(unittest.TestCase):
             for name in ("SHARD_A", "SHARD_B"):
                 directory = root / name
                 directory.mkdir()
-                shard.initialize_shard_identity({"chain_id": name, "chain_config": str(template)}, directory)
+                config = {**configuration(), "chain_id": name, "chain_config": str(template)}
+                guardian = {"publicKey": "0x123", "accountClassHash": "0x456"}
+                with patch("urllib.request.OpenerDirector.open", return_value=io.StringIO(json.dumps(guardian))):
+                    shard.initialize_shard_identity(config, directory)
                 manifest = json.loads((directory / "native-world.json").read_text())
                 self.assertEqual(bytes.fromhex(manifest["shard"]["chainId"][2:]).decode(), name)
+                self.assertEqual(manifest["shard"]["guardianPublicKey"], guardian["publicKey"])
+                self.assertEqual(manifest["shard"]["accountClassHash"], guardian["accountClassHash"])
                 config = (directory / "chain-config.yaml").read_text()
                 self.assertEqual(config.count("chain_id:"), 1)
                 self.assertIn(f'chain_id: "{name}"', config)
                 self.assertNotIn("OLD_SHARD", config)
+
+    def test_initialization_refuses_missing_or_invalid_guardian_identity(self):
+        for value in ({}, {"publicKey": "0x0", "accountClassHash": "0x1"},
+                      {"publicKey": "0x1", "accountClassHash": "0x" + "f" * 64}):
+            with self.subTest(value=value), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                with patch("urllib.request.OpenerDirector.open", return_value=io.StringIO(json.dumps(value))):
+                    with self.assertRaises((KeyError, ValueError)):
+                        shard.initialize_shard_identity(configuration(), directory)
+                self.assertFalse((directory / "native-world.json").exists())
 
     def test_shards_have_distinct_projects_ports_volumes_and_databases(self):
         first = configuration()
@@ -96,7 +115,8 @@ class ShardTest(unittest.TestCase):
     def test_collector_output_is_the_harness_metrics_input(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
-            environment = {"RANDOMNESS_PRIVATE_KEY": "0x1", "RPC_URL": "http://127.0.0.1:1", "ADMISSION_URL": "http://127.0.0.1:1"}
+            environment = {"RANDOMNESS_PRIVATE_KEY": "0x1", "HERALD_PUBLIC_RPC_URL": "https://rpc.test",
+                           "HERALD_PUBLIC_ADMISSION_URL": "https://admission.test"}
             shard.prepare_runtime_files(directory, environment)
             config = json.loads((directory / "collector.json").read_text())
             self.assertEqual(config["service"]["pipelines"]["metrics"], {

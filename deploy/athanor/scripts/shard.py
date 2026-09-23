@@ -14,6 +14,7 @@ import socket
 import subprocess
 import time
 from urllib.request import Request, urlopen
+from urllib.parse import urlparse
 
 import candidate_guard
 
@@ -42,6 +43,10 @@ def validate_configuration(config, allowed_cpus):
         raise ValueError("shard must be a lowercase identifier")
     if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,30}", config.get("chain_id", "")):
         raise ValueError("chain_id must be a unique 1-31 character ASCII shard name")
+    for key in ("guardian_url", "public_rpc_url", "public_admission_url"):
+        url = urlparse(config[key])
+        if url.scheme not in ("http", "https") or not url.netloc or url.username or url.password:
+            raise ValueError(f"{key} must be an explicit HTTP endpoint without credentials")
     for key in ("madara_image", "herald_image"):
         if not re.fullmatch(r"(?:[^\s]+@)?sha256:[a-f0-9]{64}", config[key]):
             raise ValueError(f"{key} must be pinned by digest")
@@ -120,7 +125,8 @@ def compose_configuration(config, directory):
                                 "interval": "2s", "timeout": "3s", "retries": 30},
             },
             "herald": {
-                **budget, "image": config["herald_image"], "mem_limit": "2g", "memswap_limit": "2g",
+                **budget, "image": config["herald_image"], "mem_limit": "6g", "memswap_limit": "6g",
+                "restart": "on-failure",
                 "env_file": [str(directory / "herald.env")], "ports": [f"127.0.0.1:{base + 1}:3003"],
                 "volumes": [f"{directory / 'native-world.json'}:/config/native-world.json:ro"],
                 "depends_on": {"postgres": {"condition": "service_healthy"}},
@@ -194,6 +200,8 @@ def deployment_environment(config, directory):
         **os.environ, **credentials, "RPC_URL": f"http://127.0.0.1:{base}/rpc/v0_10_2",
         "ADMISSION_URL": f"http://127.0.0.1:{base}/rpc/v0_10_2",
         "HERALD_URL": f"http://127.0.0.1:{base + 1}",
+        "HERALD_PUBLIC_RPC_URL": config["public_rpc_url"],
+        "HERALD_PUBLIC_ADMISSION_URL": config["public_admission_url"],
         "COMPOSE_PROJECT_NAME": f"athanor-{config['shard']}",
         "CHAIN_CONFIG_PATH": str(directory / "chain-config.yaml"),
         "BINDING_AUTHORITY_ADDRESS": credentials["DEPLOYER_ACCOUNT_ADDRESS"],
@@ -226,7 +234,8 @@ def prepare_runtime_files(directory, environment):
     })
     write_private_environment(directory / "herald.env", {
         "PORT": "3003", "HERALD_RPC_URL": "http://madara:9944/rpc/v0_10_2",
-        "HERALD_PUBLIC_RPC_URL": environment["RPC_URL"], "HERALD_PUBLIC_ADMISSION_URL": environment["ADMISSION_URL"],
+        "HERALD_PUBLIC_RPC_URL": environment["HERALD_PUBLIC_RPC_URL"],
+        "HERALD_PUBLIC_ADMISSION_URL": environment["HERALD_PUBLIC_ADMISSION_URL"],
         "NATIVE_WORLD_MANIFEST": "/config/native-world.json",
         "DATABASE_URL": f"postgres://herald:{password}@postgres:5432/herald",
     })
@@ -257,9 +266,24 @@ def deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rt
     }
 
 
+def read_guardian_identity(url):
+    request = Request(url, headers={"Accept": "application/json", "User-Agent": "realms-shard-init"})
+    with urlopen(request, timeout=15) as response:
+        guardian = json.load(response)
+    identity = {"guardianPublicKey": guardian["publicKey"], "accountClassHash": guardian["accountClassHash"]}
+    for key in ("guardianPublicKey", "accountClassHash"):
+        value = identity[key]
+        if not isinstance(value, str) or not re.fullmatch(r"0x[0-9a-fA-F]{1,64}", value) or not (
+            0 < int(value, 16) < 2**251 + 17 * 2**192 + 1
+        ):
+            raise ValueError(f"guardian response requires a nonzero felt {key}")
+    return identity
+
+
 def initialize_shard_identity(config, directory):
+    identity = read_guardian_identity(config["guardian_url"])
     chain_id = "0x" + config["chain_id"].encode("ascii").hex()
-    write_json(directory / "native-world.json", {"shard": {"chainId": chain_id}})
+    write_json(directory / "native-world.json", {"shard": {"chainId": chain_id, **identity}})
     template = Path(config["chain_config"]).read_text()
     # Identity belongs to the initialized shard, not to a benchmark template.
     template = re.sub(r"^chain_id:.*\n?", "", template, flags=re.MULTILINE)

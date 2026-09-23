@@ -1,0 +1,23 @@
+{
+	auto_https off
+	admin off
+}
+
+:8080 {
+	encode zstd gzip
+
+	# Keep the identity session cookie on the app's origin. /api/* belongs to the staging Worker.
+	handle_path /launch/* {
+		reverse_proxy launch:3006
+	}
+
+	handle /api/* {
+		respond "Identity is served by the staging Worker" 404
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

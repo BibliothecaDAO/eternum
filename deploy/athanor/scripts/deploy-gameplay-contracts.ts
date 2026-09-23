@@ -7,6 +7,7 @@ import { type Account, addAddressPadding, ec, hash, RpcProvider } from "starknet
 import { ensureGameplayAccount, bindGameplayAccounts } from "@bibliothecadao/eternum";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
+import type { ShardRecord } from "../../../apps/herald/src/shard-manifest";
 
 import {
   declareClass,
@@ -37,6 +38,7 @@ function requiredEnvironment(name: string): string {
 
 const PLAYER_ACCOUNT_ARTIFACT = "realms_player_account_RealmsPlayerAccount.contract_class.json";
 const PLAYER_REGISTRY_ARTIFACT = "realms_player_account_PlayerRegistry.contract_class.json";
+const REALMS_ACCOUNT_ARTIFACT = "realms_player_account_RealmsAccount.contract_class.json";
 
 interface GameplayDeploymentResult {
   operatorAccountAddress: string;
@@ -63,13 +65,16 @@ function buildGameplayContracts(): void {
   runCommand("scarb", ["build"], CONTRACT_DIRECTORY);
 }
 
-async function declareGameplayContracts(account: Account) {
-  const artifacts = [PLAYER_ACCOUNT_ARTIFACT, PLAYER_REGISTRY_ARTIFACT].map((name) =>
+async function declareGameplayContracts(account: Account, accountClassHash: string) {
+  const artifacts = [PLAYER_ACCOUNT_ARTIFACT, PLAYER_REGISTRY_ARTIFACT, REALMS_ACCOUNT_ARTIFACT].map((name) =>
     readClassArtifact(
       resolve(ARTIFACT_DIRECTORY, name),
       resolve(ARTIFACT_DIRECTORY, name.replace(".contract_class.json", ".compiled_contract_class.json")),
     ),
   );
+  if (BigInt(artifacts[2].classHash) !== BigInt(accountClassHash)) {
+    throw new Error(`RealmsAccount class ${artifacts[2].classHash} differs from guardian class ${accountClassHash}`);
+  }
   for (const artifact of artifacts) {
     await declareClass(account, artifact, (transactionHash) => {
       console.error(
@@ -127,10 +132,14 @@ function writeDeploymentResult(result: GameplayDeploymentResult): void {
 
 async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
   const provider = new RpcProvider({ nodeUrl: RPC_URL });
-  await assertProviderChain(provider, readShardManifest(process.env.NATIVE_WORLD_MANIFEST), "RPC_URL");
+  const manifest = readShardManifest<{ shard: ShardRecord }>(process.env.NATIVE_WORLD_MANIFEST);
+  await assertProviderChain(provider, manifest, "RPC_URL");
   buildGameplayContracts();
   const account = createMadaraAccount(provider, DEPLOYER_ADDRESS, DEPLOYER_PRIVATE_KEY);
-  const { playerAccountClassHash, playerRegistryClassHash } = await declareGameplayContracts(account);
+  const { playerAccountClassHash, playerRegistryClassHash } = await declareGameplayContracts(
+    account,
+    manifest.shard.accountClassHash,
+  );
   const playerRegistryAddress = resolvePlayerRegistryAddress(playerRegistryClassHash);
 
   await deployPlayerRegistryIfNeeded(account, playerRegistryClassHash, playerRegistryAddress);

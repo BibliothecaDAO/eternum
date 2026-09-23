@@ -1,0 +1,52 @@
+name: athanor-staging-app
+
+x-budget: &budget
+  cgroup_parent: athanor.slice
+  cpuset: "8-11,20-23"
+  pids_limit: 512
+  restart: on-failure
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "3"
+
+services:
+  client:
+    <<: *budget
+    image: ${CANDIDATE_CADDY_IMAGE:?Set the pinned Caddy image digest}
+    mem_limit: 256m
+    memswap_limit: 256m
+    ports: ["127.0.0.1:28313:8080"]
+    volumes:
+      - ./staging.Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${CANDIDATE_CHECKOUT:?Set the built candidate checkout}/apps/game/dist:/srv:ro
+
+  launch:
+    <<: *budget
+    image: ${CANDIDATE_BUN_IMAGE:?Set the pinned Bun runtime digest}
+    user: ${CANDIDATE_UID:?Set the deployment user id}:${CANDIDATE_GID:?Set the deployment group id}
+    mem_limit: 1g
+    memswap_limit: 1g
+    working_dir: /app
+    command: ["bun", "apps/launch-service/src/main.ts"]
+    env_file: ["${CANDIDATE_LAUNCH_ENV_FILE:?Set the private launch environment file}"]
+    environment:
+      PORT: "3006"
+      IDENTITY_URL: https://staging.realms.party
+      CORS_ORIGIN: https://staging.realms.party
+      LAUNCHER_ALLOWLIST: "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d"
+      RPC_URL: http://madara:9944/rpc/v0_10_2
+      ADMISSION_URL: http://madara:9944/rpc/v0_10_2
+      HERALD_URL: http://herald:3003
+      NATIVE_WORLD_MANIFEST: /config/native-world.json
+    ports: ["127.0.0.1:28314:3006"]
+    volumes:
+      - ${CANDIDATE_CHECKOUT:?Set the built candidate checkout}:/app:ro
+      - ${CANDIDATE_SHARD_DIRECTORY:?Set the initialized shard directory}/native-world.json:/config/native-world.json:ro
+    networks: [default, shard]
+
+networks:
+  shard:
+    external: true
+    name: ${CANDIDATE_SHARD_NETWORK:?Set the primary shard compose network}

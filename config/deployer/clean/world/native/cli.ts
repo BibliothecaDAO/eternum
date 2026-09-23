@@ -33,7 +33,7 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
     authentication: {
       submitter: required(args, "submitter"),
       registry: identity.playerRegistryAddress,
-      account_class: identity.playerAccountClassHash,
+      account_class: manifest.shard.accountClassHash,
     },
   });
   if (args.inspect === "true") {
@@ -56,7 +56,7 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
   );
   const shard = {
     chainId: manifest.shard.chainId,
-    accountClassHash: identity.playerAccountClassHash,
+    accountClassHash: manifest.shard.accountClassHash,
     contracts: { playerRegistry: identity.playerRegistryAddress, bindingAuthority: identity.bindingAuthorityAddress },
     guardianPublicKey: manifest.shard.guardianPublicKey,
   };
