@@ -16,16 +16,16 @@ import { formatFeedTime } from "./important-feed-rows";
 export function resolveStoryEventPosition(event: ProcessedStoryEvent, store: NativeFactStore): Position | null {
   const coord = event.storyPayload.end_coord ?? event.storyPayload.coord;
   if (coord && typeof coord === "object" && "x" in coord && "y" in coord) {
-    return new Position({ x: Number(coord.x), y: Number(coord.y) });
+    return Position.fromContract({ x: Number(coord.x), y: Number(coord.y) });
   }
   // Battle stories contain participant IDs but no historical hex. Resolve surviving entities from native facts.
   for (const id of [event.storyPayload.defender_id, event.entity_id, event.storyPayload.attacker_id]) {
     if (id == null) continue;
     const key = { game_id: configManager.getActiveGameId(), entity_id: Number(id) };
     const structure = store.get("Structure", key);
-    if (structure) return new Position({ x: structure.base.coord_x, y: structure.base.coord_y });
+    if (structure) return Position.fromContract({ x: structure.base.coord_x, y: structure.base.coord_y });
     const army = store.get("ExplorerTroops", { game_id: key.game_id, explorer_id: key.entity_id });
-    if (army) return new Position({ x: army.coord.x, y: army.coord.y });
+    if (army) return Position.fromContract({ x: army.coord.x, y: army.coord.y });
   }
   return null;
 }

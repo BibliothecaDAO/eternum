@@ -99,8 +99,10 @@ describe("buildExplorationSnapshot", () => {
       worldSpatialProjection.getArmiesInBounds,
     ])
       expect(query).toHaveBeenCalledWith(expect.objectContaining({ alt }));
-    expect(snapshot?.structureHexes.get(10)?.get(11)?.owner).toBe(structureOwner);
-    expect(snapshot?.armyHexes.get(11)?.get(10)?.owner).toBe(armyOwner);
-    expect(snapshot?.exploredTiles.get(10)?.get(10)).toBe(1);
+    // The projection carries contract hexes; the snapshot keys them by normalized hex (contract minus the map centre).
+    const center = configManager.getMapCenter();
+    expect(snapshot?.structureHexes.get(10 - center)?.get(11 - center)?.owner).toBe(structureOwner);
+    expect(snapshot?.armyHexes.get(11 - center)?.get(10 - center)?.owner).toBe(armyOwner);
+    expect(snapshot?.exploredTiles.get(10 - center)?.get(10 - center)).toBe(1);
   });
 });

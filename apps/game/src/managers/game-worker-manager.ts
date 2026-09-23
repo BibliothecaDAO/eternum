@@ -136,7 +136,7 @@ class GameWorkerManager {
   }
 
   private buildResolvedPath(path: GameWorkerPosition[]): Position[] {
-    return path.map((position) => new Position({ x: position.x, y: position.y }));
+    return path.map((position) => Position.fromNormalized({ x: position.x, y: position.y }));
   }
 
   private finishPathRequest(requestId: number) {

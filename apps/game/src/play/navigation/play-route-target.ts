@@ -78,7 +78,10 @@ const resolveHexRealmPosition = (
     return null;
   }
 
-  const contractPosition = new Position({ x: routeWorldPosition.col, y: routeWorldPosition.row }).getContract();
+  const contractPosition = Position.fromNormalized({
+    x: routeWorldPosition.col,
+    y: routeWorldPosition.row,
+  }).getContract();
   return {
     col: contractPosition.x,
     row: contractPosition.y,

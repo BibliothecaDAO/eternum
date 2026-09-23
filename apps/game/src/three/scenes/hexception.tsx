@@ -74,6 +74,7 @@ import {
   NEUTRAL_BIOME_CLIMATE,
   StructureProgress,
   getBlockTimestamp,
+  Position,
 } from "@bibliothecadao/eternum";
 
 import { HexceptionAmbienceSystem } from "@/three/systems/hexception-ambience-system";
@@ -1805,7 +1806,7 @@ export default class HexceptionScene extends HexagonScene {
       this.structureIndex = fullIndex;
     }
 
-    navigateToStructure(structure.position.x, structure.position.y, "hex");
+    navigateToStructure(Position.fromContract(structure.position), "hex");
     this.state.setStructureEntityId(structure.entityId);
   }
 

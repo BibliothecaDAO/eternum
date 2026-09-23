@@ -41,7 +41,7 @@ export const useSuggestionActions = () => {
       if (target?.structure) {
         const position = structureMapPosition(setup.store, target.structure);
         setSelectedHex({ col: position.x, row: position.y });
-        await goToStructure(realmId, new Position(position), forceMap || isMapView);
+        await goToStructure(realmId, Position.fromContract(position), forceMap || isMapView);
       } else {
         setStructureEntityId(realmId);
       }

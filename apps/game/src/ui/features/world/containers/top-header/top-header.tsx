@@ -50,7 +50,7 @@ export const TopHeader = memo(() => {
   }, [structureEntityId, entityInfo]);
 
   const selectedStructurePosition = useMemo(() => {
-    return new Position(selectedStructure?.position || { x: 0, y: 0 }).getNormalized();
+    return Position.fromContract(selectedStructure?.position || { x: 0, y: 0 }).getNormalized();
   }, [selectedStructure]);
   const [currentPathname, setCurrentPathname] = useState(() =>
     typeof window !== "undefined" ? window.location.pathname : "/play/hex",
@@ -92,7 +92,7 @@ export const TopHeader = memo(() => {
       playClick();
       goToStructure(
         world ? lastControlledStructureEntityId || structureEntityId : structureEntityId,
-        new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
+        Position.fromNormalized({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
         world,
       );
     },

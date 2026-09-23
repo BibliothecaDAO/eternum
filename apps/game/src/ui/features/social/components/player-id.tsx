@@ -211,7 +211,7 @@ export const PlayerId = ({
         <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
           <div className="grid grid-cols-1 gap-3">
             {playerStructures.map((structure) => {
-              const position = new PositionType({ x: structure.coord_x, y: structure.coord_y });
+              const position = PositionType.fromContract({ x: structure.coord_x, y: structure.coord_y });
               const structureName = getStructureName(structure);
 
               return (

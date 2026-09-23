@@ -606,6 +606,12 @@ function resolveExploreClientLatencyPhase(stage: string | undefined): ClientActi
   return undefined;
 }
 
+/** An action path's contract hex, as the scene hex its helpers work in. */
+const sceneHexOf = (contractHex: HexPosition): HexPosition => {
+  const normalized = Position.fromContract({ x: contractHex.col, y: contractHex.row }).getNormalized();
+  return { col: normalized.x, row: normalized.y };
+};
+
 export default class WorldmapScene extends WarpTravel {
   private readonly interactionDebugInstanceId = allocateWorldmapInteractionDebugInstanceId();
   private readonly terrainMetricsSceneId = `game:${configManager.getActiveGameId()}:worldmap:${this.interactionDebugInstanceId}`;
@@ -835,7 +841,7 @@ export default class WorldmapScene extends WarpTravel {
   private refreshVisualTerrainWindowThrottled?: ReturnType<typeof throttle>;
   private updateCameraTargetHex = () => {
     const normalizedHex = this.getCameraTargetHex();
-    const contractHex = new Position({ x: normalizedHex.col, y: normalizedHex.row }).getContract();
+    const contractHex = Position.fromNormalized({ x: normalizedHex.col, y: normalizedHex.row }).getContract();
     const nextHex = { col: Number(contractHex.x), row: Number(contractHex.y) };
     const state = useUIStore.getState();
     const currentHex = state.cameraTargetHex;
@@ -1414,7 +1420,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private resolveMarkerWorldPosition(hexCoords: WorldSpatialHex): Vector3 {
-    const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
+    const normalized = Position.fromContract({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
     return getWorldPositionForHex({ col: normalized.x, row: normalized.y });
   }
 
@@ -1432,13 +1438,13 @@ export default class WorldmapScene extends WarpTravel {
 
     if (current) this.completePendingExploreEffects(current.hexCoords);
 
-    const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
+    const normalized = Position.fromContract({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
     if (!this.isHexInRetainedRenderArea(normalized.x, normalized.y)) {
       return;
     }
 
     if (!previous && current) {
-      const origin = source ? new Position({ x: source.col, y: source.row }).getNormalized() : undefined;
+      const origin = source ? Position.fromContract({ x: source.col, y: source.row }).getNormalized() : undefined;
       this.proceduralTerrain.queueShroudReveal(
         normalized.x,
         normalized.y,
@@ -1472,7 +1478,10 @@ export default class WorldmapScene extends WarpTravel {
   private syncProjectedArmyPathfinding(changes: readonly ArmySpatialProjectionChange[]): void {
     changes.forEach(({ previous, current }) => {
       if (previous) {
-        const previousHex = new Position({ x: previous.hexCoords.col, y: previous.hexCoords.row }).getNormalized();
+        const previousHex = Position.fromContract({
+          x: previous.hexCoords.col,
+          y: previous.hexCoords.row,
+        }).getNormalized();
         const stayedAtPreviousHex =
           current?.hexCoords.col === previous.hexCoords.col && current.hexCoords.row === previous.hexCoords.row;
         if (!stayedAtPreviousHex && this.isHexInRetainedRenderArea(previousHex.x, previousHex.y)) {
@@ -1481,7 +1490,10 @@ export default class WorldmapScene extends WarpTravel {
       }
 
       if (current) {
-        const currentHex = new Position({ x: current.hexCoords.col, y: current.hexCoords.row }).getNormalized();
+        const currentHex = Position.fromContract({
+          x: current.hexCoords.col,
+          y: current.hexCoords.row,
+        }).getNormalized();
         if (this.isHexInRetainedRenderArea(currentHex.x, currentHex.y)) {
           gameWorkerManager.updateArmyHex(currentHex.x, currentHex.y, {
             id: current.entityId,
@@ -1528,7 +1540,7 @@ export default class WorldmapScene extends WarpTravel {
   ): void {
     const hovered = this.currentHoverLabelHex;
     if (!hovered) return;
-    const contract = new Position({ x: hovered.col, y: hovered.row }).getContract();
+    const contract = Position.fromNormalized({ x: hovered.col, y: hovered.row }).getContract();
     const touchesHoveredHex = changes.some(
       ({ previous, current }) =>
         isSameWorldSpatialHex(previous?.hexCoords, contract) || isSameWorldSpatialHex(current?.hexCoords, contract),
@@ -1539,7 +1551,10 @@ export default class WorldmapScene extends WarpTravel {
   private syncProjectedStructurePathfinding(changes: readonly StructureSpatialProjectionChange[]): void {
     changes.forEach(({ previous, current }) => {
       if (previous && !previous.reserved) {
-        const previousHex = new Position({ x: previous.hexCoords.col, y: previous.hexCoords.row }).getNormalized();
+        const previousHex = Position.fromContract({
+          x: previous.hexCoords.col,
+          y: previous.hexCoords.row,
+        }).getNormalized();
         const currentStayedAtPreviousHex =
           current?.hexCoords.col === previous.hexCoords.col && current.hexCoords.row === previous.hexCoords.row;
         if (!currentStayedAtPreviousHex && this.isHexInRetainedRenderArea(previousHex.x, previousHex.y)) {
@@ -1548,7 +1563,10 @@ export default class WorldmapScene extends WarpTravel {
       }
 
       if (current && !current.reserved) {
-        const currentHex = new Position({ x: current.hexCoords.col, y: current.hexCoords.row }).getNormalized();
+        const currentHex = Position.fromContract({
+          x: current.hexCoords.col,
+          y: current.hexCoords.row,
+        }).getNormalized();
         if (this.isHexInRetainedRenderArea(currentHex.x, currentHex.y)) {
           gameWorkerManager.updateStructureHex(currentHex.x, currentHex.y, {
             id: current.entityId,
@@ -1634,7 +1652,7 @@ export default class WorldmapScene extends WarpTravel {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.RelicChest.onRelicChestOpened((opening) => {
         if (this.currentChunk === "null" || getActiveGameSyncRuntime()?.getStatus() !== "running") return;
-        const hex = new Position({ x: opening.hex.x, y: opening.hex.y }).getNormalized();
+        const hex = Position.fromContract({ x: opening.hex.x, y: opening.hex.y }).getNormalized();
         if (!this.isColRowInCurrentRenderBounds(hex.x, hex.y)) return;
         const revealed = this.chestManager.revealRelics({ col: opening.hex.x, row: opening.hex.y }, opening.relics);
         if (!revealed) void this.resourceFXManager.playRelicBurst(opening.relics, hex.x, hex.y);
@@ -2039,12 +2057,12 @@ export default class WorldmapScene extends WarpTravel {
   private getArmyDisplayPosition(entityId: ID): HexPosition | undefined {
     const army = this.worldSpatialProjection.getArmy(entityId);
     if (!army) return undefined;
-    const normalized = new Position({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
+    const normalized = Position.fromContract({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
     return { col: normalized.x, row: normalized.y };
   }
 
   private getArmyAtHex(hexCoords: HexPosition): HexEntityInfo | undefined {
-    const contract = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const renderable = this.worldSpatialProjection
       .getArmiesAtHex({ alt: activeMapLayer(), col: contract.x, row: contract.y })
       .find(({ entityId }) => {
@@ -2055,7 +2073,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private resolveContractHexKey(hexCoords: HexPosition): string {
-    const contract = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const contract = Position.fromContract({ x: hexCoords.col, y: hexCoords.row }).getContract();
     return `${contract.x},${contract.y}`;
   }
 
@@ -2279,7 +2297,9 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
 
-      toast.success("Creating Hyperstructure...", { location: { x: hexCoords.col, y: hexCoords.row } });
+      toast.success("Creating Hyperstructure...", {
+        location: Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract(),
+      });
     } catch (error) {
       console.error("[Worldmap] Failed to create reserved hyperstructure", error);
       toast.error("Unable to create this Hyperstructure right now.");
@@ -2287,7 +2307,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private isReservedHyperstructureHex(hexCoords: HexPosition): boolean {
-    const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const contractPosition = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
     return this.worldSpatialProjection
       .getStructuresAtHex({ alt: activeMapLayer(), col: contractPosition.x, row: contractPosition.y })
       .some((structure) => structure.reserved);
@@ -2297,7 +2317,7 @@ export default class WorldmapScene extends WarpTravel {
     const accountAddress = ContractAddress(useAccountStore.getState().account?.address || "");
     const isMine = structure.owner === accountAddress;
 
-    const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const contractPosition = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const worldMapPosition =
       Number.isFinite(Number(contractPosition?.x)) && Number.isFinite(Number(contractPosition?.y))
         ? { col: Number(contractPosition?.x), row: Number(contractPosition?.y) }
@@ -2313,8 +2333,9 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
+  /** What stands on a scene hex (normalized); action paths carry contract hexes and convert with sceneHexOf first. */
   protected getHexagonEntity(hexCoords: HexPosition) {
-    const position = new Position({ x: hexCoords.col, y: hexCoords.row });
+    const position = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row });
     const hex = position.getNormalized();
     const contractHex = position.getContract();
     const army = this.getArmyAtHex({ col: hex.x, row: hex.y });
@@ -2481,7 +2502,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   protected handleHexSelection(hexCoords: HexPosition, isMine: boolean) {
-    const contractHexPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const contractHexPosition = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const position = getWorldPositionForHex(hexCoords);
     this.interactionAdapter.selectHex({
       contractHexPosition,
@@ -2842,18 +2863,18 @@ export default class WorldmapScene extends WarpTravel {
     const selectedPath = actionPath.map((path) => path.hex);
 
     const targetHex = selectedPath[selectedPath.length - 1];
-    const target = this.getHexagonEntity(targetHex);
-    const selected = this.getHexagonEntity(selectedPath[0]);
+    const target = this.getHexagonEntity(sceneHexOf(targetHex));
+    const selected = this.getHexagonEntity(sceneHexOf(selectedPath[0]));
 
     const attackerSummary = {
       type: selected.army ? ActorType.Explorer : ActorType.Structure,
       id: selectedEntityId,
-      hex: new Position({ x: selectedPath[0].col, y: selectedPath[0].row }).getContract(),
+      hex: Position.fromContract({ x: selectedPath[0].col, y: selectedPath[0].row }).getContract(),
     };
     const targetSummary = {
       type: target.army ? ActorType.Explorer : ActorType.Structure,
       id: target.army?.id || target.structure?.id || 0,
-      hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
+      hex: Position.fromContract({ x: targetHex.col, y: targetHex.row }).getContract(),
       alt: activeMapLayer(),
     };
 
@@ -2877,7 +2898,7 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    const selected = this.getHexagonEntity(selectedHex);
+    const selected = this.getHexagonEntity(sceneHexOf(selectedHex));
     const attacker = this.worldSpatialProjection.getArmy(selectedEntityId);
     if (!attacker) return;
     const traversalAction = resolveSpireTraversalAction({
@@ -2890,7 +2911,7 @@ export default class WorldmapScene extends WarpTravel {
       const attackerSummary = {
         type: selected.army ? ActorType.Explorer : ActorType.Structure,
         id: selectedEntityId,
-        hex: new Position({ x: selectedHex.col, y: selectedHex.row }).getContract(),
+        hex: Position.fromContract({ x: selectedHex.col, y: selectedHex.row }).getContract(),
       };
       const targetSummary = {
         type: ActorType.Explorer,
@@ -2934,7 +2955,7 @@ export default class WorldmapScene extends WarpTravel {
 
     if (direction === undefined || direction === null) return;
 
-    const normalized = new Position({ x: targetHex.col, y: targetHex.row }).getNormalized();
+    const normalized = Position.fromContract({ x: targetHex.col, y: targetHex.row }).getNormalized();
     const point = projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera);
     openArmyDeploymentPicker(
       { direction, structureId: selectedEntityId, isExplorer: true },
@@ -2947,7 +2968,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private openTargetActionSurface(targetHex: HexPosition, surface: { id: string; content: ReactNode }): void {
     if (!canIssueOrders()) return;
-    const normalized = new Position({ x: targetHex.col, y: targetHex.row }).getNormalized();
+    const normalized = Position.fromContract({ x: targetHex.col, y: targetHex.row }).getNormalized();
     const point = projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera);
     usePopoverStore.getState().openSurface({
       ...surface,
@@ -3007,13 +3028,16 @@ export default class WorldmapScene extends WarpTravel {
     if (!structure) return;
     intent.setSuggestedArmyDeploymentStructureId(null);
     if (!canIssueOrders()) return;
-    const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
+    const normalized = Position.fromContract({
+      x: structure.hexCoords.col,
+      y: structure.hexCoords.row,
+    }).getNormalized();
     this.onStructureSelection(structure.entityId, { col: normalized.x, row: normalized.y });
     const points = [...getLiveWorldmapEntityActions().actionPaths.values()]
       .filter((path) => ActionPaths.getActionType(path) === ActionType.CreateArmy)
       .map((path) => {
         const target = path[path.length - 1].hex;
-        const hex = new Position({ x: target.col, y: target.row }).getNormalized();
+        const hex = Position.fromContract({ x: target.col, y: target.row }).getNormalized();
         return projectHexToScreen({ col: hex.x, row: hex.y }, this.camera);
       });
     points.sort(
@@ -3029,8 +3053,8 @@ export default class WorldmapScene extends WarpTravel {
     const selectedPath = actionPath.map((path) => path.hex);
     const targetHex = selectedPath[selectedPath.length - 1];
     const selectedHex = selectedPath[0];
-    const selected = this.getHexagonEntity(selectedHex);
-    const target = this.getHexagonEntity(targetHex);
+    const selected = this.getHexagonEntity(sceneHexOf(selectedHex));
+    const target = this.getHexagonEntity(sceneHexOf(targetHex));
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
     const isTargetMine = target.army?.owner === account || target.structure?.owner === account;
     const isSelectedMine = selected.army?.owner === account || selected.structure?.owner === account;
@@ -3042,12 +3066,12 @@ export default class WorldmapScene extends WarpTravel {
           selected={{
             type: selected.army ? ActorType.Explorer : ActorType.Structure,
             id: selectedEntityId,
-            hex: new Position({ x: selectedHex.col, y: selectedHex.row }).getContract(),
+            hex: Position.fromContract({ x: selectedHex.col, y: selectedHex.row }).getContract(),
           }}
           target={{
             type: target.army ? ActorType.Explorer : ActorType.Structure,
             id: target.army?.id || target.structure?.id || 0,
-            hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
+            hex: Position.fromContract({ x: targetHex.col, y: targetHex.row }).getContract(),
           }}
           allowBothDirections={isTargetMine && isSelectedMine}
         />
@@ -3086,8 +3110,9 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
+    const structureContract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const actionPaths = requireActiveGameClient().actions.structurePaths({
-      hex: hexCoords,
+      hex: { col: structureContract.x, row: structureContract.y },
       armyHexes: this.buildProjectedArmyActionIndex(),
       exploredHexes: this.buildProjectedExploredTileIndex(),
       playerAddress: ContractAddress(playerAddress),
@@ -3108,7 +3133,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private showSelectedStructure(structureId: ID, hex: HexPosition): void {
-    const contract = new Position({ x: hex.col, y: hex.row }).getContract();
+    const contract = Position.fromNormalized({ x: hex.col, y: hex.row }).getContract();
     this.state.setStructureEntityId(structureId, {
       worldMapPosition: { col: contract.x, row: contract.y },
       spectator: !canIssueOrders(),
@@ -3403,7 +3428,7 @@ export default class WorldmapScene extends WarpTravel {
   private buildProjectedChestActionIndex(): Map<number, Map<number, HexEntityInfo>> {
     const index = new Map<number, Map<number, HexEntityInfo>>();
     this.worldSpatialProjection.getChests(activeMapLayer()).forEach((chest) => {
-      const normalized = new Position({ x: chest.hexCoords.col, y: chest.hexCoords.row }).getNormalized();
+      const normalized = Position.fromContract({ x: chest.hexCoords.col, y: chest.hexCoords.row }).getNormalized();
       const row = index.get(normalized.x) ?? new Map<number, HexEntityInfo>();
       row.set(normalized.y, { id: chest.entityId, owner: 0n });
       index.set(normalized.x, row);
@@ -3414,7 +3439,7 @@ export default class WorldmapScene extends WarpTravel {
   private buildProjectedExploredTileIndex(): Map<number, Map<number, BiomeType>> {
     const index = new Map<number, Map<number, BiomeType>>();
     this.worldSpatialProjection.getTiles(activeMapLayer()).forEach((tile) => {
-      const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
+      const normalized = Position.fromContract({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
       const row = index.get(normalized.x) ?? new Map<number, BiomeType>();
       row.set(normalized.y, requireBiomeTypeFromId(tile.biome));
       index.set(normalized.x, row);
@@ -3439,7 +3464,10 @@ export default class WorldmapScene extends WarpTravel {
     this.worldSpatialProjection.getStructures(activeMapLayer()).forEach((structure) => {
       if (structure.reserved) return;
 
-      const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
+      const normalized = Position.fromContract({
+        x: structure.hexCoords.col,
+        y: structure.hexCoords.row,
+      }).getNormalized();
       const row = index.get(normalized.x) ?? new Map<number, HexEntityInfo>();
       row.set(normalized.y, {
         id: structure.entityId,
@@ -3622,13 +3650,16 @@ export default class WorldmapScene extends WarpTravel {
   private getStructureHexPosition(structureId: ID): HexPosition | undefined {
     const structure = this.worldSpatialProjection.getStructure(structureId);
     if (!structure) return undefined;
-    const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
+    const normalized = Position.fromContract({
+      x: structure.hexCoords.col,
+      y: structure.hexCoords.row,
+    }).getNormalized();
     return { col: normalized.x, row: normalized.y };
   }
 
   private refreshTerrainPropOccupancy(): void {
     this.proceduralTerrain.refreshPropOccupancy((col, row) => {
-      const contract = new Position({ x: col, y: row }).getContract();
+      const contract = Position.fromNormalized({ x: col, y: row }).getContract();
       const hex = { col: contract.x, row: contract.y };
       return (
         this.worldSpatialProjection.getStructuresAtHex({ ...hex, alt: activeMapLayer() }).length > 0 ||
@@ -3645,7 +3676,7 @@ export default class WorldmapScene extends WarpTravel {
     surfacePresentation = this.getTerrainCellSurfacePresentation(col, row),
   ): boolean {
     if (surfacePresentation === "ethereal") return true;
-    const contract = new Position({ x: col, y: row }).getContract();
+    const contract = Position.fromNormalized({ x: col, y: row }).getContract();
     return (
       this.worldSpatialProjection.getStructuresAtHex({ alt: activeMapLayer(), col: contract.x, row: contract.y })
         .length > 0
@@ -3653,7 +3684,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getTerrainCellSurfacePresentation(col: number, row: number): "ethereal" | undefined {
-    const contract = new Position({ x: col, y: row }).getContract();
+    const contract = Position.fromNormalized({ x: col, y: row }).getContract();
     const tile = this.worldSpatialProjection.getTileAtHex({
       alt: activeMapLayer(),
       col: contract.x,
@@ -5765,7 +5796,7 @@ export default class WorldmapScene extends WarpTravel {
           : undefined;
       },
       normalizeStructureHex: (hex) => {
-        const normalized = new Position({ x: hex.col, y: hex.row }).getNormalized();
+        const normalized = Position.fromContract({ x: hex.col, y: hex.row }).getNormalized();
         return { col: normalized.x, row: normalized.y };
       },
       projection: this.worldSpatialProjection,
@@ -5960,7 +5991,7 @@ export default class WorldmapScene extends WarpTravel {
       this.worldSpatialProjection.getTilesInBounds(this.toContractBounds(bounds)).forEach((tile) => {
         if (retainedTileIds.has(tile.spatialId)) return;
         retainedTileIds.add(tile.spatialId);
-        const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
+        const normalized = Position.fromContract({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
         exploredTiles.push({
           biome: requireBiomeTypeFromId(tile.biome),
           col: normalized.x,
@@ -5981,7 +6012,10 @@ export default class WorldmapScene extends WarpTravel {
           return;
         }
         retainedStructureIds.add(structure.entityId);
-        const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
+        const normalized = Position.fromContract({
+          x: structure.hexCoords.col,
+          y: structure.hexCoords.row,
+        }).getNormalized();
         structures.push({
           col: normalized.x,
           info: {
@@ -6005,7 +6039,7 @@ export default class WorldmapScene extends WarpTravel {
           return;
         }
         retainedArmyIds.add(army.entityId);
-        const normalized = new Position({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
+        const normalized = Position.fromContract({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
         armies.push({
           col: normalized.x,
           info: {
@@ -6316,7 +6350,7 @@ export default class WorldmapScene extends WarpTravel {
   private syncExploredTilesFromProjection(tiles: readonly TileSpatialRenderable[]): number {
     let syncedTileCount = 0;
     for (const tile of tiles) {
-      const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
+      const normalized = Position.fromContract({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
       const biome = requireBiomeTypeFromId(tile.biome);
       const existingBiome = this.exploredTiles.get(normalized.x)?.get(normalized.y);
       if (existingBiome === biome) {
@@ -8541,9 +8575,14 @@ export default class WorldmapScene extends WarpTravel {
       this.structureIndex = fullIndex;
     }
 
-    navigateToStructure(structure.position.x, structure.position.y, "map");
-    this.handleHexSelection({ col: structure.position.x, row: structure.position.y }, true);
-    this.onStructureSelection(structure.entityId, { col: structure.position.x, row: structure.position.y });
+    const normalizedPosition = Position.fromContract({
+      x: structure.position.x,
+      y: structure.position.y,
+    }).getNormalized();
+    const sceneHex = { col: normalizedPosition.x, row: normalizedPosition.y };
+    navigateToStructure(Position.fromContract(structure.position), "map");
+    this.handleHexSelection(sceneHex, true);
+    this.onStructureSelection(structure.entityId, sceneHex);
 
     const worldMapPosition = { col: Number(structure.position.x), row: Number(structure.position.y) };
     this.state.setStructureEntityId(structure.entityId, {
@@ -8551,7 +8590,6 @@ export default class WorldmapScene extends WarpTravel {
       spectator: this.state.isSpectating,
     });
 
-    const normalizedPosition = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
     this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, SHORTCUT_NAVIGATION_DURATION_SECONDS);
     void this.refreshChunksAfterShortcutNavigation(
       { col: normalizedPosition.x, row: normalizedPosition.y },
@@ -8570,17 +8608,18 @@ export default class WorldmapScene extends WarpTravel {
     this.structureIndex = utilSelectNextStructure(this.playerStructures, this.structureIndex, "map");
     if (this.playerStructures.length > 0) {
       const structure = this.playerStructures[this.structureIndex];
-      // structure.position is in contract coordinates, pass it directly
-      // handleHexSelection will normalize it internally when calling getHexagonEntity
-      this.handleHexSelection({ col: structure.position.x, row: structure.position.y }, true);
-      this.onStructureSelection(structure.entityId, { col: structure.position.x, row: structure.position.y });
-      // Set the structure entity ID in the UI store
+      const normalizedPosition = Position.fromContract({
+        x: structure.position.x,
+        y: structure.position.y,
+      }).getNormalized();
+      const sceneHex = { col: normalizedPosition.x, row: normalizedPosition.y };
+      this.handleHexSelection(sceneHex, true);
+      this.onStructureSelection(structure.entityId, sceneHex);
       const worldMapPosition = { col: Number(structure.position.x), row: Number(structure.position.y) };
       this.state.setStructureEntityId(structure.entityId, {
         worldMapPosition,
         spectator: this.state.isSpectating,
       });
-      const normalizedPosition = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
       this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, SHORTCUT_NAVIGATION_DURATION_SECONDS);
       void this.refreshChunksAfterShortcutNavigation(
         { col: normalizedPosition.x, row: normalizedPosition.y },

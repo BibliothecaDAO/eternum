@@ -538,7 +538,7 @@ export const ArmyManagementCard = ({ owner_entity, army }: ArmyManagementCardPro
             ) : (
               "Unknown"
             )}
-            <ViewOnMapIcon position={new PositionInterface(army.position)} />
+            <ViewOnMapIcon position={PositionInterface.fromContract(army.position)} />
           </div>
         </div>
         <div className="flex flex-col relative my-4">

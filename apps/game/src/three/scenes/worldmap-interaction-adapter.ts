@@ -1,3 +1,4 @@
+import { Position } from "@bibliothecadao/eternum";
 import { AudioManager } from "@/audio/core/AudioManager";
 import type { HexEntityInfo, HexPosition, ID } from "@bibliothecadao/types";
 import { navigateToStructure } from "../utils/navigation";
@@ -43,7 +44,7 @@ export function createWorldmapInteractionAdapter({
         spectator: input.spectator,
         worldMapPosition: input.worldMapPosition,
       });
-      navigateToStructure(input.hexCoords.col, input.hexCoords.row, "hex");
+      navigateToStructure(Position.fromNormalized({ x: input.hexCoords.col, y: input.hexCoords.row }), "hex");
     },
 
     selectHex(input: {

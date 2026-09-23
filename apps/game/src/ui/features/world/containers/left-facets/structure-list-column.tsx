@@ -69,7 +69,7 @@ export const StructureListColumn = memo(() => {
       if (target?.structure) {
         const position = structureMapPosition(store, target.structure);
         setSelectedHex({ col: position.x, row: position.y });
-        void goToStructure(entityId, new Position(position), isMapView);
+        void goToStructure(entityId, Position.fromContract(position), isMapView);
       } else {
         setStructureEntityId(entityId);
       }

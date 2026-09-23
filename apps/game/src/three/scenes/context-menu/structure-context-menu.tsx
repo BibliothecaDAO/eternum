@@ -43,7 +43,7 @@ export const openStructureContextMenu = ({ event, structure, hexCoords, store }:
   };
 
   const selectConstructionBuilding = (building: BuildingType, view: LeftView, resource?: ResourcesIds) => {
-    const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const contractPosition = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const col = Number(contractPosition?.x);
     const row = Number(contractPosition?.y);
     const worldMapPosition = Number.isFinite(col) && Number.isFinite(row) ? { col, row } : undefined;
@@ -53,12 +53,12 @@ export const openStructureContextMenu = ({ event, structure, hexCoords, store }:
         spectator: true,
         worldMapPosition,
       });
-      navigateToStructure(hexCoords.col, hexCoords.row, "hex");
+      navigateToStructure(Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }), "hex");
       return;
     }
 
     uiStore.setStructureEntityId(structure.id, { worldMapPosition });
-    navigateToStructure(hexCoords.col, hexCoords.row, "hex");
+    navigateToStructure(Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }), "hex");
     uiStore.setSelectedBuilding(building);
     uiStore.setPreviewBuilding(resource !== undefined ? { type: building, resource } : { type: building });
     uiStore.setLeftNavigationView(view);

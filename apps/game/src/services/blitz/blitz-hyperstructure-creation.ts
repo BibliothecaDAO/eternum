@@ -71,7 +71,7 @@ const createActiveWorldBlitzHyperstructure = async ({
   systemCalls: Pick<SystemCalls, "create_hyperstructure">;
 }) => {
   assertHyperstructureCreationAllowed();
-  const coord = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+  const coord = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
   return systemCalls.create_hyperstructure({ signer: account, alt: DEFAULT_COORD_ALT, x: coord.x, y: coord.y });
 };
 

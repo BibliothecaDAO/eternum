@@ -68,7 +68,7 @@ function AttentionCycle() {
         mapClick: "dismiss",
       });
     } else {
-      void goToStructure(target.entityId, new Position(position), true);
+      void goToStructure(target.entityId, Position.fromContract(position), true);
       usePopoverStore.getState().close("suggestions");
     }
   };

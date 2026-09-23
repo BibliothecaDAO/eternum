@@ -179,7 +179,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
 
   const handleViewStructure = useCallback(() => {
     if (!structure) return;
-    goToStructure(structureEntityId, new Position(structureMapPosition(store, structure)), false);
+    goToStructure(structureEntityId, Position.fromContract(structureMapPosition(store, structure)), false);
   }, [goToStructure, store, structure, structureEntityId]);
 
   return {

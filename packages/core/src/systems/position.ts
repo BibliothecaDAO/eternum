@@ -1,34 +1,32 @@
 import { FELT_CENTER } from "../utils/utils";
 
+/**
+ * A hex on the world map. The chain's coordinate is the truth; the normalized coordinate is that coordinate minus the
+ * map centre, the one the scene, the URL and the tile panel use. A Position is always built from one or the other
+ * explicitly: nothing guesses which one a pair of numbers is.
+ */
 export class Position {
-  private x: number;
-  private y: number;
-  private FELT_CENTER: number;
-  private normalized: boolean;
+  private constructor(
+    private readonly x: number,
+    private readonly y: number,
+  ) {}
 
-  constructor({ x, y }: { x: number; y: number }) {
-    this.x = x;
-    this.y = y;
-    // if outside of square 1_000_000 x 1_000_000 around the center, it's already normalized
-    const squareSize = 1_000_000;
-    const halfSquareSize = squareSize / 2;
-    this.FELT_CENTER = FELT_CENTER();
-    this.normalized =
-      Math.abs(x - this.FELT_CENTER) > halfSquareSize || Math.abs(y - this.FELT_CENTER) > halfSquareSize;
+  public static fromContract({ x, y }: { x: number; y: number }): Position {
+    return new Position(x, y);
+  }
+
+  public static fromNormalized({ x, y }: { x: number; y: number }): Position {
+    const center = FELT_CENTER();
+    return new Position(x + center, y + center);
   }
 
   public getContract() {
-    return {
-      x: this.normalized ? this.x + this.FELT_CENTER : this.x,
-      y: this.normalized ? this.y + this.FELT_CENTER : this.y,
-    };
+    return { x: this.x, y: this.y };
   }
 
   public getNormalized() {
-    return {
-      x: this.normalized ? this.x : this.x - this.FELT_CENTER,
-      y: this.normalized ? this.y : this.y - this.FELT_CENTER,
-    };
+    const center = FELT_CENTER();
+    return { x: this.x - center, y: this.y - center };
   }
 
   public toMapLocationUrl() {

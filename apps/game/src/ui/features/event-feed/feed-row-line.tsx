@@ -91,13 +91,15 @@ function useFeedRowTarget(row: ImportantFeedRow): Position | null {
     row.kind === "arrival" ? { game_id: configManager.getActiveGameId(), entity_id: row.structureEntityId } : undefined,
   );
   if (row.kind === "headline") {
-    return row.headline.location ? new Position({ x: row.headline.location.x, y: row.headline.location.y }) : null;
+    return row.headline.location
+      ? Position.fromContract({ x: row.headline.location.x, y: row.headline.location.y })
+      : null;
   }
   if (row.kind === "story") return resolveStoryEventPosition(row.event, store);
   if (row.kind === "arrival") {
-    return structure ? new Position({ x: structure.base.coord_x, y: structure.base.coord_y }) : null;
+    return structure ? Position.fromContract({ x: structure.base.coord_x, y: structure.base.coord_y }) : null;
   }
-  if (row.kind === "notice") return row.notice.location ? new Position(row.notice.location) : null;
+  if (row.kind === "notice") return row.notice.location ? Position.fromContract(row.notice.location) : null;
   return null;
 }
 

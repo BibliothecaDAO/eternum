@@ -6,7 +6,6 @@ import {
   HexEntityInfo,
   type HexPosition,
 } from "@bibliothecadao/types";
-import { Position } from "../systems";
 import { FELT_CENTER } from "../utils";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 
@@ -26,7 +25,7 @@ export class StructureActionManager {
    * @returns ActionPaths object containing possible attack or help actions
    */
   public findActionPaths(
-    rawPosition: HexPosition,
+    contractPosition: HexPosition,
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
     playerAddress: ContractAddress,
@@ -34,8 +33,7 @@ export class StructureActionManager {
   ): ActionPaths {
     const actionPaths = new ActionPaths();
 
-    const contractPos = new Position({ x: rawPosition.col, y: rawPosition.row }).getContract();
-    const position = { col: contractPos.x, row: contractPos.y };
+    const position = { col: contractPosition.col, row: contractPosition.row };
 
     this.addAdjacentSupportActionPaths(actionPaths, position, armyHexes, exploredHexes, playerAddress);
     this.addAttackActionPaths(actionPaths, position, armyHexes, exploredHexes, playerAddress, attackRange);

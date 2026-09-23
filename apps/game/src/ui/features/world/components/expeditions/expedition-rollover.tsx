@@ -49,7 +49,7 @@ export const ExpeditionRollover = () => {
         description: "Fresh fog around your realm. Yesterday's armies are spent; today's muster is open.",
         location: { x: site.col, y: site.row },
       });
-      navigateToMapView(new Position({ x: site.col, y: site.row }));
+      navigateToMapView(Position.fromContract({ x: site.col, y: site.row }));
     };
     check();
     const id = window.setInterval(check, 1_000);

@@ -374,7 +374,7 @@ export class ChestManager {
   }
 
   private getChestWorldPosition = (chest: Pick<ChestSpatialRenderable, "hexCoords">) => {
-    const { x: hexCoordsX, y: hexCoordsY } = new Position({
+    const { x: hexCoordsX, y: hexCoordsY } = Position.fromContract({
       x: chest.hexCoords.col,
       y: chest.hexCoords.row,
     }).getNormalized();
@@ -562,7 +562,7 @@ export class ChestManager {
     const labelDiv = createChestLabel(
       {
         entityId: chest.entityId,
-        hexCoords: new Position({ x: chest.hexCoords.col, y: chest.hexCoords.row }),
+        hexCoords: Position.fromContract({ x: chest.hexCoords.col, y: chest.hexCoords.row }),
       },
       this.currentCameraView,
     );

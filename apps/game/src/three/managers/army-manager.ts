@@ -482,7 +482,7 @@ export class ArmyManager {
     this.applyExplorerTroopsPresentationUpdate(explorerTroops);
     if (variantChanged) this.refreshArmyPositionPresentation(existing);
 
-    const projectedPosition = new Position({ x: renderable.hexCoords.col, y: renderable.hexCoords.row });
+    const projectedPosition = Position.fromContract({ x: renderable.hexCoords.col, y: renderable.hexCoords.row });
     const projectedNormalized = projectedPosition.getNormalized();
     await this.moveArmy(renderable.entityId, projectedPosition);
   }
@@ -504,7 +504,7 @@ export class ArmyManager {
 
     return {
       entityId: renderable.entityId,
-      hexCoords: new Position({ x: renderable.hexCoords.col, y: renderable.hexCoords.row }),
+      hexCoords: Position.fromContract({ x: renderable.hexCoords.col, y: renderable.hexCoords.row }),
       owner: { address: resolvedOwner.ownerAddress, ownerName: resolvedOwner.ownerName, guildName: "" },
       owningStructureId: ownerStructureId,
       category,
@@ -557,7 +557,10 @@ export class ArmyManager {
     if (renderable.hexCoords.alt !== activeMapLayer() || !isCommittedManagerChunk(this.currentChunkKey)) return false;
     const [startRow, startCol] = this.currentChunkKey.split(",").map(Number);
     const bounds = this.getChunkBounds(startRow, startCol);
-    const normalized = new Position({ x: renderable.hexCoords.col, y: renderable.hexCoords.row }).getNormalized();
+    const normalized = Position.fromContract({
+      x: renderable.hexCoords.col,
+      y: renderable.hexCoords.row,
+    }).getNormalized();
     return (
       normalized.x >= bounds.minCol &&
       normalized.x <= bounds.maxCol &&
@@ -644,7 +647,7 @@ export class ArmyManager {
   private addDebugArmyFromControls(input: { col: number; entityId: number; isMine: boolean; row: number }): void {
     this.addArmy({
       entityId: input.entityId,
-      hexCoords: new Position({ x: input.col, y: input.row }),
+      hexCoords: Position.fromNormalized({ x: input.col, y: input.row }),
       owner: {
         address: input.isMine ? ContractAddress(useAccountStore.getState().account?.address || "0") : 0n,
         // TODO: Add owner name and guild name
@@ -812,7 +815,7 @@ export class ArmyManager {
 
       this.addArmy({
         entityId,
-        hexCoords: new Position({ x: col, y: row }),
+        hexCoords: Position.fromNormalized({ x: col, y: row }),
         owner: {
           address: params.isMine ? ContractAddress(useAccountStore.getState().account?.address || "0") : BigInt(i + 1),
           ownerName: `Debug Army ${i + 1}`,
@@ -1558,7 +1561,7 @@ export class ArmyManager {
     const worldPos = isActivelyRendered ? this.armyModel.getEntityWorldPosition(entityIdNumber) : undefined;
     const worldHex = worldPos ? getHexForWorldPosition(worldPos) : undefined;
     const displayedHex = worldHex
-      ? new Position({ x: worldHex.col, y: worldHex.row }).getNormalized()
+      ? Position.fromNormalized({ x: worldHex.col, y: worldHex.row }).getNormalized()
       : army.hexCoords.getNormalized();
 
     const sourceState = this.movingArmySourceBuckets.get(army.entityId);

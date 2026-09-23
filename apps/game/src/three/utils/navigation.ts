@@ -6,9 +6,9 @@ import { Structure } from "@bibliothecadao/types";
 import { resolveNavigationSceneTarget } from "../scene-navigation-boundary";
 import { SceneName } from "../types";
 
-function buildSceneLocationUrl(col: number, row: number, targetScene: SceneName): string {
+function buildSceneLocationUrl(position: Position, targetScene: SceneName): string {
   const playRoute = requirePlayRoute();
-  const normalized = new Position({ x: col, y: row }).getNormalized();
+  const normalized = position.getNormalized();
   return buildPlayHref({ ...playRoute, scene: targetScene, col: normalized.x, row: normalized.y });
 }
 
@@ -32,13 +32,13 @@ function dispatchSceneNavigation(navigationUrl: string): void {
  * @param structure - The structure to navigate to
  * @param scene - Optional scene to navigate to ('hex' or 'map'). Defaults to current scene.
  */
-export function navigateToStructure(col: number, row: number, scene?: "hex" | "map") {
+export function navigateToStructure(position: Position, scene?: "hex" | "map") {
   const targetScene = resolveNavigationSceneTarget({
     requestedScene: scene === "hex" ? SceneName.Hexception : scene === "map" ? SceneName.WorldMap : undefined,
     currentPath: window.location.pathname,
   });
 
-  dispatchSceneNavigation(buildSceneLocationUrl(col, row, targetScene));
+  dispatchSceneNavigation(buildSceneLocationUrl(position, targetScene));
 }
 
 /**
@@ -59,7 +59,7 @@ export function selectNextStructure(
   const nextIndex = (currentIndex + 1) % playerStructures.length;
   const structure = playerStructures[nextIndex];
 
-  navigateToStructure(structure.position.x, structure.position.y, scene);
+  navigateToStructure(Position.fromContract(structure.position), scene);
 
   return nextIndex;
 }

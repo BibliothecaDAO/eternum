@@ -723,7 +723,7 @@ function formatCoord(value: unknown): string | undefined {
   const x = toNumber(coord.x);
   const y = toNumber(coord.y);
   if (x === null || y === null) return undefined;
-  const normalized = new Position({ x, y }).getNormalized();
+  const normalized = Position.fromContract({ x, y }).getNormalized();
   return `(${normalized.x}, ${normalized.y})`;
 }
 

@@ -125,12 +125,12 @@ const ArmyChip = ({
             selected={{
               type: ActorType.Explorer,
               id: army.entityId,
-              hex: new Position({ x: Number(army.position.x), y: Number(army.position.y) }).getContract(),
+              hex: Position.fromContract({ x: Number(army.position.x), y: Number(army.position.y) }).getContract(),
             }}
             target={{
               type: ActorType.Structure,
               id: army.entity_owner_id,
-              hex: new Position({ x: Number(hexPosition?.col), y: Number(hexPosition?.row) }).getContract(),
+              hex: Position.fromNormalized({ x: Number(hexPosition?.col), y: Number(hexPosition?.row) }).getContract(),
             }}
             allowBothDirections={true}
           />
@@ -212,7 +212,7 @@ const ArmyChip = ({
                         {
                           <ViewOnMapIcon
                             className="w-5 h-5 hover:scale-110 transition-all duration-300 cursor-pointer"
-                            position={new Position({ x: Number(army.position.x), y: Number(army.position.y) })}
+                            position={Position.fromContract({ x: Number(army.position.x), y: Number(army.position.y) })}
                             // onClick={() => {
                             //   if (!isOnMap) {
                             //     navigate("/play/map");
@@ -220,7 +220,7 @@ const ArmyChip = ({
                             // }}
                           />
                         }
-                        {isOnMap && <NavigateToPositionIcon position={new Position(army.position)} />}
+                        {isOnMap && <NavigateToPositionIcon position={Position.fromContract(army.position)} />}
                       </React.Fragment>
                     )}
                   </div>

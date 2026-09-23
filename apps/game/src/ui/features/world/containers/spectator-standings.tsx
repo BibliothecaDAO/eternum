@@ -75,7 +75,7 @@ function StandingsRows() {
             type="button"
             disabled={!capital}
             aria-current={row.pinned ? "true" : undefined}
-            onClick={() => capital && navigate(new Position(structureMapPosition(store, capital)))}
+            onClick={() => capital && navigate(Position.fromContract(structureMapPosition(store, capital)))}
             title={capital ? `Fly to ${name}'s capital` : "No surviving realm"}
             className={cn(
               "grid w-full grid-cols-[2rem_1fr_4rem_3rem] items-center px-3 py-2 font-sans text-xs normal-case tracking-normal text-gold enabled:hover:bg-gold/10 disabled:opacity-60",

@@ -230,7 +230,7 @@ export const useExplorationAutomationRunner = () => {
 
             if (useFastCache && cached) {
               const filtered = filterFreshExplorationPaths(actionPathMap, cached.recentlyExplored, (hex) => {
-                const normalized = new Position({ x: hex.col, y: hex.row }).getNormalized();
+                const normalized = Position.fromContract({ x: hex.col, y: hex.row }).getNormalized();
                 return { x: normalized.x, y: normalized.y };
               });
 
@@ -282,7 +282,7 @@ export const useExplorationAutomationRunner = () => {
             if (shouldRepeat) {
               const endHex = selection.path[selection.path.length - 1]?.hex;
               if (endHex) {
-                const normalized = new Position({ x: endHex.col, y: endHex.row }).getNormalized();
+                const normalized = Position.fromContract({ x: endHex.col, y: endHex.row }).getNormalized();
                 const cache = snapshotCacheRef.current.get(entry.id);
                 if (cache) {
                   cache.recentlyExplored.add(`${normalized.x},${normalized.y}`);

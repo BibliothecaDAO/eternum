@@ -31,6 +31,7 @@ export interface ArmyPathsInput {
 }
 
 export interface StructurePathsInput {
+  /** The structure's contract hex. */
   hex: HexPosition;
   armyHexes: HexIndex<HexEntityInfo>;
   exploredHexes: HexIndex<BiomeType>;

@@ -27,7 +27,7 @@ export const PlaySceneHandoff = () => {
     }
 
     const first = playerStructures[0];
-    const normalized = new Position({
+    const normalized = Position.fromContract({
       x: first.position.x,
       y: first.position.y,
     }).getNormalized();

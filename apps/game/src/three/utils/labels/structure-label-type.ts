@@ -74,7 +74,7 @@ interface StructureLabelData extends LabelData {
 export const convertStructureInfo = (structure: StructureInfo): StructureLabelData => {
   return {
     ...structure,
-    hexCoords: new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }),
+    hexCoords: Position.fromNormalized({ x: structure.hexCoords.col, y: structure.hexCoords.row }),
   };
 };
 

@@ -1,11 +1,11 @@
-import { configManager, Position, tileOptToTile } from "@bibliothecadao/eternum";
+import { configManager, tileOptToTile } from "@bibliothecadao/eternum";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import type { Tile } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
-/** Accepts normalized or contract coordinates and follows the tile on its own layer. */
+/** Follows the tile at a contract hex on its own layer. */
 export function useTileAt(col: number | undefined, row: number | undefined, alt = false): Tile | undefined {
-  const coord = col === undefined || row === undefined ? undefined : new Position({ x: col, y: row }).getContract();
+  const coord = col === undefined || row === undefined ? undefined : { x: col, y: row };
   const tile = useNativeRow(
     "TileOpt",
     coord && { game_id: configManager.getActiveGameId(), alt, col: coord.x, row: coord.y },

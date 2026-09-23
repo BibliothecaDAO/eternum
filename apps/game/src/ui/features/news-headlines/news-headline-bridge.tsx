@@ -179,7 +179,7 @@ export function NewsHeadlineBridge() {
   const handleNavigate = useCallback(
     async (location: { x: number; y: number; entityId: number }) => {
       const { goToStructure, navigateToMapView, setSelectedHex, isMapView } = navRef.current;
-      const position = new Position({ x: location.x, y: location.y });
+      const position = Position.fromContract({ x: location.x, y: location.y });
 
       const col = Number(location.x);
       const row = Number(location.y);
