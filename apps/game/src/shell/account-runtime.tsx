@@ -61,12 +61,6 @@ function SignedInPanel({ session }: { session: Session }) {
         ) : null}
       </div>
       <AccountStatePrompt />
-      {session.user.address ? null : (
-        <div className="flex flex-col gap-1">
-          <span className="text-xs text-gold/60">Link a wallet to claim prizes and withdraw.</span>
-          <IdentityLogin mode="link" className="items-start" />
-        </div>
-      )}
       <button
         type="button"
         disabled={signingOut}

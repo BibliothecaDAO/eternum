@@ -193,7 +193,7 @@ const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { 
     case "signed-out":
       return (
         <SignInSurface>
-          You are not signed in, so this game is view only. Sign in with your Starknet identity wallet to play.
+          You are not signed in, so this game is view only. Sign in with your Realms account to play.
         </SignInSurface>
       );
     case "connecting":

@@ -14,6 +14,7 @@ interface SiwsPluginOptions {
   /** The app's origin: a signed message must name its host. */
   origin: string;
   verifySignature: VerifyWalletSignature;
+  hasPasskey: (userId: string) => Promise<boolean>;
 }
 
 const SiwsProof = z.object({
@@ -23,12 +24,15 @@ const SiwsProof = z.object({
 });
 
 const NONCE_LIFETIME_MS = 15 * 60 * 1000;
+// Long enough to add a passkey, and no longer: the recovered player signs in with that passkey afterwards.
+const RECOVERY_SESSION_MS = 15 * 60 * 1000;
 
 const unauthorized = (reason: string) => new APIError("UNAUTHORIZED", { message: `Unauthorized: ${reason}` });
 
 /**
- * Sign in with Starknet, and linking a wallet to a Realms account. A wallet belongs to at most one account and an
- * account to at most one wallet; the unique `address` column is the race-proof truth.
+ * A wallet is linked to a Realms account, never a way to sign in: players sign in with a passkey. A wallet belongs to
+ * at most one account and an account to at most one wallet; the unique `address` column is the race-proof truth. A
+ * player migrated with a linked wallet and no passkey recovers once through that wallet, only to add a passkey.
  */
 export const siws = (options: SiwsPluginOptions) => {
   const expectedHost = new URL(options.origin).host;
@@ -90,18 +94,18 @@ export const siws = (options: SiwsPluginOptions) => {
           return { nonce };
         },
       ),
-      verify: createAuthEndpoint("/siws/verify", { method: "POST", body: SiwsProof }, async (ctx) => {
+      recover: createAuthEndpoint("/siws/recover", { method: "POST", body: SiwsProof }, async (ctx) => {
         const owner = await verifyProof(ctx, ctx.body);
-        const existing = await findUserByWallet(ctx, owner);
-        const user =
-          (existing && (await ctx.context.internalAdapter.findUserById(existing.id))) ??
-          (await ctx.context.internalAdapter.createUser({
-            name: owner,
-            email: `${owner}@${expectedHost}`,
-            emailVerified: false,
-            address: owner,
-          }));
-        const session = await ctx.context.internalAdapter.createSession(user.id);
+        const linked = await findUserByWallet(ctx, owner);
+        const user = linked && (await ctx.context.internalAdapter.findUserById(linked.id));
+        if (!user) throw new APIError("NOT_FOUND", { message: "NO_LINKED_ACCOUNT" });
+        if (await options.hasPasskey(user.id)) throw new APIError("CONFLICT", { message: "RECOVERY_NOT_NEEDED" });
+        const session = await ctx.context.internalAdapter.createSession(
+          user.id,
+          false,
+          { expiresAt: new Date(Date.now() + RECOVERY_SESSION_MS) },
+          true,
+        );
         await setSessionCookie(ctx, { session, user });
         return ctx.json({ token: session.token });
       }),
@@ -115,12 +119,15 @@ export const siws = (options: SiwsPluginOptions) => {
           if (user.address) throw new APIError("CONFLICT", { message: "WALLET_ALREADY_LINKED" });
           const holder = await findUserByWallet(ctx, owner);
           if (holder) throw new APIError("CONFLICT", { message: "WALLET_LINKED_ELSEWHERE" });
+          let linked;
           try {
-            await ctx.context.internalAdapter.updateUser(user.id, { address: owner });
+            linked = await ctx.context.internalAdapter.updateUser(user.id, { address: owner });
           } catch {
             // A concurrent link of the same wallet lost the race on the unique address column.
             throw new APIError("CONFLICT", { message: "WALLET_LINKED_ELSEWHERE" });
           }
+          // The session cookie caches the user; without a fresh one the account reads as unlinked for an hour.
+          await setSessionCookie(ctx, { session: ctx.context.session.session, user: linked });
           return ctx.json({ address: owner });
         },
       ),

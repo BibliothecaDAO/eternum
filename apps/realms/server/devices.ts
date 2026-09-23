@@ -2,7 +2,7 @@ import { Data, Effect, Schema } from "effect";
 import { realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
 import type { Guardian } from "@realms-world/guardian";
 
-import type { IdentityAuth } from "./auth";
+import { hasPasskey, type IdentityAuth } from "./auth";
 import { json } from "./http";
 import { recordApprovedAccount } from "./realms-accounts";
 
@@ -33,8 +33,8 @@ interface DeviceChangeDependencies {
 
 /**
  * POST /api/devices: the guardian's approval for one device change on the caller's own account. The account must be
- * the one the caller's Realms id places on every shard, and the caller must have a way back in (a passkey or a linked
- * wallet), so an abandoned anonymous sign-up never obtains an approval.
+ * the one the caller's Realms id places on every shard, and the caller must have a way back in, a passkey, so neither
+ * an abandoned anonymous sign-up nor a wallet recovery that skipped its passkey obtains an approval.
  */
 export const handleDeviceChange = (request: Request, dependencies: DeviceChangeDependencies): Promise<Response> =>
   Effect.runPromise(
@@ -54,7 +54,7 @@ const approveDeviceChange = (request: Request, { auth, db, guardian, accountClas
     const realmsId = session.user.realmsId;
     if (!realmsId) return yield* Effect.die(new Error(`user ${session.user.id} has no Realms id`));
     const change = yield* readDeviceChange(request);
-    if (!(yield* hasWayBackIn(db, session.user))) {
+    if (!(yield* Effect.promise(() => hasPasskey(db, session.user.id)))) {
       return yield* new DeviceRequestError({ code: "account_not_secured", status: 403 });
     }
     const guardianPublicKey = yield* Effect.promise(() => guardian.publicKey());
@@ -102,10 +102,3 @@ const recordRevokedDevice = (db: D1Database, realmsId: string, deviceKey: string
   );
 
 const canonicalFelt = (value: string) => `0x${BigInt(value).toString(16)}`;
-
-const hasWayBackIn = (db: D1Database, user: { id: string; address?: string | null | undefined }) =>
-  Effect.promise(async () =>
-    user.address
-      ? true
-      : (await db.prepare('SELECT 1 FROM "passkey" WHERE "userId" = ? LIMIT 1').bind(user.id).first()) !== null,
-  );

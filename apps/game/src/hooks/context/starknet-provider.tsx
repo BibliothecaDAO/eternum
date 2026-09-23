@@ -13,8 +13,8 @@ const identityRpcUrl = resolveEndpoint(env.VITE_PUBLIC_IDENTITY_RPC_URL, {
   name: "VITE_PUBLIC_IDENTITY_RPC_URL",
   browserFacing: true,
 });
-// Controller is an identity wallet option only (owner decision, brief "Decisions taken"): it signs the one
-// SIWS message on mainnet. No session policies, no paymaster, no game-transaction signing.
+// Controller is a wallet a player links to their Realms account (or recovers a migrated account with, once): it signs
+// the one SIWS message on mainnet. No session policies, no paymaster, no game-transaction signing.
 // The connector package keeps the first instance and ignores later options — own exactly one.
 // `lazyload`: the keychain iframe (Cartridge's hosted keychain, an authed gRPC client of its own) is created on the first
 // wallet action, not at module load — an anonymous spectator never starts a vendor client that needs a session.

@@ -3,11 +3,12 @@ import { isoBase64URL, isoCBOR } from "@simplewebauthn/server/helpers";
 import { buildSiwsMessage } from "@realms-world/identity";
 import { deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
 import { createGuardian } from "@realms-world/guardian";
-import { ec } from "starknet";
+import { ec, typedData, type TypedData } from "starknet";
 import { getPlatformProxy } from "wrangler";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createIdentityAuth } from "./auth";
+import type { VerifyWalletSignature } from "./siws-plugin";
 import type { IdentityEnv } from "./env";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
@@ -28,6 +29,28 @@ const fetchShard = (async (input: RequestInfo | URL) => {
 }) as typeof fetch;
 let env: IdentityEnv;
 let auth: ReturnType<typeof createIdentityAuth>;
+
+/** Mainnet wallets by address: each signs the SIWS message's SNIP-12 hash with its own Stark key. */
+const walletKeys = new Map<string, string>();
+const createWallet = (): string => {
+  const privateKey = `0x${Buffer.from(crypto.getRandomValues(new Uint8Array(31))).toString("hex")}`;
+  const address = ec.starkCurve.getStarkKey(privateKey);
+  // An address is below 2^251; a key's x-coordinate occasionally is not.
+  if (BigInt(address) >= 2n ** 251n) return createWallet();
+  walletKeys.set(BigInt(address).toString(16), privateKey);
+  return address;
+};
+// The wallet contract's own check runs on mainnet; this one checks the same signature over the same message hash.
+const verifyAsMainnet: VerifyWalletSignature = async (message, signature, address) => {
+  const privateKey = walletKeys.get(BigInt(address).toString(16));
+  if (!privateKey || signature.length !== 2) return false;
+  const hash = typedData.getMessageHash(message as unknown as TypedData, address);
+  return ec.starkCurve.verify(
+    new ec.starkCurve.Signature(BigInt(signature[0]!), BigInt(signature[1]!)),
+    hash,
+    ec.starkCurve.getPublicKey(privateKey),
+  );
+};
 
 beforeAll(async () => {
   proxy = await getPlatformProxy<{ DB: D1Database }>({ environment: "staging", persist: false });
@@ -60,8 +83,7 @@ beforeAll(async () => {
     PUBLIC_RATE_LIMIT: { limit: async () => ({ success: true }) },
     VERSION: { id: "test", tag: "", timestamp: "" },
   };
-  // The wallet contract's own signature check runs on mainnet; everything after it is under test.
-  auth = createIdentityAuth(env, async () => true);
+  auth = createIdentityAuth(env, verifyAsMainnet);
 }, 60_000);
 
 afterAll(() => proxy?.dispose());
@@ -99,14 +121,30 @@ const createBrowser = () => {
   return { request, session };
 };
 
-const signInWithWallet = async (browser: ReturnType<typeof createBrowser>, address: string, path = "verify") => {
+/** Proves a wallet to the identity service, to link it or to recover the account it is linked to. */
+const proveWallet = async (browser: ReturnType<typeof createBrowser>, address: string, path: "link" | "recover") => {
   const { nonce } = (await (await browser.request("/api/auth/siws/nonce", { body: { address } })).json()) as {
     nonce: string;
   };
   const message = buildSiwsMessage({ address, chainId: "SN_MAIN", domain: new URL(ORIGIN).host, nonce, uri: ORIGIN });
+  const { r, s } = ec.starkCurve.sign(
+    typedData.getMessageHash(message as unknown as TypedData, address),
+    walletKeys.get(BigInt(address).toString(16))!,
+  );
   return browser.request(`/api/auth/siws/${path}`, {
-    body: { message: JSON.stringify(message), signature: ["0x1", "0x2"], address },
+    body: { message: JSON.stringify(message), signature: [`0x${r.toString(16)}`, `0x${s.toString(16)}`], address },
   });
+};
+
+/** A player migrated from the box: an account with a linked wallet and no passkey. */
+const migratedPlayer = async () => {
+  const browser = createBrowser();
+  await browser.request("/api/auth/sign-in/anonymous", { body: {} });
+  const wallet = createWallet();
+  expect((await proveWallet(browser, wallet, "link")).status).toBe(200);
+  const linked = (await browser.session())!.user;
+  expect(BigInt(linked.address ?? 0)).toBe(BigInt(wallet));
+  return { wallet, userId: linked.id };
 };
 
 /** A platform authenticator with a P-256 key, answering one registration ceremony with a "none" attestation. */
@@ -352,15 +390,47 @@ describe("identity Worker", () => {
   });
 
   it("refuses to link a wallet that already belongs to another Realms account", async () => {
-    const wallet = "0x0456";
-    expect((await signInWithWallet(createBrowser(), wallet)).status).toBe(200);
+    const { wallet } = await migratedPlayer();
 
     const other = createBrowser();
     await other.request("/api/auth/sign-in/anonymous", { body: {} });
-    const refused = await signInWithWallet(other, wallet, "link");
+    const refused = await proveWallet(other, wallet, "link");
     expect(refused.status).toBe(409);
     expect(((await refused.json()) as { message: string }).message).toBe("WALLET_LINKED_ELSEWHERE");
     expect((await other.session())?.user.address ?? null).toBeNull();
+  });
+
+  it("signs no one in with a wallet: it recovers a linked account without a passkey, once, only to add one", async () => {
+    const stranger = createBrowser();
+    const unlinked = await proveWallet(stranger, createWallet(), "recover");
+    expect(unlinked.status).toBe(404);
+    expect(((await unlinked.json()) as { message: string }).message).toBe("NO_LINKED_ACCOUNT");
+    expect(await stranger.session()).toBeNull();
+    expect((await stranger.request("/api/auth/siws/verify", { body: {} })).status).toBe(404);
+
+    const { wallet, userId } = await migratedPlayer();
+    const returning = createBrowser();
+    const forged = await proveWallet(returning, createWallet(), "recover");
+    expect(forged.status).toBe(404);
+    expect((await proveWallet(returning, wallet, "recover")).status).toBe(200);
+    const recovered = (await (await returning.request("/api/auth/get-session")).json()) as {
+      user: { id: string; realmsId: string };
+      session: { expiresAt: string };
+    };
+    expect(recovered.user.id).toBe(userId);
+    expect(new Date(recovered.session.expiresAt).getTime() - Date.now()).toBeLessThanOrEqual(15 * 60 * 1000);
+
+    // Until it adds a passkey, the recovered session cannot approve a device, so it cannot play.
+    const change = deviceChangeFor(recovered.user.realmsId);
+    const unsecured = await returning.request("/api/devices", { body: change });
+    expect(unsecured.status).toBe(403);
+    expect(await unsecured.json()).toEqual({ error: "account_not_secured" });
+    expect((await registerPasskey(returning)).status).toBe(200);
+    expect((await returning.request("/api/devices", { body: change })).status).toBe(200);
+
+    const again = await proveWallet(createBrowser(), wallet, "recover");
+    expect(again.status).toBe(409);
+    expect(((await again.json()) as { message: string }).message).toBe("RECOVERY_NOT_NEEDED");
   });
 });
 

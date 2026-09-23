@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 
 import {
   IDENTITY_POPOVER_ID,
@@ -15,6 +15,8 @@ import { shortAddress } from "./format";
 import { AccountStatePrompt } from "./account-state";
 import { displayName, PORTRAITS, portraitUrl } from "./identity-chip";
 import { GhostButton, GoldButton, Loading, Panel, PanelTitle } from "./kit";
+
+const WalletLink = lazy(() => import("./wallet-link"));
 
 const NAME_RULES = "3–20 characters · unique across the realms · shown everywhere";
 
@@ -93,6 +95,7 @@ const PortraitPicker = ({ current, onDone }: { current: string | null; onDone: (
 
 const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () => void }) => {
   const [editingPortrait, setEditingPortrait] = useState(false);
+  const [linkingWallet, setLinkingWallet] = useState(false);
   const hasName = displayName(session) !== shortAddress(session.user.id);
   return (
     <div className="grid items-start gap-4 lg:grid-cols-2">
@@ -141,11 +144,17 @@ const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () =
             {session.user.address ? (
               <b className="font-mono text-[12px]">{shortAddress(session.user.address)}</b>
             ) : (
-              <GhostButton onClick={() => usePopoverStore.getState().open(IDENTITY_POPOVER_ID)}>
-                Link a wallet
-              </GhostButton>
+              <GhostButton onClick={() => setLinkingWallet((linking) => !linking)}>Link a wallet</GhostButton>
             )}
           </div>
+          {linkingWallet && !session.user.address ? (
+            <div className="rounded-lg border border-gold/20 bg-black/40 px-3 py-2.5">
+              <p className="mb-2 text-[12.5px] text-gold/60">A linked wallet claims prizes and withdraws.</p>
+              <Suspense fallback={<Loading />}>
+                <WalletLink />
+              </Suspense>
+            </div>
+          ) : null}
           {hasName ? (
             <details className="rounded-lg border border-gold/20 bg-black/40 px-3 py-2.5">
               <summary className="cursor-pointer text-[13px] text-gold/60">Change name</summary>
@@ -179,8 +188,8 @@ export const AccountPage = () => {
       <Panel className="max-w-lg">
         <PanelTitle>Your account</PanelTitle>
         <p className="mb-3 text-[13.5px] text-gold/70">
-          Create a Realms account with a passkey, or sign in with a Starknet wallet. No password, no email. Then claim
-          your name.
+          Create a Realms account with a passkey. No password, no email, no wallet. Then claim your name; link a wallet
+          later to claim prizes.
         </p>
         <GoldButton onClick={() => requestSignIn({ redirectTo: "/account" })}>Sign in</GoldButton>
       </Panel>

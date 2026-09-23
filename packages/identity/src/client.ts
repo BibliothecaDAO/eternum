@@ -115,6 +115,10 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     };
   };
 
+  /**
+   * Signs in with a wallet on a server that still offers it: only the DAO pages' own server (apps/web), until J5 moves
+   * them. Players never sign in with a wallet; the identity Worker has no such route.
+   */
   const signIn = async (options: SignInOptions): Promise<Session> => {
     await readJson(
       await request("/auth/siws/verify", { method: "POST", body: JSON.stringify(await siwsProof(options)) }),
@@ -130,7 +134,18 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     return linked.address;
   };
 
-  /** A new Realms account with no way back in yet; it must add a passkey or a wallet before it can approve a device. */
+  /**
+   * Recovers a migrated account that has a linked wallet and no passkey: the wallet proves it once, and the short
+   * session it gets is only for adding a passkey. The service never creates an account here.
+   */
+  const recoverWithWallet = async (options: SignInOptions): Promise<Session> => {
+    await readJson(
+      await request("/auth/siws/recover", { method: "POST", body: JSON.stringify(await siwsProof(options)) }),
+    );
+    return requireSession();
+  };
+
+  /** A new Realms account with no way back in yet; it must add a passkey before it can approve a device. */
   const signInAnonymously = async (): Promise<Session> => {
     await readJson(await request("/auth/sign-in/anonymous", { method: "POST", body: JSON.stringify({}) }));
     return requireSession();
@@ -213,6 +228,7 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     registerPasskey,
     signInWithPasskey,
     linkWallet,
+    recoverWithWallet,
     approveDeviceChange,
     signOut,
     updateUser,
