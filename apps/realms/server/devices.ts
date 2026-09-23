@@ -62,8 +62,12 @@ const approveDeviceChange = (request: Request, { auth, db, guardian, accountClas
     if (BigInt(change.account) !== BigInt(ownAccount)) {
       return yield* new DeviceRequestError({ code: "not_your_account", status: 403 });
     }
+    if (change.action === "ADD" && (yield* isRevokedDevice(db, realmsId, change.deviceKey))) {
+      return yield* new DeviceRequestError({ code: "device_revoked", status: 403 });
+    }
     const signature = yield* Effect.promise(() => guardian.signDeviceChange(change));
     if (change.action === "ADD") yield* Effect.promise(() => recordApprovedAccount(db, ownAccount, realmsId));
+    if (change.action === "REVOKE") yield* recordRevokedDevice(db, realmsId, change.deviceKey);
     return { ...change, signature: [signature.r, signature.s] };
   });
 
@@ -73,6 +77,31 @@ const readDeviceChange = (request: Request) =>
     Effect.map((change): DeviceChange => change),
     Effect.mapError(() => new DeviceRequestError({ code: "invalid_device_change", status: 400 })),
   );
+
+/**
+ * A revoked device keeps its session cookie, so the account's approvals, not the client, keep it out: once a key is
+ * revoked from a Realms account, no shard's account gets it back.
+ */
+const isRevokedDevice = (db: D1Database, realmsId: string, deviceKey: string) =>
+  Effect.promise(
+    async () =>
+      (await db
+        .prepare('SELECT 1 FROM "revoked_devices" WHERE "realmsId" = ? AND "deviceKey" = ?')
+        .bind(realmsId, canonicalFelt(deviceKey))
+        .first()) !== null,
+  );
+
+const recordRevokedDevice = (db: D1Database, realmsId: string, deviceKey: string) =>
+  Effect.promise(() =>
+    db
+      .prepare(
+        'INSERT INTO "revoked_devices" ("realmsId", "deviceKey", "revokedAt") VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
+      )
+      .bind(realmsId, canonicalFelt(deviceKey), Date.now())
+      .run(),
+  );
+
+const canonicalFelt = (value: string) => `0x${BigInt(value).toString(16)}`;
 
 const hasWayBackIn = (db: D1Database, user: { id: string; address?: string | null | undefined }) =>
   Effect.promise(async () =>

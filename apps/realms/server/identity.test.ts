@@ -194,7 +194,7 @@ describe("identity Worker", () => {
     expect(response.status).toBe(401);
   });
 
-  it("keeps the anonymous user when its passkey is added, and approves only its own account's exact change", async () => {
+  it("keeps the anonymous user when its passkey is added, approves only its own account's exact change, and never re-adds a revoked key", async () => {
     const browser = createBrowser();
     expect((await browser.request("/api/auth/sign-in/anonymous", { body: {} })).status).toBe(200);
     const before = await browser.session();
@@ -234,6 +234,15 @@ describe("identity Worker", () => {
         ec.starkCurve.verify(new ec.starkCurve.Signature(BigInt(r), BigInt(s)), deviceChangeHash(altered), guardianKey),
       ).toBe(false);
     }
+
+    // A revoked device keeps its cookie, so it must not be able to ask for its key back, on any shard.
+    const revoked = { ...requested, action: "REVOKE" as const, counter: 5 };
+    expect((await browser.request("/api/devices", { body: revoked })).status).toBe(200);
+    const readd = await browser.request("/api/devices", { body: { ...requested, chainId: "0x1", counter: 6 } });
+    expect(readd.status).toBe(403);
+    expect(await readd.json()).toEqual({ error: "device_revoked" });
+    const newDevice = { ...requested, deviceKey: "0x3ab1ca", counter: 6 };
+    expect((await browser.request("/api/devices", { body: newDevice })).status).toBe(200);
   });
 
   it("saves preferences by revision, caps devices per account and revokes a device only with its token", async () => {
