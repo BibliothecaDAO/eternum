@@ -5,7 +5,7 @@ import { logger } from "hono/logger";
 import { requireIdentity, requireLauncher, type IdentityResolver, type LaunchAccess, type LaunchAppEnv } from "./auth";
 import { createSlotRoutes } from "./slot-routes";
 import type { SlotStore } from "./slots";
-import { toFactoryRunRecord } from "./model";
+import { toFactoryRunRecord, type LaunchRun } from "./model";
 import { CreateGameRequestSchema, type LaunchJobRequest, type LaunchKind } from "./schemas";
 import type { LaunchServiceStore } from "./store";
 
@@ -63,6 +63,14 @@ const deleteRun = async (context: Context, store: LaunchServiceStore, kind: Laun
   return deleted ? context.json({ deleted: true }) : context.json({ error: "Run is missing or active." }, 409);
 };
 
+const failedRunReport = (run: LaunchRun) => ({
+  kind: run.kind,
+  environment: run.environment,
+  name: run.name,
+  error: run.errorMessage ?? null,
+  failedAt: run.updatedAt,
+});
+
 export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   const app = new Hono<LaunchAppEnv>();
   app.use("*", logger());
@@ -70,10 +78,12 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   app.use("/api/factory/*", requireLauncher(dependencies.config));
   app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.playerAccount));
 
+  // A failed launch stays failed until a launcher continues it, a Frontier season included: the schedule creates the
+  // season once and never requeues it. Health names every failed run so that wait is never silent.
   app.get("/api/factory/health", async (context) => {
     try {
-      await dependencies.store.list("madara.blitz");
-      return context.json({ service: "launch", ...dependencies.deployment });
+      const failed = await dependencies.store.failed();
+      return context.json({ service: "launch", ...dependencies.deployment, failedRuns: failed.map(failedRunReport) });
     } catch {
       return context.json({ status: "unavailable" }, 503);
     }

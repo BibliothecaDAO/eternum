@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createLaunchApp } from "./app";
+import { scheduleFrontierSeason } from "./schedule";
 import type { IdentityResolver } from "./auth";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
@@ -196,5 +197,20 @@ describe("launch service authorization", () => {
     expect((await app.request(realGame)).status).toBe(202);
     const run = await store.find("game", "madara.blitz", "bltz-real-game");
     expect(run && "devModeOn" in run.request ? run.request.devModeOn : undefined).toBe(false);
+  });
+
+  test("names a failed Frontier season in health until a launcher continues it", async () => {
+    const { app, store } = createApp(signedOut);
+    const season = await scheduleFrontierSeason(store, "2027-01-01T00:00:00.000Z");
+    const started = (await store.startNext(Date.now()))!;
+    await store.fail(started.id, "rpc down");
+    const failedRuns = async () =>
+      ((await (await app.request("https://play.realms.party/api/factory/health")).json()) as { failedRuns: unknown[] })
+        .failedRuns;
+    expect(await failedRuns()).toEqual([
+      expect.objectContaining({ environment: "madara.frontier", name: season.name, error: "rpc down" }),
+    ]);
+    await store.enqueue("game", season.request);
+    expect(await failedRuns()).toEqual([]);
   });
 });

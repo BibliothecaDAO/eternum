@@ -27,6 +27,8 @@ export interface LaunchServiceStore extends LaunchRunStore {
   /** Creates a run once; whatever run already has that name is handed back untouched. */
   schedule(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
   list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]>;
+  /** Every run that failed and waits for a launcher to continue it, in any environment. */
+  failed(): Promise<LaunchRun[]>;
   find(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<LaunchRun | null>;
   /** The run to execute now: one interrupted while running, else the oldest due queued run. Either costs an attempt. */
   startNext(now: number): Promise<LaunchRun | null>;
@@ -95,6 +97,13 @@ export class D1LaunchStore implements LaunchServiceStore {
           .prepare("SELECT * FROM launch_runs WHERE environment = ? ORDER BY updated_at DESC, id")
           .bind(environment);
     return (await statement.all<LaunchRunRow>()).results.map(toRun);
+  }
+
+  async failed(): Promise<LaunchRun[]> {
+    const rows = await this.db
+      .prepare("SELECT * FROM launch_runs WHERE status = 'failed' ORDER BY updated_at DESC, id")
+      .all<LaunchRunRow>();
+    return rows.results.map(toRun);
   }
 
   async find(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<LaunchRun | null> {

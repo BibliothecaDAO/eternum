@@ -6,7 +6,7 @@ import { FACTORY_GAME_LIST_REFRESH_EVENT } from "../game-list-refresh-event";
 
 const inputStyle = "w-full rounded border border-gold/30 bg-black/40 px-3 py-2 text-gold";
 const buttonStyle = "rounded border border-gold/40 px-4 py-2 text-gold disabled:opacity-40 hover:bg-gold/10";
-const RUN_ENVIRONMENTS = ["madara.blitz", "madara.eternum"] as const;
+const RUN_ENVIRONMENTS = ["madara.blitz", "madara.eternum", "madara.frontier"] as const;
 
 export const FactoryV2Content = () => {
   const { status } = useIdentitySession();
@@ -42,6 +42,9 @@ export const FactoryV2Content = () => {
     action.mutate(() => createEternumGame(name, date.toISOString()));
   };
   const error = action.error ?? runs.find((query) => query.error)?.error ?? slots.error;
+  const allRuns = runs.flatMap((query) => query.data?.runs ?? []);
+  // A failed launch waits for a launcher, a Frontier season included, so it leads the page rather than hiding in the list.
+  const needsAttention = allRuns.filter((run) => run.status === "attention");
   return (
     <section className="space-y-5 rounded-2xl border border-gold/20 bg-black/60 p-5 text-gold">
       <h2 className="font-cinzel text-xl">Schedule play</h2>
@@ -94,34 +97,43 @@ export const FactoryV2Content = () => {
             {slot.name} · {slot.registrations.length} players · closes {new Date(slot.closesAt).toLocaleString()}
           </p>
         ))}
+      {needsAttention.length > 0 && (
+        <div role="alert" className="space-y-2 rounded border border-red-400/60 p-3">
+          <h3 className="font-cinzel text-lg text-red-300">Needs attention</h3>
+          {needsAttention.map((run) => (
+            <p key={run.runId}>
+              {run.gameName} ({run.environment}) failed:{" "}
+              {run.steps.find((step) => step.status === "failed")?.errorMessage}
+            </p>
+          ))}
+        </div>
+      )}
       <h3 className="font-cinzel text-lg">Progress</h3>
       {runs.some((query) => query.isPending) && <p>Loading launches…</p>}
-      {runs
-        .flatMap((query) => query.data?.runs ?? [])
-        .map((run) => (
-          <article key={run.runId} className="space-y-2 rounded border border-gold/20 p-3">
-            <p>
-              {run.gameName} · {run.kind === "result" ? "Results" : "Creation"} · {run.status}
+      {allRuns.map((run) => (
+        <article key={run.runId} className="space-y-2 rounded border border-gold/20 p-3">
+          <p>
+            {run.gameName} · {run.kind === "result" ? "Results" : "Creation"} · {run.status}
+          </p>
+          {run.steps.map((step) => (
+            <p key={step.id} className="text-sm text-gold/70">
+              {step.title}: {step.latestEvent}
             </p>
-            {run.steps.map((step) => (
-              <p key={step.id} className="text-sm text-gold/70">
-                {step.title}: {step.latestEvent}
-              </p>
-            ))}
-            {run.artifacts.resultCommitment && (
-              <p className="break-all text-xs">Result: {run.artifacts.resultCommitment}</p>
-            )}
-            {run.recovery.canContinue && status === "signed-in" && (
-              <button
-                className={buttonStyle}
-                disabled={action.isPending}
-                onClick={() => action.mutate(() => retryFactoryRun(run))}
-              >
-                Retry
-              </button>
-            )}
-          </article>
-        ))}
+          ))}
+          {run.artifacts.resultCommitment && (
+            <p className="break-all text-xs">Result: {run.artifacts.resultCommitment}</p>
+          )}
+          {run.recovery.canContinue && status === "signed-in" && (
+            <button
+              className={buttonStyle}
+              disabled={action.isPending}
+              onClick={() => action.mutate(() => retryFactoryRun(run))}
+            >
+              Retry
+            </button>
+          )}
+        </article>
+      ))}
     </section>
   );
 };
