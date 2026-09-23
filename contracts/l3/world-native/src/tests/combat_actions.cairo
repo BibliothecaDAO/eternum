@@ -1,15 +1,19 @@
 use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use snforge_std::{EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address};
 use crate::combat::TroopsTrait;
-use crate::combat_actions::{AttackExplorer, GuardAttack, ICombatActionsDispatcher, ICombatActionsDispatcherTrait, Raid};
+use crate::combat_actions::{AttackExplorer, GuardAttack, Raid};
 use crate::commands::{Command, CreateExplorer};
+use crate::games::IGamesAuthenticationDispatcher;
 use crate::guards::{Guard, GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
-use crate::map::{IMapDispatcher, IMapDispatcherTrait};
-use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceAmount, ResourceKey, ResourceSlot};
+use crate::map::IMapLogicDispatcher;
+use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
-use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
-use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, StructureRecord};
-use crate::troops::{Coord, ExplorerKey, ExplorerTroops, ITroopsDispatcher, ITroopsDispatcherTrait, Stamina, Troops};
+use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
+use crate::tests::state::{
+    CombatObservationTrait, GameState, MapObservationTrait, ResourceObservationTrait, StructureObservationTrait,
+    TroopObservationTrait,
+};
+use crate::troops::{Coord, ExplorerKey, ExplorerTroops, Stamina, Troops};
 use super::recorded_receipts::RecordedReceiptsTrait;
 use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture};
 
@@ -60,7 +64,7 @@ fn setup_with_immunity(blitz: bool, immunity: u8) -> (super::Deployment, Resourc
         );
         ids
             .append(
-                *IStructuresDispatcher { contract_address: d.peers.structures }
+                *IStructureOperationsDispatcher { contract_address: d.games }
                     .structure(key)
                     .unwrap()
                     .troop_explorers
@@ -71,9 +75,10 @@ fn setup_with_immunity(blitz: bool, immunity: u8) -> (super::Deployment, Resourc
     let defender = *ids.at(1);
     move_fixture(d, attacker, 2000009);
     move_fixture(d, defender, 2000008);
-    let original = IStructuresDispatcher { contract_address: d.peers.structures }.structure(target).unwrap();
+    let original = IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap();
     set_fixture(
-        d.peers.structures,
+        d.games,
+        selector!("structures"),
         selector!("structures"),
         array![3, target.entity_id.into()].span(),
         StructureRecord {
@@ -86,23 +91,23 @@ fn setup_with_immunity(blitz: bool, immunity: u8) -> (super::Deployment, Resourc
     (d, home, target, attacker, defender)
 }
 fn troop(d: super::Deployment, id: u32) -> Option<ExplorerTroops> {
-    ITroopsDispatcher { contract_address: d.peers.troops }.explorer(ExplorerKey { game_id: 3, explorer_id: id })
+    GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 3, explorer_id: id })
 }
 fn move_fixture(d: super::Deployment, id: u32, x: u32) {
     move_to(d, id, Coord { alt: false, x, y: 2000000 });
 }
 fn move_to(d: super::Deployment, id: u32, coord: Coord) {
     let mut explorer = troop(d, id).unwrap();
-    let map = IMapDispatcher { contract_address: d.peers.map };
-    start_cheat_caller_address(d.peers.map, d.peers.troops);
+    let map = IMapLogicDispatcher { contract_address: d.games };
+    start_cheat_caller_address(d.games, d.games);
     map.vacate(crate::geometry::tile_key(3, explorer.coord), id);
     explorer.coord = coord;
     map.occupy(crate::geometry::tile_key(3, explorer.coord), id, 2, false);
-    stop_cheat_caller_address(d.peers.map);
-    set_fixture(d.peers.troops, selector!("explorers"), array![3, id.into()].span(), explorer);
+    stop_cheat_caller_address(d.games);
+    set_fixture(d.games, selector!("troops"), selector!("explorers"), array![3, id.into()].span(), explorer);
 }
 fn balance(d: super::Deployment, id: u32, resource_type: u8) -> u128 {
-    IResourcesDispatcher { contract_address: d.peers.resources }
+    IResourceOperationsDispatcher { contract_address: d.games }
         .resource_balance(ResourceSlot { game_id: 3, entity_id: id, resource_type })
 }
 fn resources(amount: u128) -> Span<ResourceAmount> {
@@ -113,7 +118,8 @@ fn raid(attacker: u32, target: ResourceKey, amounts: Span<ResourceAmount>) -> Co
 }
 fn set_guard(d: super::Deployment, key: ResourceKey, slot: u8, count: u128) {
     set_fixture(
-        d.peers.troops,
+        d.games,
+        selector!("guards"),
         selector!("guards"),
         array![3, key.entity_id.into(), slot.into()].span(),
         Guard {
@@ -127,8 +133,7 @@ fn set_guard(d: super::Deployment, key: ResourceKey, slot: u8, count: u128) {
     );
 }
 fn guard(d: super::Deployment, key: ResourceKey, slot: u8) -> Guard {
-    IGuardsDispatcher { contract_address: d.peers.troops }
-        .guard(GuardKey { game_id: 3, structure_id: key.entity_id, slot })
+    IGuardsDispatcher { contract_address: d.games }.guard(GuardKey { game_id: 3, structure_id: key.entity_id, slot })
 }
 
 #[test]
@@ -162,7 +167,7 @@ fn a_surviving_explorer_loots_the_defeated_army_before_its_resources_are_deleted
         .serialize(ref expected);
     80_u64.serialize(ref expected);
     let mut found = false;
-    for (_, event) in spy.get_events().emitted_by(d.peers.combat).events.span() {
+    for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(0) == selector!("BattleEvent") {
             assert_eq!(event.data.span(), expected.span());
             found = true;
@@ -170,7 +175,7 @@ fn a_surviving_explorer_loots_the_defeated_army_before_its_resources_are_deleted
     }
     assert!(found, "missing immutable battle outcome");
     assert!(
-        !IResourcesDispatcher { contract_address: d.peers.resources }
+        !IResourceOperationsDispatcher { contract_address: d.games }
             .has_resource(ResourceKey { game_id: 3, entity_id: defender }),
     );
 }
@@ -201,7 +206,8 @@ fn unguarded_raids_clip_the_amount_spent_to_capacity_without_spending_stamina_or
     let (d, _, target, attacker, _) = setup(false);
     grant(d, target, 2, 90);
     set_fixture(
-        d.peers.resources,
+        d.games,
+        selector!("resources"),
         selector!("weights"),
         array![3, attacker.into()].span(),
         crate::resources::Weight { capacity: 7, weight: 0 },
@@ -212,7 +218,7 @@ fn unguarded_raids_clip_the_amount_spent_to_capacity_without_spending_stamina_or
     assert_eq!(balance(d, target.entity_id, 2), 83);
     assert_eq!(troop(d, attacker).unwrap(), before);
     assert_eq!(
-        IStructuresDispatcher { contract_address: d.peers.structures }.structure(target).unwrap().owner,
+        IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap().owner,
         999.try_into().unwrap(),
     );
 }
@@ -220,9 +226,10 @@ fn unguarded_raids_clip_the_amount_spent_to_capacity_without_spending_stamina_or
 #[test]
 fn village_immunity_is_recorded_per_village_and_allows_only_troop_loot_until_its_end() {
     let (d, _, target, attacker, _) = setup(false);
-    let original = IStructuresDispatcher { contract_address: d.peers.structures }.structure(target).unwrap();
+    let original = IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap();
     set_fixture(
-        d.peers.structures,
+        d.games,
+        selector!("structures"),
         selector!("structures"),
         array![3, target.entity_id.into()].span(),
         StructureRecord {
@@ -234,7 +241,7 @@ fn village_immunity_is_recorded_per_village_and_allows_only_troop_loot_until_its
     );
     grant(d, target, 2, 90);
     grant(d, target, 26, RESOURCE_PRECISION);
-    let view = ICombatActionsDispatcher { contract_address: d.peers.combat };
+    let view = GameState { contract_address: d.games };
     assert!(execute(d, raid(attacker, target, resources(10)), 80));
     assert_eq!(view.village_last_raided(target), 16);
     assert_terminal_rejection(d, raid(attacker, target, resources(10)), 90);
@@ -264,9 +271,9 @@ fn raid_mode_owner_range_and_resource_failures_preserve_the_armies() {
     assert_eq!(troop(d, attacker).unwrap().troops, before.unwrap().troops);
     let (blitz, _, target, attacker, _) = setup(true);
     assert_terminal_rejection(blitz, raid(attacker, target, array![].span()), 80);
-    let season = ISeasonDispatcher { contract_address: blitz.peers.season };
-    let result = IRecordedExecutionViewsDispatcher { contract_address: blitz.peers.season }
-        .recorded_outcome(3, super::recorded::head(blitz.peers.season, 3).order)
+    let _ = IGamesAuthenticationDispatcher { contract_address: blitz.games };
+    let result = IRecordedExecutionViewsDispatcher { contract_address: blitz.games }
+        .recorded_outcome(3, super::recorded::head(blitz.games, 3).order)
         .unwrap();
     assert_eq!(result.reason, 'COMMAND_DISABLED');
 }
@@ -311,9 +318,10 @@ fn losing_the_final_attacking_guard_transfers_the_structure_to_the_adjacent_surv
     move_fixture(d, defender, 2000001);
     let mut explorer = troop(d, defender).unwrap();
     explorer.troops.count = 100 * RESOURCE_PRECISION;
-    set_fixture(d.peers.troops, selector!("explorers"), array![3, defender.into()].span(), explorer);
+    set_fixture(d.games, selector!("troops"), selector!("explorers"), array![3, defender.into()].span(), explorer);
     set_fixture(
-        d.peers.resources,
+        d.games,
+        selector!("resources"),
         selector!("weights"),
         array![3, defender.into()].span(),
         crate::resources::Weight { capacity: 10000000000000000000, weight: 0 },
@@ -331,7 +339,7 @@ fn losing_the_final_attacking_guard_transfers_the_structure_to_the_adjacent_surv
         ),
     );
     assert_eq!(
-        IStructuresDispatcher { contract_address: d.peers.structures }.structure(home).unwrap().owner,
+        IStructureOperationsDispatcher { contract_address: d.games }.structure(home).unwrap().owner,
         999.try_into().unwrap(),
     );
     assert_eq!(guard(d, home, 0), Default::default());
@@ -362,51 +370,12 @@ fn raid_rounding_and_weighted_outcomes_keep_the_declared_thresholds() {
 }
 
 #[test]
-#[feature("safe_dispatcher")]
-fn combat_actions_and_troop_writes_reject_foreign_callers() {
-    let (d, home, target, attacker, defender) = setup(false);
-    let context = crate::commands::ExecutionContext { raw_root: 7, timestamp: 80 };
-    let actions = crate::combat_actions::ICombatActionsSafeDispatcher { contract_address: d.peers.combat };
-    assert!(
-        crate::combat_actions::ICombatActionsSafeDispatcherTrait::raid(
-            actions,
-            3,
-            d.actor,
-            Raid { explorer_id: attacker, structure_id: target.entity_id, steal_resources: array![].span() },
-            context,
-        )
-            .is_err(),
-    );
-    assert!(
-        crate::combat_actions::ICombatActionsSafeDispatcherTrait::guard_attack(
-            actions,
-            3,
-            d.actor,
-            GuardAttack {
-                guard: crate::troop_management::GuardSlot { structure_id: home.entity_id, slot: 0 },
-                explorer_id: defender,
-            },
-            context,
-        )
-            .is_err(),
-    );
-    assert!(
-        crate::troops::ICombatTroopsSafeDispatcherTrait::save_explorer(
-            crate::troops::ICombatTroopsSafeDispatcher { contract_address: d.peers.troops },
-            ExplorerKey { game_id: 3, explorer_id: attacker },
-            troop(d, attacker).unwrap(),
-        )
-            .is_err(),
-    );
-}
-
-#[test]
 fn raiding_requires_at_least_one_whole_troop_per_occupied_guard() {
     let (d, _, target, attacker, _) = setup(false);
     limit_guards(d, target, 4);
     let mut explorer = troop(d, attacker).unwrap();
     explorer.troops.count = RESOURCE_PRECISION;
-    set_fixture(d.peers.troops, selector!("explorers"), array![3, attacker.into()].span(), explorer);
+    set_fixture(d.games, selector!("troops"), selector!("explorers"), array![3, attacker.into()].span(), explorer);
     set_guard(d, target, 0, 1);
     set_guard(d, target, 3, 1);
     assert_terminal_rejection(d, raid(attacker, target, array![].span()), 80);
@@ -422,7 +391,7 @@ fn ethereal_battle_uses_both_recorded_d20_rolls_in_damage_and_history() {
     move_to(d, defender, Coord { alt: true, x: 2000015, y: 2000000 });
     let before_attacker = troop(d, attacker).unwrap();
     let before_defender = troop(d, defender).unwrap();
-    let game = crate::game::IGameDispatcher { contract_address: d.peers.registry };
+    let game = crate::game::IGameDispatcher { contract_address: d.games };
     let rules = crate::game::IGameDispatcherTrait::rules(game, 3);
     let mut root = super::context().raw_root;
     let seed = crate::random::game_root(ref root, 3, crate::game::IGameDispatcherTrait::game(game, 3).seed);
@@ -476,7 +445,7 @@ fn ethereal_battle_uses_both_recorded_d20_rolls_in_damage_and_history() {
         .serialize(ref expected);
     80_u64.serialize(ref expected);
     let mut found = false;
-    for (_, event) in spy.get_events().emitted_by(d.peers.combat).events.span() {
+    for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(0) == selector!("BattleEvent") {
             assert_eq!(event.data.span(), expected.span());
             found = true;
@@ -494,11 +463,11 @@ fn cross_layer_battles_require_matching_coordinates_and_an_adjacent_spire() {
     );
     move_to(d, defender, Coord { alt: true, ..origin });
     assert_terminal_rejection(d, command, 80);
-    let map = IMapDispatcher { contract_address: d.peers.map };
+    let map = IMapLogicDispatcher { contract_address: d.games };
     let spire = crate::geometry::spire_neighbor(origin, 1);
-    start_cheat_caller_address(d.peers.map, d.peers.structures);
+    start_cheat_caller_address(d.games, d.games);
     map.occupy(crate::geometry::tile_key(3, spire), 888, 35, true);
-    stop_cheat_caller_address(d.peers.map);
+    stop_cheat_caller_address(d.games);
     move_to(d, defender, Coord { alt: true, x: origin.x + 1, ..origin });
     assert_terminal_rejection(d, command, 80);
     move_to(d, defender, Coord { alt: true, ..origin });
@@ -525,9 +494,10 @@ fn season_immunity_rejects_combat_until_the_recorded_boundary() {
 #[test]
 fn guard_attacks_reject_slots_outside_the_structures_limit() {
     let (d, home, _, _, defender) = setup(false);
-    let original = IStructuresDispatcher { contract_address: d.peers.structures }.structure(home).unwrap();
+    let original = IStructureOperationsDispatcher { contract_address: d.games }.structure(home).unwrap();
     set_fixture(
-        d.peers.structures,
+        d.games,
+        selector!("structures"),
         selector!("structures"),
         array![3, home.entity_id.into()].span(),
         StructureRecord {
@@ -559,7 +529,7 @@ fn mutual_destruction_does_not_recreate_resource_rows_for_loot() {
     let (d, _, _, attacker, defender) = setup(false);
     let mut explorer = troop(d, attacker).unwrap();
     explorer.troops.count = RESOURCE_PRECISION;
-    set_fixture(d.peers.troops, selector!("explorers"), array![3, attacker.into()].span(), explorer);
+    set_fixture(d.games, selector!("troops"), selector!("explorers"), array![3, attacker.into()].span(), explorer);
     grant(d, ResourceKey { game_id: 3, entity_id: defender }, 2, 90);
     let mut spy = spy_events();
     assert!(
@@ -571,12 +541,12 @@ fn mutual_destruction_does_not_recreate_resource_rows_for_loot() {
             80,
         ),
     );
-    let resources = IResourcesDispatcher { contract_address: d.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
     for id in array![attacker, defender] {
         assert!(troop(d, id).is_none());
         assert!(!resources.has_resource(ResourceKey { game_id: 3, entity_id: id }));
     }
-    for (_, event) in spy.get_events().emitted_by(d.peers.resources).events.span() {
+    for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(0) == selector!("RowSet") && *event.keys.at(2) == 'ResourceBalance' {
             assert_eq!(*event.data.at(event.data.len() - 1), 0, "loot revived a resource balance");
         }
@@ -584,9 +554,10 @@ fn mutual_destruction_does_not_recreate_resource_rows_for_loot() {
 }
 
 fn limit_guards(d: super::Deployment, key: ResourceKey, maximum: u8) {
-    let original = IStructuresDispatcher { contract_address: d.peers.structures }.structure(key).unwrap();
+    let original = IStructureOperationsDispatcher { contract_address: d.games }.structure(key).unwrap();
     set_fixture(
-        d.peers.structures,
+        d.games,
+        selector!("structures"),
         selector!("structures"),
         array![3, key.entity_id.into()].span(),
         StructureRecord {
@@ -624,9 +595,7 @@ fn structure_capture_ignores_guards_outside_the_slot_limit() {
             80,
         ),
     );
-    assert_eq!(
-        IStructuresDispatcher { contract_address: d.peers.structures }.structure(target).unwrap().owner, d.actor,
-    );
+    assert_eq!(IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap().owner, d.actor);
     assert_eq!(troop(d, attacker).unwrap().troops.count, before);
 }
 
@@ -635,19 +604,19 @@ fn a_destroyed_raider_never_collects_loot_even_when_the_roll_wins() {
     let (d, _, target, attacker, _) = setup(false);
     let mut explorer = troop(d, attacker).unwrap();
     explorer.troops.count = RESOURCE_PRECISION;
-    set_fixture(d.peers.troops, selector!("explorers"), array![3, attacker.into()].span(), explorer);
+    set_fixture(d.games, selector!("troops"), selector!("explorers"), array![3, attacker.into()].span(), explorer);
     set_guard(d, target, 0, 1);
     grant(d, target, 2, 90);
     let mut spy = spy_events();
     assert!(execute(d, raid(attacker, target, resources(90)), 84));
     assert!(troop(d, attacker).is_none());
     assert!(
-        !IResourcesDispatcher { contract_address: d.peers.resources }
+        !IResourceOperationsDispatcher { contract_address: d.games }
             .has_resource(ResourceKey { game_id: 3, entity_id: attacker }),
     );
     assert_eq!(balance(d, target.entity_id, 2), 90);
     let mut saw_winning_roll = false;
-    for (_, event) in spy.get_events().emitted_by(d.peers.combat).events.span() {
+    for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(0) == selector!("RaidEvent") {
             saw_winning_roll = *event.data.at(0) == 1;
         }
@@ -672,7 +641,7 @@ fn guard_targeting_preserves_highest_occupied_functional_slot_first() {
     assert_eq!(guard(d, target, 0), delta);
     assert_eq!(guard(d, target, 2).troops.count, 0);
     assert_eq!(
-        IStructuresDispatcher { contract_address: d.peers.structures }.structure(target).unwrap().owner,
+        IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap().owner,
         999.try_into().unwrap(),
     );
 }
@@ -696,13 +665,14 @@ fn unowned_target_rule_rejects_owned_sites_and_allows_capture_of_an_unowned_site
             80,
         ),
     );
-    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
+    let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let attacker = *structures.structure(home).unwrap().troop_explorers.at(0);
     move_fixture(d, attacker, 2000009);
     let mut record = structures.structure(target).unwrap();
     record.owner = 999.try_into().unwrap();
     set_fixture(
-        d.peers.structures,
+        d.games,
+        selector!("structures"),
         selector!("structures"),
         array![3, target.entity_id.into()].span(),
         StructureRecord {
@@ -721,7 +691,8 @@ fn unowned_target_rule_rejects_owned_sites_and_allows_capture_of_an_unowned_site
     assert_eq!(structures.structure(target).unwrap().owner, record.owner);
     record.owner = 0.try_into().unwrap();
     set_fixture(
-        d.peers.structures,
+        d.games,
+        selector!("structures"),
         selector!("structures"),
         array![3, target.entity_id.into()].span(),
         StructureRecord {

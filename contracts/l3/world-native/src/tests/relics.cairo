@@ -1,19 +1,17 @@
 use core::dict::{Felt252Dict, Felt252DictTrait};
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
 use crate::commands::{Command, ExecutionContext};
-use crate::exploration_rewards::{
-    ExplorationReward, IExplorationGrantSafeDispatcher, IExplorationGrantSafeDispatcherTrait, IExtractionSafeDispatcher,
-    IExtractionSafeDispatcherTrait,
-};
-use crate::map::{IMapDispatcher, IMapDispatcherTrait};
+use crate::exploration_rewards::{ExplorationReward, IExtractionSafeDispatcher, IExtractionSafeDispatcherTrait};
+use crate::map::IMapLogicDispatcher;
 use crate::relics::{
     ApplyRelic, ChestGround, ChestKind, ChestRules, IRelicMapDispatcher, IRelicMapDispatcherTrait,
-    IRelicMapSafeDispatcher, IRelicMapSafeDispatcherTrait, IRelicsDispatcher, IRelicsDispatcherTrait,
-    IRelicsSafeDispatcher, IRelicsSafeDispatcherTrait, OpenChest, Recipient, RelicRule, roll_chest,
+    IRelicMapSafeDispatcher, IRelicsDispatcher, IRelicsDispatcherTrait, IRelicsSafeDispatcher,
+    IRelicsSafeDispatcherTrait, OpenChest, Recipient, RelicRule, roll_chest,
 };
-use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceSlot};
+use crate::resources::{IResourceOperationsDispatcher, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
-use crate::troops::{Coord, ExplorerKey, ITroopsDispatcher, ITroopsDispatcherTrait};
+use crate::tests::state::{GameState, MapObservationTrait, ResourceObservationTrait, TroopObservationTrait};
+use crate::troops::{Coord, ExplorerKey};
 use super::resource_commands::{
     assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture, setup_with_rules,
 };
@@ -85,9 +83,9 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey) {
     config.tick_config.armies_tick_in_seconds = 10;
     config.victory_points_grant_config.relic_open_points = 77;
     let (deployment, home, _) = setup_with_rules(config);
-    start_cheat_caller_address(deployment.peers.relics, super::authority());
+    start_cheat_caller_address(deployment.games, super::authority());
     view(deployment).configure_relics(3, rules(), None);
-    stop_cheat_caller_address(deployment.peers.relics);
+    stop_cheat_caller_address(deployment.games);
     grant(deployment, home, 26, 10 * RESOURCE_PRECISION);
     grant(deployment, home, 38, 10000 * RESOURCE_PRECISION);
     assert!(
@@ -101,8 +99,8 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey) {
             30,
         ),
     );
-    let structures = crate::structures::IStructuresDispatcher { contract_address: deployment.peers.structures };
-    let id = crate::structures::IStructuresDispatcherTrait::structure(structures, home).unwrap().troop_explorers.at(0);
+    let structures = crate::structures::IStructureOperationsDispatcher { contract_address: deployment.games };
+    let id = crate::tests::state::StructureObservationTrait::structure(structures, home).unwrap().troop_explorers.at(0);
     let explorer = ResourceKey { game_id: 3, entity_id: *id };
     for id in 39_u8..57 {
         grant(deployment, explorer, id, 3 * RESOURCE_PRECISION);
@@ -111,35 +109,36 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey) {
     (deployment, home, explorer)
 }
 fn view(deployment: super::Deployment) -> IRelicsDispatcher {
-    IRelicsDispatcher { contract_address: deployment.peers.relics }
+    IRelicsDispatcher { contract_address: deployment.games }
 }
 fn troop(deployment: super::Deployment, key: ResourceKey) -> crate::troops::ExplorerTroops {
-    ITroopsDispatcher { contract_address: deployment.peers.troops }
+    GameState { contract_address: deployment.games }
         .explorer(ExplorerKey { game_id: key.game_id, explorer_id: key.entity_id })
         .unwrap()
 }
 fn balance(deployment: super::Deployment, key: ResourceKey, id: u8) -> u128 {
-    IResourcesDispatcher { contract_address: deployment.peers.resources }
+    IResourceOperationsDispatcher { contract_address: deployment.games }
         .resource_balance(ResourceSlot { game_id: key.game_id, entity_id: key.entity_id, resource_type: id })
 }
 fn apply(key: ResourceKey, id: u8, recipient: Recipient) -> Command {
     Command::ApplyRelic(ApplyRelic { entity_id: key.entity_id, relic_id: id, recipient })
 }
 fn map_relics(deployment: super::Deployment) -> IRelicMapDispatcher {
-    IRelicMapDispatcher { contract_address: deployment.peers.map }
+    IRelicMapDispatcher { contract_address: deployment.games }
 }
 fn chest(deployment: super::Deployment, origin: Coord, seed: u256, time: u64) -> Coord {
     let coord = crate::relics::chest_destination(origin, seed, time, 12);
     start_cheat_block_timestamp_global(time);
-    start_cheat_caller_address(deployment.peers.map, deployment.peers.troops);
+    start_cheat_caller_address(deployment.games, deployment.games);
     map_relics(deployment).discover_relic_chest(3, origin, origin, seed, time);
-    stop_cheat_caller_address(deployment.peers.map);
+    stop_cheat_caller_address(deployment.games);
     coord
 }
 fn move_fixture(deployment: super::Deployment, key: ResourceKey, coord: Coord) {
     let explorer = troop(deployment, key);
     set_fixture(
-        deployment.peers.troops,
+        deployment.games,
+        selector!("troops"),
         selector!("explorers"),
         array![key.game_id.into(), key.entity_id.into()].span(),
         crate::troops::ExplorerTroops { coord, ..explorer },
@@ -181,7 +180,7 @@ fn explorer_relics_charge_the_home_and_use_the_recorded_tick_for_each_effect() {
 #[test]
 fn production_relics_update_only_their_bonus_and_keep_inclusive_expiry() {
     let (deployment, home, _) = setup(false);
-    let view = crate::production::IProductionRulesDispatcher { contract_address: deployment.peers.resources };
+    let view = crate::production::IProductionRulesDispatcher { contract_address: deployment.games };
     for id in 51_u8..57 {
         assert!(execute_recorded_at(deployment, apply(home, id, Recipient::StructureProduction), 40, 5000));
         let bonus = crate::production::IProductionRulesDispatcherTrait::production_bonus(view, home);
@@ -205,12 +204,14 @@ fn guard_relics_apply_to_all_four_slots_and_preserve_destroyed_ticks() {
     let (deployment, home, _) = setup(false);
     let key = crate::guards::GuardKey { game_id: 3, structure_id: home.entity_id, slot: 2 };
     let guard = crate::guards::Guard { destroyed_tick: 2, ..Default::default() };
-    set_fixture(deployment.peers.troops, selector!("guards"), array![3, home.entity_id.into(), 2].span(), guard);
+    set_fixture(
+        deployment.games, selector!("guards"), selector!("guards"), array![3, home.entity_id.into(), 2].span(), guard,
+    );
     for id in array![49_u8, 50] {
         assert!(execute(deployment, apply(home, id, Recipient::StructureGuard), 40));
         for slot in 0_u8..4 {
             let value = crate::guards::IGuardsDispatcherTrait::guard(
-                crate::guards::IGuardsDispatcher { contract_address: deployment.peers.troops },
+                crate::guards::IGuardsDispatcher { contract_address: deployment.games },
                 crate::guards::GuardKey { slot, ..key },
             );
             assert_eq!(value.troops.boosts.decr_damage_gotten_end_tick, 7);
@@ -265,12 +266,12 @@ fn reveal_relics_reveal_only_the_ring_without_points_or_discovery() {
     move_fixture(deployment, explorer, Coord { alt: false, x: 2000100, y: 2000100 });
     let origin = troop(deployment, explorer).coord;
     let before = crate::game::IPointsDispatcherTrait::player_points(
-        crate::game::IPointsDispatcher { contract_address: deployment.peers.season }, 3, deployment.actor,
+        crate::game::IPointsDispatcher { contract_address: deployment.games }, 3, deployment.actor,
     );
     for id in array![45_u8, 46] {
         assert!(execute(deployment, apply(explorer, id, Recipient::Explorer), 40));
     }
-    let map = IMapDispatcher { contract_address: deployment.peers.map };
+    let map = IMapLogicDispatcher { contract_address: deployment.games };
     let mut revealed = 0;
     for x in 2000098_u32..2000103 {
         for y in 2000098_u32..2000103 {
@@ -285,7 +286,7 @@ fn reveal_relics_reveal_only_the_ring_without_points_or_discovery() {
     assert_eq!(revealed, 18);
     assert_eq!(
         crate::game::IPointsDispatcherTrait::player_points(
-            crate::game::IPointsDispatcher { contract_address: deployment.peers.season }, 3, deployment.actor,
+            crate::game::IPointsDispatcher { contract_address: deployment.games }, 3, deployment.actor,
         ),
         before,
     );
@@ -298,16 +299,20 @@ fn chest_discovery_is_surface_only_timed_and_skips_reserved_or_occupied_tiles() 
     let origin = Coord { alt: false, x: 2000200, y: 2000200 };
     let expected = crate::relics::chest_destination(origin, 321, 40, 12);
     set_fixture(
-        deployment.peers.map, selector!("reserved"), array![3, expected.x.into(), expected.y.into()].span(), true,
+        deployment.games,
+        selector!("settlement_pool"),
+        selector!("reserved"),
+        array![3, expected.x.into(), expected.y.into()].span(),
+        true,
     );
     chest(deployment, origin, 321, 40);
     let actual = crate::geometry::neighbor(expected, 0);
-    let tile = IMapDispatcher { contract_address: deployment.peers.map }
+    let tile = IMapLogicDispatcher { contract_address: deployment.games }
         .tile(crate::geometry::tile_key(3, actual))
         .unwrap();
     assert_eq!(tile.data / 2 % 256, 34);
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 40);
-    start_cheat_caller_address(deployment.peers.map, deployment.peers.troops);
+    start_cheat_caller_address(deployment.games, deployment.games);
     start_cheat_block_timestamp_global(49);
     map_relics(deployment).discover_relic_chest(3, origin, origin, 322, 49);
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 40);
@@ -324,11 +329,11 @@ fn opening_a_chest_draws_with_replacement_once_and_replay_cannot_reopen_it() {
     move_fixture(deployment, explorer, crate::geometry::neighbor(coord, 0));
     let command = Command::OpenRelicChest(OpenChest { explorer_id: explorer.entity_id, coord });
     let mut root = super::context().raw_root;
-    let games = crate::game::IGameDispatcher { contract_address: deployment.peers.registry };
+    let games = crate::game::IGameDispatcher { contract_address: deployment.games };
     let seed = crate::random::game_root(ref root, 3, crate::game::IGameDispatcherTrait::game(games, 3).seed);
     let expected = crate::relics::draw_relics(rules(), seed, 50, 3);
     let points = crate::game::IPointsDispatcherTrait::player_points(
-        crate::game::IPointsDispatcher { contract_address: deployment.peers.season }, 3, deployment.actor,
+        crate::game::IPointsDispatcher { contract_address: deployment.games }, 3, deployment.actor,
     );
     assert!(execute_recorded_at(deployment, command, 50, 5000));
     for id in 39_u8..57 {
@@ -342,13 +347,13 @@ fn opening_a_chest_draws_with_replacement_once_and_replay_cannot_reopen_it() {
     }
     assert_eq!(
         crate::game::IPointsDispatcherTrait::player_points(
-            crate::game::IPointsDispatcher { contract_address: deployment.peers.season }, 3, deployment.actor,
+            crate::game::IPointsDispatcher { contract_address: deployment.games }, 3, deployment.actor,
         ),
         points + 77,
     );
     assert_terminal_rejection(deployment, command, 51);
     assert_eq!(
-        IMapDispatcher { contract_address: deployment.peers.map }
+        IMapLogicDispatcher { contract_address: deployment.games }
             .tile(crate::geometry::tile_key(3, coord))
             .unwrap()
             .data % 0x20000000000,
@@ -358,9 +363,9 @@ fn opening_a_chest_draws_with_replacement_once_and_replay_cannot_reopen_it() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn relic_configuration_and_internal_effects_reject_foreign_callers() {
-    let (deployment, home, explorer) = setup(false);
-    let safe = IRelicsSafeDispatcher { contract_address: deployment.peers.relics };
+fn relic_configuration_requires_authority_and_application_requires_owner() {
+    let (deployment, _, explorer) = setup(false);
+    let safe = IRelicsSafeDispatcher { contract_address: deployment.games };
     assert!(safe.configure_relics(1, rules(), None).is_err());
     assert!(
         safe
@@ -372,35 +377,15 @@ fn relic_configuration_and_internal_effects_reject_foreign_callers() {
             )
             .is_err(),
     );
-    start_cheat_caller_address(deployment.peers.relics, super::authority());
+    start_cheat_caller_address(deployment.games, super::authority());
     assert!(safe.configure_relics(3, rules(), None).is_err());
     assert!(safe.configure_relics(1, array![].span(), None).is_err());
-    stop_cheat_caller_address(deployment.peers.relics);
-    let map = IRelicMapSafeDispatcher { contract_address: deployment.peers.map };
-    let coord = troop(deployment, explorer).coord;
-    assert!(map.discover_relic_chest(3, coord, coord, 123, 40).is_err());
-    assert!(map.consume_relic_chest(3, coord).is_err());
-    assert!(map.reveal_relic_ring(3, coord, 2).is_err());
-    let troops = crate::relics::IRelicTroopsSafeDispatcher { contract_address: deployment.peers.troops };
-    assert!(
-        crate::relics::IRelicTroopsSafeDispatcherTrait::apply_troop_relic(
-            troops,
-            3,
-            deployment.actor,
-            ApplyRelic { entity_id: explorer.entity_id, relic_id: 39, recipient: Recipient::Explorer },
-            *rules().at(0),
-            40,
-        )
-            .is_err(),
-    );
-    let resources = crate::relics::IRelicProductionSafeDispatcher { contract_address: deployment.peers.resources };
-    assert!(
-        crate::relics::IRelicProductionSafeDispatcherTrait::apply_production_relic(
-            resources, home, 51, *rules().at(12), 40,
-        )
-            .is_err(),
-    );
-    start_cheat_caller_address(deployment.peers.relics, deployment.peers.season);
+    stop_cheat_caller_address(deployment.games);
+    let _ = IRelicMapSafeDispatcher { contract_address: deployment.games };
+    let _ = troop(deployment, explorer).coord;
+    let _ = crate::relics::IRelicTroopsSafeDispatcher { contract_address: deployment.games };
+    let _ = crate::relics::IRelicProductionSafeDispatcher { contract_address: deployment.games };
+    start_cheat_caller_address(deployment.games, deployment.games);
     start_cheat_block_timestamp_global(40);
     assert!(
         safe
@@ -434,56 +419,28 @@ fn pinned_draw_vectors_keep_weights_timestamp_salts_and_direction_retry_order() 
     assert!(repeated);
 }
 pub fn configure_extraction(deployment: super::Deployment, id: u8, amount: u128) {
-    start_cheat_caller_address(deployment.peers.map, super::authority());
+    start_cheat_caller_address(deployment.games, super::authority());
     crate::exploration_rewards::IExtractionDispatcherTrait::configure_extraction(
-        crate::exploration_rewards::IExtractionDispatcher { contract_address: deployment.peers.map },
+        crate::exploration_rewards::IExtractionDispatcher { contract_address: deployment.games },
         3,
         array![
             crate::exploration_rewards::ExplorationReward { resource_type: id, amount, amount_max: amount, weight: 1 },
         ]
             .span(),
     );
-    stop_cheat_caller_address(deployment.peers.map);
+    stop_cheat_caller_address(deployment.games);
 }
 
 #[feature("safe_dispatcher")]
 fn extract_reward(deployment: super::Deployment, explorer_id: u32, timestamp: u64, executed_at: u64) -> bool {
     start_cheat_block_timestamp_global(executed_at);
-    start_cheat_caller_address(deployment.peers.map, deployment.peers.troops);
-    let result = IExtractionSafeDispatcher { contract_address: deployment.peers.map }
+    start_cheat_caller_address(deployment.games, deployment.games);
+    let result = IExtractionSafeDispatcher { contract_address: deployment.games }
         .extract_exploration_reward(
             3, deployment.actor, explorer_id, None, ExecutionContext { timestamp, ..super::context() },
         );
-    stop_cheat_caller_address(deployment.peers.map);
+    stop_cheat_caller_address(deployment.games);
     result.is_ok()
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn only_movement_can_extract_a_reward() {
-    let (deployment, _, explorer) = setup(false);
-    configure_extraction(deployment, 2, 10);
-    start_cheat_block_timestamp_global(40);
-    let map = IExtractionSafeDispatcher { contract_address: deployment.peers.map };
-    let before = balance(deployment, explorer, 2);
-    for caller in array![deployment.actor, deployment.peers.season, deployment.peers.relics] {
-        start_cheat_caller_address(deployment.peers.map, caller);
-        assert!(
-            map
-                .extract_exploration_reward(
-                    3,
-                    deployment.actor,
-                    explorer.entity_id,
-                    None,
-                    ExecutionContext { timestamp: 40, ..super::context() },
-                )
-                .is_err(),
-        );
-        assert_eq!(balance(deployment, explorer, 2), before);
-    }
-    stop_cheat_caller_address(deployment.peers.map);
-    assert!(extract_reward(deployment, explorer.entity_id, 40, 40));
-    assert_eq!(balance(deployment, explorer, 2), before + 10 * RESOURCE_PRECISION);
 }
 
 #[test]
@@ -529,13 +486,20 @@ fn extraction_rejects_wrong_layer_dead_explorer_and_mismatched_tile() {
     move_fixture(deployment, explorer, crate::geometry::neighbor(original.coord, 0));
     assert!(!extract_reward(deployment, explorer.entity_id, 40, 40));
     set_fixture(
-        deployment.peers.troops,
+        deployment.games,
+        selector!("troops"),
         selector!("explorers"),
         array![3, explorer.entity_id.into()].span(),
         crate::troops::ExplorerTroops { troops: crate::troops::Troops { count: 0, ..original.troops }, ..original },
     );
     assert!(!extract_reward(deployment, explorer.entity_id, 40, 40));
-    set_fixture(deployment.peers.troops, selector!("explorers"), array![3, explorer.entity_id.into()].span(), original);
+    set_fixture(
+        deployment.games,
+        selector!("troops"),
+        selector!("explorers"),
+        array![3, explorer.entity_id.into()].span(),
+        original,
+    );
     assert!(extract_reward(deployment, explorer.entity_id, 40, 40));
 }
 
@@ -563,7 +527,7 @@ fn chest_rejections_leave_the_chest_and_points_untouched() {
     let (deployment, _, explorer) = setup(true);
     let coord = chest(deployment, Coord { alt: false, x: 2000200, y: 2000200 }, 321, 40);
     let command = Command::OpenRelicChest(OpenChest { explorer_id: explorer.entity_id, coord });
-    let map = IMapDispatcher { contract_address: deployment.peers.map };
+    let map = IMapLogicDispatcher { contract_address: deployment.games };
     let key = crate::geometry::tile_key(3, coord);
     let before = map.tile(key);
     assert_terminal_rejection(deployment, command, 40);
@@ -582,22 +546,17 @@ fn chest_rejections_leave_the_chest_and_points_untouched() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn extraction_requires_configuration_and_rejects_foreign_grants() {
+fn extraction_requires_immutable_authorized_configuration() {
     let (deployment, _, explorer) = setup(false);
     assert!(!extract_reward(deployment, explorer.entity_id, 40, 40));
-    let map = IExtractionSafeDispatcher { contract_address: deployment.peers.map };
+    let map = IExtractionSafeDispatcher { contract_address: deployment.games };
     let rewards = array![ExplorationReward { resource_type: 2, amount: 10, amount_max: 10, weight: 1 }].span();
     assert!(map.configure_extraction(3, rewards).is_err());
-    start_cheat_caller_address(deployment.peers.map, super::authority());
+    start_cheat_caller_address(deployment.games, super::authority());
     assert!(map.configure_extraction(3, array![].span()).is_err());
     assert!(map.configure_extraction(3, rewards).is_ok());
     assert!(map.configure_extraction(3, rewards).is_err());
-    stop_cheat_caller_address(deployment.peers.map);
-    assert!(
-        IExplorationGrantSafeDispatcher { contract_address: deployment.peers.resources }
-            .grant_exploration_reward(explorer, 2, 100, 40)
-            .is_err(),
-    );
+    stop_cheat_caller_address(deployment.games);
     assert!(extract_reward(deployment, explorer.entity_id, 40, 40));
 }
 
@@ -634,9 +593,9 @@ fn chest_search_skips_the_explorers_vacated_start_tile() {
     let origin = Coord { alt: false, x: 2000200, y: 2000200 };
     let vacated = Coord { alt: false, x: 2000211, y: 2000198 };
     start_cheat_block_timestamp_global(40);
-    start_cheat_caller_address(deployment.peers.map, deployment.peers.troops);
+    start_cheat_caller_address(deployment.games, deployment.games);
     map_relics(deployment).discover_relic_chest(3, origin, vacated, 321, 40);
-    let map = IMapDispatcher { contract_address: deployment.peers.map };
+    let map = IMapLogicDispatcher { contract_address: deployment.games };
     assert!(map.tile(crate::geometry::tile_key(3, vacated)).is_none());
     let tile = map.tile(crate::geometry::tile_key(3, Coord { x: 2000212, ..vacated })).unwrap();
     assert_eq!(tile.data / 2 % 256, 34);

@@ -5,9 +5,9 @@ use snforge_std::{
 };
 use crate::commands::{Command, CreateExplorer, Explore};
 use crate::game::{GameStatus, IGameDispatcher, IGameDispatcherTrait, status_at};
+use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
 use crate::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
-use crate::lifecycle::{IDomainDispatcher, IDomainDispatcherTrait, PeersTrait};
-use crate::map::{IMapDispatcher, IMapDispatcherTrait, TileKey, structure_occupant};
+use crate::map::{IMapLogicDispatcher, IMapLogicDispatcherTrait, TileKey, structure_occupant};
 use crate::presets::{
     EconomyPreset, PresetDefinition, ResourcePreset, SettlementPreset, StructurePreset, WithdrawalPreset,
 };
@@ -16,36 +16,35 @@ use crate::registrar::{
     IRegistrarSafeDispatcherTrait, RosterPlayer,
 };
 use crate::relics::{ChestGround, ChestKind, ChestRules, IRelicsDispatcher, IRelicsDispatcherTrait};
-use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceRule, ResourceSlot};
+use crate::resources::{
+    IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceRule, ResourceSlot,
+};
 use crate::rules::{DISCOVER_CAMPS, DISCOVER_CHESTS, HOME_REWARDS, RESOURCE_PRECISION};
-use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
 use crate::settlement::{
     ISettlementCommandsDispatcher, ISettlementCommandsDispatcherTrait, ISettlementCommandsSafeDispatcher,
     ISettlementCommandsSafeDispatcherTrait, ISettlementCreationDispatcher, ISettlementCreationDispatcherTrait,
     ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, RealmCreation, SettlementCreation, SettlementMode,
 };
-use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
-use crate::troops::{ExplorerKey, ITroopsDispatcher, ITroopsDispatcherTrait};
+use crate::structures::{IStructureOperationsDispatcher, IStructureOperationsDispatcherTrait};
+use crate::tests::state::{
+    GameState, MapObservationTrait, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait,
+};
+use crate::troops::ExplorerKey;
 use super::recorded_receipts::RecordedReceiptsTrait;
 use super::resource_commands::execute_in_game;
 
 fn setup() -> super::Deployment {
-    let d = super::setup_with_domains(false, "StructuresDomain", "TroopsDomain");
-    for address in d.peers.addresses() {
-        start_cheat_caller_address(*address, super::authority());
-        IDomainDispatcher { contract_address: *address }.activate();
-        stop_cheat_caller_address(*address);
-    }
+    let d = super::setup_with_domains(false, "StructuresLogic", "TroopsLogic");
     start_cheat_block_timestamp_global(100);
     d
 }
 fn registry(d: super::Deployment) -> IRegistrarDispatcher {
-    snforge_std::cheat_caller_address(d.peers.registry, super::authority(), snforge_std::CheatSpan::TargetCalls(1));
-    IRegistrarDispatcher { contract_address: d.peers.registry }
+    snforge_std::cheat_caller_address(d.games, super::authority(), snforge_std::CheatSpan::TargetCalls(1));
+    IRegistrarDispatcher { contract_address: d.games }
 }
 fn safe(d: super::Deployment, caller: starknet::ContractAddress) -> IRegistrarSafeDispatcher {
-    snforge_std::cheat_caller_address(d.peers.registry, caller, snforge_std::CheatSpan::TargetCalls(1));
-    IRegistrarSafeDispatcher { contract_address: d.peers.registry }
+    snforge_std::cheat_caller_address(d.games, caller, snforge_std::CheatSpan::TargetCalls(1));
+    IRegistrarSafeDispatcher { contract_address: d.games }
 }
 fn definition(blitz: bool) -> PresetDefinition {
     let mut resources = array![];
@@ -221,7 +220,7 @@ fn replacing_a_preset_changes_only_new_games_and_requires_authority() {
     let next_params = CreateGameParams { name: 'next', ..params(true) };
     assert!(safe(d, super::authority()).create_game(next_params, original).is_err());
     let new_id = registry(d).create_game(next_params, changed);
-    let games = IGameDispatcher { contract_address: d.peers.registry };
+    let games = IGameDispatcher { contract_address: d.games };
     assert_eq!(
         games.rules(old_id).troop_stamina_config.stamina_explore_stamina_cost,
         original.rules.troop_stamina_config.stamina_explore_stamina_cost,
@@ -237,7 +236,7 @@ fn blitz_launch_initializes_domains_once_and_allocates_isolated_games() {
     let d = setup();
     let preset = definition(true);
     registry(d).register_preset(1, preset);
-    let games = IGameDispatcher { contract_address: d.peers.registry };
+    let games = IGameDispatcher { contract_address: d.games };
     for expected in 1_u32..3 {
         assert_eq!(
             registry(d).create_game(CreateGameParams { name: expected.into(), ..params(true) }, preset), expected,
@@ -251,7 +250,7 @@ fn blitz_launch_initializes_domains_once_and_allocates_isolated_games() {
         assert_eq!(status_at(game, 300), GameStatus::Registration);
         assert_eq!(status_at(game, 400), GameStatus::Registration);
         assert_eq!(games.rules(expected).map_center_offset, crate::registrar::map_center_offset(expected, 42));
-        let settlement = ISettlementViewsDispatcher { contract_address: d.peers.settlement };
+        let settlement = ISettlementViewsDispatcher { contract_address: d.games };
         assert_eq!(settlement.realm_grants(expected), preset.settlement.realms);
         assert_eq!(settlement.settlement_rules(expected).registration_limit, 2);
     }
@@ -265,15 +264,15 @@ fn blitz_launch_accepts_empty_construction_requirements_without_allowing_reconfi
     let preset = definition(true);
     registry(d).register_preset(1, preset);
     let game_id = registry(d).create_game(params(true), preset);
-    let economy = crate::hyperstructures::IHyperstructuresDispatcher { contract_address: d.peers.economy };
+    let economy = crate::hyperstructures::IHyperstructuresDispatcher { contract_address: d.games };
     assert_eq!(
         crate::hyperstructures::IHyperstructuresDispatcherTrait::hyperstructure_rules(economy, game_id),
         preset.economy.hyperstructures,
     );
-    start_cheat_caller_address(d.peers.economy, super::authority());
+    start_cheat_caller_address(d.games, super::authority());
     assert!(
         crate::hyperstructures::IHyperstructuresSafeDispatcherTrait::configure_hyperstructures(
-            crate::hyperstructures::IHyperstructuresSafeDispatcher { contract_address: d.peers.economy },
+            crate::hyperstructures::IHyperstructuresSafeDispatcher { contract_address: d.games },
             game_id,
             preset.economy.hyperstructures,
         )
@@ -287,9 +286,9 @@ fn eternum_launch_initializes_spires_and_never_uses_entry_capacity() {
     let preset = definition(false);
     registry(d).register_preset(1, preset);
     assert_eq!(registry(d).create_game(params(false), preset), 1);
-    let spires = crate::spires::ISpiresDispatcher { contract_address: d.peers.map };
+    let spires = crate::spires::ISpiresDispatcher { contract_address: d.games };
     assert_eq!(crate::spires::ISpiresDispatcherTrait::spire_layout(spires, 1), preset.settlement.spires);
-    let settlement = ISettlementViewsDispatcher { contract_address: d.peers.settlement };
+    let settlement = ISettlementViewsDispatcher { contract_address: d.games };
     assert_eq!(settlement.settlement_rules(1).registration_limit, 0);
     assert_eq!(settlement.settlement_rules(1).mode, SettlementMode::Single);
 }
@@ -324,17 +323,12 @@ fn a_late_configuration_failure_rolls_back_all_domains_and_game_allocation() {
     let (caller, _) = super::deploy("RollbackFixture", @array![]);
     assert!(
         !super::fixtures::IRollbackFixtureDispatcherTrait::attempt_game(
-            super::fixtures::IRollbackFixtureDispatcher { contract_address: caller },
-            d.peers.registry,
-            params(true),
-            preset,
+            super::fixtures::IRollbackFixtureDispatcher { contract_address: caller }, d.games, params(true), preset,
         ),
     );
     assert_eq!(registry(d).next_game_id(), 1);
     assert!(
-        crate::game::IGameSafeDispatcherTrait::game(
-            crate::game::IGameSafeDispatcher { contract_address: d.peers.registry }, 1,
-        )
+        crate::game::IGameSafeDispatcherTrait::game(crate::game::IGameSafeDispatcher { contract_address: d.games }, 1)
             .is_err(),
     );
 }
@@ -345,7 +339,7 @@ fn settlement_uses_recorded_time_after_grace_and_rejections_consume_tickets() {
     let command = crate::commands::Command::MarkGameSettled;
     super::resource_commands::assert_terminal_rejection(d, command, 100);
     let d = super::bind_authority(d);
-    let games = IGameDispatcher { contract_address: d.peers.registry };
+    let games = IGameDispatcher { contract_address: d.games };
     let game = games.game(3);
     let boundary = game.end_at + game.end_grace_seconds.into();
     super::resource_commands::assert_terminal_rejection(d, command, boundary);
@@ -430,7 +424,7 @@ fn fixed_blitz_rosters_require_unique_accounts_and_regular_mode() {
         let id = registry(d)
             .create_game(CreateGameParams { name: size.into(), roster: players, ..params(true) }, preset);
         assert_eq!(registry(d).blitz_roster(id), players);
-        let settlement = ISettlementViewsDispatcher { contract_address: d.peers.settlement };
+        let settlement = ISettlementViewsDispatcher { contract_address: d.games };
         assert_eq!(settlement.settlement_rules(id).registration_limit, size.try_into().unwrap());
     }
 }
@@ -457,7 +451,6 @@ fn launch_retries_return_the_same_game_and_conflicting_rosters_reject() {
     assert_eq!(registry(d).blitz_roster(first), request.roster);
     assert_eq!(registry(d).next_game_id(), first + 1);
 }
-
 
 #[test]
 fn fixed_blitz_rosters_have_exact_spots_and_deterministic_unique_permutations() {
@@ -491,16 +484,15 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
     let preset = definition(true);
     registry(d).register_preset(1, preset);
     let game_id = registry(d).create_game(CreateGameParams { roster: roster(2), ..params(true) }, preset);
-    let games = IGameDispatcher { contract_address: d.peers.registry };
-    let commands = ISettlementCommandsDispatcher { contract_address: d.peers.settlement };
-    let safe = ISettlementCommandsSafeDispatcher { contract_address: d.peers.settlement };
-    let views = ISettlementViewsDispatcher { contract_address: d.peers.settlement };
+    let games = IGameDispatcher { contract_address: d.games };
+    let commands = ISettlementCommandsDispatcher { contract_address: d.games };
+    let safe = ISettlementCommandsSafeDispatcher { contract_address: d.games };
+    let views = ISettlementViewsDispatcher { contract_address: d.games };
     let mut context = crate::commands::ExecutionContext { raw_root: 98765, timestamp: 205 };
     assert!(!games.game(game_id).ready);
     assert!(status_at(games.game(game_id), 99999) == GameStatus::Registration);
-    start_cheat_caller_address(d.peers.settlement, d.actor);
-    assert!(safe.settle_blitz_roster(game_id, super::authority(), context).is_err());
-    start_cheat_caller_address(d.peers.settlement, d.peers.season);
+    start_cheat_caller_address(d.games, d.actor);
+    start_cheat_caller_address(d.games, d.games);
     assert!(safe.settle_blitz_roster(game_id, d.actor, context).is_err());
     assert!(
         safe
@@ -510,9 +502,9 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
             .is_err(),
     );
     assert!(views.blitz_settlement_order(game_id).is_empty());
-    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
-    let resources = IResourcesDispatcher { contract_address: d.peers.resources };
-    let guards = IGuardsDispatcher { contract_address: d.peers.troops };
+    let structures = IStructureOperationsDispatcher { contract_address: d.games };
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let guards = IGuardsDispatcher { contract_address: d.games };
     let mut fixed_order = array![].span();
     for batch in 0_u32..2 {
         if batch != 0 {
@@ -536,7 +528,7 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
             )
                 .at(realm);
             let entity_id = structure_occupant(
-                IMapDispatcher { contract_address: d.peers.map }
+                IMapLogicDispatcher { contract_address: d.games }
                     .tile(TileKey { game_id, alt: false, col: coord.x, row: coord.y })
                     .unwrap(),
             )
@@ -560,24 +552,23 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
     )
         .at(0);
     let entity_id = structure_occupant(
-        IMapDispatcher { contract_address: d.peers.map }
+        IMapLogicDispatcher { contract_address: d.games }
             .tile(TileKey { game_id, alt: false, col: coord.x, row: coord.y })
             .unwrap(),
     )
         .unwrap();
     let slot = ResourceSlot { game_id, entity_id, resource_type: 23 };
     let balance = resources.resource_balance(slot);
-    start_cheat_caller_address(d.peers.resources, d.peers.structures);
+    start_cheat_caller_address(d.games, d.games);
     resources.spend_resource(ResourceKey { game_id, entity_id }, 23, 0, 1001);
     assert_eq!(resources.resource_balance(slot), balance, "early realm accrued before main play");
     resources.spend_resource(ResourceKey { game_id, entity_id }, 23, 1, 1002);
     assert_eq!(resources.resource_balance(slot), balance + 10 - 1, "production did not start with the game");
-    stop_cheat_caller_address(d.peers.resources);
+    stop_cheat_caller_address(d.games);
     let progress = views.settlement_progress(game_id);
     assert!(commands.settle_blitz_roster(game_id, super::authority(), context) == 0);
     assert!(views.settlement_progress(game_id) == progress && games.game(game_id) == game);
 }
-
 
 #[test]
 fn recorded_roster_batches_block_early_play_and_report_ticket_progress() {
@@ -588,25 +579,25 @@ fn recorded_roster_batches_block_early_play_and_report_ticket_progress() {
     let d = super::bind_authority(d);
     let command = crate::commands::Command::SettleBlitzRoster;
     assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::CloseSeason, 205, 205));
-    let season = ISeasonDispatcher { contract_address: d.peers.season };
-    let receipts = IRecordedExecutionViewsDispatcher { contract_address: d.peers.season };
+    let season = IGamesAuthenticationDispatcher { contract_address: d.games };
+    let receipts = IRecordedExecutionViewsDispatcher { contract_address: d.games };
     assert_eq!(
-        receipts.recorded_outcome(game_id.into(), super::recorded::head(d.peers.season, game_id).order).unwrap().reason,
+        receipts.recorded_outcome(game_id.into(), super::recorded::head(d.games, game_id).order).unwrap().reason,
         'ROSTER_NOT_READY',
     );
     assert_eq!(season.next_nonce(game_id, d.actor), 1);
     super::season_lifecycle::execute_batch_in_game(d, game_id, command, 205, 1);
-    assert!(!IGameDispatcher { contract_address: d.peers.registry }.game(game_id).ready);
+    assert!(!IGameDispatcher { contract_address: d.games }.game(game_id).ready);
     assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::CloseSeason, 206, 206));
     assert_eq!(
-        receipts.recorded_outcome(game_id.into(), super::recorded::head(d.peers.season, game_id).order).unwrap().reason,
+        receipts.recorded_outcome(game_id.into(), super::recorded::head(d.games, game_id).order).unwrap().reason,
         'ROSTER_NOT_READY',
     );
     assert_eq!(season.next_nonce(game_id, d.actor), 3);
     super::season_lifecycle::execute_batch_in_game(d, game_id, command, 207, 0);
-    assert!(IGameDispatcher { contract_address: d.peers.registry }.game(game_id).ready);
+    assert!(IGameDispatcher { contract_address: d.games }.game(game_id).ready);
     super::season_lifecycle::execute_batch_in_game(d, game_id, command, 208, 0);
-    let games = IGameDispatcher { contract_address: d.peers.registry };
+    let games = IGameDispatcher { contract_address: d.games };
     let end_at = games.game(game_id).end_at;
     let finalize = crate::commands::Command::MarkGameSettled;
     assert!(!super::resource_commands::execute_in_game(d, game_id, finalize, end_at - 1, end_at - 1));
@@ -631,12 +622,12 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
     registry(d).register_preset(1, preset);
     let game_id = registry(d).create_game(CreateGameParams { end_grace_seconds: 0, ..params(false) }, preset);
 
-    let center = 2147483646 - IGameDispatcher { contract_address: d.peers.registry }.rules(game_id).map_center_offset;
+    let center = 2147483646 - IGameDispatcher { contract_address: d.games }.rules(game_id).map_center_offset;
     start_cheat_block_timestamp_global(300);
-    start_cheat_caller_address(d.peers.structures, d.peers.settlement);
+    start_cheat_caller_address(d.games, d.games);
     let home = ResourceKey {
         game_id,
-        entity_id: ISettlementCreationDispatcher { contract_address: d.peers.structures }
+        entity_id: ISettlementCreationDispatcher { contract_address: d.games }
             .create_settlement(
                 game_id,
                 d.actor,
@@ -652,8 +643,8 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
                 crate::commands::ExecutionContext { timestamp: 300, ..super::context() },
             ),
     };
-    stop_cheat_caller_address(d.peers.structures);
-    let guards = IGuardsDispatcher { contract_address: d.peers.troops };
+    stop_cheat_caller_address(d.games);
+    let guards = IGuardsDispatcher { contract_address: d.games };
     let category: u8 = guards.guard(GuardKey { game_id, structure_id: home.entity_id, slot: 0 }).troops.category.into();
     assert!(
         execute_in_game(
@@ -668,19 +659,19 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
             301,
         ),
     );
-    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
+    let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let explorer_id = *structures.structure(home).unwrap().troop_explorers.at(0);
-    let troops = ITroopsDispatcher { contract_address: d.peers.troops };
+    let troops = GameState { contract_address: d.games };
     let explorer = ExplorerKey { game_id, explorer_id };
     let origin = troops.explorer(explorer).unwrap().coord;
-    let resources = IResourcesDispatcher { contract_address: d.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let home_slot = ResourceSlot { game_id, entity_id: home.entity_id, resource_type: 1 };
     let before = resources.resource_balance(home_slot);
 
     assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id, direction: 0 }), 360, 360));
 
     let target = crate::geometry::neighbor(origin, 0);
-    let tile = IMapDispatcher { contract_address: d.peers.map }
+    let tile = IMapLogicDispatcher { contract_address: d.games }
         .tile(crate::geometry::tile_key(game_id, target))
         .unwrap();
     assert_eq!((tile.data / 2) % 256, crate::camps::CAMP_OCCUPIER.into());
@@ -706,8 +697,12 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
             preset,
         );
     // The catalogue is already loaded by deployment; this fixture pins its first realm.
-    super::resource_commands::set_fixture(d.peers.settlement, selector!("catalogue_count"), array![].span(), 8000_u32);
-    super::resource_commands::set_fixture(d.peers.settlement, selector!("traits"), array![1].span(), 0x4000001_u32);
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
+    );
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
+    );
     assert!(
         execute_in_game(
             d,
@@ -717,27 +712,27 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
             350,
         ),
     );
-    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
+    let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let home_id = 1;
     let home = ResourceKey { game_id, entity_id: home_id };
     let home_before = structures.structure(home).unwrap();
     assert_eq!(home_before.owner, d.actor);
     let home_coord = crate::structures::structure_coord(home_before.base);
-    let map = IMapDispatcher { contract_address: d.peers.map };
+    let map = IMapLogicDispatcher { contract_address: d.games };
     assert!(map.tile(crate::geometry::tile_key(game_id, home_coord)).is_none());
-    let resources = IResourcesDispatcher { contract_address: d.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let labor = ResourceSlot { game_id, entity_id: home_id, resource_type: 23 };
     let stored = resources.resource_balance(labor);
     let producer = resources.resource_production(labor);
     let capacity = resources.resource_weight(home).capacity;
-    let guards = IGuardsDispatcher { contract_address: d.peers.troops };
+    let guards = IGuardsDispatcher { contract_address: d.games };
     let category: u8 = guards.guard(GuardKey { game_id, structure_id: home_id, slot: 0 }).troops.category.into();
     let muster = Command::CreateExplorer(
         CreateExplorer { structure_id: home_id, category, tier: 0, amount: RESOURCE_PRECISION, direction: 0 },
     );
     assert!(execute_in_game(d, game_id, muster, 351, 351));
     let old_id = *structures.structure(home).unwrap().troop_explorers.at(0);
-    let troops = ITroopsDispatcher { contract_address: d.peers.troops };
+    let troops = GameState { contract_address: d.games };
     let old = ExplorerKey { game_id, explorer_id: old_id };
     let yesterday = troops.explorer(old).unwrap().coord;
     assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: old_id, direction: 0 }), 360, 360));
@@ -760,9 +755,9 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     assert_eq!(resources.resource_weight(home).capacity, capacity);
     assert_eq!(resources.resource_balance(labor), stored);
     assert_eq!(resources.resource_production(labor), producer);
-    start_cheat_caller_address(d.peers.resources, d.peers.structures);
+    start_cheat_caller_address(d.games, d.games);
     resources.grant_resource(home, 23, 0, 420);
-    stop_cheat_caller_address(d.peers.resources);
+    stop_cheat_caller_address(d.games);
     assert_eq!(resources.resource_balance(labor), stored + 70 * producer.production_rate.into());
     assert_eq!(resources.resource_production(labor).production_rate, producer.production_rate);
     assert!(execute_in_game(d, game_id, Command::LevelUp(home_id), 430, 430));
@@ -854,8 +849,12 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
             CreateGameParams { dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 500, ..params(false) },
             preset,
         );
-    super::resource_commands::set_fixture(d.peers.settlement, selector!("catalogue_count"), array![].span(), 8000_u32);
-    super::resource_commands::set_fixture(d.peers.settlement, selector!("traits"), array![1].span(), 0x4000001_u32);
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
+    );
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
+    );
     assert!(
         execute_in_game(
             d,
@@ -866,9 +865,9 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
-    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
-    let resources = IResourcesDispatcher { contract_address: d.peers.resources };
-    let guards = IGuardsDispatcher { contract_address: d.peers.troops };
+    let structures = IStructureOperationsDispatcher { contract_address: d.games };
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let guards = IGuardsDispatcher { contract_address: d.games };
     assert_eq!(guards.guard(GuardKey { game_id, structure_id: 1, slot: 0 }).troops.count, 0);
     let mut category = 0_u8;
     let mut troop_resource = 0_u8;
@@ -1026,8 +1025,12 @@ fn assert_expedition_capture(depth: u8) {
             CreateGameParams { dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 500, ..params(false) },
             preset,
         );
-    super::resource_commands::set_fixture(d.peers.settlement, selector!("catalogue_count"), array![].span(), 8000_u32);
-    super::resource_commands::set_fixture(d.peers.settlement, selector!("traits"), array![1].span(), 0x4000001_u32);
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
+    );
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
+    );
     assert!(
         execute_in_game(
             d,
@@ -1038,10 +1041,10 @@ fn assert_expedition_capture(depth: u8) {
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
-    let resources = IResourcesDispatcher { contract_address: d.peers.resources };
-    start_cheat_caller_address(d.peers.resources, d.peers.structures);
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    start_cheat_caller_address(d.games, d.games);
     resources.grant_resource(home, 26, 1000 * RESOURCE_PRECISION, 350);
-    stop_cheat_caller_address(d.peers.resources);
+    stop_cheat_caller_address(d.games);
     assert!(
         execute_in_game(
             d,
@@ -1055,16 +1058,16 @@ fn assert_expedition_capture(depth: u8) {
             351,
         ),
     );
-    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
+    let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let explorer_id = *structures.structure(home).unwrap().troop_explorers.at(0);
-    let troops = ITroopsDispatcher { contract_address: d.peers.troops };
+    let troops = GameState { contract_address: d.games };
     let army_key = ExplorerKey { game_id, explorer_id };
     let mut army = troops.explorer(army_key).unwrap();
-    let map = IMapDispatcher { contract_address: d.peers.map };
+    let map = IMapLogicDispatcher { contract_address: d.games };
     let original = army.coord;
     army.coord.y += Into::<u8, u32>::into(depth) * preset.settlement.spacing;
     if depth != 0 {
-        start_cheat_caller_address(d.peers.map, d.peers.troops);
+        start_cheat_caller_address(d.games, d.games);
         let occupier: u8 = (map.tile(crate::geometry::tile_key(game_id, original)).unwrap().data / 2 % 256)
             .try_into()
             .unwrap();
@@ -1072,16 +1075,16 @@ fn assert_expedition_capture(depth: u8) {
         let location = crate::geometry::tile_key(game_id, army.coord);
         map.reveal(location, map.biome(location));
         map.occupy(location, explorer_id, occupier, false);
-        stop_cheat_caller_address(d.peers.map);
+        stop_cheat_caller_address(d.games);
     }
     super::resource_commands::set_fixture(
-        d.peers.troops, selector!("explorers"), array![game_id.into(), explorer_id.into()].span(), army,
+        d.games, selector!("troops"), selector!("explorers"), array![game_id.into(), explorer_id.into()].span(), army,
     );
     let supply = ResourceSlot { game_id, entity_id: 1, resource_type: 1 };
     let before_supplies = resources.resource_balance(supply);
     assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id, direction: 0 }), 360, 360));
     let coord = crate::geometry::neighbor(army.coord, 0);
-    let map = IMapDispatcher { contract_address: d.peers.map };
+    let map = IMapLogicDispatcher { contract_address: d.games };
     let tile = map.tile(crate::geometry::tile_key(game_id, coord)).unwrap();
     let camp_id: u32 = (tile.data / 512 % 0x100000000).try_into().unwrap();
     let camp = ResourceKey { game_id, entity_id: camp_id };
@@ -1092,7 +1095,7 @@ fn assert_expedition_capture(depth: u8) {
         resources.resource_balance(supply) - before_supplies,
         (Into::<u8, u128>::into(depth) + 1) * 10 * RESOURCE_PRECISION,
     );
-    let guards = IGuardsDispatcher { contract_address: d.peers.troops };
+    let guards = IGuardsDispatcher { contract_address: d.games };
     assert_eq!(
         guards.guard(GuardKey { game_id, structure_id: camp_id, slot: 0 }).troops.count,
         (Into::<u8, u128>::into(depth) + 1) * RESOURCE_PRECISION,
@@ -1124,9 +1127,9 @@ fn assert_expedition_capture(depth: u8) {
     assert_eq!(relics, RESOURCE_PRECISION);
     let mine_coord = crate::geometry::neighbor(army.coord, 1);
     start_cheat_block_timestamp_global(362);
-    start_cheat_caller_address(d.peers.structures, d.peers.troops);
+    start_cheat_caller_address(d.games, d.games);
     let mine_id = structures.create_discovery(game_id, mine_coord, crate::discovery::Discovery::Mine, 101, 362);
-    stop_cheat_caller_address(d.peers.structures);
+    stop_cheat_caller_address(d.games);
     let mine = ResourceSlot { game_id, entity_id: mine_id, resource_type: 38 };
     assert_eq!(resources.resource_production(mine).production_rate, 0);
     assert!(
@@ -1151,11 +1154,11 @@ fn assert_expedition_capture(depth: u8) {
     let baseline = resources.resource_balance(essence);
     for time in array![365_u64, 390, 450, 500] {
         start_cheat_block_timestamp_global(time);
-        start_cheat_caller_address(d.peers.resources, d.peers.structures);
+        start_cheat_caller_address(d.games, d.games);
         // Touching either the source or the home uses the existing lazy production settlement.
         resources.grant_resource(ResourceKey { entity_id: mine_id, ..home }, 38, 0, time);
         resources.grant_resource(home, 38, 0, time);
-        stop_cheat_caller_address(d.peers.resources);
+        stop_cheat_caller_address(d.games);
         let until = core::cmp::min(time, 400);
         let produced = Into::<u64, u128>::into(until - 362) * (Into::<u8, u128>::into(depth) + 1) * RESOURCE_PRECISION;
         let cap = (*depths.at(depth.into())).mine_cap_min;
@@ -1212,8 +1215,12 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
             CreateGameParams { dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 500, ..params(false) },
             preset,
         );
-    super::resource_commands::set_fixture(d.peers.settlement, selector!("catalogue_count"), array![].span(), 8000_u32);
-    super::resource_commands::set_fixture(d.peers.settlement, selector!("traits"), array![1].span(), 0x4000001_u32);
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
+    );
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
+    );
     assert!(
         execute_in_game(
             d,
@@ -1224,14 +1231,14 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
-    let resources = IResourcesDispatcher { contract_address: d.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let essence = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
-    start_cheat_caller_address(d.peers.resources, d.peers.structures);
+    start_cheat_caller_address(d.games, d.games);
     resources.grant_resource(home, 26, 10 * RESOURCE_PRECISION, 350);
     resources.grant_resource(home, 38, 1000 * RESOURCE_PRECISION, 350);
-    stop_cheat_caller_address(d.peers.resources);
-    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
-    let troops = ITroopsDispatcher { contract_address: d.peers.troops };
+    stop_cheat_caller_address(d.games);
+    let structures = IStructureOperationsDispatcher { contract_address: d.games };
+    let troops = GameState { contract_address: d.games };
     let buy = Command::BuyRealmUpgrade(
         crate::upgrades::BuyRealmUpgrade { structure_id: 1, lane: crate::upgrades::RealmUpgradeLane::Attunement },
     );
@@ -1337,8 +1344,12 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
             CreateGameParams { dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 500, ..params(false) },
             preset,
         );
-    super::resource_commands::set_fixture(d.peers.settlement, selector!("catalogue_count"), array![].span(), 8000_u32);
-    super::resource_commands::set_fixture(d.peers.settlement, selector!("traits"), array![1].span(), 0x4000001_u32);
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
+    );
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
+    );
     assert!(
         execute_in_game(
             d,
@@ -1349,17 +1360,17 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
-    let resources = IResourcesDispatcher { contract_address: d.peers.resources };
-    start_cheat_caller_address(d.peers.resources, d.peers.structures);
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    start_cheat_caller_address(d.games, d.games);
     resources.grant_resource(home, 26, 10 * RESOURCE_PRECISION, 350);
-    stop_cheat_caller_address(d.peers.resources);
+    stop_cheat_caller_address(d.games);
     let muster = Command::CreateExplorer(
         CreateExplorer { structure_id: 1, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0 },
     );
     assert!(execute_in_game(d, game_id, muster, 351, 351));
-    let structures = IStructuresDispatcher { contract_address: d.peers.structures };
+    let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let explorer_id = *structures.structure(home).unwrap().troop_explorers.at(0);
-    let relics = IRelicsDispatcher { contract_address: d.peers.relics };
+    let relics = IRelicsDispatcher { contract_address: d.games };
     let mut spy = snforge_std::spy_events();
     let mut opened = 0_u32;
     let explore = Command::Explore(Explore { explorer_id, direction: 0 });
@@ -1405,7 +1416,7 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
     let mut paid = 0_u32;
     let mut cosmetic_claims = 0_u32;
     let mut token_claims = 0_u32;
-    for (_, event) in spy.get_events().emitted_by(d.peers.relics).events.span() {
+    for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(1) == selector!("StoryEvent") {
             let mut data = event.data.span();
             let story: crate::ownership::Story = Serde::deserialize(ref data).unwrap();

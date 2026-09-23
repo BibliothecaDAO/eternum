@@ -8,7 +8,8 @@ use crate::bitcoin::{
     IBitcoinViewsDispatcherTrait, PhaseKey, PhaseStatus,
 };
 use crate::commands::{Command, ExecutionContext};
-use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceSlot};
+use crate::resources::{IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceSlot};
+use crate::tests::state::ResourceObservationTrait;
 use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, setup_with_rules};
 
 fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
@@ -27,7 +28,7 @@ fn contribute(key: ResourceKey, amount: u128) -> Command {
     Command::ContributeBitcoinLabor(ContributeLabor { structure_id: key.entity_id, amount })
 }
 fn balance(deployment: super::Deployment, key: ResourceKey) -> u128 {
-    IResourcesDispatcher { contract_address: deployment.peers.resources }
+    IResourceOperationsDispatcher { contract_address: deployment.games }
         .resource_balance(ResourceSlot { game_id: key.game_id, entity_id: key.entity_id, resource_type: 23 })
 }
 
@@ -36,7 +37,7 @@ fn any_owned_structure_funds_one_player_share_without_a_mine_or_distance_require
     let (deployment, first, second) = setup();
     assert!(execute(deployment, contribute(first, 100), 30));
     assert!(execute(deployment, contribute(second, 250), 31));
-    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     let key = PhaseKey { game_id: 3, phase: 3 };
     assert_eq!(view.bitcoin_phase(key).total_labor, 350);
     assert_eq!(view.bitcoin_phase(key).contributors, 1);
@@ -61,23 +62,22 @@ fn bad_labor_contributions_are_terminal_without_partial_burns_or_pool_changes() 
     assert_terminal_rejection(deployment, contribute(ResourceKey { entity_id: 999999, ..first }, 10), 30);
     assert_terminal_rejection(deployment, contribute(first, 10), 39);
     assert_eq!(balance(deployment, first), 1000);
-    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     assert_eq!(view.bitcoin_phase(PhaseKey { game_id: 3, phase: 3 }).total_labor, 0);
 }
 
 #[test]
 #[feature("safe_dispatcher")]
-fn contribution_requires_the_authenticated_domain_and_source_owner() {
+fn contribution_requires_the_source_owner() {
     let (deployment, first, _) = setup();
-    let calls = IBitcoinCommandsSafeDispatcher { contract_address: deployment.peers.prizes };
+    let calls = IBitcoinCommandsSafeDispatcher { contract_address: deployment.games };
     let command = ContributeLabor { structure_id: first.entity_id, amount: 10 };
     let context = ExecutionContext { raw_root: 123, timestamp: 30 };
     start_cheat_block_timestamp_global(30);
-    assert!(calls.contribute_bitcoin_labor(3, deployment.actor, command, context).is_err());
-    start_cheat_caller_address(deployment.peers.prizes, deployment.peers.season);
+    start_cheat_caller_address(deployment.games, deployment.games);
     assert!(calls.contribute_bitcoin_labor(3, 0x777.try_into().unwrap(), command, context).is_err());
     assert_eq!(balance(deployment, first), 1000);
-    stop_cheat_caller_address(deployment.peers.prizes);
+    stop_cheat_caller_address(deployment.games);
 }
 
 #[test]
@@ -87,7 +87,7 @@ fn binding_requires_a_closed_pool_and_cannot_replace_its_root() {
     assert_terminal_rejection(deployment, Command::CloseBitcoinPhase(3), 38);
     assert_terminal_rejection(deployment, Command::BindBitcoinPhase(3), 39);
     assert!(execute(deployment, Command::CloseBitcoinPhase(3), 39));
-    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     let key = PhaseKey { game_id: 3, phase: 3 };
     assert_eq!(view.bitcoin_phase(key).state, PhaseStatus::Closed);
     assert!(execute(deployment, Command::BindBitcoinPhase(3), 40));
@@ -105,7 +105,7 @@ fn delayed_contribution_and_phase_binding_keep_recorded_context_after_game_end()
     assert!(execute_recorded_at(deployment, contribute(first, 100), 30, 5000));
     assert!(execute_recorded_at(deployment, Command::CloseBitcoinPhase(3), 39, 5001));
     assert!(execute_recorded_at(deployment, Command::BindBitcoinPhase(3), 40, 5002));
-    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     let phase = view.bitcoin_phase(PhaseKey { game_id: 3, phase: 3 });
     assert_eq!(phase.total_labor, 100);
     assert_eq!(phase.root, super::context().raw_root);
@@ -124,10 +124,11 @@ fn phases_outside_game_and_contributions_after_end_are_rejected() {
 }
 
 fn set_owner(deployment: super::Deployment, key: ResourceKey, owner: starknet::ContractAddress) {
-    let structures = crate::structures::IStructuresDispatcher { contract_address: deployment.peers.structures };
-    let structure = crate::structures::IStructuresDispatcherTrait::structure(structures, key).unwrap();
+    let structures = crate::structures::IStructureOperationsDispatcher { contract_address: deployment.games };
+    let structure = crate::tests::state::StructureObservationTrait::structure(structures, key).unwrap();
     super::resource_commands::set_fixture(
-        deployment.peers.structures,
+        deployment.games,
+        selector!("structures"),
         selector!("structures"),
         array![key.game_id.into(), key.entity_id.into()].span(),
         crate::structures::StructureRecord {
@@ -137,25 +138,25 @@ fn set_owner(deployment: super::Deployment, key: ResourceKey, owner: starknet::C
 }
 
 fn mine(deployment: super::Deployment, x: u32) -> ResourceKey {
-    start_cheat_caller_address(deployment.peers.structures, deployment.peers.troops);
-    let id = crate::structures::IStructuresDispatcherTrait::create_discovery(
-        crate::structures::IStructuresDispatcher { contract_address: deployment.peers.structures },
+    start_cheat_caller_address(deployment.games, deployment.games);
+    let id = crate::structures::IStructureOperationsDispatcherTrait::create_discovery(
+        crate::structures::IStructureOperationsDispatcher { contract_address: deployment.games },
         3,
         crate::troops::Coord { alt: true, x, y: 2000000 },
         crate::discovery::Discovery::BitcoinMine,
         99,
         30,
     );
-    stop_cheat_caller_address(deployment.peers.structures);
+    stop_cheat_caller_address(deployment.games);
     ResourceKey { game_id: 3, entity_id: id }
 }
 
 fn capture(deployment: super::Deployment, mine: ResourceKey, owner: starknet::ContractAddress, timestamp: u64) {
-    start_cheat_caller_address(deployment.peers.prizes, deployment.peers.structures);
+    start_cheat_caller_address(deployment.games, deployment.games);
     crate::bitcoin::IBitcoinFundingDispatcherTrait::bitcoin_mine_captured(
-        crate::bitcoin::IBitcoinFundingDispatcher { contract_address: deployment.peers.prizes }, mine, timestamp,
+        crate::bitcoin::IBitcoinFundingDispatcher { contract_address: deployment.games }, mine, timestamp,
     );
-    stop_cheat_caller_address(deployment.peers.prizes);
+    stop_cheat_caller_address(deployment.games);
     set_owner(deployment, mine, owner);
 }
 
@@ -167,7 +168,7 @@ fn claim(phase: u64, ids: Span<u32>) -> Command {
     Command::ClaimBitcoinPhase(crate::bitcoin::ClaimPhase { phase, mine_ids: ids })
 }
 fn sat(deployment: super::Deployment, key: ResourceKey) -> u128 {
-    IResourcesDispatcher { contract_address: deployment.peers.resources }
+    IResourceOperationsDispatcher { contract_address: deployment.games }
         .resource_balance(ResourceSlot { game_id: key.game_id, entity_id: key.entity_id, resource_type: 58 })
 }
 
@@ -185,7 +186,7 @@ fn winner_share_carries_if_its_recorded_structure_changed_owner_while_owner_shar
     // The winner still owns another realm; it must never replace the recorded destination.
     assert_eq!(sat(deployment, other_home), 0);
     assert_eq!(sat(deployment, mine), 200);
-    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     assert_eq!(view.bitcoin_mine(mine).winner_carry, 800);
     assert!(execute(deployment, contribute(other_home, 100), 50));
     close_and_bind(deployment, 5);
@@ -205,7 +206,7 @@ fn zero_contributor_prize_rolls_unsplit_then_pays_once_and_retries_do_nothing() 
     assert!(execute(deployment, Command::CloseBitcoinPhase(4), 49));
     assert_terminal_rejection(deployment, claim(4, array![mine.entity_id, mine.entity_id].span()), 50);
     assert!(execute(deployment, claim(4, array![mine.entity_id].span()), 50));
-    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 1000);
     assert_eq!(sat(deployment, mine), 0);
     assert!(execute(deployment, contribute(winner_home, 100), 50));
@@ -227,7 +228,7 @@ fn zero_contributor_prize_rolls_unsplit_then_pays_once_and_retries_do_nothing() 
 fn an_unowned_mine_never_funds_and_capture_begins_in_the_following_phase() {
     let (deployment, home, nearest_home) = setup();
     let mine = mine(deployment, 2000100);
-    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     assert_eq!(view.bitcoin_mine(mine).eligible_from, 4);
     assert!(execute(deployment, contribute(home, 100), 40));
     close_and_bind(deployment, 4);
@@ -252,19 +253,19 @@ fn an_unowned_mine_never_funds_and_capture_begins_in_the_following_phase() {
 fn bitcoin_discovery_reveals_six_biomes_without_points_or_neighbor_discoveries() {
     let (deployment, _, _) = setup();
     let mine = mine(deployment, 2000100);
-    let structures = crate::structures::IStructuresDispatcher { contract_address: deployment.peers.structures };
-    let row = crate::structures::IStructuresDispatcherTrait::structure(structures, mine).unwrap();
+    let structures = crate::structures::IStructureOperationsDispatcher { contract_address: deployment.games };
+    let row = crate::tests::state::StructureObservationTrait::structure(structures, mine).unwrap();
     let origin = crate::structures::structure_coord(row.base);
-    let map = crate::map::IMapDispatcher { contract_address: deployment.peers.map };
+    let map = crate::map::IMapLogicDispatcher { contract_address: deployment.games };
     for direction in 0_u8..6 {
         let coord = crate::geometry::neighbor(origin, direction);
-        let tile = crate::map::IMapDispatcherTrait::tile(map, crate::geometry::tile_key(3, coord)).unwrap();
+        let tile = crate::tests::state::MapObservationTrait::tile(map, crate::geometry::tile_key(3, coord)).unwrap();
         assert!(tile.data / 0x20000000000 % 256 != 0);
         assert_eq!(tile.data % 0x20000000000, 0);
     }
     assert_eq!(
         crate::game::IPointsDispatcherTrait::player_points(
-            crate::game::IPointsDispatcher { contract_address: deployment.peers.season }, 3, deployment.actor,
+            crate::game::IPointsDispatcher { contract_address: deployment.games }, 3, deployment.actor,
         ),
         0,
     );
@@ -281,7 +282,7 @@ fn a_forfeited_share_survives_an_empty_phase_without_another_owner_cut() {
     set_owner(deployment, owner_home, owner);
     close_and_bind(deployment, 4);
     assert!(execute(deployment, claim(4, array![mine.entity_id].span()), 50));
-    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     assert_eq!(view.bitcoin_mine(mine).winner_carry, 800);
     assert_eq!(sat(deployment, mine), 200);
     assert!(execute(deployment, Command::CloseBitcoinPhase(5), 59));
@@ -304,7 +305,7 @@ fn an_invalid_batch_rolls_back_all_awards_but_consumes_the_ticket() {
     capture(deployment, mine, deployment.actor, 30);
     assert!(execute(deployment, contribute(home, 100), 40));
     close_and_bind(deployment, 4);
-    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     let before = view.bitcoin_mine(mine);
     assert_terminal_rejection(deployment, claim(4, array![mine.entity_id, 999999].span()), 50);
     assert_eq!(sat(deployment, nearest), 0);
@@ -325,8 +326,8 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
     let second_mine = mine(deployment, 2000130);
     capture(deployment, first_mine, other, 30);
     capture(deployment, second_mine, other, 30);
-    let calls = IBitcoinCommandsDispatcher { contract_address: deployment.peers.prizes };
-    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
+    let calls = IBitcoinCommandsDispatcher { contract_address: deployment.games };
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     let mut expected_first = 0_u128;
     let mut expected_second = 0_u128;
     let mut first_wins = 0_u32;
@@ -334,7 +335,7 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
     let mut repeated_winner = false;
     for phase in 4_u64..16 {
         start_cheat_block_timestamp_global(phase * 10);
-        start_cheat_caller_address(deployment.peers.prizes, deployment.peers.season);
+        start_cheat_caller_address(deployment.games, deployment.games);
         let context = ExecutionContext { timestamp: phase * 10, raw_root: phase.into() };
         calls
             .contribute_bitcoin_labor(
@@ -402,7 +403,7 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
                 },
                 context,
             );
-        stop_cheat_caller_address(deployment.peers.prizes);
+        stop_cheat_caller_address(deployment.games);
         assert_eq!(sat(deployment, first), expected_first);
         assert_eq!(sat(deployment, second), expected_second);
     }
@@ -419,7 +420,7 @@ fn the_first_contributing_structure_receives_the_winner_share_even_after_another
     capture(deployment, mine, deployment.actor, 30);
     assert!(execute(deployment, contribute(second, 100), 40));
     assert!(execute(deployment, contribute(first, 100), 41));
-    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     let contribution = view.bitcoin_contribution(ContributionKey { game_id: 3, phase: 4, player: deployment.actor });
     assert_eq!(contribution.structure_id, second.entity_id);
     assert_eq!(contribution.labor, 200);
@@ -444,7 +445,7 @@ fn owner_cut_uses_current_owner_and_does_not_require_owner_labor() {
     assert_eq!(sat(deployment, first), 800);
     assert_eq!(sat(deployment, second), 0);
     assert_eq!(sat(deployment, mine), 200);
-    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     assert_eq!(view.bitcoin_contribution(ContributionKey { game_id: 3, phase: 4, player: owner }).labor, 0);
 }
 
@@ -462,20 +463,20 @@ fn attacking_explorer(deployment: super::Deployment, home: ResourceKey, x: u32) 
         },
     };
     super::resource_commands::set_fixture(
-        deployment.peers.troops, selector!("explorers"), array![3, id.into()].span(), explorer,
+        deployment.games, selector!("troops"), selector!("explorers"), array![3, id.into()].span(), explorer,
     );
     super::resource_commands::set_fixture(
-        deployment.peers.troops, selector!("exists"), array![3, id.into()].span(), true,
+        deployment.games, selector!("troops"), selector!("exists"), array![3, id.into()].span(), true,
     );
-    start_cheat_caller_address(deployment.peers.resources, deployment.peers.structures);
-    IResourcesDispatcher { contract_address: deployment.peers.resources }
+    start_cheat_caller_address(deployment.games, deployment.games);
+    IResourceOperationsDispatcher { contract_address: deployment.games }
         .initialize_resources(ResourceKey { game_id: 3, entity_id: id }, 100000000000000000000, 0, 30);
-    stop_cheat_caller_address(deployment.peers.resources);
-    start_cheat_caller_address(deployment.peers.map, deployment.peers.troops);
-    let map = crate::map::IMapDispatcher { contract_address: deployment.peers.map };
+    stop_cheat_caller_address(deployment.games);
+    start_cheat_caller_address(deployment.games, deployment.games);
+    let map = crate::map::IMapLogicDispatcher { contract_address: deployment.games };
     let tile = crate::geometry::tile_key(3, coord);
-    crate::map::IMapDispatcherTrait::occupy(map, tile, id, 17, false);
-    stop_cheat_caller_address(deployment.peers.map);
+    crate::tests::state::MapObservationTrait::occupy(map, tile, id, 17, false);
+    stop_cheat_caller_address(deployment.games);
     id
 }
 
@@ -484,14 +485,15 @@ fn a_single_guard_in_the_highest_slot_must_be_fought_before_capture() {
     let (deployment, home, _) = setup();
     let mine = mine(deployment, 2000100);
     let explorer = attacking_explorer(deployment, home, 2000085);
-    let structures = crate::structures::IStructuresDispatcher { contract_address: deployment.peers.structures };
+    let structures = crate::structures::IStructureOperationsDispatcher { contract_address: deployment.games };
     let guard = crate::guards::IGuardsDispatcherTrait::guard(
-        crate::guards::IGuardsDispatcher { contract_address: deployment.peers.troops },
+        crate::guards::IGuardsDispatcher { contract_address: deployment.games },
         crate::guards::GuardKey { game_id: 3, structure_id: mine.entity_id, slot: 0 },
     );
     for slot in 0_u8..4 {
         super::resource_commands::set_fixture(
-            deployment.peers.troops,
+            deployment.games,
+            selector!("guards"),
             selector!("guards"),
             array![3, mine.entity_id.into(), slot.into()].span(),
             if slot == 3 {
@@ -509,7 +511,7 @@ fn a_single_guard_in_the_highest_slot_must_be_fought_before_capture() {
             40,
         ),
     );
-    let events = spy.get_events().emitted_by(deployment.peers.combat);
+    let events = spy.get_events().emitted_by(deployment.games);
     let mut fought = false;
     for (_, event) in events.events.span() {
         if *event.keys.at(0) == selector!("BattleEvent") {
@@ -518,7 +520,7 @@ fn a_single_guard_in_the_highest_slot_must_be_fought_before_capture() {
     }
     assert!(fought, "occupied guard slot was skipped");
     assert_eq!(
-        crate::structures::IStructuresDispatcherTrait::structure(structures, mine).unwrap().owner, deployment.actor,
+        crate::tests::state::StructureObservationTrait::structure(structures, mine).unwrap().owner, deployment.actor,
     );
 }
 
@@ -527,12 +529,13 @@ fn defeating_the_last_guard_captures_the_mine_and_defers_funding_to_the_next_pha
     let (deployment, home, nearest) = setup();
     let mine = mine(deployment, 2000100);
     let explorer = attacking_explorer(deployment, home, 2000085);
-    let structures = crate::structures::IStructuresDispatcher { contract_address: deployment.peers.structures };
-    let guards = crate::guards::IGuardsDispatcher { contract_address: deployment.peers.troops };
+    let structures = crate::structures::IStructureOperationsDispatcher { contract_address: deployment.games };
+    let guards = crate::guards::IGuardsDispatcher { contract_address: deployment.games };
     // Begin with the final surviving guard after earlier attacks.
     for slot in 1_u8..4 {
         super::resource_commands::set_fixture(
-            deployment.peers.troops,
+            deployment.games,
+            selector!("guards"),
             selector!("guards"),
             array![3, mine.entity_id.into(), slot.into()].span(),
             Default::<crate::guards::Guard>::default(),
@@ -552,7 +555,7 @@ fn defeating_the_last_guard_captures_the_mine_and_defers_funding_to_the_next_pha
             40,
         ),
     );
-    let captured = crate::structures::IStructuresDispatcherTrait::structure(structures, mine).unwrap();
+    let captured = crate::tests::state::StructureObservationTrait::structure(structures, mine).unwrap();
     assert_eq!(captured.owner, deployment.actor);
     for slot in 0_u8..4 {
         assert_eq!(
@@ -562,7 +565,7 @@ fn defeating_the_last_guard_captures_the_mine_and_defers_funding_to_the_next_pha
             Default::default(),
         );
     }
-    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     assert_eq!(view.bitcoin_mine(mine).eligible_from, 5);
     assert!(execute(deployment, contribute(home, 100), 40));
     close_and_bind(deployment, 4);
@@ -577,44 +580,6 @@ fn defeating_the_last_guard_captures_the_mine_and_defers_funding_to_the_next_pha
 }
 
 #[test]
-#[feature("safe_dispatcher")]
-fn guard_and_funding_mutations_reject_foreign_domains() {
-    let (deployment, home, _) = setup();
-    let mine = mine(deployment, 2000100);
-    assert!(
-        crate::bitcoin::IBitcoinFundingSafeDispatcherTrait::register_bitcoin_structure(
-            crate::bitcoin::IBitcoinFundingSafeDispatcher { contract_address: deployment.peers.prizes }, mine, 8, 30,
-        )
-            .is_err(),
-    );
-    let guards = crate::guards::IGuardsSafeDispatcher { contract_address: deployment.peers.troops };
-    assert!(crate::guards::IGuardsSafeDispatcherTrait::initialize_structure_guards(guards, mine, 99, 30).is_err());
-    assert!(
-        crate::guards::IGuardsSafeDispatcherTrait::add_starting_guard(
-            guards, home, crate::troops::TroopType::Knight, 1, 30,
-        )
-            .is_err(),
-    );
-    assert!(
-        crate::guards::IStructureCaptureSafeDispatcherTrait::capture_structure(
-            crate::guards::IStructureCaptureSafeDispatcher { contract_address: deployment.peers.structures },
-            mine,
-            home.entity_id,
-            30,
-        )
-            .is_err(),
-    );
-    assert!(
-        crate::bitcoin::IBitcoinFundingSafeDispatcherTrait::bitcoin_mine_captured(
-            crate::bitcoin::IBitcoinFundingSafeDispatcher { contract_address: deployment.peers.prizes }, mine, 50,
-        )
-            .is_err(),
-    );
-    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
-    assert_eq!(view.bitcoin_mine(mine).eligible_from, 4);
-}
-
-#[test]
 fn guard_attacks_reject_owned_wrong_layer_and_out_of_range_targets_without_advancing_funding() {
     let (deployment, home, _) = setup();
     let mine = mine(deployment, 2000100);
@@ -624,16 +589,16 @@ fn guard_attacks_reject_owned_wrong_layer_and_out_of_range_targets_without_advan
     set_owner(deployment, mine, deployment.actor);
     assert_terminal_rejection(deployment, attack, 40);
     set_owner(deployment, mine, 0.try_into().unwrap());
-    let troop_view = crate::troops::ITroopsDispatcher { contract_address: deployment.peers.troops };
+    let troop_view = crate::tests::state::GameState { contract_address: deployment.games };
     let key = crate::troops::ExplorerKey { game_id: 3, explorer_id: explorer };
-    let mut row = crate::troops::ITroopsDispatcherTrait::explorer(troop_view, key).unwrap();
+    let mut row = crate::tests::state::TroopObservationTrait::explorer(troop_view, key).unwrap();
     row.coord = crate::troops::Coord { alt: false, x: 2000085, y: 2000000 };
     super::resource_commands::set_fixture(
-        deployment.peers.troops, selector!("explorers"), array![3, explorer.into()].span(), row,
+        deployment.games, selector!("troops"), selector!("explorers"), array![3, explorer.into()].span(), row,
     );
     assert_terminal_rejection(deployment, attack, 40);
-    assert_eq!(crate::troops::ITroopsDispatcherTrait::explorer(troop_view, key).unwrap(), row);
-    let view = IBitcoinViewsDispatcher { contract_address: deployment.peers.prizes };
+    assert_eq!(crate::tests::state::TroopObservationTrait::explorer(troop_view, key).unwrap(), row);
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     assert_eq!(view.bitcoin_mine(mine).eligible_from, 4);
 }
 
@@ -652,12 +617,13 @@ fn configured_owner_cut_preserves_every_unit_including_rounding() {
 fn discovery_guard_initialization_rejects_more_guards_than_the_structure_allows() {
     let (d, _, _) = setup();
     let key = mine(d, 2000100);
-    let original = crate::structures::IStructuresDispatcherTrait::structure(
-        crate::structures::IStructuresDispatcher { contract_address: d.peers.structures }, key,
+    let original = crate::tests::state::StructureObservationTrait::structure(
+        crate::structures::IStructureOperationsDispatcher { contract_address: d.games }, key,
     )
         .unwrap();
     super::resource_commands::set_fixture(
-        d.peers.structures,
+        d.games,
+        selector!("structures"),
         selector!("structures"),
         array![3, key.entity_id.into()].span(),
         crate::structures::StructureRecord {
@@ -669,22 +635,23 @@ fn discovery_guard_initialization_rejects_more_guards_than_the_structure_allows(
     );
     for slot in 0_u8..4 {
         super::resource_commands::set_fixture(
-            d.peers.troops,
+            d.games,
+            selector!("guards"),
             selector!("guards"),
             array![3, key.entity_id.into(), slot.into()].span(),
             Default::<crate::guards::Guard>::default(),
         );
     }
-    start_cheat_caller_address(d.peers.troops, d.peers.structures);
+    start_cheat_caller_address(d.games, d.games);
     assert!(
         crate::guards::IGuardsSafeDispatcherTrait::initialize_structure_guards(
-            crate::guards::IGuardsSafeDispatcher { contract_address: d.peers.troops }, key, 99, 30,
+            crate::guards::IGuardsSafeDispatcher { contract_address: d.games }, key, 99, 30,
         )
             .is_err(),
     );
     assert_eq!(
         crate::guards::IGuardsDispatcherTrait::guard(
-            crate::guards::IGuardsDispatcher { contract_address: d.peers.troops },
+            crate::guards::IGuardsDispatcher { contract_address: d.games },
             crate::guards::GuardKey { game_id: 3, structure_id: key.entity_id, slot: 0 },
         ),
         Default::default(),
@@ -696,7 +663,7 @@ fn capture_many_phases_after_discovery_starts_at_its_first_eligible_phase() {
     let (d, home, _) = setup();
     let mine = mine(d, 2000100);
     capture(d, mine, d.actor, 170);
-    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: d.games };
     assert_eq!(view.bitcoin_mine(mine).next_phase, 18);
     assert!(execute(d, contribute(home, 100), 180));
     close_and_bind(d, 18);
@@ -721,7 +688,7 @@ fn mixed_mine_cursors_settle_all_ready_phases_independently() {
         close_and_bind(d, phase);
     }
     assert!(execute(d, claim(6, array![first.entity_id, second.entity_id].span()), 70));
-    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: d.games };
     assert_eq!(view.bitcoin_mine(first).next_phase, 7);
     assert_eq!(view.bitcoin_mine(second).next_phase, 7);
     assert_eq!(sat(d, first), 600);
@@ -743,7 +710,7 @@ fn a_claim_stops_before_an_unbound_phase_and_resumes_without_rerolling() {
     assert!(execute(d, contribute(home, 100), 60));
     close_and_bind(d, 6);
     assert!(execute(d, claim(6, array![mine.entity_id].span()), 70));
-    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: d.games };
     assert_eq!(view.bitcoin_mine(mine).next_phase, 5);
     assert_eq!(sat(d, home), 800);
     assert!(execute(d, Command::BindBitcoinPhase(5), 71));
@@ -762,7 +729,7 @@ fn a_large_backlog_advances_by_eight_phases_per_claim() {
         assert!(execute(d, Command::CloseBitcoinPhase(phase), (phase + 1) * 10));
     }
     super::season_lifecycle::execute_batch(d, claim(12, array![mine.entity_id].span()), 130, 1);
-    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: d.games };
     assert_eq!(view.bitcoin_mine(mine).next_phase, 12);
     assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 8000);
     super::season_lifecycle::execute_batch(d, claim(12, array![mine.entity_id].span()), 131, 0);
@@ -779,14 +746,14 @@ fn weighted_draws_include_appended_players_and_later_updates_to_earlier_contribu
     set_owner(d, second, other);
     capture(d, mine, third, 30);
     grant(d, mine, 23, 1000);
-    let calls = IBitcoinCommandsDispatcher { contract_address: d.peers.prizes };
+    let calls = IBitcoinCommandsDispatcher { contract_address: d.games };
     let mut expected_first = 0_u128;
     let mut expected_second = 0_u128;
     let mut expected_mine = 0_u128;
     for phase in 4_u64..16 {
         let context = ExecutionContext { timestamp: phase * 10, raw_root: phase.into() };
         start_cheat_block_timestamp_global(context.timestamp);
-        start_cheat_caller_address(d.peers.prizes, d.peers.season);
+        start_cheat_caller_address(d.games, d.games);
         for (actor, source, amount) in array![
             (d.actor, first.entity_id, 10_u128), (other, second.entity_id, 30), (third, mine.entity_id, 20),
             (d.actor, first.entity_id, 20),
@@ -814,7 +781,7 @@ fn weighted_draws_include_appended_players_and_later_updates_to_earlier_contribu
             .claim_bitcoin_phase(
                 3, d.actor, crate::bitcoin::ClaimPhase { phase, mine_ids: array![mine.entity_id].span() }, context,
             );
-        stop_cheat_caller_address(d.peers.prizes);
+        stop_cheat_caller_address(d.games);
         assert_eq!(sat(d, first), expected_first);
         assert_eq!(sat(d, second), expected_second);
         assert_eq!(sat(d, mine), expected_mine);
@@ -835,19 +802,20 @@ fn claim_execution_cost_does_not_grow_with_unrelated_settlements() {
     }
     assert!(execute(d, contribute(home, 100), 40));
     close_and_bind(d, 4);
-    let calls = IBitcoinCommandsDispatcher { contract_address: d.peers.prizes };
+    let calls = IBitcoinCommandsDispatcher { contract_address: d.games };
     let context = ExecutionContext { timestamp: 50, raw_root: 123 };
-    start_cheat_caller_address(d.peers.prizes, d.peers.season);
+    start_cheat_caller_address(d.games, d.games);
     let initial_claim = crate::bitcoin::ClaimPhase { phase: 4, mine_ids: array![first.entity_id].span() };
     let initial_cost = measured_claim(calls, d.actor, initial_claim, context);
-    stop_cheat_caller_address(d.peers.prizes);
-    let structures = crate::structures::IStructuresDispatcher { contract_address: d.peers.structures };
-    let home_row = crate::structures::IStructuresDispatcherTrait::structure(structures, home).unwrap();
-    start_cheat_caller_address(d.peers.resources, d.peers.structures);
+    stop_cheat_caller_address(d.games);
+    let structures = crate::structures::IStructureOperationsDispatcher { contract_address: d.games };
+    let home_row = crate::tests::state::StructureObservationTrait::structure(structures, home).unwrap();
+    start_cheat_caller_address(d.games, d.games);
     for index in 0_u32..32 {
         let id = 900000 + index;
         super::resource_commands::set_fixture(
-            d.peers.structures,
+            d.games,
+            selector!("structures"),
             selector!("structures"),
             array![3, id.into()].span(),
             crate::structures::StructureRecord {
@@ -857,14 +825,14 @@ fn claim_execution_cost_does_not_grow_with_unrelated_settlements() {
                 metadata: home_row.metadata,
             },
         );
-        IResourcesDispatcher { contract_address: d.peers.resources }
+        IResourceOperationsDispatcher { contract_address: d.games }
             .initialize_resources(ResourceKey { game_id: 3, entity_id: id }, 1000000, 1, 50);
     }
-    stop_cheat_caller_address(d.peers.resources);
-    start_cheat_caller_address(d.peers.prizes, d.peers.season);
+    stop_cheat_caller_address(d.games);
+    start_cheat_caller_address(d.games, d.games);
     let later_claim = crate::bitcoin::ClaimPhase { phase: 4, mine_ids: array![second.entity_id].span() };
     let later_cost = measured_claim(calls, d.actor, later_claim, context);
-    stop_cheat_caller_address(d.peers.prizes);
+    stop_cheat_caller_address(d.games);
     assert!(initial_cost > 0, "claim cost must be measured");
     assert_eq!(later_cost, initial_cost);
     assert_eq!(sat(d, first), 201);
@@ -892,7 +860,7 @@ fn capture_carries_unpaid_closed_prizes_once_and_old_claims_cannot_pay_them() {
     assert!(execute(d, contribute(home, 100), 40));
     close_and_bind(d, 4);
     capture(d, mine, 0x777.try_into().unwrap(), 51);
-    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: d.games };
     assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 1000);
     assert_eq!(view.bitcoin_mine(mine).next_phase, 6);
     assert!(execute(d, claim(4, array![mine.entity_id].span()), 51));
@@ -922,7 +890,7 @@ fn capture_excludes_paid_phases_from_the_unpaid_prefix() {
         }
     }
     capture(d, mine, 0x777.try_into().unwrap(), 60);
-    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: d.games };
     assert_eq!(sat(d, home) + sat(d, mine), 1000);
     assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 1000);
     assert!(execute(d, claim(5, array![mine.entity_id].span()), 61));
@@ -942,7 +910,7 @@ fn capture_carries_more_than_eight_unpaid_phases_without_a_scan() {
         assert!(execute(d, Command::CloseBitcoinPhase(phase), (phase + 1) * 10));
     }
     capture(d, mine, 0x777.try_into().unwrap(), 140);
-    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: d.games };
     assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 10000);
     assert_eq!(view.bitcoin_mine(mine).next_phase, 15);
     capture(d, mine, d.actor, 141);
@@ -955,7 +923,7 @@ fn capture_with_no_closed_eligible_phase_creates_no_carry() {
     let mine = mine(d, 2000100);
     capture(d, mine, d.actor, 30);
     capture(d, mine, 0x777.try_into().unwrap(), 31);
-    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: d.games };
     assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 0);
     assert_eq!(view.bitcoin_mine(mine).next_phase, 4);
 }
@@ -973,7 +941,7 @@ fn capture_preserves_already_split_winner_carry_without_a_second_owner_cut() {
     assert_eq!(sat(d, mine), 200);
     assert!(execute(d, Command::CloseBitcoinPhase(5), 59));
     capture(d, mine, other, 60);
-    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: d.games };
     assert_eq!(view.bitcoin_mine(mine).winner_carry, 800);
     assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 1000);
     assert!(execute(d, contribute(second, 100), 70));
@@ -994,7 +962,7 @@ fn capture_at_the_inclusive_phase_end_carries_that_closed_phase() {
     assert!(execute(d, Command::CloseBitcoinPhase(4), 49));
     assert!(execute(d, Command::BindBitcoinPhase(4), 49));
     capture(d, mine, 0x777.try_into().unwrap(), 49);
-    let view = IBitcoinViewsDispatcher { contract_address: d.peers.prizes };
+    let view = IBitcoinViewsDispatcher { contract_address: d.games };
     assert_eq!(view.bitcoin_mine(mine).unsplit_carry, 1000);
     assert_eq!(view.bitcoin_mine(mine).next_phase, 5);
     assert!(execute(d, claim(4, array![mine.entity_id].span()), 49));

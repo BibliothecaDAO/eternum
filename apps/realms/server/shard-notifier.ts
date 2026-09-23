@@ -96,7 +96,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     if (shard.worldAddress) return shard as Required<WatchedShard>;
     const manifest = await readShard<ShardManifest>(shard.url, "/manifest");
     if (BigInt(manifest.chainId) !== BigInt(shard.chainId)) throw new Error(`${shard.url} changed chain`);
-    const worldAddress = manifest.contracts.season;
+    const worldAddress = manifest.contracts.games;
     if (!worldAddress) throw new Error(`${shard.url} names no Games contract`);
     const watched = { ...shard, worldAddress };
     await this.ctx.storage.put("shard", watched);

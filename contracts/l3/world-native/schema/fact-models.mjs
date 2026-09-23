@@ -1,5 +1,687 @@
+// Fact-only Cairo wire types replace the removed fixture getter ABIs.
+// Production definitions, when present, must agree exactly with these fields.
+export const factWireTypes = [
+  {
+    type: "struct",
+    name: "world_native::faith::WonderFaith",
+    members: [
+      { name: "last_recorded_owner", type: "core::starknet::contract_address::ContractAddress" },
+      { name: "claimed_points", type: "core::integer::u128" },
+      { name: "claim_per_sec", type: "core::integer::u32" },
+      { name: "claim_last_at", type: "core::integer::u64" },
+      { name: "owner_claim_per_sec", type: "core::integer::u32" },
+      { name: "num_structures_pledged", type: "core::integer::u32" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::faith::FaithfulStructure",
+    members: [
+      { name: "wonder_id", type: "core::integer::u32" },
+      { name: "faithful_since", type: "core::integer::u64" },
+      { name: "fp_to_wonder_owner_per_sec", type: "core::integer::u16" },
+      { name: "fp_to_struct_owner_per_sec", type: "core::integer::u16" },
+      { name: "last_recorded_owner", type: "core::starknet::contract_address::ContractAddress" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::arrivals::Arrival",
+    members: [
+      {
+        name: "resources",
+        type: "core::array::Span::<world_native::resources::ResourceAmount>",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::arrivals::ArrivalKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "entity_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "day",
+        type: "core::integer::u64",
+      },
+      {
+        name: "slot",
+        type: "core::integer::u8",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::bitcoin::ClaimKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "phase",
+        type: "core::integer::u64",
+      },
+      {
+        name: "mine_id",
+        type: "core::integer::u32",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::bitcoin::Contribution",
+    members: [
+      {
+        name: "labor",
+        type: "core::integer::u128",
+      },
+      {
+        name: "structure_id",
+        type: "core::integer::u32",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::bitcoin::ContributionKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "phase",
+        type: "core::integer::u64",
+      },
+      {
+        name: "player",
+        type: "core::starknet::contract_address::ContractAddress",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::bitcoin::MineFunding",
+    members: [
+      {
+        name: "eligible_from",
+        type: "core::integer::u64",
+      },
+      {
+        name: "next_phase",
+        type: "core::integer::u64",
+      },
+      {
+        name: "unsplit_carry",
+        type: "core::integer::u128",
+      },
+      {
+        name: "winner_carry",
+        type: "core::integer::u128",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::bitcoin::Phase",
+    members: [
+      {
+        name: "total_labor",
+        type: "core::integer::u128",
+      },
+      {
+        name: "contributors",
+        type: "core::integer::u32",
+      },
+      {
+        name: "state",
+        type: "world_native::bitcoin::PhaseStatus",
+      },
+      {
+        name: "root",
+        type: "core::integer::u256",
+      },
+    ],
+  },
+  {
+    type: "enum",
+    name: "world_native::bitcoin::PhaseStatus",
+    variants: [
+      {
+        name: "Open",
+        type: "()",
+      },
+      {
+        name: "Closed",
+        type: "()",
+      },
+      {
+        name: "Bound",
+        type: "()",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::bitcoin::PhaseKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "phase",
+        type: "core::integer::u64",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::buildings::Building",
+    members: [
+      {
+        name: "category",
+        type: "core::integer::u8",
+      },
+      {
+        name: "outer_entity_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "paused",
+        type: "core::bool",
+      },
+      {
+        name: "labor_paid",
+        type: "core::integer::u128",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::buildings::BuildingKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "alt",
+        type: "core::bool",
+      },
+      {
+        name: "outer_col",
+        type: "core::integer::u32",
+      },
+      {
+        name: "outer_row",
+        type: "core::integer::u32",
+      },
+      {
+        name: "inner_col",
+        type: "core::integer::u32",
+      },
+      {
+        name: "inner_row",
+        type: "core::integer::u32",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::buildings::BuildingRuleKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "category",
+        type: "core::integer::u8",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::buildings::Population",
+    members: [
+      {
+        name: "current",
+        type: "core::integer::u32",
+      },
+      {
+        name: "max",
+        type: "core::integer::u32",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::buildings::StructureBuildings",
+    members: [
+      {
+        name: "packed_counts_1",
+        type: "core::integer::u128",
+      },
+      {
+        name: "packed_counts_2",
+        type: "core::integer::u128",
+      },
+      {
+        name: "packed_counts_3",
+        type: "core::integer::u128",
+      },
+      {
+        name: "population",
+        type: "world_native::buildings::Population",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::faith::PlayerFaithKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "player",
+        type: "core::starknet::contract_address::ContractAddress",
+      },
+      {
+        name: "wonder_id",
+        type: "core::integer::u32",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::faith::PlayerFaithPoints",
+    members: [
+      {
+        name: "points_claimed",
+        type: "core::integer::u128",
+      },
+      {
+        name: "points_per_sec_as_owner",
+        type: "core::integer::u32",
+      },
+      {
+        name: "points_per_sec_as_pledger",
+        type: "core::integer::u32",
+      },
+      {
+        name: "last_updated_at",
+        type: "core::integer::u64",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::game::GameRegistry",
+    members: [
+      {
+        name: "name",
+        type: "core::felt252",
+      },
+      {
+        name: "preset_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "creator",
+        type: "core::starknet::contract_address::ContractAddress",
+      },
+      {
+        name: "settled",
+        type: "core::bool",
+      },
+      {
+        name: "ready",
+        type: "core::bool",
+      },
+      {
+        name: "dev_mode_on",
+        type: "core::bool",
+      },
+      {
+        name: "start_settling_at",
+        type: "core::integer::u64",
+      },
+      {
+        name: "start_main_at",
+        type: "core::integer::u64",
+      },
+      {
+        name: "end_at",
+        type: "core::integer::u64",
+      },
+      {
+        name: "end_grace_seconds",
+        type: "core::integer::u32",
+      },
+      {
+        name: "seed",
+        type: "core::felt252",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::map::TileOpt",
+    members: [
+      {
+        name: "data",
+        type: "core::integer::u128",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::market::LiquidityKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "owner",
+        type: "core::starknet::contract_address::ContractAddress",
+      },
+      {
+        name: "resource_type",
+        type: "core::integer::u8",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::mines::MineKindKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "kind",
+        type: "core::integer::u8",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::names::AddressName",
+    members: [
+      {
+        name: "name",
+        type: "core::felt252",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::production::ProductionBonus",
+    members: [
+      {
+        name: "incr_resource_rate_percent_num",
+        type: "core::integer::u16",
+      },
+      {
+        name: "incr_labor_rate_percent_num",
+        type: "core::integer::u16",
+      },
+      {
+        name: "incr_troop_rate_percent_num",
+        type: "core::integer::u16",
+      },
+      {
+        name: "incr_resource_rate_end_tick",
+        type: "core::integer::u32",
+      },
+      {
+        name: "incr_labor_rate_end_tick",
+        type: "core::integer::u32",
+      },
+      {
+        name: "incr_troop_rate_end_tick",
+        type: "core::integer::u32",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::production::RecipeKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "resource_type",
+        type: "core::integer::u8",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::realms::RealmCatalogue",
+    members: [
+      {
+        name: "initialized",
+        type: "core::integer::u32",
+      },
+      {
+        name: "digest",
+        type: "core::felt252",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::resources::Production",
+    members: [
+      {
+        name: "building_count",
+        type: "core::integer::u8",
+      },
+      {
+        name: "production_rate",
+        type: "core::integer::u64",
+      },
+      {
+        name: "output_amount_left",
+        type: "core::integer::u128",
+      },
+      {
+        name: "last_updated_at",
+        type: "core::integer::u32",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::resources::Weight",
+    members: [
+      {
+        name: "capacity",
+        type: "core::integer::u128",
+      },
+      {
+        name: "weight",
+        type: "core::integer::u128",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::settlement::PlayerEntry",
+    members: [
+      {
+        name: "player",
+        type: "core::starknet::contract_address::ContractAddress",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::settlement::SettlementProgress",
+    members: [
+      {
+        name: "registered",
+        type: "core::integer::u16",
+      },
+      {
+        name: "realm_count",
+        type: "core::integer::u16",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::structures::Structure",
+    members: [
+      {
+        name: "owner",
+        type: "core::starknet::contract_address::ContractAddress",
+      },
+      {
+        name: "base",
+        type: "world_native::structures::StructureBase",
+      },
+      {
+        name: "troop_explorers",
+        type: "core::array::Span::<core::integer::u32>",
+      },
+      {
+        name: "resources_packed",
+        type: "core::integer::u128",
+      },
+      {
+        name: "metadata",
+        type: "world_native::structures::StructureMetadata",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::structures::StructureBase",
+    members: [
+      {
+        name: "troop_explorer_count",
+        type: "core::integer::u16",
+      },
+      {
+        name: "troop_max_guard_count",
+        type: "core::integer::u8",
+      },
+      {
+        name: "troop_max_explorer_count",
+        type: "core::integer::u16",
+      },
+      {
+        name: "created_at",
+        type: "core::integer::u32",
+      },
+      {
+        name: "category",
+        type: "core::integer::u8",
+      },
+      {
+        name: "coord_x",
+        type: "core::integer::u32",
+      },
+      {
+        name: "coord_y",
+        type: "core::integer::u32",
+      },
+      {
+        name: "level",
+        type: "core::integer::u8",
+      },
+      {
+        name: "starting_troops_granted",
+        type: "core::bool",
+      },
+      {
+        name: "alt",
+        type: "core::bool",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::structures::StructureMetadata",
+    members: [
+      {
+        name: "realm_id",
+        type: "core::integer::u16",
+      },
+      {
+        name: "order",
+        type: "core::integer::u8",
+      },
+      {
+        name: "has_wonder",
+        type: "core::bool",
+      },
+      {
+        name: "village_realm",
+        type: "core::integer::u32",
+      },
+      {
+        name: "mine_kind",
+        type: "core::integer::u8",
+      },
+      {
+        name: "attunement",
+        type: "core::integer::u8",
+      },
+      {
+        name: "barracks_tier",
+        type: "core::integer::u8",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::trade::TradeKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "trade_id",
+        type: "core::integer::u32",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::village::VillagePass",
+    members: [
+      {
+        name: "owner",
+        type: "core::starknet::contract_address::ContractAddress",
+      },
+      {
+        name: "village_id",
+        type: "core::integer::u32",
+      },
+    ],
+  },
+];
+
 // Native row declarations are shared by schema generation, behavioural observations and client bindings.
-export function defineFactModels({ contracts, struct, method, model: declare, types }) {
+export function defineFactModels({ struct, model: declare }) {
   const model = (...arguments_) => {
     const row = declare(...arguments_);
     if (row.name === "ResourceBalance" || row.name === "ResourceProduction")
@@ -64,11 +746,15 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     const observation = behaviouralFacts[row.name];
     return observation ? { ...row, observation } : row;
   };
-  const domainKey = [{ name: "address", type: struct("lifecycle::Peers")[0].type }];
+  const domainKey = [{ name: "address", type: "core::starknet::contract_address::ContractAddress" }];
   return [
-    model("Preset", ["registry"], "deployment", method("registry", "preset_commitment").inputs, [
-      { name: "commitment", type: "core::felt252" },
-    ]),
+    model(
+      "Preset",
+      ["registry"],
+      "deployment",
+      [{ name: "preset_id", type: "core::integer::u32" }],
+      [{ name: "commitment", type: "core::felt252" }],
+    ),
     model(
       "GameSequence",
       ["registry"],
@@ -77,75 +763,176 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       [{ name: "next_game_id", type: "core::integer::u32" }],
       "address",
     ),
-    model("SpireLayout", ["map"], "game", method("map", "spire_layout").inputs, struct("spires::SpireLayout")),
+    model(
+      "SpireLayout",
+      ["map"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      struct("spires::SpireLayout"),
+    ),
     model(
       "LedgerOperator",
       ["settlement"],
       "deployment",
       domainKey,
-      [{ name: "operator", type: method("settlement", "ledger_operator").outputs[0].type }],
+      [{ name: "operator", type: "core::starknet::contract_address::ContractAddress" }],
       "address",
     ),
-    model("CampResources", ["structures"], "game", method("structures", "camp_resources").inputs, [
-      { name: "resources", type: "core::array::Span::<world_native::resources::ResourceAmount>" },
-    ]),
-    model("Guild", ["registry"], "game", method("registry", "guild").inputs, struct("guilds::Guild")),
-    model("GuildMember", ["registry"], "game", method("registry", "guild_member").inputs, [
-      { name: "guild_id", type: method("registry", "guild_member").outputs[0].type },
-    ]),
+    model(
+      "CampResources",
+      ["structures"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "resources", type: "core::array::Span::<world_native::resources::ResourceAmount>" }],
+    ),
+    model(
+      "Guild",
+      ["registry"],
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "guild_id", type: "core::starknet::contract_address::ContractAddress" },
+      ],
+      struct("guilds::Guild"),
+    ),
+    model(
+      "GuildMember",
+      ["registry"],
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "actor", type: "core::starknet::contract_address::ContractAddress" },
+      ],
+      [{ name: "guild_id", type: "core::starknet::contract_address::ContractAddress" }],
+    ),
     model("GuildWhitelist", ["registry"], "game", struct("guilds::WhitelistKey"), [
       { name: "allowed", type: "core::bool" },
     ]),
-    model("ArtificerCost", ["relics"], "game", method("relics", "artificer_cost").inputs, [
-      { name: "research", type: "core::integer::u128" },
-    ]),
+    model(
+      "ArtificerCost",
+      ["relics"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "research", type: "core::integer::u128" }],
+    ),
     model(
       "BlitzResult",
       ["prizes"],
       "game",
-      method("prizes", "blitz_result").inputs,
+      [{ name: "game_id", type: "core::integer::u32" }],
       struct("blitz_results::BlitzResult"),
     ),
-    model("FaithRules", ["prizes"], "game", method("prizes", "faith_rules").inputs, struct("faith::FaithRules")),
-    model("SeasonWinThreshold", ["season"], "game", method("season", "season_win_threshold").inputs, [
-      { name: "points", type: "core::integer::u128" },
-    ]),
-    model("ExtractionRewards", ["map"], "game", method("map", "extraction_rewards").inputs, [
-      { name: "rewards", type: method("map", "extraction_rewards").outputs[0].type },
-    ]),
-    model("RelicRules", ["relics"], "game", method("relics", "relic_rules").inputs, [
-      { name: "rules", type: method("relics", "relic_rules").outputs[0].type },
-    ]),
-    model("ChestRules", ["relics"], "game", method("relics", "chest_rules").inputs, struct("relics::ChestRules")),
-    model("ChestPity", ["relics"], "game", method("relics", "chest_pity").inputs, [
-      { name: "count", type: "core::integer::u16" },
-    ]),
-    model("ChestTokens", ["relics"], "game", method("relics", "chest_tokens").inputs, [
-      { name: "count", type: "core::integer::u16" },
-    ]),
-    model("ChestReward", ["relics"], "game", method("relics", "chest_reward").inputs, struct("relics::ChestReward")),
-    model("RelicDiscovery", ["map"], "game", method("map", "relic_discovery_time").inputs, [
-      { name: "last_at", type: "core::integer::u64" },
-    ]),
-    model("DepositRules", ["bridge"], "game", method("bridge", "deposit_rules").inputs, struct("bridge::DepositRules")),
+    model(
+      "FaithRules",
+      ["prizes"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      struct("faith::FaithRules"),
+    ),
+    model(
+      "SeasonWinThreshold",
+      ["season"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "points", type: "core::integer::u128" }],
+    ),
+    model(
+      "ExtractionRewards",
+      ["map"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "rewards", type: "core::array::Span::<world_native::exploration_rewards::ExplorationReward>" }],
+    ),
+    model(
+      "RelicRules",
+      ["relics"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "rules", type: "core::array::Span::<world_native::relics::RelicRule>" }],
+    ),
+    model(
+      "ChestRules",
+      ["relics"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      struct("relics::ChestRules"),
+    ),
+    model(
+      "ChestPity",
+      ["relics"],
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "player", type: "core::starknet::contract_address::ContractAddress" },
+        { name: "depth", type: "core::integer::u8" },
+      ],
+      [{ name: "count", type: "core::integer::u16" }],
+    ),
+    model(
+      "ChestTokens",
+      ["relics"],
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "player", type: "core::starknet::contract_address::ContractAddress" },
+        { name: "epoch", type: "core::integer::u64" },
+      ],
+      [{ name: "count", type: "core::integer::u16" }],
+    ),
+    model(
+      "ChestReward",
+      ["relics"],
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "result_id", type: "core::integer::u32" },
+      ],
+      struct("relics::ChestReward"),
+    ),
+    model(
+      "RelicDiscovery",
+      ["map"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "last_at", type: "core::integer::u64" }],
+    ),
+    model(
+      "DepositRules",
+      ["bridge"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      struct("bridge::DepositRules"),
+    ),
     model(
       "WithdrawalRules",
       ["bridge"],
       "game",
-      method("bridge", "withdrawal_rules").inputs,
+      [{ name: "game_id", type: "core::integer::u32" }],
       struct("withdrawals::WithdrawalRules"),
     ),
     model("ResourceToken", ["bridge"], "game", struct("market::MarketKey"), [
       { name: "token", type: struct("withdrawals::ResourceToken")[1].type },
     ]),
-    model("BankRules", ["economy"], "game", method("economy", "bank_rules").inputs, struct("market::BankRules")),
+    model(
+      "BankRules",
+      ["economy"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      struct("market::BankRules"),
+    ),
     model("BankName", ["economy"], "game", struct("resources::ResourceKey"), [{ name: "name", type: "core::felt252" }]),
     model("Market", ["economy"], "game", struct("market::MarketKey"), struct("market::Market")),
     model("Liquidity", ["economy"], "game", struct("market::LiquidityKey"), [
       { name: "shares", type: "core::integer::u128" },
     ]),
     model("TradeOrder", ["economy"], "game", struct("trade::TradeKey"), struct("trade::TradeOrder")),
-    model("TradeRules", ["economy"], "game", method("economy", "trade_rules").inputs, struct("trade::TradeRules")),
+    model(
+      "TradeRules",
+      ["economy"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      struct("trade::TradeRules"),
+    ),
     model("Guard", ["troops"], "game", struct("guards::GuardKey"), struct("guards::Guard")),
     model("VillageRaid", ["combat"], "game", struct("resources::ResourceKey"), [
       { name: "last_tick", type: "core::integer::u64" },
@@ -168,56 +955,74 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       "RealmTraits",
       ["settlement"],
       "deployment",
-      method("settlement", "realm_traits").inputs,
+      [{ name: "realm_id", type: "core::integer::u32" }],
       struct("realms::RealmTraits"),
     ),
-    model("BlitzSettlementOrder", ["settlement"], "game", method("settlement", "blitz_settlement_order").inputs, [
-      { name: "players", type: "core::array::Span::<core::integer::u8>" },
-    ]),
-    model("BlitzRoster", ["registry"], "game", method("registry", "blitz_roster").inputs, [
-      { name: "players", type: "core::array::Span::<world_native::registrar::RosterPlayer>" },
-    ]),
+    model(
+      "BlitzSettlementOrder",
+      ["settlement"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "players", type: "core::array::Span::<core::integer::u8>" }],
+    ),
+    model(
+      "BlitzRoster",
+      ["registry"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "players", type: "core::array::Span::<world_native::registrar::RosterPlayer>" }],
+    ),
     model("RealmCatalogue", ["settlement"], "deployment", domainKey, struct("realms::RealmCatalogue"), "address"),
     model(
       "RealmGrants",
       ["settlement"],
       "game",
-      method("settlement", "realm_grants").inputs,
+      [{ name: "game_id", type: "core::integer::u32" }],
       struct("settlement::RealmGrants"),
     ),
-    model("HyperstructureReservations", ["map"], "game", method("map", "reserved_hyperstructures").inputs, [
-      { name: "placed", type: "core::integer::u32" },
-    ]),
+    model(
+      "HyperstructureReservations",
+      ["map"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "placed", type: "core::integer::u32" }],
+    ),
     model(
       "SettlementRules",
       ["settlement"],
       "game",
-      method("settlement", "settlement_rules").inputs,
+      [{ name: "game_id", type: "core::integer::u32" }],
       struct("settlement::SettlementRules"),
     ),
     model(
       "SettlementProgress",
       ["settlement"],
       "game",
-      method("settlement", "settlement_progress").inputs,
+      [{ name: "game_id", type: "core::integer::u32" }],
       struct("settlement::SettlementProgress"),
     ),
     model(
       "SettlementPool",
       ["map"],
       "game",
-      method("map", "settlement_pool").inputs,
+      [{ name: "game_id", type: "core::integer::u32" }],
       struct("settlement::SettlementPool"),
     ),
     model(
       "VillageRules",
       ["settlement"],
       "game",
-      method("settlement", "village_rules").inputs,
+      [{ name: "game_id", type: "core::integer::u32" }],
       struct("village::VillageRules"),
     ),
     model("VillagePass", ["settlement"], "game", struct("village::VillagePassKey"), struct("village::VillagePass")),
-    model("VillagePool", ["map"], "game", method("map", "village_pool").inputs, struct("settlement::SettlementPool")),
+    model(
+      "VillagePool",
+      ["map"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      struct("settlement::SettlementPool"),
+    ),
     model(
       "EntryEntitlement",
       ["settlement"],
@@ -230,7 +1035,7 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
     model("ExplorerTroops", ["troops"], "game", struct("troops::ExplorerKey"), struct("troops::ExplorerTroops")),
     model("Structure", ["structures"], "game", struct("resources::ResourceKey"), struct("structures::Structure")),
     model("ResourceBalance", ["resources"], "game", struct("resources::ResourceSlot"), [
-      { name: "balance", type: method("resources", "resource_balance").outputs[0].type },
+      { name: "balance", type: "core::integer::u128" },
     ]),
     model(
       "ResourceProduction",
@@ -313,14 +1118,14 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       "HyperstructureRules",
       ["economy"],
       "game",
-      method("economy", "hyperstructure_rules").inputs,
+      [{ name: "game_id", type: "core::integer::u32" }],
       struct("hyperstructures::HyperstructureRules"),
     ),
     model(
       "AddressName",
       ["structures"],
       "deployment",
-      method("structures", "address_name").inputs,
+      [{ name: "address", type: "core::starknet::contract_address::ContractAddress" }],
       struct("names::AddressName"),
     ),
     model("EntityName", ["structures"], "game", struct("resources::ResourceKey"), struct("names::AddressName")),
@@ -356,57 +1161,88 @@ export function defineFactModels({ contracts, struct, method, model: declare, ty
       "UpgradeLimits",
       ["settlement"],
       "game",
-      method("settlement", "upgrade_limits").inputs,
+      [{ name: "game_id", type: "core::integer::u32" }],
       struct("upgrades::UpgradeLimits"),
     ),
     model(
       "UpgradeRecipe",
       ["settlement"],
       "game",
-      method("settlement", "upgrade_recipe").inputs,
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "level", type: "core::integer::u8" },
+      ],
       struct("upgrades::UpgradeRecipe"),
     ),
     model(
       "DepthRules",
       ["settlement"],
       "game",
-      method("settlement", "depth_rules").inputs,
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "depth", type: "core::integer::u8" },
+      ],
       struct("expeditions::DepthRules"),
     ),
-    model("GameRegistry", ["registry"], "game", method("registry", "game").inputs, struct("game::GameRegistry")),
-    model("SliceRules", ["registry"], "game", method("registry", "rules").inputs, struct("rules::SliceRules")),
-    model("EntitySequence", ["registry"], "game", method("registry", "allocate_entity").inputs, [
-      { name: "next_entity_id", type: method("registry", "allocate_entity").outputs[0].type },
-    ]),
+    model(
+      "GameRegistry",
+      ["registry"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      struct("game::GameRegistry"),
+    ),
+    model(
+      "SliceRules",
+      ["registry"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      struct("rules::SliceRules"),
+    ),
+    model(
+      "EntitySequence",
+      ["registry"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "next_entity_id", type: "core::integer::u32" }],
+    ),
     model(
       "PlayerPoints",
       ["season"],
       "game",
-      method("season", "player_points").inputs.map((key) => ({
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "actor", type: "core::starknet::contract_address::ContractAddress" },
+      ].map((key) => ({
         ...key,
         name: key.name === "actor" ? "address" : key.name,
       })),
-      [{ name: "points", type: method("season", "player_points").outputs[0].type }],
+      [{ name: "points", type: "core::integer::u128" }],
     ),
-    model("PointsTotal", ["season"], "game", method("season", "season_points").inputs, [
-      { name: "total", type: method("season", "season_points").outputs[0].type },
-    ]),
-    model("DomainState", Object.keys(contracts), "deployment", domainKey, struct("lifecycle::DomainState"), "address"),
     model(
-      "DomainClass",
-      Object.keys(contracts),
-      "deployment",
-      domainKey,
-      method("season", "upgrade").inputs,
-      "address",
+      "PointsTotal",
+      ["season"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "total", type: "core::integer::u128" }],
     ),
-    model("Authentication", ["season"], "deployment", domainKey, struct("season::Authentication"), "address"),
-    model("OwnershipRulesReady", ["registry"], "game", method("registry", "ownership_rules_ready").inputs, [
-      { name: "ready", type: "core::bool" },
-    ]),
-    model("ActionNonce", ["season"], "game", method("season", "next_nonce").inputs, [
-      { name: "next_nonce", type: method("season", "next_nonce").outputs[0].type },
-    ]),
+    model("Authentication", ["season"], "deployment", domainKey, struct("games::Authentication"), "address"),
+    model(
+      "OwnershipRulesReady",
+      ["registry"],
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "ready", type: "core::bool" }],
+    ),
+    model(
+      "ActionNonce",
+      ["season"],
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "actor", type: "core::starknet::contract_address::ContractAddress" },
+      ],
+      [{ name: "next_nonce", type: "core::integer::u64" }],
+    ),
   ];
 }
 
@@ -665,8 +1501,6 @@ export const syncScopes = {
       "SliceRules",
       "EntitySequence",
       "PointsTotal",
-      "DomainState",
-      "DomainClass",
       "Authentication",
       "OwnershipRulesReady",
     ].map((name) => [name, shared]),

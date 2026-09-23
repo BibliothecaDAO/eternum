@@ -6,7 +6,7 @@ function ruleEvent(name: string, keys: string[], values: string[]) {
   const model = schema.models.find((model) => model.name === name)!;
   const event = schema.domains.settlement.events.find((event) => event.name === "RowSet")!;
   return {
-    from_address: manifest.native.domains.settlement.address,
+    from_address: manifest.world.address,
     keys: [...event.prefix, "1", model.identity],
     data: [String(keys.length), ...keys, String(values.length), ...values],
   };
@@ -53,7 +53,7 @@ describe("native structure upgrades", () => {
     const event = schema.domains.structures.events.find((event) => event.name === "StoryEvent")!;
     const decoded = decoder.decode(
       raw({
-        from_address: manifest.native.domains.structures.address,
+        from_address: manifest.world.address,
         keys: [...event.prefix, "1", "1", "7", "0", "0x111", "0", "3", "0x55"],
         data: ["1", "2", "1860"],
       }),

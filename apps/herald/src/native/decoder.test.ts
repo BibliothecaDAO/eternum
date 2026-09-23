@@ -5,10 +5,9 @@ import memberFixture from "../../../../contracts/l3/world-native/schema/fixtures
 import deleteFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-deleted.json";
 import foreignFixture from "../../../../contracts/l3/world-native/schema/fixtures/foreign-emitter.json";
 import malformedFixture from "../../../../contracts/l3/world-native/schema/fixtures/malformed-row.json";
-import { toJsonValue } from "../model-registry";
 import { WorldFold } from "../world-fold";
 
-import { schema, manifest, receipt, raw, setup, battleEvent } from "./fixtures";
+import { schema, manifest, receipt, raw, setup, battleEvent, rowEvent } from "./fixtures";
 
 describe("native row decoder", () => {
   it("consumes the generated fixtures for set, member, deletion and recreation", () => {
@@ -24,7 +23,7 @@ describe("native row decoder", () => {
     native.applyReceipt(fold, receipt([setFixture.raw]), 10, 2);
     expect(fold.modelRows("ExplorerTroops")).toHaveLength(1);
   });
-  it("rejects the generated wrong-owner and malformed fixtures", () => {
+  it("rejects foreign emitters and malformed fixtures", () => {
     const { decoder } = setup();
     expect(() => decoder.decode(raw(foreignFixture.raw))).toThrow();
     expect(() => decoder.decode(raw(malformedFixture.raw))).toThrow();
@@ -95,28 +94,24 @@ describe("native row decoder", () => {
       "does not match",
     );
   });
-  it("keeps folding compatible upgrades without registering the new class hash", () => {
+  it("folds facts from different logic classes at the Games address", () => {
     const { native, fold } = setup();
-    const lifecycle = schema.domains.troops.events.find((event) => event.name === "RowSet")!;
-    const model = schema.models.find((model) => model.name === "DomainClass")!;
-    const upgrade = {
-      from_address: manifest.native.domains.troops.address,
-      keys: [...lifecycle.prefix, "0x1", model.identity],
-      data: ["0x1", manifest.native.domains.troops.address, "0x1", "0x456"],
-    };
-    native.applyReceipt(fold, receipt([setFixture.raw, upgrade, memberFixture.raw]), 10, 0);
-    expect(toJsonValue(fold.modelRows("ExplorerTroops")[0].value)).toEqual({
+    const points = rowEvent("PlayerPoints", ["1", "0x111"], ["42"]);
+    expect(points.from_address).toBe(setFixture.raw.from_address);
+    const foreign = { ...rowEvent("PlayerPoints", ["1", "0x111"], ["999"]), from_address: "0x999" };
+    native.applyReceipt(fold, receipt([setFixture.raw, points, memberFixture.raw, battleEvent(), foreign]), 10, 0);
+    expect(fold.modelRows("ExplorerTroops")[0].value).toEqual({
       ...memberFixture.expected.key,
       ...memberFixture.expected.value,
     });
-    expect(fold.modelRows("DomainClass")[0].value.class_hash).toBe("0x456");
+    expect(fold.modelRows("PlayerPoints")[0].value.points).toBe("0x2a");
     const incompatible = structuredClone(memberFixture.raw);
     incompatible.keys[0] = "0x987";
     expect(() => native.applyReceipt(fold, receipt([incompatible]), 11, 0)).toThrow("Unknown native event prefix");
   });
 });
 
-it("decodes every declared row and member shape from each owning domain", () => {
+it("decodes every declared row and member shape from each logic event layout", () => {
   const { decoder } = setup();
   const value = (type: string): string[] => {
     if (type === "()") return [];
@@ -128,7 +123,7 @@ it("decodes every declared row and member shape from each owning domain", () => 
   };
   for (const model of schema.models) {
     for (const domain of model.owners) {
-      const from_address = manifest.native.domains[domain].address;
+      const from_address = manifest.world.address;
       const keys = model.keys.flatMap((member) =>
         member.name === model.emitterKey ? [from_address] : value(member.type),
       );

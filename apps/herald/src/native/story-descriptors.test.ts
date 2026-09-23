@@ -16,7 +16,7 @@ function decodedStory(name: string, payload: number[]) {
   const layout = schema.domains.troops.events.find((event) => event.name === "StoryEvent")!;
   const decoded = setup().decoder.decode(
     raw({
-      from_address: manifest.native.domains.troops.address,
+      from_address: manifest.world.address,
       keys: [...layout.prefix, "1", "1", "100", "0", "0x123", "0", "3", "0x55"],
       data: [String(variant), ...payload.map(String), "140"],
     }),

@@ -4,14 +4,15 @@ use crate::artificer::{
 };
 use crate::commands::Command;
 use crate::relics::{IRelicsDispatcher, IRelicsDispatcherTrait};
-use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceSlot};
+use crate::resources::{IResourceOperationsDispatcher, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
-use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, StructureRecord};
+use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
+use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 use super::resource_commands::{
     assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture, setup_with_rules,
 };
 fn view(d: super::Deployment) -> IArtificerDispatcher {
-    IArtificerDispatcher { contract_address: d.peers.relics }
+    IArtificerDispatcher { contract_address: d.games }
 }
 fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
     let mut rules = super::recorded::rules();
@@ -32,21 +33,22 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
         crate::rules::ENTRY_ENTITLEMENT
     };
     let (d, home, _) = setup_with_rules(rules);
-    start_cheat_caller_address(d.peers.relics, super::authority());
+    start_cheat_caller_address(d.games, super::authority());
     view(d).configure_artificer(3, 10 * RESOURCE_PRECISION);
-    IRelicsDispatcher { contract_address: d.peers.relics }.configure_relics(3, super::relics::rules(), None);
-    stop_cheat_caller_address(d.peers.relics);
+    IRelicsDispatcher { contract_address: d.games }.configure_relics(3, super::relics::rules(), None);
+    stop_cheat_caller_address(d.games);
     grant(d, home, RESEARCH, 20 * RESOURCE_PRECISION);
     (d, home)
 }
 fn balance(d: super::Deployment, home: ResourceKey, id: u8) -> u128 {
-    IResourcesDispatcher { contract_address: d.peers.resources }
+    IResourceOperationsDispatcher { contract_address: d.games }
         .resource_balance(ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type: id })
 }
 fn structure(d: super::Deployment, key: ResourceKey, owner: starknet::ContractAddress, category: u8) {
-    let value = IStructuresDispatcher { contract_address: d.peers.structures }.structure(key).unwrap();
+    let value = IStructureOperationsDispatcher { contract_address: d.games }.structure(key).unwrap();
     set_fixture(
-        d.peers.structures,
+        d.games,
+        selector!("structures"),
         selector!("structures"),
         array![key.game_id.into(), key.entity_id.into()].span(),
         StructureRecord {
@@ -106,12 +108,11 @@ fn rejected_crafting_preserves_balances_and_consumes_the_ticket() {
 }
 #[test]
 #[feature("safe_dispatcher")]
-fn crafting_configuration_and_calls_are_authorized_immutable_and_game_scoped() {
-    let (d, home) = setup(false);
-    let safe = IArtificerSafeDispatcher { contract_address: d.peers.relics };
+fn crafting_configuration_is_authorized_immutable_and_game_scoped() {
+    let (d, _) = setup(false);
+    let safe = IArtificerSafeDispatcher { contract_address: d.games };
     assert!(safe.configure_artificer(2, 1).is_err());
-    assert!(safe.craft_relic(3, d.actor, home.entity_id, super::context()).is_err());
-    start_cheat_caller_address(d.peers.relics, super::authority());
+    start_cheat_caller_address(d.games, super::authority());
     assert!(safe.configure_artificer(3, 1).is_err());
     view(d).configure_artificer(2, 5);
     assert_eq!(view(d).artificer_cost(2), 5);

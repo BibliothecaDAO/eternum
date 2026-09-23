@@ -1,30 +1,36 @@
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::commands::Command;
 use crate::discovery::{Discovery, ethereal, surface};
+use crate::map::IMapLogicDispatcher;
 use crate::ownership::TransferOwnership;
 use crate::resources::{ResourceAmount, ResourceKey};
-use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, StructureRecord};
+use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
+use crate::tests::state::{MapObservationTrait, StructureObservationTrait};
 use crate::upgrades::{IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait, UpgradeLimits, UpgradeRecipe};
 use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture, setup, setup_with_rules};
 
 fn record(d: super::Deployment, key: ResourceKey) -> StructureRecord {
-    let row = IStructuresDispatcher { contract_address: d.peers.structures }.structure(key).unwrap();
+    let row = IStructureOperationsDispatcher { contract_address: d.games }.structure(key).unwrap();
     StructureRecord { owner: row.owner, base: row.base, resources_packed: row.resources_packed, metadata: row.metadata }
 }
 fn save(d: super::Deployment, key: ResourceKey, row: StructureRecord) {
     set_fixture(
-        d.peers.structures, selector!("structures"), array![key.game_id.into(), key.entity_id.into()].span(), row,
+        d.games,
+        selector!("structures"),
+        selector!("structures"),
+        array![key.game_id.into(), key.entity_id.into()].span(),
+        row,
     );
 }
 fn upgrade_rules(d: super::Deployment) {
-    start_cheat_caller_address(d.peers.settlement, super::authority());
-    IUpgradeRulesDispatcher { contract_address: d.peers.settlement }
+    start_cheat_caller_address(d.games, super::authority());
+    IUpgradeRulesDispatcher { contract_address: d.games }
         .configure_upgrades(
             3,
             UpgradeLimits { realm_max: 1, village_max: 1 },
             array![UpgradeRecipe { costs: array![ResourceAmount { resource_type: 23, amount: 17 }].span() }].span(),
         );
-    stop_cheat_caller_address(d.peers.settlement);
+    stop_cheat_caller_address(d.games);
 }
 
 #[test]
@@ -45,8 +51,18 @@ fn level_up_rejects_unowned_missing_wrong_category_unfunded_and_maximum_structur
     );
     assert_terminal_rejection(d, Command::LevelUp(home.entity_id), 80);
     save(d, home, original);
+    let map = IMapLogicDispatcher { contract_address: d.games };
+    let location = crate::geometry::tile_key(3, crate::structures::structure_coord(original.base));
+    let tile = map.tile(location).unwrap();
+    let storage_key = array![3, location.alt.into(), location.col.into(), location.row.into()].span();
+    set_fixture(d.games, selector!("map"), selector!("tiles"), storage_key, tile.data + 512);
+    assert_terminal_rejection(d, Command::LevelUp(home.entity_id), 80);
+    assert_eq!(record(d, home), original);
+    assert_eq!(map.tile(location).unwrap().data, tile.data + 512);
+    set_fixture(d.games, selector!("map"), selector!("tiles"), storage_key, tile.data);
     assert!(execute(d, Command::LevelUp(home.entity_id), 80));
     assert_eq!(record(d, home).base.level, 1);
+    assert_eq!(map.tile(location).unwrap().data, tile.data + 2);
     assert_terminal_rejection(d, Command::LevelUp(home.entity_id), 80);
     assert_eq!(record(d, home).base.level, 1);
 }
@@ -90,7 +106,6 @@ fn blitz_ownership_transfer_is_rejected_even_by_owner() {
     );
     assert_eq!(record(d, home).owner, d.actor);
 }
-
 
 #[test]
 fn discovery_uses_pinned_weight_totals_offsets_and_layer_restrictions() {

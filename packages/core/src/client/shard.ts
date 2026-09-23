@@ -38,7 +38,7 @@ export class ShardReleaseMismatchError extends Error {
   }
 }
 
-const ENTRYPOINT_CONTRACT = "season";
+const ENTRYPOINT_CONTRACT = "games";
 
 const shards = new Map<string, Shard>();
 

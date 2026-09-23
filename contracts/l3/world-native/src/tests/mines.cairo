@@ -1,14 +1,15 @@
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::buildings::{IBuildingRulesDispatcher, IBuildingRulesDispatcherTrait};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
-use crate::map::{IMapDispatcher, IMapDispatcherTrait};
+use crate::map::{IMapLogicDispatcher, IMapLogicDispatcherTrait};
 use crate::mines::{
     IMineRulesDispatcher, IMineRulesDispatcherTrait, IMineRulesSafeDispatcher, IMineRulesSafeDispatcherTrait,
     MineKindConfig, MineKindEntry, MineKindKey, MinePoolKey, MineWeight, cap, select_kind,
 };
-use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceSlot};
+use crate::resources::{IResourceOperationsDispatcher, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
-use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, structure_coord};
+use crate::structures::{IStructureOperationsDispatcher, IStructureOperationsDispatcherTrait, structure_coord};
+use crate::tests::state::{MapObservationTrait, ResourceObservationTrait, StructureObservationTrait};
 use crate::troops::{Coord, TroopTier, TroopType};
 
 pub fn kinds() -> Span<MineKindEntry> {
@@ -43,13 +44,13 @@ fn surface() -> Span<MineWeight> {
 
 #[test]
 fn the_surface_pool_selects_only_its_configured_kinds_and_keeps_game_configuration_isolated() {
-    let deployment = super::setup_with_domains(true, "StructuresDomain", "TroopsDomain");
-    let rules = IMineRulesDispatcher { contract_address: deployment.peers.resources };
+    let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
+    let rules = IMineRulesDispatcher { contract_address: deployment.games };
     let rift = array![MineWeight { kind: 1, weight: 1 }].span();
-    start_cheat_caller_address(deployment.peers.resources, super::authority());
+    start_cheat_caller_address(deployment.games, super::authority());
     rules.configure_mines(1, kinds(), surface());
     rules.configure_mines(2, kinds(), rift);
-    stop_cheat_caller_address(deployment.peers.resources);
+    stop_cheat_caller_address(deployment.games);
     let mut seen_rift = false;
     let mut seen_fragment = false;
     for root in 0_u64..32 {
@@ -111,10 +112,10 @@ fn pool_weights_use_one_draw_across_the_complete_distribution() {
 #[test]
 #[feature("safe_dispatcher")]
 fn mine_configuration_is_authorized_immutable_and_rejects_unknown_or_duplicate_weights() {
-    let deployment = super::setup_with_domains(true, "StructuresDomain", "TroopsDomain");
-    let rules = IMineRulesSafeDispatcher { contract_address: deployment.peers.resources };
+    let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
+    let rules = IMineRulesSafeDispatcher { contract_address: deployment.games };
     assert!(rules.configure_mines(1, kinds(), surface()).is_err());
-    start_cheat_caller_address(deployment.peers.resources, super::authority());
+    start_cheat_caller_address(deployment.games, super::authority());
     for weights in array![
         array![MineWeight { kind: 9, weight: 1 }].span(), array![MineWeight { kind: 1, weight: 0 }].span(),
         array![MineWeight { kind: 1, weight: 1 }, MineWeight { kind: 1, weight: 1 }].span(),
@@ -126,16 +127,16 @@ fn mine_configuration_is_authorized_immutable_and_rejects_unknown_or_duplicate_w
     assert!(rules.mine_kind(MineKindKey { game_id: 1, kind: 9 }).is_err());
     assert!(rules.mine_pool(MinePoolKey { game_id: 2 }).is_err());
     assert!(rules.mine_draw(MinePoolKey { game_id: 2 }, 1).is_err());
-    stop_cheat_caller_address(deployment.peers.resources);
+    stop_cheat_caller_address(deployment.games);
 }
 
 #[test]
 #[feature("safe_dispatcher")]
 fn invalid_rate_cap_ladder_and_building_resource_pairs_cannot_initialize_a_game() {
-    let deployment = super::setup_with_domains(true, "StructuresDomain", "TroopsDomain");
-    let rules = IMineRulesSafeDispatcher { contract_address: deployment.peers.resources };
+    let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
+    let rules = IMineRulesSafeDispatcher { contract_address: deployment.games };
     let valid = (*kinds().at(0)).config;
-    start_cheat_caller_address(deployment.peers.resources, super::authority());
+    start_cheat_caller_address(deployment.games, super::authority());
     for config in array![
         MineKindConfig { production_rate: 0, ..valid }, MineKindConfig { cap_min: 0, ..valid },
         MineKindConfig { cap_steps: 0, ..valid },
@@ -153,24 +154,23 @@ fn invalid_rate_cap_ladder_and_building_resource_pairs_cannot_initialize_a_game(
         );
     }
     assert!(rules.configure_mines(1, kinds(), surface()).is_ok());
-    stop_cheat_caller_address(deployment.peers.resources);
+    stop_cheat_caller_address(deployment.games);
 }
 
 #[test]
 fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
     let (deployment, _, _) = super::resource_commands::setup();
-    let peers = deployment.peers;
-    start_cheat_caller_address(peers.resources, super::authority());
-    let mine_rules = IMineRulesDispatcher { contract_address: peers.resources };
+    start_cheat_caller_address(deployment.games, super::authority());
+    let mine_rules = IMineRulesDispatcher { contract_address: deployment.games };
     mine_rules.configure_mines(3, kinds(), surface());
-    stop_cheat_caller_address(peers.resources);
-    start_cheat_caller_address(peers.structures, super::authority());
-    IBuildingRulesDispatcher { contract_address: peers.structures }
+    stop_cheat_caller_address(deployment.games);
+    start_cheat_caller_address(deployment.games, super::authority());
+    IBuildingRulesDispatcher { contract_address: deployment.games }
         .configure_buildings(3, super::building_commands::rules(), None);
-    start_cheat_caller_address(peers.structures, peers.troops);
-    let structures = IStructuresDispatcher { contract_address: peers.structures };
-    let resources = IResourcesDispatcher { contract_address: peers.resources };
-    let map = IMapDispatcher { contract_address: peers.map };
+    start_cheat_caller_address(deployment.games, deployment.games);
+    let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
+    let map = IMapLogicDispatcher { contract_address: deployment.games };
     let mut seen = 0_u8;
     for index in 0_u32..12 {
         let coord = Coord { alt: false, x: 2000100 + index * 10, y: 2000100 };
@@ -183,7 +183,7 @@ fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
         assert_eq!(structure_coord(structure.base), coord);
         assert_eq!(
             crate::guards::IGuardsDispatcherTrait::guard(
-                crate::guards::IGuardsDispatcher { contract_address: deployment.peers.troops },
+                crate::guards::IGuardsDispatcher { contract_address: deployment.games },
                 crate::guards::GuardKey { game_id: 3, structure_id: id, slot: 0 },
             )
                 .troops
@@ -192,7 +192,7 @@ fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
         );
         assert_eq!(
             crate::guards::IGuardsDispatcherTrait::guard(
-                crate::guards::IGuardsDispatcher { contract_address: deployment.peers.troops },
+                crate::guards::IGuardsDispatcher { contract_address: deployment.games },
                 crate::guards::GuardKey { game_id: 3, structure_id: id, slot: 0 },
             )
                 .troops
@@ -202,7 +202,7 @@ fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
         for slot in 1_u8..4 {
             assert_eq!(
                 crate::guards::IGuardsDispatcherTrait::guard(
-                    crate::guards::IGuardsDispatcher { contract_address: peers.troops },
+                    crate::guards::IGuardsDispatcher { contract_address: deployment.games },
                     crate::guards::GuardKey { game_id: 3, structure_id: id, slot },
                 ),
                 Default::default(),
@@ -225,22 +225,22 @@ fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
         };
     }
     assert_eq!(seen, 3);
-    stop_cheat_caller_address(peers.structures);
+    stop_cheat_caller_address(deployment.games);
 }
 
 #[test]
 fn ethereal_discovery_never_draws_from_the_ordinary_mine_pool() {
     let d = super::setup(true);
-    let game = IGameDispatcher { contract_address: d.peers.registry };
+    let game = IGameDispatcher { contract_address: d.games };
     let mut rules = super::recorded::rules();
     rules.bitcoin_mine_config.enabled = false;
     rules.map_config.shards_mines_win_probability = 1;
     rules.map_config.shards_mines_fail_probability = 0;
-    super::recorded::seed_game(d.peers.registry, 3, game.game(1), rules);
-    start_cheat_caller_address(d.peers.resources, super::authority());
-    IMineRulesDispatcher { contract_address: d.peers.resources }.configure_mines(3, kinds(), surface());
-    stop_cheat_caller_address(d.peers.resources);
-    let map = IMapDispatcher { contract_address: d.peers.map };
+    super::recorded::seed_game(d.games, 3, game.game(1), rules);
+    start_cheat_caller_address(d.games, super::authority());
+    IMineRulesDispatcher { contract_address: d.games }.configure_mines(3, kinds(), surface());
+    stop_cheat_caller_address(d.games);
+    let map = IMapLogicDispatcher { contract_address: d.games };
     for root in 0_u64..8 {
         assert_eq!(
             map

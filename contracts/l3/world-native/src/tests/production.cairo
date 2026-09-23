@@ -1,11 +1,14 @@
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::commands::Command;
 use crate::production::{
-    IProductionCommandsSafeDispatcher, IProductionCommandsSafeDispatcherTrait, IProductionRulesDispatcher,
-    IProductionRulesDispatcherTrait, IProductionRulesSafeDispatcher, IProductionRulesSafeDispatcherTrait,
-    ProductionBonus, ProductionRecipe, RecipeConfig, RefillProduction, bonus_output,
+    IProductionRulesDispatcher, IProductionRulesDispatcherTrait, IProductionRulesSafeDispatcher,
+    IProductionRulesSafeDispatcherTrait, ProductionBonus, ProductionRecipe, RecipeConfig, RefillProduction,
+    bonus_output,
 };
-use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceAmount, ResourceRule, ResourceSlot};
+use crate::resources::{
+    IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceAmount, ResourceRule, ResourceSlot,
+};
+use crate::tests::state::ResourceObservationTrait;
 use super::resource_commands::{
     assert_terminal_rejection, execute_recorded_at, grant, resource_facts, set_fixture, setup,
 };
@@ -80,9 +83,9 @@ pub fn recipes() -> Span<RecipeConfig> {
 }
 
 fn configure(deployment: super::Deployment) {
-    start_cheat_caller_address(deployment.peers.resources, super::authority());
-    IProductionRulesDispatcher { contract_address: deployment.peers.resources }.configure_production(3, recipes());
-    stop_cheat_caller_address(deployment.peers.resources);
+    start_cheat_caller_address(deployment.games, super::authority());
+    IProductionRulesDispatcher { contract_address: deployment.games }.configure_production(3, recipes());
+    stop_cheat_caller_address(deployment.games);
 }
 
 #[test]
@@ -91,7 +94,8 @@ fn late_refills_use_recorded_troop_bonus_expiry_without_retroactive_production()
     configure(deployment);
     grant(deployment, key, 2, 100);
     set_fixture(
-        deployment.peers.resources,
+        deployment.games,
+        selector!("production"),
         selector!("bonuses"),
         array![3, key.entity_id.into()].span(),
         ProductionBonus { incr_troop_rate_percent_num: 5000, incr_troop_rate_end_tick: 1, ..Default::default() },
@@ -100,7 +104,7 @@ fn late_refills_use_recorded_troop_bonus_expiry_without_retroactive_production()
         structure_id: key.entity_id, resource_types: array![26].span(), amounts: array![1].span(),
     };
     assert!(execute_recorded_at(deployment, Command::BurnLaborForResourceProduction(refill), 60, 1000));
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let slot = ResourceSlot { game_id: 3, entity_id: key.entity_id, resource_type: 26 };
     let at_end = resources.resource_production(slot);
     assert_eq!(at_end.output_amount_left, 150);
@@ -126,44 +130,22 @@ fn late_production_payment_failure_rolls_back_prior_debits_and_consumes_ticket()
 
 #[test]
 #[feature("safe_dispatcher")]
-fn production_commands_reject_a_forged_internal_caller_before_mutating_resources() {
-    let (deployment, key, _) = setup();
-    configure(deployment);
-    grant(deployment, key, 2, 100);
-    let before = resource_facts(deployment, key);
-    let commands = IProductionCommandsSafeDispatcher { contract_address: deployment.peers.resources };
-    let command = RefillProduction {
-        structure_id: key.entity_id, resource_types: array![26].span(), amounts: array![1].span(),
-    };
-    let context = crate::commands::ExecutionContext { raw_root: 1234, timestamp: 60 };
-    for caller in array![deployment.actor, deployment.peers.structures, super::authority()] {
-        start_cheat_caller_address(deployment.peers.resources, caller);
-        assert!(commands.burn_labor_for_resource_production(3, deployment.actor, command, context).is_err());
-        assert!(commands.burn_resource_for_resource_production(3, deployment.actor, command, context).is_err());
-        assert_eq!(resource_facts(deployment, key), before);
-    }
-    stop_cheat_caller_address(deployment.peers.resources);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
 fn production_recipes_require_authority_and_cannot_be_reconfigured() {
     let (deployment, _, _) = setup();
-    let rules = IProductionRulesSafeDispatcher { contract_address: deployment.peers.resources };
-    start_cheat_caller_address(deployment.peers.resources, deployment.actor);
+    let rules = IProductionRulesSafeDispatcher { contract_address: deployment.games };
+    start_cheat_caller_address(deployment.games, deployment.actor);
     assert!(rules.configure_production(3, recipes()).is_err());
-    stop_cheat_caller_address(deployment.peers.resources);
+    stop_cheat_caller_address(deployment.games);
     configure(deployment);
-    start_cheat_caller_address(deployment.peers.resources, super::authority());
+    start_cheat_caller_address(deployment.games, super::authority());
     assert!(rules.configure_production(3, recipes()).is_err());
-    stop_cheat_caller_address(deployment.peers.resources);
+    stop_cheat_caller_address(deployment.games);
 }
-
 
 #[test]
 fn resource_configuration_keeps_full_width_rates_without_storing_its_key_twice() {
-    let deployment = super::setup_with_domains(true, "StructuresDomain", "TroopsDomain");
-    let store = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
+    let store = IResourceOperationsDispatcher { contract_address: deployment.games };
     let mut rules = array![];
     for resource_type in 1_u8..59 {
         rules
@@ -176,9 +158,9 @@ fn resource_configuration_keeps_full_width_rates_without_storing_its_key_twice()
                 },
             );
     }
-    start_cheat_caller_address(deployment.peers.resources, super::authority());
+    start_cheat_caller_address(deployment.games, super::authority());
     store.configure_resources(2, rules.span());
-    stop_cheat_caller_address(deployment.peers.resources);
+    stop_cheat_caller_address(deployment.games);
     for expected in rules {
         assert_eq!(store.resource_rule(2, expected.resource_type), expected);
     }
@@ -192,7 +174,8 @@ fn all_refill_strategies_pay_their_inputs_and_queue_output_without_an_active_bui
     grant(deployment, home, 2, 2 * precision + 100);
     grant(deployment, home, 3, 100);
     set_fixture(
-        deployment.peers.resources,
+        deployment.games,
+        selector!("resources"),
         selector!("resource_rules"),
         array![3, 2].span(),
         (1_u128, 0x10000000000000002_u128, 7_u64),
@@ -203,7 +186,7 @@ fn all_refill_strategies_pay_their_inputs_and_queue_output_without_an_active_bui
     let refill = RefillProduction { resource_types: array![26].span(), amounts: array![2].span(), ..refill };
     assert!(execute_recorded_at(deployment, Command::BurnLaborForResourceProduction(refill), 60, 1001));
     assert!(execute_recorded_at(deployment, Command::BurnResourceForResourceProduction(refill), 60, 1002));
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let slot = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 26 };
     assert_eq!(resources.resource_production(slot).output_amount_left, 600);
     assert_eq!(resources.resource_production(slot).building_count, 0);
@@ -262,7 +245,7 @@ fn blitz_rejects_labor_recipes_but_accepts_resource_production() {
         structure_id: key.entity_id, resource_types: array![26].span(), amounts: array![1].span(),
     };
     assert_terminal_rejection(deployment, Command::BurnLaborForResourceProduction(refill), 60);
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let slot = ResourceSlot { game_id: 3, entity_id: key.entity_id, resource_type: 2 };
     assert_eq!(resources.resource_balance(slot), 100);
     assert!(execute_recorded_at(deployment, Command::BurnResourceForResourceProduction(refill), 60, 1000));

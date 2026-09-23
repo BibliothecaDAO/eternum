@@ -1,13 +1,14 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::ContractAddress;
 use crate::bridge::{
-    Deposit, DepositRules, IBankWithdrawalSafeDispatcher, IBankWithdrawalSafeDispatcherTrait, IBridgeDispatcher,
-    IBridgeDispatcherTrait, IBridgeSafeDispatcher, IBridgeSafeDispatcherTrait, Withdraw,
+    Deposit, DepositRules, IBridgeDispatcher, IBridgeDispatcherTrait, IBridgeSafeDispatcher, IBridgeSafeDispatcherTrait,
+    Withdraw,
 };
 use crate::commands::Command;
-use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceAmount, ResourceKey, ResourceSlot};
+use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
-use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, StructureRecord};
+use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
+use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 use super::fixtures::{ITokenFixtureDispatcher, ITokenFixtureDispatcherTrait};
 use super::resource_commands::{
     assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture, setup_with_rules,
@@ -29,13 +30,14 @@ fn setup(village: bool, paused: bool) -> (super::Deployment, ResourceKey, Resour
     rules.capacity_config.donkey_capacity = 100;
     let (d, realm, target) = setup_with_rules(rules);
     let (token, _) = super::market::configure_wallet(d, paused);
-    start_cheat_caller_address(d.peers.bridge, super::authority());
-    IBridgeDispatcher { contract_address: d.peers.bridge }.configure_deposits(3, deposit_rules(paused));
-    stop_cheat_caller_address(d.peers.bridge);
+    start_cheat_caller_address(d.games, super::authority());
+    IBridgeDispatcher { contract_address: d.games }.configure_deposits(3, deposit_rules(paused));
+    stop_cheat_caller_address(d.games);
     if village {
-        let structure = IStructuresDispatcher { contract_address: d.peers.structures }.structure(target).unwrap();
+        let structure = IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap();
         set_fixture(
-            d.peers.structures,
+            d.games,
+            selector!("structures"),
             selector!("structures"),
             array![3, target.entity_id.into()].span(),
             StructureRecord {
@@ -73,7 +75,7 @@ fn withdraw(target: ResourceKey, actor: ContractAddress) -> Command {
     )
 }
 fn balance(d: super::Deployment, target: ResourceKey, resource_type: u8) -> u128 {
-    IResourcesDispatcher { contract_address: d.peers.resources }
+    IResourceOperationsDispatcher { contract_address: d.games }
         .resource_balance(ResourceSlot { game_id: target.game_id, entity_id: target.entity_id, resource_type })
 }
 fn tokens(token: ContractAddress, actor: ContractAddress) -> u256 {
@@ -82,7 +84,7 @@ fn tokens(token: ContractAddress, actor: ContractAddress) -> u256 {
     )
 }
 fn arrival(d: super::Deployment, target: ResourceKey, travel: u64) -> Span<ResourceAmount> {
-    IResourcesDispatcher { contract_address: d.peers.resources }
+    IResourceOperationsDispatcher { contract_address: d.games }
         .resource_arrival(crate::arrivals::arrival_key(3, target.entity_id, 1, 40, travel))
         .resources
 }
@@ -143,9 +145,10 @@ fn connected_realms_current_owner_receives_both_fees_after_ownership_changes() {
     for withdrawal in array![false, true] {
         let (d, realm, target, _) = setup(true, false);
         let new_owner = 0x987.try_into().unwrap();
-        let structure = IStructuresDispatcher { contract_address: d.peers.structures }.structure(realm).unwrap();
+        let structure = IStructureOperationsDispatcher { contract_address: d.games }.structure(realm).unwrap();
         set_fixture(
-            d.peers.structures,
+            d.games,
+            selector!("structures"),
             selector!("structures"),
             array![3, realm.entity_id.into()].span(),
             StructureRecord {
@@ -167,7 +170,7 @@ fn connected_realms_current_owner_receives_both_fees_after_ownership_changes() {
             0
         }), amount(12500000000));
         let mut fee_recorded = false;
-        for (_, event) in spy.get_events().emitted_by(d.peers.bridge).events.span() {
+        for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
             if *event.keys.at(1) == selector!("StoryEvent") {
                 let mut keys = event.keys.span().slice(2, event.keys.len() - 2);
                 let mut data = event.data.span();
@@ -205,29 +208,12 @@ fn rejected_bridge_actions_preserve_tokens_resources_and_arrivals() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn bridge_rejects_forged_domain_callers_and_mutating_immutable_rules() {
-    let (d, _, target, _) = setup(false, false);
-    let bridge = IBridgeSafeDispatcher { contract_address: d.peers.bridge };
-    start_cheat_caller_address(d.peers.bridge, d.actor);
+fn bridge_configuration_requires_authority_and_is_immutable() {
+    let (d, _, _, _) = setup(false, false);
+    let bridge = IBridgeSafeDispatcher { contract_address: d.games };
+    start_cheat_caller_address(d.games, d.actor);
     assert!(bridge.configure_deposits(2, deposit_rules(false)).is_err());
-    assert!(
-        bridge
-            .deposit_resource(
-                3,
-                d.actor,
-                Deposit {
-                    structure_id: target.entity_id, resource_type: 2, amount: TOKENS, client_fee_recipient: d.actor,
-                },
-                super::context(),
-            )
-            .is_err(),
-    );
-    assert!(
-        IBankWithdrawalSafeDispatcher { contract_address: d.peers.bridge }
-            .withdraw_bank_resources(3, d.actor, target.entity_id, 2, STOCK, 40)
-            .is_err(),
-    );
-    start_cheat_caller_address(d.peers.bridge, super::authority());
+    start_cheat_caller_address(d.games, super::authority());
     assert!(bridge.configure_deposits(3, deposit_rules(false)).is_err());
     bridge.configure_deposits(2, deposit_rules(true)).unwrap();
     assert!(bridge.deposit_rules(2).unwrap().paused);
@@ -282,10 +268,11 @@ fn bridge_rejects_wrong_owner_category_unlisted_resource_and_closed_game() {
         ),
         40,
     );
-    let structure = IStructuresDispatcher { contract_address: d.peers.structures }.structure(target).unwrap();
+    let structure = IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap();
     for (owner, category) in array![(0x987.try_into().unwrap(), 1_u8), (d.actor, 3_u8)] {
         set_fixture(
-            d.peers.structures,
+            d.games,
+            selector!("structures"),
             selector!("structures"),
             array![3, target.entity_id.into()].span(),
             StructureRecord {
@@ -299,7 +286,8 @@ fn bridge_rejects_wrong_owner_category_unlisted_resource_and_closed_game() {
         assert_terminal_rejection(d, withdraw(target, d.actor), 40);
     }
     set_fixture(
-        d.peers.structures,
+        d.games,
+        selector!("structures"),
         selector!("structures"),
         array![3, target.entity_id.into()].span(),
         StructureRecord {
@@ -319,7 +307,7 @@ fn bridge_rejects_wrong_owner_category_unlisted_resource_and_closed_game() {
 #[test]
 fn bridge_rejects_troop_deposits_to_villages_and_small_platform_fees() {
     let (d, _, target, token) = setup(true, false);
-    set_fixture(d.peers.bridge, selector!("tokens"), array![3, 26].span(), token);
+    set_fixture(d.games, selector!("withdrawals"), selector!("tokens"), array![3, 26].span(), token);
     assert_terminal_rejection(
         d,
         Command::DepositResource(

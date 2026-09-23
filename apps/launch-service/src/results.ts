@@ -3,7 +3,7 @@ import {
   completeNativeAdminCommand,
   executeNativeAdminCommand,
 } from "../../../config/deployer/clean/world/native/command";
-import { nativeDomainAbi } from "../../../config/deployer/clean/world/native/manifest";
+import { nativeGamesAbi } from "../../../config/deployer/clean/world/native/manifest";
 import type { RegistrarWorld } from "../../../config/deployer/clean/world/native/types";
 import type { NativeCommand } from "../../../packages/provider/src/native-command";
 import type { FinalizedGameSummary } from "./model";
@@ -69,16 +69,11 @@ function rankPlayers(players: readonly { player: bigint; points: bigint }[]): Pl
   });
 }
 
-function view<T>(
-  target: ResultTarget,
-  domain: string,
-  entrypoint: string,
-  calldata: (number | string | bigint)[],
-): Promise<T> {
-  const abi: Abi = nativeDomainAbi(target.manifest, domain);
+function view<T>(target: ResultTarget, entrypoint: string, calldata: (number | string | bigint)[]): Promise<T> {
+  const abi: Abi = nativeGamesAbi(target.manifest);
   return target.provider
     .callContract(
-      { contractAddress: target.manifest.native.domains[domain].address, entrypoint, calldata: calldata.map(String) },
+      { contractAddress: target.manifest.world.address, entrypoint, calldata: calldata.map(String) },
       "latest",
     )
     .then((response) => new CallData(abi).parse(entrypoint, response) as T);
@@ -102,20 +97,18 @@ export async function finalizeGame(
 function resultOperations(target: ResultTarget): ResultOperations {
   return {
     secondsUntilEnd: async () => {
-      const game = await view<{ end_at: bigint; end_grace_seconds: bigint }>(target, "registry", "game", [
-        target.gameId,
-      ]);
+      const game = await view<{ end_at: bigint; end_grace_seconds: bigint }>(target, "game", [target.gameId]);
       const block = await target.provider.getBlock("latest");
       return Number(game.end_at + game.end_grace_seconds) - block.timestamp;
     },
     settle: () => completeNativeAdminCommand({ ...target, command: { kind: "MarkGameSettled", value: undefined } }),
-    progress: () => view<ResultProgress>(target, "prizes", "blitz_result", [target.gameId]),
+    progress: () => view<ResultProgress>(target, "blitz_result", [target.gameId]),
     players: async () => {
-      const roster = await view<{ account: bigint }[]>(target, "registry", "blitz_roster", [target.gameId]);
+      const roster = await view<{ account: bigint }[]>(target, "blitz_roster", [target.gameId]);
       return Promise.all(
         roster.map(async ({ account }) => ({
           player: account,
-          points: await view<bigint>(target, "season", "player_points", [target.gameId, account]),
+          points: await view<bigint>(target, "player_points", [target.gameId, account]),
         })),
       );
     },

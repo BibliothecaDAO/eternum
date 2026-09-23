@@ -111,18 +111,12 @@ async function readRoleHolders(): Promise<Array<{ role: string; address: string 
     { role: "sequencing administrator", address: administrator },
     { role: "operator", address: identity.operatorAccountAddress },
   ];
-  for (const [name, domain] of Object.entries(manifest.native.domains)) {
-    const [address] = await provider.callContract(
-      {
-        contractAddress: domain.address,
-        entrypoint: "domain_state",
-        calldata: [],
-      },
-      "latest",
-    );
-    equal(address, identity.operatorAccountAddress, `${name} shard authority`);
-    roles.push({ role: `${name} shard authority`, address });
-  }
+  const [address] = await provider.callContract(
+    { contractAddress: manifest.world.address, entrypoint: "deployment_configuration", calldata: [] },
+    "latest",
+  );
+  equal(address, identity.operatorAccountAddress, "Games shard authority");
+  roles.push({ role: "Games shard authority", address });
   return roles;
 }
 

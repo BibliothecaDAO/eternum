@@ -22,14 +22,14 @@ export function buildShardManifest(document: ShardDocument, endpoints: ShardEndp
   return {
     version: 1,
     chainId: shard.chainId,
-    releaseId: release,
+    releaseId: String(document.native.releaseId),
     schemaHash: release,
     rpcUrl: endpoints.rpcUrl,
     admissionUrl: endpoints.admissionUrl,
     accountClassHash: shard.accountClassHash,
     contracts: {
-      ...Object.fromEntries(Object.entries(document.native.domains).map(([name, domain]) => [name, domain.address])),
       ...shard.contracts,
+      games: document.world.address,
     },
     guardianPublicKey: shard.guardianPublicKey,
   };

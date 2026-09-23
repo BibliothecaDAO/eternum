@@ -23,6 +23,24 @@
     "HYPERSTRUCTURE_MULTIPLIERS": 32768,
     "PRODUCTION_START": 131072
   },
+  "logicClasses": {
+    "season": "SeasonLogic",
+    "map": "MapLogic",
+    "placement": "PlacementLogic",
+    "construction": "ConstructionLogic",
+    "production": "ProductionLogic",
+    "structures": "StructuresLogic",
+    "troops": "TroopsLogic",
+    "settlement": "SettlementLogic",
+    "resources": "ResourcesLogic",
+    "economy": "EconomyLogic",
+    "prizes": "PrizesLogic",
+    "registry": "RegistryLogic",
+    "combat": "CombatLogic",
+    "raid": "RaidLogic",
+    "bridge": "BridgeLogic",
+    "relics": "RelicsLogic"
+  },
   "version": 2,
   "cairoVersion": "2.17.0",
   "encoding": "cairo-serde",
@@ -30,8 +48,37 @@
   "memberIdentity": "short-string",
   "domains": {
     "season": {
-      "contract": "SeasonDomain",
+      "contract": "Games",
       "events": [
+        {
+          "name": "RowSet",
+          "prefix": [
+            "0x36f16904f7734350d822ada38a59fed0c639e5205b723a7c3491c7973938c0b",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
         {
           "name": "PointsAwarded",
           "prefix": [
@@ -116,7 +163,6 @@
         {
           "name": "RowSet",
           "prefix": [
-            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
             "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
           ],
           "members": [
@@ -143,29 +189,29 @@
           ]
         },
         {
-          "name": "RowSet",
+          "name": "BatchProgress",
           "prefix": [
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+            "0x34d8e97ef8a63ca5ca08ce1b22a214f440154b5890f88cde8406cd9d20fff7e"
           ],
           "members": [
             {
-              "name": "version",
-              "type": "core::integer::u8",
+              "name": "game_id",
+              "type": "core::integer::u32",
               "kind": "key"
             },
             {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress",
               "kind": "data"
             },
             {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
+              "name": "nonce",
+              "type": "core::integer::u64",
+              "kind": "data"
+            },
+            {
+              "name": "remaining",
+              "type": "core::integer::u64",
               "kind": "data"
             }
           ]
@@ -213,48 +259,20 @@
               "kind": "data"
             }
           ]
-        },
-        {
-          "name": "BatchProgress",
-          "prefix": [
-            "0x34d8e97ef8a63ca5ca08ce1b22a214f440154b5890f88cde8406cd9d20fff7e"
-          ],
-          "members": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32",
-              "kind": "key"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress",
-              "kind": "data"
-            },
-            {
-              "name": "nonce",
-              "type": "core::integer::u64",
-              "kind": "data"
-            },
-            {
-              "name": "remaining",
-              "type": "core::integer::u64",
-              "kind": "data"
-            }
-          ]
         }
       ],
       "entrypoints": [
         {
           "type": "function",
-          "name": "configure_season_win",
+          "name": "register_entitlement",
           "inputs": [
             {
-              "name": "game_id",
-              "type": "core::integer::u32"
+              "name": "key",
+              "type": "world_native::settlement::EntryKey"
             },
             {
-              "name": "points",
-              "type": "core::integer::u128"
+              "name": "entitlement",
+              "type": "world_native::settlement::EntryEntitlement"
             }
           ],
           "outputs": [],
@@ -262,179 +280,42 @@
         },
         {
           "type": "function",
-          "name": "season_win_threshold",
+          "name": "entry_entitlement",
           "inputs": [
             {
-              "name": "game_id",
-              "type": "core::integer::u32"
+              "name": "key",
+              "type": "world_native::settlement::EntryKey"
             }
           ],
           "outputs": [
             {
-              "type": "core::integer::u128"
+              "type": "core::option::Option::<world_native::settlement::EntryEntitlement>"
             }
           ],
           "state_mutability": "view"
         },
         {
           "type": "function",
-          "name": "close_season",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
+          "name": "ledger_operator",
+          "inputs": [],
           "outputs": [
             {
-              "type": "core::integer::u64"
-            }
-          ],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "mark_game_settled",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
               "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u64"
-            }
-          ],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "register_exploration",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "register_capture",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "category",
-              "type": "core::integer::u8"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u128"
-            }
-          ],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "register_relic_points",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "register_hyperstructure_points",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "amount",
-              "type": "core::integer::u128"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "player_points",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u128"
             }
           ],
           "state_mutability": "view"
         },
         {
           "type": "function",
-          "name": "season_points",
+          "name": "set_ledger_operator",
           "inputs": [
             {
-              "name": "game_id",
-              "type": "core::integer::u32"
+              "name": "operator",
+              "type": "core::starknet::contract_address::ContractAddress"
             }
           ],
-          "outputs": [
-            {
-              "type": "core::integer::u128"
-            }
-          ],
-          "state_mutability": "view"
+          "outputs": [],
+          "state_mutability": "external"
         },
         {
           "type": "function",
@@ -454,43 +335,11 @@
         },
         {
           "type": "function",
-          "name": "command_commitment",
-          "inputs": [
-            {
-              "name": "command",
-              "type": "world_native::commands::Command"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::felt252"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "rules_commitment",
-          "inputs": [
-            {
-              "name": "rules",
-              "type": "world_native::rules::SliceRules"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::felt252"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "authentication",
           "inputs": [],
           "outputs": [
             {
-              "type": "world_native::season::Authentication"
+              "type": "world_native::games::Authentication"
             }
           ],
           "state_mutability": "view"
@@ -605,80 +454,210 @@
         },
         {
           "type": "function",
-          "name": "domain_state",
-          "inputs": [],
+          "name": "register_preset",
+          "inputs": [
+            {
+              "name": "preset_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "definition",
+              "type": "world_native::presets::PresetDefinition"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "preset_commitment",
+          "inputs": [
+            {
+              "name": "preset_id",
+              "type": "core::integer::u32"
+            }
+          ],
           "outputs": [
             {
-              "type": "world_native::lifecycle::DomainState"
+              "type": "core::felt252"
             }
           ],
           "state_mutability": "view"
         },
         {
           "type": "function",
-          "name": "configure",
-          "inputs": [
-            {
-              "name": "peers",
-              "type": "world_native::lifecycle::Peers"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "activate",
+          "name": "next_game_id",
           "inputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "game_id_by_name",
+          "inputs": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "blitz_roster",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Span::<world_native::registrar::RosterPlayer>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "create_game",
+          "inputs": [
+            {
+              "name": "params",
+              "type": "world_native::registrar::CreateGameParams"
+            },
+            {
+              "name": "definition",
+              "type": "world_native::presets::PresetDefinition"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "initialize_realm_traits",
+          "inputs": [
+            {
+              "name": "first_realm",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "packed_traits",
+              "type": "core::array::Span::<core::integer::u32>"
+            }
+          ],
           "outputs": [],
           "state_mutability": "external"
         },
         {
           "type": "function",
-          "name": "upgrade",
+          "name": "register_village_pass",
           "inputs": [
             {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash"
+              "name": "key",
+              "type": "world_native::village::VillagePassKey"
+            },
+            {
+              "name": "owner",
+              "type": "core::starknet::contract_address::ContractAddress"
             }
           ],
           "outputs": [],
           "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "deployment_configuration",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "world_native::games::DeploymentConfiguration"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "realm_catalogue",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "world_native::realms::RealmCatalogue"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "game",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::game::GameRegistry"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "player_points",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u128"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "blitz_result",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "world_native::blitz_results::BlitzResult"
+            }
+          ],
+          "state_mutability": "view"
         }
       ]
     },
     "map": {
-      "contract": "MapDomain",
+      "contract": "MapLogic",
       "events": [
-        {
-          "name": "RowSet",
-          "prefix": [
-            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
         {
           "name": "RowSet",
           "prefix": [
@@ -851,162 +830,6 @@
       "entrypoints": [
         {
           "type": "function",
-          "name": "initialize_spires",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "layout",
-              "type": "world_native::spires::SpireLayout"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "spire_layout",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::spires::SpireLayout>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "claim_season_settlement",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "settled_count",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "seed",
-              "type": "core::integer::u256"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::troops::Coord"
-            }
-          ],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "settlement_pool",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::settlement::SettlementPool"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "village_pool",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::settlement::SettlementPool"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "claim_village",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "registered",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "seed",
-              "type": "core::integer::u256"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::troops::Coord"
-            }
-          ],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "reserved_hyperstructures",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u32"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "initialize_reservations",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "release_hyperstructure",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "coord",
-              "type": "world_native::troops::Coord"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "biome",
           "inputs": [
             {
@@ -1051,38 +874,6 @@
         },
         {
           "type": "function",
-          "name": "tile",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::map::TileKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::map::TileOpt>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "reveal",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::map::TileKey"
-            },
-            {
-              "name": "biome",
-              "type": "core::integer::u8"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "reveal_structure_surroundings",
           "inputs": [
             {
@@ -1092,70 +883,6 @@
             {
               "name": "coord",
               "type": "world_native::troops::Coord"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "occupy",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::map::TileKey"
-            },
-            {
-              "name": "entity_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "category",
-              "type": "core::integer::u8"
-            },
-            {
-              "name": "is_structure",
-              "type": "core::bool"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "upgrade_realm",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::map::TileKey"
-            },
-            {
-              "name": "entity_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "wonder",
-              "type": "core::bool"
-            },
-            {
-              "name": "level",
-              "type": "core::integer::u8"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "vacate",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::map::TileKey"
-            },
-            {
-              "name": "entity_id",
-              "type": "core::integer::u32"
             }
           ],
           "outputs": [],
@@ -1223,22 +950,6 @@
         },
         {
           "type": "function",
-          "name": "relic_discovery_time",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u64"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "discover_relic_chest",
           "inputs": [
             {
@@ -1300,53 +1011,11 @@
           ],
           "outputs": [],
           "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "domain_state",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "world_native::lifecycle::DomainState"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "configure",
-          "inputs": [
-            {
-              "name": "peers",
-              "type": "world_native::lifecycle::Peers"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "activate",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "upgrade",
-          "inputs": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
         }
       ]
     },
     "troops": {
-      "contract": "TroopsDomain",
+      "contract": "TroopsLogic",
       "events": [
         {
           "name": "RowSet",
@@ -1396,35 +1065,6 @@
             },
             {
               "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "name": "RowSet",
-          "prefix": [
-            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
               "type": "core::array::Span::<core::felt252>",
               "kind": "data"
             }
@@ -1708,66 +1348,6 @@
         },
         {
           "type": "function",
-          "name": "explorer",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::troops::ExplorerKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::troops::ExplorerTroops>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "active_explorer",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::troops::ExplorerKey"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::troops::ExplorerTroops"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "authorized_explorer",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::troops::ExplorerKey"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::troops::ExplorerTroops"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "displace_explorer",
           "inputs": [
             {
@@ -1928,70 +1508,6 @@
         },
         {
           "type": "function",
-          "name": "next_guard",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            },
-            {
-              "name": "maximum",
-              "type": "core::integer::u8"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::guards::GuardKey>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "save_guard",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::guards::GuardKey"
-            },
-            {
-              "name": "guard",
-              "type": "world_native::guards::Guard"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "reset_guards",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "save_explorer",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::troops::ExplorerKey"
-            },
-            {
-              "name": "explorer",
-              "type": "world_native::troops::ExplorerTroops"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "finish_battle",
           "inputs": [
             {
@@ -2009,83 +1525,12 @@
           ],
           "outputs": [],
           "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "domain_state",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "world_native::lifecycle::DomainState"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "configure",
-          "inputs": [
-            {
-              "name": "peers",
-              "type": "world_native::lifecycle::Peers"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "activate",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "upgrade",
-          "inputs": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
         }
       ]
     },
     "structures": {
-      "contract": "StructuresDomain",
+      "contract": "StructuresLogic",
       "events": [
-        {
-          "name": "RowSet",
-          "prefix": [
-            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
         {
           "name": "RowSet",
           "prefix": [
@@ -2338,42 +1783,6 @@
         },
         {
           "type": "function",
-          "name": "configure_buildings",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "rules",
-              "type": "core::array::Span::<world_native::buildings::BuildingRuleConfig>"
-            },
-            {
-              "name": "board",
-              "type": "core::option::Option::<world_native::buildings::BoardRules>"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "building_rule",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::buildings::BuildingRuleKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::buildings::BuildingRule"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "create_discovery",
           "inputs": [
             {
@@ -2403,70 +1812,6 @@
             }
           ],
           "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "building",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::buildings::BuildingKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::buildings::Building>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "structure_buildings",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::buildings::StructureBuildings"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "structure",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::structures::Structure>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "structure_owner",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "state_mutability": "view"
         },
         {
           "type": "function",
@@ -2523,22 +1868,6 @@
             {
               "name": "timestamp",
               "type": "core::integer::u64"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "remove_explorer",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            },
-            {
-              "name": "explorer_id",
-              "type": "core::integer::u32"
             }
           ],
           "outputs": [],
@@ -2674,230 +2003,6 @@
         },
         {
           "type": "function",
-          "name": "create_building",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::buildings::CreateBuilding"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "destroy_building",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::buildings::ChangeBuilding"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "pause_building_production",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::buildings::ChangeBuilding"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "resume_building_production",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::buildings::ChangeBuilding"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "buy_realm_upgrade",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::upgrades::BuyRealmUpgrade"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "level_up",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "structure_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "entity_name",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::names::AddressName"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "set_entity_name",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::names::SetEntityName"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "address_name",
-          "inputs": [
-            {
-              "name": "address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::names::AddressName"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "set_address_name",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::names::SetAddressName"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "transfer_structure_ownership",
           "inputs": [
             {
@@ -2942,22 +2047,23 @@
         },
         {
           "type": "function",
-          "name": "domain_state",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "world_native::lifecycle::DomainState"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "configure",
+          "name": "set_entity_name",
           "inputs": [
             {
-              "name": "peers",
-              "type": "world_native::lifecycle::Peers"
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::names::SetEntityName"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
             }
           ],
           "outputs": [],
@@ -2965,18 +2071,23 @@
         },
         {
           "type": "function",
-          "name": "activate",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "upgrade",
+          "name": "set_address_name",
           "inputs": [
             {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash"
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::names::SetAddressName"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
             }
           ],
           "outputs": [],
@@ -2985,7 +2096,7 @@
       ]
     },
     "settlement": {
-      "contract": "SettlementDomain",
+      "contract": "SettlementLogic",
       "events": [
         {
           "name": "RowSet",
@@ -3048,35 +2159,6 @@
         {
           "name": "RowSet",
           "prefix": [
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "name": "RowSet",
-          "prefix": [
-            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
             "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
           ],
           "members": [
@@ -3193,273 +2275,6 @@
       "entrypoints": [
         {
           "type": "function",
-          "name": "configure_upgrades",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "limits",
-              "type": "world_native::upgrades::UpgradeLimits"
-            },
-            {
-              "name": "recipes",
-              "type": "core::array::Span::<world_native::upgrades::UpgradeRecipe>"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "upgrade_limits",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::upgrades::UpgradeLimits"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "upgrade_recipe",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "level",
-              "type": "core::integer::u8"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::upgrades::UpgradeRecipe"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "configure_depths",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "depths",
-              "type": "core::array::Span::<world_native::expeditions::DepthRules>"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "depth_rules",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "depth",
-              "type": "core::integer::u8"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::expeditions::DepthRules"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "initialize_realm_traits",
-          "inputs": [
-            {
-              "name": "first_realm",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "packed_traits",
-              "type": "core::array::Span::<core::integer::u32>"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "realm_catalogue",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "world_native::realms::RealmCatalogue"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "realm_traits",
-          "inputs": [
-            {
-              "name": "realm_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::realms::RealmTraits"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "available_realm",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "index",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u32"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "settle_season",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::realms::SettleSeason"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "configure_villages",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "rules",
-              "type": "world_native::village::VillageRules"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "village_rules",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::village::VillageRules"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "register_village_pass",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::village::VillagePassKey"
-            },
-            {
-              "name": "owner",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "village_pass",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::village::VillagePassKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::village::VillagePass>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "settle_village",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::village::SettleVillage"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "configure_settlement",
           "inputs": [
             {
@@ -3477,106 +2292,6 @@
           ],
           "outputs": [],
           "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "blitz_settlement_order",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::array::Span::<core::integer::u8>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "player_has_settled",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "player",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::bool"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "settlement_rules",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::settlement::SettlementRules"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "realm_grants",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::settlement::RealmGrants"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "settlement_progress",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::settlement::SettlementProgress"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "player_entry",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::settlement::EntryKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::settlement::PlayerEntry>"
-            }
-          ],
-          "state_mutability": "view"
         },
         {
           "type": "function",
@@ -3636,22 +2351,19 @@
         },
         {
           "type": "function",
-          "name": "domain_state",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "world_native::lifecycle::DomainState"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "configure",
+          "name": "configure_upgrades",
           "inputs": [
             {
-              "name": "peers",
-              "type": "world_native::lifecycle::Peers"
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "limits",
+              "type": "world_native::upgrades::UpgradeLimits"
+            },
+            {
+              "name": "recipes",
+              "type": "core::array::Span::<world_native::upgrades::UpgradeRecipe>"
             }
           ],
           "outputs": [],
@@ -3659,18 +2371,111 @@
         },
         {
           "type": "function",
-          "name": "activate",
-          "inputs": [],
+          "name": "configure_depths",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "depths",
+              "type": "core::array::Span::<world_native::expeditions::DepthRules>"
+            }
+          ],
           "outputs": [],
           "state_mutability": "external"
         },
         {
           "type": "function",
-          "name": "upgrade",
+          "name": "initialize_realm_traits",
           "inputs": [
             {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash"
+              "name": "first_realm",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "packed_traits",
+              "type": "core::array::Span::<core::integer::u32>"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "settle_season",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::realms::SettleSeason"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "configure_villages",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "rules",
+              "type": "world_native::village::VillageRules"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "register_village_pass",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::village::VillagePassKey"
+            },
+            {
+              "name": "owner",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "settle_village",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::village::SettleVillage"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
             }
           ],
           "outputs": [],
@@ -3702,41 +2507,12 @@
       ]
     },
     "resources": {
-      "contract": "ResourcesDomain",
+      "contract": "ResourcesLogic",
       "events": [
         {
           "name": "RowSet",
           "prefix": [
             "0x3f8d2b7184800a3615eb15bdc8b7e169c17d2f34db6312ff6ce82a5f7e435d9",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "name": "RowSet",
-          "prefix": [
-            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
             "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
           ],
           "members": [
@@ -3977,86 +2753,6 @@
       "entrypoints": [
         {
           "type": "function",
-          "name": "resource_arrival",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::arrivals::ArrivalKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::arrivals::Arrival"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "has_resource",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::bool"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "resource_balance",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceSlot"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u128"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "resource_production",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceSlot"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::resources::Production"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "production_receiver",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceSlot"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::resources::ProductionReceiver>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "redirect_production",
           "inputs": [
             {
@@ -4082,42 +2778,6 @@
           ],
           "outputs": [],
           "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "resource_weight",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::resources::Weight"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "resource_rule",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "resource_type",
-              "type": "core::integer::u8"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::resources::ResourceRule"
-            }
-          ],
-          "state_mutability": "view"
         },
         {
           "type": "function",
@@ -4397,78 +3057,6 @@
         },
         {
           "type": "function",
-          "name": "configure_mines",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "kinds",
-              "type": "core::array::Span::<world_native::mines::MineKindEntry>"
-            },
-            {
-              "name": "surface",
-              "type": "core::array::Span::<world_native::mines::MineWeight>"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "mine_kind",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::mines::MineKindKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::mines::MineKindConfig"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "mine_pool",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::mines::MinePoolKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::array::Span::<world_native::mines::MineWeight>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "mine_draw",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::mines::MinePoolKey"
-            },
-            {
-              "name": "seed",
-              "type": "core::integer::u256"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "(core::integer::u8, world_native::mines::MineKindConfig, core::integer::u128)"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "grant_exploration_reward",
           "inputs": [
             {
@@ -4486,126 +3074,6 @@
             {
               "name": "timestamp",
               "type": "core::integer::u64"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "apply_production_relic",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            },
-            {
-              "name": "relic_id",
-              "type": "core::integer::u8"
-            },
-            {
-              "name": "rule",
-              "type": "world_native::relics::RelicRule"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "configure_production",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "recipes",
-              "type": "core::array::Span::<world_native::production::RecipeConfig>"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "production_recipe",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::production::RecipeKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::production::ProductionRecipe"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "production_bonus",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::production::ProductionBonus"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "burn_labor_for_resource_production",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::production::RefillProduction"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "burn_resource_for_resource_production",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::production::RefillProduction"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
             }
           ],
           "outputs": [],
@@ -4754,53 +3222,11 @@
           ],
           "outputs": [],
           "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "domain_state",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "world_native::lifecycle::DomainState"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "configure",
-          "inputs": [
-            {
-              "name": "peers",
-              "type": "world_native::lifecycle::Peers"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "activate",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "upgrade",
-          "inputs": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
         }
       ]
     },
     "economy": {
-      "contract": "EconomyDomain",
+      "contract": "EconomyLogic",
       "events": [
         {
           "name": "RowSet",
@@ -4910,35 +3336,6 @@
             {
               "name": "timestamp",
               "type": "core::integer::u64",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "name": "RowSet",
-          "prefix": [
-            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
               "kind": "data"
             }
           ]
@@ -5151,38 +3548,6 @@
         },
         {
           "type": "function",
-          "name": "trade_rules",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::trade::TradeRules"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "trade_order",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::trade::TradeKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::trade::TradeOrder>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "create_trade_order",
           "inputs": [
             {
@@ -5271,38 +3636,6 @@
         },
         {
           "type": "function",
-          "name": "bank_rules",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::market::BankRules"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "bank_name",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::felt252"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "market",
           "inputs": [
             {
@@ -5313,22 +3646,6 @@
           "outputs": [
             {
               "type": "world_native::market::Market"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "liquidity",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::market::LiquidityKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u128"
             }
           ],
           "state_mutability": "view"
@@ -5736,83 +4053,12 @@
           ],
           "outputs": [],
           "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "domain_state",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "world_native::lifecycle::DomainState"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "configure",
-          "inputs": [
-            {
-              "name": "peers",
-              "type": "world_native::lifecycle::Peers"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "activate",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "upgrade",
-          "inputs": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
         }
       ]
     },
     "relics": {
-      "contract": "RelicsDomain",
+      "contract": "RelicsLogic",
       "events": [
-        {
-          "name": "RowSet",
-          "prefix": [
-            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
         {
           "name": "RowSet",
           "prefix": [
@@ -5893,48 +4139,6 @@
         }
       ],
       "entrypoints": [
-        {
-          "type": "function",
-          "name": "domain_state",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "world_native::lifecycle::DomainState"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "configure",
-          "inputs": [
-            {
-              "name": "peers",
-              "type": "world_native::lifecycle::Peers"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "activate",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "upgrade",
-          "inputs": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
         {
           "type": "function",
           "name": "configure_relics",
@@ -6210,37 +4414,8 @@
       ]
     },
     "prizes": {
-      "contract": "PrizesDomain",
+      "contract": "PrizesLogic",
       "events": [
-        {
-          "name": "RowSet",
-          "prefix": [
-            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
         {
           "name": "RowSet",
           "prefix": [
@@ -6530,70 +4705,6 @@
       "entrypoints": [
         {
           "type": "function",
-          "name": "wonder_faith",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::faith::WonderFaith"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "faithful_structure",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::faith::FaithfulStructure"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "player_faith_points",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::faith::PlayerFaithKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::faith::PlayerFaithPoints"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "wonder_faith_winners",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::faith::WonderFaithWinners"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
           "name": "transfer_faith_ownership",
           "inputs": [
             {
@@ -6611,90 +4722,6 @@
           ],
           "outputs": [],
           "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "bitcoin_mine",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::bitcoin::MineFunding"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "bitcoin_claimed",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::bitcoin::ClaimKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::bool"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "bitcoin_phase",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::bitcoin::PhaseKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::bitcoin::Phase"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "bitcoin_contribution",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::bitcoin::ContributionKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::bitcoin::Contribution"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "bitcoin_contributor",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::bitcoin::PhaseKey"
-            },
-            {
-              "name": "index",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "state_mutability": "view"
         },
         {
           "type": "function",
@@ -7051,87 +5078,16 @@
             }
           ],
           "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "domain_state",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "world_native::lifecycle::DomainState"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "configure",
-          "inputs": [
-            {
-              "name": "peers",
-              "type": "world_native::lifecycle::Peers"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "activate",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "upgrade",
-          "inputs": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
         }
       ]
     },
     "registry": {
-      "contract": "RegistryDomain",
+      "contract": "RegistryLogic",
       "events": [
         {
           "name": "RowSet",
           "prefix": [
             "0x3e037e958ba3b5c1cc99ac16aaf9896423eebd03183c41fbb26548a12336e5f",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "name": "RowSet",
-          "prefix": [
-            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
             "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
           ],
           "members": [
@@ -7243,102 +5199,6 @@
       "entrypoints": [
         {
           "type": "function",
-          "name": "ownership_rules_ready",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::bool"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "game",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::game::GameRegistry"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "rules",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::rules::SliceRules"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "write_game",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "game",
-              "type": "world_native::game::GameRegistry"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "start_blitz",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "allocate_entity",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u32"
-            }
-          ],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
           "name": "register_preset",
           "inputs": [
             {
@@ -7430,48 +5290,6 @@
               "type": "core::integer::u32"
             }
           ],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "domain_state",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "world_native::lifecycle::DomainState"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "configure",
-          "inputs": [
-            {
-              "name": "peers",
-              "type": "world_native::lifecycle::Peers"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "activate",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "upgrade",
-          "inputs": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash"
-            }
-          ],
-          "outputs": [],
           "state_mutability": "external"
         },
         {
@@ -7649,37 +5467,8 @@
       ]
     },
     "combat": {
-      "contract": "CombatDomain",
+      "contract": "CombatLogic",
       "events": [
-        {
-          "name": "RowSet",
-          "prefix": [
-            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
         {
           "name": "BattleEvent",
           "prefix": [
@@ -7912,123 +5701,12 @@
           ],
           "outputs": [],
           "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "raid",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::combat_actions::Raid"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "village_last_raided",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u64"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "domain_state",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "world_native::lifecycle::DomainState"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "configure",
-          "inputs": [
-            {
-              "name": "peers",
-              "type": "world_native::lifecycle::Peers"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "activate",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "upgrade",
-          "inputs": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
         }
       ]
     },
     "bridge": {
-      "contract": "BridgeDomain",
+      "contract": "BridgeLogic",
       "events": [
-        {
-          "name": "RowSet",
-          "prefix": [
-            "0x1517f684ec2bc21ca20251bbef26b7ad0434759388fc50e84858abf49e4024b",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
         {
           "name": "RowSet",
           "prefix": [
@@ -8153,80 +5831,6 @@
             {
               "name": "tokens",
               "type": "core::array::Span::<world_native::withdrawals::ResourceToken>"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "withdrawal_rules",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "world_native::withdrawals::WithdrawalRules"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "resource_token",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::market::MarketKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "domain_state",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "world_native::lifecycle::DomainState"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "configure",
-          "inputs": [
-            {
-              "name": "peers",
-              "type": "world_native::lifecycle::Peers"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "activate",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "upgrade",
-          "inputs": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash"
             }
           ],
           "outputs": [],
@@ -12222,92 +9826,6 @@
       }
     },
     {
-      "name": "DomainState",
-      "identity": "0x446f6d61696e5374617465",
-      "owners": [
-        "season",
-        "map",
-        "troops",
-        "structures",
-        "settlement",
-        "resources",
-        "economy",
-        "relics",
-        "prizes",
-        "registry",
-        "combat",
-        "bridge"
-      ],
-      "scope": "deployment",
-      "emitterKey": "address",
-      "keys": [
-        {
-          "name": "address",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "authority",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x617574686f72697479",
-          "feltLength": 1
-        },
-        {
-          "name": "peers",
-          "type": "world_native::lifecycle::Peers",
-          "id": "0x7065657273",
-          "feltLength": 12
-        },
-        {
-          "name": "active",
-          "type": "core::bool",
-          "id": "0x616374697665",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 14
-    },
-    {
-      "name": "DomainClass",
-      "identity": "0x446f6d61696e436c617373",
-      "owners": [
-        "season",
-        "map",
-        "troops",
-        "structures",
-        "settlement",
-        "resources",
-        "economy",
-        "relics",
-        "prizes",
-        "registry",
-        "combat",
-        "bridge"
-      ],
-      "scope": "deployment",
-      "emitterKey": "address",
-      "keys": [
-        {
-          "name": "address",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "class_hash",
-          "type": "core::starknet::class_hash::ClassHash",
-          "id": "0x636c6173735f68617368",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1
-    },
-    {
       "name": "Authentication",
       "identity": "0x41757468656e7469636174696f6e",
       "owners": [
@@ -13071,34 +10589,6 @@
         }
       ]
     },
-    "core::option::Option::<world_native::buildings::Building>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::buildings::Building>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::buildings::Building"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::guards::GuardKey>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::guards::GuardKey>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::guards::GuardKey"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
     "core::option::Option::<world_native::guilds::Guild>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::guilds::Guild>",
@@ -13120,20 +10610,6 @@
         {
           "name": "Some",
           "type": "world_native::hyperstructures::Hyperstructure"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::map::TileOpt>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::map::TileOpt>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::map::TileOpt"
         },
         {
           "name": "None",
@@ -13183,20 +10659,6 @@
         }
       ]
     },
-    "core::option::Option::<world_native::resources::ProductionReceiver>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::resources::ProductionReceiver>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::resources::ProductionReceiver"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
     "core::option::Option::<world_native::rules::MapConfig>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::rules::MapConfig>",
@@ -13225,20 +10687,6 @@
         }
       ]
     },
-    "core::option::Option::<world_native::settlement::PlayerEntry>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::settlement::PlayerEntry>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::settlement::PlayerEntry"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
     "core::option::Option::<world_native::spires::SpireLayout>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::spires::SpireLayout>",
@@ -13246,34 +10694,6 @@
         {
           "name": "Some",
           "type": "world_native::spires::SpireLayout"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::structures::Structure>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::structures::Structure>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::structures::Structure"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::trade::TradeOrder>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::trade::TradeOrder>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::trade::TradeOrder"
         },
         {
           "name": "None",
@@ -13295,31 +10715,17 @@
         }
       ]
     },
-    "core::option::Option::<world_native::troops::ExplorerTroops>": {
+    "core::result::Result::<core::array::Span::<core::felt252>, core::felt252>": {
       "type": "enum",
-      "name": "core::option::Option::<world_native::troops::ExplorerTroops>",
+      "name": "core::result::Result::<core::array::Span::<core::felt252>, core::felt252>",
       "variants": [
         {
-          "name": "Some",
-          "type": "world_native::troops::ExplorerTroops"
+          "name": "Ok",
+          "type": "core::array::Span::<core::felt252>"
         },
         {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::village::VillagePass>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::village::VillagePass>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::village::VillagePass"
-        },
-        {
-          "name": "None",
-          "type": "()"
+          "name": "Err",
+          "type": "core::felt252"
         }
       ]
     },
@@ -13442,6 +10848,76 @@
         {
           "name": "state",
           "type": "core::felt252"
+        }
+      ]
+    },
+    "games_storage::release::LogicClasses": {
+      "type": "struct",
+      "name": "games_storage::release::LogicClasses",
+      "members": [
+        {
+          "name": "season",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "map",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "placement",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "construction",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "production",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "structures",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "troops",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "settlement",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "resources",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "economy",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "prizes",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "registry",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "combat",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "raid",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "bridge",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "relics",
+          "type": "core::starknet::class_hash::ClassHash"
         }
       ]
     },
@@ -14809,20 +12285,6 @@
         }
       ]
     },
-    "world_native::faith::WonderFaithWinners": {
-      "type": "struct",
-      "name": "world_native::faith::WonderFaithWinners",
-      "members": [
-        {
-          "name": "high_score",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "wonder_ids",
-          "type": "core::array::Span::<core::integer::u32>"
-        }
-      ]
-    },
     "world_native::game::GameRegistry": {
       "type": "struct",
       "name": "world_native::game::GameRegistry",
@@ -14896,6 +12358,34 @@
         {
           "name": "Hyperstructure",
           "type": "()"
+        }
+      ]
+    },
+    "world_native::games::Authentication": {
+      "type": "struct",
+      "name": "world_native::games::Authentication",
+      "members": [
+        {
+          "name": "submitter",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "account_class",
+          "type": "core::starknet::class_hash::ClassHash"
+        }
+      ]
+    },
+    "world_native::games::DeploymentConfiguration": {
+      "type": "struct",
+      "name": "world_native::games::DeploymentConfiguration",
+      "members": [
+        {
+          "name": "authority",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "classes",
+          "type": "games_storage::release::LogicClasses"
         }
       ]
     },
@@ -15222,78 +12712,6 @@
         {
           "name": "Complete",
           "type": "()"
-        }
-      ]
-    },
-    "world_native::lifecycle::DomainState": {
-      "type": "struct",
-      "name": "world_native::lifecycle::DomainState",
-      "members": [
-        {
-          "name": "authority",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "peers",
-          "type": "world_native::lifecycle::Peers"
-        },
-        {
-          "name": "active",
-          "type": "core::bool"
-        }
-      ]
-    },
-    "world_native::lifecycle::Peers": {
-      "type": "struct",
-      "name": "world_native::lifecycle::Peers",
-      "members": [
-        {
-          "name": "season",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "map",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "structures",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "troops",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "settlement",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "resources",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "economy",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "prizes",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "registry",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "combat",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "bridge",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "relics",
-          "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
     },
@@ -17321,20 +14739,6 @@
         }
       ]
     },
-    "world_native::season::Authentication": {
-      "type": "struct",
-      "name": "world_native::season::Authentication",
-      "members": [
-        {
-          "name": "submitter",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "account_class",
-          "type": "core::starknet::class_hash::ClassHash"
-        }
-      ]
-    },
     "world_native::settlement::EntryEntitlement": {
       "type": "struct",
       "name": "world_native::settlement::EntryEntitlement",
@@ -18334,5 +15738,5 @@
       ]
     }
   },
-  "identity": "55b011d27627d45b774b472650f7bc55fd9aaf7629d94e56bd286642a468829c"
+  "identity": "3f516829bed4c50a4a156003700bee585fb6e19ef1506286d752e436627ad0c0"
 }

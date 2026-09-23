@@ -1,18 +1,7 @@
 {
-  "schemaIdentity": "55b011d27627d45b774b472650f7bc55fd9aaf7629d94e56bd286642a468829c",
+  "schemaIdentity": "3f516829bed4c50a4a156003700bee585fb6e19ef1506286d752e436627ad0c0",
   "deployment": {
-    "season": "0x101",
-    "map": "0x102",
-    "troops": "0x100",
-    "structures": "0x104",
-    "settlement": "0x105",
-    "resources": "0x106",
-    "economy": "0x107",
-    "relics": "0x108",
-    "prizes": "0x109",
-    "registry": "0x10a",
-    "combat": "0x10b",
-    "bridge": "0x10c"
+    "games": "0x100"
   },
   "raw": {
     "from_address": "0x100",

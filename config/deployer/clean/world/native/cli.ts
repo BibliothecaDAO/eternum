@@ -69,7 +69,7 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
       {
         event: "native_world_deployment",
         ...report,
-        classSizes: local.domains.map((domain) => ({
+        classSizes: [...local.logic, { name: "games", ...local.games }].map((domain) => ({
           domain: domain.name,
           sierraFelts: domain.sierra.sierra_program.length,
           casmFelts: domain.casm.bytecode.length,

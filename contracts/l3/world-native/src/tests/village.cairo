@@ -6,15 +6,18 @@ use snforge_std::{
 };
 use crate::commands::{Command, ExecutionContext};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait, IPointsDispatcherTrait};
-use crate::map::{IMapDispatcher, IMapDispatcherTrait};
-use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceKey, ResourceRule, ResourceSlot};
-use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
+use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
+use crate::map::IMapLogicDispatcher;
+use crate::resources::{
+    IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceRule, ResourceSlot,
+};
 use crate::settlement::{
     ISettlementConfigurationDispatcher, ISettlementConfigurationDispatcherTrait, ISettlementCreationDispatcher,
     ISettlementCreationDispatcherTrait, ISettlementPoolDispatcher, ISettlementPoolDispatcherTrait, RealmGrants,
     SettlementMode, SettlementRules,
 };
-use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
+use crate::structures::IStructureOperationsDispatcher;
+use crate::tests::state::{MapObservationTrait, ResourceObservationTrait, StructureObservationTrait};
 use crate::troops::Coord;
 use crate::village::{
     IVillagesDispatcher, IVillagesDispatcherTrait, IVillagesSafeDispatcher, IVillagesSafeDispatcherTrait, SettleVillage,
@@ -35,42 +38,39 @@ fn setup(dev: bool) -> (Deployment, u32) {
     setup_config(dev, SettlementMode::Single, recorded::rules())
 }
 fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::SliceRules) -> (Deployment, u32) {
-    let deployment = super::setup_with_domains(true, "StructuresDomain", "TroopsDomain");
+    let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
     super::entry::set_operator(deployment, authority());
-    let games = IGameDispatcher { contract_address: deployment.peers.registry };
+    let games = IGameDispatcher { contract_address: deployment.games };
     super::recorded::seed_game(
-        deployment.peers.registry, 3, crate::game::GameRegistry { dev_mode_on: dev, ..games.game(1) }, game_rules,
+        deployment.games, 3, crate::game::GameRegistry { dev_mode_on: dev, ..games.game(1) }, game_rules,
     );
-    recorded::configure_submitter(deployment.peers.season, super::submitter());
+    recorded::configure_submitter(deployment.games, super::submitter());
     let data = read_txt(@FileTrait::new("tests/fixtures/settlement.txt"));
     let mut fields = data.span();
     let grants: RealmGrants = Serde::deserialize(ref fields).unwrap();
-    start_cheat_caller_address(deployment.peers.settlement, authority());
-    ISettlementConfigurationDispatcher { contract_address: deployment.peers.settlement }
+    start_cheat_caller_address(deployment.games, authority());
+    ISettlementConfigurationDispatcher { contract_address: deployment.games }
         .configure_settlement(
             3, SettlementRules { registration_start: 0, registration_limit: 2, mode, spacing: 6 }, grants,
         );
-    IVillagesDispatcher { contract_address: deployment.peers.settlement }
+    IVillagesDispatcher { contract_address: deployment.games }
         .configure_villages(3, VillageRules { troop_delay_ticks: 2, ..village_rules() });
-    stop_cheat_caller_address(deployment.peers.settlement);
+    stop_cheat_caller_address(deployment.games);
     let data = read_txt(@FileTrait::new("tests/fixtures/preset-3.txt"));
     let mut fields = data.span();
     let _: crate::rules::SliceRules = Serde::deserialize(ref fields).unwrap();
     let resources: Span<ResourceRule> = Serde::deserialize(ref fields).unwrap();
     let buildings: Span<crate::buildings::BuildingRuleConfig> = Serde::deserialize(ref fields).unwrap();
-    start_cheat_caller_address(deployment.peers.structures, authority());
-    start_cheat_caller_address(deployment.peers.resources, authority());
-    IResourcesDispatcher { contract_address: deployment.peers.resources }.configure_resources(3, resources);
+    start_cheat_caller_address(deployment.games, authority());
+    start_cheat_caller_address(deployment.games, authority());
+    IResourceOperationsDispatcher { contract_address: deployment.games }.configure_resources(3, resources);
     crate::buildings::IBuildingRulesDispatcherTrait::configure_buildings(
-        crate::buildings::IBuildingRulesDispatcher { contract_address: deployment.peers.structures },
-        3,
-        buildings,
-        None,
+        crate::buildings::IBuildingRulesDispatcher { contract_address: deployment.games }, 3, buildings, None,
     );
 
-    stop_cheat_caller_address(deployment.peers.resources);
-    start_cheat_caller_address(deployment.peers.structures, deployment.peers.settlement);
-    let realm = ISettlementCreationDispatcher { contract_address: deployment.peers.structures }
+    stop_cheat_caller_address(deployment.games);
+    start_cheat_caller_address(deployment.games, deployment.games);
+    let realm = ISettlementCreationDispatcher { contract_address: deployment.games }
         .create_settlement(
             3,
             deployment.actor,
@@ -85,39 +85,35 @@ fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::Slice
             ),
             context(),
         );
-    stop_cheat_caller_address(deployment.peers.structures);
+    stop_cheat_caller_address(deployment.games);
     (deployment, realm)
 }
 
 fn run(deployment: Deployment, command: Command, timestamp: u64) -> bool {
     start_cheat_block_timestamp_global(timestamp);
-    let season = ISeasonDispatcher { contract_address: deployment.peers.season };
+    let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
     let action = recorded::FixtureAction {
         command,
-        rules: IGameDispatcher { contract_address: deployment.peers.registry }.rules(3),
+        rules: IGameDispatcher { contract_address: deployment.games }.rules(3),
         nonce: season.next_nonce(3, deployment.actor),
         deadline: 10000,
         ..intent(deployment, 3),
     };
     let signed = signature(deployment, action);
-    let ticket = recorded::make_intent(deployment.peers.season, action);
+    let ticket = recorded::make_intent(deployment.games, action);
     let recorded_context = recorded::make_context(
-        deployment.peers.season, action, ExecutionContext { timestamp, ..context() },
+        deployment.games, action, ExecutionContext { timestamp, ..context() },
     );
-    snforge_std::start_cheat_block_timestamp(deployment.peers.season, timestamp);
-    snforge_std::cheat_caller_address(
-        deployment.peers.season, super::submitter(), snforge_std::CheatSpan::TargetCalls(1),
-    );
+    snforge_std::start_cheat_block_timestamp(deployment.games, timestamp);
+    snforge_std::cheat_caller_address(deployment.games, super::submitter(), snforge_std::CheatSpan::TargetCalls(1));
     eternum_randomness_protocol::entrypoint::IRecordedExecutionDispatcherTrait::execute(
-        eternum_randomness_protocol::entrypoint::IRecordedExecutionDispatcher {
-            contract_address: deployment.peers.season,
-        },
+        eternum_randomness_protocol::entrypoint::IRecordedExecutionDispatcher { contract_address: deployment.games },
         ticket,
         recorded_context,
         signed,
     );
-    IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }
-        .recorded_outcome(3, super::recorded::head(deployment.peers.season, 3).order)
+    IRecordedExecutionViewsDispatcher { contract_address: deployment.games }
+        .recorded_outcome(3, super::recorded::head(deployment.games, 3).order)
         .unwrap()
         .status == 1
 }
@@ -130,32 +126,32 @@ fn settle(realm: u32, pass_id: u16) -> Command {
 #[feature("safe_dispatcher")]
 fn production_pass_is_atomic_single_use_and_army_grant_uses_recorded_time() {
     let (deployment, realm) = setup(false);
-    let ledger = IVillagesSafeDispatcher { contract_address: deployment.peers.settlement };
+    let ledger = IVillagesSafeDispatcher { contract_address: deployment.games };
     let pass = VillagePassKey { game_id: 3, pass_id: 7 };
     assert!(!run(deployment, settle(realm, 7), 100));
     assert!(ledger.village_pass(pass).unwrap().is_none());
-    start_cheat_caller_address(deployment.peers.settlement, deployment.actor);
+    start_cheat_caller_address(deployment.games, deployment.actor);
     assert!(ledger.register_village_pass(pass, deployment.actor).is_err());
-    start_cheat_caller_address(deployment.peers.settlement, authority());
+    start_cheat_caller_address(deployment.games, authority());
     ledger.register_village_pass(pass, deployment.actor).unwrap();
     assert!(ledger.register_village_pass(pass, 0x333.try_into().unwrap()).is_err());
-    stop_cheat_caller_address(deployment.peers.settlement);
-    let realm_map = IMapDispatcher { contract_address: deployment.peers.map };
+    stop_cheat_caller_address(deployment.games);
+    let realm_map = IMapLogicDispatcher { contract_address: deployment.games };
     for direction in 0_u8..6 {
         let neighbor = crate::geometry::neighbor(Coord { alt: false, x: 2000000, y: 2000000 }, direction);
         let tile = realm_map.tile(crate::geometry::tile_key(3, neighbor)).unwrap();
         assert!(tile.data % 0x20000000000 == 0, "realm neighbours must be biome only");
         assert!(tile.data / 0x20000000000 % 256 != 0, "realm neighbour biome missing");
     }
-    let pools = ISettlementPoolDispatcher { contract_address: deployment.peers.map };
+    let pools = ISettlementPoolDispatcher { contract_address: deployment.games };
     let before = pools.village_pool(3);
     assert!(!run(deployment, settle(0xffffffff, 7), 100));
     assert!(ledger.village_pass(pass).unwrap().unwrap().village_id == 0);
     assert!(pools.village_pool(3) == before, "failed placement retained reservations");
     assert!(run(deployment, settle(realm, 7), 100));
     let village_id = ledger.village_pass(pass).unwrap().unwrap().village_id;
-    let structures = IStructuresDispatcher { contract_address: deployment.peers.structures };
-    let resource_store = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
+    let resource_store = IResourceOperationsDispatcher { contract_address: deployment.games };
     let key = ResourceKey { game_id: 3, entity_id: village_id };
     let village = structures.structure(key).unwrap();
     assert!(village.base.category == 5 && village.metadata.village_realm == realm);
@@ -167,15 +163,14 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_recorded_time() {
             .production_rate > 0,
     );
     let coord = Coord { alt: false, x: village.base.coord_x, y: village.base.coord_y };
-    let map = IMapDispatcher { contract_address: deployment.peers.map };
+    let map = IMapLogicDispatcher { contract_address: deployment.games };
     for direction in 0_u8..6 {
         let tile = map.tile(crate::geometry::tile_key(3, crate::geometry::neighbor(coord, direction))).unwrap();
         assert!(tile.data % 0x20000000000 == 0, "settlement surroundings must have no occupant or discovery");
         assert!(tile.data / 0x20000000000 % 256 != 0, "neighbour biome missing");
     }
     assert!(
-        crate::game::IPointsDispatcher { contract_address: deployment.peers.season }
-            .player_points(3, deployment.actor) == 0,
+        crate::game::IPointsDispatcher { contract_address: deployment.games }.player_points(3, deployment.actor) == 0,
     );
     assert!(!run(deployment, settle(realm, 7), 100));
     assert!(!run(deployment, Command::ReceiveVillageArmy(village_id), 100));
@@ -184,7 +179,7 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_recorded_time() {
     let mut spy = spy_events();
     assert!(run(deployment, Command::ReceiveVillageArmy(village_id), claimable_at));
     let mut guard_stories = 0;
-    for (_, event) in spy.get_events().emitted_by(deployment.peers.structures).events.span() {
+    for (_, event) in spy.get_events().emitted_by(deployment.games).events.span() {
         if *event.keys.at(0) == selector!("StoryEvent") {
             let mut data = event.data.span();
             let story: crate::ownership::Story = Serde::deserialize(ref data).unwrap();
@@ -201,7 +196,7 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_recorded_time() {
     assert!(granted.base.starting_troops_granted);
     assert!(
         crate::guards::IGuardsDispatcherTrait::guard(
-            crate::guards::IGuardsDispatcher { contract_address: deployment.peers.troops },
+            crate::guards::IGuardsDispatcher { contract_address: deployment.games },
             crate::guards::GuardKey { game_id: 3, structure_id: village_id, slot: 0 },
         )
             .troops
@@ -217,16 +212,15 @@ fn development_villages_skip_passes_and_have_no_six_per_realm_limit() {
     for _ in 0..7_u8 {
         assert!(run(deployment, settle(realm, 0), 100));
     }
-    let ledger = IVillagesDispatcher { contract_address: deployment.peers.settlement };
+    let ledger = IVillagesDispatcher { contract_address: deployment.games };
     assert!(ledger.village_pass(VillagePassKey { game_id: 3, pass_id: 0 }).is_none());
 }
 
-
 fn register_pass(deployment: Deployment, pass_id: u16) -> VillagePassKey {
     let key = VillagePassKey { game_id: 3, pass_id };
-    start_cheat_caller_address(deployment.peers.settlement, authority());
-    IVillagesDispatcher { contract_address: deployment.peers.settlement }.register_village_pass(key, deployment.actor);
-    stop_cheat_caller_address(deployment.peers.settlement);
+    start_cheat_caller_address(deployment.games, authority());
+    IVillagesDispatcher { contract_address: deployment.games }.register_village_pass(key, deployment.actor);
+    stop_cheat_caller_address(deployment.games);
     key
 }
 
@@ -243,11 +237,11 @@ fn assert_blitz_village(mode: SettlementMode) {
     );
     let pass = register_pass(deployment, 1);
     assert!(run(deployment, settle(realm, 1), 100));
-    let ledger = IVillagesDispatcher { contract_address: deployment.peers.settlement };
+    let ledger = IVillagesDispatcher { contract_address: deployment.games };
     assert!(ledger.village_pass(pass).unwrap().village_id != 0);
     assert!(!run(deployment, settle(realm, 1), 100));
     let progress = crate::settlement::ISettlementViewsDispatcherTrait::settlement_progress(
-        crate::settlement::ISettlementViewsDispatcher { contract_address: deployment.peers.settlement }, 3,
+        crate::settlement::ISettlementViewsDispatcher { contract_address: deployment.games }, 3,
     );
     assert!(progress.registered == 0 && progress.realm_count == 0);
 }
@@ -269,18 +263,16 @@ fn exhausted_geometry_records_rejection_and_keeps_the_pass() {
     );
     let pass = register_pass(deployment, 9);
     assert!(!run(deployment, settle(realm, 9), 100));
-    let ledger = IVillagesDispatcher { contract_address: deployment.peers.settlement };
+    let ledger = IVillagesDispatcher { contract_address: deployment.games };
     assert!(ledger.village_pass(pass).unwrap().village_id == 0);
-    let pool = ISettlementPoolDispatcher { contract_address: deployment.peers.map };
+    let pool = ISettlementPoolDispatcher { contract_address: deployment.games };
     assert!(pool.village_pool(3).opened == 0 && pool.settlement_pool(3).opened == 0);
-    let season = ISeasonDispatcher { contract_address: deployment.peers.season };
-    let result = IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }
+    let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
+    let result = IRecordedExecutionViewsDispatcher { contract_address: deployment.games }
         .recorded_outcome(3, 1)
         .unwrap();
     assert!(result.status == 2 && result.reason == 'GAMEPLAY_REJECTED');
-    assert!(
-        super::recorded::head(deployment.peers.season, 3).order == 1 && season.next_nonce(3, deployment.actor) == 1,
-    );
+    assert!(super::recorded::head(deployment.games, 3).order == 1 && season.next_nonce(3, deployment.actor) == 1);
 }
 
 #[test]
@@ -290,10 +282,10 @@ fn season_settlement_random_draw_reserves_realm_and_provisions_its_economy() {
     // Catalogue loading is covered separately; this draw uses the pinned salt 71419
     // after scoping raw root 987654321 to game 3 with seed 1: realm 2239.
     super::resource_commands::set_fixture(
-        deployment.peers.settlement, selector!("catalogue_count"), array![].span(), 8000_u32,
+        deployment.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
     );
     super::resource_commands::set_fixture(
-        deployment.peers.settlement, selector!("traits"), array![2239].span(), 0x9000002_u32,
+        deployment.games, selector!("realms"), selector!("traits"), array![2239].span(), 0x9000002_u32,
     );
     let mut spy = spy_events();
     assert!(
@@ -304,7 +296,7 @@ fn season_settlement_random_draw_reserves_realm_and_provisions_its_economy() {
         ),
     );
     let mut created = Option::None;
-    for (_, event) in spy.get_events().emitted_by(deployment.peers.structures).events.span() {
+    for (_, event) in spy.get_events().emitted_by(deployment.games).events.span() {
         if *event.keys.at(0) == selector!("StoryEvent") {
             let mut keys = event.keys.span();
             let _ = keys.pop_front(); // event selector
@@ -322,7 +314,7 @@ fn season_settlement_random_draw_reserves_realm_and_provisions_its_economy() {
     }
     let id = created.expect('missing realm story');
     let key = ResourceKey { game_id: 3, entity_id: id };
-    let row = IStructuresDispatcher { contract_address: deployment.peers.structures }.structure(key).unwrap();
+    let row = IStructureOperationsDispatcher { contract_address: deployment.games }.structure(key).unwrap();
     assert_eq!(row.metadata.realm_id, 2239);
     assert_eq!(row.metadata.order, 5);
     assert!(row.metadata.has_wonder);
@@ -330,20 +322,20 @@ fn season_settlement_random_draw_reserves_realm_and_provisions_its_economy() {
     assert_eq!(row.base.level, 0);
     assert!(row.base.starting_troops_granted);
     assert!(
-        IResourcesDispatcher { contract_address: deployment.peers.resources }
+        IResourceOperationsDispatcher { contract_address: deployment.games }
             .resource_production(ResourceSlot { game_id: 3, entity_id: id, resource_type: 23 })
             .production_rate > 0,
     );
     assert_eq!(
         crate::names::INamesDispatcherTrait::address_name(
-            crate::names::INamesDispatcher { contract_address: deployment.peers.structures }, deployment.actor,
+            crate::names::INamesDispatcher { contract_address: deployment.games }, deployment.actor,
         )
             .name,
         'Season player',
     );
     assert_eq!(
         crate::realms::ISeasonRealmsDispatcherTrait::available_realm(
-            crate::realms::ISeasonRealmsDispatcher { contract_address: deployment.peers.settlement }, 3, 2238,
+            crate::realms::ISeasonRealmsDispatcher { contract_address: deployment.games }, 3, 2238,
         ),
         8000,
     );
@@ -387,7 +379,8 @@ fn assert_season_entitlement_mode(dev: bool, has_operator: bool, has_entitlement
     let owner = d.actor;
     if has_entitlement {
         super::resource_commands::set_fixture(
-            d.peers.settlement,
+            d.games,
+            selector!("settlements"),
             selector!("entitlements"),
             array![3, owner.into()].span(),
             Some(
@@ -402,8 +395,12 @@ fn assert_season_entitlement_mode(dev: bool, has_operator: bool, has_entitlement
     } else {
         0.try_into().unwrap()
     });
-    super::resource_commands::set_fixture(d.peers.settlement, selector!("catalogue_count"), array![].span(), 8000_u32);
-    super::resource_commands::set_fixture(d.peers.settlement, selector!("traits"), array![2239].span(), 0x9000002_u32);
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
+    );
+    super::resource_commands::set_fixture(
+        d.games, selector!("realms"), selector!("traits"), array![2239].span(), 0x9000002_u32,
+    );
     let mut spy = spy_events();
     assert_eq!(
         run(
@@ -414,7 +411,7 @@ fn assert_season_entitlement_mode(dev: bool, has_operator: bool, has_entitlement
         dev || has_entitlement,
     );
     let mut created = false;
-    for (_, event) in spy.get_events().emitted_by(d.peers.structures).events.span() {
+    for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if event.keys.len() >= 3
             && *event.keys.at(event.keys.len() - 3) == selector!("RowSet")
             && *event.keys.at(event.keys.len() - 1) == 'Structure' {

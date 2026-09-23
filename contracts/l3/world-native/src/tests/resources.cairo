@@ -22,21 +22,23 @@ trait IResourceFixture<T> {
 
 #[starknet::contract]
 mod ResourceFixture {
-    use crate::resources::{Production, ResourceKey, ResourceState, Weight};
+    use crate::logic::resources::ResourceState;
+    use crate::resources::{Production, ResourceKey, Weight};
     component!(path: ResourceState, storage: resources, event: ResourceEvent);
-    component!(path: crate::production::ProductionState, storage: recipes, event: RecipeEvent);
+    component!(path: crate::logic::production::ProductionState, storage: recipes, event: RecipeEvent);
     impl Internal = ResourceState::InternalImpl<ContractState>;
     #[storage]
+    #[allow(starknet::colliding_storage_paths)]
     struct Storage {
         #[substorage(v0)]
         resources: ResourceState::Storage,
         #[substorage(v0)]
-        recipes: crate::production::ProductionState::Storage,
+        recipes: crate::logic::production::ProductionState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        RecipeEvent: crate::production::ProductionState::Event,
+        RecipeEvent: crate::logic::production::ProductionState::Event,
         #[flat]
         ResourceEvent: ResourceState::Event,
     }
@@ -61,13 +63,13 @@ mod ResourceFixture {
             self.resources.destroy(key);
         }
         fn balance(self: @ContractState, key: ResourceKey) -> u128 {
-            self.resources.balance(key, 23)
+            crate::logic::resources::balance(key, 23)
         }
         fn production(self: @ContractState, key: ResourceKey) -> Production {
-            self.resources.production(key, 23)
+            crate::logic::resources::production(key, 23)
         }
         fn weight(self: @ContractState, key: ResourceKey) -> Weight {
-            self.resources.weight(key)
+            crate::logic::resources::weight(key)
         }
         fn grant_at(
             ref self: ContractState, key: ResourceKey, resource_type: u8, amount: u128, unit_weight: u128, now: u32,
@@ -84,9 +86,9 @@ mod ResourceFixture {
         }
         fn read_slot(self: @ContractState, key: ResourceKey, resource_type: u8) -> (u128, Production, Weight) {
             (
-                self.resources.balance(key, resource_type),
-                self.resources.production(key, resource_type),
-                self.resources.weight(key),
+                crate::logic::resources::balance(key, resource_type),
+                crate::logic::resources::production(key, resource_type),
+                crate::logic::resources::weight(key),
             )
         }
     }

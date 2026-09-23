@@ -21,39 +21,39 @@ async function fixture(t, classes) {
   return directory;
 }
 
-const schema = { domains: { season: { contract: "SeasonDomain" } } };
+const schema = { domains: { season: { contract: "Games" } } };
 
 test("accepts the headroom boundary and reports every compiled class", async (t) => {
   const directory = await fixture(t, [
-    ["SeasonDomain", 75_366],
+    ["Games", 75_366],
     ["SequencingAccount", 10],
-    ["ExtraDomain", 20],
+    ["ExtraLogic", 20],
   ]);
   const report = await classSizeReport(directory, schema);
   assert.equal(report.passed, true);
   assert.equal(report.classes.length, 3);
-  assert.equal(report.classes.find(({ name }) => name === "SeasonDomain").felts, 75_366);
+  assert.equal(report.classes.find(({ name }) => name === "Games").felts, 75_366);
 });
 
 test("rejects a class one felt above the headroom boundary", async (t) => {
   const directory = await fixture(t, [
-    ["SeasonDomain", 75_367],
+    ["Games", 75_367],
     ["SequencingAccount", 10],
   ]);
   assert.equal((await classSizeReport(directory, schema)).passed, false);
 });
 
-test("rejects a deployed domain missing from the artifact index", async (t) => {
+test("rejects a required class missing from the artifact index", async (t) => {
   const directory = await fixture(t, [["SequencingAccount", 10]]);
   const report = await classSizeReport(directory, schema);
   assert.equal(report.passed, false);
-  assert.match(report.classes.find(({ name }) => name === "SeasonDomain").error, /Missing compiled class/);
+  assert.match(report.classes.find(({ name }) => name === "Games").error, /Missing compiled class/);
 });
 
 test("rejects an indexed class with no artifact file or empty bytecode", async (t) => {
   for (const size of [null, 0]) {
     const directory = await fixture(t, [
-      ["SeasonDomain", size],
+      ["Games", size],
       ["SequencingAccount", 10],
     ]);
     assert.equal((await classSizeReport(directory, schema)).passed, false);

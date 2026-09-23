@@ -6,7 +6,7 @@ function nameEvent(address: string, name: string) {
   const model = schema.models.find((model) => model.name === "AddressName")!;
   const event = schema.domains.structures.events.find((event) => event.name === "RowSet" && event.prefix.length === 1)!;
   return {
-    from_address: manifest.native.domains.structures.address,
+    from_address: manifest.world.address,
     keys: [...event.prefix, "0x1", model.identity],
     data: ["0x1", address, "0x1", name],
   };
@@ -22,13 +22,5 @@ describe("native account names", () => {
       expect(rows[0].value).toEqual({ address: "0x111", name });
       expect(BigInt(rows[0].key)).toBe(BigInt(hash.computePoseidonHashOnElements(["0x111"])));
     }
-  });
-
-  it("rejects another domain's attempt to overwrite an account name atomically", () => {
-    const { native, fold } = setup();
-    native.applyReceipt(fold, receipt([nameEvent("0x111", "0x123")]), 10, 0);
-    const foreign = { ...nameEvent("0x111", "0x789"), from_address: manifest.native.domains.map.address };
-    expect(() => native.applyReceipt(fold, receipt([nameEvent("0x222", "0x456"), foreign]), 10, 1)).toThrow();
-    expect(fold.modelRows("AddressName").map((row) => row.value)).toEqual([{ address: "0x111", name: "0x123" }]);
   });
 });

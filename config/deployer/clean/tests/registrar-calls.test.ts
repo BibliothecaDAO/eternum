@@ -11,11 +11,11 @@ import {
 } from "../registrar/calls";
 
 const manifest = {
-  world: { address: "0x123" },
+  world: { address: "0x123", abi: [...Object.values(schema.types), ...schema.domains.season.entrypoints] },
   native: {
     activeSchema: schema.identity,
     schemas: { [schema.identity]: schema },
-    domains: { registry: { address: "0x456" }, season: { address: "0x123" } },
+    version: 2,
   },
 } as unknown as RegistrarManifest;
 
@@ -27,19 +27,20 @@ describe("native registrar", () => {
     });
   });
   test("rejects a non-native manifest before any transaction", () => {
-    expect(() => assertRegistrarAvailable({ world: { address: "0x123" } } as RegistrarManifest)).toThrow(
-      "native registry ABI",
-    );
+    expect(() => assertRegistrarAvailable({ world: { address: "0x123" } } as RegistrarManifest)).toThrow("Games ABI");
+    const legacy = structuredClone(manifest);
+    legacy.native.schemas[schema.identity].domains.season.contract = "SeasonDomain";
+    expect(() => assertRegistrarAvailable(legacy)).toThrow("Games ABI");
   });
   test("resolves the world from the validated native deployment", () => {
     assertRegistrarAvailable(manifest);
     expect(resolveRegistrarWorldAddress(manifest)).toBe("0x123");
   });
-  test("accepts each declared game row prefix only from the registry domain", () => {
+  test("accepts each declared game row prefix only from Games", () => {
     const model = schema.models.find((model) => model.name === "GameRegistry")!;
     for (const layout of schema.domains.registry.events.filter((event) => event.name === "RowSet")) {
       const event = {
-        from_address: "0x456",
+        from_address: "0x123",
         keys: [...layout.prefix, "1", model.identity],
         data: ["1", "7", "1", "0"],
       };
@@ -64,7 +65,7 @@ test("a ready roster submits no settlement transactions on retry", async () => {
   expect(settlement).toEqual({ finalizeAt: 305, settlementTransactions: 0 });
   expect(provider.callContract).toHaveBeenCalledTimes(1);
   expect(provider.callContract).toHaveBeenCalledWith(
-    { contractAddress: "0x456", entrypoint: "game", calldata: [7] },
+    { contractAddress: "0x123", entrypoint: "game", calldata: [7] },
     "latest",
   );
 });

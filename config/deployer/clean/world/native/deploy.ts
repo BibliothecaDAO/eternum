@@ -1,9 +1,8 @@
-import { CallData, type Account, type Call, type RawArgs } from "starknet";
+import { CallData, type Account } from "starknet";
 import { declareClass, waitForSuccess } from "../../shared/declare";
-import { nativePeers } from "./artifacts";
 import { canonicalRealmTraits } from "./realm-catalogue";
 import { inspectNativeWorld } from "./plan";
-import type { NativeDomain, NativePlan, NativeTransaction, NativeWorld } from "./types";
+import type { NativePlan, NativeTransaction, NativeWorld } from "./types";
 
 export async function deployNativeWorld(
   local: NativeWorld,
@@ -19,23 +18,12 @@ export async function deployNativeWorld(
     transactions.push(transaction);
     onSubmitted(transaction);
   };
-  for (const domain of local.domains) {
-    const state = before.domains.find((state) => state.name === domain.name)!;
-    await declareClass(declarer, domain, (hash) => record("declare", domain.name, hash));
-    await deployDomain(account, domain, state.chainClassHash, record);
-  }
-  for (const domain of local.domains) {
-    if (!before.domains.find((state) => state.name === domain.name)!.configured)
-      await command(account, domain, "configure", { peers: nativePeers(local) }, record);
-  }
-  const configured = await inspectNativeWorld(local, account);
-  if (configured.blockers.length || configured.domains.some((domain) => !domain.configured))
-    throw new Error(`Native peer verification failed: ${configured.blockers.join("; ")}`);
-  await initializeRealmCatalogue(local, account, configured, record);
-  for (const domain of local.domains) {
-    if (!configured.domains.find((state) => state.name === domain.name)!.active)
-      await command(account, domain, "activate", {}, record);
-  }
+  for (const logic of local.logic) await declareClass(declarer, logic, (hash) => record("declare", logic.name, hash));
+  await declareClass(declarer, local.games, (hash) => record("declare", "games", hash));
+  if (!before.deployedClassHash) await deployGames(local, account, (hash) => record("deploy", "games", hash));
+  const deployed = await inspectNativeWorld(local, account);
+  if (deployed.blockers.length) throw new Error(deployed.blockers.join("; "));
+  await initializeRealmCatalogue(local, account, deployed, (hash) => record("initialize_realm_traits", "games", hash));
   const after = await inspectNativeWorld(local, account);
   if (!after.synced) throw new Error("Native deployment did not converge");
   return { before, after, transactions };
@@ -44,61 +32,39 @@ export async function deployNativeWorld(
 async function initializeRealmCatalogue(
   local: NativeWorld,
   account: Account,
-  configured: NativePlan,
-  record: (action: NativeTransaction["action"], domain: string, hash: string) => void,
+  plan: NativePlan,
+  submitted: (hash: string) => void,
 ) {
-  const settlement = local.domains.find((domain) => domain.name === "settlement")!;
-  const catalogue = configured.domains.find((domain) => domain.name === "settlement")!.realmCatalogue;
-  if (!catalogue) throw new Error("Settlement catalogue inspection missing after declaration");
-  for (let offset = catalogue.initialized; offset < canonicalRealmTraits.length; offset += 128)
-    await command(
-      account,
-      settlement,
-      "initialize_realm_traits",
+  if (!plan.realmCatalogue) throw new Error("Games catalogue inspection missing after deployment");
+  const codec = new CallData(local.games.sierra.abi);
+  for (let offset = plan.realmCatalogue.initialized; offset < canonicalRealmTraits.length; offset += 128) {
+    const result = await account.execute(
       {
-        first_realm: offset + 1,
-        packed_traits: canonicalRealmTraits.slice(offset, offset + 128),
-      },
-      record,
-    );
-}
-
-async function command(
-  account: Account,
-  domain: NativeDomain,
-  entrypoint: "upgrade" | "configure" | "activate" | "initialize_realm_traits",
-  args: RawArgs,
-  record: (action: NativeTransaction["action"], domain: string, hash: string) => void,
-) {
-  const call: Call = {
-    contractAddress: domain.address,
-    entrypoint,
-    calldata: new CallData(domain.sierra.abi).compile(entrypoint, args),
-  };
-  const result = await account.execute(call, { tip: 0 });
-  record(entrypoint, domain.name, result.transaction_hash);
-  await waitForSuccess(account, result.transaction_hash);
-}
-
-async function deployDomain(
-  account: Account,
-  domain: NativeDomain,
-  chainClassHash: string | null,
-  record: (action: NativeTransaction["action"], domain: string, hash: string) => void,
-) {
-  if (!chainClassHash) {
-    const result = await account.deployContract(
-      {
-        classHash: domain.classHash,
-        salt: domain.salt,
-        constructorCalldata: domain.constructorCalldata,
-        unique: false,
+        contractAddress: local.games.address,
+        entrypoint: "initialize_realm_traits",
+        calldata: codec.compile("initialize_realm_traits", {
+          first_realm: offset + 1,
+          packed_traits: canonicalRealmTraits.slice(offset, offset + 128),
+        }),
       },
       { tip: 0 },
     );
-    record("deploy", domain.name, result.transaction_hash);
+    submitted(result.transaction_hash);
     await waitForSuccess(account, result.transaction_hash);
-  } else if (BigInt(chainClassHash) !== BigInt(domain.classHash)) {
-    await command(account, domain, "upgrade", { class_hash: domain.classHash }, record);
   }
+}
+
+async function deployGames(local: NativeWorld, account: Account, submitted: (hash: string) => void) {
+  const games = local.games;
+  const result = await account.deployContract(
+    {
+      classHash: games.classHash,
+      salt: games.salt,
+      constructorCalldata: games.constructorCalldata,
+      unique: false,
+    },
+    { tip: 0 },
+  );
+  submitted(result.transaction_hash);
+  await waitForSuccess(account, result.transaction_hash);
 }

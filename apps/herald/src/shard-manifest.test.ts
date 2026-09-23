@@ -17,14 +17,14 @@ it("serves the shard's chain, release, endpoints and every contract a client cal
   const served = buildShardManifest(document, { rpcUrl: "https://rpc.test", admissionUrl: "https://admission.test" });
   expect(served).toMatchObject({
     chainId: "0x4c4142",
-    releaseId: manifest.native.activeSchema,
+    releaseId: String(manifest.native.releaseId),
     schemaHash: manifest.native.activeSchema,
     rpcUrl: "https://rpc.test",
     admissionUrl: "https://admission.test",
     accountClassHash: "0x456",
     guardianPublicKey: "0xabc",
   });
-  expect(served.contracts).toMatchObject({ season: manifest.native.domains.season.address, bridge: "0x789" });
+  expect(served.contracts).toMatchObject({ games: manifest.world.address, bridge: "0x789" });
 });
 
 it("refuses a shard record without a guardian public key", () => {

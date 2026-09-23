@@ -4,79 +4,62 @@ import type { NativePlan } from "./types";
 import type { ShardRecord } from "../../../../../apps/herald/src/shard-manifest";
 import type { NativeSchema } from "../../../../../apps/herald/src/native/schema";
 
-export function nativeDomainAbi(manifest: RegistrarWorld, name: string): Abi {
+export function nativeGamesAbi(manifest: RegistrarWorld): Abi {
   const schema = manifest.native?.schemas[manifest.native.activeSchema];
-  const domain = schema?.domains[name];
-  if (!domain) throw new Error(`Manifest has no native ${name} ABI`);
-  // Resolve entrypoints within their owning domain.
-  return [...Object.values(schema.types), ...domain.entrypoints] as Abi;
+  const games = schema?.domains.season;
+  if (games?.contract !== "Games") throw new Error("Manifest has no Games ABI");
+  return [...Object.values(schema.types), ...games.entrypoints] as Abi;
 }
 
-/**
- * A shard's world as its public manifest names it, with the schema this release was built with. The caller has already
- * refused a shard whose schema differs; every domain the schema declares must have an address.
- */
+/** Resolve the Games surface from the shard's verified schema and address. */
 export function registrarWorldOf(
-  shard: { chainId: string; contracts: Record<string, string>; worldAddress: string },
+  shard: { chainId: string; worldAddress: string },
   schema: NativeSchema,
 ): RegistrarWorld {
-  const domains = Object.fromEntries(
-    Object.keys(schema.domains).map((name) => {
-      const address = shard.contracts[name];
-      if (!address) throw new Error(`Shard ${shard.chainId} names no ${name} contract`);
-      return [name, { address }];
-    }),
-  );
   return {
-    native: { activeSchema: schema.identity, schemas: { [schema.identity]: schema }, domains },
+    native: { activeSchema: schema.identity, schemas: { [schema.identity]: schema } },
     world: { address: shard.worldAddress },
     shard: { chainId: shard.chainId },
   };
 }
 
 export function buildNativeManifest(local: NativeWorld, before: NativePlan, shard: ShardRecord): NativeWorldManifest {
-  const season = local.domains.find((domain) => domain.name === "season")!;
+  const games = local.games;
   const abis = new Map(
-    local.domains
-      .flatMap((domain) => domain.sierra.abi)
+    [games, ...local.logic]
+      .flatMap(({ sierra }) => sierra.abi)
       .filter((entry) => entry.type !== "impl")
       .map((entry) => [entry.name, entry]),
   );
   return {
     world: {
-      address: season.address,
-      class_hash: season.classHash,
+      address: games.address,
+      class_hash: games.classHash,
       seed: local.seed,
-      name: "Eternum native",
-      entrypoints: local.schema.domains.season.entrypoints.map((entry) => entry.name),
-      abi: season.sierra.abi,
+      name: "Eternum Games",
+      entrypoints: games.sierra.abi
+        .flatMap((item) => (item.type === "interface" ? item.items : item.type === "function" ? [item] : []))
+        .map((item) => item.name),
+      abi: games.sierra.abi,
     },
-    contracts: local.domains.map((domain) => ({
-      address: domain.address,
-      class_hash: domain.classHash,
-      selector: hash.getSelectorFromName(domain.name),
-      init_calldata: domain.constructorCalldata,
-    })),
+    contracts: [
+      {
+        address: games.address,
+        class_hash: games.classHash,
+        selector: hash.getSelectorFromName("games"),
+        init_calldata: games.constructorCalldata,
+      },
+    ],
     abis: [...abis.values()],
     shard,
     native: {
-      version: 1,
+      version: 2,
       deploymentBlock: local.previous?.native.deploymentBlock ?? before.blockNumber,
       activeSchema: local.schema.identity,
       schemas: { ...local.previous?.native.schemas, [local.schema.identity]: local.schema },
-      domains: Object.fromEntries(
-        local.domains.map((domain) => {
-          const previous = local.previous?.native.domains[domain.name];
-          return [
-            domain.name,
-            {
-              address: domain.address,
-              initialClassHash: previous?.initialClassHash ?? domain.classHash,
-              classes: { ...previous?.classes, [domain.classHash]: local.schema.identity },
-            },
-          ];
-        }),
-      ),
+      gamesClassHash: games.classHash,
+      releaseId: 1,
+      logic: Object.fromEntries(local.logic.map(({ name, classHash }) => [name, classHash])),
     },
   };
 }

@@ -1,4 +1,5 @@
-import { defineFactModels, syncScopes } from "../schema/fact-models.mjs";
+import { eventLayouts, uniqueEventLayouts } from "./event-layouts.mjs";
+import { defineFactModels, factWireTypes, syncScopes } from "../schema/fact-models.mjs";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -11,29 +12,44 @@ const { CallData } = await import(
   Bun.resolveSync("starknet", fileURLToPath(new URL("../../../../apps/herald/src/", import.meta.url)))
 );
 const contracts = {
-  season: "SeasonDomain",
-  map: "MapDomain",
-  troops: "TroopsDomain",
-  structures: "StructuresDomain",
-  settlement: "SettlementDomain",
-  resources: "ResourcesDomain",
-  economy: "EconomyDomain",
-  relics: "RelicsDomain",
-  prizes: "PrizesDomain",
-  registry: "RegistryDomain",
-  combat: "CombatDomain",
-  bridge: "BridgeDomain",
+  season: "Games",
+  map: "MapLogic",
+  troops: "TroopsLogic",
+  structures: "StructuresLogic",
+  settlement: "SettlementLogic",
+  resources: "ResourcesLogic",
+  economy: "EconomyLogic",
+  relics: "RelicsLogic",
+  prizes: "PrizesLogic",
+  registry: "RegistryLogic",
+  combat: "CombatLogic",
+  bridge: "BridgeLogic",
 };
-const artifacts = Object.fromEntries(
+const entryArtifacts = Object.fromEntries(
   await Promise.all(
     Object.entries(contracts).map(async ([domain, name]) => {
-      const artifact = JSON.parse(await readFile(new URL(`target/dev/world_native_${name}.contract_class.json`, root)));
-      return [domain, artifact.abi];
+      return [domain, await readContractAbi(name)];
     }),
   ),
 );
+// A library emits in Games' context; its event types still come from the logic class ABI.
+const seasonLogicAbi = await readContractAbi("SeasonLogic");
+const artifacts = {
+  ...entryArtifacts,
+  map: [...entryArtifacts.map, ...(await readContractAbi("PlacementLogic"))],
+  structures: [...entryArtifacts.structures, ...(await readContractAbi("ConstructionLogic"))],
+  resources: [...entryArtifacts.resources, ...(await readContractAbi("ProductionLogic"))],
+  season: [...entryArtifacts.season, ...seasonLogicAbi],
+  combat: [...entryArtifacts.combat, ...(await readContractAbi("RaidLogic"))],
+};
+
+async function readContractAbi(name) {
+  const artifact = JSON.parse(await readFile(new URL(`target/dev/world_native_${name}.contract_class.json`, root)));
+  return artifact.abi;
+}
+
 const types = new Map();
-for (const abi of Object.values(artifacts)) {
+for (const abi of [...Object.values(artifacts), factWireTypes]) {
   for (const item of abi) {
     if (item.type === "struct" || item.type === "enum") {
       if (types.has(item.name) && JSON.stringify(types.get(item.name)) !== JSON.stringify(item)) {
@@ -44,16 +60,50 @@ for (const abi of Object.values(artifacts)) {
   }
 }
 
+// Serialization projections use the types carried by the production gameplay and preset ABIs.
+// These bindings do not add entrypoints to Games.
+const commandInterface = {
+  type: "interface",
+  name: "NativeCommandEncoding",
+  items: [
+    {
+      type: "function",
+      name: "command_commitment",
+      inputs: [{ name: "command", type: "world_native::commands::Command" }],
+      outputs: [],
+      state_mutability: "view",
+    },
+    {
+      type: "function",
+      name: "rules_commitment",
+      inputs: [{ name: "rules", type: "world_native::rules::SliceRules" }],
+      outputs: [],
+      state_mutability: "view",
+    },
+  ],
+};
+for (const name of ["world_native::commands::Command", "world_native::rules::SliceRules"]) {
+  if (!types.has(name)) throw new Error(`Missing production ABI type ${name}`);
+}
+const commandTypes = new Set();
+function includeCommandType(name) {
+  const nested = name.match(/::<(.+)>$/)?.[1];
+  if (nested && !types.has(name)) includeCommandType(nested);
+  if (commandTypes.has(name) || !types.has(name)) return;
+  commandTypes.add(name);
+  const item = types.get(name);
+  for (const field of item.members ?? item.variants) includeCommandType(field.type);
+  if (nested) includeCommandType(nested);
+}
+for (const method of commandInterface.items) {
+  for (const field of [...method.inputs, ...method.outputs]) includeCommandType(field.type);
+}
+const commandAbi = [commandInterface, ...[...commandTypes].map((name) => types.get(name))];
+
 function struct(name) {
   const item = types.get(`world_native::${name}`);
   if (item?.type !== "struct") throw new Error(`Missing ABI struct ${name}`);
   return item.members;
-}
-
-function method(domain, name) {
-  const item = artifacts[domain].flatMap((item) => item.items ?? []).find((item) => item.name === name);
-  if (!item) throw new Error(`Missing ABI method ${domain}.${name}`);
-  return item;
 }
 
 function feltLength(type) {
@@ -99,43 +149,7 @@ function model(name, owners, scope, keys, members, emitterKey) {
   };
 }
 
-const models = defineFactModels({ contracts, struct, method, model, types });
-
-function eventLayouts(abi) {
-  const events = new Map(abi.filter((item) => item.type === "event").map((item) => [item.name, item]));
-  const rootEvent = [...events.values()].find((item) => item.kind === "enum" && /Domain::Event$/.test(item.name));
-  if (!rootEvent) throw new Error("Missing contract event root");
-  const layouts = [];
-  function visit(event, prefix) {
-    if (event.kind === "enum") {
-      for (const variant of event.variants) {
-        visit(
-          events.get(variant.type),
-          variant.kind === "flat" ? prefix : [...prefix, hash.getSelectorFromName(variant.name)],
-        );
-      }
-      return;
-    }
-    const name = event.name.split("::").at(-1);
-    if (
-      ![
-        "RowSet",
-        "RowMemberSet",
-        "RowDeleted",
-        "BattleEvent",
-        "StoryEvent",
-        "RaidEvent",
-        "PointsAwarded",
-        "ExecutionRecorded",
-        "BatchProgress",
-      ].includes(name)
-    )
-      throw new Error(`Unexpected event ${name}`);
-    layouts.push({ name, prefix, members: event.members });
-  }
-  visit(rootEvent, []);
-  return layouts;
-}
+const models = defineFactModels({ struct, model });
 
 const ruleSource = await readFile(new URL("src/rules.cairo", root), "utf8");
 const ruleConstants = Object.fromEntries(
@@ -145,8 +159,17 @@ const ruleConstants = Object.fromEntries(
   ]),
 );
 
+const domainEvents = Object.fromEntries(Object.entries(artifacts).map(([domain, abi]) => [domain, eventLayouts(abi)]));
+// Validate across all logic classes before publishing any selector to the Games decoder.
+uniqueEventLayouts(Object.values(domainEvents).flat());
+
 const schema = {
   ruleConstants,
+  logicClasses: Object.fromEntries(
+    types
+      .get("games_storage::release::LogicClasses")
+      .members.map(({ name }) => [name, `${name[0].toUpperCase()}${name.slice(1)}Logic`]),
+  ),
   version: 2,
   cairoVersion: "2.17.0",
   encoding: "cairo-serde",
@@ -157,8 +180,10 @@ const schema = {
       domain,
       {
         contract,
-        events: eventLayouts(artifacts[domain]),
-        entrypoints: artifacts[domain].filter((item) => item.type === "interface").flatMap((item) => item.items),
+        events: domainEvents[domain],
+        entrypoints: entryArtifacts[domain].flatMap((item) =>
+          item.type === "interface" ? item.items : item.type === "function" ? [item] : [],
+        ),
       },
     ]),
   ),
@@ -240,12 +265,7 @@ async function writeJson(path, value) {
 
 async function writeFixtures(schema) {
   const emitter = "0x100";
-  const deployment = Object.fromEntries(
-    Object.keys(schema.domains).map((domain, index) => [
-      domain,
-      domain === "troops" ? emitter : `0x${(0x101 + index).toString(16)}`,
-    ]),
-  );
+  const deployment = { games: emitter };
   const model = schema.models.find((model) => model.name === "ExplorerTroops");
   function raw(name, values = []) {
     const layout = schema.domains.troops.events.find(
@@ -292,7 +312,7 @@ async function writeFixtures(schema) {
   });
   await writeJson("schema/fixtures/foreign-emitter.json", {
     ...fixture,
-    raw: { ...set, from_address: deployment.map },
+    raw: { ...set, from_address: "0x999" },
     expected: { error: "foreign-emitter" },
   });
   await writeJson("schema/fixtures/malformed-row.json", {
@@ -305,7 +325,7 @@ console.log(`Generated ${schema.models.length} models at ${fileURLToPath(new URL
 
 await writeJson("schema/bindings.json", {
   schemaIdentity: schema.identity,
-  commandAbi: artifacts.season,
+  commandAbi,
   events: schema.events.map(({ name, scope }) => ({ name, scope })),
   models: [
     ...schema.models.map((model) => ({

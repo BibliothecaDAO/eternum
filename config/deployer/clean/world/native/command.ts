@@ -10,7 +10,8 @@ import {
   type NativeCommand,
 } from "../../../../../packages/provider/src/native-command";
 import { createNativeTicketSubmission, signGameplayIntent } from "../../../../../packages/provider/src/native-ticket";
-import { nativeDomainAbi } from "./manifest";
+import bindings from "../../../../../contracts/l3/world-native/schema/bindings.json";
+import type { Abi } from "starknet";
 import { confirmedTransactionReceipt } from "../../shared/transaction";
 import type { RegistrarWorld } from "./types";
 
@@ -58,7 +59,7 @@ export async function executeNativeAdminCommand(
 ): Promise<{ transactionHash: string; remaining?: string }> {
   if (!administrativeCommands.has(input.command.kind)) throw new Error("Not an administrative command");
   if (!Number.isSafeInteger(input.gameId) || input.gameId <= 0) throw new Error("Native command requires a game id");
-  const season = input.manifest.native.domains.season.address;
+  const season = input.manifest.world.address;
   const { intent, nonce } = await buildAdminIntent(input, season);
   const accepted = await submitAdminIntent(input, intent);
   const receipt = await confirmedTransactionReceipt(input.provider, accepted.transaction_hash);
@@ -109,7 +110,7 @@ async function buildAdminIntent(input: AdminCommandInput, season: string) {
     validFrom: 0,
     validUntil: BigInt(timestamp) + 300n,
     lastOrder: 0xffffffffffffffffn,
-    arguments: encodeNativeCommand(nativeDomainAbi(input.manifest, "season"), input.command),
+    arguments: encodeNativeCommand(bindings.commandAbi as Abi, input.command),
   });
   return { intent, nonce: BigInt(nonce) };
 }

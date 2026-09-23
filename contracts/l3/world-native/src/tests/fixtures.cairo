@@ -1,9 +1,8 @@
 use starknet::ContractAddress;
-use crate::troops::{ExplorerKey, ExplorerTroops, Troops};
+use crate::troops::{ExplorerKey, Troops};
 
 #[starknet::interface]
 pub trait IFixture<T> {
-    fn explorer(self: @T, key: ExplorerKey) -> Option<ExplorerTroops>;
     fn destroy(ref self: T, key: ExplorerKey);
     fn update_troops(ref self: T, key: ExplorerKey, troops: Troops);
     fn received_actor(self: @T) -> ContractAddress;
@@ -13,23 +12,14 @@ pub trait IFixture<T> {
 
 #[starknet::contract]
 pub mod TroopFixture {
+    use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-    use starknet::{ContractAddress, get_caller_address};
     use crate::commands::{CreateExplorer, ExecutionContext, Explore};
-    use crate::lifecycle::Lifecycle;
-    use crate::troops::{Coord, ExplorerKey, ExplorerTroops, Stamina, TroopState, TroopTier, TroopType, Troops};
-    component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
-    component!(path: TroopState, storage: troops, event: TroopEvent);
-    #[abi(embed_v0)]
-    impl Domain = Lifecycle::DomainImpl<ContractState>;
-    impl LifeInternal = Lifecycle::InternalImpl<ContractState>;
-    impl TroopInternal = TroopState::InternalImpl<ContractState>;
+    use crate::logic::troops::TroopState;
+    use crate::troops::{Coord, ExplorerKey, ExplorerTroops, Stamina, TroopTier, TroopType, Troops};
+
     #[storage]
     struct Storage {
-        #[substorage(v0)]
-        lifecycle: Lifecycle::Storage,
-        #[substorage(v0)]
-        troops: TroopState::Storage,
         actor: ContractAddress,
         root: u256,
         timestamp: u64,
@@ -37,23 +27,15 @@ pub mod TroopFixture {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        LifecycleEvent: Lifecycle::Event,
         TroopEvent: TroopState::Event,
-    }
-    #[constructor]
-    fn constructor(ref self: ContractState, authority: ContractAddress) {
-        self.lifecycle.initialize(authority);
     }
     #[abi(embed_v0)]
     impl Fixture of super::IFixture<ContractState> {
-        fn explorer(self: @ContractState, key: ExplorerKey) -> Option<ExplorerTroops> {
-            self.troops.explorer(key)
-        }
         fn destroy(ref self: ContractState, key: ExplorerKey) {
-            self.troops.destroy(key);
+            crate::logic::troops::TroopState::destroy(key);
         }
         fn update_troops(ref self: ContractState, key: ExplorerKey, troops: Troops) {
-            self.troops.update_troops(key, troops);
+            crate::logic::troops::TroopState::update_troops(key, troops);
         }
         fn received_actor(self: @ContractState) -> ContractAddress {
             self.actor.read()
@@ -74,28 +56,24 @@ pub mod TroopFixture {
             command: CreateExplorer,
             context: ExecutionContext,
         ) {
-            let peers = self.lifecycle.require_active();
-            assert!(get_caller_address() == peers.season, "only season domain");
             self.actor.write(actor);
             self.root.write(context.raw_root);
             self.timestamp.write(context.timestamp);
-            self
-                .troops
-                .create(
-                    ExplorerKey { game_id, explorer_id: command.structure_id },
-                    ExplorerTroops {
-                        owner: command.structure_id,
-                        troops: Troops {
-                            category: TroopType::Knight,
-                            tier: TroopTier::T1,
-                            count: command.amount,
-                            stamina: Stamina { amount: 0, updated_tick: 0 },
-                            boosts: Default::default(),
-                            battle_cooldown_end: 0,
-                        },
-                        coord: Coord { alt: false, x: 12, y: 34 },
+            crate::logic::troops::TroopState::create(
+                ExplorerKey { game_id, explorer_id: command.structure_id },
+                ExplorerTroops {
+                    owner: command.structure_id,
+                    troops: Troops {
+                        category: TroopType::Knight,
+                        tier: TroopTier::T1,
+                        count: command.amount,
+                        stamina: Stamina { amount: 0, updated_tick: 0 },
+                        boosts: Default::default(),
+                        battle_cooldown_end: 0,
                     },
-                );
+                    coord: Coord { alt: false, x: 12, y: 34 },
+                },
+            );
             assert!(context.raw_root != 0, "fixture late rejection");
         }
         fn explore(
@@ -152,97 +130,6 @@ pub mod AccountFixture {
     }
 }
 
-#[starknet::interface]
-pub trait IUpgradeFixture<T> {
-    fn revision(self: @T) -> u32;
-    fn set_revision(ref self: T, revision: u32);
-}
-
-#[starknet::contract]
-pub mod MapUpgradeFixture {
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-    use crate::events::RowSet;
-    use crate::lifecycle::Lifecycle;
-    use crate::map::{MapState, TileKey, TileOpt};
-    component!(path: Lifecycle, storage: lifecycle, event: LifecycleEvent);
-    component!(path: MapState, storage: map, event: MapEvent);
-    #[abi(embed_v0)]
-    impl Domain = Lifecycle::DomainImpl<ContractState>;
-    impl LifeInternal = Lifecycle::InternalImpl<ContractState>;
-    impl MapInternal = MapState::InternalImpl<ContractState>;
-    #[storage]
-    struct Storage {
-        #[substorage(v0)]
-        lifecycle: Lifecycle::Storage,
-        #[substorage(v0)]
-        map: MapState::Storage,
-        revision: u32,
-    }
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        LifecycleEvent: Lifecycle::Event,
-        MapEvent: MapState::Event,
-        RowSet: RowSet,
-    }
-    #[abi(embed_v0)]
-    impl Upgrade of super::IUpgradeFixture<ContractState> {
-        fn revision(self: @ContractState) -> u32 {
-            self.revision.read()
-        }
-        fn set_revision(ref self: ContractState, revision: u32) {
-            self.lifecycle.assert_authority();
-            self.revision.write(revision);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'MapRevision',
-                        keys: array![starknet::get_contract_address().into()].span(),
-                        values: array![revision.into()].span(),
-                    },
-                );
-        }
-    }
-    #[abi(embed_v0)]
-    impl Map of crate::map::IMap<ContractState> {
-        fn biome(self: @ContractState, key: TileKey) -> u8 {
-            panic!("storage upgrade fixture")
-        }
-        fn discovery(
-            self: @ContractState, key: TileKey, seed: u256, hyperstructures: u32, timestamp: u64,
-        ) -> crate::discovery::Discovery {
-            panic!("storage upgrade fixture")
-        }
-        fn tile(self: @ContractState, key: TileKey) -> Option<TileOpt> {
-            self.map.tile(key)
-        }
-        fn reveal_structure_surroundings(ref self: ContractState, game_id: u32, coord: crate::troops::Coord) {
-            panic!("storage upgrade fixture")
-        }
-        fn reveal(ref self: ContractState, key: TileKey, biome: u8) {
-            let peers = self.lifecycle.require_active();
-            assert!(starknet::get_caller_address() == peers.troops, "only troops domain");
-            self.map.reveal(key, biome);
-        }
-        fn occupy(ref self: ContractState, key: TileKey, entity_id: u32, category: u8, is_structure: bool) {
-            let peers = self.lifecycle.require_active();
-            assert!(starknet::get_caller_address() == peers.troops, "only troops domain");
-            self.map.occupy(key, entity_id, category, is_structure);
-        }
-        fn upgrade_realm(ref self: ContractState, key: TileKey, entity_id: u32, wonder: bool, level: u8) {
-            assert!(
-                starknet::get_caller_address() == self.lifecycle.require_active().structures, "only structures domain",
-            );
-            self.map.upgrade_realm(key, entity_id, wonder, level);
-        }
-        fn vacate(ref self: ContractState, key: TileKey, entity_id: u32) {
-            let peers = self.lifecycle.require_active();
-            assert!(starknet::get_caller_address() == peers.troops, "only troops domain");
-            self.map.vacate(key, entity_id);
-        }
-    }
-}
 
 #[starknet::interface]
 pub trait IRollbackFixture<T> {

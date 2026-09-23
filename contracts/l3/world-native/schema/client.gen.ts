@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "55b011d27627d45b774b472650f7bc55fd9aaf7629d94e56bd286642a468829c";
+export const nativeFactSchemaIdentity = "3f516829bed4c50a4a156003700bee585fb6e19ef1506286d752e436627ad0c0";
 export const nativeRuleConstants = {
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
@@ -110,8 +110,6 @@ export interface NativeRows {
   EntitySequence: { readonly game_id: number; readonly next_entity_id: number };
   PlayerPoints: { readonly game_id: number; readonly address: bigint; readonly points: bigint };
   PointsTotal: { readonly game_id: number; readonly total: bigint };
-  DomainState: { readonly address: bigint; readonly authority: bigint; readonly peers: { readonly season: bigint; readonly map: bigint; readonly structures: bigint; readonly troops: bigint; readonly settlement: bigint; readonly resources: bigint; readonly economy: bigint; readonly prizes: bigint; readonly registry: bigint; readonly combat: bigint; readonly bridge: bigint; readonly relics: bigint }; readonly active: boolean };
-  DomainClass: { readonly address: bigint; readonly class_hash: bigint };
   Authentication: { readonly address: bigint; readonly submitter: bigint; readonly account_class: bigint };
   OwnershipRulesReady: { readonly game_id: number; readonly ready: boolean };
   ActionNonce: { readonly game_id: number; readonly actor: bigint; readonly next_nonce: bigint };
@@ -202,8 +200,6 @@ export interface NativeKeys {
   EntitySequence: { readonly game_id: number };
   PlayerPoints: { readonly game_id: number; readonly address: bigint };
   PointsTotal: { readonly game_id: number };
-  DomainState: { readonly address: bigint };
-  DomainClass: { readonly address: bigint };
   Authentication: { readonly address: bigint };
   OwnershipRulesReady: { readonly game_id: number };
   ActionNonce: { readonly game_id: number; readonly actor: bigint };
@@ -1727,41 +1723,6 @@ export const nativeFactModels = {
       "total": "u128"
     }
   },
-  "DomainState": {
-    "keys": [
-      "address"
-    ],
-    "scope": "deployment",
-    "fields": {
-      "address": "felt",
-      "authority": "felt",
-      "peers": {
-        "season": "felt",
-        "map": "felt",
-        "structures": "felt",
-        "troops": "felt",
-        "settlement": "felt",
-        "resources": "felt",
-        "economy": "felt",
-        "prizes": "felt",
-        "registry": "felt",
-        "combat": "felt",
-        "bridge": "felt",
-        "relics": "felt"
-      },
-      "active": "boolean"
-    }
-  },
-  "DomainClass": {
-    "keys": [
-      "address"
-    ],
-    "scope": "deployment",
-    "fields": {
-      "address": "felt",
-      "class_hash": "felt"
-    }
-  },
   "Authentication": {
     "keys": [
       "address"
@@ -1847,8 +1808,6 @@ export const nativeSyncScopes = {
   "SliceRules": "shared",
   "EntitySequence": "shared",
   "PointsTotal": "shared",
-  "DomainState": "shared",
-  "DomainClass": "shared",
   "Authentication": "shared",
   "OwnershipRulesReady": "shared",
   "AddressName": {

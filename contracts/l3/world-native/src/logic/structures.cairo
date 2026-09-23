@@ -1,0 +1,1046 @@
+use starknet::ContractAddress;
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
+use crate::resources::ResourceKey;
+use crate::structures::{Structure, StructureRecord};
+
+pub fn owner(key: ResourceKey) -> ContractAddress {
+    let state = crate::state::read();
+    state.structures.structures.entry((key.game_id, key.entity_id)).owner.read()
+}
+
+pub fn exists(key: ResourceKey) -> bool {
+    let state = crate::state::read();
+    state.structures.structures.entry((key.game_id, key.entity_id)).base.read().category != 0
+}
+
+pub fn record(key: ResourceKey) -> StructureRecord {
+    let state = crate::state::read();
+    assert!(exists(key), "missing structure");
+    state.structures.structures.read((key.game_id, key.entity_id))
+}
+
+pub fn structure(key: ResourceKey) -> Option<Structure> {
+    let state = crate::state::read();
+    if !exists(key) {
+        return None;
+    }
+    let record = record(key);
+    let mut explorers = array![];
+    for index in 0..record.base.troop_explorer_count {
+        explorers.append(state.structures.explorers.read((key.game_id, key.entity_id, index)));
+    }
+    Some(
+        Structure {
+            owner: record.owner,
+            base: record.base,
+            troop_explorers: explorers.span(),
+            resources_packed: record.resources_packed,
+            metadata: record.metadata,
+        },
+    )
+}
+
+pub fn remove_explorer(key: ResourceKey, explorer_id: u32) {
+    StructureState::remove_explorer(key, explorer_id);
+    let state = crate::state::read();
+    let release_id = state.game_releases.read(key.game_id);
+    assert!(release_id != 0, "game has no release");
+    crate::resources::IResourceOperationsDispatcherTrait::destroy_resources(
+        crate::resources::IResourceOperationsLibraryDispatcher {
+            class_hash: state.releases.entry(release_id).resources.read(),
+        },
+        ResourceKey { game_id: key.game_id, entity_id: explorer_id },
+    );
+}
+
+pub mod StructureState {
+    use starknet::Event as EventTrait;
+    use starknet::storage::{
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
+    };
+    use crate::events::{RowMemberSet, RowSet};
+    use crate::resources::ResourceKey;
+    use crate::structures::StructureRecord;
+
+    #[derive(Drop, starknet::Event)]
+    pub enum Event {
+        RowSet: RowSet,
+        RowMemberSet: RowMemberSet,
+    }
+
+    pub fn mark_starting_troops(key: ResourceKey) {
+        let state = crate::state::write();
+        let mut base = crate::logic::structures::record(key).base;
+        base.starting_troops_granted = true;
+        state.structures.structures.entry((key.game_id, key.entity_id)).base.write(base);
+        emit_base(key, base);
+    }
+    pub fn emit_base(key: ResourceKey, base: crate::structures::StructureBase) {
+        let mut values = array![];
+        base.serialize(ref values);
+        emit(
+            Event::RowMemberSet(
+                RowMemberSet {
+                    version: 1,
+                    model: 'Structure',
+                    member: 'base',
+                    keys: array![key.game_id.into(), key.entity_id.into()].span(),
+                    values: values.span(),
+                },
+            ),
+        );
+    }
+
+    pub fn create(key: ResourceKey, record: StructureRecord) {
+        let state = crate::state::write();
+        assert!(
+            key.game_id != 0
+                && key.entity_id != 0
+                && record.base.category != 0
+                && !crate::logic::structures::exists(key),
+            "invalid new structure",
+        );
+        state.structures.structures.write((key.game_id, key.entity_id), record);
+        let mut keys = array![];
+        key.serialize(ref keys);
+        let mut values = array![];
+        crate::logic::structures::structure(key).unwrap().serialize(ref values);
+        emit(Event::RowSet(RowSet { version: 1, model: 'Structure', keys: keys.span(), values: values.span() }));
+    }
+    pub fn transfer_owner(key: ResourceKey, owner: starknet::ContractAddress) {
+        let state = crate::state::write();
+        assert!(crate::logic::structures::exists(key), "missing structure");
+        if state.structures.structures.entry((key.game_id, key.entity_id)).owner.read() == owner {
+            return;
+        }
+        state.structures.structures.entry((key.game_id, key.entity_id)).owner.write(owner);
+        emit(
+            Event::RowMemberSet(
+                RowMemberSet {
+                    version: 1,
+                    model: 'Structure',
+                    member: 'owner',
+                    keys: array![key.game_id.into(), key.entity_id.into()].span(),
+                    values: array![owner.into()].span(),
+                },
+            ),
+        );
+    }
+    pub fn upgrade(
+        key: ResourceKey, mut base: crate::structures::StructureBase, config: crate::rules::TroopLimitConfig,
+    ) {
+        let state = crate::state::write();
+        base.level += 1;
+        let (explorers, guards) = crate::upgrades::troop_limits(config, base.level);
+        base.troop_max_explorer_count = explorers;
+        base.troop_max_guard_count = guards;
+        state.structures.structures.entry((key.game_id, key.entity_id)).base.write(base);
+        emit_base(key, base);
+    }
+    pub fn append_explorer(key: ResourceKey, explorer_id: u32) {
+        let state = crate::state::write();
+        let mut record = crate::logic::structures::record(key);
+        assert!(record.base.troop_explorer_count < record.base.troop_max_explorer_count, "structure explorer limit");
+        state.structures.explorers.write((key.game_id, key.entity_id, record.base.troop_explorer_count), explorer_id);
+        record.base.troop_explorer_count += 1;
+        state.structures.structures.entry((key.game_id, key.entity_id)).base.write(record.base);
+        emit_explorers(key);
+    }
+    pub fn remove_explorer(key: ResourceKey, explorer_id: u32) {
+        let state = crate::state::write();
+        let mut record = crate::logic::structures::record(key);
+        let mut found = false;
+        let mut next = 0;
+        for index in 0..record.base.troop_explorer_count {
+            let id = state.structures.explorers.read((key.game_id, key.entity_id, index));
+            if id == explorer_id {
+                found = true;
+            } else {
+                state.structures.explorers.write((key.game_id, key.entity_id, next), id);
+                next += 1;
+            }
+        }
+        assert!(found, "explorer absent from structure");
+        record.base.troop_explorer_count = next;
+        state.structures.structures.entry((key.game_id, key.entity_id)).base.write(record.base);
+        emit_explorers(key);
+    }
+    pub fn emit_explorers(key: ResourceKey) {
+        let structure = crate::logic::structures::structure(key).unwrap();
+        let mut keys = array![];
+        key.serialize(ref keys);
+        let mut base = array![];
+        structure.base.serialize(ref base);
+        emit(
+            Event::RowMemberSet(
+                RowMemberSet { version: 1, model: 'Structure', member: 'base', keys: keys.span(), values: base.span() },
+            ),
+        );
+        let mut explorers = array![];
+        structure.troop_explorers.serialize(ref explorers);
+        emit(
+            Event::RowMemberSet(
+                RowMemberSet {
+                    version: 1,
+                    model: 'Structure',
+                    member: 'troop_explorers',
+                    keys: keys.span(),
+                    values: explorers.span(),
+                },
+            ),
+        );
+    }
+
+    pub fn emit(event: Event) {
+        let mut keys = array![selector!("StructureEvent")];
+        let mut data = array![];
+        event.append_keys_and_data(ref keys, ref data);
+        starknet::syscalls::emit_event_syscall(keys.span(), data.span()).unwrap();
+    }
+}
+
+#[starknet::contract]
+pub mod StructuresLogic {
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
+    use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
+    use crate::buildings::{Building, BuildingKey};
+    use crate::commands::ExecutionContext;
+    use crate::discovery::Discovery;
+    use crate::events::RowSet;
+    use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
+    use crate::geometry::tile_key;
+    use crate::logic::buildings::BuildingState;
+    use crate::logic::release::ReleaseState;
+    use crate::logic::structures::StructureState;
+    use crate::map::{IMapLogicDispatcherTrait, IMapLogicLibraryDispatcher};
+    use crate::mines::{IMineRulesDispatcherTrait, IMineRulesLibraryDispatcher, MinePoolKey};
+    use crate::ownership::{Story, StoryEvent, TransferOwnership};
+    use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
+    use crate::rules::RESOURCE_PRECISION;
+    use crate::settlement::{ISettlementDisplacementDispatcherTrait, ISettlementDisplacementLibraryDispatcher};
+    use crate::structures::{StructureBase, StructureRecord};
+    use crate::troops::{Coord, ExplorerKey};
+    component!(path: BuildingState, storage: buildings, event: BuildingEvent);
+    impl BuildingInternal = BuildingState::InternalImpl<ContractState>;
+    component!(path: ReleaseState, storage: release, event: ReleaseEvent);
+    impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
+    #[storage]
+    #[allow(starknet::colliding_storage_paths)]
+    struct Storage {
+        #[flat]
+        pub data: crate::state::Storage,
+        #[substorage(v0)]
+        release: ReleaseState::Storage,
+        #[substorage(v0)]
+        buildings: BuildingState::Storage,
+    }
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        ReleaseEvent: ReleaseState::Event,
+        StructureEvent: StructureState::Event,
+        BuildingEvent: BuildingState::Event,
+        StoryEvent: StoryEvent,
+        RowSet: RowSet,
+    }
+    #[abi(embed_v0)]
+    #[abi(embed_v0)]
+    impl Camps of crate::camps::ICampRules<ContractState> {
+        fn configure_camps(ref self: ContractState, game_id: u32, resources: Span<crate::resources::ResourceAmount>) {
+            crate::logic::release::assert_authority();
+            let _ = crate::logic::game::game(game_id);
+            assert!(
+                self.data.structure_rules.camp_resource_count.read(game_id).is_none(),
+                "camp resources already configured",
+            );
+            for index in 0..resources.len() {
+                let resource = *resources.at(index);
+                let _ = crate::logic::resources::rule(game_id, resource.resource_type);
+                self.data.structure_rules.camp_grants.write((game_id, index), resource);
+            }
+            self.data.structure_rules.camp_resource_count.write(game_id, Some(resources.len()));
+            let mut values = array![];
+            resources.serialize(ref values);
+            self
+                .emit(
+                    RowSet {
+                        version: 1, model: 'CampResources', keys: array![game_id.into()].span(), values: values.span(),
+                    },
+                );
+        }
+        fn camp_resources(self: @ContractState, game_id: u32) -> Span<crate::resources::ResourceAmount> {
+            let count = self
+                .data
+                .structure_rules
+                .camp_resource_count
+                .read(game_id)
+                .expect('camp resources not configured');
+            let mut resources = array![];
+            for index in 0..count {
+                resources.append(self.data.structure_rules.camp_grants.read((game_id, index)));
+            }
+            resources.span()
+        }
+    }
+    #[abi(embed_v0)]
+    impl BankCreation of crate::market::IBankCreation<ContractState> {
+        fn create_bank(
+            ref self: ContractState, key: ResourceKey, owner: ContractAddress, coord: Coord, timestamp: u64,
+        ) {
+            crate::commands::assert_context_time(timestamp);
+            assert!(key.entity_id >= 0xfffffff9 && key.entity_id <= 0xfffffffe, "invalid regional bank id");
+            assert!(!coord.alt && owner != 0.try_into().unwrap(), "invalid bank placement");
+            let rules = crate::logic::game::rules(key.game_id);
+            assert!(!crate::logic::structures::exists(key), "bank already exists");
+            self.reveal_structure_tile(key.game_id, coord);
+            self.map_dispatcher(key.game_id).reveal_structure_surroundings(key.game_id, coord);
+            let record = StructureRecord {
+                owner,
+                base: StructureBase {
+                    category: 3,
+                    level: 3,
+                    troop_max_guard_count: 4,
+                    troop_max_explorer_count: 0,
+                    created_at: timestamp.try_into().unwrap(),
+                    coord_x: coord.x,
+                    coord_y: coord.y,
+                    ..Default::default(),
+                },
+                resources_packed: 0,
+                metadata: Default::default(),
+            };
+            crate::logic::structures::StructureState::create(key, record);
+            crate::logic::map::MapState::occupy(tile_key(key.game_id, coord), key.entity_id, 14, true);
+            self
+                .resources_dispatcher(key.game_id)
+                .initialize_resources(
+                    key,
+                    rules.structure_capacity_config.bank_structure_capacity.into() * RESOURCE_PRECISION,
+                    3,
+                    timestamp,
+                );
+            let seed: u256 = Into::<felt252, u256>::into('what could possibly go wrong') - key.entity_id.into();
+            crate::guards::IGuardsDispatcherTrait::initialize_structure_guards(
+                crate::guards::IGuardsLibraryDispatcher { class_hash: self.release.classes(key.game_id).troops.read() },
+                key,
+                seed,
+                timestamp,
+            );
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl Structures of crate::structures::IStructureOperations<ContractState> {
+        fn create_discovery(
+            ref self: ContractState, game_id: u32, coord: Coord, discovery: Discovery, seed: u256, timestamp: u64,
+        ) -> u32 {
+            self.place_discovery(game_id, coord, discovery, seed, timestamp, false)
+        }
+
+        fn provision_realm(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
+        ) -> u32 {
+            self.assert_authority();
+            let game = crate::logic::game::game(game_id);
+            assert!(game.dev_mode_on, "fixture provisioning requires development game");
+            assert!(!coord.alt && actor != 0.try_into().unwrap(), "invalid realm owner or layer");
+            let record = realm_record(
+                actor, coord, get_block_timestamp(), crate::logic::game::rules(game_id).troop_limit_config,
+            );
+            let key = self.place_settlement(game_id, coord, record);
+            for grant in grants {
+                let (resource_type, amount) = *grant;
+                self.resources_dispatcher(game_id).grant_resource(key, resource_type, amount, get_block_timestamp());
+            }
+            key.entity_id
+        }
+        fn pay_for_explorer(
+            ref self: ContractState,
+            key: ResourceKey,
+            actor: ContractAddress,
+            resource_type: u8,
+            amount: u128,
+            explorer_id: u32,
+            timestamp: u64,
+        ) {
+            assert_playing(crate::logic::game::game(key.game_id), timestamp);
+            assert!(crate::logic::structures::record(key).owner == actor, "actor does not own structure");
+            assert!(resource_type >= 26 && resource_type <= 34, "invalid troop resource");
+            assert!(amount > 0 && amount % RESOURCE_PRECISION == 0, "invalid troop amount");
+            self.spend(key, resource_type, amount, timestamp);
+            crate::logic::structures::StructureState::append_explorer(key, explorer_id);
+        }
+    }
+    #[abi(embed_v0)]
+    impl BlitzHyperstructures of crate::settlement::IBlitzHyperstructures<ContractState> {
+        fn create_reserved_hyperstructure(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, coord: Coord, context: ExecutionContext,
+        ) {
+            let classes = self.release.classes(game_id);
+            let game = crate::logic::game::game(game_id);
+            assert!(
+                crate::rules::rule_enabled(crate::logic::game::rules(game_id), crate::rules::RESERVED_HYPERSTRUCTURES),
+                "reserved hyperstructures disabled",
+            );
+            assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
+            crate::settlement::IBlitzReservationsDispatcherTrait::release_hyperstructure(
+                crate::settlement::IBlitzReservationsLibraryDispatcher { class_hash: classes.placement.read() },
+                game_id,
+                coord,
+            );
+            let coord_seed = (if coord.alt {
+                1_felt252
+            } else {
+                0
+            }) * 0x10000000000000000
+                + coord.x.into() * 0x100000000
+                + coord.y.into();
+            let seed = core::poseidon::poseidon_hash_span(
+                array![game_id.into(), coord_seed, context.timestamp.into()].span(),
+            );
+            self.place_discovery(game_id, coord, Discovery::Hyperstructure, seed.into(), context.timestamp, true);
+        }
+    }
+    #[abi(embed_v0)]
+    impl SettlementCreation of crate::settlement::ISettlementCreation<ContractState> {
+        fn create_settlement(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            coord: Coord,
+            creation: crate::settlement::SettlementCreation,
+            context: ExecutionContext,
+        ) -> u32 {
+            let mut record = realm_record(
+                actor, coord, context.timestamp, crate::logic::game::rules(game_id).troop_limit_config,
+            );
+            match creation {
+                crate::settlement::SettlementCreation::Realm(realm) => {
+                    record.metadata.realm_id = realm.realm_id;
+                    record.metadata.order = realm.traits.order;
+                    record.metadata.has_wonder = realm.traits.wonder != 1;
+                    record.resources_packed = pack_realm_resources(realm.traits.resources);
+                },
+                crate::settlement::SettlementCreation::Village(village) => {
+                    let connected = crate::logic::structures::record(
+                        ResourceKey { game_id, entity_id: village.connected_realm },
+                    );
+                    assert!(connected.base.category == 1, "connected entity is not a realm");
+                    assert!(village.resource >= 1 && village.resource <= 22, "invalid village resource");
+                    record.base.category = crate::ownership::VILLAGE_CATEGORY;
+                    record.metadata.village_realm = village.connected_realm;
+                    record.resources_packed = pack_realm_resources(array![village.resource].span());
+                },
+            }
+            let key = self.place_settlement(game_id, coord, record);
+            match creation {
+                crate::settlement::SettlementCreation::Realm(realm) => {
+                    if realm.activate_economy {
+                        self.provision_realm_economy(key, context.timestamp);
+                    } else if realm.grant_troops {
+                        self.grant_realm_troops(key, context.timestamp);
+                    }
+                    crate::logic::stories::emit_entity_story(
+                        key,
+                        actor,
+                        Story::RealmCreatedStory(crate::ownership::RealmCreatedStory { coord }),
+                        context.timestamp,
+                    );
+                },
+                crate::settlement::SettlementCreation::Village(_) => {
+                    self.grant_non_troop_resources(key, self.village_rules(game_id).resources, context.timestamp);
+                    let rules = crate::logic::game::rules(game_id);
+                    self
+                        .create_producer(
+                            key,
+                            coord,
+                            0,
+                            crate::logic::resources::rule(key.game_id, 23).village_rate,
+                            23,
+                            25,
+                            rules.building_config.base_population,
+                            context.timestamp,
+                        );
+                },
+            }
+            key.entity_id
+        }
+    }
+    #[abi(embed_v0)]
+    impl Villages of crate::village::IVillageArmy<ContractState> {
+        fn receive_village_army(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, village_id: u32, context: ExecutionContext,
+        ) {
+            assert_playing(crate::logic::game::game(game_id), context.timestamp);
+            let key = ResourceKey { game_id, entity_id: village_id };
+            let record = crate::logic::structures::record(key);
+            assert!(record.owner == actor, "actor does not own village");
+            assert!(record.base.category == crate::ownership::VILLAGE_CATEGORY, "structure is not a village");
+            assert!(!record.base.starting_troops_granted, "army grant already claimed");
+            let grants = self.village_rules(game_id);
+            let interval = crate::logic::game::rules(game_id).tick_config.armies_tick_in_seconds;
+            let claimable_at: u64 = record.base.created_at.into() / interval + grants.troop_delay_ticks.into();
+            assert!(context.timestamp / interval >= claimable_at, "army grant cannot be claimed yet");
+            self.grant_starting_troops(key, grants.resources, 10 * RESOURCE_PRECISION, context.timestamp);
+        }
+    }
+    #[abi(embed_v0)]
+    impl RealmCreation of crate::settlement::IRealmCreation<ContractState> {
+        fn provision_and_upgrade_realm(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, structure_id: u32, context: ExecutionContext,
+        ) {
+            Self::activate_realm_economy(ref self, game_id, actor, structure_id, context);
+            crate::upgrades::IStructureUpgradesDispatcherTrait::level_up(
+                crate::upgrades::IStructureUpgradesLibraryDispatcher {
+                    class_hash: self.release.classes(game_id).construction.read(),
+                },
+                game_id,
+                actor,
+                structure_id,
+                context,
+            );
+        }
+
+        fn activate_realm_economy(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, structure_id: u32, context: ExecutionContext,
+        ) {
+            assert_playing(crate::logic::game::game(game_id), context.timestamp);
+            let key = ResourceKey { game_id, entity_id: structure_id };
+            let record = crate::logic::structures::record(key);
+            assert!(record.owner == actor, "actor does not own structure");
+            assert!(record.base.category == 1, "not a realm");
+            self.provision_realm_economy(key, context.timestamp);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl Names of crate::names::INames<ContractState> {
+        #[cfg(test)]
+        fn entity_name(self: @ContractState, key: ResourceKey) -> crate::names::AddressName {
+            crate::names::AddressName {
+                name: self.data.structure_rules.entity_names.read((key.game_id, key.entity_id)),
+            }
+        }
+        fn set_entity_name(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::names::SetEntityName,
+            context: ExecutionContext,
+        ) {
+            crate::commands::assert_context_time(context.timestamp);
+            assert_playing(crate::logic::game::game(game_id), context.timestamp);
+            let key = ResourceKey { game_id, entity_id: command.entity_id };
+            let home = match crate::logic::structures::structure(key) {
+                Option::Some(_) => key,
+                Option::None => {
+                    let explorer = crate::logic::troops::active_explorer(
+                        ExplorerKey { game_id, explorer_id: command.entity_id }, context.timestamp,
+                    );
+                    ResourceKey { game_id, entity_id: explorer.owner }
+                },
+            };
+            assert!(crate::logic::structures::record(home).owner == actor, "actor does not own entity");
+            self.data.structure_rules.entity_names.write((game_id, command.entity_id), command.name);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'EntityName',
+                        keys: array![game_id.into(), command.entity_id.into()].span(),
+                        values: array![command.name].span(),
+                    },
+                );
+        }
+        #[cfg(test)]
+        fn address_name(self: @ContractState, address: ContractAddress) -> crate::names::AddressName {
+            crate::names::AddressName { name: self.data.structure_rules.address_names.read(address) }
+        }
+        fn set_address_name(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::names::SetAddressName,
+            context: ExecutionContext,
+        ) {
+            crate::commands::assert_context_time(context.timestamp);
+            let key = (game_id, command.owned_structure_id);
+            assert!(
+                crate::logic::structures::exists(ResourceKey { game_id, entity_id: command.owned_structure_id }),
+                "actor does not own structure",
+            );
+            assert!(self.data.structures.structures.entry(key).owner.read() == actor, "actor does not own structure");
+            self.data.structure_rules.address_names.write(actor, command.name);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'AddressName',
+                        keys: array![actor.into()].span(),
+                        values: array![command.name].span(),
+                    },
+                );
+        }
+    }
+    #[abi(embed_v0)]
+    impl Ownership of crate::ownership::IStructureOwnership<ContractState> {
+        fn transfer_structure_ownership(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: TransferOwnership,
+            context: ExecutionContext,
+        ) {
+            crate::commands::assert_context_time(context.timestamp);
+            let game = crate::logic::game::game(game_id);
+            assert_playing(game, context.timestamp);
+            let key = ResourceKey { game_id, entity_id: command.entity_id };
+            let record = crate::logic::structures::record(key);
+            assert!(record.owner == actor, "actor does not own structure");
+            assert!(crate::logic::game::game_exists(game_id), "ownership rules require initialized game");
+            assert!(command.new_owner != 0.try_into().unwrap(), "new owner is zero");
+            assert!(record.base.category != crate::ownership::VILLAGE_CATEGORY, "cannot transfer ownership of village");
+            if record.owner == command.new_owner {
+                return;
+            }
+            self.change_owner(key, command.new_owner, context.timestamp);
+        }
+    }
+    #[abi(embed_v0)]
+    impl Capture of crate::guards::IStructureCapture<ContractState> {
+        fn capture_structure(ref self: ContractState, key: ResourceKey, capturing_home: u32, timestamp: u64) {
+            let record = crate::logic::structures::record(key);
+            let owner = crate::logic::structures::record(
+                ResourceKey { game_id: key.game_id, entity_id: capturing_home },
+            )
+                .owner;
+            assert!(owner != 0.try_into().unwrap(), "capturing home is unowned");
+            if record.base.category == 8 {
+                crate::bitcoin::IBitcoinFundingDispatcherTrait::bitcoin_mine_captured(
+                    crate::bitcoin::IBitcoinFundingLibraryDispatcher {
+                        class_hash: self.release.classes(key.game_id).prizes.read(),
+                    },
+                    key,
+                    timestamp,
+                );
+            }
+            self.change_owner(key, owner, timestamp);
+            self.start_captured_mine(key, capturing_home, record, timestamp);
+            let points = if record.owner == 0.try_into().unwrap() {
+                IPointsLibraryDispatcher { class_hash: self.release.classes(key.game_id).season.read() }
+                    .register_capture(key.game_id, owner, record.base.category)
+            } else {
+                0
+            };
+            if record.owner == 0.try_into().unwrap() {
+                crate::logic::stories::emit_entity_story(
+                    key,
+                    owner,
+                    Story::StructureCapturedStory(
+                        crate::ownership::StructureCapturedStory {
+                            previous_owner: record.owner, new_owner: owner, points,
+                        },
+                    ),
+                    timestamp,
+                );
+            }
+        }
+    }
+    #[inline(never)]
+    fn pack_realm_resources(resources: Span<u8>) -> u128 {
+        let mut packed = 0;
+        for resource in resources {
+            packed = packed * 256 + (*resource).into();
+        }
+        packed
+    }
+    fn realm_record(
+        actor: ContractAddress, coord: Coord, timestamp: u64, config: crate::rules::TroopLimitConfig,
+    ) -> StructureRecord {
+        let (armies, guards) = crate::upgrades::troop_limits(config, 0);
+        StructureRecord {
+            owner: actor,
+            base: StructureBase {
+                troop_explorer_count: 0,
+                troop_max_guard_count: guards,
+                troop_max_explorer_count: armies,
+                created_at: timestamp.try_into().unwrap(),
+                category: 1,
+                coord_x: coord.x,
+                coord_y: coord.y,
+                level: 0,
+                starting_troops_granted: false,
+                alt: coord.alt,
+            },
+            resources_packed: 0,
+            metadata: Default::default(),
+        }
+    }
+    #[generate_trait]
+    impl Internal of InternalTrait {
+        fn place_discovery(
+            ref self: ContractState,
+            game_id: u32,
+            coord: Coord,
+            discovery: Discovery,
+            seed: u256,
+            timestamp: u64,
+            completed: bool,
+        ) -> u32 {
+            let rules = crate::logic::game::rules(game_id);
+            let id = crate::logic::game::allocate_entity(game_id);
+            let key = ResourceKey { game_id, entity_id: id };
+            let (mut record, occupier, capacity) = crate::structures::discovered_structure(
+                coord, discovery, rules.structure_capacity_config, rules.troop_limit_config.camp_armies, timestamp,
+            );
+            let depth = if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
+                Some(crate::logic::expeditions::depth_rules_at(game_id, coord))
+            } else {
+                None
+            };
+            self.reveal_structure_tile(game_id, coord);
+            let reveal_neighbors = match depth {
+                Some(value) => value.reveal_site_neighbors,
+                None => discovery != Discovery::Mine,
+            };
+            if reveal_neighbors {
+                self.map_dispatcher(game_id).reveal_structure_surroundings(game_id, coord);
+            }
+            self
+                .resources_dispatcher(game_id)
+                .initialize_resources(key, capacity * RESOURCE_PRECISION, record.base.category, timestamp);
+            match discovery {
+                Discovery::Mine => {
+                    let (kind, config, cap) = IMineRulesLibraryDispatcher {
+                        class_hash: self.release.classes(game_id).production.read(),
+                    }
+                        .mine_draw(MinePoolKey { game_id }, seed);
+                    record.metadata.mine_kind = kind;
+                    let (cap, rate) = match depth {
+                        Some(value) => (
+                            value.mine_cap_min
+                                + crate::random::range(seed, 'RIFT_CAP', value.mine_cap_max - value.mine_cap_min + 1),
+                            value.mine_rate,
+                        ),
+                        None => (cap, config.production_rate),
+                    };
+                    let rate = if crate::rules::rule_enabled(rules, crate::rules::HOME_MINE_PRODUCTION) {
+                        0
+                    } else {
+                        rate
+                    };
+                    self
+                        .create_producer(
+                            key,
+                            coord,
+                            cap,
+                            rate,
+                            config.resource_type,
+                            config.building_category,
+                            rules.building_config.base_population,
+                            timestamp,
+                        );
+                },
+                Discovery::Hyperstructure => self.create_hyperstructure(key, seed, completed),
+                Discovery::BitcoinMine => {},
+                Discovery::Camp => {
+                    assert!(
+                        crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CAMPS), "camp discovery is disabled",
+                    );
+                    if !crate::rules::rule_enabled(rules, crate::rules::HOME_CAMP_REWARDS) {
+                        for resource in self.camp_resources(game_id) {
+                            self
+                                .resources_dispatcher(game_id)
+                                .grant_resource(key, *resource.resource_type, *resource.amount, timestamp);
+                        }
+                        let labor_rate = crate::logic::resources::rule(game_id, 23).village_rate;
+                        assert!(labor_rate != 0, "zero camp labor rate");
+                        self
+                            .create_producer(
+                                key,
+                                coord,
+                                0xffffffffffffffffffffffffffffffff,
+                                labor_rate,
+                                23,
+                                25,
+                                rules.building_config.base_population,
+                                timestamp,
+                            );
+                    }
+                },
+                Discovery::None => panic!("discovery is not a structure"),
+            }
+            crate::logic::structures::StructureState::create(key, record);
+            crate::guards::IGuardsDispatcherTrait::initialize_structure_guards(
+                crate::guards::IGuardsLibraryDispatcher { class_hash: self.release.classes(game_id).troops.read() },
+                key,
+                seed,
+                timestamp,
+            );
+            crate::logic::map::MapState::occupy(tile_key(game_id, coord), id, occupier, true);
+            id
+        }
+
+        fn place_settlement(
+            ref self: ContractState, game_id: u32, coord: Coord, record: StructureRecord,
+        ) -> ResourceKey {
+            assert!(!coord.alt && record.owner != 0.try_into().unwrap(), "invalid realm owner or layer");
+            let key = ResourceKey { game_id, entity_id: crate::logic::game::allocate_entity(game_id) };
+            let rules = crate::logic::game::rules(game_id);
+            let village = record.base.category == crate::ownership::VILLAGE_CATEGORY;
+            let on_map = rules.epoch_seconds == 0 || village;
+            if on_map {
+                self.prepare_settlement_tile(game_id, coord);
+            }
+            crate::logic::structures::StructureState::create(key, record);
+            if on_map {
+                let occupier = if village {
+                    13
+                } else if record.metadata.has_wonder {
+                    5
+                } else {
+                    1
+                };
+                crate::logic::map::MapState::occupy(tile_key(game_id, coord), key.entity_id, occupier, true);
+            }
+            let capacity = if village {
+                rules.structure_capacity_config.village_capacity
+            } else {
+                rules.structure_capacity_config.realm_capacity
+            };
+            self
+                .resources_dispatcher(game_id)
+                .initialize_resources(
+                    key, capacity.into() * RESOURCE_PRECISION, record.base.category, record.base.created_at.into(),
+                );
+            key
+        }
+        fn prepare_settlement_tile(ref self: ContractState, game_id: u32, coord: Coord) {
+            let tile = crate::logic::map::tile(tile_key(game_id, coord)).map(|tile| tile.data).unwrap_or(0);
+            if tile % 0x20000000000 != 0 {
+                assert!(tile % 2 == 0, "tile occupied by structure");
+                let explorer_id = (tile / 512 % 0x100000000).try_into().unwrap();
+                ISettlementDisplacementLibraryDispatcher { class_hash: self.release.classes(game_id).troops.read() }
+                    .displace_explorer(game_id, explorer_id);
+            }
+            self.reveal_structure_tile(game_id, coord);
+            self.map_dispatcher(game_id).reveal_structure_surroundings(game_id, coord);
+        }
+
+        fn provision_realm_economy(ref self: ContractState, key: ResourceKey, timestamp: u64) {
+            let record = crate::logic::structures::record(key);
+            let counts = self.buildings.data.buildings.structure_buildings.read((key.game_id, key.entity_id));
+            const LABOR_COUNT_SCALE: u128 = 0x10000000000000000;
+            assert!(counts.packed_counts_2 / LABOR_COUNT_SCALE % 256 == 0, "realm already provisioned");
+            let coord = Coord { alt: false, x: record.base.coord_x, y: record.base.coord_y };
+            self.grant_realm_troops(key, timestamp);
+            let grants = crate::logic::settlement::grants(key.game_id);
+            self.grant_non_troop_resources(key, grants.resources, timestamp);
+            let rules = crate::logic::game::rules(key.game_id);
+            self
+                .create_producer(
+                    key,
+                    coord,
+                    0xffffffffffffffffffffffffffffffff,
+                    crate::logic::resources::rule(key.game_id, 23).realm_rate,
+                    23,
+                    25,
+                    rules.building_config.base_population,
+                    timestamp,
+                );
+        }
+        fn village_rules(self: @ContractState, game_id: u32) -> crate::village::VillageRules {
+            crate::logic::village::rules(game_id)
+        }
+        fn grant_non_troop_resources(
+            ref self: ContractState, key: ResourceKey, grants: Span<crate::resources::ResourceAmount>, timestamp: u64,
+        ) {
+            for grant in grants {
+                let resource_type = *grant.resource_type;
+                assert!(resource_type != crate::resources::LORDS, "invalid start resource");
+                if resource_type < 26 || resource_type > 34 {
+                    self.resources_dispatcher(key.game_id).grant_resource(key, resource_type, *grant.amount, timestamp);
+                }
+            }
+        }
+        fn grant_realm_troops(ref self: ContractState, key: ResourceKey, timestamp: u64) {
+            let grants = crate::logic::settlement::grants(key.game_id);
+            let guards = crate::logic::game::rules(key.game_id).troop_limit_config.starting_guard;
+            self.grant_starting_troops(key, grants.resources, guards.into() * RESOURCE_PRECISION, timestamp);
+        }
+        fn grant_starting_troops(
+            ref self: ContractState,
+            key: ResourceKey,
+            resources: Span<crate::resources::ResourceAmount>,
+            guards: u128,
+            timestamp: u64,
+        ) {
+            let record = crate::logic::structures::record(key);
+            if record.base.starting_troops_granted {
+                return;
+            }
+            crate::logic::structures::StructureState::mark_starting_troops(key);
+            let coord = Coord { alt: false, x: record.base.coord_x, y: record.base.coord_y };
+            let biome = self.map_dispatcher(key.game_id).biome(tile_key(key.game_id, coord));
+            assert!(biome > 0 && biome <= 17, "starting troops require a biome");
+            let grants = crate::logic::settlement::grants(key.game_id);
+            let category = *grants.starting_troops.at((biome - 1).into());
+            let resource_type = crate::troops::troop_resource(category, 0);
+            for grant in resources {
+                let kind = *grant.resource_type;
+                let amount = *grant.amount;
+                if kind == resource_type {
+                    self.resources_dispatcher(key.game_id).grant_resource(key, kind, amount + guards, timestamp);
+                    if guards != 0 {
+                        self.spend(key, kind, guards, timestamp);
+                        crate::guards::IGuardsDispatcherTrait::add_starting_guard(
+                            crate::guards::IGuardsLibraryDispatcher {
+                                class_hash: self.release.classes(key.game_id).troops.read(),
+                            },
+                            key,
+                            category,
+                            guards,
+                            timestamp,
+                        );
+                        crate::logic::stories::emit_entity_story(
+                            key,
+                            record.owner,
+                            Story::GuardAddStory(
+                                crate::ownership::GuardAddStory {
+                                    structure_id: key.entity_id,
+                                    slot: 0,
+                                    category,
+                                    tier: crate::troops::TroopTier::T1,
+                                    amount: guards,
+                                },
+                            ),
+                            timestamp,
+                        );
+                    }
+                }
+            }
+        }
+
+        fn start_captured_mine(
+            ref self: ContractState, key: ResourceKey, capturing_home: u32, record: StructureRecord, timestamp: u64,
+        ) {
+            let rules = crate::logic::game::rules(key.game_id);
+            if record.base.category == 4 && crate::rules::rule_enabled(rules, crate::rules::HOME_MINE_PRODUCTION) {
+                let mine = crate::logic::mines::kind(
+                    crate::mines::MineKindKey { game_id: key.game_id, kind: record.metadata.mine_kind },
+                );
+                let rate = if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
+                    crate::logic::expeditions::depth_rules_at(
+                        key.game_id, crate::structures::structure_coord(record.base),
+                    )
+                        .mine_rate
+                } else {
+                    mine.production_rate
+                };
+                let end_at = crate::logic::game::game(key.game_id).end_at;
+                let end_at = if rules.epoch_seconds == 0 {
+                    end_at
+                } else {
+                    core::cmp::min(end_at, (timestamp / rules.epoch_seconds.into() + 1) * rules.epoch_seconds.into())
+                };
+                self
+                    .resources_dispatcher(key.game_id)
+                    .redirect_production(
+                        key,
+                        mine.resource_type,
+                        crate::resources::ProductionReceiver {
+                            home: capturing_home, end_at: end_at.try_into().unwrap(),
+                        },
+                        rate,
+                        timestamp,
+                    );
+            }
+        }
+
+        fn change_owner(ref self: ContractState, key: ResourceKey, owner: ContractAddress, timestamp: u64) {
+            let record = crate::logic::structures::record(key);
+            let rules = crate::logic::game::rules(key.game_id);
+            if record.owner != 0.try_into().unwrap() && rules.faith_enabled {
+                crate::faith::IFaithOwnershipDispatcherTrait::transfer_faith_ownership(
+                    crate::faith::IFaithOwnershipLibraryDispatcher {
+                        class_hash: self.release.classes(key.game_id).prizes.read(),
+                    },
+                    key,
+                    owner,
+                    timestamp,
+                );
+            }
+            crate::logic::structures::StructureState::transfer_owner(key, owner);
+        }
+
+        fn create_producer(
+            ref self: ContractState,
+            key: ResourceKey,
+            coord: Coord,
+            cap: u128,
+            rate: u64,
+            resource_type: u8,
+            building_category: u8,
+            base_population: u32,
+            timestamp: u64,
+        ) {
+            crate::logic::game::allocate_entity(key.game_id);
+            let building_rule = self
+                .buildings
+                .rule(crate::buildings::BuildingRuleKey { game_id: key.game_id, category: building_category });
+            self.resources_dispatcher(key.game_id).start_production(key, resource_type, rate, cap, timestamp);
+            self
+                .buildings
+                .create(
+                    BuildingKey {
+                        game_id: key.game_id,
+                        alt: coord.alt,
+                        outer_col: coord.x,
+                        outer_row: coord.y,
+                        inner_col: 10,
+                        inner_row: 10,
+                    },
+                    Building {
+                        category: building_category, outer_entity_id: key.entity_id, paused: false, labor_paid: 0,
+                    },
+                    building_rule.population_cost,
+                    building_rule.capacity_grant,
+                    base_population,
+                );
+            crate::logic::game::allocate_entity(key.game_id);
+        }
+        fn create_hyperstructure(ref self: ContractState, key: ResourceKey, seed: u256, completed: bool) {
+            crate::hyperstructures::IHyperstructuresDispatcherTrait::record_hyperstructure(
+                crate::hyperstructures::IHyperstructuresLibraryDispatcher {
+                    class_hash: self.release.classes(key.game_id).economy.read(),
+                },
+                key,
+                seed.try_into().unwrap(),
+                completed,
+            );
+        }
+        fn assert_authority(self: @ContractState) {
+            assert!(get_caller_address() == self.release.authority(), "only domain authority");
+        }
+
+        fn map_dispatcher(self: @ContractState, game_id: u32) -> IMapLogicLibraryDispatcher {
+            IMapLogicLibraryDispatcher { class_hash: self.release.classes(game_id).map.read() }
+        }
+        fn resources_dispatcher(self: @ContractState, game_id: u32) -> IResourceOperationsLibraryDispatcher {
+            IResourceOperationsLibraryDispatcher { class_hash: self.release.classes(game_id).resources.read() }
+        }
+        fn spend(ref self: ContractState, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64) {
+            self.resources_dispatcher(key.game_id).spend_resource(key, resource_type, amount, timestamp);
+        }
+        fn reveal_structure_tile(ref self: ContractState, game_id: u32, coord: Coord) {
+            let key = tile_key(game_id, coord);
+            let tile = crate::logic::map::tile(key);
+            let data = tile.map(|tile| tile.data).unwrap_or(0);
+            assert!(data % 0x20000000000 == 0, "occupied structure tile");
+            if (data / 0x20000000000) % 0x100 == 0 {
+                crate::logic::map::MapState::reveal(key, self.map_dispatcher(game_id).biome(key));
+            }
+        }
+    }
+}

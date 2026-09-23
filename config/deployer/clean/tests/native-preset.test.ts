@@ -14,17 +14,18 @@ import {
   loadNativePresetConfiguration,
 } from "../registrar/native-preset";
 
-const abi = [...Object.values(schema.types), ...schema.domains.registry.entrypoints];
+const abi = [...Object.values(schema.types), ...schema.domains.season.entrypoints];
 const codec = new CallData(abi);
 const directory = mkdtempSync(join(tmpdir(), "native-preset-"));
 const manifestPath = join(directory, "manifest.json");
 writeFileSync(
   manifestPath,
   JSON.stringify({
+    world: { address: "0x123", abi },
     abis: abi,
     contracts: [{ address: "0x123", class_hash: "0x456" }],
     native: {
-      domains: { registry: { address: "0x123" } },
+      version: 2,
       activeSchema: schema.identity,
       schemas: { [schema.identity]: schema },
     },
@@ -192,8 +193,9 @@ test("rejects missing Eternum rules and bridge tokens before registration", () =
 });
 describe("fixed Regular Blitz rosters", () => {
   const target = {
+    world: { address: "0x123", abi },
     native: {
-      domains: { registry: { address: "0x123" }, season: { address: "0x456" } },
+      version: 2,
       activeSchema: schema.identity,
       schemas: { [schema.identity]: schema },
     },

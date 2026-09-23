@@ -42,12 +42,20 @@ jobs:
           if ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
             export BASE_SHA=origin/next
           fi
-          git diff --name-only --diff-filter=ACMR -z "$BASE_SHA" "$HEAD_SHA" |
-            while IFS= read -r -d '' file; do
-              [ -L "$file" ] && continue
-              [ -f "$file" ] || continue
-              case "$file" in
-                *.cjs|*.mjs|*.js|*.jsx|*.ts|*.tsx|*.json|*.md|*.mdx|*.yaml|*.yml|*.css|*.scss|*.html)
-                  pnpm prettier --check "$file" ;;
-              esac
-            done
+          mapfile -d '' -t changed < <(git diff --name-only --diff-filter=ACMR -z "$BASE_SHA" "$HEAD_SHA")
+          pnpm run format
+          if ((${#changed[@]})); then
+            git diff --exit-code -- "${changed[@]}"
+          fi
+
+      - name: Record formatting diff
+        if: always()
+        run: git diff --binary > "$RUNNER_TEMP/format.patch"
+
+      - name: Upload formatting diff
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: format-diff
+          path: ${{ runner.temp }}/format.patch
+          if-no-files-found: error

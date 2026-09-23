@@ -182,7 +182,7 @@ it("evicts a finalized game to its directory and standings, the same way live an
     const model = schema.models.find(({ name }) => name === "TileOpt")!;
     const layout = schema.domains[model.owners[0]].events.find(({ name }) => name === "RowMemberSet")!;
     return {
-      from_address: manifest.native.domains[model.owners[0]].address,
+      from_address: manifest.world.address,
       keys: [...layout.prefix, "1", model.identity, model.members[0].id!],
       data: ["4", game, "0", "5", "5", "1", "2"],
     };

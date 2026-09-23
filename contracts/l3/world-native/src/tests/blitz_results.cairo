@@ -6,8 +6,8 @@ use crate::blitz_results::{
 };
 use crate::commands::{Command, ExecutionContext};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
+use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
 use crate::registrar::RosterPlayer;
-use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
 use super::resource_commands::{execute, set_fixture, setup_with_rules};
 
 fn player(index: u32) -> ContractAddress {
@@ -17,10 +17,10 @@ fn result(index: u32, points: u128, rank: u8) -> PlayerResult {
     PlayerResult { player: player(index), points, rank }
 }
 fn view(d: super::Deployment) -> IBlitzResultsDispatcher {
-    IBlitzResultsDispatcher { contract_address: d.peers.prizes }
+    IBlitzResultsDispatcher { contract_address: d.games }
 }
 fn games(d: super::Deployment) -> IGameDispatcher {
-    IGameDispatcher { contract_address: d.peers.registry }
+    IGameDispatcher { contract_address: d.games }
 }
 fn setup(scores: Span<u128>) -> super::Deployment {
     let (d, _, _) = setup_with_rules(
@@ -32,20 +32,26 @@ fn setup(scores: Span<u128>) -> super::Deployment {
         },
     );
     let d = super::bind_authority(d);
-    set_fixture(d.peers.registry, selector!("roster_sizes"), array![3].span(), scores.len());
+    set_fixture(d.games, selector!("registrar"), selector!("roster_sizes"), array![3].span(), scores.len());
     for index in 0..scores.len() {
         set_fixture(
-            d.peers.registry,
+            d.games,
+            selector!("registrar"),
             selector!("roster_players"),
             array![3, index.into()].span(),
             RosterPlayer { account: player(index) },
         );
         set_fixture(
-            d.peers.season, selector!("player_points"), array![3, player(index).into()].span(), *scores.at(index),
+            d.games,
+            selector!("season"),
+            selector!("player_points"),
+            array![3, player(index).into()].span(),
+            *scores.at(index),
         );
     }
     set_fixture(
-        d.peers.registry,
+        d.games,
+        selector!("games"),
         selector!("games"),
         array![3].span(),
         crate::game::GameRegistry { settled: true, ..games(d).game(3) },
@@ -53,12 +59,12 @@ fn setup(scores: Span<u128>) -> super::Deployment {
     d
 }
 fn submit(d: super::Deployment, start: u8, players: Span<PlayerResult>) -> bool {
-    let season = ISeasonDispatcher { contract_address: d.peers.season };
+    let season = IGamesAuthenticationDispatcher { contract_address: d.games };
     let nonce = season.next_nonce(3, d.actor);
-    let order = super::recorded::head(d.peers.season, 3).order;
+    let order = super::recorded::head(d.games, 3).order;
     let passed = execute(d, Command::RecordBlitzResults(RecordBlitzResults { start, players }), 500);
     assert_eq!(season.next_nonce(3, d.actor), nonce + 1);
-    assert_eq!(super::recorded::head(d.peers.season, 3).order, order + 1);
+    assert_eq!(super::recorded::head(d.games, 3).order, order + 1);
     passed
 }
 
@@ -147,23 +153,48 @@ fn the_full_roster_stays_bounded_to_eight_results_per_ticket() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn results_require_the_authority_domain_path_and_finished_point_settlement() {
+fn results_require_authority_and_finished_point_settlement() {
     let d = setup(array![10].span());
-    let safe = IBlitzResultsSafeDispatcher { contract_address: d.peers.prizes };
+    let safe = IBlitzResultsSafeDispatcher { contract_address: d.games };
     let command = RecordBlitzResults { start: 0, players: array![result(0, 10, 1)].span() };
     let context = ExecutionContext { timestamp: 500, raw_root: 1 };
-    assert!(safe.record_blitz_results(3, d.actor, command, context).is_err());
-    start_cheat_caller_address(d.peers.prizes, d.peers.season);
+    start_cheat_caller_address(d.games, d.games);
     assert!(safe.record_blitz_results(3, player(99), command, context).is_err());
     assert!(safe.record_blitz_results(3, d.actor, command, ExecutionContext { timestamp: 199, ..context }).is_err());
-    stop_cheat_caller_address(d.peers.prizes);
+    stop_cheat_caller_address(d.games);
     let game = games(d).game(3);
     set_fixture(
-        d.peers.registry, selector!("games"), array![3].span(), crate::game::GameRegistry { settled: false, ..game },
+        d.games,
+        selector!("games"),
+        selector!("games"),
+        array![3].span(),
+        crate::game::GameRegistry { settled: false, ..game },
     );
     assert!(!submit(d, 0, command.players));
     assert!(execute(d, Command::MarkGameSettled, 500));
     assert!(submit(d, 0, command.players));
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn results_are_game_scoped_and_an_absent_roster_rejects() {
+    let d = setup(array![100].span());
+    assert!(submit(d, 0, array![result(0, 100, 1)].span()));
+    let safe = IBlitzResultsSafeDispatcher { contract_address: d.games };
+    assert!(safe.blitz_result(4).is_err());
+    set_fixture(d.games, selector!("registrar"), selector!("roster_sizes"), array![4].span(), 1_u32);
+    set_fixture(
+        d.games,
+        selector!("registrar"),
+        selector!("roster_players"),
+        array![4, 0].span(),
+        RosterPlayer { account: player(0) },
+    );
+    let other = view(d).blitz_result(4);
+    assert!(other.players.is_empty());
+    assert!(!other.complete);
+    assert_eq!(other.commitment, 0);
+    assert!(view(d).blitz_result(3).complete);
 }
 
 #[test]
@@ -172,28 +203,19 @@ fn final_history_is_emitted_once_and_retry_does_not_rewrite_the_result() {
     let players = array![result(0, 0, 1)].span();
     let mut spy = snforge_std::spy_events();
     assert!(submit(d, 0, players));
-    let events = spy.get_events().emitted_by(d.peers.prizes).events;
-    assert_eq!(events.len(), 2);
-    assert!(view(d).blitz_result(3).complete);
+    let mut result_events = 0;
+    for (_, event) in spy.get_events().emitted_by(d.games).events {
+        if *event.keys.at(0) == selector!("BlitzEvent") {
+            result_events += 1;
+        }
+    }
+    assert_eq!(result_events, 2);
+    let complete = view(d).blitz_result(3);
+    assert!(complete.complete);
     let mut retry = snforge_std::spy_events();
     assert!(submit(d, 0, players));
-    assert!(retry.get_events().emitted_by(d.peers.prizes).events.is_empty());
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn results_are_game_scoped_and_an_absent_roster_rejects() {
-    let d = setup(array![100].span());
-    assert!(submit(d, 0, array![result(0, 100, 1)].span()));
-    let safe = IBlitzResultsSafeDispatcher { contract_address: d.peers.prizes };
-    assert!(safe.blitz_result(4).is_err());
-    set_fixture(d.peers.registry, selector!("roster_sizes"), array![4].span(), 1_u32);
-    set_fixture(
-        d.peers.registry, selector!("roster_players"), array![4, 0].span(), RosterPlayer { account: player(0) },
-    );
-    let other = view(d).blitz_result(4);
-    assert!(other.players.is_empty());
-    assert!(!other.complete);
-    assert_eq!(other.commitment, 0);
-    assert!(view(d).blitz_result(3).complete);
+    assert_eq!(view(d).blitz_result(3), complete);
+    for (_, event) in retry.get_events().emitted_by(d.games).events {
+        assert!(*event.keys.at(0) != selector!("BlitzEvent"), "retry re-emitted final result");
+    }
 }

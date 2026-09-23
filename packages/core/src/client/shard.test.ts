@@ -12,7 +12,7 @@ const manifest = (chainId: string) => ({
   rpcUrl: "https://rpc.shard.test",
   admissionUrl: "https://admission.shard.test",
   accountClassHash: "0x2",
-  contracts: { season: "0x77", bridge: "0x78" },
+  contracts: { games: "0x77", bridge: "0x78" },
   guardianPublicKey: "0x9",
 });
 

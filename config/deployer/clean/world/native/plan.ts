@@ -1,106 +1,83 @@
 import { CallData, type RpcProvider } from "starknet";
 import { isClassDeclared, rpcErrorCode } from "../../shared/declare";
-import { nativePeers } from "./artifacts";
 import { canonicalRealmTraits, realmCatalogueDigest } from "./realm-catalogue";
-import type { NativeDomain, NativeDomainPlan, NativePlan, NativeWorld } from "./types";
+import type { NativePlan, NativeWorld } from "./types";
 
 export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvider): Promise<NativePlan> {
   const blockNumber = await provider.getBlockNumber();
   const blockers: string[] = [];
-  const domains: NativeDomainPlan[] = [];
-  for (const domain of local.domains) domains.push(await inspectDomain(local, domain, provider, blockNumber, blockers));
+  const classes = await Promise.all(
+    [...local.logic, { name: "games", ...local.games }].map(async ({ name, classHash }) => ({
+      name,
+      classHash,
+      declared: await isClassDeclared(provider, classHash, blockNumber),
+    })),
+  );
+  const deployedClassHash = await deployedClass(provider, local.games.address, blockNumber);
+  if (deployedClassHash && BigInt(deployedClassHash) !== BigInt(local.games.classHash))
+    blockers.push("Games is immutable; the deployed class differs from this release");
+  let realmCatalogue: NativePlan["realmCatalogue"];
+  if (deployedClassHash && blockers.length === 0) {
+    await inspectGamesConfiguration(local, provider, blockNumber, blockers);
+    realmCatalogue = await inspectRealmCatalogue(local, provider, blockNumber, blockers);
+  }
   return {
-    worldAddress: nativePeers(local).season,
+    worldAddress: local.games.address,
     blockNumber,
-    domains,
+    classes,
+    deployedClassHash,
+    realmCatalogue,
     blockers,
     synced:
       blockers.length === 0 &&
-      domains.every(
-        (domain) =>
-          domain.active &&
-          domain.configured &&
-          domain.chainClassHash === domain.localClassHash &&
-          (domain.name !== "settlement" || domain.realmCatalogue?.initialized === canonicalRealmTraits.length),
-      ),
+      classes.every(({ declared }) => declared) &&
+      deployedClassHash !== null &&
+      realmCatalogue?.initialized === canonicalRealmTraits.length,
   };
 }
 
-async function inspectDomain(
-  local: NativeWorld,
-  domain: NativeDomain,
-  provider: RpcProvider,
-  block: number,
-  blockers: string[],
-) {
-  const declared = await isClassDeclared(provider, domain.classHash, block);
-  const chainClassHash = await deployedClass(provider, domain.address, block);
-  const plan: NativeDomainPlan = {
-    name: domain.name,
-    address: domain.address,
-    localClassHash: domain.classHash,
-    chainClassHash,
-    declared,
-    configured: false,
-    active: false,
-  };
-  if (!chainClassHash) return plan;
-  if (
-    BigInt(chainClassHash) !== BigInt(domain.classHash) &&
-    !local.previous?.native.domains[domain.name]?.classes[chainClassHash]
-  )
-    blockers.push(`${domain.name}: deployed class is not in the release history`);
-  const codec = new CallData(domain.sierra.abi);
-  const state = codec.parse(
-    "domain_state",
-    await provider.callContract({ contractAddress: domain.address, entrypoint: "domain_state", calldata: [] }, block),
-  ) as {
-    authority: bigint;
-    peers: Record<string, bigint>;
-    active: boolean;
-  };
-  if (BigInt(state.authority) !== BigInt(local.authority)) blockers.push(`${domain.name}: authority mismatch`);
-  plan.configured = BigInt(state.peers.season) !== 0n;
-  plan.active = state.active;
-  if (plan.configured && !sameAddresses(state.peers, nativePeers(local)))
-    blockers.push(`${domain.name}: peer mismatch`);
-  if (plan.active && !plan.configured) blockers.push(`${domain.name}: active without configured peers`);
-  if (domain.name === "season") {
-    const actual = codec.parse(
-      "authentication",
+async function inspectGamesConfiguration(local: NativeWorld, provider: RpcProvider, block: number, blockers: string[]) {
+  const codec = new CallData(local.games.sierra.abi);
+  const read = async (entrypoint: string) =>
+    codec.parse(
+      entrypoint,
       await provider.callContract(
-        { contractAddress: domain.address, entrypoint: "authentication", calldata: [] },
+        {
+          contractAddress: local.games.address,
+          entrypoint,
+          calldata: [],
+        },
         block,
       ),
-    ) as Record<string, bigint>;
-    if (!sameAddresses(actual, { ...local.authentication })) blockers.push("season: authentication mismatch");
-  }
-  if (domain.name === "settlement" && BigInt(chainClassHash) === BigInt(domain.classHash)) {
-    plan.realmCatalogue = await inspectRealmCatalogue(domain, provider, block, blockers);
-  }
-  return plan;
+    );
+  const authentication = (await read("authentication")) as Record<string, bigint>;
+  if (!Object.entries(local.authentication).every(([name, value]) => authentication[name] === BigInt(value)))
+    blockers.push("Games authentication mismatch");
+  const configuration = (await read("deployment_configuration")) as {
+    authority: bigint;
+    classes: Record<string, bigint>;
+  };
+  if (configuration.authority !== BigInt(local.authority)) blockers.push("Games authority mismatch");
+  if (!local.logic.every(({ name, classHash }) => configuration.classes[name] === BigInt(classHash)))
+    blockers.push("Games initial logic release mismatch");
 }
-async function inspectRealmCatalogue(domain: NativeDomain, provider: RpcProvider, block: number, blockers: string[]) {
+
+async function inspectRealmCatalogue(local: NativeWorld, provider: RpcProvider, block: number, blockers: string[]) {
   const raw = await provider.callContract(
-    { contractAddress: domain.address, entrypoint: "realm_catalogue", calldata: [] },
+    { contractAddress: local.games.address, entrypoint: "realm_catalogue", calldata: [] },
     block,
   );
-  const catalogue = new CallData(domain.sierra.abi).parse("realm_catalogue", raw) as {
+  const catalogue = new CallData(local.games.sierra.abi).parse("realm_catalogue", raw) as {
     initialized: bigint;
     digest: bigint;
   };
   if (catalogue.initialized > BigInt(canonicalRealmTraits.length))
-    blockers.push("settlement: realm catalogue exceeds canonical count");
+    blockers.push("Games realm catalogue exceeds canonical count");
   else if (BigInt(realmCatalogueDigest(Number(catalogue.initialized))) !== catalogue.digest)
-    blockers.push("settlement: realm catalogue content mismatch");
+    blockers.push("Games realm catalogue content mismatch");
   return { initialized: Number(catalogue.initialized), digest: `0x${catalogue.digest.toString(16)}` };
 }
 
-function sameAddresses(actual: Record<string, bigint>, expected: Record<string, string>): boolean {
-  return Object.entries(expected).every(
-    ([key, value]) => actual[key] !== undefined && BigInt(actual[key]) === BigInt(value),
-  );
-}
 async function deployedClass(provider: RpcProvider, address: string, block: number): Promise<string | null> {
   try {
     return await provider.getClassHashAt(address, block);

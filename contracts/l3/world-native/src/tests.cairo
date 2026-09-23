@@ -1,10 +1,15 @@
 use recorded_receipts::RecordedReceiptsTrait;
+use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+use crate::tests::state::{GameState, TroopObservationTrait};
 mod bitcoin;
 mod bridge;
 mod combat_actions;
 mod combat_formula;
 mod entry;
+mod fact_wire;
 mod fixtures;
+pub(crate) mod games_fixture;
+mod games_host;
 mod hyperstructures;
 mod market;
 mod mines;
@@ -19,6 +24,7 @@ mod rule_storage;
 mod settlement;
 mod shared_storage;
 mod spires;
+mod state;
 mod structure_storage;
 mod trade;
 mod troop_management;
@@ -26,7 +32,6 @@ mod village;
 use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use fixtures::{
     IFixtureDispatcher, IFixtureDispatcherTrait, IRollbackFixtureDispatcher, IRollbackFixtureDispatcherTrait,
-    IUpgradeFixtureDispatcher, IUpgradeFixtureDispatcherTrait,
 };
 use recorded::{
     FixtureAction as Intent, FixtureSafeSeasonTrait, FixtureSeasonTrait, configure_submitter, make_context, make_intent,
@@ -35,17 +40,16 @@ use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairIm
 use snforge_std::signature::{KeyPairTrait, SignerTrait};
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, EventSpyTrait, EventsFilterTrait, declare, spy_events,
-    start_cheat_block_timestamp, start_cheat_caller_address, stop_cheat_caller_address,
+    start_cheat_block_timestamp, start_cheat_caller_address,
 };
 use starknet::{ClassHash, ContractAddress};
 use crate::commands::{
     Command, CreateExplorer, ExecutionContext, ITroopCommandsSafeDispatcher, ITroopCommandsSafeDispatcherTrait,
 };
-use crate::lifecycle::{
-    IDomainDispatcher, IDomainDispatcherTrait, IDomainSafeDispatcher, IDomainSafeDispatcherTrait, Peers,
+use crate::games::{
+    IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait, IGamesAuthenticationSafeDispatcher,
+    IGamesAuthenticationSafeDispatcherTrait,
 };
-use crate::map::{IMapDispatcher, IMapDispatcherTrait, IMapSafeDispatcher, IMapSafeDispatcherTrait, TileKey};
-use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait, ISeasonSafeDispatcher, ISeasonSafeDispatcherTrait};
 use crate::troops::ExplorerKey;
 use crate::upgrades::{
     IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait, IUpgradeRulesSafeDispatcher,
@@ -54,7 +58,7 @@ use crate::upgrades::{
 
 #[derive(Drop, Copy)]
 struct Deployment {
-    peers: Peers,
+    games: ContractAddress,
     actor: ContractAddress,
     account_class: ClassHash,
 }
@@ -73,11 +77,11 @@ fn deploy(name: ByteArray, calldata: @Array<felt252>) -> (ContractAddress, Class
     let (address, _) = class.deploy(calldata).unwrap();
     (address, *class.class_hash)
 }
-fn setup(activate: bool) -> Deployment {
-    setup_with_structures(activate, "MapDomain")
+fn setup(seed_games: bool) -> Deployment {
+    setup_with_structures(seed_games, "MapLogic")
 }
-fn setup_with_structures(activate: bool, structures_class: ByteArray) -> Deployment {
-    setup_with_domains(activate, structures_class, "TroopFixture")
+fn setup_with_structures(seed_games: bool, structures_class: ByteArray) -> Deployment {
+    setup_with_domains(seed_games, structures_class, "TroopFixture")
 }
 pub fn bind_authority(d: Deployment) -> Deployment {
     declare("AccountFixture")
@@ -88,65 +92,51 @@ pub fn bind_authority(d: Deployment) -> Deployment {
     Deployment { actor: authority(), ..d }
 }
 
-fn setup_with_domains(activate: bool, structures_class: ByteArray, troops_class: ByteArray) -> Deployment {
+fn declare_logic(name: ByteArray) -> ClassHash {
+    *declare(name).unwrap().contract_class().class_hash
+}
+
+fn setup_with_domains(seed_games: bool, structures_class: ByteArray, troops_class: ByteArray) -> Deployment {
+    setup_with_host(seed_games, structures_class, troops_class, "GamesTest")
+}
+fn setup_with_host(
+    seed_games: bool, structures_class: ByteArray, troops_class: ByteArray, host: ByteArray,
+) -> Deployment {
     let pair = keypair(12345);
     recorded::deploy_submitter(submitter());
     let (actor, account_class) = deploy("AccountFixture", @array![pair.public_key]);
-    let (season, _) = deploy("SeasonDomain", @array![authority().into(), submitter().into(), account_class.into()]);
-    let (map, _) = deploy("MapDomain", @array![authority().into()]);
-    let (structures, _) = deploy(structures_class, @array![authority().into()]);
-    let (troops, _) = deploy(troops_class, @array![authority().into()]);
-    let (settlement, _) = deploy("SettlementDomain", @array![authority().into()]);
-    let (resources, _) = deploy("ResourcesDomain", @array![authority().into()]);
-    let (economy, _) = deploy("EconomyDomain", @array![authority().into()]);
-    let (relics, _) = deploy("RelicsDomain", @array![authority().into()]);
-    let (prizes, _) = deploy("PrizesDomain", @array![authority().into()]);
-    let (registry_domain, _) = deploy("RegistryDomain", @array![authority().into()]);
-    let (combat, _) = deploy("CombatDomain", @array![authority().into()]);
-    let (bridge, _) = deploy("BridgeDomain", @array![authority().into()]);
-    let peers = Peers {
-        season,
-        map,
-        structures,
-        troops,
-        settlement,
-        resources,
-        economy,
-        prizes,
-        registry: registry_domain,
-        combat,
-        bridge,
-        relics,
+    let classes = games_storage::release::LogicClasses {
+        season: declare_logic("SeasonLogic"),
+        map: declare_logic("MapLogic"),
+        placement: declare_logic("PlacementLogic"),
+        construction: declare_logic("ConstructionLogic"),
+        production: declare_logic("ProductionLogic"),
+        structures: declare_logic(structures_class),
+        troops: declare_logic(troops_class),
+        settlement: declare_logic("SettlementLogic"),
+        resources: declare_logic("ResourcesLogic"),
+        economy: declare_logic("EconomyLogic"),
+        prizes: declare_logic("PrizesLogic"),
+        registry: declare_logic("RegistryLogic"),
+        combat: declare_logic("CombatLogic"),
+        raid: declare_logic("RaidLogic"),
+        bridge: declare_logic("BridgeLogic"),
+        relics: declare_logic("RelicsLogic"),
     };
-    for address in array![
-        season, map, structures, troops, settlement, resources, economy, prizes, registry_domain, combat, bridge,
-        relics,
-    ] {
-        start_cheat_caller_address(address, authority());
-        IDomainDispatcher { contract_address: address }.configure(peers);
+    let authentication = crate::games::Authentication { submitter: submitter(), account_class };
+    let mut calldata = array![authority().into()];
+    authentication.serialize(ref calldata);
+    classes.serialize(ref calldata);
+    let (games, _) = deploy(host, @calldata);
+    if seed_games {
+        recorded::create_games(games, authority());
     }
-    if activate {
-        for address in array![
-            season, map, structures, troops, settlement, resources, economy, prizes, registry_domain, combat, bridge,
-            relics,
-        ] {
-            IDomainDispatcher { contract_address: address }.activate();
-        }
-    }
-    for address in array![
-        season, map, structures, troops, settlement, resources, economy, prizes, registry_domain, combat, bridge,
-        relics,
-    ] {
-        stop_cheat_caller_address(address);
-    }
-    if activate {
-        recorded::create_games(registry_domain, authority());
-    }
-    configure_submitter(season, submitter());
-    start_cheat_caller_address(season, submitter());
-    start_cheat_block_timestamp(season, 100);
-    Deployment { peers, actor, account_class }
+    configure_submitter(games, submitter());
+    start_cheat_caller_address(games, submitter());
+    start_cheat_block_timestamp(games, 100);
+    Deployment { games, actor, account_class }
 }
+
 fn intent(deployment: Deployment, game_id: u32) -> Intent {
     Intent {
         game_id,
@@ -166,13 +156,13 @@ fn context() -> ExecutionContext {
 fn signature(deployment: Deployment, action: Intent) -> Span<felt252> {
     let device = keypair(12345);
     let (r, s) = device
-        .sign(ISeasonDispatcher { contract_address: deployment.peers.season }.hash_intent(action))
+        .sign(IGamesAuthenticationDispatcher { contract_address: deployment.games }.hash_intent(action))
         .unwrap();
     array![device.public_key, r, s].span()
 }
 fn execute(deployment: Deployment, action: Intent) {
     let signed = signature(deployment, action);
-    ISeasonDispatcher { contract_address: deployment.peers.season }.execute(action, context(), signed);
+    IGamesAuthenticationDispatcher { contract_address: deployment.games }.execute(action, context(), signed);
 }
 
 #[test]
@@ -180,14 +170,18 @@ fn signed_actor_and_root_reach_domain_with_game_scoped_nonces() {
     let deployment = setup(true);
     execute(deployment, intent(deployment, 1));
     execute(deployment, intent(deployment, 2));
-    let gateway = ISeasonDispatcher { contract_address: deployment.peers.season };
+    let gateway = IGamesAuthenticationDispatcher { contract_address: deployment.games };
     assert_eq!(gateway.next_nonce(1, deployment.actor), 1);
     assert_eq!(gateway.next_nonce(2, deployment.actor), 1);
-    let troops = IFixtureDispatcher { contract_address: deployment.peers.troops };
+    let troops = IFixtureDispatcher { contract_address: deployment.games };
     assert_eq!(troops.received_actor(), deployment.actor);
     assert_eq!(troops.received_root(), context().raw_root);
-    assert!(troops.explorer(ExplorerKey { game_id: 1, explorer_id: 7 }).is_some());
-    assert!(troops.explorer(ExplorerKey { game_id: 2, explorer_id: 7 }).is_some());
+    assert!(
+        GameState { contract_address: deployment.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 7 }).is_some(),
+    );
+    assert!(
+        GameState { contract_address: deployment.games }.explorer(ExplorerKey { game_id: 2, explorer_id: 7 }).is_some(),
+    );
 }
 
 #[test]
@@ -196,12 +190,12 @@ fn forged_signature_actor_game_and_replayed_intent_are_rejected() {
     let deployment = setup(true);
     let action = intent(deployment, 1);
     let signed = signature(deployment, action);
-    let gateway = ISeasonSafeDispatcher { contract_address: deployment.peers.season };
+    let gateway = IGamesAuthenticationSafeDispatcher { contract_address: deployment.games };
     let unknown = keypair(999);
     let (unknown_r, unknown_s) = unknown
-        .sign(ISeasonDispatcher { contract_address: deployment.peers.season }.hash_intent(action))
+        .sign(IGamesAuthenticationDispatcher { contract_address: deployment.games }.hash_intent(action))
         .unwrap();
-    let results = IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season };
+    let results = IRecordedExecutionViewsDispatcher { contract_address: deployment.games };
     gateway.execute(action, context(), array![unknown.public_key, unknown_r, unknown_s].span()).unwrap();
     assert_eq!(results.recorded_outcome(1, 1).unwrap().reason, 'INVALID_SIGNATURE');
     let mut forged = action;
@@ -216,39 +210,45 @@ fn forged_signature_actor_game_and_replayed_intent_are_rejected() {
     assert!(!results.recorded_outcome(1, 1).unwrap().nonce_consumed);
     assert!(!results.recorded_outcome(1, 2).unwrap().nonce_consumed);
     assert!(!results.recorded_outcome(2, 1).unwrap().nonce_consumed);
-    assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(1, deployment.actor), 0);
+    assert_eq!(
+        IGamesAuthenticationDispatcher { contract_address: deployment.games }.next_nonce(1, deployment.actor), 0,
+    );
     let successor = action;
     let signed = signature(deployment, successor);
     gateway.execute(successor, context(), signed).unwrap();
     assert_eq!(results.recorded_outcome(1, 3).unwrap().status, 1);
     gateway.execute(successor, context(), signed).unwrap();
     assert_eq!(results.recorded_outcome(1, 4).unwrap().reason, 'STALE_NONCE');
-    assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(1, deployment.actor), 1);
+    assert_eq!(
+        IGamesAuthenticationDispatcher { contract_address: deployment.games }.next_nonce(1, deployment.actor), 1,
+    );
 }
 
 #[test]
 #[feature("safe_dispatcher")]
 fn direct_player_submission_and_forged_domain_calls_are_rejected() {
-    let deployment = setup(true);
+    let deployment = setup_with_host(true, "MapLogic", "TroopFixture", "Games");
     let action = intent(deployment, 1);
     let signed = signature(deployment, action);
-    start_cheat_caller_address(deployment.peers.season, deployment.actor);
+    start_cheat_caller_address(deployment.games, deployment.actor);
     assert!(
-        ISeasonSafeDispatcher { contract_address: deployment.peers.season }.execute(action, context(), signed).is_err(),
+        IGamesAuthenticationSafeDispatcher { contract_address: deployment.games }
+            .execute(action, context(), signed)
+            .is_err(),
     );
-    start_cheat_caller_address(deployment.peers.troops, deployment.actor);
+    start_cheat_caller_address(deployment.games, deployment.actor);
     let Command::CreateExplorer(command) = action.command else {
         panic!("wrong command")
     };
     assert!(
-        ITroopCommandsSafeDispatcher { contract_address: deployment.peers.troops }
+        ITroopCommandsSafeDispatcher { contract_address: deployment.games }
             .create_explorer(1, deployment.actor, command, context())
             .is_err(),
     );
-    start_cheat_caller_address(deployment.peers.map, deployment.actor);
     assert!(
-        IMapSafeDispatcher { contract_address: deployment.peers.map }
-            .reveal(TileKey { game_id: 1, alt: false, col: 12, row: 34 }, 11)
+        starknet::syscalls::call_contract_syscall(
+            deployment.games, selector!("reveal"), array![1, 0, 12, 34, 11].span(),
+        )
             .is_err(),
     );
 }
@@ -262,107 +262,19 @@ fn late_domain_failure_consumes_ticket_and_rolls_back_gameplay_rows() {
     let (wrapper, _) = deploy("RollbackFixture", @array![]);
     let success = IRollbackFixtureDispatcher { contract_address: wrapper }
         .attempt(
-            deployment.peers.season,
-            make_intent(deployment.peers.season, action),
-            make_context(deployment.peers.season, action, ExecutionContext { raw_root: 0, timestamp: 100 }),
+            deployment.games,
+            make_intent(deployment.games, action),
+            make_context(deployment.games, action, ExecutionContext { raw_root: 0, timestamp: 100 }),
             signed,
         );
     assert!(success);
-    assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(1, deployment.actor), 1);
-    assert!(
-        IFixtureDispatcher { contract_address: deployment.peers.troops }
-            .explorer(ExplorerKey { game_id: 1, explorer_id: 7 })
-            .is_none(),
-    );
-    assert_eq!(IFixtureDispatcher { contract_address: deployment.peers.troops }.received_root(), 0);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn gameplay_before_activation_and_reinitialization_are_rejected() {
-    let deployment = setup(false);
-    let action = intent(deployment, 1);
-    let signed = signature(deployment, action);
-    assert!(
-        ISeasonSafeDispatcher { contract_address: deployment.peers.season }.execute(action, context(), signed).is_err(),
-    );
-    start_cheat_caller_address(deployment.peers.season, authority());
-    assert!(IDomainSafeDispatcher { contract_address: deployment.peers.season }.configure(deployment.peers).is_err());
-}
-
-#[test]
-fn row_set_member_and_deleted_have_exact_wire_shapes_and_zero_is_present() {
-    let deployment = setup(true);
-    let mut spy = spy_events();
-    execute(deployment, intent(deployment, 1));
-    let fixture = IFixtureDispatcher { contract_address: deployment.peers.troops };
-    let key = ExplorerKey { game_id: 1, explorer_id: 7 };
-    let mut explorer = fixture.explorer(key).unwrap();
-    assert_eq!(explorer.troops.count, 0);
-    let mut values = array![];
-    explorer.serialize(ref values);
-    let events = spy.get_events().emitted_by(deployment.peers.troops);
-    assert_eq!(events.events.len(), 1);
-    let (_, event) = events.events.at(0);
-    assert_eq!(event.keys.span(), array![selector!("TroopEvent"), selector!("RowSet"), 1, 'ExplorerTroops'].span());
-    let mut expected = array![2, 1, 7, values.len().into()];
-    expected.append_span(values.span());
-    assert_eq!(event.data.span(), expected.span());
-    let mut spy = spy_events();
-    explorer.troops.count = 25;
-    fixture.update_troops(key, explorer.troops);
-    fixture.destroy(key);
-    let events = spy.get_events().emitted_by(deployment.peers.troops);
-    assert_eq!(events.events.len(), 2);
-    let (_, member) = events.events.at(0);
-    let (_, deleted) = events.events.at(1);
     assert_eq!(
-        member.keys.span(),
-        array![selector!("TroopEvent"), selector!("RowMemberSet"), 1, 'ExplorerTroops', 'troops'].span(),
+        IGamesAuthenticationDispatcher { contract_address: deployment.games }.next_nonce(1, deployment.actor), 1,
     );
-    let mut troop_values = array![];
-    explorer.troops.serialize(ref troop_values);
-    let mut expected = array![2, 1, 7, troop_values.len().into()];
-    expected.append_span(troop_values.span());
-    assert_eq!(member.data.span(), expected.span());
-    assert_eq!(
-        deleted.keys.span(), array![selector!("TroopEvent"), selector!("RowDeleted"), 1, 'ExplorerTroops'].span(),
+    assert!(
+        GameState { contract_address: deployment.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 7 }).is_none(),
     );
-    assert_eq!(deleted.data.span(), array![2, 1, 7].span());
-    assert!(fixture.explorer(key).is_none());
-    let mut action = intent(deployment, 1);
-    action.nonce = 1;
-    execute(deployment, action);
-    assert_eq!(fixture.explorer(key).unwrap().troops.count, 0);
-}
-
-#[test]
-fn append_only_replace_class_preserves_and_mutates_existing_tiles() {
-    let deployment = setup(true);
-    start_cheat_caller_address(deployment.peers.map, deployment.peers.troops);
-    let map = IMapDispatcher { contract_address: deployment.peers.map };
-    let key = TileKey { game_id: 1, alt: false, col: 12, row: 34 };
-    let other_game = TileKey { game_id: 2, alt: true, col: 12, row: 34 };
-    map.reveal(key, 11);
-    map.reveal(other_game, 17);
-    map.occupy(key, 7, 15, false);
-    let before = map.tile(key).unwrap();
-    let other_before = map.tile(other_game).unwrap();
-    let class = declare("MapUpgradeFixture").unwrap().contract_class();
-    start_cheat_caller_address(deployment.peers.map, authority());
-    IDomainDispatcher { contract_address: deployment.peers.map }.upgrade(*class.class_hash);
-    assert_eq!(starknet::syscalls::get_class_hash_at_syscall(deployment.peers.map).unwrap(), *class.class_hash);
-    assert_eq!(map.tile(key).unwrap(), before);
-    assert_eq!(map.tile(other_game).unwrap(), other_before);
-    let upgrade = IUpgradeFixtureDispatcher { contract_address: deployment.peers.map };
-    assert_eq!(upgrade.revision(), 0);
-    upgrade.set_revision(2);
-    assert_eq!(upgrade.revision(), 2);
-    start_cheat_caller_address(deployment.peers.map, deployment.peers.troops);
-    map.vacate(key, 7);
-    map.occupy(key, 8, 16, false);
-    assert_eq!(map.tile(key).unwrap().data, before.data + 514);
-    assert_eq!(map.tile(other_game).unwrap(), other_before);
+    assert_eq!(IFixtureDispatcher { contract_address: deployment.games }.received_root(), 0);
 }
 
 #[test]
@@ -372,8 +284,8 @@ fn signatures_are_bound_to_deployment_command_nonce_and_deadline() {
     let second = setup(true);
     let action = intent(first, 1);
     let signed = signature(first, action);
-    let gateway = ISeasonSafeDispatcher { contract_address: first.peers.season };
-    let results = IRecordedExecutionViewsDispatcher { contract_address: first.peers.season };
+    let gateway = IGamesAuthenticationSafeDispatcher { contract_address: first.games };
+    let results = IRecordedExecutionViewsDispatcher { contract_address: first.games };
     let mut changed = action;
     changed.command = Command::CloseSeason;
     gateway.execute(changed, context(), signed).unwrap();
@@ -391,62 +303,28 @@ fn signatures_are_bound_to_deployment_command_nonce_and_deadline() {
     assert!(gateway.execute(action, ExecutionContext { raw_root: 1, timestamp: 101 }, signed).is_err());
     // Both deployments use the same test key; address binding still changes the digest.
     assert!(
-        ISeasonDispatcher { contract_address: second.peers.season }
-            .hash_intent(action) != ISeasonDispatcher { contract_address: first.peers.season }
+        IGamesAuthenticationDispatcher { contract_address: second.games }
+            .hash_intent(action) != IGamesAuthenticationDispatcher { contract_address: first.games }
             .hash_intent(action),
     );
-    assert_eq!(ISeasonDispatcher { contract_address: first.peers.season }.next_nonce(1, first.actor), 1);
+    assert_eq!(IGamesAuthenticationDispatcher { contract_address: first.games }.next_nonce(1, first.actor), 1);
 }
 
 #[test]
 #[feature("safe_dispatcher")]
 fn registered_account_with_unapproved_class_is_rejected_before_key_read() {
-    let pair = keypair(12345);
-    let (actor, _) = deploy("AccountFixture", @array![pair.public_key]);
-    let wrong_class = declare("MapUpgradeFixture").unwrap().contract_class();
-    let (season, _) = deploy(
-        "SeasonDomain", @array![authority().into(), submitter().into(), (*wrong_class.class_hash).into()],
-    );
-    let (map, _) = deploy("MapDomain", @array![authority().into()]);
-    let (structures, _) = deploy("MapDomain", @array![authority().into()]);
-    let (troops, _) = deploy("TroopFixture", @array![authority().into()]);
-    let (settlement, _) = deploy("SettlementDomain", @array![authority().into()]);
-    let (resources, _) = deploy("ResourcesDomain", @array![authority().into()]);
-    let (economy, _) = deploy("EconomyDomain", @array![authority().into()]);
-    let (relics, _) = deploy("RelicsDomain", @array![authority().into()]);
-    let (prizes, _) = deploy("PrizesDomain", @array![authority().into()]);
-    let (registry_domain, _) = deploy("RegistryDomain", @array![authority().into()]);
-    let (combat, _) = deploy("CombatDomain", @array![authority().into()]);
-    let (bridge, _) = deploy("BridgeDomain", @array![authority().into()]);
-    let peers = Peers {
-        season,
-        map,
-        structures,
-        troops,
-        settlement,
-        resources,
-        economy,
-        prizes,
-        registry: registry_domain,
-        combat,
-        bridge,
-        relics,
-    };
-    for address in array![
-        season, map, structures, troops, settlement, resources, economy, prizes, registry_domain, combat, bridge,
-        relics,
-    ] {
-        start_cheat_caller_address(address, authority());
-        IDomainDispatcher { contract_address: address }.configure(peers);
-    }
-    IDomainDispatcher { contract_address: season }.activate();
-    IDomainDispatcher { contract_address: registry_domain }.activate();
+    let d = setup(true);
+    let actor = d.actor;
+    let season = d.games;
+    let wrong_class = declare("BankTokenFixture").unwrap().contract_class();
+    let auth = IGamesAuthenticationDispatcher { contract_address: season }.authentication();
+    start_cheat_caller_address(season, authority());
+    IGamesAuthenticationDispatcher { contract_address: season }
+        .set_authentication(auth.submitter, *wrong_class.class_hash);
     start_cheat_caller_address(season, submitter());
-    start_cheat_block_timestamp(season, 100);
-    recorded::create_games(registry_domain, authority());
     let error = recorded::admission(season, actor).unwrap_err();
     assert_eq!(error.span(), array!['unregistered actor', 'ENTRYPOINT_FAILED'].span());
-    assert_eq!(ISeasonDispatcher { contract_address: season }.next_nonce(1, actor), 0);
+    assert_eq!(IGamesAuthenticationDispatcher { contract_address: season }.next_nonce(1, actor), 0);
 }
 
 #[test]
@@ -456,27 +334,29 @@ fn recorded_context_survives_outage_and_rejects_future_time() {
     let mut action = intent(deployment, 1);
     action.deadline = 100;
     let signed = signature(deployment, action);
-    let gateway = ISeasonSafeDispatcher { contract_address: deployment.peers.season };
-    start_cheat_block_timestamp(deployment.peers.season, 99);
+    let gateway = IGamesAuthenticationSafeDispatcher { contract_address: deployment.games };
+    start_cheat_block_timestamp(deployment.games, 99);
     assert!(gateway.execute(action, context(), signed).is_err());
-    start_cheat_block_timestamp(deployment.peers.season, 86500);
+    start_cheat_block_timestamp(deployment.games, 86500);
     gateway.execute(action, context(), signed).unwrap();
-    let troops = IFixtureDispatcher { contract_address: deployment.peers.troops };
+    let troops = IFixtureDispatcher { contract_address: deployment.games };
     assert_eq!(troops.received_timestamp(), 100);
     assert_eq!(troops.received_root(), context().raw_root);
-    assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(1, deployment.actor), 1);
+    assert_eq!(
+        IGamesAuthenticationDispatcher { contract_address: deployment.games }.next_nonce(1, deployment.actor), 1,
+    );
 }
 
 #[test]
 #[feature("safe_dispatcher")]
 fn authority_rotates_authentication_without_replacing_the_domain() {
     let deployment = setup(true);
-    let gateway = ISeasonDispatcher { contract_address: deployment.peers.season };
-    let safe = ISeasonSafeDispatcher { contract_address: deployment.peers.season };
+    let gateway = IGamesAuthenticationDispatcher { contract_address: deployment.games };
+    let safe = IGamesAuthenticationSafeDispatcher { contract_address: deployment.games };
     let previous = gateway.authentication();
-    let replacement = crate::season::Authentication { submitter: 0x777.try_into().unwrap(), ..previous };
+    let replacement = crate::games::Authentication { submitter: 0x777.try_into().unwrap(), ..previous };
     assert!(safe.set_authentication(replacement.submitter, replacement.account_class).is_err());
-    start_cheat_caller_address(deployment.peers.season, authority());
+    start_cheat_caller_address(deployment.games, authority());
     gateway.set_authentication(replacement.submitter, replacement.account_class);
     let current = gateway.authentication();
     assert_eq!(current.submitter, replacement.submitter);
@@ -484,10 +364,10 @@ fn authority_rotates_authentication_without_replacing_the_domain() {
     recorded::deploy_submitter(replacement.submitter);
     let action = intent(deployment, 1);
     let signed = signature(deployment, action);
-    start_cheat_caller_address(deployment.peers.season, submitter());
+    start_cheat_caller_address(deployment.games, submitter());
     assert!(safe.execute(action, context(), signed).is_err());
-    configure_submitter(deployment.peers.season, replacement.submitter);
-    start_cheat_caller_address(deployment.peers.season, replacement.submitter);
+    configure_submitter(deployment.games, replacement.submitter);
+    start_cheat_caller_address(deployment.games, replacement.submitter);
     gateway.execute(action, context(), signed);
     assert_eq!(gateway.next_nonce(1, deployment.actor), 1);
 }
@@ -496,19 +376,19 @@ fn authority_rotates_authentication_without_replacing_the_domain() {
 #[feature("safe_dispatcher")]
 fn approved_account_class_can_follow_a_player_account_upgrade() {
     let deployment = setup(true);
-    let season = ISeasonDispatcher { contract_address: deployment.peers.season };
+    let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
     let class = declare("AccountUpgradeFixture").unwrap().contract_class();
     fixtures::IAccountUpgradeDispatcherTrait::upgrade(
         fixtures::IAccountUpgradeDispatcher { contract_address: deployment.actor }, *class.class_hash,
     );
     let action = intent(deployment, 1);
     let signed = signature(deployment, action);
-    assert!(recorded::admission(deployment.peers.season, deployment.actor).is_err());
-    let authentication = crate::season::Authentication { account_class: *class.class_hash, ..season.authentication() };
-    start_cheat_caller_address(deployment.peers.season, authority());
+    assert!(recorded::admission(deployment.games, deployment.actor).is_err());
+    let authentication = crate::games::Authentication { account_class: *class.class_hash, ..season.authentication() };
+    start_cheat_caller_address(deployment.games, authority());
     season.set_authentication(authentication.submitter, authentication.account_class);
-    start_cheat_caller_address(deployment.peers.season, submitter());
-    assert!(recorded::admission(deployment.peers.season, deployment.actor).is_ok());
+    start_cheat_caller_address(deployment.games, submitter());
+    assert!(recorded::admission(deployment.games, deployment.actor).is_ok());
     season.execute(action, context(), signed);
     assert_eq!(season.next_nonce(1, deployment.actor), 1);
 }
@@ -517,115 +397,29 @@ fn approved_account_class_can_follow_a_player_account_upgrade() {
 #[feature("safe_dispatcher")]
 fn admission_rejects_a_non_account_and_authentication_row_keeps_its_shape() {
     let deployment = setup(true);
-    assert!(recorded::admission(deployment.peers.season, 0x999.try_into().unwrap()).is_err());
-    let season = ISeasonDispatcher { contract_address: deployment.peers.season };
+    assert!(recorded::admission(deployment.games, 0x999.try_into().unwrap()).is_err());
+    let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
     let authentication = season.authentication();
-    start_cheat_caller_address(deployment.peers.season, authority());
+    start_cheat_caller_address(deployment.games, authority());
     let mut spy = spy_events();
     season.set_authentication(authentication.submitter, authentication.account_class);
-    let events = spy.get_events().emitted_by(deployment.peers.season);
+    let events = spy.get_events().emitted_by(deployment.games);
     assert_eq!(events.events.len(), 1);
     let (_, event) = events.events.at(0);
     assert_eq!(event.keys.span(), array![selector!("RowSet"), 1, 'Authentication'].span());
     assert_eq!(
         event.data.span(),
-        array![
-            1, deployment.peers.season.into(), 2, authentication.submitter.into(), authentication.account_class.into(),
-        ]
+        array![1, deployment.games.into(), 2, authentication.submitter.into(), authentication.account_class.into()]
             .span(),
     );
 }
 
-#[test]
-#[feature("safe_dispatcher")]
-fn map_rejects_foreign_occupancy_commands_and_duplicate_mutations() {
-    let deployment = setup(true);
-    let address = deployment.peers.map;
-    let map = IMapDispatcher { contract_address: address };
-    let safe = IMapSafeDispatcher { contract_address: address };
-    let key = TileKey { game_id: 1, alt: false, col: 12, row: 34 };
-    start_cheat_caller_address(address, deployment.peers.troops);
-    map.reveal(key, 11);
-    let revealed = map.tile(key).unwrap();
-    assert!(safe.reveal(key, 12).is_err());
-    assert_eq!(map.tile(key).unwrap(), revealed);
-    start_cheat_caller_address(address, deployment.actor);
-    assert!(safe.occupy(key, 7, 15, false).is_err());
-    assert_eq!(map.tile(key).unwrap(), revealed);
-    start_cheat_caller_address(address, deployment.peers.troops);
-    map.occupy(key, 7, 15, false);
-    let occupied = map.tile(key).unwrap();
-    assert!(safe.occupy(key, 8, 16, false).is_err());
-    start_cheat_caller_address(address, deployment.actor);
-    assert!(safe.vacate(key, 7).is_err());
-    assert_eq!(map.tile(key).unwrap(), occupied);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn activation_rejects_peer_mismatch_authority_mismatch_and_double_activation() {
-    for wrong_authority in array![false, true] {
-        let (season, _) = deploy("MapDomain", @array![authority().into()]);
-        let other_authority: ContractAddress = if wrong_authority {
-            0x999.try_into().unwrap()
-        } else {
-            authority()
-        };
-        let (map, _) = deploy("MapDomain", @array![other_authority.into()]);
-        let (structures, _) = deploy("MapDomain", @array![authority().into()]);
-        let (troops, _) = deploy("MapDomain", @array![authority().into()]);
-        let (settlement, _) = deploy("SettlementDomain", @array![authority().into()]);
-        let (resources, _) = deploy("ResourcesDomain", @array![authority().into()]);
-        let (economy, _) = deploy("EconomyDomain", @array![authority().into()]);
-        let (relics, _) = deploy("RelicsDomain", @array![authority().into()]);
-        let (prizes, _) = deploy("PrizesDomain", @array![authority().into()]);
-        let (registry_domain, _) = deploy("RegistryDomain", @array![authority().into()]);
-        let (combat, _) = deploy("CombatDomain", @array![authority().into()]);
-        let (bridge, _) = deploy("BridgeDomain", @array![authority().into()]);
-        let peers = Peers {
-            season,
-            map,
-            structures,
-            troops,
-            settlement,
-            resources,
-            economy,
-            prizes,
-            registry: registry_domain,
-            combat,
-            bridge,
-            relics,
-        };
-        for address in array![season, structures, troops, settlement] {
-            start_cheat_caller_address(address, authority());
-            IDomainDispatcher { contract_address: address }.configure(peers);
-        }
-        start_cheat_caller_address(map, other_authority);
-        let map_peers = if wrong_authority {
-            peers
-        } else {
-            Peers { structures: troops, troops: structures, ..peers }
-        };
-        IDomainDispatcher { contract_address: map }.configure(map_peers);
-        let error = IDomainSafeDispatcher { contract_address: season }.activate().unwrap_err();
-        let expected = if wrong_authority {
-            "authority mismatch"
-        } else {
-            "peer mismatch"
-        };
-        assert_eq!(snforge_std::byte_array::try_deserialize_bytearray_error(error.span()).unwrap(), expected);
-        assert!(!IDomainDispatcher { contract_address: season }.domain_state().active);
-    }
-    let deployment = setup(true);
-    start_cheat_caller_address(deployment.peers.season, authority());
-    assert!(IDomainSafeDispatcher { contract_address: deployment.peers.season }.activate().is_err());
-}
 
 #[test]
 #[feature("safe_dispatcher")]
 fn upgrade_rules_are_immutable_complete_and_game_scoped() {
     let deployment = setup(true);
-    let settlement = deployment.peers.settlement;
+    let settlement = deployment.games;
     let rules = IUpgradeRulesDispatcher { contract_address: settlement };
     let safe = IUpgradeRulesSafeDispatcher { contract_address: settlement };
     let limits = UpgradeLimits { realm_max: 1, village_max: 0 };
@@ -649,29 +443,6 @@ fn upgrade_rules_are_immutable_complete_and_game_scoped() {
     assert_eq!(rules.upgrade_limits(2).realm_max, 0);
 }
 
-#[test]
-#[feature("safe_dispatcher")]
-fn realm_upgrade_changes_only_its_display_and_rejects_foreign_occupants() {
-    let deployment = setup(true);
-    let address = deployment.peers.map;
-    let map = IMapDispatcher { contract_address: address };
-    let safe = IMapSafeDispatcher { contract_address: address };
-    let key = TileKey { game_id: 1, alt: false, col: 12, row: 34 };
-    start_cheat_caller_address(address, deployment.peers.structures);
-    map.reveal(key, 11);
-    map.occupy(key, 7, 1, true);
-    let before = map.tile(key).unwrap();
-    start_cheat_caller_address(address, deployment.peers.troops);
-    assert!(safe.upgrade_realm(key, 7, false, 1).is_err());
-    start_cheat_caller_address(address, deployment.peers.structures);
-    assert!(safe.upgrade_realm(key, 8, false, 1).is_err());
-    assert_eq!(map.tile(key).unwrap(), before);
-    map.upgrade_realm(key, 7, false, 1);
-    assert_eq!(map.tile(key).unwrap().data, before.data + 2);
-    map.upgrade_realm(key, 7, true, 3);
-    assert_eq!(map.tile(key).unwrap().data, before.data + 14);
-    assert!(safe.vacate(key, 7).is_err());
-}
 
 mod artificer;
 
@@ -682,7 +453,6 @@ mod camps;
 
 mod faith;
 
-
 mod guilds;
 
 mod random_vectors;
@@ -692,3 +462,88 @@ mod recorded_receipts;
 mod season_lifecycle;
 
 mod structure_rules;
+
+mod test_conformance;
+
+#[test]
+fn row_set_member_and_deleted_have_exact_wire_shapes_and_zero_is_present() {
+    let deployment = setup(true);
+    let mut spy = spy_events();
+    execute(deployment, intent(deployment, 1));
+    let fixture = IFixtureDispatcher { contract_address: deployment.games };
+    let key = ExplorerKey { game_id: 1, explorer_id: 7 };
+    let mut explorer = GameState { contract_address: deployment.games }.explorer(key).unwrap();
+    assert_eq!(explorer.troops.count, 0);
+    let mut values = array![];
+    explorer.serialize(ref values);
+    let events = spy.get_events().emitted_by(deployment.games);
+    let mut matched = array![];
+    for (address, event) in events.events {
+        if event.keys.span() == array![selector!("TroopEvent"), selector!("RowSet"), 1, 'ExplorerTroops'].span() {
+            matched.append((address, event));
+        }
+    }
+    assert_eq!(matched.len(), 1);
+    let (_, event) = matched.at(0);
+    assert_eq!(event.keys.span(), array![selector!("TroopEvent"), selector!("RowSet"), 1, 'ExplorerTroops'].span());
+    let mut expected = array![2, 1, 7, values.len().into()];
+    expected.append_span(values.span());
+    assert_eq!(event.data.span(), expected.span());
+    let mut spy = spy_events();
+    explorer.troops.count = 25;
+    fixture.update_troops(key, explorer.troops);
+    fixture.destroy(key);
+    let events = spy.get_events().emitted_by(deployment.games);
+    assert_eq!(events.events.len(), 2);
+    let (_, member) = events.events.at(0);
+    let (_, deleted) = events.events.at(1);
+    assert_eq!(
+        member.keys.span(),
+        array![selector!("TroopEvent"), selector!("RowMemberSet"), 1, 'ExplorerTroops', 'troops'].span(),
+    );
+    let mut troop_values = array![];
+    explorer.troops.serialize(ref troop_values);
+    let mut expected = array![2, 1, 7, troop_values.len().into()];
+    expected.append_span(troop_values.span());
+    assert_eq!(member.data.span(), expected.span());
+    assert_eq!(
+        deleted.keys.span(), array![selector!("TroopEvent"), selector!("RowDeleted"), 1, 'ExplorerTroops'].span(),
+    );
+    assert_eq!(deleted.data.span(), array![2, 1, 7].span());
+    assert!(GameState { contract_address: deployment.games }.explorer(key).is_none());
+    let mut action = intent(deployment, 1);
+    action.nonce = 1;
+    execute(deployment, action);
+    assert_eq!(GameState { contract_address: deployment.games }.explorer(key).unwrap().troops.count, 0);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn games_reinitialization_is_rejected_without_changing_authentication_or_state() {
+    let deployment = setup_with_host(true, "MapLogic", "TroopFixture", "Games");
+    let entry = IGamesAuthenticationDispatcher { contract_address: deployment.games };
+    let authentication = entry.authentication();
+    let classes = snforge_std::interact_with_state(
+        deployment.games, || {
+            let state = crate::state::read();
+            state.releases.read(state.current_release.read())
+        },
+    );
+    let mut calldata = array![deployment.actor.into()];
+    authentication.serialize(ref calldata);
+    classes.serialize(ref calldata);
+    start_cheat_caller_address(deployment.games, authority());
+    assert!(
+        starknet::syscalls::call_contract_syscall(deployment.games, selector!("constructor"), calldata.span()).is_err(),
+    );
+    assert!(
+        starknet::syscalls::call_contract_syscall(deployment.games, selector!("initializer"), calldata.span()).is_err(),
+    );
+    start_cheat_caller_address(deployment.games, deployment.actor);
+    let safe = IGamesAuthenticationSafeDispatcher { contract_address: deployment.games };
+    assert!(safe.set_authentication(deployment.actor, authentication.account_class).is_err());
+    let after = entry.authentication();
+    assert_eq!(after.submitter, authentication.submitter);
+    assert_eq!(after.account_class, authentication.account_class);
+    assert_eq!(entry.next_nonce(1, deployment.actor), 0);
+}

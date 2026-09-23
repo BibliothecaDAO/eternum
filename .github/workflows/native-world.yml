@@ -13,9 +13,26 @@ jobs:
         with:
           tool-versions: contracts/l3/world-native/.tool-versions
           scarb-lock: contracts/l3/world-native/Scarb.lock
-      - uses: foundry-rs/setup-snfoundry@v3
+      - name: Restore corrected snforge binary
+        id: snforge-cache
+        uses: actions/cache/restore@v4
         with:
-          tool-versions: contracts/l3/world-native/.tool-versions
+          path: ${{ runner.temp }}/native-snforge/bin
+          key:
+            ${{ runner.os }}-${{ runner.arch }}-snforge-${{ hashFiles('contracts/l3/world-native/.tool-versions',
+            'contracts/l3/world-native/build-snforge.sh',
+            'contracts/l3/world-native/toolchain/library-call-rollback.patch') }}
+      - name: Build snforge with library rollback correction
+        if: steps.snforge-cache.outputs.cache-hit != 'true'
+        run: bash contracts/l3/world-native/build-snforge.sh "$RUNNER_TEMP/native-snforge/bin"
+      - name: Cache corrected snforge before running gates
+        if: steps.snforge-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/native-snforge/bin
+          key: ${{ steps.snforge-cache.outputs.cache-primary-key }}
+      - name: Use corrected snforge
+        run: echo "$RUNNER_TEMP/native-snforge/bin" >> "$GITHUB_PATH"
       - uses: software-mansion/setup-universal-sierra-compiler@v1
         with:
           tool-versions: contracts/l3/world-native/.tool-versions
@@ -27,17 +44,13 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - name: Install schema dependencies
         run: pnpm install --frozen-lockfile
-      - name: Build shared model registry dependencies
-        run: pnpm --filter @bibliothecadao/eternum... run build
-      - name: Check native formatting
-        working-directory: contracts/l3/world-native
-        run: scarb fmt --check
       - name: Build native contracts
+        id: native-build
         working-directory: contracts/l3/world-native
         run: scarb build
       - name: Enforce class size headroom
         run: |
-          node --test contracts/l3/world-native/scripts/check-class-sizes.test.mjs
+          node --test contracts/l3/world-native/scripts/check-class-sizes.test.mjs contracts/l3/world-native/scripts/event-layouts.test.mjs
           node contracts/l3/world-native/scripts/check-class-sizes.mjs > "$RUNNER_TEMP/native-class-sizes.json"
       - name: Upload class size report
         if: always()
@@ -50,13 +63,34 @@ jobs:
         run: |
           (cd contracts/l3/randomness-protocol && scarb build)
           python3 contracts/l3/randomness-protocol/check-entrypoint.py \
-            contracts/l3/world-native/target/dev/world_native_SeasonDomain.contract_class.json \
+            contracts/l3/world-native/target/dev/world_native_Games.contract_class.json \
             "$RUNNER_TEMP/recorded-entrypoint.json"
       - name: Test all native rules and recorded execution
         working-directory: contracts/l3/world-native
         run: /usr/bin/time -v scarb test
-      - name: Reject schema drift
-        run: bun contracts/l3/world-native/scripts/generate-schema.mjs --check
+      - name: Check fact wire declarations against the test-profile ABI
+        run: node contracts/l3/world-native/scripts/check-fact-wire.mjs
+      - name: Regenerate production schema and reject drift
+        if: ${{ !cancelled() && steps.native-build.outcome == 'success' }}
+        run: |
+          bun contracts/l3/world-native/scripts/generate-schema.mjs
+          git diff --exit-code -- contracts/l3/world-native/schema
+      - name: Format native sources and reject drift
+        if: ${{ !cancelled() }}
+        working-directory: contracts/l3/world-native
+        run: |
+          scarb fmt
+          git diff --exit-code -- src storage
+      - name: Record native regeneration diff
+        if: always()
+        run: git diff --binary -- contracts/l3/world-native > "$RUNNER_TEMP/native-regeneration.patch"
+      - name: Upload native regeneration diff
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-regeneration
+          path: ${{ runner.temp }}/native-regeneration.patch
+          if-no-files-found: error
 
   randomness-protocol:
     runs-on: ubuntu-latest

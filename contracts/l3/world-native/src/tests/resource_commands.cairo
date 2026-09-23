@@ -3,18 +3,19 @@ use eternum_randomness_protocol::entrypoint::{
 };
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
 use crate::arrivals::{ArrivalKey, has_arrived};
-use crate::commands::{Command, ExecutionContext, IResourceCommandsSafeDispatcher, IResourceCommandsSafeDispatcherTrait};
+use crate::commands::{Command, ExecutionContext};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
+use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
 use crate::resources::{
-    IResourcesDispatcher, IResourcesDispatcherTrait, IResourcesSafeDispatcher, IResourcesSafeDispatcherTrait,
-    ResourceAmount, ResourceBurn, ResourceKey, ResourceRule, ResourceSlot,
+    IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceAmount, ResourceBurn, ResourceKey,
+    ResourceRule, ResourceSlot,
 };
-use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
 use crate::settlement::{
     ISettlementCreationDispatcher, ISettlementCreationDispatcherTrait, RealmCreation, SettlementCreation,
 };
-use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, StructureRecord};
-use crate::troops::{Coord, ExplorerKey, ITroopsDispatcher, ITroopsDispatcherTrait};
+use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
+use crate::tests::state::{GameState, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait};
+use crate::troops::{Coord, ExplorerKey};
 use super::recorded_receipts::RecordedReceiptsTrait;
 use super::{Deployment, authority, context, intent, recorded, signature};
 
@@ -23,11 +24,10 @@ pub fn setup() -> (Deployment, ResourceKey, ResourceKey) {
 }
 
 pub fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, ResourceKey, ResourceKey) {
-    let deployment = super::setup_with_domains(true, "StructuresDomain", "TroopsDomain");
-    let peers = deployment.peers;
-    let games = IGameDispatcher { contract_address: peers.registry };
+    let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
+    let games = IGameDispatcher { contract_address: deployment.games };
     super::recorded::seed_game(
-        peers.registry,
+        deployment.games,
         3,
         crate::game::GameRegistry {
             dev_mode_on: false,
@@ -52,12 +52,12 @@ pub fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, Resourc
                 },
             );
     }
-    let resources = IResourcesDispatcher { contract_address: peers.resources };
-    start_cheat_caller_address(peers.resources, authority());
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
+    start_cheat_caller_address(deployment.games, authority());
     resources.configure_resources(3, rules.span());
-    stop_cheat_caller_address(peers.resources);
-    start_cheat_caller_address(peers.structures, peers.settlement);
-    let creation = ISettlementCreationDispatcher { contract_address: peers.structures };
+    stop_cheat_caller_address(deployment.games);
+    start_cheat_caller_address(deployment.games, deployment.games);
+    let creation = ISettlementCreationDispatcher { contract_address: deployment.games };
     let mut ids = array![];
     for offset in array![0_u32, 10] {
         ids
@@ -79,12 +79,12 @@ pub fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, Resourc
                     ),
             );
     }
-    stop_cheat_caller_address(peers.structures);
+    stop_cheat_caller_address(deployment.games);
     let source = ResourceKey { game_id: 3, entity_id: *ids.at(0) };
-    start_cheat_caller_address(peers.resources, peers.structures);
+    start_cheat_caller_address(deployment.games, deployment.games);
     resources.grant_resource(source, 1, 100, 30);
     resources.start_production(source, 1, 2, 100, 30);
-    stop_cheat_caller_address(peers.resources);
+    stop_cheat_caller_address(deployment.games);
     (deployment, source, ResourceKey { game_id: 3, entity_id: *ids.at(1) })
 }
 
@@ -99,27 +99,24 @@ pub fn execute_recorded_at(deployment: Deployment, command: Command, timestamp: 
 pub fn execute_in_game(
     deployment: Deployment, game_id: u32, command: Command, timestamp: u64, executed_at: u64,
 ) -> bool {
-    let season = ISeasonDispatcher { contract_address: deployment.peers.season };
+    let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
     let action = recorded::FixtureAction {
         command,
-        rules: IGameDispatcher { contract_address: deployment.peers.registry }.rules(game_id),
+        rules: IGameDispatcher { contract_address: deployment.games }.rules(game_id),
         nonce: season.next_nonce(game_id, deployment.actor),
         deadline: 10000,
         ..intent(deployment, game_id),
     };
     let signed = signature(deployment, action);
     start_cheat_block_timestamp_global(executed_at);
-    let ticket = recorded::make_intent(deployment.peers.season, action);
+    let ticket = recorded::make_intent(deployment.games, action);
     let recorded_context = recorded::make_context(
-        deployment.peers.season, action, ExecutionContext { timestamp, ..context() },
+        deployment.games, action, ExecutionContext { timestamp, ..context() },
     );
-    snforge_std::cheat_caller_address(
-        deployment.peers.season, super::submitter(), snforge_std::CheatSpan::TargetCalls(1),
-    );
-    IRecordedExecutionDispatcher { contract_address: deployment.peers.season }
-        .execute(ticket, recorded_context, signed);
-    IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }
-        .recorded_outcome(game_id.into(), recorded::head(deployment.peers.season, game_id).order)
+    snforge_std::cheat_caller_address(deployment.games, super::submitter(), snforge_std::CheatSpan::TargetCalls(1));
+    IRecordedExecutionDispatcher { contract_address: deployment.games }.execute(ticket, recorded_context, signed);
+    IRecordedExecutionViewsDispatcher { contract_address: deployment.games }
+        .recorded_outcome(game_id.into(), recorded::head(deployment.games, game_id).order)
         .unwrap()
         .status == 1
 }
@@ -131,7 +128,7 @@ fn amount(resource_type: u8, amount: u128) -> Span<ResourceAmount> {
 #[test]
 fn explicit_burn_does_not_harvest_and_rejection_keeps_the_stream_moving() {
     let (deployment, source, _) = setup();
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let slot = ResourceSlot { game_id: 3, entity_id: source.entity_id, resource_type: 1 };
     let burn = ResourceBurn { entity_id: source.entity_id, resources: amount(1, 10) };
     assert!(execute(deployment, Command::BurnStructureResources(burn), 40));
@@ -146,68 +143,40 @@ fn explicit_burn_does_not_harvest_and_rejection_keeps_the_stream_moving() {
     assert!(execute(deployment, Command::BurnStructureResources(burn), 45));
     assert_eq!(resources.resource_balance(slot), 80);
     assert_eq!(resources.resource_production(slot), production);
-    assert_eq!(ISeasonDispatcher { contract_address: deployment.peers.season }.next_nonce(3, deployment.actor), 3);
-}
-
-
-#[test]
-#[feature("safe_dispatcher")]
-fn resource_mutations_reject_players_and_the_wrong_domain() {
-    let (deployment, source, _) = setup();
-    let resources = IResourcesSafeDispatcher { contract_address: deployment.peers.resources };
-    let commands = IResourceCommandsSafeDispatcher { contract_address: deployment.peers.resources };
-    for caller in array![deployment.actor, deployment.peers.map, deployment.peers.settlement] {
-        start_cheat_caller_address(deployment.peers.resources, caller);
-        assert!(resources.grant_resource(source, 1, 100, 40).is_err());
-        assert!(resources.spend_resource(source, 1, 100, 40).is_err());
-        assert!(resources.start_production(source, 1, 2, 100, 40).is_err());
-        assert!(resources.destroy_resources(source).is_err());
-        assert!(
-            commands
-                .burn_structure_resources(
-                    3,
-                    deployment.actor,
-                    ResourceBurn { entity_id: source.entity_id, resources: amount(1, 1) },
-                    context(),
-                )
-                .is_err(),
-        );
-    }
-    stop_cheat_caller_address(deployment.peers.resources);
     assert_eq!(
-        IResourcesDispatcher { contract_address: deployment.peers.resources }
-            .resource_balance(ResourceSlot { game_id: 3, entity_id: source.entity_id, resource_type: 1 }),
-        100,
+        IGamesAuthenticationDispatcher { contract_address: deployment.games }.next_nonce(3, deployment.actor), 3,
     );
 }
 
 pub fn set_fixture<T, +starknet::storage_access::Store<T>, +Drop<T>, +Copy<T>>(
-    address: starknet::ContractAddress, name: felt252, keys: Span<felt252>, value: T,
+    address: starknet::ContractAddress, node: felt252, name: felt252, keys: Span<felt252>, value: T,
 ) {
-    let base = starknet::storage_access::storage_base_address_from_felt252(snforge_std::map_entry_address(name, keys));
+    let base = starknet::storage_access::storage_base_address_from_felt252(
+        snforge_std::map_entry_address(core::pedersen::pedersen(node, name), keys),
+    );
     snforge_std::interact_with_state(address, || starknet::storage_access::Store::<T>::write(0, base, value).unwrap());
 }
 
 fn explorer_fixture(deployment: Deployment, id: u32, owner: u32, coord: Coord, capacity: u128) -> ResourceKey {
     set_fixture(
-        deployment.peers.troops,
+        deployment.games,
+        selector!("troops"),
         selector!("explorers"),
         array![3, id.into()].span(),
         crate::troops::ExplorerTroops { owner, coord, ..Default::default() },
     );
-    set_fixture(deployment.peers.troops, selector!("exists"), array![3, id.into()].span(), true);
+    set_fixture(deployment.games, selector!("troops"), selector!("exists"), array![3, id.into()].span(), true);
     let key = ResourceKey { game_id: 3, entity_id: id };
-    start_cheat_caller_address(deployment.peers.resources, deployment.peers.structures);
-    IResourcesDispatcher { contract_address: deployment.peers.resources }.initialize_resources(key, capacity, 0, 30);
-    stop_cheat_caller_address(deployment.peers.resources);
+    start_cheat_caller_address(deployment.games, deployment.games);
+    IResourceOperationsDispatcher { contract_address: deployment.games }.initialize_resources(key, capacity, 0, 30);
+    stop_cheat_caller_address(deployment.games);
     key
 }
 
 pub fn grant(deployment: Deployment, key: ResourceKey, resource_type: u8, amount: u128) {
-    start_cheat_caller_address(deployment.peers.resources, deployment.peers.structures);
-    IResourcesDispatcher { contract_address: deployment.peers.resources }
-        .grant_resource(key, resource_type, amount, 30);
-    stop_cheat_caller_address(deployment.peers.resources);
+    start_cheat_caller_address(deployment.games, deployment.games);
+    IResourceOperationsDispatcher { contract_address: deployment.games }.grant_resource(key, resource_type, amount, 30);
+    stop_cheat_caller_address(deployment.games);
 }
 
 #[test]
@@ -218,12 +187,12 @@ fn explorer_transfers_keep_capacity_loss_and_reject_wrong_layers_atomically() {
     let surface = explorer_fixture(deployment, 72, home.entity_id, Coord { alt: false, x: 2000015, y: 2000000 }, 100);
     grant(deployment, from, 1, 50);
     assert_eq!(
-        ITroopsDispatcher { contract_address: deployment.peers.troops }
+        GameState { contract_address: deployment.games }
             .authorized_explorer(ExplorerKey { game_id: 3, explorer_id: from.entity_id }, deployment.actor, 40)
             .owner,
         home.entity_id,
     );
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let command = crate::resources::ResourceTransfer {
         from_entity_id: from.entity_id, to_entity_id: to.entity_id, resources: amount(1, 10),
     };
@@ -276,7 +245,7 @@ fn structure_transfer_harvests_but_rejects_all_nine_troop_resources() {
         from_entity_id: home.entity_id, to_entity_id: explorer.entity_id, resources: amount(1, 110),
     };
     assert!(execute(deployment, Command::TransferStructureResourcesToExplorer(transfer), 40));
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     assert_eq!(
         resources.resource_balance(ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 1 }), 10,
     );
@@ -300,20 +269,21 @@ fn structure_transfer_harvests_but_rejects_all_nine_troop_resources() {
     }
 }
 
-
 fn arrival_fixture(
     deployment: Deployment, entity_id: u32, slot: u8, values: Span<ResourceAmount>,
 ) -> crate::arrivals::ArrivalKey {
     let key = crate::arrivals::ArrivalKey { game_id: 3, entity_id, day: 0, slot };
     set_fixture(
-        deployment.peers.resources,
+        deployment.games,
+        selector!("arrivals"),
         selector!("arrival_bounds"),
         array![3, entity_id.into(), 0, slot.into()].span(),
         Into::<u32, u64>::into(values.len()),
     );
     for index in 0..values.len() {
         set_fixture(
-            deployment.peers.resources,
+            deployment.games,
+            selector!("arrivals"),
             selector!("arrival_items"),
             array![3, entity_id.into(), 0, slot.into(), index.into()].span(),
             *values.at(index),
@@ -325,7 +295,7 @@ fn arrival_fixture(
 #[test]
 fn arrivals_offload_only_the_requested_prefix_and_delete_the_last_row() {
     let (deployment, home, _) = setup();
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let values = array![
         ResourceAmount { resource_type: 2, amount: 10 }, ResourceAmount { resource_type: 3, amount: 20 },
     ]
@@ -372,7 +342,8 @@ fn full_capacity_discards_offloaded_excess_as_the_original_rules_do() {
     let (deployment, home, _) = setup();
     let key = arrival_fixture(deployment, home.entity_id, 1, amount(2, 30));
     set_fixture(
-        deployment.peers.resources,
+        deployment.games,
+        selector!("resources"),
         selector!("weights"),
         array![3, home.entity_id.into()].span(),
         crate::resources::Weight { capacity: 100, weight: 100 },
@@ -386,7 +357,7 @@ fn full_capacity_discards_offloaded_excess_as_the_original_rules_do() {
             180,
         ),
     );
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     assert!(resources.resource_arrival(key).resources.is_empty());
     assert_eq!(resources.resource_balance(ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 2 }), 0);
     assert_eq!(resources.resource_weight(home), crate::resources::Weight { capacity: 100, weight: 100 });
@@ -400,11 +371,10 @@ fn village_arrivals_wait_for_both_season_and_creation_immunity() {
         rules.battle_config.regular_immunity_ticks = 2;
         rules.battle_config.village_immunity_ticks = village_ticks;
         let (deployment, home, _) = setup_with_rules(rules);
-        let structure = IStructuresDispatcher { contract_address: deployment.peers.structures }
-            .structure(home)
-            .unwrap();
+        let structure = IStructureOperationsDispatcher { contract_address: deployment.games }.structure(home).unwrap();
         set_fixture(
-            deployment.peers.structures,
+            deployment.games,
+            selector!("structures"),
             selector!("structures"),
             array![3, home.entity_id.into()].span(),
             StructureRecord {
@@ -421,7 +391,7 @@ fn village_arrivals_wait_for_both_season_and_creation_immunity() {
         let command = Command::OffloadArrival(
             crate::arrivals::OffloadArrival { entity_id: home.entity_id, day: 0, slot: 1, resource_count: 1 },
         );
-        let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+        let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
         assert!(!execute(deployment, command, available_at - 1));
         assert_eq!(resources.resource_arrival(key).resources, values);
         assert!(execute(deployment, command, available_at));
@@ -441,7 +411,7 @@ fn arrival_day_rollover_preserves_the_previous_tick_rule() {
 }
 
 pub fn resource_facts(deployment: Deployment, key: ResourceKey) -> Array<felt252> {
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let mut values = array![];
     resources.resource_weight(key).serialize(ref values);
     for resource_type in 1_u8..59 {
@@ -453,13 +423,13 @@ pub fn resource_facts(deployment: Deployment, key: ResourceKey) -> Array<felt252
 }
 
 pub fn assert_terminal_rejection(deployment: Deployment, command: Command, timestamp: u64) {
-    let season = ISeasonDispatcher { contract_address: deployment.peers.season };
+    let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
     let nonce = season.next_nonce(3, deployment.actor);
-    let order = recorded::head(deployment.peers.season, 3).order;
+    let order = recorded::head(deployment.games, 3).order;
     assert!(!execute(deployment, command, timestamp));
     assert_eq!(season.next_nonce(3, deployment.actor), nonce + 1);
-    assert_eq!(recorded::head(deployment.peers.season, 3).order, order + 1);
-    let result = IRecordedExecutionViewsDispatcher { contract_address: deployment.peers.season }
+    assert_eq!(recorded::head(deployment.games, 3).order, order + 1);
+    let result = IRecordedExecutionViewsDispatcher { contract_address: deployment.games }
         .recorded_outcome(3, order + 1)
         .unwrap();
     assert_eq!(result.status, 2);
@@ -472,7 +442,7 @@ fn every_transfer_rejects_duplicates_without_changing_facts_and_consumes_the_tic
     let explorer = explorer_fixture(deployment, 70, from.entity_id, Coord { alt: false, x: 2000001, y: 2000000 }, 1000);
     let other = explorer_fixture(deployment, 71, from.entity_id, Coord { alt: false, x: 2000002, y: 2000000 }, 1000);
     grant(deployment, explorer, 1, 100);
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let source_before = resource_facts(deployment, from);
     let recipient_before = resource_facts(deployment, to);
     let explorer_before = resource_facts(deployment, explorer);
@@ -530,7 +500,7 @@ fn sending_queues_arrivals_and_spends_only_the_senders_donkeys() {
     let precision = crate::rules::RESOURCE_PRECISION;
     grant(deployment, from, 25, 10 * precision);
     grant(deployment, to, 25, 10 * precision);
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let transfer = crate::resources::ResourceTransfer {
         from_entity_id: from.entity_id, to_entity_id: to.entity_id, resources: amount(1, 10),
     };
@@ -639,7 +609,7 @@ fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
             ..recorded::rules(),
         },
     );
-    let structures = IStructuresDispatcher { contract_address: deployment.peers.structures };
+    let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
     let structure = structures.structure(target).unwrap();
     let explorer = explorer_fixture(deployment, 70, home.entity_id, Coord { alt: false, x: 2000009, y: 2000000 }, 1000);
     grant(deployment, explorer, 26, 100);
@@ -650,14 +620,16 @@ fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
         Coord { alt: false, x: 2000009, y: 2000000 }
     };
     set_fixture(
-        deployment.peers.troops,
+        deployment.games,
+        selector!("troops"),
         selector!("explorers"),
         array![3, 70].span(),
         crate::troops::ExplorerTroops { owner: home.entity_id, coord, ..Default::default() },
     );
     for owner in array![deployment.actor, 0x998.try_into().unwrap(), 0x999.try_into().unwrap()] {
         set_fixture(
-            deployment.peers.structures,
+            deployment.games,
+            selector!("structures"),
             selector!("structures"),
             array![3, target.entity_id.into()].span(),
             StructureRecord {
@@ -701,9 +673,10 @@ fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
 }
 
 fn village_fixture(deployment: Deployment, key: ResourceKey, owner: starknet::ContractAddress) {
-    let structure = IStructuresDispatcher { contract_address: deployment.peers.structures }.structure(key).unwrap();
+    let structure = IStructureOperationsDispatcher { contract_address: deployment.games }.structure(key).unwrap();
     set_fixture(
-        deployment.peers.structures,
+        deployment.games,
+        selector!("structures"),
         selector!("structures"),
         array![key.game_id.into(), key.entity_id.into()].span(),
         StructureRecord {
@@ -745,7 +718,7 @@ fn delayed_village_troops_ignore_the_connection_and_keep_transport_ownership_rul
             from_entity_id: from.entity_id, to_entity_id: to.entity_id, resources: amount(26, 30),
         };
         assert!(execute(deployment, Command::SendResources(transfer), 40));
-        let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+        let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
         let arrival = ArrivalKey { game_id: 3, entity_id: to.entity_id, day: 0, slot: 2 };
         assert_eq!(resources.resource_arrival(arrival).resources, amount(26, 30));
         village_fixture(deployment, to, 0x999.try_into().unwrap());

@@ -5,7 +5,8 @@ use crate::faith::{
     IFaithOwnershipViewsDispatcherTrait, IFaithSafeDispatcher, IFaithSafeDispatcherTrait, PlayerFaithKey, Pledge,
 };
 use crate::resources::ResourceKey;
-use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, StructureRecord};
+use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
+use crate::tests::state::StructureObservationTrait;
 use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, set_fixture, setup_with_rules};
 
 pub fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
@@ -17,18 +18,19 @@ pub fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
     let (deployment, wonder, realm) = setup_with_rules(rules);
     set_wonder(deployment, wonder, true);
     set_wonder(deployment, realm, false);
-    start_cheat_caller_address(deployment.peers.prizes, super::authority());
-    IFaithDispatcher { contract_address: deployment.peers.prizes }.configure_faith(3, config());
-    stop_cheat_caller_address(deployment.peers.prizes);
+    start_cheat_caller_address(deployment.games, super::authority());
+    IFaithDispatcher { contract_address: deployment.games }.configure_faith(3, config());
+    stop_cheat_caller_address(deployment.games);
     (deployment, wonder, realm)
 }
 fn config() -> FaithRules {
     FaithRules { wonder_rate: 500, realm_rate: 100, village_rate: 10, owner_share_bps: 3000 }
 }
 pub fn set_wonder(deployment: super::Deployment, key: ResourceKey, enabled: bool) {
-    let value = IStructuresDispatcher { contract_address: deployment.peers.structures }.structure(key).unwrap();
+    let value = IStructureOperationsDispatcher { contract_address: deployment.games }.structure(key).unwrap();
     set_fixture(
-        deployment.peers.structures,
+        deployment.games,
+        selector!("structures"),
         selector!("structures"),
         array![3, key.entity_id.into()].span(),
         StructureRecord {
@@ -40,7 +42,7 @@ pub fn set_wonder(deployment: super::Deployment, key: ResourceKey, enabled: bool
     );
 }
 fn view(deployment: super::Deployment) -> IFaithOwnershipViewsDispatcher {
-    IFaithOwnershipViewsDispatcher { contract_address: deployment.peers.prizes }
+    IFaithOwnershipViewsDispatcher { contract_address: deployment.games }
 }
 fn pledge(structure: ResourceKey, wonder: ResourceKey) -> Command {
     Command::PledgeFaith(Pledge { structure_id: structure.entity_id, wonder_id: wonder.entity_id })
@@ -142,21 +144,11 @@ fn subservient_wonders_cannot_receive_pledges_and_submission_requires_no_followe
 }
 #[test]
 #[feature("safe_dispatcher")]
-fn faith_configuration_and_commands_reject_foreign_callers_and_isolate_games() {
-    let (deployment, wonder, realm) = setup();
-    let safe = IFaithSafeDispatcher { contract_address: deployment.peers.prizes };
+fn faith_configuration_requires_authority_and_isolates_games() {
+    let (deployment, _, _) = setup();
+    let safe = IFaithSafeDispatcher { contract_address: deployment.games };
     assert!(safe.configure_faith(2, config()).is_err());
-    assert!(
-        safe
-            .pledge_faith(
-                3,
-                deployment.actor,
-                Pledge { structure_id: realm.entity_id, wonder_id: wonder.entity_id },
-                super::context(),
-            )
-            .is_err(),
-    );
-    start_cheat_caller_address(deployment.peers.prizes, super::authority());
+    start_cheat_caller_address(deployment.games, super::authority());
     assert!(safe.configure_faith(3, config()).is_err());
     assert!(safe.configure_faith(2, FaithRules { owner_share_bps: 10001, ..config() }).is_err());
     assert!(safe.configure_faith(999, config()).is_err());
@@ -166,9 +158,10 @@ fn faith_configuration_and_commands_reject_foreign_callers_and_isolate_games() {
 #[test]
 fn village_pledges_use_the_village_rate_and_integer_owner_split() {
     let (deployment, wonder, village) = setup();
-    let record = IStructuresDispatcher { contract_address: deployment.peers.structures }.structure(village).unwrap();
+    let record = IStructureOperationsDispatcher { contract_address: deployment.games }.structure(village).unwrap();
     set_fixture(
-        deployment.peers.structures,
+        deployment.games,
+        selector!("structures"),
         selector!("structures"),
         array![3, village.entity_id.into()].span(),
         StructureRecord {

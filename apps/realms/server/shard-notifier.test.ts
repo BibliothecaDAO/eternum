@@ -85,7 +85,7 @@ const createHerald = () => {
     snapshotFails: false,
   };
   const answer = (url: URL): unknown => {
-    if (url.pathname === "/manifest") return { version: 1, chainId: CHAIN_ID, contracts: { season: "0x5e45" } };
+    if (url.pathname === "/manifest") return { version: 1, chainId: CHAIN_ID, contracts: { games: "0x5e45" } };
     if (url.pathname === "/games")
       return { chain: CHAIN_ID, games: [{ game_id: GAME_ID, name: "frontier-a", status: state.status }] };
     if (url.pathname === `/games/${GAME_ID}/snapshot`) state.snapshotReads++;

@@ -2,9 +2,10 @@ use snforge_std::{
     EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_block_timestamp_global, start_cheat_caller_address,
     stop_cheat_caller_address,
 };
-use crate::commands::{Command, ExecutionContext};
-use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceAmount, ResourceKey, ResourceSlot};
+use crate::commands::Command;
+use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
+use crate::tests::state::ResourceObservationTrait;
 use crate::trade::{
     AcceptOrder, CreateOrder, ITradeDispatcher, ITradeDispatcherTrait, ITradeSafeDispatcher, ITradeSafeDispatcherTrait,
     TradeKey, TradeRules,
@@ -21,10 +22,10 @@ fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
     rules.tick_config.delivery_tick_in_seconds = 1;
     rules.capacity_config.donkey_capacity = 10;
     let (deployment, maker, taker) = setup_with_rules(rules);
-    let trades = ITradeDispatcher { contract_address: deployment.peers.economy };
-    start_cheat_caller_address(deployment.peers.economy, super::authority());
+    let trades = ITradeDispatcher { contract_address: deployment.games };
+    start_cheat_caller_address(deployment.games, super::authority());
     trades.configure_trade(3, TradeRules { max_count: 2 });
-    stop_cheat_caller_address(deployment.peers.economy);
+    stop_cheat_caller_address(deployment.games);
     for key in array![maker, taker] {
         grant(deployment, key, 2, 1000);
         grant(deployment, key, 3, 1000);
@@ -45,7 +46,7 @@ fn offer(maker: ResourceKey) -> CreateOrder {
     }
 }
 fn balance(deployment: super::Deployment, key: ResourceKey, resource_type: u8) -> u128 {
-    IResourcesDispatcher { contract_address: deployment.peers.resources }
+    IResourceOperationsDispatcher { contract_address: deployment.games }
         .resource_balance(ResourceSlot { game_id: key.game_id, entity_id: key.entity_id, resource_type })
 }
 fn create(deployment: super::Deployment, command: CreateOrder) -> TradeKey {
@@ -53,7 +54,7 @@ fn create(deployment: super::Deployment, command: CreateOrder) -> TradeKey {
 }
 fn create_at(deployment: super::Deployment, command: CreateOrder, timestamp: u64) -> TradeKey {
     assert!(execute(deployment, Command::CreateTradeOrder(command), timestamp));
-    let view = ITradeDispatcher { contract_address: deployment.peers.economy };
+    let view = ITradeDispatcher { contract_address: deployment.games };
     let mut latest = 0;
     for trade_id in 1_u32..100 {
         if view.trade_order(TradeKey { game_id: 3, trade_id }).is_some() {
@@ -67,7 +68,7 @@ fn accept(key: TradeKey, taker: ResourceKey, lots: u64) -> Command {
     Command::AcceptTradeOrder(AcceptOrder { trade_id: key.trade_id, taker_id: taker.entity_id, lots })
 }
 fn arrival(deployment: super::Deployment, key: ResourceKey, at: u64, duration: u64) -> Span<ResourceAmount> {
-    IResourcesDispatcher { contract_address: deployment.peers.resources }
+    IResourceOperationsDispatcher { contract_address: deployment.games }
         .resource_arrival(crate::arrivals::arrival_key(3, key.entity_id, 1, at, duration))
         .resources
 }
@@ -78,7 +79,7 @@ fn public_trade_escrows_once_and_partial_fills_deliver_both_sides() {
     assert_eq!(balance(deployment, maker, 2), 970);
     assert_eq!(balance(deployment, maker, 25), 9 * RESOURCE_PRECISION);
     assert!(execute(deployment, accept(key, taker, 1), 50));
-    let view = ITradeDispatcher { contract_address: deployment.peers.economy };
+    let view = ITradeDispatcher { contract_address: deployment.games };
     assert_eq!(view.trade_order(key).unwrap().remaining_lots, 2);
     assert_eq!(balance(deployment, maker, 2), 970);
     assert_eq!(balance(deployment, taker, 3), 980);
@@ -131,9 +132,7 @@ fn rejected_fills_leave_escrow_balances_and_arrivals_unchanged() {
     assert_terminal_rejection(deployment, accept(key, maker, 0), 50);
     assert_terminal_rejection(deployment, accept(key, maker, 4), 50);
     assert_terminal_rejection(deployment, accept(key, maker, 1), 180);
-    assert_eq!(
-        ITradeDispatcher { contract_address: deployment.peers.economy }.trade_order(key).unwrap().remaining_lots, 3,
-    );
+    assert_eq!(ITradeDispatcher { contract_address: deployment.games }.trade_order(key).unwrap().remaining_lots, 3);
     assert_eq!(balance(deployment, taker, 3), 1000);
     assert_eq!(balance(deployment, taker, 25), 10 * RESOURCE_PRECISION);
     assert!(arrival(deployment, maker, 50, 20).is_empty());
@@ -144,10 +143,11 @@ fn rejected_fills_leave_escrow_balances_and_arrivals_unchanged() {
 fn escrow_uses_current_structure_owner_and_private_taker_identity() {
     let (deployment, maker, taker) = setup();
     let key = create(deployment, CreateOrder { taker_id: taker.entity_id, ..offer(maker) });
-    let structures = crate::structures::IStructuresDispatcher { contract_address: deployment.peers.structures };
-    let record = crate::structures::IStructuresDispatcherTrait::structure(structures, maker).unwrap();
+    let structures = crate::structures::IStructureOperationsDispatcher { contract_address: deployment.games };
+    let record = crate::tests::state::StructureObservationTrait::structure(structures, maker).unwrap();
     super::resource_commands::set_fixture(
-        deployment.peers.structures,
+        deployment.games,
+        selector!("structures"),
         selector!("structures"),
         array![3, maker.entity_id.into()].span(),
         crate::structures::StructureRecord {
@@ -173,24 +173,17 @@ fn recorded_trade_times_survive_outages_and_cancel_has_only_game_grace() {
     let (late, maker, _) = setup();
     let open = create(late, offer(maker));
     assert_terminal_rejection(late, Command::CancelTradeOrder(open.trade_id), 211);
-    assert!(ITradeDispatcher { contract_address: late.peers.economy }.trade_order(open).is_some());
+    assert!(ITradeDispatcher { contract_address: late.games }.trade_order(open).is_some());
 }
 #[test]
 #[feature("safe_dispatcher")]
-fn trade_rules_are_immutable_game_scoped_and_internal_calls_authenticated() {
+fn trade_rules_are_authorized_immutable_and_game_scoped() {
     let (deployment, maker, _) = setup();
-    let economy = deployment.peers.economy;
+    let economy = deployment.games;
     let safe = ITradeSafeDispatcher { contract_address: economy };
     start_cheat_block_timestamp_global(40);
     start_cheat_caller_address(economy, deployment.actor);
     assert!(safe.configure_trade(1, TradeRules { max_count: 1 }).is_err());
-    assert!(
-        safe
-            .create_trade_order(
-                3, deployment.actor, offer(maker), ExecutionContext { timestamp: 40, ..super::context() },
-            )
-            .is_err(),
-    );
     start_cheat_caller_address(economy, super::authority());
     assert!(safe.configure_trade(3, TradeRules { max_count: 1 }).is_err());
     safe.configure_trade(1, TradeRules { max_count: 1 }).unwrap();
@@ -200,24 +193,15 @@ fn trade_rules_are_immutable_game_scoped_and_internal_calls_authenticated() {
     stop_cheat_caller_address(economy);
     let key = create(deployment, offer(maker));
     assert!(safe.trade_order(TradeKey { game_id: 1, trade_id: key.trade_id }).unwrap().is_none());
-    start_cheat_caller_address(deployment.peers.resources, deployment.actor);
-    assert!(
-        crate::trade::IEconomyDeliverySafeDispatcherTrait::queue_economy_delivery(
-            crate::trade::IEconomyDeliverySafeDispatcher { contract_address: deployment.peers.resources },
-            maker,
-            ResourceAmount { resource_type: 2, amount: 10 },
-            0,
-            40,
-        )
-            .is_err(),
-    );
+    start_cheat_caller_address(deployment.games, deployment.actor);
 }
 
 fn change_structure(deployment: super::Deployment, key: ResourceKey, category: u8, alt: bool) {
-    let view = crate::structures::IStructuresDispatcher { contract_address: deployment.peers.structures };
-    let structure = crate::structures::IStructuresDispatcherTrait::structure(view, key).unwrap();
+    let view = crate::structures::IStructureOperationsDispatcher { contract_address: deployment.games };
+    let structure = crate::tests::state::StructureObservationTrait::structure(view, key).unwrap();
     super::resource_commands::set_fixture(
-        deployment.peers.structures,
+        deployment.games,
+        selector!("structures"),
         selector!("structures"),
         array![3, key.entity_id.into()].span(),
         crate::structures::StructureRecord {
@@ -256,9 +240,7 @@ fn insufficient_payment_or_donkeys_reverts_the_entire_fill() {
     assert_terminal_rejection(deployment, accept(key, taker, 1), 50);
     assert_eq!(balance(deployment, taker, 25), 10 * RESOURCE_PRECISION);
     assert!(arrival(deployment, maker, 50, 20).is_empty());
-    assert_eq!(
-        ITradeDispatcher { contract_address: deployment.peers.economy }.trade_order(key).unwrap().remaining_lots, 3,
-    );
+    assert_eq!(ITradeDispatcher { contract_address: deployment.games }.trade_order(key).unwrap().remaining_lots, 3);
     assert!(
         execute(
             deployment,
@@ -307,7 +289,7 @@ fn trade_creation_and_cancellation_have_distinct_story_ids() {
     let key = create(d, offer(maker));
     assert!(execute(d, Command::CancelTradeOrder(key.trade_id), 50));
     let mut ids = array![];
-    for (_, event) in spy.get_events().emitted_by(d.peers.economy).events.span() {
+    for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(0) == selector!("StoryEvent") {
             ids.append(*event.keys.at(3));
         }

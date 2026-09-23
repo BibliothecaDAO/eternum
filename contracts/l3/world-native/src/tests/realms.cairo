@@ -13,7 +13,8 @@ pub trait IRealmPoolFixture<T> {
 #[starknet::contract]
 pub mod RealmPoolFixture {
     use starknet::storage::StoragePointerReadAccess;
-    use crate::realms::{RealmCatalogue, RealmState, RealmTraits};
+    use crate::logic::realms::RealmState;
+    use crate::realms::{RealmCatalogue, RealmTraits};
     component!(path: RealmState, storage: realms, event: RealmEvent);
     impl Internal = RealmState::InternalImpl<ContractState>;
     #[storage]
@@ -34,7 +35,8 @@ pub mod RealmPoolFixture {
         }
         fn catalogue(self: @ContractState) -> RealmCatalogue {
             RealmCatalogue {
-                initialized: self.realms.data.catalogue_count.read(), digest: self.realms.data.catalogue_digest.read(),
+                initialized: self.realms.data.realms.catalogue_count.read(),
+                digest: self.realms.data.realms.catalogue_digest.read(),
             }
         }
         fn traits(self: @ContractState, id: u32) -> RealmTraits {
@@ -101,13 +103,13 @@ fn packed_traits_and_entitlement_keep_ordered_resources() {
 #[feature("safe_dispatcher")]
 fn only_deployment_authority_can_append_canonical_traits() {
     let deployment = super::setup(true);
-    let safe = crate::realms::ISeasonRealmsSafeDispatcher { contract_address: deployment.peers.settlement };
-    snforge_std::start_cheat_caller_address(deployment.peers.settlement, deployment.actor);
+    let safe = crate::realms::ISeasonRealmsSafeDispatcher { contract_address: deployment.games };
+    snforge_std::start_cheat_caller_address(deployment.games, deployment.actor);
     assert!(
         crate::realms::ISeasonRealmsSafeDispatcherTrait::initialize_realm_traits(safe, 1, array![0x4000003].span())
             .is_err(),
     );
-    snforge_std::start_cheat_caller_address(deployment.peers.settlement, super::authority());
+    snforge_std::start_cheat_caller_address(deployment.games, super::authority());
     crate::realms::ISeasonRealmsSafeDispatcherTrait::initialize_realm_traits(safe, 1, array![0x4000003].span())
         .unwrap();
     let result = crate::realms::ISeasonRealmsSafeDispatcherTrait::realm_catalogue(safe).unwrap();
@@ -118,8 +120,8 @@ fn only_deployment_authority_can_append_canonical_traits() {
 #[feature("safe_dispatcher")]
 fn forged_season_commands_cannot_allocate_or_place_realms() {
     let deployment = super::setup(true);
-    let season = crate::realms::ISeasonRealmsSafeDispatcher { contract_address: deployment.peers.settlement };
-    snforge_std::start_cheat_caller_address(deployment.peers.settlement, deployment.actor);
+    let season = crate::realms::ISeasonRealmsSafeDispatcher { contract_address: deployment.games };
+    snforge_std::start_cheat_caller_address(deployment.games, deployment.actor);
     assert!(
         crate::realms::ISeasonRealmsSafeDispatcherTrait::settle_season(
             season,
@@ -130,7 +132,7 @@ fn forged_season_commands_cannot_allocate_or_place_realms() {
         )
             .is_err(),
     );
-    let map = crate::realms::ISeasonPlacementSafeDispatcher { contract_address: deployment.peers.map };
-    snforge_std::start_cheat_caller_address(deployment.peers.map, deployment.actor);
+    let map = crate::realms::ISeasonPlacementSafeDispatcher { contract_address: deployment.games };
+    snforge_std::start_cheat_caller_address(deployment.games, deployment.actor);
     assert!(crate::realms::ISeasonPlacementSafeDispatcherTrait::claim_season_settlement(map, 1, 0, 123).is_err());
 }

@@ -14,7 +14,7 @@ import { buildCreateGameParams, type CreateGamePayloadInput } from "./preset";
 import { buildNativePreset } from "../config/native-preset";
 import { waitForSuccess } from "../shared/declare";
 import type { NativeWorldManifest, RegistrarWorld } from "../world/native/types";
-import { nativeDomainAbi } from "../world/native/manifest";
+import { nativeGamesAbi } from "../world/native/manifest";
 
 export function buildNativePresetRegistration(
   definition: ReturnType<typeof buildNativePreset>,
@@ -35,16 +35,15 @@ export function presetRegistrationCall(
   presetId: number,
   world: RegistrarWorld,
 ) {
-  const registry = world.native?.domains.registry;
-  if (!registry) throw new Error("Manifest has no native registrar");
-  const codec = new CallData(nativeDomainAbi(world, "registry"));
+  const address = world.world.address;
+  const codec = new CallData(nativeGamesAbi(world));
   const calldata = codec.compile("register_preset", { preset_id: presetId, definition });
   const commitment = hash.computePoseidonHashOnElements([
     shortString.encodeShortString("NATIVE_PRESET"),
     1,
     ...calldata.slice(1),
   ]);
-  return { address: registry.address, calldata, commitment };
+  return { address, calldata, commitment };
 }
 
 export async function registerNativePreset(

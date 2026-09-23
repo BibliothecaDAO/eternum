@@ -28,6 +28,7 @@ export interface NativeSchema {
   identity: string;
   version: number;
   cairoVersion: string;
+  logicClasses: Record<string, string>;
   encoding: string;
   domains: Record<
     string,
@@ -51,11 +52,13 @@ export interface NativeSchema {
   }[];
 }
 export interface NativeRelease {
-  version: 1;
+  version: 2;
   deploymentBlock: number;
   activeSchema: string;
   schemas: Record<string, NativeSchema>;
-  domains: Record<string, { address: string; initialClassHash: string; classes: Record<string, string> }>;
+  gamesClassHash: string;
+  releaseId: number;
+  logic: Record<string, string>;
 }
 export interface NativeManifest {
   world: { address: string };

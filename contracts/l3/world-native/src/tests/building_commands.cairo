@@ -1,14 +1,16 @@
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::buildings::{
-    BuildingKey, BuildingRule, BuildingRuleConfig, ChangeBuilding, CreateBuilding, IBuildingCommandsSafeDispatcher,
-    IBuildingCommandsSafeDispatcherTrait, IBuildingRulesDispatcher, IBuildingRulesDispatcherTrait,
-    IBuildingRulesSafeDispatcher, IBuildingRulesSafeDispatcherTrait,
+    BuildingKey, BuildingRule, BuildingRuleConfig, ChangeBuilding, CreateBuilding, IBuildingRulesDispatcher,
+    IBuildingRulesDispatcherTrait, IBuildingRulesSafeDispatcher, IBuildingRulesSafeDispatcherTrait,
 };
 use crate::commands::Command;
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 use crate::production::{IProductionRulesDispatcher, IProductionRulesDispatcherTrait, ProductionRecipe, RecipeConfig};
-use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceAmount, ResourceKey, ResourceSlot};
-use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait};
+use crate::resources::{
+    IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceAmount, ResourceKey, ResourceSlot,
+};
+use crate::structures::IStructureOperationsDispatcher;
+use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 use crate::troops::Coord;
 use crate::upgrades::{IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait, UpgradeLimits, UpgradeRecipe};
 use super::resource_commands::{
@@ -43,7 +45,7 @@ pub fn rules() -> Span<BuildingRuleConfig> {
 }
 fn building_world(board: Option<crate::buildings::BoardRules>) -> (super::Deployment, ResourceKey) {
     let (deployment, home, _) = setup();
-    start_cheat_caller_address(deployment.peers.structures, super::authority());
+    start_cheat_caller_address(deployment.games, super::authority());
     let mut configured = array![];
     for rule in rules() {
         configured
@@ -66,14 +68,13 @@ fn building_world(board: Option<crate::buildings::BoardRules>) -> (super::Deploy
                 },
             );
     }
-    IBuildingRulesDispatcher { contract_address: deployment.peers.structures }
-        .configure_buildings(3, configured.span(), board);
-    stop_cheat_caller_address(deployment.peers.structures);
-    start_cheat_caller_address(deployment.peers.settlement, super::authority());
+    IBuildingRulesDispatcher { contract_address: deployment.games }.configure_buildings(3, configured.span(), board);
+    stop_cheat_caller_address(deployment.games);
+    start_cheat_caller_address(deployment.games, super::authority());
     let recipe = UpgradeRecipe { costs: array![].span() };
-    IUpgradeRulesDispatcher { contract_address: deployment.peers.settlement }
+    IUpgradeRulesDispatcher { contract_address: deployment.games }
         .configure_upgrades(3, UpgradeLimits { realm_max: 3, village_max: 2 }, array![recipe, recipe, recipe].span());
-    stop_cheat_caller_address(deployment.peers.settlement);
+    stop_cheat_caller_address(deployment.games);
     (deployment, home)
 }
 fn create(home: ResourceKey, category: u8) -> Command {
@@ -91,8 +92,8 @@ fn change(home: ResourceKey) -> ChangeBuilding {
 #[test]
 fn building_lifecycle_settles_before_rate_changes_and_removes_the_final_building() {
     let (deployment, home) = building_world(None);
-    let structures = IStructuresDispatcher { contract_address: deployment.peers.structures };
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let slot = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 35 };
     assert!(execute(deployment, create(home, 37), 40));
     assert_eq!(resources.resource_production(slot).building_count, 1);
@@ -116,7 +117,7 @@ fn building_lifecycle_settles_before_rate_changes_and_removes_the_final_building
 #[test]
 fn failed_building_payment_rolls_back_placement_population_rate_and_resources() {
     let (deployment, home) = building_world(None);
-    let structures = IStructuresDispatcher { contract_address: deployment.peers.structures };
+    let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
     let before = resource_facts(deployment, home);
     let counts = structures.structure_buildings(home);
     assert_terminal_rejection(
@@ -139,7 +140,7 @@ fn failed_building_payment_rolls_back_placement_population_rate_and_resources() 
 #[test]
 fn delayed_building_actions_use_recorded_time_after_the_game_ends() {
     let (deployment, home) = building_world(None);
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let slot = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 35 };
     assert!(execute_recorded_at(deployment, create(home, 37), 40, 1000));
     assert!(execute_recorded_at(deployment, Command::PauseBuildingProduction(change(home)), 70, 1001));
@@ -151,26 +152,26 @@ fn delayed_building_actions_use_recorded_time_after_the_game_ends() {
 #[feature("safe_dispatcher")]
 fn building_configuration_is_authorized_complete_and_immutable() {
     let (deployment, _, _) = setup();
-    let dispatcher = IBuildingRulesSafeDispatcher { contract_address: deployment.peers.structures };
+    let dispatcher = IBuildingRulesSafeDispatcher { contract_address: deployment.games };
     assert!(dispatcher.configure_buildings(3, rules(), None).is_err());
-    start_cheat_caller_address(deployment.peers.structures, super::authority());
+    start_cheat_caller_address(deployment.games, super::authority());
     assert!(dispatcher.configure_buildings(3, rules().slice(0, 39), None).is_err());
     assert!(dispatcher.configure_buildings(3, rules(), None).is_ok());
     assert!(dispatcher.configure_buildings(3, rules(), None).is_err());
-    stop_cheat_caller_address(deployment.peers.structures);
+    stop_cheat_caller_address(deployment.games);
 }
-
 
 #[test]
 fn storehouse_capacity_is_retained_while_paused_and_cannot_be_removed_while_needed() {
     let (deployment, home) = building_world(None);
-    let game = IGameDispatcher { contract_address: deployment.peers.registry };
+    let game = IGameDispatcher { contract_address: deployment.games };
     let mut rules = game.rules(3);
     rules.capacity_config.storehouse_boost_capacity = 1;
-    set_fixture(deployment.peers.registry, selector!("rules"), array![3].span(), rules);
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    set_fixture(deployment.games, selector!("games"), selector!("rules"), array![3].span(), rules);
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     set_fixture(
-        deployment.peers.resources,
+        deployment.games,
+        selector!("resources"),
         selector!("weights"),
         array![3, home.entity_id.into()].span(),
         crate::resources::Weight { capacity: 100, weight: 0 },
@@ -181,16 +182,18 @@ fn storehouse_capacity_is_retained_while_paused_and_cannot_be_removed_while_need
     assert_eq!(resources.resource_weight(home).capacity, 100 + crate::rules::RESOURCE_PRECISION);
     let stored = resources.resource_weight(home);
     set_fixture(
-        deployment.peers.resources,
+        deployment.games,
+        selector!("resources"),
         selector!("weights"),
         array![3, home.entity_id.into()].span(),
         crate::resources::Weight { weight: 101, ..stored },
     );
     assert_terminal_rejection(deployment, Command::DestroyBuilding(change(home)), 60);
-    assert!(IStructuresDispatcher { contract_address: deployment.peers.structures }.building(east()).is_some());
+    assert!(IStructureOperationsDispatcher { contract_address: deployment.games }.building(east()).is_some());
     assert_eq!(resources.resource_weight(home).capacity, stored.capacity);
     set_fixture(
-        deployment.peers.resources,
+        deployment.games,
+        selector!("resources"),
         selector!("weights"),
         array![3, home.entity_id.into()].span(),
         crate::resources::Weight { weight: 100, ..stored },
@@ -200,36 +203,9 @@ fn storehouse_capacity_is_retained_while_paused_and_cannot_be_removed_while_need
 }
 
 #[test]
-#[feature("safe_dispatcher")]
-fn building_commands_reject_direct_and_foreign_domain_callers() {
-    let (deployment, home) = building_world(None);
-    let commands = IBuildingCommandsSafeDispatcher { contract_address: deployment.peers.structures };
-    let context = crate::commands::ExecutionContext { timestamp: 40, raw_root: 1 };
-    for caller in array![deployment.actor, deployment.peers.resources] {
-        start_cheat_caller_address(deployment.peers.structures, caller);
-        assert!(
-            commands
-                .create_building(
-                    3,
-                    deployment.actor,
-                    CreateBuilding {
-                        structure_id: home.entity_id, directions: array![0_u8].span(), category: 37, use_simple: true,
-                    },
-                    context,
-                )
-                .is_err(),
-        );
-        assert!(commands.destroy_building(3, deployment.actor, change(home), context).is_err());
-        assert!(commands.pause_building_production(3, deployment.actor, change(home), context).is_err());
-        assert!(commands.resume_building_production(3, deployment.actor, change(home), context).is_err());
-    }
-    stop_cheat_caller_address(deployment.peers.structures);
-}
-
-#[test]
 fn building_placement_rejects_invalid_paths_categories_and_occupied_tiles() {
     let (deployment, home) = building_world(None);
-    let structures = IStructuresDispatcher { contract_address: deployment.peers.structures };
+    let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
     let before = resource_facts(deployment, home);
     let counts = structures.structure_buildings(home);
     for directions in array![array![].span(), array![6_u8].span(), array![0_u8, 0].span()] {
@@ -258,7 +234,7 @@ fn building_placement_rejects_invalid_paths_categories_and_occupied_tiles() {
 #[test]
 fn building_actions_require_ownership_and_the_recorded_game_window() {
     let (deployment, home) = building_world(None);
-    let structures = IStructuresDispatcher { contract_address: deployment.peers.structures };
+    let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
     let before = resource_facts(deployment, home);
     for timestamp in array![19_u64] {
         for command in array![
@@ -270,7 +246,8 @@ fn building_actions_require_ownership_and_the_recorded_game_window() {
     }
     let structure = structures.structure(home).unwrap();
     set_fixture(
-        deployment.peers.structures,
+        deployment.games,
+        selector!("structures"),
         selector!("structures"),
         array![3, home.entity_id.into()].span(),
         crate::structures::StructureRecord {
@@ -287,7 +264,8 @@ fn building_actions_require_ownership_and_the_recorded_game_window() {
         assert_terminal_rejection(deployment, command, 60);
     }
     set_fixture(
-        deployment.peers.structures,
+        deployment.games,
+        selector!("structures"),
         selector!("structures"),
         array![3, home.entity_id.into()].span(),
         crate::structures::StructureRecord {
@@ -310,10 +288,11 @@ fn building_actions_require_ownership_and_the_recorded_game_window() {
 #[test]
 fn labor_buildings_cannot_be_destroyed_and_population_blocks_overbuilding() {
     let (deployment, home) = building_world(None);
-    let structures = IStructuresDispatcher { contract_address: deployment.peers.structures };
+    let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
     let structure = structures.structure(home).unwrap();
     set_fixture(
-        deployment.peers.structures,
+        deployment.games,
+        selector!("structures"),
         selector!("structures"),
         array![3, home.entity_id.into()].span(),
         crate::structures::StructureRecord {
@@ -325,16 +304,14 @@ fn labor_buildings_cannot_be_destroyed_and_population_blocks_overbuilding() {
     assert!(structures.building(east()).is_some());
     let counts = structures.structure_buildings(home);
     set_fixture(
-        deployment.peers.structures,
+        deployment.games,
+        selector!("buildings"),
         selector!("structure_buildings"),
         array![3, home.entity_id.into()].span(),
         crate::buildings::StructureBuildings {
             population: crate::buildings::Population {
                 current: counts.population.max
-                    + IGameDispatcher { contract_address: deployment.peers.registry }
-                        .rules(3)
-                        .building_config
-                        .base_population,
+                    + IGameDispatcher { contract_address: deployment.games }.rules(3).building_config.base_population,
                 max: counts.population.max,
             },
             ..counts,
@@ -352,7 +329,6 @@ fn labor_buildings_cannot_be_destroyed_and_population_blocks_overbuilding() {
     );
     assert_eq!(resource_facts(deployment, home), before);
 }
-
 
 #[test]
 fn board_neighbors_change_production_capacity_and_population_and_demolition_refunds_paid_labor() {
@@ -376,18 +352,19 @@ fn board_neighbors_change_production_capacity_and_population_and_demolition_refu
             },
         ),
     );
-    let structures = IStructuresDispatcher { contract_address: deployment.peers.structures };
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
-    let game = IGameDispatcher { contract_address: deployment.peers.registry };
+    let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
+    let game = IGameDispatcher { contract_address: deployment.games };
     let mut rules = game.rules(3);
     rules.building_config.base_population = 6;
     rules.building_config.base_cost_percent_increase = 1500;
     rules.capacity_config.storehouse_boost_capacity = 10;
-    set_fixture(deployment.peers.registry, selector!("rules"), array![3].span(), rules);
+    set_fixture(deployment.games, selector!("games"), selector!("rules"), array![3].span(), rules);
     let mut realm = structures.structure(home).unwrap();
     realm.base.level = 1;
     set_fixture(
-        deployment.peers.structures,
+        deployment.games,
+        selector!("structures"),
         selector!("structures"),
         array![3, home.entity_id.into()].span(),
         crate::structures::StructureRecord {
@@ -395,29 +372,32 @@ fn board_neighbors_change_production_capacity_and_population_and_demolition_refu
         },
     );
     set_fixture(
-        deployment.peers.structures,
+        deployment.games,
+        selector!("buildings"),
         selector!("buildings"),
         array![3, 0, 2000000, 2000000, 10, 10].span(),
         Building { category: 25, outer_entity_id: home.entity_id, paused: false, labor_paid: 0 },
     );
     set_fixture(
-        deployment.peers.structures,
+        deployment.games,
+        selector!("buildings"),
         selector!("structure_buildings"),
         array![3, home.entity_id.into()].span(),
         StructureBuildings { packed_counts_2: 0x10000000000000000, ..Default::default() },
     );
     for resource in array![23_u8, 26, 35] {
         set_fixture(
-            deployment.peers.resources,
+            deployment.games,
+            selector!("resources"),
             selector!("resource_rules"),
             array![3, resource.into()].span(),
             (0_u128, 10_u128),
         );
     }
     super::resource_commands::grant(deployment, home, 23, 10000);
-    start_cheat_caller_address(deployment.peers.resources, deployment.peers.structures);
+    start_cheat_caller_address(deployment.games, deployment.games);
     resources.start_production(home, 23, 10, 0xffffffffffffffffffffffffffffffff, 40);
-    stop_cheat_caller_address(deployment.peers.resources);
+    stop_cheat_caller_address(deployment.games);
     let capacity = resources.resource_weight(home).capacity;
     let labor = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 23 };
     let wheat = ResourceSlot { resource_type: 35, ..labor };
@@ -508,7 +488,6 @@ fn board_neighbors_change_production_capacity_and_population_and_demolition_refu
     assert_eq!(resources.resource_production(troops).production_rate, 0);
 }
 
-
 #[test]
 fn barracks_lane_charges_each_essence_cost_and_changes_existing_barracks_to_the_bought_tier() {
     use crate::buildings::BoardRules;
@@ -524,12 +503,12 @@ fn barracks_lane_charges_each_essence_cost_and_changes_existing_barracks_to_the_
             },
         ),
     );
-    let structures = IStructuresDispatcher { contract_address: deployment.peers.structures };
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
-    let games = IGameDispatcher { contract_address: deployment.peers.registry };
+    let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
+    let games = IGameDispatcher { contract_address: deployment.games };
     let mut rules = games.rules(3);
     rules.command_mask = 0xffffffffffffffffffffffffffffffff;
-    set_fixture(deployment.peers.registry, selector!("rules"), array![3].span(), rules);
+    set_fixture(deployment.games, selector!("games"), selector!("rules"), array![3].span(), rules);
     super::resource_commands::grant(deployment, home, 23, 100);
     super::resource_commands::grant(deployment, home, 38, 79);
     assert!(execute(deployment, create(home, 28), 40));
@@ -556,7 +535,6 @@ fn barracks_lane_charges_each_essence_cost_and_changes_existing_barracks_to_the_
     assert_terminal_rejection(deployment, buy, 40);
     assert_eq!(structures.structure(home).unwrap().metadata.barracks_tier, 2);
 }
-
 
 #[test]
 fn unlimited_training_consumes_its_simple_recipe_and_waits_for_farm_wheat_without_refills() {
@@ -586,16 +564,16 @@ fn unlimited_training_consumes_its_simple_recipe_and_waits_for_farm_wheat_withou
                 },
             );
     }
-    start_cheat_caller_address(deployment.peers.resources, super::authority());
-    IProductionRulesDispatcher { contract_address: deployment.peers.resources }.configure_production(3, recipes.span());
-    stop_cheat_caller_address(deployment.peers.resources);
+    start_cheat_caller_address(deployment.games, super::authority());
+    IProductionRulesDispatcher { contract_address: deployment.games }.configure_production(3, recipes.span());
+    stop_cheat_caller_address(deployment.games);
     super::resource_commands::grant(deployment, home, 23, 1000);
     super::resource_commands::grant(deployment, home, 35, 4);
     assert!(execute(deployment, create(home, 28), 40));
-    let resources = IResourcesDispatcher { contract_address: deployment.peers.resources };
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let troop = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 26 };
     let wheat = ResourceSlot { resource_type: 35, ..troop };
-    start_cheat_caller_address(deployment.peers.resources, deployment.peers.structures);
+    start_cheat_caller_address(deployment.games, deployment.games);
     resources.spend_resource(home, 26, 0, 50);
     assert_eq!(resources.resource_balance(troop), 2);
     assert_eq!(resources.resource_balance(wheat), 0);
@@ -603,7 +581,7 @@ fn unlimited_training_consumes_its_simple_recipe_and_waits_for_farm_wheat_withou
     assert_eq!(resources.resource_balance(troop), 2);
     assert_eq!(resources.resource_production(troop).production_rate, 2);
     assert_eq!(resources.resource_production(troop).output_amount_left, crate::resources::UNLIMITED_OUTPUT);
-    stop_cheat_caller_address(deployment.peers.resources);
+    stop_cheat_caller_address(deployment.games);
 
     assert!(
         execute(
@@ -616,7 +594,7 @@ fn unlimited_training_consumes_its_simple_recipe_and_waits_for_farm_wheat_withou
             70,
         ),
     );
-    start_cheat_caller_address(deployment.peers.resources, deployment.peers.structures);
+    start_cheat_caller_address(deployment.games, deployment.games);
     resources.spend_resource(home, 26, 0, 75);
     assert_eq!(resources.resource_balance(troop), 7);
     assert_eq!(resources.resource_balance(wheat), 0);
@@ -630,5 +608,5 @@ fn unlimited_training_consumes_its_simple_recipe_and_waits_for_farm_wheat_withou
     assert_eq!(resources.resource_balance(troop), 14);
     assert_eq!(resources.resource_balance(wheat), 8);
     assert_eq!(resources.resource_production(troop).output_amount_left, crate::resources::UNLIMITED_OUTPUT);
-    stop_cheat_caller_address(deployment.peers.resources);
+    stop_cheat_caller_address(deployment.games);
 }

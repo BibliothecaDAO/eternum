@@ -6,9 +6,10 @@ use crate::hyperstructures::{
     IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait, IHyperstructuresSafeDispatcher,
     IHyperstructuresSafeDispatcherTrait, SetConstructionAccess, Share, Stage,
 };
-use crate::resources::{IResourcesDispatcher, IResourcesDispatcherTrait, ResourceAmount, ResourceKey, ResourceSlot};
+use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
-use crate::structures::{IStructuresDispatcher, IStructuresDispatcherTrait, StructureRecord};
+use crate::structures::{IStructureOperationsDispatcher, IStructureOperationsDispatcherTrait, StructureRecord};
+use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 use super::resource_commands::{
     assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture, setup_with_rules,
 };
@@ -46,12 +47,12 @@ pub fn setup_mode(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, 
     };
     ruleset.victory_points_grant_config.hyp_points_per_second = 1000;
     let (deployment, first, second) = setup_with_rules(ruleset);
-    start_cheat_caller_address(deployment.peers.economy, super::authority());
+    start_cheat_caller_address(deployment.games, super::authority());
     view(deployment).configure_hyperstructures(3, rules());
-    stop_cheat_caller_address(deployment.peers.economy);
-    start_cheat_caller_address(deployment.peers.structures, deployment.peers.troops);
+    stop_cheat_caller_address(deployment.games);
+    start_cheat_caller_address(deployment.games, deployment.games);
     start_cheat_block_timestamp_global(30);
-    let id = IStructuresDispatcher { contract_address: deployment.peers.structures }
+    let id = IStructureOperationsDispatcher { contract_address: deployment.games }
         .create_discovery(
             3,
             crate::troops::Coord { alt: false, x: 2000100, y: 2000000 },
@@ -59,7 +60,7 @@ pub fn setup_mode(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, 
             101,
             30,
         );
-    stop_cheat_caller_address(deployment.peers.structures);
+    stop_cheat_caller_address(deployment.games);
     let hyper = ResourceKey { game_id: 3, entity_id: id };
     owner(deployment, hyper, deployment.actor);
     grant(deployment, hyper, 24, 5 * RESOURCE_PRECISION);
@@ -70,12 +71,13 @@ pub fn setup_mode(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, 
     (deployment, hyper, first, second)
 }
 fn view(deployment: super::Deployment) -> IHyperstructuresDispatcher {
-    IHyperstructuresDispatcher { contract_address: deployment.peers.economy }
+    IHyperstructuresDispatcher { contract_address: deployment.games }
 }
 pub fn owner(deployment: super::Deployment, key: ResourceKey, owner: starknet::ContractAddress) {
-    let value = IStructuresDispatcher { contract_address: deployment.peers.structures }.structure(key).unwrap();
+    let value = IStructureOperationsDispatcher { contract_address: deployment.games }.structure(key).unwrap();
     set_fixture(
-        deployment.peers.structures,
+        deployment.games,
+        selector!("structures"),
         selector!("structures"),
         array![key.game_id.into(), key.entity_id.into()].span(),
         StructureRecord { owner, base: value.base, resources_packed: value.resources_packed, metadata: value.metadata },
@@ -90,11 +92,11 @@ pub fn amount(resource_type: u8, amount: u128) -> ResourceAmount {
     ResourceAmount { resource_type, amount: amount * RESOURCE_PRECISION }
 }
 fn balance(deployment: super::Deployment, key: ResourceKey, resource_type: u8) -> u128 {
-    IResourcesDispatcher { contract_address: deployment.peers.resources }
+    IResourceOperationsDispatcher { contract_address: deployment.games }
         .resource_balance(ResourceSlot { game_id: key.game_id, entity_id: key.entity_id, resource_type })
 }
 fn points(deployment: super::Deployment, actor: starknet::ContractAddress) -> u128 {
-    crate::game::IPointsDispatcher { contract_address: deployment.peers.season }.player_points(3, actor)
+    crate::game::IPointsDispatcher { contract_address: deployment.games }.player_points(3, actor)
 }
 fn access(hyper: ResourceKey, access: ConstructionAccess) -> Command {
     Command::SetConstructionAccess(SetConstructionAccess { hyperstructure_id: hyper.entity_id, access })
@@ -130,8 +132,8 @@ fn initialization_burns_only_shards_and_progress_completes_with_clamped_contribu
     assert_eq!(allocation.start_at, 50);
     assert_eq!(allocation.multiplier, 1);
     assert_eq!(allocation.shareholders, array![Share { player: deployment.actor, bps: 10000 }].span());
-    let tile = crate::map::IMapDispatcherTrait::tile(
-        crate::map::IMapDispatcher { contract_address: deployment.peers.map },
+    let tile = crate::tests::state::MapObservationTrait::tile(
+        crate::map::IMapLogicDispatcher { contract_address: deployment.games },
         crate::map::TileKey { game_id: 3, alt: false, col: 2000100, row: 2000000 },
     )
         .unwrap();
@@ -159,7 +161,7 @@ fn contribution_rejections_roll_back_the_whole_batch_and_consume_the_ticket() {
     }
     assert_terminal_rejection(deployment, contribute(hyper, from, array![amount(2, 1)].span()), 200);
     assert_eq!(
-        crate::game::IPointsDispatcher { contract_address: deployment.peers.season }.season_points(3),
+        crate::game::IPointsDispatcher { contract_address: deployment.games }.season_points(3),
         points(deployment, deployment.actor),
     );
 }
@@ -230,37 +232,47 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
     assert!(execute(deployment, Command::InitializeHyperstructure(hyper.entity_id), 40));
     let friend: starknet::ContractAddress = 987.try_into().unwrap();
     owner(deployment, other, friend);
-    let safe = IHyperstructuresSafeDispatcher { contract_address: deployment.peers.economy };
+    let safe = IHyperstructuresSafeDispatcher { contract_address: deployment.games };
     let command = Contribution {
         hyperstructure_id: hyper.entity_id, from_structure_id: other.entity_id, resources: array![amount(2, 1)].span(),
     };
     start_cheat_block_timestamp_global(45);
-    start_cheat_caller_address(deployment.peers.economy, deployment.peers.season);
+    start_cheat_caller_address(deployment.games, deployment.games);
     assert!(
         safe
             .contribute_hyperstructure(3, friend, command, ExecutionContext { timestamp: 45, ..super::context() })
             .is_err(),
     );
-    stop_cheat_caller_address(deployment.peers.economy);
+    stop_cheat_caller_address(deployment.games);
     assert_terminal_rejection(deployment, access(hyper, ConstructionAccess::GuildOnly), 45);
-    set_fixture(deployment.peers.registry, selector!("members"), array![3, deployment.actor.into()].span(), 1_felt252);
+    set_fixture(
+        deployment.games,
+        selector!("guilds"),
+        selector!("members"),
+        array![3, deployment.actor.into()].span(),
+        1_felt252,
+    );
     assert!(execute(deployment, access(hyper, ConstructionAccess::GuildOnly), 45));
-    start_cheat_caller_address(deployment.peers.economy, deployment.peers.season);
+    start_cheat_caller_address(deployment.games, deployment.games);
     assert!(
         safe
             .contribute_hyperstructure(3, friend, command, ExecutionContext { timestamp: 45, ..super::context() })
             .is_err(),
     );
-    set_fixture(deployment.peers.registry, selector!("members"), array![3, friend.into()].span(), 1_felt252);
+    set_fixture(
+        deployment.games, selector!("guilds"), selector!("members"), array![3, friend.into()].span(), 1_felt252,
+    );
     assert!(
         safe
             .contribute_hyperstructure(3, friend, command, ExecutionContext { timestamp: 45, ..super::context() })
             .is_ok(),
     );
-    stop_cheat_caller_address(deployment.peers.economy);
+    stop_cheat_caller_address(deployment.games);
     assert!(execute(deployment, access(hyper, ConstructionAccess::Public), 46));
-    set_fixture(deployment.peers.registry, selector!("members"), array![3, friend.into()].span(), 2_felt252);
-    start_cheat_caller_address(deployment.peers.economy, deployment.peers.season);
+    set_fixture(
+        deployment.games, selector!("guilds"), selector!("members"), array![3, friend.into()].span(), 2_felt252,
+    );
+    start_cheat_caller_address(deployment.games, deployment.games);
     start_cheat_block_timestamp_global(46);
     assert!(
         safe
@@ -280,18 +292,15 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
 }
 #[test]
 #[feature("safe_dispatcher")]
-fn only_authority_configures_and_only_domains_create_or_mutate_hyperstructures() {
+fn hyperstructure_configuration_requires_authority_and_initialization_requires_owner() {
     let (deployment, hyper, from, _) = setup();
-    let safe = IHyperstructuresSafeDispatcher { contract_address: deployment.peers.economy };
+    let safe = IHyperstructuresSafeDispatcher { contract_address: deployment.games };
     assert!(safe.configure_hyperstructures(1, rules()).is_err());
-    assert!(safe.record_hyperstructure(ResourceKey { game_id: 3, entity_id: 999 }, 1, false).is_err());
-    assert!(safe.initialize_hyperstructure(3, deployment.actor, hyper.entity_id, super::context()).is_err());
-    assert!(safe.settle_completed_hyperstructures(3, super::context().timestamp).is_err());
-    start_cheat_caller_address(deployment.peers.economy, super::authority());
+    start_cheat_caller_address(deployment.games, super::authority());
     assert!(safe.configure_hyperstructures(3, rules()).is_err());
     assert!(safe.configure_hyperstructures(1, HyperstructureRules { resources: array![].span(), ..rules() }).is_err());
     assert!(safe.configure_hyperstructures(1, rules()).is_ok());
-    stop_cheat_caller_address(deployment.peers.economy);
+    stop_cheat_caller_address(deployment.games);
     assert_terminal_rejection(deployment, Command::InitializeHyperstructure(from.entity_id), 40);
     owner(deployment, hyper, 987.try_into().unwrap());
     assert_terminal_rejection(deployment, Command::InitializeHyperstructure(hyper.entity_id), 40);
@@ -315,14 +324,14 @@ pub fn settlement(deployment: super::Deployment, mode: crate::settlement::Settle
     let fields = snforge_std::fs::read_txt(@snforge_std::fs::FileTrait::new("tests/fixtures/settlement.txt"));
     let mut fields = fields.span();
     let grants: crate::settlement::RealmGrants = Serde::deserialize(ref fields).unwrap();
-    start_cheat_caller_address(deployment.peers.settlement, super::authority());
+    start_cheat_caller_address(deployment.games, super::authority());
     crate::settlement::ISettlementConfigurationDispatcherTrait::configure_settlement(
-        crate::settlement::ISettlementConfigurationDispatcher { contract_address: deployment.peers.settlement },
+        crate::settlement::ISettlementConfigurationDispatcher { contract_address: deployment.games },
         3,
         crate::settlement::SettlementRules { registration_start: 10, registration_limit: 96, mode, spacing },
         grants,
     );
-    stop_cheat_caller_address(deployment.peers.settlement);
+    stop_cheat_caller_address(deployment.games);
 }
 #[test]
 fn blitz_duel_multiplier_and_owner_only_shares_match_entry_rules() {
@@ -358,9 +367,9 @@ fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_r
         4,
     )
         .unwrap();
-    start_cheat_caller_address(deployment.peers.structures, deployment.peers.settlement);
+    start_cheat_caller_address(deployment.games, deployment.games);
     crate::settlement::ISettlementCreationDispatcherTrait::create_settlement(
-        crate::settlement::ISettlementCreationDispatcher { contract_address: deployment.peers.structures },
+        crate::settlement::ISettlementCreationDispatcher { contract_address: deployment.games },
         3,
         deployment.actor,
         coord,
@@ -374,7 +383,7 @@ fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_r
         ),
         ExecutionContext { timestamp: 55, ..super::context() },
     );
-    stop_cheat_caller_address(deployment.peers.structures);
+    stop_cheat_caller_address(deployment.games);
     let before = points(deployment, deployment.actor);
     assert!(execute(deployment, allocate(hyper, array![Share { player: deployment.actor, bps: 10000 }].span()), 60));
     assert_eq!(points(deployment, deployment.actor), before);
@@ -440,8 +449,8 @@ fn insufficient_shards_or_a_later_resource_leave_construction_unchanged() {
 }
 
 pub fn checkpoint(deployment: super::Deployment, timestamp: u64) {
-    snforge_std::start_cheat_block_timestamp(deployment.peers.economy, timestamp);
-    start_cheat_caller_address(deployment.peers.economy, deployment.peers.season);
+    snforge_std::start_cheat_block_timestamp(deployment.games, timestamp);
+    start_cheat_caller_address(deployment.games, deployment.games);
     assert_eq!(view(deployment).settle_completed_hyperstructures(3, timestamp), 0);
-    stop_cheat_caller_address(deployment.peers.economy);
+    stop_cheat_caller_address(deployment.games);
 }

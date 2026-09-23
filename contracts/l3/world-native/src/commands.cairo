@@ -153,7 +153,7 @@ pub fn decode_command(arguments: Span<felt252>, commitment: felt252) -> Result<C
     Ok(command)
 }
 
-fn command_items(command: Command) -> u32 {
+pub fn command_items(command: Command) -> u32 {
     match command {
         Command::Move(value) => value.directions.len(),
         Command::Battle(value) => value.steal_resources.len(),

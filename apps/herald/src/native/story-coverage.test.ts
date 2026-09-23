@@ -204,7 +204,7 @@ describe("compiled native history coverage", () => {
         const layout = schema.domains[domain].events.find(({ name }) => name === "StoryEvent")!;
         assertDecoded(
           raw({
-            from_address: manifest.native.domains[domain].address,
+            from_address: manifest.world.address,
             keys: [...layout.prefix, "1", "1", "100", "0", "17", "0", "3", "0x55"],
             data: [String(variant), ...fields.map(String), "140"],
           }),
@@ -222,7 +222,7 @@ describe("compiled native history coverage", () => {
         const layout = schema.domains[domain].events.find((event) => event.name === name)!;
         assertDecoded(
           raw({
-            from_address: manifest.native.domains[domain].address,
+            from_address: manifest.world.address,
             keys: [...layout.prefix, ...fixture.keys],
             data: fixture.data,
           }),

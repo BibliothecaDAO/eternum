@@ -7,7 +7,7 @@ function resourceEvent(name: string, keys: string[], values?: string[]) {
   const kind = values ? "RowSet" : "RowDeleted";
   const event = schema.domains.resources.events.find((event) => event.name === kind)!;
   return {
-    from_address: manifest.native.domains.resources.address,
+    from_address: manifest.world.address,
     keys: [...event.prefix, "1", model.identity],
     data: [String(keys.length), ...keys, ...(values ? [String(values.length), ...values] : [])],
   };
@@ -52,17 +52,13 @@ describe("native resource facts", () => {
     expect(fold.modelRows("ResourceBalance").find((row) => row.value.game_id === "0x2")?.value.balance).toBe("0x63");
   });
 
-  it("rejects malformed and foreign-domain arrivals without exposing a partial resource mutation", () => {
+  it("rejects malformed arrivals without exposing a partial resource mutation", () => {
     const { native, fold } = setup();
     const balance = resourceEvent("ResourceBalance", ["1", "7", "2"], ["10"]);
     const arrival = resourceEvent("ResourceArrival", ["1", "7", "0", "1"], ["1", "2", "10"]);
-    for (const invalid of [
-      { ...arrival, data: ["4", "1", "7", "0", "1", "3", "2", "2", "10"] },
-      { ...arrival, from_address: manifest.native.domains.structures.address },
-    ]) {
-      expect(() => native.applyReceipt(fold, receipt([balance, invalid]), 10, 0)).toThrow();
-      expect(fold.retainedRowCount()).toBe(0);
-    }
+    const invalid = { ...arrival, data: ["4", "1", "7", "0", "1", "3", "2", "2", "10"] };
+    expect(() => native.applyReceipt(fold, receipt([balance, invalid]), 10, 0)).toThrow();
+    expect(fold.retainedRowCount()).toBe(0);
   });
 });
 
@@ -99,11 +95,9 @@ describe("native production facts", () => {
 
   it("rejects a truncated production recipe atomically with its accompanying balance", () => {
     const { native, fold } = setup();
-    const bonus = resourceEvent("ProductionBonus", ["1", "7"], ["0", "0", "5000", "0", "0", "31"]);
     for (const invalid of [
       resourceEvent("ProductionRecipe", ["1", "26"], ["100", "200", "1", "23", "10", "1", "35"]),
       resourceEvent("ProductionBonus", ["1", "7"], ["0", "0", "65536", "0", "0", "31"]),
-      { ...bonus, from_address: manifest.native.domains.structures.address },
     ]) {
       expect(() =>
         native.applyReceipt(
@@ -122,7 +116,7 @@ describe("native production facts", () => {
     const event = schema.domains.resources.events.find((event) => event.name === "StoryEvent")!;
     const decoded = decoder.decode(
       raw({
-        from_address: manifest.native.domains.resources.address,
+        from_address: manifest.world.address,
         keys: [...event.prefix, "1", "1", "7", "0", "0x111", "0", "3", "0x55"],
         data: ["7", "26", "125", "2", "23", "10", "35", "20", "1920"],
       }),
@@ -153,7 +147,7 @@ describe("native building facts", () => {
     const decode = (data: string[]) => {
       const decoded = decoder.decode(
         raw({
-          from_address: manifest.native.domains.structures.address,
+          from_address: manifest.world.address,
           keys: [...event.prefix, "1", "1", "7", "0", "0x111", "0", "3", "0x55"],
           data,
         }),
@@ -176,7 +170,7 @@ describe("native building facts", () => {
     const model = schema.models.find((model) => model.name === "Building")!;
     const event = schema.domains.structures.events.find((event) => event.name === (values ? "RowSet" : "RowDeleted"))!;
     return {
-      from_address: manifest.native.domains.structures.address,
+      from_address: manifest.world.address,
       keys: [...event.prefix, "1", model.identity],
       data: [String(keys.length), ...keys, ...(values ? [String(values.length), ...values] : [])],
     };

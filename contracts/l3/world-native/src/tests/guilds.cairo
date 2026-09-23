@@ -4,12 +4,9 @@ use eternum_randomness_protocol::entrypoint::{
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::ContractAddress;
 use crate::commands::Command;
-use crate::guilds::{
-    CreateGuild, IGuildsDispatcher, IGuildsDispatcherTrait, IGuildsSafeDispatcher, IGuildsSafeDispatcherTrait,
-    JoinGuild, SetWhitelist, WhitelistKey,
-};
+use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
+use crate::guilds::{CreateGuild, IGuildsDispatcher, IGuildsDispatcherTrait, JoinGuild, SetWhitelist, WhitelistKey};
 use crate::resources::ResourceKey;
-use crate::season::{ISeasonDispatcher, ISeasonDispatcherTrait};
 use super::resource_commands::{execute, execute_recorded_at, setup_with_rules};
 fn setup() -> (super::Deployment, ResourceKey, ResourceKey, ContractAddress) {
     let (d, home, second) = setup_with_rules(super::recorded::rules());
@@ -26,7 +23,7 @@ fn setup() -> (super::Deployment, ResourceKey, ResourceKey, ContractAddress) {
     (d, home, second, friend)
 }
 fn view(d: super::Deployment) -> IGuildsDispatcher {
-    IGuildsDispatcher { contract_address: d.peers.registry }
+    IGuildsDispatcher { contract_address: d.games }
 }
 fn member(d: super::Deployment, player: ContractAddress) -> ContractAddress {
     view(d).guild_member(3, player)
@@ -44,14 +41,13 @@ fn act(d: super::Deployment, actor: ContractAddress, command: Command) -> bool {
     act_at(d, actor, command, 40, 40)
 }
 fn act_at(d: super::Deployment, actor: ContractAddress, command: Command, accepted: u64, executed: u64) -> bool {
-    let season = ISeasonDispatcher { contract_address: d.peers.season };
+    let season = IGamesAuthenticationDispatcher { contract_address: d.games };
     start_cheat_block_timestamp_global(accepted);
-    let admission = IRecordedExecutionViewsDispatcher { contract_address: d.peers.season }
-        .get_admission(3, actor.into());
-    let order = super::recorded::head(d.peers.season, 3).order;
+    let admission = IRecordedExecutionViewsDispatcher { contract_address: d.games }.get_admission(3, actor.into());
+    let order = super::recorded::head(d.games, 3).order;
     let ok = execute_recorded_at(super::Deployment { actor, ..d }, command, accepted, executed);
     assert_eq!(season.next_nonce(3, actor), admission.nonce + 1);
-    assert_eq!(super::recorded::head(d.peers.season, 3).order, order + 1);
+    assert_eq!(super::recorded::head(d.games, 3).order, order + 1);
     ok
 }
 #[test]
@@ -145,24 +141,12 @@ fn accepted_guild_actions_survive_outages_but_actions_accepted_after_end_reject(
 }
 #[test]
 #[feature("safe_dispatcher")]
-fn foreign_callers_cannot_forge_a_guild_actor_and_games_are_isolated() {
+fn guild_membership_is_game_scoped() {
     let (d, home, _, _) = setup();
-    let safe = IGuildsSafeDispatcher { contract_address: d.peers.registry };
-    assert!(
-        safe
-            .create_guild(
-                3,
-                d.actor,
-                CreateGuild { owned_structure_id: home.entity_id, public: true, name: 'guild' },
-                super::context(),
-            )
-            .is_err(),
-    );
     assert!(act(d, d.actor, create(home, true)));
     assert!(view(d).guild(2, d.actor).is_none());
     assert_eq!(view(d).guild_member(2, d.actor), 0.try_into().unwrap());
-    start_cheat_caller_address(d.peers.registry, d.peers.structures);
-    assert!(safe.leave_guild(3, d.actor, super::context()).is_err());
-    stop_cheat_caller_address(d.peers.registry);
+    start_cheat_caller_address(d.games, d.games);
+    stop_cheat_caller_address(d.games);
     assert_eq!(member(d, d.actor), d.actor);
 }

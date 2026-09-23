@@ -1,5 +1,4 @@
-use crate::commands::ExecutionContext;
-use crate::resources::{ResourceAmount, ResourceKey};
+use crate::resources::ResourceAmount;
 use crate::troop_management::GuardSlot;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -34,22 +33,7 @@ pub fn battle_side(
 ) -> BattleSide {
     BattleSide { player, category: after.category, tier: after.tier, before, after: after.count, roll }
 }
-#[starknet::interface]
-pub trait ICombatActions<T> {
-    fn battle(
-        ref self: T,
-        game_id: u32,
-        actor: starknet::ContractAddress,
-        command: crate::combat_actions::AttackExplorer,
-        context: ExecutionContext,
-    );
 
-    fn guard_attack(
-        ref self: T, game_id: u32, actor: starknet::ContractAddress, command: GuardAttack, context: ExecutionContext,
-    );
-    fn raid(ref self: T, game_id: u32, actor: starknet::ContractAddress, command: Raid, context: ExecutionContext);
-    fn village_last_raided(self: @T, key: ResourceKey) -> u64;
-}
 
 #[derive(Drop, starknet::Event)]
 pub struct RaidEvent {
@@ -68,4 +52,33 @@ pub struct RaidEvent {
     pub troops_after: u128,
     pub requested_loot: Span<ResourceAmount>,
     pub timestamp: u64,
+}
+
+#[starknet::interface]
+pub trait IBattles<T> {
+    fn battle(
+        ref self: T,
+        game_id: u32,
+        actor: starknet::ContractAddress,
+        command: crate::combat_actions::AttackExplorer,
+        context: crate::commands::ExecutionContext,
+    );
+    fn guard_attack(
+        ref self: T,
+        game_id: u32,
+        actor: starknet::ContractAddress,
+        command: crate::combat_actions::GuardAttack,
+        context: crate::commands::ExecutionContext,
+    );
+}
+#[starknet::interface]
+pub trait IRaids<T> {
+    fn raid(
+        ref self: T,
+        game_id: u32,
+        actor: starknet::ContractAddress,
+        command: crate::combat_actions::Raid,
+        context: crate::commands::ExecutionContext,
+    );
+    fn village_last_raided(self: @T, key: crate::resources::ResourceKey) -> u64;
 }

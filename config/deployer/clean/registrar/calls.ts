@@ -1,7 +1,7 @@
 import { presetRegistrationCall } from "./native-preset";
 import { confirmedTransactionReceipt } from "../shared/transaction";
 import { completeNativeAdminCommand } from "../world/native/command";
-import { nativeDomainAbi } from "../world/native/manifest";
+import { nativeGamesAbi } from "../world/native/manifest";
 import type { RegistrarWorld } from "../world/native/types";
 import type { buildNativePreset } from "../config/native-preset";
 import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
@@ -45,20 +45,20 @@ const DEFAULT_ENVIRONMENT_ID: RegistrarEnvironmentId = "madara.blitz";
 
 function resolveRegistrarContext(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): RegistrarContext {
   if (typeof target !== "string") {
-    nativeDomainAbi(target, "registry");
+    nativeGamesAbi(target);
     return { manifest: target };
   }
   const path = process.env.NATIVE_WORLD_MANIFEST;
   if (!path) throw new Error("NATIVE_WORLD_MANIFEST is required");
   const manifest = loadRepoJsonFile<RegistrarManifest>(path);
-  nativeDomainAbi(manifest, "registry");
+  nativeGamesAbi(manifest);
   return { environmentId: target, manifest };
 }
 
 function registrarContract(context: RegistrarContext): ManifestContract {
   return {
-    address: context.manifest.native.domains.registry.address,
-    abi: nativeDomainAbi(context.manifest, "registry") as ManifestAbiEntry[],
+    address: context.manifest.world.address,
+    abi: nativeGamesAbi(context.manifest) as ManifestAbiEntry[],
   };
 }
 
@@ -150,8 +150,7 @@ function resolveNativeCreatedGameId(receipt: unknown, manifest: RegistrarWorld):
   const layouts = schema.domains.registry.events.filter((event) => event.name === "RowSet");
   if (!model || !layouts.length) throw new Error("Native manifest has no game registry event");
   for (const event of readReceiptEvents(receipt)) {
-    if (!event.from_address || BigInt(event.from_address) !== BigInt(manifest.native.domains.registry.address))
-      continue;
+    if (!event.from_address || BigInt(event.from_address) !== BigInt(manifest.world.address)) continue;
     const keys = event.keys ?? [];
     if (
       !layouts.some(
@@ -175,7 +174,7 @@ export async function findRegistrarGame(
 ): Promise<{ gameId: number } | null> {
   const { manifest } = resolveRegistrarContext(target);
   const [id] = await provider.callContract({
-    contractAddress: manifest.native.domains.registry.address,
+    contractAddress: manifest.world.address,
     entrypoint: "game_id_by_name",
     calldata: [shortString.encodeShortString(name)],
   });
@@ -235,7 +234,7 @@ export async function createRegistrarGame(
   );
   if (commitment === undefined || BigInt(commitment) !== BigInt(registration.commitment))
     throw new Error("Current preset differs from the launch configuration; reload its balance before creating a game");
-  const calldata = new CallData(nativeDomainAbi(context.manifest, "registry")).compile("create_game", {
+  const calldata = new CallData(nativeGamesAbi(context.manifest)).compile("create_game", {
     params: params as RawArgs,
     definition: nativeDefinition,
   });
@@ -251,9 +250,9 @@ export async function settleBlitzRoster(
   admissionUrl: string,
 ): Promise<BlitzRosterSettlement> {
   const { manifest } = resolveRegistrarContext(target);
-  const registry = manifest.native.domains.registry.address;
+  const registry = manifest.world.address;
   const read = async () =>
-    new CallData(nativeDomainAbi(manifest, "registry")).parse(
+    new CallData(nativeGamesAbi(manifest)).parse(
       "game",
       await provider.callContract({ contractAddress: registry, entrypoint: "game", calldata: [gameId] }, "latest"),
     ) as { ready: boolean; end_at: bigint; end_grace_seconds: bigint };

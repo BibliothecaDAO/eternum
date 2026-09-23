@@ -10,6 +10,7 @@ pub struct SpireLayout {
 #[starknet::interface]
 pub trait ISpires<T> {
     fn initialize_spires(ref self: T, game_id: u32, layout: SpireLayout);
+    #[cfg(test)]
     fn spire_layout(self: @T, game_id: u32) -> Option<SpireLayout>;
 }
 

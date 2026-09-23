@@ -15,11 +15,12 @@ export type NativeRawEvent = RawWorldEvent & RpcEvent;
 
 export class NativeDecoder {
   readonly registry: ModelRegistry;
-  private readonly emitters = new Map<string, string>();
+  private readonly emitter: string;
+  private readonly layouts: NativeEventLayout[];
   private readonly schema: NativeSchema;
   constructor(readonly manifest: NativeManifest) {
     const release = manifest.native;
-    if (release.version !== 1 || !Number.isSafeInteger(release.deploymentBlock) || release.deploymentBlock < 0)
+    if (release.version !== 2 || !Number.isSafeInteger(release.deploymentBlock) || release.deploymentBlock < 0)
       throw new Error("Invalid native release");
     for (const [identity, schema] of Object.entries(release.schemas)) {
       if (
@@ -33,15 +34,17 @@ export class NativeDecoder {
     const active = release.schemas[release.activeSchema];
     if (!active) throw new Error(`Missing native schema ${release.activeSchema}`);
     this.schema = active;
-    if (Object.keys(release.domains).sort().join() !== Object.keys(active.domains).sort().join())
-      throw new Error("Native domain set mismatch");
-    for (const [domain, deployment] of Object.entries(release.domains)) {
-      const address = normalizeFelt(deployment.address);
-      if (BigInt(address) === 0n || this.emitters.has(address)) throw new Error("Duplicate or zero native emitter");
-      this.emitters.set(address, domain);
-    }
-    if (BigInt(manifest.world.address) !== BigInt(release.domains.season.address))
-      throw new Error("Native deployment identity is not its season domain");
+    this.emitter = normalizeFelt(manifest.world.address);
+    if (BigInt(this.emitter) === 0n) throw new Error("Zero Games emitter");
+    if (Object.keys(release.logic).sort().join() !== Object.keys(active.logicClasses).sort().join())
+      throw new Error("Native logic class set mismatch");
+    this.layouts = [
+      ...new Map(
+        Object.values(active.domains)
+          .flatMap(({ events }) => events)
+          .map((layout) => [JSON.stringify(layout), layout]),
+      ).values(),
+    ];
     const codecs = active.models.map((model) => modelCodec(active, model));
     this.registry = {
       nativeSchemaIdentity: release.activeSchema,
@@ -52,26 +55,20 @@ export class NativeDecoder {
     };
   }
   owns(address: string): boolean {
-    return this.emitters.has(normalizeFelt(address));
+    return normalizeFelt(address) === this.emitter;
   }
   decode(event: NativeRawEvent): DecodedWorldEvent {
-    const domain = this.emitters.get(normalizeFelt(event.from_address));
-    if (!domain) throw new Error(`Foreign native emitter ${event.from_address}`);
+    if (!this.owns(event.from_address)) throw new Error(`Foreign native emitter ${event.from_address}`);
     const schema = this.schema;
-    const layout = schema.domains[domain].events.find((candidate) =>
+    const layout = this.layouts.find((candidate) =>
       candidate.prefix.every((key, index) => BigInt(key) === BigInt(event.keys[index] ?? -1)),
     );
     if (!layout) throw new Error("Unknown native event prefix");
     return schema.events.some((projection) => projection.name === layout.name)
-      ? decodeEvent(event, domain, schema, layout)
-      : this.decodeRow(event, domain, schema, layout);
+      ? decodeEvent(event, schema, layout)
+      : this.decodeRow(event, schema, layout);
   }
-  private decodeRow(
-    event: NativeRawEvent,
-    domain: string,
-    schema: NativeSchema,
-    layout: NativeEventLayout,
-  ): DecodedWorldEvent {
+  private decodeRow(event: NativeRawEvent, schema: NativeSchema, layout: NativeEventLayout): DecodedWorldEvent {
     const header = event.keys.slice(layout.prefix.length);
     if (BigInt(header[0] ?? -1) !== 1n) throw new Error("Unsupported native event version");
     const position = {
@@ -82,7 +79,7 @@ export class NativeDecoder {
     };
 
     const model = schema.models.find((model) => BigInt(model.identity) === BigInt(header[1] ?? -1));
-    if (!model || !model.owners.includes(domain)) throw new Error("Native model emitted by wrong domain");
+    if (!model) throw new Error("Unknown native model");
     const memberEvent = layout.name === "RowMemberSet";
     if (header.length !== (memberEvent ? 3 : 2)) throw new Error("Malformed native event header");
     const frame = readFrame(event.data, layout.name !== "RowDeleted");
@@ -151,12 +148,7 @@ function readFrame(data: string[], withValue: boolean): { keys: string[]; values
   return { keys, values };
 }
 
-function decodeEvent(
-  event: NativeRawEvent,
-  domain: string,
-  schema: NativeSchema,
-  layout: NativeEventLayout,
-): DecodedWorldEvent {
+function decodeEvent(event: NativeRawEvent, schema: NativeSchema, layout: NativeEventLayout): DecodedWorldEvent {
   const header = event.keys.slice(layout.prefix.length);
   const keyMembers = layout.members.filter((member) => member.kind === "key");
   const versioned = keyMembers[0]?.name === "version";
@@ -167,9 +159,7 @@ function decodeEvent(
     transactionIndex: event.transaction_index,
     eventIndex: event.event_index,
   };
-  const projection = schema.events.find(
-    (projection) => projection.name === layout.name && projection.owners.includes(domain),
-  );
+  const projection = schema.events.find((projection) => projection.name === layout.name);
   if (!projection) throw new Error("Unowned native event");
   const key = decodeMembers(schema, versioned ? keyMembers.slice(1) : keyMembers, versioned ? header.slice(1) : header);
   if (projection.scope === "game" && BigInt(key.game_id as bigint) === 0n) throw new Error("Reserved native game id");

@@ -10,7 +10,7 @@ import { WorldFold } from "../world-fold";
 import { createHeraldRequestHandler } from "../http";
 import type { MadaraRpc } from "../madara-rpc";
 import type { RpcEvent, RpcBlockWithReceipts } from "../types";
-import { manifest, receipt, setup, rowEvent, rulesEvent, shardManifest } from "./fixtures";
+import { receipt, setup, rowEvent, rulesEvent, shardManifest } from "./fixtures";
 
 function block(number: number, events: RpcEvent[]): RpcBlockWithReceipts {
   return {
@@ -121,7 +121,6 @@ describe("native confirmed replay and transaction delivery", () => {
   });
   it.each([
     malformed.raw,
-    { ...setFixture.raw, from_address: manifest.native.domains.map.address },
     { ...setFixture.raw, keys: [...setFixture.raw.keys.slice(0, 2), "2", ...setFixture.raw.keys.slice(3)] },
   ])("rejects invalid rows without partial publication and accepts the next valid receipt", (invalid) => {
     const { native, decoder, fold } = setup();

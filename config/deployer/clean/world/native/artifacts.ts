@@ -13,40 +13,33 @@ export function loadNativeWorld(input: {
   authentication: NativeAuthentication;
   previous?: NativeWorldManifest;
 }): NativeWorld {
-  if (input.previous && !input.previous.native)
-    throw new Error("Cannot replace a non-native world with native domains");
+  if (input.previous && input.previous.native?.version !== 2)
+    throw new Error("Games requires a fresh deployment; the peer-contract manifest cannot be reused");
   const schema = JSON.parse(readFileSync(input.schemaPath, "utf8")) as NativeSchema;
   if (schemaIdentity(schema) !== schema.identity) throw new Error("Native schema identity mismatch");
-  const previous = input.previous?.world.seed === input.seed ? input.previous : undefined;
-  const domains = Object.entries(schema.domains).map(([name, definition]) => {
-    const artifact = readClassArtifact(
-      resolve(input.artifacts, `world_native_${definition.contract}.contract_class.json`),
-      resolve(input.artifacts, `world_native_${definition.contract}.compiled_contract_class.json`),
+  const readClass = (name: string) =>
+    readClassArtifact(
+      resolve(input.artifacts, `world_native_${name}.contract_class.json`),
+      resolve(input.artifacts, `world_native_${name}.compiled_contract_class.json`),
     );
-    const entrypoints = artifact.sierra.abi
-      .filter((entry) => entry.type === "interface")
-      .flatMap((entry) => entry.items);
-    if (JSON.stringify(entrypoints) !== JSON.stringify(definition.entrypoints))
-      throw new Error(`Native schema does not match ${name} ABI; regenerate it before deployment`);
-    const constructorCalldata = new CallData(artifact.sierra.abi).compile("constructor", {
-      authority: input.authority,
-      ...(name === "season" ? { authentication: input.authentication } : {}),
-    });
-    const salt = hash.starknetKeccak(`${input.seed}:${name}`).toString();
-    const address =
-      previous?.native.domains[name]?.address ??
-      hash.calculateContractAddressFromHash(salt, artifact.classHash, constructorCalldata, 0);
-    return { ...artifact, name, address, salt, constructorCalldata };
+  const logic = Object.entries(schema.logicClasses).map(([name, contract]) => ({ name, ...readClass(contract) }));
+  const artifact = readClass("Games");
+  const constructorCalldata = new CallData(artifact.sierra.abi).compile("constructor", {
+    authority: input.authority,
+    authentication: input.authentication,
+    classes: Object.fromEntries(logic.map(({ name, classHash }) => [name, classHash])),
   });
+  const previous = input.previous?.world.seed === input.seed ? input.previous : undefined;
+  const salt = hash.starknetKeccak(`${input.seed}:games`).toString();
+  const address =
+    previous?.world.address ?? hash.calculateContractAddressFromHash(salt, artifact.classHash, constructorCalldata, 0);
   return {
     seed: input.seed,
     authority: input.authority,
     authentication: input.authentication,
     schema,
-    domains,
+    games: { ...artifact, address, salt, constructorCalldata },
+    logic,
     previous,
   };
 }
-
-export const nativePeers = (local: NativeWorld): Record<string, string> =>
-  Object.fromEntries(local.domains.map((domain) => [domain.name, domain.address]));

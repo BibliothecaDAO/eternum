@@ -73,8 +73,8 @@ function setup(outcome?: string[]) {
   });
   servers.push(server);
   const manifest = {
+    world: { address: "0x77" },
     native: {
-      domains: { season: { address: "0x77" } },
       activeSchema: schema.identity,
       schemas: { [schema.identity]: schema },
     },

@@ -78,9 +78,6 @@
     "packages/db": {
       "drizzle": false
     },
-    "packages/identity": {
-      "entry": ["src/index.ts", "src/account.ts"]
-    },
     "packages/core": {
       "project": [
         "src/**/*.ts"
