@@ -13,6 +13,7 @@ jobs:
       - uses: software-mansion/setup-scarb@v1
         with:
           tool-versions: contracts/l2/season_pass/.tool-versions
+          scarb-lock: contracts/l2/season_pass/Scarb.lock
       - uses: foundry-rs/setup-snfoundry@v3
         with:
           tool-versions: contracts/l2/season_pass/.tool-versions

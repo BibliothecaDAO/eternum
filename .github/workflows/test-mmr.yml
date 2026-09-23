@@ -11,6 +11,7 @@ jobs:
       - uses: software-mansion/setup-scarb@v1
         with:
           tool-versions: .tool-versions
+          scarb-lock: contracts/l2/mmr/Scarb.lock
       - uses: foundry-rs/setup-snfoundry@v3
         with:
           tool-versions: .tool-versions
