@@ -70,6 +70,43 @@ describe("GameStreamHub", () => {
     expect(traffic).toMatchObject({ event: "herald_subscriber_traffic", frames: 4, bytes: bytes(sent), snapshots: 1 });
   });
 
+  it("keeps an idle stream resumable for a ring window, then drops it and its ring", () => {
+    vi.useFakeTimers();
+    const hub = new GameStreamHub("epoch-a", { info: vi.fn() });
+    const attach = (socket = recordingSocket()) => ({
+      socket,
+      session: hub.attach({
+        actor: "0x111",
+        confirmedBlock: 12,
+        gameId: "7",
+        overlay: () => [],
+        preconfirmedBlock: 13,
+        snapshot: () => snapshot,
+        socket,
+      }),
+    });
+    const first = attach();
+    hub.resume(first.session, { epoch: "", seq: 0, type: "resume" });
+    expect(first.session.snapshot).toBeUndefined();
+    hub.publishHead("7", 13, 100);
+    const epoch = first.socket.messages.at(-1)!.epoch as string;
+    hub.detach(first.session);
+
+    vi.advanceTimersByTime(10 * 60 * 1_000);
+    hub.publishHead("7", 14, 101);
+    const soon = attach();
+    hub.resume(soon.session, { epoch, seq: 1, type: "resume" });
+    expect(soon.socket.messages.map(({ type }) => type)).toEqual(["hello", "head"]);
+    hub.detach(soon.session);
+
+    vi.advanceTimersByTime(10 * 60 * 1_000 + 1);
+    hub.publishHead("7", 15, 102);
+    const late = attach();
+    hub.resume(late.session, { epoch, seq: 2, type: "resume" });
+    expect(late.socket.messages.map(({ type }) => type)).toEqual(["hello", "snapshot", "snapshot_end"]);
+    vi.useRealTimers();
+  });
+
   it("resumes a killed socket by sequence and snapshots after an epoch change", () => {
     const hub = new GameStreamHub("epoch-a");
     const firstSocket = recordingSocket();

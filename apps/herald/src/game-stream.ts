@@ -24,6 +24,8 @@ interface GameStreamState {
   ring: RingEntry[];
   seq: number;
   subscribers: Set<GameStreamSession>;
+  /** When the last subscriber left. A reconnect within a ring window still resumes; after it the state is dropped. */
+  idleSince?: number;
 }
 
 export interface SnapshotOverlayDiff {
@@ -68,6 +70,10 @@ interface AttachInput {
   socket: StreamSocket;
 }
 
+/** No subscriber has been back for a ring window: nobody can resume from this ring any more. */
+const isAbandoned = (state: GameStreamState): boolean =>
+  state.idleSince !== undefined && Date.now() - state.idleSince > RING_MIN_AGE_MS;
+
 export class GameStreamHub {
   public readonly epoch: string;
   private readonly games = new Map<string, GameStreamState>();
@@ -90,11 +96,12 @@ export class GameStreamHub {
       traffic: { attachedAt: Date.now(), bytes: 0, frames: 0, snapshots: 0 },
     };
     state.subscribers.add(session);
+    state.idleSince = undefined;
     try {
       session.snapshot = input.snapshot();
       session.overlay = input.overlay();
     } catch (error) {
-      state.subscribers.delete(session);
+      this.leave(session);
       throw error;
     }
     this.send(session, {
@@ -116,6 +123,9 @@ export class GameStreamHub {
     if (!canResume) this.sendSnapshot(session);
 
     session.active = true;
+    // The boundary is only needed until the session is live; keeping it would hold a snapshot per subscriber.
+    session.snapshot = undefined;
+    session.overlay = undefined;
     for (const entry of state.ring) {
       if (entry.seq > resumeFrom) this.transmit(session, entry.serialized);
     }
@@ -135,7 +145,9 @@ export class GameStreamHub {
   }
 
   private leave(session: GameStreamSession): void {
-    this.games.get(this.streamKey(session.gameId, session.actor))?.subscribers.delete(session);
+    const state = this.games.get(this.streamKey(session.gameId, session.actor));
+    if (!state?.subscribers.delete(session) || state.subscribers.size > 0) return;
+    state.idleSince = Date.now();
   }
 
   public selectActor(session: GameStreamSession, input: AttachInput): void {
@@ -194,7 +206,11 @@ export class GameStreamHub {
   }
 
   private publish(gameId: string, body: PublishedBody, actors?: readonly string[]): void {
-    for (const state of this.games.values()) {
+    for (const [key, state] of this.games) {
+      if (isAbandoned(state)) {
+        this.games.delete(key);
+        continue;
+      }
       if (state.gameId !== gameId) continue;
       if (actors && (state.actor === undefined || !actors.some((actor) => BigInt(actor) === BigInt(state.actor!))))
         continue;
