@@ -1,5 +1,6 @@
 import { resolveRendererBuildMode, type RendererBuildMode } from "@/three/renderer-build-mode";
 import type { GameRef } from "@bibliothecadao/eternum/game-client";
+import { gamePath } from "@bibliothecadao/notifications";
 
 import { hasSpectateQuery, isExplicitSpectateSession } from "@/utils/spectator-session";
 
@@ -41,8 +42,6 @@ const parseGameRef = (rawChainId: string, rawGameId: string): GameRef | null => 
   return Number.isSafeInteger(gameId) ? { chainId: rawChainId.toLowerCase(), gameId } : null;
 };
 
-/** A game lives at /g/<chain id>/<game id>; its scenes are one segment deeper. */
-const gamePath = (game: GameRef): string => `/g/${game.chainId}/${game.gameId}`;
 const isPlayScene = (value: string): value is PlayScene => PLAY_SCENES.includes(value as PlayScene);
 const isEntryIntent = (value: string): value is EntryIntent => ENTRY_INTENTS.includes(value as EntryIntent);
 const isPlayBootMode = (value: string): value is PlayBootMode => PLAY_BOOT_MODES.includes(value as PlayBootMode);
@@ -130,7 +129,7 @@ export const buildPlayHref = (route: PlayHrefInput): string => {
   if (route.rendererMode) searchParams.set("rendererMode", route.rendererMode);
   if (route.verboseLogs) searchParams.set("logs", "1");
 
-  return `${gamePath(route)}/${route.scene}${buildSearch(searchParams)}`;
+  return `${gamePath(route, route.scene)}${buildSearch(searchParams)}`;
 };
 
 export const parseEntryRoute = (location: LocationLike): EntryRouteDescriptor | null => {

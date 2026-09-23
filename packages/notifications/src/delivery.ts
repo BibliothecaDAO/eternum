@@ -86,11 +86,18 @@ export function isNotificationGameClient(clientUrl: string, origin: string): boo
   return notificationTargetForGameClient(clientUrl, origin) !== null;
 }
 
+/**
+ * A game lives at /g/<chain id>/<game id>; its scenes are one segment deeper. Every game link and every notification
+ * target is built here, so a target can only ever name a route the app serves.
+ */
+export const gamePath = (game: { chainId: string; gameId: number }, scene?: "map" | "hex"): string =>
+  `/g/${game.chainId.toLowerCase()}/${game.gameId}${scene ? `/${scene}` : ""}`;
+
 function notificationTargetForGameClient(clientUrl: string, origin: string): string | null {
   const client = new URL(clientUrl);
   if (client.origin !== origin) return null;
   const match = /^\/g\/(0x[0-9a-f]{1,64})\/([1-9][0-9]{0,15})\/(map|hex)\/?$/.exec(client.pathname);
-  return match ? `/g/${match[1]}/${match[2]}` : null;
+  return match ? gamePath({ chainId: match[1], gameId: Number(match[2]) }) : null;
 }
 
 function isNotificationTarget(target: string): boolean {

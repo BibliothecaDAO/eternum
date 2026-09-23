@@ -12,6 +12,7 @@ import {
 } from "@bibliothecadao/eternum/game-sync";
 import {
   buildStoryNotification,
+  gamePath,
   includesStoryNotification,
   readHistoryStory,
   storyRecipients,
@@ -157,7 +158,7 @@ const planAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, page: Heral
             value: item.value,
             owner,
             gameName: games.get(gameId) ?? `Game ${gameId}`,
-            target: `/g/${shard.chainId}/${gameId}`,
+            target: gamePath({ chainId: shard.chainId, gameId }),
             now,
           });
           if (!notification) return [];
