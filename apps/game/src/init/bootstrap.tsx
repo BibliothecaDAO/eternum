@@ -78,6 +78,10 @@ export const attachGameClient = (
     .then((profile) => createEntryGameClient({ profile, onSetupCompleted }))
     .then((created) => {
       installActiveGameClient(created);
+      // Selection follows the client from the moment it exists: settlement attaches it before the game boots, so the
+      // entry after founding already names the realm and the world map opens on it instead of re-opening there.
+      stopFollowingInitialStructure?.();
+      stopFollowingInitialStructure = followInitialStructure(created.setup);
       return created;
     });
   attachedGameClient = { key, client };
@@ -100,8 +104,6 @@ const runBootstrap = async ({
     const client = await attachGameClient(context, renderer.prepare);
     // A client attached earlier (settlement) was set up before this boot, so the renderer is prepared from it here.
     renderer.prepare(client.setup);
-    stopFollowingInitialStructure?.();
-    stopFollowingInitialStructure = followInitialStructure(client.setup);
     useSyncStore.getState().setInitialSyncProgress(100);
     await startGameRenderer(renderer.requireSession().initialize);
     return { context, profile, setupResult: client.setup };
