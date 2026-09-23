@@ -28,37 +28,57 @@ interface DirectoryDependencies {
 
 /**
  * GET /api/directory — every game on every listed shard, each carrying its shard's URL and chain id so the app opens it
- * on its own shard. A shard that cannot be read is listed by name with an error; it never empties the list.
+ * on its own shard. A shard that cannot be read is listed by name with an error; it never empties the list. With
+ * ?player=<gameplay account>, each shard answers that player's standing in its games; the shared listing is cached, a
+ * player's standing never is.
  */
-export const handleDirectory = async ({ db, cache, fetchShard }: DirectoryDependencies): Promise<Response> => {
+export const handleDirectory = async (request: Request, { db, cache, fetchShard }: DirectoryDependencies) => {
+  const player = new URL(request.url).searchParams.get("player");
+  if (player !== null && !/^0x[0-9a-fA-F]{1,64}$/.test(player)) return json({ error: "invalid_player" }, 400);
   const { results } = await db
     .prepare(`SELECT "url", "chainId", "status" FROM "shards" WHERE "status" != 'retired' ORDER BY "addedAt"`)
     .all<ListedShard>();
-  const shards = await Promise.all(results.map((shard) => listShard(shard, cache, fetchShard)));
+  const shards = await Promise.all(
+    results.map((shard) =>
+      listShard(shard, () =>
+        player
+          ? fetchShardGames(shard, `${shard.url}/games?player=${player}`, fetchShard)
+          : readCachedShardGames(shard, cache, fetchShard),
+      ),
+    ),
+  );
   return json({ shards });
 };
 
-const listShard = async (shard: ListedShard, cache: Cache, fetchShard: typeof fetch): Promise<ShardListing> => {
+const listShard = async (
+  shard: ListedShard,
+  readGames: () => Promise<HeraldGameDirectoryEntry[]>,
+): Promise<ShardListing> => {
   try {
-    return { ...shard, games: await readShardGames(shard, cache, fetchShard) };
+    return { ...shard, games: await readGames() };
   } catch (error) {
     console.error("directory_shard_unavailable", shard.url, error);
     return { ...shard, games: null, error: "unavailable" };
   }
 };
 
-const readShardGames = async (shard: ListedShard, cache: Cache, fetchShard: typeof fetch) => {
+const readCachedShardGames = async (shard: ListedShard, cache: Cache, fetchShard: typeof fetch) => {
   const key = new Request(`${shard.url}/games`);
   const cached = await cache.match(key);
   if (cached) return ((await cached.json()) as HeraldGameDirectory).games;
-  const response = await fetchShard(key.url, { signal: AbortSignal.timeout(SHARD_TIMEOUT_MS), redirect: "manual" });
+  const games = await fetchShardGames(shard, key.url, fetchShard);
+  await cache.put(key, Response.json({ games }, { headers: { "cache-control": `max-age=${GAMES_CACHE_SECONDS}` } }));
+  return games;
+};
+
+const fetchShardGames = async (shard: ListedShard, url: string, fetchShard: typeof fetch) => {
+  const response = await fetchShard(url, { signal: AbortSignal.timeout(SHARD_TIMEOUT_MS), redirect: "manual" });
   if (!response.ok) throw new Error(`games directory answered ${response.status}`);
   const directory = (await response.json()) as HeraldGameDirectory;
   // A Herald folding another chain would list that chain's games under this shard's name.
   if (!Array.isArray(directory.games) || BigInt(directory.chain) !== BigInt(shard.chainId)) {
     throw new Error(`games directory is not chain ${shard.chainId}`);
   }
-  await cache.put(key, Response.json(directory, { headers: { "cache-control": `max-age=${GAMES_CACHE_SECONDS}` } }));
   return directory.games;
 };
 

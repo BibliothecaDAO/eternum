@@ -301,7 +301,7 @@ describe("identity Worker", () => {
     expect(await status()).toBe(false);
   });
 
-  it("lists each shard's games under that shard, names a shard it cannot read, and refuses a listed chain id", async () => {
+  it("lists each shard's games under that shard, with a player's standing when asked, names a shard it cannot read, and refuses a listed chain id", async () => {
     const operator = createBrowser();
     const game = (gameId: number, name: string) => ({ game_id: gameId, name, status: "Running" });
     heralds.set("https://shard-a.test/manifest", { chainId: "0xa" });
@@ -322,18 +322,32 @@ describe("identity Worker", () => {
     });
     expect(await duplicate.json()).toEqual({ error: "chain_id_listed", url: "https://shard-a.test" });
 
-    const list = async () =>
-      ((await (await createBrowser().request("/api/directory")).json()) as { shards: unknown[] }).shards;
+    const list = async (query = "") =>
+      ((await (await createBrowser().request(`/api/directory${query}`)).json()) as { shards: unknown[] }).shards;
     expect(await list()).toEqual([
       { url: "https://shard-a.test", chainId: "0xa", status: "active", games: [game(1, "frontier-a")] },
       { url: "https://shard-b.test", chainId: "0xb", status: "active", games: null, error: "unavailable" },
     ]);
 
     heralds.set("https://shard-b.test/games", { chain: "0xb", games: [game(1, "blitz-b")] });
-    expect(await list()).toEqual([
+    const listed = [
       { url: "https://shard-a.test", chainId: "0xa", status: "active", games: [game(1, "frontier-a")] },
       { url: "https://shard-b.test", chainId: "0xb", status: "active", games: [game(1, "blitz-b")] },
+    ];
+    expect(await list()).toEqual(listed);
+
+    // A player's standing comes from each shard as it answers that player; shard B cannot answer, and says so.
+    const standing = { registered: true, settled: false, roster_member: false, structures: [] };
+    heralds.set("https://shard-a.test/games?player=0xabc", {
+      chain: "0xa",
+      games: [{ ...game(1, "frontier-a"), player_state: standing }],
+    });
+    expect(await list("?player=0xabc")).toEqual([
+      { ...listed[0], games: [{ ...game(1, "frontier-a"), player_state: standing }] },
+      { url: "https://shard-b.test", chainId: "0xb", status: "active", games: null, error: "unavailable" },
     ]);
+    expect(await list()).toEqual(listed);
+    expect((await createBrowser().request("/api/directory?player=nobody")).status).toBe(400);
   });
 
   it("refuses to link a wallet that already belongs to another Realms account", async () => {

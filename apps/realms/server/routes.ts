@@ -49,7 +49,7 @@ export const routeIdentityRequest = async (
   if (pathname.startsWith("/api/notifications/push/")) return handlePushSubscriptions(request, auth, env);
   if (pathname === "/api/directory" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "directory", request))) return json({ error: "too_many_requests" }, 429);
-    return handleDirectory({ db: env.DB, ...platform });
+    return handleDirectory(request, { db: env.DB, ...platform });
   }
   if (pathname.startsWith("/api/directory/shards") && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
