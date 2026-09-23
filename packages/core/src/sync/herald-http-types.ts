@@ -135,3 +135,6 @@ export interface HeraldLeaderboard {
   game_id: string;
   entries: HeraldLeaderboardEntry[];
 }
+
+/** Herald closes a game stream with this code when the game is finalized; the stream will never serve it again. */
+export const HERALD_GAME_FINALIZED_CLOSE = 4409;

@@ -1,4 +1,5 @@
 import { parseStoryHistoryCursor } from "@bibliothecadao/eternum/game-sync";
+import { GameFinalizedError } from "./world-fold";
 import { buildNativeDirectory, buildNativeLeaderboard } from "./native/read-models";
 import type { DirectoryInput } from "./game-directory";
 import type { FoldRow, GameSnapshot, ReplayMetrics } from "./types";
@@ -216,6 +217,8 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
       );
       return jsonResponse(selectModels(snapshot, models));
     } catch (error) {
+      if (error instanceof GameFinalizedError)
+        return jsonResponse({ error: "game_finalized", game_id: error.gameId, message: error.message }, 409);
       const message = error instanceof Error ? error.message : String(error);
       return jsonResponse({ error: message }, 400);
     }

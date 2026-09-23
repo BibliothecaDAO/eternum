@@ -1,5 +1,7 @@
 import { isScopedGameSyncModel } from "@bibliothecadao/eternum/game-sync-models";
 import { randomUUID } from "node:crypto";
+import { HERALD_GAME_FINALIZED_CLOSE } from "@bibliothecadao/eternum/game-sync";
+import { GameFinalizedError } from "./world-fold";
 
 import type { FoldSet, GameSnapshot } from "./types";
 import type { HeraldStreamMessage, ResumeRequest } from "./stream-protocol";
@@ -9,6 +11,7 @@ const RING_MIN_AGE_MS = 10 * 60 * 1_000;
 
 export interface StreamSocket {
   send(data: string): unknown;
+  close?(code?: number, reason?: string): void;
 }
 
 interface RingEntry {
@@ -231,7 +234,15 @@ export class GameStreamHub {
     const game = this.games.get(gameId);
     if (!game) return;
     for (const state of recipients ?? this.currentStates(game)) {
-      for (const projected of state.project ? state.project(body) : [body]) {
+      let projections: PublishedBody[];
+      try {
+        projections = state.project ? state.project(body) : [body];
+      } catch (error) {
+        // One stream that cannot be served ends by name; the publish to every other stream goes on.
+        this.end(game, state, error);
+        continue;
+      }
+      for (const projected of projections) {
         const message = { ...projected, epoch: this.streamEpoch(state.gameId, state.actor), seq: ++state.seq };
         const serialized = JSON.stringify(message);
         state.ring.push({ recordedAt: Date.now(), seq: message.seq, serialized });
@@ -241,6 +252,22 @@ export class GameStreamHub {
       // Projecting can move a scope, and with it the keys that reach this state.
       this.index(game, state);
     }
+  }
+
+  /** Drops a stream state and closes its subscribers with the reason, as a failed attach is closed. */
+  private end(game: GameStreams, state: GameStreamState, error: unknown): void {
+    const finalized = error instanceof GameFinalizedError;
+    const reason = finalized
+      ? "game_finalized"
+      : (error instanceof Error ? error.message : String(error)).slice(0, 120);
+    this.log.info(
+      JSON.stringify({ event: "herald_stream_ended", gameId: state.gameId, actor: state.actor ?? null, reason }),
+    );
+    game.states.delete(this.streamKey(state.gameId, state.actor));
+    game.unindexed.delete(state);
+    this.unindex(game, state);
+    for (const subscriber of state.subscribers)
+      subscriber.socket.close?.(finalized ? HERALD_GAME_FINALIZED_CLOSE : 1011, reason);
   }
 
   /** The states a diff's rows name, or undefined when a row is for everyone. */

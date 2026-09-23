@@ -1,5 +1,6 @@
 import type { NativeExecutionOutcome } from "@bibliothecadao/types";
 import type { GameSyncModelDefinition } from "./model-manifest";
+import { HERALD_GAME_FINALIZED_CLOSE } from "./herald-http-types";
 import type {
   GameSyncFact,
   GameSyncHead,
@@ -58,7 +59,7 @@ type HeraldMessage =
 
 export interface HeraldSocket {
   close(): void;
-  onclose: (() => void) | null;
+  onclose: ((event?: { code?: number; reason?: string }) => void) | null;
   onerror: (() => void) | null;
   onmessage: ((event: { data: unknown }) => void) | null;
   onopen: (() => void) | null;
@@ -193,7 +194,18 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       if (this.socket === socket) this.acceptMessage(data);
     };
     socket.onerror = () => this.reconnectSocket(socket);
-    socket.onclose = () => this.reconnectSocket(socket);
+    socket.onclose = (event) =>
+      event?.code === HERALD_GAME_FINALIZED_CLOSE ? this.endFinalized(socket) : this.reconnectSocket(socket);
+  }
+
+  /** Herald will never serve a finalized game again, so the stream ends instead of reconnecting. */
+  private endFinalized(socket: HeraldSocket): void {
+    if (this.socket !== socket) return;
+    this.stop();
+    const failure = new Error(`The game at ${this.options.url} is finalized; its review holds the final state`);
+    console.warn(`[Herald] ${failure.message}; not reconnecting`);
+    if (!this.ready.settled) this.ready.reject(failure);
+    else if (!this.firstSnapshotEnded) this.handlers?.onStartFailure(failure);
   }
 
   private reconnectSocket(socket: HeraldSocket): void {

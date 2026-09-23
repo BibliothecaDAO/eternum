@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { HERALD_GAME_FINALIZED_CLOSE } from "@bibliothecadao/eternum/game-sync";
 import { GameStreamHub, type StreamSocket } from "./game-stream";
+import { GameFinalizedError } from "./world-fold";
 import type { GameSnapshot } from "./types";
 
 const snapshot: GameSnapshot = {
@@ -215,5 +217,31 @@ describe("GameStreamHub", () => {
     diff([row("shared")]);
     diff([], [{ key: "0x9", model: "TileOpt" }]);
     expect([projected["0x1"].mock.calls.length, projected["0x2"].mock.calls.length]).toEqual([3, 2]);
+  });
+  it("ends only the stream whose projection fails, by name, and keeps publishing to the rest", () => {
+    const hub = new GameStreamHub("epoch-a", { info: vi.fn() });
+    const sockets = {
+      "0x1": { ...recordingSocket(), close: vi.fn() },
+      "0x2": { ...recordingSocket(), close: vi.fn() },
+    };
+    for (const [actor, socket] of Object.entries(sockets)) {
+      const session = hub.attach({
+        actor,
+        confirmedBlock: 12,
+        gameId: "7",
+        overlay: () => [],
+        preconfirmedBlock: 13,
+        project: (body) => {
+          if (actor === "0x1") throw new GameFinalizedError("7", ["TileOpt"]);
+          return [body];
+        },
+        snapshot: () => snapshot,
+        socket,
+      });
+      hub.resume(session, { epoch: "", seq: 0, type: "resume" });
+    }
+    expect(() => hub.publishHead("7", 14, 200)).not.toThrow();
+    expect(sockets["0x1"].close).toHaveBeenCalledWith(HERALD_GAME_FINALIZED_CLOSE, "game_finalized");
+    expect(sockets["0x2"].messages.at(-1)).toMatchObject({ type: "head", block: 14 });
   });
 });

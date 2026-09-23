@@ -4,11 +4,10 @@ import { NativeIngestion } from "./native/ingestion";
 import { readFile } from "node:fs/promises";
 
 import { CheckpointStore } from "./checkpoint-store";
-import type { GameStreamSession } from "./game-stream";
 import { createHeraldRequestHandler } from "./http";
 import { MadaraRpc } from "./madara-rpc";
 import { MadaraSubscriptions } from "./madara-subscriptions";
-import type { ResumeRequest } from "./stream-protocol";
+import { answerSafely, createStreamSocketHandlers, type HeraldSocketData } from "./request-guards";
 import { HistoryStore } from "./history-store";
 import { assertShardChain, buildShardManifest, type ShardDocument } from "./shard-manifest";
 
@@ -24,12 +23,6 @@ interface HeraldConfig {
   publicRpcUrl: string;
   rpcUrl: string;
   wsUrl: string;
-}
-
-interface HeraldSocketData {
-  gameId: string;
-  actor?: string;
-  session?: GameStreamSession;
 }
 
 const requireEnvironment = (name: string): string => {
@@ -64,21 +57,6 @@ const readConfig = (): HeraldConfig => {
 };
 
 const streamGameId = (pathname: string): string | undefined => /^\/games\/([0-9]+)$/.exec(pathname)?.[1];
-
-const parseResume = (message: string | Buffer): ResumeRequest => {
-  const request = JSON.parse(String(message)) as Partial<ResumeRequest>;
-  const seq = request.seq;
-  if (
-    request.type !== "resume" ||
-    typeof request.epoch !== "string" ||
-    !Number.isSafeInteger(seq) ||
-    seq === undefined ||
-    seq < 0
-  ) {
-    throw new Error("Expected resume{epoch,seq}");
-  }
-  return request as ResumeRequest;
-};
 
 const main = async (): Promise<void> => {
   const config = readConfig();
@@ -169,44 +147,21 @@ const main = async (): Promise<void> => {
   });
   server = Bun.serve<HeraldSocketData>({
     port: config.port,
-    fetch: (request, bunServer) => {
-      const url = new URL(request.url);
-      if (url.pathname === "/games/updates") bunServer.timeout(request, 0);
-      const gameId = streamGameId(url.pathname);
-      const actor = url.searchParams.get("actor") ?? undefined;
-      if (
-        actor !== undefined &&
-        (!/^0x[0-9a-f]{1,64}$/i.test(actor) || BigInt(actor) === 0n || BigInt(actor) >= (1n << 251n) - 256n)
-      )
-        return new Response("Invalid gameplay account", { status: 400 });
-      if (gameId && bunServer.upgrade(request, { data: { gameId, actor } })) return;
-      return http(request);
-    },
-    websocket: {
-      close: (socket) => {
-        if (socket.data.session) live.detach(socket.data.session);
-      },
-      message: (socket, message) => {
-        try {
-          if (!socket.data.session) throw new Error("Stream session is not attached");
-          const request = JSON.parse(String(message)) as { type?: string; actor?: string | null };
-          if (request.type === "select_actor") {
-            if (
-              request.actor !== null &&
-              (typeof request.actor !== "string" || !/^0x[0-9a-f]{1,64}$/i.test(request.actor))
-            )
-              throw new Error("Invalid gameplay account");
-            live.selectActor(socket.data.session, request.actor ?? undefined);
-          } else live.resume(socket.data.session, parseResume(message));
-        } catch (error) {
-          const reason = error instanceof Error ? error.message : String(error);
-          socket.close(1008, reason);
-        }
-      },
-      open: (socket) => {
-        socket.data.session = live.attach(socket.data.gameId, socket, socket.data.actor);
-      },
-    },
+    fetch: (request, bunServer) =>
+      answerSafely(request, () => {
+        const url = new URL(request.url);
+        if (url.pathname === "/games/updates") bunServer.timeout(request, 0);
+        const gameId = streamGameId(url.pathname);
+        const actor = url.searchParams.get("actor") ?? undefined;
+        if (
+          actor !== undefined &&
+          (!/^0x[0-9a-f]{1,64}$/i.test(actor) || BigInt(actor) === 0n || BigInt(actor) >= (1n << 251n) - 256n)
+        )
+          return new Response("Invalid gameplay account", { status: 400 });
+        if (gameId && bunServer.upgrade(request, { data: { gameId, actor } })) return;
+        return http(request);
+      }),
+    websocket: createStreamSocketHandlers(live),
   });
 
   process.once("SIGINT", () => void shutdown(0));

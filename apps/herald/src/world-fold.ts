@@ -108,6 +108,16 @@ const indexKeys = (model: string, row: StoredModelRow, spacing: number): string[
   return [...scopeInputKeys(model, facts, spacing), ...(held === "shared" ? [] : held.filter((key) => key !== "*"))];
 };
 
+/** A request for rows a finalized game no longer keeps; its review snapshot holds them. */
+export class GameFinalizedError extends Error {
+  constructor(
+    readonly gameId: string,
+    models: readonly string[],
+  ) {
+    super(`Game ${gameId} is finalized; its review snapshot holds ${models.join(", ")}`);
+  }
+}
+
 interface ScopeIndex {
   spacing: number;
   /** Entity ids per `model|key`. */
@@ -606,8 +616,9 @@ export class WorldFold {
       ({ name, scope }) => scope === "game" && this.isEvicted(gameId, name),
     );
     if (evicted.length > 0)
-      throw new Error(
-        `Game ${gameId} is finalized; its review snapshot holds ${evicted.map(({ name }) => name).join(", ")}`,
+      throw new GameFinalizedError(
+        gameId,
+        evicted.map(({ name }) => name),
       );
   }
 
