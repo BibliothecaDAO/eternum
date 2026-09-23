@@ -81,7 +81,6 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
           theme_color: "#F6C297",
           background_color: "#F6C297",
           display: "standalone",
-          orientation: "landscape",
           scope: "/",
           start_url: "/",
           icons: [

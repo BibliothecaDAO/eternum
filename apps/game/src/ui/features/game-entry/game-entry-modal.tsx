@@ -1663,7 +1663,8 @@ export const GameEntryModal = ({
   return (
     <div
       className={cn(
-        "fixed inset-0 z-50 flex justify-center bg-black/70 backdrop-blur-sm",
+        // The backdrop scrolls, so a modal taller than a sideways phone stays reachable to its last button.
+        "fixed inset-0 z-50 flex justify-center overflow-y-auto bg-black/70 pb-8 backdrop-blur-sm max-lg:landscape:pt-4",
         usesDesktopCenteredSettlementLayout
           ? "items-start pt-16 sm:pt-24 lg:items-center lg:px-6 lg:py-8 lg:pt-8"
           : "items-start pt-16 sm:pt-24",

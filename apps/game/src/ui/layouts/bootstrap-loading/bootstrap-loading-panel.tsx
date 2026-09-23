@@ -55,7 +55,9 @@ export const BootstrapLoadingPanel = ({
           Something went wrong while preparing the world.
         </p>
         {error.message && (
-          <p className="text-xs text-white/50 max-w-md mb-4 font-mono bg-black/20 px-3 py-2 rounded">{error.message}</p>
+          <p className="text-xs text-white/50 max-w-md mb-4 break-all font-mono bg-black/20 px-3 py-2 rounded">
+            {error.message}
+          </p>
         )}
         <Button variant="outline" onClick={onRetry} className="mt-2">
           <RefreshCw className="w-4 h-4 mr-2" />
