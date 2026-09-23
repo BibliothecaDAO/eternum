@@ -164,7 +164,6 @@ async function prepareOperator(
   await bindGameplayAccounts({
     accounts: [{ address: operator.address, owner: DEPLOYER_ADDRESS }],
     authority: createMadaraAccount(provider, BINDING_AUTHORITY_ADDRESS, BINDING_AUTHORITY_PRIVATE_KEY),
-    chain: "madara",
     playerRegistryAddress,
     provider,
   });

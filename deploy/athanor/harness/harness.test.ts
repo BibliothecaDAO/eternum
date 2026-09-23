@@ -83,7 +83,7 @@ describe("Madara harness workload", () => {
     game.structureCoord = (id) => ({ x: id, y: 0 });
     game.startingTroopType = (id) => {
       if (existing.has(id)) throw new Error("Existing explorers do not need a new troop balance");
-      return 1;
+      return "Knight";
     };
     game.explorersOf = (id) => existing.get(id) ?? [];
     game.explorer = (id) => ({ coord: { x: id - 10, y: 0 }, staminaAmount: 120n, staminaUpdatedTick: 1n });

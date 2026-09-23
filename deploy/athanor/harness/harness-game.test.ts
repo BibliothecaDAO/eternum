@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { EventEmitter } from "node:events";
-import type { GameClient } from "@bibliothecadao/eternum/game-client";
+import type { GameClient } from "@bibliothecadao/eternum";
 import type { Account } from "starknet";
 import { createHarnessGame } from "./harness-game";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
