@@ -34,9 +34,11 @@
       "entry": ["src/worker.ts"],
       "ignoreDependencies": ["cloudflare"],
       "paths": {
-        "@bibliothecadao/eternum/shard": ["../../packages/core/src/client/shard-reader.ts"],
-        "@realms-world/identity/account": ["../../packages/identity/src/account.ts"]
+        "@bibliothecadao/eternum/shard": ["../../packages/core/src/client/shard-reader.ts"]
       }
+    },
+    "packages/identity": {
+      "entry": ["src/index.ts", "src/account.ts"]
     },
     "apps/guardian": {
       "entry": [
@@ -59,8 +61,7 @@
       ],
       "paths": {
         "@bibliothecadao/eternum/expeditions": ["../../packages/core/src/utils/expeditions.ts"],
-        "@bibliothecadao/eternum/troop-stamina": ["../../packages/core/src/managers/troop-stamina.ts"],
-        "@realms-world/identity/account": ["../../packages/identity/src/account.ts"]
+        "@bibliothecadao/eternum/troop-stamina": ["../../packages/core/src/managers/troop-stamina.ts"]
       }
     },
     "apps/indexer": {
