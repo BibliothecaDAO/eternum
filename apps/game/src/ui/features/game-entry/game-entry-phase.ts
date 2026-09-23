@@ -2,6 +2,7 @@ type GameEntryBootstrapStatus = "idle" | "pending-world" | "loading" | "ready" |
 
 export type GameEntryModalPhase =
   | "loading"
+  | "account"
   | "settlement-waiting"
   | "settlement"
   | "spectate"
@@ -31,6 +32,8 @@ interface ResolveGameEntryModalPhaseInput {
   worldMode: string;
   isCheckingWorldAvailability: boolean;
   hasWorldMeta: boolean;
+  /** The player's gameplay account has joined this game's shard; only a spectator enters without one. */
+  hasAccount: boolean;
   isSeasonMode: boolean;
   isLoadingVillagePrereqs: boolean;
   hasVillageRevealResult: boolean;
@@ -47,13 +50,16 @@ interface ResolveGameEntryModalPhaseInput {
 
 interface GameEntryPreflightInput {
   isSpectateMode: boolean;
+  hasAccount: boolean;
   settlementCheckComplete: boolean;
 }
 
+/** A spectator needs no checks, and a player without an account is held by the account phase, not the loader. */
 export const isGameEntryPreflightComplete = ({
   isSpectateMode,
+  hasAccount,
   settlementCheckComplete,
-}: GameEntryPreflightInput): boolean => isSpectateMode || settlementCheckComplete;
+}: GameEntryPreflightInput): boolean => isSpectateMode || !hasAccount || settlementCheckComplete;
 
 /** Membership is the roster fact; readiness and the end of the game decide what a member may do. */
 export const resolveBlitzEntry = ({
@@ -125,6 +131,7 @@ export const resolveGameEntryModalPhase = ({
   worldMode,
   isCheckingWorldAvailability,
   hasWorldMeta,
+  hasAccount,
   isSeasonMode,
   isLoadingVillagePrereqs,
   hasVillageRevealResult,
@@ -152,6 +159,12 @@ export const resolveGameEntryModalPhase = ({
 
   if (worldMode === "unknown" || isCheckingWorldAvailability || !hasWorldMeta) {
     return "loading";
+  }
+
+  // Every way to play acts as the account, so none is offered before it exists: a signed-out player, a join in flight
+  // and a removed device all wait here instead of reaching a button that cannot sign.
+  if (!hasAccount) {
+    return "account";
   }
 
   if (settlementMode === "village") {

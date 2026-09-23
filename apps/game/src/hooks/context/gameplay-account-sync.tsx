@@ -47,7 +47,10 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
   const { session } = useIdentitySession();
   const setGameplayAccount = useAccountStore((state) => state.setGameplayAccount);
   const reportShardFailure = useCallback(
-    (message: string) => setGameplayAccount(null, null, message),
+    (message: string) => {
+      console.error("gameplay_shard_open_failed", { error: message });
+      setGameplayAccount(null, null, ACCOUNT_SETUP_FAILED);
+    },
     [setGameplayAccount],
   );
   const shard = useGameplayShard(reportShardFailure);
@@ -71,7 +74,7 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
           const message = error instanceof Error ? error.message : "Gameplay account provisioning failed";
           console.error("gameplay_account_sync_failed", { error: message });
         }
-        if (active) setGameplayAccount(null, null, state ?? (error instanceof Error ? error.message : null));
+        if (active) setGameplayAccount(null, null, state ?? ACCOUNT_SETUP_FAILED);
       },
     );
     return () => {
@@ -84,7 +87,14 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
 
 /** The account states a player resolves themselves; they are not failures and are not logged as errors. */
 export const ACCOUNT_NOT_SECURED = "account_not_secured";
-export const DEVICE_REMOVED = "device_removed";
+const DEVICE_REMOVED = "device_removed";
+
+export const isAccountStatePrompt = (provisioningError: string | null): boolean =>
+  provisioningError === ACCOUNT_NOT_SECURED || provisioningError === DEVICE_REMOVED;
+
+// Every surface shows the provisioning error to the player as is, so a failure is stored as one sentence and its
+// detail (an RPC dump, a transaction's params) goes to the console only.
+const ACCOUNT_SETUP_FAILED = "Your account could not be set up for this game. Try again in a moment.";
 
 const accountStateOf = (error: unknown): string | null => {
   if (error instanceof IdentityRequestError && error.code === ACCOUNT_NOT_SECURED) return ACCOUNT_NOT_SECURED;

@@ -23,13 +23,14 @@ import {
   TreasureChest,
 } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { resolveEntryContextFromLandingSelection } from "@/game-entry/context";
 import { RealmNumberPicker } from "./realm-number-picker";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { identityUsername, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
+import { identityUsername, useIdentitySessionStore, useSignInAndReturn } from "@/hooks/context/identity-session";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import { resolvePlayerNameFelt } from "@/services/identity/player-name";
@@ -49,6 +50,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
+import { AccountStatePrompt } from "@/shell/account-state";
 
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { getShard, type GameRef } from "@bibliothecadao/eternum/game-client";
@@ -499,6 +501,51 @@ const BlitzPreparingPhase = ({ settledPlayers, rosterSize }: { settledPlayers: n
           <span>{Math.round(progress)}%</span>
         </div>
       </div>
+    </div>
+  );
+};
+
+/** The entry holds here until the player's account has joined this game's shard; watching needs no account. */
+const AccountPhase = ({ onSpectate }: { onSpectate: () => void }) => (
+  <div className="flex flex-col gap-3 py-4 text-center">
+    <AccountPhaseState />
+    <Button onClick={onSpectate} variant="outline" className="w-full h-9" forceUppercase={false}>
+      <div className="flex items-center justify-center gap-2">
+        <Eye className="w-4 h-4" />
+        <span>Spectate</span>
+      </div>
+    </Button>
+  </div>
+);
+
+const AccountPhaseState = () => {
+  const sessionStatus = useIdentitySessionStore((state) => state.status);
+  const provisioningError = useAccountStore((state) => state.provisioningError);
+  const signInAndReturn = useSignInAndReturn();
+  const location = useLocation();
+
+  if (sessionStatus === "anonymous") {
+    return (
+      <>
+        <p className="text-sm text-white/60">
+          Sign in to play. Your account is set up the first time you enter a game.
+        </p>
+        <Button
+          onClick={() => signInAndReturn(`${location.pathname}${location.search}`)}
+          className="w-full h-11 !text-brown !bg-gold rounded-md"
+          forceUppercase={false}
+        >
+          Sign in
+        </Button>
+      </>
+    );
+  }
+  if (isAccountStatePrompt(provisioningError)) return <AccountStatePrompt />;
+  if (provisioningError) return <p className="text-xs text-red-300 break-words">{provisioningError}</p>;
+  return (
+    <div className="flex items-center justify-center gap-2 text-sm text-gold">
+      <Loader2 className="w-4 h-4 animate-spin" />
+      <span>Preparing your account...</span>
     </div>
   );
 };
@@ -1105,6 +1152,7 @@ export const GameEntryModal = ({
   const checksComplete = isBlitzMode ? blitzEntry != null : settlementCheckComplete;
   const entryPreflightComplete = isGameEntryPreflightComplete({
     isSpectateMode,
+    hasAccount: account != null,
     settlementCheckComplete: checksComplete,
   });
   const settlementCopy = isFrontierMode ? FRONTIER_SETTLEMENT_COPY : ETERNUM_SETTLEMENT_COPY;
@@ -1166,6 +1214,7 @@ export const GameEntryModal = ({
       worldMode,
       isCheckingWorldAvailability,
       hasWorldMeta: worldMeta != null,
+      hasAccount: account != null,
       isSeasonMode,
       isLoadingVillagePrereqs,
       hasVillageRevealResult: villageRevealResult != null,
@@ -1182,6 +1231,7 @@ export const GameEntryModal = ({
 
     return result;
   }, [
+    account,
     bootstrapStatus,
     isDevMode,
     isEternumDevMode,
@@ -1319,12 +1369,7 @@ export const GameEntryModal = ({
 
     const checkSettlementStatus = async () => {
       try {
-        if (!account?.address) {
-          setNeedsSettlement(false);
-          setCanPlay(false);
-          setSettlementCheckComplete(true);
-          return;
-        }
+        if (!account?.address) return;
 
         const snapshot = await readSettlementSnapshot();
         if (!snapshot) {
@@ -1749,6 +1794,11 @@ export const GameEntryModal = ({
             {(phase === "loading" || phase === "error") && (
               <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <BootstrapLoadingPanel tasks={tasks} progress={progress} error={phaseError} onRetry={handleRetry} />
+              </motion.div>
+            )}
+            {phase === "account" && (
+              <motion.div key="account" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <AccountPhase onSpectate={handleSpectate} />
               </motion.div>
             )}
             {phase === "settlement-waiting" && (

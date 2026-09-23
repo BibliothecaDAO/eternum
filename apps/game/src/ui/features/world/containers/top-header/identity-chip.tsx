@@ -1,6 +1,8 @@
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { identityUsername, IDENTITY_POPOVER_ID, useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
+import { AccountStatePrompt } from "@/shell/account-state";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { usePlayers } from "@/hooks/use-player-profile";
@@ -199,7 +201,11 @@ const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { 
         <div className="flex flex-col gap-1">
           <span className={HUD_HEADLINE}>{state.name ?? "Signing in"}</span>
           <span className={HUD_BODY}>Preparing your gameplay account…</span>
-          {state.error && <span className="text-xs text-danger">{state.error}</span>}
+          {isAccountStatePrompt(state.error) ? (
+            <AccountStatePrompt />
+          ) : (
+            state.error && <span className="text-xs text-danger">{state.error}</span>
+          )}
         </div>
       );
     case "spectating":

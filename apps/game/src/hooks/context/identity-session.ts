@@ -1,6 +1,7 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { createIdentityClient, profileOfIdentityUser, type Session } from "@realms-world/identity";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { create } from "zustand";
 
 /**
@@ -92,4 +93,20 @@ export const useIdentitySession = () => {
   }, []);
 
   return { status, session };
+};
+
+/**
+ * Signs in from any page: the account page carries the sign-in view, and the identity chip there sends the player back
+ * to `returnTo` once the session lands. A surface outside the app shell (the game entry) has no chip of its own.
+ */
+export const useSignInAndReturn = () => {
+  const navigate = useNavigate();
+  const requestSignIn = useIdentitySessionStore((state) => state.requestSignIn);
+  return useCallback(
+    (returnTo: string) => {
+      requestSignIn({ redirectTo: returnTo });
+      navigate("/account");
+    },
+    [navigate, requestSignIn],
+  );
 };
