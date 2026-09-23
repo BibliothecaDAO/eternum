@@ -143,6 +143,9 @@
         ],
         "@bibliothecadao/eternum/game-sync-models": [
           "../../packages/core/src/sync/model-manifest.ts"
+        ],
+        "@bibliothecadao/eternum/expeditions": [
+          "../../packages/core/src/utils/expeditions.ts"
         ]
       }
     },

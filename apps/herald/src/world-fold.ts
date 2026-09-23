@@ -1,3 +1,4 @@
+import { expeditionEpoch, isCurrentExpeditionArmy } from "@bibliothecadao/eternum/expeditions";
 import {
   gameSyncRegion,
   rowInGameSyncScope,
@@ -259,9 +260,12 @@ export class WorldFold {
     if (!game || !settlement || Number(settlement.spacing) <= 0)
       throw new Error("Expedition scope requires game and settlement rules");
     const spacing = Number(settlement.spacing);
-    const epoch =
-      Math.floor(timestamp / Number(rules.epoch_seconds)) -
-      Math.floor(Number(game.start_main_at) / Number(rules.epoch_seconds));
+    const expedition = {
+      epochSeconds: Number(rules.epoch_seconds),
+      spacing,
+      startMainAt: Number(game.start_main_at),
+    };
+    const epoch = expeditionEpoch(expedition, timestamp);
     const owners = new Set<string>(actor === undefined ? [] : [syncScalar(actor)]);
     for (const { value } of this.gameRows("PlayerEntry", gameId)) {
       if (actor !== undefined && syncScalar(value.player) === syncScalar(actor)) owners.add(syncScalar(value.owner));
@@ -278,8 +282,11 @@ export class WorldFold {
       return (
         realms.has(syncScalar(value.owner)) &&
         BigInt((value.troops as DecodedRecord).count as string) > 0n &&
-        coord.alt !== true &&
-        Math.floor(Number(coord.y) / spacing / 4) === epoch
+        isCurrentExpeditionArmy(
+          expedition,
+          { x: Number(coord.x), y: Number(coord.y), alt: coord.alt === true },
+          timestamp,
+        )
       );
     });
     // With no current army, morning muster starts on the surface.
