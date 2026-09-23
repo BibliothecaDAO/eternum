@@ -189,4 +189,31 @@ describe("GameStreamHub", () => {
     ]);
     expect(socket.messages.slice(3, 5).every(({ preconfirmed }) => preconfirmed === true)).toBe(true);
   });
+  it("projects a diff only to the states its rows name, and a shared row or a delete to every state", () => {
+    const hub = new GameStreamHub("epoch-a", { info: vi.fn() });
+    const projected = { "0x1": vi.fn((body) => [body]), "0x2": vi.fn((body) => [body]) };
+    for (const [actor, project] of Object.entries(projected))
+      hub.attach({
+        actor,
+        confirmedBlock: 12,
+        gameId: "7",
+        interest: () => new Set([`region:${actor}`]),
+        overlay: () => [],
+        preconfirmedBlock: 13,
+        project,
+        snapshot: () => snapshot,
+        socket: recordingSocket(),
+      });
+    const row = (region: string) => ({ key: "0x9", model: "TileOpt", value: { region } });
+    const keys = (row: { value: Record<string, unknown> }) =>
+      row.value.region === "shared" ? ("everyone" as const) : [`region:${row.value.region}`];
+    const diff = (set: ReturnType<typeof row>[], del: { key: string; model: string }[] = []) =>
+      hub.publishDiff("7", { block: 13, del, preconfirmed: true, set }, keys);
+
+    diff([row("0x1")]);
+    expect([projected["0x1"].mock.calls.length, projected["0x2"].mock.calls.length]).toEqual([1, 0]);
+    diff([row("shared")]);
+    diff([], [{ key: "0x9", model: "TileOpt" }]);
+    expect([projected["0x1"].mock.calls.length, projected["0x2"].mock.calls.length]).toEqual([3, 2]);
+  });
 });

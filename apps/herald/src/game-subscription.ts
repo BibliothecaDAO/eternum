@@ -1,7 +1,8 @@
 import { rowInGameSyncScope, type GameSyncScope } from "@bibliothecadao/eternum/game-sync-models";
 import type { PublishedBody, SnapshotOverlayDiff } from "./game-stream";
 import type { FoldDelete, FoldSet, GameSnapshot } from "./types";
-import { SCOPE_INPUT_MODELS, touchesSubscriptionScope, type WorldFold } from "./world-fold";
+import { movesSubscriptionScope, SCOPE_INPUT_MODELS, scopeInputInterest, scopeStreamKeys } from "./subscription-keys";
+import type { WorldFold } from "./world-fold";
 
 const identity = (row: FoldDelete) => `${row.model}:${row.key}`;
 const scopeIdentity = (scope: GameSyncScope) =>
@@ -13,10 +14,14 @@ export class GameSubscription {
   private scopeKey = "";
   private rememberedScope?: GameSyncScope;
   /**
-   * The scope per fold (confirmed, pre-confirmed), kept until a published change touches a row it was taken from or
-   * the day's expedition rolls over. Taking it scans the game, so it is never taken per message.
+   * The scope per fold (confirmed, pre-confirmed) with the scope-input keys it was taken from, kept until a published
+   * change reaches one of those keys or the day's expedition rolls over.
    */
-  private readonly scopes = new Map<boolean, { scope: GameSyncScope; validUntil: number }>();
+  private readonly scopes = new Map<
+    boolean,
+    { scope: GameSyncScope; inputs: ReadonlySet<string>; validUntil: number }
+  >();
+  private interestOf?: { confirmed: GameSyncScope; preconfirmed: GameSyncScope; keys: ReadonlySet<string> };
 
   constructor(
     private readonly gameId: string,
@@ -41,6 +46,16 @@ export class GameSubscription {
 
   public get expedition(): boolean {
     return this.scope(false).expedition !== undefined;
+  }
+
+  /** Every key a published row can reach this subscription by, under either fold's scope. */
+  public interest(): ReadonlySet<string> {
+    const [confirmed, preconfirmed] = [this.scope(false), this.scope(true)];
+    if (this.interestOf?.confirmed !== confirmed || this.interestOf.preconfirmed !== preconfirmed) {
+      const keys = new Set([...scopeStreamKeys(confirmed), ...scopeStreamKeys(preconfirmed)]);
+      this.interestOf = { confirmed, preconfirmed, keys };
+    }
+    return this.interestOf.keys;
   }
 
   public project(body: PublishedBody): PublishedBody[] {
@@ -69,7 +84,11 @@ export class GameSubscription {
     if (known && timestamp < known.validUntil) return known.scope;
     const fold = this.fold(preconfirmed);
     const scope = fold.subscriptionScope(this.gameId, this.actor, timestamp);
-    this.scopes.set(preconfirmed, { scope, validUntil: fold.scopeValidUntil(this.gameId, timestamp) });
+    this.scopes.set(preconfirmed, {
+      scope,
+      inputs: scopeInputInterest(scope),
+      validUntil: fold.scopeValidUntil(this.gameId, timestamp),
+    });
     return scope;
   }
 
@@ -79,9 +98,10 @@ export class GameSubscription {
    */
   private forgetMovedScopes(body: PublishedBody): void {
     if (body.type !== "diff") return;
-    for (const [preconfirmed, { scope }] of this.scopes) {
+    for (const [preconfirmed, { scope, inputs }] of this.scopes) {
+      const spacing = scope.expedition?.spacing ?? 0;
       const moved =
-        body.set.some((row) => touchesSubscriptionScope(scope, row)) ||
+        body.set.some((row) => movesSubscriptionScope(inputs, row, spacing)) ||
         body.del.some((row) => SCOPE_INPUT_MODELS.has(row.model) && this.visible.has(identity(row)));
       // A confirmed change also shows through the pre-confirmed fold, which reads from it.
       if (moved) {

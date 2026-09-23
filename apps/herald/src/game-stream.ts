@@ -1,7 +1,7 @@
 import { isScopedGameSyncModel } from "@bibliothecadao/eternum/game-sync-models";
 import { randomUUID } from "node:crypto";
 
-import type { GameSnapshot } from "./types";
+import type { FoldSet, GameSnapshot } from "./types";
 import type { HeraldStreamMessage, ResumeRequest } from "./stream-protocol";
 
 const RING_MIN_MESSAGES = 10_000;
@@ -21,12 +21,26 @@ interface GameStreamState {
   actor?: string;
   gameId: string;
   project?: (body: PublishedBody) => PublishedBody[];
+  /** The keys a published row reaches this state by; without it, every row does. */
+  interest?: () => ReadonlySet<string>;
+  indexed?: ReadonlySet<string>;
   ring: RingEntry[];
   seq: number;
   subscribers: Set<GameStreamSession>;
   /** When the last subscriber left. A reconnect within a ring window still resumes; after it the state is dropped. */
   idleSince?: number;
 }
+
+/** One game's stream states, indexed by the keys their subscriptions are reached by. */
+interface GameStreams {
+  states: Map<string, GameStreamState>;
+  byKey: Map<string, Set<GameStreamState>>;
+  /** States without an interest: every published row reaches them. */
+  unindexed: Set<GameStreamState>;
+}
+
+/** The keys a published row reaches stream states by, or "everyone". */
+export type RowStreamKeys = (row: FoldSet) => readonly string[] | "everyone";
 
 export interface SnapshotOverlayDiff {
   block: number | null;
@@ -62,6 +76,7 @@ interface AttachInput {
   actor?: string;
   expedition?: boolean;
   project?: (body: PublishedBody) => PublishedBody[];
+  interest?: () => ReadonlySet<string>;
   confirmedBlock: number;
   gameId: string;
   preconfirmedBlock: number | null;
@@ -76,7 +91,7 @@ const isAbandoned = (state: GameStreamState): boolean =>
 
 export class GameStreamHub {
   public readonly epoch: string;
-  private readonly games = new Map<string, GameStreamState>();
+  private readonly games = new Map<string, GameStreams>();
 
   constructor(
     epoch: string = randomUUID(),
@@ -116,7 +131,7 @@ export class GameStreamHub {
 
   public resume(session: GameStreamSession, request: ResumeRequest): void {
     if (session.active) throw new Error("Stream session already resumed");
-    const state = this.games.get(this.streamKey(session.gameId, session.actor))!;
+    const state = this.stateOf(session.gameId, session.actor)!;
     const canResume = this.canResume(state, request);
     const resumeFrom = canResume ? request.seq : session.boundary;
 
@@ -145,7 +160,7 @@ export class GameStreamHub {
   }
 
   private leave(session: GameStreamSession): void {
-    const state = this.games.get(this.streamKey(session.gameId, session.actor));
+    const state = this.stateOf(session.gameId, session.actor);
     if (!state?.subscribers.delete(session) || state.subscribers.size > 0) return;
     state.idleSince = Date.now();
   }
@@ -181,11 +196,16 @@ export class GameStreamHub {
     this.logSnapshotSent(session, "scope", sent);
   }
 
+  /** With `rowKeys`, a diff reaches only the states its rows name; deletes carry no values, so they reach every state. */
   public publishDiff(
     gameId: string,
     input: Omit<Extract<HeraldStreamMessage, { type: "diff" }>, "epoch" | "seq" | "type">,
+    rowKeys?: RowStreamKeys,
   ): void {
-    this.publish(gameId, { ...input, type: "diff" });
+    const game = this.games.get(gameId);
+    if (!game) return;
+    const named = rowKeys && input.del.length === 0 ? this.named(game, input.set, rowKeys) : undefined;
+    this.publish(gameId, { ...input, type: "diff" }, named);
   }
 
   public publishOverlayReset(gameId: string, confirmedBlock: number): void {
@@ -197,7 +217,8 @@ export class GameStreamHub {
     input: Omit<Extract<HeraldStreamMessage, { type: "tx" }>, "epoch" | "seq" | "type">,
     actors: readonly string[],
   ): void {
-    this.publish(gameId, { ...input, type: "tx" }, actors);
+    const states = actors.flatMap((actor) => this.stateOf(gameId, actor) ?? []);
+    this.publish(gameId, { ...input, type: "tx" }, new Set(states));
   }
 
   /** A confirmed head, or with `preconfirmed` the sequencer clock read off the pre-confirmed block. */
@@ -205,15 +226,11 @@ export class GameStreamHub {
     this.publish(gameId, { block, preconfirmed, timestamp, type: "head" });
   }
 
-  private publish(gameId: string, body: PublishedBody, actors?: readonly string[]): void {
-    for (const [key, state] of this.games) {
-      if (isAbandoned(state)) {
-        this.games.delete(key);
-        continue;
-      }
-      if (state.gameId !== gameId) continue;
-      if (actors && (state.actor === undefined || !actors.some((actor) => BigInt(actor) === BigInt(state.actor!))))
-        continue;
+  /** Publishes to these states, or to every current state of the game. */
+  private publish(gameId: string, body: PublishedBody, recipients?: Iterable<GameStreamState>): void {
+    const game = this.games.get(gameId);
+    if (!game) return;
+    for (const state of recipients ?? this.currentStates(game)) {
       for (const projected of state.project ? state.project(body) : [body]) {
         const message = { ...projected, epoch: this.streamEpoch(state.gameId, state.actor), seq: ++state.seq };
         const serialized = JSON.stringify(message);
@@ -221,7 +238,57 @@ export class GameStreamHub {
         this.pruneRing(state);
         for (const subscriber of state.subscribers) if (subscriber.active) this.transmit(subscriber, serialized);
       }
+      // Projecting can move a scope, and with it the keys that reach this state.
+      this.index(game, state);
     }
+  }
+
+  /** The states a diff's rows name, or undefined when a row is for everyone. */
+  private named(game: GameStreams, rows: readonly FoldSet[], rowKeys: RowStreamKeys): Set<GameStreamState> | undefined {
+    const named = new Set(game.unindexed);
+    for (const row of rows) {
+      const keys = rowKeys(row);
+      if (keys === "everyone") return undefined;
+      for (const key of keys) for (const state of game.byKey.get(key) ?? []) named.add(state);
+    }
+    return named;
+  }
+
+  /** The game's states, less those nobody can resume any more. */
+  private currentStates(game: GameStreams): GameStreamState[] {
+    for (const [key, state] of game.states) {
+      if (!isAbandoned(state)) continue;
+      game.states.delete(key);
+      game.unindexed.delete(state);
+      this.unindex(game, state);
+    }
+    return [...game.states.values()];
+  }
+
+  private index(game: GameStreams, state: GameStreamState): void {
+    if (!state.interest) return;
+    const keys = state.interest();
+    if (keys === state.indexed) return;
+    this.unindex(game, state);
+    for (const key of keys) {
+      const states = game.byKey.get(key) ?? new Set();
+      states.add(state);
+      game.byKey.set(key, states);
+    }
+    state.indexed = keys;
+  }
+
+  private unindex(game: GameStreams, state: GameStreamState): void {
+    for (const key of state.indexed ?? []) {
+      const states = game.byKey.get(key);
+      states?.delete(state);
+      if (states?.size === 0) game.byKey.delete(key);
+    }
+    state.indexed = undefined;
+  }
+
+  private stateOf(gameId: string, actor?: string): GameStreamState | undefined {
+    return this.games.get(gameId)?.states.get(this.streamKey(gameId, actor));
   }
 
   private streamEpoch(gameId: string, actor?: string): string {
@@ -233,18 +300,23 @@ export class GameStreamHub {
   }
 
   private game(input: AttachInput): GameStreamState {
+    const game = this.games.get(input.gameId) ?? { states: new Map(), byKey: new Map(), unindexed: new Set() };
+    this.games.set(input.gameId, game);
     const key = this.streamKey(input.gameId, input.actor);
-    let state = this.games.get(key);
+    let state = game.states.get(key);
     if (!state) {
       state = {
         actor: input.actor,
         gameId: input.gameId,
         project: input.project,
+        interest: input.interest,
         ring: [],
         seq: 0,
         subscribers: new Set(),
       };
-      this.games.set(key, state);
+      game.states.set(key, state);
+      if (state.interest) this.index(game, state);
+      else game.unindexed.add(state);
     }
     return state;
   }

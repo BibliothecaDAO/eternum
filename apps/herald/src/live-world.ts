@@ -182,6 +182,7 @@ export class LiveWorld {
       preconfirmedBlock: this.preconfirmedBlockValue,
       snapshot: () => subscription.snapshot(),
       project: (body: Parameters<GameSubscription["project"]>[0]) => subscription.project(body),
+      interest: () => subscription.interest(),
       socket,
     };
   }
@@ -351,13 +352,17 @@ export class LiveWorld {
     transactionHash?: string,
   ): void {
     for (const [gameId, grouped] of byGame) {
-      this.hub.publishDiff(gameId, {
-        block,
-        del: grouped.del,
-        preconfirmed,
-        set: grouped.set,
-        ...(transactionHash ? { transaction_hash: transactionHash } : {}),
-      });
+      this.hub.publishDiff(
+        gameId,
+        {
+          block,
+          del: grouped.del,
+          preconfirmed,
+          set: grouped.set,
+          ...(transactionHash ? { transaction_hash: transactionHash } : {}),
+        },
+        this.confirmedFold.streamKeys(gameId),
+      );
     }
   }
 
