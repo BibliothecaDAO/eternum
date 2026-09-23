@@ -86,7 +86,8 @@ interface HarnessEvidenceBeforeRun {
   gitDirty: boolean;
   gitRevision: string;
   hostStateStart: Record<string, unknown> | null;
-  madaraImage: { digest: string; tag: string };
+  /** The node image as the shard pins it; null for a functional run, which records no node evidence. */
+  madaraImage: { digest: string; tag: string | null } | null;
 }
 
 export interface HarnessEvidence extends HarnessEvidenceBeforeRun {
@@ -179,10 +180,10 @@ const BLOCK_STATS_SCRIPT = path.resolve(import.meta.dir, "../scripts/block-stats
 const HOST_STATE_SCRIPT = path.resolve(import.meta.dir, "../scripts/host-state.sh");
 
 export async function collectHarnessEvidenceBeforeRun(functional = false): Promise<HarnessEvidenceBeforeRun> {
-  const [gitRevision, gitStatus, madaraImage, hostStateStart] = await Promise.all([
+  const madaraImage = functional ? null : pinnedNodeImage(process.env.MADARA_IMAGE);
+  const [gitRevision, gitStatus, hostStateStart] = await Promise.all([
     runCommand(["git", "rev-parse", "HEAD"]),
     runCommand(["git", "status", "--porcelain"]),
-    readMadaraImage(),
     functional ? null : captureHostState(),
   ]);
   return {
@@ -710,16 +711,15 @@ async function readProcFile(file: string): Promise<string | null> {
   return readFile(file, "utf8").catch(() => null);
 }
 
-async function readMadaraImage(): Promise<HarnessEvidence["madaraImage"]> {
-  const output = await runCommand([
-    "docker",
-    "inspect",
-    "--format={{.Config.Image}}|{{.Image}}",
-    process.env.MADARA_CONTAINER ?? `${process.env.COMPOSE_PROJECT_NAME ?? "athanor-local"}-madara-1`,
-  ]);
-  const [tag, digest] = output.trim().split("|");
-  if (!tag || !digest) throw new Error(`Could not parse Madara image metadata: ${output}`);
-  return { tag, digest };
+/**
+ * The node image a measured run played against, as the shard pins it by digest in its harness.env (MADARA_IMAGE).
+ * It is read from the shard's configuration, never from a container name, so a run works from any host.
+ */
+export function pinnedNodeImage(pinned: string | undefined): { digest: string; tag: string | null } {
+  if (!pinned) throw new Error("MADARA_IMAGE is required for a measured run: the shard's harness.env pins it");
+  const match = /^(?:(.+)@)?(sha256:[a-f0-9]{64})$/.exec(pinned.trim());
+  if (!match) throw new Error(`MADARA_IMAGE ${pinned} is not pinned by digest`);
+  return { tag: match[1] ?? null, digest: match[2]! };
 }
 
 async function captureHostState(): Promise<Record<string, unknown>> {

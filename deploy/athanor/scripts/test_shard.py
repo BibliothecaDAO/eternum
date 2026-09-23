@@ -114,6 +114,8 @@ class ShardTest(unittest.TestCase):
             self.assertEqual(values["RPC_URL"], "http://127.0.0.1:28050/rpc/v0_10_2")
             self.assertEqual(values["GAMEPLAY_CONTRACTS_PATH"], str(directory / "gameplay-contracts.json"))
             self.assertEqual(values["MADARA_METRICS_FILE"], str(directory / "metrics" / "metrics.jsonl"))
+            self.assertEqual(values["MADARA_IMAGE"], configuration()["madara_image"])
+            self.assertEqual(values["MADARA_CONTAINER"], f"athanor-{configuration()['shard']}-madara-1")
 
     def test_collector_output_is_the_harness_metrics_input(self):
         with tempfile.TemporaryDirectory() as temporary:

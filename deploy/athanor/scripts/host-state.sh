@@ -14,7 +14,7 @@ set -eu
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="${CHAIN_CONFIG_PATH:-$LAB_DIR/chain-config.yaml}"
 [[ -f "$CONFIG" ]] || { echo "Missing chain configuration: $CONFIG" >&2; exit 1; }
-CONTAINER="${MADARA_CONTAINER:-${COMPOSE_PROJECT_NAME:-athanor-local}-madara-1}"
+CONTAINER="${MADARA_CONTAINER:?MADARA_CONTAINER is required: the shard harness.env names its node container}"
 
 read -r load1 load5 load15 _ < /proc/loadavg
 

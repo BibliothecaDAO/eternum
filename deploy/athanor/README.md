@@ -14,7 +14,9 @@ follows in E3, and launch moves to its Worker in K7 before the release deploymen
 
 Until the native cutover's fresh genesis, the running live stack retains its `madara-lab` compose project and container
 names, chain ID and tunnel hostnames. Source-directory changes do not rename, restart or switch that stack. Candidate projects use `athanor-<shard>` with disjoint ports and volumes. Set
-`COMPOSE_PROJECT_NAME` when starting a shard, and `MADARA_CONTAINER` when measuring a separately named running node. The
+`COMPOSE_PROJECT_NAME` when starting a shard. A measured harness run reads the node's image and container from the
+shard's `harness.env` (`MADARA_IMAGE`, pinned by digest, and `MADARA_CONTAINER`) and stops by name without them; a
+functional run reads neither. Set `MADARA_CONTAINER` by hand only when measuring a separately named running node. The
 three live holdovers are removed only at the approved traffic switch.
 
 Use a separate checkout, compose project, ports, volumes and Herald database for a candidate. Keep the live project and

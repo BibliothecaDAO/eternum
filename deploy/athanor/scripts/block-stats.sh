@@ -10,7 +10,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONTAINER="${MADARA_CONTAINER:-${COMPOSE_PROJECT_NAME:-athanor-local}-madara-1}"
+CONTAINER="${MADARA_CONTAINER:?MADARA_CONTAINER is required: the shard harness.env names its node container}"
 DOCKER_ARGS=(logs --tail 100000 "$CONTAINER")
 PYTHON_ARGS=()
 if [[ -n "${MADARA_METRICS_FILE:-}" ]]; then

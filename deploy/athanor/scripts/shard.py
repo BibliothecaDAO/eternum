@@ -237,6 +237,9 @@ def deployment_environment(config, directory):
         "NATIVE_WORLD_MANIFEST": str(directory / "native-world.json"),
         "GAMEPLAY_CONTRACTS_PATH": str(directory / "gameplay-contracts.json"),
         "MADARA_METRICS_FILE": str(directory / "metrics" / "metrics.jsonl"),
+        # The node image and container as this shard runs them: a measured harness run records both as evidence.
+        "MADARA_IMAGE": config["madara_image"],
+        "MADARA_CONTAINER": f"athanor-{config['shard']}-madara-1",
     }
 
 
@@ -285,7 +288,7 @@ def save_harness_environment(directory, environment):
         "DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY", "RPC_URL", "ADMISSION_URL", "HERALD_URL",
         "RANDOMNESS_PRIVATE_KEY",
         "NATIVE_AUTHORITY_FILE", "NATIVE_WORLD_MANIFEST", "GAMEPLAY_CONTRACTS_PATH",
-        "MADARA_METRICS_FILE",
+        "MADARA_METRICS_FILE", "MADARA_IMAGE", "MADARA_CONTAINER",
         "COMPOSE_PROJECT_NAME", "CHAIN_CONFIG_PATH",
     )
     write_private_environment(directory / "harness.env", {key: environment[key] for key in keys})

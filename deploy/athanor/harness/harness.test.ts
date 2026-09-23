@@ -28,7 +28,9 @@ import {
   assessRosterRun,
   isThresholdBlockingFailure,
   analyzeHarnessResult,
+  collectHarnessEvidenceBeforeRun,
   latencyAgainstTargets,
+  pinnedNodeImage,
   percentile,
   summarizeCompletedMix,
   summarizeFailureClasses,
@@ -506,6 +508,26 @@ describe("Madara harness workload", () => {
 });
 
 describe("Madara harness reporting", () => {
+  it("reads the node image from the shard's pin, and a functional run reads none", async () => {
+    const digest = `sha256:${"a".repeat(64)}`;
+    expect(pinnedNodeImage(`ghcr.io/madara-alliance/madara@${digest}`)).toEqual({
+      tag: "ghcr.io/madara-alliance/madara",
+      digest,
+    });
+    expect(pinnedNodeImage(digest)).toEqual({ tag: null, digest });
+    expect(() => pinnedNodeImage("ghcr.io/madara-alliance/madara:latest")).toThrow("not pinned by digest");
+    expect(() => pinnedNodeImage(undefined)).toThrow("MADARA_IMAGE is required");
+
+    const saved = process.env.MADARA_IMAGE;
+    delete process.env.MADARA_IMAGE;
+    try {
+      expect((await collectHarnessEvidenceBeforeRun(true)).madaraImage).toBeNull();
+      await expect(collectHarnessEvidenceBeforeRun(false)).rejects.toThrow("MADARA_IMAGE is required");
+    } finally {
+      if (saved !== undefined) process.env.MADARA_IMAGE = saved;
+    }
+  });
+
   it("flags a latency with no samples as over target", () => {
     expect(latencyAgainstTargets(40, null).overTarget).toEqual({
       admissionToVisibleP95: false,
