@@ -205,7 +205,7 @@ fn launch_rejects_unregistered_or_stale_presets_before_allocating() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn replacing_a_preset_changes_only_new_games_and_requires_authority() {
+fn registered_presets_are_immutable_and_changed_rules_require_a_new_id() {
     let d = setup();
     let original = definition(true);
     registry(d).register_preset(1, original);
@@ -214,15 +214,24 @@ fn replacing_a_preset_changes_only_new_games_and_requires_authority() {
     changed.rules.troop_stamina_config.stamina_explore_stamina_cost += 1;
     assert!(safe(d, d.actor).register_preset(1, changed).is_err());
     assert_eq!(registry(d).preset_commitment(1), crate::presets::commitment(original));
-    registry(d).register_preset(1, changed);
-    assert_eq!(registry(d).preset_commitment(1), crate::presets::commitment(changed));
+    assert!(safe(d, super::authority()).register_preset(1, original).is_err());
+    assert!(safe(d, super::authority()).register_preset(1, changed).is_err());
+    assert_eq!(registry(d).preset_commitment(1), crate::presets::commitment(original));
     assert_eq!(registry(d).create_game(params(true), original), old_id);
     let next_params = CreateGameParams { name: 'next', ..params(true) };
-    assert!(safe(d, super::authority()).create_game(next_params, original).is_err());
-    let new_id = registry(d).create_game(next_params, changed);
+    assert!(safe(d, super::authority()).create_game(next_params, changed).is_err());
+    let next_original_id = registry(d).create_game(next_params, original);
+    assert!(safe(d, d.actor).register_preset(101, changed).is_err());
+    registry(d).register_preset(101, changed);
+    assert_eq!(registry(d).preset_commitment(101), crate::presets::commitment(changed));
+    let new_id = registry(d).create_game(CreateGameParams { name: 'changed', preset_id: 101, ..params(true) }, changed);
     let games = IGameDispatcher { contract_address: d.games };
     assert_eq!(
         games.rules(old_id).troop_stamina_config.stamina_explore_stamina_cost,
+        original.rules.troop_stamina_config.stamina_explore_stamina_cost,
+    );
+    assert_eq!(
+        games.rules(next_original_id).troop_stamina_config.stamina_explore_stamina_cost,
         original.rules.troop_stamina_config.stamina_explore_stamina_cost,
     );
     assert_eq!(

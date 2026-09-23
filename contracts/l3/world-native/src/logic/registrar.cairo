@@ -43,6 +43,7 @@ pub mod RegistrarState {
         fn register_preset(ref self: ComponentState<TContractState>, preset_id: u32, definition: PresetDefinition) {
             get_dep_component!(@self, Life).assert_authority();
             assert!(preset_id != 0, "preset id zero is reserved");
+            assert!(self.data.registrar.presets.read(preset_id) == 0, "preset id already registered");
             crate::presets::validate(definition);
             crate::settlement_grid::validate_spacing(definition.settlement.spacing);
             if crate::rules::rule_enabled(definition.rules, crate::rules::SPIRES) {
