@@ -1,5 +1,4 @@
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
-import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { Aura } from "@/three/managers/aura";
 import { HoverHexManager, type HoverVisualMode } from "@/three/managers/hover-hex-manager";
@@ -8,7 +7,7 @@ import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
 import { HexGeometryPool } from "@/three/utils/hex-geometry-pool";
 import { PerformanceMonitor } from "@/three/utils/performance-monitor";
 import * as THREE from "three";
-import { getHexForWorldPosition, getWorldPositionForHex, getWorldPositionForHexCoordsInto } from "../utils/utils";
+import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { type HoverVisualPalette } from "./worldmap-interaction-palette";
 
 import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
@@ -59,6 +58,8 @@ export class InteractiveHexManager {
   constructor(
     scene: THREE.Scene,
     private readonly terrain: TerrainSurface = FLAT_TERRAIN_SURFACE,
+    /** The owning scene's hex space: the world map's floating origin, or the local realm scene's own lattice. */
+    private readonly space: HexSpace = WORLD_HEX_SPACE,
   ) {
     this.scene = scene;
     this.hoverAura = new Aura();
@@ -384,7 +385,7 @@ export class InteractiveHexManager {
       for (let i = 0; i < this.hexCoordsCount; i++) {
         const col = this.hexCoordsCache[i * 2];
         const row = this.hexCoordsCache[i * 2 + 1];
-        getWorldPositionForHexCoordsInto(col, row, this.position);
+        this.space.positionForHexInto(col, row, this.position);
         this.dummy.position.set(this.position.x, this.surfaceY(this.position.x, this.position.z), this.position.z);
         this.dummy.rotation.x = -Math.PI / 2;
         this.dummy.updateMatrix();
@@ -395,7 +396,7 @@ export class InteractiveHexManager {
       let index = 0;
       this.allHexes.forEach((hexString) => {
         const [col, row] = hexString.split(",").map(Number);
-        const position = getWorldPositionForHex({ col, row });
+        const position = this.space.positionForHex({ col, row });
         this.dummy.position.set(position.x, this.surfaceY(position.x, position.z), position.z);
         this.dummy.rotation.x = -Math.PI / 2;
         this.dummy.updateMatrix();
@@ -442,7 +443,7 @@ export class InteractiveHexManager {
     for (let i = 0; i < instanceCount; i++) {
       const col = this.visibleHexCoordsCache[i * 2];
       const row = this.visibleHexCoordsCache[i * 2 + 1];
-      getWorldPositionForHexCoordsInto(col, row, this.position);
+      this.space.positionForHexInto(col, row, this.position);
       this.dummy.position.set(this.position.x, this.surfaceY(this.position.x, this.position.z), this.position.z);
       this.dummy.rotation.x = -Math.PI / 2;
       this.dummy.updateMatrix();
@@ -508,12 +509,12 @@ export class InteractiveHexManager {
   }
 
   private resolveHexFromPoint(point: THREE.Vector3) {
-    const hexCoords = getHexForWorldPosition(point);
+    const hexCoords = this.space.hexForPosition(point);
     if (!this.isHexInteractive(hexCoords)) {
       return null;
     }
 
-    getWorldPositionForHexCoordsInto(hexCoords.col, hexCoords.row, this.position);
+    this.space.positionForHexInto(hexCoords.col, hexCoords.row, this.position);
     this.position.y = this.surfaceY(this.position.x, this.position.z);
 
     return { hexCoords, position: this.position };

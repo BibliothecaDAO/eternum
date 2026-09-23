@@ -45,9 +45,10 @@ function loggedInAccount(): ContractAddress {
 
 import { calculateDistance } from "@bibliothecadao/eternum";
 import { HexPosition, Position } from "@bibliothecadao/types";
-import { InstancedMesh, Quaternion, Vector3 } from "three";
+import { Vector3 } from "three";
 import { HEX_SIZE } from "../constants";
-import { MatrixPool } from "./matrix-pool";
+import { worldHexAt, worldHexToWorld } from "../world-origin";
+import { latticeHexAt, latticeToWorld } from "./hex-lattice";
 
 export const hashCoordinates = (x: number, y: number): number => {
   // Simple hash function to generate a deterministic value between 0 and 1
@@ -55,118 +56,44 @@ export const hashCoordinates = (x: number, y: number): number => {
   return hash - Math.floor(hash);
 };
 
-const _matrixDecomposePos = new Vector3();
-const _matrixDecomposeQuat = new Quaternion();
-const _matrixDecomposeScale = new Vector3();
+const placeOnLattice = (world: { x: number; z: number }, flat: boolean, out: Vector3): Vector3 =>
+  out.set(world.x, flat ? 0 : pseudoRandom(world.x, world.z) * 2, world.z);
 
-const getRowOffset = (row: number, horizDist: number): number => {
-  return ((row % 2) * Math.sign(row) * horizDist) / 2;
-};
-
-const getHexagonCoordinates = (
-  instancedMesh: InstancedMesh,
-  instanceId: number,
-): { hexCoords: HexPosition; position: Vector3 } => {
-  const matrixPool = MatrixPool.getInstance();
-  const matrix = matrixPool.getMatrix();
-  instancedMesh.getMatrixAt(instanceId, matrix);
-
-  // Use shared objects for decomposition to avoid garbage creation
-  matrix.decompose(_matrixDecomposePos, _matrixDecomposeQuat, _matrixDecomposeScale);
-
-  const position = new Vector3().copy(_matrixDecomposePos);
-  const hexCoords = getHexForWorldPosition(position);
-
-  // Release matrix back to pool
-  matrixPool.releaseMatrix(matrix);
-
-  return { hexCoords, position };
-};
-
-export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = true) => {
-  const hexRadius = HEX_SIZE;
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
-
-  const col = hexCoords.col;
-  const row = hexCoords.row;
-  const rowOffset = getRowOffset(row, horizDist);
-  const x = col * horizDist - rowOffset;
-  const z = row * vertDist;
-  const y = flat ? 0 : pseudoRandom(x, z) * 2;
-  return new Vector3(x, y, z);
-};
+/** Where a normalized world-map hex is drawn, through the world map's floating origin. */
+export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = true): Vector3 =>
+  placeOnLattice(worldHexToWorld(hexCoords.col, hexCoords.row), flat, new Vector3());
 
 export const getWorldPositionForHexCoordsInto = (
   col: number,
   row: number,
   out: Vector3,
   flat: boolean = true,
-): Vector3 => {
-  const hexRadius = HEX_SIZE;
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
+): Vector3 => placeOnLattice(worldHexToWorld(col, row), flat, out);
 
-  const rowOffset = getRowOffset(row, horizDist);
-  const x = col * horizDist - rowOffset;
-  const z = row * vertDist;
-  const y = flat ? 0 : pseudoRandom(x, z) * 2;
+/** The normalized world-map hex under a drawn point. */
+export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z: number }): HexPosition =>
+  worldHexAt(worldPosition.x, worldPosition.z);
 
-  out.set(x, y, z);
-  return out;
+/**
+ * How a scene turns its hexes into drawn positions and back. The world map goes through its floating origin; the
+ * local realm scene draws its own building lattice, which the world origin must never move.
+ */
+export interface HexSpace {
+  positionForHex(hex: HexPosition, flat?: boolean): Vector3;
+  positionForHexInto(col: number, row: number, out: Vector3, flat?: boolean): Vector3;
+  hexForPosition(point: { x: number; y: number; z: number }): HexPosition;
+}
+
+export const WORLD_HEX_SPACE: HexSpace = {
+  positionForHex: getWorldPositionForHex,
+  positionForHexInto: getWorldPositionForHexCoordsInto,
+  hexForPosition: getHexForWorldPosition,
 };
 
-export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z: number }): HexPosition => {
-  const hexRadius = HEX_SIZE;
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
-  const epsilon = 1e-12;
-
-  // Start from the coarse rounded row/col estimate and evaluate nearby centers.
-  const estimatedRow = Math.round(worldPosition.z / vertDist);
-  const estimatedOffset = getRowOffset(estimatedRow, horizDist);
-  const estimatedCol = Math.round((worldPosition.x + estimatedOffset) / horizDist);
-  const originX = estimatedCol * horizDist - estimatedOffset;
-  const originZ = estimatedRow * vertDist;
-  const localWorldX = worldPosition.x - originX;
-  const localWorldZ = worldPosition.z - originZ;
-
-  let bestRow = estimatedRow;
-  let bestCol = estimatedCol;
-  let bestDistanceSquared = Number.POSITIVE_INFINITY;
-
-  for (let row = estimatedRow - 1; row <= estimatedRow + 1; row += 1) {
-    const rowOffset = getRowOffset(row, horizDist);
-    const nearestColForRow = Math.round((worldPosition.x + rowOffset) / horizDist);
-    const localCenterZ = (row - estimatedRow) * vertDist;
-
-    for (let col = nearestColForRow - 1; col <= nearestColForRow + 1; col += 1) {
-      // Compare in a local coordinate frame near the estimated cell to avoid
-      // precision loss at very large world coordinates.
-      const localCenterX = (col - estimatedCol) * horizDist - (rowOffset - estimatedOffset);
-      const dx = localWorldX - localCenterX;
-      const dz = localWorldZ - localCenterZ;
-      const distanceSquared = dx * dx + dz * dz;
-
-      if (
-        distanceSquared < bestDistanceSquared - epsilon ||
-        (Math.abs(distanceSquared - bestDistanceSquared) <= epsilon &&
-          (row < bestRow || (row === bestRow && col < bestCol)))
-      ) {
-        bestDistanceSquared = distanceSquared;
-        bestRow = row;
-        bestCol = col;
-      }
-    }
-  }
-
-  return { col: bestCol, row: bestRow };
+export const LOCAL_HEX_SPACE: HexSpace = {
+  positionForHex: (hex, flat = true) => placeOnLattice(latticeToWorld(hex.col, hex.row), flat, new Vector3()),
+  positionForHexInto: (col, row, out, flat = true) => placeOnLattice(latticeToWorld(col, row), flat, out),
+  hexForPosition: (point) => latticeHexAt(point.x, point.z),
 };
 
 export const calculateDistanceInHexes = (

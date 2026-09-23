@@ -101,7 +101,6 @@ describe("worldmap terrain presentation runtime", () => {
     const window = resolveWorldmapVisualTerrainWindow({
       focusPoint: { x: -2.61, z: -2.49 },
       generation: 1,
-      hexSize: 1,
       paddingHexes: 0,
       groundBounds: { minX: -3, maxX: -2, minZ: -3, maxZ: -2 },
       pageOrigin: { col: 0, row: 0 },

@@ -1,5 +1,5 @@
 import { HexPosition, ID } from "@bibliothecadao/types";
-import { HEX_SIZE } from "../constants";
+import { latticeToWorld } from "./hex-lattice";
 
 interface CombatAngles {
   attackedFromDegrees?: number | null;
@@ -49,22 +49,9 @@ export function getCombatAngles(
 
 // returns direction angle
 export const getAngleBetweenHexPositions = (fromHex: HexPosition, toHex: HexPosition): number => {
-  // Calculate hex coordinate differences
-  const hexRadius = HEX_SIZE;
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
-
-  // Calculate world positions directly
-  const fromRowOffset = ((fromHex.row % 2) * Math.sign(fromHex.row) * horizDist) / 2;
-  const toRowOffset = ((toHex.row % 2) * Math.sign(toHex.row) * horizDist) / 2;
-
-  const fromX = fromHex.col * horizDist - fromRowOffset;
-  const fromZ = fromHex.row * vertDist;
-
-  const toX = toHex.col * horizDist - toRowOffset;
-  const toZ = toHex.row * vertDist;
+  // The angle depends only on the lattice difference between the two hexes, never on where the map is drawn.
+  const { x: fromX, z: fromZ } = latticeToWorld(fromHex.col, fromHex.row);
+  const { x: toX, z: toZ } = latticeToWorld(toHex.col, toHex.row);
 
   // Calculate direction vector
   const deltaX = toX - fromX;

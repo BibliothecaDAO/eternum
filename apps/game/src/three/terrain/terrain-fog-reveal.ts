@@ -1,3 +1,4 @@
+import { toRenderHex } from "../world-origin";
 import { DataTexture, FloatType, NearestFilter, RGBAFormat, Vector4 } from "three";
 import {
   Fn,
@@ -127,7 +128,9 @@ export class TerrainFogReveal {
       const offset = ((cell.row - minRow) * width + cell.col - minCol) * 4;
       data.set([cell.start, cell.direction[0], cell.direction[1], 1], offset);
     }
-    this.bounds.value.set(minCol, minRow, width, height);
+    // The shader finds each fragment's hex from its drawn position, so the reveal map is placed in render hexes.
+    const renderMin = toRenderHex(minCol, minRow);
+    this.bounds.value.set(renderMin.col, renderMin.row, width, height);
     this.map.image = { data, width, height };
     this.map.needsUpdate = true;
   }

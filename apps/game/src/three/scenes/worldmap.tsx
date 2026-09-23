@@ -1,3 +1,4 @@
+import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
 import { followArmyLayerChange } from "./worldmap-layer-follow";
 import { TileOccupier } from "@bibliothecadao/types";
 import { SpireManager } from "../managers/spire-manager";
@@ -23,7 +24,7 @@ import { resolveStoredWorldmapCameraDistance, useCameraZoomStore } from "@/hooks
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
-import { parsePlayRoute } from "@/play/navigation/play-route";
+import { buildPlayHref, parsePlayRoute } from "@/play/navigation/play-route";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
 import {
   clearPendingReservedHyperstructureCreation,
@@ -606,6 +607,13 @@ function resolveExploreClientLatencyPhase(stage: string | undefined): ClientActi
   return undefined;
 }
 
+/** Re-opens the world map on a hex, so the page draws around a floating origin there; the URL's hex is origin-free. */
+function reopenWorldMapAt(hex: HexPosition): void {
+  const route = parsePlayRoute(window.location);
+  if (!route) throw new Error(`Cannot re-open the world map outside a game route: ${window.location.pathname}`);
+  window.location.replace(buildPlayHref({ ...route, scene: "map", col: hex.col, row: hex.row }));
+}
+
 /** An action path's contract hex, as the scene hex its helpers work in. */
 const sceneHexOf = (contractHex: HexPosition): HexPosition => {
   const normalized = Position.fromContract({ x: contractHex.col, y: contractHex.row }).getNormalized();
@@ -976,6 +984,8 @@ export default class WorldmapScene extends WarpTravel {
   private armyIndex: number = 0;
   private selectableArmies: SelectableArmy[] = [];
   private structureIndex: number = 0;
+  /** Set once the first world-map pass is drawn: from then on drawn positions depend on the floating origin. */
+  private worldOriginLocked = false;
   private playerStructures: Structure[] = [];
 
   // Hover-based label expansion manager
@@ -1935,6 +1945,25 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
     useCameraZoomStore.getState().setWorldmapDistance(settled);
+  }
+
+  public override moveCameraToColRow(col: number, row: number, duration: number = 2) {
+    if (!this.reachWorldOrigin({ col, row })) return;
+    super.moveCameraToColRow(col, row, duration);
+  }
+
+  /**
+   * Keeps a camera target within reach of the floating world origin. Until the first pass is drawn the origin simply
+   * moves to the target; after that everything drawn is placed relative to it, so a far target re-opens the map there.
+   */
+  private reachWorldOrigin(target: HexPosition): boolean {
+    if (isWithinWorldOriginReach(target)) return true;
+    if (!this.worldOriginLocked) {
+      setWorldOrigin(target);
+      return true;
+    }
+    reopenWorldMapAt(target);
+    return false;
   }
 
   public moveCameraToURLLocation(options: WorldmapUrlLocationMoveOptions = {}): void {
@@ -3804,6 +3833,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async commitCriticalWorldmapPass(phase: WorldmapWarpTravelPhase): Promise<void> {
+    this.worldOriginLocked = true;
     const startedAt = performance.now();
     await completeWorldmapInteractiveRefresh({
       phase,
@@ -4574,7 +4604,6 @@ export default class WorldmapScene extends WarpTravel {
         z: focusPoint.z,
       },
       generation: nextGeneration,
-      hexSize: HEX_SIZE,
       paddingHexes: WORLDMAP_CHUNK_POLICY.visualPresentation.viewportPaddingHexes,
       pageOrigin: this.getVisualTerrainPageOrigin(),
       pageSize: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize,
@@ -6783,6 +6812,9 @@ export default class WorldmapScene extends WarpTravel {
 
   async updateVisibleChunks(force: boolean, options: WorldmapVisibleChunkUpdateOptions): Promise<boolean> {
     if (this.isSwitchedOff) {
+      return false;
+    }
+    if (!this.reachWorldOrigin(this.getCameraTargetHex())) {
       return false;
     }
     incrementWorldmapRenderCounter("updateVisibleChunksCalls");

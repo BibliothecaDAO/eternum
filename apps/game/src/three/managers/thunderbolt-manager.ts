@@ -3,8 +3,7 @@ import type GUI from "lil-gui";
 import { AdditiveBlending, DoubleSide, Group, Mesh, PlaneGeometry, Scene, Vector2, Vector3 } from "three";
 import { MeshBasicNodeMaterial } from "three/webgpu";
 import { uniform, uv, vec2 } from "three/tsl";
-import { HEX_SIZE } from "../constants";
-import { getWorldPositionForHex } from "../utils";
+import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
 import {
   loadWeatherSpriteSheet,
   spriteSheetFrame,
@@ -42,6 +41,8 @@ export class ThunderBoltManager {
     private scene: Scene,
     private controls: { target: Vector3; object?: { position: Vector3 } },
     private sampleHeight: (x: number, z: number) => number = () => 0,
+    /** The owning scene's hex space: the world map's floating origin, or the local realm scene's own lattice. */
+    private space: HexSpace = WORLD_HEX_SPACE,
   ) {
     this.thunderBolts.name = "ThunderBolts";
     scene.add(this.thunderBolts);
@@ -62,18 +63,7 @@ export class ThunderBoltManager {
       tempCameraTarget.y = 0;
     }
 
-    // Convert world position to hex coordinates
-    const hexRadius = HEX_SIZE;
-    const hexHeight = hexRadius * 2;
-    const hexWidth = Math.sqrt(3) * hexRadius;
-    const vertDist = hexHeight * 0.75;
-    const horizDist = hexWidth;
-
-    const row = Math.round(tempCameraTarget.z / vertDist);
-    const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
-    const col = Math.round((tempCameraTarget.x + rowOffset) / horizDist);
-
-    return { col, row };
+    return this.space.hexForPosition(tempCameraTarget);
   }
 
   private createThunderBolt(hexPosition: HexPosition): void {
@@ -88,7 +78,7 @@ export class ThunderBoltManager {
     const flashOffset = spriteSheetOffset(WEATHER_SPRITE_SHEETS.flash, 0);
     bolt.frameOffsets[0].set(boltOffset.x, boltOffset.y);
     bolt.frameOffsets[1].set(flashOffset.x, flashOffset.y);
-    bolt.group.position.copy(getWorldPositionForHex(hexPosition));
+    bolt.group.position.copy(this.space.positionForHex(hexPosition));
     bolt.group.position.y = this.sampleHeight(bolt.group.position.x, bolt.group.position.z) + 0.05;
     // Face the camera at birth, but stay upright and fixed in world space for the strike.
     const cameraPosition = this.controls.object?.position;

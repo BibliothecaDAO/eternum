@@ -1,3 +1,4 @@
+import { latticeToWorld } from "@/three/utils/hex-lattice";
 import { Loader2, AlertTriangle } from "@/ui/design-system/atoms/game-icons";
 import { requireBiomeColor, resolveBiomeTypeFromId } from "@/three/managers/biome-colors";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
@@ -17,21 +18,10 @@ interface RealmHexDeployMapProps {
 }
 
 const HEX_SIZE = 14;
-const SQRT3 = Math.sqrt(3);
-
-const hexWidth = SQRT3 * HEX_SIZE;
-const hexHeight = HEX_SIZE * 2;
-const vertDist = hexHeight * 0.75;
-const horizDist = hexWidth;
-
-// Absolute-coord hex layout — odd rows get a half-width shimmy so neighbors
-// from `getNeighborHexes` line up. Callers translate to recenter on the realm.
+// The game's hex lattice at this map's scale; callers translate to recenter on the realm.
 const offsetToPixel = (col: number, row: number) => {
-  const rowParity = ((row % 2) + 2) % 2;
-  const rowOffset = rowParity * (horizDist / 2);
-  const x = col * horizDist - rowOffset;
-  const y = row * vertDist;
-  return { x, y };
+  const { x, z } = latticeToWorld(col, row);
+  return { x: x * HEX_SIZE, y: z * HEX_SIZE };
 };
 
 const hexCorners = (cx: number, cy: number) => {

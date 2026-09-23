@@ -128,7 +128,8 @@ import {
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { SceneName } from "../types";
-import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
+import { LOCAL_HEX_SPACE, type HexSpace } from "../utils/utils";
+import { localHexPosition } from "./hexception-layout";
 import { HexHoverLabel } from "../utils/labels/hex-hover-label";
 
 const loader = gltfLoader;
@@ -152,12 +153,17 @@ interface BuildingModelSelection {
 
 const generateHexPositions = (center: HexPosition, radius: number) =>
   getLocalHexDisk(center, radius).map((cell) => ({
-    ...getWorldPositionForHex(cell, false),
+    ...localHexPosition(cell),
     ...cell,
     color: new Color("gray"),
   }));
 
 export default class HexceptionScene extends HexagonScene {
+  /** A realm's buildings sit on their own local lattice, never moved by the world map's floating origin. */
+  protected override get hexSpace(): HexSpace {
+    return LOCAL_HEX_SPACE;
+  }
+
   private hexceptionRadius = 4;
   private buildingModels: Map<
     BUILDINGS_GROUPS,
@@ -634,7 +640,7 @@ export default class HexceptionScene extends HexagonScene {
       this.updateHexceptionGrid(this.hexceptionRadius);
     }
 
-    const settlementCenter = getWorldPositionForHex({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] });
+    const settlementCenter = LOCAL_HEX_SPACE.positionForHex({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] });
     this.ambienceSystem?.setup(settlementCenter, this.hexceptionRadius);
 
     this.controls.maxDistance = LOCAL_CAMERA_ZOOM.maxDistance;
@@ -1198,7 +1204,7 @@ export default class HexceptionScene extends HexagonScene {
 
   private createBuildingMatrix(position: HexPosition): Matrix4 {
     const building = new Object3D();
-    const worldPosition = getWorldPositionForHex(position, false);
+    const worldPosition = localHexPosition(position);
     building.position.set(worldPosition.x, 0.05, worldPosition.z);
     building.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
     building.rotation.y = (Math.floor(this.hashCoordinates(position.col, position.row) * 6) * Math.PI) / 3;
@@ -1318,7 +1324,7 @@ export default class HexceptionScene extends HexagonScene {
     const builtKeys = new Set(
       this.buildings.map((building) => {
         worldPosition.setFromMatrixPosition(building.matrix);
-        const coordinate = getHexForWorldPosition(worldPosition);
+        const coordinate = LOCAL_HEX_SPACE.hexForPosition(worldPosition);
         return `${coordinate.col}:${coordinate.row}`;
       }),
     );
@@ -1327,7 +1333,7 @@ export default class HexceptionScene extends HexagonScene {
       const biome = resolveHexceptionBiome(biomeKey, fallbackBiome);
       matrices.forEach((matrix) => {
         worldPosition.setFromMatrixPosition(matrix);
-        const coordinate = getHexForWorldPosition(worldPosition);
+        const coordinate = LOCAL_HEX_SPACE.hexForPosition(worldPosition);
         const key = `${coordinate.col}:${coordinate.row}`;
         cellsByKey.set(key, {
           biome,
@@ -1675,7 +1681,7 @@ export default class HexceptionScene extends HexagonScene {
         if (building) {
           this.buildings.push({ ...building, matrix: this.createBuildingMatrix(position) });
         } else {
-          this.highlights.push(getHexForWorldPosition(dummy.position));
+          this.highlights.push(LOCAL_HEX_SPACE.hexForPosition(dummy.position));
         }
 
         const tempMatrix = MatrixPool.getInstance().getMatrix();

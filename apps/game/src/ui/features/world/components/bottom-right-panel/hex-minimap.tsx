@@ -1,3 +1,5 @@
+import { latticeHexAt, latticeHexBoundsForWorldRect, latticeToWorld } from "@/three/utils/hex-lattice";
+import { fromRenderHex, toRenderHex } from "@/three/world-origin";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView, selectableArmiesView } from "@/sync/fact-views";
@@ -47,7 +49,6 @@ const normalizeEntityId = (value: unknown): string | null => {
 };
 
 const HEX_SIZE = 7;
-const SQRT3 = Math.sqrt(3);
 const CAMERA_CIRCLE_SCREEN_RADIUS_PX = 60;
 const WORLD_CAMERA_DISTANCE_REFERENCE = 20;
 const TILE_WINDOW_STEP = HEX_SIZE * 8;
@@ -70,28 +71,19 @@ const LABEL_ICONS = {
   chest: "/images/labels/chest.png",
 } as const;
 
-const getGridMetrics = () => {
-  const hexHeight = HEX_SIZE * 2;
-  const hexWidth = SQRT3 * HEX_SIZE;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
-  return { vertDist, horizDist };
-};
-
+/**
+ * Minimap pixels for a normalized hex: the world map's lattice at minimap scale, drawn relative to the floating world
+ * origin so SVG coordinates stay small wherever the map is looked at.
+ */
 const offsetToPixel = (col: number, row: number) => {
-  const { vertDist, horizDist } = getGridMetrics();
-  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
-  const x = col * horizDist - rowOffset;
-  const y = row * vertDist;
-  return { x, y };
+  const render = toRenderHex(col, row);
+  const { x, z } = latticeToWorld(render.col, render.row);
+  return { x: x * HEX_SIZE, y: z * HEX_SIZE };
 };
 
 const pixelToOffset = (x: number, y: number) => {
-  const { vertDist, horizDist } = getGridMetrics();
-  const row = Math.round(y / vertDist);
-  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
-  const col = Math.round((x + rowOffset) / horizDist);
-  return { col, row };
+  const render = latticeHexAt(x / HEX_SIZE, y / HEX_SIZE);
+  return fromRenderHex(render.col, render.row);
 };
 
 const hexCorners = (center: { x: number; y: number }) => {
@@ -403,20 +395,15 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
   const visibleTiles = useMemo(() => {
     if (!tiles.length) return [] as CenteredTileEntry[];
 
-    const { vertDist, horizDist } = getGridMetrics();
-    const minRow = Math.floor(minY / vertDist) - 2;
-    const maxRow = Math.ceil(maxY / vertDist) + 2;
-
-    const rowOffsetMin = 0;
-    const rowOffsetMax = horizDist / 2;
-    const colCandidates = [
-      (minX + rowOffsetMin) / horizDist,
-      (minX + rowOffsetMax) / horizDist,
-      (maxX + rowOffsetMin) / horizDist,
-      (maxX + rowOffsetMax) / horizDist,
-    ];
-    const minCol = Math.floor(Math.min(...colCandidates)) - 2;
-    const maxCol = Math.ceil(Math.max(...colCandidates)) + 2;
+    // The window is in minimap pixels relative to the world origin; tiles are indexed by normalized hex.
+    const window = latticeHexBoundsForWorldRect({
+      minX: minX / HEX_SIZE,
+      minZ: minY / HEX_SIZE,
+      maxX: maxX / HEX_SIZE,
+      maxZ: maxY / HEX_SIZE,
+    });
+    const { col: minCol, row: minRow } = fromRenderHex(window.minCol - 1, window.minRow - 1);
+    const { col: maxCol, row: maxRow } = fromRenderHex(window.maxCol + 1, window.maxRow + 1);
 
     const result: CenteredTileEntry[] = [];
     for (let col = minCol; col <= maxCol; col += 1) {
