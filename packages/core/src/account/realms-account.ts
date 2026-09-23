@@ -66,20 +66,43 @@ export function forgetDeviceKey(storage: StorageLike): void {
  * key, or adds the device to an account another device deployed. Either way the transaction carries the guardian's
  * approval in a five-felt signature, which the account applies while validating it.
  */
-export async function joinRealmsAccount({
-  provider,
-  shard,
-  realmsId,
-  device,
-  approve,
-}: {
+export function joinRealmsAccount(input: {
   provider: ProviderInterface;
   shard: RealmsAccountShard;
   realmsId: string;
   device: DeviceKey;
   approve: GuardianApproval;
 }): Promise<Account> {
-  const address = realmsAccountAddress(realmsId, shard.accountClassHash, shard.guardianPublicKey);
+  const address = realmsAccountAddress(input.realmsId, input.shard.accountClassHash, input.shard.guardianPublicKey);
+  const key = `${input.shard.chainId}:${address}:${input.device.publicKey}`;
+  // One join per device and account at a time: a second caller (the game route mounting the sync again) waits for the
+  // first instead of asking the guardian for the same counter and sending a transaction the account refuses.
+  let join = joinsInFlight.get(key);
+  if (!join) {
+    join = joinOnce(input, address).finally(() => joinsInFlight.delete(key));
+    joinsInFlight.set(key, join);
+  }
+  return join;
+}
+
+const joinsInFlight = new Map<string, Promise<Account>>();
+
+async function joinOnce(
+  {
+    provider,
+    shard,
+    realmsId,
+    device,
+    approve,
+  }: {
+    provider: ProviderInterface;
+    shard: RealmsAccountShard;
+    realmsId: string;
+    device: DeviceKey;
+    approve: GuardianApproval;
+  },
+  address: string,
+): Promise<Account> {
   const approval = (counter: number) =>
     approve({ chainId: shard.chainId, account: address, action: "ADD", deviceKey: device.publicKey, counter });
 

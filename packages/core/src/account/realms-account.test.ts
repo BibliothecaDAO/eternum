@@ -39,4 +39,17 @@ describe("joining a shard", () => {
     expect(execute.mock.calls[0][1]).toEqual({ tip: 0 });
     expect(approve).toHaveBeenCalledWith(expect.objectContaining({ action: "ADD", counter: 2 }));
   });
+
+  it("runs one join when the same device joins twice at once", async () => {
+    const execute = vi.spyOn(Account.prototype, "execute").mockResolvedValue({ transaction_hash: "0x8" });
+    const guardian = vi.fn(async () => ["0x5", "0x6"]);
+    const shardProvider = provider(true);
+    const [first, second] = await Promise.all([
+      joinRealmsAccount({ provider: shardProvider, shard, realmsId: "0x9", device, approve: guardian }),
+      joinRealmsAccount({ provider: shardProvider, shard, realmsId: "0x9", device, approve: guardian }),
+    ]);
+    expect(guardian).toHaveBeenCalledOnce();
+    expect(execute).toHaveBeenCalledOnce();
+    expect(second).toBe(first);
+  });
 });
