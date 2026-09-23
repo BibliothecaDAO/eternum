@@ -227,6 +227,19 @@ const initialState: Omit<RealtimeChatStore, "actions"> = {
   pendingReadReceipts: [],
   openTabs: loadTabsFromStorage(),
   activeTabId: loadActiveTabIdFromStorage(),
+  blockedPlayers: [],
+};
+
+/** The signed-in account's block list, as the server returns it after a read or a change. */
+const requestBlockList = async (baseUrl: string | undefined, method: string, path = "", body?: unknown) => {
+  if (!baseUrl) return null;
+  const response = await fetch(new URL(`/api/chat/blocks${path}`, baseUrl), {
+    method,
+    credentials: "include",
+    ...(body === undefined ? {} : { headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
+  });
+  if (!response.ok) throw new Error(`Block list request failed (${response.status})`);
+  return ((await response.json()) as { blocked: string[] }).blocked;
 };
 
 export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
@@ -349,6 +362,9 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         joinedZoneIds: [],
         lastConnectionError: undefined,
       });
+      get()
+        .actions.loadBlockedPlayers()
+        .catch((error) => console.error("chat_block_list_unavailable", error));
     },
     resetClient: () => {
       const { client } = get();
@@ -1160,6 +1176,28 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       } else {
         localStorage.removeItem("realtime-chat-active-tab");
       }
+    },
+    loadBlockedPlayers: async () => {
+      const blocked = await requestBlockList(get().baseUrl, "GET");
+      if (blocked) set({ blockedPlayers: blocked });
+    },
+    // Blocking hides the thread: its tab closes and its messages leave this client. The server drops the account's
+    // future messages; unblocking lets later ones through, and a new message brings the thread back.
+    blockPlayer: async (playerId) => {
+      const blocked = await requestBlockList(get().baseUrl, "POST", "", { realmsId: playerId });
+      if (!blocked) return;
+      const hidden = Object.keys(get().dmThreads).filter((threadId) =>
+        get().dmThreads[threadId]!.thread.participants.includes(playerId),
+      );
+      const dmThreads = Object.fromEntries(
+        Object.entries(get().dmThreads).filter(([threadId]) => !hidden.includes(threadId)),
+      );
+      set({ blockedPlayers: blocked, dmThreads });
+      hidden.forEach((threadId) => get().actions.removeTab(`dm-${threadId}`));
+    },
+    unblockPlayer: async (playerId) => {
+      const blocked = await requestBlockList(get().baseUrl, "DELETE", `/${encodeURIComponent(playerId)}`);
+      if (blocked) set({ blockedPlayers: blocked });
     },
     setActiveTab: (tabId) => {
       set({ activeTabId: tabId });

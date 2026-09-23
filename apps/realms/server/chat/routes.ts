@@ -11,8 +11,8 @@ const HISTORY_LIMIT = 50;
 const HISTORY_MAX = 100;
 
 /**
- * /api/chat/*: the signed-in account's inbox socket, a room socket once membership is checked, and the two histories
- * the chat reads. The Worker authenticates; the objects trust the member it names.
+ * /api/chat/*: the signed-in account's inbox socket, a room socket once membership is checked, the two histories the
+ * chat reads, and the account's block list. The Worker authenticates; the objects trust the member it names.
  */
 export const routeChat = async (
   request: Request,
@@ -53,6 +53,9 @@ export const routeChat = async (
     );
   }
 
+  const blocks = /^\/api\/chat\/blocks(?:\/([^/]+))?$/.exec(pathname);
+  if (blocks) return routeBlocks(request, env, member.realmsId, blocks[1] ? decodeURIComponent(blocks[1]) : undefined);
+
   const threadHistory = /^\/api\/chat\/dm\/threads\/([^/]+)\/messages$/.exec(pathname);
   if (threadHistory && request.method === "GET") {
     const page = await env.CHAT_INBOX.get(env.CHAT_INBOX.idFromName(member.realmsId)).threadMessages(
@@ -65,6 +68,31 @@ export const routeChat = async (
 
   return json({ error: "not_found" }, 404);
 };
+
+const REALMS_ID = /^0x[0-9a-fA-F]{1,64}$/;
+
+/**
+ * /api/chat/blocks: the signed-in account's block list. GET lists it, POST {realmsId} blocks an account, and
+ * DELETE /api/chat/blocks/:realmsId unblocks it. A blocked account's direct messages are dropped at this inbox.
+ */
+const routeBlocks = async (request: Request, env: IdentityEnv, owner: string, target: string | undefined) => {
+  const inbox = env.CHAT_INBOX.get(env.CHAT_INBOX.idFromName(owner));
+  if (request.method === "GET" && !target) return json({ blocked: await inbox.blocked() });
+  if (request.method === "POST" && !target) {
+    const body = (await request.json().catch(() => null)) as { realmsId?: unknown } | null;
+    const realmsId = typeof body?.realmsId === "string" && REALMS_ID.test(body.realmsId) ? body.realmsId : null;
+    if (!realmsId || BigInt(realmsId) === BigInt(owner)) return json({ error: "invalid_realms_id" }, 400);
+    await inbox.block(canonical(realmsId));
+    return json({ blocked: await inbox.blocked() });
+  }
+  if (request.method === "DELETE" && target && REALMS_ID.test(target)) {
+    await inbox.unblock(canonical(target));
+    return json({ blocked: await inbox.blocked() });
+  }
+  return json({ error: "not_found" }, 404);
+};
+
+const canonical = (realmsId: string) => `0x${BigInt(realmsId).toString(16)}`;
 
 const chatMemberFrom = async (request: Request, auth: IdentityAuth) => {
   const session = await auth.api.getSession({ headers: request.headers });

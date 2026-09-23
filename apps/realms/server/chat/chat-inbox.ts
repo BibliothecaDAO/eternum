@@ -54,7 +54,8 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
          updatedAt INTEGER NOT NULL, lastMessageId TEXT NOT NULL, unread INTEGER NOT NULL);
        CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, threadId TEXT NOT NULL, senderId TEXT NOT NULL,
          recipientId TEXT NOT NULL, content TEXT NOT NULL, metadata TEXT, createdAt INTEGER NOT NULL);
-       CREATE INDEX IF NOT EXISTS messages_thread ON messages (threadId, createdAt)`,
+       CREATE INDEX IF NOT EXISTS messages_thread ON messages (threadId, createdAt);
+       CREATE TABLE IF NOT EXISTS blocks (realmsId TEXT PRIMARY KEY, blockedAt INTEGER NOT NULL)`,
     );
   }
 
@@ -86,8 +87,12 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     sendChat(socket, { type: "error", code: "invalid_message", message: "Unknown direct message type." });
   }
 
-  /** A message from another inbox for this owner: stored, then shown on the owner's sockets or pushed to devices. */
+  /**
+   * A message from another inbox for this owner: stored, then shown on the owner's sockets or pushed to devices. A
+   * message from an account the owner blocked is dropped here, unseen, and the sender is told nothing different.
+   */
   async receive(message: DirectMessage, senderName?: string): Promise<void> {
+    if (this.hasBlocked(message.senderId)) return;
     const thread = this.store(message, message.senderId, 1);
     const sockets = this.ctx.getWebSockets();
     if (sockets.length > 0) {
@@ -98,11 +103,34 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
   }
 
   async typing(typing: DirectMessageTyping): Promise<void> {
+    if (this.hasBlocked(typing.playerId)) return;
     for (const socket of this.ctx.getWebSockets()) sendChat(socket, { type: "direct:typing", typing });
   }
 
   async read(receipt: DirectMessageReadReceipt): Promise<void> {
+    if (this.hasBlocked(receipt.readerId)) return;
     for (const socket of this.ctx.getWebSockets()) sendChat(socket, { type: "direct:read", receipt });
+  }
+
+  /** The accounts the owner blocked, most recent first. */
+  async blocked(): Promise<string[]> {
+    return this.ctx.storage.sql
+      .exec<{ realmsId: string }>("SELECT realmsId FROM blocks ORDER BY blockedAt DESC")
+      .toArray()
+      .map(({ realmsId }) => realmsId);
+  }
+
+  async block(realmsId: string): Promise<void> {
+    this.ctx.storage.sql.exec(
+      "INSERT INTO blocks (realmsId, blockedAt) VALUES (?, ?) ON CONFLICT DO NOTHING",
+      realmsId,
+      Date.now(),
+    );
+  }
+
+  /** Unblocking lets future messages through; what was dropped while blocked stays dropped. */
+  async unblock(realmsId: string): Promise<void> {
+    this.ctx.storage.sql.exec("DELETE FROM blocks WHERE realmsId = ?", realmsId);
   }
 
   /** One thread's messages for its owner, newest first, a page before the cursor (an ISO time). */
@@ -176,6 +204,10 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     if (!parsed.success || !peer || parsed.data.readerId !== member.realmsId) return;
     this.ctx.storage.sql.exec("UPDATE threads SET unread = 0 WHERE id = ?", parsed.data.threadId);
     await inboxOf(this.env, peer).read(parsed.data as DirectMessageReadReceipt);
+  }
+
+  private hasBlocked(realmsId: string): boolean {
+    return this.ctx.storage.sql.exec("SELECT 1 FROM blocks WHERE realmsId = ?", realmsId).toArray().length > 0;
   }
 
   private peerOf(threadId: string): string | null {

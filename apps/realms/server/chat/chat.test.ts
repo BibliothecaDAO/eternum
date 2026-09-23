@@ -2,10 +2,12 @@ import { beforeAll, expect, it } from "vitest";
 
 import {
   buildWorkerBundle,
+  deviceKeys,
   migrationStatements,
   newStorage,
   startWorker,
   vapidKeys,
+  pause,
   waitUntil,
   WORKER_NAME,
 } from "../workerd-harness";
@@ -160,6 +162,76 @@ it("lets two players chat in their Blitz room, keeps its history, survives evict
     })
   ).json()) as { messages: { content: string }[] };
   expect(thread.messages.map((message) => message.content)).toEqual(["meet at dawn"]);
+
+  await worker.dispose();
+}, 120_000);
+
+it("drops a blocked player's direct messages before socket and push, and delivers again after unblocking", async () => {
+  const PUSH_ENDPOINT = "https://fcm.googleapis.com/fcm/send/blocking-device";
+  const pushes: string[] = [];
+  const worker = await startWorker({
+    bundle,
+    storage: newStorage(),
+    vapid: await vapidKeys(),
+    outbound: (request) => {
+      if (request.url === PUSH_ENDPOINT) pushes.push(request.url);
+      return new Response(null, { status: request.url === PUSH_ENDPOINT ? 201 : 599 });
+    },
+  });
+  await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
+  const [sender, recipient] = [await signIn(worker), await signIn(worker)];
+  const device = await deviceKeys();
+  await worker.db.batch([
+    worker.db
+      .prepare(`INSERT INTO "notification_preferences" ("owner", "level", "revision") VALUES (?, 'important', 1)`)
+      .bind(recipient.realmsId),
+    worker.db
+      .prepare(
+        `INSERT INTO "notification_push_subscriptions" ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "directMessagesEnabledAt", "createdAt") VALUES ('device-1', ?, ?, ?, ?, 'x', ?, ?)`,
+      )
+      .bind(recipient.realmsId, PUSH_ENDPOINT, device.p256dh, device.auth, Date.now(), Date.now()),
+  ]);
+  const blocks = (method: string, path = "", body?: unknown) =>
+    worker.mf
+      .dispatchFetch(`${ORIGIN}/api/chat/blocks${path}`, {
+        method,
+        headers: { cookie: recipient.cookie, origin: ORIGIN, "content-type": "application/json" },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      })
+      .then((response) => response.json() as Promise<{ blocked: string[] }>);
+  expect(await blocks("POST", "", { realmsId: sender.realmsId })).toEqual({ blocked: [sender.realmsId] });
+
+  const outbox = await connect(worker, sender.cookie, "/api/chat/inbox");
+  await waitUntil(() => ofType(outbox.received, "connected").length > 0, 5_000);
+  const send = (content: string) =>
+    outbox.socket!.send(
+      JSON.stringify({ type: "direct:message", payload: { recipientId: recipient.realmsId, content } }),
+    );
+  const echoes = () => ofType(outbox.received, "direct:message").length;
+
+  // Blocked, with the recipient's socket open and then with only its device: nothing arrives, and the sender sees the
+  // same echo it always does.
+  const inbox = await connect(worker, recipient.cookie, "/api/chat/inbox");
+  await waitUntil(() => ofType(inbox.received, "connected").length > 0, 5_000);
+  send("are you there");
+  await waitUntil(() => echoes() >= 1, 5_000);
+  inbox.socket!.close();
+  send("answer me");
+  await waitUntil(() => echoes() >= 2, 5_000);
+  await pause(1_500);
+  expect(echoes()).toBe(2);
+  expect(ofType(inbox.received, "direct:message")).toEqual([]);
+  expect(pushes).toEqual([]);
+
+  expect(await blocks("DELETE", `/${encodeURIComponent(sender.realmsId)}`)).toEqual({ blocked: [] });
+  send("sorry");
+  await waitUntil(() => pushes.length >= 1, 10_000);
+  expect(pushes).toEqual([PUSH_ENDPOINT]);
+  const reopened = await connect(worker, recipient.cookie, "/api/chat/inbox");
+  await waitUntil(() => ofType(reopened.received, "connected").length > 0, 5_000);
+  send("hello again");
+  await waitUntil(() => ofType(reopened.received, "direct:message").length > 0, 5_000);
+  expect(ofType(reopened.received, "direct:message")[0]!.message).toMatchObject({ content: "hello again" });
 
   await worker.dispose();
 }, 120_000);
