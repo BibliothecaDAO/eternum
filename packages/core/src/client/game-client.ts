@@ -27,6 +27,7 @@ import { createGameActions, type GameActions } from "./actions";
 import { setGameScope } from "./game-scope";
 import { createHeraldGameSyncSession, type GameClientObserver } from "./herald-session";
 import { createGameViews, type GameViews } from "./views";
+import { waitForTransactionOutcome } from "./transaction-outcome";
 import type { Shard } from "./shard";
 
 export interface GameClientSetup {
@@ -155,7 +156,7 @@ const startSync = async (
 /** Herald's stream carries transaction status, so submits wait on the stream instead of polling the RPC. */
 const routeTransactionWaitsThroughStream = (setupResult: GameClientSetup, runtime: GameSyncRuntime): void => {
   setupResult.network.provider.setTransactionStreamWaiter(
-    (transactionHash) => runtime.waitForTransaction(transactionHash),
+    (transactionHash, ticket) => waitForTransactionOutcome(runtime, setupResult.store, transactionHash, ticket),
     (transactionHash) => runtime.recordSubmittedTransaction(transactionHash),
   );
 };

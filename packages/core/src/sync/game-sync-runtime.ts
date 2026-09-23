@@ -103,6 +103,7 @@ export class GameSyncRuntime {
   private snapshotExpectedOperations = 0;
   private snapshotStreaming = false;
   private readonly sliceAppliedListeners = new Set<() => void>();
+  private readonly resyncListeners = new Set<() => void>();
   private transactionWaiters = new Map<
     string,
     Array<{ reject: (error: Error) => void; resolve: (transaction: GameSyncTransaction) => void }>
@@ -209,6 +210,16 @@ export class GameSyncRuntime {
     return () => this.sliceAppliedListeners.delete(listener);
   }
 
+  /**
+   * Fires once a reconnect's fresh snapshot has replaced the store. Herald streams a transaction's status only once, so
+   * a status it sent before the reconnect, or a transaction it recorded while it was down, will never arrive; waits for
+   * one must settle from the store after this.
+   */
+  public subscribeResynced(listener: () => void): () => void {
+    this.resyncListeners.add(listener);
+    return () => this.resyncListeners.delete(listener);
+  }
+
   public dispose(): void {
     this.generation += 1;
     this.abandonFirstSnapshot();
@@ -217,6 +228,7 @@ export class GameSyncRuntime {
     this.session?.transport.dispose?.();
     this.session?.onDispose?.();
     this.sliceAppliedListeners.clear();
+    this.resyncListeners.clear();
     this.disposeWorldSpatialProjection();
     this.ingestQueue?.dispose();
     this.ingestQueue = null;
@@ -300,7 +312,11 @@ export class GameSyncRuntime {
         if (!current() || !snapshot) return;
         const { held, retained } = snapshot;
         snapshot = null;
-        this.enqueueReplacement(generation, held ?? [], retained);
+        const replaced = this.enqueueReplacement(generation, held ?? [], retained);
+        if (held)
+          void replaced.then((applied) => {
+            if (applied && current()) this.resyncListeners.forEach((listener) => listener());
+          });
         firstSnapshot.resolve();
       },
       onScope: (facts, expedition) => {
@@ -310,7 +326,7 @@ export class GameSyncRuntime {
             .filter((model) => isScopedGameSyncModel(model, expedition))
             .map((model) => [model, new Set(facts.filter((fact) => fact.model === model).map((fact) => fact.key))]),
         );
-        this.enqueueReplacement(generation, facts, retained);
+        void this.enqueueReplacement(generation, facts, retained);
       },
       onFacts: (batch) => {
         if (!current()) return;
@@ -350,10 +366,20 @@ export class GameSyncRuntime {
     };
   }
 
-  private enqueueReplacement(generation: number, facts: GameSyncFact[], retained: Map<string, Set<string>>): void {
-    void this.ingestQueue
-      ?.enqueueFacts(facts, { retain: retained })
-      .catch((error) => this.stopAfterLiveBatchFailure(generation, error));
+  /** Resolves true once the replacement is in the store, false if it failed (which stops the live stream). */
+  private enqueueReplacement(
+    generation: number,
+    facts: GameSyncFact[],
+    retained: Map<string, Set<string>>,
+  ): Promise<boolean> {
+    if (!this.ingestQueue) return Promise.resolve(false);
+    return this.ingestQueue.enqueueFacts(facts, { retain: retained }).then(
+      () => true,
+      (error) => {
+        this.stopAfterLiveBatchFailure(generation, error);
+        return false;
+      },
+    );
   }
 
   private reportSnapshotReceived(

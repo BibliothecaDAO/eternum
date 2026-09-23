@@ -1,4 +1,4 @@
-import type { NativeExecutionOutcome } from "@bibliothecadao/types";
+import type { NativeExecutionOutcome, NativeTicketIdentity } from "@bibliothecadao/types";
 /**
  * Details about a single transaction type within a batch.
  * Used to display breakdown of batched transactions in the UI.
@@ -56,7 +56,11 @@ interface TransactionStreamStatus {
   status: string;
 }
 
-export type TransactionStreamWaiter = (transactionHash: string) => Promise<TransactionStreamStatus>;
+/** Waits for a transaction's status on the stream; a native action passes its ticket so the wait can settle from the store. */
+export type TransactionStreamWaiter = (
+  transactionHash: string,
+  ticket?: NativeTicketIdentity,
+) => Promise<TransactionStreamStatus>;
 
 export enum TransactionType {
   PROVISION_REALM = "provision_realm",

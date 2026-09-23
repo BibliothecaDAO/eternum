@@ -3,13 +3,14 @@
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
 import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json";
-import { hash } from "starknet";
+import { hash, type AccountInterface } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
 import type { HeraldSocket } from "../sync/herald-game-sync-transport";
 import { createManualGameSyncScheduler } from "../sync/scheduler";
 import { createGameClient, type CreateGameClientInput } from "./game-client";
+import { ActionOutcomeUnreportedError } from "./transaction-outcome";
 
 class FakeSocket implements HeraldSocket {
   public onclose: (() => void) | null = null;
@@ -97,6 +98,19 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+const actionNonce = (epoch: string, nextNonce: number) => ({
+  type: "snapshot",
+  epoch,
+  seq: 0,
+  model: "ActionNonce",
+  rows: [
+    {
+      key: hash.computePoseidonHashOnElements([54, 0x111]),
+      value: { game_id: 54, actor: "0x111", next_nonce: String(nextNonce) },
+    },
+  ],
+});
+
 describe("createGameClient", () => {
   it("dispose() clears a pending reconnect so no timer outlives the client", async () => {
     vi.useFakeTimers();
@@ -131,5 +145,43 @@ describe("createGameClient", () => {
     expect(vi.getTimerCount()).toBe(0);
     await vi.advanceTimersByTimeAsync(20_000);
     expect(harness.sockets).toHaveLength(1);
+  });
+  it("releases an action recorded while Herald restarted, so the player's next action still signs", async () => {
+    vi.useFakeTimers();
+    const submitIntent = vi.fn(async () => ({ transaction_hash: "0xabc", order: 1n }));
+    const harness = createHarness();
+    harness.input.native = { ...harness.input.native, signIntent: vi.fn(async () => ["0x1", "0x2"]), submitIntent };
+    const creation = createGameClient(harness.input);
+    await vi.waitFor(() => expect(harness.sockets).toHaveLength(1));
+    harness.sockets[0]!.receive(hello);
+    await flushMicrotasks();
+    for (const message of [rulesSnapshot, actionNonce("epoch-a", 0), snapshotEnd]) harness.sockets[0]!.receive(message);
+    const client = await harness.settle(creation);
+    const provider = client.setup.network.provider;
+    const signer = { address: "0x111" } as AccountInterface;
+    const explore = { kind: "Explore", value: { explorer_id: 9, direction: 2 } } as const;
+
+    const failed = new Promise<{ error: unknown }>((resolve) => provider.once("transactionFailed", resolve));
+    void provider.submitCommand(signer, explore);
+    await vi.waitFor(() => expect(submitIntent).toHaveBeenCalledOnce());
+
+    // Herald restarts: the action is recorded while it is down, and the new Herald never streams its status.
+    harness.sockets[0]!.close();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(harness.sockets).toHaveLength(2);
+    const restarted = { ...hello, epoch: "epoch-b", confirmed_block: 13 };
+    harness.sockets[1]!.receive(restarted);
+    await flushMicrotasks();
+    for (const message of [
+      { ...rulesSnapshot, epoch: "epoch-b" },
+      actionNonce("epoch-b", 1),
+      { ...snapshotEnd, epoch: "epoch-b" },
+    ])
+      harness.sockets[1]!.receive(message);
+
+    expect((await harness.settle(failed)).error).toBeInstanceOf(ActionOutcomeUnreportedError);
+    void provider.submitCommand(signer, explore).catch(() => undefined);
+    await vi.waitFor(() => expect(submitIntent).toHaveBeenCalledTimes(2));
+    client.dispose();
   });
 });

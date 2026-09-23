@@ -778,7 +778,7 @@ export class EternumProvider extends EventEmitter {
       } as unknown as GetTransactionReceiptResponse;
     }
 
-    let transaction = await this.transactionStreamWaiter(transactionHash).catch((error) => {
+    let transaction = await this.transactionStreamWaiter(transactionHash, ticket).catch((error) => {
       throw attachTransactionFailureStage(error, "confirmation");
     });
 

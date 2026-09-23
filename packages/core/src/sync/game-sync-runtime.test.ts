@@ -255,7 +255,7 @@ describe("GameSyncRuntime recovery", () => {
     expect([...memory.rows.entries()]).toEqual([["Stats:army", { health: 6 }]]);
   });
 
-  it("replaces the store in one write when a running session receives a fresh snapshot", async () => {
+  it("replaces the store in one write when a running session receives a fresh snapshot, then announces the resync", async () => {
     const memory = createMemoryStore();
     const harness = createSessionHarness({
       store: memory.store,
@@ -265,13 +265,17 @@ describe("GameSyncRuntime recovery", () => {
       },
     });
     const runtime = new GameSyncRuntime();
+    const resynced = vi.fn();
+    runtime.subscribeResynced(resynced);
     await runtime.startSession(harness.session);
+    expect(resynced).not.toHaveBeenCalled();
     const writesBefore = memory.writes.length;
 
     harness.emitSnapshot({ Position: [fact("one", "Position", { x: 1 }), fact("three", "Position", { x: 3 })] });
     await flushMicrotasks();
 
     expect(memory.writes.slice(writesBefore)).toEqual([2]);
+    expect(resynced).toHaveBeenCalledOnce();
     expect([...memory.rows.entries()]).toEqual([
       ["Position:one", { x: 1 }],
       ["Position:three", { x: 3 }],
