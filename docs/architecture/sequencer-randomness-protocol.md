@@ -65,11 +65,11 @@ Commitments cannot be reused. `reveal_randomness_epoch(secret)` checks the commi
 epoch is an error. The account refuses execution while its current epoch is revealed, and execution checks that each
 envelope names the current epoch, so a revealed secret never supplies new draws.
 
-Only the account's signed transaction path can open or reveal epochs. The node reveals only with nothing queued or in
-flight: at every start, after draining retained transactions, and after a bounded number of admitted tickets. Each
-reveal is followed by a fresh commitment. The node retains only the open epoch's secret across restart, never ticket
-assignments. Anyone can recompute recorded roots after reveal from the envelope's epoch and the wrapper transaction
-calldata, one game at a time.
+Only the account's signed transaction path can open or reveal epochs. Admission reveals only with nothing queued or in
+flight: at every start, once transactions retained from an earlier run have executed or been dropped, and after a
+bounded number of admitted tickets. Each reveal is followed by a fresh commitment. Admission retains only the open
+epoch's secret across restart, never ticket assignments. Anyone can recompute recorded roots after reveal from the
+envelope's epoch and the wrapper transaction calldata, one game at a time.
 
 ## Admission and execution
 
@@ -82,8 +82,10 @@ conflicts.
 Admission assigns the next order of the intent's game, the current epoch and a root in a bounded volatile queue; the
 first ticket of a game after a start takes its order from that game's recorded head. It does not guess preceding
 execution state. Packing is bounded by ticket count, elapsed time and transaction resources. Transactions enter Madara's
-validated submission path. Ticket status uses the v0.10.2 WebSocket route; no receipt or HTTP status polling is
-required.
+validated submission path and ticket status follows the v0.10.2 WebSocket route. The gateway beside a stock node uses
+only public JSON-RPC and WebSocket methods. A submitted transaction whose status stays silent is looked up once; if the
+node no longer knows it, one simulation recovers the executor's reason. Only a deterministic executor limit counts as a
+refusal; any other drop resubmits the same transaction.
 
 `execute(intent, context, r, s)` and `execute_batch(actions)` share the same action implementation. A batch contains at
 most 64 recorded actions and may mix games. Every action checks `order == head(game).order + 1` against its own game's
@@ -153,7 +155,12 @@ Restart may discard every unexecuted volatile assignment, including assigned ord
 epoch, so a lost ticket's root is never reused; only the games that lost tickets reassign those orders. The client
 resubmits its same signed intent only if its nonce remains unconsumed in recovered state. Re-admission may produce a
 different order and root. This is the accepted reroll boundary. An ordinary disconnect does not authorize replacing a
-pending draw. There is no ticket journal, standby replication, fencing/promotion protocol or sidecar placement.
+pending draw. There is no ticket journal, standby replication or fencing/promotion protocol.
+
+The gateway cannot read the node's mempool. Account transactions execute in nonce order and the mempool refuses a second
+transaction at a taken nonce without a tip bump, so the start-up epoch commands land only after every retained
+transaction has executed or been dropped. A failed run, including a node restart, restarts admission from recorded heads
+the same way.
 
 ## Gameplay derivation and cosmetics
 
