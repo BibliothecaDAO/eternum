@@ -72,7 +72,8 @@ export class NativeIngestion {
     return this.executionReceipt(receipt);
   }
 
-  private executionReceipt(receipt: RpcReceipt): RpcReceipt {
+  /** The receipt with its native execution outcomes, for a receipt already validated. */
+  executionReceipt(receipt: RpcReceipt): RpcReceipt {
     if (receipt.execution_status === "REVERTED") return receipt;
     return { ...receipt, executions: nativeExecutionOutcomes(receipt.events, this.decoder.manifest.world.address) };
   }

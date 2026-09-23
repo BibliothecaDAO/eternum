@@ -211,17 +211,18 @@ export class LiveWorld {
 
   public acceptReceipt(receipt: RpcReceipt): void {
     if (this.native.halted) return;
-    if (receipt.finality_status === "PRE_CONFIRMED" && !this.publishPreconfirmedReceipt(receipt)) return;
+    if (receipt.finality_status === "PRE_CONFIRMED") {
+      // Applying it to the overlay validated it, and a receipt the overlay refused was rejected there.
+      if (this.publishPreconfirmedReceipt(receipt)) this.publishReceiptStatus(this.native.executionReceipt(receipt));
+      return;
+    }
     let actionReceipt: RpcReceipt;
     try {
       actionReceipt = this.native.actionReceipt(this.overlayFold, receipt);
     } catch (error) {
-      const confirmed = receipt.finality_status !== "PRE_CONFIRMED";
-      this.native.rejectReceipt(receipt, receipt.block_number ?? null, error, confirmed);
-      if (confirmed) {
-        this.resetOverlay();
-        this.publishOverlayReverts();
-      }
+      this.native.rejectReceipt(receipt, receipt.block_number ?? null, error, true);
+      this.resetOverlay();
+      this.publishOverlayReverts();
       return;
     }
     // Ticket rejections do not change the enclosing transaction or its other outcomes.
