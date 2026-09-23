@@ -33,6 +33,7 @@ type HeraldMessage =
   | (HeraldMessageBase & {
       type: "hello";
       confirmed_block: number;
+      confirmed_timestamp?: number | null;
       preconfirmed_block: number | null;
     })
   | (HeraldMessageBase & { type: "snapshot"; model: string; rows: HeraldRow[] })
@@ -252,6 +253,14 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private acceptHello(message: Extract<HeraldMessage, { type: "hello" }>): void {
     this.attachedThroughBlock = message.confirmed_block;
+    // Chain time before any row: a snapshot's first reader (a Frontier realm's daily site) must not guess the clock.
+    if (typeof message.confirmed_timestamp === "number" && message.confirmed_timestamp > 0) {
+      this.handlers?.onHead({
+        block: message.confirmed_block,
+        preconfirmed: false,
+        timestamp: message.confirmed_timestamp,
+      });
+    }
     this.clearHelloTimer();
     this.socket?.send(
       JSON.stringify({

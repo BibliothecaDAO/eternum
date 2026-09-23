@@ -81,6 +81,8 @@ interface AttachInput {
   project?: (body: PublishedBody) => PublishedBody[];
   interest?: () => ReadonlySet<string>;
   confirmedBlock: number;
+  /** The chain time of the last confirmed head, so a client knows the clock before it reads any row. */
+  confirmedTimestamp?: number | null;
   gameId: string;
   preconfirmedBlock: number | null;
   overlay: () => SnapshotOverlayDiff[];
@@ -127,6 +129,7 @@ export class GameStreamHub {
     }
     this.send(session, {
       confirmed_block: input.confirmedBlock,
+      confirmed_timestamp: input.confirmedTimestamp ?? null,
       epoch: this.streamEpoch(input.gameId, input.actor),
       preconfirmed_block: input.preconfirmedBlock,
       seq: session.boundary,
