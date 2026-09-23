@@ -2,35 +2,45 @@ import { Data, Effect } from "effect";
 import {
   isPushDeviceId,
   isPushOwner,
-  parseAutomaticPushSource,
+  parseNotificationPayload,
   parsePushRegistration,
+  type PushConfiguration,
 } from "@bibliothecadao/notifications";
 
 import type { IdentityAuth } from "./auth";
+import { vapidKeysOf, type IdentityEnv } from "./env";
 import { json, readBody } from "./http";
 import { PushSubscriptionStore } from "./push-subscription-store";
+import { sendPush } from "./web-push";
 
-const ACTIONS = ["subscribe", "status", "foreground", "revoke"];
+const ACTIONS = ["subscribe", "status", "foreground", "revoke", "test"];
 
 /**
- * POST /api/notifications/push/:action — a device's push subscription for the signed-in account. Sending lives with
- * the notification sources, not here, so GET config reports it off.
+ * GET /api/notifications/push/config and POST /api/notifications/push/:action — a device's push subscription for the
+ * signed-in account. Game alerts are sent by each shard's notifier; direct messages come with chat.
  */
-export function handlePushSubscriptions(request: Request, auth: IdentityAuth, db: D1Database): Promise<Response> {
+export function handlePushSubscriptions(request: Request, auth: IdentityAuth, env: IdentityEnv): Promise<Response> {
   return Effect.runPromise(
-    servePushRequest(request, auth).pipe(
-      Effect.provide(PushSubscriptionStore.layer(db)),
+    servePushRequest(request, auth, env).pipe(
+      Effect.provide(PushSubscriptionStore.layer(env.DB)),
       Effect.catchTag("PushRequestError", (error) => Effect.succeed(json({ error: error.code }, error.status))),
       Effect.catchTag("PushStorageError", () => Effect.succeed(json({ error: "push_storage_unavailable" }, 503))),
     ),
   );
 }
 
-function servePushRequest(request: Request, auth: IdentityAuth) {
+function servePushRequest(request: Request, auth: IdentityAuth, env: IdentityEnv) {
   return Effect.gen(function* () {
     const action = new URL(request.url).pathname.slice("/api/notifications/push/".length);
-    // No push is sent from here; devices can still register state and always revoke themselves.
-    if (action === "config" && request.method === "GET") return json({ enabled: false });
+    if (action === "config" && request.method === "GET") {
+      const configuration: PushConfiguration = {
+        enabled: true,
+        publicKey: env.WEB_PUSH_VAPID_PUBLIC_KEY,
+        gameAlerts: true,
+        directMessages: false,
+      };
+      return json(configuration);
+    }
     if (!ACTIONS.includes(action)) return json({ error: "not_found" }, 404);
     if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
     const input = yield* parsePushRequest(request);
@@ -56,12 +66,10 @@ function servePushRequest(request: Request, auth: IdentityAuth) {
       return json({
         registered: !!subscription,
         directMessages: !!subscription?.directMessagesEnabledAt,
-        automatic:
-          subscription?.gameAlertsEnabledAt && subscription.gameAlertsSource
-            ? parseAutomaticPushSource(subscription.gameAlertsSource)
-            : null,
+        gameAlerts: !!subscription?.gameAlertsEnabledAt,
       });
     }
+    if (action === "test") return json({ status: yield* sendTestPush(env, owner, input.id) });
     if (typeof input.foreground !== "boolean") return json({ error: "invalid_foreground_status" }, 400);
     const found = yield* store.setGameForeground(owner, input.id, input.foreground);
     return found ? json({ foreground: input.foreground }) : json({ error: "subscription_not_found" }, 404);
@@ -92,6 +100,35 @@ function parsePushRequest(request: Request) {
       return body as Record<string, unknown>;
     },
     catch: () => new PushRequestError({ code: "invalid_push_request", status: 400 }),
+  });
+}
+
+/** Server-owned text to the caller's own device, so a player can see a push arrive with the game closed. */
+function sendTestPush(env: IdentityEnv, owner: string, id: string) {
+  return Effect.gen(function* () {
+    const store = yield* PushSubscriptionStore;
+    const device = yield* store.find(owner, id);
+    if (!device) return yield* new PushRequestError({ code: "subscription_not_found", status: 404 });
+    const now = Date.now();
+    const notification = parseNotificationPayload(
+      {
+        version: 1,
+        id: `push-test:${crypto.randomUUID()}`,
+        owner,
+        title: "Realms background notification",
+        body: "This test was sent by the server and can arrive with the game closed.",
+        target: "/",
+        createdAt: now,
+        expiresAt: now + 120_000,
+      },
+      now,
+    );
+    const outcome = yield* Effect.tryPromise({
+      try: () => sendPush(vapidKeysOf(env), device, { version: 1, kind: "test", subscriptionId: id, notification }),
+      catch: () => new PushRequestError({ code: "push_provider_unavailable", status: 502 }),
+    });
+    if (outcome === "expired") yield* store.expire(owner, id);
+    return outcome;
   });
 }
 

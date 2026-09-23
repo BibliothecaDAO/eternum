@@ -83,12 +83,16 @@ jobs:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           IDENTITY_RPC_URL: ${{ secrets.CLIENT_IDENTITY_RPC_URL }}
           DIRECTORY_ADMIN_TOKEN: ${{ secrets.DIRECTORY_ADMIN_TOKEN }}
+          WEB_PUSH_VAPID_PUBLIC_KEY: ${{ secrets.WEB_PUSH_VAPID_PUBLIC_KEY }}
+          WEB_PUSH_VAPID_PRIVATE_KEY: ${{ secrets.WEB_PUSH_VAPID_PRIVATE_KEY }}
+          WEB_PUSH_VAPID_SUBJECT: ${{ secrets.WEB_PUSH_VAPID_SUBJECT }}
         run: |
           set -euo pipefail
-          for name in BETTER_AUTH_SECRET IDENTITY_RPC_URL DIRECTORY_ADMIN_TOKEN; do
+          names="BETTER_AUTH_SECRET IDENTITY_RPC_URL DIRECTORY_ADMIN_TOKEN WEB_PUSH_VAPID_PUBLIC_KEY WEB_PUSH_VAPID_PRIVATE_KEY WEB_PUSH_VAPID_SUBJECT"
+          for name in $names; do
             [ -n "${!name}" ] || { echo "::error::$name is not set for the $TARGET environment"; exit 1; }
           done
-          jq -n 'env | {BETTER_AUTH_SECRET, IDENTITY_RPC_URL, DIRECTORY_ADMIN_TOKEN}' |
+          jq -n --arg names "$names" 'env as $env | $names | split(" ") | map({(.): $env[.]}) | add' |
             pnpm exec wrangler secret bulk --env "$TARGET"
 
       - name: Deploy

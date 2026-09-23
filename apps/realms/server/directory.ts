@@ -1,5 +1,6 @@
 import type { HeraldGameDirectory, HeraldGameDirectoryEntry, ShardManifest } from "@bibliothecadao/eternum/game-sync";
 
+import type { IdentityEnv } from "./env";
 import { json } from "./http";
 
 const SHARD_STATUSES = ["active", "draining", "retired"] as const;
@@ -130,4 +131,15 @@ const readManifestChainId = async (url: string, fetchShard: typeof fetch): Promi
   } catch {
     return null;
   }
+};
+
+/** The directory's cron: every listed shard has a running notifier, and a retired one has none. */
+export const superviseNotifiers = async (db: D1Database, notifiers: IdentityEnv["SHARD_NOTIFIER"]): Promise<void> => {
+  const { results } = await db.prepare('SELECT "url", "chainId", "status" FROM "shards"').all<ListedShard>();
+  await Promise.all(
+    results.map((shard) => {
+      const notifier = notifiers.get(notifiers.idFromName(shard.url));
+      return shard.status === "retired" ? notifier.stop() : notifier.watch({ url: shard.url, chainId: shard.chainId });
+    }),
+  );
 };

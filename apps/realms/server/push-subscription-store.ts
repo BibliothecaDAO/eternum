@@ -1,17 +1,16 @@
 import { Context, Data, Effect, Layer } from "effect";
-import { automaticPushSourceKey, parseAutomaticPushSource, type PushRegistration } from "@bibliothecadao/notifications";
+import type { PushRegistration } from "@bibliothecadao/notifications";
 
 const PUSH_FOREGROUND_LEASE_MS = 60_000;
 const DEVICES_PER_OWNER = 10;
 
-interface PushSubscriptionRow {
+export interface PushSubscriptionRow {
   id: string;
   owner: string;
   endpoint: string;
   p256dh: string;
   auth: string;
   revocationHash: string;
-  gameAlertsSource: string | null;
   gameAlertsEnabledAt: number | null;
   directMessagesEnabledAt: number | null;
   gameForegroundUntil: number | null;
@@ -35,6 +34,26 @@ function createPushSubscriptionStore(db: D1Database) {
           .bind(id, owner)
           .first<PushSubscriptionRow>(),
       ),
+    /** Devices of these accounts that opted in to game alerts. */
+    gameAlertDevices: (owners: readonly string[]) =>
+      storeEffect(async () => {
+        if (owners.length === 0) return [];
+        const { results } = await db
+          .prepare(
+            `SELECT * FROM "notification_push_subscriptions" WHERE "gameAlertsEnabledAt" IS NOT NULL AND "owner" IN (${owners.map(() => "?").join(", ")})`,
+          )
+          .bind(...owners)
+          .all<PushSubscriptionRow>();
+        return results;
+      }),
+    /** A push service reported the endpoint gone. */
+    expire: (owner: string, id: string) =>
+      storeEffect(async () => {
+        await db
+          .prepare('DELETE FROM "notification_push_subscriptions" WHERE "id" = ? AND "owner" = ?')
+          .bind(id, owner)
+          .run();
+      }),
     revoke: (id: string, token: string) =>
       storeEffect(async () => {
         await db
@@ -66,9 +85,9 @@ async function registerSubscription(db: D1Database, input: PushRegistration) {
   const inserted = await db
     .prepare(
       `INSERT INTO "notification_push_subscriptions"
-         ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "gameAlertsSource", "gameAlertsEnabledAt",
-          "directMessagesEnabledAt", "createdAt")
-       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+         ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "gameAlertsEnabledAt", "directMessagesEnabledAt",
+          "createdAt")
+       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?
        WHERE (SELECT count(*) FROM "notification_push_subscriptions" WHERE "owner" = ?) < ?
        ON CONFLICT DO NOTHING RETURNING "id"`,
     )
@@ -79,7 +98,6 @@ async function registerSubscription(db: D1Database, input: PushRegistration) {
       registration.p256dh,
       registration.auth,
       registration.revocationHash,
-      registration.gameAlertsSource,
       registration.gameAlertsEnabledAt,
       registration.directMessagesEnabledAt,
       registration.createdAt,
@@ -101,15 +119,10 @@ async function enableRequestedChannels(
   registration: PushSubscriptionRow,
 ) {
   if (!matchesRegistration(existing, registration)) return "conflict" as const;
-  if (
-    registration.gameAlertsSource &&
-    (!existing.gameAlertsEnabledAt || existing.gameAlertsSource !== registration.gameAlertsSource)
-  ) {
+  if (registration.gameAlertsEnabledAt && !existing.gameAlertsEnabledAt) {
     await db
-      .prepare(
-        'UPDATE "notification_push_subscriptions" SET "gameAlertsEnabledAt" = ?, "gameAlertsSource" = ? WHERE "id" = ?',
-      )
-      .bind(registration.createdAt, registration.gameAlertsSource, existing.id)
+      .prepare('UPDATE "notification_push_subscriptions" SET "gameAlertsEnabledAt" = ? WHERE "id" = ?')
+      .bind(registration.createdAt, existing.id)
       .run();
   }
   if (registration.directMessagesEnabledAt && !existing.directMessagesEnabledAt) {
@@ -130,7 +143,6 @@ async function buildSubscriptionRow(input: PushRegistration): Promise<PushSubscr
     p256dh: input.subscription.keys.p256dh,
     auth: input.subscription.keys.auth,
     revocationHash: await tokenHash(input.token),
-    gameAlertsSource: input.gameAlerts ? automaticPushSourceKey(parseAutomaticPushSource(input.source)) : null,
     gameAlertsEnabledAt: input.gameAlerts ? now : null,
     directMessagesEnabledAt: input.directMessages ? now : null,
     gameForegroundUntil: null,

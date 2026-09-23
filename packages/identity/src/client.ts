@@ -4,7 +4,6 @@ import {
   type NotificationPreferences,
   type PushRegistration,
   type PushConfiguration,
-  type AutomaticPushSource,
 } from "@bibliothecadao/notifications";
 import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage } from "./siws";
@@ -144,7 +143,7 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
     getPushConfiguration: () => pushRequest<PushConfiguration>("config"),
     registerPushSubscription: (input: PushRegistration) => pushRequest<{ id: string }>("subscribe", input),
     getPushSubscriptionStatus: (owner: string, id: string) =>
-      pushRequest<{ registered: boolean; automatic: AutomaticPushSource | null; directMessages?: boolean }>("status", {
+      pushRequest<{ registered: boolean; gameAlerts: boolean; directMessages: boolean }>("status", {
         owner,
         id,
       }),

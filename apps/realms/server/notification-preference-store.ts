@@ -39,7 +39,22 @@ function createNotificationPreferenceStore(db: D1Database) {
       },
       catch: (cause) => new NotificationPreferenceStorageError({ operation: "save", cause }),
     });
-  return { read, save };
+  /** Each account's level; an account that never saved one is off. */
+  const levels = (owners: readonly string[]) =>
+    Effect.tryPromise({
+      try: async () => {
+        if (owners.length === 0) return new Map<string, NotificationLevel>();
+        const { results } = await db
+          .prepare(
+            `SELECT "owner", "level" FROM "notification_preferences" WHERE "owner" IN (${owners.map(() => "?").join(", ")})`,
+          )
+          .bind(...owners)
+          .all<{ owner: string; level: NotificationLevel }>();
+        return new Map(results.map((row) => [row.owner, row.level]));
+      },
+      catch: (cause) => new NotificationPreferenceStorageError({ operation: "read", cause }),
+    });
+  return { read, save, levels };
 }
 
 class NotificationPreferenceStorageError extends Data.TaggedError("NotificationPreferenceStorageError")<{

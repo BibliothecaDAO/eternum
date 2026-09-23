@@ -42,6 +42,9 @@
         "server/worker.ts",
         "server/migrate-box-users.ts"
       ],
+      "ignoreDependencies": [
+        "cloudflare"
+      ],
       "ignore": [
         "dist/**"
       ]

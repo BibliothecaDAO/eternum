@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@better-auth/passkey": "1.5.3",
+    "@block65/webcrypto-web-push": "2.0.0",
     "@realms-world/identity": "workspace:*",
     "@tanstack/react-router": "1.166.2",
     "better-auth": "1.5.3",
@@ -42,6 +43,7 @@
     "wrangler": "4.136.3",
     "@cloudflare/workers-types": "5.20260922.1",
     "@realms-world/guardian": "workspace:*",
-    "@simplewebauthn/server": "13.3.3"
+    "@simplewebauthn/server": "13.3.3",
+    "miniflare": "4.20260730.0"
   }
 }

@@ -1,4 +1,3 @@
-import { automaticPushSourceKey } from "@bibliothecadao/notifications";
 import { useEffect, useRef, useState } from "react";
 import { identityClient } from "@/hooks/context/identity-session";
 import { localNotificationCapability } from "@/pwa/local-notification-client";
@@ -62,13 +61,8 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
     try {
       if (action === "enable") {
         if (!config?.enabled) throw new Error("Background tests are unavailable.");
-        await enablePushNotifications(
-          owner,
-          config.publicKey,
-          config.automatic ?? null,
-          config.directMessages === true,
-        );
-        setDirectMessagesEnabled(config.directMessages === true);
+        await enablePushNotifications(owner, config.publicKey, config.gameAlerts, config.directMessages);
+        setDirectMessagesEnabled(config.directMessages);
       } else {
         await disablePushNotifications(device?.owner ?? owner);
         setDirectMessagesEnabled(false);
@@ -92,14 +86,10 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
         {error}
       </p>
     ) : null;
-  const automatic = config?.enabled ? config.automatic : null;
-  const directMessages = config?.enabled === true && config.directMessages === true;
-  const backgroundAlerts = Boolean(automatic || directMessages);
-  const needsGameAlerts = Boolean(
-    automatic &&
-    (!device?.automatic?.acknowledged ||
-      automaticPushSourceKey(device.automatic) !== automaticPushSourceKey(automatic)),
-  );
+  const gameAlerts = config?.enabled === true && config.gameAlerts;
+  const directMessages = config?.enabled === true && config.directMessages;
+  const backgroundAlerts = gameAlerts || directMessages;
+  const needsGameAlerts = gameAlerts && !device?.automatic?.acknowledged;
   const needsDirectMessages = directMessages && !directMessagesEnabled;
   return (
     <section aria-label="Background notifications" className="space-y-2">
@@ -107,7 +97,7 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
         Background notifications:{" "}
         {device?.state === "active" && device.owner === owner ? "Enabled" : device ? "Cleanup required" : "Off"}.
       </p>
-      <p className={HUD_BODY}>{backgroundNotificationDescription(Boolean(automatic), directMessages)}</p>
+      <p className={HUD_BODY}>{backgroundNotificationDescription(gameAlerts, directMessages)}</p>
       {capability && <p className={HUD_BODY}>{capability}</p>}
       {!owner ? (
         <p className={HUD_BODY}>Sign in to enable background notifications.</p>

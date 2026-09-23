@@ -10,7 +10,7 @@ import { createIdentityAuth } from "./auth";
 import { realmsAccountAddress } from "./devices";
 import type { IdentityEnv } from "./env";
 import { realmsIdOf } from "./realms-id";
-import { routeIdentityRequest } from "./worker";
+import { routeIdentityRequest } from "./routes";
 
 const ORIGIN = "https://staging.realms.party";
 const ACCOUNT_CLASS_HASH = "0x68995feeefffc1647118073e1ff16179f07eb8eed6c8fb03cce73109f5fbacd";
@@ -48,6 +48,10 @@ beforeAll(async () => {
     BETTER_AUTH_SECRET: "identity-test-secret-identity-test-secret",
     IDENTITY_RPC_URL: "http://127.0.0.1:1",
     DIRECTORY_ADMIN_TOKEN: OPERATOR_TOKEN,
+    WEB_PUSH_VAPID_PUBLIC_KEY: "unused",
+    WEB_PUSH_VAPID_PRIVATE_KEY: "unused",
+    WEB_PUSH_VAPID_SUBJECT: "mailto:ops@realms.party",
+    SHARD_NOTIFIER: {} as IdentityEnv["SHARD_NOTIFIER"],
     DB: proxy.env.DB,
     GUARDIAN: createGuardian(GUARDIAN_KEY),
     PUBLIC_RATE_LIMIT: { limit: async () => ({ success: true }) },

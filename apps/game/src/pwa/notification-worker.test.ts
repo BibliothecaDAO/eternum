@@ -118,19 +118,17 @@ it("delivers once across worker restarts, respects foreground activity and stops
   expect(prepared.ok).toBe(true);
   const id = prepared.value.id;
   expect((await restarted.send("activate-push", { id })).ok).toBe(true);
-  const source = { chainId: "0xa1", worldAddress: "0x123" };
   const notification = {
     ...local,
     createdAt: Date.now(),
     id: "story:v1:0xa1:0x123:0x7:0xabc:logical:BattleStory:0x64",
     tag: "thread:one",
   };
-  const envelope = { version: 1, kind: "game", source, subscriptionId: id, notification };
+  const envelope = { version: 1, kind: "game", subscriptionId: id, notification };
   await restarted.push(envelope);
   expect(restarted.registration.showNotification).not.toHaveBeenCalled();
-  expect((await restarted.send("prepare-automatic", { id, source })).ok).toBe(true);
-  expect((await restarted.send("acknowledge-automatic", { id, source })).ok).toBe(true);
-  expect((await restarted.send("deliver", { token, payload: notification })).value).toBe("push-owned");
+  expect((await restarted.send("prepare-automatic", { id })).ok).toBe(true);
+  expect((await restarted.send("acknowledge-automatic", { id })).ok).toBe(true);
   restarted.clients.matchAll.mockResolvedValue([]);
   await restarted.push(envelope);
   await restarted.push(envelope);

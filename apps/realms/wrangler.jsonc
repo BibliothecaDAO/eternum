@@ -9,6 +9,7 @@
   "compatibility_date": "2026-09-15",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ShardNotifier"] }],
   "env": {
     "staging": {
       "name": "realms-identity-staging",
@@ -22,6 +23,8 @@
       "d1_databases": [{ "binding": "DB", "database_name": "realms-identity-staging", "migrations_dir": "migrations" }],
       "ratelimits": [{ "name": "PUBLIC_RATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } }],
       "services": [{ "binding": "GUARDIAN", "service": "realms-guardian-staging" }],
+      "durable_objects": { "bindings": [{ "name": "SHARD_NOTIFIER", "class_name": "ShardNotifier" }] },
+      "triggers": { "crons": ["* * * * *"] },
       "version_metadata": { "binding": "VERSION" },
     },
     "production": {
@@ -38,6 +41,8 @@
       ],
       "ratelimits": [{ "name": "PUBLIC_RATE_LIMIT", "namespace_id": "1002", "simple": { "limit": 30, "period": 60 } }],
       "services": [{ "binding": "GUARDIAN", "service": "realms-guardian" }],
+      "durable_objects": { "bindings": [{ "name": "SHARD_NOTIFIER", "class_name": "ShardNotifier" }] },
+      "triggers": { "crons": ["* * * * *"] },
       "version_metadata": { "binding": "VERSION" },
     },
   },

@@ -4,6 +4,7 @@ import type { DeviceChange, Guardian } from "@realms-world/guardian";
 
 import type { IdentityAuth } from "./auth";
 import { json } from "./http";
+import { recordApprovedAccount } from "./realms-accounts";
 
 const FIELD_PRIME = 2n ** 251n + 17n * 2n ** 192n + 1n;
 
@@ -62,6 +63,7 @@ const approveDeviceChange = (request: Request, { auth, db, guardian, accountClas
       return yield* new DeviceRequestError({ code: "not_your_account", status: 403 });
     }
     const signature = yield* Effect.promise(() => guardian.signDeviceChange(change));
+    if (change.action === "ADD") yield* Effect.promise(() => recordApprovedAccount(db, ownAccount, realmsId));
     return { ...change, signature: [signature.r, signature.s] };
   });
 
