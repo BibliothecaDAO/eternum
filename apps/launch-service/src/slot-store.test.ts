@@ -86,7 +86,13 @@ test("registration and frozen groups survive concurrency, an interrupted freeze 
 test("every tick names the same next slot and a frozen slot is pruned when the next one freezes", async () => {
   const launches = new D1LaunchStore(database.db);
   const slots = new D1SlotStore(database.db);
-  const tick = (now: Date) => Effect.runPromise(runLaunchSchedule(launches, slots, undefined, now));
+  const blitzWindow = {
+    phase: "blitz" as const,
+    startsAt: "2026-10-01T00:00:00.000Z",
+    endsAt: "2026-10-10T00:00:00.000Z",
+  };
+  const calendar = { list: async () => [blitzWindow], set: async () => blitzWindow };
+  const tick = (now: Date) => Effect.runPromise(runLaunchSchedule(launches, slots, calendar, now));
   const now = new Date("2026-10-01T11:30:00Z");
   await Promise.all([tick(now), tick(now), tick(now)]);
   expect((await slots.list()).map(({ name, closesAt }) => ({ name, closesAt }))).toEqual([

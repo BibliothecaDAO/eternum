@@ -95,30 +95,43 @@ test("a launch interrupted while running is resumed, not queued twice", async ()
   expect(await store.list("madara.blitz")).toHaveLength(1);
 });
 
+/** A Frontier season of seventeen weeks from this start, as the calendar would hold it. */
+const season = (startsAt: string) => ({
+  phase: "frontier" as const,
+  startsAt,
+  endsAt: new Date(Date.parse(startsAt) + 17 * 7 * 86_400_000).toISOString(),
+});
+
 test("one Frontier season is created once by every tick and continued like any failed run", async () => {
   const store = new D1LaunchStore(database.db);
   const seasonStart = "2027-01-01T00:00:00.000Z";
-  const queued = await scheduleFrontierSeason(store, seasonStart);
+  const queued = await scheduleFrontierSeason(store, season(seasonStart));
   expect(queued.name).toBe("frontier-1798761600");
-  expect(await scheduleFrontierSeason(store, seasonStart)).toMatchObject({ id: queued.id, status: "queued" });
+  expect(await scheduleFrontierSeason(store, season(seasonStart))).toMatchObject({ id: queued.id, status: "queued" });
   const run = (await store.startNext(Date.now()))!;
-  expect(run.request).toMatchObject({ version: "1", gameStartTime: seasonStart });
+  expect(run.request).toMatchObject({ version: "1", gameStartTime: seasonStart, durationSeconds: 17 * 7 * 86_400 });
   await store.retry(run.id, "rpc down", 60_000);
   // A tick while the season waits to retry must not reset its attempts or its delay.
-  expect(await scheduleFrontierSeason(store, seasonStart)).toMatchObject({ attempts: 1, errorMessage: "rpc down" });
+  expect(await scheduleFrontierSeason(store, season(seasonStart))).toMatchObject({
+    attempts: 1,
+    errorMessage: "rpc down",
+  });
   expect(await store.startNext(Date.now())).toBeNull();
 
   await database.db.prepare("UPDATE launch_runs SET status = 'failed' WHERE id = ?").bind(run.id).run();
-  expect(await scheduleFrontierSeason(store, seasonStart)).toMatchObject({ id: run.id, status: "failed" });
+  expect(await scheduleFrontierSeason(store, season(seasonStart))).toMatchObject({ id: run.id, status: "failed" });
   const continued = await store.enqueue("game", run.request);
   expect(continued).toMatchObject({ name: queued.name, status: "queued", attempts: 0 });
   expect(continued.errorMessage).toBeUndefined();
   const retried = (await store.startNext(Date.now()))!;
   await store.complete(retried.id, frontierSummary(retried.name, seasonStart));
-  expect(await scheduleFrontierSeason(store, seasonStart)).toMatchObject({ id: retried.id, status: "complete" });
+  expect(await scheduleFrontierSeason(store, season(seasonStart))).toMatchObject({
+    id: retried.id,
+    status: "complete",
+  });
   expect(await store.list("madara.frontier")).toHaveLength(1);
 
-  const next = await scheduleFrontierSeason(store, "2027-04-30T00:00:00.000Z");
+  const next = await scheduleFrontierSeason(store, season("2027-04-30T00:00:00.000Z"));
   expect(next.id).not.toBe(queued.id);
   expect((await store.startNext(Date.now()))?.id).toBe(next.id);
 });

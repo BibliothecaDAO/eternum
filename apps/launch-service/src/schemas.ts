@@ -53,17 +53,22 @@ export interface FinalizeGameRequest {
 export type LaunchJobRequest = CreateGameRequest | FinalizeGameRequest;
 export type LaunchKind = "game" | "result";
 
-/** A season is one open-entry game named by its start, so scheduling the same start twice names the same game. */
-export const frontierSeasonRequest = (seasonStart: string): CreateGameRequest => {
-  const start = Date.parse(seasonStart);
-  if (!Number.isSafeInteger(start) || start % 1000 !== 0) {
-    throw new Error("FRONTIER_SEASON_START must be an ISO timestamp on a whole second");
+/**
+ * A season is one open-entry game named by its start, so scheduling the same start twice names the same game. It runs
+ * to the calendar's planned end; the preset's own duration is only a fallback for games created outside the calendar.
+ */
+export const frontierSeasonRequest = (season: { startsAt: string; endsAt: string }): CreateGameRequest => {
+  const start = Date.parse(season.startsAt);
+  const end = Date.parse(season.endsAt);
+  if (!Number.isSafeInteger(start) || start % 1000 !== 0 || !Number.isSafeInteger(end) || end % 1000 !== 0) {
+    throw new Error("A Frontier season starts and ends on a whole second");
   }
   return {
     environment: "madara.frontier",
     version: String(nativePresetIdFor("frontier")) as "1",
     gameName: `frontier-${start / 1000}`,
     gameStartTime: new Date(start).toISOString(),
+    durationSeconds: (end - start) / 1000,
   };
 };
 

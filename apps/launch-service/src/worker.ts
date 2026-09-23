@@ -2,6 +2,7 @@ import { Effect } from "effect";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import { createLaunchApp } from "./app";
 import { createIdentityResolver } from "./auth";
+import { D1CalendarStore } from "./calendar-store";
 import { decodeLaunchEnv, type LaunchEnv } from "./env";
 import { readLaunchShard } from "./executor";
 import { runLaunchSchedule } from "./schedule";
@@ -10,8 +11,8 @@ import { D1LaunchStore } from "./store";
 
 /**
  * The launch Worker, served under the app's /api beside identity: /api/factory/* for launchers and /api/slots/* for
- * players. Its cron tick keeps the Frontier season and the next Blitz slot created, freezes closed slots, and wakes the
- * registrar that executes launches.
+ * players. Its cron tick follows the season calendar: it creates the Frontier season game at its start and the next
+ * Blitz slot inside the Blitz window, freezes closed slots, and wakes the registrar that executes launches.
  */
 export default {
   fetch(request: Request, rawEnv: Record<string, unknown>): Response | Promise<Response> {
@@ -20,7 +21,7 @@ export default {
   async scheduled(_controller: ScheduledController, rawEnv: Record<string, unknown>): Promise<void> {
     const env = decodeLaunchEnv(rawEnv);
     await Effect.runPromise(
-      runLaunchSchedule(new D1LaunchStore(env.DB), new D1SlotStore(env.DB), env.FRONTIER_SEASON_START, new Date()),
+      runLaunchSchedule(new D1LaunchStore(env.DB), new D1SlotStore(env.DB), new D1CalendarStore(env.DB), new Date()),
     );
     await env.REGISTRAR.get(env.REGISTRAR.idFromName("registrar")).wake();
   },
@@ -39,6 +40,7 @@ const launchAppOf = (env: LaunchEnv) =>
     identity: createIdentityResolver(env.BASE_URL, (url, init) => env.IDENTITY.fetch(url, init)),
     store: new D1LaunchStore(env.DB),
     slots: new D1SlotStore(env.DB),
+    calendar: new D1CalendarStore(env.DB),
     playerAccount: async (realmsId) => {
       const { shard } = await readLaunchShard(env.SHARD_URL);
       return realmsAccountAddress(realmsId, shard.accountClassHash, shard.guardianPublicKey);

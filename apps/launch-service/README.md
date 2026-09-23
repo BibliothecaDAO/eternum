@@ -13,7 +13,7 @@ Configuration, per environment (see `wrangler.jsonc` and `.github/workflows/depl
   refused; the ABIs are that release's committed schema.
 - `DEPLOYER_ACCOUNT_ADDRESS` and the secret `DEPLOYER_PRIVATE_KEY` — the registrar writer
 - `LAUNCHER_ALLOWLIST` — comma-separated Starknet addresses; a wildcard is refused
-- `FRONTIER_SEASON_START` — the current Frontier season's start as an ISO UTC time; omit where no Frontier runs
+- the secret `OPERATOR_TOKEN` — the environment's one token for operator automation
 
 Launchers are allowlisted wallets and the operator: automation that presents the environment's one `OPERATOR_TOKEN`
 secret as a bearer token, the same token the identity Worker's directory routes accept. A launcher can also create a
@@ -21,10 +21,17 @@ slot off the timetable (`POST /api/slots {name, closesAt}`) and register gamepla
 (`POST /api/slots/:name/register {accounts}`, at most 96 per call) for harness runs and invited rosters, under the same
 duplicate and close-time rules as a player. A slot freezes at the first cron tick after it closes.
 
-Runs and slots live in D1 (`migrations/`). A cron tick every minute creates the Frontier season named by
-`FRONTIER_SEASON_START` (`frontier-<unix seconds>`) and the next free Blitz slot, freezes a slot whose registration has
-closed into queued games, and wakes the registrar. Slots close daily at 11:00 and 20:00 UTC and are named by their
-closing time, so every tick names the same slot; a frozen slot is pruned when the next one freezes.
+Runs, slots and the season calendar live in D1 (`migrations/`). The calendar holds each phase's planned start and end,
+the Frontier season and the Blitz window; launchers edit it on the launcher screen (`PUT /api/factory/calendar/:phase`)
+and the operator token can set it for automation. A phase that has not started moves freely; a running phase keeps its
+start, and a running Frontier season also keeps its end.
+
+A cron tick every minute follows the calendar. Once the Frontier season has started it creates the season game
+(`frontier-<unix seconds>`), running to the season's planned end; the Frontier preset's own duration is only a fallback
+for games created outside the calendar. It creates the next free Blitz slot only when that slot closes inside the Blitz
+window, freezes a slot whose registration has closed into queued games, and wakes the registrar. Slots close daily at
+11:00 and 20:00 UTC and are named by their closing time, so every tick names the same slot; a frozen slot is pruned when
+the next one freezes.
 
 The registrar is one Durable Object that executes launches one at a time, because they all sign with one deployer
 account. Each alarm runs the next due launch to its end. A launch interrupted by a restart is resumed on the next alarm

@@ -59,7 +59,18 @@ beforeAll(async () => {
 
 afterAll(() => mf?.dispose());
 
-it("ticks the schedule, queues an authorized launch and records the registrar's attempt", async () => {
+it("opens a Blitz window, ticks the schedule, queues an authorized launch and records the registrar's attempt", async () => {
+  const window = {
+    // A second ahead: a phase cannot start in the past, and the next slot must close after the window opens.
+    startsAt: new Date(Math.ceil(Date.now() / 1_000) * 1_000 + 1_000).toISOString(),
+    endsAt: new Date(Date.now() + 3 * 86_400_000).toISOString(),
+  };
+  const opened = await mf.dispatchFetch(`${ORIGIN}/api/factory/calendar/blitz`, {
+    method: "PUT",
+    headers: { origin: ORIGIN, authorization: "Bearer operator-test-token", "content-type": "application/json" },
+    body: JSON.stringify(window),
+  });
+  expect(opened.status).toBe(200);
   await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
   const slots = (await (await mf.dispatchFetch(`${ORIGIN}/api/slots`)).json()) as { slots: { name: string }[] };
   expect(slots.slots.map(({ name }) => name)).toEqual([expect.stringMatching(/^blitz-\d{8}-(11|20)00$/)]);

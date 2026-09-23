@@ -4,7 +4,7 @@ name: Deploy Workers
 # the native branches; production deploys only by dispatch, at the cutover. Each environment has its own D1 databases
 # and secrets. The guardian Worker is deployed by the owner alone and is not listed here. The launch Worker targets the
 # shard its environment's LAUNCH_SHARD_URL names (the shard's Herald, whose /manifest says the rest), with
-# LAUNCH_DEPLOYER_ACCOUNT_ADDRESS, LAUNCHER_ALLOWLIST and, where Frontier runs, FRONTIER_SEASON_START, and signs with its
+# LAUNCH_DEPLOYER_ACCOUNT_ADDRESS and LAUNCHER_ALLOWLIST, and signs with its
 # LAUNCH_DEPLOYER_PRIVATE_KEY secret. Both Workers accept the environment's one OPERATOR_TOKEN secret from operator
 # automation.
 on:
@@ -135,7 +135,6 @@ jobs:
           SHARD_URL: ${{ vars.LAUNCH_SHARD_URL }}
           DEPLOYER_ACCOUNT_ADDRESS: ${{ vars.LAUNCH_DEPLOYER_ACCOUNT_ADDRESS }}
           LAUNCHER_ALLOWLIST: ${{ vars.LAUNCHER_ALLOWLIST }}
-          FRONTIER_SEASON_START: ${{ vars.FRONTIER_SEASON_START }}
         run: |
           set -euo pipefail
           args=()
@@ -143,7 +142,6 @@ jobs:
             [ -n "${!name}" ] || { echo "::error::the $TARGET environment has no variable for $name"; exit 1; }
             args+=(--var "$name:${!name}")
           done
-          if [ -n "$FRONTIER_SEASON_START" ]; then args+=(--var "FRONTIER_SEASON_START:$FRONTIER_SEASON_START"); fi
           pnpm exec wrangler deploy --env "$TARGET" "${args[@]}"
 
       # The deploy record names the Worker's route pattern and the version it deployed; the route must answer its health

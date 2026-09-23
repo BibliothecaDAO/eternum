@@ -18,8 +18,6 @@ const LaunchVars = Schema.Struct({
   DEPLOYER_PRIVATE_KEY: Schema.NonEmptyString,
   /** The environment's one operator token, which operator automation presents as a launcher. */
   OPERATOR_TOKEN: Schema.NonEmptyString,
-  /** The current Frontier season's start, as an ISO UTC time; absent on a shard that hosts no Frontier. */
-  FRONTIER_SEASON_START: Schema.optional(Schema.String),
 });
 
 type LaunchVars = Schema.Schema.Type<typeof LaunchVars>;

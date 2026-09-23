@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createLaunchApp } from "./app";
 import { scheduleFrontierSeason } from "./schedule";
 import type { IdentityResolver } from "./auth";
+import { D1CalendarStore } from "./calendar-store";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
 import { createLaunchTestDatabase } from "./test-database";
@@ -45,6 +46,7 @@ const createApp = (
       identity: resolver,
       store,
       slots,
+      calendar: new D1CalendarStore(database.db),
       playerAccount,
     }),
     store,
@@ -135,6 +137,28 @@ describe("launcher rosters and off-timetable slots", () => {
     const late = await app.request(post("/api/slots/campaign-1/register", { accounts: ["0xb09"] }));
     expect(late.status).toBe(409);
     expect(await late.json()).toEqual({ error: "Registration is closed" });
+  });
+
+  test("launchers and the operator set the season calendar, which anyone reads", async () => {
+    const operator = createApp(signedOut);
+    const put = (body: unknown, auth: { cookie?: string; token?: string }) =>
+      new Request("https://play.realms.party/api/factory/calendar/frontier", {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+          ...(auth.cookie ? { origin: ALLOWED_ORIGIN, cookie: auth.cookie } : {}),
+          ...(auth.token ? { authorization: `Bearer ${auth.token}` } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+    const season = { startsAt: "2099-01-01T00:00:00.000Z", endsAt: "2099-05-01T00:00:00.000Z" };
+    expect((await operator.app.request(put(season, { token: OPERATOR_TOKEN }))).status).toBe(200);
+    const backwards = { startsAt: season.endsAt, endsAt: season.startsAt };
+    expect((await operator.app.request(put(backwards, { token: OPERATOR_TOKEN }))).status).toBe(409);
+    const player = createApp(signedIn());
+    expect((await player.app.request(put(season, { cookie: "session=valid" }))).status).toBe(403);
+    const read = await player.app.request("https://play.realms.party/api/factory/calendar");
+    expect(await read.json()).toEqual({ phases: [{ phase: "frontier", ...season }] });
   });
 
   test("the operator token acts as a launcher, and nobody else registers accounts or creates slots", async () => {
@@ -264,7 +288,11 @@ describe("launch service authorization", () => {
 
   test("names a failed Frontier season in health until a launcher continues it", async () => {
     const { app, store } = createApp(signedOut);
-    const season = await scheduleFrontierSeason(store, "2027-01-01T00:00:00.000Z");
+    const season = await scheduleFrontierSeason(store, {
+      phase: "frontier",
+      startsAt: "2027-01-01T00:00:00.000Z",
+      endsAt: "2027-05-01T00:00:00.000Z",
+    });
     const started = (await store.startNext(Date.now()))!;
     await store.fail(started.id, "rpc down");
     const failedRuns = async () =>

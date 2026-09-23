@@ -4,6 +4,8 @@ import { Hono, type Context } from "hono";
 import { logger } from "hono/logger";
 import { requireIdentity, requireLauncher, type IdentityResolver, type LaunchAccess, type LaunchAppEnv } from "./auth";
 import { createSlotRoutes } from "./slot-routes";
+import type { CalendarStore } from "./calendar";
+import { createCalendarRoutes } from "./calendar-routes";
 import type { SlotStore } from "./slots";
 import { toFactoryRunRecord, type LaunchRun } from "./model";
 import { CreateGameRequestSchema, type LaunchJobRequest, type LaunchKind } from "./schemas";
@@ -16,6 +18,7 @@ interface LaunchAppDependencies {
   identity: IdentityResolver;
   store: LaunchServiceStore;
   slots: SlotStore;
+  calendar: CalendarStore;
   /** The gameplay account a Realms account has on the shard slots launch on. */
   playerAccount: (realmsId: string) => Promise<string>;
 }
@@ -76,6 +79,7 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   app.use("*", logger());
   app.use("/api/*", requireIdentity(dependencies.identity, dependencies.config));
   app.use("/api/factory/*", requireLauncher(dependencies.config));
+  app.route("/api/factory/calendar", createCalendarRoutes(dependencies.calendar));
   app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.playerAccount, dependencies.config));
 
   // A failed launch stays failed until a launcher continues it, a Frontier season included: the schedule creates the

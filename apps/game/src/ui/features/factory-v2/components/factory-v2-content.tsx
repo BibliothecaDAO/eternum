@@ -1,7 +1,16 @@
 import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { createEternumGame, fetchFactoryRuns, fetchPlaytestSlots, retryFactoryRun } from "../api/factory-worker";
+import {
+  createEternumGame,
+  fetchFactoryRuns,
+  fetchPlaytestSlots,
+  fetchSeasonCalendar,
+  retryFactoryRun,
+  saveSeasonPhase,
+  type SeasonPhase,
+  type SeasonPhaseName,
+} from "../api/factory-worker";
 import { FACTORY_GAME_LIST_REFRESH_EVENT } from "../game-list-refresh-event";
 
 const inputStyle = "w-full rounded border border-gold/30 bg-black/40 px-3 py-2 text-gold";
@@ -49,8 +58,8 @@ export const FactoryV2Content = () => {
     <section className="space-y-5 rounded-2xl border border-gold/20 bg-black/60 p-5 text-gold">
       <h2 className="font-cinzel text-xl">Schedule play</h2>
       <p className="text-sm text-gold/70">
-        Free Blitz slots open on the daily timetable and form games of up to 24 players on their own. Eternum games are
-        scheduled here.
+        The season calendar decides when Frontier runs and when free Blitz slots open: slots follow the daily timetable
+        inside the Blitz window and form games of up to 24 players on their own. Eternum games are scheduled here.
       </p>
       {status !== "signed-in" ? (
         <button className={buttonStyle} onClick={() => signIn()}>
@@ -90,6 +99,7 @@ export const FactoryV2Content = () => {
         </p>
       )}
       {notice && <p role="status">{notice}</p>}
+      <SeasonCalendar canEdit={status === "signed-in"} />
       {slots.data?.slots
         .filter((slot) => !slot.frozenAt)
         .map((slot) => (
@@ -135,5 +145,91 @@ export const FactoryV2Content = () => {
         </article>
       ))}
     </section>
+  );
+};
+
+const CALENDAR_PHASES: { phase: SeasonPhaseName; title: string }[] = [
+  { phase: "frontier", title: "Frontier season" },
+  { phase: "blitz", title: "Blitz window" },
+];
+
+/** The season calendar: each phase's planned start and end. A running Frontier season's dates are fixed. */
+const SeasonCalendar = ({ canEdit }: { canEdit: boolean }) => {
+  const queryClient = useQueryClient();
+  const calendar = useQuery({ queryKey: ["seasonCalendar"], queryFn: fetchSeasonCalendar });
+  const save = useMutation({
+    mutationFn: ({ phase, startsAt, endsAt }: SeasonPhase) => saveSeasonPhase(phase, startsAt, endsAt),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["seasonCalendar"] }),
+  });
+  return (
+    <div className="space-y-3 border-t border-gold/20 pt-3">
+      <h3 className="font-cinzel text-lg">Season calendar</h3>
+      {CALENDAR_PHASES.map(({ phase, title }) => (
+        <CalendarPhase
+          key={`${phase}:${calendar.dataUpdatedAt}`}
+          title={title}
+          current={calendar.data?.phases.find((entry) => entry.phase === phase)}
+          canEdit={canEdit}
+          saving={save.isPending}
+          onSave={(startsAt, endsAt) => save.mutate({ phase, startsAt, endsAt })}
+        />
+      ))}
+      {save.error && (
+        <p role="alert" className="text-red-400">
+          {save.error.message}
+        </p>
+      )}
+    </div>
+  );
+};
+
+/** An ISO instant as a datetime-local input's value, in the launcher's own time zone. */
+const toLocalInput = (iso: string | undefined) =>
+  iso ? new Date(Date.parse(iso) - new Date(iso).getTimezoneOffset() * 60_000).toISOString().slice(0, 16) : "";
+
+const CalendarPhase = (props: {
+  title: string;
+  current: SeasonPhase | undefined;
+  canEdit: boolean;
+  saving: boolean;
+  onSave: (startsAt: string, endsAt: string) => void;
+}) => {
+  const [start, setStart] = useState(toLocalInput(props.current?.startsAt));
+  const [end, setEnd] = useState(toLocalInput(props.current?.endsAt));
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    props.onSave(new Date(start).toISOString(), new Date(end).toISOString());
+  };
+  return (
+    <form onSubmit={submit} className="grid max-w-xl gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+      <p className="sm:col-span-3">{props.title}</p>
+      <label className="text-sm">
+        Starts (local time)
+        <input
+          className={inputStyle}
+          required
+          type="datetime-local"
+          value={start}
+          onChange={(e) => setStart(e.target.value)}
+          disabled={!props.canEdit}
+        />
+      </label>
+      <label className="text-sm">
+        Ends (local time)
+        <input
+          className={inputStyle}
+          required
+          type="datetime-local"
+          value={end}
+          onChange={(e) => setEnd(e.target.value)}
+          disabled={!props.canEdit}
+        />
+      </label>
+      {props.canEdit && (
+        <button className={buttonStyle} disabled={props.saving}>
+          Save
+        </button>
+      )}
+    </form>
   );
 };
