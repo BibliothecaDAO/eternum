@@ -15,6 +15,12 @@ const NAV = [
   { to: "/account", label: "Account", end: false },
 ] as const;
 
+const FOOTER_LINKS = [
+  { to: "/scroll", label: "Scroll" },
+  { to: "/terms", label: "Terms" },
+  { to: "/privacy", label: "Privacy" },
+] as const;
+
 /**
  * The app shell: every screen outside a game. It carries no three.js and no game asset; a game loads only under
  * `/g/:chain/:game`.
@@ -66,6 +72,13 @@ export const AppShell = () => {
               ? " · unreachable"
               : ""}
         </span>
+        <nav aria-label="About" className="flex gap-4">
+          {FOOTER_LINKS.map((item) => (
+            <NavLink key={item.to} to={item.to} className="hover:text-gold">
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
         <span className="ml-auto">{env.VITE_PUBLIC_GAME_VERSION || "dev"}</span>
       </footer>
     </div>

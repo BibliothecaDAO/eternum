@@ -32,3 +32,11 @@
   Cache-Control: no-cache
 /news
   Cache-Control: no-cache
+/scroll
+  Cache-Control: no-cache
+/scroll/*
+  Cache-Control: no-cache
+/terms
+  Cache-Control: no-cache
+/privacy
+  Cache-Control: no-cache

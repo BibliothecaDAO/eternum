@@ -4,8 +4,12 @@
 /account / 200
 /learn / 200
 /news / 200
+/scroll / 200
+/terms / 200
+/privacy / 200
 /factory / 200
 /p/* / 200
+/scroll/* / 200
 /g/* / 200
 /lab/* / 200
 /debug/* / 200

@@ -23,7 +23,7 @@ import { seo } from "@/utils/seo";
 import { AppKitProvider } from "@/providers/ethereum";
 
 const THEME_STORAGE_KEY = "vite-ui-theme";
-const SITE_ROUTE_PREFIXES = ["/blitz", "/eternum", "/games", "/scroll", "/terms", "/privacy"];
+const SITE_ROUTE_PREFIXES = ["/blitz", "/eternum", "/games"];
 const TanStackRouterDevtools = import.meta.env.DEV
   ? lazy(() =>
       import("@tanstack/react-router-devtools").then((mod) => ({

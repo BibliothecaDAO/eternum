@@ -524,18 +524,27 @@ importers:
       globals:
         specifier: ^15.9.0
         version: 15.15.0
+      gray-matter:
+        specifier: ^4.0.3
+        version: 4.0.3
       jsdom:
         specifier: ^28.0.0
         version: 28.1.0(@noble/hashes@2.3.0)
       leva:
         specifier: ^0.9.35
         version: 0.9.36(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      marked:
+        specifier: ^17.0.2
+        version: 17.0.6
       meshoptimizer:
         specifier: ^1.1.1
         version: 1.1.1
       rollup-plugin-visualizer:
         specifier: ^6.0.3
         version: 6.0.5(rolldown@1.2.5)(rollup@2.79.2)
+      sanitize-html:
+        specifier: ^2.17.0
+        version: 2.17.7
       typescript-eslint:
         specifier: ^8.53.1
         version: 8.56.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3)
@@ -1054,9 +1063,6 @@ importers:
       framer-motion:
         specifier: ^11.18.2
         version: 11.18.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      gray-matter:
-        specifier: ^4.0.3
-        version: 4.0.3
       gsap:
         specifier: ^3.14.2
         version: 3.14.2
@@ -1066,9 +1072,6 @@ importers:
       lucide-react:
         specifier: 0.563.0
         version: 0.563.0(react@19.2.8)
-      marked:
-        specifier: ^17.0.2
-        version: 17.0.6
       motion:
         specifier: ^12.0.5
         version: 12.43.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -1105,9 +1108,6 @@ importers:
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
-      sanitize-html:
-        specifier: ^2.17.0
-        version: 2.17.7
       simplex-noise:
         specifier: ^4.0.3
         version: 4.0.3

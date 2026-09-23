@@ -48,6 +48,11 @@ const DebugWorldFxGymView = lazy(() =>
 const GraphicsLabView = lazy(() =>
   import("./ui/features/debug/graphics-lab-view").then((module) => ({ default: module.GraphicsLabView })),
 );
+// Reading matter loads on demand, so the cold path carries no post or legal text.
+const ScrollIndexPage = lazy(() => import("./shell/scroll").then((module) => ({ default: module.ScrollIndexPage })));
+const ScrollPostPage = lazy(() => import("./shell/scroll").then((module) => ({ default: module.ScrollPostPage })));
+const TermsPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.TermsPage })));
+const PrivacyPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.PrivacyPage })));
 const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({ default: module.GameClientApp })));
 
 const AppFallback = () => <div className="min-h-screen bg-black" />;
@@ -77,6 +82,38 @@ function App() {
             <Route path="p/:address" element={<PlayerPage />} />
             <Route path="learn" element={<LearnPage />} />
             <Route path="news" element={<NewsPage />} />
+            <Route
+              path="scroll"
+              element={
+                <LazyRoute>
+                  <ScrollIndexPage />
+                </LazyRoute>
+              }
+            />
+            <Route
+              path="scroll/:slug"
+              element={
+                <LazyRoute>
+                  <ScrollPostPage />
+                </LazyRoute>
+              }
+            />
+            <Route
+              path="terms"
+              element={
+                <LazyRoute>
+                  <TermsPage />
+                </LazyRoute>
+              }
+            />
+            <Route
+              path="privacy"
+              element={
+                <LazyRoute>
+                  <PrivacyPage />
+                </LazyRoute>
+              }
+            />
             <Route path="factory" element={<FactoryPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>

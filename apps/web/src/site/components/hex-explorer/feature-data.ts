@@ -145,7 +145,7 @@ export const FEATURE_HEXES: FeatureHexData[] = [
     label: "The Scroll Archive",
     description:
       "Every battle, every trade, every hex conquered — permanently inscribed on Starknet. The Realms remember what players forget.",
-    link: "/scroll",
+    link: "https://play.realms.party/scroll",
   },
 ];
 

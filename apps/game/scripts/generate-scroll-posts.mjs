@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// The scroll: markdown posts under content/scroll, rendered to safe HTML once at build so the shell serves them
+// as plain data. Run from apps/game (pnpm build does, as prebuild).
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -10,7 +12,7 @@ import { z } from "zod";
 
 const rootDir = process.cwd();
 const contentDir = path.join(rootDir, "content", "scroll");
-const outputDir = path.join(rootDir, "src", "site", "generated");
+const outputDir = path.join(rootDir, "src", "shell", "generated");
 const outputFile = path.join(outputDir, "scroll-posts.ts");
 
 const frontmatterSchema = z.object({
