@@ -84,7 +84,7 @@ import { ProductionModal } from "@/ui/features/settlement";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { playerStructuresView, readFactView, watchFactView } from "@/sync/fact-views";
-import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
+import type { GameClientSetup as SetupResult, NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
   ActionType,
   type BuildingTiles,
@@ -93,9 +93,9 @@ import {
   configManager,
   getRealmInfo,
   getStructureStage,
-  getTileAt,
   DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
+import { requireActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import {
   BUILDINGS_CENTER,
   BiomeType,
@@ -583,11 +583,10 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     this.startLocalAssets();
-    this.selectRouteStructure(contractPosition);
+    const structure = this.selectRouteStructure(contractPosition);
     this.isEntered = true;
     this.bootstrapSceneOwnership();
 
-    const { col, row } = routeWorldPosition;
     const realmKey = `${contractPosition.col},${contractPosition.row}`;
     const realmChanged = !this.isInitialized || this.lastRealmKey !== realmKey;
 
@@ -631,8 +630,9 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingUpdateUnsubscribe?.();
 
       // subscribe to building updates (create and destroy)
+      // Buildings are keyed by the structure's own coordinate; a Frontier realm's differs from the hex it stands on.
       this.buildingUpdateUnsubscribe = this.worldUpdateListener.Buildings.onBuildingUpdate(
-        { col: this.centerColRow[0], row: this.centerColRow[1] },
+        { col: structure.base.coord_x, row: structure.base.coord_y },
         (update: BuildingSystemUpdate) => this.handleBuildingUpdate(update, realmGeneration),
       );
 
@@ -657,10 +657,10 @@ export default class HexceptionScene extends HexagonScene {
       count: 4, // Moderate number of bolts for hex view
     });
 
-    // select center hex
+    // select center hex; its outer hex is the building key, the structure's own coordinate
     this.state.setSelectedBuildingHex({
-      outerCol: col,
-      outerRow: row,
+      outerCol: structure.base.coord_x,
+      outerRow: structure.base.coord_y,
       innerCol: BUILDINGS_CENTER[0],
       innerRow: BUILDINGS_CENTER[1],
     });
@@ -1078,13 +1078,18 @@ export default class HexceptionScene extends HexagonScene {
     });
   }
 
-  private selectRouteStructure(position: HexPosition): void {
-    const tile = getTileAt(this.game.store, DEFAULT_COORD_ALT, position.col, position.row);
-    const structure = tile?.occupier_is_structure
-      ? this.game.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: tile.occupier_id })
+  /** The projection knows what stands on a hex, including a Frontier realm raised on a site with no tile of its own. */
+  private selectRouteStructure(position: HexPosition): NativeRows["Structure"] {
+    const standing = requireActiveGameSyncRuntime()
+      .requireWorldSpatialProjection()
+      .getStructuresAtHex({ alt: DEFAULT_COORD_ALT, col: position.col, row: position.row })
+      .find((entry) => entry.entityId !== null);
+    const structure = standing?.entityId
+      ? this.game.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: standing.entityId })
       : undefined;
     if (!structure) throw new Error(`No structure is available at local route ${position.col},${position.row}`);
     useUIStore.getState().setStructureEntityId(structure.entity_id, { worldMapPosition: position });
+    return structure;
   }
 
   private applyAmbienceAppearance(): void {

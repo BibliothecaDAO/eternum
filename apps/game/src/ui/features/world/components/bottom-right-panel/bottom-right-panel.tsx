@@ -53,7 +53,7 @@ import { resolveRealmHasAvailableBuildingTile } from "@/ui/features/settlement/c
 import { requireActiveGameClient } from "@/sync/active-game-client";
 
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, MINIMAP_SIZE } from "./constants";
-import { HexMinimap, normalizeMinimapTile, type MinimapTile } from "./hex-minimap";
+import { HexMinimap, readMinimapTiles, type MinimapTile } from "./hex-minimap";
 
 const compactResourceFormatter = new Intl.NumberFormat("en-US", {
   notation: "compact",
@@ -757,23 +757,17 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
     }
 
     const readTiles = () => {
-      setTiles(
-        projection.getTiles(mapLayer).map((tile) =>
-          normalizeMinimapTile({
-            col: tile.hexCoords.col,
-            row: tile.hexCoords.row,
-            biome: tile.biome,
-            occupier_id: tile.occupierId.toString(),
-            occupier_type: tile.occupierType,
-            occupier_is_structure: tile.occupierIsStructure,
-          }),
-        ),
-      );
+      setTiles(readMinimapTiles(projection, mapLayer));
       setIsLoading(false);
     };
 
     readTiles();
-    return projection.subscribeTiles(readTiles);
+    const stopTiles = projection.subscribeTiles(readTiles);
+    const stopStructures = projection.subscribeStructures(readTiles);
+    return () => {
+      stopTiles();
+      stopStructures();
+    };
   }, [mapLayer]);
 
   return (

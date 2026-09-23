@@ -14,7 +14,8 @@ import {
   getProducedResource,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { DEFAULT_COORD_ALT, FELT_CENTER, getTileAt } from "..";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { DEFAULT_COORD_ALT } from "..";
 import { configManager } from "./config-manager";
 
 const BUILDING_SLOT_COORDINATES = [
@@ -37,44 +38,34 @@ const isOccupiedSpaceError = (error: unknown): boolean =>
   extractErrorMessage(error).toLowerCase().includes(OCCUPIED_SPACE_REASON);
 
 export class TileManager {
-  private col: number;
-  private row: number;
-  private FELT_CENTER: number;
+  private readonly col: number;
+  private readonly row: number;
+  private readonly alt: boolean;
 
-  constructor(
+  private constructor(
     private readonly store: NativeFactStore,
     private readonly systemCalls: SystemCalls,
-    hexCoords: HexPosition,
-    private readonly alt = false,
+    private readonly structure: NativeRows["Structure"],
     private readonly gameId = configManager.getActiveGameId(),
   ) {
-    this.col = hexCoords.col;
-    this.row = hexCoords.row;
-    this.FELT_CENTER = FELT_CENTER();
+    // The structure's own coordinate keys its buildings, even where the map shows it elsewhere (a Frontier realm).
+    this.col = structure.base.coord_x;
+    this.row = structure.base.coord_y;
+    this.alt = structure.base.alt;
   }
 
-  /** Bound to where the structure stands, so callers name the structure instead of plumbing its hex. */
+  /** Bound to the structure, so callers name the structure instead of plumbing its hex. */
   static forStructure(store: NativeFactStore, systemCalls: SystemCalls, structureEntityId: ID): TileManager {
     const structure = store.require("Structure", {
       game_id: configManager.getActiveGameId(),
       entity_id: structureEntityId,
     });
-    return new TileManager(
-      store,
-      systemCalls,
-      { col: structure.base.coord_x, row: structure.base.coord_y },
-      structure.base.alt,
-    );
+    return new TileManager(store, systemCalls, structure);
   }
 
   getHexCoords = () => {
     return { col: this.col, row: this.row };
   };
-
-  setTile(hexCoords: HexPosition) {
-    this.col = hexCoords.col + this.FELT_CENTER;
-    this.row = hexCoords.row + this.FELT_CENTER;
-  }
 
   getRealmLevel = (realmEntityId: number): RealmLevels => {
     const structure = this.store.require("Structure", { game_id: this.gameId, entity_id: realmEntityId });
@@ -123,17 +114,7 @@ export class TileManager {
     return building !== undefined && building.category !== BuildingType.None;
   };
 
-  structureType = () => {
-    const tile = getTileAt(this.store, this.alt, this.col, this.row, this.gameId);
-
-    if (tile?.occupier_is_structure) {
-      const structure = this.store.get("Structure", { game_id: this.gameId, entity_id: tile.occupier_id });
-      if (structure) {
-        let category = structure.base.category;
-        return category as StructureType;
-      }
-    }
-  };
+  structureType = () => this.structure.base.category as StructureType;
 
   placeBuilding = async (
     signer: GameplayAccount,

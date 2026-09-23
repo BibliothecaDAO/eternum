@@ -14,6 +14,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { HexPosition, StructureType, TileOccupier, getMinePresentation } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
+import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 
 export interface MinimapTile {
   col: number;
@@ -25,7 +26,7 @@ export interface MinimapTile {
   mineKind?: number;
 }
 
-export const normalizeMinimapTile = (tile: MinimapTile): MinimapTile => ({
+const normalizeMinimapTile = (tile: MinimapTile): MinimapTile => ({
   mineKind: tile.mineKind,
   col: Number(tile.col),
   row: Number(tile.row),
@@ -34,6 +35,38 @@ export const normalizeMinimapTile = (tile: MinimapTile): MinimapTile => ({
   occupier_type: tile.occupier_type !== undefined ? Number(tile.occupier_type) : undefined,
   occupier_is_structure: Boolean(tile.occupier_is_structure),
 });
+
+/**
+ * Tiles give the minimap its biomes; what stands on a hex comes from the projection's structure index, which also
+ * places a Frontier realm on the site it is raised on, where no tile carries it.
+ */
+export const readMinimapTiles = (
+  projection: Pick<WorldSpatialProjection, "getTiles" | "getStructures">,
+  alt: boolean,
+): MinimapTile[] => {
+  const tilesByHex = new Map<string, MinimapTile>();
+  for (const tile of projection.getTiles(alt)) {
+    tilesByHex.set(`${tile.hexCoords.col}:${tile.hexCoords.row}`, {
+      col: tile.hexCoords.col,
+      row: tile.hexCoords.row,
+      biome: tile.biome,
+      occupier_id: tile.occupierId.toString(),
+      occupier_type: tile.occupierType,
+      occupier_is_structure: tile.occupierIsStructure,
+    });
+  }
+  for (const structure of projection.getStructures(alt)) {
+    if (structure.entityId === null) continue;
+    const key = `${structure.hexCoords.col}:${structure.hexCoords.row}`;
+    tilesByHex.set(key, {
+      ...(tilesByHex.get(key) ?? { col: structure.hexCoords.col, row: structure.hexCoords.row }),
+      occupier_id: structure.entityId.toString(),
+      occupier_type: structure.occupierType,
+      occupier_is_structure: true,
+    });
+  }
+  return [...tilesByHex.values()].map(normalizeMinimapTile);
+};
 
 const normalizeEntityId = (value: unknown): string | null => {
   if (value === null || value === undefined) return null;
