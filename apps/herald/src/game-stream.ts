@@ -104,6 +104,7 @@ export class GameStreamHub {
   }
 
   public attach(input: AttachInput): GameStreamSession {
+    const existed = this.stateOf(input.gameId, input.actor) !== undefined;
     const state = this.game(input);
     const session: GameStreamSession = {
       actor: input.actor,
@@ -120,6 +121,8 @@ export class GameStreamHub {
       session.overlay = input.overlay();
     } catch (error) {
       this.leave(session);
+      // A stream state this attach created serves nobody once the attach fails, so a refusal leaves nothing behind.
+      if (!existed && state.subscribers.size === 0) this.forget(state);
       throw error;
     }
     this.send(session, {
@@ -239,7 +242,7 @@ export class GameStreamHub {
         projections = state.project ? state.project(body) : [body];
       } catch (error) {
         // One stream that cannot be served ends by name; the publish to every other stream goes on.
-        this.end(game, state, error);
+        this.end(state, error);
         continue;
       }
       for (const projected of projections) {
@@ -255,7 +258,7 @@ export class GameStreamHub {
   }
 
   /** Drops a stream state and closes its subscribers with the reason, as a failed attach is closed. */
-  private end(game: GameStreams, state: GameStreamState, error: unknown): void {
+  private end(state: GameStreamState, error: unknown): void {
     const finalized = error instanceof GameFinalizedError;
     const reason = finalized
       ? "game_finalized"
@@ -263,9 +266,7 @@ export class GameStreamHub {
     this.log.info(
       JSON.stringify({ event: "herald_stream_ended", gameId: state.gameId, actor: state.actor ?? null, reason }),
     );
-    game.states.delete(this.streamKey(state.gameId, state.actor));
-    game.unindexed.delete(state);
-    this.unindex(game, state);
+    this.forget(state);
     for (const subscriber of state.subscribers)
       subscriber.socket.close?.(finalized ? HERALD_GAME_FINALIZED_CLOSE : 1011, reason);
   }
@@ -283,13 +284,18 @@ export class GameStreamHub {
 
   /** The game's states, less those nobody can resume any more. */
   private currentStates(game: GameStreams): GameStreamState[] {
-    for (const [key, state] of game.states) {
-      if (!isAbandoned(state)) continue;
-      game.states.delete(key);
-      game.unindexed.delete(state);
-      this.unindex(game, state);
-    }
+    for (const state of game.states.values()) if (isAbandoned(state)) this.forget(state);
     return [...game.states.values()];
+  }
+
+  /** Drops a stream state, its keys, and its game's entry once the game has no stream left. */
+  private forget(state: GameStreamState): void {
+    const game = this.games.get(state.gameId);
+    if (!game) return;
+    game.states.delete(this.streamKey(state.gameId, state.actor));
+    game.unindexed.delete(state);
+    this.unindex(game, state);
+    if (game.states.size === 0) this.games.delete(state.gameId);
   }
 
   private index(game: GameStreams, state: GameStreamState): void {

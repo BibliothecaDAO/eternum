@@ -244,4 +244,33 @@ describe("GameStreamHub", () => {
     expect(sockets["0x1"].close).toHaveBeenCalledWith(HERALD_GAME_FINALIZED_CLOSE, "game_finalized");
     expect(sockets["0x2"].messages.at(-1)).toMatchObject({ type: "head", block: 14 });
   });
+  it("leaves no stream state behind when an attach is refused", () => {
+    const hub = new GameStreamHub("epoch-a", { info: vi.fn() });
+    const project = vi.fn((body) => [body]);
+    const attach = (snapshot: () => GameSnapshot) =>
+      hub.attach({
+        actor: "0x1",
+        confirmedBlock: 12,
+        gameId: "7",
+        overlay: () => [],
+        preconfirmedBlock: 13,
+        project,
+        snapshot,
+        socket: recordingSocket(),
+      });
+    expect(() =>
+      attach(() => {
+        throw new GameFinalizedError("7", ["TileOpt"]);
+      }),
+    ).toThrow(GameFinalizedError);
+    hub.publishHead("7", 14, 200);
+    expect(project).not.toHaveBeenCalled();
+
+    hub.resume(
+      attach(() => snapshot),
+      { epoch: "", seq: 0, type: "resume" },
+    );
+    hub.publishHead("7", 15, 201);
+    expect(project).toHaveBeenCalledTimes(1);
+  });
 });
