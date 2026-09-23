@@ -20,7 +20,7 @@ import { createBootstrapSession, type BootstrapSelection } from "./bootstrap-ses
 import { resolveCachedEntrySessionForContext } from "./bootstrap-session-context";
 import { prepareGameRenderer } from "./game-renderer";
 import type { GameRendererSession } from "./game-renderer-session";
-import { selectInitialStructure } from "./initial-structure";
+import { followInitialStructure } from "./initial-structure";
 
 export type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 
@@ -65,6 +65,7 @@ const resolveBootstrapSelection = (context: ResolvedEntryContext): BootstrapSele
  * both attach to it, so entering a game opens one session and takes one snapshot; another game resets it.
  */
 let attachedGameClient: { key: string; client: Promise<GameClient> } | null = null;
+let stopFollowingInitialStructure: (() => void) | null = null;
 
 export const attachGameClient = (
   context: ResolvedEntryContext,
@@ -94,14 +95,14 @@ const runBootstrap = async ({
   context: ResolvedEntryContext;
   profile: GameProfile;
 }): Promise<BootstrapResult> => {
-  const stores = resolveBootstrapStores();
   const renderer = createBootstrapRendererHandoff();
   try {
     const client = await attachGameClient(context, renderer.prepare);
     // A client attached earlier (settlement) was set up before this boot, so the renderer is prepared from it here.
     renderer.prepare(client.setup);
-    selectInitialStructure(client.setup, stores.uiStore);
-    stores.syncingStore.setInitialSyncProgress(100);
+    stopFollowingInitialStructure?.();
+    stopFollowingInitialStructure = followInitialStructure(client.setup);
+    useSyncStore.getState().setInitialSyncProgress(100);
     await startGameRenderer(renderer.requireSession().initialize);
     return { context, profile, setupResult: client.setup };
   } catch (error) {
@@ -155,16 +156,6 @@ export const bootstrapGameForEntryContext = async (
     throw error;
   }
 };
-
-type BootstrapStores = {
-  syncingStore: ReturnType<typeof useSyncStore.getState>;
-  uiStore: ReturnType<typeof useUIStore.getState>;
-};
-
-const resolveBootstrapStores = (): BootstrapStores => ({
-  syncingStore: useSyncStore.getState(),
-  uiStore: useUIStore.getState(),
-});
 
 const resetBootstrapForSelectionChange = (selection: BootstrapSelection) => {
   const resetReason = bootstrapSession.getResetReason(selection);
@@ -269,6 +260,8 @@ const startGameRenderer = async (initialize: () => Promise<void>) => {
 };
 
 const cancelActiveBootstrapSubscriptions = () => {
+  stopFollowingInitialStructure?.();
+  stopFollowingInitialStructure = null;
   disposeGameSyncSession();
 };
 

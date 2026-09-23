@@ -1,4 +1,5 @@
-import type { AppStore } from "@/hooks/store/use-ui-store";
+import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
+import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { configManager, structureMapPosition } from "@bibliothecadao/eternum";
@@ -36,12 +37,33 @@ const resolveConnectedAccountAddress = (): string | undefined => {
   return hasConnectedAccount ? accountAddress : undefined;
 };
 
-/** Opens the UI on the player's realm, or the first structure in spectator mode, once the native snapshot is applied. */
-export const selectInitialStructure = (setup: SetupResult, state: AppStore): void => {
-  if (state.structureEntityId && state.structureEntityId !== 0) return;
+/**
+ * Keeps the UI on a structure for the life of the game session. The snapshot can land after boot and the account can
+ * be restored after that, so a choice made once at boot left a reload with nothing selected. This chooses again when
+ * the facts or the account change: the player's realm once they own one, else the first structure as a spectator.
+ */
+export const followInitialStructure = (setup: SetupResult): (() => void) => {
+  const choose = () => chooseInitialStructure(setup, useUIStore.getState());
+  choose();
+  const stopFacts = setup.store.subscribe(choose);
+  const stopAccount = useAccountStore.subscribe((state, previous) => {
+    if (state.account !== previous.account) choose();
+  });
+  return () => {
+    stopFacts();
+    stopAccount();
+  };
+};
+
+const chooseInitialStructure = (setup: SetupResult, state: AppStore): void => {
+  const hasSelection = Boolean(state.structureEntityId);
+  if (hasSelection && !isSpectatorFallback(state)) return;
 
   const address = resolveConnectedAccountAddress();
   const ownedStructures = address ? readInitialSelectableStructures(setup, BigInt(address)) : [];
+  // A spectator fallback yields only to the player's own realm.
+  if (hasSelection && ownedStructures.length === 0) return;
+
   const firstGlobalStructure = ownedStructures.length > 0 ? null : (readInitialSelectableStructures(setup)[0] ?? null);
   const { selectedStructure, spectator } = resolveInitialStructureSelection({
     ownedStructures,
@@ -54,3 +76,6 @@ export const selectInitialStructure = (setup: SetupResult, state: AppStore): voi
     worldMapPosition: { col: selectedStructure.coord_x, row: selectedStructure.coord_y },
   });
 };
+
+/** Spectating because no account had arrived, not because the player asked to spectate. */
+const isSpectatorFallback = (state: AppStore): boolean => state.isSpectating && !isExplicitSpectateSession();

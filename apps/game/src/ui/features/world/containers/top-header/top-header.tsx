@@ -45,13 +45,11 @@ export const TopHeader = memo(() => {
     [structureEntityId, currentDefaultTick, account.address, structure, mode, setup.store],
   );
 
-  const selectedStructure = useMemo(() => {
-    return entityInfo;
-  }, [structureEntityId, entityInfo]);
-
-  const selectedStructurePosition = useMemo(() => {
-    return Position.fromContract(selectedStructure?.position || { x: 0, y: 0 }).getNormalized();
-  }, [selectedStructure]);
+  // With nothing selected there is no structure to open: LOCAL is disabled rather than aimed at a default hex.
+  const selectedStructurePosition = useMemo(
+    () => (entityInfo?.position ? Position.fromContract(entityInfo.position) : null),
+    [entityInfo],
+  );
   const [currentPathname, setCurrentPathname] = useState(() =>
     typeof window !== "undefined" ? window.location.pathname : "/play/hex",
   );
@@ -89,10 +87,11 @@ export const TopHeader = memo(() => {
 
   const navigateToView = useCallback(
     (world: boolean) => {
+      if (!selectedStructurePosition) return;
       playClick();
       goToStructure(
         world ? lastControlledStructureEntityId || structureEntityId : structureEntityId,
-        Position.fromNormalized({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
+        selectedStructurePosition,
         world,
       );
     },
@@ -111,6 +110,7 @@ export const TopHeader = memo(() => {
           <MapViewControls
             compact={lane !== null}
             isLocalView={isLocalView}
+            canOpenLocal={selectedStructurePosition !== null}
             mapLayer={mapLayer}
             showLayerSwitch={showLayerSwitch}
             onNavigate={navigateToView}
