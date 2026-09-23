@@ -29,8 +29,6 @@ const eternumBlitzModeConfig: ConfigPatch = {
     registration: {
       registration_count_max: 0,
       registration_delay_seconds: 0,
-      collectible_cosmetics_max_items: 0,
-      collectible_cosmetics_address: "0x0",
       collectible_timelock_address: "0x0",
       collectibles_lootchest_address: "0x0",
       collectibles_elitenft_address: "0x0",

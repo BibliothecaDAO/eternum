@@ -11,7 +11,6 @@ import { arenaTroopConfig } from "./troop";
 
 const BLITZ_REGISTRATION_COUNT_MAX = 24;
 const BLITZ_REGISTRATION_DELAY_SECONDS = 10;
-const BLITZ_COLLECTIBLE_COSMETICS_MAX_ITEMS = 5;
 const BLITZ_DISABLED_BANK_NAME = "Disabled Bank";
 
 const blitzModeConfig: ConfigPatch = {
@@ -19,8 +18,6 @@ const blitzModeConfig: ConfigPatch = {
     registration: {
       registration_count_max: BLITZ_REGISTRATION_COUNT_MAX,
       registration_delay_seconds: BLITZ_REGISTRATION_DELAY_SECONDS,
-      collectible_cosmetics_max_items: BLITZ_COLLECTIBLE_COSMETICS_MAX_ITEMS,
-      collectible_cosmetics_address: "0x0",
       collectible_timelock_address: "0x0",
       collectibles_lootchest_address: "0x0",
       collectibles_elitenft_address: "0x0",

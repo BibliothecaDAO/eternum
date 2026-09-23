@@ -7,7 +7,6 @@ describe("generated Madara Blitz config", () => {
     const config = generatedMadaraBlitzConfig.configuration;
 
     expect(config.blitz.registration.registration_count_max).toBe(96);
-    expect(config.blitz.registration.collectible_cosmetics_address).toBe("0x0");
     expect(config.blitz.registration.collectible_timelock_address).toBe("0x0");
     expect(config.blitz.registration.collectibles_lootchest_address).toBe("0x0");
     expect(config.blitz.registration.collectibles_elitenft_address).toBe("0x0");

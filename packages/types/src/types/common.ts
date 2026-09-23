@@ -555,8 +555,6 @@ export interface Config {
     registration: {
       registration_count_max: number;
       registration_delay_seconds: number;
-      collectible_cosmetics_max_items: number;
-      collectible_cosmetics_address: string;
       collectible_timelock_address: string;
       collectibles_lootchest_address: string;
       collectibles_elitenft_address: string;
