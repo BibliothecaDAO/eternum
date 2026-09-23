@@ -1,12 +1,18 @@
 import { useSearchParams } from "react-router-dom";
 
-import { useAccountStore } from "@/hooks/store/use-account-store";
-
 import { BlitzSlots } from "./blitz-slots";
 import { ShardUrlForm } from "./shard-url-form";
 import { formatCountdown, formatLocalTime } from "./format";
 import { EnterLink, GameRow, SpectateLink, modeLabel, statusPill } from "./game-links";
-import { type DirectoryGame, isGameOver, isMember, nextOpenGame, sameGame, useDirectory } from "./herald";
+import {
+  type DirectoryGame,
+  isGameOver,
+  isMember,
+  nextOpenGame,
+  sameGame,
+  useDirectory,
+  useRealmsPlayer,
+} from "./herald";
 import { ErrorPanel, Loading, Panel, PanelTitle, Pill, StatBlock } from "./kit";
 import { Standings } from "./standings";
 import { useNowSeconds } from "./use-now";
@@ -92,7 +98,7 @@ const GameDetail = ({ game, now, player }: { game: DirectoryGame; now: number; p
 export const PlayPage = () => {
   const [search, setSearch] = useSearchParams();
   const now = useNowSeconds();
-  const player = useAccountStore((state) => state.account?.address ?? null);
+  const player = useRealmsPlayer();
   const directory = useDirectory(player);
   const games = directory.data?.games ?? [];
   const requested = { chainId: search.get("chain") ?? "", gameId: Number(search.get("game")) };

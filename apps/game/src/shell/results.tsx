@@ -1,11 +1,10 @@
 import { lazy, Suspense, useState } from "react";
 
-import { useAccountStore } from "@/hooks/store/use-account-store";
 import type { ReviewedGame } from "@/ui/features/game-review/game-review-modal";
 
 import { formatDate } from "./format";
 import { modeLabel } from "./game-links";
-import { type DirectoryGame, finishedGames, useDirectory } from "./herald";
+import { type DirectoryGame, finishedGames, useDirectory, useRealmsPlayer } from "./herald";
 import { ErrorPanel, GhostButton, Loading, Panel, PanelTitle } from "./kit";
 import { Standings } from "./standings";
 
@@ -22,7 +21,7 @@ const reviewedGame = (game: DirectoryGame): ReviewedGame => ({
 
 /** Recorded results, newest first: rank and victory points as the chain settled them. */
 export const ResultsPage = () => {
-  const player = useAccountStore((state) => state.account?.address ?? null);
+  const player = useRealmsPlayer();
   const directory = useDirectory();
   const [openId, setOpenId] = useState<number | null>(null);
   const [review, setReview] = useState<ReviewedGame | null>(null);

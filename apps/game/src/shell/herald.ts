@@ -1,6 +1,9 @@
 import { fetchHeraldGameDirectory, fetchHeraldGameLeaderboard, type GameRef } from "@bibliothecadao/eternum/shard";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
+import { realmsAccountAddress } from "@realms-world/identity/account";
 import { useQuery } from "@tanstack/react-query";
+
+import { useIdentitySession } from "@/hooks/context/identity-session";
 
 import { fetchDirectory, type DirectoryShard } from "@/runtime/world/directory";
 import { listPastedShards, openPastedShards, requireOpenShard } from "@/runtime/world/shards";
@@ -73,7 +76,34 @@ export const fetchDirectories = async (player: string | null): Promise<ShardDire
   };
 };
 
-/** Every listed and pasted shard's games; a pasted shard also says whether the gameplay account is registered. */
+interface GuardianIdentity {
+  publicKey: string;
+  accountClassHash: string;
+}
+
+/** Our guardian's key and the account class: with the Realms id they place the player's account on every shard we run. */
+const fetchGuardian = async (): Promise<GuardianIdentity> => {
+  const response = await fetch("/api/guardian");
+  if (!response.ok) throw new Error(`Guardian answered ${response.status}`);
+  return (await response.json()) as GuardianIdentity;
+};
+
+/** The signed-in player's account address on our shards, known from the session alone, before any game is joined. */
+export const realmsPlayerOf = (realmsId: string | undefined, guardian: GuardianIdentity | undefined): string | null =>
+  realmsId && guardian ? realmsAccountAddress(realmsId, guardian.accountClassHash, guardian.publicKey) : null;
+
+export const useRealmsPlayer = (): string | null => {
+  const { session } = useIdentitySession();
+  const guardian = useQuery({
+    queryKey: ["shell", "guardian"],
+    queryFn: fetchGuardian,
+    staleTime: Infinity,
+    enabled: session !== null,
+  });
+  return realmsPlayerOf(session?.user.realmsId, guardian.data);
+};
+
+/** Every listed and pasted shard's games; with a player, each game says whether that account is in it. */
 export const useDirectory = (player: string | null = null) =>
   useQuery({
     queryKey: [...DIRECTORY_QUERY_KEY, player],

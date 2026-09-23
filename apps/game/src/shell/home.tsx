@@ -1,11 +1,10 @@
 import { Link } from "react-router-dom";
 
-import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 
 import { formatCountdown } from "./format";
 import { EnterLink, GameClock, GameRow, SpectateLink, modeLabel } from "./game-links";
-import { type DirectoryGame, finishedGames, isMember, nextOpenGame, useDirectory } from "./herald";
+import { type DirectoryGame, finishedGames, isMember, nextOpenGame, useDirectory, useRealmsPlayer } from "./herald";
 import { ErrorPanel, Loading, Panel, PanelTitle, Pill } from "./kit";
 import { useNowSeconds } from "./use-now";
 import { Standings } from "./standings";
@@ -118,7 +117,7 @@ const Dashboard = ({ games, now }: { games: DirectoryGame[]; now: number }) => {
 
 export const HomePage = () => {
   const { status } = useIdentitySession();
-  const player = useAccountStore((state) => state.account?.address ?? null);
+  const player = useRealmsPlayer();
   const now = useNowSeconds();
   const directory = useDirectory(player);
 
