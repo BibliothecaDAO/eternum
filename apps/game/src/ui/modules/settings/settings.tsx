@@ -27,7 +27,6 @@ import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
-import { useDisconnect } from "@starknet-react/core";
 import { Pencil } from "@/ui/design-system/atoms/game-icons";
 import { type ReactNode, useState } from "react";
 import { NotificationSettings } from "./notification-settings";
@@ -343,7 +342,6 @@ function ShortcutsSection() {
 
 function SessionActions() {
   const { session } = useIdentitySession();
-  const { disconnectAsync } = useDisconnect();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const canSignOut = Boolean(session) && !isExplicitSpectateSession();
@@ -351,7 +349,7 @@ function SessionActions() {
     setPending(true);
     setError(null);
     try {
-      await signOutIdentitySession(disconnectAsync);
+      await signOutIdentitySession();
     } catch (error) {
       setError(error instanceof Error ? error.message : "Sign out failed");
     } finally {

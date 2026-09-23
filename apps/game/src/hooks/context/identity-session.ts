@@ -68,15 +68,10 @@ export const useIdentitySessionStore = create<IdentitySessionStore>()((set) => (
   clearSignInRequest: () => set({ signInRequest: null }),
 }));
 
-/** End the identity session before detaching its wallet in every sign-out surface. */
-export async function signOutIdentitySession(disconnect: () => Promise<unknown>): Promise<void> {
+/** Ends the identity session; no wallet stays connected to detach, since wallets only link or recover. */
+export async function signOutIdentitySession(): Promise<void> {
   await identityClient.signOut();
   useIdentitySessionStore.getState().applySession(null);
-  try {
-    await disconnect();
-  } catch (error) {
-    console.error("identity_wallet_disconnect_failed", error);
-  }
 }
 
 let initialLoad: Promise<void> | null = null;

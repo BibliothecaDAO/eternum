@@ -1,4 +1,3 @@
-import { GameplayAccountSync } from "@/hooks/context/gameplay-account-sync";
 import { ControllerConnector } from "@cartridge/connector";
 import { resolveEndpoint } from "@realms-world/chain";
 import { mainnet } from "@starknet-react/chains";
@@ -50,10 +49,9 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
       provider={jsonRpcProvider({ rpc })}
       connectors={identityConnectors}
       explorer={voyager}
-      autoConnect
       queryClient={queryClient}
     >
-      <GameplayAccountSync>{children}</GameplayAccountSync>
+      {children}
     </StarknetConfig>
   );
 }

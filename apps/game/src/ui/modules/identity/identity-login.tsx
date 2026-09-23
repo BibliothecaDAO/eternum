@@ -1,50 +1,38 @@
-import {
-  identityClient,
-  identityOrigin,
-  useIdentitySession,
-  useIdentitySessionStore,
-} from "@/hooks/context/identity-session";
+import { identityClient, useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import Button from "@/ui/design-system/atoms/button";
-import { IdentityRequestError, type SignInOptions } from "@realms-world/identity";
-import { useConnect, useDisconnect, useProvider } from "@starknet-react/core";
-import type { Connector } from "@starknet-react/core";
-import { useCallback, useRef, useState } from "react";
-import { addAddressPadding, constants, stark } from "starknet";
+import { useCallback, useRef, useState, type FormEvent } from "react";
+import { useLocation } from "react-router-dom";
 
-interface IdentityLoginProps {
-  className?: string;
-  /** "link" attaches a wallet to the signed-in Realms account; players never sign in with one. */
-  mode?: "sign-in" | "link";
-}
+import { failureSentence, type IdentityAction } from "./identity-failures";
 
-/** What the player asked for; each names its own failure. */
-type IdentityAction = "create" | "passkey" | "recover" | "link";
+const INPUT_CLASS =
+  "w-full rounded-lg border border-gold/30 bg-black/40 px-3 py-2.5 text-[14px] text-gold outline-none placeholder:text-gold/40 focus:border-gold";
 
 /**
- * Sign-in is a Realms account: created with a passkey, or signed into with one. A wallet only links to an account,
- * except once for a player migrated with a linked wallet and no passkey, who proves the wallet and adds a passkey.
+ * Sign-in to a Realms account: Discord, or a code emailed to the player. The first sign-in creates the account. No
+ * wallet loads here; a wallet is linked afterwards on the account page.
  */
-export const IdentityLogin = ({ className = "", mode = "sign-in" }: IdentityLoginProps) => {
+export const IdentityLogin = ({ className = "" }: { className?: string }) => {
   const { status, session } = useIdentitySession();
   const applySession = useIdentitySessionStore((state) => state.applySession);
-  const refresh = useIdentitySessionStore((state) => state.refresh);
-  const { connectAsync, connectors, connector: connectedConnector } = useConnect();
-  const { disconnectAsync } = useDisconnect();
-  const { provider } = useProvider();
-  const [pending, setPending] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [showRecovery, setShowRecovery] = useState(false);
+  const signInRequest = useIdentitySessionStore((state) => state.signInRequest);
+  const location = useLocation();
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [codeSentTo, setCodeSentTo] = useState<string | null>(null);
+  const [pending, setPending] = useState<IdentityAction | null>(null);
+  // Discord returns here with an `error` query parameter when sign-in did not complete.
+  const [error, setError] = useState<string | null>(() => discordReturnError(location.search));
   const running = useRef(false);
 
-  const run = useCallback(async (action: IdentityAction, key: string, body: () => Promise<void>) => {
+  const run = useCallback(async (action: IdentityAction, body: () => Promise<void>) => {
     if (running.current) return;
     running.current = true;
-    setPending(key);
+    setPending(action);
     setError(null);
     try {
       await body();
     } catch (cause) {
-      console.error("identity_action_failed", { action, error: cause instanceof Error ? cause.message : cause });
       setError(failureSentence(action, cause));
     } finally {
       running.current = false;
@@ -52,155 +40,91 @@ export const IdentityLogin = ({ className = "", mode = "sign-in" }: IdentityLogi
     }
   }, []);
 
-  const createAccount = () =>
-    run("create", "create", async () => {
-      await identityClient.signInAnonymously();
-      try {
-        await identityClient.registerPasskey();
-      } finally {
-        // An account whose passkey was cancelled still signs in; the account prompt asks it to add one.
-        applySession(await identityClient.getSession().catch(() => null));
-      }
+  // Discord returns the player to the page that asked for sign-in, or to this one.
+  const continueWithDiscord = () =>
+    run("discord", async () => {
+      const returnTo = signInRequest?.redirectTo ?? `${location.pathname}${location.search}`;
+      window.location.assign(await identityClient.discordSignInUrl(returnTo));
     });
 
-  const signInWithPasskey = () =>
-    run("passkey", "passkey", async () => applySession(await identityClient.signInWithPasskey()));
-
-  /** The wallet's proof as the identity service reads it, from the connector the player just chose. */
-  const walletProof = useCallback(
-    async (connector: Connector): Promise<SignInOptions> => {
-      if (connectedConnector) await disconnectAsync();
-      await connectAsync({ connector });
-      if ((await connector.chainId()) !== BigInt(constants.StarknetChainId.SN_MAIN)) throw new WrongNetworkError();
-      // Use the selected connector immediately; React's account state may still describe the previous wallet.
-      const account = await connector.account(provider);
-      return {
-        address: addAddressPadding(account.address),
-        chainId: "SN_MAIN",
-        domain: window.location.host,
-        uri: identityOrigin(),
-        signTypedData: async (message) =>
-          stark.formatSignature(await account.signMessage(message as Parameters<typeof account.signMessage>[0])),
-      };
-    },
-    [connectAsync, connectedConnector, disconnectAsync, provider],
-  );
-
-  const linkWallet = (connector: Connector) =>
-    run("link", connector.id, async () => {
-      await identityClient.linkWallet(await walletProof(connector));
-      await refresh();
+  const emailCode = (event: FormEvent) => {
+    event.preventDefault();
+    const address = email.trim();
+    void run("send-code", async () => {
+      await identityClient.sendSignInCode(address);
+      setCode("");
+      setCodeSentTo(address);
     });
+  };
 
-  // The recovered session is only for adding a passkey: without one, it ends here, and the player can try again.
-  const recoverWithWallet = (connector: Connector) =>
-    run("recover", connector.id, async () => {
-      await identityClient.recoverWithWallet(await walletProof(connector));
-      try {
-        await identityClient.registerPasskey();
-        applySession(await identityClient.signInWithPasskey());
-      } catch (cause) {
-        await identityClient.signOut().catch(() => undefined);
-        applySession(null);
-        throw cause;
-      }
-    });
+  const signInWithCode = (event: FormEvent) => {
+    event.preventDefault();
+    if (!codeSentTo) return;
+    void run("code", async () => applySession(await identityClient.signInWithCode(codeSentTo, code.trim())));
+  };
 
+  if (status === "signed-in" && session) return null;
   const busy = pending !== null || status === "loading";
-  const walletButtons = (onChoose: (connector: Connector) => void) => (
-    <>
-      {connectors.map((connector) => (
-        <Button
-          key={connector.id}
-          className="w-full !whitespace-normal px-4 py-2 leading-tight"
-          disabled={busy}
-          isLoading={pending === connector.id}
-          onClick={() => onChoose(connector)}
-        >
-          {connector.name}
-        </Button>
-      ))}
-      {connectors.length === 0 && <span className="text-xs text-gold/60">No Starknet wallets are available.</span>}
-    </>
-  );
-
-  if (mode === "sign-in" && status === "signed-in" && session) return null;
 
   return (
-    <div className={`flex flex-col gap-1 ${className}`}>
-      <div className="flex w-full flex-col gap-1">
-        {mode === "link" ? (
-          walletButtons((connector) => void linkWallet(connector))
-        ) : (
-          <>
-            <Button
-              className="w-full px-4 py-2"
-              disabled={busy}
-              isLoading={pending === "create"}
-              onClick={() => void createAccount()}
-            >
-              Create a Realms account
-            </Button>
-            <Button
-              className="w-full px-4 py-2"
-              disabled={busy}
-              isLoading={pending === "passkey"}
-              onClick={() => void signInWithPasskey()}
-            >
-              Sign in with a passkey
-            </Button>
-            <button
-              type="button"
-              className="pt-1 text-left text-xs text-gold/60 underline"
-              onClick={() => setShowRecovery((shown) => !shown)}
-            >
-              Existing player? Use your linked wallet once
-            </button>
-            {showRecovery ? (
-              <>
-                <span className="text-xs text-gold/60">
-                  Your wallet proves the account once, then you add a passkey and sign in with it from now on.
-                </span>
-                {walletButtons((connector) => void recoverWithWallet(connector))}
-              </>
-            ) : null}
-          </>
-        )}
-      </div>
-      {error && <span className="max-w-[240px] text-xs text-danger">{error}</span>}
+    <div className={`flex w-full flex-col gap-2 ${className}`}>
+      <Button
+        className="w-full px-4 py-2"
+        disabled={busy}
+        isLoading={pending === "discord"}
+        onClick={() => void continueWithDiscord()}
+      >
+        Continue with Discord
+      </Button>
+      {codeSentTo === null ? (
+        <form className="flex w-full flex-col gap-1" onSubmit={emailCode}>
+          <input
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="Your email"
+            className={INPUT_CLASS}
+          />
+          <Button type="submit" className="w-full px-4 py-2" disabled={busy} isLoading={pending === "send-code"}>
+            Email me a code
+          </Button>
+        </form>
+      ) : (
+        <form className="flex w-full flex-col gap-1" onSubmit={signInWithCode}>
+          <span className="text-xs text-gold/60">We sent a six-digit code to {codeSentTo}.</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]{6}"
+            maxLength={6}
+            required
+            value={code}
+            onChange={(event) => setCode(event.target.value)}
+            placeholder="Code"
+            className={INPUT_CLASS}
+          />
+          <Button type="submit" className="w-full px-4 py-2" disabled={busy} isLoading={pending === "code"}>
+            Sign in
+          </Button>
+          <button
+            type="button"
+            className="pt-1 text-left text-xs text-gold/60 underline"
+            onClick={() => setCodeSentTo(null)}
+          >
+            Use another address or send a new code
+          </button>
+        </form>
+      )}
+      {error && <span className="text-xs text-danger">{error}</span>}
     </div>
   );
 };
 
-class WrongNetworkError extends Error {}
-
-const NAMED_REFUSALS: Record<string, string> = {
-  NO_LINKED_ACCOUNT: "This wallet is not linked to a Realms account.",
-  RECOVERY_NOT_NEEDED: "This account already has a passkey. Sign in with it.",
-  WALLET_LINKED_ELSEWHERE: "This wallet is linked to another Realms account.",
-  WALLET_ALREADY_LINKED: "This account already has a linked wallet.",
-};
-
-const PASSKEY_REFUSED: Record<IdentityAction, string> = {
-  create: "The passkey was not saved. Add one before you play.",
-  passkey: "No passkey signed in. Try again, or create a Realms account.",
-  recover: "Your account needs a passkey to finish. Try again.",
-  link: "The wallet was not linked. Try again in a moment.",
-};
-
-const FALLBACK: Record<IdentityAction, string> = {
-  create: "Your account was not created. Try again in a moment.",
-  passkey: "Sign-in did not complete. Try again in a moment.",
-  recover: "Your account was not recovered. Try again in a moment.",
-  link: "The wallet was not linked. Try again in a moment.",
-};
-
-/** One sentence per failure the player can act on; the detail goes to the console. */
-const failureSentence = (action: IdentityAction, cause: unknown): string => {
-  const code = cause instanceof IdentityRequestError ? cause.code : undefined;
-  if (code && NAMED_REFUSALS[code]) return NAMED_REFUSALS[code];
-  if (cause instanceof WrongNetworkError) return "Switch this wallet to Starknet mainnet.";
-  // A closed, timed-out or unanswered passkey prompt rejects with NotAllowedError.
-  if (cause instanceof DOMException && cause.name === "NotAllowedError") return PASSKEY_REFUSED[action];
-  return FALLBACK[action];
+const discordReturnError = (search: string): string | null => {
+  const returned = new URLSearchParams(search).get("error");
+  return returned ? failureSentence("discord", new Error(returned)) : null;
 };

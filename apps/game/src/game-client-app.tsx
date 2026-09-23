@@ -4,7 +4,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-
 import { env } from "../env";
 import { loadGameRouteForPlayEntry } from "./game-entry-preload";
 import { resolveEntryContextFromEntryRoute } from "./game-entry/context";
-import { StarknetProvider } from "./hooks/context/starknet-provider";
+import { GameplayAccountSync } from "./hooks/context/gameplay-account-sync";
 import { useUIStore } from "./hooks/store/use-ui-store";
 import { normalizePlayBootLocation } from "./play/navigation/play-route-boot-normalization";
 import { LocalNotificationLifecycle } from "./pwa/local-notification-lifecycle";
@@ -28,14 +28,14 @@ export const GameClientApp = () => {
   }
 
   return (
-    <StarknetProvider>
+    <GameplayAccountSync>
       <LocalNotificationLifecycle />
       <Routes>
         <Route index element={<GameEntryRoute />} />
         <Route path=":scene" element={<GameRouteShell backgroundImage={backgroundImage} />} />
         <Route path="*" element={<Navigate to="/play" replace />} />
       </Routes>
-    </StarknetProvider>
+    </GameplayAccountSync>
   );
 };
 

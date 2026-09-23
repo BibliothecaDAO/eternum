@@ -16,7 +16,9 @@ import { AccountStatePrompt } from "./account-state";
 import { displayName, PORTRAITS, portraitUrl } from "./identity-chip";
 import { GhostButton, GoldButton, Loading, Panel, PanelTitle } from "./kit";
 
-const WalletLink = lazy(() => import("./wallet-link"));
+const WalletLink = lazy(() =>
+  import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletLink })),
+);
 
 const NAME_RULES = "3–20 characters · unique across the realms · shown everywhere";
 
@@ -188,8 +190,8 @@ export const AccountPage = () => {
       <Panel className="max-w-lg">
         <PanelTitle>Your account</PanelTitle>
         <p className="mb-3 text-[13.5px] text-gold/70">
-          Create a Realms account with a passkey. No password, no email, no wallet. Then claim your name; link a wallet
-          later to claim prizes.
+          Sign in with Discord or your email; your first sign-in creates your Realms account. Then claim your name, and
+          link a wallet to claim prizes.
         </p>
         <GoldButton onClick={() => requestSignIn({ redirectTo: "/account" })}>Sign in</GoldButton>
       </Panel>

@@ -52,7 +52,7 @@ const readJson = async <T>(response: Response): Promise<T> => {
       message?: string;
       code?: string;
     } | null;
-    throw new IdentityRequestError(response.status, payload?.error ?? payload?.message ?? payload?.code);
+    throw new IdentityRequestError(response.status, payload?.error ?? payload?.code ?? payload?.message);
   }
   return (await response.json()) as T;
 };
@@ -132,6 +132,38 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
       await request("/auth/siws/link", { method: "POST", body: JSON.stringify(await siwsProof(options)) }),
     );
     return linked.address;
+  };
+
+  /** Emails a one-time sign-in code; the service limits how many an address and a client get a minute. */
+  const sendSignInCode = async (email: string): Promise<void> => {
+    await readJson(
+      await request("/auth/email-otp/send-verification-otp", {
+        method: "POST",
+        body: JSON.stringify({ email, type: "sign-in" }),
+      }),
+    );
+  };
+
+  /** Signs in with an emailed code; an email's first sign-in creates its Realms account. */
+  const signInWithCode = async (email: string, code: string): Promise<Session> => {
+    await readJson(
+      await request("/auth/sign-in/email-otp", { method: "POST", body: JSON.stringify({ email, otp: code }) }),
+    );
+    return requireSession();
+  };
+
+  /**
+   * Where to send the player to sign in with Discord; Discord returns them to `returnTo`, signed in, or with an
+   * `error` query parameter when sign-in did not complete.
+   */
+  const discordSignInUrl = async (returnTo: string): Promise<string> => {
+    const started = await readJson<{ url: string }>(
+      await request("/auth/sign-in/social", {
+        method: "POST",
+        body: JSON.stringify({ provider: "discord", callbackURL: returnTo, errorCallbackURL: returnTo }),
+      }),
+    );
+    return started.url;
   };
 
   /**
@@ -229,6 +261,9 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     signInWithPasskey,
     linkWallet,
     recoverWithWallet,
+    sendSignInCode,
+    signInWithCode,
+    discordSignInUrl,
     approveDeviceChange,
     signOut,
     updateUser,

@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { useDisconnect } from "@starknet-react/core";
 
 import { IDENTITY_POPOVER_ID, signOutIdentitySession, useIdentitySession } from "@/hooks/context/identity-session";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { StarknetProvider } from "@/hooks/context/starknet-provider";
+import { GameplayAccountSync } from "@/hooks/context/gameplay-account-sync";
 import { IdentityLogin } from "@/ui/modules/identity/identity-login";
 import type { Session } from "@realms-world/identity";
 
@@ -13,14 +12,14 @@ import { AccountStatePrompt } from "./account-state";
 import { shortAddress } from "./format";
 
 /**
- * The shell's account runtime: the Starknet wallet connectors, the gameplay account sync, and the identity panel.
- * It is one lazy chunk, mounted by the identity chip when a session exists or is being requested.
+ * The shell's account runtime: the gameplay account sync and the identity panel. It is one lazy chunk, mounted by
+ * the identity chip when a session exists or is being requested; it loads no wallet.
  */
 export default function AccountRuntime() {
   return (
-    <StarknetProvider>
+    <GameplayAccountSync>
       <IdentityPanelPortal />
-    </StarknetProvider>
+    </GameplayAccountSync>
   );
 }
 
@@ -33,7 +32,6 @@ function IdentityPanelPortal() {
 
 function SignedInPanel({ session }: { session: Session }) {
   const closePopover = usePopoverStore((state) => state.close);
-  const { disconnectAsync } = useDisconnect();
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,7 +39,7 @@ function SignedInPanel({ session }: { session: Session }) {
     setSigningOut(true);
     setError(null);
     try {
-      await signOutIdentitySession(disconnectAsync);
+      await signOutIdentitySession();
       closePopover(IDENTITY_POPOVER_ID);
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "Sign out failed";
@@ -77,8 +75,8 @@ function SignedInPanel({ session }: { session: Session }) {
 const SignInPanel = () => (
   <div className="flex flex-col gap-3">
     <p className="text-sm text-gold/85">
-      A Realms account needs no wallet: a passkey on this device signs you in. Your gameplay account is prepared
-      automatically when you play.
+      Sign in with Discord or your email; your first sign-in creates your Realms account. Your gameplay account is
+      prepared automatically when you play.
     </p>
     <IdentityLogin className="items-start" />
   </div>
