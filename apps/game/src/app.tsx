@@ -6,6 +6,7 @@ import "./index.css";
 import { PwaUpdatePrompt } from "./pwa/pwa-update-prompt";
 import { PwaInstallRuntime } from "./pwa/pwa-install-control";
 import { AccountPage } from "./shell/account";
+import { FirstNamePrompt } from "./shell/first-name-prompt";
 import { AppShell } from "./shell/app-shell";
 import { FactoryPage } from "./shell/factory";
 import { HomePage } from "./shell/home";
@@ -73,6 +74,7 @@ function App() {
       <QueryClientProvider client={shellQueryClient}>
         <PwaUpdatePrompt />
         <PwaInstallRuntime />
+        <FirstNamePrompt />
         <Routes>
           <Route element={<AppShell />}>
             <Route index element={<HomePage />} />
