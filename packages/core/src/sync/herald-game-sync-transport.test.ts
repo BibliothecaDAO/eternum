@@ -135,6 +135,21 @@ afterEach(() => {
 });
 
 describe("HeraldGameSyncTransport", () => {
+  it("knows the chain time from Herald's hello, before the first snapshot row", async () => {
+    const harness = streamHarness();
+    const subscribed = harness.transport.subscribe(harness.handlers);
+    harness.sockets.at(-1)!.receive({ ...hello("epoch-a", 0), confirmed_timestamp: 1_790_194_601 });
+    await subscribed;
+    expect(harness.heads).toEqual([{ block: 12, preconfirmed: false, timestamp: 1_790_194_601 }]);
+
+    // A Herald before its first confirmed head names no time; the clock then waits for the stream's head.
+    const early = streamHarness();
+    const earlySubscribed = early.transport.subscribe(early.handlers);
+    early.sockets.at(-1)!.receive({ ...hello("epoch-a", 0), confirmed_timestamp: null });
+    await earlySubscribed;
+    expect(early.heads).toEqual([]);
+  });
+
   it("forwards an actor's scope replacement and resumes that actor after reconnect", async () => {
     vi.useFakeTimers();
     const harness = streamHarness();

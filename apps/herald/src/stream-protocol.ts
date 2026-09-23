@@ -12,6 +12,8 @@ export type HeraldStreamMessage =
   | (StreamMessageBase & {
       type: "hello";
       confirmed_block: number;
+      /** The chain time of the last confirmed head Herald published; null before its first. */
+      confirmed_timestamp: number | null;
       preconfirmed_block: number | null;
     })
   | (StreamMessageBase & { type: "snapshot"; model: string; rows: FoldRow[] })

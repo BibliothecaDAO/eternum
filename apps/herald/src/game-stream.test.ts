@@ -45,6 +45,32 @@ describe("GameStreamHub", () => {
     expect(socket.messages.every(({ epoch }) => epoch === "epoch-a:7:")).toBe(true);
   });
 
+  it("names the last confirmed head's chain time in hello, and null before Herald has one", () => {
+    const hub = new GameStreamHub("epoch-a");
+    const known = recordingSocket();
+    hub.attach({
+      confirmedBlock: 12,
+      confirmedTimestamp: 1_790_194_601,
+      gameId: "7",
+      overlay: () => [],
+      preconfirmedBlock: 13,
+      snapshot: () => snapshot,
+      socket: known,
+    });
+    expect(known.messages[0]).toMatchObject({ type: "hello", confirmed_block: 12, confirmed_timestamp: 1_790_194_601 });
+
+    const unknown = recordingSocket();
+    hub.attach({
+      confirmedBlock: 12,
+      gameId: "7",
+      overlay: () => [],
+      preconfirmedBlock: 13,
+      snapshot: () => snapshot,
+      socket: unknown,
+    });
+    expect(unknown.messages[0]).toMatchObject({ type: "hello", confirmed_timestamp: null });
+  });
+
   it("counts every frame and byte a subscriber is sent, and each snapshot's own", () => {
     const log = { info: vi.fn() };
     const hub = new GameStreamHub("epoch-a", log);

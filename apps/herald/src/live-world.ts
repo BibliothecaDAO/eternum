@@ -74,6 +74,8 @@ export class LiveWorld {
   private preconfirmedBlockValue: number | null = null;
 
   private lastClockTimestamp = 0;
+  /** The last confirmed head's chain time; the pre-confirmed clock above can run ahead of it. */
+  private confirmedHeadTimestamp: number | null = null;
 
   private lastCheckpointBlock: number;
 
@@ -179,6 +181,7 @@ export class LiveWorld {
     return {
       actor,
       confirmedBlock: this.confirmedBlockValue,
+      confirmedTimestamp: this.confirmedHeadTimestamp,
       gameId,
       expedition: subscription.expedition,
       overlay: () => subscription.overlay(this.snapshotOverlay(gameId)),
@@ -281,6 +284,9 @@ export class LiveWorld {
     const startedAt = performance.now();
 
     const confirmed = await this.applyConfirmedThrough(head.block_number);
+    // Recorded with the block it belongs to, before any other await, so an attach never pairs this block with an
+    // older head's time.
+    this.confirmedHeadTimestamp = head.timestamp;
     await this.archiveFinalizedGames();
     let publishedChanges = false;
     for (const [block, changes] of confirmed.changes) {

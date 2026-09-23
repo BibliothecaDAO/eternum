@@ -90,6 +90,22 @@ describe("native live publication", () => {
     expect(messages.filter((message) => message.type === "head")).toHaveLength(2);
   });
 
+  it("names the last confirmed head's time in hello, which a pre-confirmed clock tick leaves as it is", async () => {
+    const { live, pending } = fixture();
+    const hello = () => {
+      const sent: Array<Record<string, unknown>> = [];
+      live.attach("1", { send: (text) => sent.push(JSON.parse(text)) });
+      return sent[0];
+    };
+    expect(hello()).toMatchObject({ type: "hello", confirmed_timestamp: null });
+
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
+    pending.timestamp = 500;
+    await live.publishChainClock();
+
+    expect(hello()).toMatchObject({ type: "hello", confirmed_block: 10, confirmed_timestamp: 100 });
+  });
+
   it("invalidates directory readers only after confirmed changes", async () => {
     const { live, submit, confirm } = fixture();
     const changed = vi.fn();
