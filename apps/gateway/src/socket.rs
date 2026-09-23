@@ -30,7 +30,7 @@ struct Routes {
 }
 
 /// Notifications for one subscription. The stream ends when the socket closes; dropping it
-/// removes its route and unsubscribes, since the node keeps status subscriptions open indefinitely.
+/// removes its route and unsubscribes, since the node keeps subscriptions open until told otherwise.
 pub(crate) struct Notifications<T> {
     receiver: mpsc::UnboundedReceiver<Value>,
     _subscription: Subscription,
@@ -81,7 +81,6 @@ impl NodeSocket {
         let state = Arc::new(Mutex::new(Routes::default()));
         let (closed, mut reader_done) = oneshot::channel::<()>();
         tokio::spawn(async move {
-            // Ending here drops the queue, which is what `is_open` observes.
             loop {
                 tokio::select! {
                     message = queued.recv() => {
@@ -112,10 +111,6 @@ impl NodeSocket {
             closed.send(()).ok();
         });
         Ok(Self { outgoing, state, next_id: AtomicU64::new(1) })
-    }
-
-    pub fn is_open(&self) -> bool {
-        !self.outgoing.is_closed()
     }
 
     pub async fn subscribe<T: DeserializeOwned>(
