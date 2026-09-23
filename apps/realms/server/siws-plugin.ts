@@ -1,4 +1,4 @@
-import type { AuthContext, BetterAuthPlugin } from "better-auth";
+import type { AuthContext, BetterAuthPlugin, Session, User } from "better-auth";
 import { APIError, createAuthEndpoint, sessionMiddleware } from "better-auth/api";
 import { setSessionCookie } from "better-auth/cookies";
 import { z } from "zod";
@@ -24,12 +24,18 @@ const SiwsProof = z.object({
 
 const NONCE_LIFETIME_MS = 15 * 60 * 1000;
 
+/** An endpoint behind the session middleware: it may set cookies, and it knows who is signed in. */
+type SignedInContext = Parameters<typeof setSessionCookie>[0] & {
+  context: { session: { session: Session; user: User } };
+};
+
 const unauthorized = (reason: string) => new APIError("UNAUTHORIZED", { message: `Unauthorized: ${reason}` });
 
 /**
- * A wallet is linked to a Realms account, never a way to sign in: players sign in with Discord or an emailed code. A
- * wallet belongs to at most one account and an account to at most one wallet; the unique `address` column is the
- * race-proof truth.
+ * A wallet is linked to a Realms account, never a way to sign in: players sign in with Discord or an emailed code. An
+ * account has one wallet at a time and a wallet one account at a time; the unique `address` column is the race-proof
+ * truth. Linking a new wallet replaces the account's current one in one update, and unlinking frees it for another
+ * account.
  */
 export const siws = (options: SiwsPluginOptions) => {
   const expectedHost = new URL(options.origin).host;
@@ -66,6 +72,18 @@ export const siws = (options: SiwsPluginOptions) => {
   const findUserByWallet = (ctx: { context: AuthContext }, owner: string) =>
     ctx.context.adapter.findOne<{ id: string }>({ model: "user", where: [{ field: "address", value: owner }] });
 
+  /** Sets the signed-in account's wallet and refreshes the session cookie, which caches the user for an hour. */
+  const setWallet = async (ctx: SignedInContext, address: string | null) => {
+    let updated;
+    try {
+      updated = await ctx.context.internalAdapter.updateUser(ctx.context.session.user.id, { address });
+    } catch {
+      // A concurrent link of the same wallet lost the race on the unique address column.
+      throw new APIError("CONFLICT", { message: "WALLET_LINKED_ELSEWHERE" });
+    }
+    await setSessionCookie(ctx, { session: ctx.context.session.session, user: updated });
+  };
+
   return {
     id: "sign-in-with-starknet",
     schema: {
@@ -98,21 +116,16 @@ export const siws = (options: SiwsPluginOptions) => {
           const owner = await verifyProof(ctx, ctx.body);
           const user = ctx.context.session.user as { id: string; address?: string | null };
           if (user.address === owner) return ctx.json({ address: owner });
-          if (user.address) throw new APIError("CONFLICT", { message: "WALLET_ALREADY_LINKED" });
-          const holder = await findUserByWallet(ctx, owner);
-          if (holder) throw new APIError("CONFLICT", { message: "WALLET_LINKED_ELSEWHERE" });
-          let linked;
-          try {
-            linked = await ctx.context.internalAdapter.updateUser(user.id, { address: owner });
-          } catch {
-            // A concurrent link of the same wallet lost the race on the unique address column.
+          if (await findUserByWallet(ctx, owner))
             throw new APIError("CONFLICT", { message: "WALLET_LINKED_ELSEWHERE" });
-          }
-          // The session cookie caches the user; without a fresh one the account reads as unlinked for an hour.
-          await setSessionCookie(ctx, { session: ctx.context.session.session, user: linked });
+          await setWallet(ctx, owner);
           return ctx.json({ address: owner });
         },
       ),
+      unlink: createAuthEndpoint("/siws/unlink", { method: "POST", use: [sessionMiddleware] }, async (ctx) => {
+        await setWallet(ctx, null);
+        return ctx.json({ address: null });
+      }),
     },
   } satisfies BetterAuthPlugin;
 };

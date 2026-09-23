@@ -134,7 +134,7 @@ const createBrowser = (parentDomainCookies: string[] = []) => {
   };
   const session = async () =>
     (await (await request("/api/auth/get-session")).json()) as {
-      user: { id: string; realmsId: string; address?: string | null };
+      user: { id: string; realmsId: string; address?: string | null; suggestedName?: string | null };
     } | null;
   return { request, session };
 };
@@ -477,6 +477,44 @@ describe("identity Worker", () => {
     expect(refused.status).toBe(409);
     expect(((await refused.json()) as { message: string }).message).toBe("WALLET_LINKED_ELSEWHERE");
     expect((await other.session())?.user.address ?? null).toBeNull();
+  });
+
+  it("keeps one wallet per account: unlinking frees it, and a new link replaces the account's wallet", async () => {
+    const { wallet: first } = await playerWithWallet("first-holder@realms.test");
+    const holder = createBrowser();
+    await signInWithCode(holder, "first-holder@realms.test");
+    const other = createBrowser();
+    await signInWithCode(other, "second-holder@realms.test");
+    expect((await proveWallet(other, first, "link")).status).toBe(409);
+
+    expect((await holder.request("/api/auth/siws/unlink", { body: {} })).status).toBe(200);
+    expect((await holder.session())?.user.address ?? null).toBeNull();
+    expect((await proveWallet(other, first, "link")).status).toBe(200);
+
+    const second = createWallet();
+    expect((await proveWallet(other, second, "link")).status).toBe(200);
+    expect(BigInt((await other.session())?.user.address ?? 0)).toBe(BigInt(second));
+    expect((await proveWallet(holder, first, "link")).status).toBe(200);
+  });
+
+  it("suggests a new player's display name from their Discord name or their email", async () => {
+    const byEmail = createBrowser();
+    await signInWithCode(byEmail, "ser.galen+play@realms.test");
+    expect((await byEmail.session())?.user.suggestedName).toBe("sergalenplay");
+
+    const discord = fakeDiscord();
+    try {
+      const byDiscord = createBrowser();
+      await signInWithDiscord(byDiscord, {
+        id: "80351110224678913",
+        username: "nelly_b",
+        email: "x@discord.test",
+        verified: true,
+      });
+      expect((await byDiscord.session())?.user.suggestedName).toBe("nelly_b");
+    } finally {
+      discord.mockRestore();
+    }
   });
 
   it("offers no way in but Discord and an emailed code", async () => {

@@ -4,7 +4,7 @@ import { emailOTP } from "better-auth/plugins";
 import { RpcProvider, verifyMessageInStarknet } from "starknet";
 
 import type { IdentityEnv } from "./env";
-import { nameRuleViolation } from "./name-rules";
+import { nameRuleViolation, suggestedNameOf } from "./name-rules";
 import { isNameTaken } from "./names";
 import { realmsIdOf } from "./realms-id";
 import { resendSignInCodes, type SendSignInCode } from "./sign-in-codes";
@@ -38,12 +38,16 @@ const verifyOnMainnet =
 
 /**
  * A new user's id is fixed here and never changes: the Realms id derives from it and places the player's account on
- * every shard. A new user starts with its id as its name, which reads as "not chosen" until they pick one, and with no
- * portrait: a sign-in provider's avatar is not one of ours.
+ * every shard. A new user starts with its id as its name, which reads as "not chosen" until they pick one, offered
+ * their Discord name or their email's local part as a suggestion, and with no portrait: a sign-in provider's avatar is
+ * not one of ours.
  */
 const assignRealmsIdentity = async (user: Record<string, unknown>) => {
   const id = crypto.randomUUID().replaceAll("-", "");
-  return { data: { ...user, id, name: id, image: null, realmsId: realmsIdOf(id) } };
+  const providerName = typeof user.name === "string" ? user.name : "";
+  const emailName = typeof user.email === "string" ? (user.email.split("@")[0] ?? "") : "";
+  const suggestedName = suggestedNameOf(providerName) ?? suggestedNameOf(emailName);
+  return { data: { ...user, id, name: id, suggestedName, image: null, realmsId: realmsIdOf(id) } };
 };
 
 /**
@@ -94,6 +98,7 @@ export const createIdentityAuth = (
     user: {
       additionalFields: {
         realmsId: { type: "string", unique: true, required: false, input: false },
+        suggestedName: { type: "string", required: false, input: false },
       },
     },
     databaseHooks: {

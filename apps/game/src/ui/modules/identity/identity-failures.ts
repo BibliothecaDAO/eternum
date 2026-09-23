@@ -1,7 +1,7 @@
 import { IdentityRequestError } from "@realms-world/identity";
 
 /** What the player asked for; each names its own failure. */
-export type IdentityAction = "discord" | "send-code" | "code" | "link";
+export type IdentityAction = "discord" | "send-code" | "code" | "link" | "unlink";
 
 export class WrongNetworkError extends Error {}
 
@@ -11,7 +11,6 @@ const NAMED_REFUSALS: Record<string, string> = {
   TOO_MANY_ATTEMPTS: "Too many tries with that code. Ask for a new one.",
   too_many_codes: "Too many codes for this address. Wait a minute and ask again.",
   WALLET_LINKED_ELSEWHERE: "This wallet is linked to another Realms account.",
-  WALLET_ALREADY_LINKED: "This account already has a linked wallet.",
 };
 
 const FALLBACK: Record<IdentityAction, string> = {
@@ -19,6 +18,7 @@ const FALLBACK: Record<IdentityAction, string> = {
   "send-code": "The code was not sent. Check the address and try again.",
   code: "Sign-in did not complete. Try again in a moment.",
   link: "The wallet was not linked. Try again in a moment.",
+  unlink: "The wallet was not unlinked. Try again in a moment.",
 };
 
 /** One sentence per failure the player can act on; the detail goes to the console. */

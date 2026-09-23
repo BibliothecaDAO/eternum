@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import {
   IDENTITY_POPOVER_ID,
@@ -7,6 +7,7 @@ import {
   useIdentitySessionStore,
 } from "@/hooks/context/identity-session";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { failureSentence } from "@/ui/modules/identity/identity-failures";
 import { NotificationSettings } from "@/ui/modules/settings/notification-settings";
 import type { Session } from "@realms-world/identity";
 
@@ -22,8 +23,17 @@ const WalletLink = lazy(() =>
 
 const NAME_RULES = "3–20 characters · unique across the realms · shown everywhere";
 
-const NameClaim = ({ currentName, onDone }: { currentName: string | null; onDone: () => void }) => {
-  const [name, setName] = useState(currentName ?? "");
+/** Claims or changes the display name; a new player starts from the name suggested at their first sign-in. */
+const NameClaim = ({
+  currentName,
+  suggestion = null,
+  onDone,
+}: {
+  currentName: string | null;
+  suggestion?: string | null;
+  onDone: () => void;
+}) => {
+  const [name, setName] = useState(currentName ?? suggestion ?? "");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const claim = async () => {
@@ -95,9 +105,91 @@ const PortraitPicker = ({ current, onDone }: { current: string | null; onDone: (
   );
 };
 
+/** How the player signs in: Discord, a verified email, or both. */
+const SignInMethods = ({ session }: { session: Session }) => {
+  const [providers, setProviders] = useState<string[] | null>(null);
+  useEffect(() => {
+    let active = true;
+    identityClient.listSignInProviders().then(
+      (listed) => active && setProviders(listed),
+      (cause: unknown) => {
+        console.error("identity_sign_in_methods_failed", cause);
+        if (active) setProviders([]);
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [session.user.id]);
+  const methods = [
+    ...(providers?.includes("discord") ? ["Discord"] : []),
+    ...(session.user.emailVerified ? [`Email · ${session.user.email}`] : []),
+  ];
+  return (
+    <div className="flex items-center justify-between gap-2.5 rounded-lg border border-gold/20 bg-black/40 px-3 py-2.5 text-[13px]">
+      <span className="text-gold/60">Sign-in</span>
+      <b className="text-right text-[12px]">{providers === null ? "…" : methods.join(" · ") || "—"}</b>
+    </div>
+  );
+};
+
+/** One wallet per account: link one, change it for another, or unlink it. Cosmetics and prizes follow the wallet. */
+const WalletRow = ({ session, refresh }: { session: Session; refresh: () => void }) => {
+  const [choosing, setChoosing] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const address = session.user.address ?? null;
+  // A linked or changed wallet closes the connectors.
+  useEffect(() => setChoosing(false), [address]);
+
+  const unlink = async () => {
+    setUnlinking(true);
+    setError(null);
+    try {
+      await identityClient.unlinkWallet();
+      refresh();
+    } catch (cause) {
+      setError(failureSentence("unlink", cause));
+    } finally {
+      setUnlinking(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-lg border border-gold/20 bg-black/40 px-3 py-2.5 text-[13px]">
+        <span className="text-gold/60">Wallet</span>
+        {address ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <b className="font-mono text-[12px]">{shortAddress(address)}</b>
+            <GhostButton onClick={() => setChoosing((open) => !open)}>Change wallet</GhostButton>
+            <GhostButton disabled={unlinking} onClick={() => void unlink()}>
+              {unlinking ? "Unlinking…" : "Unlink"}
+            </GhostButton>
+          </div>
+        ) : (
+          <GhostButton onClick={() => setChoosing((open) => !open)}>Link a wallet</GhostButton>
+        )}
+      </div>
+      {choosing ? (
+        <div className="rounded-lg border border-gold/20 bg-black/40 px-3 py-2.5">
+          <p className="mb-2 text-[12.5px] text-gold/60">
+            {address
+              ? "The new wallet replaces the linked one."
+              : "A linked wallet claims prizes and shows your cosmetics."}
+          </p>
+          <Suspense fallback={<Loading />}>
+            <WalletLink />
+          </Suspense>
+        </div>
+      ) : null}
+      {error ? <div className="text-[12.5px] text-danger">{error}</div> : null}
+    </>
+  );
+};
+
 const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () => void }) => {
   const [editingPortrait, setEditingPortrait] = useState(false);
-  const [linkingWallet, setLinkingWallet] = useState(false);
   const hasName = displayName(session) !== shortAddress(session.user.id);
   return (
     <div className="grid items-start gap-4 lg:grid-cols-2">
@@ -136,27 +228,13 @@ const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () =
         {!hasName ? (
           <div className="mb-3 rounded-lg border border-dashed border-gold/50 p-3">
             <p className="mb-2 font-serif text-[15px] italic text-gold/70">Every lord bears a name. Claim yours.</p>
-            <NameClaim currentName={null} onDone={refresh} />
+            <NameClaim currentName={null} suggestion={session.user.suggestedName ?? null} onDone={refresh} />
           </div>
         ) : null}
         <div className="space-y-2">
           <AccountStatePrompt />
-          <div className="flex items-center justify-between gap-2.5 rounded-lg border border-gold/20 bg-black/40 px-3 py-2.5 text-[13px]">
-            <span className="text-gold/60">Wallet</span>
-            {session.user.address ? (
-              <b className="font-mono text-[12px]">{shortAddress(session.user.address)}</b>
-            ) : (
-              <GhostButton onClick={() => setLinkingWallet((linking) => !linking)}>Link a wallet</GhostButton>
-            )}
-          </div>
-          {linkingWallet && !session.user.address ? (
-            <div className="rounded-lg border border-gold/20 bg-black/40 px-3 py-2.5">
-              <p className="mb-2 text-[12.5px] text-gold/60">A linked wallet claims prizes and withdraws.</p>
-              <Suspense fallback={<Loading />}>
-                <WalletLink />
-              </Suspense>
-            </div>
-          ) : null}
+          <SignInMethods session={session} />
+          <WalletRow session={session} refresh={refresh} />
           {hasName ? (
             <details className="rounded-lg border border-gold/20 bg-black/40 px-3 py-2.5">
               <summary className="cursor-pointer text-[13px] text-gold/60">Change name</summary>

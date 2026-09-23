@@ -126,13 +126,27 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     return requireSession();
   };
 
-  /** Links the wallet to the signed-in Realms account; the server refuses a wallet already linked elsewhere. */
+  /**
+   * Links the wallet to the signed-in Realms account, replacing the wallet it had; the server refuses a wallet another
+   * account holds.
+   */
   const linkWallet = async (options: SignInOptions): Promise<string> => {
     const linked = await readJson<{ address: string }>(
       await request("/auth/siws/link", { method: "POST", body: JSON.stringify(await siwsProof(options)) }),
     );
     return linked.address;
   };
+
+  /** Unlinks the account's wallet, freeing it for another account. */
+  const unlinkWallet = async (): Promise<void> => {
+    await readJson(await request("/auth/siws/unlink", { method: "POST", body: JSON.stringify({}) }));
+  };
+
+  /** The sign-in providers linked to the signed-in account, such as "discord". */
+  const listSignInProviders = async (): Promise<string[]> =>
+    (await readJson<{ providerId: string }[]>(await request("/auth/list-accounts", { method: "GET" }))).map(
+      (account) => account.providerId,
+    );
 
   /** Emails a one-time sign-in code; the service limits how many an address and a client get a minute. */
   const sendSignInCode = async (email: string): Promise<void> => {
@@ -206,6 +220,8 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     getSession,
     signIn,
     linkWallet,
+    unlinkWallet,
+    listSignInProviders,
     sendSignInCode,
     signInWithCode,
     discordSignInUrl,
