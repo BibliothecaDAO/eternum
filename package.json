@@ -80,6 +80,7 @@
     "check:forbidden-hosts": "node --test scripts/check-forbidden-hosts.test.mjs && node scripts/check-forbidden-hosts.mjs",
     "lab:deploy-gameplay": "bun deploy/athanor/scripts/deploy-gameplay-contracts.ts",
     "lab:harness": "bun deploy/athanor/harness/run.ts",
+    "lab:push-receiver": "bun deploy/athanor/harness/push-receiver.ts",
     "lab:slice:prepare-authority": "bun deploy/athanor/harness/native/prepare-authority.ts",
     "lab:probe-account": "bun deploy/athanor/scripts/probe-deploy-account.ts",
     "lab:probe-ws": "node deploy/athanor/scripts/probe-ws-subscriber.mjs",
