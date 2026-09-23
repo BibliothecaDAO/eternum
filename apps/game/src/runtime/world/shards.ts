@@ -1,5 +1,4 @@
 import { getShards, openShard, requireShard, type Shard } from "@bibliothecadao/eternum/shard";
-import { resolveEndpoint } from "@realms-world/chain";
 
 import { nativeFactSchemaIdentity } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { env } from "../../../env";
@@ -32,17 +31,6 @@ export const requireOpenShard = async (chainId: string): Promise<Shard> => {
   return requireShard(chainId);
 };
 
-/** The shard a player acts on before choosing a game: this build's default shard. */
-export const openDefaultShard = async (): Promise<Shard> => {
-  const failures = await openKnownShards();
-  const defaultShard = listOpenShards().find((shard) => shard.url === resolveShardUrl(env.VITE_PUBLIC_SHARD_URL));
-  if (defaultShard) return defaultShard;
-  throw (
-    failures.find((failure) => failure.url === env.VITE_PUBLIC_SHARD_URL)?.error ??
-    new Error("Default shard is not open")
-  );
-};
-
 /** A pasted shard is remembered only once it opened, so a mistyped URL never persists. */
 export const addPastedShard = async (url: string): Promise<Shard> => {
   const shard = await openShard(url, nativeFactSchemaIdentity);
@@ -58,8 +46,6 @@ const openShardUrls = async (urls: string[]): Promise<ShardOpenFailure[]> => {
     result.status === "rejected" ? [{ url: urls[index], error: toError(result.reason) }] : [],
   );
 };
-
-const resolveShardUrl = (url: string): string => resolveEndpoint(url, { name: "Shard URL" });
 
 const toError = (reason: unknown): Error => (reason instanceof Error ? reason : new Error(String(reason)));
 

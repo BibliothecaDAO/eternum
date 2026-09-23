@@ -15,10 +15,12 @@ const CONTRACT_NOT_FOUND = 20;
 // The account's own state is read where its transactions land: a deployment or device change is pre-confirmed within
 // the block, and a read of the last closed block would ask the guardian again with a stale counter.
 const ACCOUNT_STATE = BlockTag.PRE_CONFIRMED;
+// Like every native submit: no tip, so no tip estimate reads recent blocks before signing.
+const NO_TIP = { tip: 0 };
 const DEVICE_KEY_STORAGE_KEY = "realms:device-key";
 const RECEIPT_POLL_MS = 250;
 
-type StorageLike = Pick<Storage, "getItem" | "setItem">;
+type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 export interface DeviceKey {
   privateKey: string;
@@ -54,6 +56,11 @@ export function getOrCreateDeviceKey(storage: StorageLike): DeviceKey {
   return deviceKeyOf(privateKey);
 }
 
+/** A removed device returns only as a new one: the next sign-in on this browser makes a fresh key. */
+export function forgetDeviceKey(storage: StorageLike): void {
+  storage.removeItem(DEVICE_KEY_STORAGE_KEY);
+}
+
 /**
  * Makes this device a signer of the player's account on one shard: deploys the account with the device as its first
  * key, or adds the device to an account another device deployed. Either way the transaction carries the guardian's
@@ -78,19 +85,22 @@ export async function joinRealmsAccount({
 
   if (!(await isAccountDeployed(provider, address, shard.accountClassHash))) {
     const deployer = realmsAccount(provider, address, device, await approval(1));
-    const deployed = await deployer.deployAccount({
-      classHash: shard.accountClassHash,
-      constructorCalldata: [realmsId, shard.guardianPublicKey],
-      addressSalt: realmsId,
-      contractAddress: address,
-    });
+    const deployed = await deployer.deployAccount(
+      {
+        classHash: shard.accountClassHash,
+        constructorCalldata: [realmsId, shard.guardianPublicKey],
+        addressSalt: realmsId,
+        contractAddress: address,
+      },
+      NO_TIP,
+    );
     await provider.waitForTransaction(deployed.transaction_hash, { retryInterval: RECEIPT_POLL_MS });
   } else if (!(await isDevice(provider, address, device.publicKey))) {
     // A device the player removed never adds itself back; it returns only as a new device after a fresh sign-in.
     if (await wasRevoked(provider, address, device.publicKey)) throw new DeviceRemovedError(address);
     const counter = (await deviceChangeCounter(provider, address)) + 1;
     const joining = realmsAccount(provider, address, device, await approval(counter));
-    const joined = await joining.execute(isDeviceCall(address, device.publicKey));
+    const joined = await joining.execute(isDeviceCall(address, device.publicKey), NO_TIP);
     await provider.waitForTransaction(joined.transaction_hash, { retryInterval: RECEIPT_POLL_MS });
   }
   return connectRealmsAccount(provider, shard, realmsId, device);
@@ -105,7 +115,7 @@ export const connectRealmsAccount = (
 ): Account =>
   realmsAccount(provider, realmsAccountAddress(realmsId, shard.accountClassHash, shard.guardianPublicKey), device);
 
-class DeviceRemovedError extends Error {
+export class DeviceRemovedError extends Error {
   constructor(readonly account: string) {
     super("This device was removed from your account. Sign in again to add it as a new device.");
   }
@@ -170,11 +180,14 @@ export async function revokeDevice({
     deviceKey,
     counter,
   });
-  const result = await account.execute({
-    contractAddress: account.address,
-    entrypoint: "revoke_device",
-    calldata: [deviceKey, r, s],
-  });
+  const result = await account.execute(
+    {
+      contractAddress: account.address,
+      entrypoint: "revoke_device",
+      calldata: [deviceKey, r, s],
+    },
+    NO_TIP,
+  );
   await account.waitForTransaction(result.transaction_hash, { retryInterval: RECEIPT_POLL_MS });
   return result.transaction_hash;
 }

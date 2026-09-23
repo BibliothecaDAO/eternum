@@ -9,7 +9,7 @@ import { IdentityLogin } from "@/ui/modules/identity/identity-login";
 import type { Session } from "@realms-world/identity";
 
 import { displayName, useIdentityPanelSlot } from "./identity-chip";
-import { SecureAccountPrompt } from "./secure-account";
+import { AccountStatePrompt } from "./account-state";
 import { shortAddress } from "./format";
 
 /**
@@ -60,7 +60,7 @@ function SignedInPanel({ session }: { session: Session }) {
           <span className="font-mono text-xs text-gold/60">{shortAddress(session.user.address)}</span>
         ) : null}
       </div>
-      <SecureAccountPrompt />
+      <AccountStatePrompt />
       {session.user.address ? null : (
         <div className="flex flex-col gap-1">
           <span className="text-xs text-gold/60">Link a wallet to claim prizes and withdraw.</span>

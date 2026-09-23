@@ -2,32 +2,32 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
 import { parseEntryRoute, parsePlayRoute } from "@/play/navigation/play-route";
-import { openDefaultShard, requireOpenShard } from "@/runtime/world/shards";
+import { requireOpenShard } from "@/runtime/world/shards";
+import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
-import { getOrCreateDeviceKey, joinRealmsAccount } from "@bibliothecadao/eternum";
+import { DeviceRemovedError, getOrCreateDeviceKey, joinRealmsAccount } from "@bibliothecadao/eternum";
+import { IdentityRequestError } from "@realms-world/identity";
 import type { Shard } from "@bibliothecadao/eternum/game-client";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
-// The gameplay account is an identity-level fact of a shard, not per-game state. On the landing it targets the
-// default shard, so a signed-in player's account exists before any game is entered; a route naming a game targets
-// that game's shard.
-const useGameplayShardChainId = (): string | null => {
+// The account is joined when a player enters a game to play: its deploy happens at game entry, not in the first click,
+// and never for a shard the player only opens or spectates.
+const usePlayingShardChainId = (): string | null => {
   const location = useLocation();
-  return (parsePlayRoute(location) ?? parseEntryRoute(location))?.chainId ?? null;
+  const game = parsePlayRoute(location) ?? parseEntryRoute(location);
+  return game && !isExplicitSpectateSession() ? game.chainId : null;
 };
 
-const resolveGameplayShard = (chainId: string | null): Promise<Shard> =>
-  chainId ? requireOpenShard(chainId) : openDefaultShard();
-
-/** Keyed by chain id, so moving from the landing into a game on the default shard keeps the joined account. */
+/** Keyed by chain id, so moving between the scenes of one game keeps the joined account. */
 const useGameplayShard = (onError: (message: string) => void): Shard | null => {
-  const routeChainId = useGameplayShardChainId();
+  const routeChainId = usePlayingShardChainId();
   const [shard, setShard] = useState<Shard | null>(null);
   useEffect(() => {
+    if (!routeChainId) return;
     let active = true;
-    resolveGameplayShard(routeChainId).then(
+    requireOpenShard(routeChainId).then(
       (resolved) => active && setShard((current) => (current?.chainId === resolved.chainId ? current : resolved)),
       (error: unknown) => active && onError(error instanceof Error ? error.message : "Shard could not be opened"),
     );
@@ -66,9 +66,12 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
     }).then(
       (account) => active && setGameplayAccount(configureGameplayAccountSubmits(account, shard.chainId), realmsId),
       (error: unknown) => {
-        const message = error instanceof Error ? error.message : "Gameplay account provisioning failed";
-        console.error("gameplay_account_sync_failed", { error: message });
-        if (active) setGameplayAccount(null, null, message);
+        const state = accountStateOf(error);
+        if (!state) {
+          const message = error instanceof Error ? error.message : "Gameplay account provisioning failed";
+          console.error("gameplay_account_sync_failed", { error: message });
+        }
+        if (active) setGameplayAccount(null, null, state ?? (error instanceof Error ? error.message : null));
       },
     );
     return () => {
@@ -78,3 +81,13 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
 
   return <>{children}</>;
 }
+
+/** The account states a player resolves themselves; they are not failures and are not logged as errors. */
+export const ACCOUNT_NOT_SECURED = "account_not_secured";
+export const DEVICE_REMOVED = "device_removed";
+
+const accountStateOf = (error: unknown): string | null => {
+  if (error instanceof IdentityRequestError && error.code === ACCOUNT_NOT_SECURED) return ACCOUNT_NOT_SECURED;
+  if (error instanceof DeviceRemovedError) return DEVICE_REMOVED;
+  return null;
+};

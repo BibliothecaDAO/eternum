@@ -12,7 +12,7 @@ import type { Session } from "@realms-world/identity";
 
 import { DevicesPanel } from "./devices";
 import { shortAddress } from "./format";
-import { SecureAccountPrompt } from "./secure-account";
+import { AccountStatePrompt } from "./account-state";
 import { displayName, PORTRAITS, portraitUrl } from "./identity-chip";
 import { GhostButton, GoldButton, Loading, Panel, PanelTitle } from "./kit";
 
@@ -135,7 +135,7 @@ const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () =
           </div>
         ) : null}
         <div className="space-y-2">
-          <SecureAccountPrompt />
+          <AccountStatePrompt />
           <div className="flex items-center justify-between gap-2.5 rounded-lg border border-gold/20 bg-black/40 px-3 py-2.5 text-[13px]">
             <span className="text-gold/60">Wallet</span>
             {session.user.address ? (
