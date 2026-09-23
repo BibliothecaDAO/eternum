@@ -15,6 +15,8 @@ export interface Shard {
   rpcUrl: string;
   admissionUrl: string;
   accountClassHash: string;
+  /** The key that authorizes device keys on this shard's Realms accounts; with the class, it fixes their addresses. */
+  guardianPublicKey: string;
   contracts: Record<string, string>;
   /** The contract every game command enters through. */
   worldAddress: string;
@@ -76,6 +78,7 @@ const buildShard = (url: string, manifest: ShardManifest): Shard => {
     rpcUrl: resolveEndpoint(manifest.rpcUrl, { name: `RPC URL of shard ${url}` }),
     admissionUrl: resolveEndpoint(manifest.admissionUrl, { name: `Admission URL of shard ${url}` }),
     accountClassHash: manifest.accountClassHash,
+    guardianPublicKey: manifest.guardianPublicKey,
     contracts: manifest.contracts,
     worldAddress,
   };

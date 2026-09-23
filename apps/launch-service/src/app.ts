@@ -16,7 +16,8 @@ interface LaunchAppDependencies {
   identity: IdentityResolver;
   store: LaunchServiceStore;
   slots: SlotStore;
-  verifyPlayer: (owner: string) => Promise<void>;
+  /** The gameplay account a Realms account has on the shard slots launch on. */
+  playerAccount: (realmsId: string) => Promise<string>;
 }
 
 const decodeBody = async <A>(context: Context, schema: Schema.ConstraintDecoder<A, never>): Promise<A> => {
@@ -67,7 +68,7 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   app.use("*", logger());
   app.use("/api/*", requireIdentity(dependencies.identity, dependencies.config));
   app.use("/api/factory/*", requireLauncher(dependencies.config));
-  app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.verifyPlayer));
+  app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.playerAccount));
 
   app.get("/api/factory/health", async (context) => {
     try {

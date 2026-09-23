@@ -30,7 +30,7 @@ beforeAll(async () => {
     d1Databases: { DB: "launch" },
     durableObjects: { REGISTRAR: { className: "Registrar", useSQLite: true } },
     serviceBindings: {
-      IDENTITY: () => Response.json({ session: { id: "s1" }, user: { id: "u1", address: LAUNCHER } }),
+      IDENTITY: () => Response.json({ session: { id: "s1" }, user: { id: "u1", realmsId: "0x7", address: LAUNCHER } }),
     },
     bindings: {
       ENVIRONMENT: "staging",
@@ -47,6 +47,7 @@ beforeAll(async () => {
   db = (await mf.getD1Database("DB")) as unknown as D1Database;
   const migrations = new URL("../migrations/", import.meta.url);
   const statements = readdirSync(migrations)
+    .sort()
     .map((file) => readFileSync(new URL(file, migrations), "utf8").replace(/^--.*$/gm, ""))
     .join(";")
     .split(";")

@@ -282,7 +282,7 @@ async function main(): Promise<void> {
 
 export const createHarnessProvider = (rpcUrl: string): HarnessProvider => new HarnessProvider(rpcUrl);
 
-async function resolveHarnessGame(options: HarnessCliOptions, rosterOwners: string[]): Promise<LaunchedGame> {
+async function resolveHarnessGame(options: HarnessCliOptions, rosterAccounts: string[]): Promise<LaunchedGame> {
   if (options.gameId !== undefined) {
     return { gameId: options.gameId, gameName: options.gameName! };
   }
@@ -305,7 +305,7 @@ async function resolveHarnessGame(options: HarnessCliOptions, rosterOwners: stri
     durationSeconds: Math.ceil(options.minutes * 60) + 3_600,
     environmentId: options.gameType === "eternum" ? "madara.eternum" : "madara.blitz",
     gameName,
-    rosterOwners: options.gameType === "blitz" ? rosterOwners : undefined,
+    rosterAccounts: options.gameType === "blitz" ? rosterAccounts : undefined,
     privateKey: process.env.DEPLOYER_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
     rpcUrl: options.rpcUrl,
     startTime: startAt,
@@ -401,7 +401,7 @@ async function prepareGames(
   for (const [index, group] of groups.entries()) {
     const game = await resolveHarnessGame(
       { ...options, gameName: groups.length > 1 ? `${prefix}-${index + 1}` : prefix },
-      group.map(({ owner }) => owner),
+      group.map(({ address }) => address),
     );
     prepared.push({
       game,

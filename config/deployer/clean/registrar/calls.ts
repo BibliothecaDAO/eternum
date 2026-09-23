@@ -185,63 +185,19 @@ export async function findRegistrarGame(
   return value === 0n ? null : { gameId: Number(value) };
 }
 
-export function createRosterVerifier(rpcUrl: string, manifest: RegistrarManifest) {
-  const provider = new RpcProvider({ nodeUrl: rpcUrl });
-  return async (owner: string): Promise<void> => {
-    await resolveBlitzRoster(provider, [owner], manifest);
-  };
-}
-
-export async function resolveBlitzRoster(
-  provider: RpcProvider,
-  owners: readonly string[],
-  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
-) {
-  if (owners.length < 1 || owners.length > 24) throw new Error("Blitz requires 1 to 24 registered identities");
-  const normalized = owners.map((owner) => {
-    if (!/^0x[0-9a-f]+$/i.test(owner) || BigInt(owner) === 0n) throw new Error("Invalid roster identity");
-    return `0x${BigInt(owner).toString(16)}`;
+/**
+ * A Blitz roster is its players' gameplay accounts: the contract authenticates each command through the account, so an
+ * account needs no registry binding and need not be deployed yet. The roster keeps an owner field until the registry
+ * goes; it carries the account.
+ */
+export function blitzRosterOf(accounts: readonly string[]) {
+  if (accounts.length < 1 || accounts.length > 24) throw new Error("Blitz requires 1 to 24 registered players");
+  const normalized = accounts.map((account) => {
+    if (!/^0x[0-9a-f]+$/i.test(account) || BigInt(account) === 0n) throw new Error("Invalid roster account");
+    return `0x${BigInt(account).toString(16)}`;
   });
-  if (new Set(normalized).size !== normalized.length) throw new Error("Duplicate roster identity");
-  const { manifest } = resolveRegistrarContext(target);
-  const block = await provider.getBlockNumber();
-  const authentication = await provider.callContract(
-    {
-      contractAddress: manifest.native.domains.season.address,
-      entrypoint: "authentication",
-      calldata: [],
-    },
-    block,
-  );
-  const decoded = new CallData(nativeDomainAbi(manifest, "season")).parse("authentication", authentication) as {
-    registry: bigint;
-  };
-  const registry = `0x${BigInt(decoded.registry).toString(16)}`;
-  if (BigInt(registry) === 0n) throw new Error("World has no PlayerRegistry");
-  return Promise.all(normalized.map((owner) => readRosterPlayer(provider, registry, owner, block)));
-}
-
-async function readRosterPlayer(provider: RpcProvider, registry: string, owner: string, block: number) {
-  const [account] = await provider.callContract(
-    {
-      contractAddress: registry,
-      entrypoint: "account_of",
-      calldata: [owner],
-    },
-    block,
-  );
-  if (account === undefined || BigInt(account) === 0n) throw new Error(`Identity ${owner} has no gameplay account`);
-  const [boundOwner] = await provider.callContract(
-    {
-      contractAddress: registry,
-      entrypoint: "owner_of",
-      calldata: [account],
-    },
-    block,
-  );
-  if (boundOwner === undefined || BigInt(boundOwner) !== BigInt(owner))
-    throw new Error(`Registry binding mismatch for ${owner}`);
-  return { owner, account: `0x${BigInt(account).toString(16)}` };
+  if (new Set(normalized).size !== normalized.length) throw new Error("Duplicate roster account");
+  return normalized.map((account) => ({ owner: account, account }));
 }
 
 export function resolveRegistrarWorldAddress(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): string {

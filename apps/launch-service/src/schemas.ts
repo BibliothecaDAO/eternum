@@ -22,7 +22,7 @@ const SharedOptions = {
 export const CreateGameRequestSchema = Schema.Struct({
   ...SharedOptions,
   gameName: NonEmptyString,
-  rosterOwners: Schema.optional(Schema.Array(Schema.String.pipe(Schema.check(Schema.isPattern(/^0x[0-9a-fA-F]+$/))))),
+  rosterAccounts: Schema.optional(Schema.Array(Schema.String.pipe(Schema.check(Schema.isPattern(/^0x[0-9a-fA-F]+$/))))),
   gameStartTime: Schema.optional(NonEmptyString),
   workflowRef: Schema.optional(NonEmptyString),
 });
@@ -39,7 +39,7 @@ interface SharedLaunchOptions {
 }
 
 export interface CreateGameRequest extends SharedLaunchOptions {
-  rosterOwners?: readonly string[];
+  rosterAccounts?: readonly string[];
   gameName: string;
   gameStartTime?: string;
   workflowRef?: string;

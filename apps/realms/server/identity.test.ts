@@ -1,13 +1,13 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { isoBase64URL, isoCBOR } from "@simplewebauthn/server/helpers";
 import { buildSiwsMessage } from "@realms-world/identity";
-import { createGuardian, deviceChangeHash } from "@realms-world/guardian";
+import { deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
+import { createGuardian } from "@realms-world/guardian";
 import { ec } from "starknet";
 import { getPlatformProxy } from "wrangler";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createIdentityAuth } from "./auth";
-import { realmsAccountAddress } from "./devices";
 import type { IdentityEnv } from "./env";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";

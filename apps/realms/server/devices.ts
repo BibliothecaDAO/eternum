@@ -1,6 +1,6 @@
 import { Data, Effect, Schema } from "effect";
-import { hash, num } from "starknet";
-import type { DeviceChange, Guardian } from "@realms-world/guardian";
+import { realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
+import type { Guardian } from "@realms-world/guardian";
 
 import type { IdentityAuth } from "./auth";
 import { json } from "./http";
@@ -80,7 +80,3 @@ const hasWayBackIn = (db: D1Database, user: { id: string; address?: string | nul
       ? true
       : (await db.prepare('SELECT 1 FROM "passkey" WHERE "userId" = ? LIMIT 1').bind(user.id).first()) !== null,
   );
-
-/** Deployed with salt = Realms id and constructor (realms_id, guardian_public_key) from no deployer. */
-export const realmsAccountAddress = (realmsId: string, accountClassHash: string, guardianPublicKey: string): string =>
-  num.toHex(hash.calculateContractAddressFromHash(realmsId, accountClassHash, [realmsId, guardianPublicKey], 0));

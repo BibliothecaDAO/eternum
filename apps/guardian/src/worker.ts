@@ -1,6 +1,8 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
 
-import { createGuardian, type DeviceChange, type Guardian } from "./guardian";
+import type { DeviceChange } from "@realms-world/identity/account";
+
+import { createGuardian, type Guardian } from "./guardian";
 
 interface GuardianEnv {
   GUARDIAN_PRIVATE_KEY: string;

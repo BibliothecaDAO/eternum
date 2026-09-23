@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@bibliothecadao/eternum": "workspace:*",
+    "@realms-world/identity": "workspace:*",
     "effect": "4.0.0-rc.108",
     "hono": "^4.9.12"
   },

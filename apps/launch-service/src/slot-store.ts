@@ -5,6 +5,7 @@ import {
   SlotNotFound,
   splitPlaytestRoster,
   type PlaytestSlot,
+  type SlotPlayer,
   type SlotRegistration,
   type SlotStore,
 } from "./slots";
@@ -17,7 +18,8 @@ interface SlotRow {
 
 interface RegistrationRow {
   slot_name: string;
-  owner: string;
+  realms_id: string;
+  account: string;
   position: number;
   game_number: number | null;
 }
@@ -46,22 +48,23 @@ export class D1SlotStore implements SlotStore {
     return (slots!.results as SlotRow[]).map((row) => toSlot(row, rosters.get(row.name) ?? [], Date.now()));
   }
 
-  async register(name: string, owner: string): Promise<PlaytestSlot> {
-    const address = normalizeAddress(owner);
-    if (BigInt(address) === 0n) throw new SlotConflict("A bound identity is required");
+  async register(name: string, player: SlotPlayer): Promise<PlaytestSlot> {
+    const realmsId = normalizeAddress(player.realmsId);
+    const account = normalizeAddress(player.account);
+    if (BigInt(account) === 0n) throw new SlotConflict("A gameplay account is required");
     const now = Date.now();
     if (!isOpen(await this.readSlot(name), now)) throw new SlotConflict("Registration is closed");
     await this.db
       .prepare(
-        `INSERT INTO playtest_registrations (slot_name, owner, position)
-         SELECT ?1, ?2, COALESCE((SELECT MAX(position) FROM playtest_registrations WHERE slot_name = ?1), 0) + 1
-         WHERE EXISTS (SELECT 1 FROM playtest_slots WHERE name = ?1 AND frozen_at IS NULL AND closes_at > ?3)
-         ON CONFLICT (slot_name, owner) DO NOTHING`,
+        `INSERT INTO playtest_registrations (slot_name, realms_id, account, position)
+         SELECT ?1, ?2, ?3, COALESCE((SELECT MAX(position) FROM playtest_registrations WHERE slot_name = ?1), 0) + 1
+         WHERE EXISTS (SELECT 1 FROM playtest_slots WHERE name = ?1 AND frozen_at IS NULL AND closes_at > ?4)
+         ON CONFLICT (slot_name, realms_id) DO NOTHING`,
       )
-      .bind(name, address, now)
+      .bind(name, realmsId, account, now)
       .run();
     const slot = await this.readSlot(name);
-    if (!slot.registrations.some((registration) => registration.owner === address))
+    if (!slot.registrations.some((registration) => registration.realmsId === realmsId))
       throw new SlotConflict("Registration is closed");
     return slot;
   }
@@ -72,7 +75,7 @@ export class D1SlotStore implements SlotStore {
     if (!slot.closed) throw new SlotConflict("Registration is still open");
     const groups = splitPlaytestRoster(slot.registrations);
     await this.db.batch([
-      ...groups.flatMap((group, index) => group.map(({ owner }) => this.assignGame(name, owner, index + 1))),
+      ...groups.flatMap((group, index) => group.map(({ realmsId }) => this.assignGame(name, realmsId, index + 1))),
       ...groups.map((group, index) => this.queueSlotGame(slot, index + 1, group)),
       this.db
         .prepare("UPDATE playtest_slots SET frozen_at = ? WHERE name = ? AND frozen_at IS NULL")
@@ -94,10 +97,10 @@ export class D1SlotStore implements SlotStore {
     if (due) await this.freeze(due.name);
   }
 
-  private assignGame(slotName: string, owner: string, gameNumber: number) {
+  private assignGame(slotName: string, realmsId: string, gameNumber: number) {
     return this.db
-      .prepare("UPDATE playtest_registrations SET game_number = ? WHERE slot_name = ? AND owner = ?")
-      .bind(gameNumber, slotName, owner);
+      .prepare("UPDATE playtest_registrations SET game_number = ? WHERE slot_name = ? AND realms_id = ?")
+      .bind(gameNumber, slotName, realmsId);
   }
 
   private queueSlotGame(slot: PlaytestSlot, gameNumber: number, players: readonly SlotRegistration[]) {
@@ -109,7 +112,7 @@ export class D1SlotStore implements SlotStore {
       gameStartTime: slot.closesAt,
       devModeOn: false,
       singleRealmMode: false,
-      rosterOwners: players.map(({ owner }) => owner),
+      rosterAccounts: players.map(({ account }) => account),
     };
     const now = Date.now();
     return this.db
@@ -135,7 +138,8 @@ export class D1SlotStore implements SlotStore {
 const isOpen = (slot: PlaytestSlot, now: number) => !slot.frozenAt && Date.parse(slot.closesAt) > now;
 
 const toRegistration = (row: RegistrationRow): SlotRegistration => ({
-  owner: row.owner,
+  realmsId: row.realms_id,
+  account: row.account,
   position: row.position,
   gameNumber: row.game_number,
 });

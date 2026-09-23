@@ -40,7 +40,8 @@ export interface LaunchGameRequest {
   manifest: RegistrarWorld;
   heraldUrl?: string;
   admissionUrl?: string;
-  rosterOwners?: readonly string[];
+  /** A Blitz game's players, as the gameplay accounts they play with. */
+  rosterAccounts?: readonly string[];
   launchKind?: "game";
   environmentId: DeploymentEnvironmentId;
   gameName: string;

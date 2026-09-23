@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { createRosterVerifier } from "../../../config/deployer/clean/registrar/calls";
+import { realmsAccountAddress } from "@realms-world/identity/account";
 import { createLaunchApp } from "./app";
 import { createIdentityResolver } from "./auth";
 import { decodeLaunchEnv, type LaunchEnv } from "./env";
@@ -35,8 +35,8 @@ const launchAppOf = (env: LaunchEnv) =>
     identity: createIdentityResolver(env.BASE_URL, (url, init) => env.IDENTITY.fetch(url, init)),
     store: new D1LaunchStore(env.DB),
     slots: new D1SlotStore(env.DB),
-    verifyPlayer: async (owner) => {
-      const { shard, world } = await readLaunchShard(env.SHARD_URL);
-      await createRosterVerifier(shard.rpcUrl, world)(owner);
+    playerAccount: async (realmsId) => {
+      const { shard } = await readLaunchShard(env.SHARD_URL);
+      return realmsAccountAddress(realmsId, shard.accountClassHash, shard.guardianPublicKey);
     },
   });

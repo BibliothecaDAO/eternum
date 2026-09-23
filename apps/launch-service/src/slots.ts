@@ -1,5 +1,10 @@
-export interface SlotRegistration {
-  owner: string;
+/** A player in a slot: their Realms account, and the gameplay account it has on the shard the slot launches on. */
+export interface SlotPlayer {
+  realmsId: string;
+  account: string;
+}
+
+export interface SlotRegistration extends SlotPlayer {
   position: number;
   gameNumber: number | null;
 }
@@ -16,7 +21,7 @@ export interface SlotStore {
   /** Creates the slot once; the timetable names a slot by its closing time, so a repeat is the same slot. */
   create(name: string, closesAt: string): Promise<void>;
   list(): Promise<PlaytestSlot[]>;
-  register(name: string, owner: string): Promise<PlaytestSlot>;
+  register(name: string, player: SlotPlayer): Promise<PlaytestSlot>;
   freeze(name: string): Promise<PlaytestSlot>;
   freezeNextDue(): Promise<void>;
 }

@@ -69,7 +69,7 @@ const buildGameRequest = (
   blitzRegistrationOverrides: request.blitzRegistrationOverrides,
   launchKind: "game",
   gameName: request.gameName,
-  rosterOwners: request.rosterOwners,
+  rosterAccounts: request.rosterAccounts,
   startTime: requirePersistedStartTime(request),
 });
 

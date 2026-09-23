@@ -16,7 +16,7 @@ import {
   assertRegistrarAvailable,
   createRegistrarGame,
   settleBlitzRoster,
-  resolveBlitzRoster,
+  blitzRosterOf,
   findRegistrarGame,
   resolveRegistrarWorldAddress,
 } from "../registrar/calls";
@@ -171,10 +171,10 @@ async function assertLaunchChainTargets(launch: PreparedLaunch): Promise<void> {
 }
 
 async function buildRegistrarGameParams(launch: PreparedLaunch) {
-  const owners = launch.request.rosterOwners ?? [];
+  const accounts = launch.request.rosterAccounts ?? [];
   const fixedRoster = nativePresetForId(launch.runtime.presetId).entryRule === nativeRuleConstants.ENTRY_ROSTER;
-  const roster = fixedRoster ? await resolveBlitzRoster(launch.runtime.provider, owners, launch.request.manifest) : [];
-  if (!fixedRoster && owners.length) throw new Error("Eternum does not use a fixed roster");
+  const roster = fixedRoster ? blitzRosterOf(accounts) : [];
+  if (!fixedRoster && accounts.length) throw new Error("Eternum does not use a fixed roster");
   const block = await launch.runtime.provider.getBlock("latest");
   return buildNativeGameParams(
     launch.config,

@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "starknet": "catalog:web"
+    "starknet": "catalog:web",
+    "@realms-world/identity": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260922.1",

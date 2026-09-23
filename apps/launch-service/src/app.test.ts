@@ -9,9 +9,14 @@ import { createLaunchTestDatabase } from "./test-database";
 const ALLOWED_ORIGIN = "https://play.realms.party";
 const ALLOWED_ADDRESS = "0x123";
 
-const identity = (address: string | null): IdentityResolver => ({
-  resolve: () => Effect.succeed(address ? { address } : null),
+const PLAYER = "0x7";
+const PLAYER_ACCOUNT = "0xacc";
+
+/** A signed-in Realms account, with the wallet linked to it, if any. */
+const signedIn = (wallet: string | null = null): IdentityResolver => ({
+  resolve: () => Effect.succeed({ realmsId: PLAYER, wallet }),
 });
+const signedOut: IdentityResolver = { resolve: () => Effect.succeed(null) };
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
@@ -24,7 +29,7 @@ afterEach(async () => {
 const createApp = (
   resolver: IdentityResolver,
   slots = new D1SlotStore(database.db),
-  verifyPlayer = vi.fn(async (_owner: string) => {}),
+  playerAccount = vi.fn(async (_realmsId: string) => PLAYER_ACCOUNT),
 ) => {
   const store = new D1LaunchStore(database.db);
   return {
@@ -37,11 +42,11 @@ const createApp = (
       identity: resolver,
       store,
       slots,
-      verifyPlayer,
+      playerAccount,
     }),
     store,
     slots,
-    verifyPlayer,
+    playerAccount,
   };
 };
 
@@ -57,22 +62,22 @@ describe("free slot registration", () => {
       body: JSON.stringify({ owner: "0xdead", account: "0xbeef" }),
     });
 
-  test("binds registration to the verified identity, without requiring launcher privileges", async () => {
-    const { app, slots, verifyPlayer } = createApp(identity("0x456"));
+  test("registers the signed-in Realms account and its shard account, with no wallet or launcher privileges", async () => {
+    const { app, slots, playerAccount } = createApp(signedIn());
     await slots.create("friday", "2099-01-01T00:00:00.000Z");
     const response = await app.request(registerRequest());
     expect(response.status).toBe(200);
-    expect((await slots.list())[0].registrations.map(({ owner }) => owner)).toEqual(["0x456"]);
-    expect(verifyPlayer).toHaveBeenCalledWith("0x456");
+    expect((await slots.list())[0]!.registrations).toMatchObject([{ realmsId: PLAYER, account: PLAYER_ACCOUNT }]);
+    expect(playerAccount).toHaveBeenCalledWith(PLAYER);
   });
 
-  test("does not freeze an unbound identity into the roster", async () => {
+  test("does not register a player whose shard account cannot be read", async () => {
     const slots = new D1SlotStore(database.db);
     const { app } = createApp(
-      identity("0x456"),
+      signedIn("0x456"),
       slots,
       vi.fn(async () => {
-        throw new Error("Identity has no gameplay account");
+        throw new Error("Shard https://shard.test manifest failed: 503");
       }),
     );
     expect((await app.request(registerRequest())).status).toBe(503);
@@ -80,7 +85,7 @@ describe("free slot registration", () => {
   });
 
   test("does not register unauthenticated or cross-origin requests", async () => {
-    const { app, slots } = createApp(identity(null));
+    const { app, slots } = createApp(signedOut);
     expect((await app.request(registerRequest())).status).toBe(401);
     const request = registerRequest();
     request.headers.set("origin", "https://untrusted.example");
@@ -102,13 +107,13 @@ const launchRequest = () =>
 
 describe("launch service authorization", () => {
   test("rejects a mutation without a verified session", async () => {
-    const { app } = createApp(identity(null));
+    const { app } = createApp(signedOut);
     const response = await app.request(launchRequest());
     expect(response.status).toBe(401);
   });
 
   test("rejects an allowlisted session from a spoofed or omitted origin", async () => {
-    const { app } = createApp(identity(ALLOWED_ADDRESS));
+    const { app } = createApp(signedIn(ALLOWED_ADDRESS));
     const spoofed = launchRequest();
     spoofed.headers.set("origin", "https://attacker.example");
     expect((await app.request(spoofed)).status).toBe(403);
@@ -119,12 +124,14 @@ describe("launch service authorization", () => {
   });
 
   test("rejects a signed-in address outside the launcher allowlist", async () => {
-    const { app } = createApp(identity("0x456"));
+    const { app } = createApp(signedIn("0x456"));
     expect((await app.request(launchRequest())).status).toBe(403);
+    const noWallet = createApp(signedIn()).app;
+    expect((await noWallet.request(launchRequest())).status).toBe(403);
   });
 
   test("returns the requested format when launching and listing Eternum games", async () => {
-    const { app } = createApp(identity(ALLOWED_ADDRESS));
+    const { app } = createApp(signedIn(ALLOWED_ADDRESS));
     const request = launchRequest();
     const response = await app.request(
       new Request(request.url, {
@@ -140,7 +147,7 @@ describe("launch service authorization", () => {
   });
 
   test("queues an authorized launch and keeps reads public", async () => {
-    const { app } = createApp(identity(ALLOWED_ADDRESS));
+    const { app } = createApp(signedIn(ALLOWED_ADDRESS));
     const created = await app.request(launchRequest());
     expect(created.status).toBe(202);
     expect(await created.json()).toMatchObject({
@@ -156,7 +163,7 @@ describe("launch service authorization", () => {
   });
 
   test("rejects Duel and unregistered presets at the schema", async () => {
-    const { app } = createApp(identity(ALLOWED_ADDRESS));
+    const { app } = createApp(signedIn(ALLOWED_ADDRESS));
     const duel = new Request(launchRequest(), {
       body: JSON.stringify({ environment: "madara.blitz", gameName: "bltz-duel-game", version: "4" }),
     });
@@ -175,7 +182,7 @@ describe("launch service authorization", () => {
   });
 
   test("launches a real game dev-off and stores devModeOn:false", async () => {
-    const { app, store } = createApp(identity(ALLOWED_ADDRESS));
+    const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
     const request = launchRequest();
     request.headers.set("content-type", "application/json");
     const realGame = new Request(request, {

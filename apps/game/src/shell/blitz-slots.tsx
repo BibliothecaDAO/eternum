@@ -6,9 +6,10 @@ import {
   type PlaytestSlot,
 } from "@/ui/features/factory-v2/api/factory-worker";
 
-function registrationFor(slot: PlaytestSlot, owner: string | undefined) {
-  if (!owner) return undefined;
-  return slot.registrations.find((registration) => BigInt(registration.owner) === BigInt(owner));
+/** A slot's players are Realms accounts, so the signed-in account finds itself by its Realms id. */
+function registrationFor(slot: PlaytestSlot, realmsId: string | undefined) {
+  if (!realmsId) return undefined;
+  return slot.registrations.find((registration) => BigInt(registration.realmsId) === BigInt(realmsId));
 }
 
 export const BlitzSlots = () => {
@@ -21,7 +22,7 @@ export const BlitzSlots = () => {
     onSuccess: () => client.invalidateQueries({ queryKey: ["playtestSlots"] }),
   });
   const error = register.error ?? slots.error;
-  const visible = slots.data?.slots.filter((slot) => !slot.frozenAt || registrationFor(slot, session?.user.id));
+  const visible = slots.data?.slots.filter((slot) => !slot.frozenAt || registrationFor(slot, session?.user.realmsId));
   if (!visible?.length && !error) return null;
   return (
     <section className="space-y-3 rounded-2xl border border-gold/30 bg-black/40 p-4 text-gold">
@@ -32,7 +33,7 @@ export const BlitzSlots = () => {
         </p>
       )}
       {visible?.map((slot) => {
-        const registration = registrationFor(slot, session?.user.id);
+        const registration = registrationFor(slot, session?.user.realmsId);
         const closed = slot.closed;
         return (
           <article

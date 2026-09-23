@@ -1,4 +1,4 @@
-import { resolveBlitzRoster, findRegistrarGame } from "../registrar/calls";
+import { blitzRosterOf, findRegistrarGame } from "../registrar/calls";
 import { afterAll, describe, expect, test, mock } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -188,35 +188,14 @@ describe("fixed Regular Blitz rosters", () => {
     expect(() => buildNativeGameParams(config, { ...input, devModeOn: true }, players)).toThrow("development mode");
     expect(buildNativeGameParams(config, input, players).roster).toEqual(players);
   });
-  test("binding resolution uses one confirmed block and preserves registration order", async () => {
-    const callContract = mock(
-      async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }, block: number) => {
-        expect(block).toBe(42);
-        if (entrypoint === "authentication") return ["0x10", "0x20", "0x30"];
-        if (entrypoint === "account_of") return [BigInt(calldata[0]) === 1n ? "0x101" : "0x102"];
-        if (entrypoint === "owner_of") return [BigInt(calldata[0]) === 0x101n ? "0x1" : "0x2"];
-        throw new Error("Unexpected view");
-      },
-    );
-    const provider = { getBlockNumber: async () => 42, callContract } as unknown as RpcProvider;
-    expect(await resolveBlitzRoster(provider, ["0x02", "0x1"], target as never)).toEqual([
-      { owner: "0x2", account: "0x102" },
-      { owner: "0x1", account: "0x101" },
+  test("a roster is its players' accounts in registration order, each once", () => {
+    expect(blitzRosterOf(["0x02", "0x1"])).toEqual([
+      { owner: "0x2", account: "0x2" },
+      { owner: "0x1", account: "0x1" },
     ]);
-    expect(callContract).toHaveBeenCalledTimes(5);
-    await expect(resolveBlitzRoster(provider, ["0x01", "0x1"], target as never)).rejects.toThrow("Duplicate");
-    expect(callContract).toHaveBeenCalledTimes(5);
-  });
-  test.each(["0x0", "0x999"])("an unbound or mismatched account %s fails loudly", async (bound) => {
-    const provider = {
-      getBlockNumber: async () => 42,
-      callContract: async ({ entrypoint }: { entrypoint: string }) => {
-        if (entrypoint === "authentication") return ["0x10", "0x20", "0x30"];
-        if (entrypoint === "account_of") return [bound];
-        return ["0x777"];
-      },
-    } as unknown as RpcProvider;
-    await expect(resolveBlitzRoster(provider, ["0x1"], target as never)).rejects.toThrow();
+    expect(() => blitzRosterOf(["0x01", "0x1"])).toThrow("Duplicate");
+    expect(() => blitzRosterOf(["0x0"])).toThrow("Invalid");
+    expect(() => blitzRosterOf([])).toThrow("1 to 24");
   });
   test("creation recovery reads the registrar without waiting for Herald", async () => {
     const callContract = mock(async () => ["0x7"]);
