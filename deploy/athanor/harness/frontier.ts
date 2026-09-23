@@ -65,7 +65,7 @@ export async function launchFrontierSeason(provider: HarnessProvider, gameName: 
   });
   try {
     const registered = await registerNativePreset(account, 1, acceleratedRegistration);
-    const created = await createRegistrarGame(account, params, "madara.frontier", undefined, accelerated);
+    const created = await createRegistrarGame(account, params, "madara.frontier", accelerated);
     if (!created.gameId) throw new Error("Frontier registrar did not emit a game id");
     console.log(
       JSON.stringify({
@@ -253,7 +253,7 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
 async function readChestHistory(client: GameClient, confirmedBlock: number) {
   const rewards: Array<{ player: bigint; epoch: number; depth: number; kind: string; quality: number }> = [];
   for (let offset = 0; ; ) {
-    const page = await fetchHeraldGameHistory(client.world, client.gameId, {
+    const page = await fetchHeraldGameHistory(client.shard, client.gameId, {
       model: "StoryEvent",
       story: "ChestReward",
       limit: 500,
