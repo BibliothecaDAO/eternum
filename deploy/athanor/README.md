@@ -82,6 +82,14 @@ The runner creates private volumes, deploys the Realms account class (refusing o
 for) and the operator's own Realms account, deploys the native world under it, registers
 presets 1–4 and starts Herald. Each shard exports upstream node metrics through its own
 pinned OTLP collector into its private run directory; `harness.env` points the existing block reporter at that output.
+The collector also scrapes `gateway:9950/metrics` every 5 seconds. Its cgroup sampler replaces the Docker stats
+receiver: it reads each container's `cpu.stat` through a read-only `/sys/fs/cgroup` mount, with no Docker socket.
+Every 10 seconds it appends usage and throttling counters to `metrics/container-metrics.jsonl` in the existing OTLP
+JSON format, retaining the whole run across collector restarts. Container ID, cgroup name and relative cgroup path
+identify each sample, including containers outside the shard so runs can show competing work. Compare cumulative
+`container.cpu.usage.total` deltas (nanoseconds), CPU utilization and throttled time with the latency window.
+The image builds from pinned Python and collector images; the Compose runner builds it from the sampler's content
+hash. It runs without capabilities or writable root files. Keep the unrotated samples with the run report.
 The run directory holds its compose configuration, manifest, logs and private `harness.env`. It starts no live services.
 Failed runs retain their volumes for inspection; choose a fresh shard id for a new run.
 
@@ -155,7 +163,10 @@ and admission URLs to their separate staging tunnel hostnames. Herald has the ow
 restarts on failure so a node restart does not leave it down.
 
 The app uses `staging.realms.party`, whose `/api/*` routes belong to K's staging Workers. `candidate-services.yml`
-replaces the old candidate's Vite dev server with a static client. Build it with
+replaces the old candidate's Vite dev server with a static client. Set both `VITE_PUBLIC_IDENTITY_RPC_URL` and
+`VITE_PUBLIC_CONTROLLER_RPC_URL` from the protected `/opt/athanor/config/client-identity-rpc-url` file in the build
+process environment. Never print the value or copy it to an environment file. Verify the served bundle has no public
+RPC fallback and exercise passkey sign-in after changing it. Build the client with
 `VITE_PUBLIC_SHARD_URL=https://staging-herald.realms.party`; launch requests use the app's own origin. The launch Worker
 reads the RPC, admission and contract addresses from `SHARD_URL=https://staging-herald.realms.party`; the box runs no launch or identity service. Configure
 its registrar credentials from the primary shard's private `harness.env` and its Frontier season start through K's

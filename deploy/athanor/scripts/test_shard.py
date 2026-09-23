@@ -1,4 +1,5 @@
 import io
+import importlib.util
 import json
 from pathlib import Path
 import tempfile
@@ -134,6 +135,41 @@ class ShardTest(unittest.TestCase):
             })
             self.assertEqual(config["exporters"]["file"]["path"], "/data/metrics.jsonl")
             self.assertEqual((directory / "metrics").stat().st_mode & 0o777, 0o700)
+
+    def test_cgroup_samples_keep_units_and_history_across_container_replacement(self):
+        spec = importlib.util.spec_from_file_location("collect_cpu", shard.METRICS_CONTEXT / "collect_cpu.py")
+        sampler = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(sampler)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            output = root / "samples.jsonl"
+            (root / "cpu.stat").write_text("usage_usec 999999\n")
+            container = root / "athanor.slice" / ("docker-" + "a" * 64 + ".scope")
+            container.mkdir(parents=True)
+            stats = container / "cpu.stat"
+            stats.write_text("usage_usec 120\nuser_usec 80\nsystem_usec 40\nnr_periods 5\nnr_throttled 2\nthrottled_usec 7\n")
+            previous = sampler.append_samples(root, output, {})
+            stats.write_text("usage_usec 220\nuser_usec 140\nsystem_usec 80\nnr_periods 6\nnr_throttled 3\nthrottled_usec 9\n")
+            sampler.append_samples(root, output, previous)
+            stats.unlink()
+            container.rmdir()
+            replacement = root / "docker" / ("b" * 64)
+            replacement.mkdir(parents=True)
+            (replacement / "cpu.stat").write_text("usage_usec 10\nuser_usec 6\nsystem_usec 4\n")
+            current = sampler.append_samples(root, output, previous)
+            lines = [json.loads(line) for line in output.read_text().splitlines()]
+            self.assertEqual(len(lines), 3)  # No aggregate double counting; old samples survive restarts.
+            resource = lines[0]["resourceMetrics"][0]
+            attributes = {item["key"]: item["value"]["stringValue"] for item in resource["resource"]["attributes"]}
+            self.assertEqual(attributes["container.id"], "a" * 64)
+            self.assertEqual(attributes["container.name"], container.name)
+            metrics = {metric["name"]: metric for metric in resource["scopeMetrics"][0]["metrics"]}
+            self.assertEqual(metrics["container.cpu.usage.total"]["sum"]["dataPoints"][0]["asInt"], "120000")
+            self.assertEqual(metrics["container.cpu.throttling_data.throttled_time"]["sum"]["dataPoints"][0]["asInt"], "7000")
+            self.assertEqual(metrics["container.cpu.throttling_data.throttled_periods"]["sum"]["dataPoints"][0]["asInt"], "2")
+            self.assertEqual(set(current), {"b" * 64})
+            last_metrics = lines[-1]["resourceMetrics"][0]["scopeMetrics"][0]["metrics"]
+            self.assertEqual(len(last_metrics), 3)  # Disabled bandwidth controller: omit unavailable counters.
 
     def test_environment_rejects_line_injection(self):
         with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError):

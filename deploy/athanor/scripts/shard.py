@@ -21,7 +21,7 @@ import candidate_guard
 
 
 ROOT = Path(__file__).resolve().parents[3]
-METRICS_IMAGE = "otel/opentelemetry-collector-contrib@sha256:fd328de2552466ad78385e1b1289c3f2402b1c45f265b252aab1955b42845ac1"
+METRICS_CONTEXT = ROOT / "deploy/athanor/metrics"
 DOCKER = ["sudo", "-n", "docker"]
 # Admission connections: each player holds about two (a 100-connection node refused a 96-player slot at its
 # 48th player), plus a fixed allowance for the sequencing authority, Herald and tooling.
@@ -147,9 +147,12 @@ def compose_configuration(config, directory):
     node["ports"] = [f"127.0.0.1:{config['port_base']}:9944"]
     compose["services"]["postgres"]["ports"] = [f"127.0.0.1:{config['port_base'] + 2}:5432"]
     compose["services"]["metrics"] = {
-        **budget, "image": METRICS_IMAGE, "mem_limit": "256m", "memswap_limit": "256m",
+        **budget, "image": collector_image(), "build": {"context": str(METRICS_CONTEXT)},
+        "mem_limit": "256m", "memswap_limit": "256m",
         "user": f"{os.getuid()}:{os.getgid()}", "command": ["--config=/config/collector.json"],
-        "volumes": ["public-config:/config:ro", f"{directory / 'metrics'}:/data"],
+        "volumes": ["public-config:/config:ro", f"{directory / 'metrics'}:/data",
+                    "/sys/fs/cgroup:/host-cgroup:ro"],
+        "read_only": True, "cap_drop": ["ALL"], "security_opt": ["no-new-privileges:true"],
         "depends_on": {"prepare": {"condition": "service_completed_successfully"}},
     }
     return compose
@@ -237,18 +240,31 @@ def deployment_environment(config, directory):
     }
 
 
-def prepare_runtime_files(directory, environment):
-    (directory / "metrics").mkdir(mode=0o700, exist_ok=True)
-    # The node pushes OTLP; the collector scrapes the gateway's admission metrics into the same file.
+def collector_image():
+    source = b"".join((METRICS_CONTEXT / name).read_bytes() for name in ("Dockerfile", "collect_cpu.py"))
+    return f"athanor-metrics:{hashlib.sha256(source).hexdigest()}"
+
+
+def collector_configuration():
+    # Replace node-only telemetry with admission timing and container cost in the same run directory.
     gateway = {"job_name": "gateway", "scrape_interval": "5s", "static_configs": [{"targets": ["gateway:9950"]}]}
-    write_json(directory / "collector.json", {
+    return {
         "receivers": {
             "otlp": {"protocols": {"grpc": {"endpoint": "0.0.0.0:4317"}}},
             "prometheus": {"config": {"scrape_configs": [gateway]}},
         },
-        "exporters": {"file": {"path": "/data/metrics.jsonl", "rotation": {"max_megabytes": 100, "max_backups": 2}}},
-        "service": {"pipelines": {"metrics": {"receivers": ["otlp", "prometheus"], "exporters": ["file"]}}},
-    })
+        "exporters": {
+            "file": {"path": "/data/metrics.jsonl", "rotation": {"max_megabytes": 100, "max_backups": 2}},
+        },
+        "service": {"pipelines": {
+            "metrics": {"receivers": ["otlp", "prometheus"], "exporters": ["file"]},
+        }},
+    }
+
+
+def prepare_runtime_files(directory, environment):
+    (directory / "metrics").mkdir(mode=0o700, exist_ok=True)
+    write_json(directory / "collector.json", collector_configuration())
     password = secrets.token_hex(24)
     write_private_environment(directory / "postgres.env", {
         "POSTGRES_USER": "herald", "POSTGRES_DB": "herald", "POSTGRES_PASSWORD": password,
@@ -270,9 +286,9 @@ def write_gateway_environment(config, directory, environment, authority, world):
         "RANDOMNESS_PRIVATE_KEY": environment["RANDOMNESS_PRIVATE_KEY"],
         "RANDOMNESS_EPOCH_SECRET": "/data/game-epoch-secret.json", "RUST_LOG": "info",
         "GATEWAY_LISTEN": "0.0.0.0:9950", "GATEWAY_MAX_CONNECTIONS": admission_connections(config),
-        "GATEWAY_PLAYER_CAPACITY": config["player_capacity"], "GATEWAY_AUTHORITY": environment["DEPLOYER_ACCOUNT_ADDRESS"],
+        "GATEWAY_PLAYER_CAPACITY": config["player_capacity"],
+        "GATEWAY_AUTHORITY": json.loads((directory / "gameplay-contracts.json").read_text())["operatorAccountAddress"],
         "NODE_RPC_URL": "http://madara:9944/rpc/v0_10_2", "NODE_WS_URL": "ws://madara:9944/rpc/v0_10_2",
-        # Behind a tunnel every player arrives from the proxy; only its forwarded address is trusted.
         **({"GATEWAY_TRUSTED_PROXY": config["trusted_proxy"]} if "trusted_proxy" in config else {}),
     })
 
@@ -292,7 +308,7 @@ def save_harness_environment(directory, environment):
 def deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rtt):
     return {
         **config, "project": compose["name"], "revision": read(["git", "rev-parse", "HEAD"]),
-        "chainId": manifest["shard"]["chainId"], "metrics_image": METRICS_IMAGE,
+        "chainId": manifest["shard"]["chainId"], "metrics_image": compose["services"]["metrics"]["image"],
         "slice_limits": {name: Path(f"/sys/fs/cgroup/athanor.slice/{name}").read_text().strip()
                          for name in ("cpu.max", "cpuset.cpus.effective", "memory.max", "memory.high",
                                       "memory.swap.max")},
