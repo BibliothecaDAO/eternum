@@ -305,13 +305,15 @@ async function createAndSettleGame(launch: PreparedLaunch): Promise<void> {
   }
   await createGame(launch);
   if (!fixedRoster) return;
-  launch.summary.finalizeAt = await settleBlitzRoster(
+  const settlement = await settleBlitzRoster(
     launch.runtime.provider,
     await resolveGameId(launch),
     launchCredentials(launch),
     launch.request.manifest,
     admissionUrl!,
   );
+  launch.summary.finalizeAt = settlement.finalizeAt;
+  launch.summary.settlementTransactions = settlement.settlementTransactions;
 }
 
 async function executeLaunchStep(launch: PreparedLaunch, stepId: LaunchGameStepId): Promise<void> {

@@ -33,14 +33,24 @@ type AdminCommandInput = {
   command: NativeCommand;
 };
 
-export async function completeNativeAdminCommand(input: AdminCommandInput) {
-  if (!repeatableBatches.has(input.command.kind)) return executeNativeAdminCommand(input);
+export interface CompletedAdminCommand {
+  transactionHash: string;
+  remaining?: string;
+  /** Transactions the command took to complete: one, or one per batch of a repeatable command. */
+  transactions: number;
+}
+
+export async function completeNativeAdminCommand(input: AdminCommandInput): Promise<CompletedAdminCommand> {
+  if (!repeatableBatches.has(input.command.kind))
+    return { ...(await executeNativeAdminCommand(input)), transactions: 1 };
+  let transactions = 0;
   const result = await completeNativeBatches(async () => {
+    transactions += 1;
     const result = await executeNativeAdminCommand(input);
     if (result.remaining === undefined) throw new Error("Native administrative batch has no remaining count");
     return { ...result, remaining: BigInt(result.remaining) };
   });
-  return { ...result, remaining: result.remaining.toString() };
+  return { ...result, remaining: result.remaining.toString(), transactions };
 }
 
 export async function executeNativeAdminCommand(

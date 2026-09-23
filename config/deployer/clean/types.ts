@@ -72,6 +72,8 @@ export interface LaunchGameStepRequest extends LaunchGameRequest {
 
 export interface LaunchGameSummary {
   finalizeAt?: number;
+  /** Transactions the Blitz roster settlement took at game start. */
+  settlementTransactions?: number;
   environment: DeploymentEnvironmentId;
   chain: DeploymentChain;
   gameType: DeploymentGameType;

@@ -250,7 +250,7 @@ export async function settleBlitzRoster(
   credentials: { accountAddress: string; privateKey: string },
   target: RegistrarTarget,
   admissionUrl: string,
-): Promise<number> {
+): Promise<BlitzRosterSettlement> {
   const { manifest } = resolveRegistrarContext(target);
   const registry = manifest.native.domains.registry.address;
   const read = async () =>
@@ -259,8 +259,8 @@ export async function settleBlitzRoster(
       await provider.callContract({ contractAddress: registry, entrypoint: "game", calldata: [gameId] }, "latest"),
     ) as { ready: boolean; end_at: bigint; end_grace_seconds: bigint };
   let game = await read();
-  if (game.ready) return Number(game.end_at + game.end_grace_seconds);
-  await completeNativeAdminCommand({
+  if (game.ready) return { finalizeAt: Number(game.end_at + game.end_grace_seconds), settlementTransactions: 0 };
+  const settled = await completeNativeAdminCommand({
     provider,
     manifest,
     admissionUrl,
@@ -270,5 +270,11 @@ export async function settleBlitzRoster(
   });
   game = await read();
   if (!game.ready) throw new Error("Roster settlement did not make the game ready");
-  return Number(game.end_at + game.end_grace_seconds);
+  return { finalizeAt: Number(game.end_at + game.end_grace_seconds), settlementTransactions: settled.transactions };
+}
+
+export interface BlitzRosterSettlement {
+  finalizeAt: number;
+  /** Transactions the settlement burst took at this game start; zero when the roster was already settled. */
+  settlementTransactions: number;
 }

@@ -77,7 +77,8 @@ export async function launchFrontierSeason(provider: HarnessProvider, gameName: 
         createTransaction: created.transactionHash,
       }),
     );
-    return { gameId: created.gameId, gameName, startAt };
+    // Open entry: Frontier has no settlement burst at start; players settle themselves during play.
+    return { gameId: created.gameId, gameName, startAt, settlementTransactions: 0 };
   } finally {
     const restored = await registerNativePreset(account, 1, canonicalRegistration);
     console.log(

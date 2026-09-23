@@ -3,7 +3,8 @@ import type { HarnessRpcRequests } from "./provider";
 import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import type { LayerRoundTripEvidence } from "./layer-round-trip";
 import type { SeasonFinalizationEvidence } from "./season-lifecycle";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import type { HarnessAccount } from "./account-factory";
 import {
@@ -85,19 +86,53 @@ export interface HarnessEvidence extends HarnessEvidenceBeforeRun {
   hostStateEnd: Record<string, unknown> | null;
 }
 
+/** Where the driver process ran: the campaign compares figures only across the same placement. */
+export interface DriverPlacement {
+  hostname: string;
+  pid: number;
+  cpuset: string | null;
+  cgroup: string | null;
+  availableParallelism: number;
+}
+
+export interface HarnessGameInstance {
+  botCount: number;
+  gameId: number;
+  gameName: string;
+  /** Transactions the settlement burst took at this game's start; null for a game the harness did not start. */
+  settlementTransactions: number | null;
+}
+
+interface RunGates {
+  minimumThresholdActions: number;
+  evidence: HarnessEvidence;
+}
+
+/** What one worker hands its roster driver so the driver can assert the run-wide gates. */
+export interface WorkerWorkloadSummary {
+  gameId: number;
+  startedAt: string;
+  endedAt: string;
+  plannedActions: number;
+  thresholdEligibleActions: number;
+  preConfirmedMs: number[];
+  acceptedOnL2Ms: number[];
+}
+
 export interface HarnessReportInput {
   functional?: boolean;
   accounts: HarnessAccount[];
   botCount: number;
   chainId: string;
-  evidence: HarnessEvidence;
-  games: Array<{ botCount: number; gameId: number; gameName: string }>;
+  games: HarnessGameInstance[];
   intervalSeconds: number;
-  minimumThresholdActions: number;
+  /** Null when this process is one worker of a roster run: the driver asserts the run's gates over every worker. */
+  gates: RunGates | null;
   minutes: number;
   rpcUrl: string;
   setupTransactions: TrackedTransaction[];
   heraldUrl: string;
+  driver: DriverPlacement;
   workload: WorkloadResult;
   seasonFinalizations?: SeasonFinalizationEvidence[];
   layerRoundTrips?: LayerRoundTripEvidence[];
@@ -120,6 +155,7 @@ interface LatencyPercentiles {
 
 const PRECONFIRMED_P95_LIMIT_MS = 1_000;
 const ACCEPTED_ON_L2_P95_LIMIT_MS = 4_000;
+const CLOSE_BLOCK_P95_LIMIT_MS = 300;
 export const HARNESS_OUTPUT_DIRECTORY = path.resolve(
   process.env.HARNESS_OUTPUT_DIRECTORY ?? path.resolve(import.meta.dir, "../.lab/runs"),
 );
@@ -155,7 +191,9 @@ export async function finishHarnessEvidence(
   return { ...before, blockStats, hostStateEnd };
 }
 
-export async function writeHarnessReport(input: HarnessReportInput): Promise<{ passed: boolean; path: string }> {
+export async function writeHarnessReport(
+  input: HarnessReportInput,
+): Promise<{ passed: boolean; path: string; workload: WorkerWorkloadSummary }> {
   const analysis = analyzeHarnessResult(input);
   const createdAt = new Date().toISOString();
   const runId = `${createdAt.replace(/[-:.]/g, "")}-g${input.games.map(({ gameId }) => gameId).join("-")}`;
@@ -164,7 +202,79 @@ export async function writeHarnessReport(input: HarnessReportInput): Promise<{ p
 
   await mkdir(HARNESS_OUTPUT_DIRECTORY, { recursive: true });
   await writeFile(outputPath, `${JSON.stringify(manifest, null, 2)}\n`);
-  return { passed: analysis.passed, path: outputPath };
+  return { passed: analysis.passed, path: outputPath, workload: summarizeWorkerWorkload(input, analysis) };
+}
+
+function summarizeWorkerWorkload(
+  input: HarnessReportInput,
+  analysis: ReturnType<typeof analyzeHarnessResult>,
+): WorkerWorkloadSummary {
+  const latencies = (field: "preConfirmedMs" | "acceptedOnL2Ms") =>
+    analysis.completedActions.flatMap((action) => (action[field] === undefined ? [] : [action[field]]));
+  return {
+    gameId: input.games[0]!.gameId,
+    startedAt: input.workload.startedAt,
+    endedAt: input.workload.endedAt,
+    plannedActions: input.workload.plannedActions,
+    thresholdEligibleActions: analysis.thresholdEligibleActions,
+    preConfirmedMs: latencies("preConfirmedMs"),
+    acceptedOnL2Ms: latencies("acceptedOnL2Ms"),
+  };
+}
+
+/** The run-wide gates over every worker of a roster run: the bars hold for the whole run, not per bot. */
+export function assessRosterRun(input: {
+  functional: boolean;
+  workers: WorkerWorkloadSummary[];
+  minimumThresholdActions: number;
+  evidence: HarnessEvidence | null;
+}) {
+  const plannedActions = input.workers.reduce((sum, worker) => sum + worker.plannedActions, 0);
+  const thresholdEligibleActions = input.workers.reduce((sum, worker) => sum + worker.thresholdEligibleActions, 0);
+  const preConfirmedMs = input.workers.flatMap((worker) => worker.preConfirmedMs);
+  const acceptedOnL2Ms = input.workers.flatMap((worker) => worker.acceptedOnL2Ms);
+  const percentiles = {
+    preConfirmedMs: { p50: percentile(preConfirmedMs, 50), p95: percentile(preConfirmedMs, 95) },
+    acceptedOnL2Ms: { p50: percentile(acceptedOnL2Ms, 50), p95: percentile(acceptedOnL2Ms, 95) },
+  };
+  const checks = {
+    thresholdEligibleActions: thresholdEligibleActions >= input.minimumThresholdActions,
+    ...(input.functional ? {} : latencyChecks(percentiles.acceptedOnL2Ms.p95, percentiles.preConfirmedMs.p95, input.evidence)),
+  };
+  return {
+    checks,
+    limits: gateLimits(input.functional, input.minimumThresholdActions),
+    passed: Object.values(checks).every(Boolean),
+    percentiles: input.functional ? null : percentiles,
+    plannedActions,
+    thresholdEligibleActions,
+  };
+}
+
+/** A run is judged only on its own samples: a latency with no samples fails its budget, never passes as zero. */
+export function latencyChecks(
+  acceptedOnL2P95: number | null,
+  preConfirmedP95: number | null,
+  evidence: HarnessEvidence | null,
+) {
+  return {
+    acceptedOnL2P95: passesLatency(acceptedOnL2P95, ACCEPTED_ON_L2_P95_LIMIT_MS),
+    preConfirmedP95: passesLatency(preConfirmedP95, PRECONFIRMED_P95_LIMIT_MS),
+    closeBlockP95: passesCloseCost(evidence?.blockStats ?? null),
+  };
+}
+
+function gateLimits(functional: boolean, minimumThresholdActions: number) {
+  return {
+    minimumThresholdActions,
+    ...(functional
+      ? {}
+      : {
+          acceptedOnL2P95Ms: ACCEPTED_ON_L2_P95_LIMIT_MS,
+          preConfirmedP95Ms: PRECONFIRMED_P95_LIMIT_MS,
+          closeBlockP95Ms: CLOSE_BLOCK_P95_LIMIT_MS,
+        }),
+  };
 }
 
 function analyzeHarnessResult(input: HarnessReportInput) {
@@ -185,10 +295,14 @@ function analyzeHarnessResult(input: HarnessReportInput) {
   const rpc = summarizeRpcLoad(input.setupTransactions, actions, input.workload.overheadRpc);
 
   const checks = {
-    ...(input.functional
+    ...(input.gates === null
       ? {}
-      : latencyChecks(percentiles)),
-    thresholdEligibleActions: thresholdEligibleActions >= input.minimumThresholdActions,
+      : {
+          thresholdEligibleActions: thresholdEligibleActions >= input.gates.minimumThresholdActions,
+          ...(input.functional
+            ? {}
+            : latencyChecks(percentiles.acceptedOnL2Ms.p95, percentiles.preConfirmedMs.p95, input.gates.evidence)),
+        }),
     setup: setupFailures.length === 0,
     frontierTokenCap:
       !input.workload.frontier ||
@@ -253,7 +367,7 @@ function buildHarnessManifest(
   createdAt: string,
 ) {
   return {
-    schemaVersion: 7,
+    schemaVersion: 8,
     runId,
     createdAt,
     passed: analysis.passed,
@@ -261,12 +375,9 @@ function buildHarnessManifest(
       chainId: input.chainId,
       rpcUrl: input.rpcUrl,
       heraldUrl: input.heraldUrl,
-      madaraImage: input.evidence.madaraImage,
+      madaraImage: input.gates?.evidence.madaraImage ?? null,
     },
-    source: {
-      gitRevision: input.evidence.gitRevision,
-      gitDirty: input.evidence.gitDirty,
-    },
+    source: input.gates ? { gitRevision: input.gates.evidence.gitRevision, gitDirty: input.gates.evidence.gitDirty } : null,
     game: {
       count: input.games.length,
       executionModel: "single_process",
@@ -292,7 +403,6 @@ function buildHarnessManifest(
       actualMix: analysis.actualMix,
       ticks: input.workload.ticks,
       plannedActions: input.workload.plannedActions,
-      minimumThresholdActions: input.minimumThresholdActions,
       completedActions: analysis.completedActions.length,
       thresholdEligibleActions: analysis.thresholdEligibleActions,
       failedActions: analysis.failedActions.length,
@@ -338,20 +448,18 @@ function buildHarnessManifest(
       failures: analysis.setupFailures.length,
     },
     thresholds: {
-      limits: input.functional
-        ? null
-        : {
-            acceptedOnL2P95Ms: ACCEPTED_ON_L2_P95_LIMIT_MS,
-            preConfirmedP95Ms: PRECONFIRMED_P95_LIMIT_MS,
-            minimumThresholdActions: input.minimumThresholdActions,
-          },
+      // Null limits: this process is one worker of a roster run, and the driver's summary carries the gates.
+      limits: input.gates ? gateLimits(input.functional ?? false, input.gates.minimumThresholdActions) : null,
       checks: analysis.checks,
     },
-    evidence: {
-      hostStateStart: input.evidence.hostStateStart,
-      hostStateEnd: input.evidence.hostStateEnd,
-      blockStats: input.evidence.blockStats,
-    },
+    driver: input.driver,
+    evidence: input.gates
+      ? {
+          hostStateStart: input.gates.evidence.hostStateStart,
+          hostStateEnd: input.gates.evidence.hostStateEnd,
+          blockStats: input.gates.evidence.blockStats,
+        }
+      : null,
   };
 }
 
@@ -522,36 +630,37 @@ function latencyPercentiles(
   return { p50: percentile(values, 50), p95: percentile(values, 95), p99: percentile(values, 99) };
 }
 
-/** A run is judged only on its own samples: a latency with no samples fails its budget, never passes as zero. */
-export function latencyChecks(percentiles: Pick<PercentileSummary, "acceptedOnL2Ms" | "preConfirmedMs">) {
-  return {
-    acceptedOnL2P95: passesLatency(percentiles.acceptedOnL2Ms.p95, ACCEPTED_ON_L2_P95_LIMIT_MS),
-    preConfirmedP95: passesLatency(percentiles.preConfirmedMs.p95, PRECONFIRMED_P95_LIMIT_MS),
-  };
-}
-
 function passesLatency(value: number | null, limit: number): boolean {
   return value !== null && value <= limit;
 }
 
-// Block stats are a secondary per-block metric parsed from Madara's docker logs. A run that completes its workload
-// must still produce a report even when they are unavailable (e.g. docker log rotation, or a --since/--until window
-// that spans a container restart), so treat their absence as null, never as a run failure.
-async function captureBlockStats(since: string, until: string): Promise<BlockStats | null> {
-  try {
-    const output = await runCommand([BLOCK_STATS_SCRIPT, "--since", since, "--until", until, "--json"]);
-    const summary = JSON.parse(output) as Omit<BlockStats, "window">;
-    if (summary.blocks.count === 0) {
-      console.warn(`Block stats: no closed blocks in the Madara log window ${since}..${until}; recording null.`);
-      return null;
-    }
-    return { ...summary, window: { since, until } };
-  } catch (error) {
-    console.warn(
-      `Block stats unavailable (${since}..${until}): ${error instanceof Error ? error.message : String(error)}`,
-    );
-    return null;
-  }
+/** The close-cost bar: block close p95 within the limit, measured from the node's own close_block lines. */
+function passesCloseCost(blockStats: BlockStats | null): boolean {
+  return blockStats !== null && passesLatency(blockStats.closeBlockMs.p95, CLOSE_BLOCK_P95_LIMIT_MS);
+}
+
+// Block stats carry the close-cost bar, so a measured run cannot pass without them: a failed read (log rotation, a
+// window spanning a container restart, an empty window) is a failed run, never a null figure.
+async function captureBlockStats(since: string, until: string): Promise<BlockStats> {
+  const output = await runCommand([BLOCK_STATS_SCRIPT, "--since", since, "--until", until, "--json"]);
+  const summary = JSON.parse(output) as Omit<BlockStats, "window">;
+  if (summary.blocks.count === 0) throw new Error(`Block stats: no closed blocks in the Madara log window ${since}..${until}`);
+  return { ...summary, window: { since, until } };
+}
+
+export async function readDriverPlacement(): Promise<DriverPlacement> {
+  const [status, cgroup] = await Promise.all([readProcFile("/proc/self/status"), readProcFile("/proc/self/cgroup")]);
+  return {
+    hostname: os.hostname(),
+    pid: process.pid,
+    cpuset: status?.match(/^Cpus_allowed_list:\s*(\S+)/m)?.[1] ?? null,
+    cgroup: cgroup?.trim().split("\n").at(-1)?.split(":").at(-1) ?? null,
+    availableParallelism: os.availableParallelism(),
+  };
+}
+
+async function readProcFile(file: string): Promise<string | null> {
+  return readFile(file, "utf8").catch(() => null);
 }
 
 async function readMadaraImage(): Promise<HarnessEvidence["madaraImage"]> {

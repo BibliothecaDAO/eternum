@@ -23,9 +23,14 @@ import { HarnessProvider, measureHarnessRequests } from "./provider";
 import { prepareHarnessBots, runWorkload, type HarnessGameType, type TrackedTransaction } from "./driver";
 import {
   HARNESS_OUTPUT_DIRECTORY,
+  assessRosterRun,
   collectHarnessEvidenceBeforeRun,
   finishHarnessEvidence,
+  readDriverPlacement,
   writeHarnessReport,
+  type HarnessEvidence,
+  type HarnessGameInstance,
+  type WorkerWorkloadSummary,
 } from "./report";
 
 interface HarnessCliOptions {
@@ -49,9 +54,7 @@ interface GameplayContractsArtifact extends HarnessGameplayContracts {
   rpcUrl?: string;
 }
 
-interface LaunchedGame {
-  gameId: number;
-  gameName: string;
+interface LaunchedGame extends Omit<HarnessGameInstance, "botCount"> {
   startAt?: number;
 }
 
@@ -184,7 +187,8 @@ async function main(): Promise<void> {
             setupTransactions,
           });
 
-    const evidenceBefore = await collectHarnessEvidenceBeforeRun(options.functional);
+    const isRosterWorker = Boolean(workerData?.harness);
+    const evidenceBefore = isRosterWorker ? null : await collectHarnessEvidenceBeforeRun(options.functional);
     if (!options.functional) console.log("Waiting for explorers to recover before measuring the workload");
     const workload =
       options.workload === "frontier"
@@ -241,22 +245,21 @@ async function main(): Promise<void> {
           ]
         : [];
 
-    const evidence = await finishHarnessEvidence(
-      evidenceBefore,
-      workload.startedAt,
-      workload.endedAt,
-      options.functional,
-    );
-    const minimumThresholdActions = resolveMinimumThresholdActions(options, workload.plannedActions);
+    const gates = evidenceBefore
+      ? {
+          minimumThresholdActions: resolveMinimumThresholdActions(options, workload.plannedActions),
+          evidence: await finishHarnessEvidence(evidenceBefore, workload.startedAt, workload.endedAt, options.functional),
+        }
+      : null;
     const report = await writeHarnessReport({
       functional: options.functional,
       accounts,
       botCount: options.bots,
       chainId,
-      evidence,
+      driver: await readDriverPlacement(),
       games: [{ ...game, botCount: options.bots }],
       intervalSeconds: options.intervalSeconds,
-      minimumThresholdActions,
+      gates,
       minutes: options.minutes,
       rpcUrl: options.rpcUrl,
       setupTransactions,
@@ -281,7 +284,7 @@ export const createHarnessProvider = (rpcUrl: string): HarnessProvider => new Ha
 
 async function resolveHarnessGame(options: HarnessCliOptions, rosterAccounts: string[]): Promise<LaunchedGame> {
   if (options.gameId !== undefined) {
-    return { gameId: options.gameId, gameName: options.gameName! };
+    return { gameId: options.gameId, gameName: options.gameName!, settlementTransactions: null };
   }
 
   const gameName = options.gameName ?? `lab-${Date.now().toString(36)}`;
@@ -309,7 +312,7 @@ async function resolveHarnessGame(options: HarnessCliOptions, rosterAccounts: st
     version: defaultPresetForEnvironment(options.gameType === "eternum" ? "madara.eternum" : "madara.blitz"),
   });
   if (!summary.gameId) throw new Error(`Registrar did not return a game id for ${gameName}`);
-  return { gameId: summary.gameId, gameName, startAt };
+  return { gameId: summary.gameId, gameName, startAt, settlementTransactions: summary.settlementTransactions ?? 0 };
 }
 
 function resolveMinimumThresholdActions(options: HarnessCliOptions, plannedActions: number): number {
@@ -402,14 +405,18 @@ interface GameWorkerReport {
   path: string;
   pid: number;
   threadId: number;
+  workload: WorkerWorkloadSummary;
 }
 
+// One driver process runs every player as a worker thread. Evidence is read once here, never per worker, and the
+// run's gates (action threshold, latency bars, close cost) are asserted over the whole run: a worker only reports.
 async function runRosterGroups(options: HarnessCliOptions, games: PreparedGame[]): Promise<void> {
   const players = games.flatMap(({ game, accounts }) => accounts.map((account) => ({ game, accounts: [account] })));
   const directory = path.join(HARNESS_OUTPUT_DIRECTORY, `rosters-${Date.now()}`);
   await mkdir(directory, { recursive: true, mode: 0o700 });
   const workers: Worker[] = [];
   const reports: GameWorkerReport[] = [];
+  const evidenceBefore = await collectHarnessEvidenceBeforeRun(options.functional);
   let failure: unknown;
   try {
     const paths = await Promise.all(
@@ -426,21 +433,49 @@ async function runRosterGroups(options: HarnessCliOptions, games: PreparedGame[]
   } finally {
     await Promise.all(workers.map((worker) => worker.terminate()));
   }
-  const passed =
-    !failure &&
-    reports.length === players.length &&
-    reports.every((report) => report.passed && report.pid === process.pid);
+  let evidence: HarnessEvidence | null = null;
+  try {
+    evidence = await finishRosterEvidence(evidenceBefore, reports, options.functional);
+  } catch (error) {
+    failure ??= error;
+  }
+  const workloads = reports.map((report) => report.workload);
+  const gates = assessRosterRun({
+    functional: options.functional,
+    workers: workloads,
+    minimumThresholdActions: resolveMinimumThresholdActions(
+      options,
+      workloads.reduce((sum, workload) => sum + workload.plannedActions, 0),
+    ),
+    evidence,
+  });
+  const workersPassed =
+    reports.length === players.length && reports.every((report) => report.passed && report.pid === process.pid);
+  const passed = !failure && workersPassed && gates.passed;
   const summary = {
     passed,
-    pid: process.pid,
-    games: games.map(({ game }) => game),
-    reports,
+    driver: { ...(await readDriverPlacement()), workers: workers.length },
+    games: games.map(({ game, accounts }) => ({ ...game, botCount: accounts.length })),
+    gates: { ...gates, checks: { ...gates.checks, workers: workersPassed } },
+    reports: reports.map(({ workload: _workload, ...report }) => report),
+    evidence,
     error: failure instanceof Error ? failure.message : failure === undefined ? undefined : String(failure),
   };
   const output = path.join(directory, "summary.json");
   await writeFile(output, JSON.stringify(summary, null, 2) + "\n");
   if (!passed) throw new Error(`Roster workload failed: ${output}`, { cause: failure });
   console.log(`PASS: ${output}`);
+}
+
+async function finishRosterEvidence(
+  before: Awaited<ReturnType<typeof collectHarnessEvidenceBeforeRun>>,
+  reports: GameWorkerReport[],
+  functional: boolean,
+): Promise<HarnessEvidence | null> {
+  if (reports.length === 0) return null;
+  const startedAt = reports.map(({ workload }) => workload.startedAt).sort()[0]!;
+  const endedAt = reports.map(({ workload }) => workload.endedAt).sort().at(-1)!;
+  return finishHarnessEvidence(before, startedAt, endedAt, functional);
 }
 
 function startGameWorker(options: HarnessCliOptions, game: PreparedGame, file: string): Worker {

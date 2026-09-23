@@ -194,7 +194,7 @@ describe("native administrative command", () => {
     });
     expect(
       await completeNativeAdminCommand({ ...input, command: { kind: "SettleBlitzRoster", value: undefined } }),
-    ).toEqual({ transactionHash: "0x55", remaining: "0" });
+    ).toEqual({ transactionHash: "0x55", remaining: "0", transactions: 2 });
     expect(requests).toHaveLength(2);
   });
   it("refuses to infer completion from a successful receipt without progress", async () => {

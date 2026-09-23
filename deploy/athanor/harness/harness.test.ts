@@ -24,6 +24,7 @@ import {
 } from "./driver";
 import type { Coord, ExplorerRow, HarnessGame, ProductionState } from "./harness-game";
 import {
+  assessRosterRun,
   isThresholdBlockingFailure,
   latencyChecks,
   percentile,
@@ -33,6 +34,7 @@ import {
   summarizeRevertReasons,
   summarizeRpcMetrics,
 } from "./report";
+import type { HarnessEvidence, WorkerWorkloadSummary } from "./report";
 import { createHarnessProvider, parseHarnessArgs } from "./run";
 import { BlockTag } from "starknet";
 import { EventEmitter } from "node:events";
@@ -405,10 +407,54 @@ describe("Madara harness workload", () => {
 
 describe("Madara harness reporting", () => {
   it("fails a run's pre-confirmed budget when the run has no pre-confirmed samples", () => {
-    const sampled = { p50: 20, p95: 40, p99: 60 };
-    const unsampled = { p50: null, p95: null, p99: null };
-    expect(latencyChecks({ acceptedOnL2Ms: sampled, preConfirmedMs: unsampled }).preConfirmedP95).toBe(false);
-    expect(latencyChecks({ acceptedOnL2Ms: sampled, preConfirmedMs: sampled }).preConfirmedP95).toBe(true);
+    expect(latencyChecks(40, null, null).preConfirmedP95).toBe(false);
+    expect(latencyChecks(40, 40, null).preConfirmedP95).toBe(true);
+  });
+
+  it("asserts the action threshold and the latency bars over every worker of a roster run", () => {
+    const worker = (thresholdEligibleActions: number, preConfirmedMs: number[]): WorkerWorkloadSummary => ({
+      gameId: 1,
+      startedAt: "2026-09-23T00:00:00.000Z",
+      endedAt: "2026-09-23T00:10:00.000Z",
+      plannedActions: 40,
+      thresholdEligibleActions,
+      preConfirmedMs,
+      acceptedOnL2Ms: preConfirmedMs.map((value) => value + 100),
+    });
+    const evidence = (closeBlockP95: number) =>
+      ({ blockStats: { closeBlockMs: { p50: 100, p95: closeBlockP95, max: closeBlockP95 } } }) as HarnessEvidence;
+    // One bot short of its own plan does not fail the run while the total clears the bar.
+    const passing = assessRosterRun({
+      functional: false,
+      workers: [worker(40, [200, 900]), worker(30, [300, 400])],
+      minimumThresholdActions: 70,
+      evidence: evidence(299),
+    });
+    expect(passing.checks).toEqual({
+      thresholdEligibleActions: true,
+      acceptedOnL2P95: true,
+      preConfirmedP95: true,
+      closeBlockP95: true,
+    });
+    expect(passing).toMatchObject({ passed: true, plannedActions: 80, thresholdEligibleActions: 70 });
+    expect(passing.percentiles?.preConfirmedMs.p95).toBe(900);
+
+    expect(
+      assessRosterRun({
+        functional: false,
+        workers: [worker(40, [200]), worker(29, [300])],
+        minimumThresholdActions: 70,
+        evidence: evidence(301),
+      }).checks,
+    ).toMatchObject({ thresholdEligibleActions: false, closeBlockP95: false });
+    // A failed block-stats read leaves no evidence, and the close-cost bar cannot pass without it.
+    expect(
+      assessRosterRun({ functional: false, workers: [worker(40, [1])], minimumThresholdActions: 40, evidence: null })
+        .checks.closeBlockP95,
+    ).toBe(false);
+    expect(
+      assessRosterRun({ functional: true, workers: [worker(40, [])], minimumThresholdActions: 40, evidence: null }),
+    ).toMatchObject({ passed: true, checks: { thresholdEligibleActions: true }, percentiles: null });
   });
 
   it("uses nearest-rank percentiles", () => {

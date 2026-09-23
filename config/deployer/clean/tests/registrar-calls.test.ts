@@ -54,14 +54,14 @@ test("a ready roster submits no settlement transactions on retry", async () => {
   const provider = {
     callContract: mock(async () => ["1", "2", "291", "0", "1", "0", "100", "200", "300", "5", "1"]),
   };
-  const finalizeAt = await settleBlitzRoster(
+  const settlement = await settleBlitzRoster(
     provider as unknown as RpcProvider,
     7,
     { accountAddress: "0x123", privateKey: "0x1234" },
     manifest,
     "http://unused.invalid",
   );
-  expect(finalizeAt).toBe(305);
+  expect(settlement).toEqual({ finalizeAt: 305, settlementTransactions: 0 });
   expect(provider.callContract).toHaveBeenCalledTimes(1);
   expect(provider.callContract).toHaveBeenCalledWith(
     { contractAddress: "0x456", entrypoint: "game", calldata: [7] },

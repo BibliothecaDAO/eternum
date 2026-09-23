@@ -191,6 +191,13 @@ Every bot follows build-order suggestions, updates automation each minute and ex
 uses 96 players and the frozen run configuration. Do not substitute a short smoke for it. Keep failed runs labeled
 failed. Run reports remain in `.lab/runs/`; measurements and exact revision/image/configuration pins go in the PR.
 
+A roster run drives every player as a worker thread of one process and asserts its gates once, over the whole run, in
+`rosters-<time>/summary.json`: the action threshold (3,500 for the frozen 96-player configuration, otherwise every
+planned action), pre-confirmed p95 ≤ 1 s, accepted-on-L2 p95 ≤ 4 s and block close p95 ≤ 300 ms. Host state and block
+stats are read once by the driver, never per worker, and a block-stats read that fails or finds no closed block fails
+the run. The summary records the driver's placement (host, pid, cpuset, cgroup, available threads) and, per game, the
+number of transactions its settlement burst took at start. Worker reports under `players/` carry no gates of their own.
+
 For a node with OTLP export, set `MADARA_METRICS_FILE` to the collector's JSON-lines output. The existing
 `scripts/block-stats.py` combines close-block data with upstream counter deltas, excluding process resets. Report
 latency separately from gas and execution resources. Admission-to-visible includes queue wait and the Herald barrier.
