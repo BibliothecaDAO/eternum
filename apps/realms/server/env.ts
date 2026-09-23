@@ -21,6 +21,8 @@ const IdentityVars = Schema.Struct({
   WEB_PUSH_VAPID_PUBLIC_KEY: Schema.NonEmptyString,
   WEB_PUSH_VAPID_PRIVATE_KEY: Schema.NonEmptyString,
   WEB_PUSH_VAPID_SUBJECT: Schema.NonEmptyString,
+  /** How often each shard notifier reads its shard's new stories; its retries wait whole polls. */
+  SHARD_NOTIFIER_POLL_MS: Schema.FiniteFromString.pipe(Schema.check(Schema.isGreaterThan(0))),
 });
 
 export interface IdentityEnv extends Schema.Schema.Type<typeof IdentityVars> {

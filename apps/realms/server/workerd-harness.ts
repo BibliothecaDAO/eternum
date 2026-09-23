@@ -24,6 +24,8 @@ export const startWorker = async (options: {
   storage: string;
   vapid: { publicKey: string; privateKey: string };
   outbound: (request: Request) => Response | Promise<Response>;
+  /** The shard notifiers' poll interval; tests poll fast so their waits stay short. */
+  notifierPollMs?: number;
 }) => {
   const mf = new Miniflare({
     name: WORKER_NAME,
@@ -50,6 +52,7 @@ export const startWorker = async (options: {
       WEB_PUSH_VAPID_PUBLIC_KEY: options.vapid.publicKey,
       WEB_PUSH_VAPID_PRIVATE_KEY: options.vapid.privateKey,
       WEB_PUSH_VAPID_SUBJECT: "mailto:ops@realms.party",
+      SHARD_NOTIFIER_POLL_MS: String(options.notifierPollMs ?? 3_000),
     },
     outboundService: options.outbound,
   });

@@ -22,6 +22,7 @@
         "ENVIRONMENT": "staging",
         "BASE_URL": "https://staging.realms.party",
         "ACCOUNT_CLASS_HASH": "0x68995feeefffc1647118073e1ff16179f07eb8eed6c8fb03cce73109f5fbacd",
+        "SHARD_NOTIFIER_POLL_MS": "3000",
       },
       "d1_databases": [{ "binding": "DB", "database_name": "realms-identity-staging", "migrations_dir": "migrations" }],
       "ratelimits": [{ "name": "PUBLIC_RATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } }],
@@ -44,6 +45,7 @@
         "ENVIRONMENT": "production",
         "BASE_URL": "https://play.realms.party",
         "ACCOUNT_CLASS_HASH": "0x68995feeefffc1647118073e1ff16179f07eb8eed6c8fb03cce73109f5fbacd",
+        "SHARD_NOTIFIER_POLL_MS": "3000",
       },
       "d1_databases": [
         { "binding": "DB", "database_name": "realms-identity-production", "migrations_dir": "migrations" },

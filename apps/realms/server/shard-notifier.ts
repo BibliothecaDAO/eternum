@@ -53,7 +53,6 @@ interface OutboxEntry {
   dueAt: number;
 }
 
-const POLL_MS = 3_000;
 const STORY_PAGE = 100;
 const MAX_ATTEMPTS = 5;
 const SHARD_TIMEOUT_MS = 10_000;
@@ -90,7 +89,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
       await runStage(shard, "deliver", () => this.deliverDue(env));
       morePages = (await runStage(shard, "stories", () => this.readStories(env, watched))) ?? false;
     }
-    await this.ctx.storage.setAlarm(Date.now() + (morePages ? 0 : POLL_MS));
+    await this.ctx.storage.setAlarm(Date.now() + (morePages ? 0 : env.SHARD_NOTIFIER_POLL_MS));
   }
 
   private async withWorldAddress(shard: WatchedShard): Promise<Required<WatchedShard>> {
@@ -168,7 +167,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     const { running: due, ended } = await partitionByRunningGame(
       shard.url,
       [...(await this.ctx.storage.list<RestWatch>({ prefix: "rest:" })).values()].filter(
-        (watch) => wakeAt(watch) <= now,
+        (watch) => wakeAt(watch, env.SHARD_NOTIFIER_POLL_MS) <= now,
       ),
     );
     await this.ctx.storage.transaction(async (txn) => {
@@ -232,7 +231,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     );
     for (const [key, entry] of due) {
       const next = await deliver(env, entry, now).catch((error: unknown) => {
-        const retry = retryLater(entry, now);
+        const retry = retryLater(entry, now, env.SHARD_NOTIFIER_POLL_MS);
         console.error(
           retry ? "shard_notifier_delivery_retry" : "shard_notifier_delivery_dropped",
           entry.envelope.notification.id,
@@ -309,7 +308,7 @@ const deliver = (env: IdentityEnv, entry: OutboxEntry, now: number) =>
       if (!device || !wantsGameAlerts(device, now) || (levels.get(entry.owner) ?? "off") === "off") return null;
       const outcome = yield* Effect.promise(() => sendPush(vapidKeysOf(env), device, entry.envelope));
       if (outcome === "expired") yield* store.expire(entry.owner, entry.subscriptionId);
-      return outcome === "retry" ? retryLater(entry, now) : null;
+      return outcome === "retry" ? retryLater(entry, now, env.SHARD_NOTIFIER_POLL_MS) : null;
     }).pipe(
       Effect.provide(NotificationPreferenceStore.layer(env.DB)),
       Effect.provide(PushSubscriptionStore.layer(env.DB)),
@@ -327,16 +326,17 @@ const historyStoryIdentity = (scope: StoryEventScope, item: HeraldHistoryEvent) 
 
 const outboxKey = (entry: OutboxEntry) => `outbox:${entry.envelope.notification.id}:${entry.subscriptionId}`;
 
-/** A failed attempt waits 1 s, 2 s, 4 s, 8 s; after MAX_ATTEMPTS the entry is dropped (null). */
-const retryLater = (entry: OutboxEntry, now: number): OutboxEntry | null =>
+/** A failed attempt waits 1, 2, 4, then 8 polls; after MAX_ATTEMPTS the entry is dropped (null). */
+const retryLater = (entry: OutboxEntry, now: number, pollMs: number): OutboxEntry | null =>
   entry.attempts + 1 >= MAX_ATTEMPTS
     ? null
-    : { ...entry, attempts: entry.attempts + 1, dueAt: now + backoffMs(entry.attempts) };
+    : { ...entry, attempts: entry.attempts + 1, dueAt: now + backoffMs(entry.attempts, pollMs) };
 
-const backoffMs = (attempts: number) => 2 ** attempts * 1_000;
+const backoffMs = (attempts: number, pollMs: number) => 2 ** attempts * pollMs;
 
 /** A watch wakes at its army's full time; after each failed read it wakes later, by the delivery backoff, from then. */
-const wakeAt = (watch: RestWatch) => watch.fullAt + (watch.attempts === 0 ? 0 : backoffMs(watch.attempts - 1));
+const wakeAt = (watch: RestWatch, pollMs: number) =>
+  watch.fullAt + (watch.attempts === 0 ? 0 : backoffMs(watch.attempts - 1, pollMs));
 
 /** Runs one stage of the alarm; a failure is logged with its shard and stage, and returns undefined. */
 const runStage = async <T>(shard: WatchedShard, stage: string, run: () => Promise<T>): Promise<T | undefined> => {

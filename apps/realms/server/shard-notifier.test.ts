@@ -27,11 +27,17 @@ const ARMY = 7;
 const PUSH_ENDPOINT = "https://fcm.googleapis.com/fcm/send/player-device";
 const DEVICE_ID = "00000000-0000-4000-8000-000000000001";
 const OWNER = realmsIdOf("player-one");
+/** The notifier polls every 200 ms here (every 3 s deployed); its retries wait 1, 2, 4, then 8 polls. */
+const POLL_MS = 200;
+const polls = (count: number) => count * POLL_MS;
 /**
- * A two-second armies tick with the preset's knights (120, regaining 20 a tick): six ticks from empty to rested, long
- * enough that the notifier, polling every three seconds, sees an army act again well before its first wake time.
+ * A one-second armies tick (the chain counts whole seconds) with the preset's knights (120) regaining 40 a tick: three
+ * ticks from empty to rested, long enough that the notifier sees an army act again well before its first wake time.
  */
-const ARMIES_TICK_SECONDS = 2;
+const ARMIES_TICK_SECONDS = 1;
+const STAMINA_GAIN_PER_TICK = 40;
+const REST_TICKS = 3;
+const ticks = (count: number) => count * ARMIES_TICK_SECONDS * 1000;
 /** A Frontier season that began yesterday: today is its second daily expedition, each day a row of 40-hex regions. */
 const DAY_SECONDS = 86_400;
 const REGION_SPACING = 40;
@@ -136,6 +142,10 @@ const snapshot = (army: null | { amount: number; updatedTick: number; day: numbe
             ...preset.rules,
             game_id: GAME_ID,
             tick_config: { ...preset.rules.tick_config, armies_tick_in_seconds: ARMIES_TICK_SECONDS },
+            troop_stamina_config: {
+              ...preset.rules.troop_stamina_config,
+              stamina_gain_per_tick: STAMINA_GAIN_PER_TICK,
+            },
             epoch_seconds: DAY_SECONDS,
           },
         },
@@ -245,6 +255,7 @@ const createHarness = async (level: "important" | "standard") => {
       bundle,
       storage,
       vapid,
+      notifierPollMs: POLL_MS,
       outbound: (request) => {
         const url = new URL(request.url);
         if (url.origin === SHARD) {
@@ -293,7 +304,7 @@ it("alerts the player's device once for a battle on a listed shard, and a restar
   const { herald, push, start, worker } = await createHarness("important");
   push.status = 503;
   await worker.runCron();
-  await pause(4_000); // the notifier reaches the shard's head
+  await pause(polls(5)); // the notifier reaches the shard's head
   herald.battle();
   await waitUntil(() => push.received.length >= 1, 15_000);
   expect(push.received).toEqual([503]);
@@ -303,7 +314,7 @@ it("alerts the player's device once for a battle on a listed shard, and a restar
   const restarted = await start();
   await restarted.runCron();
   await waitUntil(() => push.received.includes(201), 20_000);
-  await pause(8_000); // two more polls, and the retry window, pass quietly
+  await pause(polls(10)); // more polls, and the retry window, pass quietly
   expect(push.received).toEqual([503, 201]);
   await restarted.dispose();
 }, 90_000);
@@ -311,29 +322,31 @@ it("alerts the player's device once for a battle on a listed shard, and a restar
 it("alerts once when an army is rested, not if it acted again first, nor once it is gone or from an earlier day", async () => {
   const { herald, push, worker } = await createHarness("standard");
   await worker.runCron();
-  await pause(4_000); // the notifier reaches the shard's head
+  await pause(polls(5)); // the notifier reaches the shard's head
 
   herald.act(0);
   await waitUntil(() => push.received.length >= 1, 30_000);
   expect(push.received).toEqual([201]);
 
+  // Acting at the start of a tick puts the first wake exactly REST_TICKS on, and the second a whole tick after it.
+  await waitUntil(() => Date.now() % ticks(1) < polls(1), 5_000);
   herald.act(0);
-  const firstWake = Date.now() + 6 * ARMIES_TICK_SECONDS * 1000;
-  await pause(ARMIES_TICK_SECONDS * 1000);
+  const firstWake = (armiesTick() + REST_TICKS) * ticks(1);
+  await pause(ticks(1));
   herald.act(0); // the army spends its stamina again before it was rested
-  await waitUntil(() => Date.now() > firstWake + 2_000, 30_000);
+  await waitUntil(() => Date.now() > firstWake + polls(2), 30_000);
   expect(push.received).toEqual([201]);
   await waitUntil(() => push.received.length >= 2, 30_000);
   expect(push.received).toEqual([201, 201]);
 
   herald.act(0);
-  await pause(ARMIES_TICK_SECONDS * 1000);
+  await pause(ticks(1));
   herald.state.army = null; // the army expires at rollover before it is rested
-  await pause(7 * ARMIES_TICK_SECONDS * 1000 + 4_000);
+  await pause(ticks(REST_TICKS + 1) + polls(10));
   expect(push.received).toEqual([201, 201]);
 
   herald.act(0, TODAY - 1); // an army of yesterday's expedition is still a fact, but no longer an army
-  await pause(7 * ARMIES_TICK_SECONDS * 1000 + 4_000);
+  await pause(ticks(REST_TICKS + 1) + polls(10));
   expect(push.received).toEqual([201, 201]);
   await worker.dispose();
 }, 240_000);
@@ -341,18 +354,18 @@ it("alerts once when an army is rested, not if it acted again first, nor once it
 it("a game that ends while an army rests alerts nothing for it, and every other alert still flows", async () => {
   const { herald, push, worker } = await createHarness("standard");
   await worker.runCron();
-  await pause(4_000); // the notifier reaches the shard's head
+  await pause(polls(5)); // the notifier reaches the shard's head
 
   herald.act(0);
-  await pause(ARMIES_TICK_SECONDS * 1000);
+  await pause(ticks(1));
   herald.state.status = "Settled"; // the game ends before the army is rested, and Herald drops its armies
-  await pause(7 * ARMIES_TICK_SECONDS * 1000 + 4_000);
+  await pause(ticks(REST_TICKS + 1) + polls(10));
   expect(push.received).toEqual([]);
 
   herald.act(0); // an action folded late, in the ended game
   herald.battle();
   await waitUntil(() => push.received.length >= 1, 20_000);
-  await pause(4_000);
+  await pause(polls(10));
   expect(push.received).toEqual([201]);
   await worker.dispose();
 }, 90_000);
@@ -360,18 +373,18 @@ it("a game that ends while an army rests alerts nothing for it, and every other 
 it("a wake that keeps failing is retried, then dropped, and every other alert still flows", async () => {
   const { herald, push, worker } = await createHarness("standard");
   await worker.runCron();
-  await pause(4_000); // the notifier reaches the shard's head
+  await pause(polls(5)); // the notifier reaches the shard's head
 
   herald.act(0);
-  await pause(4_000); // the action is read and its army watched
+  await pause(polls(5)); // the action is read and its army watched
   herald.state.snapshotFails = true;
-  await pause(6 * ARMIES_TICK_SECONDS * 1000 + 24_000); // the wake comes due, fails, and is retried up to its cap
+  await pause(ticks(REST_TICKS) + polls(15 + 10)); // the wake comes due, fails, and is retried up to its cap
   herald.battle();
   await waitUntil(() => push.received.length >= 1, 20_000);
   expect(push.received).toEqual([201]);
 
   const reads = herald.state.snapshotReads;
-  await pause(8_000);
+  await pause(polls(20));
   expect(herald.state.snapshotReads).toBe(reads); // the watch was given up, not retried forever
   await worker.dispose();
 }, 120_000);
