@@ -68,6 +68,7 @@ def deploy(config):
     complete = DATA / "initialized.json"
     if complete.exists():
         shard.run(["bun", "deploy/athanor/scripts/inspect-shard-roles.ts", str(DATA), env["RPC_URL"]], DATA, "shard-roles", env)
+        publish("gameplay-contracts.json", "/public")
         return
     shard.run(["bun", "deploy/athanor/scripts/host-accounts.ts", "deploy", str(DATA)], DATA, "host-account-deploy", env)
     authority = shard.deploy_world(config, DATA, env)
@@ -79,6 +80,7 @@ def deploy(config):
     shard.write_gateway_environment(config, DATA, env, authority, manifest["world"]["address"])
     publish("gateway.env", "/gateway-config")
     publish("native-world.json", "/public")
+    publish("gameplay-contracts.json", "/public")
     shard.save_harness_environment(DATA, env)
     shard.write_json(complete, {"chainId": manifest["shard"]["chainId"], "world": manifest["world"]["address"], "presets": [1, 2, 3, 4]})
     print(complete.read_text())

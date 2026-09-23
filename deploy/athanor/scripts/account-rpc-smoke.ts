@@ -56,6 +56,11 @@ const owner = new Account({
   signer: new DeviceSigner(deviceKeyOf(env.DEPLOYER_PRIVATE_KEY)),
   cairoVersion: "1",
 });
+const operatorInvoke = await owner.execute(
+  { contractAddress: operator, entrypoint: "device_change_counter", calldata: [] },
+  { tip: 0 },
+);
+await provider.waitForTransaction(operatorInvoke.transaction_hash, { retryInterval: 250 });
 const revoke = await owner.execute(
   {
     contractAddress: operator,
@@ -73,6 +78,7 @@ if (BigInt(removed) !== 0n) throw new Error("Device was not revoked");
 console.log(
   JSON.stringify({
     chainId: manifest.shard.chainId,
+    acceptedOperatorInvoke: operatorInvoke.transaction_hash,
     acceptedJoin: join.transaction_hash,
     acceptedRevoke: revoke.transaction_hash,
     deviceRevoked: true,

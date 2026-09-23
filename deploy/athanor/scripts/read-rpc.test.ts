@@ -15,7 +15,7 @@ test("public RPC forwards reads but never forwards writes, mixed batches, escape
   const proxy = startReadRpc(
     node.url.origin,
     0,
-    { accountClassHash: "0x123", guardianPublicKey: "0x456" },
+    { accountClassHash: "0x123", guardianPublicKey: "0x456", operatorAccountAddress: "0x789" },
     undefined,
     "127.0.0.1",
   );
@@ -72,7 +72,7 @@ import { hash } from "starknet";
 import { rpcClientAddress } from "./rpc-client-limit";
 
 test("only manifest-bound deploys and one self join/revoke pass the public transaction boundary", async () => {
-  const identity = { accountClassHash: "0x123", guardianPublicKey: "0x456" };
+  const identity = { accountClassHash: "0x123", guardianPublicKey: "0x456", operatorAccountAddress: "0x789" };
   const forwarded: string[] = [];
   const node = Bun.serve({
     hostname: "127.0.0.1",
@@ -174,7 +174,7 @@ test("forged forwarded prefixes cannot reset the trusted client's account reques
   const proxy = startReadRpc(
     "http://127.0.0.1:1",
     0,
-    { accountClassHash: "0x123", guardianPublicKey: "0x456" },
+    { accountClassHash: "0x123", guardianPublicKey: "0x456", operatorAccountAddress: "0x789" },
     "127.0.0.1",
     "127.0.0.1",
   );
@@ -190,5 +190,59 @@ test("forged forwarded prefixes cannot reset the trusted client's account reques
     expect((await request("10.9.9.9, 203.0.113.8")).status).toBe(200);
   } finally {
     proxy.stop(true);
+  }
+});
+
+test("only the operator from shard init state may invoke arbitrary calls and estimate their fees", async () => {
+  const identity = { accountClassHash: "0x123", guardianPublicKey: "0x456", operatorAccountAddress: "0x789" };
+  const forwarded: unknown[] = [];
+  const node = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    async fetch(request) {
+      forwarded.push(await request.json());
+      return Response.json({ jsonrpc: "2.0", id: 1, result: { transaction_hash: "0x777" } });
+    },
+  });
+  const proxy = startReadRpc(node.url.origin, 0, identity, undefined, "127.0.0.1");
+  const invoke = {
+    type: "INVOKE",
+    version: "0x3",
+    tip: "0x0",
+    sender_address: "0x0789",
+    calldata: ["0x1", "0xabc", hash.starknetKeccak("create_game").toString(), "0x1", "0x1"],
+    signature: ["0x1", "0x2", "0x3"],
+  };
+  const submit = async (method: string, params: unknown) =>
+    (
+      await fetch(proxy.url, {
+        method: "POST",
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params, operatorAccountAddress: "0x42" }),
+      })
+    ).json();
+  try {
+    expect((await submit("starknet_addInvokeTransaction", { invoke_transaction: invoke })).result).toBeDefined();
+    const query = { ...invoke, signature: [], version: "0x100000000000000000000000000000003" };
+    expect((await submit("starknet_estimateFee", [[query], ["SKIP_VALIDATE"], "pre_confirmed"])).result).toBeDefined();
+    for (const sender_address of ["0x42", "0x78a"]) {
+      expect((await submit("starknet_addInvokeTransaction", [{ ...invoke, sender_address }])).error.code).toBe(-32601);
+      expect(
+        (
+          await submit("starknet_estimateFee", {
+            request: [{ ...query, sender_address }],
+            simulation_flags: ["SKIP_VALIDATE"],
+            block_id: "pre_confirmed",
+          })
+        ).error.code,
+      ).toBe(-32601);
+    }
+    expect((await submit("starknet_addInvokeTransaction", [{ ...invoke, tip: "0x1" }])).error.code).toBe(-32601);
+    expect((await submit("starknet_estimateFee", [[query], [], "pre_confirmed"])).error.code).toBe(-32601);
+    expect(forwarded).toHaveLength(2);
+    for (let n = 8; n < 30; n++) await submit("starknet_addInvokeTransaction", [invoke]);
+    expect((await submit("starknet_addInvokeTransaction", [invoke])).error.code).toBe(-32005);
+  } finally {
+    proxy.stop(true);
+    node.stop(true);
   }
 });

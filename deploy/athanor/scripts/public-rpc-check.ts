@@ -42,12 +42,13 @@ export async function assertPublicRpcBoundary(
       contract_address_salt: "0x42",
       signature: ["0x1", "0x2", "0x3", "0x4", "0x5"],
     };
+    const otherSender = `0x${(BigInt(identity.operator) + 1n).toString(16)}`;
     const invoke = {
       type: "INVOKE",
       version: "0x3",
       tip: "0x0",
-      sender_address: identity.operator,
-      calldata: ["0x1", identity.operator, hash.starknetKeccak("is_device").toString(), "0x1", "0x1"],
+      sender_address: otherSender,
+      calldata: ["0x1", otherSender, hash.starknetKeccak("is_device").toString(), "0x1", "0x1"],
       signature: deploy.signature,
     };
     const cases = [
@@ -69,7 +70,7 @@ export async function assertPublicRpcBoundary(
       [
         "other selector",
         "starknet_addInvokeTransaction",
-        { ...invoke, calldata: ["0x1", identity.operator, "0x2", "0x1", "0x1"] },
+        { ...invoke, calldata: ["0x1", otherSender, "0x2", "0x1", "0x1"] },
       ],
       [
         "multi-call",

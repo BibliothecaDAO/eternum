@@ -40,8 +40,9 @@ init in `data/*.log` before retrying; do not delete chain state to repair a depl
 
 Forward your HTTPS hostnames to loopback ports 8080 (RPC), 8081 (Herald) and 8082 (admission). `RPC_PORT`,
 `HERALD_PORT` and `ADMISSION_PORT` can select disjoint ports for a second shard. Never expose the node itself. Gameplay writes enter through admission. Herald serves `/manifest`; public RPC permits
-only Realms account deployment, device join and device revoke, checked against the manifest, with zero tip. Other
-writes and node WebSocket upgrades are refused. SDK fee estimation is restricted to those account shapes.
+Realms account deployment, device join and device revoke checked against the manifest, plus invokes from the host
+operator recorded in `data/gameplay-contracts.json`. All require zero tip. SDK fee estimation follows the same policy;
+other writes and node WebSocket upgrades are refused. The node still verifies every submitted transaction signature.
 The default loopback bindings expect a tunnel on the host. Set `BIND_ADDRESS` only when placing these three services
 behind another TLS proxy. The node has no published port.
 Set `TRUSTED_PROXY` to the tunnel's socket peer IP. Only that peer may supply a client address, using the last
@@ -64,8 +65,8 @@ docker compose run --rm --no-deps --entrypoint bun init \
   deploy/athanor/scripts/account-rpc-smoke.ts /data https://rpc.example.org/rpc/v0_10_2
 ```
 
-The smoke rejects foreign classes, guardian keys, targets, selectors and multi-calls; it joins and revokes a temporary
-device on the host operator. Keys remain private in `data/`.
+The smoke rejects foreign classes, guardian keys and non-operator calls to other targets, selectors or multi-calls;
+it joins and revokes a temporary device and confirms a harmless operator invoke. Keys remain private in `data/`.
 
 Create an unranked Frontier game with the host operator (choose a future start time):
 

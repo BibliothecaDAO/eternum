@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { isIP } from "node:net";
-import { permitsAccountRequest } from "./account-rpc-policy";
+import { dirname, join } from "node:path";
+import { permitsAccountRequest, type ShardIdentity } from "./account-rpc-policy";
 import { accountRequestLimiter, rpcClientAddress } from "./rpc-client-limit";
 
 const READ_METHODS = new Set([
@@ -47,11 +48,11 @@ function refuse(code: number, message: string, status = 200): Response {
   return Response.json({ jsonrpc: "2.0", id: null, error: { code, message } }, { status, headers: CORS });
 }
 
-// Replaces direct public forwarding: reads and manifest-bound account management may reach the fee-free node.
+// Replaces direct public forwarding: reads, the host operator and manifest-bound account management may reach the fee-free node.
 export function startReadRpc(
   upstream: string,
   port: number,
-  identity: { accountClassHash: string; guardianPublicKey: string },
+  identity: ShardIdentity,
   trustedProxy?: string,
   hostname = "0.0.0.0",
 ) {
@@ -61,9 +62,11 @@ export function startReadRpc(
   }
   if (trustedProxy && !isIP(trustedProxy)) throw new Error("RPC_TRUSTED_PROXY must be one IP address");
   if (
-    ![identity.accountClassHash, identity.guardianPublicKey].every((v) => /^0x[0-9a-fA-F]+$/.test(v) && BigInt(v) > 0n)
+    ![identity.accountClassHash, identity.guardianPublicKey, identity.operatorAccountAddress].every(
+      (v) => /^0x[0-9a-fA-F]+$/.test(v) && BigInt(v) > 0n,
+    )
   ) {
-    throw new Error("The shard manifest must contain its account class and guardian key");
+    throw new Error("Shard init state must contain its account class, guardian key and operator address");
   }
   const allowance = accountRequestLimiter();
   return Bun.serve({
@@ -98,7 +101,7 @@ async function readNodeClass(node: URL, sender: string) {
 async function handlePublicRequest(
   request: Request,
   node: URL,
-  identity: { accountClassHash: string; guardianPublicKey: string },
+  identity: ShardIdentity,
   client: string | undefined,
   allowance: ReturnType<typeof accountRequestLimiter>,
 ): Promise<Response> {
@@ -152,10 +155,13 @@ if (import.meta.main) {
   if (!process.env.NODE_RPC_URL) throw new Error("NODE_RPC_URL is required");
   if (!process.env.NATIVE_WORLD_MANIFEST) throw new Error("NATIVE_WORLD_MANIFEST is required");
   const manifest = JSON.parse(readFileSync(process.env.NATIVE_WORLD_MANIFEST, "utf8"));
+  const deployment = JSON.parse(
+    readFileSync(join(dirname(process.env.NATIVE_WORLD_MANIFEST), "gameplay-contracts.json"), "utf8"),
+  );
   startReadRpc(
     process.env.NODE_RPC_URL,
     Number(process.env.PORT ?? 8080),
-    manifest.shard,
+    { ...manifest.shard, operatorAccountAddress: deployment.operatorAccountAddress },
     process.env.RPC_TRUSTED_PROXY,
   );
 }
