@@ -5,7 +5,7 @@ import { deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/a
 import { createGuardian } from "@realms-world/guardian";
 import { ec, typedData, type TypedData } from "starknet";
 import { getPlatformProxy } from "wrangler";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { createIdentityAuth } from "./auth";
 import type { VerifyWalletSignature } from "./siws-plugin";
@@ -29,6 +29,15 @@ const fetchShard = (async (input: RequestInfo | URL) => {
 }) as typeof fetch;
 let env: IdentityEnv;
 let auth: ReturnType<typeof createIdentityAuth>;
+
+/** The email provider's inbox: the last sign-in code sent to each address. */
+const sentCodes = new Map<string, string>();
+/** Sign-in codes requested per address, as the rate limiter counts them. */
+const codesRequested = new Map<string, number>();
+const countSignInCode = (email: string) => {
+  codesRequested.set(email, (codesRequested.get(email) ?? 0) + 1);
+  return codesRequested.get(email)!;
+};
 
 /** Mainnet wallets by address: each signs the SIWS message's SNIP-12 hash with its own Stark key. */
 const walletKeys = new Map<string, string>();
@@ -71,6 +80,9 @@ beforeAll(async () => {
     BETTER_AUTH_SECRET: "identity-test-secret-identity-test-secret",
     IDENTITY_RPC_URL: "http://127.0.0.1:1",
     OPERATOR_TOKEN: OPERATOR_TOKEN,
+    DISCORD_CLIENT_ID: "discord-client",
+    DISCORD_CLIENT_SECRET: "discord-secret",
+    RESEND_API_KEY: "unused",
     WEB_PUSH_VAPID_PUBLIC_KEY: "unused",
     WEB_PUSH_VAPID_PRIVATE_KEY: "unused",
     WEB_PUSH_VAPID_SUBJECT: "mailto:ops@realms.party",
@@ -81,15 +93,22 @@ beforeAll(async () => {
     DB: proxy.env.DB,
     GUARDIAN: createGuardian(GUARDIAN_KEY),
     PUBLIC_RATE_LIMIT: { limit: async () => ({ success: true }) },
+    SIGN_IN_CODE_RATE_LIMIT: { limit: async ({ key }) => ({ success: countSignInCode(key) <= 3 }) },
     VERSION: { id: "test", tag: "", timestamp: "" },
   };
-  auth = createIdentityAuth(env, verifyAsMainnet);
+  auth = createIdentityAuth(env, {
+    verifyWalletSignature: verifyAsMainnet,
+    sendSignInCode: async (email, code) => void sentCodes.set(email, code),
+  });
 }, 60_000);
 
 afterAll(() => proxy?.dispose());
 
-/** A browser: one cookie jar, first-party requests to the app's /api. */
-const createBrowser = () => {
+/**
+ * A browser: one cookie jar, first-party requests to the app's /api. `parentDomainCookies` are cookies another
+ * realms.party service set for the whole domain; the browser sends them first.
+ */
+const createBrowser = (parentDomainCookies: string[] = []) => {
   const cookies = new Map<string, string>();
   const request = async (path: string, init: { method?: string; body?: unknown; token?: string } = {}) => {
     const response = await routeIdentityRequest(
@@ -98,7 +117,7 @@ const createBrowser = () => {
         headers: {
           origin: ORIGIN,
           "content-type": "application/json",
-          cookie: [...cookies].map(([name, value]) => `${name}=${value}`).join("; "),
+          cookie: [...parentDomainCookies, ...[...cookies].map(([name, value]) => `${name}=${value}`)].join("; "),
           ...(init.token ? { authorization: `Bearer ${init.token}` } : {}),
         },
         ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
@@ -210,6 +229,54 @@ const registerPasskey = async (browser: ReturnType<typeof createBrowser>) => {
   });
 };
 
+/** Asks for a sign-in code and signs in with it, as the sign-in screen does. */
+const signInWithCode = async (browser: ReturnType<typeof createBrowser>, email: string) => {
+  const sent = await browser.request("/api/auth/email-otp/send-verification-otp", { body: { email, type: "sign-in" } });
+  expect(sent.status).toBe(200);
+  return browser.request("/api/auth/sign-in/email-otp", { body: { email, otp: sentCodes.get(email.toLowerCase()) } });
+};
+
+/** Discord's OAuth and user endpoints, answering for the profiles the test registers by authorization code. */
+const discordProfiles = new Map<string, { id: string; username: string; email: string; verified: boolean }>();
+const fakeDiscord = () => {
+  const passThrough = globalThis.fetch;
+  return vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+    const request = new Request(input, init);
+    const url = new URL(request.url);
+    if (url.hostname !== "discord.com") return passThrough(input, init);
+    if (url.pathname === "/api/oauth2/token") {
+      const code = new URLSearchParams(await request.text()).get("code");
+      return Response.json({
+        access_token: `token-${code}`,
+        token_type: "Bearer",
+        expires_in: 604_800,
+        scope: "identify email",
+      });
+    }
+    const profile = discordProfiles.get(request.headers.get("authorization")?.replace("Bearer token-", "") ?? "");
+    return profile
+      ? Response.json({ ...profile, global_name: null, avatar: null, discriminator: "0" })
+      : new Response("unauthorized", { status: 401 });
+  });
+};
+
+/** Starts Discord sign-in and returns from Discord with an authorization code for this profile. */
+const signInWithDiscord = async (
+  browser: ReturnType<typeof createBrowser>,
+  profile: { id: string; username: string; email: string; verified: boolean },
+) => {
+  const started = (await (
+    await browser.request("/api/auth/sign-in/social", { body: { provider: "discord", callbackURL: "/account" } })
+  ).json()) as { url: string };
+  const code = `code-${profile.id}`;
+  discordProfiles.set(code, profile);
+  const state = new URL(started.url).searchParams.get("state");
+  return browser.request(`/api/auth/callback/discord?code=${code}&state=${state}`);
+};
+
+const userCount = async () =>
+  ((await proxy.env.DB.prepare('SELECT count(*) AS n FROM "user"').first()) as { n: number }).n;
+
 const deviceChangeFor = (realmsId: string, overrides: Partial<{ account: string; counter: number }> = {}) => ({
   chainId: CHAIN_ID,
   account: realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, ec.starkCurve.getStarkKey(GUARDIAN_KEY)),
@@ -226,6 +293,81 @@ describe("identity Worker", () => {
       publicKey: ec.starkCurve.getStarkKey(GUARDIAN_KEY),
       accountClassHash: ACCOUNT_CLASS_HASH,
     });
+  });
+
+  it("keeps a new session when another realms.party service's session cookie is sent first", async () => {
+    const browser = createBrowser(["__Secure-better-auth.session_token=another-service.c2lnbmF0dXJl"]);
+    expect((await signInWithCode(browser, "shadowed@realms.test")).status).toBe(200);
+    expect((await browser.session())?.user.realmsId).toBeTruthy();
+  });
+
+  it("creates an account on an email's first sign-in with a code, and signs the same account in after", async () => {
+    const before = await userCount();
+    const first = createBrowser();
+    expect((await signInWithCode(first, "lord@realms.test")).status).toBe(200);
+    const created = await first.session();
+    expect(created?.user.realmsId).toBe(realmsIdOf(created!.user.id));
+
+    const second = createBrowser();
+    expect((await signInWithCode(second, "LORD@realms.test")).status).toBe(200);
+    expect((await second.session())?.user.id).toBe(created?.user.id);
+    expect(await userCount()).toBe(before + 1);
+  });
+
+  it("refuses a wrong code, an expired code and a code after three wrong tries", async () => {
+    const browser = createBrowser();
+    const signIn = (email: string, otp: string | undefined) =>
+      browser.request("/api/auth/sign-in/email-otp", { body: { email, otp } });
+    const ask = (email: string) =>
+      browser.request("/api/auth/email-otp/send-verification-otp", { body: { email, type: "sign-in" } });
+
+    await ask("wrong@realms.test");
+    const wrongCode = sentCodes.get("wrong@realms.test") === "000000" ? "111111" : "000000";
+    expect((await signIn("wrong@realms.test", wrongCode)).status).toBe(400);
+
+    await ask("late@realms.test");
+    await proxy.env.DB.prepare('UPDATE "verification" SET "expiresAt" = ? WHERE "identifier" LIKE ?')
+      .bind(new Date(Date.now() - 1_000).toISOString(), "%late@realms.test")
+      .run();
+    expect((await signIn("late@realms.test", sentCodes.get("late@realms.test"))).status).toBe(400);
+
+    await ask("guess@realms.test");
+    for (let attempt = 0; attempt < 3; attempt += 1) await signIn("guess@realms.test", "999999");
+    const afterGuesses = await signIn("guess@realms.test", sentCodes.get("guess@realms.test"));
+    expect(afterGuesses.status).not.toBe(200);
+    expect(await browser.session()).toBeNull();
+  });
+
+  it("sends an address only a few sign-in codes a minute", async () => {
+    const browser = createBrowser();
+    const ask = (email: string) =>
+      browser.request("/api/auth/email-otp/send-verification-otp", { body: { email, type: "sign-in" } });
+    for (let code = 0; code < 3; code += 1) expect((await ask("busy@realms.test")).status).toBe(200);
+    const refused = await ask("busy@realms.test");
+    expect(refused.status).toBe(429);
+    expect(await refused.json()).toEqual({ error: "too_many_codes" });
+    expect((await ask("quiet@realms.test")).status).toBe(200);
+  });
+
+  it("creates an account on a Discord user's first sign-in, and signs the same account in after", async () => {
+    const discord = fakeDiscord();
+    try {
+      const before = await userCount();
+      const profile = { id: "80351110224678912", username: "nelly", email: "nelly@discord.test", verified: true };
+      const first = createBrowser();
+      const returned = await signInWithDiscord(first, profile);
+      expect(returned.status).toBe(302);
+      expect(returned.headers.get("location")).toContain("/account");
+      const created = await first.session();
+      expect(created?.user.realmsId).toBe(realmsIdOf(created!.user.id));
+
+      const second = createBrowser();
+      await signInWithDiscord(second, profile);
+      expect((await second.session())?.user.id).toBe(created?.user.id);
+      expect(await userCount()).toBe(before + 1);
+    } finally {
+      discord.mockRestore();
+    }
   });
 
   it("refuses a device approval without a session", async () => {

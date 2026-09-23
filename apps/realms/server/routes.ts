@@ -27,6 +27,9 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/auth/sign-in/anonymous" && !(await withinPublicBudget(env, "anonymous", request))) {
     return json({ error: "too_many_requests" }, 429);
   }
+  if (pathname === "/api/auth/email-otp/send-verification-otp" && !(await withinSignInCodeBudget(env, request))) {
+    return json({ error: "too_many_codes" }, 429);
+  }
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
   if (pathname === "/api/devices" && request.method === "POST") {
     return handleDeviceChange(request, {
@@ -69,6 +72,17 @@ export const routeIdentityRequest = async (
 const withinPublicBudget = async (env: IdentityEnv, route: string, request: Request) => {
   const client = request.headers.get("cf-connecting-ip") ?? "unknown";
   return (await env.PUBLIC_RATE_LIMIT.limit({ key: `${route}:${client}` })).success;
+};
+
+/** A sign-in code costs an email: each client and each address gets a few a minute. */
+const withinSignInCodeBudget = async (env: IdentityEnv, request: Request) => {
+  if (!(await withinPublicBudget(env, "sign-in-code", request))) return false;
+  const { email } = (await request
+    .clone()
+    .json()
+    .catch(() => ({}))) as { email?: unknown };
+  const address = typeof email === "string" ? email.trim().toLowerCase() : "";
+  return (await env.SIGN_IN_CODE_RATE_LIMIT.limit({ key: address })).success;
 };
 
 const isOperator = (env: IdentityEnv, request: Request) => presentsOperatorToken(request, env.OPERATOR_TOKEN);

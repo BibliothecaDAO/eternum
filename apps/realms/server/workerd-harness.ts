@@ -41,7 +41,10 @@ export const startWorker = async (options: {
       CHAT_INBOX: { className: "ChatInbox", useSQLite: true },
     },
     durableObjectsPersist: join(options.storage, "do"),
-    ratelimits: { PUBLIC_RATE_LIMIT: { namespace_id: "1001", simple: { limit: 1000, period: 60 } } },
+    ratelimits: {
+      PUBLIC_RATE_LIMIT: { namespace_id: "1001", simple: { limit: 1000, period: 60 } },
+      SIGN_IN_CODE_RATE_LIMIT: { namespace_id: "1003", simple: { limit: 1000, period: 60 } },
+    },
     bindings: {
       ENVIRONMENT: "staging",
       BASE_URL: "https://staging.realms.party",
@@ -49,6 +52,9 @@ export const startWorker = async (options: {
       BETTER_AUTH_SECRET: "workerd-test-secret-workerd-test-secret",
       IDENTITY_RPC_URL: "http://127.0.0.1:1",
       OPERATOR_TOKEN: "unused",
+      DISCORD_CLIENT_ID: "unused",
+      DISCORD_CLIENT_SECRET: "unused",
+      RESEND_API_KEY: "unused",
       WEB_PUSH_VAPID_PUBLIC_KEY: options.vapid.publicKey,
       WEB_PUSH_VAPID_PRIVATE_KEY: options.vapid.privateKey,
       WEB_PUSH_VAPID_SUBJECT: "mailto:ops@realms.party",

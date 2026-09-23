@@ -1,16 +1,30 @@
 import { passkey } from "@better-auth/passkey";
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
-import { anonymous } from "better-auth/plugins";
+import { anonymous, emailOTP } from "better-auth/plugins";
 import { RpcProvider, verifyMessageInStarknet } from "starknet";
 
 import type { IdentityEnv } from "./env";
 import { nameRuleViolation } from "./name-rules";
 import { isNameTaken } from "./names";
 import { realmsIdOf } from "./realms-id";
+import { resendSignInCodes, type SendSignInCode } from "./sign-in-codes";
 import { siws, type VerifyWalletSignature } from "./siws-plugin";
 
 const PORTRAIT_PATTERN = /^(0[1-9]|1[0-2])$/;
+const DAY_SECONDS = 24 * 60 * 60;
+const SIGN_IN_CODE_SECONDS = 5 * 60;
+
+/** What the identity service reaches outside its database: mainnet for wallet signatures, and the email provider. */
+interface IdentityServices {
+  verifyWalletSignature: VerifyWalletSignature;
+  sendSignInCode: SendSignInCode;
+}
+
+const identityServicesOf = (env: Pick<IdentityEnv, "IDENTITY_RPC_URL" | "RESEND_API_KEY">): IdentityServices => ({
+  verifyWalletSignature: verifyOnMainnet(env.IDENTITY_RPC_URL),
+  sendSignInCode: resendSignInCodes(env.RESEND_API_KEY),
+});
 
 /** Mainnet wallets verify their own signatures; the identity RPC asks the wallet contract. */
 const verifyOnMainnet =
@@ -25,11 +39,12 @@ const verifyOnMainnet =
 
 /**
  * A new user's id is fixed here and never changes: the Realms id derives from it and places the player's account on
- * every shard. A new user starts with its id as its name, which reads as "not chosen" until they pick one.
+ * every shard. A new user starts with its id as its name, which reads as "not chosen" until they pick one, and with no
+ * portrait: a sign-in provider's avatar is not one of ours.
  */
 const assignRealmsIdentity = async (user: Record<string, unknown>) => {
   const id = crypto.randomUUID().replaceAll("-", "");
-  return { data: { ...user, id, name: id, realmsId: realmsIdOf(id) } };
+  return { data: { ...user, id, name: id, image: null, realmsId: realmsIdOf(id) } };
 };
 
 /** A player's way back in is a passkey: a linked wallet only recovers an account that has none, once. */
@@ -43,15 +58,31 @@ export const hasPasskey = async (db: D1Database, userId: string): Promise<boolea
  * race-proof guarantee.
  */
 export const createIdentityAuth = (
-  env: Pick<IdentityEnv, "DB" | "BASE_URL" | "BETTER_AUTH_SECRET" | "IDENTITY_RPC_URL">,
-  verifySignature: VerifyWalletSignature = verifyOnMainnet(env.IDENTITY_RPC_URL),
+  env: Pick<
+    IdentityEnv,
+    | "DB"
+    | "BASE_URL"
+    | "BETTER_AUTH_SECRET"
+    | "IDENTITY_RPC_URL"
+    | "DISCORD_CLIENT_ID"
+    | "DISCORD_CLIENT_SECRET"
+    | "RESEND_API_KEY"
+  >,
+  services: IdentityServices = identityServicesOf(env),
 ) =>
   betterAuth({
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BASE_URL,
     basePath: "/api/auth",
     database: env.DB,
-    session: { cookieCache: { enabled: true, maxAge: 60 * 60 } },
+    // A month, renewed by a day's use, so a phone stays signed in.
+    session: { expiresIn: 30 * DAY_SECONDS, updateAge: DAY_SECONDS, cookieCache: { enabled: true, maxAge: 60 * 60 } },
+    socialProviders: {
+      discord: { clientId: env.DISCORD_CLIENT_ID, clientSecret: env.DISCORD_CLIENT_SECRET },
+    },
+    // Other realms.party services set better-auth's default cookie names for the whole domain; a browser sends that
+    // older cookie first, and it would hide this service's session. Our cookies carry their own name.
+    advanced: { cookiePrefix: "realms-identity" },
     user: {
       additionalFields: {
         realmsId: { type: "string", unique: true, required: false, input: false },
@@ -78,7 +109,22 @@ export const createIdentityAuth = (
       },
     },
     plugins: [
-      siws({ origin: env.BASE_URL, verifySignature, hasPasskey: (userId) => hasPasskey(env.DB, userId) }),
+      // A sign-in code for an email signs in its account, and creates it on the email's first sign-in.
+      emailOTP({
+        otpLength: 6,
+        expiresIn: SIGN_IN_CODE_SECONDS,
+        allowedAttempts: 3,
+        storeOTP: "hashed",
+        sendVerificationOTP: async ({ email, otp, type }) => {
+          if (type !== "sign-in") throw new APIError("BAD_REQUEST", { message: "SIGN_IN_CODES_ONLY" });
+          await services.sendSignInCode(email, otp);
+        },
+      }),
+      siws({
+        origin: env.BASE_URL,
+        verifySignature: services.verifyWalletSignature,
+        hasPasskey: (userId) => hasPasskey(env.DB, userId),
+      }),
       passkey({ rpID: new URL(env.BASE_URL).hostname, rpName: "Realms", origin: env.BASE_URL }),
       anonymous({ emailDomainName: new URL(env.BASE_URL).hostname, disableDeleteAnonymousUser: true }),
     ],

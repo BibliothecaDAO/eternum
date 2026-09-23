@@ -97,9 +97,12 @@ jobs:
           WEB_PUSH_VAPID_PUBLIC_KEY: ${{ secrets.WEB_PUSH_VAPID_PUBLIC_KEY }}
           WEB_PUSH_VAPID_PRIVATE_KEY: ${{ secrets.WEB_PUSH_VAPID_PRIVATE_KEY }}
           WEB_PUSH_VAPID_SUBJECT: ${{ secrets.WEB_PUSH_VAPID_SUBJECT }}
+          DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+          DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: |
           set -euo pipefail
-          names="BETTER_AUTH_SECRET IDENTITY_RPC_URL OPERATOR_TOKEN WEB_PUSH_VAPID_PUBLIC_KEY WEB_PUSH_VAPID_PRIVATE_KEY WEB_PUSH_VAPID_SUBJECT"
+          names="BETTER_AUTH_SECRET IDENTITY_RPC_URL OPERATOR_TOKEN WEB_PUSH_VAPID_PUBLIC_KEY WEB_PUSH_VAPID_PRIVATE_KEY WEB_PUSH_VAPID_SUBJECT DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET RESEND_API_KEY"
           for name in $names; do
             [ -n "${!name}" ] || { echo "::error::$name is not set for the $TARGET environment"; exit 1; }
           done
