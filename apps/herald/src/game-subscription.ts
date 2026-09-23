@@ -1,7 +1,7 @@
 import { rowInGameSyncScope, type GameSyncScope } from "@bibliothecadao/eternum/game-sync-models";
 import type { PublishedBody, SnapshotOverlayDiff } from "./game-stream";
 import type { FoldDelete, FoldSet, GameSnapshot } from "./types";
-import type { WorldFold } from "./world-fold";
+import { SCOPE_INPUT_MODELS, touchesSubscriptionScope, type WorldFold } from "./world-fold";
 
 const identity = (row: FoldDelete) => `${row.model}:${row.key}`;
 const scopeIdentity = (scope: GameSyncScope) =>
@@ -11,6 +11,12 @@ const scopeIdentity = (scope: GameSyncScope) =>
 export class GameSubscription {
   private visible = new Map<string, FoldDelete>();
   private scopeKey = "";
+  private rememberedScope?: GameSyncScope;
+  /**
+   * The scope per fold (confirmed, pre-confirmed), kept until a published change touches a row it was taken from or
+   * the day's expedition rolls over. Taking it scans the game, so it is never taken per message.
+   */
+  private readonly scopes = new Map<boolean, { scope: GameSyncScope; validUntil: number }>();
 
   constructor(
     private readonly gameId: string,
@@ -38,6 +44,7 @@ export class GameSubscription {
   }
 
   public project(body: PublishedBody): PublishedBody[] {
+    this.forgetMovedScopes(body);
     if (body.type === "overlay_reset") return [body];
     if (body.type === "tx") {
       const executions = body.executions?.filter(
@@ -47,7 +54,8 @@ export class GameSubscription {
     }
     const preconfirmed = body.type === "head" || body.preconfirmed;
     const scope = this.scope(preconfirmed);
-    if (scopeIdentity(scope) !== this.scopeKey) return this.replaceScope(body, scope, preconfirmed);
+    if (scope !== this.rememberedScope && scopeIdentity(scope) !== this.scopeKey)
+      return this.replaceScope(body, scope, preconfirmed);
     if (body.type === "head") return [body];
     const set = body.set.filter((row) => rowInGameSyncScope(row.model, row.value, scope));
     const del = body.del.filter((row) => this.visible.has(identity(row)));
@@ -56,7 +64,31 @@ export class GameSubscription {
   }
 
   private scope(preconfirmed: boolean): GameSyncScope {
-    return this.fold(preconfirmed).subscriptionScope(this.gameId, this.actor, this.timestamp());
+    const timestamp = this.timestamp();
+    const known = this.scopes.get(preconfirmed);
+    if (known && timestamp < known.validUntil) return known.scope;
+    const fold = this.fold(preconfirmed);
+    const scope = fold.subscriptionScope(this.gameId, this.actor, timestamp);
+    this.scopes.set(preconfirmed, { scope, validUntil: fold.scopeValidUntil(this.gameId, timestamp) });
+    return scope;
+  }
+
+  /**
+   * The published change is already in the fold: forget any scope it can have moved. An overlay reset needs nothing
+   * here: what it reverts or confirms is published as diffs of its own.
+   */
+  private forgetMovedScopes(body: PublishedBody): void {
+    if (body.type !== "diff") return;
+    for (const [preconfirmed, { scope }] of this.scopes) {
+      const moved =
+        body.set.some((row) => touchesSubscriptionScope(scope, row)) ||
+        body.del.some((row) => SCOPE_INPUT_MODELS.has(row.model) && this.visible.has(identity(row)));
+      // A confirmed change also shows through the pre-confirmed fold, which reads from it.
+      if (moved) {
+        this.scopes.delete(preconfirmed);
+        if (!body.preconfirmed) this.scopes.delete(true);
+      }
+    }
   }
 
   private replaceScope(
@@ -89,6 +121,7 @@ export class GameSubscription {
     for (const { model, rows } of snapshot.models)
       for (const row of rows) this.visible.set(identity({ model, key: row.key }), { model, key: row.key });
     this.scopeKey = scopeIdentity(scope);
+    this.rememberedScope = scope;
   }
 
   private track(set: FoldSet[], del: FoldDelete[]): void {

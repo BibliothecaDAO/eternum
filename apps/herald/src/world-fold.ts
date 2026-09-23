@@ -93,6 +93,42 @@ const orderSnapshotModelsForStreaming = <TDefinition extends { name: string }>(
   return [...definitions].sort((left, right) => rank(left.name) - rank(right.name));
 };
 
+const SCOPE_RULE_MODELS = new Set(["SliceRules", "GameRegistry", "SettlementRules"]);
+/** Every model subscriptionScope reads: a change to any other model never moves a scope. */
+export const SCOPE_INPUT_MODELS = new Set([
+  ...SCOPE_RULE_MODELS,
+  "PlayerEntry",
+  "Structure",
+  "ExplorerTroops",
+  "ProductionReceiver",
+]);
+
+/** Whether a changed row can move this scope: the rows subscriptionScope reads that concern its actor. */
+export function touchesSubscriptionScope(scope: GameSyncScope, row: FoldSet): boolean {
+  if (SCOPE_RULE_MODELS.has(row.model)) return true;
+  const expedition = scope.expedition;
+  if (!expedition) return false;
+  const value = row.value;
+  if (row.model === "PlayerEntry")
+    return scope.actor !== undefined && syncScalar(value.player) === syncScalar(scope.actor);
+  if (row.model === "Structure") {
+    const base = value.base as DecodedRecord;
+    const region = gameSyncRegion({ alt: base.alt, x: base.coord_x, y: base.coord_y }, expedition.spacing);
+    return (
+      expedition.owners.has(syncScalar(value.owner)) ||
+      expedition.entities.has(syncScalar(value.entity_id)) ||
+      (region !== undefined && expedition.regions.has(region))
+    );
+  }
+  if (row.model === "ExplorerTroops")
+    return expedition.realms.has(syncScalar(value.owner)) || expedition.entities.has(syncScalar(value.explorer_id));
+  if (row.model === "ProductionReceiver")
+    return (
+      expedition.realms.has(syncScalar(value.home)) || expedition.productionSources.has(syncScalar(value.entity_id))
+    );
+  return false;
+}
+
 export class WorldFold {
   private readonly registry: ModelRegistry;
 
@@ -310,6 +346,15 @@ export class WorldFold {
     );
     scope.expedition = { epoch, spacing, owners, realms, realmTraits, regions, entities, productionSources };
     return scope;
+  }
+
+  /** The first timestamp at which the scope must be taken again: the game's start, or the expedition's rollover. */
+  public scopeValidUntil(gameId: string, timestamp: number): number {
+    const epochSeconds = Number(this.gameRows("SliceRules", gameId)[0]?.value.epoch_seconds ?? 0);
+    if (epochSeconds === 0) return Number.POSITIVE_INFINITY;
+    const startMainAt = Number(this.gameRows("GameRegistry", gameId)[0]?.value.start_main_at ?? 0);
+    const rollover = (Math.floor(timestamp / epochSeconds) + 1) * epochSeconds;
+    return timestamp < startMainAt ? Math.min(startMainAt, rollover) : rollover;
   }
 
   public subscriptionSnapshot(
