@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from "vitest";
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, Position } from "@bibliothecadao/eternum";
 import type { Structure } from "@bibliothecadao/types";
 import type { RealmStore } from "./use-realm-store";
 
@@ -79,7 +79,7 @@ describe("use-realm-store spectator lifecycle", () => {
 
     harness.getState().setStructureEntityId(303, {
       spectator: true,
-      worldMapPosition: { col: 12, row: 34 },
+      worldMapPosition: Position.fromNormalized({ x: 12, y: 34 }),
     });
 
     const next = harness.getState();
@@ -89,7 +89,7 @@ describe("use-realm-store spectator lifecycle", () => {
     expect(next.worldMapReturnPosition).toEqual({ col: 12, row: 34 });
   });
 
-  it("normalizes contract-space world map positions before storing route resume state", () => {
+  it("stores a contract position as its normalized map hex, near the centre or at a Frontier site far from it", () => {
     const harness = createRealmStoreTestHarness();
     harness.setState({
       structureEntityId: 101,
@@ -99,11 +99,15 @@ describe("use-realm-store spectator lifecycle", () => {
 
     harness.getState().setStructureEntityId(303, {
       spectator: true,
-      worldMapPosition: { col: 2010831286, row: 2010831278 },
+      worldMapPosition: Position.fromContract({ x: 2010831286, y: 2010831278 }),
     });
+    expect(harness.getState().worldMapReturnPosition).toEqual({ col: 6, row: -2 });
 
-    const next = harness.getState();
-    expect(next.worldMapReturnPosition).toEqual({ col: 6, row: -2 });
+    harness.getState().setStructureEntityId(303, {
+      spectator: true,
+      worldMapPosition: Position.fromContract({ x: 13850, y: 19650 }),
+    });
+    expect(harness.getState().worldMapReturnPosition).toEqual({ col: 13850 - 2010831280, row: 19650 - 2010831280 });
   });
 
   it("exits spectator mode using last controlled structure fallback", () => {

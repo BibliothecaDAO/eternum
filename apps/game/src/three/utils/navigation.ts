@@ -1,15 +1,13 @@
 import { traceFlightMark } from "../flight-trace";
 import { Position } from "@bibliothecadao/eternum";
-import { buildPlayHref, parsePlayRoute } from "@/play/navigation/play-route";
+import { buildPlayHref, mapRouteHex, parsePlayRoute } from "@/play/navigation/play-route";
 
 import { Structure } from "@bibliothecadao/types";
 import { resolveNavigationSceneTarget } from "../scene-navigation-boundary";
 import { SceneName } from "../types";
 
 function buildSceneLocationUrl(position: Position, targetScene: SceneName): string {
-  const playRoute = requirePlayRoute();
-  const normalized = position.getNormalized();
-  return buildPlayHref({ ...playRoute, scene: targetScene, col: normalized.x, row: normalized.y });
+  return buildPlayHref({ ...requirePlayRoute(), scene: targetScene, ...mapRouteHex(position) });
 }
 
 function requirePlayRoute() {

@@ -1,6 +1,7 @@
 // @vitest-environment node
 
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, Position } from "@bibliothecadao/eternum";
+import { mapRouteHex } from "@/play/navigation/play-route";
 import { describe, expect, it, vi } from "vitest";
 
 import { resolveGameEntryTarget } from "./game-entry-navigation";
@@ -42,24 +43,22 @@ describe("resolveGameEntryTarget", () => {
     });
   });
 
-  it("normalizes contract-space world-map selections before building a canonical dashboard entry URL", () => {
+  it("enters a Frontier realm at its normalized site, not at its contract coordinate", () => {
+    const site = Position.fromContract({ x: 13850, y: 19650 });
     const result = resolveGameEntryTarget({
       chainId: "0xa1",
-      gameId: 3,
-      structureEntityId: 91,
-      worldMapReturnPosition: { col: 2010831286, row: 2010831278 },
+      gameId: 1,
+      structureEntityId: 139,
+      worldMapReturnPosition: mapRouteHex(site),
       isSpectateMode: false,
-      mapCenterOffset: 136652366,
     });
 
+    const normalized = { col: 13850 - 2010831280, row: 19650 - 2010831280 };
     expect(result).toEqual({
       spectator: false,
-      structureEntityId: 91,
-      url: "/g/0xa1/3/map?col=6&row=-2",
-      worldMapPosition: {
-        col: 6,
-        row: -2,
-      },
+      structureEntityId: 139,
+      url: `/g/0xa1/1/map?col=${normalized.col}&row=${normalized.row}`,
+      worldMapPosition: normalized,
     });
   });
 

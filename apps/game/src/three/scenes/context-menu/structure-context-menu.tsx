@@ -43,10 +43,7 @@ export const openStructureContextMenu = ({ event, structure, hexCoords, store }:
   };
 
   const selectConstructionBuilding = (building: BuildingType, view: LeftView, resource?: ResourcesIds) => {
-    const contractPosition = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    const col = Number(contractPosition?.x);
-    const row = Number(contractPosition?.y);
-    const worldMapPosition = Number.isFinite(col) && Number.isFinite(row) ? { col, row } : undefined;
+    const worldMapPosition = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row });
 
     if (!isOwner) {
       uiStore.setStructureEntityId(structure.id, {

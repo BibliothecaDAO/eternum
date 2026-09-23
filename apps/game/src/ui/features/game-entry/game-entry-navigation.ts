@@ -1,4 +1,3 @@
-import { normalizeWorldMapRoutePosition } from "@/play/navigation/play-route-target";
 import { buildPlayHref } from "@/play/navigation/play-route";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import type { GameRef } from "@bibliothecadao/eternum/game-client";
@@ -12,7 +11,6 @@ type ResolveGameEntryTargetInput = GameRef & {
   structureEntityId: number;
   worldMapReturnPosition: WorldMapPosition | null;
   isSpectateMode: boolean;
-  mapCenterOffset?: number | null;
 };
 
 type ResolvedGameEntryTarget = {
@@ -23,15 +21,6 @@ type ResolvedGameEntryTarget = {
 };
 
 const isFiniteCoordinate = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
-const CONTRACT_MAP_CENTER = 2147483646;
-
-const resolveMapCenter = (mapCenterOffset?: number | null): number | null => {
-  if (typeof mapCenterOffset !== "number" || !Number.isFinite(mapCenterOffset)) {
-    return null;
-  }
-
-  return CONTRACT_MAP_CENTER - mapCenterOffset;
-};
 
 const buildCanonicalGameEntryUrl = ({
   chainId,
@@ -61,21 +50,15 @@ const resolveBootstrappedWorldMapTarget = (
     return null;
   }
 
-  const normalizedWorldMapPosition = normalizeWorldMapRoutePosition(input.worldMapReturnPosition, {
-    mapCenter: resolveMapCenter(input.mapCenterOffset),
-  });
-  if (normalizedWorldMapPosition == null) {
-    return null;
-  }
-
-  const { col, row } = normalizedWorldMapPosition;
+  // The store keeps the map URL's hex already normalized (mapRouteHex), so it is used as it is.
+  const { col, row } = input.worldMapReturnPosition;
   if (!isFiniteCoordinate(col) || !isFiniteCoordinate(row)) {
     return null;
   }
 
   return {
     structureEntityId: input.structureEntityId,
-    worldMapPosition: normalizedWorldMapPosition,
+    worldMapPosition: { col, row },
   };
 };
 
@@ -116,7 +99,6 @@ export const resolveGameEntryTarget = ({
   structureEntityId,
   worldMapReturnPosition,
   isSpectateMode,
-  mapCenterOffset,
 }: ResolveGameEntryTargetInput): ResolvedGameEntryTarget => {
   const input = {
     chainId,
@@ -124,7 +106,6 @@ export const resolveGameEntryTarget = ({
     structureEntityId,
     worldMapReturnPosition,
     isSpectateMode,
-    mapCenterOffset,
   };
   const bootstrappedWorldMapTarget = resolveBootstrappedWorldMapTarget(input);
 

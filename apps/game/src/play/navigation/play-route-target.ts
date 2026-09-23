@@ -1,4 +1,4 @@
-import { Position, configManager } from "@bibliothecadao/eternum";
+import { Position } from "@bibliothecadao/eternum";
 import { resolveSpectateIntent } from "@/utils/spectator-session";
 
 import { parsePlayRoute, type PlayRouteDescriptor, type PlayScene } from "./play-route";
@@ -22,36 +22,6 @@ interface ResolvedPlayRouteTarget {
 }
 
 const isFiniteCoordinate = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
-const CONTRACT_SPACE_RANGE_RADIUS = 1_000_000;
-
-export const normalizeWorldMapRoutePosition = (
-  position: Partial<PlayRouteWorldPosition> | null | undefined,
-  options: { mapCenter?: number | null } = {},
-): PlayRouteWorldPosition | null => {
-  if (!position || !isFiniteCoordinate(position.col) || !isFiniteCoordinate(position.row)) {
-    return null;
-  }
-
-  const resolvedMapCenter =
-    typeof options.mapCenter === "number" && Number.isFinite(options.mapCenter)
-      ? options.mapCenter
-      : configManager.getMapCenter();
-  const appearsToBeContractPosition =
-    Math.abs(position.col - resolvedMapCenter) <= CONTRACT_SPACE_RANGE_RADIUS &&
-    Math.abs(position.row - resolvedMapCenter) <= CONTRACT_SPACE_RANGE_RADIUS;
-
-  if (!appearsToBeContractPosition) {
-    return {
-      col: position.col,
-      row: position.row,
-    };
-  }
-
-  return {
-    col: position.col - resolvedMapCenter,
-    row: position.row - resolvedMapCenter,
-  };
-};
 
 const resolveRouteWorldPositionFromPlayRoute = (
   playRoute: PlayRouteDescriptor | null,
@@ -60,10 +30,9 @@ const resolveRouteWorldPositionFromPlayRoute = (
     return null;
   }
 
-  return normalizeWorldMapRoutePosition({
-    col: playRoute.col ?? undefined,
-    row: playRoute.row ?? undefined,
-  });
+  // A map URL carries normalized hexes (mapRouteHex); it is read as written, never guessed from its magnitude.
+  if (!isFiniteCoordinate(playRoute.col) || !isFiniteCoordinate(playRoute.row)) return null;
+  return { col: playRoute.col, row: playRoute.row };
 };
 
 export const resolvePlayRouteWorldPosition = (location: LocationLike): PlayRouteWorldPosition | null => {

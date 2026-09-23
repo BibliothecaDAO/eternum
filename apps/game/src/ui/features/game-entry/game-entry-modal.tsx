@@ -1439,13 +1439,12 @@ export const GameEntryModal = ({
         structureEntityId: useUIStore.getState().structureEntityId,
         worldMapReturnPosition: useUIStore.getState().worldMapReturnPosition,
         isSpectateMode: spectate,
-        mapCenterOffset: worldMeta?.mapCenterOffset ?? null,
       });
 
       navigate(entryTarget.url);
       window.dispatchEvent(new Event("urlChanged"));
     },
-    [navigate, navigationEntryContext, worldMeta?.mapCenterOffset],
+    [navigate, navigationEntryContext],
   );
   const handleEnterGame = useCallback(
     () => enterGame(navigationEntryContext?.intent === "spectate"),

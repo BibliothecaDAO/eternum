@@ -3,6 +3,7 @@ import type { GameRef } from "@bibliothecadao/eternum/game-client";
 import { gamePath } from "@bibliothecadao/notifications";
 
 import { hasSpectateQuery, isExplicitSpectateSession } from "@/utils/spectator-session";
+import type { Position } from "@bibliothecadao/eternum";
 
 export type PlayScene = "map" | "hex";
 type EntryIntent = "play" | "settle" | "spectate";
@@ -98,6 +99,15 @@ export const parsePlayRoute = (location: LocationLike): PlayRouteDescriptor | nu
     bootMode,
     resumeScene,
   };
+};
+
+/**
+ * The one way a position becomes a map URL's hex. URLs carry normalized hexes, free of any floating origin, so a link
+ * names the same place on every client; a caller states its position's space by how it builds the Position.
+ */
+export const mapRouteHex = (position: Position): { col: number; row: number } => {
+  const normalized = position.getNormalized();
+  return { col: normalized.x, row: normalized.y };
 };
 
 export const buildPlayHref = (route: PlayHrefInput): string => {

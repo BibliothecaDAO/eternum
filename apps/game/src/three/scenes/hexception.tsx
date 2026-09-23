@@ -1088,7 +1088,9 @@ export default class HexceptionScene extends HexagonScene {
       ? this.game.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: standing.entityId })
       : undefined;
     if (!structure) throw new Error(`No structure is available at local route ${position.col},${position.row}`);
-    useUIStore.getState().setStructureEntityId(structure.entity_id, { worldMapPosition: position });
+    useUIStore.getState().setStructureEntityId(structure.entity_id, {
+      worldMapPosition: Position.fromContract({ x: position.col, y: position.row }),
+    });
     return structure;
   }
 

@@ -2,7 +2,7 @@ import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
-import { configManager, structureMapPosition } from "@bibliothecadao/eternum";
+import { Position, configManager, structureMapPosition } from "@bibliothecadao/eternum";
 
 import { resolveInitialStructureSelection } from "../sync/initial-structure-selection";
 
@@ -73,7 +73,7 @@ const chooseInitialStructure = (setup: SetupResult, state: AppStore): void => {
 
   state.setStructureEntityId(selectedStructure.entity_id, {
     spectator,
-    worldMapPosition: { col: selectedStructure.coord_x, row: selectedStructure.coord_y },
+    worldMapPosition: Position.fromContract({ x: selectedStructure.coord_x, y: selectedStructure.coord_y }),
   });
 };
 

@@ -2,14 +2,14 @@ import { useCallback } from "react";
 
 import { Position } from "@bibliothecadao/eternum";
 
-import { buildPlayHref, parsePlayRoute, type PlayScene } from "@/play/navigation/play-route";
+import { buildPlayHref, mapRouteHex, parsePlayRoute, type PlayScene } from "@/play/navigation/play-route";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { ID } from "@bibliothecadao/types";
 import { useUIStore } from "../store/use-ui-store";
 
 /** The chain coordinate a navigation selects: the UI store keeps selections as contract hexes. */
-const toWorldMapPosition = (position: Position): { col: number; row: number } => {
+const toSelectedHex = (position: Position): { col: number; row: number } => {
   const contract = position.getContract();
   return { col: contract.x, row: contract.y };
 };
@@ -17,8 +17,7 @@ const toWorldMapPosition = (position: Position): { col: number; row: number } =>
 const resolvePlaySceneHref = (scene: PlayScene, position: Position): string => {
   const playRoute = parsePlayRoute(window.location);
   if (!playRoute) throw new Error(`Cannot navigate scenes outside a game route: ${window.location.pathname}`);
-  const normalized = position.getNormalized();
-  return buildPlayHref({ ...playRoute, scene, col: normalized.x, row: normalized.y });
+  return buildPlayHref({ ...playRoute, scene, ...mapRouteHex(position) });
 };
 
 const useNavigateToHexView = () => {
@@ -76,14 +75,12 @@ export const useGoToStructure = (setupResult: GameClientSetup | null) => {
     isMapView: boolean,
     options?: { spectator?: boolean },
   ) => {
-    const worldMapPosition = toWorldMapPosition(targetPosition);
-
     setStructureEntityId(structureEntityId, {
       spectator: options?.spectator ?? false,
-      worldMapPosition,
+      worldMapPosition: targetPosition,
     });
 
-    updateSelectedHex(worldMapPosition);
+    updateSelectedHex(toSelectedHex(targetPosition));
 
     if (isMapView) {
       navigateToMapView(targetPosition);
