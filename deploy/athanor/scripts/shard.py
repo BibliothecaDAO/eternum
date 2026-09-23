@@ -3,6 +3,7 @@
 
 import argparse
 import hashlib
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -60,6 +61,8 @@ def validate_configuration(config, allowed_cpus):
             raise ValueError(f"{key} must be pinned by digest")
     if not isinstance(config["player_capacity"], int) or not 1 <= config["player_capacity"] <= 1024:
         raise ValueError("player_capacity must be the shard's player count, 1 to 1024")
+    if "trusted_proxy" in config:
+        ipaddress.ip_address(config["trusted_proxy"])
     port = config["port_base"]
     if not isinstance(port, int) or not 28000 <= port <= 65532:
         raise ValueError("reserve four isolated ports above 27999")
@@ -268,6 +271,8 @@ def write_gateway_environment(config, directory, environment, authority, world):
         "GATEWAY_LISTEN": "0.0.0.0:9950", "GATEWAY_MAX_CONNECTIONS": admission_connections(config),
         "GATEWAY_PLAYER_CAPACITY": config["player_capacity"], "GATEWAY_AUTHORITY": environment["DEPLOYER_ACCOUNT_ADDRESS"],
         "NODE_RPC_URL": "http://madara:9944/rpc/v0_10_2", "NODE_WS_URL": "ws://madara:9944/rpc/v0_10_2",
+        # Behind a tunnel every player arrives from the proxy; only its forwarded address is trusted.
+        **({"GATEWAY_TRUSTED_PROXY": config["trusted_proxy"]} if "trusted_proxy" in config else {}),
     })
 
 

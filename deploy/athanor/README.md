@@ -52,7 +52,9 @@ docker build -t realms-gateway:REVISION apps/gateway
 Use the node, gateway and Herald release digests with `scripts/shard.py CONFIGURATION RUN_DIRECTORY`. The configuration
 names `shard`, `chain_id`, `port_base` (four free loopback ports above 27999), `cpuset`, `node_memory_mib`,
 `player_capacity`, `madara_image`, `gateway_image`, `herald_image`, `chain_config`, `node_flags`, `guardian_url`,
-`public_rpc_url` and `public_admission_url`. Choose a unique `chain_id` of 1–31 ASCII letters,
+`public_rpc_url` and `public_admission_url`. Behind a tunnel or reverse proxy, also set `trusted_proxy` to the address
+the gateway sees for it: the gateway then limits each client by the last `X-Forwarded-For` entry, the one that proxy
+appended, and ignores the header from any other peer. Choose a unique `chain_id` of 1–31 ASCII letters,
 digits, underscores or hyphens, beginning with a letter. The runner writes its hex encoding to `native-world.json` at `shard.chainId`
 before deployment and renders the node configuration with the same identity. The checked-in chain configuration is a
 template; initialize it through the runner before starting a node. For the baseline compose profiles, set

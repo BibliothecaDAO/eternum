@@ -88,7 +88,7 @@ impl GameApi {
         }
     }
 
-    /// The peer comes from the TCP connection, never a client-controlled header.
+    /// The client address is the TCP peer's, or the trusted proxy's own forwarded entry.
     pub fn rpc(&self, peer: IpAddr) -> anyhow::Result<RpcModule<Self>> {
         let mut module = RpcModule::new(self.clone());
         module.register_subscription(

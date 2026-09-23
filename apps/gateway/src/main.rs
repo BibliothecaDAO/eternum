@@ -29,6 +29,11 @@ async fn main() -> anyhow::Result<()> {
             .parse()
             .context("GATEWAY_PLAYER_CAPACITY is not a player count")?,
         authority: felt("GATEWAY_AUTHORITY")?,
+        trusted_proxy: std::env::var("GATEWAY_TRUSTED_PROXY")
+            .ok()
+            .map(|proxy| proxy.parse())
+            .transpose()
+            .context("GATEWAY_TRUSTED_PROXY is not an IP address")?,
         epoch_secret: required("RANDOMNESS_EPOCH_SECRET")?.into(),
     })
     .await
