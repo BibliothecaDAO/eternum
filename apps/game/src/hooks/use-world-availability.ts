@@ -11,7 +11,7 @@ import { requireOpenShard } from "@/runtime/world/shards";
 import { gameKey } from "@/runtime/world/store";
 import { useQueries } from "@tanstack/react-query";
 
-export interface WorldConfigMeta {
+interface WorldConfigMeta {
   /** The game's display name from its shard's directory. */
   name: string | null;
   ready: boolean;

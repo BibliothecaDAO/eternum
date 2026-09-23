@@ -60,6 +60,33 @@ const resolveBootstrapSelection = (context: ResolvedEntryContext): BootstrapSele
   return { cacheKey: resolveEntryContextCacheKey(context) };
 };
 
+/**
+ * The game this page plays has one client, which holds the one Herald stream for it. Settling and booting the scene
+ * both attach to it, so entering a game opens one session and takes one snapshot; another game resets it.
+ */
+let attachedGameClient: { key: string; client: Promise<GameClient> } | null = null;
+
+export const attachGameClient = (
+  context: ResolvedEntryContext,
+  onSetupCompleted?: (setup: SetupResult) => void,
+): Promise<GameClient> => {
+  const key = resolveEntryContextCacheKey(context);
+  if (attachedGameClient?.key === key) return attachedGameClient.client;
+  if (attachedGameClient) resetBootstrap();
+  const client = applyGameSelection(context)
+    .then((profile) => createEntryGameClient({ profile, onSetupCompleted }))
+    .then((created) => {
+      installActiveGameClient(created);
+      return created;
+    });
+  attachedGameClient = { key, client };
+  // A failed start leaves nothing attached, so the next attempt starts afresh.
+  client.catch(() => {
+    if (attachedGameClient?.client === client) attachedGameClient = null;
+  });
+  return client;
+};
+
 const runBootstrap = async ({
   context,
   profile,
@@ -68,18 +95,13 @@ const runBootstrap = async ({
   profile: GameProfile;
 }): Promise<BootstrapResult> => {
   const stores = resolveBootstrapStores();
-  const reportProgress = createInitialSyncProgressReporter(stores.syncingStore.setInitialSyncProgress);
   const renderer = createBootstrapRendererHandoff();
-  reportProgress(0);
   try {
-    const client = await createEntryGameClient({
-      profile,
-      reportProgress,
-      onSetupCompleted: renderer.prepare,
-    });
-    installActiveGameClient(client);
+    const client = await attachGameClient(context, renderer.prepare);
+    // A client attached earlier (settlement) was set up before this boot, so the renderer is prepared from it here.
+    renderer.prepare(client.setup);
     selectInitialStructure(client.setup, stores.uiStore);
-    reportProgress(100);
+    stores.syncingStore.setInitialSyncProgress(100);
     await startGameRenderer(renderer.requireSession().initialize);
     return { context, profile, setupResult: client.setup };
   } catch (error) {
@@ -89,6 +111,7 @@ const runBootstrap = async ({
 };
 export const resetBootstrap = () => {
   verboseLog("[BOOTSTRAP] Resetting bootstrap state");
+  attachedGameClient = null;
   cancelActiveBootstrapSubscriptions();
   bootstrapSession.reset();
   clearBootstrapWorldData();
@@ -176,6 +199,7 @@ const createBootstrapRendererHandoff = () => {
   let session: GameRendererSession | null = null;
   return {
     prepare: (setup: SetupResult) => {
+      if (session) return;
       session = prepareGameRenderer(setup, DEV_MODE_ENABLED);
       bootstrapSession.replaceRendererCleanup(session.cleanup);
     },
@@ -189,24 +213,25 @@ const createBootstrapRendererHandoff = () => {
 
 interface EntryGameClientInput {
   profile: GameProfile;
-  reportProgress: InitialSyncProgressReporter;
-  onSetupCompleted: (setup: SetupResult) => void;
+  onSetupCompleted?: (setup: SetupResult) => void;
 }
 
 const createEntryGameClient = async (input: EntryGameClientInput): Promise<GameClient> => {
   const timing = { syncStartedAt: performance.now() };
   verboseLog("[STARTING GAME SETUP]");
   markGameEntryMilestone("setup-started");
+  const reportProgress = createInitialSyncProgressReporter(useSyncStore.getState().setInitialSyncProgress);
+  reportProgress(0);
   const client = await createBrowserGameClient({
     shard: await requireOpenShard(input.profile.chainId),
     gameId: input.profile.gameId,
     presetId: input.profile.presetId,
     authHandler: bootstrapAuthHandler,
     observer: createGameSyncObserver({
-      reportProgress: input.reportProgress,
+      reportProgress,
       onSetupCompleted: (setup) => {
         verboseLog("[GAME SETUP COMPLETED]");
-        input.onSetupCompleted(setup);
+        input.onSetupCompleted?.(setup);
         timing.syncStartedAt = performance.now();
       },
     }),

@@ -1438,7 +1438,7 @@ export const GameEntryModal = ({
       const signer = account as unknown as Account;
       const existingVillageIds = new Set(ownedVillageIdSet);
       if (!worldMeta) throw new Error("The selected game is not ready for settlement");
-      await submitSettlement(worldMeta, signer, (client) =>
+      await submitSettlement(navigationEntryContext, (client) =>
         client.setup.systemCalls.settle_village({
           signer,
           passId: isDevMode ? 0n : selectedVillagePassTokenId!,
@@ -1476,6 +1476,7 @@ export const GameEntryModal = ({
     refetchVillagePassInventory,
     refetchOwnedStructures,
     worldName,
+    navigationEntryContext,
   ]);
 
   const handleSettleAnotherVillage = useCallback(() => {
@@ -1553,7 +1554,7 @@ export const GameEntryModal = ({
       const settlementTarget = isEternumDevMode ? (initialSnapshot?.settledCount ?? 0) + 1 : expectedSettlementCount;
       if (isEternumDevMode) setDevSettlementTarget(settlementTarget);
       setSettleStage("settling");
-      await submitSettlement(worldMeta, signer, (client) =>
+      await submitSettlement(navigationEntryContext, (client) =>
         client.setup.systemCalls.settle_season({
           signer,
           name: usernameFelt,
@@ -1599,6 +1600,7 @@ export const GameEntryModal = ({
     worldMeta,
     worldName,
     readSettlementSnapshot,
+    navigationEntryContext,
   ]);
 
   useEffect(() => {
