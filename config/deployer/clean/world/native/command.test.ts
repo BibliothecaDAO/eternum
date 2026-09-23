@@ -28,7 +28,6 @@ function setup(outcome?: string[]) {
     getTransactionReceipt: mock(async () => receipt),
   };
   const requests: unknown[] = [];
-  let disconnectConfirmation = () => {};
   const server = Bun.serve({
     port: 0,
     fetch(request, server) {
@@ -37,13 +36,6 @@ function setup(outcome?: string[]) {
     websocket: {
       message(socket, message) {
         const request = JSON.parse(String(message));
-        if (request.method === "starknet_subscribeTransactionStatus") {
-          disconnectConfirmation = () => socket.close();
-          expect(request.params.transaction_hash).toBe("0x55");
-          socket.subscribe("confirmation");
-          socket.send(JSON.stringify({ jsonrpc: "2.0", id: request.id, result: "confirmation" }));
-          return;
-        }
         expect(request.method).toBe("game_subscribeAction");
         const [signed] = request.params;
         requests.push(signed);
@@ -88,10 +80,7 @@ function setup(outcome?: string[]) {
     },
   } as unknown as NativeWorldManifest;
   const input = {
-    provider: {
-      ...provider,
-      channel: { nodeUrl: `http://127.0.0.1:${server.port}/rpc/v0_10_2` },
-    } as unknown as RpcProvider,
+    provider: provider as unknown as RpcProvider,
     manifest,
     admissionUrl: `http://127.0.0.1:${server.port}/rpc/v0_10_2`,
     gameId: 7,
@@ -99,7 +88,7 @@ function setup(outcome?: string[]) {
     privateKey: "0x1234",
     command: { kind: "MarkGameSettled", value: undefined } as const,
   };
-  return { input, provider, requests, receipt, server, disconnectConfirmation: () => disconnectConfirmation() };
+  return { input, provider, requests, receipt };
 }
 describe("native administrative command", () => {
   it("signs the compiled command and confirms its accepted outcome", async () => {
@@ -108,36 +97,13 @@ describe("native administrative command", () => {
     expect(requests).toHaveLength(1);
     expect(provider.getTransactionReceipt).toHaveBeenCalledWith("0x55");
   });
-  it("waits for node confirmation without polling the receipt", async () => {
-    const { input, provider, server } = setup();
-    let readStatus!: () => void;
-    const caughtUp = new Promise<void>((resolve) => {
-      readStatus = resolve;
-    });
-    provider.getTransactionStatus.mockImplementation(async () => {
-      readStatus();
-      return { finality_status: "PRE_CONFIRMED" };
-    });
-    const completed = executeNativeAdminCommand(input);
-    await caughtUp;
-    expect(provider.getTransactionReceipt).not.toHaveBeenCalled();
-    server.publish(
-      "confirmation",
-      JSON.stringify({
-        jsonrpc: "2.0",
-        method: "starknet_subscriptionTransactionStatus",
-        params: {
-          subscription_id: "confirmation",
-          result: {
-            transaction_hash: "0x55",
-            status: { finality_status: "ACCEPTED_ON_L2", execution_status: "SUCCEEDED" },
-          },
-        },
-      }),
-    );
-    expect(await completed).toEqual({ transactionHash: "0x55", remaining: "0" });
-    expect(provider.getTransactionStatus).toHaveBeenCalledTimes(1);
+  it("waits for the node's accepted status over HTTP, reading the receipt once and never resubmitting", async () => {
+    const { input, provider, requests } = setup();
+    provider.getTransactionStatus.mockImplementationOnce(async () => ({ finality_status: "PRE_CONFIRMED" }));
+    expect(await executeNativeAdminCommand(input)).toEqual({ transactionHash: "0x55", remaining: "0" });
+    expect(provider.getTransactionStatus).toHaveBeenCalledTimes(2);
     expect(provider.getTransactionReceipt).toHaveBeenCalledTimes(1);
+    expect(requests).toHaveLength(1);
   });
   it("does not treat a pre-confirmed receipt as durable completion", async () => {
     const { input, provider, receipt } = setup();
@@ -147,24 +113,6 @@ describe("native administrative command", () => {
     });
     await expect(executeNativeAdminCommand(input)).rejects.toThrow("no confirmed block");
   });
-  it("catches up after a lost confirmation without resubmitting the command", async () => {
-    const { input, provider, requests, disconnectConfirmation } = setup();
-    let observed!: () => void;
-    const initialStatus = new Promise<void>((resolve) => {
-      observed = resolve;
-    });
-    provider.getTransactionStatus.mockImplementationOnce(async () => {
-      observed();
-      return { finality_status: "PRE_CONFIRMED" };
-    });
-    const completed = executeNativeAdminCommand(input);
-    await initialStatus;
-    disconnectConfirmation();
-    expect(await completed).toEqual({ transactionHash: "0x55", remaining: "0" });
-    expect(provider.getTransactionStatus).toHaveBeenCalledTimes(2);
-    expect(provider.getTransactionReceipt).toHaveBeenCalledTimes(1);
-    expect(requests).toHaveLength(1);
-  }, 10_000);
   it("rejects an included transaction revert", async () => {
     const { input, receipt } = setup();
     receipt.execution_status = "REVERTED";

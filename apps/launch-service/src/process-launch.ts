@@ -1,14 +1,11 @@
 import { Effect, Result } from "effect";
-import { LaunchExecutionFailure } from "./errors";
+import { describeFailure } from "./errors";
 import { LaunchExecutor } from "./executor";
 import { GameNotEnded } from "./results";
 import { databaseOperation, LaunchDatabase } from "./store";
 
 const MAX_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 5_000;
-
-const errorMessage = (error: LaunchExecutionFailure): string =>
-  error.cause instanceof Error ? error.cause.message : String(error.cause);
 
 export const processNextLaunch = (now: number) =>
   Effect.gen(function* () {
@@ -34,7 +31,7 @@ export const processNextLaunch = (now: number) =>
       return true;
     }
 
-    const message = errorMessage(result.failure);
+    const message = describeFailure(result.failure.cause);
     if (run.attempts < MAX_ATTEMPTS) {
       yield* databaseOperation("retry launch", () => store.retry(run.id, message, RETRY_DELAY_MS));
       yield* Effect.logWarning("launch_retry_queued", { runId: run.id, attempt: run.attempts, error: message });

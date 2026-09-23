@@ -1,4 +1,5 @@
 import { Effect, Layer } from "effect";
+import { RpcError } from "starknet";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { LaunchExecutionFailure } from "./errors";
 import { LaunchExecutor } from "./executor";
@@ -38,6 +39,32 @@ describe("the registrar's launch step", () => {
 
     expect(retried).toMatchObject({ id: queued.id, attempts: 2, errorMessage: "rpc down" });
     expect(retried?.request).toMatchObject({ gameStartTime: persistedStart });
+  });
+
+  test("records a failed step's cause by name, whether an error event or an RPC error", async () => {
+    const socketClosed = Object.assign(new Event("error"), { error: new Error("WebSocket connection closed") });
+    // The shard's public RPC answers a JSON-RPC error outside the Starknet spec's codes, as staging did.
+    const notPublic = new RpcError(
+      { code: -32601, message: "RPC method is not public" } as unknown as ConstructorParameters<typeof RpcError>[0],
+      "starknet_addInvokeTransaction",
+      {},
+    );
+    for (const [gameName, cause] of [
+      ["bltz-socket", socketClosed],
+      ["bltz-rpc", notPublic],
+    ] as const) {
+      const queued = await store.enqueue("game", { ...request, gameName });
+      const failing = Layer.mergeAll(
+        databaseLayer(store),
+        Layer.succeed(LaunchExecutor, {
+          execute: (run) => Effect.fail(new LaunchExecutionFailure({ runId: run.id, cause })),
+        }),
+      );
+      await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(failing)));
+      expect((await store.find("game", "madara.blitz", queued.name))?.errorMessage).toContain(
+        cause === notPublic ? "-32601: RPC method is not public" : "WebSocket connection closed",
+      );
+    }
   });
 
   test("defers a result job to the chain's end time without spending an attempt", async () => {
