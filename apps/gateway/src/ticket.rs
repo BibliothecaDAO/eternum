@@ -6,20 +6,15 @@ use starknet_types_core::felt::Felt;
 #[serde(deny_unknown_fields)]
 pub struct ActionRequest {
     pub intent: Vec<Felt>,
-    pub public_key: Felt,
-    pub r: Felt,
-    pub s: Felt,
+    /// Whatever the actor account's SNIP-6 `is_valid_signature` accepts.
+    pub signature: Vec<Felt>,
 }
 
 impl ActionRequest {
-    /// Signature and scope are checked before acquiring an actor slot or reading node state.
-    pub fn verify(&self, chain: Felt, deployment: Felt) -> anyhow::Result<Intent> {
+    /// The signing domain is checked before any node read; the actor account checks the signature.
+    pub fn decode(&self, chain: Felt, deployment: Felt) -> anyhow::Result<Intent> {
         let intent = Intent::decode(&self.intent)?;
         anyhow::ensure!(intent.chain == chain && intent.deployment == deployment, "wrong signing domain");
-        anyhow::ensure!(
-            matches!(starknet_crypto::verify(&self.public_key, &intent.identity()?, &self.r, &self.s), Ok(true)),
-            "invalid player signature"
-        );
         Ok(intent)
     }
 }
@@ -28,8 +23,7 @@ impl ActionRequest {
 pub(crate) struct RecordedTicket {
     pub intent: Intent,
     pub envelope: Envelope,
-    pub r: Felt,
-    pub s: Felt,
+    pub signature: Vec<Felt>,
 }
 
 impl RecordedTicket {
@@ -40,12 +34,15 @@ impl RecordedTicket {
         let envelope_len: usize =
             (*fields.get(intent_len).ok_or_else(|| anyhow::anyhow!("truncated context"))?).try_into()?;
         anyhow::ensure!(envelope_len == 9, "invalid context length");
-        let total = intent_len + 1 + envelope_len + 2;
+        let signature_at = intent_len + 1 + envelope_len;
+        let signature_len: usize =
+            (*fields.get(signature_at).ok_or_else(|| anyhow::anyhow!("truncated signature"))?).try_into()?;
+        let total = signature_at + 1 + signature_len;
         anyhow::ensure!(fields.len() >= total, "truncated recorded action");
         let intent = Intent::from_calldata(&fields[..intent_len])?;
-        let envelope = Envelope::decode(&fields[intent_len + 1..total - 2])?;
+        let envelope = Envelope::decode(&fields[intent_len + 1..signature_at])?;
         anyhow::ensure!(envelope.action == intent.identity()?, "recorded action commitment mismatch");
-        let result = Self { intent, envelope, r: fields[total - 2], s: fields[total - 1] };
+        let result = Self { intent, envelope, signature: fields[signature_at + 1..total].to_vec() };
         *fields = &fields[total..];
         Ok(result)
     }
@@ -55,7 +52,8 @@ impl RecordedTicket {
         let envelope = self.envelope.encode()?;
         payload.push(Felt::from(envelope.len() as u64));
         payload.extend(envelope);
-        payload.extend([self.r, self.s]);
+        payload.push(Felt::from(self.signature.len() as u64));
+        payload.extend(&self.signature);
         Ok(payload)
     }
 }
@@ -83,33 +81,6 @@ pub(crate) fn context_matches(intent: &Intent, order: u64, timestamp: u64) -> bo
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::transaction::sign;
-    use starknet_crypto::get_public_key;
-
-    #[test]
-    fn verifies_every_request_before_admission() {
-        let key = Felt::from(123);
-        let intent = Intent {
-            chain: Felt::ONE,
-            deployment: Felt::TWO,
-            game: Felt::ONE,
-            actor: Felt::from(99),
-            nonce: 0,
-            command: Felt::ONE,
-            rules: Felt::ONE,
-            valid_from: 10,
-            valid_until: 20,
-            last_order: 5,
-            arguments: vec![],
-        };
-        let [r, s] = sign(key, intent.identity().unwrap()).unwrap();
-        let mut request = ActionRequest { intent: intent.encode().unwrap(), public_key: get_public_key(&key), r, s };
-        assert_eq!(request.verify(Felt::ONE, Felt::TWO).unwrap(), intent);
-        assert!(request.verify(Felt::TWO, Felt::TWO).is_err());
-        assert!(request.verify(Felt::ONE, Felt::ONE).is_err());
-        request.r += Felt::ONE;
-        assert!(request.verify(Felt::ONE, Felt::TWO).is_err());
-    }
 
     #[test]
     fn cross_language_context_boundaries() {

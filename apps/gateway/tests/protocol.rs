@@ -24,7 +24,7 @@ impl Fixture {
 #[test]
 fn canonical_cross_language_vectors() {
     let mut fixture = Fixture {
-        fields: include_str!("../../../contracts/l3/randomness-protocol/tests/fixtures/v4.txt")
+        fields: include_str!("../../../contracts/l3/randomness-protocol/tests/fixtures/v5.txt")
             .split_whitespace()
             .map(|field| Felt::from_hex(field).unwrap())
             .collect::<Vec<_>>()

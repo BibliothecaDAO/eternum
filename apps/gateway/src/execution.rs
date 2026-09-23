@@ -401,8 +401,7 @@ mod tests {
                         epoch: 1,
                         root: [index as u8; 32],
                     },
-                    r: Felt::ONE,
-                    s: Felt::TWO,
+                    signature: vec![Felt::ONE, Felt::TWO],
                 },
                 permit,
             });
