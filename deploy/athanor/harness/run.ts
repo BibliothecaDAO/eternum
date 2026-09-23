@@ -155,15 +155,16 @@ async function main(): Promise<void> {
   const prepared = options.preparedGamePath
     ? await readJson<PreparedGame>(path.resolve(options.preparedGamePath))
     : await prepareGames(options, gameplayContracts, provider);
-  if (Array.isArray(prepared) || prepared.accounts.length > 1) {
+  const players = playersOf(options.workload, prepared);
+  if (players.kind === "roster") {
     provider.dispose();
     requests?.dispose();
-    await runRosterGroups(options, Array.isArray(prepared) ? prepared : [prepared]);
+    await runRosterGroups(options, players.games);
     return;
   }
-  const { game } = prepared;
-  if (prepared.accounts.length !== options.bots) throw new Error("Prepared roster size does not match --bots");
-  const accounts: HarnessAccount[] = prepared.accounts.map((account) => ({
+  const { game } = players.game;
+  if (players.game.accounts.length !== options.bots) throw new Error("Prepared roster size does not match --bots");
+  const accounts: HarnessAccount[] = players.game.accounts.map((account) => ({
     ...account,
     account: configureGameplayAccountSubmits(
       new Account({ provider, address: account.address, signer: new DeviceSigner(deviceKeyOf(account.privateKey)) }),
@@ -465,6 +466,23 @@ interface GameWorkerReport {
   pid: number;
   threadId: number;
   workload: WorkerWorkloadSummary;
+}
+
+/**
+ * Who plays the prepared games: a roster run splits them into one worker per account, or this process plays its one
+ * game itself. A Frontier run is never split: its design run plays both player profiles together, and a worker
+ * holding one of them would refuse.
+ */
+export function playersOf(
+  workload: HarnessCliOptions["workload"],
+  prepared: PreparedGame | PreparedGame[],
+): { kind: "roster"; games: PreparedGame[] } | { kind: "single"; game: PreparedGame } {
+  if (workload === "frontier") {
+    if (Array.isArray(prepared)) throw new Error("A Frontier run plays one season, not a roster of games");
+    return { kind: "single", game: prepared };
+  }
+  if (Array.isArray(prepared)) return { kind: "roster", games: prepared };
+  return prepared.accounts.length > 1 ? { kind: "roster", games: [prepared] } : { kind: "single", game: prepared };
 }
 
 // One driver process runs every player as a worker thread. Evidence is read once here, never per worker, and the

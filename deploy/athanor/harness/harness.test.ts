@@ -40,7 +40,7 @@ import {
   summarizeRpcMetrics,
 } from "./report";
 import type { WorkerWorkloadSummary } from "./report";
-import { createHarnessProvider, parseHarnessArgs } from "./run";
+import { createHarnessProvider, parseHarnessArgs, playersOf } from "./run";
 import { BlockTag } from "starknet";
 import { EventEmitter } from "node:events";
 import type { Worker } from "node:worker_threads";
@@ -797,6 +797,19 @@ describe("Madara harness reporting", () => {
 });
 
 describe("Madara harness CLI and concurrency", () => {
+  it("plays a prepared Frontier season's profiles in one process, and splits other rosters per account", () => {
+    const prepared = (accounts: number) =>
+      ({
+        game: { gameId: 8, gameName: "frontier-staging" },
+        accounts: Array.from({ length: accounts }, (_, index) => ({ botId: index + 1, address: `0x${index + 1}` })),
+      }) as never;
+
+    expect(playersOf("frontier", prepared(2))).toMatchObject({ kind: "single" });
+    expect(() => playersOf("frontier", [prepared(2), prepared(2)] as never)).toThrow("one season");
+    expect(playersOf("build-order", prepared(24))).toMatchObject({ kind: "roster", games: [expect.anything()] });
+    expect(playersOf("build-order", prepared(1))).toMatchObject({ kind: "single" });
+  });
+
   it("requires the shard's endpoints instead of falling back to a lab port", () => {
     delete process.env.RPC_URL;
     delete process.env.HERALD_URL;
