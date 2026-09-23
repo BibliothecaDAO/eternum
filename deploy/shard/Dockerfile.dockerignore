@@ -1,0 +1,13 @@
+.git
+**/node_modules
+**/dist
+**/target
+**/.lab
+**/.context
+**/.env*
+**/*.log
+**/__pycache__
+**/.venv
+**/host-keys.json
+**/authority.json
+**/harness.env

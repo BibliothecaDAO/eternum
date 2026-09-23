@@ -21,9 +21,7 @@ import candidate_guard
 
 
 ROOT = Path(__file__).resolve().parents[3]
-POSTGRES_IMAGE = "postgres@sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73"
 METRICS_IMAGE = "otel/opentelemetry-collector-contrib@sha256:fd328de2552466ad78385e1b1289c3f2402b1c45f265b252aab1955b42845ac1"
-BUN_IMAGE = "oven/bun@sha256:e0ee68d16ccb9927bf02aa7dd8fd4bf3369ee6d46da04faa72b05ce8bfd135f6"
 DOCKER = ["sudo", "-n", "docker"]
 # Admission connections: each player holds about two (a 100-connection node refused a 96-player slot at its
 # 48th player), plus a fixed allowance for the sequencing authority, Herald and tooling.
@@ -51,19 +49,10 @@ def admission_connections(config):
 def validate_configuration(config, allowed_cpus):
     if not re.fullmatch(r"[a-z][a-z0-9-]{0,39}", config["shard"]):
         raise ValueError("shard must be a lowercase identifier")
-    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,30}", config.get("chain_id", "")):
-        raise ValueError("chain_id must be a unique 1-31 character ASCII shard name")
-    for key in ("guardian_url", "public_rpc_url", "public_admission_url"):
-        url = urlparse(config[key])
-        if url.scheme not in ("http", "https") or not url.netloc or url.username or url.password:
-            raise ValueError(f"{key} must be an explicit HTTP endpoint without credentials")
-    for key in ("madara_image", "herald_image", "gateway_image"):
+    validate_shard_identity(config)
+    for key in ("madara_image", "herald_image", "gateway_image", "init_image"):
         if not re.fullmatch(r"(?:[^\s]+@)?sha256:[a-f0-9]{64}", config[key]):
             raise ValueError(f"{key} must be pinned by digest")
-    if not isinstance(config["player_capacity"], int) or not 1 <= config["player_capacity"] <= 1024:
-        raise ValueError("player_capacity must be the shard's player count, 1 to 1024")
-    if "trusted_proxy" in config:
-        ipaddress.ip_address(config["trusted_proxy"])
     port = config["port_base"]
     if not isinstance(port, int) or not 28000 <= port <= 65530:
         raise ValueError("reserve isolated ports base through base+3 and base+5 above 27999")
@@ -80,6 +69,19 @@ def validate_configuration(config, allowed_cpus):
         raise ValueError("record the native execution setting explicitly")
     if not any(flag.startswith("--native-compilation-mode=") for flag in config["node_flags"]):
         raise ValueError("record the native compilation mode explicitly")
+
+
+def validate_shard_identity(config):
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,30}", config.get("chain_id", "")):
+        raise ValueError("chain_id must be a unique 1-31 character ASCII shard name")
+    for key in ("guardian_url", "public_rpc_url", "public_admission_url"):
+        url = urlparse(config[key])
+        if url.scheme not in ("http", "https") or not url.netloc or url.username or url.password:
+            raise ValueError(f"{key} must be an explicit HTTP endpoint without credentials")
+    if not isinstance(config["player_capacity"], int) or not 1 <= config["player_capacity"] <= 1024:
+        raise ValueError("player_capacity must be the shard's player count, 1 to 1024")
+    if "trusted_proxy" in config:
+        ipaddress.ip_address(config["trusted_proxy"])
 
 
 def read(command):
@@ -106,72 +108,51 @@ def admission_url(config):
     return f"http://127.0.0.1:{config['port_base'] + 3}"
 
 
-def gateway_service(config, directory, budget):
-    return {
-        **budget, "image": config["gateway_image"], "mem_limit": "1g", "memswap_limit": "1g",
-        "env_file": [str(directory / "gateway.env")], "ports": [f"127.0.0.1:{config['port_base'] + 3}:9950"],
-        "volumes": ["gateway:/data"], "restart": "on-failure",
-    }
-
-
 def compose_configuration(config, directory):
-    project = f"athanor-{config['shard']}"
-    base = config["port_base"]
+    environment = {
+        **os.environ, "SHARD_NAME": f"athanor-{config['shard']}", "CHAIN_ID": config["chain_id"],
+        "SHARD_DATA": str(directory), "SHARD_INIT_IMAGE": config["init_image"],
+        "SHARD_HERALD_IMAGE": config["herald_image"], "SHARD_GATEWAY_IMAGE": config["gateway_image"],
+        "GUARDIAN_URL": config["guardian_url"], "PUBLIC_RPC_URL": config["public_rpc_url"],
+        "PUBLIC_ADMISSION_URL": config["public_admission_url"], "PLAYER_CAPACITY": str(config["player_capacity"]),
+        "TRUSTED_PROXY": config.get("trusted_proxy", ""),
+        "HOST_UID": str(os.getuid()), "HOST_GID": str(os.getgid()), "BIND_ADDRESS": "127.0.0.1",
+        "RPC_PORT": str(config["port_base"] + 5), "HERALD_PORT": str(config["port_base"] + 1),
+        "ADMISSION_PORT": str(config["port_base"] + 3), "NODE_MEMORY": f"{config['node_memory_mib']}m",
+        "HERALD_MEMORY": "24g",
+    }
+    compose = json.loads(subprocess.check_output([
+        "docker", "compose", "-f", str(ROOT / "deploy/shard/compose.yml"), "config", "--format", "json",
+    ], env=environment, text=True))
     budget = {
         "cgroup_parent": "athanor.slice", "cpuset": config["cpuset"], "pids_limit": 2048,
         "logging": {"driver": "json-file", "options": {"max-size": "20m", "max-file": "3"}},
     }
-    node_command = [
-        f"--name={project}", "--devnet", "--devnet-contracts=0", "--base-path=/data", "--db-fsync", "--db-wal",
-        "--chain-config-path=/config/chain-config.yaml", "--rpc-external", "--rpc-cors=all",
-        "--rpc-port=9944", f"--rpc-max-connections={admission_connections(config)}", "--no-charge-fee",
-        "--l1-sync-disabled",
-        "--otel-collector-endpoint=http://metrics:4317", "--otel-export-metrics=true", *config["node_flags"],
+    for service in compose["services"].values():
+        service.update(budget)
+    for name in ("prepare", "init"):
+        service = compose["services"][name]
+        service.update({"mem_limit": "8g", "memswap_limit": "8g"})
+        service["environment"]["MADARA_IMAGE"] = config["madara_image"]
+        service["environment"]["CHAIN_CONFIG"] = "/template/chain-config.yaml"
+        service["volumes"].append({"type": "bind", "source": str(Path(config["chain_config"]).resolve()),
+                                   "target": "/template/chain-config.yaml", "read_only": True})
+    node = compose["services"]["madara"]
+    node["image"] = config["madara_image"]
+    replaced = ("--enable-native-execution=", "--native-compilation-mode=", "--rpc-max-connections=")
+    node["command"] = [flag for flag in node["command"] if not flag.startswith(replaced)] + [
+        f"--rpc-max-connections={admission_connections(config)}", "--otel-collector-endpoint=http://metrics:4317",
+        "--otel-export-metrics=true", *config["node_flags"],
     ]
-    return {
-        "name": project,
-        "services": {
-            "metrics": {
-                **budget, "image": METRICS_IMAGE, "mem_limit": "256m", "memswap_limit": "256m",
-                "user": f"{os.getuid()}:{os.getgid()}", "command": ["--config=/config/collector.json"],
-                "volumes": [f"{directory / 'collector.json'}:/config/collector.json:ro",
-                            f"{directory / 'metrics'}:/data"],
-            },
-            "madara": {
-                **budget, "image": config["madara_image"], "entrypoint": ["tini", "--", "/bin/madara"],
-                "command": node_command,
-                "mem_limit": f"{config['node_memory_mib']}m", "memswap_limit": f"{config['node_memory_mib']}m",
-                "ports": [f"127.0.0.1:{base}:9944"],
-                "volumes": ["chain:/data", f"{directory / 'chain-config.yaml'}:/config/chain-config.yaml:ro"],
-            },
-            "postgres": {
-                **budget, "image": POSTGRES_IMAGE, "mem_limit": "512m", "memswap_limit": "512m",
-                "env_file": [str(directory / "postgres.env")], "ports": [f"127.0.0.1:{base + 2}:5432"],
-                "volumes": ["postgres:/var/lib/postgresql/data"],
-                "healthcheck": {"test": ["CMD", "pg_isready", "-U", "herald", "-d", "herald"],
-                                "interval": "2s", "timeout": "3s", "retries": 30},
-            },
-            # Herald exits when it loses the node and replays from its checkpoint on restart.
-            "herald": {
-                **budget, "image": config["herald_image"], "mem_limit": "24g", "memswap_limit": "24g",
-                "restart": "on-failure",
-                "env_file": [str(directory / "herald.env")], "ports": [f"127.0.0.1:{base + 1}:3003"],
-                "volumes": [f"{directory / 'native-world.json'}:/config/native-world.json:ro"],
-                "depends_on": {"postgres": {"condition": "service_healthy"}},
-            },
-            "gateway": gateway_service(config, directory, budget),
-            "rpc": {
-                **budget, "image": BUN_IMAGE, "mem_limit": "256m", "memswap_limit": "256m",
-                "restart": "on-failure", "command": ["bun", "/app/read-rpc.js"],
-                "environment": {"NODE_RPC_URL": "http://madara:9944", "NATIVE_WORLD_MANIFEST": "/config/native-world.json",
-                                **({"RPC_TRUSTED_PROXY": config["trusted_proxy"]} if "trusted_proxy" in config else {})},
-                "volumes": [f"{directory / 'read-rpc.js'}:/app/read-rpc.js:ro",
-                            f"{directory / 'native-world.json'}:/config/native-world.json:ro"],
-                "ports": [f"127.0.0.1:{base + 5}:8080"],
-            },
-        },
-        "volumes": {"chain": {}, "postgres": {}, "gateway": {}},
+    node["ports"] = [f"127.0.0.1:{config['port_base']}:9944"]
+    compose["services"]["postgres"]["ports"] = [f"127.0.0.1:{config['port_base'] + 2}:5432"]
+    compose["services"]["metrics"] = {
+        **budget, "image": METRICS_IMAGE, "mem_limit": "256m", "memswap_limit": "256m",
+        "user": f"{os.getuid()}:{os.getgid()}", "command": ["--config=/config/collector.json"],
+        "volumes": ["public-config:/config:ro", f"{directory / 'metrics'}:/data"],
+        "depends_on": {"prepare": {"condition": "service_completed_successfully"}},
     }
+    return compose
 
 
 def ensure_fresh_project(config):
@@ -252,12 +233,12 @@ def deployment_environment(config, directory):
         "MADARA_METRICS_FILE": str(directory / "metrics" / "metrics.jsonl"),
         # The node image and container as this shard runs them: a measured harness run records both as evidence.
         "MADARA_IMAGE": config["madara_image"],
-        "MADARA_CONTAINER": f"athanor-{config['shard']}-madara-1",
+        "MADARA_CONTAINER": config.get("madara_container", f"athanor-{config['shard']}-madara-1"),
     }
 
 
 def prepare_runtime_files(directory, environment):
-    (directory / "metrics").mkdir(mode=0o700)
+    (directory / "metrics").mkdir(mode=0o700, exist_ok=True)
     # The node pushes OTLP; the collector scrapes the gateway's admission metrics into the same file.
     gateway = {"job_name": "gateway", "scrape_interval": "5s", "static_configs": [{"targets": ["gateway:9950"]}]}
     write_json(directory / "collector.json", {
@@ -357,31 +338,15 @@ def start_shard(config, directory):
         raise ValueError("shard preparation does not deploy or configure the deferred ledger")
     directory = directory.resolve()
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
-    accounts = "deploy/athanor/scripts/host-accounts.ts"
-    run(["bun", accounts, "initialize", str(directory)], directory, "host-accounts-initialize")
-    environment = deployment_environment(config, directory)
-    initialize_shard_identity(config, directory, environment["DEPLOYER_ACCOUNT_ADDRESS"])
     write_json(directory / "configuration.json", config)
-    prepare_runtime_files(directory, environment)
-    run(["bun", "build", "deploy/athanor/scripts/read-rpc.ts", "--target=bun",
-         "--outfile", str(directory / "read-rpc.js")], directory, "read-rpc-build")
     compose = compose_configuration(config, directory)
-    # Compose resolves every service's env_file, even when up names only the bootstrap services.
-    bootstrap_services = ("metrics", "madara", "postgres")
-    write_json(directory / "compose.json", {
-        **compose, "services": {name: compose["services"][name] for name in bootstrap_services},
-    })
-    command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
-    run([*command, "up", "-d", *bootstrap_services], directory, "bootstrap-start")
-    wait_for_endpoint(environment["RPC_URL"], rpc=True)
-    run(["bun", accounts, "deploy", str(directory)], directory, "host-account-deploy", environment)
-    authority = deploy_world(config, directory, environment)
-    run(["bun", "deploy/athanor/scripts/inspect-shard-roles.ts", str(directory), environment["RPC_URL"]],
-        directory, "shard-roles", environment)
-    manifest = json.loads((directory / "native-world.json").read_text())
-    write_gateway_environment(config, directory, environment, authority, manifest["world"]["address"])
     write_json(directory / "compose.json", compose)
-    run([*command, "up", "-d", "herald", "gateway", "rpc"], directory, "shard-start")
+    command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
+    run([*command, "up", "-d"], directory, "shard-start")
+    environment = deployment_environment(config, directory)
+    identity = json.loads((directory / "gameplay-contracts.json").read_text())
+    environment["DEPLOYER_ACCOUNT_ADDRESS"] = identity["operatorAccountAddress"]
+    manifest = json.loads((directory / "native-world.json").read_text())
     rpc_rtt = wait_for_endpoint(environment["RPC_URL"], rpc=True)
     herald_rtt = wait_for_endpoint(environment["HERALD_URL"] + "/health")
     wait_for_endpoint(f"http://127.0.0.1:{config['port_base'] + 5}/rpc/v0_10_2", rpc=True)

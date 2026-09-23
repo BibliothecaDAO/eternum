@@ -1,4 +1,3 @@
-import copy
 import io
 import json
 from pathlib import Path
@@ -14,7 +13,7 @@ def configuration():
         "shard": "smoke", "chain_id": "SHARD_A", "port_base": 28050, "cpuset": "8-11,20-23", "node_memory_mib": 16384,
         "player_capacity": 96,
         "madara_image": "sha256:" + "a" * 64, "herald_image": "sha256:" + "b" * 64,
-        "gateway_image": "sha256:" + "c" * 64,
+        "gateway_image": "sha256:" + "c" * 64, "init_image": "sha256:" + "d" * 64,
         "chain_config": "/tmp/chain-config.yaml",
         "guardian_url": "https://identity.test/api/guardian",
         "public_rpc_url": "https://rpc.test/rpc/v0_10_2",
@@ -38,6 +37,29 @@ class ShardTest(unittest.TestCase):
         ):
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                 shard.validate_configuration({**config, key: value}, allowed)
+
+    def test_package_init_retains_the_actual_node_evidence(self):
+        spec = importlib.util.spec_from_file_location("shard_init", shard.ROOT / "deploy/shard/init.py")
+        package = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(package)
+        config = configuration()
+        values = {
+            "CHAIN_ID": "COMMUNITY", "GUARDIAN_URL": config["guardian_url"],
+            "PUBLIC_RPC_URL": config["public_rpc_url"], "PUBLIC_ADMISSION_URL": config["public_admission_url"],
+            "PLAYER_CAPACITY": "16", "MADARA_IMAGE": config["madara_image"],
+            "MADARA_CONTAINER": "community-madara-1",
+        }
+        with tempfile.TemporaryDirectory() as temporary, patch.dict(shard.os.environ, values):
+            directory = Path(temporary)
+            (directory / "host-keys.json").write_text(json.dumps({
+                "deployerAddress": "0x789", "deployerPrivateKey": "0xabc", "sequencingPrivateKey": "0xdef",
+            }))
+            with patch.object(package, "DATA", directory):
+                environment = package.environment(package.configuration())
+            shard.save_harness_environment(directory, environment)
+            saved = dict(line.split("=", 1) for line in (directory / "harness.env").read_text().splitlines())
+            self.assertEqual(saved["MADARA_IMAGE"], config["madara_image"])
+            self.assertEqual(saved["MADARA_CONTAINER"], "community-madara-1")
 
     def test_initialization_replaces_template_identity_for_each_shard(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -71,29 +93,6 @@ class ShardTest(unittest.TestCase):
                     with self.assertRaises((KeyError, ValueError)):
                         shard.initialize_shard_identity(configuration(), directory, "0x789")
                 self.assertFalse((directory / "native-world.json").exists())
-
-    def test_shards_have_distinct_projects_ports_volumes_and_databases(self):
-        first = configuration()
-        second = {**first, "shard": "another", "port_base": 29050}
-        original = copy.deepcopy(first)
-        a = shard.compose_configuration(first, Path("/runs/a"))
-        b = shard.compose_configuration(second, Path("/runs/b"))
-        self.assertEqual(first, original)
-        self.assertNotEqual(a["name"], b["name"])
-        for name in ("madara", "herald", "postgres", "gateway"):
-            service = a["services"][name]
-            self.assertEqual(service["cgroup_parent"], "athanor.slice")
-            self.assertEqual(service["cpuset"], "8-11,20-23")
-            self.assertNotEqual(service["ports"], b["services"][name]["ports"])
-            self.assertTrue(service["ports"][0].startswith("127.0.0.1:"))
-        self.assertEqual(a["services"]["postgres"]["volumes"], ["postgres:/var/lib/postgresql/data"])
-        self.assertEqual(a["volumes"], {"chain": {}, "postgres": {}, "gateway": {}})
-        self.assertIn("--db-wal", a["services"]["madara"]["command"])
-        self.assertIn("--db-fsync", a["services"]["madara"]["command"])
-        self.assertIn("--otel-collector-endpoint=http://metrics:4317", a["services"]["madara"]["command"])
-        self.assertEqual(a["services"]["metrics"]["image"], shard.METRICS_IMAGE)
-        self.assertNotIn("ports", a["services"]["metrics"])
-        self.assertNotEqual(a["services"]["metrics"]["volumes"], b["services"]["metrics"]["volumes"])
 
     def test_existing_containers_or_volumes_are_never_reused(self):
         for replies in (["container"], ["", "volume"]):
@@ -135,8 +134,6 @@ class ShardTest(unittest.TestCase):
             })
             self.assertEqual(config["exporters"]["file"]["path"], "/data/metrics.jsonl")
             self.assertEqual((directory / "metrics").stat().st_mode & 0o777, 0o700)
-            volumes = shard.compose_configuration(configuration(), directory)["services"]["metrics"]["volumes"]
-            self.assertIn(f"{directory / 'metrics'}:/data", volumes)
 
     def test_environment_rejects_line_injection(self):
         with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError):

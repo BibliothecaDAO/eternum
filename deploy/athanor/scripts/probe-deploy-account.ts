@@ -4,7 +4,7 @@
 //
 //   pnpm lab:probe-account
 //
-// Prints one JSON line; exit code 1 on any failure. CLI tool: plain HTTP to loopback (see Caddyfile).
+// Prints one JSON line; exit code 1 on any failure. CLI tool: plain HTTP to the node on loopback.
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { Account, CallData, ec, hash, logger, RpcProvider, stark } from "starknet";

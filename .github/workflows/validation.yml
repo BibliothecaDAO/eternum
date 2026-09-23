@@ -73,11 +73,13 @@ jobs:
                   "packages/**",
                   "config/**",
                   "deploy/athanor/**",
+                  "deploy/shard/**",
                   "scripts/generate-realm-metadata.py"
               ],
               "runtime": [
                   "apps/agent-runner/**",
                   "deploy/athanor/**",
+                  "deploy/shard/**",
                   "packages/**",
                   "config/**"
               ],

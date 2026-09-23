@@ -7,7 +7,16 @@ sequencer and the admission gateway orders signed actions beside it; Herald serv
 ATHANOR contains the isolated box deployment and gameplay harness. `scripts/shard.py` initializes a fresh shard from
 pinned images, an explicit chain identity and the published guardian identity, then starts its compose project. See
 "Isolated node and release" below for the inputs. The staging candidate also serves the static client beside the shards;
-identity, launches and the other central services use the staging Workers. The public compose package follows in E3.
+identity, launches and the other central services use the staging Workers. The [public shard package](../shard/README.md) runs with Docker alone; the runner renders that same Compose file.
+
+## Publishing the shard package
+
+Push a reviewed `shard-v*` tag to build the init, Herald and gateway images and the downloadable Compose package.
+The release job verifies anonymous pulls before publishing its archive. For the first tag, an organization package
+administrator must set `eternum-shard-init`, `eternum-shard-herald` and `eternum-shard-gateway` to public; GitHub creates
+new container packages as private ([registry documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)).
+After that one-time setting, retry the failed package job; future tags retain the package visibility. Tags publish
+artifacts only and never redeploy a shard.
 
 ## Live holdovers
 
@@ -50,16 +59,15 @@ A shard runs the upstream Madara image unmodified. The current pin is
 docker build -t realms-gateway:REVISION apps/gateway
 ```
 
-Use the node, gateway and Herald release digests with `scripts/shard.py CONFIGURATION RUN_DIRECTORY`. The configuration
+Use the node, init, gateway and Herald release digests with `scripts/shard.py CONFIGURATION RUN_DIRECTORY`. The configuration
 names `shard`, `chain_id`, `port_base` (free loopback ports at base through base+3 and base+5 above 27999), `cpuset`, `node_memory_mib`,
-`player_capacity`, `madara_image`, `gateway_image`, `herald_image`, `chain_config`, `node_flags`, `guardian_url`,
+`player_capacity`, `madara_image`, `init_image`, `gateway_image`, `herald_image`, `chain_config`, `node_flags`, `guardian_url`,
 `public_rpc_url` and `public_admission_url`. Behind a tunnel or reverse proxy, also set `trusted_proxy` to the address
 the gateway sees for it: the gateway then limits each client by the last `X-Forwarded-For` entry, the one that proxy
 appended, and ignores the header from any other peer. Choose a unique `chain_id` of 1–31 ASCII letters,
 digits, underscores or hyphens, beginning with a letter. The runner writes its hex encoding to `native-world.json` at `shard.chainId`
 before deployment and renders the node configuration with the same identity. The checked-in chain configuration is a
-template; initialize it through the runner before starting a node. For the baseline compose profiles, set
-`CHAIN_CONFIG_PATH` to that rendered file; compose refuses to start without it. Deployment, preset and harness commands check their
+template; the package init renders it before starting a node. Deployment, preset and harness commands check their
 RPC against the manifest before submitting. Every image must be pinned by digest. Flags explicitly select native
 execution and compilation mode. The runner refuses existing project state and CPUs outside `athanor.slice`.
 
@@ -72,7 +80,7 @@ This requires fresh chain state; existing candidate chains are not rewritten or 
 
 The runner creates private volumes, deploys the Realms account class (refusing one that differs from the class the identity service approves devices
 for) and the operator's own Realms account, deploys the native world under it, registers
-the Frontier and Regular Blitz presets and starts Herald. Each shard exports upstream node metrics through its own
+presets 1–4 and starts Herald. Each shard exports upstream node metrics through its own
 pinned OTLP collector into its private run directory; `harness.env` points the existing block reporter at that output.
 The run directory holds its compose configuration, manifest, logs and private `harness.env`. It starts no live services.
 Failed runs retain their volumes for inspection; choose a fresh shard id for a new run.
@@ -133,20 +141,14 @@ persists its epoch secret in its own volume. Pending assignments are volatile ac
 duplicate gameplay effects. The node always runs with WAL and fsync enabled; never request fsync with WAL disabled
 (upstream issue #1257).
 
-`docker-compose.yml` preserves the earlier infrastructure profiles and their pinned baseline image. That image is not
-the native candidate. Do not start that profile over an existing stack or treat its pin as acceptance of a shard's
-node. Reserve disjoint ports and resource limits before starting a candidate. Caddy's local TLS routes require the host
-entries and certificates produced by `scripts/issue-certs.sh`; keep private files under `.lab/`.
-
 ### Staging candidate
 
 Initialize both browser-gate shards with `guardian_url=https://staging.realms.party/api/guardian`. Initialization fetches
 the guardian's public key and account class hash and records them in `shard.guardianPublicKey` and
 `shard.accountClassHash`. An unavailable endpoint or invalid identity stops initialization; candidate and release
 configurations never supply substitute values. The deployer declares `RealmsAccount` only when its locally built class
-matches that published hash, and the game's authentication and Herald use the same manifest class. Build the account
-with the repository root's declared toolchain before starting the shard runner; build the game with its workspace's
-toolchain.
+matches that published hash, and the game's authentication and Herald use the same manifest class. The init image builds the account with the root's declared toolchain and the game with its workspace's toolchain.
+The host does not compile contracts during initialization.
 
 Every shard uses the pinned upstream Madara image and admission gateway described above. Set each shard's public RPC
 and admission URLs to their separate staging tunnel hostnames. Herald has the owner-approved 24 GiB memory limit and

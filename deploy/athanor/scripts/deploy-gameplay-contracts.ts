@@ -1,5 +1,4 @@
 #!/usr/bin/env bun
-import { spawnSync } from "node:child_process";
 import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -37,22 +36,6 @@ interface GameplayDeploymentResult {
   rpcUrl: string;
 }
 
-function runCommand(command: string, args: string[], cwd: string): void {
-  const result = spawnSync(command, args, {
-    cwd,
-    env: process.env,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  if (result.status !== 0) {
-    throw new Error(`${command} failed:\n${result.stderr || result.stdout}`);
-  }
-}
-
-function buildGameplayContracts(): void {
-  runCommand("scarb", ["build"], CONTRACT_DIRECTORY);
-}
-
 /** The one account class every player, bot and operator runs: the class the identity service approves devices for. */
 async function declareAccountClass(account: Account, accountClassHash: string): Promise<string> {
   const artifact = readClassArtifact(
@@ -79,7 +62,6 @@ async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
   const provider = new RpcProvider({ nodeUrl: RPC_URL });
   const manifest = readShardManifest<{ shard: ShardRecord }>(process.env.NATIVE_WORLD_MANIFEST);
   await assertProviderChain(provider, manifest, "RPC_URL");
-  buildGameplayContracts();
   const account = createMadaraAccount(provider, DEPLOYER_ADDRESS, DEPLOYER_PRIVATE_KEY);
   const playerAccountClassHash = await declareAccountClass(account, manifest.shard.accountClassHash);
   const operatorAccountAddress = await prepareOperator(provider, playerAccountClassHash);
