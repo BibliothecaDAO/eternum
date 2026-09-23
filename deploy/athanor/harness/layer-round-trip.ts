@@ -1,3 +1,4 @@
+import { attachAcceptedBlocks } from "./gas-collector";
 import { ETHEREAL_STRIDE, tileDataToTile } from "@bibliothecadao/types";
 import { setTimeout as sleep } from "node:timers/promises";
 import type { HarnessProvider } from "./provider";
@@ -259,6 +260,7 @@ async function submitStep(context: RoundTripContext, kind: StepKind, act: () => 
   });
   const step: LayerRoundTripEvidence["steps"][number] = { kind, transaction };
   context.evidence.steps.push(step);
+  if (transaction.outcome === "completed") await attachAcceptedBlocks(context.provider, [transaction]);
   if (transaction.outcome !== "completed" || transaction.acceptedOnL2Block === undefined) {
     throw new Error(`${kind} failed: ${transaction.error ?? transaction.outcome}`);
   }

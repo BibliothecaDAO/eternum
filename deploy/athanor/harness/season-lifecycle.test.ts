@@ -50,7 +50,6 @@ function fixture(target: number, dev = false, batches = 1) {
       provider: {
         subscribeTransactionStatus: async () =>
           statusSubscription({ finality_status: "ACCEPTED_ON_L2", execution_status: "SUCCEEDED" }),
-        getTransactionReceipt: async () => ({ block_number: 1 }),
       },
       accounts: [{ botId: 1, address: "0x1", account: { address: "0x1" } }],
     } as unknown as Parameters<typeof closeHarnessSeason>[0],

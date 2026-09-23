@@ -1,3 +1,4 @@
+import { attachAcceptedBlocks } from "./gas-collector";
 import { setTimeout as sleep } from "node:timers/promises";
 import type { Account } from "starknet";
 import { createOperatorAccount } from "../../../config/deployer/clean/shared/madara-account";
@@ -254,6 +255,7 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
     await sleep(1000);
   }
   for (const player of players) currentDay(player).endedAt = now();
+  await attachAcceptedBlocks(provider, actions);
   const chests = await readChestHistory(client, Math.max(0, ...actions.map((action) => action.acceptedOnL2Block ?? 0)));
   const evidence: FrontierEvidence = {
     epochSeconds,

@@ -512,7 +512,6 @@ describe("Madara harness reporting", () => {
       methods: {
         estimateInvokeFee: { calls: 1, wallMs: 12.35 },
         getBlock: { calls: 2, wallMs: 4.57 },
-        getTransactionReceipt: { calls: 0, wallMs: 0 },
         getTransactionStatus: { calls: 3, wallMs: 7.89 },
       },
       total: { calls: 6, wallMs: 24.81 },
@@ -815,7 +814,6 @@ function confirmingProvider(): HarnessProvider {
     getBlock: async () => ({ timestamp: 60 }),
     subscribeTransactionStatus: async () =>
       statusSubscription({ finality_status: "ACCEPTED_ON_L2", execution_status: "SUCCEEDED" }),
-    getTransactionReceipt: async () => ({ block_number: 5 }),
   } as unknown as HarnessProvider;
 }
 

@@ -269,6 +269,7 @@ async function main(): Promise<void> {
       intervalSeconds: options.intervalSeconds,
       gates,
       minutes: options.minutes,
+      receipts: provider,
       rpcUrl: options.rpcUrl,
       setupTransactions,
       heraldUrl: options.heraldUrl,

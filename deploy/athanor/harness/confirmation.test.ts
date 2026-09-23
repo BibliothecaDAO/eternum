@@ -10,7 +10,6 @@ import { trackTransaction } from "./driver";
 const never = new Promise(() => {});
 const accepted = {
   subscribeTransactionStatus: async () => statusSubscription({ finality_status: "ACCEPTED_ON_L2" }),
-  getTransactionReceipt: async () => ({ block_number: 42 }),
 } as unknown as HarnessProvider;
 
 const track = (confirmed: Promise<unknown> | undefined, provider = accepted) =>
@@ -38,7 +37,6 @@ describe("transaction confirmation deadline", () => {
         applied();
         return statusSubscription({ finality_status: "ACCEPTED_ON_L2" });
       },
-      getTransactionReceipt: async () => ({ block_number: 42 }),
     } as unknown as HarnessProvider;
     try {
       const result = await trackTransaction({
@@ -64,7 +62,6 @@ describe("transaction confirmation deadline", () => {
   it("bounds a missing Herald update while retaining L2 measurements", async () => {
     const result = await track(never);
     expect(result.outcome).toBe("confirmation_timeout");
-    expect(result.acceptedOnL2Block).toBe(42);
     expect(result.error).toContain("Herald");
   });
   it("bounds a stalled receipt request", async () => {

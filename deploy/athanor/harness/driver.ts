@@ -18,8 +18,8 @@ import {
 } from "./harness-game";
 
 export type WorkloadActionKind = "move" | "explore" | "produce";
-export type TransactionStage = "setup" | "workload";
-export type MeasuredRpcMethod = "estimateInvokeFee" | "getBlock" | "getTransactionReceipt" | "getTransactionStatus";
+export type TransactionStage = "setup" | "workload" | "finalization";
+export type MeasuredRpcMethod = "estimateInvokeFee" | "getBlock" | "getTransactionStatus";
 export type WorkloadFailureClass = "game_rule_limit" | "harness_pathing" | "gameplay_rejection" | "chain_or_driver";
 export type WorkloadRevertReason = "tile_contention" | "stamina" | "labor" | "other";
 export type TransactionOutcome =
@@ -1070,22 +1070,16 @@ async function waitForReceiptLifecycle(
       }
       if (!["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(lastStatus)) return;
       finished = true;
-      void measureRpc(rpc, "getTransactionReceipt", () => provider.getTransactionReceipt(transactionHash))
-        .then((receipt) => {
-          if (!("block_number" in receipt) || !Number.isSafeInteger(receipt.block_number)) {
-            throw new Error(`Accepted transaction ${transactionHash} has no block number`);
-          }
-          finish({
-            acceptedOnL2At: toIso(observedAtMs),
-            acceptedOnL2Block: receipt.block_number,
-            acceptedOnL2Ms: observedAtMs - submittedAtMs,
-            finalityStatus: lastStatus,
-            outcome: "completed",
-            preConfirmedAt: toIso(preConfirmedAtMs ?? observedAtMs),
-            preConfirmedMs: (preConfirmedAtMs ?? observedAtMs) - submittedAtMs,
-          });
-        })
-        .catch((error: unknown) => finish({ outcome: "driver_failed", error: errorMessage(error) }));
+      // The receipt (block, gas, fee) is read after the window by the gas collector from the recorded hash; nothing
+      // on the timed path waits for it.
+      finish({
+        acceptedOnL2At: toIso(observedAtMs),
+        acceptedOnL2Ms: observedAtMs - submittedAtMs,
+        finalityStatus: lastStatus,
+        outcome: "completed",
+        preConfirmedAt: toIso(preConfirmedAtMs ?? observedAtMs),
+        preConfirmedMs: (preConfirmedAtMs ?? observedAtMs) - submittedAtMs,
+      });
     };
     let observedSocket: unknown;
     const catchUp = () => {
@@ -1297,7 +1291,6 @@ export function createRpcMetrics(): RpcMetrics {
   return {
     estimateInvokeFee: { calls: 0, wallMs: 0 },
     getBlock: { calls: 0, wallMs: 0 },
-    getTransactionReceipt: { calls: 0, wallMs: 0 },
     getTransactionStatus: { calls: 0, wallMs: 0 },
   };
 }
@@ -1316,7 +1309,6 @@ function snapshotRpcMetrics(rpc: RpcMetrics): RpcMetrics {
   return {
     estimateInvokeFee: snapshotRpcMethod(rpc.estimateInvokeFee),
     getBlock: snapshotRpcMethod(rpc.getBlock),
-    getTransactionReceipt: snapshotRpcMethod(rpc.getTransactionReceipt),
     getTransactionStatus: snapshotRpcMethod(rpc.getTransactionStatus),
   };
 }

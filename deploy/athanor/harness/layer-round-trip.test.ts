@@ -120,7 +120,11 @@ function fixture(
             ? "REVERTED"
             : "SUCCEEDED",
       }),
-    getTransactionReceipt: async () => ({ block_number: block }),
+    getTransactionReceipt: async () => ({
+      block_number: block,
+      execution_resources: { l1_gas: 0, l1_data_gas: 0, l2_gas: 1 },
+      execution_status: "SUCCEEDED",
+    }),
   } as unknown as HarnessProvider;
   const bot = {
     account,

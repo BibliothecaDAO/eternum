@@ -3,6 +3,7 @@ import type { HarnessRpcRequests } from "./provider";
 import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import type { LayerRoundTripEvidence } from "./layer-round-trip";
 import type { SeasonFinalizationEvidence } from "./season-lifecycle";
+import { collectGas, type CollectedTransaction, type GasSummary, type TransactionReceiptReader } from "./gas-collector";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -131,6 +132,8 @@ export interface HarnessReportInput {
   /** Null when this process is one worker of a roster run: the driver asserts the run's gates over every worker. */
   gates: RunGates | null;
   minutes: number;
+  /** Reads receipts after the window; the driver never does on the timed path. */
+  receipts: TransactionReceiptReader;
   rpcUrl: string;
   setupTransactions: TrackedTransaction[];
   heraldUrl: string;
@@ -199,10 +202,11 @@ export async function writeHarnessReport(
   input: HarnessReportInput,
 ): Promise<{ passed: boolean; path: string; workload: WorkerWorkloadSummary }> {
   const analysis = analyzeHarnessResult(input);
+  const gas = await collectRunGas(input);
   const createdAt = new Date().toISOString();
   const runId = `${createdAt.replace(/[-:.]/g, "")}-g${input.games.map(({ gameId }) => gameId).join("-")}`;
   const outputPath = path.join(HARNESS_OUTPUT_DIRECTORY, `${runId}.json`);
-  const manifest = buildHarnessManifest(input, analysis, runId, createdAt);
+  const manifest = buildHarnessManifest(input, analysis, gas, runId, createdAt);
 
   await mkdir(HARNESS_OUTPUT_DIRECTORY, { recursive: true });
   await writeFile(outputPath, `${JSON.stringify(manifest, null, 2)}\n`);
@@ -282,6 +286,31 @@ function gateLimits(functional: boolean, minimumThresholdActions: number) {
           heraldConfirmedLagP95Ms: HERALD_CONFIRMED_LAG_P95_LIMIT_MS,
         }),
   };
+}
+
+/** Every transaction the run recorded, by stage, against the node's close-block gas for the measured window. */
+function collectRunGas(input: HarnessReportInput): Promise<GasSummary> {
+  const finalizations: CollectedTransaction[] = (input.seasonFinalizations ?? []).flatMap((finalization) =>
+    finalization.transactionHash === undefined
+      ? []
+      : [
+          {
+            botId: 0,
+            gameId: finalization.gameId,
+            kind: "season_close",
+            outcome: "completed",
+            stage: "finalization",
+            transactionHash: finalization.transactionHash,
+          },
+        ],
+  );
+  const drills = (input.layerRoundTrips ?? []).flatMap((drill) => drill.steps.map((step) => step.transaction));
+  const blockStats = input.gates?.evidence.blockStats ?? null;
+  return collectGas({
+    transactions: [...input.setupTransactions, ...input.workload.actions, ...drills, ...finalizations],
+    reader: input.receipts,
+    node: blockStats ? { blocks: blockStats.blocks, l2GasConsumed: blockStats.transactions.l2GasConsumed } : null,
+  });
 }
 
 function analyzeHarnessResult(input: HarnessReportInput) {
@@ -369,11 +398,12 @@ function frontierDesignChecks(frontier: FrontierEvidence) {
 function buildHarnessManifest(
   input: HarnessReportInput,
   analysis: ReturnType<typeof analyzeHarnessResult>,
+  gas: GasSummary,
   runId: string,
   createdAt: string,
 ) {
   return {
-    schemaVersion: 8,
+    schemaVersion: 9,
     runId,
     createdAt,
     passed: analysis.passed,
@@ -431,7 +461,7 @@ function buildHarnessManifest(
         ? null
         : {
             scope:
-              "estimateInvokeFee, getBlock, getTransactionReceipt, and getTransactionStatus calls made by the harness driver",
+              "estimateInvokeFee, getBlock and getTransactionStatus calls made by the harness driver",
             ...analysis.rpc,
             transport: input.transportRequests
               ? summarizeTransportRequests(input.transportRequests, input.workload.actions.length)
@@ -453,6 +483,7 @@ function buildHarnessManifest(
       ),
       failures: analysis.setupFailures.length,
     },
+    gas,
     thresholds: {
       // Null limits: this process is one worker of a roster run, and the driver's summary carries the gates.
       limits: input.gates ? gateLimits(input.functional ?? false, input.gates.minimumThresholdActions) : null,

@@ -48,7 +48,7 @@ export async function closeHarnessSeason(options: {
       gameId: game_id,
       provider: options.provider,
       kind: "season_close",
-      stage: "setup",
+      stage: "finalization",
       send: () =>
         game.submit(signer, () => {
           applied = client.setup.systemCalls.end_game({ signer });

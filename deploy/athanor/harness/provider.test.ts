@@ -53,8 +53,6 @@ test("one shared connection catches up both transactions after reconnect, with o
     finality_status: connections === 1 ? "PRE_CONFIRMED" : "ACCEPTED_ON_L2",
     execution_status: "SUCCEEDED",
   })) as typeof provider.getTransactionStatus;
-  const receipts = mock(async () => ({ block_number: 42 }));
-  provider.getTransactionReceipt = receipts as unknown as typeof provider.getTransactionReceipt;
   try {
     const results = await Promise.all(
       ["0x1", "0x2"].map((transactionHash, botId) =>
@@ -70,10 +68,8 @@ test("one shared connection catches up both transactions after reconnect, with o
       ),
     );
     expect(results.map(({ outcome }) => outcome)).toEqual(["completed", "completed"]);
-    expect(results.map(({ acceptedOnL2Block }) => acceptedOnL2Block)).toEqual([42, 42]);
     expect(connections).toBe(2);
     expect(subscriptions).toBeGreaterThanOrEqual(2);
-    expect(receipts).toHaveBeenCalledTimes(2);
     expect(results.every(({ rpc }) => rpc.getTransactionStatus.calls <= 2 && rpc.getTransactionStatus.calls > 0)).toBe(
       true,
     );
