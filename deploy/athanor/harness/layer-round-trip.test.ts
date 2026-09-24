@@ -122,6 +122,7 @@ function fixture(
       }),
     getTransactionReceipt: async () => ({
       block_number: block,
+      actual_fee: { amount: "0x0", unit: "FRI" },
       execution_resources: { l1_gas: 0, l1_data_gas: 0, l2_gas: 1 },
       execution_status: "SUCCEEDED",
     }),
