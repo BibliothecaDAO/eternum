@@ -21,5 +21,6 @@ export function createArmyRecord(input: ArmyData): ArmyData {
     attackedTowardDegrees: input.attackedTowardDegrees,
     battleCooldownEnd: input.battleCooldownEnd,
     battleTimerLeft: input.battleTimerLeft,
+    foodBlocked: input.foodBlocked,
   };
 }

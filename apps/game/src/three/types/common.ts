@@ -65,6 +65,7 @@ export interface ArmyData {
   attackedTowardDegrees?: number; // Degrees in which this army has attacked someone
   battleCooldownEnd?: number; // Unix timestamp when battle cooldown ends
   battleTimerLeft?: number; // Time left in seconds before battle penalty is over
+  foodBlocked?: boolean; // Own army whose realm cannot pay a step's food (see readArmyMovementReadiness)
 }
 
 export interface RenderChunkSize {
