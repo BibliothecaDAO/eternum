@@ -77,6 +77,8 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
     3: [{ resource: 38, amount: 90000 }],
   },
   troop: {
+    // One troop type fights here, so terrain would only add noise: Frontier combat is biome-neutral.
+    damage: { damageBiomeBonusNum: 0 },
     stamina: {
       damageStaminaRefund: false,
       captureStaminaRefund: 0,

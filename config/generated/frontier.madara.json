@@ -555,7 +555,7 @@
       "t2DamageMultiplier": "55340232221128654848",
       "t3DamageMultiplier": "166020696663385964544",
       "damageRaidPercentNum": 1000,
-      "damageBiomeBonusNum": 3000,
+      "damageBiomeBonusNum": 0,
       "damageScalingFactor": "36893488147419103232"
     },
     "stamina": {
