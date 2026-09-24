@@ -29,6 +29,9 @@ DOCKER = ["sudo", "-n", "docker"]
 CONNECTIONS_PER_PLAYER = 2
 TOOLING_CONNECTIONS = 32
 DEFAULT_NODE_MEMORY_MIB = 24576
+SLICE = Path("/sys/fs/cgroup/athanor.slice")
+# The services that hold memory for the shard's lifetime; prepare and init exit once the shard is deployed.
+LONG_RUNNING = ("madara", "postgres", "herald", "gateway", "rpc", "metrics")
 
 
 def cpu_numbers(value):
@@ -126,7 +129,6 @@ def compose_configuration(config, directory):
         "RPC_PORT": str(config["port_base"] + 5), "HERALD_PORT": str(config["port_base"] + 1),
         "ADMISSION_PORT": str(config["port_base"] + 3),
         "NODE_MEMORY": f"{config.get('node_memory_mib', DEFAULT_NODE_MEMORY_MIB)}m",
-        "HERALD_MEMORY": "24g",
     }
     compose = json.loads(subprocess.check_output([
         "docker", "compose", "-f", str(ROOT / "deploy/shard/compose.yml"), "config", "--format", "json",
@@ -162,6 +164,30 @@ def compose_configuration(config, directory):
         "depends_on": {"prepare": {"condition": "service_completed_successfully"}},
     }
     return compose
+
+
+def memory_bytes(value):
+    units = {"k": 2**10, "m": 2**20, "g": 2**30}
+    text = str(value).lower()
+    return int(text[:-1]) * units[text[-1]] if text[-1] in units else int(text)
+
+
+def check_slice_memory(compose, slice_directory=SLICE):
+    """Refuse a shard whose limits, beside every container already in the slice, exceed the slice's memory.max:
+    otherwise the slice kills processes before any container reaches its own limit."""
+    budget = (slice_directory / "memory.max").read_text().strip()
+    if budget == "max":
+        return
+    held = 0
+    for scope in slice_directory.glob("docker-*.scope"):
+        limit = (scope / "memory.max").read_text().strip()
+        if limit == "max":
+            raise ValueError(f"{scope.name} runs in the native slice without a memory limit")
+        held += int(limit)
+    wanted = sum(memory_bytes(compose["services"][name]["mem_limit"]) for name in LONG_RUNNING)
+    if held + wanted > int(budget):
+        raise ValueError(f"the shard needs {wanted >> 20} MiB beside {held >> 20} MiB already held in the native "
+                         f"slice, over its {int(budget) >> 20} MiB")
 
 
 def ensure_fresh_project(config):
@@ -363,6 +389,7 @@ def start_shard(config, directory):
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
     write_json(directory / "configuration.json", config)
     compose = compose_configuration(config, directory)
+    check_slice_memory(compose)
     write_json(directory / "compose.json", compose)
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
     run([*command, "up", "-d"], directory, "shard-start")

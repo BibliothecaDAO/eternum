@@ -99,6 +99,22 @@ class ShardTest(unittest.TestCase):
                         shard.initialize_shard_identity(configuration(), directory, "0x789")
                 self.assertFalse((directory / "native-world.json").exists())
 
+    def test_a_shard_that_does_not_fit_the_slice_beside_running_shards_is_refused(self):
+        compose = {"services": {name: {"mem_limit": "1g"} for name in shard.LONG_RUNNING}}
+        with tempfile.TemporaryDirectory() as directory:
+            slice_directory = Path(directory)
+            (slice_directory / "memory.max").write_text(str(10 * 2**30) + "\n")
+            running = slice_directory / "docker-running.scope"
+            running.mkdir()
+            (running / "memory.max").write_text(str(4 * 2**30) + "\n")
+            shard.check_slice_memory(compose, slice_directory)
+            (running / "memory.max").write_text(str(5 * 2**30) + "\n")
+            with self.assertRaisesRegex(ValueError, "over its 10240 MiB"):
+                shard.check_slice_memory(compose, slice_directory)
+            (running / "memory.max").write_text("max\n")
+            with self.assertRaisesRegex(ValueError, "without a memory limit"):
+                shard.check_slice_memory(compose, slice_directory)
+
     def test_existing_containers_or_volumes_are_never_reused(self):
         for replies in (["container"], ["", "volume"]):
             with patch.object(shard, "read", side_effect=replies), self.assertRaisesRegex(ValueError, "already owns state"):
