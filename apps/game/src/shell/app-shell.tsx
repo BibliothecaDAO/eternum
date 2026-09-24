@@ -68,7 +68,7 @@ export const AppShell = () => {
         <Outlet />
       </main>
 
-      <footer className="flex items-center gap-5 border-t border-gold/10 px-4 py-2 font-mono text-[10.5px] tracking-[0.05em] text-gold/50">
+      <footer className="flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-gold/10 px-4 py-2 font-mono text-[10.5px] tracking-[0.05em] text-gold/50">
         <span>
           <span className={directory.isSuccess ? "text-green" : "text-danger"}>●</span> Shards
           {directory.isSuccess
