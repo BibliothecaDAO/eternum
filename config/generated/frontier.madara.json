@@ -41,7 +41,7 @@
   },
   "tick": {
     "defaultTickIntervalInSeconds": 1,
-    "armiesTickIntervalInSeconds": 120,
+    "armiesTickIntervalInSeconds": 3600,
     "deliveryTickIntervalInSeconds": 180,
     "bitcoinPhaseInSeconds": 600
   },
@@ -240,7 +240,7 @@
       "23": 0.027777777777777776,
       "24": 0,
       "25": 0,
-      "26": 0.06944444444444445,
+      "26": 0.027777777777777776,
       "27": 0.06944444444444445,
       "28": 0.06944444444444445,
       "29": 0,
@@ -249,7 +249,7 @@
       "32": 0,
       "33": 0,
       "34": 0,
-      "35": 0.16666666666666666,
+      "35": 0.05555555555555555,
       "36": 0,
       "37": 0,
       "38": 0,
@@ -536,11 +536,11 @@
   "startingResources": [
     {
       "resource": 26,
-      "amount": 2000
+      "amount": 1500
     },
     {
       "resource": 35,
-      "amount": 5000
+      "amount": 1000
     },
     {
       "resource": 23,
@@ -560,8 +560,8 @@
     },
     "stamina": {
       "damageStaminaRefund": false,
-      "captureStaminaRefund": 25,
-      "staminaGainPerTick": 1,
+      "captureStaminaRefund": 0,
+      "staminaGainPerTick": 30,
       "staminaInitial": 150,
       "staminaBonusValue": 0,
       "staminaKnightMax": 150,
@@ -906,7 +906,7 @@
     "ammStartingLiquidity": {},
     "lordsLiquidityPerResource": 0
   },
-  "presetId": 1,
+  "presetId": 5,
   "setup": {
     "chain": "madara",
     "addresses": {

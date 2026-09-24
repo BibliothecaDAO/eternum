@@ -6,7 +6,11 @@ import { join } from "node:path";
 import { CallData, type Account, type RpcProvider } from "starknet";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import { buildNativePreset } from "../config/native-preset";
-import { FRONTIER_ACCELERATED_PRESET_ID, nativeGameModeOf } from "../../../source/common/native-preset-modes";
+import {
+  FRONTIER_ACCELERATED_PRESET_ID,
+  FRONTIER_PRESET_ID,
+  nativeGameModeOf,
+} from "../../../source/common/native-preset-modes";
 import {
   buildNativePresetRegistration,
   registerNativePreset,
@@ -40,7 +44,10 @@ function configuration(preset: number) {
 
 describe("native presets", () => {
   test("the accelerated Frontier preset is Frontier with every season clock 120 times faster, under its own id", () => {
-    const canonical = buildNativePreset(loadNativePresetConfiguration("madara.frontier", 1), 1);
+    const canonical = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
+      FRONTIER_PRESET_ID,
+    );
     const accelerated = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_ACCELERATED_PRESET_ID),
       FRONTIER_ACCELERATED_PRESET_ID,
@@ -56,15 +63,40 @@ describe("native presets", () => {
     );
     expect(
       buildNativePresetRegistration(accelerated, FRONTIER_ACCELERATED_PRESET_ID, manifestPath).commitment,
-    ).not.toBe(buildNativePresetRegistration(canonical, 1, manifestPath).commitment);
+    ).not.toBe(buildNativePresetRegistration(canonical, FRONTIER_PRESET_ID, manifestPath).commitment);
+  });
+
+  test("Frontier's design preset carries the owner's balance: hourly stamina, a lean grant, slower barracks and farms", () => {
+    const design = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
+      FRONTIER_PRESET_ID,
+    );
+    const perHour = (resource: number) =>
+      (design.resources.resources.find(({ resource_type }) => resource_type === resource)!.realm_rate * 3600n) /
+      1_000_000_000n;
+
+    expect(design.rules.tick_config.armies_tick_in_seconds).toBe(3600);
+    expect(design.rules.troop_stamina_config).toMatchObject({
+      stamina_gain_per_tick: 30,
+      capture_stamina_refund: 0,
+      stamina_initial: 150,
+    });
+    expect(design.settlement.realms.resources).toEqual([
+      { resource_type: 26, amount: 1_500_000_000_000n },
+      { resource_type: 35, amount: 1_000_000_000_000n },
+      { resource_type: 23, amount: 2_000_000_000_000n },
+    ]);
+    expect(design.settlement.realms.starting_troops.every((troop) => troop.activeVariant() === "Knight")).toBe(true);
+    expect([perHour(26), perHour(35), perHour(23)]).toEqual([100n, 200n, 100n]);
   });
 
   test("every preset id names the mode it plays, and an unknown id fails by name", () => {
-    expect([1, 2, 3, 4, FRONTIER_ACCELERATED_PRESET_ID].map(nativeGameModeOf)).toEqual([
+    expect([1, 2, 3, 4, FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID].map(nativeGameModeOf)).toEqual([
       "frontier",
       "blitz",
       "eternum",
       "duel",
+      "frontier",
       "frontier",
     ]);
     expect(() => nativeGameModeOf(9)).toThrow("Unknown native preset 9");

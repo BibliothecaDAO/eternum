@@ -2,6 +2,7 @@ import type { NativePreset } from "../common/native-preset";
 import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/client.gen";
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 import { relicRules } from "../common/native-data";
+import { FRONTIER_PRESET_ID } from "../common/native-preset-modes";
 
 export const frontierPreset: NativePreset = {
   ledger: {
@@ -28,7 +29,7 @@ export const frontierPreset: NativePreset = {
     { resource_type: 26, amount: 30, amount_max: 250, weight: 1 },
   ],
   bridgeResources: [],
-  id: 1,
+  id: FRONTIER_PRESET_ID,
   gameType: "frontier",
   environmentGameType: "frontier",
   settlementMode: "Single",

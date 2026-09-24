@@ -29,7 +29,7 @@ export const CreateGameRequestSchema = Schema.Struct({
 
 interface SharedLaunchOptions {
   environment: "madara.blitz" | "madara.eternum" | "madara.frontier";
-  version?: "1" | "2" | "3";
+  version?: "5" | "2" | "3";
   devModeOn?: boolean;
   singleRealmMode?: boolean;
   durationSeconds?: number;
@@ -65,7 +65,7 @@ export const frontierSeasonRequest = (season: { startsAt: string; endsAt: string
   }
   return {
     environment: "madara.frontier",
-    version: String(nativePresetIdFor("frontier")) as "1",
+    version: String(nativePresetIdFor("frontier")) as "5",
     gameName: `frontier-${start / 1000}`,
     gameStartTime: new Date(start).toISOString(),
     durationSeconds: (end - start) / 1000,
