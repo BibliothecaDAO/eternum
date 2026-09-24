@@ -44,7 +44,7 @@ use snforge_std::{
 };
 use starknet::{ClassHash, ContractAddress};
 use crate::commands::{
-    Command, CreateExplorer, ExecutionContext, ITroopCommandsSafeDispatcher, ITroopCommandsSafeDispatcherTrait,
+    Command, CreateExplorer, ExecutionContext, ICreateExplorerSafeDispatcher, ICreateExplorerSafeDispatcherTrait,
 };
 use crate::games::{
     IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait, IGamesAuthenticationSafeDispatcher,
@@ -105,6 +105,11 @@ fn setup_with_host(
     let pair = keypair(12345);
     recorded::deploy_submitter(submitter());
     let (actor, account_class) = deploy("AccountFixture", @array![pair.public_key]);
+    let movement = if troops_class == "TroopFixture" {
+        declare_logic("TroopFixture")
+    } else {
+        declare_logic("MovementLogic")
+    };
     let classes = games_storage::release::LogicClasses {
         season: declare_logic("SeasonLogic"),
         map: declare_logic("MapLogic"),
@@ -122,6 +127,7 @@ fn setup_with_host(
         raid: declare_logic("RaidLogic"),
         bridge: declare_logic("BridgeLogic"),
         relics: declare_logic("RelicsLogic"),
+        movement,
     };
     let authentication = crate::games::Authentication { submitter: submitter(), account_class };
     let mut calldata = array![authority().into()];
@@ -140,7 +146,6 @@ fn setup_with_host(
 fn intent(deployment: Deployment, game_id: u32) -> Intent {
     Intent {
         game_id,
-        rules: recorded::rules(),
         actor: deployment.actor,
         nonce: 0,
         deadline: 200,
@@ -149,8 +154,19 @@ fn intent(deployment: Deployment, game_id: u32) -> Intent {
         ),
     }
 }
-fn context() -> ExecutionContext {
-    ExecutionContext { raw_root: 987654321, timestamp: 100 }
+fn context(games: ContractAddress, game_id: u32) -> ExecutionContext {
+    snforge_std::interact_with_state(
+        games,
+        || {
+            let state = crate::state::read();
+            ExecutionContext {
+                raw_root: 987654321,
+                timestamp: 100,
+                game: BoxTrait::new(state.games.games.read(game_id)),
+                rules: BoxTrait::new(state.games.rules.read(game_id)),
+            }
+        },
+    )
 }
 /// The actor's device signature, `[device_key, r, s]`, as the shard's account class checks it.
 fn signature(deployment: Deployment, action: Intent) -> Span<felt252> {
@@ -162,7 +178,8 @@ fn signature(deployment: Deployment, action: Intent) -> Span<felt252> {
 }
 fn execute(deployment: Deployment, action: Intent) {
     let signed = signature(deployment, action);
-    IGamesAuthenticationDispatcher { contract_address: deployment.games }.execute(action, context(), signed);
+    IGamesAuthenticationDispatcher { contract_address: deployment.games }
+        .execute(action, context(deployment.games, action.game_id), signed);
 }
 
 #[test]
@@ -175,7 +192,7 @@ fn signed_actor_and_root_reach_domain_with_game_scoped_nonces() {
     assert_eq!(gateway.next_nonce(2, deployment.actor), 1);
     let troops = IFixtureDispatcher { contract_address: deployment.games };
     assert_eq!(troops.received_actor(), deployment.actor);
-    assert_eq!(troops.received_root(), context().raw_root);
+    assert_eq!(troops.received_root(), context(deployment.games, 1).raw_root);
     assert!(
         GameState { contract_address: deployment.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 7 }).is_some(),
     );
@@ -196,15 +213,17 @@ fn forged_signature_actor_game_and_replayed_intent_are_rejected() {
         .sign(IGamesAuthenticationDispatcher { contract_address: deployment.games }.hash_intent(action))
         .unwrap();
     let results = IRecordedExecutionViewsDispatcher { contract_address: deployment.games };
-    gateway.execute(action, context(), array![unknown.public_key, unknown_r, unknown_s].span()).unwrap();
+    gateway
+        .execute(action, context(deployment.games, 1), array![unknown.public_key, unknown_r, unknown_s].span())
+        .unwrap();
     assert_eq!(results.recorded_outcome(1, 1).unwrap().status_class, 'INVALID_SIGNATURE');
     let mut forged = action;
     forged.actor = 0x999.try_into().unwrap();
-    gateway.execute(forged, context(), signed).unwrap();
+    gateway.execute(forged, context(deployment.games, 1), signed).unwrap();
     assert_eq!(results.recorded_outcome(1, 2).unwrap().status_class, 'INVALID_ACTOR');
     forged = action;
     forged.game_id = 2;
-    gateway.execute(forged, context(), signed).unwrap();
+    gateway.execute(forged, context(deployment.games, 1), signed).unwrap();
     // The forged game's action is recorded on that game's own chain.
     assert_eq!(results.recorded_outcome(2, 1).unwrap().status_class, 'INVALID_SIGNATURE');
     assert!(!results.recorded_outcome(1, 1).unwrap().nonce_consumed);
@@ -215,9 +234,9 @@ fn forged_signature_actor_game_and_replayed_intent_are_rejected() {
     );
     let successor = action;
     let signed = signature(deployment, successor);
-    gateway.execute(successor, context(), signed).unwrap();
+    gateway.execute(successor, context(deployment.games, 1), signed).unwrap();
     assert_eq!(results.recorded_outcome(1, 3).unwrap().status, 1);
-    gateway.execute(successor, context(), signed).unwrap();
+    gateway.execute(successor, context(deployment.games, 1), signed).unwrap();
     assert_eq!(results.recorded_outcome(1, 4).unwrap().status_class, 'STALE_NONCE');
     assert_eq!(
         IGamesAuthenticationDispatcher { contract_address: deployment.games }.next_nonce(1, deployment.actor), 1,
@@ -233,7 +252,7 @@ fn direct_player_submission_and_forged_domain_calls_are_rejected() {
     start_cheat_caller_address(deployment.games, deployment.actor);
     assert!(
         IGamesAuthenticationSafeDispatcher { contract_address: deployment.games }
-            .execute(action, context(), signed)
+            .execute(action, context(deployment.games, 1), signed)
             .is_err(),
     );
     start_cheat_caller_address(deployment.games, deployment.actor);
@@ -241,8 +260,10 @@ fn direct_player_submission_and_forged_domain_calls_are_rejected() {
         panic!("wrong command")
     };
     assert!(
-        ITroopCommandsSafeDispatcher { contract_address: deployment.games }
-            .create_explorer(1, deployment.actor, command, context())
+        ICreateExplorerSafeDispatcher { contract_address: deployment.games }
+            .create_explorer(
+                1, deployment.actor, command, crate::commands::action_context(context(deployment.games, 1)),
+            )
             .is_err(),
     );
     assert!(
@@ -264,7 +285,11 @@ fn late_domain_failure_consumes_ticket_and_rolls_back_gameplay_rows() {
         .attempt(
             deployment.games,
             make_intent(deployment.games, action),
-            make_context(deployment.games, action, ExecutionContext { raw_root: 0, timestamp: 100 }),
+            make_context(
+                deployment.games,
+                action,
+                ExecutionContext { raw_root: 0, timestamp: 100, ..crate::tests::context(deployment.games, 1) },
+            ),
             signed,
         );
     assert!(success);
@@ -288,19 +313,27 @@ fn signatures_are_bound_to_deployment_command_nonce_and_deadline() {
     let results = IRecordedExecutionViewsDispatcher { contract_address: first.games };
     let mut changed = action;
     changed.command = Command::CloseSeason;
-    gateway.execute(changed, context(), signed).unwrap();
+    gateway.execute(changed, context(first.games, 1), signed).unwrap();
     assert_eq!(results.recorded_outcome(1, 1).unwrap().status_class, 'INVALID_SIGNATURE');
     changed = action;
     changed.nonce = 1;
-    gateway.execute(changed, context(), signed).unwrap();
+    gateway.execute(changed, context(first.games, 1), signed).unwrap();
     assert_eq!(results.recorded_outcome(1, 2).unwrap().status_class, 'INVALID_SIGNATURE');
     changed = action;
     assert!(!results.recorded_outcome(1, 1).unwrap().nonce_consumed);
     assert!(!results.recorded_outcome(1, 2).unwrap().nonce_consumed);
     changed.deadline = 99;
-    gateway.execute(changed, context(), signature(first, changed)).unwrap();
+    gateway.execute(changed, context(first.games, 1), signature(first, changed)).unwrap();
     assert_eq!(results.recorded_outcome(1, 3).unwrap().status_class, 'INVALID_ACCEPTANCE');
-    assert!(gateway.execute(action, ExecutionContext { raw_root: 1, timestamp: 101 }, signed).is_err());
+    assert!(
+        gateway
+            .execute(
+                action,
+                ExecutionContext { raw_root: 1, timestamp: 101, ..crate::tests::context(first.games, 1) },
+                signed,
+            )
+            .is_err(),
+    );
     // Both deployments use the same test key; address binding still changes the digest.
     assert!(
         IGamesAuthenticationDispatcher { contract_address: second.games }
@@ -336,12 +369,12 @@ fn recorded_context_survives_outage_and_rejects_future_time() {
     let signed = signature(deployment, action);
     let gateway = IGamesAuthenticationSafeDispatcher { contract_address: deployment.games };
     start_cheat_block_timestamp(deployment.games, 99);
-    assert!(gateway.execute(action, context(), signed).is_err());
+    assert!(gateway.execute(action, context(deployment.games, 1), signed).is_err());
     start_cheat_block_timestamp(deployment.games, 86500);
-    gateway.execute(action, context(), signed).unwrap();
+    gateway.execute(action, context(deployment.games, 1), signed).unwrap();
     let troops = IFixtureDispatcher { contract_address: deployment.games };
     assert_eq!(troops.received_timestamp(), 100);
-    assert_eq!(troops.received_root(), context().raw_root);
+    assert_eq!(troops.received_root(), context(deployment.games, 1).raw_root);
     assert_eq!(
         IGamesAuthenticationDispatcher { contract_address: deployment.games }.next_nonce(1, deployment.actor), 1,
     );
@@ -365,10 +398,10 @@ fn authority_rotates_authentication_without_replacing_the_domain() {
     let action = intent(deployment, 1);
     let signed = signature(deployment, action);
     start_cheat_caller_address(deployment.games, submitter());
-    assert!(safe.execute(action, context(), signed).is_err());
+    assert!(safe.execute(action, context(deployment.games, 1), signed).is_err());
     configure_submitter(deployment.games, replacement.submitter);
     start_cheat_caller_address(deployment.games, replacement.submitter);
-    gateway.execute(action, context(), signed);
+    gateway.execute(action, context(deployment.games, action.game_id), signed);
     assert_eq!(gateway.next_nonce(1, deployment.actor), 1);
 }
 
@@ -389,7 +422,7 @@ fn approved_account_class_can_follow_a_player_account_upgrade() {
     season.set_authentication(authentication.submitter, authentication.account_class);
     start_cheat_caller_address(deployment.games, submitter());
     assert!(recorded::admission(deployment.games, deployment.actor).is_ok());
-    season.execute(action, context(), signed);
+    season.execute(action, context(deployment.games, action.game_id), signed);
     assert_eq!(season.next_nonce(1, deployment.actor), 1);
 }
 

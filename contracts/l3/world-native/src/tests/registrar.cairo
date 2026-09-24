@@ -498,16 +498,20 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
     let commands = ISettlementCommandsDispatcher { contract_address: d.games };
     let safe = ISettlementCommandsSafeDispatcher { contract_address: d.games };
     let views = ISettlementViewsDispatcher { contract_address: d.games };
-    let mut context = crate::commands::ExecutionContext { raw_root: 98765, timestamp: 205 };
+    let mut context = crate::commands::ExecutionContext {
+        raw_root: 98765, timestamp: 205, ..super::context(d.games, game_id),
+    };
     assert!(!games.game(game_id).ready);
     assert!(status_at(games.game(game_id), 99999) == GameStatus::Registration);
     start_cheat_caller_address(d.games, d.actor);
     start_cheat_caller_address(d.games, d.games);
-    assert!(safe.settle_blitz_roster(game_id, d.actor, context).is_err());
+    assert!(safe.settle_blitz_roster(game_id, d.actor, crate::commands::action_context(context)).is_err());
     assert!(
         safe
             .settle_blitz_roster(
-                game_id, super::authority(), crate::commands::ExecutionContext { timestamp: 199, ..context },
+                game_id,
+                super::authority(),
+                crate::commands::action_context(crate::commands::ExecutionContext { timestamp: 199, ..context }),
             )
             .is_err(),
     );
@@ -521,7 +525,13 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
             context.raw_root = 111 + batch.into();
             context.timestamp = 1000 + batch.into();
         }
-        assert!(commands.settle_blitz_roster(game_id, super::authority(), context) == (1 - batch).into());
+        assert!(
+            commands
+                .settle_blitz_roster(
+                    game_id, super::authority(), crate::commands::action_context(context),
+                ) == (1 - batch)
+                .into(),
+        );
         let order = views.blitz_settlement_order(game_id);
         if batch == 0 {
             fixed_order = order;
@@ -570,13 +580,27 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
     let slot = ResourceSlot { game_id, entity_id, resource_type: 23 };
     let balance = resources.resource_balance(slot);
     start_cheat_caller_address(d.games, d.games);
-    resources.spend_resource(ResourceKey { game_id, entity_id }, 23, 0, 1001);
+    resources
+        .spend_resource(
+            ResourceKey { game_id, entity_id },
+            23,
+            0,
+            1001,
+            crate::commands::resource_context(super::context(d.games, game_id)),
+        );
     assert_eq!(resources.resource_balance(slot), balance, "early realm accrued before main play");
-    resources.spend_resource(ResourceKey { game_id, entity_id }, 23, 1, 1002);
+    resources
+        .spend_resource(
+            ResourceKey { game_id, entity_id },
+            23,
+            1,
+            1002,
+            crate::commands::resource_context(super::context(d.games, game_id)),
+        );
     assert_eq!(resources.resource_balance(slot), balance + 10 - 1, "production did not start with the game");
     stop_cheat_caller_address(d.games);
     let progress = views.settlement_progress(game_id);
-    assert!(commands.settle_blitz_roster(game_id, super::authority(), context) == 0);
+    assert!(commands.settle_blitz_roster(game_id, super::authority(), crate::commands::action_context(context)) == 0);
     assert!(views.settlement_progress(game_id) == progress && games.game(game_id) == game);
 }
 
@@ -650,7 +674,9 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
                         activate_economy: true,
                     },
                 ),
-                crate::commands::ExecutionContext { timestamp: 300, ..super::context() },
+                crate::commands::action_context(
+                    crate::commands::ExecutionContext { timestamp: 300, ..super::context(d.games, game_id) },
+                ),
             ),
     };
     stop_cheat_caller_address(d.games);
@@ -740,7 +766,17 @@ fn expedition_armies(d: super::Deployment, game_id: u32, category: u8) -> (Explo
     start_cheat_caller_address(d.games, d.games);
     for troop in array![26_u8, 29, 32] {
         IResourceOperationsDispatcher { contract_address: d.games }
-            .grant_resource(home, troop, 1000 * RESOURCE_PRECISION, 351);
+            .grant_resource(
+                home,
+                troop,
+                1000 * RESOURCE_PRECISION,
+                351,
+                crate::commands::resource_context(
+                    crate::commands::ExecutionContext {
+                        timestamp: 351, ..crate::tests::context(d.games, (home).game_id),
+                    },
+                ),
+            );
     }
     stop_cheat_caller_address(d.games);
     for direction in array![0_u8, 1] {
@@ -838,7 +874,15 @@ fn guard_management_is_refused_past_the_home_guard_slots() {
     // Paying for the knights succeeds, so only the slot rule can refuse the recruit.
     start_cheat_caller_address(d.games, d.games);
     IResourceOperationsDispatcher { contract_address: d.games }
-        .grant_resource(home, 26, 1000 * RESOURCE_PRECISION, 351);
+        .grant_resource(
+            home,
+            26,
+            1000 * RESOURCE_PRECISION,
+            351,
+            crate::commands::resource_context(
+                crate::commands::ExecutionContext { timestamp: 351, ..crate::tests::context(d.games, (home).game_id) },
+            ),
+        );
     stop_cheat_caller_address(d.games);
     let slots = IStructureOperationsDispatcher { contract_address: d.games }
         .structure(home)
@@ -907,7 +951,19 @@ fn a_home_ring_tile_reads_as_explored_and_an_explore_onto_it_moves_without_a_rol
     assert!(execute_in_game(d, game_id, move, 352, 352));
     let tile_key = crate::geometry::tile_key(game_id, ring_tile);
     assert_eq!(troops.explorer(key).unwrap().coord, ring_tile);
-    assert_eq!(map.tile(tile_key).unwrap().data / 0x20000000000 % 256, map.biome(tile_key).into());
+    assert_eq!(
+        map.tile(tile_key).unwrap().data / 0x20000000000 % 256,
+        map
+            .biome(
+                tile_key,
+                crate::commands::biome_context(
+                    crate::commands::ExecutionContext {
+                        timestamp: 100, ..crate::tests::context(d.games, (tile_key).game_id),
+                    },
+                ),
+            )
+            .into(),
+    );
 
     // An explore onto another ring tile moves at move cost: no discovery, no supplies.
     let (step, target) = unstored_ring_neighbor(map, game_id, ring_tile, site, spacing);
@@ -931,7 +987,19 @@ fn a_home_ring_tile_reads_as_explored_and_an_explore_onto_it_moves_without_a_rol
     let target_key = crate::geometry::tile_key(game_id, target);
     let mut troops_before = before.troops;
     let (increase, bonus) = troops_before
-        .stamina_travel_bonus(map.biome(target_key).into(), preset.rules.troop_stamina_config);
+        .stamina_travel_bonus(
+            map
+                .biome(
+                    target_key,
+                    crate::commands::biome_context(
+                        crate::commands::ExecutionContext {
+                            timestamp: 100, ..crate::tests::context(d.games, (target_key).game_id),
+                        },
+                    ),
+                )
+                .into(),
+            preset.rules.troop_stamina_config,
+        );
     let travel: u64 = preset.rules.troop_stamina_config.stamina_travel_stamina_cost.into();
     let move_cost = if increase {
         travel + bonus.into()
@@ -1018,7 +1086,16 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     assert_eq!(resources.resource_balance(labor), stored);
     assert_eq!(resources.resource_production(labor), producer);
     start_cheat_caller_address(d.games, d.games);
-    resources.grant_resource(home, 23, 0, 420);
+    resources
+        .grant_resource(
+            home,
+            23,
+            0,
+            420,
+            crate::commands::resource_context(
+                crate::commands::ExecutionContext { timestamp: 420, ..crate::tests::context(d.games, (home).game_id) },
+            ),
+        );
     stop_cheat_caller_address(d.games);
     assert_eq!(resources.resource_balance(labor), stored + 70 * producer.production_rate.into());
     assert_eq!(resources.resource_production(labor).production_rate, producer.production_rate);
@@ -1303,7 +1380,16 @@ fn assert_expedition_capture(depth: u8) {
     let home = ResourceKey { game_id, entity_id: 1 };
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     start_cheat_caller_address(d.games, d.games);
-    resources.grant_resource(home, 26, 1000 * RESOURCE_PRECISION, 350);
+    resources
+        .grant_resource(
+            home,
+            26,
+            1000 * RESOURCE_PRECISION,
+            350,
+            crate::commands::resource_context(
+                crate::commands::ExecutionContext { timestamp: 350, ..crate::tests::context(d.games, (home).game_id) },
+            ),
+        );
     stop_cheat_caller_address(d.games);
     assert!(
         execute_in_game(
@@ -1333,7 +1419,19 @@ fn assert_expedition_capture(depth: u8) {
             .unwrap();
         map.vacate(crate::geometry::tile_key(game_id, original), explorer_id);
         let location = crate::geometry::tile_key(game_id, army.coord);
-        map.reveal(location, map.biome(location));
+        map
+            .reveal(
+                location,
+                map
+                    .biome(
+                        location,
+                        crate::commands::biome_context(
+                            crate::commands::ExecutionContext {
+                                timestamp: 100, ..crate::tests::context(d.games, (location).game_id),
+                            },
+                        ),
+                    ),
+            );
         map.occupy(location, explorer_id, occupier, false);
         stop_cheat_caller_address(d.games);
     }
@@ -1394,7 +1492,17 @@ fn assert_expedition_capture(depth: u8) {
     let mine_coord = crate::geometry::neighbor(army.coord, 1);
     start_cheat_block_timestamp_global(362);
     start_cheat_caller_address(d.games, d.games);
-    let mine_id = structures.create_discovery(game_id, mine_coord, crate::discovery::Discovery::Mine, 101, 362);
+    let mine_id = structures
+        .create_discovery(
+            game_id,
+            mine_coord,
+            crate::discovery::Discovery::Mine,
+            101,
+            362,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 362, ..crate::tests::context(d.games, game_id) },
+            ),
+        );
     stop_cheat_caller_address(d.games);
     let mine = ResourceSlot { game_id, entity_id: mine_id, resource_type: 38 };
     assert_eq!(resources.resource_production(mine).production_rate, 0);
@@ -1422,8 +1530,31 @@ fn assert_expedition_capture(depth: u8) {
         start_cheat_block_timestamp_global(time);
         start_cheat_caller_address(d.games, d.games);
         // Touching either the source or the home uses the existing lazy production settlement.
-        resources.grant_resource(ResourceKey { entity_id: mine_id, ..home }, 38, 0, time);
-        resources.grant_resource(home, 38, 0, time);
+        resources
+            .grant_resource(
+                ResourceKey { entity_id: mine_id, ..home },
+                38,
+                0,
+                time,
+                crate::commands::resource_context(
+                    crate::commands::ExecutionContext {
+                        timestamp: time,
+                        ..crate::tests::context(d.games, (ResourceKey { entity_id: mine_id, ..home }).game_id),
+                    },
+                ),
+            );
+        resources
+            .grant_resource(
+                home,
+                38,
+                0,
+                time,
+                crate::commands::resource_context(
+                    crate::commands::ExecutionContext {
+                        timestamp: time, ..crate::tests::context(d.games, (home).game_id),
+                    },
+                ),
+            );
         stop_cheat_caller_address(d.games);
         let until = core::cmp::min(time, 400);
         let produced = Into::<u64, u128>::into(until - 362) * (Into::<u8, u128>::into(depth) + 1) * RESOURCE_PRECISION;
@@ -1498,8 +1629,26 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let essence = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
     start_cheat_caller_address(d.games, d.games);
-    resources.grant_resource(home, 26, 10 * RESOURCE_PRECISION, 350);
-    resources.grant_resource(home, 38, 1000 * RESOURCE_PRECISION, 350);
+    resources
+        .grant_resource(
+            home,
+            26,
+            10 * RESOURCE_PRECISION,
+            350,
+            crate::commands::resource_context(
+                crate::commands::ExecutionContext { timestamp: 350, ..crate::tests::context(d.games, (home).game_id) },
+            ),
+        );
+    resources
+        .grant_resource(
+            home,
+            38,
+            1000 * RESOURCE_PRECISION,
+            350,
+            crate::commands::resource_context(
+                crate::commands::ExecutionContext { timestamp: 350, ..crate::tests::context(d.games, (home).game_id) },
+            ),
+        );
     stop_cheat_caller_address(d.games);
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let troops = GameState { contract_address: d.games };
@@ -1681,7 +1830,16 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
     let home = ResourceKey { game_id, entity_id: 1 };
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     start_cheat_caller_address(d.games, d.games);
-    resources.grant_resource(home, 26, 10 * RESOURCE_PRECISION, 350);
+    resources
+        .grant_resource(
+            home,
+            26,
+            10 * RESOURCE_PRECISION,
+            350,
+            crate::commands::resource_context(
+                crate::commands::ExecutionContext { timestamp: 350, ..crate::tests::context(d.games, (home).game_id) },
+            ),
+        );
     stop_cheat_caller_address(d.games);
     let muster = Command::CreateExplorer(
         CreateExplorer { structure_id: 1, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0 },

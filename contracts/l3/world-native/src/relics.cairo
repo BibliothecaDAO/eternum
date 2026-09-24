@@ -1,5 +1,4 @@
 use starknet::ContractAddress;
-use crate::commands::ExecutionContext;
 use crate::resources::ResourceKey;
 use crate::troops::Coord;
 
@@ -125,34 +124,59 @@ pub trait IRelics<T> {
     fn chest_tokens(self: @T, game_id: u32, player: ContractAddress, epoch: u64) -> u16;
     fn chest_reward(self: @T, game_id: u32, result_id: u32) -> Option<ChestReward>;
     fn grant_reveal_chest(
-        ref self: T, game_id: u32, actor: ContractAddress, command: OpenChest, context: ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: OpenChest, context: crate::commands::ActionContext,
     );
     fn relic_rules(self: @T, game_id: u32) -> Span<RelicRule>;
     fn open_relic_chest(
-        ref self: T, game_id: u32, actor: ContractAddress, command: OpenChest, context: ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: OpenChest, context: crate::commands::ActionContext,
     );
     fn grant_site_chest(
-        ref self: T, game_id: u32, actor: ContractAddress, command: OpenChest, context: ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: OpenChest, context: crate::commands::ActionContext,
     );
-    fn apply_relic(ref self: T, game_id: u32, actor: ContractAddress, command: ApplyRelic, context: ExecutionContext);
+    fn apply_relic(
+        ref self: T, game_id: u32, actor: ContractAddress, command: ApplyRelic, context: crate::commands::ActionContext,
+    );
 }
 #[starknet::interface]
 pub trait IRelicMap<T> {
     #[cfg(test)]
     fn relic_discovery_time(self: @T, game_id: u32) -> u64;
-    fn discover_relic_chest(ref self: T, game_id: u32, coord: Coord, excluded: Coord, seed: u256, timestamp: u64);
+    fn discover_relic_chest(
+        ref self: T,
+        game_id: u32,
+        coord: Coord,
+        excluded: Coord,
+        seed: u256,
+        timestamp: u64,
+        game_context: crate::commands::ActionContext,
+    );
     fn consume_relic_chest(ref self: T, game_id: u32, coord: Coord);
-    fn reveal_relic_ring(ref self: T, game_id: u32, coord: Coord, radius: u8);
+    fn reveal_relic_ring(
+        ref self: T, game_id: u32, coord: Coord, radius: u8, game_context: crate::commands::BiomeContext,
+    );
 }
 #[starknet::interface]
 pub trait IRelicTroops<T> {
     fn apply_troop_relic(
-        ref self: T, game_id: u32, actor: ContractAddress, command: ApplyRelic, rule: RelicRule, timestamp: u64,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: ApplyRelic,
+        rule: RelicRule,
+        timestamp: u64,
+        game_context: crate::commands::ActionContext,
     );
 }
 #[starknet::interface]
 pub trait IRelicProduction<T> {
-    fn apply_production_relic(ref self: T, key: ResourceKey, relic_id: u8, rule: RelicRule, timestamp: u64);
+    fn apply_production_relic(
+        ref self: T,
+        key: ResourceKey,
+        relic_id: u8,
+        rule: RelicRule,
+        timestamp: u64,
+        game_context: crate::commands::ActionContext,
+    );
 }
 
 pub fn chest_destination(origin: Coord, seed: u256, timestamp: u64, distance: u8) -> Coord {

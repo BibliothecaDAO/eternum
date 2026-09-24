@@ -129,6 +129,7 @@ const main = async (): Promise<void> => {
     readModels: ingestion.readModels,
     chain,
     manifest: shardManifest,
+    schemas: manifest.native.schemas,
     worldAddress: registry.worldAddress,
     confirmedBlock: () => live.confirmedBlock,
     chainTimestamp: () => live.chainTimestamp,

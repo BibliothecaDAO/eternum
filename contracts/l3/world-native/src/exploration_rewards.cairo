@@ -1,5 +1,4 @@
 use starknet::ContractAddress;
-use crate::commands::ExecutionContext;
 use crate::resources::ResourceKey;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -27,12 +26,19 @@ pub trait IExtraction<T> {
         actor: ContractAddress,
         explorer_id: u32,
         revealed: Option<crate::troops::Coord>,
-        context: ExecutionContext,
+        context: crate::commands::ActionContext,
     );
 }
 #[starknet::interface]
 pub trait IExplorationGrant<T> {
-    fn grant_exploration_reward(ref self: T, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64);
+    fn grant_exploration_reward(
+        ref self: T,
+        key: ResourceKey,
+        resource_type: u8,
+        amount: u128,
+        timestamp: u64,
+        game_context: crate::commands::ResourceContext,
+    );
 }
 pub fn draw(rewards: Span<ExplorationReward>, seed: u256, timestamp: u64) -> ExplorationReward {
     let mut total: u128 = 0;

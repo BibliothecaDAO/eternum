@@ -19,6 +19,7 @@ it("serves the shard's chain, release, endpoints and every contract a client cal
     chainId: "0x4c4142",
     releaseId: String(manifest.native.releaseId),
     schemaHash: manifest.native.activeSchema,
+    releaseSchemas: { [manifest.native.releaseId]: manifest.native.activeSchema },
     rpcUrl: "https://rpc.test",
     admissionUrl: "https://admission.test",
     accountClassHash: "0x456",

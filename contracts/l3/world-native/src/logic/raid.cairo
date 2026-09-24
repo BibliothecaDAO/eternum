@@ -1,7 +1,6 @@
 #[starknet::contract]
 pub mod RaidLogic {
     use starknet::ContractAddress;
-    use crate::commands::ExecutionContext;
     use crate::resources::ResourceKey;
 
     #[storage]
@@ -23,8 +22,10 @@ pub mod RaidLogic {
             game_id: u32,
             actor: ContractAddress,
             command: crate::combat_actions::Raid,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
+            let context = crate::commands::load_context(game_id, context);
+
             crate::logic::combat::raid(game_id, actor, command, context)
         }
         fn village_last_raided(self: @ContractState, key: ResourceKey) -> u64 {

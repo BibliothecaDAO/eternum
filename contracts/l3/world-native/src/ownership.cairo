@@ -1,5 +1,4 @@
 use starknet::ContractAddress;
-use crate::commands::ExecutionContext;
 
 pub const VILLAGE_CATEGORY: u8 = 5;
 
@@ -12,7 +11,11 @@ pub struct TransferOwnership {
 #[starknet::interface]
 pub trait IStructureOwnership<T> {
     fn transfer_structure_ownership(
-        ref self: T, game_id: u32, actor: ContractAddress, command: TransferOwnership, context: ExecutionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: TransferOwnership,
+        context: crate::commands::ActionContext,
     );
 }
 

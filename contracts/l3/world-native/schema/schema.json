@@ -40,7 +40,8 @@
     "combat": "CombatLogic",
     "raid": "RaidLogic",
     "bridge": "BridgeLogic",
-    "relics": "RelicsLogic"
+    "relics": "RelicsLogic",
+    "movement": "MovementLogic"
   },
   "version": 2,
   "cairoVersion": "2.17.0",
@@ -5528,6 +5529,34 @@
       }
     },
     {
+      "name": "GameRelease",
+      "identity": "0x47616d6552656c65617365",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "release_id",
+          "type": "core::integer::u32",
+          "id": "0x72656c656173655f6964",
+          "feltLength": 1
+        },
+        {
+          "name": "preset_commitment",
+          "type": "core::felt252",
+          "id": "0x7072657365745f636f6d6d69746d656e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 2
+    },
+    {
       "name": "GameRegistry",
       "identity": "0x47616d655265676973747279",
       "scope": "game",
@@ -6717,11 +6746,11 @@
       "name": "eternum_randomness_protocol::entrypoint::Admission",
       "members": [
         {
-          "name": "rules",
-          "type": "core::felt252"
+          "name": "release_id",
+          "type": "core::integer::u32"
         },
         {
-          "name": "execution_config",
+          "name": "preset_commitment",
           "type": "core::felt252"
         },
         {
@@ -6795,7 +6824,11 @@
           "type": "core::felt252"
         },
         {
-          "name": "rules",
+          "name": "release_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "preset_commitment",
           "type": "core::felt252"
         },
         {
@@ -6914,6 +6947,10 @@
         },
         {
           "name": "relics",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "movement",
           "type": "core::starknet::class_hash::ClassHash"
         }
       ]
@@ -7594,6 +7631,20 @@
         }
       ]
     },
+    "world_native::commands::ActionContext": {
+      "type": "struct",
+      "name": "world_native::commands::ActionContext",
+      "members": [
+        {
+          "name": "raw_root",
+          "type": "core::integer::u256"
+        },
+        {
+          "name": "timestamp",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
     "world_native::commands::Battle": {
       "type": "struct",
       "name": "world_native::commands::Battle",
@@ -7605,6 +7656,24 @@
         {
           "name": "defender_id",
           "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::commands::BiomeContext": {
+      "type": "struct",
+      "name": "world_native::commands::BiomeContext",
+      "members": [
+        {
+          "name": "climate",
+          "type": "world_native::rules::BiomeClimateConfig"
+        },
+        {
+          "name": "epoch_seconds",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "start_main_at",
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -7926,20 +7995,6 @@
         }
       ]
     },
-    "world_native::commands::ExecutionContext": {
-      "type": "struct",
-      "name": "world_native::commands::ExecutionContext",
-      "members": [
-        {
-          "name": "raw_root",
-          "type": "core::integer::u256"
-        },
-        {
-          "name": "timestamp",
-          "type": "core::integer::u64"
-        }
-      ]
-    },
     "world_native::commands::Explore": {
       "type": "struct",
       "name": "world_native::commands::Explore",
@@ -7965,6 +8020,28 @@
         {
           "name": "directions",
           "type": "core::array::Span::<core::integer::u8>"
+        }
+      ]
+    },
+    "world_native::commands::ResourceContext": {
+      "type": "struct",
+      "name": "world_native::commands::ResourceContext",
+      "members": [
+        {
+          "name": "production_start",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "troop_capacity",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "spire_fee",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "delivery_tick",
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -11713,5 +11790,5 @@
       ]
     }
   },
-  "identity": "08278192983ccd5d46daeff539fd149bdc17255c6557ee3e4a825dac14602227"
+  "identity": "052f35ff19da351dc6c23d04306a71e0c8cf2ae6cffe067327770bfb1991f05c"
 }

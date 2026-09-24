@@ -2,7 +2,6 @@
 pub mod FaithState {
     use starknet::ContractAddress;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
-    use crate::commands::ExecutionContext;
     use crate::events::{RowDeleted, RowSet};
     use crate::faith::{FaithfulStructure, WonderFaith, WonderFaithWinners};
     use crate::logic::release::ReleaseState;
@@ -52,11 +51,13 @@ pub mod FaithState {
             game_id: u32,
             actor: ContractAddress,
             command: crate::faith::Pledge,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            let game = self.authorize(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            let game = self.authorize(game_id, context.timestamp, context);
             crate::game::assert_playing(game, context.timestamp);
-            assert!(crate::logic::game::rules(game_id).faith_enabled, "faith is disabled");
+            assert!(context.rules.unbox().faith_enabled, "faith is disabled");
             let structure = self.structure(game_id, command.structure_id);
             assert!(structure.owner == actor, "actor does not own structure");
             self.validate_pledge(game_id, actor, command, structure);
@@ -70,9 +71,11 @@ pub mod FaithState {
             game_id: u32,
             actor: ContractAddress,
             structure_id: u32,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            let game = self.authorize(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            let game = self.authorize(game_id, context.timestamp, context);
             crate::game::assert_playing(game, context.timestamp);
             let pledge = self.data.faith.faith_pledges.read((game_id, structure_id));
             assert!(pledge.wonder_id != 0, "structure is not faithful");
@@ -93,9 +96,11 @@ pub mod FaithState {
             game_id: u32,
             actor: ContractAddress,
             wonder_id: u32,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            let game = self.authorize(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            let game = self.authorize(game_id, context.timestamp, context);
             crate::game::assert_playing(game, context.timestamp);
             self.refresh_wonder(game_id, wonder_id, context.timestamp, game.end_at);
         }
@@ -104,9 +109,11 @@ pub mod FaithState {
             game_id: u32,
             actor: ContractAddress,
             structure_id: u32,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            let game = self.authorize(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            let game = self.authorize(game_id, context.timestamp, context);
             crate::game::assert_playing(game, context.timestamp);
             if self.data.faith.faith_pledges.read((game_id, structure_id)).wonder_id != 0 {
                 let structure = self.structure(game_id, structure_id);
@@ -118,9 +125,11 @@ pub mod FaithState {
             game_id: u32,
             actor: ContractAddress,
             wonder_id: u32,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            let game = self.authorize(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            let game = self.authorize(game_id, context.timestamp, context);
             self.require_started(game, context.timestamp);
             self.wonder(game_id, wonder_id);
             let mut wonder = self.data.faith.faith_wonders.read((game_id, wonder_id));
@@ -132,9 +141,11 @@ pub mod FaithState {
             game_id: u32,
             actor: ContractAddress,
             command: crate::faith::ClaimPlayer,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            let game = self.authorize(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            let game = self.authorize(game_id, context.timestamp, context);
             self.require_started(game, context.timestamp);
             assert!(command.player != 0.try_into().unwrap(), "invalid player");
             self.wonder(game_id, command.wonder_id);
@@ -148,8 +159,13 @@ pub mod FaithState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of PrizeSettlementTrait<TContractState> {
-        fn settle_faith_wonders(ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64) -> u32 {
-            let game = self.authorize_prizes(game_id, timestamp);
+        fn settle_faith_wonders(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) -> u32 {
+            let game = self.authorize_prizes(game_id, timestamp, game_context);
             let (start, mut high_score, mut winners) = self.data.faith.prize_checkpoint.read(game_id);
             let count = self.data.faith.faith_wonder_count.read(game_id);
             let end = start + core::cmp::min(8, count - start);
@@ -184,8 +200,9 @@ pub mod FaithState {
             player: ContractAddress,
             wonder_id: u32,
             timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) {
-            let game = self.authorize_prizes(game_id, timestamp);
+            let game = self.authorize_prizes(game_id, timestamp, game_context);
             assert!(player != 0.try_into().unwrap(), "invalid player");
             self.wonder(game_id, wonder_id);
             self.update_rates(game_id, player, wonder_id, true, 0, 0, timestamp, game.end_at);
@@ -199,17 +216,24 @@ pub mod FaithState {
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
         fn authorize_prizes(
-            self: @ComponentState<TContractState>, game_id: u32, timestamp: u64,
+            self: @ComponentState<TContractState>,
+            game_id: u32,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) -> crate::game::GameRegistry {
-            let game = self.authorize(game_id, timestamp);
+            let game = self.authorize(game_id, timestamp, game_context);
             self.require_started(game, timestamp);
             assert!(game.end_at != 0 && timestamp >= game.end_at, "game not ended");
             game
         }
         #[inline(never)]
-        fn authorize(self: @ComponentState<TContractState>, game_id: u32, timestamp: u64) -> crate::game::GameRegistry {
-            crate::commands::assert_context_time(timestamp);
-            crate::logic::game::game(game_id)
+        fn authorize(
+            self: @ComponentState<TContractState>,
+            game_id: u32,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) -> crate::game::GameRegistry {
+            game_context.game.unbox()
         }
         fn require_started(self: @ComponentState<TContractState>, game: crate::game::GameRegistry, timestamp: u64) {
             assert!(

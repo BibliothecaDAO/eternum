@@ -9,7 +9,6 @@ pub fn guild_member(game_id: u32, actor: ContractAddress) -> ContractAddress {
 pub mod GuildState {
     use starknet::ContractAddress;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
-    use crate::commands::ExecutionContext;
     use crate::events::{RowDeleted, RowSet};
     use crate::guilds::{CreateGuild, Guild, JoinGuild, SetWhitelist, WhitelistKey};
     use crate::logic::release::ReleaseState;
@@ -54,9 +53,11 @@ pub mod GuildState {
             game_id: u32,
             actor: ContractAddress,
             command: CreateGuild,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            self.authorize(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.authorize(game_id, context.timestamp, context);
             assert!(command.name != 0, "guild name must be set");
             self.require_structure(game_id, actor, command.owned_structure_id);
             assert!(self.guild(game_id, actor).is_none(), "guild already exists");
@@ -81,9 +82,11 @@ pub mod GuildState {
             game_id: u32,
             actor: ContractAddress,
             command: JoinGuild,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            self.authorize(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.authorize(game_id, context.timestamp, context);
             self.require_structure(game_id, actor, command.owned_structure_id);
             let guild = self.guild(game_id, command.guild_id).expect('guild does not exist');
             assert!(
@@ -98,9 +101,14 @@ pub mod GuildState {
             self.attach_member(game_id, actor, command.guild_id);
         }
         fn leave_guild(
-            ref self: ComponentState<TContractState>, game_id: u32, actor: ContractAddress, context: ExecutionContext,
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            context: crate::commands::ActionContext,
         ) {
-            self.authorize(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.authorize(game_id, context.timestamp, context);
             assert!(self.data.guilds.members.read((game_id, actor)) != 0.try_into().unwrap(), "not a guild member");
             self.detach_member(game_id, actor);
         }
@@ -109,9 +117,11 @@ pub mod GuildState {
             game_id: u32,
             actor: ContractAddress,
             command: SetWhitelist,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            self.authorize(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.authorize(game_id, context.timestamp, context);
             self.guild(game_id, actor).expect('guild does not exist');
             self.require_structure(game_id, command.player, command.owned_structure_id);
             self.data.guilds.whitelist.write((game_id, actor, command.player), command.allowed);
@@ -127,9 +137,11 @@ pub mod GuildState {
             game_id: u32,
             actor: ContractAddress,
             member: ContractAddress,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            self.authorize(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.authorize(game_id, context.timestamp, context);
             assert!(self.data.guilds.members.read((game_id, member)) == actor, "not a member of this guild");
             self.detach_member(game_id, member);
         }
@@ -141,9 +153,13 @@ pub mod GuildState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        fn authorize(self: @ComponentState<TContractState>, game_id: u32, timestamp: u64) {
-            crate::commands::assert_context_time(timestamp);
-            crate::game::assert_playing(crate::logic::game::game(game_id), timestamp);
+        fn authorize(
+            self: @ComponentState<TContractState>,
+            game_id: u32,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) {
+            crate::game::assert_playing(game_context.game.unbox(), timestamp);
         }
         fn require_structure(
             self: @ComponentState<TContractState>, game_id: u32, player: ContractAddress, structure_id: u32,

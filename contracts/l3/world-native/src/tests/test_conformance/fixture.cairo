@@ -28,8 +28,8 @@ use snforge_std::{
 use starknet::account::Call;
 use starknet::{ContractAddress, ResourcesBounds, SyscallResultTrait};
 use world_native::commands::{
-    Command, CreateExplorer, Explore, ITroopCommandsDispatcher, ITroopCommandsDispatcherTrait,
-    ITroopCommandsSafeDispatcher, ITroopCommandsSafeDispatcherTrait, command_commitment,
+    Command, CreateExplorer, Explore, ICreateExplorerDispatcher, ICreateExplorerDispatcherTrait, IExploreSafeDispatcher,
+    IExploreSafeDispatcherTrait, command_commitment,
 };
 use world_native::game::{GameRegistry, IPointsDispatcher, IPointsDispatcherTrait};
 use world_native::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
@@ -140,6 +140,7 @@ pub fn setup() -> ContractAddress {
         resources: *declare("ResourcesLogic").unwrap().contract_class().class_hash,
         economy: *declare("EconomyLogic").unwrap().contract_class().class_hash,
         relics: *declare("RelicsLogic").unwrap().contract_class().class_hash,
+        movement: *declare("MovementLogic").unwrap().contract_class().class_hash,
         prizes: *declare("PrizesLogic").unwrap().contract_class().class_hash,
         registry: *declare("RegistryLogic").unwrap().contract_class().class_hash,
         combat: *declare("CombatLogic").unwrap().contract_class().class_hash,
@@ -263,20 +264,24 @@ fn provision_game(season: ContractAddress, actor: ContractAddress, administrator
             array![(26, 1000000000000), (35, 5000000000000), (36, 5000000000000), (38, 100000000000)].span(),
         );
     start_cheat_caller_address(season, season);
-    ITroopCommandsDispatcher { contract_address: season }
+    ICreateExplorerDispatcher { contract_address: season }
         .create_explorer(
             7,
             actor,
             CreateExplorer { structure_id: realm, category: 0, tier: 0, amount: 100000000000, direction: 0 },
-            world_native::commands::ExecutionContext { raw_root: 101, timestamp: 900 },
+            crate::commands::action_context(
+                world_native::commands::ExecutionContext {
+                    raw_root: 101, timestamp: 900, ..crate::tests::context(season, 7),
+                },
+            ),
         );
 }
 pub fn intent(address: ContractAddress) -> Intent {
     // Address 123 belongs to the pure context-boundary vectors, which deploy no contracts.
-    let rules = if address == 123.try_into().unwrap() {
+    let preset_commitment = if address == 123.try_into().unwrap() {
         789
     } else {
-        IRecordedExecutionViewsDispatcher { contract_address: address }.get_admission(7, 456).rules
+        IRecordedExecutionViewsDispatcher { contract_address: address }.get_admission(7, 456).preset_commitment
     };
     let command = Command::Explore(Explore { explorer_id: 2, direction: 0 });
     let mut arguments = array![];
@@ -288,7 +293,8 @@ pub fn intent(address: ContractAddress) -> Intent {
         actor: 456,
         nonce: 0,
         command: command_commitment(command),
-        rules,
+        release_id: 1,
+        preset_commitment,
         valid_from: 1000,
         valid_until: 1010,
         last_order: 10,
@@ -296,18 +302,12 @@ pub fn intent(address: ContractAddress) -> Intent {
     }
 }
 pub fn envelope(action: @Intent) -> Envelope {
-    let execution_config = if *action.deployment == 123 {
-        987
-    } else {
-        IRecordedExecutionViewsDispatcher { contract_address: (*action.deployment).try_into().unwrap() }
-            .get_admission(7, 456)
-            .execution_config
-    };
     Envelope {
         action: action_identity(action),
         order: 1,
         timestamp: 1005,
-        execution_config,
+        release_id: *action.release_id,
+        preset_commitment: *action.preset_commitment,
         epoch: 1,
         root: 0x8000000000000000000000000000000000000000000000000000000000000000,
     }
@@ -369,12 +369,16 @@ fn exploration_fixture_runs_the_real_domain() {
     let season = setup();
     let season = season;
     start_cheat_caller_address(season, season);
-    ITroopCommandsSafeDispatcher { contract_address: season }
+    IExploreSafeDispatcher { contract_address: season }
         .explore(
             7,
             456.try_into().unwrap(),
             Explore { explorer_id: 2, direction: 0 },
-            world_native::commands::ExecutionContext { raw_root: 1, timestamp: 1005 },
+            crate::commands::action_context(
+                world_native::commands::ExecutionContext {
+                    raw_root: 1, timestamp: 1005, ..crate::tests::context(season, 7),
+                },
+            ),
         )
         .unwrap_syscall();
 }

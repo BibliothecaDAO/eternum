@@ -1,5 +1,4 @@
 use starknet::ContractAddress;
-use crate::commands::ExecutionContext;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct MarketKey {
@@ -86,15 +85,31 @@ pub trait IBank<T> {
     #[cfg(test)]
     fn liquidity(self: @T, key: LiquidityKey) -> u128;
     fn create_banks(
-        ref self: T, game_id: u32, actor: ContractAddress, banks: Span<BankPlacement>, context: ExecutionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        banks: Span<BankPlacement>,
+        context: crate::commands::ActionContext,
     );
-    fn buy_from_bank(ref self: T, game_id: u32, actor: ContractAddress, command: Swap, context: ExecutionContext);
-    fn sell_to_bank(ref self: T, game_id: u32, actor: ContractAddress, command: Swap, context: ExecutionContext);
+    fn buy_from_bank(
+        ref self: T, game_id: u32, actor: ContractAddress, command: Swap, context: crate::commands::ActionContext,
+    );
+    fn sell_to_bank(
+        ref self: T, game_id: u32, actor: ContractAddress, command: Swap, context: crate::commands::ActionContext,
+    );
     fn add_bank_liquidity(
-        ref self: T, game_id: u32, actor: ContractAddress, command: AddLiquidity, context: ExecutionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: AddLiquidity,
+        context: crate::commands::ActionContext,
     );
     fn remove_bank_liquidity(
-        ref self: T, game_id: u32, actor: ContractAddress, command: RemoveLiquidity, context: ExecutionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: RemoveLiquidity,
+        context: crate::commands::ActionContext,
     );
 }
 #[starknet::interface]
@@ -105,6 +120,7 @@ pub trait IBankCreation<T> {
         owner: ContractAddress,
         coord: crate::troops::Coord,
         timestamp: u64,
+        game_context: crate::commands::ActionContext,
     );
 }
 

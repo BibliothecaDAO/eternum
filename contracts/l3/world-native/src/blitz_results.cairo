@@ -1,5 +1,4 @@
 use starknet::ContractAddress;
-use crate::commands::ExecutionContext;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct PlayerResult {
@@ -25,7 +24,11 @@ pub struct RecordBlitzResults {
 pub trait IBlitzResults<T> {
     fn blitz_result(self: @T, game_id: u32) -> BlitzResult;
     fn record_blitz_results(
-        ref self: T, game_id: u32, actor: ContractAddress, command: RecordBlitzResults, context: ExecutionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: RecordBlitzResults,
+        context: crate::commands::ActionContext,
     ) -> u64;
 }
 

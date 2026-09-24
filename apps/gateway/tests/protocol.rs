@@ -24,7 +24,7 @@ impl Fixture {
 #[test]
 fn canonical_cross_language_vectors() {
     let mut fixture = Fixture {
-        fields: include_str!("../../../contracts/l3/randomness-protocol/tests/fixtures/v5.txt")
+        fields: include_str!("../../../contracts/l3/randomness-protocol/tests/fixtures/v6.txt")
             .split_whitespace()
             .map(|field| Felt::from_hex(field).unwrap())
             .collect::<Vec<_>>()
@@ -92,7 +92,7 @@ fn rejects_noncanonical_bytes_and_framing() {
     let mut trailing = fields.clone();
     trailing.push(Felt::ZERO);
     assert!(Intent::decode(&trailing).is_err());
-    for index in [0, 1, 6, 9, 10, 11, 12] {
+    for index in [0, 1, 6, 8, 10, 11, 12, 13] {
         let mut malformed = fields.clone();
         malformed[index] = Felt::MAX;
         assert!(Intent::decode(&malformed).is_err());
@@ -116,7 +116,8 @@ fn rejects_invalid_envelopes_and_binds_execution_context() {
         action: sample_intent().identity().unwrap(),
         order: 1,
         timestamp: 2,
-        execution_config: Felt::ONE,
+        release_id: 1,
+        preset_commitment: Felt::ONE,
         epoch: 1,
         root: [255; 32],
     };
@@ -127,7 +128,7 @@ fn rejects_invalid_envelopes_and_binds_execution_context() {
     let mut trailing = fields.clone();
     trailing.push(Felt::ZERO);
     assert!(Envelope::decode(&trailing).is_err());
-    for index in [0, 1, 3, 4, 6, 7, 8] {
+    for index in [0, 1, 3, 4, 5, 7, 8, 9] {
         let mut malformed = fields.clone();
         malformed[index] = Felt::MAX;
         assert!(Envelope::decode(&malformed).is_err());
@@ -150,7 +151,8 @@ fn sample_intent() -> Intent {
         actor: Felt::TWO,
         nonce: 0,
         command: Felt::ONE,
-        rules: Felt::ONE,
+        release_id: 1,
+        preset_commitment: Felt::ONE,
         valid_from: 0,
         valid_until: 100,
         last_order: 100,

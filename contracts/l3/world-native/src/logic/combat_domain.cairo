@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod CombatLogic {
     use starknet::ContractAddress;
-    use crate::commands::{Battle, ExecutionContext};
+    use crate::commands::Battle;
 
     #[storage]
     struct Storage {
@@ -18,8 +18,14 @@ pub mod CombatLogic {
     #[abi(embed_v0)]
     impl GuardCombat of crate::guards::IGuardCombat<ContractState> {
         fn battle_guard(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, command: Battle, context: ExecutionContext,
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: Battle,
+            context: crate::commands::ActionContext,
         ) {
+            let context = crate::commands::load_context(game_id, context);
+
             crate::logic::combat::battle_guard(game_id, actor, command, context)
         }
     }
@@ -30,8 +36,10 @@ pub mod CombatLogic {
             game_id: u32,
             actor: ContractAddress,
             command: crate::combat_actions::AttackExplorer,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
+            let context = crate::commands::load_context(game_id, context);
+
             crate::logic::combat::battle(game_id, actor, command, context)
         }
         fn guard_attack(
@@ -39,8 +47,10 @@ pub mod CombatLogic {
             game_id: u32,
             actor: ContractAddress,
             command: crate::combat_actions::GuardAttack,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
+            let context = crate::commands::load_context(game_id, context);
+
             crate::logic::combat::guard_attack(game_id, actor, command, context)
         }
     }

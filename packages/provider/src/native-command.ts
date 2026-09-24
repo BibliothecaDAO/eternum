@@ -59,7 +59,7 @@ function encodeValue(type: string, value: unknown, types: Map<string, AbiType>):
   return value;
 }
 
-export function nativeTaggedHash(tag: string, fields: readonly BigNumberish[]): string {
+function nativeTaggedHash(tag: string, fields: readonly BigNumberish[]): string {
   return hash.computePoseidonHashOnElements([shortString.encodeShortString(tag), 1, ...fields]);
 }
 
@@ -69,7 +69,8 @@ export function frameNativeIntent(input: {
   gameId: BigNumberish;
   actor: BigNumberish;
   nonce: BigNumberish;
-  rules: BigNumberish;
+  releaseId: BigNumberish;
+  presetCommitment: BigNumberish;
   validFrom: BigNumberish;
   validUntil: BigNumberish;
   lastOrder: BigNumberish;
@@ -77,14 +78,15 @@ export function frameNativeIntent(input: {
 }): string[] {
   return [
     shortString.encodeShortString("ETERNUM_ACTION"),
-    1,
+    2,
     input.chain,
     input.deployment,
     input.gameId,
     input.actor,
     input.nonce,
     nativeTaggedHash("ETERNUM_COMMAND", input.arguments),
-    input.rules,
+    input.releaseId,
+    input.presetCommitment,
     input.validFrom,
     input.validUntil,
     input.lastOrder,

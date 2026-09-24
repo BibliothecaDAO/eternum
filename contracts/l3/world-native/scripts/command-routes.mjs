@@ -22,7 +22,7 @@ function compileRoute(route, artifacts, types, logic, feltLength) {
     ![3, 4].includes(inputs.length) ||
     inputs[0].type !== "core::integer::u32" ||
     inputs[1].type !== "core::starknet::contract_address::ContractAddress" ||
-    inputs.at(-1).type !== "world_native::commands::ExecutionContext"
+    inputs.at(-1).type !== "world_native::commands::ActionContext"
   )
     throw new Error(`Invalid command entrypoint signature ${route.entrypoint}`);
   const payload = inputs.length === 4 ? inputs[2].type : "()";

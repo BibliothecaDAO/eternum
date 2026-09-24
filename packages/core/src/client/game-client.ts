@@ -29,7 +29,7 @@ import { createHeraldGameSyncSession, type GameClientObserver } from "./herald-s
 import type { PlayerNameResolver } from "../utils/entities";
 import { createGameViews, type GameViews } from "./views";
 import { waitForTransactionOutcome } from "./transaction-outcome";
-import type { Shard } from "./shard";
+import { refreshShardRelease, type Shard } from "./shard";
 
 export interface GameClientSetup {
   store: NativeFactStore;
@@ -117,6 +117,7 @@ const startSync = async (
   setupResult: GameClientSetup,
   input: CreateGameClientInput,
 ): Promise<{ projection: WorldSpatialProjection; transport: HeraldGameSyncTransport }> => {
+  const release = followGameRelease(setupResult.store, input, runtime);
   const session = createHeraldGameSyncSession({
     actor: input.actor,
     baseUrl: input.shard.url,
@@ -131,12 +132,20 @@ const startSync = async (
     store: setupResult.store,
     socketFactory: input.socketFactory,
   });
-  session.onDispose = input.native.submitIntent.dispose;
+  session.onDispose = () => {
+    release.dispose();
+    input.native.submitIntent.dispose?.();
+  };
   await runtime.startSession(session);
+  await release.ready();
   // Herald's hello names the confirmed head before any row; a Herald yet to see one sends it on the stream.
   await confirmedChainTime(runtime);
-  setupResult.network.provider.setNativeSubmission(
-    nativeSubmission(input.native, setupResult.store, input.gameId, input.shard.worldAddress, async (actor) => {
+  const submit = nativeSubmission(
+    { ...input.native, refreshRelease: release.refresh },
+    setupResult.store,
+    input.gameId,
+    input.shard.worldAddress,
+    async (actor) => {
       session.transport.selectActor(actor);
       await waitForWorldState(
         { runtime },
@@ -144,7 +153,13 @@ const startSync = async (
         10_000,
         () => "Gameplay nonce from Herald",
       );
-    }),
+    },
+  );
+  setupResult.network.provider.setNativeSubmission(
+    async (actor, calls) => {
+      await release.ready();
+      return submit(actor, calls);
+    },
     input.native.bindings.commandAbi,
     (actor) => {
       let owned: number | undefined;
@@ -156,6 +171,65 @@ const startSync = async (
   );
   routeTransactionWaitsThroughStream(setupResult, runtime);
   return { projection: installWorldSpatialProjection(runtime, setupResult), transport: session.transport };
+};
+
+/** Each observed game pin must have a decoder before another command can be signed. */
+const followGameRelease = (store: NativeFactStore, input: CreateGameClientInput, runtime: GameSyncRuntime) => {
+  let pending = Promise.resolve();
+  let disposed = false;
+  const reload = (): Promise<void> => {
+    const releaseId = String(store.require("GameRelease", { game_id: input.gameId }).release_id);
+    pending = pending.then(async () => {
+      if (disposed) return;
+      const shard = await refreshShardRelease(input.shard.url, releaseId, input.native.bindings.schemaIdentity);
+      if (!disposed) Object.assign(input.shard, shard);
+    });
+    pending.catch((error: unknown) => {
+      if (disposed) return;
+      input.observer?.onLiveApplyFailed?.(error instanceof Error ? error : new Error(String(error)));
+      disposeRuntime(runtime);
+    });
+    return pending;
+  };
+  const ready = async (): Promise<void> => {
+    let observed: Promise<void>;
+    do {
+      observed = pending;
+      await observed;
+    } while (observed !== pending);
+  };
+  const refresh = async (previousRelease: number): Promise<void> => {
+    await waitForWorldState(
+      { runtime },
+      () => {
+        const release = store.get("GameRelease", { game_id: input.gameId });
+        return !!release && release.release_id !== previousRelease;
+      },
+      10_000,
+      () => "Updated game release from Herald",
+    );
+    await reload();
+    await ready();
+  };
+  const unsubscribe = store.subscribe((changes) => {
+    if (
+      changes.some(
+        (change) =>
+          change.model === "GameRelease" &&
+          change.current?.game_id === input.gameId &&
+          change.current.release_id !== change.previous?.release_id,
+      )
+    )
+      void reload();
+  });
+  return {
+    refresh,
+    ready,
+    dispose: () => {
+      disposed = true;
+      unsubscribe();
+    },
+  };
 };
 
 const CONFIRMED_HEAD_TIMEOUT_MS = 30_000;

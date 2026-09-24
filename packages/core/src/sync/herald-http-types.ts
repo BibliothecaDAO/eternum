@@ -72,6 +72,7 @@ export interface ShardManifest {
   chainId: string;
   releaseId: string;
   schemaHash: string;
+  releaseSchemas: Record<string, string>;
   rpcUrl: string;
   admissionUrl: string;
   accountClassHash: string;

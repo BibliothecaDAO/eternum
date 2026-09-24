@@ -100,14 +100,15 @@ async function buildAdminIntent(input: AdminCommandInput, season: string) {
     ),
   ]);
   if (admission.length !== 5) throw new Error("Unexpected native admission view");
-  const [rules, , nonce, , timestamp] = admission;
+  const [releaseId, presetCommitment, nonce, , timestamp] = admission;
   const intent = frameNativeIntent({
     chain,
     deployment: season,
     gameId: input.gameId,
     actor: input.accountAddress,
     nonce,
-    rules,
+    releaseId,
+    presetCommitment,
     validFrom: 0,
     validUntil: BigInt(timestamp) + 300n,
     lastOrder: 0xffffffffffffffffn,

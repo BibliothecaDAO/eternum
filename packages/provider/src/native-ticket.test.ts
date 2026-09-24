@@ -52,7 +52,7 @@ vi.mock("starknet", async (original) => ({
 }));
 
 const vector = readFileSync(
-  new URL("../../../contracts/l3/randomness-protocol/tests/fixtures/v5.txt", import.meta.url),
+  new URL("../../../contracts/l3/randomness-protocol/tests/fixtures/v6.txt", import.meta.url),
   "utf8",
 )
   .trim()
@@ -101,6 +101,28 @@ describe("node action subscriptions", () => {
       nonce_consumed: true,
     });
     await expect(pending).resolves.toEqual({ transaction_hash: "0x99", order: 7n });
+  });
+
+  it("names a stale release without consuming or hiding its refusal", async () => {
+    const pending = transport()(signed);
+    connected();
+    status({
+      status: "recorded",
+      order: 7,
+      transaction_hash: "0x99",
+      succeeded: false,
+      status_class: "0x5354414c455f52454c45415345",
+      nonce_consumed: false,
+      reason: "STALE_RELEASE",
+    });
+    await expect(pending).rejects.toMatchObject({ name: "StaleGameReleaseError" });
+  });
+
+  it("preserves a stale release from admission before any ticket is assigned", async () => {
+    const pending = transport()(signed);
+    channels[0].open();
+    channels[0].message({ id: 0, error: { code: -32001, message: "STALE_RELEASE" } });
+    await expect(pending).rejects.toMatchObject({ name: "StaleGameReleaseError" });
   });
 
   it("holds a ticket for 30 s with no timeout and no poll", async () => {

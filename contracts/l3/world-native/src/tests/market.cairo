@@ -37,7 +37,13 @@ fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
     bank.configure_banks(3, BankRules { lp_fee_num: 3, lp_fee_denom: 1000, owner_fee_num: 1, owner_fee_denom: 100 });
     start_cheat_block_timestamp_global(30);
     start_cheat_caller_address(deployment.games, deployment.games);
-    bank.create_banks(3, super::authority(), banks(), ExecutionContext { timestamp: 30, ..super::context() });
+    bank
+        .create_banks(
+            3,
+            super::authority(),
+            banks(),
+            crate::commands::action_context(ExecutionContext { timestamp: 30, ..super::context(deployment.games, 3) }),
+        );
     stop_cheat_caller_address(deployment.games);
     for key in array![source, other] {
         for resource in array![2, 26, 37, 25] {
@@ -301,17 +307,21 @@ fn bank_creation_and_configuration_reject_players_repeats_and_partial_batches() 
     let (deployment, _, _) = setup();
     let safe = IBankSafeDispatcher { contract_address: deployment.games };
     start_cheat_caller_address(deployment.games, deployment.actor);
-    let context = ExecutionContext { timestamp: 30, ..super::context() };
-    assert!(safe.create_banks(3, super::authority(), banks(), context).is_err());
+    let context = ExecutionContext { timestamp: 30, ..super::context(deployment.games, 3) };
+    assert!(safe.create_banks(3, super::authority(), banks(), crate::commands::action_context(context)).is_err());
     assert!(
         safe
             .configure_banks(2, BankRules { lp_fee_num: 0, lp_fee_denom: 1, owner_fee_num: 0, owner_fee_denom: 1 })
             .is_err(),
     );
     start_cheat_caller_address(deployment.games, deployment.games);
-    assert!(safe.create_banks(3, deployment.actor, banks(), context).is_err());
-    assert!(safe.create_banks(3, super::authority(), banks().slice(0, 5), context).is_err());
-    assert!(safe.create_banks(3, super::authority(), banks(), context).is_err());
+    assert!(safe.create_banks(3, deployment.actor, banks(), crate::commands::action_context(context)).is_err());
+    assert!(
+        safe
+            .create_banks(3, super::authority(), banks().slice(0, 5), crate::commands::action_context(context))
+            .is_err(),
+    );
+    assert!(safe.create_banks(3, super::authority(), banks(), crate::commands::action_context(context)).is_err());
     start_cheat_caller_address(deployment.games, super::authority());
     assert!(
         safe

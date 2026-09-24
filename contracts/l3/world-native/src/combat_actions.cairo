@@ -61,14 +61,14 @@ pub trait IBattles<T> {
         game_id: u32,
         actor: starknet::ContractAddress,
         command: crate::combat_actions::AttackExplorer,
-        context: crate::commands::ExecutionContext,
+        context: crate::commands::ActionContext,
     );
     fn guard_attack(
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
         command: crate::combat_actions::GuardAttack,
-        context: crate::commands::ExecutionContext,
+        context: crate::commands::ActionContext,
     );
 }
 #[starknet::interface]
@@ -78,7 +78,7 @@ pub trait IRaids<T> {
         game_id: u32,
         actor: starknet::ContractAddress,
         command: crate::combat_actions::Raid,
-        context: crate::commands::ExecutionContext,
+        context: crate::commands::ActionContext,
     );
     fn village_last_raided(self: @T, key: crate::resources::ResourceKey) -> u64;
 }

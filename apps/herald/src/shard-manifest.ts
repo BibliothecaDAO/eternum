@@ -23,6 +23,7 @@ export function buildShardManifest(document: ShardDocument, endpoints: ShardEndp
     version: 1,
     chainId: shard.chainId,
     releaseId: String(document.native.releaseId),
+    releaseSchemas: { [document.native.releaseId]: release },
     schemaHash: release,
     rpcUrl: endpoints.rpcUrl,
     admissionUrl: endpoints.admissionUrl,

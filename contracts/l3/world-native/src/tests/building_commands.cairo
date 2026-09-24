@@ -432,7 +432,19 @@ fn board_neighbors_change_production_capacity_and_population_and_demolition_refu
     }
     super::resource_commands::grant(deployment, home, 23, 10000);
     start_cheat_caller_address(deployment.games, deployment.games);
-    resources.start_production(home, 23, 10, 0xffffffffffffffffffffffffffffffff, 40);
+    resources
+        .start_production(
+            home,
+            23,
+            10,
+            0xffffffffffffffffffffffffffffffff,
+            40,
+            crate::commands::resource_context(
+                crate::commands::ExecutionContext {
+                    timestamp: 40, ..crate::tests::context(deployment.games, (home).game_id),
+                },
+            ),
+        );
     stop_cheat_caller_address(deployment.games);
     let capacity = resources.resource_weight(home).capacity;
     let labor = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 23 };
@@ -610,10 +622,16 @@ fn unlimited_training_consumes_its_simple_recipe_and_waits_for_farm_wheat_withou
     let troop = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 26 };
     let wheat = ResourceSlot { resource_type: 35, ..troop };
     start_cheat_caller_address(deployment.games, deployment.games);
-    resources.spend_resource(home, 26, 0, 50);
+    resources
+        .spend_resource(
+            home, 26, 0, 50, crate::commands::resource_context(super::context(deployment.games, home.game_id)),
+        );
     assert_eq!(resources.resource_balance(troop), 2);
     assert_eq!(resources.resource_balance(wheat), 0);
-    resources.spend_resource(home, 26, 0, 60);
+    resources
+        .spend_resource(
+            home, 26, 0, 60, crate::commands::resource_context(super::context(deployment.games, home.game_id)),
+        );
     assert_eq!(resources.resource_balance(troop), 2);
     assert_eq!(resources.resource_production(troop).production_rate, 2);
     assert_eq!(resources.resource_production(troop).output_amount_left, crate::resources::UNLIMITED_OUTPUT);
@@ -631,16 +649,36 @@ fn unlimited_training_consumes_its_simple_recipe_and_waits_for_farm_wheat_withou
         ),
     );
     start_cheat_caller_address(deployment.games, deployment.games);
-    resources.spend_resource(home, 26, 0, 75);
+    resources
+        .spend_resource(
+            home, 26, 0, 75, crate::commands::resource_context(super::context(deployment.games, home.game_id)),
+        );
     assert_eq!(resources.resource_balance(troop), 7);
     assert_eq!(resources.resource_balance(wheat), 0);
     // A new wheat grant cannot pay for training during the preceding starvation interval.
-    resources.grant_resource(home, 35, 10, 80);
+    resources
+        .grant_resource(
+            home,
+            35,
+            10,
+            80,
+            crate::commands::resource_context(
+                crate::commands::ExecutionContext {
+                    timestamp: 80, ..crate::tests::context(deployment.games, (home).game_id),
+                },
+            ),
+        );
     assert_eq!(resources.resource_balance(troop), 12);
     assert_eq!(resources.resource_balance(wheat), 10);
-    resources.spend_resource(home, 26, 0, 80);
+    resources
+        .spend_resource(
+            home, 26, 0, 80, crate::commands::resource_context(super::context(deployment.games, home.game_id)),
+        );
     assert_eq!(resources.resource_balance(troop), 12);
-    resources.spend_resource(home, 26, 0, 81);
+    resources
+        .spend_resource(
+            home, 26, 0, 81, crate::commands::resource_context(super::context(deployment.games, home.game_id)),
+        );
     assert_eq!(resources.resource_balance(troop), 14);
     assert_eq!(resources.resource_balance(wheat), 8);
     assert_eq!(resources.resource_production(troop).output_amount_left, crate::resources::UNLIMITED_OUTPUT);

@@ -1012,6 +1012,15 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       struct("expeditions::DepthRules"),
     ),
+    model(
+      "GameRelease",
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [
+        { name: "release_id", type: "core::integer::u32" },
+        { name: "preset_commitment", type: "core::felt252" },
+      ],
+    ),
     model("GameRegistry", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("game::GameRegistry")),
     model("SliceRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("rules::SliceRules")),
     model(
@@ -1300,6 +1309,7 @@ export const syncScopes = {
       "UpgradeRecipe",
       "DepthRules",
       "GameRegistry",
+      "GameRelease",
       "SliceRules",
       "EntitySequence",
       "PointsTotal",

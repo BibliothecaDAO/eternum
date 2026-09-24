@@ -28,12 +28,12 @@ pub(crate) struct RecordedTicket {
 
 impl RecordedTicket {
     pub fn take_calldata(fields: &mut &[Felt]) -> anyhow::Result<Self> {
-        let arguments: usize = (*fields.get(10).ok_or_else(|| anyhow::anyhow!("truncated intent"))?).try_into()?;
+        let arguments: usize = (*fields.get(11).ok_or_else(|| anyhow::anyhow!("truncated intent"))?).try_into()?;
         anyhow::ensure!(arguments <= crate::protocol::MAX_ARGUMENTS, "too many intent arguments");
-        let intent_len = 11 + arguments;
+        let intent_len = 12 + arguments;
         let envelope_len: usize =
             (*fields.get(intent_len).ok_or_else(|| anyhow::anyhow!("truncated context"))?).try_into()?;
-        anyhow::ensure!(envelope_len == 9, "invalid context length");
+        anyhow::ensure!(envelope_len == 10, "invalid context length");
         let signature_at = intent_len + 1 + envelope_len;
         let signature_len: usize =
             (*fields.get(signature_at).ok_or_else(|| anyhow::anyhow!("truncated signature"))?).try_into()?;
@@ -42,6 +42,10 @@ impl RecordedTicket {
         let intent = Intent::from_calldata(&fields[..intent_len])?;
         let envelope = Envelope::decode(&fields[intent_len + 1..signature_at])?;
         anyhow::ensure!(envelope.action == intent.identity()?, "recorded action commitment mismatch");
+        anyhow::ensure!(
+            envelope.release_id == intent.release_id && envelope.preset_commitment == intent.preset_commitment,
+            "recorded release commitment mismatch"
+        );
         let result = Self { intent, envelope, signature: fields[signature_at + 1..total].to_vec() };
         *fields = &fields[total..];
         Ok(result)
@@ -117,7 +121,8 @@ mod tests {
                 actor: Felt::ONE,
                 nonce: 0,
                 command: Felt::ONE,
-                rules: Felt::ONE,
+                release_id: 1,
+                preset_commitment: Felt::ONE,
                 valid_from: vector[2],
                 valid_until: vector[3],
                 last_order: vector[5],

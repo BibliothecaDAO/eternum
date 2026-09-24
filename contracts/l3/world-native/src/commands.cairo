@@ -1,6 +1,7 @@
 #[cfg(test)]
 use core::poseidon::poseidon_hash_span;
 use starknet::ContractAddress;
+use starknet::storage::StorageMapReadAccess;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct CreateExplorer {
@@ -51,10 +52,88 @@ pub struct BatchProgress {
 #[cfg(test)]
 pub use crate::command_routes::Command;
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+#[derive(Copy, Drop, Debug)]
 pub struct ExecutionContext {
     pub raw_root: u256,
     pub timestamp: u64,
+    pub game: Box<crate::game::GameRegistry>,
+    pub rules: Box<crate::rules::SliceRules>,
+}
+
+#[cfg(test)]
+impl ExecutionContextSerde of Serde<ExecutionContext> {
+    fn serialize(self: @ExecutionContext, ref output: Array<felt252>) {
+        self.raw_root.serialize(ref output);
+        self.timestamp.serialize(ref output);
+        self.game.unbox().serialize(ref output);
+        self.rules.unbox().serialize(ref output);
+    }
+
+    fn deserialize(ref serialized: Span<felt252>) -> Option<ExecutionContext> {
+        Some(
+            ExecutionContext {
+                raw_root: Serde::deserialize(ref serialized)?,
+                timestamp: Serde::deserialize(ref serialized)?,
+                game: BoxTrait::new(Serde::deserialize(ref serialized)?),
+                rules: BoxTrait::new(Serde::deserialize(ref serialized)?),
+            },
+        )
+    }
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ActionContext {
+    pub raw_root: u256,
+    pub timestamp: u64,
+}
+
+pub fn action_context(context: ExecutionContext) -> ActionContext {
+    ActionContext { raw_root: context.raw_root, timestamp: context.timestamp }
+}
+
+pub fn load_context(game_id: u32, context: ActionContext) -> ExecutionContext {
+    ExecutionContext {
+        raw_root: context.raw_root,
+        timestamp: context.timestamp,
+        game: BoxTrait::new(crate::logic::game::game(game_id)),
+        rules: BoxTrait::new(crate::state::read().games.rules.read(game_id)),
+    }
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ResourceContext {
+    pub production_start: u32,
+    pub troop_capacity: u32,
+    pub spire_fee: u128,
+    pub delivery_tick: u64,
+}
+
+pub fn resource_context(context: ExecutionContext) -> ResourceContext {
+    ResourceContext {
+        production_start: if crate::rules::rule_enabled(context.rules.unbox(), crate::rules::PRODUCTION_START) {
+            context.game.unbox().start_main_at.try_into().unwrap()
+        } else {
+            0
+        },
+        troop_capacity: context.rules.unbox().capacity_config.troop_capacity,
+        spire_fee: context.rules.unbox().spire_travel_essence_cost,
+        delivery_tick: context.rules.unbox().tick_config.delivery_tick_in_seconds,
+    }
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct BiomeContext {
+    pub climate: crate::rules::BiomeClimateConfig,
+    pub epoch_seconds: u32,
+    pub start_main_at: u64,
+}
+
+pub fn biome_context(context: ExecutionContext) -> BiomeContext {
+    BiomeContext {
+        climate: context.rules.unbox().biome_climate_config,
+        epoch_seconds: context.rules.unbox().epoch_seconds,
+        start_main_at: context.game.unbox().start_main_at,
+    }
 }
 
 // Cairo Serde encodes the variant index followed by its typed fields.
@@ -96,11 +175,21 @@ pub fn assert_unique_entity_ids(ids: Span<u32>) {
 }
 
 #[starknet::interface]
-pub trait ITroopCommands<T> {
+pub trait ICreateExplorer<T> {
     fn create_explorer(
-        ref self: T, game_id: u32, actor: ContractAddress, command: CreateExplorer, context: ExecutionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: CreateExplorer,
+        context: crate::commands::ActionContext,
     );
-    fn explore(ref self: T, game_id: u32, actor: ContractAddress, command: Explore, context: ExecutionContext);
+}
+
+#[starknet::interface]
+pub trait IExplore<T> {
+    fn explore(
+        ref self: T, game_id: u32, actor: ContractAddress, command: Explore, context: crate::commands::ActionContext,
+    );
 }
 
 #[starknet::interface]
@@ -110,57 +199,58 @@ pub trait IResourceCommands<T> {
         game_id: u32,
         actor: ContractAddress,
         command: crate::resources::ResourceTransfer,
-        context: ExecutionContext,
+        context: crate::commands::ActionContext,
     );
     fn transfer_explorer_resources_to_structure(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: crate::resources::ResourceTransfer,
-        context: ExecutionContext,
+        context: crate::commands::ActionContext,
     );
     fn offload_arrival(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: crate::arrivals::OffloadArrival,
-        context: ExecutionContext,
+        context: crate::commands::ActionContext,
     );
     fn burn_structure_resources(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: crate::resources::ResourceBurn,
-        context: ExecutionContext,
+        context: crate::commands::ActionContext,
     );
     fn transfer_explorer_resources(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: crate::resources::ResourceTransfer,
-        context: ExecutionContext,
+        context: crate::commands::ActionContext,
     );
     fn transfer_structure_resources_to_explorer(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: crate::resources::ResourceTransfer,
-        context: ExecutionContext,
+        context: crate::commands::ActionContext,
     );
 }
 
 #[starknet::interface]
 pub trait ITravelCommands<T> {
-    fn enter_depth(ref self: T, game_id: u32, actor: ContractAddress, command: EnterDepth, context: ExecutionContext);
-    fn move_explorer(ref self: T, game_id: u32, actor: ContractAddress, command: Move, context: ExecutionContext);
-    fn toggle_alternate(
-        ref self: T, game_id: u32, actor: ContractAddress, command: ToggleAlternate, context: ExecutionContext,
+    fn enter_depth(
+        ref self: T, game_id: u32, actor: ContractAddress, command: EnterDepth, context: crate::commands::ActionContext,
     );
-}
-
-pub fn assert_context_time(timestamp: u64) {
-    assert!(
-        eternum_randomness_protocol::entrypoint::timestamp_in_bounds(timestamp, starknet::get_block_timestamp()),
-        "execution timestamp is in the future",
+    fn move_explorer(
+        ref self: T, game_id: u32, actor: ContractAddress, command: Move, context: crate::commands::ActionContext,
+    );
+    fn toggle_alternate(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: ToggleAlternate,
+        context: crate::commands::ActionContext,
     );
 }

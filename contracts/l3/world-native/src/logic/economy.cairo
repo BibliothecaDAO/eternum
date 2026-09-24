@@ -72,12 +72,14 @@ pub mod EconomyLogic {
             game_id: u32,
             actor: ContractAddress,
             command: CreateOrder,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            self.assert_command(game_id, context.timestamp, false);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.assert_command(game_id, context.timestamp, false, context);
             self.validate_offer(game_id, actor, command, context.timestamp);
             let order = crate::trade::new_order(command);
-            self.reserve_offer(game_id, order, context.timestamp);
+            self.reserve_offer(game_id, order, context.timestamp, context);
             let trade_id = crate::logic::game::allocate_entity(game_id);
             self.trades.create(TradeKey { game_id, trade_id }, order);
             self
@@ -95,9 +97,11 @@ pub mod EconomyLogic {
             game_id: u32,
             actor: ContractAddress,
             command: AcceptOrder,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            self.assert_command(game_id, context.timestamp, false);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.assert_command(game_id, context.timestamp, false, context);
             let key = TradeKey { game_id, trade_id: command.trade_id };
             let order = self.trades.order(key).expect('trade does not exist');
             let taker = self.owned_structure(game_id, command.taker_id, actor);
@@ -106,19 +110,25 @@ pub mod EconomyLogic {
             assert!(order.taker_id == 0 || order.taker_id == command.taker_id, "not the taker");
             assert!(command.lots != 0 && command.lots <= order.remaining_lots, "invalid purchase count");
             assert!(!maker.base.alt && !taker.base.alt, "transportation only allowed on surface");
-            let fill = self.settle_fill(game_id, order, command, maker, taker, context.timestamp);
+            let fill = self.settle_fill(game_id, order, command, maker, taker, context.timestamp, context);
             self.trades.fill(key, order, command.lots);
             self.emit_story(game_id, command.taker_id, actor, Story::TradeAccepted(fill), context.timestamp);
         }
 
         fn cancel_trade_order(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, trade_id: u32, context: ExecutionContext,
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            trade_id: u32,
+            context: crate::commands::ActionContext,
         ) {
-            self.assert_command(game_id, context.timestamp, true);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.assert_command(game_id, context.timestamp, true, context);
             let key = TradeKey { game_id, trade_id };
             let order = self.trades.order(key).expect('trade does not exist');
             self.owned_structure(game_id, order.maker_id, actor);
-            self.refund_offer(game_id, order, context.timestamp);
+            self.refund_offer(game_id, order, context.timestamp, context);
             self.trades.remove(key, order);
             self.emit_story(game_id, order.maker_id, actor, Story::TradeCancelled(trade_id), context.timestamp);
         }
@@ -150,8 +160,10 @@ pub mod EconomyLogic {
             game_id: u32,
             actor: ContractAddress,
             banks: Span<BankPlacement>,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
+            let context = crate::commands::load_context(game_id, context);
+
             self.assert_economy_submission(game_id, context.timestamp);
             assert!(actor == self.release.authority(), "only domain authority");
             assert!(banks.len() == 6, "six regional banks required");
@@ -159,18 +171,30 @@ pub mod EconomyLogic {
                 let bank = *banks.at(index);
                 let key = ResourceKey { game_id, entity_id: 0xfffffffe - index };
                 IBankCreationLibraryDispatcher { class_hash: self.release.classes(game_id).structures.read() }
-                    .create_bank(key, actor, bank.coord, context.timestamp);
+                    .create_bank(key, actor, bank.coord, context.timestamp, crate::commands::action_context(context));
                 self.markets.name_bank(key, bank.name);
             }
         }
         fn buy_from_bank(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, command: Swap, context: ExecutionContext,
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: Swap,
+            context: crate::commands::ActionContext,
         ) {
+            let context = crate::commands::load_context(game_id, context);
+
             self.execute_swap(game_id, actor, command, context, true);
         }
         fn sell_to_bank(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, command: Swap, context: ExecutionContext,
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: Swap,
+            context: crate::commands::ActionContext,
         ) {
+            let context = crate::commands::load_context(game_id, context);
+
             self.execute_swap(game_id, actor, command, context, false);
         }
         fn add_bank_liquidity(
@@ -178,11 +202,13 @@ pub mod EconomyLogic {
             game_id: u32,
             actor: ContractAddress,
             command: AddLiquidity,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
+            let context = crate::commands::load_context(game_id, context);
+
             self.assert_economy_submission(game_id, context.timestamp);
             if actor != self.release.authority() {
-                assert_playing(crate::logic::game::game(game_id), context.timestamp);
+                assert_playing(context.game.unbox(), context.timestamp);
             }
             let player = self.owned_structure(game_id, command.structure_id, actor);
             self.bank_structure(game_id, command.bank_id);
@@ -193,8 +219,24 @@ pub mod EconomyLogic {
                 market, command.lords_amount, command.resource_amount,
             );
             let source = ResourceKey { game_id, entity_id: command.structure_id };
-            self.resources(game_id).spend_resource(source, command.resource_type, resource, context.timestamp);
-            self.resources(game_id).spend_resource(source, crate::resources::LORDS, lords, context.timestamp);
+            self
+                .resources(game_id)
+                .spend_resource(
+                    source,
+                    command.resource_type,
+                    resource,
+                    context.timestamp,
+                    crate::commands::resource_context(context),
+                );
+            self
+                .resources(game_id)
+                .spend_resource(
+                    source,
+                    crate::resources::LORDS,
+                    lords,
+                    context.timestamp,
+                    crate::commands::resource_context(context),
+                );
             market.lords += lords;
             market.resource += resource;
             market.shares += shares;
@@ -221,9 +263,11 @@ pub mod EconomyLogic {
             game_id: u32,
             actor: ContractAddress,
             command: RemoveLiquidity,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            self.assert_command(game_id, context.timestamp, true);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.assert_command(game_id, context.timestamp, true, context);
             let bank = self.bank_structure(game_id, command.bank_id);
             assert!(command.resource_type != crate::resources::LORDS, "resource type cannot be lords");
             let key = MarketKey { game_id, resource_type: command.resource_type };
@@ -242,13 +286,25 @@ pub mod EconomyLogic {
                     class_hash: self.release.classes(game_id).bridge.read(),
                 }
                     .withdraw_bank_resources(
-                        game_id, actor, command.bank_id, command.resource_type, resource, context.timestamp,
+                        game_id,
+                        actor,
+                        command.bank_id,
+                        command.resource_type,
+                        resource,
+                        context.timestamp,
+                        crate::commands::action_context(context),
                     );
                 crate::bridge::IBankWithdrawalLibraryDispatcher {
                     class_hash: self.release.classes(game_id).bridge.read(),
                 }
                     .withdraw_bank_resources(
-                        game_id, actor, command.bank_id, crate::resources::LORDS, lords, context.timestamp,
+                        game_id,
+                        actor,
+                        command.bank_id,
+                        crate::resources::LORDS,
+                        lords,
+                        context.timestamp,
+                        crate::commands::action_context(context),
                     );
             } else {
                 let player = self.owned_structure(game_id, command.structure_id, actor);
@@ -266,6 +322,7 @@ pub mod EconomyLogic {
                         ]
                             .span(),
                         context.timestamp,
+                        context,
                     );
             }
             self
@@ -294,7 +351,7 @@ pub mod EconomyLogic {
             context: ExecutionContext,
             buy: bool,
         ) {
-            self.assert_command(game_id, context.timestamp, false);
+            self.assert_command(game_id, context.timestamp, false, context);
             let player = self.owned_structure(game_id, command.structure_id, actor);
             let bank = self.bank_structure(game_id, command.bank_id);
             let key = MarketKey { game_id, resource_type: command.resource_type };
@@ -318,6 +375,7 @@ pub mod EconomyLogic {
                     input_resource,
                     quote.input,
                     context.timestamp,
+                    crate::commands::resource_context(context),
                 );
             self
                 .resources(game_id)
@@ -326,6 +384,7 @@ pub mod EconomyLogic {
                     crate::resources::LORDS,
                     quote.owner_fee,
                     context.timestamp,
+                    crate::commands::resource_context(context),
                 );
             self.markets.write_market(key, quote.market);
             self
@@ -337,6 +396,7 @@ pub mod EconomyLogic {
                     player,
                     array![ResourceAmount { resource_type: output_resource, amount: quote.output }].span(),
                     context.timestamp,
+                    context,
                 );
             let lords = if buy {
                 quote.input - quote.owner_fee
@@ -348,9 +408,7 @@ pub mod EconomyLogic {
                     game_id, actor, command, quote.market, lords, quote.owner_fee, quote.lp_fee, buy, context.timestamp,
                 );
         }
-        fn assert_economy_submission(self: @ContractState, game_id: u32, timestamp: u64) {
-            crate::commands::assert_context_time(timestamp);
-        }
+        fn assert_economy_submission(self: @ContractState, game_id: u32, timestamp: u64) {}
         fn bank_structure(self: @ContractState, game_id: u32, bank_id: u32) -> Structure {
             let bank = self.structure(game_id, bank_id);
             assert!(bank.base.category == 3, "structure is not a bank");
@@ -372,8 +430,9 @@ pub mod EconomyLogic {
             player: Structure,
             resources: Span<ResourceAmount>,
             timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) {
-            let rules = crate::logic::game::rules(game_id);
+            let rules = game_context.rules.unbox();
             let travel_time = crate::transport::travel_time(
                 structure_coord(bank.base), structure_coord(player.base), resources, rules.speed_config, true,
             );
@@ -390,12 +449,16 @@ pub mod EconomyLogic {
                     crate::transport::DONKEY,
                     crate::transport::donkeys_needed(weight, rules.capacity_config.donkey_capacity.into()),
                     timestamp,
+                    crate::commands::resource_context(game_context),
                 );
             let delivery = IEconomyDeliveryLibraryDispatcher {
                 class_hash: self.release.classes(game_id).resources.read(),
             };
             for resource in resources {
-                delivery.queue_economy_delivery(key, *resource, travel_time, timestamp);
+                delivery
+                    .queue_economy_delivery(
+                        key, *resource, travel_time, timestamp, crate::commands::resource_context(game_context),
+                    );
             }
             let story = Story::ResourceTransferStory(
                 crate::ownership::ResourceTransferStory {
@@ -481,32 +544,52 @@ pub mod EconomyLogic {
                     timestamp,
                 );
         }
-        fn reserve_offer(self: @ContractState, game_id: u32, order: TradeOrder, timestamp: u64) {
+        fn reserve_offer(
+            self: @ContractState,
+            game_id: u32,
+            order: TradeOrder,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) {
             let key = ResourceKey { game_id, entity_id: order.maker_id };
             let resources = self.resources(game_id);
             let offered: u128 = order.offered_per_lot.into() * order.remaining_lots.into();
             let requested: u128 = order.requested_per_lot.into() * order.remaining_lots.into();
-            resources.spend_resource(key, order.offered_resource, offered, timestamp);
+            resources
+                .spend_resource(
+                    key, order.offered_resource, offered, timestamp, crate::commands::resource_context(game_context),
+                );
             resources
                 .spend_resource(
                     key,
                     crate::transport::DONKEY,
-                    self.shipping_donkeys(game_id, order.requested_resource, requested),
+                    self.shipping_donkeys(game_id, order.requested_resource, requested, game_context),
                     timestamp,
+                    crate::commands::resource_context(game_context),
                 );
         }
-        fn refund_offer(self: @ContractState, game_id: u32, order: TradeOrder, timestamp: u64) {
+        fn refund_offer(
+            self: @ContractState,
+            game_id: u32,
+            order: TradeOrder,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) {
             let key = ResourceKey { game_id, entity_id: order.maker_id };
             let resources = self.resources(game_id);
             let offered: u128 = order.offered_per_lot.into() * order.remaining_lots.into();
             let requested: u128 = order.requested_per_lot.into() * order.remaining_lots.into();
-            resources.grant_resource(key, order.offered_resource, offered, timestamp);
+            resources
+                .grant_resource(
+                    key, order.offered_resource, offered, timestamp, crate::commands::resource_context(game_context),
+                );
             resources
                 .grant_resource(
                     key,
                     crate::transport::DONKEY,
-                    self.shipping_donkeys(game_id, order.requested_resource, requested),
+                    self.shipping_donkeys(game_id, order.requested_resource, requested, game_context),
                     timestamp,
+                    crate::commands::resource_context(game_context),
                 );
         }
         fn settle_fill(
@@ -517,6 +600,7 @@ pub mod EconomyLogic {
             maker: Structure,
             taker: Structure,
             timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) -> TradeFill {
             let offered: u128 = order.offered_per_lot.into() * command.lots.into();
             let requested: u128 = order.requested_per_lot.into() * command.lots.into();
@@ -526,10 +610,18 @@ pub mod EconomyLogic {
                 .spend_resource(
                     taker_key,
                     crate::transport::DONKEY,
-                    self.shipping_donkeys(game_id, order.offered_resource, offered),
+                    self.shipping_donkeys(game_id, order.offered_resource, offered, game_context),
                     timestamp,
+                    crate::commands::resource_context(game_context),
                 );
-            resources.spend_resource(taker_key, order.requested_resource, requested, timestamp);
+            resources
+                .spend_resource(
+                    taker_key,
+                    order.requested_resource,
+                    requested,
+                    timestamp,
+                    crate::commands::resource_context(game_context),
+                );
             self
                 .deliver(
                     game_id,
@@ -538,6 +630,7 @@ pub mod EconomyLogic {
                     maker,
                     ResourceAmount { resource_type: order.requested_resource, amount: requested },
                     timestamp,
+                    game_context,
                 );
             self
                 .deliver(
@@ -547,6 +640,7 @@ pub mod EconomyLogic {
                     taker,
                     ResourceAmount { resource_type: order.offered_resource, amount: offered },
                     timestamp,
+                    game_context,
                 );
             TradeFill {
                 trade_id: command.trade_id,
@@ -569,12 +663,18 @@ pub mod EconomyLogic {
             assert!(structure.owner == actor && actor != 0.try_into().unwrap(), "actor does not own trade structure");
             structure
         }
-        fn assert_command(self: @ContractState, game_id: u32, timestamp: u64, grace: bool) {
+        fn assert_command(
+            self: @ContractState,
+            game_id: u32,
+            timestamp: u64,
+            grace: bool,
+            game_context: crate::commands::ExecutionContext,
+        ) {
             self.assert_economy_submission(game_id, timestamp);
             if grace {
-                assert_main_with_grace(crate::logic::game::game(game_id), timestamp);
+                assert_main_with_grace(game_context.game.unbox(), timestamp);
             } else {
-                assert_playing(crate::logic::game::game(game_id), timestamp);
+                assert_playing(game_context.game.unbox(), timestamp);
             }
         }
         fn validate_offer(
@@ -605,11 +705,15 @@ pub mod EconomyLogic {
                 "trade count exceeds max",
             );
         }
-        fn shipping_donkeys(self: @ContractState, game_id: u32, resource_type: u8, amount: u128) -> u128 {
+        fn shipping_donkeys(
+            self: @ContractState,
+            game_id: u32,
+            resource_type: u8,
+            amount: u128,
+            game_context: crate::commands::ExecutionContext,
+        ) -> u128 {
             let weight = crate::logic::resources::rule(game_id, resource_type).unit_weight * amount;
-            crate::transport::donkeys_needed(
-                weight, crate::logic::game::rules(game_id).capacity_config.donkey_capacity.into(),
-            )
+            crate::transport::donkeys_needed(weight, game_context.rules.unbox().capacity_config.donkey_capacity.into())
         }
         fn deliver(
             self: @ContractState,
@@ -619,6 +723,7 @@ pub mod EconomyLogic {
             to: Structure,
             resource: ResourceAmount,
             timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) {
             let origin = structure_coord(from.base);
             let target = structure_coord(to.base);
@@ -626,12 +731,16 @@ pub mod EconomyLogic {
                 0
             } else {
                 crate::transport::travel_time(
-                    origin, target, array![resource].span(), crate::logic::game::rules(game_id).speed_config, true,
+                    origin, target, array![resource].span(), game_context.rules.unbox().speed_config, true,
                 )
             };
             IEconomyDeliveryLibraryDispatcher { class_hash: self.release.classes(game_id).resources.read() }
                 .queue_economy_delivery(
-                    ResourceKey { game_id, entity_id: destination }, resource, travel_time, timestamp,
+                    ResourceKey { game_id, entity_id: destination },
+                    resource,
+                    travel_time,
+                    timestamp,
+                    crate::commands::resource_context(game_context),
                 );
         }
         fn emit_story(

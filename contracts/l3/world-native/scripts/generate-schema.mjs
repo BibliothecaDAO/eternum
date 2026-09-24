@@ -62,18 +62,10 @@ const commandInterface = {
       outputs: [],
       state_mutability: "view",
     },
-    {
-      type: "function",
-      name: "rules_commitment",
-      inputs: [{ name: "rules", type: "world_native::rules::SliceRules" }],
-      outputs: [],
-      state_mutability: "view",
-    },
   ],
 };
-for (const name of ["world_native::commands::Command", "world_native::rules::SliceRules"]) {
-  if (!types.has(name)) throw new Error(`Missing command encoding type ${name}`);
-}
+if (!types.has("world_native::commands::Command"))
+  throw new Error("Missing command encoding type world_native::commands::Command");
 const commandTypes = new Set();
 function includeCommandType(name) {
   const nested = name.match(/::<(.+)>$/)?.[1];

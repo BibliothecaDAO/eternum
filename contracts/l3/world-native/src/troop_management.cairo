@@ -87,7 +87,7 @@ pub trait ITroopManagement<T> {
         game_id: u32,
         actor: starknet::ContractAddress,
         command: ManageTroops,
-        context: crate::commands::ExecutionContext,
+        context: crate::commands::ActionContext,
     );
 }
 

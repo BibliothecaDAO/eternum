@@ -64,8 +64,16 @@ pub struct ClaimPhase {
 
 #[starknet::interface]
 pub trait IBitcoinFunding<T> {
-    fn register_bitcoin_structure(ref self: T, key: crate::resources::ResourceKey, category: u8, timestamp: u64);
-    fn bitcoin_mine_captured(ref self: T, key: crate::resources::ResourceKey, timestamp: u64);
+    fn register_bitcoin_structure(
+        ref self: T,
+        key: crate::resources::ResourceKey,
+        category: u8,
+        timestamp: u64,
+        game_context: crate::commands::ActionContext,
+    );
+    fn bitcoin_mine_captured(
+        ref self: T, key: crate::resources::ResourceKey, timestamp: u64, game_context: crate::commands::ActionContext,
+    );
 }
 
 #[starknet::interface]
@@ -85,24 +93,20 @@ pub trait IBitcoinViews<T> {
 #[starknet::interface]
 pub trait IBitcoinCommands<T> {
     fn claim_bitcoin_phase(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: ClaimPhase,
-        context: crate::commands::ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: ClaimPhase, context: crate::commands::ActionContext,
     ) -> u64;
     fn contribute_bitcoin_labor(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: ContributeLabor,
-        context: crate::commands::ExecutionContext,
+        context: crate::commands::ActionContext,
     );
     fn close_bitcoin_phase(
-        ref self: T, game_id: u32, actor: ContractAddress, phase: u64, context: crate::commands::ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, phase: u64, context: crate::commands::ActionContext,
     );
     fn bind_bitcoin_phase(
-        ref self: T, game_id: u32, actor: ContractAddress, phase: u64, context: crate::commands::ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, phase: u64, context: crate::commands::ActionContext,
     );
 }
 

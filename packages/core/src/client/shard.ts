@@ -33,7 +33,7 @@ export class ShardReleaseMismatchError extends Error {
     readonly shardUrl: string,
     readonly releaseId: string,
   ) {
-    super(`Shard ${shardUrl} runs release ${releaseId}, which this client cannot read`);
+    super(`UNKNOWN_RELEASE_SCHEMA: shard ${shardUrl} release ${releaseId} has no decoder in this client`);
     this.name = "ShardReleaseMismatchError";
   }
 }
@@ -47,11 +47,28 @@ const normalizeChainId = (chainId: string | bigint): string => `0x${BigInt(chain
 
 /** Read a shard's manifest, refuse a release this client cannot read, and make the shard addressable by chain id. */
 export async function openShard(url: string, schemaHash: string): Promise<Shard> {
+  return refreshShardRelease(url, undefined, schemaHash);
+}
+
+/** Re-read release and schema metadata before a newly pinned game can submit another action. */
+export async function refreshShardRelease(
+  url: string,
+  releaseId: string | undefined,
+  schemaHash: string,
+): Promise<Shard> {
   const shardUrl = resolveEndpoint(url, { name: "Shard URL" });
   const response = await fetch(`${shardUrl}/manifest`, { signal: AbortSignal.timeout(10_000) });
   if (!response.ok) throw new Error(`Shard ${shardUrl} manifest failed: ${response.status} ${response.statusText}`);
   const manifest = (await response.json()) as ShardManifest;
-  if (manifest.schemaHash !== schemaHash) throw new ShardReleaseMismatchError(shardUrl, manifest.releaseId);
+  const expectedRelease = releaseId ?? manifest.releaseId;
+  if (manifest.releaseSchemas?.[expectedRelease] !== schemaHash)
+    throw new ShardReleaseMismatchError(shardUrl, expectedRelease);
+  const schemaResponse = await fetch(`${shardUrl}/schemas/${schemaHash}`, { signal: AbortSignal.timeout(10_000) });
+  if (!schemaResponse.ok) throw new ShardReleaseMismatchError(shardUrl, expectedRelease);
+  const { identity, ...schema } = await schemaResponse.json();
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(schema)));
+  const actual = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+  if (identity !== schemaHash || actual !== schemaHash) throw new ShardReleaseMismatchError(shardUrl, expectedRelease);
   return registerShard(buildShard(shardUrl, manifest));
 }
 

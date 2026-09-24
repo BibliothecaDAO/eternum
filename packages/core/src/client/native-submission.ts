@@ -1,6 +1,6 @@
-import { CallData, hash, type AccountInterface } from "starknet";
+import { hash, type AccountInterface } from "starknet";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
-import { frameNativeIntent, nativeTaggedHash, type NativeSubmission } from "@bibliothecadao/provider";
+import { frameNativeIntent, StaleGameReleaseError, type NativeSubmission } from "@bibliothecadao/provider";
 export { createNativeTicketSubmission, signGameplayIntent } from "@bibliothecadao/provider";
 import type { SignedNativeIntent } from "@bibliothecadao/provider";
 import type { NativeFactStore } from "./native-fact-store";
@@ -10,6 +10,8 @@ export interface NativeClientConnection {
   chainId: string;
   /** Signs with the connected player's existing gameplay key. */
   signIntent(actor: AccountInterface, digest: string): Promise<string[]>;
+  /** Revalidate the game's release against fresh shard schema metadata before re-signing. */
+  refreshRelease?: (previousRelease: number) => Promise<void>;
   /** Acceptance time and entropy are assigned only by the sequencing service. */
   submitIntent: ((action: SignedNativeIntent) => Promise<{ transaction_hash: string; order: bigint }>) & {
     dispose?: () => void;
@@ -23,7 +25,6 @@ export function nativeSubmission(
   season: string,
   prepareNonce?: (actor: string) => Promise<void>,
 ): NativeSubmission {
-  const codec = new CallData(input.bindings.commandAbi);
   const readNonce = createNonceReader(store, gameId, prepareNonce);
   return async (actor, calls) => {
     const batch = Array.isArray(calls) ? calls : [calls];
@@ -38,34 +39,41 @@ export function nativeSubmission(
     );
     if (!commands || commands.variants[Number(arguments_[0])]?.name !== call.entrypoint)
       throw new Error("Native command discriminant mismatch");
-    const nonce = await readNonce(actor.address);
-    const timestamp = Math.floor(Date.now() / 1_000);
-    const encoded = frameNativeIntent({
-      chain: input.chainId,
-      deployment: season,
-      gameId,
-      actor: actor.address,
-      nonce,
-      rules: nativeTaggedHash(
-        "ETERNUM_RULES",
-        codec.compile("rules_commitment", { rules: store.require("SliceRules", { game_id: gameId }) }),
-      ),
-      validFrom: 0,
-      validUntil: timestamp + 300,
-      lastOrder: 0xffffffffffffffffn,
-      arguments: arguments_,
-    });
-    const signature = await input.signIntent(actor, hash.computePoseidonHashOnElements(encoded));
-    const submitted = await input.submitIntent({ intent: encoded, signature });
-    return {
-      transaction_hash: submitted.transaction_hash,
-      ticket: {
-        gameId: String(gameId),
+    const submit = async (canRefresh: boolean): Promise<Awaited<ReturnType<NativeSubmission>>> => {
+      const nonce = await readNonce(actor.address);
+      const release = store.require("GameRelease", { game_id: gameId });
+      const encoded = frameNativeIntent({
+        chain: input.chainId,
+        deployment: season,
+        gameId,
         actor: actor.address,
-        nonce: nonce.toString(),
-        order: submitted.order.toString(),
-      },
+        nonce,
+        releaseId: release.release_id,
+        presetCommitment: release.preset_commitment,
+        validFrom: 0,
+        validUntil: Math.floor(Date.now() / 1_000) + 300,
+        lastOrder: 0xffffffffffffffffn,
+        arguments: arguments_,
+      });
+      const signature = await input.signIntent(actor, hash.computePoseidonHashOnElements(encoded));
+      try {
+        const submitted = await input.submitIntent({ intent: encoded, signature });
+        return {
+          transaction_hash: submitted.transaction_hash,
+          ticket: {
+            gameId: String(gameId),
+            actor: actor.address,
+            nonce: nonce.toString(),
+            order: submitted.order.toString(),
+          },
+        };
+      } catch (error) {
+        if (!canRefresh || !(error instanceof StaleGameReleaseError) || !input.refreshRelease) throw error;
+        await input.refreshRelease(release.release_id);
+        return submit(false);
+      }
     };
+    return submit(true);
   };
 }
 

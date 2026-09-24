@@ -1,4 +1,3 @@
-use core::poseidon::poseidon_hash_span;
 use eternum_randomness_protocol::authority::{
     ISequencingAccountDispatcher, ISequencingAccountDispatcherTrait, ISequencingAuthorityDispatcher,
     ISequencingAuthorityDispatcherTrait,
@@ -21,7 +20,9 @@ use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_account_contract_address, start_cheat_chain_id_global,
     start_cheat_resource_bounds, start_cheat_signature, start_cheat_transaction_hash, start_cheat_transaction_version,
 };
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+use starknet::storage::{
+    StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
+};
 use starknet::{ContractAddress, ResourcesBounds};
 use crate::commands::{Command, ExecutionContext as DomainContext, command_commitment};
 use crate::game::GameRegistry;
@@ -35,7 +36,6 @@ use super::recorded_receipts::RecordedReceiptsTrait;
 #[derive(Copy, Drop, Serde)]
 pub struct FixtureAction {
     pub game_id: u32,
-    pub rules: crate::rules::SliceRules,
     pub actor: ContractAddress,
     pub nonce: u64,
     pub deadline: u64,
@@ -110,8 +110,13 @@ pub fn configure_submitter(season: ContractAddress, account: ContractAddress) {
     );
 }
 pub fn make_intent(season: ContractAddress, action: FixtureAction) -> Intent {
-    let mut values = array!['ETERNUM_RULES', 1];
-    action.rules.serialize(ref values);
+    let (release_id, preset_commitment) = snforge_std::interact_with_state(
+        season,
+        || {
+            let state = crate::state::read();
+            (state.game_releases.read(action.game_id), crate::logic::game::preset_commitment(action.game_id))
+        },
+    );
     let mut arguments = array![];
     action.command.serialize(ref arguments);
     Intent {
@@ -121,7 +126,8 @@ pub fn make_intent(season: ContractAddress, action: FixtureAction) -> Intent {
         actor: action.actor.into(),
         nonce: action.nonce,
         command: command_commitment(action.command),
-        rules: poseidon_hash_span(values.span()),
+        release_id,
+        preset_commitment,
         valid_from: 0,
         valid_until: action.deadline,
         last_order: 100,
@@ -134,19 +140,13 @@ pub fn head(season: ContractAddress, game_id: u32) -> ExecutionHead {
 pub fn make_context(season: ContractAddress, action: FixtureAction, context: DomainContext) -> ExecutionContext {
     let head = head(season, action.game_id);
     let submitter = IGamesAuthenticationDispatcher { contract_address: season }.authentication().submitter;
-    let mut values = array!['ETERNUM_EXECUTION', 1];
-    let classes = snforge_std::interact_with_state(
-        season, || {
-            let state = crate::state::read();
-            state.releases.read(state.current_release.read())
-        },
-    );
-    classes.serialize(ref values);
+    let intent = make_intent(season, action);
     let envelope = Envelope {
-        action: action_identity(@make_intent(season, action)),
+        action: action_identity(@intent),
         order: head.order + 1,
         timestamp: context.timestamp,
-        execution_config: poseidon_hash_span(values.span()),
+        release_id: intent.release_id,
+        preset_commitment: intent.preset_commitment,
         epoch: IRandomnessEpochsDispatcher { contract_address: submitter }.current_randomness_epoch(),
         root: context.raw_root,
     };
@@ -198,7 +198,7 @@ fn definitive_execution_failure_consumes_only_its_ticket_then_successor_executes
     snforge_std::start_cheat_caller_address(authority, authority);
     IRandomnessEpochsDispatcher { contract_address: authority }.open_randomness_epoch(epoch_commitment(123456));
     snforge_std::start_cheat_caller_address(authority, 0.try_into().unwrap());
-    let original = make_context(d.games, action, super::context());
+    let original = make_context(d.games, action, super::context(d.games, 1));
     configure_submitter(authority, authority);
     let mut calldata = array![];
     make_intent(d.games, action).serialize(ref calldata);
@@ -233,14 +233,16 @@ fn failure_recording_rejects_unauthenticated_and_already_executed_tickets() {
     snforge_std::start_cheat_caller_address(d.games, d.actor);
     assert!(
         call
-            .reject_execution(make_intent(d.games, action), make_context(d.games, action, super::context()), signed)
+            .reject_execution(
+                make_intent(d.games, action), make_context(d.games, action, super::context(d.games, 1)), signed,
+            )
             .is_err(),
     );
     let season = IGamesAuthenticationDispatcher { contract_address: d.games };
     assert_eq!(head(d.games, 1).order, 0);
     assert_eq!(season.next_nonce(1, d.actor), 0);
     snforge_std::start_cheat_caller_address(d.games, super::submitter());
-    let original = make_context(d.games, action, super::context());
+    let original = make_context(d.games, action, super::context(d.games, 1));
     super::execute(d, action);
     assert!(call.reject_execution(make_intent(d.games, action), original, signed).is_err());
     assert_eq!(head(d.games, 1).order, 1);
@@ -256,7 +258,7 @@ fn unexecuted_ticket_recovery_preserves_original_context_after_delay() {
     let action = super::intent(d, 1);
     let signed = super::signature(d, action);
     let retained_intent = make_intent(d.games, action);
-    let retained_context = make_context(d.games, action, super::context());
+    let retained_context = make_context(d.games, action, super::context(d.games, 1));
     snforge_std::start_cheat_block_timestamp(d.games, 86400);
     IRecordedExecutionDispatcher { contract_address: d.games }.execute(retained_intent, retained_context, signed);
     let season = IGamesAuthenticationDispatcher { contract_address: d.games };
@@ -381,6 +383,9 @@ pub fn seed_game(registry: ContractAddress, game_id: u32, game: GameRegistry, ru
         || {
             let state = crate::state::write();
             state.game_releases.write(game_id, state.current_release.read());
+            if state.registrar.presets.read(game.preset_id) == 0 {
+                state.registrar.presets.write(game.preset_id, 789);
+            }
         },
     );
     super::resource_commands::set_fixture(
@@ -392,4 +397,72 @@ pub fn seed_game(registry: ContractAddress, game_id: u32, game: GameRegistry, ru
     super::resource_commands::set_fixture(
         registry, selector!("games"), selector!("next_entity"), array![game_id.into()].span(), 1_u32,
     );
+}
+
+#[test]
+fn release_admission_uses_the_game_pin_and_refusals_preserve_nonce_and_gameplay() {
+    let d = super::setup(true);
+    let view = IRecordedExecutionViewsDispatcher { contract_address: d.games };
+    let original = view.get_admission(1, d.actor.into());
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::write();
+            state.releases.write(2, state.releases.read(1));
+            state.current_release.write(2);
+        },
+    );
+    let admission = view.get_admission(1, d.actor.into());
+    assert_eq!(admission.release_id, original.release_id);
+    assert_eq!(admission.preset_commitment, original.preset_commitment);
+    let before = gameplay_snapshot(d.games);
+    for (release_id, preset_commitment, reason) in array![
+        (2, admission.preset_commitment, 'STALE_RELEASE'),
+        (admission.release_id, admission.preset_commitment + 1, 'INVALID_PRESET'),
+    ] {
+        let mut intent = make_intent(d.games, super::intent(d, 1));
+        intent.release_id = release_id;
+        intent.preset_commitment = preset_commitment;
+        let envelope = Envelope {
+            action: action_identity(@intent),
+            order: head(d.games, 1).order + 1,
+            timestamp: 100,
+            release_id,
+            preset_commitment,
+            epoch: 0,
+            root: 987654321,
+        };
+        let device = super::keypair(12345);
+        let (r, s) = device.sign(envelope.action).unwrap();
+        IRecordedExecutionDispatcher { contract_address: d.games }
+            .execute(
+                intent,
+                ExecutionContext { envelope: encode_envelope(@envelope) },
+                array![device.public_key, r, s].span(),
+            );
+        let outcome = view.recorded_outcome(1, envelope.order).unwrap();
+        assert_eq!(outcome.status_class, reason);
+        assert!(!outcome.nonce_consumed);
+        assert_eq!(view.get_admission(1, d.actor.into()).nonce, admission.nonce);
+        assert_eq!(gameplay_snapshot(d.games), before);
+    }
+    super::execute(d, super::intent(d, 1));
+    assert_eq!(view.recorded_outcome(1, 3).unwrap().status, 1);
+    assert_eq!(view.get_admission(1, d.actor.into()).nonce, admission.nonce + 1);
+}
+
+fn gameplay_snapshot(games: ContractAddress) -> Array<felt252> {
+    snforge_std::interact_with_state(
+        games,
+        || {
+            let state = crate::state::read();
+            let mut values = array![];
+            state.games.games.read(1).serialize(ref values);
+            state.games.rules.read(1).serialize(ref values);
+            state.games.next_entity.read(1).serialize(ref values);
+            crate::logic::troops::explorer(crate::troops::ExplorerKey { game_id: 1, explorer_id: 7 })
+                .serialize(ref values);
+            values
+        },
+    )
 }

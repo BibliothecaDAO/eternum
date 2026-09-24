@@ -157,10 +157,16 @@ fn results_require_authority_and_finished_point_settlement() {
     let d = setup(array![10].span());
     let safe = IBlitzResultsSafeDispatcher { contract_address: d.games };
     let command = RecordBlitzResults { start: 0, players: array![result(0, 10, 1)].span() };
-    let context = ExecutionContext { timestamp: 500, raw_root: 1 };
+    let context = ExecutionContext { timestamp: 500, raw_root: 1, ..super::context(d.games, 3) };
     start_cheat_caller_address(d.games, d.games);
-    assert!(safe.record_blitz_results(3, player(99), command, context).is_err());
-    assert!(safe.record_blitz_results(3, d.actor, command, ExecutionContext { timestamp: 199, ..context }).is_err());
+    assert!(safe.record_blitz_results(3, player(99), command, crate::commands::action_context(context)).is_err());
+    assert!(
+        safe
+            .record_blitz_results(
+                3, d.actor, command, crate::commands::action_context(ExecutionContext { timestamp: 199, ..context }),
+            )
+            .is_err(),
+    );
     stop_cheat_caller_address(d.games);
     let game = games(d).game(3);
     set_fixture(
