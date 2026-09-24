@@ -830,8 +830,38 @@ describe("Madara harness CLI and concurrency", () => {
 
     expect(playersOf("frontier", prepared(2))).toMatchObject({ kind: "single" });
     expect(() => playersOf("frontier", [prepared(2), prepared(2)] as never)).toThrow("one season");
-    expect(playersOf("build-order", prepared(24))).toMatchObject({ kind: "roster", games: [expect.anything()] });
+    const roster = playersOf("build-order", prepared(24));
+    expect(roster.kind === "roster" && roster.groups.map(({ accounts }) => accounts.length)).toEqual(Array(24).fill(1));
     expect(playersOf("build-order", prepared(1))).toMatchObject({ kind: "single" });
+  });
+
+  it("splits one Frontier season into even account slices, one per worker, all on the same game", () => {
+    const season = {
+      game: { gameId: 3, gameName: "frontier-campaign" },
+      accounts: Array.from({ length: 10 }, (_, index) => ({ botId: index + 1, address: `0x${index + 1}` })),
+    } as never;
+    const split = playersOf("frontier", season, 4);
+    if (split.kind !== "roster") throw new Error("expected worker groups");
+    expect(split.groups.map(({ accounts }) => accounts.length)).toEqual([3, 3, 3, 1]);
+    expect(new Set(split.groups.map(({ game }) => game.gameId))).toEqual(new Set([3]));
+    expect(split.groups.flatMap(({ accounts }) => accounts.map(({ botId }) => botId))).toEqual(
+      Array.from({ length: 10 }, (_, index) => index + 1),
+    );
+  });
+
+  it("splits only Frontier capacity runs across workers", () => {
+    expect(parseHarnessArgs(["--game-type", "frontier", "--bots", "2000", "--workers", "8"])).toMatchObject({
+      workers: 8,
+      bots: 2000,
+    });
+    expect(parseHarnessArgs(["--game-type", "frontier"]).workers).toBe(1);
+    expect(() => parseHarnessArgs(["--workers", "2"])).toThrow("--workers splits a Frontier season");
+    expect(() => parseHarnessArgs(["--game-type", "frontier", "--functional", "--workers", "2"])).toThrow(
+      "design run plays both profiles in one process",
+    );
+    expect(() => parseHarnessArgs(["--game-type", "frontier", "--bots", "2", "--workers", "3"])).toThrow(
+      "--workers cannot exceed --bots",
+    );
   });
 
   it("requires the shard's endpoints instead of falling back to a lab port", () => {

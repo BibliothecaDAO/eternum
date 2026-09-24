@@ -43,6 +43,8 @@ interface HarnessCliOptions {
   presetId: number;
   /** A campaign burst on the Frontier shape instead of its day-long play. */
   frontierBurst?: FrontierBurst;
+  /** Worker threads that share one Frontier season, each playing its own slice of the accounts. */
+  workers: number;
   bots: number;
   games?: number;
   accountsPerGame?: number;
@@ -119,6 +121,10 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   }
   const slot = resolveSlotOptions(values, gameType, games);
   const frontierBurst = resolveFrontierBurst(values, gameType);
+  const workers = positiveInteger(values.workers ?? "1", "workers");
+  if (workers > 1 && gameType !== "frontier") throw new Error("--workers splits a Frontier season; rosters split per account");
+  if (workers > 1 && functional) throw new Error("A Frontier design run plays both profiles in one process");
+  if (workers > bots) throw new Error("--workers cannot exceed --bots");
 
   return {
     gameType,
@@ -126,6 +132,7 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     functional,
     presetId,
     frontierBurst,
+    workers,
     bots,
     games,
     accountsPerGame,
@@ -159,11 +166,11 @@ async function main(): Promise<void> {
   const prepared = options.preparedGamePath
     ? await readJson<PreparedGame>(path.resolve(options.preparedGamePath))
     : await prepareGames(options, gameplayContracts, provider);
-  const players = playersOf(options.workload, prepared);
+  const players = playersOf(options.workload, prepared, options.workers);
   if (players.kind === "roster") {
     provider.dispose();
     requests?.dispose();
-    await runRosterGroups(options, players.games);
+    await runRosterGroups(options, players.groups);
     return;
   }
   const { game } = players.game;
@@ -406,6 +413,7 @@ function parseFlags(args: string[]): Record<string, string> {
         "slot-closes-in-seconds",
         "frontier-burst",
         "burst-window-seconds",
+        "workers",
       ].includes(name)
     ) {
       throw new Error(`Unsupported harness option --${name}`);
@@ -492,26 +500,33 @@ interface GameWorkerReport {
 }
 
 /**
- * Who plays the prepared games: a roster run splits them into one worker per account, or this process plays its one
- * game itself. A Frontier run is never split: its design run plays both player profiles together, and a worker
- * holding one of them would refuse.
+ * Who plays the prepared games, as the groups each worker thread plays: a roster run gives every account its own
+ * worker, a Frontier season is split into `workers` even slices of its accounts, and a single group is played by this
+ * process itself. A Frontier design run stays in one process, since its checks read both profiles together.
  */
 export function playersOf(
   workload: HarnessCliOptions["workload"],
   prepared: PreparedGame | PreparedGame[],
-): { kind: "roster"; games: PreparedGame[] } | { kind: "single"; game: PreparedGame } {
+  workers = 1,
+): { kind: "roster"; groups: PreparedGame[] } | { kind: "single"; game: PreparedGame } {
   if (workload === "frontier") {
     if (Array.isArray(prepared)) throw new Error("A Frontier run plays one season, not a roster of games");
-    return { kind: "single", game: prepared };
+    if (workers === 1) return { kind: "single", game: prepared };
+    const size = Math.ceil(prepared.accounts.length / workers);
+    const groups = Array.from({ length: workers }, (_, index) => ({
+      game: prepared.game,
+      accounts: prepared.accounts.slice(index * size, (index + 1) * size),
+    })).filter(({ accounts }) => accounts.length > 0);
+    return { kind: "roster", groups };
   }
-  if (Array.isArray(prepared)) return { kind: "roster", games: prepared };
-  return prepared.accounts.length > 1 ? { kind: "roster", games: [prepared] } : { kind: "single", game: prepared };
+  const games = Array.isArray(prepared) ? prepared : [prepared];
+  const groups = games.flatMap(({ game, accounts }) => accounts.map((account) => ({ game, accounts: [account] })));
+  return groups.length > 1 ? { kind: "roster", groups } : { kind: "single", game: games[0]! };
 }
 
-// One driver process runs every player as a worker thread. Evidence is read once here, never per worker, and the
+// One driver process runs every group as a worker thread. Evidence is read once here, never per worker, and the
 // run's gates (action threshold, latency bars, close cost) are asserted over the whole run: a worker only reports.
-async function runRosterGroups(options: HarnessCliOptions, games: PreparedGame[]): Promise<void> {
-  const players = games.flatMap(({ game, accounts }) => accounts.map((account) => ({ game, accounts: [account] })));
+async function runRosterGroups(options: HarnessCliOptions, players: PreparedGame[]): Promise<void> {
   const directory = path.join(HARNESS_OUTPUT_DIRECTORY, `rosters-${Date.now()}`);
   await mkdir(directory, { recursive: true, mode: 0o700 });
   const workers: Worker[] = [];
@@ -554,7 +569,7 @@ async function runRosterGroups(options: HarnessCliOptions, games: PreparedGame[]
   const summary = {
     passed,
     driver: { ...(await readDriverPlacement()), workers: workers.length },
-    games: games.map(({ game, accounts }) => ({ ...game, botCount: accounts.length })),
+    games: gamesPlayed(players),
     gates: { ...gates, checks: { ...gates.checks, workers: workersPassed } },
     reports: reports.map(({ workload: _workload, ...report }) => report),
     evidence,
@@ -564,6 +579,16 @@ async function runRosterGroups(options: HarnessCliOptions, games: PreparedGame[]
   await writeFile(output, JSON.stringify(summary, null, 2) + "\n");
   if (!passed) throw new Error(`Roster workload failed: ${output}`, { cause: failure });
   console.log(`PASS: ${output}`);
+}
+
+/** Each game the groups played, once, with every bot that played it. */
+function gamesPlayed(groups: PreparedGame[]) {
+  const games = new Map<number, PreparedGame["game"] & { botCount: number }>();
+  for (const { game, accounts } of groups) {
+    const played = games.get(game.gameId);
+    games.set(game.gameId, { ...game, botCount: (played?.botCount ?? 0) + accounts.length });
+  }
+  return [...games.values()];
 }
 
 async function finishRosterEvidence(
@@ -604,6 +629,9 @@ function startGameWorker(options: HarnessCliOptions, game: PreparedGame, file: s
       String(options.setupConcurrency),
       "--workload",
       options.workload,
+      ...(options.frontierBurst
+        ? ["--frontier-burst", options.frontierBurst.shape, "--burst-window-seconds", String(options.frontierBurst.windowSeconds)]
+        : []),
       "--preset",
       String(options.presetId),
       "--rpc-url",
@@ -715,6 +743,7 @@ Usage: bun deploy/athanor/harness/run.ts [options]
                                  realm inside the window; rollover waits for the next day and has every bot muster
                                  and move inside the window (use the 720 s day of --preset 101 on perf shards)
   --burst-window-seconds <s>     with --frontier-burst; default: 600 for booth, 120 for rollover
+  --workers <count>              Frontier: split the season's bots across this many worker threads; default: 1
   --functional                  omit capacity collection and latency gates; for Frontier, the accelerated design run
   --prepared-game <path>         resume a prepared roster using its private account file
   --game-id <id>                 use an existing Eternum game

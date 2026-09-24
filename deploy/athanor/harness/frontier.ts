@@ -262,11 +262,12 @@ async function runRolloverBurst(
   epochSeconds: number,
 ): Promise<WorkloadResult> {
   const { client, game } = options;
+  // Workers sharing the season are all settled before any waits, so they wait for the same boundary.
+  await options.onReady?.();
   const settledEpoch = currentEpoch(client);
   console.log(JSON.stringify({ frontierRolloverWaitSeconds: epochSeconds - (now() % epochSeconds) }));
   while (currentEpoch(client) === settledEpoch) await sleep(1000);
   for (const player of players) observeDay(client, game, player);
-  await options.onReady?.();
   const startedAt = new Date().toISOString();
   const releaseAtMs = Date.now();
   const spacingMs = (options.burst!.windowSeconds * 1000) / players.length;
