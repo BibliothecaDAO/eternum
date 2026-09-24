@@ -3,7 +3,7 @@ import { presentsOperatorToken } from "@realms-world/identity";
 import type { IdentityAuth } from "./auth";
 import { routeChat } from "./chat/routes";
 import { handleDeviceChange } from "./devices";
-import { handleAdmitShard, handleDirectory, handleShardStatus } from "./directory";
+import { handleAdmitShard, handleDirectory, handleDirectoryHistory, handleShardStatus } from "./directory";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
 import { handleNotificationPreferences } from "./notification-preferences";
@@ -50,6 +50,10 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/directory" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "directory", request))) return json({ error: "too_many_requests" }, 429);
     return handleDirectory(request, { db: env.DB, ...platform });
+  }
+  if (pathname === "/api/directory/history" && request.method === "GET") {
+    if (!(await withinPublicBudget(env, "directory", request))) return json({ error: "too_many_requests" }, 429);
+    return handleDirectoryHistory(request, { db: env.DB, ...platform });
   }
   if (pathname.startsWith("/api/directory/shards") && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);

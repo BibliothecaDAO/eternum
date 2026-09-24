@@ -27,27 +27,100 @@ interface DirectoryDependencies {
 }
 
 /**
- * GET /api/directory — every game on every listed shard, each carrying its shard's URL and chain id so the app opens it
- * on its own shard. A shard that cannot be read is listed by name with an error; it never empties the list. With
- * ?player=<gameplay account>, each shard answers that player's standing in its games; the shared listing is cached, a
- * player's standing never is.
+ * GET /api/directory — every live or upcoming game on every listed shard, each carrying its shard's URL and chain id so
+ * the app opens it on its own shard; a settled game leaves this list for the history. A shard that cannot be read is
+ * listed by name with an error; it never empties the list. With ?player=<gameplay account>, each shard answers that
+ * player's standing in its games; the shared listing is cached, a player's standing never is.
  */
-export const handleDirectory = async (request: Request, { db, cache, fetchShard }: DirectoryDependencies) => {
+export const handleDirectory = async (request: Request, dependencies: DirectoryDependencies) => {
+  const player = playerOf(request);
+  if (player === INVALID) return json({ error: "invalid_player" }, 400);
+  const listings = await listShards(dependencies, player);
+  return json({
+    shards: listings.map((listing) =>
+      listing.games === null ? listing : { ...listing, games: listing.games.filter((game) => !isSettled(game)) },
+    ),
+  });
+};
+
+/**
+ * GET /api/directory/history?limit=&cursor=[&player=] — settled games across every listed shard, newest end first, a
+ * page at a time. With ?player=, only the games that player entered. A shard that cannot be read is named in `failures`.
+ */
+export const handleDirectoryHistory = async (request: Request, dependencies: DirectoryDependencies) => {
+  const url = new URL(request.url);
+  const player = playerOf(request);
+  const limit = Number(url.searchParams.get("limit") ?? HISTORY_PAGE);
+  const cursor = url.searchParams.get("cursor");
+  if (player === INVALID) return json({ error: "invalid_player" }, 400);
+  if (!Number.isInteger(limit) || limit < 1 || limit > HISTORY_PAGE_MAX) return json({ error: "invalid_limit" }, 400);
+  if (cursor !== null && !HISTORY_CURSOR.test(cursor)) return json({ error: "invalid_cursor" }, 400);
+  const listings = await listShards(dependencies, player);
+  const settled = listings
+    .flatMap((listing) =>
+      (listing.games ?? [])
+        .filter((game) => isSettled(game) && (player === null || game.player_state?.registered === true))
+        .map((game) => ({ ...game, chainId: listing.chainId, shardUrl: listing.url })),
+    )
+    .sort((a, b) => historyPosition(b).localeCompare(historyPosition(a)));
+  const after = cursor === null ? settled : settled.filter((game) => historyPosition(game) < positionOfCursor(cursor));
+  const games = after.slice(0, limit);
+  return json({
+    games,
+    next: after.length > limit ? cursorOf(games.at(-1)!) : null,
+    failures: listings.filter((listing) => listing.games === null).map(({ url }) => ({ url, error: "unavailable" })),
+  });
+};
+
+const HISTORY_PAGE = 20;
+const HISTORY_PAGE_MAX = 100;
+const HISTORY_CURSOR = /^\d+:0x[0-9a-f]+:\d+$/;
+const INVALID = Symbol("invalid player");
+
+const playerOf = (request: Request): string | null | typeof INVALID => {
   const player = new URL(request.url).searchParams.get("player");
-  if (player !== null && !/^0x[0-9a-fA-F]{1,64}$/.test(player)) return json({ error: "invalid_player" }, 400);
-  const { results } = await db
+  if (player === null) return null;
+  return /^0x[0-9a-fA-F]{1,64}$/.test(player) ? player : INVALID;
+};
+
+/** Every listed shard's games, each shard read on its own so one that fails is named and the rest still answer. */
+const listShards = async (dependencies: DirectoryDependencies, player: string | null) => {
+  const { results } = await dependencies.db
     .prepare(`SELECT "url", "chainId", "status" FROM "shards" WHERE "status" != 'retired' ORDER BY "addedAt"`)
     .all<ListedShard>();
-  const shards = await Promise.all(
+  return Promise.all(
     results.map((shard) =>
       listShard(shard, () =>
         player
-          ? fetchShardGames(shard, `${shard.url}/games?player=${player}`, fetchShard)
-          : readCachedShardGames(shard, cache, fetchShard),
+          ? fetchShardGames(shard, `${shard.url}/games?player=${player}`, dependencies.fetchShard)
+          : readCachedShardGames(shard, dependencies.cache, dependencies.fetchShard),
       ),
     ),
   );
-  return json({ shards });
+};
+
+const isSettled = (game: HeraldGameDirectoryEntry) => game.status === "Settled";
+
+/** Newest end first, then chain and game, as one sortable string; a cursor names the last game of a page. */
+const historyPosition = ({
+  clock,
+  chainId,
+  game_id,
+}: {
+  clock: { end_at: number };
+  chainId: string;
+  game_id: number;
+}) =>
+  [
+    String(clock.end_at).padStart(12, "0"),
+    BigInt(chainId).toString(16).padStart(64, "0"),
+    String(game_id).padStart(10, "0"),
+  ].join(":");
+const cursorOf = (game: { clock: { end_at: number }; chainId: string; game_id: number }) =>
+  `${game.clock.end_at}:0x${BigInt(game.chainId).toString(16)}:${game.game_id}`;
+const positionOfCursor = (cursor: string) => {
+  const [endAt, chainId, gameId] = cursor.split(":");
+  return historyPosition({ clock: { end_at: Number(endAt) }, chainId: chainId!, game_id: Number(gameId) });
 };
 
 const listShard = async (

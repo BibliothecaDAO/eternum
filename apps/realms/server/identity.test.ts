@@ -419,7 +419,7 @@ describe("identity Worker", () => {
     expect(await status()).toBe(false);
   });
 
-  it("lists each shard's games under that shard, with a player's standing when asked, names a shard it cannot read, and refuses a listed chain id", async () => {
+  it("lists each shard's live games under that shard, settled ones in a paged history, with a player's standing when asked, names a shard it cannot read, and refuses a listed chain id", async () => {
     const operator = createBrowser();
     const game = (gameId: number, name: string) => ({ game_id: gameId, name, status: "Running" });
     heralds.set("https://shard-a.test/manifest", { chainId: "0xa" });
@@ -466,6 +466,62 @@ describe("identity Worker", () => {
     ]);
     expect(await list()).toEqual(listed);
     expect((await createBrowser().request("/api/directory?player=nobody")).status).toBe(400);
+
+    // A settled game leaves the live list; the history serves it, newest end first across shards, a page at a time.
+    const settled = (gameId: number, name: string, endAt: number) => ({
+      ...game(gameId, name),
+      status: "Settled",
+      clock: { end_at: endAt },
+    });
+    const live = { ...game(1, "blitz-d"), clock: { end_at: 900 } };
+    heralds.set("https://shard-d.test/manifest", { chainId: "0xd" });
+    heralds.set("https://shard-d.test/games", { chain: "0xd", games: [live, settled(2, "blitz-d-old", 200)] });
+    heralds.set("https://shard-e.test/manifest", { chainId: "0xe" });
+    heralds.set("https://shard-e.test/games", {
+      chain: "0xe",
+      games: [settled(1, "e-first", 100), settled(2, "e-last", 300)],
+    });
+    for (const url of ["https://shard-d.test", "https://shard-e.test"]) {
+      expect((await operator.request("/api/directory/shards", { body: { url }, token: OPERATOR_TOKEN })).status).toBe(
+        201,
+      );
+    }
+    expect(await list()).toEqual([
+      ...listed,
+      { url: "https://shard-d.test", chainId: "0xd", status: "active", games: [live] },
+      { url: "https://shard-e.test", chainId: "0xe", status: "active", games: [] },
+    ]);
+    const history = async (query: string) =>
+      (await (await createBrowser().request(`/api/directory/history${query}`)).json()) as {
+        games: { name: string; chainId: string; shardUrl: string }[];
+        next: string | null;
+        failures: { url: string }[];
+      };
+    const first = await history("?limit=2");
+    expect(first.games.map(({ name, chainId, shardUrl }) => [name, chainId, shardUrl])).toEqual([
+      ["e-last", "0xe", "https://shard-e.test"],
+      ["blitz-d-old", "0xd", "https://shard-d.test"],
+    ]);
+    expect(first.next).toBe("200:0xd:2");
+    const second = await history(`?limit=2&cursor=${first.next}`);
+    expect(second.games.map(({ name }) => name)).toEqual(["e-first"]);
+    expect(second.next).toBeNull();
+    expect(second.failures).toEqual([]);
+
+    // With a player, only the games they entered; a shard that cannot answer that player is named.
+    heralds.set("https://shard-e.test/games?player=0xabc", {
+      chain: "0xe",
+      games: [
+        { ...settled(1, "e-first", 100), player_state: { ...standing, registered: false } },
+        { ...settled(2, "e-last", 300), player_state: standing },
+      ],
+    });
+    const mine = await history("?player=0xabc");
+    expect(mine.games.map(({ name }) => name)).toEqual(["e-last"]);
+    expect(mine.failures.map(({ url }) => url)).toEqual(["https://shard-b.test", "https://shard-d.test"]);
+    for (const query of ["?limit=0", "?limit=101", "?cursor=bogus", "?player=nobody"]) {
+      expect((await createBrowser().request(`/api/directory/history${query}`)).status).toBe(400);
+    }
   });
 
   it("refuses to link a wallet that already belongs to another Realms account", async () => {
