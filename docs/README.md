@@ -15,6 +15,8 @@ Read [`AGENTS.md`](../AGENTS.md) first. It is the coding and review standard for
 ### Where things live
 
 - Contributing: [`CONTRIBUTING.md`](../CONTRIBUTING.md)
+- Eternum S2 design and implementation package: [`docs/eternum-s2`](./eternum-s2/README.md) — Eternum-only mechanics,
+  selected initial-playtest config and the implementation delta from the current stack
 - Chain and box infrastructure (the self-hosted Madara L3):
   [`deploy/madara-lab/README.md`](../deploy/madara-lab/README.md)
 - Game launch and balance config: [`config/deployer/clean/README.md`](../config/deployer/clean/README.md) and

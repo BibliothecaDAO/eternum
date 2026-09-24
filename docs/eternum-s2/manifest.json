@@ -1,0 +1,35 @@
+{
+  "schema": "eternum-s2-design-package-v1",
+  "applies_to": "eternum_only",
+  "selection": "initial_playtest",
+  "excluded_game_modes": [
+    "blitz",
+    "all_other_game_modes"
+  ],
+  "authority_order": [
+    "design-scope.md",
+    "config/initial-playtest.json",
+    "implementation-guide.md",
+    "config/README.md"
+  ],
+  "documents": {
+    "entrypoint": "README.md",
+    "mechanics": "design-scope.md",
+    "implementation": "implementation-guide.md",
+    "config_contract": "config/README.md",
+    "selected_config": "config/initial-playtest.json",
+    "banking_explainer": "banking-explainer.md",
+    "map_geometry": "maps/geometry.mjs",
+    "map_metadata": "maps/metadata.json"
+  },
+  "deferred_systems": [
+    "agents"
+  ],
+  "configuration_counts": {
+    "parameters": 2072,
+    "acceptance_targets": 71,
+    "assets": 41,
+    "recipe_components": 1362,
+    "transitions": 50
+  }
+}
