@@ -11,8 +11,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -37,31 +35,5 @@ jobs:
           node --test scripts/check-committed-env-rpc.test.mjs
           node scripts/check-committed-env-rpc.mjs
 
-      - name: Check changed-file formatting
-        env:
-          EVENT: ${{ github.event_name }}
-          BRANCH: ${{ github.ref_name }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          BEFORE_SHA: ${{ github.event.before }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: |
-          BASE_SHA=$(bash .github/scripts/diff-base.sh)
-          export BASE_SHA
-          echo "Measuring $HEAD_SHA from $BASE_SHA"
-          mapfile -d '' -t changed < <(git diff --name-only --diff-filter=ACMR -z "$BASE_SHA" "$HEAD_SHA")
-          pnpm run format
-          if ((${#changed[@]})); then
-            git diff --exit-code -- "${changed[@]}"
-          fi
-
-      - name: Record formatting diff
-        if: always()
-        run: git diff --binary > "$RUNNER_TEMP/format.patch"
-
-      - name: Upload formatting diff
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: format-diff
-          path: ${{ runner.temp }}/format.patch
-          if-no-files-found: error
+      - name: Check formatting
+        run: pnpm run format:check
