@@ -86,3 +86,18 @@ export function resolveInitialTroop(
   const chosen = troops.find((troop) => troop.available >= 1) ?? troops.find(isTrainable);
   return chosen ? { type: chosen.type, tier: chosen.tier } : null;
 }
+
+/**
+ * The spawn direction a field army is raised in: the caller's fixed choice (a clicked hex), else the current choice
+ * while it is still free, else the first free direction. A remembered choice an army now stands on never blocks the
+ * form while another hex is free.
+ */
+export function resolveSpawnDirection<Direction>(
+  current: Direction | null,
+  free: readonly Direction[],
+  fixed: Direction | undefined,
+): Direction | null {
+  if (fixed !== undefined) return fixed;
+  if (current !== null && free.includes(current)) return current;
+  return free[0] ?? null;
+}

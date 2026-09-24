@@ -4,6 +4,7 @@ import {
   resolveArmyCreationBlockedReason,
   resolveArmyTroopAvailability,
   resolveInitialTroop,
+  resolveSpawnDirection,
   resolveTroopAvailabilityReason,
 } from "./army-creation-policy";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
@@ -113,5 +114,18 @@ describe("initial troop", () => {
   it("with none on hand, opens on a troop the mode lets the realm train", () => {
     expect(resolveInitialTroop(options(0, 0), knightsOnly)).toEqual({ type: TroopType.Knight, tier: TroopTier.T1 });
     expect(resolveInitialTroop(options(0, 0), () => false)).toBeNull();
+  });
+});
+
+describe("spawn direction", () => {
+  it("moves off a hex an army now stands on to the first free one", () => {
+    expect(resolveSpawnDirection(0, [1, 2, 3, 4, 5], undefined)).toBe(1);
+  });
+  it("keeps a choice that is still free, and keeps a caller's clicked hex", () => {
+    expect(resolveSpawnDirection(3, [1, 3], undefined)).toBe(3);
+    expect(resolveSpawnDirection(3, [1], 4)).toBe(4);
+  });
+  it("chooses nothing when no hex is free", () => {
+    expect(resolveSpawnDirection(0, [], undefined)).toBeNull();
   });
 });
