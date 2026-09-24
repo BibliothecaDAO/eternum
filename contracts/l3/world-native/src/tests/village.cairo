@@ -276,26 +276,8 @@ fn exhausted_geometry_records_rejection_and_keeps_the_pass() {
     assert!(super::recorded::head(deployment.games, 3).order == 1 && season.next_nonce(3, deployment.actor) == 1);
 }
 
-#[test]
-fn season_settlement_random_draw_reserves_realm_and_provisions_its_economy() {
-    let (deployment, _) = setup(true);
-    super::entry::set_operator(deployment, 0.try_into().unwrap());
-    // Catalogue loading is covered separately; this draw uses the pinned salt 71419
-    // after scoping raw root 987654321 to game 3 with seed 1: realm 2239.
-    super::resource_commands::set_fixture(
-        deployment.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
-    );
-    super::resource_commands::set_fixture(
-        deployment.games, selector!("realms"), selector!("traits"), array![2239].span(), 0x9000002_u32,
-    );
-    let mut spy = spy_events();
-    assert!(
-        run(
-            deployment,
-            Command::SettleSeason(crate::realms::SettleSeason { name: 'Season player', selected_realm: Option::None }),
-            100,
-        ),
-    );
+// The realm a settlement created, read from its RealmCreatedStory.
+fn created_realm(ref spy: snforge_std::EventSpy, deployment: Deployment) -> u32 {
     let mut created = Option::None;
     for (_, event) in spy.get_events().emitted_by(deployment.games).events.span() {
         if *event.keys.at(0) == selector!("StoryEvent") {
@@ -313,7 +295,61 @@ fn season_settlement_random_draw_reserves_realm_and_provisions_its_economy() {
             }
         }
     }
-    let id = created.expect('missing realm story');
+    created.expect('missing realm story')
+}
+
+// Settles one season realm. Catalogue loading is covered separately; this draw uses the pinned salt 71419 after
+// scoping raw root 987654321 to game 3 with seed 1: realm 2239.
+fn settle_season_realm(deployment: Deployment) -> u32 {
+    super::entry::set_operator(deployment, 0.try_into().unwrap());
+    super::resource_commands::set_fixture(
+        deployment.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
+    );
+    super::resource_commands::set_fixture(
+        deployment.games, selector!("realms"), selector!("traits"), array![2239].span(), 0x9000002_u32,
+    );
+    let mut spy = spy_events();
+    assert!(
+        run(
+            deployment,
+            Command::SettleSeason(crate::realms::SettleSeason { name: 'Season player', selected_realm: Option::None }),
+            100,
+        ),
+    );
+    created_realm(ref spy, deployment)
+}
+
+#[test]
+fn a_founded_realm_castle_uses_no_population_even_where_labor_buildings_cost_it() {
+    let (deployment, _) = setup(true);
+    // Labor costs 2 population in this game; its rules are immutable once created, so the fixture sets them directly.
+    let labor = crate::buildings::IBuildingRulesDispatcherTrait::building_rule(
+        crate::buildings::IBuildingRulesDispatcher { contract_address: deployment.games },
+        crate::buildings::BuildingRuleKey { game_id: 3, category: 25 },
+    );
+    super::resource_commands::set_fixture(
+        deployment.games,
+        selector!("buildings"),
+        selector!("terms"),
+        array![3, 25].span(),
+        crate::buildings::BuildingTerms {
+            population_cost: 2,
+            capacity_grant: labor.capacity_grant,
+            simple_count: labor.simple_cost.len().try_into().unwrap(),
+            complex_count: labor.complex_cost.len().try_into().unwrap(),
+        },
+    );
+
+    let realm = ResourceKey { game_id: 3, entity_id: settle_season_realm(deployment) };
+    let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
+    assert!(structures.structure_buildings(realm).packed_counts_2 > 0);
+    assert_eq!(structures.structure_buildings(realm).population.current, 0);
+}
+
+#[test]
+fn season_settlement_random_draw_reserves_realm_and_provisions_its_economy() {
+    let (deployment, _) = setup(true);
+    let id = settle_season_realm(deployment);
     let key = ResourceKey { game_id: 3, entity_id: id };
     let row = IStructureOperationsDispatcher { contract_address: deployment.games }.structure(key).unwrap();
     assert_eq!(row.metadata.realm_id, 2239);

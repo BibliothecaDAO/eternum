@@ -331,6 +331,40 @@ fn labor_buildings_cannot_be_destroyed_and_population_blocks_overbuilding() {
 }
 
 #[test]
+fn a_labor_building_a_player_builds_costs_its_rule_population() {
+    let (deployment, home) = building_world(None);
+    let mut labor_costs_two = array![];
+    for rule in rules() {
+        labor_costs_two
+            .append(
+                if *rule.category == 25 {
+                    BuildingRuleConfig { category: 25, rule: BuildingRule { population_cost: 2, ..*rule.rule } }
+                } else {
+                    *rule
+                },
+            );
+    }
+    start_cheat_caller_address(deployment.games, super::authority());
+    IBuildingRulesDispatcher { contract_address: deployment.games }
+        .configure_buildings(3, labor_costs_two.span(), Option::None);
+    stop_cheat_caller_address(deployment.games);
+    let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
+    let structure = structures.structure(home).unwrap();
+    set_fixture(
+        deployment.games,
+        selector!("structures"),
+        selector!("structures"),
+        array![3, home.entity_id.into()].span(),
+        crate::structures::StructureRecord {
+            owner: structure.owner, base: structure.base, metadata: structure.metadata, resources_packed: 23,
+        },
+    );
+    let before = structures.structure_buildings(home).population.current;
+    assert!(execute(deployment, create(home, 25), 40));
+    assert_eq!(structures.structure_buildings(home).population.current, before + 2);
+}
+
+#[test]
 fn board_neighbors_change_production_capacity_and_population_and_demolition_refunds_paid_labor() {
     use crate::buildings::{BoardRules, Building, NeighborBonus, StructureBuildings};
     let mut neighbors = array![];
