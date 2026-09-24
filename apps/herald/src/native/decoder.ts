@@ -38,13 +38,7 @@ export class NativeDecoder {
     if (BigInt(this.emitter) === 0n) throw new Error("Zero Games emitter");
     if (Object.keys(release.logic).sort().join() !== Object.keys(active.logicClasses).sort().join())
       throw new Error("Native logic class set mismatch");
-    this.layouts = [
-      ...new Map(
-        Object.values(active.domains)
-          .flatMap(({ events }) => events)
-          .map((layout) => [JSON.stringify(layout), layout]),
-      ).values(),
-    ];
+    this.layouts = active.games.events;
     const codecs = active.models.map((model) => modelCodec(active, model));
     this.registry = {
       nativeSchemaIdentity: release.activeSchema,
@@ -61,7 +55,7 @@ export class NativeDecoder {
   decodeRowSet(model: string, keys: readonly string[], values: readonly string[]): DecodedWorldEvent {
     const definition = this.schema.models.find((candidate) => candidate.name === model);
     if (!definition) throw new Error(`Unknown native model ${model}`);
-    const layout = this.schema.domains[definition.owners[0]!]?.events.find((event) => event.name === "RowSet");
+    const layout = this.schema.games.events.find((event) => event.name === "RowSet");
     if (!layout) throw new Error(`Native model ${model} has no RowSet event`);
     return this.decode({
       from_address: this.emitter,

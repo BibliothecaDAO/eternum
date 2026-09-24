@@ -1,6 +1,6 @@
 /** The part of a shard's schema that names what the deployed Games contract exposes. */
 interface WorldViewSchema {
-  domains: { season?: { contract: string; entrypoints: readonly { name: string }[] } };
+  games: { contract: string; entrypoints: readonly { name: string }[] };
 }
 
 /**
@@ -9,7 +9,7 @@ interface WorldViewSchema {
  * forwards logic classes passes; this refuses it by name wherever it is called, test or shard.
  */
 export const worldView = <Name extends string>(schema: WorldViewSchema, name: Name): Name => {
-  const games = schema.domains.season;
+  const games = schema.games;
   if (games?.contract !== "Games") throw new Error("Schema has no Games contract");
   if (!games.entrypoints.some((entrypoint) => entrypoint.name === name))
     throw new Error(`World view ${name} is not exposed by the Games contract`);

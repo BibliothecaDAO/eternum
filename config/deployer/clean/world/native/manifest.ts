@@ -13,7 +13,7 @@ export function nativeWorldSchema(manifest: RegistrarWorld): NativeSchema {
 
 export function nativeGamesAbi(manifest: RegistrarWorld): Abi {
   const schema = nativeWorldSchema(manifest);
-  const games = schema.domains.season;
+  const games = schema.games;
   if (games?.contract !== "Games") throw new Error("Manifest has no Games ABI");
   return [...Object.values(schema.types), ...games.entrypoints] as Abi;
 }

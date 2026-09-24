@@ -209,7 +209,7 @@ it("rebuilds state and history from genesis in one replay when history lags the 
 it("reports a member write to a row it does not hold once, skips it, and keeps folding", async () => {
   const { native, decoder, fold } = setup();
   const model = schema.models.find(({ name }) => name === "TileOpt")!;
-  const layout = schema.domains[model.owners[0]!]!.events.find(({ name }) => name === "RowMemberSet")!;
+  const layout = schema.games.events.find(({ name }) => name === "RowMemberSet")!;
   const unheldTile = {
     from_address: decoder.manifest.world.address,
     keys: [...layout.prefix, "1", model.identity, model.members[0]!.id!],

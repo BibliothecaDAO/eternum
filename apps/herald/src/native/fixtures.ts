@@ -43,8 +43,7 @@ export const setup = () => {
 
 export function rowEvent(name: string, keys: string[], values: string[]): RpcEvent {
   const model = schema.models.find((model) => model.name === name)!;
-  const domain = model.owners[0];
-  const layout = schema.domains[domain].events.find((event) => event.name === "RowSet")!;
+  const layout = schema.games.events.find((event) => event.name === "RowSet")!;
   return {
     from_address: manifest.world.address,
     keys: [...layout.prefix, "1", model.identity],
@@ -75,7 +74,7 @@ export function rulesEvent(gameId = "1") {
 }
 
 export function battleEvent(attacker = "7", defender = "8", timestamp = "1920"): RpcEvent {
-  const layout = schema.domains.combat.events.find((event) => event.name === "BattleEvent")!;
+  const layout = schema.games.events.find((event) => event.name === "BattleEvent")!;
   return {
     from_address: manifest.world.address,
     keys: [...layout.prefix, "1", "1", attacker, defender, "2", "3"],

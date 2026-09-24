@@ -99,7 +99,9 @@ fn an_arena_game_refuses_labor_paid_production() {
     let refill = RefillProduction {
         structure_id: key.entity_id, resource_types: array![26].span(), amounts: array![1].span(),
     };
+    let before = resource_facts(deployment, key);
     assert_terminal_rejection(deployment, Command::BurnLaborForResourceProduction(refill), 60);
+    assert_eq!(resource_facts(deployment, key), before);
     let result = IRecordedExecutionViewsDispatcher { contract_address: deployment.games }
         .recorded_outcome(3, super::recorded::head(deployment.games, 3).order)
         .unwrap();

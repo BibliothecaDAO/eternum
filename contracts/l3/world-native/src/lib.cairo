@@ -8,6 +8,7 @@ pub mod buildings;
 pub mod camps;
 pub mod combat;
 pub mod combat_actions;
+pub mod command_routes;
 pub mod commands;
 pub mod discovery;
 pub mod entry;

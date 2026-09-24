@@ -9,7 +9,7 @@ export function transactionScopes(
 ): { gameId: string; actor: string }[] {
   if (!calldata?.length) return [];
   const schema = manifest.native.schemas[manifest.native.activeSchema];
-  const commands = schema.domains.season.entrypoints.filter((entry) =>
+  const commands = schema.games.entrypoints.filter((entry) =>
     entry.inputs.some((member) => member.name === "intent" || member.name === "actions"),
   );
   const scopes = new Map<string, { gameId: string; actor: string }>();

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { raw, receipt, rowEvent, rulesEvent, schema, setup, manifest } from "./fixtures";
 
 function faithStory() {
-  const layout = schema.domains.prizes.events.find((event) => event.name === "StoryEvent")!;
+  const layout = schema.games.events.find((event) => event.name === "StoryEvent")!;
   const keys = [...layout.prefix, "1", "1", "7", "1", "0", "3", "0x55"];
   const values = ["0", "3", "30000", "30000", "1860"];
   return raw({ from_address: manifest.world.address, keys, data: values });

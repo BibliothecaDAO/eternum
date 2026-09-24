@@ -21,7 +21,7 @@ async function fixture(t, classes) {
   return directory;
 }
 
-const schema = { domains: { season: { contract: "Games" } } };
+const schema = { games: { contract: "Games" }, logicClasses: {} };
 
 test("accepts the headroom boundary and reports every compiled class", async (t) => {
   const directory = await fixture(t, [

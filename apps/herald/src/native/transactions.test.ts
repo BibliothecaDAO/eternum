@@ -8,7 +8,7 @@ import { manifest, receipt, schema, setup } from "./fixtures";
 import { transactionScopes } from "./transactions";
 
 function executionEvent(status: number, nonceConsumed = true, nonce = 0, order = 1) {
-  const layout = schema.domains.season.events.find((event) => event.name === "ExecutionRecorded")!;
+  const layout = schema.games.events.find((event) => event.name === "ExecutionRecorded")!;
   return {
     from_address: manifest.world.address,
     keys: layout.prefix,
@@ -46,7 +46,7 @@ function action(game: number) {
 }
 
 function encodedCall(entrypoint: string, args: RawArgs) {
-  const abi = [...Object.values(schema.types), ...schema.domains.season.entrypoints];
+  const abi = [...Object.values(schema.types), ...schema.games.entrypoints];
   const calldata = new CallData(abi).compile(entrypoint, args);
   return [manifest.world.address, hash.getSelectorFromName(entrypoint), String(calldata.length), ...calldata];
 }
@@ -186,7 +186,7 @@ describe("native transaction receipt routing", () => {
   });
   it("decodes a compiled batch result and publishes it with the matching transaction", () => {
     const { native, decoder, fold } = setup();
-    const layout = schema.domains.season.events.find((event) => event.name === "BatchProgress")!;
+    const layout = schema.games.events.find((event) => event.name === "BatchProgress")!;
     const progress = { from_address: manifest.world.address, keys: [...layout.prefix, "1"], data: ["0x111", "0", "9"] };
     const decoded = decoder.decode({
       ...progress,

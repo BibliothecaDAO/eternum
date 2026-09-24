@@ -21,7 +21,7 @@ function fixture() {
       classHash: "0x123",
       constructorCalldata: [],
       salt: "0x1",
-      sierra: { abi: [...Object.values(schemaJson.types), ...schemaJson.domains.season.entrypoints] },
+      sierra: { abi: [...Object.values(schemaJson.types), ...schemaJson.games.entrypoints] },
     },
   } as unknown as NativeWorld;
   const state = {

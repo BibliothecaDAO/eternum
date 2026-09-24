@@ -147,7 +147,7 @@ export function resolveCreatedGameId(
 function resolveNativeCreatedGameId(receipt: unknown, manifest: RegistrarWorld): number | undefined {
   const schema = manifest.native.schemas[manifest.native.activeSchema];
   const model = schema.models.find((model) => model.name === "GameRegistry");
-  const layouts = schema.domains.registry.events.filter((event) => event.name === "RowSet");
+  const layouts = schema.games.events.filter((event) => event.name === "RowSet");
   if (!model || !layouts.length) throw new Error("Native manifest has no game registry event");
   for (const event of readReceiptEvents(receipt)) {
     if (!event.from_address || BigInt(event.from_address) !== BigInt(manifest.world.address)) continue;

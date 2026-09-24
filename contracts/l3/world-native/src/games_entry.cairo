@@ -269,9 +269,9 @@ pub mod GamesEntry {
             if poseidon_hash_span(committed.span()) != *intent.command {
                 return Err(rejection('INVALID_COMMAND'));
             }
-            // SeasonLogic's typed entrypoint decodes the command; Games forwards its existing wire fields.
+            // The route consumes the index; the logic entrypoint decodes the unchanged payload.
             let mut calldata = array![game_id.into(), actor.into()];
-            calldata.append_span(intent.arguments.span());
+            intent.arguments.span().serialize(ref calldata);
             calldata.append((*intent.nonce).into());
             DomainContext { raw_root: *envelope.root, timestamp: *envelope.timestamp }.serialize(ref calldata);
             let mut result = starknet::syscalls::library_call_syscall(

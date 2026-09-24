@@ -13,7 +13,7 @@ function decodedStory(name: string, payload: number[]) {
   if (story.type !== "enum") throw new Error("Missing compiled story enum");
   const variant = story.variants.findIndex((variant) => variant.name === name);
   if (variant < 0) throw new Error(`Missing story ${name}`);
-  const layout = schema.domains.troops.events.find((event) => event.name === "StoryEvent")!;
+  const layout = schema.games.events.find((event) => event.name === "StoryEvent")!;
   const decoded = setup().decoder.decode(
     raw({
       from_address: manifest.world.address,

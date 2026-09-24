@@ -381,33 +381,65 @@ fn exploration_fixture_runs_the_real_domain() {
 
 #[test]
 fn accepted_malformed_commands_are_terminal_and_cannot_stall_the_stream() {
-    for invalid in 0_u32..3_u32 {
-        let address = setup();
+    let address = setup();
+    let before = gameplay_state(address);
+    let views = IRecordedExecutionViewsDispatcher { contract_address: address };
+    for invalid in 0_u32..5_u32 {
+        let nonce: u64 = invalid.into();
         let mut action = intent(address);
+        action.nonce = nonce;
         match invalid {
             0 => action.arguments = array![99],
             1 => action.arguments.append(99),
-            _ => action.command += 1,
+            2 => action.command += 1,
+            3 => action.arguments = array![1, 2],
+            _ => action.arguments = array![1, 2, 256],
         }
-        let recorded = envelope(@action);
+        if invalid != 2 {
+            let mut committed = array!['ETERNUM_COMMAND', 1];
+            committed.append_span(action.arguments.span());
+            action.command = core::poseidon::poseidon_hash_span(committed.span());
+        }
+        let mut recorded = envelope(@action);
+        recorded.order = nonce + 1;
         let (r, s) = pair().sign(action_identity(@action)).unwrap();
         IRecordedExecutionDispatcher { contract_address: address }.execute(action, context(@recorded), signed(r, s));
-        let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-        assert!(views.recorded_outcome(7, 1).unwrap().status == 2, "malformed command must be terminal");
+        let rejected = views.recorded_outcome(7, nonce + 1).unwrap();
+        assert!(rejected.status == 2, "malformed command must be terminal");
+        let expected_class = if invalid == 0 || invalid == 2 {
+            'INVALID_COMMAND'
+        } else {
+            'GAMEPLAY_REJECTED'
+        };
+        assert_eq!(rejected.status_class, expected_class);
+        assert!(rejected.reason.len() != 0, "malformed command needs a named error");
+        assert_eq!(gameplay_state(address), before);
         let next = views.get_admission(7, 456);
-        assert!(next.nonce == 1 && next.order == 2, "malformed command must consume its ticket");
-        let mut valid = intent(address);
-        valid.nonce = next.nonce;
-        let mut successor = envelope(@valid);
-        successor.order = next.order;
-        let (r, s) = pair().sign(action_identity(@valid)).unwrap();
-        IRecordedExecutionDispatcher { contract_address: address }.execute(valid, context(@successor), signed(r, s));
-        assert!(views.recorded_outcome(7, 2).unwrap().status == 1, "valid successor must execute");
+        assert!(next.nonce == nonce + 1 && next.order == nonce + 2, "malformed command must consume its ticket");
     }
+    let next = views.get_admission(7, 456);
+    let mut valid = intent(address);
+    valid.nonce = next.nonce;
+    let mut successor = envelope(@valid);
+    successor.order = next.order;
+    let (r, s) = pair().sign(action_identity(@valid)).unwrap();
+    IRecordedExecutionDispatcher { contract_address: address }.execute(valid, context(@successor), signed(r, s));
+    assert!(views.recorded_outcome(7, next.order).unwrap().status == 1, "valid successor must execute");
 }
 
 // Compare gameplay state for the fixture's real explore, excluding deployment identities and recording hashes.
 pub fn outcome(address: ContractAddress) -> Array<felt252> {
+    let mut values = array![];
+    IRecordedExecutionViewsDispatcher { contract_address: address }
+        .recorded_outcome(7, 1)
+        .unwrap()
+        .status
+        .serialize(ref values);
+    values.append_span(gameplay_state(address).span());
+    values
+}
+
+fn gameplay_state(address: ContractAddress) -> Array<felt252> {
     let season = address;
     let structures = IStructureOperationsDispatcher { contract_address: season };
     let resource_store = IResourceOperationsDispatcher { contract_address: season };
@@ -415,11 +447,6 @@ pub fn outcome(address: ContractAddress) -> Array<felt252> {
     let troops = GameState { contract_address: season };
     let points = IPointsDispatcher { contract_address: address };
     let mut values = array![];
-    IRecordedExecutionViewsDispatcher { contract_address: address }
-        .recorded_outcome(7, 1)
-        .unwrap()
-        .status
-        .serialize(ref values);
     troops.explorer(world_native::troops::ExplorerKey { game_id: 7, explorer_id: 2 }).serialize(ref values);
     for entity_id in array![1_u32, 2] {
         let key = world_native::resources::ResourceKey { game_id: 7, entity_id };

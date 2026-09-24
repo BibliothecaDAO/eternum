@@ -112,7 +112,7 @@ describe("native confirmed history", () => {
       await store.appendEvents([], 9);
       const cursor = (await store.queryStoryCursor(null, 2)).next_cursor;
       const { native, fold } = setup();
-      const award = nativeSchema.domains.season.events.find(({ name }) => name === "PointsAwarded")!;
+      const award = nativeSchema.games.events.find(({ name }) => name === "PointsAwarded")!;
       const result = native.applyReceipt(
         fold,
         receipt([

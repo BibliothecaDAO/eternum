@@ -1,3 +1,7 @@
+import { compileCommandRoutes } from "./command-routes.mjs";
+import { execFileSync } from "node:child_process";
+import { mkdtemp, rm } from "node:fs/promises";
+import { join } from "node:path";
 import { eventLayouts, uniqueEventLayouts } from "./event-layouts.mjs";
 import { defineFactModels, factWireTypes, syncScopes, executionRecordedVersion } from "../schema/fact-models.mjs";
 import { createHash } from "node:crypto";
@@ -11,36 +15,17 @@ const root = new URL("../", import.meta.url);
 const { CallData } = await import(
   Bun.resolveSync("starknet", fileURLToPath(new URL("../../../../apps/herald/src/", import.meta.url)))
 );
-const contracts = {
-  season: "Games",
-  map: "MapLogic",
-  troops: "TroopsLogic",
-  structures: "StructuresLogic",
-  settlement: "SettlementLogic",
-  resources: "ResourcesLogic",
-  economy: "EconomyLogic",
-  relics: "RelicsLogic",
-  prizes: "PrizesLogic",
-  registry: "RegistryLogic",
-  combat: "CombatLogic",
-  bridge: "BridgeLogic",
-};
-const entryArtifacts = Object.fromEntries(
-  await Promise.all(
-    Object.entries(contracts).map(async ([domain, name]) => {
-      return [domain, await readContractAbi(name)];
-    }),
-  ),
+const gamesAbi = await readContractAbi("Games");
+const logicClasses = Object.fromEntries(
+  gamesAbi
+    .find((item) => item.name === "games_storage::release::LogicClasses")
+    .members.map(({ name }) => [name, `${name[0].toUpperCase()}${name.slice(1)}Logic`]),
 );
-// A library emits in Games' context; its event types still come from the logic class ABI.
-const seasonLogicAbi = await readContractAbi("SeasonLogic");
 const artifacts = {
-  ...entryArtifacts,
-  map: [...entryArtifacts.map, ...(await readContractAbi("PlacementLogic"))],
-  structures: [...entryArtifacts.structures, ...(await readContractAbi("ConstructionLogic"))],
-  resources: [...entryArtifacts.resources, ...(await readContractAbi("ProductionLogic"))],
-  season: [...entryArtifacts.season, ...seasonLogicAbi],
-  combat: [...entryArtifacts.combat, ...(await readContractAbi("RaidLogic"))],
+  games: gamesAbi,
+  ...Object.fromEntries(
+    await Promise.all(Object.entries(logicClasses).map(async ([logic, name]) => [logic, await readContractAbi(name)])),
+  ),
 };
 
 async function readContractAbi(name) {
@@ -59,6 +44,10 @@ for (const abi of [...Object.values(artifacts), factWireTypes]) {
     }
   }
 }
+
+const routes = compileCommandRoutes(artifacts, types, feltLength);
+types.set(routes.command.name, routes.command);
+await writeCairo("src/command_routes.cairo", routes.cairo);
 
 // Serialization projections use the types carried by the production gameplay and preset ABIs.
 // These bindings do not add entrypoints to Games.
@@ -83,7 +72,7 @@ const commandInterface = {
   ],
 };
 for (const name of ["world_native::commands::Command", "world_native::rules::SliceRules"]) {
-  if (!types.has(name)) throw new Error(`Missing production ABI type ${name}`);
+  if (!types.has(name)) throw new Error(`Missing command encoding type ${name}`);
 }
 const commandTypes = new Set();
 function includeCommandType(name) {
@@ -130,12 +119,11 @@ function sumLengths(lengths) {
   return lengths.includes(null) ? null : lengths.reduce((sum, length) => sum + length, 0);
 }
 
-function model(name, owners, scope, keys, members, emitterKey) {
+function model(name, scope, keys, members, emitterKey) {
   if (scope === "game" && keys[0]?.name !== "game_id") throw new Error(`Missing leading game key for ${name}`);
   return {
     name,
     identity: shortString.encodeShortString(name),
-    owners,
     scope,
     ...(emitterKey ? { emitterKey } : {}),
     keys: keys.map((key) => ({ ...key, feltLength: feltLength(key.type) })),
@@ -159,89 +147,66 @@ const ruleConstants = Object.fromEntries(
   ]),
 );
 
-const domainEvents = Object.fromEntries(Object.entries(artifacts).map(([domain, abi]) => [domain, eventLayouts(abi)]));
-// Validate across all logic classes before publishing any selector to the Games decoder.
-uniqueEventLayouts(Object.values(domainEvents).flat());
+// Every library emits in Games' context. A prefix must identify exactly one layout.
+const gamesEvents = uniqueEventLayouts(Object.values(artifacts).flatMap(eventLayouts));
+const productionAbi = Object.values(artifacts).flat();
 
 const schema = {
   ruleConstants,
-  logicClasses: Object.fromEntries(
-    types
-      .get("games_storage::release::LogicClasses")
-      .members.map(({ name }) => [name, `${name[0].toUpperCase()}${name.slice(1)}Logic`]),
-  ),
+  logicClasses,
   version: 2,
   cairoVersion: "2.17.0",
   encoding: "cairo-serde",
   modelIdentity: "short-string",
   memberIdentity: "short-string",
-  domains: Object.fromEntries(
-    Object.entries(contracts).map(([domain, contract]) => [
-      domain,
-      {
-        contract,
-        events: domainEvents[domain],
-        entrypoints: entryArtifacts[domain].flatMap((item) =>
-          item.type === "interface" ? item.items : item.type === "function" ? [item] : [],
-        ),
-      },
-    ]),
-  ),
+  games: {
+    contract: "Games",
+    events: gamesEvents,
+    entrypoints: gamesAbi.flatMap((item) =>
+      item.type === "interface" ? item.items : item.type === "function" ? [item] : [],
+    ),
+  },
   models,
   events: [
     {
       name: "BatchProgress",
-      owners: ["season"],
       scope: "game",
       version: 1,
-      event: artifacts.season.find(
+      event: productionAbi.find(
         (item) => item.type === "event" && item.name === "world_native::commands::BatchProgress",
       ),
     },
     {
       name: "ExecutionRecorded",
-      owners: ["season"],
       scope: "deployment",
       version: executionRecordedVersion,
-      event: artifacts.season.find(
+      event: productionAbi.find(
         (item) => item.type === "event" && item.name === "eternum_randomness_protocol::recording::ExecutionRecorded",
       ),
     },
     {
       name: "PointsAwarded",
-      owners: ["season"],
       scope: "game",
       version: 1,
-      event: artifacts.season.find(
-        (item) => item.type === "event" && item.name === "world_native::game::PointsAwarded",
-      ),
+      event: productionAbi.find((item) => item.type === "event" && item.name === "world_native::game::PointsAwarded"),
     },
     {
       name: "StoryEvent",
-      owners: Object.keys(artifacts).filter((domain) =>
-        artifacts[domain].some((item) => item.type === "event" && item.name === "world_native::ownership::StoryEvent"),
-      ),
       scope: "game",
       version: 1,
-      event: artifacts.structures.find(
-        (item) => item.type === "event" && item.name === "world_native::ownership::StoryEvent",
-      ),
+      event: productionAbi.find((item) => item.type === "event" && item.name === "world_native::ownership::StoryEvent"),
     },
     {
       name: "BattleEvent",
-      owners: ["combat"],
       scope: "game",
       version: 1,
-      event: artifacts.combat.find(
-        (item) => item.type === "event" && item.name === "world_native::troops::BattleEvent",
-      ),
+      event: productionAbi.find((item) => item.type === "event" && item.name === "world_native::troops::BattleEvent"),
     },
     {
       name: "RaidEvent",
-      owners: ["combat"],
       scope: "game",
       version: 1,
-      event: artifacts.combat.find(
+      event: productionAbi.find(
         (item) => item.type === "event" && item.name === "world_native::combat_actions::RaidEvent",
       ),
     },
@@ -251,6 +216,24 @@ const schema = {
 schema.identity = createHash("sha256").update(JSON.stringify(schema)).digest("hex");
 await writeJson("schema/schema.json", schema);
 await writeFixtures(schema);
+
+async function writeCairo(path, value) {
+  const temporary = await mkdtemp(fileURLToPath(new URL("src/.command-routes-", root)));
+  try {
+    const input = join(temporary, "routes.cairo");
+    await writeFile(input, value);
+    execFileSync("scarb", ["fmt", input], { cwd: fileURLToPath(root), encoding: "utf8" });
+    const formatted = await readFile(input, "utf8");
+    const target = new URL(path, root);
+    if (process.argv.includes("--check")) {
+      if ((await readFile(target, "utf8")) !== formatted) throw new Error(`Generated artifact differs: ${path}`);
+    } else {
+      await writeFile(target, formatted);
+    }
+  } finally {
+    await rm(temporary, { recursive: true });
+  }
+}
 
 async function writeJson(path, value) {
   const url = new URL(path, root);
@@ -268,7 +251,7 @@ async function writeFixtures(schema) {
   const deployment = { games: emitter };
   const model = schema.models.find((model) => model.name === "ExplorerTroops");
   function raw(name, values = []) {
-    const layout = schema.domains.troops.events.find(
+    const layout = schema.games.events.find(
       (event) => event.name === name && event.prefix[0] === hash.getSelectorFromName("TroopEvent"),
     );
     const keys = [...layout.prefix, "0x1", model.identity];
@@ -452,7 +435,7 @@ const commandBits = Object.fromEntries(
 await writeText(
   "schema/commands.gen.ts",
   [
-    "// Generated from the compiled Command ABI. Run the native schema generator to update.",
+    "// Generated from command routes and production payload ABIs. Run the native schema generator to update.",
     'import type { BigNumberish } from "starknet";',
     `export const nativeCommandBits = ${JSON.stringify(commandBits, null, 2)} as const;`,
     "export interface NativeCommandPayloads {",

@@ -11,7 +11,7 @@ import {
 } from "../registrar/calls";
 
 const manifest = {
-  world: { address: "0x123", abi: [...Object.values(schema.types), ...schema.domains.season.entrypoints] },
+  world: { address: "0x123", abi: [...Object.values(schema.types), ...schema.games.entrypoints] },
   native: {
     activeSchema: schema.identity,
     schemas: { [schema.identity]: schema },
@@ -31,7 +31,7 @@ describe("native registrar", () => {
       "no active native schema",
     );
     const legacy = structuredClone(manifest);
-    legacy.native.schemas[schema.identity].domains.season.contract = "SeasonDomain";
+    legacy.native.schemas[schema.identity].games.contract = "SeasonDomain";
     expect(() => assertRegistrarAvailable(legacy)).toThrow("Games ABI");
   });
   test("resolves the world from the validated native deployment", () => {
@@ -40,7 +40,7 @@ describe("native registrar", () => {
   });
   test("accepts each declared game row prefix only from Games", () => {
     const model = schema.models.find((model) => model.name === "GameRegistry")!;
-    for (const layout of schema.domains.registry.events.filter((event) => event.name === "RowSet")) {
+    for (const layout of schema.games.events.filter((event) => event.name === "RowSet")) {
       const event = {
         from_address: "0x123",
         keys: [...layout.prefix, "1", model.identity],

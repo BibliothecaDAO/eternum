@@ -10,7 +10,6 @@ export interface NativeMember {
 export interface NativeModel {
   name: string;
   identity: string;
-  owners: string[];
   scope: "game" | "deployment";
   emitterKey?: string;
   keys: NativeMember[];
@@ -30,14 +29,11 @@ export interface NativeSchema {
   cairoVersion: string;
   logicClasses: Record<string, string>;
   encoding: string;
-  domains: Record<
-    string,
-    {
-      contract: string;
-      events: NativeEventLayout[];
-      entrypoints: { name: string; inputs: NativeMember[] }[];
-    }
-  >;
+  games: {
+    contract: string;
+    events: NativeEventLayout[];
+    entrypoints: { name: string; inputs: NativeMember[] }[];
+  };
   models: NativeModel[];
   types: Record<
     string,
@@ -45,8 +41,7 @@ export interface NativeSchema {
   >;
   events: {
     name: string;
-    owners: string[];
-    scope: "game";
+    scope: "game" | "deployment";
     version: number;
     event: NativeEventLayout;
   }[];

@@ -21,7 +21,7 @@ import {
   loadNativePresetConfiguration,
 } from "../registrar/native-preset";
 
-const abi = [...Object.values(schema.types), ...schema.domains.season.entrypoints];
+const abi = [...Object.values(schema.types), ...schema.games.entrypoints];
 const codec = new CallData(abi);
 const directory = mkdtempSync(join(tmpdir(), "native-preset-"));
 const manifestPath = join(directory, "manifest.json");

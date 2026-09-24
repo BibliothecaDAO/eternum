@@ -5,7 +5,7 @@ import { manifest, raw, receipt, schema, setup } from "./fixtures";
 function resourceEvent(name: string, keys: string[], values?: string[]) {
   const model = schema.models.find((model) => model.name === name)!;
   const kind = values ? "RowSet" : "RowDeleted";
-  const event = schema.domains.resources.events.find((event) => event.name === kind)!;
+  const event = schema.games.events.find((event) => event.name === kind)!;
   return {
     from_address: manifest.world.address,
     keys: [...event.prefix, "1", model.identity],
@@ -113,7 +113,7 @@ describe("native production facts", () => {
 
   it("decodes the refill story as history without retaining a second copy of production state", () => {
     const { decoder, fold } = setup();
-    const event = schema.domains.resources.events.find((event) => event.name === "StoryEvent")!;
+    const event = schema.games.events.find((event) => event.name === "StoryEvent")!;
     const decoded = decoder.decode(
       raw({
         from_address: manifest.world.address,
@@ -143,7 +143,7 @@ describe("native production facts", () => {
 describe("native building facts", () => {
   it("decodes building changes and payments as history without creating current-state rows", () => {
     const { decoder, fold } = setup();
-    const event = schema.domains.structures.events.find((event) => event.name === "StoryEvent")!;
+    const event = schema.games.events.find((event) => event.name === "StoryEvent")!;
     const decode = (data: string[]) => {
       const decoded = decoder.decode(
         raw({
@@ -168,7 +168,7 @@ describe("native building facts", () => {
   const keys = ["1", "0", "2000", "2001", "11", "10"];
   function buildingEvent(values?: string[]) {
     const model = schema.models.find((model) => model.name === "Building")!;
-    const event = schema.domains.structures.events.find((event) => event.name === (values ? "RowSet" : "RowDeleted"))!;
+    const event = schema.games.events.find((event) => event.name === (values ? "RowSet" : "RowDeleted"))!;
     return {
       from_address: manifest.world.address,
       keys: [...event.prefix, "1", model.identity],

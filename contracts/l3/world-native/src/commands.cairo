@@ -1,3 +1,4 @@
+#[cfg(test)]
 use core::poseidon::poseidon_hash_span;
 use starknet::ContractAddress;
 
@@ -47,78 +48,8 @@ pub struct BatchProgress {
     pub nonce: u64,
     pub remaining: u64,
 }
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub enum Command {
-    CreateExplorer: CreateExplorer,
-    Explore: Explore,
-    Battle: crate::combat_actions::AttackExplorer,
-    Move: Move,
-    ToggleAlternate: ToggleAlternate,
-    TransferStructureOwnership: crate::ownership::TransferOwnership,
-    LevelUp: u32,
-    SettleBlitzRoster,
-    ProvisionRealm: u32,
-    CreateReservedHyperstructure: crate::troops::Coord,
-    SettleSeason: crate::realms::SettleSeason,
-    SettleVillage: crate::village::SettleVillage,
-    ReceiveVillageArmy: u32,
-    BurnStructureResources: crate::resources::ResourceBurn,
-    TransferExplorerResources: crate::resources::ResourceTransfer,
-    TransferStructureResourcesToExplorer: crate::resources::ResourceTransfer,
-    OffloadArrival: crate::arrivals::OffloadArrival,
-    SendResources: crate::resources::ResourceTransfer,
-    TransferExplorerResourcesToStructure: crate::resources::ResourceTransfer,
-    BurnLaborForResourceProduction: crate::production::RefillProduction,
-    BurnResourceForResourceProduction: crate::production::RefillProduction,
-    CreateBuilding: crate::buildings::CreateBuilding,
-    DestroyBuilding: crate::buildings::ChangeBuilding,
-    PauseBuildingProduction: crate::buildings::ChangeBuilding,
-    ResumeBuildingProduction: crate::buildings::ChangeBuilding,
-    ContributeBitcoinLabor: crate::bitcoin::ContributeLabor,
-    CloseBitcoinPhase: u64,
-    BindBitcoinPhase: u64,
-    ClaimBitcoinPhase: crate::bitcoin::ClaimPhase,
-    BattleGuard: Battle,
-    CreateTradeOrder: crate::trade::CreateOrder,
-    AcceptTradeOrder: crate::trade::AcceptOrder,
-    CancelTradeOrder: u32,
-    CreateBanks: Span<crate::market::BankPlacement>,
-    BuyFromBank: crate::market::Swap,
-    SellToBank: crate::market::Swap,
-    AddBankLiquidity: crate::market::AddLiquidity,
-    RemoveBankLiquidity: crate::market::RemoveLiquidity,
-    InitializeHyperstructure: u32,
-    ContributeHyperstructure: crate::hyperstructures::Contribution,
-    AllocateHyperstructureShares: crate::hyperstructures::AllocateShares,
-    SetConstructionAccess: crate::hyperstructures::SetConstructionAccess,
-    OpenRelicChest: crate::relics::OpenChest,
-    ApplyRelic: crate::relics::ApplyRelic,
-    CloseSeason,
-    PledgeFaith: crate::faith::Pledge,
-    RemoveFaith: u32,
-    UpdateWonderOwnership: u32,
-    UpdateFaithfulOwnership: u32,
-    ClaimWonderPoints: u32,
-    ClaimPlayerFaithPoints: crate::faith::ClaimPlayer,
-    RecordBlitzResults: crate::blitz_results::RecordBlitzResults,
-    CraftRelic: u32,
-    CreateGuild: crate::guilds::CreateGuild,
-    JoinGuild: crate::guilds::JoinGuild,
-    LeaveGuild,
-    SetGuildWhitelist: crate::guilds::SetWhitelist,
-    RemoveGuildMember: ContractAddress,
-    MarkGameSettled,
-    ManageTroops: crate::troop_management::ManageTroops,
-    GuardAttack: crate::combat_actions::GuardAttack,
-    Raid: crate::combat_actions::Raid,
-    DepositResource: crate::bridge::Deposit,
-    WithdrawResource: crate::bridge::Withdraw,
-    ProvisionAndUpgradeRealm: u32,
-    SetEntityName: crate::names::SetEntityName,
-    EnterDepth: EnterDepth,
-    BuyRealmUpgrade: crate::upgrades::BuyRealmUpgrade,
-}
+#[cfg(test)]
+pub use crate::command_routes::Command;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ExecutionContext {
@@ -127,6 +58,7 @@ pub struct ExecutionContext {
 }
 
 // Cairo Serde encodes the variant index followed by its typed fields.
+#[cfg(test)]
 pub fn command_commitment(command: Command) -> felt252 {
     let mut fields = array!['ETERNUM_COMMAND', 1];
     command.serialize(ref fields);
@@ -135,41 +67,22 @@ pub fn command_commitment(command: Command) -> felt252 {
 
 pub const MAX_COMMAND_ITEMS: u32 = 64;
 
-pub fn decode_command(arguments: Span<felt252>, commitment: felt252) -> Result<Command, Array<felt252>> {
+pub fn route_command(
+    mut arguments: Span<felt252>,
+) -> Result<(u32, crate::command_routes::CommandRoute, Span<felt252>), felt252> {
     if arguments.len() > 256 {
-        return Err(array!['command arguments limit']);
+        return Err('INVALID_COMMAND');
     }
-    let mut fields = arguments;
-    let command: Command = Serde::deserialize(ref fields).ok_or(array!['malformed command'])?;
-    if !fields.is_empty() {
-        return Err(array!['trailing command arguments']);
+    let index: u32 = (*arguments.pop_front().ok_or('INVALID_COMMAND')?).try_into().ok_or('INVALID_COMMAND')?;
+    let routes = crate::command_routes::COMMAND_ROUTES.span();
+    let route = **routes.get(index).ok_or('INVALID_COMMAND')?;
+    if let Some(offset) = route.items_offset {
+        let items: u32 = (**arguments.get(offset).ok_or('INVALID_COMMAND')?).try_into().ok_or('INVALID_COMMAND')?;
+        if items > MAX_COMMAND_ITEMS {
+            return Err('INVALID_COMMAND');
+        }
     }
-    if command_commitment(command) != commitment {
-        return Err(array!['command commitment mismatch']);
-    }
-    if command_items(command) > MAX_COMMAND_ITEMS {
-        return Err(array!['command items limit']);
-    }
-    Ok(command)
-}
-
-pub fn command_items(command: Command) -> u32 {
-    match command {
-        Command::Move(value) => value.directions.len(),
-        Command::Battle(value) => value.steal_resources.len(),
-        Command::Raid(value) => value.steal_resources.len(),
-        Command::BurnStructureResources(value) => value.resources.len(),
-        Command::TransferExplorerResources(value) => value.resources.len(),
-        Command::TransferStructureResourcesToExplorer(value) => value.resources.len(),
-        Command::SendResources(value) => value.resources.len(),
-        Command::TransferExplorerResourcesToStructure(value) => value.resources.len(),
-        Command::ClaimBitcoinPhase(value) => value.mine_ids.len(),
-        Command::ContributeHyperstructure(value) => value.resources.len(),
-        Command::AllocateHyperstructureShares(value) => value.shareholders.len(),
-        Command::RecordBlitzResults(value) => value.players.len(),
-        Command::CreateBanks(value) => value.len(),
-        _ => 0,
-    }
+    Ok((index, route, arguments))
 }
 
 #[inline(never)]

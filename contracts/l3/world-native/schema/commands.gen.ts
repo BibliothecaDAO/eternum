@@ -1,4 +1,4 @@
-// Generated from the compiled Command ABI. Run the native schema generator to update.
+// Generated from command routes and production payload ABIs. Run the native schema generator to update.
 import type { BigNumberish } from "starknet";
 export const nativeCommandBits = {
   "CreateExplorer": "1",

@@ -111,7 +111,7 @@ describe("native row decoder", () => {
   });
 });
 
-it("decodes every declared row and member shape from each logic event layout", () => {
+it("decodes every declared row and member shape from Games", () => {
   const { decoder } = setup();
   const value = (type: string): string[] => {
     if (type === "()") return [];
@@ -122,38 +122,34 @@ it("decodes every declared row and member shape from each logic event layout", (
     return ["1"];
   };
   for (const model of schema.models) {
-    for (const domain of model.owners) {
-      const from_address = manifest.world.address;
-      const keys = model.keys.flatMap((member) =>
-        member.name === model.emitterKey ? [from_address] : value(member.type),
-      );
-      const frame = (kind: string, values: string[], member?: string) => {
-        const layout = schema.domains[domain].events.find((event) => event.name === kind)!;
-        return raw({
-          from_address,
-          keys: [...layout.prefix, "1", model.identity, ...(member ? [member] : [])],
-          data: [String(keys.length), ...keys, ...(kind === "RowDeleted" ? [] : [String(values.length), ...values])],
-        });
-      };
-      expect(
-        decoder.decode(
-          frame(
-            "RowSet",
-            model.members.flatMap((member) => value(member.type)),
-          ),
+    const from_address = manifest.world.address;
+    const keys = model.keys.flatMap((member) =>
+      member.name === model.emitterKey ? [from_address] : value(member.type),
+    );
+    const frame = (kind: string, values: string[], member?: string) => {
+      const layout = schema.games.events.find((event) => event.name === kind)!;
+      return raw({
+        from_address,
+        keys: [...layout.prefix, "1", model.identity, ...(member ? [member] : [])],
+        data: [String(keys.length), ...keys, ...(kind === "RowDeleted" ? [] : [String(values.length), ...values])],
+      });
+    };
+    expect(
+      decoder.decode(
+        frame(
+          "RowSet",
+          model.members.flatMap((member) => value(member.type)),
         ),
-      ).toMatchObject({ kind: "set", model: { name: model.name } });
-      if (schema.domains[domain].events.some(({ name }) => name === "RowDeleted"))
-        expect(decoder.decode(frame("RowDeleted", []))).toMatchObject({ kind: "delete", model: { name: model.name } });
-      for (const member of schema.domains[domain].events.some(({ name }) => name === "RowMemberSet")
-        ? model.members
-        : []) {
-        expect(decoder.decode(frame("RowMemberSet", value(member.type), member.id))).toMatchObject({
-          kind: "update-member",
-          member: member.name,
-          model: { name: model.name },
-        });
-      }
+      ),
+    ).toMatchObject({ kind: "set", model: { name: model.name } });
+    if (schema.games.events.some(({ name }) => name === "RowDeleted"))
+      expect(decoder.decode(frame("RowDeleted", []))).toMatchObject({ kind: "delete", model: { name: model.name } });
+    for (const member of schema.games.events.some(({ name }) => name === "RowMemberSet") ? model.members : []) {
+      expect(decoder.decode(frame("RowMemberSet", value(member.type), member.id))).toMatchObject({
+        kind: "update-member",
+        member: member.name,
+        model: { name: model.name },
+      });
     }
   }
 });

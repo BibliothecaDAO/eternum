@@ -21,7 +21,9 @@ RUN --mount=type=cache,target=/scarb-cache version=$(awk '$1=="scarb" {print $2}
     export XDG_CACHE_HOME=/scarb-cache/$version && cd contracts/l3/world-native && \
     for attempt in 1 2 3; do "/tools/$version/bin/scarb" fetch && break; test "$attempt" -lt 3 || exit 1; sleep 5; done && \
     "/tools/$version/bin/scarb" build
-RUN mkdir -p /release && bun contracts/l3/world-native/scripts/generate-schema.mjs --check && \
+RUN version=$(awk '$1=="scarb" {print $2}' /app/contracts/l3/world-native/.tool-versions) && \
+    export PATH="/tools/$version/bin:$PATH" && \
+    mkdir -p /release && bun contracts/l3/world-native/scripts/generate-schema.mjs --check && \
     bun deploy/release/facts.ts > /release/release-facts.json && \
     bun build apps/herald/src/server.ts --target=bun --outfile=/release/herald.js && \
     bun build deploy/athanor/scripts/read-rpc.ts --target=bun --outfile=/release/read-rpc.js

@@ -300,7 +300,7 @@ fn command_item_bound_counts_items_not_their_serialized_fields() {
     let mut fields = array![];
     command.serialize(ref fields);
     assert!(fields.len() > crate::commands::MAX_COMMAND_ITEMS);
-    assert_eq!(crate::commands::decode_command(fields.span(), command_commitment(command)).unwrap(), command);
+    assert!(crate::commands::route_command(fields.span()).is_ok());
 
     let mut mine_ids = array![];
     for mine_id in 1_u32..65 {
@@ -309,15 +309,12 @@ fn command_item_bound_counts_items_not_their_serialized_fields() {
     let command = Command::ClaimBitcoinPhase(crate::bitcoin::ClaimPhase { phase: 1, mine_ids: mine_ids.span() });
     let mut fields = array![];
     command.serialize(ref fields);
-    assert!(crate::commands::decode_command(fields.span(), command_commitment(command)).is_ok());
+    assert!(crate::commands::route_command(fields.span()).is_ok());
     mine_ids.append(65);
     let command = Command::ClaimBitcoinPhase(crate::bitcoin::ClaimPhase { phase: 1, mine_ids: mine_ids.span() });
     let mut fields = array![];
     command.serialize(ref fields);
-    assert_eq!(
-        crate::commands::decode_command(fields.span(), command_commitment(command)).unwrap_err(),
-        array!['command items limit'],
-    );
+    assert_eq!(crate::commands::route_command(fields.span()).unwrap_err(), 'INVALID_COMMAND');
 }
 
 #[test]
@@ -337,11 +334,11 @@ fn nested_loot_lists_obey_the_shared_command_limit() {
         for command in array![battle, raid] {
             let mut arguments = array![];
             command.serialize(ref arguments);
-            let decoded = crate::commands::decode_command(arguments.span(), command_commitment(command));
+            let decoded = crate::commands::route_command(arguments.span());
             if resource_type == 64 {
-                assert_eq!(decoded.unwrap(), command);
+                assert!(decoded.is_ok());
             } else {
-                assert_eq!(decoded.unwrap_err(), array!['command items limit']);
+                assert_eq!(decoded.unwrap_err(), 'INVALID_COMMAND');
             }
         }
     }

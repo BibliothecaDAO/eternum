@@ -206,11 +206,9 @@ function assertDecoded(event: ReturnType<typeof raw>, key: unknown, value: Recor
 
 describe("compiled native history coverage", () => {
   for (const [name, { fields, expected }] of Object.entries(stories)) {
-    it(`decodes ${name} from every declared emitting domain`, () => {
+    it(`decodes ${name} from every Games event prefix`, () => {
       const variant = storyVariants().findIndex((variant) => variant.name === name);
-      const projection = schema.events.find(({ name }) => name === "StoryEvent")!;
-      for (const domain of projection.owners) {
-        const layout = schema.domains[domain].events.find(({ name }) => name === "StoryEvent")!;
+      for (const layout of schema.games.events.filter(({ name }) => name === "StoryEvent")) {
         assertDecoded(
           raw({
             from_address: manifest.world.address,
@@ -226,9 +224,7 @@ describe("compiled native history coverage", () => {
 
   for (const [name, fixture] of Object.entries(standalone)) {
     it(`decodes the complete ${name} payload`, () => {
-      const projection = schema.events.find((event) => event.name === name)!;
-      for (const domain of projection.owners) {
-        const layout = schema.domains[domain].events.find((event) => event.name === name)!;
+      for (const layout of schema.games.events.filter((event) => event.name === name)) {
         assertDecoded(
           raw({
             from_address: manifest.world.address,

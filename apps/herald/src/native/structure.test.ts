@@ -4,7 +4,7 @@ import { manifest, raw, receipt, schema, setup } from "./fixtures";
 
 function ruleEvent(name: string, keys: string[], values: string[]) {
   const model = schema.models.find((model) => model.name === name)!;
-  const event = schema.domains.settlement.events.find((event) => event.name === "RowSet")!;
+  const event = schema.games.events.find((event) => event.name === "RowSet")!;
   return {
     from_address: manifest.world.address,
     keys: [...event.prefix, "1", model.identity],
@@ -50,7 +50,7 @@ describe("native structure upgrades", () => {
 
   it("decodes the upgrade story without retaining history as current state", () => {
     const { decoder, fold } = setup();
-    const event = schema.domains.structures.events.find((event) => event.name === "StoryEvent")!;
+    const event = schema.games.events.find((event) => event.name === "StoryEvent")!;
     const decoded = decoder.decode(
       raw({
         from_address: manifest.world.address,

@@ -4,7 +4,7 @@ pub trait IGameplay<T> {
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
-        command: crate::commands::Command,
+        arguments: Span<felt252>,
         nonce: u64,
         context: crate::commands::ExecutionContext,
     ) -> Result<Span<felt252>, eternum_randomness_protocol::recording::Rejection>;
@@ -16,7 +16,7 @@ pub mod SeasonLogic {
     use games_storage::release::LogicClasses;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_tx_info};
-    use crate::commands::{Command, ExecutionContext as DomainContext};
+    use crate::commands::ExecutionContext as DomainContext;
     use crate::events::RowSet;
     use crate::logic::release::ReleaseState;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
@@ -226,276 +226,18 @@ pub mod SeasonLogic {
 
     fn dispatch(
         classes: starknet::storage::StoragePath<LogicClasses>,
+        route: crate::command_routes::CommandRoute,
         game_id: u32,
         actor: ContractAddress,
-        command: Command,
+        arguments: Span<felt252>,
         context: DomainContext,
     ) -> Result<Span<felt252>, Array<felt252>> {
         let mut calldata = array![game_id.into(), actor.into()];
-        let (target, selector) = match command {
-            Command::DepositResource(value) => {
-                value.serialize(ref calldata);
-                (classes.bridge.read(), selector!("deposit_resource"))
-            },
-            Command::WithdrawResource(value) => {
-                value.serialize(ref calldata);
-                (classes.bridge.read(), selector!("withdraw_resource"))
-            },
-            Command::ClaimBitcoinPhase(value) => {
-                value.serialize(ref calldata);
-                (classes.prizes.read(), selector!("claim_bitcoin_phase"))
-            },
-            Command::ContributeBitcoinLabor(value) => {
-                value.serialize(ref calldata);
-                (classes.prizes.read(), selector!("contribute_bitcoin_labor"))
-            },
-            Command::CloseBitcoinPhase(value) => {
-                value.serialize(ref calldata);
-                (classes.prizes.read(), selector!("close_bitcoin_phase"))
-            },
-            Command::BindBitcoinPhase(value) => {
-                value.serialize(ref calldata);
-                (classes.prizes.read(), selector!("bind_bitcoin_phase"))
-            },
-            Command::CreateGuild(value) => {
-                value.serialize(ref calldata);
-                (classes.structures.read(), selector!("create_guild"))
-            },
-            Command::JoinGuild(value) => {
-                value.serialize(ref calldata);
-                (classes.structures.read(), selector!("join_guild"))
-            },
-            Command::ManageTroops(value) => {
-                value.serialize(ref calldata);
-                (classes.troops.read(), selector!("manage_troops"))
-            },
-            Command::GuardAttack(value) => {
-                value.serialize(ref calldata);
-                (classes.combat.read(), selector!("guard_attack"))
-            },
-            Command::Raid(value) => {
-                value.serialize(ref calldata);
-                (classes.raid.read(), selector!("raid"))
-            },
-            Command::MarkGameSettled => (classes.season.read(), selector!("mark_game_settled")),
-            Command::LeaveGuild => (classes.structures.read(), selector!("leave_guild")),
-            Command::SetGuildWhitelist(value) => {
-                value.serialize(ref calldata);
-                (classes.structures.read(), selector!("set_guild_whitelist"))
-            },
-            Command::RemoveGuildMember(value) => {
-                value.serialize(ref calldata);
-                (classes.structures.read(), selector!("remove_guild_member"))
-            },
-            Command::CraftRelic(value) => {
-                value.serialize(ref calldata);
-                (classes.relics.read(), selector!("craft_relic"))
-            },
-            Command::RecordBlitzResults(value) => {
-                value.serialize(ref calldata);
-                (classes.prizes.read(), selector!("record_blitz_results"))
-            },
-            Command::PledgeFaith(value) => {
-                value.serialize(ref calldata);
-                (classes.prizes.read(), selector!("pledge_faith"))
-            },
-            Command::RemoveFaith(value) => {
-                value.serialize(ref calldata);
-                (classes.prizes.read(), selector!("remove_faith"))
-            },
-            Command::UpdateWonderOwnership(value) => {
-                value.serialize(ref calldata);
-                (classes.prizes.read(), selector!("update_wonder_ownership"))
-            },
-            Command::UpdateFaithfulOwnership(value) => {
-                value.serialize(ref calldata);
-                (classes.prizes.read(), selector!("update_faithful_ownership"))
-            },
-            Command::ClaimWonderPoints(value) => {
-                value.serialize(ref calldata);
-                (classes.prizes.read(), selector!("claim_wonder_points"))
-            },
-            Command::ClaimPlayerFaithPoints(value) => {
-                value.serialize(ref calldata);
-                (classes.prizes.read(), selector!("claim_player_faith_points"))
-            },
-            Command::CloseSeason => (classes.season.read(), selector!("close_season")),
-            Command::CreateExplorer(value) => {
-                value.serialize(ref calldata);
-                (classes.troops.read(), selector!("create_explorer"))
-            },
-            Command::Explore(value) => {
-                value.serialize(ref calldata);
-                (classes.troops.read(), selector!("explore"))
-            },
-            Command::CreateBanks(value) => {
-                value.serialize(ref calldata);
-                (classes.economy.read(), selector!("create_banks"))
-            },
-            Command::BuyFromBank(value) => {
-                value.serialize(ref calldata);
-                (classes.economy.read(), selector!("buy_from_bank"))
-            },
-            Command::SellToBank(value) => {
-                value.serialize(ref calldata);
-                (classes.economy.read(), selector!("sell_to_bank"))
-            },
-            Command::AddBankLiquidity(value) => {
-                value.serialize(ref calldata);
-                (classes.economy.read(), selector!("add_bank_liquidity"))
-            },
-            Command::RemoveBankLiquidity(value) => {
-                value.serialize(ref calldata);
-                (classes.economy.read(), selector!("remove_bank_liquidity"))
-            },
-            Command::InitializeHyperstructure(value) => {
-                value.serialize(ref calldata);
-                (classes.economy.read(), selector!("initialize_hyperstructure"))
-            },
-            Command::ContributeHyperstructure(value) => {
-                value.serialize(ref calldata);
-                (classes.economy.read(), selector!("contribute_hyperstructure"))
-            },
-            Command::AllocateHyperstructureShares(value) => {
-                value.serialize(ref calldata);
-                (classes.economy.read(), selector!("allocate_hyperstructure_shares"))
-            },
-            Command::SetConstructionAccess(value) => {
-                value.serialize(ref calldata);
-                (classes.economy.read(), selector!("set_construction_access"))
-            },
-            Command::OpenRelicChest(value) => {
-                value.serialize(ref calldata);
-                (classes.relics.read(), selector!("open_relic_chest"))
-            },
-            Command::ApplyRelic(value) => {
-                value.serialize(ref calldata);
-                (classes.relics.read(), selector!("apply_relic"))
-            },
-            Command::CreateTradeOrder(value) => {
-                value.serialize(ref calldata);
-                (classes.economy.read(), selector!("create_trade_order"))
-            },
-            Command::AcceptTradeOrder(value) => {
-                value.serialize(ref calldata);
-                (classes.economy.read(), selector!("accept_trade_order"))
-            },
-            Command::CancelTradeOrder(value) => {
-                value.serialize(ref calldata);
-                (classes.economy.read(), selector!("cancel_trade_order"))
-            },
-            Command::BattleGuard(value) => {
-                value.serialize(ref calldata);
-                (classes.combat.read(), selector!("battle_guard"))
-            },
-            Command::Battle(value) => {
-                value.serialize(ref calldata);
-                (classes.combat.read(), selector!("battle"))
-            },
-            Command::Move(value) => {
-                value.serialize(ref calldata);
-                (classes.troops.read(), selector!("move_explorer"))
-            },
-            Command::ToggleAlternate(value) => {
-                value.serialize(ref calldata);
-                (classes.troops.read(), selector!("toggle_alternate"))
-            },
-            Command::TransferStructureOwnership(value) => {
-                value.serialize(ref calldata);
-                (classes.structures.read(), selector!("transfer_structure_ownership"))
-            },
-            Command::SetEntityName(value) => {
-                value.serialize(ref calldata);
-                (classes.structures.read(), selector!("set_entity_name"))
-            },
-            Command::SettleVillage(value) => {
-                value.serialize(ref calldata);
-                (classes.settlement.read(), selector!("settle_village"))
-            },
-            Command::ReceiveVillageArmy(value) => {
-                value.serialize(ref calldata);
-                (classes.structures.read(), selector!("receive_village_army"))
-            },
-            Command::SettleSeason(value) => {
-                value.serialize(ref calldata);
-                (classes.settlement.read(), selector!("settle_season"))
-            },
-            Command::SettleBlitzRoster => (classes.settlement.read(), selector!("settle_blitz_roster")),
-            Command::ProvisionAndUpgradeRealm(value) => {
-                value.serialize(ref calldata);
-                (classes.structures.read(), selector!("provision_and_upgrade_realm"))
-            },
-            Command::ProvisionRealm(value) => {
-                value.serialize(ref calldata);
-                (classes.structures.read(), selector!("activate_realm_economy"))
-            },
-            Command::CreateReservedHyperstructure(value) => {
-                value.serialize(ref calldata);
-                (classes.structures.read(), selector!("create_reserved_hyperstructure"))
-            },
-            Command::EnterDepth(value) => {
-                value.serialize(ref calldata);
-                (classes.troops.read(), selector!("enter_depth"))
-            },
-            Command::BuyRealmUpgrade(value) => {
-                value.serialize(ref calldata);
-                (classes.construction.read(), selector!("buy_realm_upgrade"))
-            },
-            Command::LevelUp(value) => {
-                value.serialize(ref calldata);
-                (classes.construction.read(), selector!("level_up"))
-            },
-            Command::BurnLaborForResourceProduction(value) => {
-                value.serialize(ref calldata);
-                (classes.production.read(), selector!("burn_labor_for_resource_production"))
-            },
-            Command::BurnResourceForResourceProduction(value) => {
-                value.serialize(ref calldata);
-                (classes.production.read(), selector!("burn_resource_for_resource_production"))
-            },
-            Command::CreateBuilding(value) => {
-                value.serialize(ref calldata);
-                (classes.construction.read(), selector!("create_building"))
-            },
-            Command::DestroyBuilding(value) => {
-                value.serialize(ref calldata);
-                (classes.construction.read(), selector!("destroy_building"))
-            },
-            Command::PauseBuildingProduction(value) => {
-                value.serialize(ref calldata);
-                (classes.construction.read(), selector!("pause_building_production"))
-            },
-            Command::ResumeBuildingProduction(value) => {
-                value.serialize(ref calldata);
-                (classes.construction.read(), selector!("resume_building_production"))
-            },
-            Command::BurnStructureResources(value) => {
-                value.serialize(ref calldata);
-                (classes.resources.read(), selector!("burn_structure_resources"))
-            },
-            Command::TransferExplorerResources(value) => {
-                value.serialize(ref calldata);
-                (classes.resources.read(), selector!("transfer_explorer_resources"))
-            },
-            Command::TransferStructureResourcesToExplorer(value) => {
-                value.serialize(ref calldata);
-                (classes.resources.read(), selector!("transfer_structure_resources_to_explorer"))
-            },
-            Command::SendResources(value) => {
-                value.serialize(ref calldata);
-                (classes.resources.read(), selector!("send_resources"))
-            },
-            Command::TransferExplorerResourcesToStructure(value) => {
-                value.serialize(ref calldata);
-                (classes.resources.read(), selector!("transfer_explorer_resources_to_structure"))
-            },
-            Command::OffloadArrival(value) => {
-                value.serialize(ref calldata);
-                (classes.resources.read(), selector!("offload_arrival"))
-            },
-        };
+        calldata.append_span(arguments);
         context.serialize(ref calldata);
-        starknet::syscalls::library_call_syscall(target, selector, calldata.span())
+        starknet::syscalls::library_call_syscall(
+            crate::command_routes::logic_class(classes, route.logic), route.selector, calldata.span(),
+        )
     }
 
     // Cairo assertions encode strings as ByteArray; expect/panic_with_felt252 use one short string.
@@ -521,35 +263,25 @@ pub mod SeasonLogic {
             ref self: ContractState,
             game_id: u32,
             actor: ContractAddress,
-            command: Command,
+            arguments: Span<felt252>,
             nonce: u64,
             context: DomainContext,
         ) -> Result<Span<felt252>, eternum_randomness_protocol::recording::Rejection> {
-            if crate::commands::command_items(command) > crate::commands::MAX_COMMAND_ITEMS {
-                return Err(rejection('INVALID_COMMAND'));
-            }
+            let (index, route, payload) = crate::commands::route_command(arguments).map_err(|code| rejection(code))?;
             let rules = crate::logic::game::rules(game_id);
-            let mut command_fields = array![];
-            command.serialize(ref command_fields);
-            let command_index: u128 = (*command_fields.at(0)).try_into().unwrap();
-            if !crate::rules::command_enabled(rules.command_mask, command_index) {
+            if !crate::rules::command_enabled(rules.command_mask, index.into()) {
                 return Err(rejection('COMMAND_DISABLED'));
             }
-            if !crate::logic::game::game(game_id).ready && command != Command::SettleBlitzRoster {
+            if !crate::logic::game::game(game_id).ready && index != crate::command_routes::SETTLE_BLITZ_ROSTER {
                 return Err(rejection('ROSTER_NOT_READY'));
             }
-            let result = dispatch(self.release.classes(game_id), game_id, actor, command, context)
+            let result = dispatch(self.release.classes(game_id), route, game_id, actor, payload, context)
                 .map_err(|error| domain_rejection(error))?;
-            match command {
-                Command::SettleBlitzRoster | Command::CloseSeason | Command::MarkGameSettled |
-                Command::ClaimBitcoinPhase(_) |
-                Command::RecordBlitzResults(_) => {
-                    let mut output = result;
-                    let remaining: u64 = Serde::deserialize(ref output).expect('missing batch result');
-                    assert!(output.is_empty(), "invalid batch result");
-                    self.emit(crate::commands::BatchProgress { game_id, actor, nonce, remaining });
-                },
-                _ => {},
+            if route.batch {
+                let mut output = result;
+                let remaining: u64 = Serde::deserialize(ref output).expect('missing batch result');
+                assert!(output.is_empty(), "invalid batch result");
+                self.emit(crate::commands::BatchProgress { game_id, actor, nonce, remaining });
             }
             Ok(result)
         }
