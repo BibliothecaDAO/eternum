@@ -323,6 +323,7 @@ export class LiveWorld {
     if (this.checkpointFailure) throw this.checkpointFailure;
     if (head.block_number < this.confirmedBlockValue) return;
     const startedAt = performance.now();
+    const violationsBefore = this.confirmedFold.invariantViolations;
 
     const confirmed = await this.applyConfirmedThrough(head.block_number);
     // Recorded with the block it belongs to, before any other await, so an attach never pairs this block with an
@@ -344,8 +345,10 @@ export class LiveWorld {
     this.resetOverlay();
     await this.rebuildOverlay();
     this.publishOverlayReverts();
-    // An empty head publishes no diff, so it is not a confirmed sample.
-    if (publishedChanges) this.diffLatency.record("confirmed", performance.now() - startedAt);
+    // An empty head publishes no diff, so it is not a confirmed sample unless it skipped an event.
+    const violations = this.confirmedFold.invariantViolations - violationsBefore;
+    if (publishedChanges || violations > 0)
+      this.diffLatency.record("confirmed", performance.now() - startedAt, violations);
     this.lastClockTimestamp = Math.max(this.lastClockTimestamp, head.timestamp);
     for (const gameId of this.knownGames) this.hub.publishHead(gameId, head.block_number, head.timestamp);
     this.checkpointIfDue();

@@ -4,6 +4,7 @@ type DiffKind = (typeof DIFF_KINDS)[number];
 interface LatencyWindow {
   count: number;
   samples: number[];
+  invariantViolations: number;
 }
 
 const SLOW_DIFF_MS = 200;
@@ -12,7 +13,8 @@ const MAX_SAMPLES_PER_WINDOW = 2_048;
 
 const nearestRank = (sorted: number[], quantile: number): number => sorted[Math.ceil(quantile * sorted.length) - 1]!;
 
-const emptyWindows = () => new Map(DIFF_KINDS.map((kind) => [kind, { count: 0, samples: [] } as LatencyWindow]));
+const emptyWindows = () =>
+  new Map(DIFF_KINDS.map((kind) => [kind, { count: 0, samples: [], invariantViolations: 0 } as LatencyWindow]));
 
 /**
  * Publish latency per diff kind: a pre-confirmed receipt's arrival to its publish, and a confirmed head's fold to its
@@ -29,7 +31,8 @@ export class DiffLatencyMonitor {
     private readonly log: Pick<Console, "info" | "warn"> = console,
   ) {}
 
-  public record(kind: DiffKind, durationMs: number): void {
+  /** `invariantViolations` counts the chain events this diff's fold skipped (see WorldFold.invariantViolations). */
+  public record(kind: DiffKind, durationMs: number, invariantViolations = 0): void {
     if (durationMs > SLOW_DIFF_MS) {
       this.log.warn(JSON.stringify({ durationMs: Math.round(durationMs), event: "herald_diff_slow", kind }));
     }
@@ -37,6 +40,7 @@ export class DiffLatencyMonitor {
     this.windowStartedAt ??= now;
     const window = this.windows.get(kind)!;
     window.count += 1;
+    window.invariantViolations += invariantViolations;
     // Percentiles come from the window's first samples so memory stays bounded; the count still covers every diff.
     if (window.samples.length < MAX_SAMPLES_PER_WINDOW) window.samples.push(durationMs);
     const windowMs = now - this.windowStartedAt;
@@ -49,7 +53,14 @@ export class DiffLatencyMonitor {
 }
 
 function digest(kind: DiffKind, window: LatencyWindow, windowMs: number) {
-  const base = { count: window.count, event: "herald_diff_latency_digest", kind, windowMs: Math.round(windowMs) };
+  const base = {
+    count: window.count,
+    event: "herald_diff_latency_digest",
+    kind,
+    windowMs: Math.round(windowMs),
+    // Present only when a skipped event needs attention, so a healthy digest reads as before.
+    ...(window.invariantViolations > 0 ? { invariantViolations: window.invariantViolations } : {}),
+  };
   if (window.count === 0) return base;
   const sorted = [...window.samples].sort((left, right) => left - right);
   return {

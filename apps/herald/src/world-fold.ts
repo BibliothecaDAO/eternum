@@ -141,6 +141,7 @@ export class WorldFold {
 
   /** Finalized games whose other rows are evicted: later writes to those rows are dropped the same way. */
   private readonly evictedGames = new Set<string>();
+  private invariantViolationCount = 0;
 
   constructor(registry: ModelRegistry, parent?: WorldFold) {
     this.registry = registry;
@@ -202,7 +203,7 @@ export class WorldFold {
       if (this.parent) rows.set(event.entityId, null);
       else rows.delete(event.entityId);
     } else if (!existing) {
-      throw new Error(`${event.kind} for ${event.model.name}:${event.entityId} has no preceding RowSet`);
+      return this.reportInvariantViolation(event, "write to a row the fold does not hold");
     } else if (event.kind === "update") {
       rows.set(event.entityId, { key: existing.key, value: event.value });
     } else {
@@ -247,6 +248,11 @@ export class WorldFold {
   /** Every row the fold holds for the game, even one already marked for eviction: a review is frozen before eviction. */
   public reviewSnapshot(gameId: string | number | bigint, confirmedBlock: number): GameSnapshot {
     return this.snapshotRows(gameId, confirmedBlock, persistentModelNames(this.registry));
+  }
+
+  /** Chain events this confirmed fold skipped because they broke a contract invariant (see reportInvariantViolation). */
+  public get invariantViolations(): number {
+    return this.invariantViolationCount;
   }
 
   public retainedRowCount(): number {
@@ -696,6 +702,30 @@ export class WorldFold {
     if (!entityIds) return;
     entityIds.delete(entityId);
     if (entityIds.size === 0) games.delete(gameId);
+  }
+
+  /**
+   * An event the contracts cannot emit, skipped whole so no held row changes. One bad event never stops a shard: the
+   * confirmed fold reports and counts it, and a pre-confirmed overlay stays quiet because the confirmed fold reports the
+   * same event when its block lands.
+   */
+  private reportInvariantViolation(event: DecodedWorldEvent, reason: string): undefined {
+    if (this.parent) return undefined;
+    this.invariantViolationCount += 1;
+    console.error(
+      JSON.stringify({
+        block: event.position.blockNumber,
+        entityId: event.entityId,
+        event: "herald_invariant_violation",
+        eventIndex: event.position.eventIndex,
+        key: toJsonValue(event.key),
+        kind: event.kind,
+        model: event.model.name,
+        reason,
+        transactionHash: event.position.transactionHash,
+      }),
+    );
+    return undefined;
   }
 
   private applyEventRows(event: Extract<DecodedWorldEvent, { kind: "event" }>): FoldChange[] {

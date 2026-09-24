@@ -10,7 +10,7 @@ import { WorldFold } from "../world-fold";
 import { createHeraldRequestHandler } from "../http";
 import type { MadaraRpc } from "../madara-rpc";
 import type { RpcEvent, RpcBlockWithReceipts } from "../types";
-import { receipt, setup, rowEvent, rulesEvent, shardManifest } from "./fixtures";
+import { receipt, schema, setup, rowEvent, rulesEvent, shardManifest } from "./fixtures";
 
 function block(number: number, events: RpcEvent[]): RpcBlockWithReceipts {
   return {
@@ -204,6 +204,53 @@ it("rebuilds state and history from genesis in one replay when history lags the 
   expect(history.appendEvents).toHaveBeenCalledOnce();
   expect(history.appendEvents.mock.calls[0]![1]).toBe(13);
   expect(checkpointStore.save).toHaveBeenCalledWith("madara", 13, loaded.fold);
+});
+
+it("reports a member write to a row it does not hold once, skips it, and keeps folding", async () => {
+  const { native, decoder, fold } = setup();
+  const model = schema.models.find(({ name }) => name === "TileOpt")!;
+  const layout = schema.domains[model.owners[0]!]!.events.find(({ name }) => name === "RowMemberSet")!;
+  const unheldTile = {
+    from_address: decoder.manifest.world.address,
+    keys: [...layout.prefix, "1", model.identity, model.members[0]!.id!],
+    data: ["4", "1", "0", "5", "5", "1", "2"],
+  };
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  const diffLatency = { record: vi.fn() } as unknown as DiffLatencyMonitor;
+  const live = new LiveWorld({
+    native,
+    chain: "madara",
+    registry: decoder.registry,
+    confirmedBlock: 9,
+    confirmedFold: fold,
+    checkpointStore: { save: vi.fn(async () => {}) },
+    checkpointEveryBlocks: 1,
+    diffLatency,
+    rpc: {
+      getBlockWithReceipts: vi.fn(async () => block(10, [unheldTile, setFixture.raw])),
+    } as unknown as MadaraRpc,
+  });
+
+  await live.acceptSubscribedHead({ block_number: 10, timestamp: 2160 });
+
+  const violations = error.mock.calls
+    .map(([line]) => JSON.parse(String(line)))
+    .filter(({ event }) => event === "herald_invariant_violation");
+  expect(violations).toEqual([
+    expect.objectContaining({
+      block: 10,
+      eventIndex: 0,
+      kind: "update-member",
+      model: "TileOpt",
+      transactionHash: "0xa",
+    }),
+  ]);
+  expect(fold.modelRows("TileOpt")).toEqual([]);
+  expect(fold.modelRows("ExplorerTroops").length).toBeGreaterThan(0);
+  expect(native.halted).toBeUndefined();
+  expect(live.confirmedBlock).toBe(10);
+  expect(diffLatency.record).toHaveBeenCalledWith("confirmed", expect.any(Number), 1);
+  error.mockRestore();
 });
 
 it("halts a confirmed rejection at the last checkpoint without killing receipt subscriptions or startup", async () => {
