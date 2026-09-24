@@ -31,8 +31,9 @@ it("selects the Eternum preset and rejects cross-mode presets", () => {
   expect(() => applyDurableLaunchDefaults("game", { ...gameRequest(), version: "5" })).toThrow();
 });
 
-it("never launches the accelerated Frontier fixture preset", () => {
+it("never launches a Frontier fixture preset", () => {
   const decode = Schema.decodeUnknownSync(CreateGameRequestSchema);
   expect(() => decode({ environment: "madara.blitz", gameName: "fixture", version: "101" })).toThrow();
+  expect(() => decode({ environment: "madara.frontier", gameName: "playtest", version: "102" })).toThrow();
   expect(decode({ environment: "madara.blitz", gameName: "blitz", version: "2" }).version).toBe("2");
 });
