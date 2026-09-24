@@ -1,7 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { StructureType } from "@bibliothecadao/types";
 import * as timestamp from "./timestamp";
-import { liveHomeArmies, structureMapPosition } from "./expeditions";
+import {
+  expeditionSpires,
+  expeditionSpireTile,
+  isAtExpeditionSpire,
+  liveHomeArmies,
+  structureMapPosition,
+} from "./expeditions";
 
 const structure = (overrides: {
   coord_x: number;
@@ -99,5 +105,39 @@ describe("liveHomeArmies", () => {
     const store = armiesStore({ SliceRules: { epoch_seconds: 0 } }, [army(1, 5), army(2, 900), army(3, 7, 0n)]);
     atFloor(86400 * 9);
     expect(liveHomeArmies(store as never, 42, 7).map(({ explorer_id }) => explorer_id)).toEqual([1, 2]);
+  });
+});
+
+describe("expedition spire", () => {
+  // Spacing 10, days from 86400: realm 3's day-two site is (25, 45), an odd row.
+  const rules = { epochSeconds: 86400, spacing: 10, startMainAt: 86400 };
+  const realm = (attunement: number) =>
+    ({
+      game_id: 7,
+      entity_id: 42,
+      base: { coord_x: 0xffffffff - 3, coord_y: 0xffffffff, alt: false, category: StructureType.Realm },
+      metadata: { realm_id: 3, attunement },
+    }) as never;
+
+  it("stands on the home ring's tile in direction (day % 6) and turns one step each day", () => {
+    // Day 1 (epoch 1): the site's neighbour in direction 1 on odd row 45 is (25, 46).
+    expect(expeditionSpireTile(rules, realm(1), 86400 * 2 + 10)).toEqual({ col: 25, row: 46 });
+    // Day 2: site (25, 85), direction 2 on odd row 85 is (24, 86).
+    expect(expeditionSpireTile(rules, realm(1), 86400 * 3 + 10)).toEqual({ col: 24, row: 86 });
+  });
+
+  it("takes an army on the spire or beside it, and nowhere else", () => {
+    const spire = { col: 25, row: 46 };
+    expect(isAtExpeditionSpire(spire, { x: 25, y: 46 })).toBe(true);
+    expect(isAtExpeditionSpire(spire, { x: 26, y: 46 })).toBe(true);
+    expect(isAtExpeditionSpire(spire, { x: 27, y: 46 })).toBe(false);
+  });
+
+  it("lights a spire only for a realm with attunement", () => {
+    const store = {
+      ...storeWith(expeditionRules),
+      inGame: (model: string) => (model === "Structure" ? [realm(0), realm(2)] : [])[Symbol.iterator](),
+    };
+    expect(expeditionSpires(store as never, 7, 86400 * 2 + 10)).toEqual([{ col: 25, row: 46 }]);
   });
 });

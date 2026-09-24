@@ -1,6 +1,6 @@
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { StructureType } from "@bibliothecadao/types";
+import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { getBlockTimestamp } from "./timestamp";
 
 const EXPEDITION_SENTINEL_ROW = 0xffffffff;
@@ -97,4 +97,38 @@ export const expeditionRealmSite = (
     col: (structure.metadata.realm_id - 1) * rules.spacing + half,
     row: epoch * 4 * rules.spacing + half,
   };
+};
+
+/**
+ * The day's spire, which attunement lights: the home-ring tile in direction (day % 6) around today's site, turning one
+ * step each day. The contract's enter_depth takes an army on or beside it; nothing stores it.
+ */
+export const expeditionSpireTile = (
+  rules: ExpeditionRules,
+  structure: NativeRows["Structure"],
+  nowSeconds: number,
+): { col: number; row: number } => {
+  const site = expeditionRealmSite(rules, structure, nowSeconds);
+  const direction = expeditionEpoch(rules, nowSeconds) % 6;
+  const spire = getNeighborHexes(site.col, site.row).find((hex) => hex.direction === direction);
+  if (!spire) throw new Error(`No hex in direction ${direction} around the expedition site`);
+  return { col: spire.col, row: spire.row };
+};
+
+/** Whether an army stands where enter_depth takes it: on its realm's spire or beside it. */
+export const isAtExpeditionSpire = (spire: { col: number; row: number }, coord: { x: number; y: number }): boolean =>
+  (spire.col === coord.x && spire.row === coord.y) ||
+  getNeighborHexes(spire.col, spire.row).some((hex) => hex.col === coord.x && hex.row === coord.y);
+
+/** Every spire lit today that the store knows of: one per expedition realm with attunement. */
+export const expeditionSpires = (
+  store: Pick<NativeFactStore, "get" | "require" | "inGame">,
+  gameId: number,
+  nowSeconds: number,
+): Array<{ col: number; row: number }> => {
+  const rules = readExpeditionRules(store, gameId);
+  if (!rules) return [];
+  return [...store.inGame("Structure", gameId)]
+    .filter((structure) => isExpeditionRealm(structure) && structure.metadata.attunement >= 1)
+    .map((structure) => expeditionSpireTile(rules, structure, nowSeconds));
 };

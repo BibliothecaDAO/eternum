@@ -5,21 +5,22 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
   configManager,
+  expeditionSpireTile,
   getBlockTimestamp,
+  isAtExpeditionSpire,
   isExpeditionRealm,
   readExpeditionRules,
   StaminaManager,
-  structureMapPosition,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { getNeighborHexes, type ID } from "@bibliothecadao/types";
+import type { ID } from "@bibliothecadao/types";
 import { useState } from "react";
 import type { Account } from "starknet";
 
 const DEPTH_NAMES = ["", "Ethereal I", "Ethereal II", "Ethereal III"];
 
-/** The spire stands on the realm's own ring: an army beside it picks a depth its realm has attuned to. */
+/** The spire stands on the realm's own ring: an army on it or beside it picks a depth its realm has attuned to. */
 export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
   const {
     setup: { store, systemCalls },
@@ -34,10 +35,8 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
   if (!explorer || !home || !rules || !isExpeditionRealm(home) || !account) return null;
   if (home.owner !== BigInt(account.address) || home.metadata.attunement === 0) return null;
 
-  const site = structureMapPosition(store, home);
-  const besideSpire = getNeighborHexes(site.x, site.y).some(
-    (hex) => hex.col === explorer.coord.x && hex.row === explorer.coord.y,
-  );
+  const spire = expeditionSpireTile(rules, home, getBlockTimestamp().currentBlockTimestamp);
+  const besideSpire = isAtExpeditionSpire(spire, explorer.coord);
   const stamina = Number(StaminaManager.getStamina(explorer.troops, getBlockTimestamp().currentArmiesTick).amount);
   const depths = Array.from({ length: home.metadata.attunement }, (_, index) => index + 1).map((depth) => ({
     depth,
@@ -61,7 +60,7 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
       <p className={HUD_BODY}>
         {besideSpire
           ? "Pick a depth. Deeper ground pays more and guards harder; the trip costs stamina."
-          : "Bring this army beside your realm to enter the spire."}
+          : "Bring this army to your realm's spire to enter it."}
       </p>
       <div className="flex flex-wrap gap-1.5">
         {depths.map(({ depth, cost }) => (

@@ -1,7 +1,7 @@
 import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
 import { followArmyLayerChange } from "./worldmap-layer-follow";
 import { TileOccupier } from "@bibliothecadao/types";
-import { SpireManager } from "../managers/spire-manager";
+import { SpireManager, type RuleSpires } from "../managers/spire-manager";
 import { activeMapLayer } from "@/three/map-layer";
 import type { ReactNode } from "react";
 import { isMapPreviewAction } from "./worldmap-action-preview-policy";
@@ -54,6 +54,7 @@ import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import {
   configManager,
+  expeditionSpires,
   NEUTRAL_BIOME_CLIMATE,
   Position,
   isOpenSpawnHex,
@@ -1221,6 +1222,7 @@ export default class WorldmapScene extends WarpTravel {
       this.spireLabelsGroup,
       this.getTerrainSurface(),
       this.markLabelsDirty,
+      this.createRuleSpires(),
     );
     this.chestManager = new ChestManager(
       this.scene,
@@ -1305,6 +1307,26 @@ export default class WorldmapScene extends WarpTravel {
       isSwitchedOff: () => this.isSwitchedOff,
       reconcileHexHover: (hex) => this.hoverLabelManager.reconcileHexHover(hex),
     });
+  }
+
+  /** Frontier's spires stand by rule on each attuned realm's ring; they move when attunement or the day changes. */
+  private createRuleSpires(): RuleSpires {
+    const store = this.game.store;
+    const projection = this.worldSpatialProjection;
+    return {
+      hexes: () => expeditionSpires(store, configManager.getActiveGameId(), getBlockTimestamp().currentBlockTimestamp),
+      subscribe: (onChange) => {
+        const unsubscribeFacts = store.subscribe((changes) => {
+          if (changes.some((change) => change.model === "Structure")) onChange();
+        });
+        // The day turning over re-projects every realm onto its new site.
+        const unsubscribeStructures = projection.subscribeStructures(() => onChange());
+        return () => {
+          unsubscribeFacts();
+          unsubscribeStructures();
+        };
+      },
+    };
   }
 
   private bindWorldSpatialProjectionLifecycle(): void {
