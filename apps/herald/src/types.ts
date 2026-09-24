@@ -114,8 +114,9 @@ interface DecodedWorldEventBase {
 
 export type DecodedWorldEvent =
   | (DecodedWorldEventBase & { kind: "set"; key: DecodedRecord; value: DecodedRecord })
-  | (DecodedWorldEventBase & { kind: "update"; value: DecodedRecord })
-  | (DecodedWorldEventBase & { kind: "update-member"; member: string; value: unknown })
+  // A partial write carries no keys; `writesZero` says every felt it writes is zero.
+  | (DecodedWorldEventBase & { kind: "update"; value: DecodedRecord; writesZero: boolean })
+  | (DecodedWorldEventBase & { kind: "update-member"; member: string; value: unknown; writesZero: boolean })
   | (DecodedWorldEventBase & { kind: "delete" })
   | (DecodedWorldEventBase & { kind: "event"; key: DecodedRecord; value: DecodedRecord });
 

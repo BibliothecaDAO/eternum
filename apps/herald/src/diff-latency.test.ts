@@ -44,6 +44,7 @@ describe("DiffLatencyMonitor", () => {
         maxMs: 100,
         p50Ms: 50,
         p95Ms: 95,
+        unkeyedWrites: 0,
         windowMs: 60_000,
       },
     ]);
@@ -76,13 +77,13 @@ describe("DiffLatencyMonitor", () => {
     ]);
   });
 
-  it("bounds the samples kept for percentiles while counting every diff", () => {
+  it("bounds the samples kept for percentiles while counting every diff and unkeyed write", () => {
     const { advance, digests, monitor } = monitorFixture();
     for (let index = 0; index < 2_048; index += 1) monitor.record("confirmed", 1);
     for (let index = 0; index < 1_000; index += 1) monitor.record("confirmed", 1_000);
 
     advance(60_000);
-    monitor.record("confirmed", 1_000);
+    monitor.record("confirmed", 1_000, 2);
 
     expect(digests()).toEqual([
       {
@@ -92,6 +93,7 @@ describe("DiffLatencyMonitor", () => {
         maxMs: 1,
         p50Ms: 1,
         p95Ms: 1,
+        unkeyedWrites: 2,
         windowMs: 60_000,
       },
     ]);

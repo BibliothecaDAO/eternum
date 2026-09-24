@@ -4,11 +4,14 @@ interface LatencyWindow {
   count: number;
   samples: number[];
   startedAt: number;
+  unkeyedWrites: number;
 }
 
 const SLOW_DIFF_MS = 200;
 const DIGEST_WINDOW_MS = 60_000;
 const MAX_SAMPLES_PER_WINDOW = 2_048;
+
+const emptyWindow = (startedAt: number): LatencyWindow => ({ count: 0, samples: [], startedAt, unkeyedWrites: 0 });
 
 const nearestRank = (sorted: number[], quantile: number): number => sorted[Math.ceil(quantile * sorted.length) - 1]!;
 
@@ -24,25 +27,27 @@ export class DiffLatencyMonitor {
     private readonly log: Pick<Console, "info" | "warn"> = console,
   ) {}
 
-  public record(kind: DiffKind, durationMs: number): void {
+  /** `unkeyedWrites` counts the partial writes this diff's fold could not key (see WorldFold.unkeyedWrites). */
+  public record(kind: DiffKind, durationMs: number, unkeyedWrites = 0): void {
     if (durationMs > SLOW_DIFF_MS) {
       this.log.warn(JSON.stringify({ durationMs: Math.round(durationMs), event: "herald_diff_slow", kind }));
     }
     const now = this.now();
     const window = this.windowFor(kind, now);
     window.count += 1;
+    window.unkeyedWrites += unkeyedWrites;
     // Percentiles come from the window's first samples so memory stays bounded; the count still covers every diff.
     if (window.samples.length < MAX_SAMPLES_PER_WINDOW) window.samples.push(durationMs);
     const windowMs = now - window.startedAt;
     if (windowMs < DIGEST_WINDOW_MS) return;
     this.log.info(JSON.stringify(this.digest(kind, window, windowMs)));
-    this.windows.set(kind, { count: 0, samples: [], startedAt: now });
+    this.windows.set(kind, emptyWindow(now));
   }
 
   private windowFor(kind: DiffKind, now: number): LatencyWindow {
     let window = this.windows.get(kind);
     if (!window) {
-      window = { count: 0, samples: [], startedAt: now };
+      window = emptyWindow(now);
       this.windows.set(kind, window);
     }
     return window;
@@ -57,6 +62,7 @@ export class DiffLatencyMonitor {
       maxMs: Math.round(sorted.at(-1)!),
       p50Ms: Math.round(nearestRank(sorted, 0.5)),
       p95Ms: Math.round(nearestRank(sorted, 0.95)),
+      unkeyedWrites: window.unkeyedWrites,
       windowMs: Math.round(windowMs),
     };
   }

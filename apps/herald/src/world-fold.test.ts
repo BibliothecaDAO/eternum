@@ -1,6 +1,6 @@
 import type { GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-models";
 import { hash } from "starknet";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createModelRegistry } from "./model-registry";
 import type { DecodedWorldEvent, RawWorldEvent, WorldManifest } from "./types";
@@ -196,6 +196,52 @@ describe("WorldFold", () => {
     const overlay = new WorldFold(registry, fold);
     expect(overlay.apply(decodeRequired(registry, unknownRow))).toBeUndefined();
     expect(overlay.snapshot(7, 12).models[0].rows.map(({ key }) => key)).toEqual(["0xabc"]);
+  });
+
+  it("leaves a row erased when Dojo writes zero felts to it after an erase, or before any set", () => {
+    const fold = new WorldFold(registry);
+    const zeroMember = rawEvent(
+      WORLD_EVENT_SELECTORS.updateMember,
+      "0x101",
+      ["0x1", "0x0"],
+      [hash.getSelectorFromName("count")],
+    );
+
+    expect(fold.apply(decodeRequired(registry, zeroMember))).toBeUndefined();
+    fold.apply(
+      decodeRequired(
+        registry,
+        rawEvent(WORLD_EVENT_SELECTORS.set, "0x101", ["0x2", "0x7", "0x2", "0x5", "0x3", "0x1", "0x4", "0x5", "0x2"]),
+      ),
+    );
+    fold.apply(decodeRequired(registry, rawEvent(WORLD_EVENT_SELECTORS.delete, "0x101", [])));
+    expect(fold.apply(decodeRequired(registry, zeroMember))).toBeUndefined();
+    expect(fold.snapshot(7, 12).models[0].rows).toEqual([]);
+  });
+
+  it("reports a non-zero write to a row it does not hold, and keeps folding", () => {
+    const fold = new WorldFold(registry);
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const write = rawEvent(
+      WORLD_EVENT_SELECTORS.updateMember,
+      "0x101",
+      ["0x1", "0x9"],
+      [hash.getSelectorFromName("count")],
+    );
+
+    expect(fold.overlay().apply(decodeRequired(registry, write))).toBeUndefined();
+    expect(fold.unkeyedWrites).toBe(0);
+    expect(fold.apply(decodeRequired(registry, write))).toBeUndefined();
+    expect(fold.unkeyedWrites).toBe(1);
+    expect(JSON.parse(error.mock.calls[0]![0] as string)).toMatchObject({
+      block: 12,
+      entityId: "0xabc",
+      event: "herald_unkeyed_write",
+      model: "TestModel",
+      transactionHash: "0x456",
+    });
+    expect(fold.snapshot(7, 12).models[0].rows).toEqual([]);
+    error.mockRestore();
   });
 
   it("decodes event messages without retaining them in the state fold", () => {

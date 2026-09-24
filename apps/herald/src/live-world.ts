@@ -261,6 +261,7 @@ export class LiveWorld {
     if (this.checkpointFailure) throw this.checkpointFailure;
     if (head.block_number < this.confirmedBlockValue) return;
     const startedAt = performance.now();
+    const unkeyedWritesBefore = this.confirmedFold.unkeyedWrites;
 
     this.flushPreconfirmedTransaction();
 
@@ -270,7 +271,11 @@ export class LiveWorld {
     this.resetOverlay();
     await this.rebuildOverlay();
     this.publishOverlayReverts();
-    this.diffLatency.record("confirmed", performance.now() - startedAt);
+    this.diffLatency.record(
+      "confirmed",
+      performance.now() - startedAt,
+      this.confirmedFold.unkeyedWrites - unkeyedWritesBefore,
+    );
     this.lastClockTimestamp = Math.max(this.lastClockTimestamp, head.timestamp);
     for (const gameId of this.knownGames) this.hub.publishHead(gameId, head.block_number, head.timestamp);
     this.checkpointIfDue();

@@ -35,6 +35,8 @@ const readOnlySpan = (event: RawWorldEvent): Felt[] => {
   return span.values;
 };
 
+const allZero = (felts: Felt[]): boolean => felts.every((felt) => BigInt(felt) === 0n);
+
 const readKeyAndValueSpans = (event: RawWorldEvent): { keys: Felt[]; values: Felt[] } => {
   const keys = readSpan(event.data, 0);
   const values = readSpan(event.data, keys.nextOffset);
@@ -62,13 +64,14 @@ export const decodeWorldEvent = (registry: ModelRegistry, event: RawWorldEvent):
     };
   }
   if (eventSelector === WORLD_EVENT_SELECTORS.update) {
-    return { ...base, kind: "update", value: codec.decodeValue(readOnlySpan(event), "store") };
+    const felts = readOnlySpan(event);
+    return { ...base, kind: "update", value: codec.decodeValue(felts, "store"), writesZero: allZero(felts) };
   }
   if (eventSelector === WORLD_EVENT_SELECTORS.updateMember) {
     const memberSelector = event.keys[3];
     if (!memberSelector) throw new Error("StoreUpdateMember is missing its member selector");
-    const member = codec.decodeMember(memberSelector, readOnlySpan(event));
-    return { ...base, kind: "update-member", ...member };
+    const felts = readOnlySpan(event);
+    return { ...base, kind: "update-member", ...codec.decodeMember(memberSelector, felts), writesZero: allZero(felts) };
   }
   if (eventSelector === WORLD_EVENT_SELECTORS.delete) {
     if (event.data.length !== 0) throw new Error("StoreDelRecord unexpectedly contains data");
