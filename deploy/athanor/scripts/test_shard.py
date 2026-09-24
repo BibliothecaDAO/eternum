@@ -69,6 +69,21 @@ class ShardTest(unittest.TestCase):
             self.assertEqual(saved["MADARA_IMAGE"], NODE_IMAGE)
             self.assertEqual(saved["MADARA_CONTAINER"], "community-madara-1")
 
+    def test_package_init_derives_the_trusted_proxy_only_behind_loopback_bindings(self):
+        spec = importlib.util.spec_from_file_location("shard_init", shard.ROOT / "deploy/shard/init.py")
+        package = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(package)
+        routes = ("Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\n"
+                  "eth0\t00000000\t0170A8C0\t0003\t0\t0\t0\t00000000\n"
+                  "eth0\t0070A8C0\t00000000\t0001\t0\t0\t0\t00F0FFFF\n")
+        self.assertEqual(package.trusted_proxy({}, routes), "192.168.112.1")
+        self.assertEqual(package.trusted_proxy({"BIND_ADDRESS": "127.0.0.1"}, routes), "192.168.112.1")
+        self.assertEqual(package.trusted_proxy({"TRUSTED_PROXY": "10.0.0.7", "BIND_ADDRESS": "0.0.0.0"}, routes),
+                         "10.0.0.7")
+        self.assertIsNone(package.trusted_proxy({"BIND_ADDRESS": "0.0.0.0"}, routes))
+        with self.assertRaises(ValueError):
+            package.trusted_proxy({"TRUSTED_PROXY": "cloudflared"}, routes)
+
     def test_initialization_replaces_template_identity_for_each_shard(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

@@ -19,6 +19,7 @@ PUBLIC_ADMISSION_URL=https://admission.example.org
 HERALD_MEMORY=6g
 NODE_MEMORY=24g
 CONFIG
+printf 'HOST_UID=%s\nHOST_GID=%s\n' "$(id -u)" "$(id -g)" >> .env
 docker compose up -d
 ```
 
@@ -47,9 +48,11 @@ operator recorded in `data/gameplay-contracts.json`. All require zero tip. SDK f
 other writes and node WebSocket upgrades are refused. The node still verifies every submitted transaction signature.
 The default loopback bindings expect a tunnel on the host. Set `BIND_ADDRESS` only when placing these three services
 behind another TLS proxy. The node has no published port.
-Set `TRUSTED_PROXY` to the tunnel's socket peer IP. Only that peer may supply a client address, using the last
-`X-Forwarded-For` entry; otherwise requests are keyed by their socket peer. The account RPC limit is 30 requests per
-client per minute. The benchmark runner names this same setting `trusted_proxy`.
+Only a trusted proxy may supply a client address, using the last `X-Forwarded-For` entry; other requests are keyed by
+their socket peer. The account RPC limit is 30 requests per client per minute. Behind the default loopback bindings,
+every connection arrives from the shard's Compose network gateway, so initialization trusts that address, found again
+on every start; with `BIND_ADDRESS` set, it trusts no one unless `TRUSTED_PROXY` names your proxy's socket peer IP.
+An explicit `TRUSTED_PROXY` always wins. The benchmark runner names this same setting `trusted_proxy`.
 
 Verify the boundary and read the public manifest:
 

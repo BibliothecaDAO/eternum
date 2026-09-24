@@ -14,6 +14,7 @@ x-init: &init
     PUBLIC_ADMISSION_URL: ${PUBLIC_ADMISSION_URL:?Set the admission URL}
     PLAYER_CAPACITY: ${PLAYER_CAPACITY:-96}
     TRUSTED_PROXY: ${TRUSTED_PROXY:-}
+    BIND_ADDRESS: ${BIND_ADDRESS:-127.0.0.1}
     HOST_UID: ${HOST_UID:-0}
     HOST_GID: ${HOST_GID:-0}
 
@@ -81,8 +82,8 @@ services:
       postgres: { condition: service_healthy }
   gateway:
     image: ${SHARD_GATEWAY_IMAGE:?Use the published gateway image digest}
-    entrypoint: ["/bin/sh", "-ec", "set -a; . /config/gateway.env; exec /usr/local/bin/realms-gateway"]
-    volumes: ["gateway:/data", "gateway-config:/config:ro"]
+    entrypoint: ["/bin/sh", "-ec", "set -a; . /config/gateway.env; . /public/proxy.env; exec /usr/local/bin/realms-gateway"]
+    volumes: ["gateway:/data", "gateway-config:/config:ro", "public-config:/public:ro"]
     ports: ["${BIND_ADDRESS:-127.0.0.1}:${ADMISSION_PORT:-8082}:9950"]
     mem_limit: 1g
     memswap_limit: 1g
@@ -91,11 +92,10 @@ services:
       init: { condition: service_completed_successfully }
   rpc:
     image: ${SHARD_HERALD_IMAGE:?Use the published Herald image digest}
-    entrypoint: ["bun", "/app/read-rpc.js"]
+    entrypoint: ["/bin/sh", "-ec", "set -a; . /config/proxy.env; exec bun /app/read-rpc.js"]
     environment:
       NODE_RPC_URL: http://madara:9944
       NATIVE_WORLD_MANIFEST: /config/native-world.json
-      RPC_TRUSTED_PROXY: ${TRUSTED_PROXY:-}
     volumes: ["public-config:/config:ro"]
     ports: ["${BIND_ADDRESS:-127.0.0.1}:${RPC_PORT:-8080}:8080"]
     mem_limit: 256m
