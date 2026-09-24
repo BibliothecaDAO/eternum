@@ -321,7 +321,6 @@ def write_gateway_environment(config, directory, environment, authority, world):
         "GATEWAY_PLAYER_CAPACITY": config["player_capacity"],
         "GATEWAY_AUTHORITY": json.loads((directory / "gameplay-contracts.json").read_text())["operatorAccountAddress"],
         "NODE_RPC_URL": "http://madara:9944/rpc/v0_10_2", "NODE_WS_URL": "ws://madara:9944/rpc/v0_10_2",
-        **({"GATEWAY_TRUSTED_PROXY": config["trusted_proxy"]} if "trusted_proxy" in config else {}),
     })
 
 
