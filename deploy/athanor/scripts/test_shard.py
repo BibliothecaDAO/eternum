@@ -306,12 +306,29 @@ class ShardTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError):
             shard.write_private_environment(Path(temporary) / "gateway.env", {"KEY": "value\nOTHER=bad"})
 
+    def test_a_trial_runs_its_package_images_and_builds_a_lever_gateway(self):
+        package = {"init_image": "ghcr.io/i@sha256:" + "1" * 64, "herald_image": "ghcr.io/h@sha256:" + "2" * 64,
+                   "gateway_image": "ghcr.io/g@sha256:" + "3" * 64}
+        lever = "sha256:" + "4" * 64
+        with patch.object(shard, "release_images", return_value=package) as release, \
+             patch.object(shard, "gateway_image_at", return_value=lever) as build:
+            base = shard.resolve_images({"package": "shard-v1.0.0"})
+            trial = shard.resolve_images({"package": "shard-v1.0.0", "gateway_revision": "abc1234",
+                                          "herald_image": "sha256:" + "5" * 64})
+        self.assertEqual({key: base[key] for key in package}, package)
+        self.assertEqual(trial["gateway_image"], lever)
+        self.assertEqual(trial["herald_image"], "sha256:" + "5" * 64)
+        self.assertEqual(trial["init_image"], package["init_image"])
+        release.assert_called_with("shard-v1.0.0")
+        build.assert_called_once_with("abc1234")
+
     def test_matrix_runs_in_order_and_stops_only_its_own_projects(self):
         for failure in (None, RuntimeError("workload failed")):
             with self.subTest(failure=failure), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 matrix = {
-                    "configurations": [configuration(), {**configuration(), "shard": "second"}],
+                    "configurations": [configuration(), {**configuration(), "shard": "second",
+                                                          "workload": {"minutes": 30}}],
                     "workload": {"games": 2, "accounts_per_game": 3, "minutes": 1,
                                  "interval_seconds": 16, "setup_concurrency": 3, "workload": "build-order"},
                 }
@@ -326,7 +343,7 @@ class ShardTest(unittest.TestCase):
                 with patch.object(shard, "start_shard", side_effect=start), \
                      patch.object(shard, "capture_host") as hosts, \
                      patch.object(shard, "run") as stop, \
-                     patch.object(shard, "run_workload", side_effect=failure):
+                     patch.object(shard, "run_workload", side_effect=failure) as workload:
                     output = root / "matrix"
                     if failure:
                         with self.assertRaisesRegex(RuntimeError, "workload failed"):
@@ -334,6 +351,8 @@ class ShardTest(unittest.TestCase):
                     else:
                         self.assertTrue(shard.run_matrix(matrix, output)["passed"])
                     self.assertEqual(started, ["smoke"] if failure else ["smoke", "second"])
+                    minutes = [call.args[0][call.args[0].index("--minutes") + 1] for call in workload.call_args_list]
+                    self.assertEqual(minutes, ["1"] if failure else ["1", "30"])
                     self.assertEqual(hosts.call_count, len(started) * 2)
                     for call, name in zip(stop.call_args_list, started):
                         self.assertEqual(call.args[0][-2:], [str(output / name / "compose.json"), "stop"])
