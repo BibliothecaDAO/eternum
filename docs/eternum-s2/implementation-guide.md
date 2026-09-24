@@ -85,6 +85,31 @@ movement and external settlement
 This separation prevents overflow burns, double counting during capture and accidental loss when a transaction or
 indexer restarts.
 
+Ground Caches require a per-hex asset and amount, resolution marker, and collected state. Armies need homogeneous class
+and tier, surviving body count, carried asset balances and derived cargo capacity. Combat loss may make cargo overweight
+without deleting goods. The authoritative move, explore and Spire-crossing admission must reject an overweight army
+until its Owner explicitly burns enough cargo. Pickup requires occupancy of the cache hex and full capacity for the
+reward.
+
+Essence Rifts need a tier-selected initial reserve, remaining reserve and local unclaimed entitlement as separate state.
+Only a successful claim reduces remaining reserve. A full 86,400 Essence local buffer stops accrual without reducing the
+reserve; quotes bound claimable Essence by entitlement, remaining reserve and destination capacity.
+
+Current `models/weight.cairo` permits combat capacity loss to leave weight above capacity and reports zero unused space;
+`systems/resources/contracts/resource_systems.cairo` already exposes authorised `troop_burn`. However,
+`systems/combat/contracts/troop_movement.cairo` lacks an overweight admission guard and exploration credits rewards
+directly. The Eternum S2 path must guard move, paid exploration and Spire crossing at the authoritative boundary,
+preserve cargo after losses, and materialise discovered rewards in Ground Caches. A stationary E7/E8 reveal remains
+available to an overweight army. Show the overweight deficit, manual burn action, pickup fit and uncollected markers in
+the client. Test casualty-induced overweight, denied actions, Owner burn recovery, same-hex full pickup, no-adjacency
+pickup and unchanged Blitz behavior.
+
+Existing E7/E8 Relics center radius-one/two rings on the army but require surface activation. The S2 reveal uses the
+army's current layer, so its activation admission needs an Eternum-only mode guard. Existing E9/E10 reward boosts are
++100%/+200%; apply the active boost when each eligible Ground Cache amount is revealed, then persist that amount. Test
+overlapping/pre-explored hexes, structure priority, Ethereal zero material, bonus expiry before pickup and repeat pickup
+attempts.
+
 ### 3.1 Asset conservation
 
 For every asset and transition, tests must reconcile:
@@ -142,7 +167,7 @@ Herald must be able to rebuild the full current state from deployment without qu
 
 ## 5. Config compiler and activation
 
-Do not hand-copy the 2,000 parameters or 1,362 recipe components into scattered constants. Build one deterministic
+Do not hand-copy the 2,072 parameters or 1,362 recipe components into scattered constants. Build one deterministic
 compiler or importer that:
 
 1. parses strings with the declared precision;
@@ -191,6 +216,11 @@ submit, observe, replay and test the mechanic through the normal stack.
 - Production stops accruing at each local entitlement cap.
 - Claims debit exact inputs and apply maintenance to output only.
 - A failed or disallowed partial action changes no balance, timestamp or escrow.
+- Exploration resolves each eligible hex once: structure first, then the Primary-only 10% material find and conditional
+  outcome. Initial reveals and revisits do not roll; E7/E8 reveal 6/18 same-layer hexes without automatic pickup.
+- A Ground Cache remains visible until an occupying army takes the entire reward within its surviving cargo capacity.
+  Combat loss can block movement, exploration and crossing until an explicit Owner burn; cargo is never auto-burned.
+- A Rift claim cannot exceed its finite reserve, and time at the full local cap cannot consume that reserve.
 - Each capacity family is enforced independently; overflow is never destroyed silently.
 - Worker-only T1 recovery remains possible without a raid-floor subsystem.
 

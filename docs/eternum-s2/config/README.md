@@ -16,6 +16,23 @@ to Eternum only and is deliberately independent of working documents or external
 
 The root `counts` object is a validation aid. It must match the actual rows.
 
+## Exploration, army cargo and Rift reserves
+
+`exploration.material_find_bps.*` applies only after the structure resolver returns no structure. The six
+`exploration.reward.outcome.*.weight_bps` rows are conditional weights after a material find, not per-explore chances;
+they total 10,000. The amount formula uses the homogeneous army's surviving body count and tier strength. Active E9/E10
+bonuses are applied at reveal and stored in the Ground Cache amount, so expiry before pickup cannot reprice it. Outcome
+IDs name Essence, Donkey and Worker rewards; E7/E8 are Relic reveal identities.
+
+Ground Cache state belongs to its hex until an occupying army collects the entire amount. Paid explore can automatically
+collect when the player leaves the default option enabled and the full amount fits. E7/E8 multi-hex reveals never
+collect automatically. Use the asset table's `weight_grams` to evaluate army cargo against the selected per-troop kg
+allowance. An overweight army retains goods and requires an explicit Owner burn before move, explore or layer crossing.
+
+Rift reserve tiers and their equal draw weights are separate from the 86,400 local entitlement cap. Successful claims
+alone debit reserve; elapsed accrual and a full buffer do not. The claimable formula bounds the credit by local
+entitlement, remaining reserve and destination capacity.
+
 ## Parsing rules
 
 Most numeric values are encoded as strings. This is intentional: consumers must choose the correct integer, fixed-point

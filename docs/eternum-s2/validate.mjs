@@ -12,6 +12,7 @@ validateFiles();
 validateMarkdown();
 validateCounts();
 validateSelectedConfig();
+validateExplorationAndReserves();
 validateCentralBank();
 await import("./maps/validate.mjs");
 
@@ -43,7 +44,7 @@ function validateFiles() {
   }
 
   const configText = fs.readFileSync(path.join(packageRoot, "config/initial-playtest.json"), "utf8");
-  assert(!/\b(?:candidate|checkpoint|workbook|overlay|e\d{2})\b/i.test(configText), "config contains design history");
+  assert(!/\b(?:candidate|checkpoint|workbook|overlay)\b/i.test(configText), "config contains design history");
   assert(!/raid|rebellion|casual|onboarding/i.test(configText), "config contains removed Village or raid rules");
   assert(!/manager/i.test(configText), "config contains the removed separate Village Manager role");
 }
@@ -214,6 +215,108 @@ function validateSelectedConfig() {
     assert(transition.transition_id, "transition is missing transition_id");
     assert(transition.failure_rule, `${transition.transition_id} is missing failure_rule`);
     assert(transition.events, `${transition.transition_id} is missing events`);
+  }
+}
+
+function validateExplorationAndReserves() {
+  const value = (key) => config.parameters[key]?.value;
+  const required = {
+    "exploration.initial_reveal_rewards": "false",
+    "exploration.material_find_bps.primary": "1000",
+    "exploration.material_find_bps.ethereal": "0",
+    "exploration.relic.e7.reveal_hexes": "6",
+    "exploration.relic.e8.reveal_hexes": "18",
+    "exploration.relic.e9.reward_bonus_bps": "10000",
+    "exploration.relic.e10.reward_bonus_bps": "20000",
+    "exploration.relic.reveal_center": "army_current_hex",
+    "exploration.relic.reveal_layer": "current_army_layer",
+    "exploration.relic.reveal_auto_pickup": "false",
+    "exploration.reward.auto_pickup_default": "true",
+    "exploration.reward.auto_pickup_policy": "paid_explore_only_when_entire_reward_fits",
+    "exploration.reward.custody": "ground_cache_on_revealed_hex",
+    "exploration.reward.active_relic_bonus_timing": "at_reveal_persist_final_ground_cache_amount",
+    "exploration.reward.active_relic_bonus_scope": "paid_explore_and_relic_reveal_new_material_finds",
+    "exploration.reward.marker_until_collected": "true",
+    "exploration.reward.pickup_position": "occupying_hex_only_no_adjacency",
+    "exploration.reward.resolution_order": "world_structure_then_material_find_then_conditional_outcome",
+    "exploration.reward.resolved_once_per_hex": "true",
+    "exploration.reward.strength_reference": "3000",
+    "exploration.reward.factor_min_bps": "200",
+    "exploration.reward.factor_max_bps": "10000",
+    "exploration.reward.amount_formula":
+      "max(1,floor(base_amount*clamp(sqrt((bodies*tier_strength)/3000),0.02,1)))*(10000+active_relic_bonus_bps)/10000",
+    "military.army_homogeneous_class_and_tier": "true",
+    "military.army_cargo_kg_per_troop.t1": "10",
+    "military.army_cargo_kg_per_troop.t2": "20",
+    "military.army_cargo_kg_per_troop.t3": "30",
+    "military.army_overweight_blocked_actions": "move|paid_explore|cross_layer",
+    "military.army_overweight_resolution": "owner_explicit_cargo_burn_only",
+    "world_node.essence_rift.output_rate_per_second": "1",
+    "world_node.essence_rift.local_capacity": "86400",
+    "world_node.essence_rift.reserve_depletion": "successful_claim_only",
+    "world_node.essence_rift.full_local_cap_reserve_effect": "none",
+    "world_node.essence_rift.claimable_formula": "min(local_entitlement,remaining_reserve,material_capacity_headroom)",
+    "research.relic_exchange_cost": "25000",
+    "research.research_essence.all": "40",
+    "research.research_workers.all": "4",
+  };
+  for (const [key, expected] of Object.entries(required)) assert.equal(value(key), expected, key);
+
+  const outcomes = {
+    essence_level_1: ["ESSENCE", "5000", "3000"],
+    essence_level_2: ["ESSENCE", "10000", "1500"],
+    donkeys_level_1: ["DONKEYS", "200", "2500"],
+    donkeys_level_2: ["DONKEYS", "500", "1000"],
+    workers_level_1: ["WORKERS", "250", "1500"],
+    workers_level_2: ["WORKERS", "750", "500"],
+  };
+  assert.deepEqual(
+    Object.keys(config.parameters)
+      .filter((key) => key.endsWith(".weight_bps") && key.startsWith("exploration.reward.outcome."))
+      .sort(),
+    Object.keys(outcomes)
+      .map((id) => `exploration.reward.outcome.${id}.weight_bps`)
+      .sort(),
+  );
+  let totalWeight = 0;
+  for (const [id, [asset, amount, weight]] of Object.entries(outcomes)) {
+    const prefix = `exploration.reward.outcome.${id}`;
+    assert.equal(value(`${prefix}.asset`), asset);
+    assert.equal(value(`${prefix}.base_amount`), amount);
+    assert.equal(value(`${prefix}.weight_bps`), weight);
+    totalWeight += Number(weight);
+  }
+  assert.equal(totalWeight, 10000);
+  const relicResearchDebit = config.recipes.find(
+    (recipe) => recipe.recipe_id === "forge_relic" && recipe.asset === "RESEARCH" && recipe.direction === "debit",
+  );
+  assert.equal(relicResearchDebit?.amount_formula, "research.relic_exchange_cost");
+  assert.equal(relicResearchDebit?.parameter_keys, "research.relic_exchange_cost");
+
+  const reserveTiers = ["600000", "1200000", "1800000", "2400000", "3000000"];
+  for (const [index, reserve] of reserveTiers.entries()) {
+    assert.equal(value(`world_node.essence_rift.reserve_tier.${index + 1}`), reserve);
+    assert.equal(value(`world_node.essence_rift.reserve_tier_weight_bps.${index + 1}`), "2000");
+  }
+  for (const id of [
+    "explore_hex",
+    "reveal_relic_hexes",
+    "collect_ground_cache",
+    "burn_army_cargo",
+    "extract_essence",
+  ]) {
+    assert(
+      config.transitions.some((transition) => transition.transition_id === id),
+      `${id} transition missing`,
+    );
+  }
+  for (const id of [
+    "exploration_reward_custody",
+    "exploration_relic_reward_bonus",
+    "army_cargo_encumbrance",
+    "essence_rift_finite_reserve",
+  ]) {
+    assert(config.acceptance_targets[id], `${id} acceptance target missing`);
   }
 }
 

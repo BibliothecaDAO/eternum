@@ -53,3 +53,17 @@ which names a Donkey-producing holding building
 
 **Mountains**: A revealed biome that admits neither army traversal nor spawning. _Avoid_: Difficult terrain, which
 suggests a traversable movement penalty
+
+## Exploration and world supply
+
+**Ground Cache**: A discovered material reward held on its revealed hex until an occupying army collects it. _Avoid_:
+Automatic inventory reward
+
+**Army Cargo**: Goods carried by a field army within the weight capacity supplied by its surviving troops. _Avoid_:
+Holding storage
+
+**Overweight Army**: An army whose carried goods exceed the capacity supplied by its surviving troops. _Avoid_:
+Destroyed cargo
+
+**Rift Reserve**: The finite amount of Essence that an Essence Rift can ultimately yield through successful claims.
+_Avoid_: Local unclaimed buffer

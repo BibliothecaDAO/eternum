@@ -10,11 +10,11 @@
     "agents"
   ],
   "counts": {
-    "parameters": 2011,
-    "acceptance_targets": 67,
+    "parameters": 2072,
+    "acceptance_targets": 71,
     "assets": 41,
     "recipe_components": 1362,
-    "transitions": 46
+    "transitions": 50
   },
   "parameters": {
     "asset": {
@@ -1368,6 +1368,211 @@
       "unit": "Essence per second",
       "precision": "integer_or_scaled_asset"
     },
+    "exploration.initial_reveal_rewards": {
+      "value": "false",
+      "unit": "boolean",
+      "precision": "boolean"
+    },
+    "exploration.material_find_bps.ethereal": {
+      "value": "0",
+      "unit": "basis_points_after_no_structure",
+      "precision": "integer"
+    },
+    "exploration.material_find_bps.primary": {
+      "value": "1000",
+      "unit": "basis_points_after_no_structure",
+      "precision": "integer"
+    },
+    "exploration.relic.e10.reward_bonus_bps": {
+      "value": "20000",
+      "unit": "basis_points_on_exploration_reward",
+      "precision": "integer"
+    },
+    "exploration.relic.e7.reveal_hexes": {
+      "value": "6",
+      "unit": "surrounding_hexes",
+      "precision": "integer"
+    },
+    "exploration.relic.e8.reveal_hexes": {
+      "value": "18",
+      "unit": "surrounding_hexes",
+      "precision": "integer"
+    },
+    "exploration.relic.e9.reward_bonus_bps": {
+      "value": "10000",
+      "unit": "basis_points_on_exploration_reward",
+      "precision": "integer"
+    },
+    "exploration.relic.reveal_auto_pickup": {
+      "value": "false",
+      "unit": "boolean",
+      "precision": "boolean"
+    },
+    "exploration.relic.reveal_center": {
+      "value": "army_current_hex",
+      "unit": "enum",
+      "precision": "exact_or_enum"
+    },
+    "exploration.relic.reveal_layer": {
+      "value": "current_army_layer",
+      "unit": "enum",
+      "precision": "exact_or_enum"
+    },
+    "exploration.reward.active_relic_bonus_scope": {
+      "value": "paid_explore_and_relic_reveal_new_material_finds",
+      "unit": "enum",
+      "precision": "exact_or_enum"
+    },
+    "exploration.reward.active_relic_bonus_timing": {
+      "value": "at_reveal_persist_final_ground_cache_amount",
+      "unit": "enum",
+      "precision": "exact_or_enum"
+    },
+    "exploration.reward.amount_formula": {
+      "value": "max(1,floor(base_amount*clamp(sqrt((bodies*tier_strength)/3000),0.02,1)))*(10000+active_relic_bonus_bps)/10000",
+      "unit": "rule",
+      "precision": "exact_or_enum"
+    },
+    "exploration.reward.auto_pickup_default": {
+      "value": "true",
+      "unit": "boolean",
+      "precision": "boolean"
+    },
+    "exploration.reward.auto_pickup_policy": {
+      "value": "paid_explore_only_when_entire_reward_fits",
+      "unit": "enum",
+      "precision": "exact_or_enum"
+    },
+    "exploration.reward.custody": {
+      "value": "ground_cache_on_revealed_hex",
+      "unit": "enum",
+      "precision": "exact_or_enum"
+    },
+    "exploration.reward.factor_max_bps": {
+      "value": "10000",
+      "unit": "basis_points",
+      "precision": "integer"
+    },
+    "exploration.reward.factor_min_bps": {
+      "value": "200",
+      "unit": "basis_points",
+      "precision": "integer"
+    },
+    "exploration.reward.marker_until_collected": {
+      "value": "true",
+      "unit": "boolean",
+      "precision": "boolean"
+    },
+    "exploration.reward.outcome.donkeys_level_1.asset": {
+      "value": "DONKEYS",
+      "unit": "asset",
+      "precision": "exact_or_enum"
+    },
+    "exploration.reward.outcome.donkeys_level_1.base_amount": {
+      "value": "200",
+      "unit": "Donkeys",
+      "precision": "integer"
+    },
+    "exploration.reward.outcome.donkeys_level_1.weight_bps": {
+      "value": "2500",
+      "unit": "conditional_basis_points",
+      "precision": "integer"
+    },
+    "exploration.reward.outcome.donkeys_level_2.asset": {
+      "value": "DONKEYS",
+      "unit": "asset",
+      "precision": "exact_or_enum"
+    },
+    "exploration.reward.outcome.donkeys_level_2.base_amount": {
+      "value": "500",
+      "unit": "Donkeys",
+      "precision": "integer"
+    },
+    "exploration.reward.outcome.donkeys_level_2.weight_bps": {
+      "value": "1000",
+      "unit": "conditional_basis_points",
+      "precision": "integer"
+    },
+    "exploration.reward.outcome.essence_level_1.asset": {
+      "value": "ESSENCE",
+      "unit": "asset",
+      "precision": "exact_or_enum"
+    },
+    "exploration.reward.outcome.essence_level_1.base_amount": {
+      "value": "5000",
+      "unit": "Essence",
+      "precision": "integer"
+    },
+    "exploration.reward.outcome.essence_level_1.weight_bps": {
+      "value": "3000",
+      "unit": "conditional_basis_points",
+      "precision": "integer"
+    },
+    "exploration.reward.outcome.essence_level_2.asset": {
+      "value": "ESSENCE",
+      "unit": "asset",
+      "precision": "exact_or_enum"
+    },
+    "exploration.reward.outcome.essence_level_2.base_amount": {
+      "value": "10000",
+      "unit": "Essence",
+      "precision": "integer"
+    },
+    "exploration.reward.outcome.essence_level_2.weight_bps": {
+      "value": "1500",
+      "unit": "conditional_basis_points",
+      "precision": "integer"
+    },
+    "exploration.reward.outcome.workers_level_1.asset": {
+      "value": "WORKERS",
+      "unit": "asset",
+      "precision": "exact_or_enum"
+    },
+    "exploration.reward.outcome.workers_level_1.base_amount": {
+      "value": "250",
+      "unit": "Workers",
+      "precision": "integer"
+    },
+    "exploration.reward.outcome.workers_level_1.weight_bps": {
+      "value": "1500",
+      "unit": "conditional_basis_points",
+      "precision": "integer"
+    },
+    "exploration.reward.outcome.workers_level_2.asset": {
+      "value": "WORKERS",
+      "unit": "asset",
+      "precision": "exact_or_enum"
+    },
+    "exploration.reward.outcome.workers_level_2.base_amount": {
+      "value": "750",
+      "unit": "Workers",
+      "precision": "integer"
+    },
+    "exploration.reward.outcome.workers_level_2.weight_bps": {
+      "value": "500",
+      "unit": "conditional_basis_points",
+      "precision": "integer"
+    },
+    "exploration.reward.pickup_position": {
+      "value": "occupying_hex_only_no_adjacency",
+      "unit": "enum",
+      "precision": "exact_or_enum"
+    },
+    "exploration.reward.resolution_order": {
+      "value": "world_structure_then_material_find_then_conditional_outcome",
+      "unit": "enum",
+      "precision": "exact_or_enum"
+    },
+    "exploration.reward.resolved_once_per_hex": {
+      "value": "true",
+      "unit": "boolean",
+      "precision": "boolean"
+    },
+    "exploration.reward.strength_reference": {
+      "value": "3000",
+      "unit": "army_strength",
+      "precision": "integer"
+    },
     "faith.camp_eligible": {
       "value": "false",
       "unit": "rule_or_config_value",
@@ -1967,6 +2172,36 @@
       "value": "30",
       "unit": "ethereal_hex_radius",
       "precision": "integer"
+    },
+    "military.army_cargo_kg_per_troop.t1": {
+      "value": "10",
+      "unit": "kg_per_troop",
+      "precision": "integer"
+    },
+    "military.army_cargo_kg_per_troop.t2": {
+      "value": "20",
+      "unit": "kg_per_troop",
+      "precision": "integer"
+    },
+    "military.army_cargo_kg_per_troop.t3": {
+      "value": "30",
+      "unit": "kg_per_troop",
+      "precision": "integer"
+    },
+    "military.army_homogeneous_class_and_tier": {
+      "value": "true",
+      "unit": "boolean",
+      "precision": "boolean"
+    },
+    "military.army_overweight_blocked_actions": {
+      "value": "move|paid_explore|cross_layer",
+      "unit": "action_set",
+      "precision": "exact_or_enum"
+    },
+    "military.army_overweight_resolution": {
+      "value": "owner_explicit_cargo_burn_only",
+      "unit": "enum",
+      "precision": "exact_or_enum"
     },
     "military.exploration_fish_per_troop_hex": {
       "value": "1",
@@ -8504,7 +8739,7 @@
       "precision": "integer"
     },
     "research.relic_exchange_cost": {
-      "value": "50000",
+      "value": "25000",
       "unit": "Research",
       "precision": "integer"
     },
@@ -9873,6 +10108,11 @@
       "unit": "explored_hexes_per_raw_success",
       "precision": "integer"
     },
+    "world_node.essence_rift.claimable_formula": {
+      "value": "min(local_entitlement,remaining_reserve,material_capacity_headroom)",
+      "unit": "rule",
+      "precision": "exact_or_enum"
+    },
     "world_node.essence_rift.essence_discovery": {
       "value": "1/125",
       "unit": "probability per eligible discovery",
@@ -9883,6 +10123,11 @@
       "unit": "rule_or_config_value",
       "precision": "integer"
     },
+    "world_node.essence_rift.full_local_cap_reserve_effect": {
+      "value": "none",
+      "unit": "enum",
+      "precision": "exact_or_enum"
+    },
     "world_node.essence_rift.local_capacity": {
       "value": "86400",
       "unit": "Essence",
@@ -9892,6 +10137,66 @@
       "value": "1",
       "unit": "rule_or_config_value",
       "precision": "integer"
+    },
+    "world_node.essence_rift.reserve_depletion": {
+      "value": "successful_claim_only",
+      "unit": "enum",
+      "precision": "exact_or_enum"
+    },
+    "world_node.essence_rift.reserve_tier.1": {
+      "value": "600000",
+      "unit": "Essence_sequence",
+      "precision": "integer"
+    },
+    "world_node.essence_rift.reserve_tier.2": {
+      "value": "1200000",
+      "unit": "Essence_sequence",
+      "precision": "integer"
+    },
+    "world_node.essence_rift.reserve_tier.3": {
+      "value": "1800000",
+      "unit": "Essence_sequence",
+      "precision": "integer"
+    },
+    "world_node.essence_rift.reserve_tier.4": {
+      "value": "2400000",
+      "unit": "Essence_sequence",
+      "precision": "integer"
+    },
+    "world_node.essence_rift.reserve_tier.5": {
+      "value": "3000000",
+      "unit": "Essence_sequence",
+      "precision": "integer"
+    },
+    "world_node.essence_rift.reserve_tier_weight_bps.1": {
+      "value": "2000",
+      "unit": "basis_point_sequence",
+      "precision": "integer"
+    },
+    "world_node.essence_rift.reserve_tier_weight_bps.2": {
+      "value": "2000",
+      "unit": "basis_point_sequence",
+      "precision": "integer"
+    },
+    "world_node.essence_rift.reserve_tier_weight_bps.3": {
+      "value": "2000",
+      "unit": "basis_point_sequence",
+      "precision": "integer"
+    },
+    "world_node.essence_rift.reserve_tier_weight_bps.4": {
+      "value": "2000",
+      "unit": "basis_point_sequence",
+      "precision": "integer"
+    },
+    "world_node.essence_rift.reserve_tier_weight_bps.5": {
+      "value": "2000",
+      "unit": "basis_point_sequence",
+      "precision": "integer"
+    },
+    "world_node.essence_rift.ui_visible_entitlement_formula": {
+      "value": "min(local_entitlement,remaining_reserve)",
+      "unit": "rule",
+      "precision": "exact_or_enum"
     },
     "world_node.fragment_mine.claimable_bound": {
       "value": "min_local_entitlement_remaining_reserve_destination_capacity",
@@ -10077,6 +10382,13 @@
       "maximum": "true",
       "acceptance": "must satisfy hard invariants and selected subsystem corridor"
     },
+    "army_cargo_encumbrance": {
+      "value": "pass",
+      "unit": "invariant",
+      "minimum": "n/a",
+      "maximum": "n/a",
+      "acceptance": "Homogeneous T1/T2/T3 armies have 10/20/30 kg per surviving troop; losses can make cargo overweight without destruction; move, paid explore and layer crossing stay blocked until the Owner explicitly burns enough goods; stationary E7/E8 reveal remains available; no automatic burn."
+    },
     "bank.central_routing_capture": {
       "value": "pass",
       "unit": "invariant",
@@ -10146,6 +10458,27 @@
       "minimum": "true",
       "maximum": "true",
       "acceptance": "must satisfy hard invariants and selected subsystem corridor"
+    },
+    "essence_rift_finite_reserve": {
+      "value": "pass",
+      "unit": "invariant",
+      "minimum": "n/a",
+      "maximum": "n/a",
+      "acceptance": "Rift tier draw uses five equal weights and 600k..3M Essence; successful extraction alone reduces reserve, local cap remains 86400, full-cap accrual consumes no reserve, and claim never exceeds remaining reserve."
+    },
+    "exploration_relic_reward_bonus": {
+      "value": "pass",
+      "unit": "invariant",
+      "minimum": "n/a",
+      "maximum": "n/a",
+      "acceptance": "E9/E10 add 100%/200% to the scaled integer material reward at each new reveal, including eligible E7/E8 reveals; the final Ground Cache amount persists through Relic expiry and pickup, without changing structure odds or rerolling a hex."
+    },
+    "exploration_reward_custody": {
+      "value": "pass",
+      "unit": "invariant",
+      "minimum": "n/a",
+      "maximum": "n/a",
+      "acceptance": "A paid Primary explore resolves structure first, then 10% material find with the six conditional weights summing to 100%; Ethereal and initial reveals give no material; each hex resolves once, including E7/E8 overlapping reveals. Rewards remain on their hex until a full-capacity occupying-army pickup, with no adjacency pickup or Relic auto-pickup."
     },
     "fragment_full_world_adequacy": {
       "value": "5",
@@ -15081,7 +15414,7 @@
       "tier": "all",
       "asset": "RESEARCH",
       "direction": "debit",
-      "amount_formula": "50000",
+      "amount_formula": "research.relic_exchange_cost",
       "amount_unit": "formula_defined",
       "rounding": "exact_or_parameter_defined",
       "disposition": "consume",
@@ -15093,7 +15426,7 @@
       "freight_interaction": "route_defined",
       "partial_behavior": "route_defined",
       "failure_behavior": "atomic_revert",
-      "parameter_keys": "50000"
+      "parameter_keys": "research.relic_exchange_cost"
     },
     {
       "recipe_id": "HS:CONTRIBUTION:ADAMANTINE",
@@ -41813,6 +42146,22 @@
       "parameter_keys": "bridge.*"
     },
     {
+      "transition_id": "burn_army_cargo",
+      "subsystem": "army_cargo",
+      "caller": "army Owner",
+      "source_state": "army_with_carried_goods",
+      "preconditions": "positive_selected_carried_quantity",
+      "debits": "explicitly_selected_carried_goods",
+      "credits": "none",
+      "escrows": "none",
+      "timers": "none",
+      "capacity_check": "recompute_army_weight_after_burn",
+      "partial_rule": "owner_selects_quantity",
+      "failure_rule": "atomic_revert_without_implicit_burn",
+      "events": "army_cargo_burned|army_overweight_state_changed",
+      "parameter_keys": "military.army_overweight_*|military.army_cargo_kg_per_troop.*"
+    },
+    {
       "transition_id": "capture_camp",
       "subsystem": "capture",
       "caller": "winning_army_controller",
@@ -42053,6 +42402,22 @@
       "parameter_keys": "victory.*"
     },
     {
+      "transition_id": "collect_ground_cache",
+      "subsystem": "army_cargo",
+      "caller": "authorized controller of army occupying cache hex",
+      "source_state": "uncollected_ground_cache",
+      "preconditions": "same_hex_occupancy|entire_reward_fits_surviving_army_cargo_capacity",
+      "debits": "ground_cache_full_quantity",
+      "credits": "same_quantity_in_army_cargo",
+      "escrows": "none",
+      "timers": "none",
+      "capacity_check": "surviving_bodies_times_tier_cargo_kg",
+      "partial_rule": "not_partial",
+      "failure_rule": "atomic_revert_cache_unchanged",
+      "events": "ground_cache_collected",
+      "parameter_keys": "military.army_cargo_kg_per_troop.*|exploration.reward.pickup_position"
+    },
+    {
       "transition_id": "commit_bitcoin_work",
       "subsystem": "bitcoin",
       "caller": "Bitcoin_Mine_controller",
@@ -42181,11 +42546,27 @@
       "parameter_keys": "logistics.donkey_payload_kg|logistics.dispatch_worker_kg_per_worker|logistics.minimum_dispatch_workers|logistics.delivery_seconds_per_hex"
     },
     {
+      "transition_id": "explore_hex",
+      "subsystem": "world_discovery",
+      "caller": "authorized homogeneous field army controller",
+      "source_state": "newly eligible unexplored hex in active season",
+      "preconditions": "army_not_overweight|sufficient_Fish_and_stamina|one_global_resolution_per_hex",
+      "debits": "configured_Fish_and_stamina",
+      "credits": "explored_hex|first_structure_or_ground_cache|optional_full_fit_auto_pickup",
+      "escrows": "none",
+      "timers": "none",
+      "capacity_check": "auto_pickup_entire_reward_within_surviving_army_cargo_capacity",
+      "partial_rule": "no_partial_reward_pickup",
+      "failure_rule": "atomic_revert_without_discovery_or_reward_roll",
+      "events": "explore_hex_quoted|hex_discovery_resolved|ground_cache_created|ground_cache_collected",
+      "parameter_keys": "exploration.*|military.army*|combat.tier_strength.*|world.discovery.*"
+    },
+    {
       "transition_id": "extract_essence",
       "subsystem": "world_node",
       "caller": "authorized actor with Workers at Essence Rift",
       "source_state": "active_season",
-      "preconditions": "none",
+      "preconditions": "finite Rift reserve|local entitlement|destination capacity",
       "debits": "proportional_extraction",
       "credits": "extracted Essence",
       "escrows": "none",
@@ -42194,7 +42575,7 @@
       "partial_rule": "caller_selects_nominal_quantity",
       "failure_rule": "atomic_revert_without_timestamp_mutation",
       "events": "extract_essence_quoted|extract_essence_executed",
-      "parameter_keys": "n/a|n/a|n/a"
+      "parameter_keys": "world_node.essence_rift.claimable_formula|world_node.essence_rift.reserve_depletion|world_node.essence_rift.reserve_tier.*"
     },
     {
       "transition_id": "extract_fragments",
@@ -42339,6 +42720,22 @@
       "failure_rule": "atomic_revert",
       "events": "MaintenancePaid",
       "parameter_keys": "maintenance.*|recipe.maintenance.*"
+    },
+    {
+      "transition_id": "reveal_relic_hexes",
+      "subsystem": "world_discovery",
+      "caller": "authorized E7 or E8 Relic user",
+      "source_state": "active_season",
+      "preconditions": "current_layer_surrounding_hexes|newly_eligible_unexplored_only|one_global_resolution_per_hex",
+      "debits": "configured_Relic_activation_only",
+      "credits": "6_or_18_hex_reveals|per_hex_first_structure_or_ground_cache",
+      "escrows": "none",
+      "timers": "none",
+      "capacity_check": "ground_cache_remains_on_hex",
+      "partial_rule": "skip_previously_explored_or_ineligible_hexes_without_reroll",
+      "failure_rule": "atomic_revert_on_invalid_Relic_action",
+      "events": "relic_reveal_executed|hex_discovery_resolved|ground_cache_created",
+      "parameter_keys": "exploration.relic.*|exploration.reward.*|exploration.material_find_bps.*|world.discovery.*"
     },
     {
       "transition_id": "set_emergency_pause",

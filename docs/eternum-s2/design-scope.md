@@ -488,9 +488,10 @@ Higher-tier troops are stronger but do not translate every strength point into e
 
 ## 13. Movement, exploration and combat
 
-The world begins mostly hidden by fog. An army reveals unknown hexes by exploring them. Moving through a known hex costs
-1 Fish per troop; exploring an unknown hex also costs 1 Fish per troop, but uses more stamina. Stamina is an army's
-action energy: movement, exploration and combat spend it, and time restores it up to the maximum.
+The world begins mostly hidden by fog. An army reveals unknown hexes by exploring them. Field armies are homogeneous:
+every troop in one army has the same class and tier. Moving through a known hex costs 1 Fish per troop; exploring an
+unknown hex also costs 1 Fish per troop, but uses more stamina. Stamina is an army's action energy: movement,
+exploration and combat spend it, and time restores it up to the maximum.
 
 | Action                          |  Stamina |
 | ------------------------------- | -------: |
@@ -500,6 +501,45 @@ action energy: movement, exploration and combat spend it, and time restores it u
 | Defend                          |       40 |
 | Regeneration per 60-second tick |       30 |
 | Initial / maximum               | 30 / 120 |
+
+Each troop supplies cargo capacity of 10 / 20 / 30 kg at T1 / T2 / T3 respectively. An army's capacity is its surviving
+body count times that tier's allowance. Combat casualties can leave an army overweight. Its carried goods remain intact,
+but it cannot move, pay to explore or cross layers until its Owner explicitly burns enough carried goods to restore
+capacity. There is no automatic burn. Show the weight and required reduction in the action quote and army view.
+
+### 13.1 Exploration rewards and ground custody
+
+A paid army exploration of a previously unexplored eligible hex first runs the ordered world-structure resolver in
+chapter 15. A structure result occupies the hex and ends reward resolution there. If no structure is found on Primary,
+there is a 10% material-find chance; Ethereal has a 0% material-find chance. A successful material find selects exactly
+one outcome from this conditional table (the entries sum to 100%):
+
+| Outcome         | Asset   | Conditional chance | Base amount |
+| --------------- | ------- | -----------------: | ----------: |
+| Essence level 1 | Essence |                30% |       5,000 |
+| Essence level 2 | Essence |                15% |      10,000 |
+| Donkeys level 1 | Donkeys |                25% |         200 |
+| Donkeys level 2 | Donkeys |                10% |         500 |
+| Workers level 1 | Workers |                15% |         250 |
+| Workers level 2 | Workers |                 5% |         750 |
+
+Exploration reward strength is surviving army bodies times tier strength (T1 1, T2 3, T3 9). Scale the selected base
+amount by `clamp(sqrt(strength / 3000), 0.02, 1)`; floor the result to an integer, with minimum 1 for a successful find.
+An active E9 or E10 Relic on the revealing army then increases that amount by 100% or 200% respectively (2× or 3×).
+Resolve the bonus at reveal and store the final integer amount in the Ground Cache; later Relic expiry, transfer or
+pickup does not change it. The result is not a direct credit to the explorer.
+
+An army may collect a Ground Cache only while occupying that exact hex. Adjacency grants no pickup right. The paid
+exploration action offers optional automatic pickup, enabled by default, only when the entire reward fits the army's
+remaining cargo capacity. If it does not fit, the full reward remains on the ground; no partial pickup or silent burn
+occurs. Uncollected rewards retain a visible map marker. A reward on a hex is resolved once globally: revisiting,
+overlapping reveals and later pickup attempts never reroll or duplicate it.
+
+The E7 and E8 Relic reveal effects reveal the radius-one 6 hexes and radius-two 18 hexes respectively, centered on the
+army and excluding its occupied center hex, on the army's current layer. Each newly eligible hex independently runs the
+same structure-first resolver and, only after no structure, the layer's material-find chance and conditional table.
+These multi-hex reveals never automatically pick up Ground Caches; show a marker on each uncollected hex. Already
+explored hexes and initialisation/pre-explored reveals receive no new rolls.
 
 Home-biome advantage is 30%. Combat uses deterministic damage-reduction rules with class and situation modifiers.
 Crossbowmen operate at 70% against armies and 30% against structures; Knights operate at 85% when guarding and 115%
@@ -539,24 +579,27 @@ reveal 1,291 unique Primary hexes before holding-specific reveals. Model explora
 by day 14, 50% by day 28 and 75% by day 42 remain planning assumptions, not forced player milestones. Earlier node
 supply projections below require remeasurement against the revised eligible fog before they can validate this layout.
 
-When one explored hex is eligible for several discoveries, the game resolves them in order: Hyperstructure Foundation,
-Fragment Mine, Essence Rift, Bitcoin Mine, then Camp. The first successful result occupies that discovery. There are 48
-discoverable Hyperstructure Foundations on the Primary layer. HSF discovery and all Foundation creation are prohibited
-at Primary radii 0–35 inclusive. Outside that exclusion, retain the existing distance and depletion calculation using
-actual distance from the origin, without rebasing at radius 36. On ordinary eligible inner fog, Camps, Essence Rifts and
-Fragment Mines remain discoverable. Mountains and initialisation reveals never run discovery lotteries. Agents are
-deferred to the other development team and are not discovered or played in this scope.
+When one newly eligible hex is revealed by paid exploration or E7/E8, the game resolves discoveries in order:
+Hyperstructure Foundation, Fragment Mine, Essence Rift, Bitcoin Mine, then Camp. The first successful result occupies
+that discovery. There are 48 discoverable Hyperstructure Foundations on the Primary layer. HSF discovery and all
+Foundation creation are prohibited at Primary radii 0–35 inclusive. Outside that exclusion, retain the existing distance
+and depletion calculation using actual distance from the origin, without rebasing at radius 36. On ordinary eligible
+inner fog, Camps, Essence Rifts and Fragment Mines remain discoverable. Mountains and initialisation reveals never run
+discovery lotteries. Agents are deferred to the other development team and are not discovered or played in this scope.
 
 ### 15.1 Essence Rifts
 
 - discovery anchor: 1 in 125 eligible discoveries;
 - output: 1 Essence/second;
 - local unclaimed cap: 86,400;
+- finite reserve tiers: 600k / 1.2M / 1.8M / 2.4M / 3M Essence, equally weighted;
+- reserve decreases only by Essence successfully claimed or extracted, not by elapsed production;
+- a full local unclaimed buffer pauses accrual without consuming reserve;
 - extraction: 10 Workers per 1,000 Essence;
 - Essence cannot bridge.
 
-The model expects 4,168 Rifts discovered and 2,084 controlled by day 56, delivering roughly 4.84B Essence under its 50%
-control and 80% delivery assumptions. Aggregate supply is abundant; local access remains strategically scarce.
+Rift count, tier mix, capture and collection frequency must be measured against finite reserves before projecting season
+Essence supply. At a full local buffer, an unclaimed Rift retains its remaining reserve.
 
 ### 15.2 Fragment Mines
 
@@ -607,7 +650,7 @@ While serviced, a claim may include one fixed 3,600-unit ordinary-resource catal
 rarity, from 0.25% to 25% of nominal Research, rounded down. It is one stack per transaction, so batching a twelve-hour
 buffer is materially more efficient than twelve one-hour claims.
 
-A Relic costs 50,000 Research. One active Relic is allowed per family. Lesser and Greater Relics cost 5,000 / 10,000
+A Relic costs 25,000 Research. One active Relic is allowed per family. Lesser and Greater Relics cost 5,000 / 10,000
 Essence to activate and can grant 20% / 40% Worker-production bonuses. Timed Relics last 360 phases, or 60 real hours.
 Relics transfer directly between players only.
 
