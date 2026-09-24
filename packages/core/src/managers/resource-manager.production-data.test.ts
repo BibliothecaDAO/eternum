@@ -21,4 +21,12 @@ describe("ResourceManager.calculateResourceProductionData", () => {
     expect(data.isProducing).toBe(true);
     expect(data.timeRemainingSeconds).toBe(60);
   });
+
+  it("reads the u128::MAX output budget as unlimited, never as an amount or a duration", () => {
+    const unlimited = (1n << 128n) - 1n;
+    const data = ResourceManager.calculateResourceProductionData(ResourcesIds.Knight, productionInfo(unlimited), 5_000);
+    expect(data.isProducing).toBe(true);
+    expect(data.outputRemaining).toBe(Number.POSITIVE_INFINITY);
+    expect(data.timeRemainingSeconds).toBe(Number.POSITIVE_INFINITY);
+  });
 });

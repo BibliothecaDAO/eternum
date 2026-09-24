@@ -441,13 +441,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       map.set(resourceId, {
         resourceId,
         isProducing: productionData.isProducing,
-        timeRemainingSeconds: Number.isFinite(productionData.timeRemainingSeconds)
-          ? productionData.timeRemainingSeconds
-          : null,
+        timeRemainingSeconds: productionData.timeRemainingSeconds,
         productionPerSecond: Number.isFinite(productionData.productionPerSecond)
           ? productionData.productionPerSecond
           : null,
-        outputRemaining: Number.isFinite(productionData.outputRemaining) ? productionData.outputRemaining : null,
+        outputRemaining: productionData.outputRemaining,
         totalBuildings,
         activeBuildings: productionData.isProducing ? (totalBuildings > 0 ? totalBuildings : 0) : 0,
         calculatedAt,

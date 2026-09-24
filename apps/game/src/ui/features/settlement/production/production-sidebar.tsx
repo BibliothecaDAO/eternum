@@ -97,13 +97,11 @@ const SidebarRealm = ({
           activeBuildings = buildingCount > 0 ? buildingCount : stats.totalBuildings;
         }
 
-        timeRemainingSeconds = Number.isFinite(productionData.timeRemainingSeconds)
-          ? productionData.timeRemainingSeconds
-          : null;
+        timeRemainingSeconds = productionData.timeRemainingSeconds;
         productionPerSecond = Number.isFinite(productionData.productionPerSecond)
           ? productionData.productionPerSecond
           : null;
-        outputRemaining = Number.isFinite(productionData.outputRemaining) ? productionData.outputRemaining : null;
+        outputRemaining = productionData.outputRemaining;
       }
 
       return {
