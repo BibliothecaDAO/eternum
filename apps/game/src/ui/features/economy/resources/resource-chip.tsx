@@ -76,17 +76,15 @@ export const ResourceChip = ({
   const currentDefaultTick = currentDefaultTickProp ?? storeDefaultTick;
   const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
   const armiesTickTimeRemaining = armiesTickTimeRemainingProp ?? storeArmiesTickTimeRemaining;
-  const currentTick = currentDefaultTick || 0;
+  const currentTick = currentDefaultTick;
   const resourceEnumId = resourceId as ResourcesIds;
 
-  const {
-    balance,
-    hasReachedMaxCapacity: hasReachedMaxCap,
-    amountProduced,
-  } = useMemo(
+  // Undefined when this client holds no resource owner for the structure: the chip then shows nothing.
+  const production = useMemo(
     () => resourceManager.balanceWithProduction(currentTick, resourceEnumId),
     [resourceManager, currentTick, resourceEnumId, revision],
   );
+  const balance = production?.balance;
   const productionInfo = useMemo(
     () => resourceManager.current(resourceEnumId),
     [resourceManager, resourceEnumId, revision],
@@ -118,7 +116,7 @@ export const ResourceChip = ({
   }, [canOpenProduction, resourceId]);
 
   const canOpenCraftRelic = useMemo(() => {
-    if (resourceEnumId !== ResourcesIds.Research || balance <= 0) {
+    if (resourceEnumId !== ResourcesIds.Research || !balance || balance <= 0) {
       return false;
     }
 
@@ -183,6 +181,8 @@ export const ResourceChip = ({
 
   // Check if we should hide this resource based on the balance and hideZeroBalance prop
   // Show relics with active effects even if balance is 0
+  if (!production || balance === undefined) return null;
+  const { hasReachedMaxCapacity: hasReachedMaxCap, amountProduced } = production;
   if (hideZeroBalance && balance <= 0 && !(isRelic && relicEffectActivated)) {
     return null;
   }

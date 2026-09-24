@@ -70,9 +70,10 @@ const TROOP_RESOURCE_IDS = [TroopType.Knight, TroopType.Crossbowman, TroopType.P
 
 const readTroopsOnHand = (store: ReturnType<typeof useGame>["setup"]["store"], realmId: ID): number => {
   const { currentDefaultTick } = getBlockTimestamp();
+  // The player's own realm always has its resources in scope.
   return TROOP_RESOURCE_IDS.reduce(
     (total, resourceId) =>
-      total + divideByPrecision(getBalance(realmId, resourceId, currentDefaultTick, store).balance),
+      total + divideByPrecision(getBalance(realmId, resourceId, currentDefaultTick, store).balance!),
     0,
   );
 };

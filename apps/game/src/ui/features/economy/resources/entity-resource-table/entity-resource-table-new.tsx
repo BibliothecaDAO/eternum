@@ -56,6 +56,7 @@ import {
   HIDE_TIME_REMAINING_FOR,
   TIER_DISPLAY_NAMES,
 } from "./utils";
+import { knownBalance } from "@/ui/utils/utils";
 
 interface StructureColumn {
   entityId: number;
@@ -247,17 +248,16 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     const summaries = new Map<ResourcesIds, ResourceSummary>();
 
     resourcesByStructure.forEach((resourceValue, structure) => {
+      // A structure whose resources this client cannot see adds nothing to the summary.
       const balances = resourceValue.balances(currentDefaultTick);
+      if (!balances) return;
 
       balances.forEach(({ resourceId, amount }) => {
         const productionInfo = resourceValue.current(resourceId)!;
-        const { hasReachedMaxCapacity, balance } = resourceValue.balanceWithProduction(
-          currentDefaultTick || 0,
-          resourceId,
-        );
+        const { hasReachedMaxCapacity, balance } = resourceValue.balanceWithProduction(currentDefaultTick, resourceId)!;
 
         const { productionPerSecond, isProducing, outputRemaining, timeRemainingSeconds } =
-          ResourceManager.calculateResourceProductionData(resourceId, productionInfo, currentDefaultTick || 0);
+          ResourceManager.calculateResourceProductionData(resourceId, productionInfo, currentDefaultTick);
 
         // Only count production rate if actually producing
         const activeProductionRate = isProducing ? productionPerSecond : 0;
@@ -360,7 +360,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   const getResourceBalance = useCallback(
     (structureId: number, resourceId: ResourcesIds) => {
       const resourceManager = new ResourceManager(store, structureId);
-      return resourceManager.balanceWithProduction(currentDefaultTick || 0, resourceId).balance;
+      return resourceManager.balanceWithProduction(currentDefaultTick, resourceId)?.balance;
     },
     [store, currentDefaultTick],
   );
@@ -1480,8 +1480,10 @@ const DragDropAmountDialog = React.memo(
         return 0;
       }
 
-      const resourceWeightKg = configManager.getResourceWeightKg(dragData.resourceId) || 0;
-      const donkeyCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Donkey) || 0;
+      // A resource whose weight rule is unknown cannot be loaded onto donkeys.
+      const resourceWeightKg = configManager.getResourceWeightKg(dragData.resourceId);
+      if (resourceWeightKg === undefined) return 0;
+      const donkeyCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Donkey);
 
       if (resourceWeightKg <= 0 || donkeyCapacityKg <= 0) {
         return dragData.maxAmount;
@@ -1503,7 +1505,7 @@ const DragDropAmountDialog = React.memo(
     }, [availableDonkeys, dragData.maxAmount, dragData.resourceId]);
 
     const recipientResources = useResourceManager(dragData.toStructureId);
-    const recipientBalance = divideByPrecision(Number(recipientResources.balance(dragData.resourceId)));
+    const recipientBalance = knownBalance(recipientResources.balance(dragData.resourceId));
 
     const canCarry = availableDonkeys >= neededDonkeys;
     const donkeyTrait = findResourceById(ResourcesIds.Donkey)?.trait as string;
@@ -1603,7 +1605,7 @@ const DragDropAmountDialog = React.memo(
                   <div className="flex justify-between">
                     <span className="text-gold/70">{toStructure?.label}:</span>
                     <span className="text-green">
-                      {recipientBalance} → {recipientBalance + amount}
+                      {recipientBalance === undefined ? "—" : `${recipientBalance} → ${recipientBalance + amount}`}
                     </span>
                   </div>
                 </div>

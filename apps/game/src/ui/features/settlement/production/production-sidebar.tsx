@@ -89,7 +89,7 @@ const SidebarRealm = ({
         const productionData = ResourceManager.calculateResourceProductionData(
           resourceId,
           productionInfo,
-          currentDefaultTick || 0,
+          currentDefaultTick,
         );
         isProducing = productionData.isProducing;
         if (isProducing) {

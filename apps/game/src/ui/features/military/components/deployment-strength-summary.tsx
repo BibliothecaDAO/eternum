@@ -15,24 +15,11 @@ interface DeploymentStrengthSummaryProps {
   defaultExpanded?: boolean;
 }
 
-const FALLBACK_STRENGTH_BY_TIER: Record<number, number> = {
-  1: 1,
-  2: 3,
-  3: 9,
-};
-
 const LEVEL_LABELS = ["Settlement", "City", "Kingdom", "Empire"] as const;
 
-const resolveTierNumber = (tier: TroopTier): number => {
-  const asString = String(tier).toUpperCase();
-  if (asString.startsWith("T")) {
-    const parsed = Number(asString.replace("T", ""));
-    return Number.isFinite(parsed) ? parsed : 1;
-  }
-
-  const parsed = Number(asString);
-  return Number.isFinite(parsed) ? parsed : 1;
-};
+/** A structure level the deployment caps cover; armies and unknown structures have none. */
+const isDeploymentLevel = (level: number | null | undefined): level is number =>
+  typeof level === "number" && LEVEL_LABELS[level] !== undefined;
 
 const Metric = ({ label, value }: { label: string; value: string }) => (
   <div className="rounded border border-gold/15 bg-black/20 px-2 py-1">
@@ -53,30 +40,10 @@ export const DeploymentStrengthSummary = ({
 }: DeploymentStrengthSummaryProps) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const metricsId = useId();
-  const limitConfig = configManager.getTroopConfig().troop_limit_config;
-  const resolvedLevel = typeof structureLevel === "number" && Number.isFinite(structureLevel) ? structureLevel : 0;
-  const resolvedTierNumber = resolveTierNumber(troopTier);
-  const levelLabel = LEVEL_LABELS[resolvedLevel] ?? LEVEL_LABELS[0];
-
-  const deploymentCapByLevel = [
-    Number(limitConfig.settlement_deployment_cap ?? 0),
-    Number(limitConfig.city_deployment_cap ?? 0),
-    Number(limitConfig.kingdom_deployment_cap ?? 0),
-    Number(limitConfig.empire_deployment_cap ?? 0),
-  ];
-
-  const deploymentCap = Math.max(0, deploymentCapByLevel[resolvedLevel] ?? deploymentCapByLevel[0] ?? 0);
-
-  const tierStrength =
-    resolvedTierNumber === 1
-      ? Number(limitConfig.t1_tier_strength ?? 0)
-      : resolvedTierNumber === 2
-        ? Number(limitConfig.t2_tier_strength ?? 0)
-        : Number(limitConfig.t3_tier_strength ?? 0);
-
-  const safeTierStrength = tierStrength > 0 ? tierStrength : (FALLBACK_STRENGTH_BY_TIER[resolvedTierNumber] ?? 1);
-  const safeTroopCount = Math.max(0, Math.floor(Number.isFinite(troopCount) ? troopCount : 0));
-  const projectedArmyStrength = safeTroopCount * safeTierStrength;
+  const hasDeploymentLevel = isDeploymentLevel(structureLevel);
+  const deploymentCap = hasDeploymentLevel ? configManager.getDeploymentCap(structureLevel) : undefined;
+  const tierStrength = configManager.getTierStrength(troopTier);
+  const projectedArmyStrength = Math.max(0, Math.floor(Number.isFinite(troopCount) ? troopCount : 0)) * tierStrength;
   const resolvedMaxTroopSize =
     typeof maxTroopSize === "number" && Number.isFinite(maxTroopSize) ? Math.max(0, Math.floor(maxTroopSize)) : null;
   const resolvedCapacityRemaining =
@@ -85,8 +52,11 @@ export const DeploymentStrengthSummary = ({
       : null;
   const metrics = (
     <div className="grid grid-cols-2 gap-2">
-      <Metric label={`${levelLabel} cap`} value={`${deploymentCap.toLocaleString()} strength`} />
-      <Metric label="Tier strength" value={`T${resolvedTierNumber} = ${safeTierStrength}`} />
+      <Metric
+        label={hasDeploymentLevel ? `${LEVEL_LABELS[structureLevel]} cap` : "Deployment cap"}
+        value={deploymentCap === undefined ? "—" : `${deploymentCap.toLocaleString()} strength`}
+      />
+      <Metric label="Tier strength" value={`${troopTier} = ${tierStrength}`} />
       <Metric label="Projected strength" value={projectedArmyStrength.toLocaleString()} />
       <Metric
         label="Max troops (tier)"

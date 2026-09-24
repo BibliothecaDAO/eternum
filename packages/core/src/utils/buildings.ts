@@ -16,18 +16,12 @@ export const getBuildingQuantity = (entityId: ID, buildingType: BuildingType, st
   return buildingCount;
 };
 
-export const getConsumedBy = (resourceProduced: ResourcesIds) => {
-  return Object.entries(configManager.complexSystemResourceInputs)
-    .map(([resourceId, inputs]) => {
-      const resource = inputs.find(
-        (input: { resource: number; amount: number }) => input.resource === resourceProduced,
-      );
-      if (resource) {
-        return Number(resourceId);
-      }
-    })
-    .filter(Boolean);
-};
+export const getConsumedBy = (resourceProduced: ResourcesIds) =>
+  configManager
+    .producibleResources()
+    .filter((resourceId) =>
+      configManager.getRecipeInputs(resourceId, false)!.some((input) => input.resource === resourceProduced),
+    );
 
 export const getBuildingCosts = (
   realmEntityId: ID,
@@ -41,9 +35,7 @@ export const getBuildingCosts = (
 
   let updatedCosts: ResourceCost[] = [];
 
-  let costs = useSimpleCost
-    ? configManager.simpleBuildingCosts[Number(buildingCategory)]
-    : configManager.complexBuildingCosts[Number(buildingCategory)];
+  const costs = configManager.getBuildingCosts(buildingCategory, useSimpleCost);
 
   if (!costs) return undefined;
 

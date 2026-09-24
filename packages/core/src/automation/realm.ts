@@ -22,7 +22,6 @@ import {
 } from "./blitz-suggestions";
 import { resolveConstructionBuildability, type ConstructionBuildabilityInput } from "./construction";
 import { generateBuildablePositions } from "./building-spots";
-type RawUpgradeCost = { resource: number; amount: number };
 type StaticBlitzBuildKey = Exclude<BlitzBuildKey, "military">;
 type BuildabilityContext = {
   entityId: number;
@@ -64,20 +63,18 @@ const T1_MILITARY_OPTIONS = [
   },
 ] as const;
 
-const resolveUpgradeCosts = (level: number): RawUpgradeCost[] =>
-  (configManager.realmUpgradeCosts[level] as RawUpgradeCost[] | undefined) ?? [];
-
 const canAffordRealmUpgrade = (realmId: ID, realmLevel: number, store: NativeFactStore, currentDefaultTick: number) => {
   const maxLevel = configManager.getMaxLevel(StructureType.Realm);
   const nextLevel = realmLevel + 1;
   if (realmLevel >= maxLevel || nextLevel > maxLevel) return false;
 
-  const costs = resolveUpgradeCosts(nextLevel);
-  if (costs.length === 0) return true;
+  // A level this game has no recipe for is never affordable.
+  const costs = configManager.getRealmUpgradeCosts(nextLevel);
+  if (!costs) return false;
 
   return costs.every((cost) => {
-    const balance = getBalance(realmId, cost.resource, currentDefaultTick, store);
-    return divideByPrecision(balance.balance) >= cost.amount;
+    const { balance } = getBalance(realmId, cost.resource, currentDefaultTick, store);
+    return balance !== undefined && divideByPrecision(balance) >= cost.amount;
   });
 };
 

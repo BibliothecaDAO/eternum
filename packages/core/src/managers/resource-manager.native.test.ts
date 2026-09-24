@@ -63,7 +63,7 @@ describe("native resource facts", () => {
     expect(changed).toHaveBeenCalledTimes(4);
   });
 
-  it("scopes reads and notifications to their game and requires a resource owner", () => {
+  it("scopes reads and notifications to their game, and knows no balance without a resource owner", () => {
     const store = new NativeFactStore();
     store.applyFacts([...upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 } })]);
     const first = new ResourceManager(store, 7, 1);
@@ -72,6 +72,9 @@ describe("native resource facts", () => {
     first.subscribe(changed);
     store.applyFacts([...upsert("0x1", { ResourceBalance: balance() })]);
     expect(first.current(23)).toBeUndefined();
+    expect(first.balance(23)).toBeUndefined();
+    expect(first.balances()).toBeUndefined();
+    expect(first.getStoreCapacityKg()).toBeUndefined();
     store.applyFacts([...upsert("0x2", { ResourceWeight: weight(2), ResourceBalance: balance(2) })]);
     expect(second.balance(23)).toBe(9007199254740993n);
     expect(first.hasResources()).toBe(false);

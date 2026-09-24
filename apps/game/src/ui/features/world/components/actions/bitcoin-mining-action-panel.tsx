@@ -42,12 +42,13 @@ export const BitcoinMiningActionPanel = ({ structureEntityId }: { structureEntit
   if (!owned && !canClaim) return null;
   const precision = BigInt(RESOURCE_PRECISION);
   const resources = new ResourceManager(store, structureEntityId);
-  const labor =
-    (resources.current(ResourcesIds.Labor)?.balance ?? 0n) +
-    resources.balanceWithProduction(tick, ResourcesIds.Labor).amountProducedLimited;
+  // Undefined when this client cannot see the mine's labor: no contribution is then valid.
+  const laborHeld = resources.current(ResourcesIds.Labor)?.balance;
+  const laborProduced = resources.balanceWithProduction(tick, ResourcesIds.Labor)?.amountProducedLimited;
+  const labor = laborHeld === undefined || laborProduced === undefined ? undefined : laborHeld + laborProduced;
   const minimum = rules.bitcoin_mine_config.min_labor_per_contribution;
   const parsed = /^\d+$/.test(amount) ? BigInt(amount) * precision : 0n;
-  const validAmount = parsed > 0n && parsed >= minimum && parsed <= labor;
+  const validAmount = labor !== undefined && parsed > 0n && parsed >= minimum && parsed <= labor;
 
   const contribute = async () => {
     if (!account || !owned || !validAmount || pending) return;
@@ -103,7 +104,7 @@ export const BitcoinMiningActionPanel = ({ structureEntityId }: { structureEntit
             {(contribution?.labor ?? 0n) / precision + " Labor"}.
           </p>
           <label className="flex items-center gap-2">
-            Labor ({(labor / precision).toString()} available)
+            Labor ({labor === undefined ? "—" : (labor / precision).toString()} available)
             <input
               aria-label="Mining Labor"
               inputMode="numeric"

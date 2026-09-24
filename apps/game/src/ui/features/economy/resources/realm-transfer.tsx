@@ -51,7 +51,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const resourceManager = useResourceManager(selectedStructureEntityId);
 
   const balance = useMemo(() => {
-    return resourceManager.balanceWithProduction(tick, resource).balance;
+    return resourceManager.balanceWithProduction(tick, resource)?.balance;
   }, [resourceManager, tick, resource]);
 
   const playerStructures = useFactView(playerStructuresView);
@@ -112,8 +112,8 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const resourceData = useMemo(() => findResourceById(resource), [resource]);
   const resourceLabel = (resourceData?.trait as string) || "";
   const donkeyTrait = useMemo(() => findResourceById(ResourcesIds.Donkey)?.trait as string, []);
-  const availableBalance = balance ? Number(balance) : 0;
-  const burnSliderMax = availableBalance / RESOURCE_PRECISION;
+  // A balance this client cannot see burns nothing.
+  const burnSliderMax = (balance ?? 0) / RESOURCE_PRECISION;
   const normalizedSearchTerm = useMemo(() => {
     if (!searchTerm) {
       return "";
@@ -154,14 +154,13 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
         let relevantBalanceValue: number | undefined;
 
         if (type === "send") {
-          relevantBalanceValue = availableBalance;
+          relevantBalanceValue = balance;
         } else {
           const otherStructureManager = new ResourceManager(store, structure.structure.entity_id);
-          const receivedBalance = otherStructureManager.balanceWithProduction(tick, resource).balance;
-          relevantBalanceValue = receivedBalance ? Number(receivedBalance) : 0;
+          relevantBalanceValue = otherStructureManager.balanceWithProduction(tick, resource)?.balance;
         }
 
-        if (relevantBalanceValue === undefined || relevantBalanceValue === null) {
+        if (relevantBalanceValue === undefined) {
           return false;
         }
 
@@ -176,7 +175,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     selectedStructureEntityId,
     normalizedSearchTerm,
     type,
-    availableBalance,
+    balance,
     resourceRevision,
     store,
     tick,
@@ -261,9 +260,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
             />
             <div className="flex flex-col">
               <span className="text-xxs uppercase tracking-wide text-gold/60">Available</span>
-              <span className="text-2xl font-semibold leading-tight text-gold">
-                {currencyFormat(availableBalance, 2)}
-              </span>
+              <span className="text-2xl font-semibold leading-tight text-gold">{currencyFormat(balance, 2)}</span>
               <span className="text-xs uppercase text-gold/60">{resourceLabel}</span>
             </div>
           </div>
@@ -550,11 +547,11 @@ const RealmTransferBalance = memo(
     );
 
     const getSourceBalance = useCallback(() => {
-      return sourceResourceManager.balanceWithProduction(tick, resource).balance;
+      return sourceResourceManager.balanceWithProduction(tick, resource)?.balance;
     }, [sourceResourceManager, tick, resource]);
 
     const getSourceDonkeyBalance = useCallback(() => {
-      return sourceResourceManager.balanceWithProduction(tick, ResourcesIds.Donkey).balance;
+      return sourceResourceManager.balanceWithProduction(tick, ResourcesIds.Donkey)?.balance;
     }, [sourceResourceManager, tick]);
 
     const currentResourceBalanceBigInt = getSourceBalance();
@@ -582,13 +579,15 @@ const RealmTransferBalance = memo(
     }, [getSourceDonkeyBalance]);
 
     const canCarry = useMemo(() => {
-      return relevantDonkeyBalance >= neededDonkeysForThisTransfer;
+      return relevantDonkeyBalance !== undefined && relevantDonkeyBalance >= neededDonkeysForThisTransfer;
     }, [relevantDonkeyBalance, neededDonkeysForThisTransfer]);
 
     const handleSetMax = () => {
       let maxAmount = maxInputAmount;
       const currentDonkeys = relevantDonkeyBalance;
-      if (currentDonkeys > 0) {
+      if (currentDonkeys === undefined) {
+        maxAmount = 0; // Cannot send without seeing the source's donkeys
+      } else if (currentDonkeys > 0) {
         // Estimate max carriable amount. This is a simplification.
         // A more accurate way would be to iterate or use a formula for max resources per donkey.
         // For now, if donkeys are available, allow full balance. User will be warned by color.

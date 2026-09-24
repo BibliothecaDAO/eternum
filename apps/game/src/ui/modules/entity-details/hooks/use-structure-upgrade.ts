@@ -1,3 +1,4 @@
+import { knownBalance } from "@/ui/utils/utils";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { configManager, divideByPrecision, getBalance, getRealmInfo } from "@bibliothecadao/eternum";
 import { useArrivalsByStructure } from "@/hooks/helpers/use-resource-arrivals";
@@ -20,7 +21,7 @@ interface IncomingRequirementDelivery {
 interface UpgradeRequirement {
   resource: number;
   amount: number;
-  current: number;
+  current: number | undefined;
   progress: number;
   /** Resources already sent to this structure but still riding the delivery tick. */
   incoming: IncomingRequirementDelivery | null;
@@ -81,9 +82,10 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
     return candidate <= configManager.getMaxLevel(structureInfo.category) ? candidate : null;
   }, [structureInfo]);
 
-  const rawCosts = useMemo<RawUpgradeCost[]>(() => {
+  // Undefined when this game defines no recipe for the next level: that upgrade is then unavailable, never free.
+  const rawCosts = useMemo<RawUpgradeCost[] | undefined>(() => {
     if (!nextLevel) return [];
-    return (configManager.realmUpgradeCosts[nextLevel] as RawUpgradeCost[]) || [];
+    return configManager.getRealmUpgradeCosts(nextLevel);
   }, [nextLevel]);
 
   // Sent resources ride the delivery tick and belong to no balance while in
@@ -105,16 +107,17 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
   }, [currentDefaultTick, pendingArrivals]);
 
   const requirements = useMemo<UpgradeRequirement[]>(() => {
-    if (!structureInfo || !nextLevel || !structureEntityId) return [];
+    if (!structureInfo || !nextLevel || !structureEntityId || !rawCosts) return [];
     return rawCosts.map((cost) => {
-      const rawBalance = getBalance(structureEntityId, cost.resource, currentDefaultTick, setup.store).balance;
-      const current = divideByPrecision(rawBalance);
+      const current = knownBalance(
+        getBalance(structureEntityId, cost.resource, currentDefaultTick, setup.store).balance,
+      );
       const incoming = incomingByResource.get(cost.resource) ?? null;
       return {
         resource: cost.resource,
         amount: cost.amount,
         current,
-        progress: cost.amount > 0 ? Math.min(100, (current * 100) / cost.amount) : 100,
+        progress: current === undefined ? 0 : cost.amount > 0 ? Math.min(100, (current * 100) / cost.amount) : 100,
         incoming: incoming && incoming.amount > 0 ? incoming : null,
       };
     });
@@ -130,13 +133,14 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
   ]);
 
   const upgradeReadiness = useMemo(() => {
-    if (!structureInfo || !nextLevel) {
+    if (!structureInfo || !nextLevel || !rawCosts) {
       return { canUpgrade: false, upgradeProgress: 0, missingRequirements: [] as UpgradeRequirement[] };
     }
     if (requirements.length === 0) {
       return { canUpgrade: true, upgradeProgress: 100, missingRequirements: [] as UpgradeRequirement[] };
     }
-    const missingRequirements = requirements.filter(({ current, amount }) => current < amount);
+    // A balance this client cannot see never meets a requirement.
+    const missingRequirements = requirements.filter(({ current, amount }) => current === undefined || current < amount);
     return {
       canUpgrade: missingRequirements.length === 0,
       upgradeProgress: Math.floor(
@@ -144,7 +148,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
       ),
       missingRequirements,
     };
-  }, [nextLevel, requirements, structureInfo]);
+  }, [nextLevel, rawCosts, requirements, structureInfo]);
 
   const handleUpgrade = useCallback(async () => {
     if (!structureInfo || !nextLevel || !structureEntityId) return;

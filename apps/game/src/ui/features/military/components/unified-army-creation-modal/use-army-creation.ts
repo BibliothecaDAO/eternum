@@ -1,3 +1,4 @@
+import { knownBalance } from "@/ui/utils/utils";
 import {
   useCurrentArmiesTick,
   useCurrentBlockTimestamp,
@@ -139,8 +140,9 @@ export const useArmyCreation = ({
       label: formatTroopTypeLabel(type),
       tiers: TROOP_TIERS.map((tier) => {
         const resourceId = getTroopResourceId(type, tier);
-        const balance = getBalance(activeStructureId, resourceId, currentDefaultTick, store).balance;
-        const available = Number(divideByPrecision(balance));
+        // Troops this client cannot see can't be added to an army.
+        const available =
+          knownBalance(getBalance(activeStructureId, resourceId, currentDefaultTick, store).balance) ?? 0;
         const resource = resources.find((item) => item.id === resourceId);
         if (!resource) throw new Error(`Missing troop resource ${resourceId}`);
 

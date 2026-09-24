@@ -40,7 +40,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
   } = useGame();
 
   const { relicInfo, resourceName, resourceKey, essenceCost } = useRelicMetadata(relicId);
-  const { essenceBalance, hasEnoughEssence, missingEssence } = useRelicEssenceStatus(entityOwnerId, essenceCost);
+  const { essenceBalance, hasEnoughEssence, shortfall } = useRelicEssenceStatus(entityOwnerId, essenceCost);
   const compatible = isRelicCompatible(relicInfo, recipientType);
 
   const handleConfirm = async () => {
@@ -55,7 +55,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
     }
 
     if (!hasEnoughEssence) {
-      setError(`Insufficient essence. Need ${essenceCost}, have ${essenceBalance}`);
+      setError(shortfall);
       return;
     }
 
@@ -119,7 +119,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
         className="mb-4"
         essenceCost={essenceCost}
         essenceBalance={essenceBalance}
-        missingEssence={missingEssence}
+        shortfall={shortfall}
         hasEnoughEssence={hasEnoughEssence}
         balanceLabel="Your Balance"
       />

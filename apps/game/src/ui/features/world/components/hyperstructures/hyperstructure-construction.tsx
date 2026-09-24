@@ -67,7 +67,7 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
     const current = resources?.current(resource);
     const available =
       current && resources
-        ? current.balance + resources.balanceWithProduction(tick, resource).amountProducedLimited
+        ? current.balance + resources.balanceWithProduction(tick, resource)!.amountProducedLimited
         : undefined;
     const text = amounts[resource] ?? "";
     const value = parseContribution(text);

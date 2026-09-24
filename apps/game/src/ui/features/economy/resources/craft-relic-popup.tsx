@@ -125,7 +125,8 @@ interface CraftingRequirementInput {
   seasonStarted: boolean;
   seasonNotEnded: boolean;
   hasEnoughResearch: boolean;
-  missingResearch: number;
+  /** Undefined while the research balance is unknown. */
+  missingResearch: number | undefined;
 }
 
 const resolveCraftingRequirements = ({
@@ -165,7 +166,10 @@ const resolveCraftingRequirements = ({
       id: "research-balance",
       label: "Enough research balance",
       satisfied: hasEnoughResearch,
-      failureMessage: `Need ${currencyFormat(missingResearch, 0)} more research.`,
+      failureMessage:
+        missingResearch === undefined
+          ? "Research balance unknown."
+          : `Need ${currencyFormat(missingResearch, 0)} more research.`,
     },
   ];
 };
@@ -200,18 +204,12 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
   const structureCategory = Number(structureInfo.structureCategory ?? 0);
   const structureName = structureInfo.name?.name ?? `Structure #${structureId}`;
 
-  const configuredResearchCost = Number(configManager.getArtificerConfig().research_cost_for_relic ?? 0);
+  const configuredResearchCost = configManager.getArtificerConfig().research_cost_for_relic;
 
-  const currentResearchBalance = useMemo(() => {
-    if (!currentDefaultTick) {
-      return Number(resourceManager.balance(ResourcesIds.Research));
-    }
-
-    const data = resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Research);
-    return data.balance;
-  }, [currentDefaultTick, resourceManager]);
-
-  const displayedResearchBalance = currentResearchBalance;
+  const researchBalance = useMemo(
+    () => resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Research)?.balance,
+    [currentDefaultTick, resourceManager],
+  );
 
   const seasonConfig = configManager.getSeasonConfig();
   const seasonStarted = Number(seasonConfig.startMainAt) === 0 || nowSeconds >= Number(seasonConfig.startMainAt);
@@ -220,11 +218,12 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
   const canCraftStructureType =
     structureCategory === StructureType.Realm || structureCategory === StructureType.Village;
   const isOwnedByCaller = Boolean(account?.address && structureInfo.isMine);
-  const hasEnoughResearch = displayedResearchBalance >= configuredResearchCost;
-  const missingResearch = Math.max(configuredResearchCost - displayedResearchBalance, 0);
+  const hasEnoughResearch = researchBalance !== undefined && researchBalance >= configuredResearchCost;
+  const missingResearch =
+    researchBalance === undefined ? undefined : Math.max(configuredResearchCost - researchBalance, 0);
   const shouldShowResearchProgress = configuredResearchCost > 0;
   const researchProgressPercent = shouldShowResearchProgress
-    ? Math.min((displayedResearchBalance / configuredResearchCost) * 100, 100)
+    ? Math.min(((researchBalance ?? 0) / configuredResearchCost) * 100, 100)
     : 0;
 
   const craftingRequirements = useMemo(() => {
@@ -340,7 +339,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
               <div className="flex items-center justify-between text-[11px] text-gold/70">
                 <span>Research ready</span>
                 <span>
-                  {currencyFormat(displayedResearchBalance, 0)} / {currencyFormat(configuredResearchCost, 0)}
+                  {currencyFormat(researchBalance, 0)} / {currencyFormat(configuredResearchCost, 0)}
                 </span>
               </div>
               <div className="mt-1 h-2 overflow-hidden rounded-full bg-brown/60">
@@ -350,7 +349,11 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
                 />
               </div>
               {!hasEnoughResearch && (
-                <p className="mt-1 text-[11px] text-danger">Need {currencyFormat(missingResearch, 0)} more research.</p>
+                <p className="mt-1 text-[11px] text-danger">
+                  {missingResearch === undefined
+                    ? "Research balance unknown."
+                    : `Need ${currencyFormat(missingResearch, 0)} more research.`}
+                </p>
               )}
             </div>
           )}
@@ -363,7 +366,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
           <div className="mt-3 space-y-2 text-xs text-gold/80">
             <div className="flex items-center justify-between">
               <span>Research Balance</span>
-              <span className="font-semibold text-gold">{currencyFormat(displayedResearchBalance, 0)}</span>
+              <span className="font-semibold text-gold">{currencyFormat(researchBalance, 0)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span>Research Cost per Relic</span>
@@ -372,7 +375,10 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
             <div className="flex items-center justify-between">
               <span>Balance After Craft</span>
               <span className="font-semibold text-gold">
-                {currencyFormat(Math.max(displayedResearchBalance - configuredResearchCost, 0), 0)}
+                {currencyFormat(
+                  researchBalance === undefined ? undefined : Math.max(researchBalance - configuredResearchCost, 0),
+                  0,
+                )}
               </span>
             </div>
           </div>

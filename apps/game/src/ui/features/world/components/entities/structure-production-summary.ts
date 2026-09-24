@@ -81,7 +81,7 @@ const buildStructureProductionSummary = ({
     const productionData = ResourceManager.calculateResourceProductionData(
       resourceId,
       productionInfo,
-      currentDefaultTick || 0,
+      currentDefaultTick,
     );
     const isProducing = productionData.isProducing;
     const buildingCount = Number(productionInfo?.production?.building_count ?? 0);

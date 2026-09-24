@@ -146,8 +146,8 @@ const resolveStructureFoodBalance = (
     return { wheat: Number.POSITIVE_INFINITY, fish: Number.POSITIVE_INFINITY };
   }
 
-  const { balance: wheat } = structureResources.balanceWithProduction(currentDefaultTick, ResourcesIds.Wheat);
-  const { balance: fish } = structureResources.balanceWithProduction(currentDefaultTick, ResourcesIds.Fish);
+  const { balance: wheat } = structureResources.balanceWithProduction(currentDefaultTick, ResourcesIds.Wheat)!;
+  const { balance: fish } = structureResources.balanceWithProduction(currentDefaultTick, ResourcesIds.Fish)!;
 
   return { wheat: divideByPrecision(wheat), fish: divideByPrecision(fish) };
 };

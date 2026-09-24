@@ -38,7 +38,8 @@ export const InventoryResources = ({
   const currentDefaultTick = useCurrentDefaultTick();
   const { regularResources, relics } = useMemo(() => {
     // Only include resources with amount > 0
-    const balances = resources.balances(currentDefaultTick).filter((resource) => resource.amount > 0);
+    // An entity whose resources this client cannot see lists none.
+    const balances = (resources.balances(currentDefaultTick) ?? []).filter((resource) => resource.amount > 0);
 
     if (!activateRelics) {
       return {

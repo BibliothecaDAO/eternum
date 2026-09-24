@@ -26,7 +26,7 @@ export const MarketResourceRow = memo(
     const currentDefaultTick = useCoarseCurrentDefaultTick();
     const resourceManager = useResourceManager(entityId);
     const balance = useMemo(
-      () => Number(resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance),
+      () => resourceManager.balanceWithProduction(currentDefaultTick, resourceId)?.balance,
       [resourceManager, currentDefaultTick, resourceId],
     );
     const trait = findResourceById(resourceId)?.trait ?? "";

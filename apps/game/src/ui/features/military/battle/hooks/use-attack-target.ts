@@ -202,10 +202,10 @@ export const useAttackTargetData = (
 
     if (targetTile?.occupier_is_structure) {
       const oneMinuteAgo = currentBlockTimestamp - 60;
-      return orderResourcesByPriority(targetResource.balances(oneMinuteAgo));
+      return orderResourcesByPriority(targetResource.balances(oneMinuteAgo) ?? []);
     }
 
-    return orderResourcesByPriority(targetResource.balances());
+    return orderResourcesByPriority(targetResource.balances() ?? []);
   }, [currentBlockTimestamp, targetResource, targetTile?.occupier_is_structure]);
 
   const isLoading = Boolean(targetEntityId && (targetTile?.occupier_is_structure ? !targetStructure : !targetExplorer));

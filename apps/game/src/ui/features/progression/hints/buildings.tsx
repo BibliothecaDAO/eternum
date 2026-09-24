@@ -8,10 +8,8 @@ export const Buildings = () => {
   const buildingTable = useMemo(() => {
     const buildings = [];
 
-    for (const buildingId of Object.keys(BuildingType) as unknown as BuildingType[]) {
-      if (isNaN(Number(buildingId))) continue;
-
-      const complexBuildingCosts = configManager.complexBuildingCosts[buildingId];
+    for (const buildingId of configManager.gameBuildings()) {
+      const complexBuildingCosts = configManager.getBuildingCosts(buildingId, false)!;
 
       if (complexBuildingCosts.length !== 0) {
         const buildingPopCapacityConfig = configManager.getBuildingCategoryConfig(buildingId);

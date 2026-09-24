@@ -120,6 +120,16 @@ describe("owner naming", () => {
   });
 });
 
+it("names a chest's quality and ground only when the story carries them", () => {
+  expect(buildStoryEventPresentation(story("ChestReward", { quality: 2, kind: "Relic", depth: 1 }))).toMatchObject({
+    title: "Chest opened: Rare relic",
+    description: "Army · On Ethereal I",
+  });
+  const bare = buildStoryEventPresentation(story("ChestReward", {}));
+  expect(bare.title).toBe("Chest opened: reward");
+  expect(bare.description).toBe("Army");
+});
+
 it("shows the confirmed d20 bonuses and tolerates older stories without rolls", () => {
   const event = story("BattleStory", { attacker_roll: 1, defender_roll: 20 });
   const description = buildStoryEventPresentation(event).description;

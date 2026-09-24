@@ -30,6 +30,25 @@ const displayAmounts = (rows: readonly ResourceAmount[]) =>
     amount: Number(amount) / RESOURCE_PRECISION,
   }));
 
+/**
+ * A keyed rule this game does not hold. The chain refuses a game without a rule and a recipe for each of the 58
+ * resources and a rule for each of the 40 buildings, and callers stop at the last upgrade level, so a miss is a bug:
+ * in development it throws by name, headless tools included; in production it is undefined, which callers treat as
+ * unavailable (the action disabled, the value shown as unknown), never as zero, free or unlimited.
+ */
+const missingRule = (description: string): undefined => {
+  if (process.env.NODE_ENV !== "production") throw new Error(`This game defines no ${description}`);
+  return undefined;
+};
+
+const TROOP_TIERS = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
+
+const troopTierIndex = (tier: TroopTier): number => {
+  const index = TROOP_TIERS.indexOf(tier);
+  if (index < 0) throw new Error(`Unknown troop tier ${tier}`);
+  return index;
+};
+
 /** Configuration is read from the active game's immutable facts, without a second balance table. */
 export class ClientConfigManager {
   private static _instance: ClientConfigManager;
@@ -73,93 +92,54 @@ export class ClientConfigManager {
     return game.settled || (game.end_at !== 0n && BigInt(getBlockTimestamp().currentBlockTimestamp) >= game.end_at);
   }
 
-  get complexSystemResourceInputs() {
-    return Object.fromEntries(
-      [...this.facts().inGame("ProductionRecipe", this.gameId)].map((row) => [
-        row.resource_type,
-        displayAmounts(row.complex_inputs),
-      ]),
-    );
+  /**
+   * The resources this game can produce. Every game holds a recipe row for all 58 resources (the chain refuses fewer);
+   * relics and similar carry an empty one.
+   */
+  producibleResources(): ResourcesIds[] {
+    return [...this.facts().inGame("ProductionRecipe", this.gameId)]
+      .filter((row) => row.complex_output > 0n || row.simple_output > 0n)
+      .map((row) => row.resource_type as ResourcesIds)
+      .toSorted((a, b) => a - b);
   }
-  get simpleSystemResourceInputs() {
-    return Object.fromEntries(
-      [...this.facts().inGame("ProductionRecipe", this.gameId)].map((row) => [
-        row.resource_type,
-        displayAmounts(row.simple_inputs),
-      ]),
-    );
+  getRecipeInputs(resourceId: ResourcesIds, simple: boolean) {
+    const recipe = this.facts().get("ProductionRecipe", { game_id: this.gameId, resource_type: resourceId });
+    if (!recipe) return missingRule(`production recipe for resource ${resourceId}`);
+    return displayAmounts(simple ? recipe.simple_inputs : recipe.complex_inputs);
   }
-  get complexSystemResourceOutput() {
-    return Object.fromEntries(
-      [...this.facts().inGame("ProductionRecipe", this.gameId)].map((row) => [
-        row.resource_type,
-        { resource: row.resource_type, amount: this.divideByPrecision(Number(row.complex_output)) },
-      ]),
-    );
+  getRecipeOutput(resourceId: ResourcesIds, simple: boolean) {
+    const recipe = this.facts().get("ProductionRecipe", { game_id: this.gameId, resource_type: resourceId });
+    if (!recipe) return missingRule(`production recipe for resource ${resourceId}`);
+    return this.divideByPrecision(Number(simple ? recipe.simple_output : recipe.complex_output));
   }
-  get simpleSystemResourceOutput() {
-    return Object.fromEntries(
-      [...this.facts().inGame("ProductionRecipe", this.gameId)].map((row) => [
-        row.resource_type,
-        { resource: row.resource_type, amount: this.divideByPrecision(Number(row.simple_output)) },
-      ]),
-    );
+  /** The upgrade recipes this game defines, by the level they unlock. */
+  realmUpgradeRecipes() {
+    return [...this.facts().inGame("UpgradeRecipe", this.gameId)]
+      .map((row) => ({ level: row.level, costs: displayAmounts(row.costs) }))
+      .toSorted((a, b) => a.level - b.level);
   }
-  get resourceOutputRate() {
-    return Object.fromEntries(
-      [...this.facts().inGame("ResourceRule", this.gameId)].map((row) => [
-        row.resource_type,
-        {
-          resource: row.resource_type,
-          realm_output_per_second: Number(row.realm_rate),
-          village_output_per_second: Number(row.village_rate),
-        },
-      ]),
-    );
+  getRealmUpgradeCosts(level: number) {
+    const recipe = this.facts().get("UpgradeRecipe", { game_id: this.gameId, level });
+    if (!recipe) return missingRule(`realm upgrade recipe for level ${level}`);
+    return displayAmounts(recipe.costs);
   }
-  get realmUpgradeCosts() {
-    return Object.fromEntries(
-      [...this.facts().inGame("UpgradeRecipe", this.gameId)].map((row) => [row.level, displayAmounts(row.costs)]),
-    );
+  /** The buildings this game defines, from its building rules. */
+  gameBuildings(): BuildingType[] {
+    return [...this.facts().inGame("BuildingRule", this.gameId)]
+      .map((row) => row.category as BuildingType)
+      .toSorted((a, b) => a - b);
   }
-  get complexBuildingCosts() {
-    return Object.fromEntries(
-      [...this.facts().inGame("BuildingRule", this.gameId)].map((row) => [
-        row.category,
-        displayAmounts(row.complex_cost),
-      ]),
-    );
+  getBuildingCosts(buildingType: BuildingType, simple: boolean) {
+    const rule = this.facts().get("BuildingRule", { game_id: this.gameId, category: buildingType });
+    if (!rule) return missingRule(`building rule for building ${buildingType}`);
+    return displayAmounts(simple ? rule.simple_cost : rule.complex_cost);
   }
   /** Which building costs this game's rules carry; see buildingCostModeOf. */
   get buildingCostMode(): BuildingCostMode {
     return buildingCostModeOf(this.facts().inGame("BuildingRule", this.gameId));
   }
-  get simpleBuildingCosts() {
-    return Object.fromEntries(
-      [...this.facts().inGame("BuildingRule", this.gameId)].map((row) => [
-        row.category,
-        displayAmounts(row.simple_cost),
-      ]),
-    );
-  }
   get structureCosts() {
     return { [StructureType.Hyperstructure]: [this.getHyperstructureConstructionCosts()] };
-  }
-  get buildingOutputs() {
-    return Object.fromEntries(
-      [...this.facts().inGame("BuildingRule", this.gameId)].map((row) => [
-        row.category,
-        getProducedResource(row.category),
-      ]),
-    );
-  }
-  get resourceWeightsKg() {
-    return Object.fromEntries(
-      [...this.facts().inGame("ResourceRule", this.gameId)].map((row) => [
-        row.resource_type,
-        Number(row.unit_weight) / 1000,
-      ]),
-    );
   }
   get hyperstructureTotalCosts() {
     return this.getHyperstructureTotalCosts();
@@ -200,10 +180,9 @@ export class ClientConfigManager {
     };
   }
   getResourceWeightKg(resourceId: number) {
-    return (
-      Number(this.facts().require("ResourceRule", { game_id: this.gameId, resource_type: resourceId }).unit_weight) /
-      1000
-    );
+    const rule = this.facts().get("ResourceRule", { game_id: this.gameId, resource_type: resourceId });
+    if (!rule) return missingRule(`resource rule for resource ${resourceId}`);
+    return Number(rule.unit_weight) / 1000;
   }
   getTravelStaminaCost(biome: BiomeType, troopType: TroopType) {
     const config = this.rules().troop_stamina_config;
@@ -364,7 +343,8 @@ export class ClientConfigManager {
       troop_limit_config: { ...rules.troop_limit_config, troops_per_military_building: 1, max_defense_armies: 4 },
     };
   }
-  getMaxArmySize(level: number, tier: TroopTier): number {
+  /** Army strength a structure of this level may deploy. */
+  getDeploymentCap(level: number): number {
     const config = this.rules().troop_limit_config;
     const cap = [
       config.settlement_deployment_cap,
@@ -372,10 +352,18 @@ export class ClientConfigManager {
       config.kingdom_deployment_cap,
       config.empire_deployment_cap,
     ][level];
-    const tierIndex = [TroopTier.T1, TroopTier.T2, TroopTier.T3].indexOf(tier);
-    if (cap === undefined || tierIndex < 0) throw new Error("Unknown army level or tier");
-    const strength = [config.t1_tier_strength, config.t2_tier_strength, config.t3_tier_strength][tierIndex];
-    const modifier = [config.t1_tier_modifier, config.t2_tier_modifier, config.t3_tier_modifier][tierIndex];
+    if (cap === undefined) throw new Error(`Unknown army level ${level}`);
+    return cap;
+  }
+  getTierStrength(tier: TroopTier): number {
+    const config = this.rules().troop_limit_config;
+    return [config.t1_tier_strength, config.t2_tier_strength, config.t3_tier_strength][troopTierIndex(tier)];
+  }
+  getMaxArmySize(level: number, tier: TroopTier): number {
+    const config = this.rules().troop_limit_config;
+    const cap = this.getDeploymentCap(level);
+    const strength = this.getTierStrength(tier);
+    const modifier = [config.t1_tier_modifier, config.t2_tier_modifier, config.t3_tier_modifier][troopTierIndex(tier)];
     return strength === 0 ? 0 : Math.floor((cap * modifier) / (strength * 100));
   }
   getCombatConfig() {

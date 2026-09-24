@@ -87,8 +87,10 @@ export const buildDisplayItems = (
 ) => {
   if (!resourceComponent) return [] as DisplayItem[];
 
-  const projectedTick = currentDefaultTick ?? 0;
-  const balances = resourceComponent.balances(projectedTick).filter((resource) => resource.amount > 0);
+  // An entity whose resources this client cannot see shows no inventory.
+  const knownBalances = resourceComponent.balances(currentDefaultTick);
+  if (!knownBalances) return [] as DisplayItem[];
+  const balances = knownBalances.filter((resource) => resource.amount > 0);
 
   const activeRelicSet = new Set(activeRelicIds);
   const tiers = resourceTiers ?? {};

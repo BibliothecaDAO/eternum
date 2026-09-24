@@ -124,7 +124,7 @@ const startingTroopType = (client: GameClient, structureId: ID): TroopType | und
   const balances = [ResourcesIds.Knight, ResourcesIds.Paladin, ResourcesIds.Crossbowman].map((id) =>
     resource.balance(id),
   );
-  const funded = balances.findIndex((balance) => BigInt(balance) >= required);
+  const funded = balances.findIndex((balance) => balance !== undefined && balance >= required);
   return funded < 0 ? undefined : T1_TROOP_TYPES[funded];
 };
 

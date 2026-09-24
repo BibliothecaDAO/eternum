@@ -63,7 +63,9 @@ export class ArmyActionManager {
           wheatPayAmount: 0,
           fishPayAmount: 0,
         };
-    const { wheat, fish } = this.getFood(currentDefaultTick);
+    const food = this.getFood(currentDefaultTick);
+    if (!food) return false;
+    const { wheat, fish } = food;
 
     if (fish < exploreFoodCosts.fishPayAmount) {
       return false;
@@ -92,7 +94,9 @@ export class ArmyActionManager {
           fishPayAmount: 0,
         };
 
-    const { wheat, fish } = this.getFood(currentDefaultTick);
+    const food = this.getFood(currentDefaultTick);
+    if (!food) return 0;
+    const { wheat, fish } = food;
 
     let maxTravelWheatSteps = Infinity;
     let maxTravelFishSteps = Infinity;
@@ -116,18 +120,12 @@ export class ArmyActionManager {
     return { col: position.x, row: position.y, alt: position.alt };
   };
 
-  // getFood is without precision
-  public getFood(currentDefaultTick: number) {
+  /** The owner's food, without precision; undefined when this client holds no resource owner for it (unknown). */
+  public getFood(currentDefaultTick: number): { wheat: number; fish: number } | undefined {
     const resourceManager = this._getOwnerResourceManager();
-    if (!resourceManager) {
-      return {
-        wheat: 0,
-        fish: 0,
-      };
-    }
-
-    const wheatBalance = resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Wheat);
-    const fishBalance = resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Fish);
+    const wheatBalance = resourceManager?.balanceWithProduction(currentDefaultTick, ResourcesIds.Wheat);
+    const fishBalance = resourceManager?.balanceWithProduction(currentDefaultTick, ResourcesIds.Fish);
+    if (!wheatBalance || !fishBalance) return undefined;
 
     return {
       wheat: divideByPrecision(wheatBalance.balance),

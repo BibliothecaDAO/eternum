@@ -271,20 +271,20 @@ export const BattleLab = ({
           signer: account,
           structure_id: attackerEntityId,
           structure_guard_slot: state.selectedGuardSlot,
-          explorer_id: target.id || 0,
+          explorer_id: target.id,
         });
       } else if (target.targetType === TargetType.Army) {
         await attack_explorer_vs_explorer({
           signer: account,
           aggressor_id: attackerEntityId,
-          defender_id: target.id || 0,
+          defender_id: target.id,
           steal_resources: targetResources,
         });
       } else {
         await attack_explorer_vs_guard({
           signer: account,
           explorer_id: attackerEntityId,
-          structure_id: target.id || 0,
+          structure_id: target.id,
         });
       }
       updateSelectedEntityId(null);

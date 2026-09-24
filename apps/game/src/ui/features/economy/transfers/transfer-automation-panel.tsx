@@ -193,6 +193,8 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
 
     for (const ps of sourcesToUse) {
       const balances = new ResourceManager(store, ps.entityId).balances(currentDefaultTick);
+      // A source whose resources this client cannot see offers nothing.
+      if (!balances) continue;
 
       for (const { resourceId, amount } of balances) {
         const rid = resourceId as ResourcesIds;
@@ -276,8 +278,8 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       let sum = 0;
       let hasAllResources = true;
       for (const rid of selectedResources) {
-        const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
-        if (Number(bal) <= 0) {
+        const bal = rm.balanceWithProduction(currentDefaultTick, rid)?.balance;
+        if (bal === undefined || bal <= 0) {
           hasAllResources = false;
           break;
         }
@@ -430,8 +432,9 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     try {
       const rm = new ResourceManager(store, selectedSourceId);
       for (const rid of selectedResources) {
-        const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
-        map.set(rid, Math.max(0, Math.floor(Number(bal) / RESOURCE_PRECISION)));
+        // An unknown balance is left out, so the resource offers nothing to send.
+        const bal = rm.balanceWithProduction(currentDefaultTick, rid)?.balance;
+        if (bal !== undefined) map.set(rid, Math.max(0, Math.floor(bal / RESOURCE_PRECISION)));
       }
     } catch {
       // ignore balance fetch errors
@@ -444,8 +447,8 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     if (!store || !selectedSourceId) return 0;
     try {
       const rm = new ResourceManager(store, selectedSourceId);
-      const raw = rm.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance ?? 0n;
-      return Math.max(0, Math.floor(Number(raw) / RESOURCE_PRECISION));
+      const raw = rm.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey)?.balance;
+      return raw === undefined ? 0 : Math.max(0, Math.floor(raw / RESOURCE_PRECISION));
     } catch {
       return 0;
     }
@@ -521,14 +524,11 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         if (rid === ResourcesIds.Donkey) {
           available = Math.max(0, available - aggregatedDonkeyNeed);
         }
-        let weightPerUnit = 0;
-        try {
-          weightPerUnit = configManager.getResourceWeightKg(rid as ResourcesIds);
-        } catch {
-          weightPerUnit = 0;
-        }
+        // A resource whose weight rule is unknown cannot be loaded onto donkeys.
+        const weightPerUnit = configManager.getResourceWeightKg(rid as ResourcesIds);
+        if (weightPerUnit === undefined) available = 0;
         const totalCarryKg = donkeyCapacityKgPerUnit * donkeyAvailable;
-        const donkeyLimited = weightPerUnit > 0 ? Math.floor(totalCarryKg / weightPerUnit) : available;
+        const donkeyLimited = weightPerUnit ? Math.floor(totalCarryKg / weightPerUnit) : available;
         const perDestinationResourceCap = Math.floor(available / destinationCountForLimits);
         const perDestinationDonkeyCap = Math.floor(donkeyLimited / destinationCountForLimits);
         const maxAmount = Math.max(0, Math.min(perDestinationResourceCap, perDestinationDonkeyCap));
@@ -904,14 +904,11 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               if (rid === ResourcesIds.Donkey) {
                 available = Math.max(0, available - aggregatedDonkeyNeed);
               }
-              let weightPerUnit = 0;
-              try {
-                weightPerUnit = configManager.getResourceWeightKg(rid as ResourcesIds);
-              } catch {
-                weightPerUnit = 0;
-              }
+              // A resource whose weight rule is unknown cannot be loaded onto donkeys.
+              const weightPerUnit = configManager.getResourceWeightKg(rid as ResourcesIds);
+              if (weightPerUnit === undefined) available = 0;
               const totalCarryKg = donkeyCapacityKgPerUnit * donkeyAvailable;
-              const donkeyLimited = weightPerUnit > 0 ? Math.floor(totalCarryKg / weightPerUnit) : available;
+              const donkeyLimited = weightPerUnit ? Math.floor(totalCarryKg / weightPerUnit) : available;
               const perDestinationResourceCap = Math.floor(available / destinationCountForLimits);
               const perDestinationDonkeyCap = Math.floor(donkeyLimited / destinationCountForLimits);
               const maxAmount = Math.max(0, Math.min(perDestinationResourceCap, perDestinationDonkeyCap));

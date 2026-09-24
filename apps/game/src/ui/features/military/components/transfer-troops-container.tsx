@@ -131,15 +131,13 @@ export const TransferTroopsContainer = ({
   }, [selectedEntityId, targetExplorerTroops?.owner]);
 
   const structureTroopBalance = useMemo(() => {
-    if (!targetExplorerTroops?.troops || !selectedResourceState.hasResources()) return undefined;
+    if (!targetExplorerTroops?.troops) return undefined;
     const { category, tier } = targetExplorerTroops.troops;
     const resourceId = getTroopResourceId(category as TroopType, tier as TroopTier);
-    return {
-      resourceId,
-      balance: selectedResourceState.balanceWithProduction(currentDefaultTick, resourceId).balance,
-      category,
-      tier,
-    };
+    // A structure whose resources this client cannot see offers no troop balance.
+    const balance = selectedResourceState.balanceWithProduction(currentDefaultTick, resourceId)?.balance;
+    if (balance === undefined) return undefined;
+    return { resourceId, balance, category, tier };
   }, [currentDefaultTick, selectedResourceState, targetExplorerTroops?.troops]);
   const sameStructureBlockReason = useMemo(
     () =>
@@ -805,7 +803,7 @@ export const TransferTroopsContainer = ({
           const { balance } = selectedResourceState.balanceWithProduction(
             currentDefaultTick,
             resourceId as ResourcesIds,
-          );
+          )!;
           return {
             resourceId,
             amount: balance,

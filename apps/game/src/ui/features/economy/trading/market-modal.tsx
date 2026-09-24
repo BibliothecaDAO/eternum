@@ -202,7 +202,7 @@ const useStructureResourceBalance = (structureEntityId: ID, resourceId: number) 
   const { currentDefaultTick } = getBlockTimestamp();
   const resourceManager = useResourceManager(structureEntityId);
   return useMemo(
-    () => Number(resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance),
+    () => resourceManager.balanceWithProduction(currentDefaultTick, resourceId)?.balance,
     [resourceManager, currentDefaultTick, resourceId],
   );
 };
@@ -264,7 +264,7 @@ const TradingStructureHeader = ({
   const resourceManager = useResourceManager(structureEntityId);
   const balances = useMemo(() => {
     const balanceOf = (resourceId: ResourcesIds) =>
-      Number(resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance);
+      resourceManager.balanceWithProduction(currentDefaultTick, resourceId)?.balance;
     return { lords: balanceOf(ResourcesIds.Lords), donkeys: balanceOf(ResourcesIds.Donkey) };
   }, [resourceManager, currentDefaultTick]);
 
@@ -283,7 +283,13 @@ const TradingStructureHeader = ({
           <ResourceIcon resource="Lords" size="xs" withTooltip={false} />
           {currencyFormat(balances.lords, 0)}
         </span>
-        <span className={cn(REQUIREMENT_CHIP, balances.donkeys > 0 ? "text-gold" : "text-red")} title="Donkeys">
+        <span
+          className={cn(
+            REQUIREMENT_CHIP,
+            balances.donkeys !== undefined && balances.donkeys > 0 ? "text-gold" : "text-red",
+          )}
+          title="Donkeys"
+        >
           <ResourceIcon resource="Donkey" size="xs" withTooltip={false} />
           {currencyFormat(balances.donkeys, 0)}
         </span>

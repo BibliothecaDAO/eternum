@@ -547,6 +547,13 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
   getWorldmapChunkTrace?: () => WorldmapChunkTraceEntry[];
 };
 
+/** The explorer or structure an action targets on a hex; null when the hex holds neither. */
+const actorOnHex = (entity: { army?: { id: ID }; structure?: { id: ID } }) => {
+  if (entity.army) return { type: ActorType.Explorer, id: entity.army.id };
+  if (entity.structure) return { type: ActorType.Structure, id: entity.structure.id };
+  return null;
+};
+
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
 const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
@@ -2914,7 +2921,8 @@ export default class WorldmapScene extends WarpTravel {
     const selectedPath = actionPath.map((path) => path.hex);
 
     const targetHex = selectedPath[selectedPath.length - 1];
-    const target = this.getHexagonEntity(sceneHexOf(targetHex));
+    const target = actorOnHex(this.getHexagonEntity(sceneHexOf(targetHex)));
+    if (!target) return;
     const selected = this.getHexagonEntity(sceneHexOf(selectedPath[0]));
 
     const attackerSummary = {
@@ -2923,8 +2931,7 @@ export default class WorldmapScene extends WarpTravel {
       hex: Position.fromContract({ x: selectedPath[0].col, y: selectedPath[0].row }).getContract(),
     };
     const targetSummary = {
-      type: target.army ? ActorType.Explorer : ActorType.Structure,
-      id: target.army?.id || target.structure?.id || 0,
+      ...target,
       hex: Position.fromContract({ x: targetHex.col, y: targetHex.row }).getContract(),
       alt: activeMapLayer(),
     };
@@ -3106,6 +3113,8 @@ export default class WorldmapScene extends WarpTravel {
     const selectedHex = selectedPath[0];
     const selected = this.getHexagonEntity(sceneHexOf(selectedHex));
     const target = this.getHexagonEntity(sceneHexOf(targetHex));
+    const targetActor = actorOnHex(target);
+    if (!targetActor) return;
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
     const isTargetMine = target.army?.owner === account || target.structure?.owner === account;
     const isSelectedMine = selected.army?.owner === account || selected.structure?.owner === account;
@@ -3120,8 +3129,7 @@ export default class WorldmapScene extends WarpTravel {
             hex: Position.fromContract({ x: selectedHex.col, y: selectedHex.row }).getContract(),
           }}
           target={{
-            type: target.army ? ActorType.Explorer : ActorType.Structure,
-            id: target.army?.id || target.structure?.id || 0,
+            ...targetActor,
             hex: Position.fromContract({ x: targetHex.col, y: targetHex.row }).getContract(),
           }}
           allowBothDirections={isTargetMine && isSelectedMine}

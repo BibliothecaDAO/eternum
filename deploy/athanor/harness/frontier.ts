@@ -38,6 +38,7 @@ import { actorKey, type HarnessGameClient } from "./game-client";
 import { createRpcMetrics, trackTransaction, type TrackedTransaction, type WorkloadResult } from "./driver";
 import type { HarnessGame } from "./harness-game";
 import type { HarnessProvider } from "./provider";
+import { known } from "./known";
 
 const PRODUCTION_EPOCH_SECONDS = 86400;
 const precision = BigInt(RESOURCE_PRECISION);
@@ -481,9 +482,9 @@ function observeDay(player: Player) {
       realmId: player.realmId,
       previousArmies: previous.armyIds,
       currentArmies: [] as number[],
-      labor: resources.balance(23).toString(),
-      wheat: resources.balance(35).toString(),
-      essence: resources.balance(38).toString(),
+      labor: known(resources.balance(23), player.realmId, "labor balance").toString(),
+      wheat: known(resources.balance(35), player.realmId, "wheat balance").toString(),
+      essence: known(resources.balance(38), player.realmId, "essence balance").toString(),
       production: [...client.setup.store.inGame("ResourceProduction", game.gameId)]
         .filter((row) => row.entity_id === player.realmId)
         .map((row) => ({ resource: row.resource_type, rate: row.production_rate.toString() })),
@@ -536,12 +537,9 @@ function chooseAction(client: GameClient, game: HarnessGame, player: Player): Ac
   );
 }
 function balance(client: GameClient, player: Player, resource: ResourcesIds): bigint {
-  return BigInt(
-    new ResourceManager(client.setup.store, player.realmId, client.gameId).balanceWithProduction(
-      getBlockTimestamp().currentDefaultTick,
-      resource,
-    ).balance,
-  );
+  const manager = new ResourceManager(client.setup.store, player.realmId, client.gameId);
+  const current = manager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, resource);
+  return BigInt(known(current, player.realmId, `balance of resource ${resource}`).balance);
 }
 function planUpgrade(client: GameClient, player: Player): Action | undefined {
   const realm = home(client, player);
@@ -589,9 +587,13 @@ function planBuilding(client: GameClient, player: Player): Action | undefined {
   );
   const counts = (category: number) => buildings.filter((building) => building.category === category).length;
   const desired = [37, 1, 28, 25, 2, 37, 28, 25, 37, 2];
-  const training = new ResourceManager(client.setup.store, player.realmId, client.gameId).balanceWithProduction(
-    getBlockTimestamp().currentDefaultTick,
-    (26 + realm.metadata.barracks_tier) as ResourcesIds,
+  const training = known(
+    new ResourceManager(client.setup.store, player.realmId, client.gameId).balanceWithProduction(
+      getBlockTimestamp().currentDefaultTick,
+      (26 + realm.metadata.barracks_tier) as ResourcesIds,
+    ),
+    player.realmId,
+    "troop training balance",
   );
   let category = training.hasReachedMaxCapacity
     ? 2

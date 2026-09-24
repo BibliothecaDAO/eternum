@@ -236,7 +236,7 @@ export const RaidContainer = ({
       .map((r) => ({ ...r, amount: r.amount * RESOURCE_PRECISION }));
     const calldata = {
       explorer_id: attackerEntityId,
-      structure_id: target?.id || 0,
+      structure_id: target.id,
       structure_direction: direction,
       steal_resources: resources,
     };

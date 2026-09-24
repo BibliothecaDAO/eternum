@@ -93,10 +93,8 @@ export const useStructuresWithMetadata = ({
         entity_id: structure.entityId,
       });
       const population = Number(structureBuildings?.population.current ?? 0);
-      const normalizedBasePopulationCapacity = structureCapabilities.hasPopulationDetails
-        ? Math.max(Number(basePopulationCapacityValue ?? 0), 6)
-        : 0;
-      const populationCapacity = Number(structureBuildings?.population.max ?? 0) + normalizedBasePopulationCapacity;
+      const basePopulationCapacity = structureCapabilities.hasPopulationDetails ? basePopulationCapacityValue : 0;
+      const populationCapacity = Number(structureBuildings?.population.max ?? 0) + basePopulationCapacity;
       const occupiedBuildingTiles = buildingTileCountsByStructure[structure.entityId];
       const buildingTileSummary =
         structureCapabilities.hasPopulationDetails && occupiedBuildingTiles !== undefined

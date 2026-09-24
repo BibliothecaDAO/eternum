@@ -18,6 +18,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { shortString, type Account } from "starknet";
 import { ResourcesIds, StructureType, TroopType, type ID, type NativeTicketIdentity } from "@bibliothecadao/types";
+import { known } from "./known";
 
 export interface Coord {
   x: number;
@@ -159,7 +160,7 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
       const balances = [ResourcesIds.Knight, ResourcesIds.Paladin, ResourcesIds.Crossbowman].map((id) =>
         resource.balance(id),
       );
-      const funded = balances.findIndex((balance) => BigInt(balance) >= required);
+      const funded = balances.findIndex((balance) => balance !== undefined && balance >= required);
       if (funded < 0) return undefined;
       return T1_TROOP_TYPES[funded];
     },
@@ -187,7 +188,7 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
     production: (structureId) => {
       const resource = new ResourceManager(store, structureId);
       return {
-        laborBalance: resource.balance(ResourcesIds.Labor),
+        laborBalance: known(resource.balance(ResourcesIds.Labor), structureId, "labor balance"),
         woodOutput: resource.current(ResourcesIds.Wood)?.production?.output_amount_left ?? 0n,
       };
     },

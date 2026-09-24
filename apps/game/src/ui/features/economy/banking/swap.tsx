@@ -6,7 +6,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules";
 import { ConfirmationPopup } from "./confirmation-popup";
 import { ResourceBar } from "@/ui/features/economy/banking/resource-bar";
 import { TravelInfo } from "@/ui/features/economy/resources";
-import { formatNumber } from "@/ui/utils/utils";
+import { formatNumber, knownBalance } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
@@ -85,7 +85,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
   const hasEnough = useMemo(() => {
     const amount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
     const balance = isBuyResource ? lordsBalance : resourceBalance;
-    return multiplyByPrecision(amount) <= balance;
+    return balance !== undefined && multiplyByPrecision(amount) <= balance;
   }, [isBuyResource, lordsAmount, resourceAmount, resourceBalance, lordsBalance, ownerFee]);
 
   const amountsBiggerThanZero = lordsAmount > 0 && resourceAmount > 0;
@@ -203,7 +203,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
           resourceId={isLords ? ResourcesIds.Lords : resourceId}
           setResourceId={setResourceId}
           disableInput={disableInput}
-          max={isLords ? divideByPrecision(lordsBalance) : Infinity}
+          max={isLords ? (knownBalance(lordsBalance) ?? 0) : Infinity}
         />
       );
     },

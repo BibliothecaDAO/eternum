@@ -3,22 +3,19 @@ import { ResourcesIds } from "@bibliothecadao/types";
 import { configManager } from "../managers/config-manager";
 import { buildResourceDependencyOrder } from "./production";
 
+// Complex recipes consume the listed inputs; labor recipes consume nothing, so the order follows the complex graph.
 const recipes = (inputs: Partial<Record<ResourcesIds, ResourcesIds[]>>) =>
-  Object.fromEntries(
-    Object.entries(inputs).map(([resource, from]) => [
-      resource,
-      (from ?? []).map((input) => ({ resource: input, amount: 1 })),
-    ]),
-  );
+  vi
+    .spyOn(configManager, "getRecipeInputs")
+    .mockImplementation((resource, simple) =>
+      simple ? [] : (inputs[resource] ?? []).map((input) => ({ resource: input, amount: 1 })),
+    );
 
 describe("buildResourceDependencyOrder", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("orders inputs before the resources that consume them", () => {
-    vi.spyOn(configManager, "complexSystemResourceInputs", "get").mockReturnValue(
-      recipes({ [ResourcesIds.Knight]: [ResourcesIds.Copper], [ResourcesIds.Copper]: [ResourcesIds.Wood] }),
-    );
-    vi.spyOn(configManager, "getLaborConfig").mockReturnValue({ inputResources: [] } as never);
+    recipes({ [ResourcesIds.Knight]: [ResourcesIds.Copper], [ResourcesIds.Copper]: [ResourcesIds.Wood] });
     expect(
       buildResourceDependencyOrder([ResourcesIds.Knight, ResourcesIds.Copper, ResourcesIds.Wood], "realm"),
     ).toEqual([ResourcesIds.Wood, ResourcesIds.Copper, ResourcesIds.Knight]);
@@ -26,16 +23,13 @@ describe("buildResourceDependencyOrder", () => {
 
   it("orders the Blitz recipe cycle deterministically and keeps troops after their inputs", () => {
     // Coal, Wood and Copper each consume the other two; troops consume Copper.
-    vi.spyOn(configManager, "complexSystemResourceInputs", "get").mockReturnValue(
-      recipes({
-        [ResourcesIds.Coal]: [ResourcesIds.Wood, ResourcesIds.Copper],
-        [ResourcesIds.Wood]: [ResourcesIds.Coal, ResourcesIds.Copper],
-        [ResourcesIds.Copper]: [ResourcesIds.Wood, ResourcesIds.Coal],
-        [ResourcesIds.Paladin]: [ResourcesIds.Copper],
-        [ResourcesIds.Knight]: [ResourcesIds.Copper],
-      }),
-    );
-    vi.spyOn(configManager, "getLaborConfig").mockReturnValue({ inputResources: [] } as never);
+    recipes({
+      [ResourcesIds.Coal]: [ResourcesIds.Wood, ResourcesIds.Copper],
+      [ResourcesIds.Wood]: [ResourcesIds.Coal, ResourcesIds.Copper],
+      [ResourcesIds.Copper]: [ResourcesIds.Wood, ResourcesIds.Coal],
+      [ResourcesIds.Paladin]: [ResourcesIds.Copper],
+      [ResourcesIds.Knight]: [ResourcesIds.Copper],
+    });
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const order = buildResourceDependencyOrder(
       [ResourcesIds.Paladin, ResourcesIds.Copper, ResourcesIds.Knight, ResourcesIds.Wood, ResourcesIds.Coal],

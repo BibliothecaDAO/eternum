@@ -27,7 +27,8 @@ export const RawResourcesPanel = ({
   outputResourceAmount,
 }: RawResourcesPanelProps) => {
   const rawInputResources = useMemo(() => {
-    return configManager.complexSystemResourceInputs[selectedResource].map((resource) => ({
+    // Empty when this game defines no recipe for the resource: nothing can be produced from inputs.
+    return (configManager.getRecipeInputs(selectedResource, false) ?? []).map((resource) => ({
       ...resource,
       amount: resource.amount / outputResourceAmount,
     }));

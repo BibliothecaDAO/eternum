@@ -69,9 +69,11 @@ export const canAcceptOffer = (
   store: NativeFactStore,
 ): boolean => {
   const manager = new ResourceManager(store, realmEntityId);
-  return resourcesGive.every(
-    (resource) => manager.balanceWithProduction(currentTick, resource.resourceId).balance >= resource.amount,
-  );
+  // A balance this client cannot see never covers an offer.
+  return resourcesGive.every((resource) => {
+    const held = manager.balanceWithProduction(currentTick, resource.resourceId)?.balance;
+    return held !== undefined && held >= resource.amount;
+  });
 };
 
 export const calculateRatio = (resourcesGive: Resource[], resourcesGet: Resource[]) =>

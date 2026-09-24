@@ -27,13 +27,13 @@ export const TravelInfo = ({
   const transferredDonkeys = isAmm
     ? 0
     : (resources.find((resource) => resource.resourceId === ResourcesIds.Donkey)?.amount ?? 0);
-  const donkeyBalance =
-    divideByPrecision(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance) -
-    transferredDonkeys;
+  // Undefined when this client cannot see the sender's donkeys: nothing can then be carried.
+  const heldDonkeys = resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey)?.balance;
+  const donkeyBalance = heldDonkeys === undefined ? undefined : divideByPrecision(heldDonkeys) - transferredDonkeys;
   const onlyWeightlessResources = resources.every(
     (resource) => resource.resourceId === ResourcesIds.Donkey || resource.resourceId === ResourcesIds.Lords,
   );
-  const canCarry = onlyWeightlessResources || donkeyBalance >= neededDonkeys;
+  const canCarry = onlyWeightlessResources || (donkeyBalance !== undefined && donkeyBalance >= neededDonkeys);
   const formattedArrivalTime = formatArrivalTime(calculateArrivalTime(travelTime));
 
   useEffect(() => {
@@ -58,12 +58,9 @@ export const TravelInfo = ({
           </tr>
           <tr className="hover:bg-gold/5 transition-colors">
             <td className="px-4 py-1 font-semibold text-right whitespace-nowrap">Donkeys Burnt for Transfer</td>
-            <td
-              className={`px-4 py-1 whitespace-nowrap text-left ${
-                neededDonkeys > donkeyBalance ? "text-red" : "text-green"
-              }`}
-            >
-              {neededDonkeys.toLocaleString()} 🔥🫏 [{donkeyBalance.toLocaleString()}]
+            <td className={`px-4 py-1 whitespace-nowrap text-left ${canCarry ? "text-green" : "text-red"}`}>
+              {neededDonkeys.toLocaleString()} 🔥🫏 [
+              {donkeyBalance === undefined ? "—" : donkeyBalance.toLocaleString()}]
             </td>
           </tr>
         </tbody>

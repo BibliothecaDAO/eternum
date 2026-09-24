@@ -5,8 +5,8 @@ import { ResourcesIds } from "@bibliothecadao/types";
 
 export interface ResourceRequirement {
   resource: ResourcesIds;
-  /** Held now, in whole units. */
-  current: number;
+  /** Held now, in whole units; undefined while the balance is unknown. */
+  current: number | undefined;
   /** Needed, in whole units. */
   amount: number;
   incoming?: { amount: number; etaSeconds: number } | null;
@@ -25,7 +25,7 @@ export const RequirementChips = ({
 }) => (
   <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
     {requirements.map((req) => {
-      const isMet = req.current >= req.amount;
+      const isMet = req.current !== undefined && req.current >= req.amount;
       const incomingTitle = req.incoming
         ? ` (+${Math.floor(req.incoming.amount).toLocaleString()} in transit, ${formatIncomingEta(req.incoming.etaSeconds)})`
         : "";
@@ -36,7 +36,9 @@ export const RequirementChips = ({
           title={`${ResourcesIds[req.resource] ?? `Resource ${req.resource}`} — need ${req.amount.toLocaleString()}${incomingTitle}`}
         >
           <ResourceIcon withTooltip={false} resource={ResourcesIds[req.resource]} size="xs" />
-          <span className={isMet ? "text-gold" : "text-red-300"}>{Math.floor(req.current).toLocaleString()}</span>
+          <span className={isMet ? "text-gold" : "text-red-300"}>
+            {req.current === undefined ? "—" : Math.floor(req.current).toLocaleString()}
+          </span>
           <span className={isMet ? "text-gold/55" : "text-red-300/80"}>/ {req.amount.toLocaleString()}</span>
           {req.incoming && <span className="text-emerald-300/90">↑</span>}
         </span>

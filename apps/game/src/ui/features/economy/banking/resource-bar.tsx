@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
-import { formatNumber } from "@/ui/utils/utils";
+import { formatNumber, knownBalance } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { divideByPrecision, getBalance } from "@bibliothecadao/eternum";
@@ -43,7 +43,7 @@ export const ResourceBar = memo(
     useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Market", "Liquidity", "Structure"]);
     const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
-    const selectedResourceBalance = divideByPrecision(
+    const selectedResourceBalance = knownBalance(
       getBalance(entityId, Number(resourceId), currentDefaultTick, game.setup.store).balance,
     );
     const [searchInput, setSearchInput] = useState("");
@@ -61,7 +61,8 @@ export const ResourceBar = memo(
     };
 
     const hasLordsFees = lordsFee > 0 && resourceId === ResourcesIds.Lords;
-    const finalResourceBalance = hasLordsFees ? selectedResourceBalance - lordsFee : selectedResourceBalance;
+    const finalResourceBalance =
+      selectedResourceBalance === undefined ? undefined : selectedResourceBalance - (hasLordsFees ? lordsFee : 0);
 
     const filteredResources = resources.filter(
       (resource) => resource.trait.toLowerCase().startsWith(searchInput.toLowerCase()) || resource.id === resourceId,
@@ -110,10 +111,10 @@ export const ResourceBar = memo(
           {!disableInput && (
             <div className="flex text-xs mt-1.5 items-center text-gold/50">
               <MaxButton
-                max={finalResourceBalance}
+                max={finalResourceBalance ?? 0}
                 onChange={(value) => handleAmountChange(parseFloat(value))}
                 variant="text"
-                label={`Max: ${isNaN(selectedResourceBalance) ? "0" : selectedResourceBalance.toLocaleString()}`}
+                label={`Max: ${selectedResourceBalance === undefined ? "—" : selectedResourceBalance.toLocaleString()}`}
                 className="hover:text-gold"
               />
               {hasLordsFees && (
@@ -153,9 +154,7 @@ export const ResourceBar = memo(
               <SelectItem key={resource.id} value={resource.trait} disabled={resource.id === resourceId}>
                 <ResourceCost
                   resourceId={resource.id}
-                  amount={divideByPrecision(
-                    getBalance(entityId, resource.id, currentDefaultTick, game.setup.store).balance,
-                  )}
+                  amount={knownBalance(getBalance(entityId, resource.id, currentDefaultTick, game.setup.store).balance)}
                   className="border-0 bg-transparent"
                 />
               </SelectItem>

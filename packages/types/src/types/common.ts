@@ -177,8 +177,8 @@ export interface Building {
   name: string;
   category: BuildingType;
   paused: boolean;
-  produced: ResourceCost;
-  consumed: ResourceCost[];
+  /** The resource the building produces. */
+  produced: { resource: ResourcesIds };
   innerCol: number;
   innerRow: number;
 }
@@ -631,11 +631,14 @@ export interface RealmInfo {
   resources: ResourcesIds[];
   order: number;
   position: Position;
-  storehouses: {
-    capacityKg: number;
-    capacityUsedKg: number;
-    quantity: number;
-  };
+  /** Undefined when this client holds no resource owner for the structure: unknown, never zero. */
+  storehouses:
+    | {
+        capacityKg: number;
+        capacityUsedKg: number;
+        quantity: number;
+      }
+    | undefined;
   population?: number | undefined;
   capacity?: number;
   hasCapacity: boolean;

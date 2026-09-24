@@ -236,19 +236,23 @@ export const getAutomationOverallocation = (
 
   Object.entries(percentagesByResource).forEach(([key, stored]) => {
     const resourceId = Number(key) as ResourcesIds;
-    if (isAutomationResourceBlocked(resourceId, entityType)) {
+    // Stored settings persist across games; a resource this game cannot produce allocates nothing.
+    if (
+      isAutomationResourceBlocked(resourceId, entityType) ||
+      !configManager.producibleResources().includes(resourceId)
+    ) {
       return;
     }
     const percentages = configManager.isCommandEnabled("BurnLaborForResourceProduction")
       ? stored
       : { ...stored, laborToResource: 0 };
-    const rawComplexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
+    const rawComplexInputs = configManager.getRecipeInputs(resourceId, false) ?? [];
     const complexInputs = rawComplexInputs.filter(
       (input: { resource: ResourcesIds }) =>
         !isAutomationResourceBlocked(input.resource, entityType, "input") && input.resource !== ResourcesIds.Wheat,
     );
 
-    const rawSimpleInputs = configManager.simpleSystemResourceInputs[resourceId] ?? [];
+    const rawSimpleInputs = configManager.getRecipeInputs(resourceId, true) ?? [];
     const simpleInputs = rawSimpleInputs.filter(
       (input: { resource: ResourcesIds }) =>
         !isAutomationResourceBlocked(input.resource, entityType, "input") && input.resource !== ResourcesIds.Wheat,

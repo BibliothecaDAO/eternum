@@ -8,6 +8,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
 import type { Account } from "starknet";
+import { knownBalance } from "@/ui/utils/utils";
 
 type Lane = "Barracks" | "Attunement";
 const BARRACKS_TIERS = ["I", "II", "III"];
@@ -27,7 +28,7 @@ export const RealmLadders = ({ structureEntityId }: { structureEntityId: number 
   const realm = store.get("Structure", { game_id: gameId, entity_id: structureEntityId });
   if (!board || !realm || !account) return null;
 
-  const essence = divideByPrecision(Number(getBalance(structureEntityId, ResourcesIds.Essence, tick, store).balance));
+  const essence = knownBalance(getBalance(structureEntityId, ResourcesIds.Essence, tick, store).balance);
   const barracksTier = realm.metadata.barracks_tier;
   const attunement = realm.metadata.attunement;
   const barracksCost =
@@ -60,10 +61,10 @@ export const RealmLadders = ({ structureEntityId }: { structureEntityId: number 
         {next && price !== null ? (
           <button
             type="button"
-            disabled={essence < price || pending !== null}
+            disabled={essence === undefined || essence < price || pending !== null}
             onClick={() => void buy(lane)}
             className="rounded-md border border-gold/30 px-2 py-1 text-gold disabled:opacity-40"
-            title={essence < price ? `Needs ${price.toLocaleString()} Essence` : undefined}
+            title={essence === undefined || essence < price ? `Needs ${price.toLocaleString()} Essence` : undefined}
           >
             {pending === lane ? "Buying…" : `${next} · ${price.toLocaleString()} Essence`}
           </button>
@@ -83,7 +84,7 @@ export const RealmLadders = ({ structureEntityId }: { structureEntityId: number 
         ATTUNEMENT_DEPTHS[attunement + 1] ?? null,
         attunementCost,
       )}
-      <p className="text-[10px] text-gold/50">Essence on hand: {essence.toLocaleString()}</p>
+      <p className="text-[10px] text-gold/50">Essence on hand: {essence?.toLocaleString() ?? "—"}</p>
     </div>
   );
 };

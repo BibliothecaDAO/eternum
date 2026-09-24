@@ -37,7 +37,7 @@ type RelicInfoType = ReturnType<typeof useRelicMetadata>["relicInfo"];
 interface ActivationRequest {
   holder: EnrichedHolder;
   hasEnoughEssence: boolean;
-  essenceBalance: number;
+  shortfall: string;
 }
 
 type RelicActivationHolderCardProps = {
@@ -57,7 +57,7 @@ const RelicActivationHolderCard = ({
   isActivating,
   activationError,
 }: RelicActivationHolderCardProps) => {
-  const { essenceBalance, hasEnoughEssence, missingEssence } = useRelicEssenceStatus(holder.entityOwnerId, essenceCost);
+  const { essenceBalance, hasEnoughEssence, shortfall } = useRelicEssenceStatus(holder.entityOwnerId, essenceCost);
   const compatible = isRelicCompatible(relicInfo, holder.recipientType);
   const isArmyHolder = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
   const parentRealmLabel = (() => {
@@ -114,7 +114,7 @@ const RelicActivationHolderCard = ({
         className="mt-3"
         essenceCost={essenceCost}
         essenceBalance={essenceBalance}
-        missingEssence={missingEssence}
+        shortfall={shortfall}
         hasEnoughEssence={hasEnoughEssence}
         balanceLabel="Essence Balance"
       />
@@ -135,7 +135,7 @@ const RelicActivationHolderCard = ({
             onActivate({
               holder,
               hasEnoughEssence,
-              essenceBalance,
+              shortfall,
             })
           }
         >
@@ -267,7 +267,7 @@ export const RelicActivationSelector = ({
   const visibleHolders = enrichedHolders;
   const visibleDisplayAmount = _initialDisplayAmount;
 
-  const handleActivate = async ({ holder, hasEnoughEssence, essenceBalance }: ActivationRequest) => {
+  const handleActivate = async ({ holder, hasEnoughEssence, shortfall }: ActivationRequest) => {
     if (!relicInfo) {
       setActivationError({ holderId: String(holder.entityId), message: "Relic data unavailable." });
       return;
@@ -292,11 +292,7 @@ export const RelicActivationSelector = ({
     }
 
     if (!hasEnoughEssence) {
-      const missingEssence = Math.max(0, essenceCost - essenceBalance);
-      setActivationError({
-        holderId: holderKey,
-        message: "Need " + missingEssence.toLocaleString() + " more essence.",
-      });
+      setActivationError({ holderId: holderKey, message: shortfall });
       return;
     }
 

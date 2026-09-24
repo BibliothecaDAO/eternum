@@ -435,7 +435,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       const productionData = ResourceManager.calculateResourceProductionData(
         resourceId,
         productionInfo,
-        currentDefaultTick || 0,
+        currentDefaultTick,
       );
 
       const totalBuildings = Number(productionInfo.production.building_count ?? 0);
@@ -1456,9 +1456,8 @@ const ResourceInfo = ({
   const game = useGame();
   useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building"]);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-  let cost = useSimpleCost
-    ? configManager.simpleSystemResourceInputs[resourceId]
-    : configManager.complexSystemResourceInputs[resourceId];
+  // Empty when this game defines no recipe for the resource.
+  let cost = configManager.getRecipeInputs(resourceId, useSimpleCost) ?? [];
 
   const structure = useNativeRow(
     "Structure",
@@ -1637,9 +1636,7 @@ const BuildingInfo = ({
 
   let ongoingCost: any[] = [];
   if (resourceProduced !== undefined) {
-    const costs = useSimpleCost
-      ? configManager.simpleSystemResourceInputs[resourceProduced]
-      : configManager.complexSystemResourceInputs[resourceProduced];
+    const costs = configManager.getRecipeInputs(resourceProduced, useSimpleCost);
     if (costs) {
       ongoingCost = Object.values(costs); // Convert object to array
     }

@@ -100,7 +100,7 @@ export const Castle = () => {
                     {LEVEL_DESCRIPTIONS[getNextRealmLevel as keyof typeof LEVEL_DESCRIPTIONS]}
                   </p>
                   <div className="flex flex-wrap gap-3">
-                    {configManager.realmUpgradeCosts[getNextRealmLevel]?.map((a: any) => (
+                    {configManager.getRealmUpgradeCosts(getNextRealmLevel)?.map((a) => (
                       <ResourceCost
                         key={a.resource}
                         type="vertical"

@@ -43,11 +43,11 @@ const EXPEDITION_GROUND_LABELS = ["the surface", "Ethereal I", "Ethereal II", "E
 
 const formatters: Record<string, StoryFormatter> = {
   ChestReward: (event, payload, components) => {
-    const quality = CHEST_QUALITY_LABELS[toNumber(payload.quality) ?? 0] ?? "Common";
+    const quality = labelAt(CHEST_QUALITY_LABELS, payload.quality);
     const kind = CHEST_KIND_LABELS[formatEnum(payload.kind) ?? ""] ?? "reward";
-    const ground = EXPEDITION_GROUND_LABELS[toNumber(payload.depth) ?? 0];
+    const ground = labelAt(EXPEDITION_GROUND_LABELS, payload.depth);
     return {
-      title: `Chest opened: ${quality} ${kind}`,
+      title: `Chest opened: ${quality ? `${quality} ${kind}` : kind}`,
       description: joinPieces([describeExplorer(payload.explorer_id, components), ground ? `On ${ground}` : undefined]),
       icon: "prize",
     };
@@ -105,7 +105,7 @@ const formatters: Record<string, StoryFormatter> = {
         : undefined;
     const inputsLine = cost ? `Inputs consumed: ${cost}` : undefined;
     return {
-      title: `Production started: ${resourceName}`,
+      title: resourceName ? `Production started: ${resourceName}` : "Production started",
       description: joinPieces([structureSummary, outputLine, inputsLine]),
       icon: "production",
     };
@@ -744,6 +744,12 @@ function formatNumber(value: unknown): string | null {
     }
   }
   return `${value}`;
+}
+
+/** The label an index names, or undefined when the payload carries no index or one outside the table. */
+function labelAt(labels: string[], value: unknown): string | undefined {
+  const index = toNumber(value);
+  return index === null ? undefined : labels[index];
 }
 
 function toNumber(value: unknown): number | null {

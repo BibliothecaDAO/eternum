@@ -50,7 +50,6 @@ export const EntityResourceTableOld = React.memo(
     const productionBoostBonus = useNativeRow("ProductionBonus", keys);
     const guardRevision = useNativeRevision(["Guard"]);
     const { currentDefaultTick, currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
-    const currentTick = currentDefaultTick || 0;
 
     const activeRelicEffects = useMemo(() => {
       const structureArmyRelicEffects = [...setup.store.inGame("Guard", configManager.getActiveGameId())]
@@ -109,9 +108,9 @@ export const EntityResourceTableOld = React.memo(
           {Object.entries(mode.resources.getTiers()).map(([tier, resourceIds]) => {
             const resourcesForTier = (resourceIds as ResourcesIds[]).filter((resourceId: ResourcesIds) => {
               const alwaysShow = ALWAYS_SHOW_RESOURCES.includes(resourceId);
-              const { balance } = resourceManager.balanceWithProduction(currentTick, resourceId);
+              const balance = resourceManager.balanceWithProduction(currentDefaultTick, resourceId)?.balance;
 
-              if (!showAllResources && !alwaysShow && balance <= 0) {
+              if (!showAllResources && !alwaysShow && (balance === undefined || balance <= 0)) {
                 return false;
               }
 
@@ -121,7 +120,7 @@ export const EntityResourceTableOld = React.memo(
                 const { isProducing } = ResourceManager.calculateResourceProductionData(
                   resourceId,
                   productionInfo,
-                  currentTick,
+                  currentDefaultTick,
                 );
 
                 if (!isProducing) {

@@ -13,7 +13,8 @@ type TextSize = (typeof TEXT_SIZES)[number];
 
 type ResourceCostProps = {
   resourceId: number;
-  amount: number;
+  /** Undefined when the amount is not known here; it shows as "—", never as zero. */
+  amount: number | undefined;
   balance?: number;
   color?: string;
   type?: (typeof LAYOUT_TYPES)[number];
@@ -45,7 +46,7 @@ export const ResourceCost = ({
 }: ResourceCostProps) => {
   const trait = useMemo(() => findResourceById(resourceId)?.trait, [resourceId]);
 
-  const hasSufficientBalance = balance !== undefined && divideByPrecision(balance) >= amount;
+  const hasSufficientBalance = balance !== undefined && amount !== undefined && divideByPrecision(balance) >= amount;
   const balanceColor = hasSufficientBalance ? "text-green-400" : "text-red-400";
 
   const containerClasses = clsx(
@@ -78,7 +79,7 @@ export const ResourceCost = ({
       />
       <div className={contentClasses}>
         <div onClick={onClick} className={clsx("relative", `text-${textSize}`, color)}>
-          {formatAmount(amount)}
+          {amount === undefined ? "—" : formatAmount(amount)}
           {showBalance && (
             <span className={clsx("font-normal", balanceColor)}>{` (${currencyFormat(balance, 0)})`}</span>
           )}

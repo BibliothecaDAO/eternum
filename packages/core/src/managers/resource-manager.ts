@@ -101,16 +101,17 @@ export class ResourceManager {
     return this.store.get("ResourceWeight", { game_id: this.gameId, entity_id: this.entityId });
   }
 
-  public balances(currentTick?: number): Resource[] {
-    if (!this.hasResources()) return [];
+  /** Every held resource; undefined when this client holds no resource owner for the entity (unknown, not empty). */
+  public balances(currentTick?: number): Resource[] | undefined {
+    if (!this.hasResources()) return undefined;
     return Array.from({ length: 58 }, (_, index) => {
       const resourceId = (index + 1) as ResourcesIds;
       return {
         resourceId,
         amount:
           currentTick === undefined
-            ? Number(this.balance(resourceId))
-            : this.balanceWithProduction(currentTick, resourceId).balance,
+            ? Number(this.balance(resourceId)!)
+            : this.balanceWithProduction(currentTick, resourceId)!.balance,
       };
     }).filter(({ amount }) => amount > 0);
   }
@@ -144,12 +145,15 @@ export class ResourceManager {
     return production.building_count > 0 && production.production_rate !== 0n && production.output_amount_left !== 0n;
   }
 
+  /** The balance with production to `currentTick`; undefined when this client holds no resource owner for the entity. */
   public balanceWithProduction(
     currentTick: number,
     resourceId: ResourcesIds,
-  ): { balance: number; hasReachedMaxCapacity: boolean; amountProduced: bigint; amountProducedLimited: bigint } {
+  ):
+    | { balance: number; hasReachedMaxCapacity: boolean; amountProduced: bigint; amountProducedLimited: bigint }
+    | undefined {
     const resource = this.current(resourceId);
-    if (!resource) return { balance: 0, hasReachedMaxCapacity: false, amountProduced: 0n, amountProducedLimited: 0n };
+    if (!resource) return undefined;
     const { balance, production } = resource;
     if (!production)
       return { balance: Number(balance), hasReachedMaxCapacity: false, amountProduced: 0n, amountProducedLimited: 0n };
@@ -275,8 +279,10 @@ export class ResourceManager {
     return production.last_updated_at + Math.ceil(remainingTicks);
   }
 
-  public getStoreCapacityKg(): { capacityKg: number; capacityUsedKg: number; quantity: number } {
+  /** The store's capacity and use; undefined when this client holds no resource owner for the entity. */
+  public getStoreCapacityKg(): { capacityKg: number; capacityUsedKg: number; quantity: number } | undefined {
     const weight = this.weight();
+    if (!weight) return undefined;
     const structureBuildings = this.store.get("StructureBuildings", { game_id: this.gameId, entity_id: this.entityId });
     const packBuildingCounts = [
       structureBuildings?.packed_counts_1 || 0n,
@@ -286,21 +292,24 @@ export class ResourceManager {
     const quantity = structureBuildings ? getBuildingCount(BuildingType.Storehouse, packBuildingCounts) || 0 : 0;
 
     return {
-      capacityKg: gramToKg(divideByPrecision(Number(weight?.capacity || 0))),
-      capacityUsedKg: gramToKg(Math.max(0, divideByPrecision(Number(weight?.weight || 0)))),
+      capacityKg: gramToKg(divideByPrecision(Number(weight.capacity))),
+      capacityUsedKg: gramToKg(Math.max(0, divideByPrecision(Number(weight.weight)))),
       quantity,
     };
   }
 
-  public balance(resourceId: ResourcesIds): bigint {
-    return this.current(resourceId)?.balance ?? 0n;
+  /** The stored balance; undefined when this client holds no resource owner for the entity (unknown, never zero). */
+  public balance(resourceId: ResourcesIds): bigint | undefined {
+    return this.current(resourceId)?.balance;
   }
 
+  // Only reached for an entity whose resource owner is held, so its store capacity is known.
   private _limitProductionByStoreCapacity(amountProduced: bigint, resourceId: ResourcesIds): bigint {
-    const { capacityKg, capacityUsedKg } = this.getStoreCapacityKg();
+    const { capacityKg, capacityUsedKg } = this.getStoreCapacityKg()!;
     return ResourceManager._limitProductionByStoreCapacityStatic(
       amountProduced,
-      configManager.getResourceWeightKg(resourceId) || 0,
+      // A resource with production has its rule; a zero weight means it takes no store space.
+      configManager.getResourceWeightKg(resourceId)!,
       capacityKg,
       capacityUsedKg,
     );

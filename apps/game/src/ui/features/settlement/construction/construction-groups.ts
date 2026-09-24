@@ -1,3 +1,4 @@
+import { knownBalance } from "@/ui/utils/utils";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { GameModeConfig } from "@/config/game-modes";
 import type { ResourceRequirement } from "@/ui/design-system/molecules/requirement-chips";
@@ -16,7 +17,7 @@ export function resolveBuildingRequirements(
   return (getBuildingCosts(entityId, store, type, useSimpleCost) ?? []).map((cost) => ({
     resource: cost.resource,
     amount: cost.amount,
-    current: divideByPrecision(getBalance(entityId, cost.resource, currentDefaultTick, store).balance),
+    current: knownBalance(getBalance(entityId, cost.resource, currentDefaultTick, store).balance),
   }));
 }
 

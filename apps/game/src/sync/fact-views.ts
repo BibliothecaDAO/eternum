@@ -92,10 +92,11 @@ const readSelectableArmies = (store: NativeFactStore, account: string) =>
 
 const RELIC_RESOURCES = { first: ResourcesIds.StaminaRelic1, last: ResourcesIds.TroopProductionRelic2 };
 
+// An entity whose resources this client cannot see shows no relics.
 const readRelicsOf = (store: NativeFactStore, entityId: number) =>
-  new ResourceManager(store, entityId)
-    .balances()
-    .filter(({ resourceId }) => resourceId >= RELIC_RESOURCES.first && resourceId <= RELIC_RESOURCES.last);
+  (new ResourceManager(store, entityId).balances() ?? []).filter(
+    ({ resourceId }) => resourceId >= RELIC_RESOURCES.first && resourceId <= RELIC_RESOURCES.last,
+  );
 
 const readPlayerRelics = (store: NativeFactStore, account: string): PlayerRelicsData | null => {
   if (account === NO_ACCOUNT) return null;

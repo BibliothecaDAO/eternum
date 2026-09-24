@@ -1,27 +1,11 @@
-import {
-  type HyperstructureResourceCostMinMax,
-  type ID,
-  type Resource,
-  ResourcesIds,
-  resources,
-} from "@bibliothecadao/types";
+import { type HyperstructureResourceCostMinMax, type ID, type Resource, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { ResourceManager } from "../managers";
 import { configManager } from "../managers/config-manager";
 
-// used for entities that don't have any production
-export const getInventoryResources = (entityId: ID, store: NativeFactStore): Resource[] => {
-  return resources
-    .map(({ id }) => {
-      const resourceManager = new ResourceManager(store, entityId);
-      const balance = resourceManager.balance(id);
-      if (balance > 0) {
-        return { resourceId: id, amount: Number(balance) };
-      }
-      return undefined;
-    })
-    .filter((resource): resource is Resource => resource !== undefined);
-};
+// used for entities that don't have any production; undefined when the entity's resources are unknown here
+export const getInventoryResources = (entityId: ID, store: NativeFactStore): Resource[] | undefined =>
+  new ResourceManager(store, entityId).balances();
 
 // for entities that have production like realms
 export const getBalance = (
@@ -32,7 +16,8 @@ export const getBalance = (
 ) => {
   const resourceManager = new ResourceManager(store, entityId);
   return {
-    balance: resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance,
+    // Undefined when this client holds no resource owner for the entity: unknown, never zero.
+    balance: resourceManager.balanceWithProduction(currentDefaultTick, resourceId)?.balance,
     resourceId,
   };
 };

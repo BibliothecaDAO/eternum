@@ -51,8 +51,8 @@ export const Realm = () => {
 
 const LevelTable = () => {
   const levelTable = useMemo(() => {
-    return Object.entries(configManager.realmUpgradeCosts).map(([level, costs]) => ({
-      level: RealmLevels[level as keyof typeof RealmLevels],
+    return configManager.realmUpgradeRecipes().map(({ level, costs }) => ({
+      level: RealmLevels[level],
       cost: costs.map((cost) => ({
         ...cost,
         amount: cost.amount,

@@ -26,7 +26,7 @@ const availableBalance = (
   resourceId: ResourcesIds,
   plannedDebits: PlannedDebits,
 ) => {
-  const balance = Number(resourceManager.balanceWithProduction(tick, resourceId).balance ?? 0n) / RESOURCE_PRECISION;
+  const balance = Number(resourceManager.balanceWithProduction(tick, resourceId)?.balance ?? 0n) / RESOURCE_PRECISION;
   return Math.max(0, balance - (plannedDebits.get(plannedDebitKey(sourceId, resourceId)) ?? 0));
 };
 

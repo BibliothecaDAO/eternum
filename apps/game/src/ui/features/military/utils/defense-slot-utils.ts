@@ -11,7 +11,7 @@ export const getStructureDefenseSlotLimit = (
     return null;
   }
 
-  const config = configManager.getWorldStructureDefenseSlotsConfig() as Partial<Record<StructureType, number>>;
+  const config = configManager.getWorldStructureDefenseSlotsConfig();
   const level = levelRaw !== null && levelRaw !== undefined ? Number(levelRaw) : undefined;
 
   switch (category) {
@@ -20,10 +20,10 @@ export const getStructureDefenseSlotLimit = (
     case StructureType.Bank:
     case StructureType.Camp:
     case StructureType.BitcoinMine:
-      return config[category] ?? 0;
+      return config[category];
     case StructureType.Village:
     case StructureType.Realm:
-      return typeof level === "number" && Number.isFinite(level) ? level + 1 : 0;
+      return typeof level === "number" && Number.isFinite(level) ? level + 1 : null;
     default:
       return 0;
   }

@@ -246,17 +246,12 @@ export const RealmAutomationPanel = ({
   }, [realmAutomation, realmResources, createBaselinePercentages, hydrated, hasLocalChanges, entityType]);
 
   const automationRows = useMemo(() => {
-    return realmResources.map((resourceId) => {
-      const percentages = resolveDraftPercentages(resourceId);
-      const complexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
-      const simpleInputs = configManager.simpleSystemResourceInputs[resourceId] ?? [];
-
-      return {
-        resourceId,
-        percentages,
-        complexInputs,
-        simpleInputs,
-      };
+    // A resource whose recipe this game does not define cannot be automated, so it has no row.
+    return realmResources.flatMap((resourceId) => {
+      const complexInputs = configManager.getRecipeInputs(resourceId, false);
+      const simpleInputs = configManager.getRecipeInputs(resourceId, true);
+      if (!complexInputs || !simpleInputs) return [];
+      return [{ resourceId, percentages: resolveDraftPercentages(resourceId), complexInputs, simpleInputs }];
     });
   }, [realmResources, resolveDraftPercentages]);
 
@@ -332,14 +327,14 @@ export const RealmAutomationPanel = ({
       const laborRatio = Math.min(1, Math.max(0, percentages.laborToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
 
       if (resourceRatio > 0) {
-        const complexOutput = configManager.complexSystemResourceOutput[resourceId]?.amount ?? 0;
+        const complexOutput = configManager.getRecipeOutput(resourceId, false)!;
         if (complexOutput > 0) {
           totals.set(resourceId, (totals.get(resourceId) ?? 0) + resourceRatio * complexOutput);
         }
       }
 
       if (laborRatio > 0) {
-        const simpleOutput = configManager.simpleSystemResourceOutput[resourceId]?.amount ?? 0;
+        const simpleOutput = configManager.getRecipeOutput(resourceId, true)!;
         if (simpleOutput > 0) {
           totals.set(resourceId, (totals.get(resourceId) ?? 0) + laborRatio * simpleOutput);
         }

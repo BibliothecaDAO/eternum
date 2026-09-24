@@ -147,8 +147,11 @@ const simulateBuildingCost = (
   }
   const balances = client.views.resources(structureId);
   const lines = costs.map((cost) => {
-    const have = Math.floor(divideByPrecision(Number(balances.balance(cost.resource))));
+    const balance = balances.balance(cost.resource);
     const need = Math.ceil(cost.amount);
+    // A balance this runner cannot see never covers a cost.
+    if (balance === undefined) return `${resourceName(cost.resource)}: need ${need}, have unknown (short)`;
+    const have = Math.floor(divideByPrecision(Number(balance)));
     return `${resourceName(cost.resource)}: need ${need}, have ${have}${have >= need ? "" : " (short)"}`;
   });
   const affordable = lines.every((line) => !line.endsWith("(short)"));

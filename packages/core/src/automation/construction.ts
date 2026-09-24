@@ -255,8 +255,8 @@ const validateCosts = (input: ConstructionBuildabilityInput): ConstructionBuilda
 
   const { currentDefaultTick } = getBlockTimestamp();
   const hasResources = buildingCosts.every((resourceCost) => {
-    const balance = getBalance(input.entityId, resourceCost.resource, currentDefaultTick, input.store);
-    return divideByPrecision(balance.balance) >= resourceCost.amount;
+    const { balance } = getBalance(input.entityId, resourceCost.resource, currentDefaultTick, input.store);
+    return balance !== undefined && divideByPrecision(balance) >= resourceCost.amount;
   });
 
   if (!hasResources) {

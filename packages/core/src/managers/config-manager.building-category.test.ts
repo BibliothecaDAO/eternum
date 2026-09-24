@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { BiomeType, BuildingType, CapacityConfig, TickIds, TroopType } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -38,6 +38,53 @@ describe("native immutable configuration", () => {
   it("throws for absent building rules instead of granting zero-cost population", () => {
     const { manager } = fixture();
     expect(() => manager.getBuildingCategoryConfig(BuildingType.WorkersHut)).toThrow("not synchronized");
+  });
+
+  it("answers every keyed lookup for the rows the chain requires, relics' empty ones included", () => {
+    const { manager, write } = fixture();
+    // The chain configures exactly 58 resource rules and recipes and 40 building rules; relics carry zero rows.
+    const isRelic = (resource: number) => (resource >= 39 && resource <= 56) || resource === 58;
+    for (const rule of preset.resources) write("ResourceRule", [54, rule.resource_type], { ...rule, game_id: 54 });
+    for (let resource = 1; resource <= 58; resource++)
+      write("ProductionRecipe", [54, resource], {
+        game_id: 54,
+        resource_type: resource,
+        simple_output: 0n,
+        complex_output: isRelic(resource) ? 0n : 1_000_000_000n,
+        simple_inputs: [],
+        complex_inputs: isRelic(resource) ? [] : [{ resource_type: 1, amount: 1_000_000_000n }],
+      });
+    for (let category = 1; category <= 40; category++)
+      write("BuildingRule", [54, category], {
+        game_id: 54,
+        category,
+        population_cost: 0,
+        capacity_grant: 0,
+        simple_cost: [],
+        complex_cost: [],
+      });
+    for (let resource = 1; resource <= 58; resource++) {
+      expect(manager.getResourceWeightKg(resource)).toBeTypeOf("number");
+      expect(manager.getRecipeInputs(resource, false)).toBeDefined();
+      expect(manager.getRecipeOutput(resource, true)).toBeTypeOf("number");
+    }
+    for (let category = 1; category <= 40; category++)
+      expect(manager.getBuildingCosts(category as BuildingType, false)).toEqual([]);
+    expect(manager.producibleResources()).toHaveLength(58 - 19);
+    expect(manager.producibleResources()).not.toContain(39);
+  });
+
+  it("refuses a keyed rule the game does not define: loud in dev, unknown in production", () => {
+    const { manager } = fixture();
+    expect(() => manager.getResourceWeightKg(23)).toThrow("This game defines no resource rule for resource 23");
+    expect(() => manager.getRecipeOutput(23, true)).toThrow("This game defines no production recipe");
+    vi.stubEnv("NODE_ENV", "production");
+    try {
+      expect(manager.getResourceWeightKg(23)).toBeUndefined();
+      expect(manager.getBuildingCosts(BuildingType.WorkersHut, true)).toBeUndefined();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("reads tick and capacity values directly from the native rules", () => {

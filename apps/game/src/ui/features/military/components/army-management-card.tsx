@@ -7,7 +7,7 @@ import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
-import { currencyFormat } from "@/ui/utils/utils";
+import { currencyFormat, knownBalance } from "@/ui/utils/utils";
 import { DeploymentStrengthSummary } from "./deployment-strength-summary";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
@@ -208,8 +208,8 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
 
   const maxAffordableTroops = useMemo(() => {
     const resourceId = getTroopResourceId(selectedTroopType, selectedTier);
-    const balance = getBalance(owner_entity, resourceId, currentDefaultTick, store).balance;
-    const available = Number(divideByPrecision(balance) || 0);
+    // Troops this client cannot see can't be added to an army.
+    const available = knownBalance(getBalance(owner_entity, resourceId, currentDefaultTick, store).balance) ?? 0;
     return Math.max(0, Math.min(available, remainingTroopCapacity));
   }, [owner_entity, selectedTroopType, selectedTier, currentDefaultTick, store, remainingTroopCapacity, revision]);
 
@@ -342,7 +342,7 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
                         <h6 className=" font-semibold">{getTroopName(troop.troopType, selectedTier)}</h6>
                       </div>
                       <div className="text-xl font-normal mt-1 mb-2 text-gold/80">
-                        Avail. <span className="text-gold">{currencyFormat(balance ? Number(balance) : 0, 0)}</span>
+                        Avail. <span className="text-gold">{currencyFormat(balance, 0)}</span>
                       </div>
                       <div className="px-2 py-1 bg-white/10 flex justify-between items-center rounded-md">
                         <ResourceIcon

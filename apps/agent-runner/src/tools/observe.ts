@@ -271,8 +271,9 @@ const renderEvents = (game: RunnerGame): string => {
 
 const resourceName = (resource: ResourcesIds): string => findResourceById(resource)?.trait ?? `resource ${resource}`;
 
-const formatAmount = (precisionScaled: bigint | number): string =>
-  Math.floor(divideByPrecision(Number(precisionScaled))).toString();
+// An amount this runner cannot see reads as unknown, never as zero.
+const formatAmount = (precisionScaled: bigint | number | undefined): string =>
+  precisionScaled === undefined ? "unknown" : Math.floor(divideByPrecision(Number(precisionScaled))).toString();
 
 const countBy = <T>(items: readonly T[], key: (item: T) => string): string => {
   const counts = new Map<string, number>();

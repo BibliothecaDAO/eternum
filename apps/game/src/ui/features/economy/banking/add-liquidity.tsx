@@ -75,8 +75,12 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
 
   const lordsBalance = getBalance(entityId, Number(ResourcesIds.Lords), currentDefaultTick, store).balance;
   const resourceBalance = getBalance(entityId, Number(resourceId), currentDefaultTick, store).balance;
+  // A balance this client cannot see never covers liquidity.
   const hasEnough =
-    lordsBalance >= multiplyByPrecision(lordsAmount) && resourceBalance >= multiplyByPrecision(resourceAmount);
+    lordsBalance !== undefined &&
+    resourceBalance !== undefined &&
+    lordsBalance >= multiplyByPrecision(lordsAmount) &&
+    resourceBalance >= multiplyByPrecision(resourceAmount);
 
   const isNotZero = lordsAmount > 0 && resourceAmount > 0;
   const canAdd = hasEnough && isNotZero;
@@ -152,7 +156,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
             setAmount={setLordsAmount}
             resourceId={ResourcesIds.Lords}
             setResourceId={setResourceId}
-            max={divideByPrecision(lordsBalance)}
+            max={lordsBalance === undefined ? 0 : divideByPrecision(lordsBalance)}
           />
 
           <ResourceBar
@@ -163,7 +167,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
             setAmount={setResourceAmount}
             resourceId={resourceId}
             setResourceId={setResourceId}
-            max={divideByPrecision(resourceBalance)}
+            max={resourceBalance === undefined ? 0 : divideByPrecision(resourceBalance)}
           />
         </div>
         <div className="p-2">

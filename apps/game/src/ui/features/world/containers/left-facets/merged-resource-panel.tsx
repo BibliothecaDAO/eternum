@@ -108,8 +108,7 @@ export const MergedResourcePanel = memo(
     const balanceMap = useMemo(() => {
       const map = new Map<number, number>();
       if (!resources) return map;
-      const balances = resources.balances(currentDefaultTick);
-      for (const balance of balances) {
+      for (const balance of resources.balances(currentDefaultTick) ?? []) {
         map.set(Number(balance.resourceId), divideByPrecision(Number(balance.amount)));
       }
       return map;

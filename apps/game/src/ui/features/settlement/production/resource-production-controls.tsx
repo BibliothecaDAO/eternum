@@ -64,9 +64,10 @@ export const ResourceProductionControls = ({
   }, [laborConfig, bonus]);
 
   // Apply the recorded production bonus.
-  const outputResourceAmountWithBonus = useMemo(() => {
-    return configManager.complexSystemResourceOutput[selectedResource].amount * bonus;
-  }, [selectedResource, bonus]);
+  // Undefined when this game defines no recipe for the resource: production is then unavailable.
+  const recipeInputs = configManager.getRecipeInputs(selectedResource, false);
+  const recipeOutput = configManager.getRecipeOutput(selectedResource, false);
+  const outputResourceAmountWithBonus = useMemo(() => (recipeOutput ?? 0) * bonus, [recipeOutput, bonus]);
 
   const handleRawResourcesProduce = async () => {
     if (!canIssueOrders() || isDisabled || isLoading || !ticks) return;
@@ -118,7 +119,7 @@ export const ResourceProductionControls = ({
 
     const balances: Record<number, number> = {};
     const allResources = [
-      ...configManager.complexSystemResourceInputs[selectedResource],
+      ...(recipeInputs ?? []),
       { resource: selectedResource, amount: 1 },
       { resource: ResourcesIds.Labor, amount: 1 },
       { resource: ResourcesIds.Wheat, amount: 1 },
@@ -126,8 +127,9 @@ export const ResourceProductionControls = ({
     ];
 
     allResources.forEach((resource) => {
-      const balance = resourceManager.balanceWithProduction(currentDefaultTick, resource.resource).balance;
-      balances[resource.resource] = divideByPrecision(balance);
+      // An unknown balance is left out, so the amount it would cover reads as over balance.
+      const balance = resourceManager.balanceWithProduction(currentDefaultTick, resource.resource)?.balance;
+      if (balance !== undefined) balances[resource.resource] = divideByPrecision(balance);
     });
     return balances;
   })();
@@ -138,11 +140,11 @@ export const ResourceProductionControls = ({
   }, [productionAmount, outputResourceAmountWithBonus, bonus]);
 
   const rawCurrentInputs = useMemo(() => {
-    return configManager.complexSystemResourceInputs[selectedResource].map(({ resource, amount }) => ({
+    return (recipeInputs ?? []).map(({ resource, amount }) => ({
       resource,
       amount: amount / outputResourceAmountWithBonus,
     }));
-  }, [selectedResource, outputResourceAmountWithBonus]);
+  }, [recipeInputs, outputResourceAmountWithBonus]);
 
   const laborCurrentInputs = useMemo(() => {
     return (
@@ -170,13 +172,13 @@ export const ResourceProductionControls = ({
 
   const isOverBalance = useMemo(() => {
     return Object.values(currentInputs).some(({ resource, amount }) => {
-      const balance = resourceBalances[Number(resource)] || 0;
-      return amount * productionAmount > balance;
+      const balance = resourceBalances[Number(resource)];
+      return balance === undefined || amount * productionAmount > balance;
     });
   }, [resourceBalances, productionAmount, currentInputs]);
 
   const isDisabled = useMemo(() => {
-    if (isOverBalance) return true;
+    if (isOverBalance || !recipeInputs || !recipeOutput) return true;
     if (useRawResources) {
       return !ticks || ticks <= 0;
     } else {
@@ -184,7 +186,7 @@ export const ResourceProductionControls = ({
       const laborNeeded = Math.round(laborConfig.laborBurnPerResourceOutput * productionAmount);
       return productionAmount <= 0 || laborNeeded <= 0;
     }
-  }, [isOverBalance, useRawResources, ticks, laborConfig, productionAmount]);
+  }, [isOverBalance, recipeInputs, recipeOutput, useRawResources, ticks, laborConfig, productionAmount]);
 
   const buildingCount = getBuildingQuantity(realm.entityId, getBuildingFromResource(selectedResource), store);
 

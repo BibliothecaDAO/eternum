@@ -353,10 +353,12 @@ const MyLiquidity = ({
 const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }) => {
   const { setup } = useGame();
   useNativeRevision(["Market"]);
-  const inputResources = configManager.complexSystemResourceInputs[marketManager.resourceId];
-  const outputAmount = configManager.complexSystemResourceOutput[marketManager.resourceId].amount;
+  // Markets list resources this game may not produce; only a producible one has an input price.
+  if (!configManager.producibleResources().includes(marketManager.resourceId)) return null;
+  const inputResources = configManager.getRecipeInputs(marketManager.resourceId, false)!;
+  const outputAmount = configManager.getRecipeOutput(marketManager.resourceId, false)!;
 
-  if (!inputResources?.length) return null;
+  if (!inputResources.length) return null;
   const totalPrice =
     inputResources.reduce((sum, resource) => {
       const price = new MarketManager(setup.store, marketManager.player, resource.resource).getMarketPrice();

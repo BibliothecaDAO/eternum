@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import { divideByPrecision } from "@bibliothecadao/eternum";
+import { knownBalance } from "@/ui/utils/utils";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import {
   findResourceById,
@@ -63,18 +63,19 @@ export const useRelicMetadata = (relicId: ID) => {
 export const useRelicEssenceStatus = (entityOwnerId: ID, essenceCost: number) => {
   const resourceManager = useResourceManager(entityOwnerId);
 
-  const essenceBalance = useMemo(
-    () => divideByPrecision(Number(resourceManager.balance(ResourcesIds.Essence))),
-    [resourceManager],
-  );
+  const essenceBalance = useMemo(() => knownBalance(resourceManager.balance(ResourcesIds.Essence)), [resourceManager]);
 
-  const hasEnoughEssence = essenceBalance >= essenceCost;
-  const missingEssence = Math.max(0, essenceCost - essenceBalance);
+  // A balance this client cannot see never covers the cost.
+  const hasEnoughEssence = essenceBalance !== undefined && essenceBalance >= essenceCost;
+  const shortfall =
+    essenceBalance === undefined
+      ? "Essence balance unknown."
+      : `Need ${Math.max(0, essenceCost - essenceBalance).toLocaleString()} more essence.`;
 
   return {
     essenceBalance,
     hasEnoughEssence,
-    missingEssence,
+    shortfall,
   } as const;
 };
 

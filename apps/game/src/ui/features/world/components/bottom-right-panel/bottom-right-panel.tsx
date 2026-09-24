@@ -1,3 +1,4 @@
+import { knownBalance } from "@/ui/utils/utils";
 import { Factory, Hammer, Info, Pause as PauseIcon, Pickaxe, Play, Trash2 } from "@/ui/design-system/atoms/game-icons";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
@@ -291,10 +292,8 @@ const LocalTilePanel = () => {
 
   const ongoingCost = useMemo<ResourceAmountEntry[]>(() => {
     if (producedResource === undefined) return [];
-    const costs =
-      (useSimpleCost
-        ? configManager.simpleSystemResourceInputs[producedResource]
-        : configManager.complexSystemResourceInputs[producedResource]) ?? [];
+    // Empty when this game defines no recipe for the resource.
+    const costs = configManager.getRecipeInputs(producedResource, useSimpleCost) ?? [];
     return normalizeResourceEntries(costs);
   }, [producedResource, useSimpleCost]);
 
@@ -493,8 +492,8 @@ const LocalTilePanel = () => {
     if (buildCost.length === 0) return false;
     if (!hasAvailableTile) return false;
     return buildCost.every((entry) => {
-      const balanceInfo = getBalance(structureEntityId ?? 0, entry.resource, currentDefaultTick, setup.store);
-      return divideByPrecision(balanceInfo.balance) >= entry.amount;
+      const { balance } = getBalance(structureEntityId ?? 0, entry.resource, currentDefaultTick, setup.store);
+      return balance !== undefined && divideByPrecision(balance) >= entry.amount;
     });
   })();
 
@@ -625,13 +624,13 @@ const LocalTilePanel = () => {
                     currentDefaultTick,
                     setup.store,
                   );
-                  const balance = divideByPrecision(balanceInfo.balance);
-                  const hasEnough = balance >= entry.amount;
+                  const balance = knownBalance(balanceInfo.balance);
+                  const hasEnough = balance !== undefined && balance >= entry.amount;
                   return (
                     <span key={`build-cost-${entry.resource}-${index}`} className={chipBase} title={name}>
                       <ResourceIcon withTooltip={false} resource={name} size="xs" />
                       <span className={valueClassFor(hasEnough ? "neutral" : "bad")}>
-                        {formatResourceAmount(balance)}
+                        {balance === undefined ? "—" : formatResourceAmount(balance)}
                       </span>
                       <span className={hasEnough ? "text-gold/55" : "text-red-300/80"}>/ {entry.amount}</span>
                     </span>
