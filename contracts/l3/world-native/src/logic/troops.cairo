@@ -672,7 +672,7 @@ pub mod TroopsLogic {
                 crate::expeditions::assert_same_region(explorer.coord, destination, self.expedition_spacing(game_id));
             }
             let tile = tile_key(game_id, destination);
-            let data = crate::logic::map::tile(tile).map(|tile| tile.data).unwrap_or(0);
+            let data = self.map_dispatcher(game_id).reveal_destination_tile(tile).map(|tile| tile.data).unwrap_or(0);
             assert!(data % 0x20000000000 == 0, "destination occupied");
             let biome: crate::biome::Biome = self.map_dispatcher(game_id).biome(tile).into();
             let exploring = (data / 0x20000000000) % 0x100 == 0;
@@ -821,7 +821,11 @@ pub mod TroopsLogic {
                     );
                 }
                 let tile = tile_key(game_id, destination);
-                let data = crate::logic::map::tile(tile).expect('undiscovered movement tile').data;
+                let data = self
+                    .map_dispatcher(game_id)
+                    .reveal_destination_tile(tile)
+                    .expect('undiscovered movement tile')
+                    .data;
                 assert!(data % 0x20000000000 == 0, "movement tile occupied");
                 assert!((data / 0x20000000000) % 256 != 0, "undiscovered movement tile");
                 let biome = self.map_dispatcher(game_id).biome(tile).into();

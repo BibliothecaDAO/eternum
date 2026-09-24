@@ -644,6 +644,30 @@
         },
         {
           "type": "function",
+          "name": "expedition_home_ring",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "realm_id",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Span::<(world_native::troops::Coord, core::integer::u8)>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
           "name": "blitz_result",
           "inputs": [
             {
@@ -892,6 +916,46 @@
           ],
           "outputs": [],
           "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "reveal_destination_tile",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::map::TileKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::map::TileOpt>"
+            }
+          ],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "expedition_home_ring",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "realm_id",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Span::<(world_native::troops::Coord, core::integer::u8)>"
+            }
+          ],
+          "state_mutability": "view"
         },
         {
           "type": "function",
@@ -10269,6 +10333,16 @@
         }
       ]
     },
+    "core::array::Span::<(world_native::troops::Coord, core::integer::u8)>": {
+      "type": "struct",
+      "name": "core::array::Span::<(world_native::troops::Coord, core::integer::u8)>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<(world_native::troops::Coord, core::integer::u8)>"
+        }
+      ]
+    },
     "core::array::Span::<core::felt252>": {
       "type": "struct",
       "name": "core::array::Span::<core::felt252>",
@@ -10638,6 +10712,20 @@
         {
           "name": "Some",
           "type": "world_native::hyperstructures::Hyperstructure"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::map::TileOpt>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::map::TileOpt>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::map::TileOpt"
         },
         {
           "name": "None",
@@ -15780,5 +15868,5 @@
       ]
     }
   },
-  "identity": "596b6aa0f1c5d451eeb0dcf3654475373654bc2c2e262ba379df46f252e998e2"
+  "identity": "0ee9e9949c3e20102ac7ca6db6625823f3074b5ccfe096bb87ad13632087e196"
 }

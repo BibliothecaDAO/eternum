@@ -151,6 +151,20 @@ pub mod GamesFixture {
                 crate::map::IMapLogicLibraryDispatcher { class_hash: classes.map.read() }, game_id, coord,
             )
         }
+        fn reveal_destination_tile(ref self: TContractState, key: crate::map::TileKey) -> Option<crate::map::TileOpt> {
+            let classes = fixture_classes(key.game_id);
+            crate::map::IMapLogicDispatcherTrait::reveal_destination_tile(
+                crate::map::IMapLogicLibraryDispatcher { class_hash: classes.map.read() }, key,
+            )
+        }
+        fn expedition_home_ring(
+            self: @TContractState, game_id: u32, realm_id: u16, timestamp: u64,
+        ) -> Span<(crate::troops::Coord, u8)> {
+            let classes = fixture_classes(game_id);
+            crate::map::IMapLogicDispatcherTrait::expedition_home_ring(
+                crate::map::IMapLogicLibraryDispatcher { class_hash: classes.map.read() }, game_id, realm_id, timestamp,
+            )
+        }
     }
     #[starknet::embeddable]
     pub impl ExtractionFixture<

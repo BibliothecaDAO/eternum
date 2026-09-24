@@ -31,6 +31,11 @@ pub trait IMapLogic<T> {
         self: @T, key: TileKey, seed: u256, hyperstructures: u32, timestamp: u64,
     ) -> crate::discovery::Discovery;
     fn reveal_structure_surroundings(ref self: T, game_id: u32, coord: Coord);
+    /// The tile a command moves onto. A home-ring tile that storage has not revealed yet is revealed first, so it is
+    /// written as explored before the command occupies it.
+    fn reveal_destination_tile(ref self: T, key: TileKey) -> Option<TileOpt>;
+    /// A realm's home ring for the day at `timestamp`: its site and six neighbours, each with its biome.
+    fn expedition_home_ring(self: @T, game_id: u32, realm_id: u16, timestamp: u64) -> Span<(Coord, u8)>;
 }
 
 pub(crate) fn coordinate_bits(key: TileKey) -> u128 {

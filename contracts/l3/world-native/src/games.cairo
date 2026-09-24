@@ -138,6 +138,20 @@ pub mod Games {
         crate::state::read().season.player_points.read((game_id, actor))
     }
 
+    /// A realm's home ring for the day at `timestamp`, from the game's own map rule: the one read Herald makes to show
+    /// a watched realm's ring before any command writes it.
+    #[external(v0)]
+    fn expedition_home_ring(
+        self: @ContractState, game_id: u32, realm_id: u16, timestamp: u64,
+    ) -> Span<(crate::troops::Coord, u8)> {
+        crate::map::IMapLogicDispatcherTrait::expedition_home_ring(
+            crate::map::IMapLogicLibraryDispatcher { class_hash: self.release.classes(game_id).map.read() },
+            game_id,
+            realm_id,
+            timestamp,
+        )
+    }
+
     #[external(v0)]
     fn blitz_result(self: @ContractState, game_id: u32) -> crate::blitz_results::BlitzResult {
         crate::blitz_results::IBlitzResultsDispatcherTrait::blitz_result(

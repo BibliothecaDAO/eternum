@@ -27,6 +27,23 @@ pub fn site(start: u64, seconds: u32, spacing: u32, realm_id: u16, timestamp: u6
     }
 }
 
+// A realm's home ring: its region's surface site and the six tiles around it. It counts as explored from the day's
+// first second, by rule and for every realm, so no transaction opens a day; storage catches up when a command first
+// uses a ring tile. Every surface region is one realm's day, so the ring follows from the coordinate alone.
+pub fn is_home_ring(coord: Coord, spacing: u32) -> bool {
+    if coord.alt || (coord.y / spacing) % 4 != 0 {
+        return false;
+    }
+    let centre = Coord {
+        alt: false, x: coord.x / spacing * spacing + spacing / 2, y: coord.y / spacing * spacing + spacing / 2,
+    };
+    let mut ring = coord == centre;
+    for direction in 0_u8..6 {
+        ring = ring || crate::geometry::neighbor(centre, direction) == coord;
+    }
+    ring
+}
+
 pub fn is_current(coord: Coord, start: u64, seconds: u32, spacing: u32, timestamp: u64) -> bool {
     if coord.alt || timestamp < start {
         return false;

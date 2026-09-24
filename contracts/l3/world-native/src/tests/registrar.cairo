@@ -3,6 +3,7 @@ use snforge_std::{
     EventSpyTrait, EventsFilterTrait, start_cheat_block_timestamp_global, start_cheat_caller_address,
     stop_cheat_caller_address,
 };
+use crate::combat::TroopsTrait;
 use crate::commands::{Command, CreateExplorer, Explore};
 use crate::game::{GameStatus, IGameDispatcher, IGameDispatcherTrait, status_at};
 use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
@@ -689,9 +690,9 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
     assert_eq!(resources.resource_balance(ResourceSlot { entity_id: explorer_id, ..home_slot }), 0);
 }
 
-#[test]
-fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
-    let d = setup();
+// An open expedition game with 100 s days, 1024-hex regions and two field armies a realm, in which realm 1 is settled
+// at t=350 as entity 1. Returns the game, its preset and the troop category of the realm's grant.
+fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
     let mut preset = definition(true);
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
     preset.rules.epoch_seconds = 100;
@@ -699,6 +700,7 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     preset.settlement.spacing = 1024;
     preset.rules.map_config.shards_mines_win_probability = 0;
     preset.rules.map_config.shards_mines_fail_probability = 1;
+    preset.rules.troop_limit_config.settlement_armies = 2;
     registry(d).register_preset(1, preset);
     let game_id = registry(d)
         .create_game(
@@ -721,6 +723,119 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
             350,
         ),
     );
+    let guards = IGuardsDispatcher { contract_address: d.games };
+    let category: u8 = guards.guard(GuardKey { game_id, structure_id: 1, slot: 0 }).troops.category.into();
+    (game_id, preset, category)
+}
+
+fn muster_command(category: u8, direction: u8) -> Command {
+    Command::CreateExplorer(
+        CreateExplorer { structure_id: 1, category, tier: 0, amount: RESOURCE_PRECISION, direction },
+    )
+}
+
+#[test]
+fn yesterdays_armies_leave_todays_army_cap_free() {
+    let d = setup();
+    let (game_id, _, category) = expedition_home(d);
+    let structures = IStructureOperationsDispatcher { contract_address: d.games };
+    let troops = GameState { contract_address: d.games };
+    let home = ResourceKey { game_id, entity_id: 1 };
+    assert!(execute_in_game(d, game_id, muster_command(category, 0), 351, 351));
+    assert!(execute_in_game(d, game_id, muster_command(category, 1), 352, 352));
+    assert!(!execute_in_game(d, game_id, muster_command(category, 2), 353, 353));
+    let yesterday = structures.structure(home).unwrap().troop_explorers;
+    // The next day both armies are dead by rule; the realm musters its full cap again.
+    assert!(execute_in_game(d, game_id, muster_command(category, 0), 401, 401));
+    assert!(execute_in_game(d, game_id, muster_command(category, 1), 402, 402));
+    for id in yesterday {
+        assert!(troops.explorer(ExplorerKey { game_id, explorer_id: *id }).is_none());
+    }
+    assert_eq!(structures.structure(home).unwrap().troop_explorers.len(), 2);
+}
+
+#[test]
+fn a_home_ring_tile_reads_as_explored_and_an_explore_onto_it_moves_without_a_roll() {
+    let d = setup();
+    let (game_id, preset, category) = expedition_home(d);
+    let spacing = preset.settlement.spacing;
+    let map = IMapLogicDispatcher { contract_address: d.games };
+    let troops = GameState { contract_address: d.games };
+    let structures = IStructureOperationsDispatcher { contract_address: d.games };
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    assert!(execute_in_game(d, game_id, muster_command(category, 0), 351, 351));
+    let key = ExplorerKey {
+        game_id,
+        explorer_id: *structures.structure(ResourceKey { game_id, entity_id: 1 }).unwrap().troop_explorers.at(0),
+    };
+    let spawn = troops.explorer(key).unwrap().coord;
+    let site = crate::geometry::neighbor(spawn, 3);
+
+    // A move onto a ring tile no command has touched: it reads as explored, and storage catches up.
+    let (step, ring_tile) = unstored_ring_neighbor(map, game_id, spawn, site, spacing);
+    let move = Command::Move(crate::commands::Move { explorer_id: key.explorer_id, directions: array![step].span() });
+    assert!(execute_in_game(d, game_id, move, 352, 352));
+    let tile_key = crate::geometry::tile_key(game_id, ring_tile);
+    assert_eq!(troops.explorer(key).unwrap().coord, ring_tile);
+    assert_eq!(map.tile(tile_key).unwrap().data / 0x20000000000 % 256, map.biome(tile_key).into());
+
+    // An explore onto another ring tile moves at move cost: no discovery, no supplies.
+    let (step, target) = unstored_ring_neighbor(map, game_id, ring_tile, site, spacing);
+    let before = troops.explorer(key).unwrap();
+    let mut balances = array![];
+    for resource in array![23_u8, 26, 38].span() {
+        balances.append(resources.resource_balance(ResourceSlot { game_id, entity_id: 1, resource_type: *resource }));
+    }
+    let target_key = crate::geometry::tile_key(game_id, target);
+    let mut troops_before = before.troops;
+    let (increase, bonus) = troops_before
+        .stamina_travel_bonus(map.biome(target_key).into(), preset.rules.troop_stamina_config);
+    let travel: u64 = preset.rules.troop_stamina_config.stamina_travel_stamina_cost.into();
+    let move_cost = if increase {
+        travel + bonus.into()
+    } else {
+        travel - bonus.into()
+    };
+    assert!(
+        execute_in_game(
+            d, game_id, Command::Explore(Explore { explorer_id: key.explorer_id, direction: step }), 353, 353,
+        ),
+    );
+    let after = troops.explorer(key).unwrap();
+    assert_eq!(after.coord, target);
+    assert_eq!(before.troops.stamina.amount - after.troops.stamina.amount, move_cost);
+    assert_eq!(map.tile(target_key).unwrap().data % 2, 0);
+    let mut index = 0;
+    for resource in array![23_u8, 26, 38].span() {
+        assert_eq!(
+            resources.resource_balance(ResourceSlot { game_id, entity_id: 1, resource_type: *resource }),
+            *balances.at(index),
+        );
+        index += 1;
+    }
+}
+
+// A home-ring tile next to `from` that storage has not written yet, and the direction to it.
+fn unstored_ring_neighbor(
+    map: IMapLogicDispatcher, game_id: u32, from: crate::troops::Coord, site: crate::troops::Coord, spacing: u32,
+) -> (u8, crate::troops::Coord) {
+    let mut found = Option::None;
+    for direction in 0_u8..6 {
+        let coord = crate::geometry::neighbor(from, direction);
+        if found.is_none()
+            && coord != site
+            && crate::expeditions::is_home_ring(coord, spacing)
+            && map.tile(crate::geometry::tile_key(game_id, coord)).is_none() {
+            found = Some((direction, coord));
+        }
+    }
+    found.expect('no unstored ring neighbour')
+}
+
+#[test]
+fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
+    let d = setup();
+    let (game_id, preset, category) = expedition_home(d);
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let home_id = 1;
     let home = ResourceKey { game_id, entity_id: home_id };
@@ -734,11 +849,7 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     let stored = resources.resource_balance(labor);
     let producer = resources.resource_production(labor);
     let capacity = resources.resource_weight(home).capacity;
-    let guards = IGuardsDispatcher { contract_address: d.games };
-    let category: u8 = guards.guard(GuardKey { game_id, structure_id: home_id, slot: 0 }).troops.category.into();
-    let muster = Command::CreateExplorer(
-        CreateExplorer { structure_id: home_id, category, tier: 0, amount: RESOURCE_PRECISION, direction: 0 },
-    );
+    let muster = muster_command(category, 0);
     assert!(execute_in_game(d, game_id, muster, 351, 351));
     let old_id = *structures.structure(home).unwrap().troop_explorers.at(0);
     let troops = GameState { contract_address: d.games };

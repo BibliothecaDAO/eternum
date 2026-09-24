@@ -155,7 +155,7 @@ pub mod MapLogic {
     use crate::logic::map::MapState;
     use crate::logic::release::ReleaseState;
     use crate::logic::settlement::SettlementPoolState;
-    use crate::map::{BIOME_SCALE, BYTE_RANGE, TileKey};
+    use crate::map::{BIOME_SCALE, BYTE_RANGE, TileKey, TileOpt};
     use crate::troops::Coord;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     component!(path: SettlementPoolState, storage: settlements, event: SettlementEvent);
@@ -221,6 +221,43 @@ pub mod MapLogic {
                     crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key));
                 }
             }
+        }
+
+        fn reveal_destination_tile(ref self: ContractState, key: TileKey) -> Option<TileOpt> {
+            let stored = crate::logic::map::tile(key);
+            if stored.map(|tile| tile.data / BIOME_SCALE % BYTE_RANGE != 0).unwrap_or(false) {
+                return stored;
+            }
+            if crate::logic::game::rules(key.game_id).epoch_seconds == 0
+                || !crate::expeditions::is_home_ring(
+                    Coord { alt: key.alt, x: key.col, y: key.row },
+                    crate::logic::settlement::rules(key.game_id).spacing,
+                ) {
+                return stored;
+            }
+            crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key));
+            crate::logic::map::tile(key)
+        }
+
+        fn expedition_home_ring(
+            self: @ContractState, game_id: u32, realm_id: u16, timestamp: u64,
+        ) -> Span<(Coord, u8)> {
+            let rules = crate::logic::game::rules(game_id);
+            assert!(rules.epoch_seconds != 0, "game has no expeditions");
+            let site = crate::expeditions::site(
+                crate::logic::game::game(game_id).start_main_at,
+                rules.epoch_seconds,
+                crate::logic::settlement::rules(game_id).spacing,
+                realm_id,
+                timestamp,
+                0,
+            );
+            let mut ring = array![(site, crate::logic::map::biome(tile_key(game_id, site)))];
+            for direction in 0_u8..6 {
+                let coord = crate::geometry::neighbor(site, direction);
+                ring.append((coord, crate::logic::map::biome(tile_key(game_id, coord))));
+            }
+            ring.span()
         }
     }
     #[abi(embed_v0)]
