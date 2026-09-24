@@ -12,6 +12,9 @@ jobs:
         with:
           tool-versions: .tool-versions
           scarb-lock: contracts/l2/mmr/Scarb.lock
+      - uses: ./.github/actions/fetch-cairo-dependencies
+        with:
+          working-directory: contracts/l2/mmr
       - uses: foundry-rs/setup-snfoundry@v3
         with:
           tool-versions: .tool-versions
