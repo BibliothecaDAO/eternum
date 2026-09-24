@@ -114,6 +114,9 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
     },
   },
   exploration: {
+    // No rule reads an exploration reward amount; Frontier pays explores from its supplies table. Blitz, Eternum and
+    // Duel keep theirs only because their registered presets commit it, and a changed definition could not launch.
+    reward: 0,
     shardsMinesWinProbability: 3,
     shardsMinesFailProbability: 97,
     campFindProbability: 3,
