@@ -651,10 +651,10 @@ describe("LiveWorld", () => {
     live.acceptPreconfirmedEvent(subscribedSet("0x222", "0x2"));
     live.acceptPreconfirmedEvent(subscribedSet("0x333", "0x3"));
     expect(diffLatency.record).toHaveBeenCalledWith("preconfirmed", expect.any(Number));
-    expect(diffLatency.record).not.toHaveBeenCalledWith("confirmed", expect.any(Number));
+    expect(diffLatency.record).not.toHaveBeenCalledWith("confirmed", expect.any(Number), 0);
 
     await live.reconcileAfterSubscribe();
-    expect(diffLatency.record).toHaveBeenCalledWith("confirmed", expect.any(Number));
+    expect(diffLatency.record).toHaveBeenCalledWith("confirmed", expect.any(Number), 0);
   });
 });
 

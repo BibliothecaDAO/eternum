@@ -92,6 +92,7 @@ export class WorldFold {
   private readonly parent?: WorldFold;
   private readonly rowsByModel = new Map<string, Map<string, StoredModelRow | null>>();
   private readonly entityIdsByGameByModel = new Map<string, Map<string, Set<string>>>();
+  private unkeyedWriteCount = 0;
 
   constructor(registry: ModelRegistry, parent?: WorldFold) {
     this.registry = registry;
@@ -147,6 +148,13 @@ export class WorldFold {
     // is erased when an arrival day settles to zero, initialized or not), so a delete for a row this
     // fold never held is chain-legal: nothing to remove, nothing to broadcast.
     if (event.kind === "delete" && !existing) return undefined;
+    if ((event.kind === "update" || event.kind === "update-member") && !existing) {
+      // Dojo also emits a partial write for a row that was erased or never set: a mutual kill erases the dead
+      // aggressor's Resource, then stores its zero weight. Zero felts leave that row's storage erased, so there is
+      // nothing to hold. Any other value is a real row this fold cannot key or scope: reported, never fatal.
+      if (!event.writesZero) this.reportUnkeyedWrite(event);
+      return undefined;
+    }
     const gameId = event.model.s2Scope === "game" ? this.eventGameId(event, existing) : undefined;
 
     if (event.kind === "set") {
@@ -169,6 +177,11 @@ export class WorldFold {
 
     if (event.kind === "delete") return { del: { key: event.entityId, model: event.model.name }, gameId };
     return { gameId, set: this.currentRow(event.model.name, event.entityId)! };
+  }
+
+  /** Partial writes this confirmed fold could not key: each one is a chain fact missing from every snapshot. */
+  public get unkeyedWrites(): number {
+    return this.unkeyedWriteCount;
   }
 
   /** The row as a diff `set` would carry it, or undefined when neither this fold nor its parent holds it. */
@@ -312,6 +325,23 @@ export class WorldFold {
       throw new Error(`BattleEvent.${field} is not a scalar`);
     }
     return BigInt(value);
+  }
+
+  private reportUnkeyedWrite(event: Extract<DecodedWorldEvent, { kind: "update" | "update-member" }>): void {
+    // A pre-confirmed overlay stays quiet: the confirmed fold reports the same event when its block lands.
+    if (this.parent) return;
+    this.unkeyedWriteCount += 1;
+    console.error(
+      JSON.stringify({
+        block: event.position.blockNumber,
+        entityId: event.entityId,
+        event: "herald_unkeyed_write",
+        eventIndex: event.position.eventIndex,
+        kind: event.kind,
+        model: event.model.name,
+        transactionHash: event.position.transactionHash,
+      }),
+    );
   }
 
   private eventGameId(event: DecodedWorldEvent, existing?: StoredModelRow): string | undefined {
