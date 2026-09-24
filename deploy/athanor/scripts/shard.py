@@ -61,10 +61,13 @@ def validate_configuration(config, allowed_cpus):
     memory = config.get("node_memory_mib", DEFAULT_NODE_MEMORY_MIB)
     if not isinstance(memory, int) or not 1024 <= memory <= 28672:
         raise ValueError("node memory must fit the native slice budget")
-    # These options belong to the shard lifecycle, never to a performance lever.
+    # These options belong to the shard lifecycle, never to a performance lever, except the database levers named
+    # after them.
     owned = ("--base-path", "--chain-config", "--rpc", "--name", "--db", "--devnet", "--l1", "--no-charge", "--otel")
+    levers = ("--db-max-kept-snapshots=",)
     for flag in config["node_flags"]:
-        if not isinstance(flag, str) or not flag.startswith("--") or flag.startswith(owned):
+        if not isinstance(flag, str) or not flag.startswith("--") or (flag.startswith(owned)
+                                                                     and not flag.startswith(levers)):
             raise ValueError(f"node flag overrides shard ownership: {flag}")
     if not any(flag.startswith("--enable-native-execution=") for flag in config["node_flags"]):
         raise ValueError("record the native execution setting explicitly")

@@ -29,12 +29,15 @@ class ShardTest(unittest.TestCase):
         allowed = set(range(8, 12)) | set(range(20, 24))
         shard.validate_configuration(config, allowed)
         shard.validate_configuration({key: value for key, value in config.items() if key != "node_memory_mib"}, allowed)
+        shard.validate_configuration({**config, "node_flags": [*config["node_flags"], "--db-max-kept-snapshots=0"]},
+                                     allowed)
         for key, value in (
             ("chain_id", ""), ("chain_id", "a" * 32), ("chain_id", "a\nb"),
             ("port_base", 5050), ("cpuset", "0-23"), ("node_memory_mib", 65536), ("player_capacity", 0),
             ("madara_image", "madara:latest"), ("gateway_image", "gateway:latest"), ("shard", "../live"),
             ("trusted_proxy", "cloudflared"),
             ("node_flags", ["--base-path=/live"]),
+            ("node_flags", [*config["node_flags"], "--db-fsync=false"]),
             ("node_flags", ["--enable-native-execution=true"]),
         ):
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
