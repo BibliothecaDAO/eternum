@@ -23,7 +23,7 @@ export function handleNotificationPreferences(request: Request, auth: IdentityAu
 function serveNotificationPreferences(request: Request, auth: IdentityAuth) {
   return Effect.gen(function* () {
     const session = yield* Effect.tryPromise({
-      try: () => auth.api.getSession({ headers: request.headers, query: { disableCookieCache: true } }),
+      try: () => auth.api.getSession({ headers: request.headers }),
       catch: (cause) =>
         new NotificationPreferenceRequestError({ code: "authentication_unavailable", status: 503, cause }),
     });

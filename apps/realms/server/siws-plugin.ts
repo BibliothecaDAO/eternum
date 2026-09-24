@@ -1,6 +1,5 @@
 import type { AuthContext, BetterAuthPlugin, Session, User } from "better-auth";
 import { APIError, createAuthEndpoint, sessionMiddleware } from "better-auth/api";
-import { setSessionCookie } from "better-auth/cookies";
 import { z } from "zod";
 
 import { normalizeStarknetAddress, parseSiwsTypedData, type SiwsTypedData } from "@realms-world/identity";
@@ -24,10 +23,8 @@ const SiwsProof = z.object({
 
 const NONCE_LIFETIME_MS = 15 * 60 * 1000;
 
-/** An endpoint behind the session middleware: it may set cookies, and it knows who is signed in. */
-type SignedInContext = Parameters<typeof setSessionCookie>[0] & {
-  context: { session: { session: Session; user: User } };
-};
+/** An endpoint behind the session middleware: it knows who is signed in. */
+type SignedInContext = { context: AuthContext & { session: { session: Session; user: User } } };
 
 const unauthorized = (reason: string) => new APIError("UNAUTHORIZED", { message: `Unauthorized: ${reason}` });
 
@@ -72,16 +69,14 @@ export const siws = (options: SiwsPluginOptions) => {
   const findUserByWallet = (ctx: { context: AuthContext }, owner: string) =>
     ctx.context.adapter.findOne<{ id: string }>({ model: "user", where: [{ field: "address", value: owner }] });
 
-  /** Sets the signed-in account's wallet and refreshes the session cookie, which caches the user for an hour. */
+  /** Sets the signed-in account's wallet. */
   const setWallet = async (ctx: SignedInContext, address: string | null) => {
-    let updated;
     try {
-      updated = await ctx.context.internalAdapter.updateUser(ctx.context.session.user.id, { address });
+      await ctx.context.internalAdapter.updateUser(ctx.context.session.user.id, { address });
     } catch {
       // A concurrent link of the same wallet lost the race on the unique address column.
       throw new APIError("CONFLICT", { message: "WALLET_LINKED_ELSEWHERE" });
     }
-    await setSessionCookie(ctx, { session: ctx.context.session.session, user: updated });
   };
 
   return {
@@ -114,10 +109,10 @@ export const siws = (options: SiwsPluginOptions) => {
         { method: "POST", body: SiwsProof, use: [sessionMiddleware] },
         async (ctx) => {
           const owner = await verifyProof(ctx, ctx.body);
-          const user = ctx.context.session.user as { id: string; address?: string | null };
-          if (user.address === owner) return ctx.json({ address: owner });
-          if (await findUserByWallet(ctx, owner))
-            throw new APIError("CONFLICT", { message: "WALLET_LINKED_ELSEWHERE" });
+          // Who holds the wallet is the database's answer, never the session's copy of the account.
+          const holder = await findUserByWallet(ctx, owner);
+          if (holder?.id === ctx.context.session.user.id) return ctx.json({ address: owner });
+          if (holder) throw new APIError("CONFLICT", { message: "WALLET_LINKED_ELSEWHERE" });
           await setWallet(ctx, owner);
           return ctx.json({ address: owner });
         },

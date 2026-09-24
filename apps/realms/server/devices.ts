@@ -47,7 +47,7 @@ export const handleDeviceChange = (request: Request, dependencies: DeviceChangeD
 const approveDeviceChange = (request: Request, { auth, db, guardian, accountClassHash }: DeviceChangeDependencies) =>
   Effect.gen(function* () {
     const session = yield* Effect.tryPromise({
-      try: () => auth.api.getSession({ headers: request.headers, query: { disableCookieCache: true } }),
+      try: () => auth.api.getSession({ headers: request.headers }),
       catch: () => new DeviceRequestError({ code: "authentication_unavailable", status: 503 }),
     });
     if (!session) return yield* new DeviceRequestError({ code: "unauthorized", status: 401 });
