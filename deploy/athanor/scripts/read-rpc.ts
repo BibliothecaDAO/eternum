@@ -154,13 +154,15 @@ async function handlePublicRequest(
 if (import.meta.main) {
   if (!process.env.NODE_RPC_URL) throw new Error("NODE_RPC_URL is required");
   if (!process.env.NATIVE_WORLD_MANIFEST) throw new Error("NATIVE_WORLD_MANIFEST is required");
+  const port = Number(process.env.PORT);
+  if (!Number.isSafeInteger(port) || port < 1 || port > 65_535) throw new Error(`Invalid PORT ${process.env.PORT}`);
   const manifest = JSON.parse(readFileSync(process.env.NATIVE_WORLD_MANIFEST, "utf8"));
   const deployment = JSON.parse(
     readFileSync(join(dirname(process.env.NATIVE_WORLD_MANIFEST), "gameplay-contracts.json"), "utf8"),
   );
   startReadRpc(
     process.env.NODE_RPC_URL,
-    Number(process.env.PORT ?? 8080),
+    port,
     { ...manifest.shard, operatorAccountAddress: deployment.operatorAccountAddress },
     process.env.RPC_TRUSTED_PROXY,
   );

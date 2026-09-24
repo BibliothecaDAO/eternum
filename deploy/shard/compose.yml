@@ -97,6 +97,7 @@ services:
     environment:
       NODE_RPC_URL: http://madara:9944
       NATIVE_WORLD_MANIFEST: /config/native-world.json
+      PORT: "8080"
     volumes: ["public-config:/config:ro"]
     ports: ["${BIND_ADDRESS:-127.0.0.1}:${RPC_PORT:-8080}:8080"]
     mem_limit: 256m
