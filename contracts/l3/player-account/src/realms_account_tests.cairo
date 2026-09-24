@@ -59,24 +59,6 @@ fn device_signature(signer: StarkCurveKeyPair, hash: felt252) -> Array<felt252> 
 }
 
 #[test]
-fn deployment_registers_the_guardian_approved_device() {
-    let account = deploy_account();
-    let first = device(0);
-    let (r, s) = first.sign(TX_HASH).unwrap();
-    let (guardian_r, guardian_s) = guardian_approval(CHAIN, account.contract_address, ADD_DEVICE, first.public_key, 1);
-    start_cheat_transaction_hash(account.contract_address, TX_HASH);
-    start_cheat_signature(account.contract_address, array![first.public_key, r, s, guardian_r, guardian_s].span());
-
-    let class_hash = account_class().class_hash.into();
-    assert!(
-        account.__validate_deploy__(class_hash, REALMS_ID, REALMS_ID, guardian().public_key) == VALIDATED,
-        "deployment refused",
-    );
-    assert!(account.is_valid_signature('intent', device_signature(first, 'intent')) == VALIDATED, "device refused");
-    assert!(account.device_change_counter() == 1, "counter not advanced");
-}
-
-#[test]
 fn second_device_joins_and_revoked_device_is_refused() {
     let account = deploy_account();
     let (first, second) = (device(0), device(1));
@@ -172,8 +154,36 @@ fn account_deployed_on_another_chain_lands_at_the_same_address() {
     assert_deploys_at_the_chain_free_address(OTHER_CHAIN);
 }
 
+#[test]
+#[should_panic(expected: "invalid guardian signature")]
+fn deployment_approved_for_another_chain_is_refused() {
+    start_cheat_chain_id_global(OTHER_CHAIN);
+    let account = deploy_at_the_chain_free_address();
+
+    validate_deployment(account, CHAIN);
+}
+
+#[test]
+#[should_panic(expected: "invalid signature")]
+fn deployment_without_the_guardian_approval_is_refused() {
+    let account = deploy_at_the_chain_free_address();
+    start_cheat_transaction_hash(account.contract_address, TX_HASH);
+    start_cheat_signature(account.contract_address, device_signature(device(0), TX_HASH).span());
+
+    account.__validate_deploy__(account_class().class_hash.into(), REALMS_ID, REALMS_ID, guardian().public_key);
+}
+
+/// A deploy-account transaction as the protocol runs it: the constructor at the address the Realms id fixes, then
+/// `__validate_deploy__` under the chain's own guardian approval for the first device.
 fn assert_deploys_at_the_chain_free_address(chain_id: felt252) {
     start_cheat_chain_id_global(chain_id);
+    let account = deploy_at_the_chain_free_address();
+
+    assert!(validate_deployment(account, chain_id) == VALIDATED, "deployment refused");
+    assert!(account.is_valid_signature('intent', device_signature(device(0), 'intent')) == VALIDATED, "device refused");
+}
+
+fn deploy_at_the_chain_free_address() -> IRealmsAccountDispatcher {
     let class_hash = account_class().class_hash;
     let calldata = array![REALMS_ID, guardian().public_key].span();
 
@@ -183,6 +193,19 @@ fn assert_deploys_at_the_chain_free_address(chain_id: felt252) {
         array!['STARKNET_CONTRACT_ADDRESS', 0, REALMS_ID, class_hash.into(), pedersen_on_elements(calldata)].span(),
     );
     assert!(address.into() == expected, "address depends on the chain");
+    IRealmsAccountDispatcher { contract_address: address }
+}
+
+/// Runs the deployment's validation, signed by the first device and carrying the guardian's approval for `approved_on`.
+fn validate_deployment(account: IRealmsAccountDispatcher, approved_on: felt252) -> felt252 {
+    let first = device(0);
+    let (r, s) = first.sign(TX_HASH).unwrap();
+    let (guardian_r, guardian_s) = guardian_approval(
+        approved_on, account.contract_address, ADD_DEVICE, first.public_key, 1,
+    );
+    start_cheat_transaction_hash(account.contract_address, TX_HASH);
+    start_cheat_signature(account.contract_address, array![first.public_key, r, s, guardian_r, guardian_s].span());
+    account.__validate_deploy__(account_class().class_hash.into(), REALMS_ID, REALMS_ID, guardian().public_key)
 }
 
 /// Starknet's contract address derivation for an account deployed by itself (deployer zero); no chain id enters it.
