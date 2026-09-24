@@ -96,8 +96,8 @@ impl<N: GatewayNode> GameApi<N> {
         let (chain, deployment) = node.domain();
         let intent = action.decode(chain, deployment)?;
         let digest = intent.identity()?;
-        // get_admission refuses an actor that does not run the shard's account class.
-        let fields = node.admission(intent.game, intent.actor).await?;
+        // get_admission refuses, by name, an actor outside the shard's account class or guardian.
+        let fields = read_admission(node.as_ref(), intent.game, intent.actor).await?;
         let [release_id, preset_commitment, nonce, _, _] = fields.as_slice() else {
             anyhow::bail!("malformed admission view")
         };
@@ -364,6 +364,30 @@ impl Assignments {
     }
 }
 
+/// The reasons the Games contract refuses an actor with before reading its signature or nonce: an account that is not
+/// the canonical one for the shard's guardian and account class, or one whose class is no longer the shard's.
+const ADMISSION_REFUSALS: [(&str, &str); 2] = [
+    ("FOREIGN_GUARDIAN", "FOREIGN_GUARDIAN: the actor's account is not under this shard's guardian"),
+    ("INVALID_ACTOR", "INVALID_ACTOR: the actor does not run this shard's account class"),
+];
+
+/// The actor's admission view. A refusal the Games contract names reaches the player under that name, whether it
+/// comes at admission or when the ticket is accepted.
+async fn read_admission(node: &impl AssignmentNode, game: Felt, actor: Felt) -> anyhow::Result<Vec<Felt>> {
+    node.admission(game, actor).await.map_err(|error| {
+        let detail = format!("{error:#}").to_ascii_lowercase();
+        match ADMISSION_REFUSALS.iter().find(|(reason, _)| detail.contains(&short_string_hex(reason))) {
+            Some((_, refusal)) => anyhow::anyhow!(*refusal),
+            None => error,
+        }
+    })
+}
+
+/// A Cairo short string as the node prints a panic's felt: `0x` and its bytes in hex.
+fn short_string_hex(text: &str) -> String {
+    text.bytes().fold(String::from("0x"), |hex, byte| hex + &format!("{byte:02x}"))
+}
+
 fn ensure_release_matches(intent: &Intent, release_id: Felt, preset_commitment: Felt) -> anyhow::Result<()> {
     ensure!(release_id == Felt::from(intent.release_id), "STALE_RELEASE");
     ensure!(preset_commitment == intent.preset_commitment, "INVALID_PRESET");
@@ -377,7 +401,7 @@ async fn accept(
     request: &Request,
 ) -> anyhow::Result<RecordedTicket> {
     let intent = &request.intent;
-    let fields = node.admission(intent.game, intent.actor).await?;
+    let fields = read_admission(node, intent.game, intent.actor).await?;
     let [release_id, preset_commitment, nonce, recorded_next, observed_time] = fields.as_slice() else {
         anyhow::bail!("malformed admission view")
     };
@@ -472,6 +496,8 @@ mod tests {
         unlandable: HashSet<Felt>,
         /// Epoch commands never land.
         stuck_epochs: bool,
+        /// Actors the Games contract refuses at admission, with the reason it panics with.
+        refused: HashMap<Felt, &'static str>,
     }
     #[derive(Default)]
     struct TestChain(Mutex<Chain>);
@@ -523,6 +549,13 @@ mod tests {
     impl AssignmentNode for TestChain {
         async fn admission(&self, game: Felt, actor: Felt) -> anyhow::Result<Vec<Felt>> {
             let chain = self.0.lock().unwrap();
+            if let Some(reason) = chain.refused.get(&actor) {
+                // The shape a node gives a view that panicked: a contract error carrying the felt in hex.
+                anyhow::bail!(
+                    "node starknet_call: Contract error: {{\"revert_error\":\"{} ('{reason}')\"}}",
+                    short_string_hex(reason)
+                );
+            }
             let next = chain.heads.get(&game).copied().unwrap_or_default() + 1;
             let nonce = chain.nonces.get(&(game, actor)).copied().unwrap_or_default();
             Ok(vec![Felt::ONE, PRESET, nonce.into(), next.into(), Felt::from(100)])
@@ -706,6 +739,30 @@ mod tests {
             assert_eq!(shard.chain.0.lock().unwrap().nonces.get(&(GAME_A, Felt::from(actor))), None);
             assert!(succeeded(&outcome(shard.submit(signed(&fresh, &VALID_SIGNATURE)).await.unwrap()).await));
         }
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn foreign_guardian_and_upgraded_actors_are_refused_by_name_and_a_valid_successor_executes() {
+        let shard = Shard::open(TestChain::default()).await;
+        let rpc = shard.api.rpc(IpAddr::from([127, 0, 0, 1])).unwrap();
+        for (actor, reason) in [(94, "FOREIGN_GUARDIAN"), (95, "INVALID_ACTOR")] {
+            shard.chain.0.lock().unwrap().refused.insert(Felt::from(actor), reason);
+            let action = serde_json::json!({
+                "intent": intent(GAME_A, actor, 0).encode().unwrap(), "signature": VALID_SIGNATURE,
+            });
+            let request = serde_json::json!({
+                "jsonrpc": "2.0", "id": 1, "method": "game_subscribeAction", "params": [action],
+            });
+            let (response, _) = rpc.raw_json_request(&request.to_string(), 8).await.unwrap();
+            let response: Value = serde_json::from_str(&response).unwrap();
+            assert_eq!(response["error"]["code"], -32001, "{response}");
+            assert!(response["error"]["message"].as_str().unwrap().starts_with(reason), "{response}");
+            assert_eq!(shard.api.0.slots.held(), 0);
+            assert_eq!(shard.chain.0.lock().unwrap().nonces.get(&(GAME_A, Felt::from(actor))), None);
+        }
+        assert!(succeeded(
+            &outcome(shard.submit(signed(&intent(GAME_A, 96, 0), &VALID_SIGNATURE)).await.unwrap()).await
+        ));
     }
 
     #[tokio::test(start_paused = true)]

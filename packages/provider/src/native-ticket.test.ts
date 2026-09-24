@@ -125,6 +125,47 @@ describe("node action subscriptions", () => {
     await expect(pending).rejects.toMatchObject({ name: "StaleGameReleaseError" });
   });
 
+  it("names an account the shard refuses, at admission, at acceptance and when recorded unexecuted", async () => {
+    for (const reason of ["FOREIGN_GUARDIAN", "INVALID_ACTOR"] as const) {
+      const shortString = `0x${Array.from(reason, (c) => c.charCodeAt(0).toString(16)).join("")}`;
+
+      const admitted = transport()(signed);
+      channels.at(-1)!.open();
+      channels.at(-1)!.message({ id: 0, error: { code: -32001, message: `${reason}: refused by the shard` } });
+      await expect(admitted).rejects.toMatchObject({ name: "AccountNotAdmittedError", reason });
+
+      const accepted = transport()(signed);
+      channels.at(-1)!.open();
+      channels.at(-1)!.message({ id: 0, result: "ticket-1" });
+      channels.at(-1)!.message({
+        method: "game_action",
+        params: { subscription: "ticket-1", result: { action, status: "refused", reason } },
+      });
+      await expect(accepted).rejects.toMatchObject({ name: "AccountNotAdmittedError", reason });
+
+      const recorded = transport()(signed);
+      channels.at(-1)!.open();
+      channels.at(-1)!.message({ id: 0, result: "ticket-1" });
+      channels.at(-1)!.message({
+        method: "game_action",
+        params: {
+          subscription: "ticket-1",
+          result: {
+            action,
+            status: "recorded",
+            order: 7,
+            transaction_hash: "0x99",
+            succeeded: false,
+            status_class: shortString,
+            nonce_consumed: false,
+            reason,
+          },
+        },
+      });
+      await expect(recorded).rejects.toMatchObject({ name: "AccountNotAdmittedError", reason });
+    }
+  });
+
   it("holds a ticket for 30 s with no timeout and no poll", async () => {
     vi.useFakeTimers();
     const pending = transport()(signed);

@@ -49,8 +49,37 @@ export class StaleGameReleaseError extends Error {
   }
 }
 
-const staleRelease = (reason: string): boolean => /\bSTALE_RELEASE\b/.test(reason);
-const STALE_RELEASE = `0x${Array.from("STALE_RELEASE", (c) => c.charCodeAt(0).toString(16)).join("")}`;
+/**
+ * The shard refuses this account before reading its signature or nonce: it is not the canonical account for the
+ * shard's guardian and account class, or its class is no longer the shard's. The nonce stays unused.
+ */
+class AccountNotAdmittedError extends Error {
+  constructor(readonly reason: "FOREIGN_GUARDIAN" | "INVALID_ACTOR") {
+    super(
+      reason === "FOREIGN_GUARDIAN"
+        ? "FOREIGN_GUARDIAN: this account is not under the shard's guardian"
+        : "INVALID_ACTOR: this account does not run the shard's account class",
+    );
+    this.name = "AccountNotAdmittedError";
+  }
+}
+
+/** The refusals the sequencer and the Games contract name, and the error each reaches the caller as. */
+const NAMED_REFUSALS: Record<string, () => Error> = {
+  STALE_RELEASE: () => new StaleGameReleaseError(),
+  FOREIGN_GUARDIAN: () => new AccountNotAdmittedError("FOREIGN_GUARDIAN"),
+  INVALID_ACTOR: () => new AccountNotAdmittedError("INVALID_ACTOR"),
+};
+
+/** The named refusal a sequencer's reason text carries, if any. */
+const refusalIn = (reason: string): Error | undefined =>
+  Object.entries(NAMED_REFUSALS).find(([name]) => new RegExp(`\\b${name}\\b`).test(reason))?.[1]();
+
+/** The named refusal a recorded outcome's status class carries, if any: the reason as a Cairo short string. */
+const refusalOf = (statusClass: string): Error | undefined =>
+  Object.entries(NAMED_REFUSALS).find(
+    ([name]) => BigInt(statusClass) === BigInt(`0x${Array.from(name, (c) => c.charCodeAt(0).toString(16)).join("")}`),
+  )?.[1]();
 
 /** How long one submission of a signed intent waits for its outcome before the one resubmission, then the failure. */
 const OUTCOME_WINDOW_MS = 60_000;
@@ -114,23 +143,20 @@ export function createNativeTicketSubmission(baseUrl: string) {
       const status = message.params.result;
       if (typeof status.action !== "string" || BigInt(status.action) !== BigInt(pending.action))
         throw new Error("Ticket status identity mismatch");
-      if (status.status === "refused") {
-        if (staleRelease(String(status.reason))) throw new StaleGameReleaseError();
-        throw new Error(`Action refused: ${status.reason}`);
-      }
+      if (status.status === "refused")
+        throw refusalIn(String(status.reason)) ?? new Error(`Action refused: ${status.reason}`);
       if (["queued", "accepted", "submitted"].includes(status.status)) return;
       if (status.status !== "recorded") throw new Error("Unknown ticket status");
       if (typeof status.transaction_hash !== "string" || !/^0x[0-9a-f]+$/i.test(status.transaction_hash))
         throw new Error("Invalid ticket transaction hash");
       if (typeof status.order !== "number" || !Number.isSafeInteger(status.order) || status.order <= 0)
         throw new Error("Invalid ticket order");
-      if (
-        status.succeeded === false &&
-        status.nonce_consumed === false &&
-        status.status_class &&
-        BigInt(status.status_class) === BigInt(STALE_RELEASE)
-      )
-        throw new StaleGameReleaseError();
+      // A refusal recorded before the nonce was used leaves the intent unexecuted; the caller hears it by name.
+      const refusal =
+        status.succeeded === false && status.nonce_consumed === false && status.status_class
+          ? refusalOf(String(status.status_class))
+          : undefined;
+      if (refusal) throw refusal;
       finish(pending, { transaction_hash: status.transaction_hash, order: BigInt(status.order) });
     } catch (error) {
       finish(pending, error instanceof Error ? error : new Error(String(error)));
@@ -138,11 +164,12 @@ export function createNativeTicketSubmission(baseUrl: string) {
   };
 
   const refuseAdmission = (pending: PendingAction, reason: string) => {
+    const refusal = refusalIn(reason);
     if (isAdmissionBusy(reason)) {
       const delay = BUSY_BACKOFF_MS[Math.min(pending.busyRetries, BUSY_BACKOFF_MS.length - 1)];
       pending.busyRetries += 1;
       setTimeout(() => actions.get(pending.action) === pending && subscribe(pending), delay);
-    } else if (staleRelease(reason)) finish(pending, new StaleGameReleaseError());
+    } else if (refusal) finish(pending, refusal);
     else if (isStaleNonce(reason)) finish(pending, new StaleActionNonceError(pending.action));
     else finish(pending, new Error(`Action admission rejected: ${reason}`));
   };
