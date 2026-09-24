@@ -361,14 +361,37 @@ describe("identity Worker", () => {
       ).toBe(false);
     }
 
-    // A revoked device keeps its cookie, so it must not be able to ask for its key back, on any shard.
+    // A revoked key never comes back, on any shard, even after a fresh sign-in.
     const revoked = { ...requested, action: "REVOKE" as const, counter: 5 };
     expect((await browser.request("/api/devices", { body: revoked })).status).toBe(200);
-    const readd = await browser.request("/api/devices", { body: { ...requested, chainId: "0x1", counter: 6 } });
+    const signedInAgain = createBrowser();
+    await signInWithCode(signedInAgain, "approver@realms.test");
+    const readd = await signedInAgain.request("/api/devices", { body: { ...requested, chainId: "0x1", counter: 6 } });
     expect(readd.status).toBe(403);
     expect(await readd.json()).toEqual({ error: "device_revoked" });
     const newDevice = { ...requested, deviceKey: "0x3ab1ca", counter: 6 };
-    expect((await browser.request("/api/devices", { body: newDevice })).status).toBe(200);
+    expect((await signedInAgain.request("/api/devices", { body: newDevice })).status).toBe(200);
+  });
+
+  it("signs a removed browser out, so its next approval request is refused, while the device that removed it stays", async () => {
+    const removed = createBrowser();
+    await signInWithCode(removed, "removed-device@realms.test");
+    const realmsId = (await removed.session())!.user.realmsId;
+    const kept = createBrowser();
+    await signInWithCode(kept, "removed-device@realms.test");
+    const oldKey = deviceChangeFor(realmsId, { counter: 1 });
+    expect((await removed.request("/api/devices", { body: oldKey })).status).toBe(200);
+    const keptKey = deviceChangeFor(realmsId, { counter: 2 });
+    expect((await kept.request("/api/devices", { body: { ...keptKey, deviceKey: "0x4b0b" } })).status).toBe(200);
+
+    const removal = { ...oldKey, action: "REVOKE" as const, counter: 3 };
+    expect((await kept.request("/api/devices", { body: removal })).status).toBe(200);
+
+    // The removed browser still holds its cookie; it mints a new key and asks for that key's approval.
+    const freshKey = { ...oldKey, deviceKey: "0x5eed1e", counter: 4 };
+    expect((await removed.request("/api/devices", { body: freshKey })).status).toBe(401);
+    expect(await removed.session()).toBeNull();
+    expect((await kept.request("/api/devices", { body: freshKey })).status).toBe(200);
   });
 
   it("names an account only through our guardian's approval, never through the Realms id it claims", async () => {

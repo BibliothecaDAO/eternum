@@ -66,8 +66,11 @@ const approveDeviceChange = (request: Request, { auth, db, guardian, accountClas
       return yield* new DeviceRequestError({ code: "device_revoked", status: 403 });
     }
     const signature = yield* Effect.promise(() => guardian.signDeviceChange(change));
-    if (change.action === "ADD") yield* Effect.promise(() => recordApprovedAccount(db, ownAccount, realmsId));
-    if (change.action === "REVOKE") yield* recordRevokedDevice(db, realmsId, change.deviceKey);
+    if (change.action === "ADD") {
+      yield* Effect.promise(() => recordApprovedAccount(db, ownAccount, realmsId));
+      yield* recordDeviceSession(db, realmsId, change.deviceKey, session.session.id);
+    }
+    if (change.action === "REVOKE") yield* removeDevice(db, realmsId, change.deviceKey);
     return { ...change, signature: [signature.r, signature.s] };
   });
 
@@ -78,10 +81,7 @@ const readDeviceChange = (request: Request) =>
     Effect.mapError(() => new DeviceRequestError({ code: "invalid_device_change", status: 400 })),
   );
 
-/**
- * A revoked device keeps its session cookie, so the account's approvals, not the client, keep it out: once a key is
- * revoked from a Realms account, no shard's account gets it back.
- */
+/** Once a key is revoked from a Realms account, no shard's account gets it back, even after a fresh sign-in. */
 const isRevokedDevice = (db: D1Database, realmsId: string, deviceKey: string) =>
   Effect.promise(
     async () =>
@@ -91,14 +91,35 @@ const isRevokedDevice = (db: D1Database, realmsId: string, deviceKey: string) =>
         .first()) !== null,
   );
 
-const recordRevokedDevice = (db: D1Database, realmsId: string, deviceKey: string) =>
+/** The session that asked for a key's approval is that device's session: removing the key ends it. */
+const recordDeviceSession = (db: D1Database, realmsId: string, deviceKey: string, sessionId: string) =>
   Effect.promise(() =>
     db
       .prepare(
-        'INSERT INTO "revoked_devices" ("realmsId", "deviceKey", "revokedAt") VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
+        'INSERT INTO "device_sessions" ("realmsId", "deviceKey", "sessionId") VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
       )
-      .bind(realmsId, canonicalFelt(deviceKey), Date.now())
+      .bind(realmsId, canonicalFelt(deviceKey), sessionId)
       .run(),
+  );
+
+/**
+ * Revokes the key for the whole Realms account and signs out every session that obtained an approval for it, in one
+ * write. A removed browser keeps its cookie, and a live session could mint a new key and ask for its approval.
+ */
+const removeDevice = (db: D1Database, realmsId: string, deviceKey: string) =>
+  Effect.promise(() =>
+    db.batch([
+      db
+        .prepare(
+          'INSERT INTO "revoked_devices" ("realmsId", "deviceKey", "revokedAt") VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
+        )
+        .bind(realmsId, canonicalFelt(deviceKey), Date.now()),
+      db
+        .prepare(
+          'DELETE FROM "session" WHERE "id" IN (SELECT "sessionId" FROM "device_sessions" WHERE "realmsId" = ? AND "deviceKey" = ?)',
+        )
+        .bind(realmsId, canonicalFelt(deviceKey)),
+    ]),
   );
 
 const canonicalFelt = (value: string) => `0x${BigInt(value).toString(16)}`;
