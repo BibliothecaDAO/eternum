@@ -18,7 +18,7 @@ import { resolveRealmBootstrapErrorMessage } from "@/ui/modules/entity-details/h
 import { configManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
+import { ContractAddress, LEVEL_DESCRIPTIONS, RealmLevels } from "@bibliothecadao/types";
 import { useState } from "react";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 
@@ -37,7 +37,6 @@ export const Castle = () => {
   const missingResources = upgrade?.missingRequirements ?? [];
   const isLevelUpLoading = upgrade?.isUpgradeLoading ?? false;
   const levelUpRealm = upgrade?.handleUpgrade;
-  const isLaborProductionEnabled = configManager.isLaborProductionEnabled();
 
   const provisionInfo = useBlitzRealmProvision(structureEntityId ?? null);
   const bootstrapInfo = useRealmUpgradeAndProvision(structureEntityId ?? null);
@@ -168,29 +167,6 @@ export const Castle = () => {
               </div>
             )}
           </div>
-
-          {/* Labor Production Button */}
-          {isOwner && isLaborProductionEnabled && (
-            <div className="flex justify-center">
-              <Button
-                onClick={(event) =>
-                  openSurface({
-                    id: "production",
-                    content: <ProductionModal preSelectedResource={ResourcesIds.Labor} />,
-                    anchor: surfaceAnchorFrom(event.currentTarget),
-                  })
-                }
-                variant="primary"
-                withoutSound
-                className="w-full max-w-[300px]"
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <PlusIcon className="w-4 h-4" />
-                  Produce Labor
-                </div>
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     )

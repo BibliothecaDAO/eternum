@@ -552,11 +552,6 @@ export class ClientConfigManager {
       resourceOutputPerInputResources: this.divideByPrecision(Number(recipe.simple_output)),
     };
   }
-  isLaborProductionEnabled() {
-    return [...this.facts().inGame("ProductionRecipe", this.gameId)].some((recipe) =>
-      recipe.simple_inputs.some((input) => input.resource_type === ResourcesIds.Labor),
-    );
-  }
   getMapCenter() {
     return MAP_CENTER - this.rules().map_center_offset;
   }
