@@ -826,9 +826,6 @@ importers:
       '@types/node':
         specifier: ^22.19.13
         version: 22.20.1
-      dotenv-cli:
-        specifier: catalog:web
-        version: 7.4.4
       eslint:
         specifier: catalog:web
         version: 9.39.2(jiti@2.7.0)

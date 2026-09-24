@@ -5,8 +5,7 @@
   "scripts": {
     "lint": "eslint",
     "typecheck": "tsc --noEmit -p server",
-    "test": "vitest run",
-    "with-env": "dotenv -e ../../.env --"
+    "test": "vitest run"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "2.0.0",
@@ -22,7 +21,6 @@
   "devDependencies": {
     "@realms-world/eslint-config": "workspace:*",
     "@types/node": "^22.19.13",
-    "dotenv-cli": "catalog:web",
     "eslint": "catalog:web",
     "typescript": "catalog:web",
     "vitest": "^3.2.4",
