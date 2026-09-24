@@ -1,11 +1,26 @@
 import { expect, it, vi } from "vitest";
 
+const pasted = vi.hoisted(() => ({ shards: [] as { url: string; chainId: string }[] }));
 vi.mock("@/runtime/world/shards", () => ({
-  listPastedShards: () => [],
+  listPastedShards: () => pasted.shards,
   openPastedShards: async () => [],
   requireOpenShard: async () => {
     throw new Error("not needed");
   },
+}));
+
+vi.mock("@bibliothecadao/eternum/shard", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum/shard")>()),
+  // A pasted shard's own Herald answers with every game it has, finished ones included.
+  fetchHeraldGameDirectory: async () => ({
+    chain: "0xc",
+    confirmed_block: 1,
+    games: [
+      { game_id: 7, status: "Live", clock: { end_at: 900 } },
+      { game_id: 5, status: "Settled", clock: { end_at: 500 } },
+      { game_id: 6, status: "Settled", clock: { end_at: 600 } },
+    ],
+  }),
 }));
 
 import { fetchDirectories, realmsPlayerOf } from "./herald";
@@ -44,4 +59,18 @@ it("asks our directory for the signed-in player's state on every shard, and for 
   requests.splice(0);
   await fetchDirectories(null);
   expect(requests).toEqual(["/api/directory"]);
+});
+
+it("keeps a pasted shard's settled games out of the live list and offers them apart, newest first", async () => {
+  pasted.shards = [{ url: "https://pasted.test", chainId: "0xc" }];
+  try {
+    const directory = await fetchDirectories(null);
+    expect(directory.games.map((game) => [game.chainId, game.game_id])).toEqual([
+      ["0xa", 1],
+      ["0xc", 7],
+    ]);
+    expect(directory.pastedFinished.map((game) => game.game_id)).toEqual([6, 5]);
+  } finally {
+    pasted.shards = [];
+  }
 });

@@ -4,7 +4,7 @@ import { useIdentitySession } from "@/hooks/context/identity-session";
 
 import { formatCountdown } from "./format";
 import { EnterLink, GameClock, GameRow, SpectateLink, modeLabel } from "./game-links";
-import { type DirectoryGame, finishedGames, isMember, nextOpenGame, useDirectory, useRealmsPlayer } from "./herald";
+import { type DirectoryGame, isMember, nextOpenGame, useDirectory, useRealmsPlayer, useRecentResults } from "./herald";
 import { ErrorPanel, Loading, Panel, PanelTitle, Pill } from "./kit";
 import { useNowSeconds } from "./use-now";
 import { Standings } from "./standings";
@@ -75,7 +75,7 @@ const MyGames = ({ games, now }: { games: DirectoryGame[]; now: number }) => (
 const Dashboard = ({ games, now }: { games: DirectoryGame[]; now: number }) => {
   const next = nextOpenGame(games);
   const mine = games.filter(isMember);
-  const latest = finishedGames(games)[0];
+  const latest = useRecentResults(1).data?.games[0];
   return (
     <div className="space-y-4">
       <Panel className="flex flex-wrap items-end justify-between gap-4">

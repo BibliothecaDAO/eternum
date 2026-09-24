@@ -28,3 +28,38 @@ export const fetchDirectory = async (player: string | null = null): Promise<Dire
 /** The shards the directory still serves: retired ones are history. */
 export const listedShards = (shards: readonly DirectoryShard[]): DirectoryShard[] =>
   shards.filter((shard) => shard.status !== "retired");
+
+/** A finished game in our history, with the shard it lives on. */
+interface HistoryGame extends HeraldGameDirectoryEntry {
+  chainId: string;
+  shardUrl: string;
+}
+
+interface DirectoryHistoryPage {
+  games: HistoryGame[];
+  /** Opaque cursor for the next page; null on the last one. */
+  next: string | null;
+  /** Listed shards that could not answer for this page, by URL. */
+  failures: { url: string; error: "unavailable" }[];
+}
+
+/**
+ * Our history: every settled game on the shards we list, newest first, a page at a time. With a player, only the
+ * games that player took part in.
+ */
+export const fetchDirectoryHistory = async ({
+  limit,
+  cursor = null,
+  player = null,
+}: {
+  limit: number;
+  cursor?: string | null;
+  player?: string | null;
+}): Promise<DirectoryHistoryPage> => {
+  const query = new URLSearchParams({ limit: String(limit) });
+  if (cursor) query.set("cursor", cursor);
+  if (player) query.set("player", player);
+  const response = await fetch(`/api/directory/history?${query}`, { cache: "no-store" });
+  if (!response.ok) throw new Error(`History answered ${response.status}`);
+  return (await response.json()) as DirectoryHistoryPage;
+};
