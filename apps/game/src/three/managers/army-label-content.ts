@@ -14,7 +14,6 @@ export type ArmyLabelContentFields = Pick<
   | "troopCount"
   | "currentStamina"
   | "maxStamina"
-  | "displayStaminaRatio"
   | "battleTimerLeft"
   | "isMine"
   | "owner"

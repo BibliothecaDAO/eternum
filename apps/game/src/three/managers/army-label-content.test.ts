@@ -42,13 +42,6 @@ describe("army label data keys", () => {
     expect(buildArmyLabelLayoutDataKey(createArmyLabelData())).toBe("10-8-true-Alice-45-90");
     expect(buildArmyLabelStaminaDataKey(createArmyLabelData())).toBe("9-100");
   });
-
-  it("ignores projected-only stamina changes so computed labels do not rerender every second", () => {
-    const initialKey = buildArmyLabelStaminaDataKey(createArmyLabelData({ displayStaminaRatio: 0.4 }));
-    const nextKey = buildArmyLabelStaminaDataKey(createArmyLabelData({ displayStaminaRatio: 0.4002 }));
-
-    expect(nextKey).toBe(initialKey);
-  });
 });
 
 describe("syncArmyLabelContentState", () => {
@@ -109,27 +102,6 @@ describe("syncArmyLabelContentState", () => {
     expect(label.userData.lastLayoutDataKey).toBe("22-8-true-Alice-45-90");
     expect(label.userData.lastStaminaDataKey).toBe("9-100");
     expect(renderLabel).toHaveBeenCalledTimes(1);
-    expect(renderStamina).not.toHaveBeenCalled();
-  });
-
-  it("skips rendering when only projected stamina changes", () => {
-    const label = createArmyLabelStub();
-    const initialArmy = createArmyLabelData();
-    label.userData.lastLayoutDataKey = buildArmyLabelLayoutDataKey(initialArmy);
-    label.userData.lastStaminaDataKey = buildArmyLabelStaminaDataKey(initialArmy);
-    const renderLabel = vi.fn();
-    const renderStamina = vi.fn();
-
-    syncArmyLabelContentState({
-      label: label as never,
-      layoutDataKey: buildArmyLabelLayoutDataKey(createArmyLabelData({ displayStaminaRatio: 0.4002 })),
-      staminaDataKey: buildArmyLabelStaminaDataKey(createArmyLabelData({ displayStaminaRatio: 0.4002 })),
-      labelsAttachedToScene: true,
-      renderLabel,
-      renderStamina,
-    });
-
-    expect(renderLabel).not.toHaveBeenCalled();
     expect(renderStamina).not.toHaveBeenCalled();
   });
 

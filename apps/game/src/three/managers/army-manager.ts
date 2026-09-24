@@ -1832,7 +1832,6 @@ export class ArmyManager {
         troopCount: finalTroopCount,
         currentStamina: finalCurrentStamina,
         maxStamina: finalMaxStamina,
-        displayStaminaRatio: initialStaminaPresentation?.displayRatio,
         attackedFromDegrees: attackedFromDegrees ?? undefined,
         attackedTowardDegrees: attackTowardDegrees ?? undefined,
         battleCooldownEnd: finalBattleCooldownEnd,
@@ -3064,7 +3063,7 @@ ${
   private resolveArmyStaminaSnapshot(
     entityId: ID,
     currentArmiesTick = getBlockTimestamp().currentArmiesTick,
-  ): { current: number; max: number; displayRatio: number } | null {
+  ): { current: number; max: number } | null {
     if (!Number.isFinite(currentArmiesTick) || currentArmiesTick <= 0) {
       return null;
     }
@@ -3080,11 +3079,7 @@ ${
 
     // staminaSnapshot.current is already the computed regen value from
     // StaminaManager.getStamina(troops, currentArmiesTick). Use it directly.
-    return {
-      current: staminaSnapshot.current,
-      max: staminaSnapshot.max,
-      displayRatio: staminaSnapshot.max > 0 ? staminaSnapshot.current / staminaSnapshot.max : 0,
-    };
+    return { current: staminaSnapshot.current, max: staminaSnapshot.max };
   }
 
   /**
@@ -3110,7 +3105,6 @@ ${
       this.staminaUnresolved.delete(entityId);
       army.currentStamina = staminaSnapshot.current;
       army.maxStamina = staminaSnapshot.max;
-      army.displayStaminaRatio = staminaSnapshot.displayRatio;
       const label = this.entityIdLabels.get(entityId);
       if (label) this.updateArmyLabelData(entityId, army, label);
     } catch {
@@ -3211,7 +3205,6 @@ ${
     const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId);
     army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;
     army.maxStamina = staminaSnapshot?.max ?? army.maxStamina;
-    army.displayStaminaRatio = staminaSnapshot?.displayRatio ?? army.displayStaminaRatio;
 
     const ownerStructureId = explorerTroops.owner === 0 ? null : explorerTroops.owner;
     const resolvedOwnerFromStructure = this.resolveArmyOwnerFromStructure({

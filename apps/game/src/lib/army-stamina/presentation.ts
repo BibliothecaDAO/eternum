@@ -15,7 +15,11 @@ export const isStaminaRecharging = (current: number, max: number): boolean => {
   return current >= 0 && current < max;
 };
 
-export const buildProjectedStaminaDisplayModel = (input: {
+/**
+ * An army's stamina as the chain holds it: the committed amount at the current tick, never an amount between ticks
+ * the contract has not granted, with the next gain and when it lands.
+ */
+export const buildStaminaDisplayModel = (input: {
   committedCurrent: number;
   committedMax: number;
   armiesTickTimeRemaining: number;
@@ -30,39 +34,37 @@ export const buildProjectedStaminaDisplayModel = (input: {
     return {
       committedCurrent,
       committedMax,
-      isRecharging: isStaminaRecharging(committedCurrent, committedMax),
-      progressToNextTick: 0,
-      nextTickGain: 0,
-      displayCurrent: committedCurrent,
       committedRatio,
-      displayRatio: committedRatio,
+      isRecharging: isStaminaRecharging(committedCurrent, committedMax),
+      nextTickGain: 0,
+      secondsUntilNextGain: 0,
       secondsUntilFull: 0,
     };
   }
 
   const tickDuration = Number(configManager.getTick(TickIds.Armies));
   const safeTickDuration = Number.isFinite(tickDuration) && tickDuration > 0 ? tickDuration : 0;
-  const progressToNextTick =
-    safeTickDuration > 0
-      ? Math.min(1, Math.max(0, (safeTickDuration - input.armiesTickTimeRemaining) / safeTickDuration))
-      : 0;
   const nextTickCurrent = Number(StaminaManager.getStamina(input.troops, input.currentArmiesTick + 1).amount);
   const nextTickGain = Math.max(0, Math.min(committedMax - committedCurrent, nextTickCurrent - committedCurrent));
-  const displayCurrent = committedCurrent + nextTickGain * progressToNextTick;
-  const displayRatio = committedMax > 0 ? Math.min(1, Math.max(committedRatio, displayCurrent / committedMax)) : 0;
+  const secondsUntilNextGain = nextTickGain > 0 ? Math.max(0, input.armiesTickTimeRemaining) : 0;
   const ticksUntilFull = nextTickGain > 0 ? Math.ceil((committedMax - committedCurrent) / nextTickGain) : 0;
-  const secondsUntilFull =
-    ticksUntilFull > 0 ? Math.max(0, input.armiesTickTimeRemaining) + (ticksUntilFull - 1) * safeTickDuration : 0;
+  const secondsUntilFull = ticksUntilFull > 0 ? secondsUntilNextGain + (ticksUntilFull - 1) * safeTickDuration : 0;
 
   return {
     committedCurrent,
     committedMax,
-    isRecharging: nextTickGain > 0 && committedCurrent < committedMax,
-    progressToNextTick,
-    nextTickGain,
-    displayCurrent,
     committedRatio,
-    displayRatio,
+    isRecharging: nextTickGain > 0 && committedCurrent < committedMax,
+    nextTickGain,
+    secondsUntilNextGain,
     secondsUntilFull,
   };
+};
+
+/** The next stamina gain and when it lands, "+30 in 1:12"; null when nothing more is coming. */
+export const describeNextStaminaGain = (stamina: ArmyStaminaPresentation): string | null => {
+  if (stamina.nextTickGain <= 0) return null;
+  const seconds = Math.ceil(stamina.secondsUntilNextGain);
+  const minutes = Math.floor(seconds / 60);
+  return `+${stamina.nextTickGain} in ${minutes}:${String(seconds % 60).padStart(2, "0")}`;
 };

@@ -28,7 +28,6 @@ export interface ArmyLabelData extends LabelData {
   troopCount: number;
   currentStamina: number;
   maxStamina: number;
-  displayStaminaRatio?: number;
   attackedFromDegrees?: number;
   attackedTowardDegrees?: number;
   battleTimerLeft?: number;
