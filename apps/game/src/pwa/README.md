@@ -8,6 +8,10 @@ mode and after `appinstalled`. Installation does not request notification permis
 The manifest, worker, offline document and icons are generated/verified by the production build. Service-worker
 registration is production-only; a Vite development server is not a complete installation test.
 
+The build stamps the client release into the worker. The update prompt asks a waiting worker which release it serves and
+appears once per worker, only when that release differs from the running page's: pages always load current HTML, so a
+page opened after a deploy already runs the new client while the previous worker still controls it.
+
 ## Cache policy
 
 `public/_headers` asks browsers to revalidate the worker, manifest and offline document. The custom domain also passes

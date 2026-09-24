@@ -11,7 +11,9 @@ export function PwaUpdatePrompt() {
 
   useEffect(() => {
     if (!import.meta.env.PROD) return;
-    return registerGameServiceWorker((apply) => setApplyUpdate(() => apply));
+    return registerGameServiceWorker(import.meta.env.VITE_PUBLIC_GAME_VERSION || "development", (apply) =>
+      setApplyUpdate(() => apply),
+    );
   }, []);
 
   if (!applyUpdate) return null;
