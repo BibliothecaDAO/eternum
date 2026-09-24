@@ -83,7 +83,6 @@
     "lab:push-receiver": "bun deploy/athanor/harness/push-receiver.ts",
     "lab:slice:prepare-authority": "bun deploy/athanor/harness/native/prepare-authority.ts",
     "lab:probe-account": "bun deploy/athanor/scripts/probe-deploy-account.ts",
-    "lab:probe-ws": "node deploy/athanor/scripts/probe-ws-subscriber.mjs",
     "lab:probe-herald": "node deploy/athanor/scripts/probe-herald-client.mjs",
     "lab:probe-sandbox-proxy": "bun deploy/athanor/scripts/probe-sandbox-proxy.ts",
     "summary:weekly": "node scripts/generate-weekly-summary.js",
