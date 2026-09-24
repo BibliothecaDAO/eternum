@@ -1,3 +1,4 @@
+import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { beforeAll, expect, it } from "vitest";
 
 import preset from "../../../contracts/l3/world-native/fixtures/preset-3.json";
@@ -58,7 +59,7 @@ const armiesTick = () => Math.floor(Date.now() / 1000 / ARMIES_TICK_SECONDS);
 
 /**
  * Story history as staging's Herald served it: every row the fake Herald serves is a recorded row with only the game,
- * players, entities and times changed, so the fake cannot serve a model or story Herald does not.
+ * players, entities and times changed. The fake node supplies the current action order and story index.
  */
 type RecordedItem = (typeof recordedPages.pages)[number]["page"]["items"][number];
 const recordedItem = (model: string, story?: string): RecordedItem => {
@@ -74,7 +75,7 @@ const recordedItem = (model: string, story?: string): RecordedItem => {
  * Like Herald, it no longer serves a settled game's armies.
  */
 const createHerald = () => {
-  const log: RecordedItem[] = [];
+  const log: HeraldHistoryEvent[] = [];
   const state = {
     army: null as null | { amount: number; updatedTick: number; day: number },
     /** The neighbour's army, spent whenever the player acts, so it rests alongside the player's. */
@@ -113,7 +114,7 @@ const createHerald = () => {
       items,
     };
   };
-  const append = (recorded: RecordedItem, value: object) => {
+  const append = (recorded: RecordedItem, value: Record<string, unknown>) => {
     const block = 11 + log.length;
     log.push({
       ...recorded,
@@ -121,8 +122,8 @@ const createHerald = () => {
       transaction_index: 0,
       game_id: String(GAME_ID),
       transaction_hash: `0x${block}`,
-      value,
-    } as RecordedItem);
+      value: { ...value, order: block, index: 0 },
+    });
   };
   /** The player acts: an explore story on the next block, their army's stamina spent at this tick. */
   const act = (stamina: number, day = TODAY) => {

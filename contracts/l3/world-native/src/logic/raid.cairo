@@ -23,10 +23,12 @@ pub mod RaidLogic {
             actor: ContractAddress,
             command: crate::combat_actions::Raid,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
-            crate::logic::combat::raid(game_id, actor, command, context)
+            crate::logic::combat::raid(game_id, actor, command, context, ref story_cursor);
+            ((), story_cursor)
         }
         fn village_last_raided(self: @ContractState, key: ResourceKey) -> u64 {
             crate::logic::combat::village_last_raided(key)

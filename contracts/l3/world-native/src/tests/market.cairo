@@ -43,6 +43,7 @@ fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
             super::authority(),
             banks(),
             crate::commands::action_context(ExecutionContext { timestamp: 30, ..super::context(deployment.games, 3) }),
+            crate::tests::story_cursor(),
         );
     stop_cheat_caller_address(deployment.games);
     for key in array![source, other] {
@@ -308,20 +309,44 @@ fn bank_creation_and_configuration_reject_players_repeats_and_partial_batches() 
     let safe = IBankSafeDispatcher { contract_address: deployment.games };
     start_cheat_caller_address(deployment.games, deployment.actor);
     let context = ExecutionContext { timestamp: 30, ..super::context(deployment.games, 3) };
-    assert!(safe.create_banks(3, super::authority(), banks(), crate::commands::action_context(context)).is_err());
+    assert!(
+        safe
+            .create_banks(
+                3, super::authority(), banks(), crate::commands::action_context(context), crate::tests::story_cursor(),
+            )
+            .is_err(),
+    );
     assert!(
         safe
             .configure_banks(2, BankRules { lp_fee_num: 0, lp_fee_denom: 1, owner_fee_num: 0, owner_fee_denom: 1 })
             .is_err(),
     );
     start_cheat_caller_address(deployment.games, deployment.games);
-    assert!(safe.create_banks(3, deployment.actor, banks(), crate::commands::action_context(context)).is_err());
     assert!(
         safe
-            .create_banks(3, super::authority(), banks().slice(0, 5), crate::commands::action_context(context))
+            .create_banks(
+                3, deployment.actor, banks(), crate::commands::action_context(context), crate::tests::story_cursor(),
+            )
             .is_err(),
     );
-    assert!(safe.create_banks(3, super::authority(), banks(), crate::commands::action_context(context)).is_err());
+    assert!(
+        safe
+            .create_banks(
+                3,
+                super::authority(),
+                banks().slice(0, 5),
+                crate::commands::action_context(context),
+                crate::tests::story_cursor(),
+            )
+            .is_err(),
+    );
+    assert!(
+        safe
+            .create_banks(
+                3, super::authority(), banks(), crate::commands::action_context(context), crate::tests::story_cursor(),
+            )
+            .is_err(),
+    );
     start_cheat_caller_address(deployment.games, super::authority());
     assert!(
         safe
@@ -452,7 +477,7 @@ fn liquidity_rejects_a_deposit_that_rounds_to_zero_shares() {
 }
 
 #[test]
-fn liquidity_changes_allocate_distinct_story_ids_instead_of_reusing_the_bank() {
+fn liquidity_changes_have_distinct_recorded_story_keys() {
     let (d, source, _) = setup();
     let mut spy = spy_events();
     assert!(execute(d, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
@@ -460,11 +485,13 @@ fn liquidity_changes_allocate_distinct_story_ids_instead_of_reusing_the_bank() {
     let mut ids = array![];
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(0) == selector!("StoryEvent") {
-            ids.append(*event.keys.at(3));
+            let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
+            let mut data = event.data.span();
+            let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
+            assert_eq!(story.entity_id, Some(source.entity_id));
+            ids.append(crate::ownership::StoryCursor { order: story.order, index: story.index });
         }
     }
     assert_eq!(ids.len(), 2);
     assert_ne!(*ids.at(0), *ids.at(1));
-    assert_ne!(*ids.at(0), BANK.into());
-    assert_ne!(*ids.at(1), BANK.into());
 }

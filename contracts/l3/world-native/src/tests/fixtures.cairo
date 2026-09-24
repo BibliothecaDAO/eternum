@@ -55,7 +55,8 @@ pub mod TroopFixture {
             actor: ContractAddress,
             command: CreateExplorer,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             self.actor.write(actor);
@@ -77,6 +78,8 @@ pub mod TroopFixture {
                 },
             );
             assert!(context.raw_root != 0, "fixture late rejection");
+
+            ((), story_cursor)
         }
     }
     #[abi(embed_v0)]
@@ -87,7 +90,8 @@ pub mod TroopFixture {
             actor: ContractAddress,
             command: Explore,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             panic!("fixture unsupported command");
         }
     }

@@ -88,7 +88,8 @@ pub trait ITroopManagement<T> {
         actor: starknet::ContractAddress,
         command: ManageTroops,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 
 pub fn assert_amount(amount: u128) {

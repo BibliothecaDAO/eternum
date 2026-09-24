@@ -54,8 +54,5 @@ pub mod RegistryLogic {
             game.ready = true;
             crate::logic::game::write_game(game_id, game);
         }
-        fn allocate_entity(ref self: ContractState, game_id: u32) -> u32 {
-            crate::logic::game::allocate_entity(game_id)
-        }
     }
 }

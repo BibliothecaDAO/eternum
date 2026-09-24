@@ -8,6 +8,7 @@ pub mod MovementLogic {
     use crate::logic::release::ReleaseState;
     use crate::logic::troops::TroopState;
     use crate::map::IMapLogicDispatcherTrait;
+    use crate::ownership::StoryResultTrait;
     use crate::resources::{IResourceOperationsDispatcherTrait, ResourceKey};
     use crate::stamina::StaminaTrait;
     use crate::structures::IStructureOperationsDispatcherTrait;
@@ -41,7 +42,8 @@ pub mod MovementLogic {
             actor: ContractAddress,
             command: Explore,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
@@ -124,10 +126,7 @@ pub mod MovementLogic {
             );
             self.pay_movement(game_id, ref explorer, rules, biome, exploring, context.timestamp, context);
             crate::logic::troops::TroopState::save(key, explorer);
-            crate::logic::game::allocate_entity(game_id);
-            if exploring {
-                crate::logic::game::allocate_entity(game_id);
-            }
+
             if !explorer.coord.alt {
                 crate::exploration_rewards::IExtractionDispatcherTrait::extract_exploration_reward(
                     crate::exploration_rewards::IExtractionLibraryDispatcher {
@@ -142,8 +141,11 @@ pub mod MovementLogic {
                         None
                     },
                     crate::commands::action_context(ExecutionContext { raw_root, ..context }),
-                );
+                    story_cursor,
+                )
+                    .resume_story(ref story_cursor);
             }
+            ((), story_cursor)
         }
     }
     #[abi(embed_v0)]
@@ -187,6 +189,7 @@ pub mod MovementLogic {
             actor: ContractAddress,
             command: crate::commands::EnterDepth,
             context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -240,6 +243,7 @@ pub mod MovementLogic {
             actor: ContractAddress,
             command: crate::commands::Move,
             context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -276,7 +280,6 @@ pub mod MovementLogic {
             );
             self.pay_food(game_id, explorer, rules, false, context.timestamp, context);
             crate::logic::troops::TroopState::save(key, explorer);
-            crate::logic::game::allocate_entity(game_id);
         }
         fn toggle_alternate(
             ref self: ContractState,
@@ -284,6 +287,7 @@ pub mod MovementLogic {
             actor: ContractAddress,
             command: crate::commands::ToggleAlternate,
             context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -319,7 +323,6 @@ pub mod MovementLogic {
             );
             explorer.coord = destination;
             crate::logic::troops::TroopState::save(key, explorer);
-            crate::logic::game::allocate_entity(game_id);
         }
     }
 }

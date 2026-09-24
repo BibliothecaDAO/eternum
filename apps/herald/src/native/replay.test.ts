@@ -1,3 +1,5 @@
+import { storyEventIdentity } from "@bibliothecadao/eternum/game-sync";
+import { toJsonValue } from "../model-registry";
 import { createNativeWorldIngestion } from "./world-ingestion";
 import { loadNativeWorld } from "./load";
 import { describe, expect, it, vi } from "vitest";
@@ -331,4 +333,40 @@ it("halts a live confirmed fold atomically while leaving the process available",
   const response = await handler(new Request("http://localhost/health"));
   expect(response.status).toBe(503);
   expect(await response.json()).toMatchObject({ success: false, confirmed_block: 9, undecodable_events: 1 });
+});
+
+it("preserves the two story identities from overlay through confirmation despite intervening facts", async () => {
+  const { native, fold, decoder } = setup();
+  const scope = { chainId: "madara", worldAddress: decoder.registry.worldAddress, gameId: 1 };
+  const layout = schema.games.events.find((event) => event.name === "StoryEvent")!;
+  const story = (index: number): RpcEvent => ({
+    from_address: decoder.registry.worldAddress,
+    keys: [...layout.prefix, "1", "1", "42", String(index), "0", "0x111", "0", "3", "0x55"],
+    data: ["1", String(index + 1), "2160"],
+  });
+  const points = rowEvent("PlayerPoints", ["1", "0x111"], ["100"]);
+  const pending = receipt([story(0), points, story(1)]);
+  const overlay = native.applyReceipt(fold.overlay(), pending, null, 0);
+  const confirmed = block(10, [points, story(0), story(1)]);
+  confirmed.transactions[0]!.receipt.transaction_hash = pending.transaction_hash;
+  const replay = await native.replay({
+    fold,
+    rpc: { getBlockWithReceipts: async () => confirmed },
+    fromBlock: 10,
+    toBlock: 10,
+    preconfirmed: () => ({ events: pending.events, decoded: overlay.events }),
+  });
+  const stories = (events: typeof overlay.events) =>
+    events.filter((event) => event.kind === "event" && event.model.name === "StoryEvent");
+  const before = stories(overlay.events);
+  const after = stories(replay.events);
+  expect(before.map((event) => event.key.index)).toEqual([0n, 1n]);
+  expect(new Set(before.map((event) => event.entityId)).size).toBe(2);
+  expect(after.map((event) => event.entityId)).toEqual(before.map((event) => event.entityId));
+  expect(before.map((event) => event.position.eventIndex)).toEqual([0, 2]);
+  expect(after.map((event) => event.position.eventIndex)).toEqual([1, 2]);
+  const identities = (events: typeof before) =>
+    events.map((event) => storyEventIdentity(scope, toJsonValue(event.key) as Record<string, unknown>));
+  expect(identities(after)).toEqual(identities(before));
+  expect(fold.modelRows("PlayerPoints")).toHaveLength(1);
 });

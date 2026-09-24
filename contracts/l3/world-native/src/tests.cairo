@@ -173,6 +173,10 @@ fn intent(deployment: Deployment, game_id: u32) -> Intent {
         ),
     }
 }
+fn story_cursor() -> crate::ownership::StoryCursor {
+    crate::ownership::StoryCursor { order: 1, index: 0 }
+}
+
 fn context(games: ContractAddress, game_id: u32) -> ExecutionContext {
     snforge_std::interact_with_state(
         games,
@@ -305,7 +309,11 @@ fn direct_player_submission_and_forged_domain_calls_are_rejected() {
     assert!(
         ICreateExplorerSafeDispatcher { contract_address: deployment.games }
             .create_explorer(
-                1, deployment.actor, command, crate::commands::action_context(context(deployment.games, 1)),
+                1,
+                deployment.actor,
+                command,
+                crate::commands::action_context(context(deployment.games, 1)),
+                crate::tests::story_cursor(),
             )
             .is_err(),
     );
@@ -667,4 +675,12 @@ fn games_reinitialization_is_rejected_without_changing_authentication_or_state()
     assert_eq!(after.submitter, authentication.submitter);
     assert_eq!(after.account_class, authentication.account_class);
     assert_eq!(entry.next_nonce(1, deployment.actor), 0);
+}
+
+#[generate_trait]
+impl StoryResultTestImpl<T> of StoryResultTestTrait<T> {
+    fn story_result(self: (T, crate::ownership::StoryCursor)) -> T {
+        let (result, _) = self;
+        result
+    }
 }

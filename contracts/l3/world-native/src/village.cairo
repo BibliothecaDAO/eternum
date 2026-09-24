@@ -46,14 +46,20 @@ pub trait IVillages<T> {
         actor: ContractAddress,
         command: SettleVillage,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 
 #[starknet::interface]
 pub trait IVillageArmy<T> {
     fn receive_village_army(
-        ref self: T, game_id: u32, actor: ContractAddress, village_id: u32, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        village_id: u32,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 
 pub fn select_resource(pool: Span<VillageResource>, seed: u256, timestamp: u64) -> u8 {

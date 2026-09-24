@@ -28,11 +28,21 @@ pub trait IBridge<T> {
     fn configure_deposits(ref self: T, game_id: u32, rules: DepositRules);
     fn deposit_rules(self: @T, game_id: u32) -> DepositRules;
     fn deposit_resource(
-        ref self: T, game_id: u32, actor: ContractAddress, command: Deposit, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: Deposit,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn withdraw_resource(
-        ref self: T, game_id: u32, actor: ContractAddress, command: Withdraw, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: Withdraw,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 #[starknet::interface]
 pub trait IBankWithdrawal<T> {
@@ -45,7 +55,8 @@ pub trait IBankWithdrawal<T> {
         amount: u128,
         timestamp: u64,
         game_context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 #[starknet::interface]
 pub trait IDepositToken<T> {

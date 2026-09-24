@@ -41,10 +41,16 @@ pub trait IStructureUpgrades<T> {
         actor: ContractAddress,
         command: BuyRealmUpgrade,
         context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
     );
     fn level_up(
-        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u32, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        structure_id: u32,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 
 pub fn troop_limits(config: crate::rules::TroopLimitConfig, level: u8) -> (u16, u8) {

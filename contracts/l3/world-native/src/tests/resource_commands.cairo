@@ -14,6 +14,7 @@ use crate::settlement::{
     ISettlementCreationDispatcher, ISettlementCreationDispatcherTrait, RealmCreation, SettlementCreation,
 };
 use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
+use crate::tests::StoryResultTestTrait;
 use crate::tests::state::{GameState, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait};
 use crate::troops::{Coord, ExplorerKey};
 use super::recorded_receipts::RecordedReceiptsTrait;
@@ -78,7 +79,9 @@ pub fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, Resourc
                         crate::commands::action_context(
                             ExecutionContext { timestamp: 30, ..context(deployment.games, 3) },
                         ),
-                    ),
+                        crate::tests::story_cursor(),
+                    )
+                    .story_result(),
             );
     }
     stop_cheat_caller_address(deployment.games);

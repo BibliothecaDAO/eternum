@@ -99,14 +99,16 @@ pub trait IProductionCommands<T> {
         actor: starknet::ContractAddress,
         command: RefillProduction,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn burn_resource_for_resource_production(
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
         command: RefillProduction,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 
 #[derive(Copy, Drop, Default, starknet::Store)]

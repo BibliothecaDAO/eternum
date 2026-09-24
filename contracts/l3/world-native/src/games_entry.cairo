@@ -285,6 +285,7 @@ pub mod GamesEntry {
             intent.arguments.span().serialize(ref calldata);
             calldata.append((*intent.nonce).into());
             DomainContext { raw_root: *envelope.root, timestamp: *envelope.timestamp }.serialize(ref calldata);
+            crate::ownership::StoryCursor { order: *envelope.order, index: 0 }.serialize(ref calldata);
             let mut result = starknet::syscalls::library_call_syscall(
                 get_dep_component!(@self, Release).classes(game_id).season.read(),
                 selector!("execute_gameplay"),

@@ -27,7 +27,8 @@ pub trait IExtraction<T> {
         explorer_id: u32,
         revealed: Option<crate::troops::Coord>,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 #[starknet::interface]
 pub trait IExplorationGrant<T> {

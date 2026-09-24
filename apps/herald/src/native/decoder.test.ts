@@ -31,6 +31,23 @@ describe("native row decoder", () => {
       ingestion.applyReceipt(fold, receipt([rowEvent("GameRelease", ["1"], ["3", "42"]), deleteFixture.raw]), 12, 0),
     ).toThrow("unavailable-schema");
   });
+  it("keys chest results by game, recorded action and story index in both overlays", () => {
+    const { native, fold } = setup();
+    const rewards = [0, 1].map((index) =>
+      rowEvent("ChestReward", ["1", "9007199254740993", String(index)], ["0x111", "7", "3", "2", "2", "0", "0"]),
+    );
+    const overlay = fold.overlay();
+    native.applyReceipt(overlay, receipt(rewards), null, 0);
+    native.applyReceipt(fold, receipt(rewards), 10, 0);
+    const rows = fold.modelRows("ChestReward");
+    expect(rows).toEqual(overlay.modelRows("ChestReward"));
+    expect(rows.map(({ value }) => [value.game_id, value.order, value.index])).toEqual([
+      ["0x1", "0x20000000000001", "0x0"],
+      ["0x1", "0x20000000000001", "0x1"],
+    ]);
+    expect(new Set(rows.map(({ key }) => key)).size).toBe(2);
+  });
+
   it("consumes the generated fixtures for set, member, deletion and recreation", () => {
     const { native, fold } = setup();
     for (const fixture of [setFixture, memberFixture]) {
@@ -94,12 +111,16 @@ describe("native row decoder", () => {
   });
   it("keeps repeated native events distinct and their identity stable at confirmation", () => {
     const { native, fold } = setup();
-    const changes = native.applyReceipt(fold, receipt([battleEvent(), battleEvent()]), null, 0).changes;
+    const battles = [battleEvent(), battleEvent("7", "8", "1920", "42", "1")];
+    const changes = native.applyReceipt(fold, receipt(battles), null, 0).changes;
     expect(changes[0].change!.set!.key).not.toBe(changes[1].change!.set!.key);
     expect(changes[0].change!.set!.value.event_position).toEqual({ transaction_hash: "0x55", event_index: 0 });
-    const confirmed = native.applyReceipt(fold, receipt([battleEvent(), battleEvent()]), 10, 0).changes;
-    expect(confirmed.map(({ change }) => change!.set)).toEqual(changes.map(({ change }) => change!.set));
-    const later = native.applyReceipt(fold, receipt([battleEvent()], "0x56"), 11, 0).changes;
+    const confirmed = native
+      .applyReceipt(fold, receipt([rowEvent("PlayerPoints", ["1", "0x111"], ["5"]), ...battles]), 10, 0)
+      .changes.filter(({ change }) => change?.event);
+    expect(confirmed.map(({ change }) => change!.set!.key)).toEqual(changes.map(({ change }) => change!.set!.key));
+    expect(confirmed[0].change!.set!.value.event_position).toEqual({ transaction_hash: "0x55", event_index: 1 });
+    const later = native.applyReceipt(fold, receipt([battleEvent("7", "8", "1920", "43")], "0x56"), 11, 0).changes;
     expect(later[0].change!.set!.key).not.toBe(changes[0].change!.set!.key);
   });
   it("binds checkpoints to the schema and deployment identity", () => {

@@ -276,6 +276,7 @@ fn provision_game(season: ContractAddress, actor: ContractAddress, administrator
                     raw_root: 101, timestamp: 900, ..crate::tests::context(season, 7),
                 },
             ),
+            crate::tests::story_cursor(),
         );
 }
 pub fn intent(address: ContractAddress) -> Intent {
@@ -356,6 +357,7 @@ fn exploration_fixture_runs_the_real_domain() {
                     raw_root: 1, timestamp: 1005, ..crate::tests::context(season, 7),
                 },
             ),
+            crate::tests::story_cursor(),
         )
         .unwrap_syscall();
 }

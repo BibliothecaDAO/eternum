@@ -848,7 +848,8 @@ export function defineFactModels({ struct, model: declare }) {
       "game",
       [
         { name: "game_id", type: "core::integer::u32" },
-        { name: "result_id", type: "core::integer::u32" },
+        { name: "order", type: "core::integer::u64" },
+        { name: "index", type: "core::integer::u32" },
       ],
       struct("relics::ChestReward"),
     ),

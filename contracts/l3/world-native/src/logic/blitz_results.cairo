@@ -49,7 +49,8 @@ pub mod BlitzResultState {
             actor: ContractAddress,
             command: RecordBlitzResults,
             context: crate::commands::ActionContext,
-        ) -> u64 {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> (u64, crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             self.authorize(game_id, actor, context.timestamp, context);
@@ -60,7 +61,7 @@ pub mod BlitzResultState {
             assert!(end <= roster.len(), "too many result players");
             if command.start < count {
                 self.assert_recorded_batch(game_id, command, count);
-                return (roster.len() - Into::<u8, u32>::into(count)).into();
+                return ((roster.len() - Into::<u8, u32>::into(count)).into(), story_cursor);
             }
             assert!(command.start == count, "result batch out of order");
             let mut points = array![];
@@ -74,8 +75,8 @@ pub mod BlitzResultState {
                 self.data.blitz_results.results.write((game_id, index), result);
             }
             self.data.blitz_results.count.write(game_id, end.try_into().unwrap());
-            self.emit_result(game_id, actor, context.timestamp);
-            (roster.len() - end).into()
+            self.emit_result(game_id, actor, context.timestamp, ref story_cursor);
+            ((roster.len() - end).into(), story_cursor)
         }
     }
     #[generate_trait]
@@ -162,7 +163,13 @@ pub mod BlitzResultState {
             };
             assert!(result.rank == rank, "incorrect competition rank");
         }
-        fn emit_result(ref self: ComponentState<TContractState>, game_id: u32, actor: ContractAddress, timestamp: u64) {
+        fn emit_result(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            timestamp: u64,
+            ref story_cursor: crate::ownership::StoryCursor,
+        ) {
             let result = crate::blitz_results::IBlitzResults::blitz_result(@self, game_id);
             let mut values = array![];
             result.serialize(ref values);
@@ -178,7 +185,8 @@ pub mod BlitzResultState {
                         StoryEvent {
                             version: 1,
                             game_id,
-                            id: crate::logic::game::allocate_entity(game_id),
+                            order: story_cursor.order,
+                            index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
                             owner: Some(actor),
                             entity_id: None,
                             tx_hash: get_tx_info().unbox().transaction_hash,

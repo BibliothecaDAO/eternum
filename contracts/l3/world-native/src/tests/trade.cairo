@@ -291,11 +291,12 @@ fn trade_creation_and_cancellation_have_distinct_story_ids() {
     let mut ids = array![];
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(0) == selector!("StoryEvent") {
-            ids.append(*event.keys.at(3));
+            let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
+            let mut data = event.data.span();
+            let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
+            ids.append(crate::ownership::StoryCursor { order: story.order, index: story.index });
         }
     }
     assert_eq!(ids.len(), 2);
     assert_ne!(*ids.at(0), *ids.at(1));
-    assert_ne!(*ids.at(0), key.trade_id.into());
-    assert_ne!(*ids.at(1), key.trade_id.into());
 }

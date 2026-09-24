@@ -259,7 +259,8 @@ pub mod TroopsLogic {
             actor: ContractAddress,
             command: crate::troop_management::ManageTroops,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
@@ -276,7 +277,8 @@ pub mod TroopsLogic {
                     .transfer_troops(game_id, actor, value, rules, context.timestamp, context),
             }
             let (entity_id, story) = crate::troop_management::management_story(command);
-            self.emit_troop_story(game_id, actor, entity_id, story, context.timestamp);
+            self.emit_troop_story(game_id, actor, entity_id, story, context.timestamp, ref story_cursor);
+            ((), story_cursor)
         }
     }
 
@@ -296,13 +298,15 @@ pub mod TroopsLogic {
             entity_id: u32,
             story: crate::ownership::Story,
             timestamp: u64,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             self
                 .emit(
                     crate::ownership::StoryEvent {
                         version: 1,
                         game_id,
-                        id: crate::logic::game::allocate_entity(game_id),
+                        order: story_cursor.order,
+                        index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
                         owner: Some(actor),
                         entity_id: Some(entity_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -622,7 +626,8 @@ pub mod TroopsLogic {
             actor: ContractAddress,
             command: CreateExplorer,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
@@ -695,7 +700,9 @@ pub mod TroopsLogic {
                         },
                     ),
                     context.timestamp,
+                    ref story_cursor,
                 );
+            ((), story_cursor)
         }
     }
 

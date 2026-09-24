@@ -64,7 +64,8 @@ pub mod BridgeState {
             actor: ContractAddress,
             command: Deposit,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             let target = self.authorize(game_id, actor, command.structure_id, context.timestamp, context);
@@ -104,6 +105,7 @@ pub mod BridgeState {
                     false,
                     context.timestamp,
                     context,
+                    ref story_cursor,
                 );
             let credited = resource_amount(token, amount - fees) - realm_fee;
             self
@@ -116,7 +118,9 @@ pub mod BridgeState {
                     true,
                     context.timestamp,
                     context,
+                    ref story_cursor,
                 );
+            ((), story_cursor)
         }
         fn withdraw_resource(
             ref self: ComponentState<TContractState>,
@@ -124,7 +128,8 @@ pub mod BridgeState {
             actor: ContractAddress,
             command: Withdraw,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             let source = self.authorize(game_id, actor, command.structure_id, context.timestamp, context);
@@ -154,8 +159,10 @@ pub mod BridgeState {
                     true,
                     context.timestamp,
                     context,
+                    ref story_cursor,
                 );
             self.pay_withdrawal(game_id, command.recipient, token, amount, realm_fee, command.client_fee_recipient);
+            ((), story_cursor)
         }
     }
     #[embeddable_as(BankWithdrawalImpl)]
@@ -175,10 +182,15 @@ pub mod BridgeState {
             amount: u128,
             timestamp: u64,
             game_context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let game_context = crate::commands::load_context(game_id, game_context);
 
-            self.withdraw_liquidity_token(game_id, actor, bank_id, resource_type, amount, timestamp, game_context);
+            self
+                .withdraw_liquidity_token(
+                    game_id, actor, bank_id, resource_type, amount, timestamp, game_context, ref story_cursor,
+                );
+            ((), story_cursor)
         }
     }
     #[generate_trait]
@@ -282,6 +294,7 @@ pub mod BridgeState {
             amount: u128,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             let withdrawals = self.withdrawals();
             let rules = withdrawals.rules(game_id);
@@ -301,6 +314,7 @@ pub mod BridgeState {
                         true,
                         timestamp,
                         game_context,
+                        ref story_cursor,
                     );
             }
             self.pay_withdrawal(game_id, actor, token, amount, fee, 0.try_into().unwrap());
@@ -316,6 +330,7 @@ pub mod BridgeState {
             withdrawal: bool,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) -> u128 {
             if village.base.category != 5 || rate == 0 {
                 return 0;
@@ -368,6 +383,7 @@ pub mod BridgeState {
                     !withdrawal,
                     timestamp,
                     game_context,
+                    ref story_cursor,
                 );
             fee
         }
@@ -381,6 +397,7 @@ pub mod BridgeState {
             is_mint: bool,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             IEconomyDeliveryLibraryDispatcher { class_hash: self.logic_classes(game_id).resources.read() }
                 .queue_economy_delivery(
@@ -396,13 +413,13 @@ pub mod BridgeState {
             } else {
                 self.structure(game_id, from_id).owner
             };
-            let id = crate::logic::game::allocate_entity(game_id);
             self
                 .emit(
                     StoryEvent {
                         version: 1,
                         game_id,
-                        id,
+                        order: story_cursor.order,
+                        index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
                         owner: Some(recipient),
                         entity_id: Some(to_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,

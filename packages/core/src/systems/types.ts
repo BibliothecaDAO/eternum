@@ -149,6 +149,7 @@ export type ExplorerRewardSystemUpdate = {
 };
 /** A Frontier chest opened on capture: what the army found and how deep it stood. */
 export type ChestRewardSystemUpdate = {
+  resultKey: readonly [gameId: string, order: string, index: string];
   explorerId: ID;
   kind: "Relic" | "Cosmetic" | "Token";
   quality: number;

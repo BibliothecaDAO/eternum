@@ -174,9 +174,9 @@ const standalone = {
     value: { activity: "Hyperstructure", points: 50n },
   },
   RaidEvent: {
-    keys: ["1", "1", "7", "3"],
+    keys: ["1", "1", "42", "0", "7", "3"],
     data: ["1", "17", "34", "100", "90", "1", "1", "100", "140"],
-    key: { game_id: 1n, explorer_id: 7n, structure_id: 3n },
+    key: { game_id: 1n, order: 42n, index: 0n, explorer_id: 7n, structure_id: 3n },
     value: {
       success: true,
       player: 17n,
@@ -212,10 +212,10 @@ describe("compiled native history coverage", () => {
         assertDecoded(
           raw({
             from_address: manifest.world.address,
-            keys: [...layout.prefix, "1", "1", "100", "0", "17", "0", "3", "0x55"],
+            keys: [...layout.prefix, "1", "1", "100", "0", "0", "17", "0", "3", "0x55"],
             data: [String(variant), ...fields.map(String), "140"],
           }),
-          { game_id: 1n, id: 100n, owner: 17n, entity_id: 3n, tx_hash: 85n },
+          { game_id: 1n, order: 100n, index: 0n, owner: 17n, entity_id: 3n, tx_hash: 85n },
           { story: { [name]: expected }, timestamp: 140n },
         );
       }
@@ -241,7 +241,7 @@ describe("compiled native history coverage", () => {
   it("decodes both combatants and the location in a battle", () => {
     assertDecoded(
       raw(battleEvent()),
-      { game_id: 1n, attacker_id: 7n, defender_id: 8n, attacker_owner: 2n, defender_owner: 3n },
+      { game_id: 1n, order: 42n, index: 0n, attacker_id: 7n, defender_id: 8n, attacker_owner: 2n, defender_owner: 3n },
       {
         winner_id: 7n,
         coord: { alt: false, x: 12n, y: 34n },

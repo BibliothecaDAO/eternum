@@ -75,11 +75,13 @@ pub mod PrizesLogic {
             owner: ContractAddress,
             timestamp: u64,
             game_context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let game_context = crate::commands::load_context(key.game_id, game_context);
 
             let game = game_context.game.unbox();
-            self.faith.transfer(key.game_id, key.entity_id, owner, timestamp, game.end_at);
+            self.faith.transfer(key.game_id, key.entity_id, owner, timestamp, game.end_at, ref story_cursor);
+            ((), story_cursor)
         }
     }
     #[abi(embed_v0)]
@@ -153,7 +155,8 @@ pub mod PrizesLogic {
             actor: ContractAddress,
             command: crate::bitcoin::ClaimPhase,
             context: crate::commands::ActionContext,
-        ) -> u64 {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> (u64, crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             self.assert_bitcoin_phase_closed(game_id, command.phase, context.timestamp, context);
@@ -167,10 +170,15 @@ pub mod PrizesLogic {
             for mine_id in command.mine_ids {
                 remaining += self
                     .claim_bound_phases(
-                        ResourceKey { game_id, entity_id: *mine_id }, command.phase, limit, context.timestamp, context,
+                        ResourceKey { game_id, entity_id: *mine_id },
+                        command.phase,
+                        limit,
+                        context.timestamp,
+                        context,
+                        ref story_cursor,
                     );
             }
-            remaining
+            (remaining, story_cursor)
         }
 
         fn contribute_bitcoin_labor(
@@ -179,6 +187,7 @@ pub mod PrizesLogic {
             actor: ContractAddress,
             command: crate::bitcoin::ContributeLabor,
             context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -213,6 +222,7 @@ pub mod PrizesLogic {
             actor: ContractAddress,
             phase: u64,
             context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -225,6 +235,7 @@ pub mod PrizesLogic {
             actor: ContractAddress,
             phase: u64,
             context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -244,6 +255,7 @@ pub mod PrizesLogic {
             limit: u32,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) -> u64 {
             let mut phase_id = self.bitcoin.mine(mine).next_phase;
             for _ in 0..limit {
@@ -261,6 +273,7 @@ pub mod PrizesLogic {
                         phase,
                         timestamp,
                         game_context,
+                        ref story_cursor,
                     );
                 phase_id += 1;
             }
@@ -276,6 +289,7 @@ pub mod PrizesLogic {
             phase: crate::bitcoin::Phase,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             if self.bitcoin.was_claimed(key) {
                 return;
@@ -315,6 +329,7 @@ pub mod PrizesLogic {
                                 winner_paid,
                                 owner_paid,
                             },
+                            ref story_cursor,
                         );
                 }
             }
@@ -340,14 +355,19 @@ pub mod PrizesLogic {
             (destination.entity_id, self.pay_bitcoin_share(destination, amount, timestamp, game_context))
         }
         fn emit_bitcoin_award(
-            ref self: ContractState, game_id: u32, timestamp: u64, award: crate::bitcoin::BitcoinAwardStory,
+            ref self: ContractState,
+            game_id: u32,
+            timestamp: u64,
+            award: crate::bitcoin::BitcoinAwardStory,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             self
                 .emit(
                     crate::ownership::StoryEvent {
                         version: 1,
                         game_id,
-                        id: crate::logic::game::allocate_entity(game_id),
+                        order: story_cursor.order,
+                        index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
                         owner: Some(award.winner),
                         entity_id: Some(award.mine_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,

@@ -90,27 +90,40 @@ pub trait IBank<T> {
         actor: ContractAddress,
         banks: Span<BankPlacement>,
         context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
     );
     fn buy_from_bank(
-        ref self: T, game_id: u32, actor: ContractAddress, command: Swap, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: Swap,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn sell_to_bank(
-        ref self: T, game_id: u32, actor: ContractAddress, command: Swap, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: Swap,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn add_bank_liquidity(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: AddLiquidity,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn remove_bank_liquidity(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: RemoveLiquidity,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 #[starknet::interface]
 pub trait IBankCreation<T> {

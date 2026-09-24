@@ -73,26 +73,52 @@ pub trait IFaith<T> {
     fn configure_faith(ref self: T, game_id: u32, rules: FaithRules);
     fn faith_rules(self: @T, game_id: u32) -> FaithRules;
     fn pledge_faith(
-        ref self: T, game_id: u32, actor: ContractAddress, command: Pledge, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: Pledge,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn remove_faith(
-        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u32, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        structure_id: u32,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn update_wonder_ownership(
-        ref self: T, game_id: u32, actor: ContractAddress, wonder_id: u32, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        wonder_id: u32,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn update_faithful_ownership(
-        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u32, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        structure_id: u32,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn claim_wonder_points(
-        ref self: T, game_id: u32, actor: ContractAddress, wonder_id: u32, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        wonder_id: u32,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn claim_player_faith_points(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: ClaimPlayer,
         context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
     );
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -111,5 +137,6 @@ pub trait IFaithOwnership<T> {
         owner: ContractAddress,
         timestamp: u64,
         game_context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }

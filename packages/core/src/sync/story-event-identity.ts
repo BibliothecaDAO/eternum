@@ -14,22 +14,32 @@ export function storyEventScopeKey(scope: StoryEventScope): string {
   }
   const world = normalizeIdentityFelt(scope.worldAddress, "world address");
   if (world === "0x0") throw new Error("StoryEvent requires a deployed world address");
-  return `story:v1:${encodeURIComponent(scope.chainId)}:${world}:${normalizeIdentityFelt(scope.gameId, "game_id")}`;
+  return `story:v2:${encodeURIComponent(scope.chainId)}:${world}:${normalizeIdentityFelt(scope.gameId, "game_id")}`;
 }
 
-/**
- * Both Herald history and streamed values carry the contract's uuid and tx_hash.
- * Receipt event_index and streamed hashed_keys cannot identify a record across those transports.
- */
+/** The contract's action order and local story index survive receipt reordering and confirmation. */
+export function storyEventKeys(value: Record<string, unknown>): readonly [string, string, string] {
+  return [
+    normalizeStoryInteger(value.game_id, "game_id", 32),
+    normalizeStoryInteger(value.order, "order", 64),
+    normalizeStoryInteger(value.index, "index", 32),
+  ];
+}
+
+/** Shared by history, streamed stories and notification deduplication. */
 export function storyEventIdentity(scope: StoryEventScope, value: Record<string, unknown>): string {
   const scopeKey = storyEventScopeKey(scope);
-  const gameId = normalizeIdentityFelt(value.game_id, "game_id");
+  const [gameId, order, index] = storyEventKeys(value);
   if (gameId !== normalizeIdentityFelt(scope.gameId, "game_id")) {
     throw new Error(`StoryEvent game ${gameId} does not match session game ${scope.gameId}`);
   }
-  const transactionHash = normalizeIdentityFelt(value.tx_hash, "tx_hash");
-  if (transactionHash === "0x0") throw new Error("StoryEvent requires a transaction hash");
-  return `${scopeKey}:${transactionHash}:${normalizeIdentityFelt(value.id, "id")}`;
+  return `${scopeKey}:${order}:${index}`;
+}
+
+function normalizeStoryInteger(value: unknown, field: string, bits: number): string {
+  const normalized = normalizeIdentityFelt(value, field);
+  if (BigInt(normalized) >= 1n << BigInt(bits)) throw new Error(`StoryEvent ${field} must be a u${bits}`);
+  return normalized;
 }
 
 function normalizeIdentityFelt(value: unknown, field: string): string {

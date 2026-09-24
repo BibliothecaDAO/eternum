@@ -29,7 +29,8 @@ pub trait IBlitzResults<T> {
         actor: ContractAddress,
         command: RecordBlitzResults,
         context: crate::commands::ActionContext,
-    ) -> u64;
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> (u64, crate::ownership::StoryCursor);
 }
 
 pub fn result_commitment(game_id: u32, players: Span<PlayerResult>) -> felt252 {

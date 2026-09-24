@@ -186,6 +186,7 @@ fn unprovisioned_realm(season: ContractAddress, grant_troops: bool) {
                     raw_root: 987654321, timestamp: 1005, ..crate::tests::context(season, 8),
                 },
             ),
+            crate::tests::story_cursor(),
         );
     stop_cheat_caller_address(season);
 }

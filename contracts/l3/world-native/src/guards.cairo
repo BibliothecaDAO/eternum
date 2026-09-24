@@ -19,7 +19,8 @@ pub trait IGuardCombat<T> {
         actor: starknet::ContractAddress,
         command: crate::commands::Battle,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 #[starknet::interface]
 pub trait IStructureCapture<T> {
@@ -29,7 +30,8 @@ pub trait IStructureCapture<T> {
         capturing_home: u32,
         timestamp: u64,
         game_context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 #[starknet::interface]
 pub trait IGuards<T> {

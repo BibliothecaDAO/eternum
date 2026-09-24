@@ -6,6 +6,7 @@ use crate::game::{
     ISeasonLifecycleSafeDispatcherTrait,
 };
 use crate::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait};
+use crate::tests::StoryResultTestTrait;
 use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, setup_with_rules};
 
 fn configure(deployment: super::Deployment, points: u128) {
@@ -35,6 +36,40 @@ fn close_settles_all_completed_shares_before_testing_the_victory_threshold() {
     assert_terminal_rejection(deployment, Command::CloseSeason, 101);
     super::hyperstructures::checkpoint(deployment, 500);
     assert_eq!(points(deployment).player_points(3, deployment.actor), before + 50000);
+}
+
+#[test]
+fn nested_economy_checkpoint_and_season_end_share_one_story_cursor() {
+    let (deployment, hyper, home, _) = super::hyperstructures::setup();
+    super::hyperstructures::complete(deployment, hyper, home);
+    configure(deployment, 1);
+    let order = super::recorded::head(deployment.games, 3).order + 1;
+    let mut spy = snforge_std::spy_events();
+    assert!(execute(deployment, Command::CloseSeason, 100));
+    let mut index = 0_u32;
+    for (_, event) in spy.get_events().emitted_by(deployment.games).events.span() {
+        let keys = event.keys.span();
+        for prefix in 0..keys.len() {
+            if *keys.at(prefix) != selector!("StoryEvent") {
+                continue;
+            }
+            let mut fields = keys.slice(prefix + 1, keys.len() - prefix - 1);
+            let mut data = event.data.span();
+            let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref fields, ref data).unwrap();
+            assert_eq!(story.order, order);
+            assert_eq!(story.index, index);
+            match story.story {
+                crate::ownership::Story::HyperstructurePoints(_) => assert_eq!(index, 0),
+                crate::ownership::Story::SeasonEnded(winner) => {
+                    assert_eq!(index, 1);
+                    assert_eq!(winner, deployment.actor);
+                },
+                _ => panic!("unexpected close story"),
+            }
+            index += 1;
+        }
+    }
+    assert_eq!(index, 2);
 }
 
 #[test]
@@ -107,7 +142,12 @@ fn season_configuration_is_authorized_immutable_and_game_scoped() {
     assert!(season.configure_season_win(3, 1).is_err());
     assert!(
         season
-            .close_season(3, deployment.actor, crate::commands::action_context(super::context(deployment.games, 3)))
+            .close_season(
+                3,
+                deployment.actor,
+                crate::commands::action_context(super::context(deployment.games, 3)),
+                crate::tests::story_cursor(),
+            )
             .is_err(),
     );
     start_cheat_caller_address(deployment.games, super::authority());
@@ -390,7 +430,9 @@ fn final_checkpoint(d: super::Deployment) -> u32 {
         crate::commands::action_context(
             crate::commands::ExecutionContext { timestamp: 1000, ..super::context(d.games, 3) },
         ),
+        crate::tests::story_cursor(),
     )
+        .story_result()
         .try_into()
         .unwrap()
 }

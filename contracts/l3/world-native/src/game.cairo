@@ -51,7 +51,6 @@ pub trait IGame<T> {
     fn rules(self: @T, game_id: u32) -> SliceRules;
     fn write_game(ref self: T, game_id: u32, game: GameRegistry);
     fn start_blitz(ref self: T, game_id: u32, timestamp: u64);
-    fn allocate_entity(ref self: T, game_id: u32) -> u32;
 }
 
 #[starknet::interface]
@@ -74,7 +73,13 @@ pub trait IPoints<T> {
 pub trait ISeasonLifecycle<T> {
     fn configure_season_win(ref self: T, game_id: u32, points: u128);
     fn season_win_threshold(self: @T, game_id: u32) -> u128;
-    fn close_season(ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext) -> u64;
+    fn close_season(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> (u64, crate::ownership::StoryCursor);
 }
 
 pub fn status_at(game: GameRegistry, timestamp: u64) -> GameStatus {

@@ -54,6 +54,7 @@ pub mod GuildState {
             actor: ContractAddress,
             command: CreateGuild,
             context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -83,6 +84,7 @@ pub mod GuildState {
             actor: ContractAddress,
             command: JoinGuild,
             context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -105,6 +107,7 @@ pub mod GuildState {
             game_id: u32,
             actor: ContractAddress,
             context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -118,6 +121,7 @@ pub mod GuildState {
             actor: ContractAddress,
             command: SetWhitelist,
             context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -138,6 +142,7 @@ pub mod GuildState {
             actor: ContractAddress,
             member: ContractAddress,
             context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 

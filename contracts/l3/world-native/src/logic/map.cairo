@@ -155,6 +155,7 @@ pub mod MapLogic {
     use crate::logic::release::ReleaseState;
     use crate::logic::settlement::SettlementPoolState;
     use crate::map::{BIOME_SCALE, BYTE_RANGE, TileKey, TileOpt};
+    use crate::ownership::StoryResultTrait;
     use crate::troops::Coord;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     component!(path: SettlementPoolState, storage: settlements, event: SettlementEvent);
@@ -333,7 +334,8 @@ pub mod MapLogic {
             explorer_id: u32,
             revealed: Option<Coord>,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             let classes = self.release.classes(game_id);
@@ -354,7 +356,7 @@ pub mod MapLogic {
             let coord = if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
                 match revealed {
                     Some(coord) => coord,
-                    None => { return; },
+                    None => { return ((), story_cursor); },
                 }
             } else {
                 explorer.coord
@@ -365,7 +367,7 @@ pub mod MapLogic {
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, game_id, game.seed);
             if tile.data / crate::map::REWARD_EXTRACTED_FLAG % 2 == 1 {
-                return;
+                return ((), story_cursor);
             }
             let reward = crate::exploration_rewards::draw(self.extraction_rewards(game_id), seed, context.timestamp);
             let multiplier = if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
@@ -402,7 +404,9 @@ pub mod MapLogic {
                     actor,
                     crate::relics::OpenChest { explorer_id, coord },
                     crate::commands::action_context(context),
-                );
+                    story_cursor,
+                )
+                    .resume_story(ref story_cursor);
             }
             self
                 .record_extraction(
@@ -412,7 +416,9 @@ pub mod MapLogic {
                     crate::exploration_rewards::ExtractedReward {
                         explorer_id, receiver, coord, resource_type: reward.resource_type, amount,
                     },
+                    ref story_cursor,
                 );
+            ((), story_cursor)
         }
     }
     #[abi(embed_v0)]
@@ -518,13 +524,15 @@ pub mod MapLogic {
             actor: ContractAddress,
             timestamp: u64,
             reward: crate::exploration_rewards::ExtractedReward,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             self
                 .emit(
                     crate::ownership::StoryEvent {
                         version: 1,
                         game_id,
-                        id: crate::logic::game::allocate_entity(game_id),
+                        order: story_cursor.order,
+                        index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
                         entity_id: Some(reward.explorer_id),
                         owner: Some(actor),
                         timestamp,

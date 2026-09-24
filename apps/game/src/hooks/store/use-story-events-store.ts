@@ -21,7 +21,6 @@ interface StoryEventData {
   confirmation: GameSyncEventConfirmation | null;
   entity_id: number | null;
   event_id: string;
-  id: string | null;
   owner: string | null;
   story: string;
   storyPayload: Record<string, unknown>;
@@ -97,17 +96,13 @@ const storyEventFromValue = (
   if (!variant || !EVENT_MODELS.has(model)) return null;
   const position = asRecord(value.event_position);
   const transactionHash = String(position?.transaction_hash ?? value.tx_hash);
-  const eventId =
-    model === "StoryEvent"
-      ? storyEventIdentity(scope, value)
-      : nativeEventIdentity(scope, value, transactionHash, position?.event_index);
+  const eventId = storyEventIdentity(scope, value);
   const owner = value.owner ?? value.player ?? asRecord(value.attacker)?.player;
   return {
     scopeKey: storyEventScopeKey(scope),
     confirmation: confirmation ?? null,
     owner: owner === null || owner === undefined ? null : String(owner),
     entity_id: toOptionalNumber(value.entity_id ?? value.explorer_id ?? value.attacker_id),
-    id: value.id === undefined ? null : String(value.id),
     tx_hash: transactionHash,
     story: variant.type,
     timestamp: String(value.timestamp ?? "0x0"),
@@ -116,20 +111,6 @@ const storyEventFromValue = (
     rawStory: value.story,
   };
 };
-
-function nativeEventIdentity(
-  scope: StoryEventScope,
-  value: Record<string, unknown>,
-  transactionHash: string,
-  index: unknown,
-): string {
-  if (BigInt(String(value.game_id)) !== BigInt(scope.gameId)) throw new Error("Native event game mismatch");
-  if (!/^0x[0-9a-f]+$/i.test(transactionHash) || BigInt(transactionHash) === 0n)
-    throw new Error("Native event requires a transaction hash");
-  const eventIndex = toOptionalNumber(index);
-  if (eventIndex === null || eventIndex < 0) throw new Error("Native event requires a receipt index");
-  return `${storyEventScopeKey(scope)}:receipt:0x${BigInt(transactionHash).toString(16)}:${eventIndex}`;
-}
 
 export const toStreamStoryEvent = (
   event: GameSyncEvent,

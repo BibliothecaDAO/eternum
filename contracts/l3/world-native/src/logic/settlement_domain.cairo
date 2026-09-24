@@ -9,6 +9,7 @@ pub mod SettlementLogic {
     use crate::logic::settlement::SettlementState;
     use crate::logic::upgrades::UpgradeState;
     use crate::logic::village::VillageState;
+    use crate::ownership::StoryResultTrait;
     use crate::realms::{ISeasonPlacementDispatcherTrait, ISeasonPlacementLibraryDispatcher};
     use crate::settlement::{
         EntryKey, ISettlementCreationDispatcherTrait, ISettlementCreationLibraryDispatcher,
@@ -158,7 +159,8 @@ pub mod SettlementLogic {
             actor: ContractAddress,
             command: crate::realms::SettleSeason,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             let classes = self.release.classes(game_id);
@@ -203,9 +205,12 @@ pub mod SettlementLogic {
                         },
                     ),
                     crate::commands::action_context(context),
-                );
+                    story_cursor,
+                )
+                .resume_story(ref story_cursor);
             progress.realm_count += 1;
             self.settlements.write_progress(game_id, progress);
+            ((), story_cursor)
         }
     }
 
@@ -236,7 +241,8 @@ pub mod SettlementLogic {
             actor: ContractAddress,
             command: SettleVillage,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             let classes = self.release.classes(game_id);
@@ -266,10 +272,13 @@ pub mod SettlementLogic {
                         VillageCreation { connected_realm: command.connected_realm_entity_id, resource },
                     ),
                     crate::commands::action_context(context),
-                );
+                    story_cursor,
+                )
+                .resume_story(ref story_cursor);
             if !dev_entry {
                 self.villages.consume(pass, owner, village_id);
             }
+            ((), story_cursor)
         }
     }
     #[abi(embed_v0)]
@@ -331,8 +340,12 @@ pub mod SettlementLogic {
     #[abi(embed_v0)]
     impl SettlementCommands of crate::settlement::ISettlementCommands<ContractState> {
         fn settle_blitz_roster(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
-        ) -> u64 {
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> (u64, crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             let _ = self.release.classes(game_id);
@@ -343,7 +356,7 @@ pub mod SettlementLogic {
             let roster = crate::logic::registrar::blitz_roster(game_id);
             let progress = self.settlements.data.settlements.progress.read(game_id);
             if progress.registered.into() == roster.len() {
-                return 0;
+                return (0, story_cursor);
             }
             if progress.registered == 0 {
                 let mut root = context.raw_root;
@@ -361,12 +374,12 @@ pub mod SettlementLogic {
                 rules.spacing,
                 progress.registered.into(),
             );
-            self.create_settlement_realms(game_id, player.account, coords, context);
+            self.create_settlement_realms(game_id, player.account, coords, context, ref story_cursor);
             let remaining: u64 = (roster.len() - Into::<u16, u32>::into(progress.registered) - 1).into();
             if remaining == 0 {
                 crate::logic::game::start_blitz(game_id, context);
             }
-            remaining
+            (remaining, story_cursor)
         }
     }
     #[generate_trait]
@@ -407,6 +420,7 @@ pub mod SettlementLogic {
             actor: ContractAddress,
             coords: Span<crate::troops::Coord>,
             context: DomainContext,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) -> u32 {
             let structures = ISettlementCreationLibraryDispatcher {
                 class_hash: self.release.classes(game_id).structures.read(),
@@ -433,7 +447,9 @@ pub mod SettlementLogic {
                             },
                         ),
                         crate::commands::action_context(context),
-                    );
+                        story_cursor,
+                    )
+                    .resume_story(ref story_cursor);
                 if first_realm == 0 {
                     first_realm = realm;
                 }

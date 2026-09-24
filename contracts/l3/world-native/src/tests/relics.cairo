@@ -445,6 +445,7 @@ fn relic_configuration_requires_authority_and_application_requires_owner() {
                 crate::commands::action_context(
                     ExecutionContext { timestamp: 40, ..super::context(deployment.games, 3) },
                 ),
+                crate::tests::story_cursor(),
             )
             .is_err(),
     );
@@ -493,6 +494,7 @@ fn extract_reward(deployment: super::Deployment, explorer_id: u32, timestamp: u6
             explorer_id,
             None,
             crate::commands::action_context(ExecutionContext { timestamp, ..super::context(deployment.games, 3) }),
+            crate::tests::story_cursor(),
         );
     stop_cheat_caller_address(deployment.games);
     result.is_ok()

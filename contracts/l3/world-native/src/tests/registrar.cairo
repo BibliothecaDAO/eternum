@@ -27,6 +27,7 @@ use crate::settlement::{
     ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, RealmCreation, SettlementCreation, SettlementMode,
 };
 use crate::structures::{IStructureOperationsDispatcher, IStructureOperationsDispatcherTrait};
+use crate::tests::StoryResultTestTrait;
 use crate::tests::state::{
     GameState, MapObservationTrait, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait,
 };
@@ -505,13 +506,20 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
     assert!(status_at(games.game(game_id), 99999) == GameStatus::Registration);
     start_cheat_caller_address(d.games, d.actor);
     start_cheat_caller_address(d.games, d.games);
-    assert!(safe.settle_blitz_roster(game_id, d.actor, crate::commands::action_context(context)).is_err());
+    assert!(
+        safe
+            .settle_blitz_roster(
+                game_id, d.actor, crate::commands::action_context(context), crate::tests::story_cursor(),
+            )
+            .is_err(),
+    );
     assert!(
         safe
             .settle_blitz_roster(
                 game_id,
                 super::authority(),
                 crate::commands::action_context(crate::commands::ExecutionContext { timestamp: 199, ..context }),
+                crate::tests::story_cursor(),
             )
             .is_err(),
     );
@@ -528,8 +536,9 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
         assert!(
             commands
                 .settle_blitz_roster(
-                    game_id, super::authority(), crate::commands::action_context(context),
-                ) == (1 - batch)
+                    game_id, super::authority(), crate::commands::action_context(context), crate::tests::story_cursor(),
+                )
+                .story_result() == (1 - batch)
                 .into(),
         );
         let order = views.blitz_settlement_order(game_id);
@@ -600,7 +609,13 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
     assert_eq!(resources.resource_balance(slot), balance + 10 - 1, "production did not start with the game");
     stop_cheat_caller_address(d.games);
     let progress = views.settlement_progress(game_id);
-    assert!(commands.settle_blitz_roster(game_id, super::authority(), crate::commands::action_context(context)) == 0);
+    assert!(
+        commands
+            .settle_blitz_roster(
+                game_id, super::authority(), crate::commands::action_context(context), crate::tests::story_cursor(),
+            )
+            .story_result() == 0,
+    );
     assert!(views.settlement_progress(game_id) == progress && games.game(game_id) == game);
 }
 
@@ -677,7 +692,9 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
                 crate::commands::action_context(
                     crate::commands::ExecutionContext { timestamp: 300, ..super::context(d.games, game_id) },
                 ),
-            ),
+                crate::tests::story_cursor(),
+            )
+            .story_result(),
     };
     stop_cheat_caller_address(d.games);
     let guards = IGuardsDispatcher { contract_address: d.games };
@@ -1895,9 +1912,10 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
     let mut token_claims = 0_u32;
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(1) == selector!("StoryEvent") {
+            let mut keys = event.keys.span().slice(2, event.keys.len() - 2);
             let mut data = event.data.span();
-            let story: crate::ownership::Story = Serde::deserialize(ref data).unwrap();
-            if let crate::ownership::Story::ChestReward(reward) = story {
+            let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
+            if let crate::ownership::Story::ChestReward(reward) = story.story {
                 paid += 1;
                 assert_eq!(reward.player, d.actor);
                 assert_eq!(reward.depth, 0);
@@ -1908,8 +1926,9 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
                     4
                 });
                 if reward.kind != ChestKind::Relic {
-                    let id: u32 = (*event.keys.at(4)).try_into().unwrap();
-                    assert_eq!(relics.chest_reward(game_id, id).unwrap(), reward);
+                    let order = story.order;
+                    let index = story.index;
+                    assert_eq!(relics.chest_reward(game_id, order, index).unwrap(), reward);
                     assert_eq!(reward.relic_id, 0);
                     assert_eq!(reward.quality, 0);
                     if reward.kind == ChestKind::Token {

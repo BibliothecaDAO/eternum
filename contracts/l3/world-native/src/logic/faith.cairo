@@ -52,7 +52,8 @@ pub mod FaithState {
             actor: ContractAddress,
             command: crate::faith::Pledge,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             let game = self.authorize(game_id, context.timestamp, context);
@@ -61,10 +62,11 @@ pub mod FaithState {
             let structure = self.structure(game_id, command.structure_id);
             assert!(structure.owner == actor, "actor does not own structure");
             self.validate_pledge(game_id, actor, command, structure);
-            self.refresh_wonder(game_id, command.wonder_id, context.timestamp, game.end_at);
+            self.refresh_wonder(game_id, command.wonder_id, context.timestamp, game.end_at, ref story_cursor);
             let pledge = self.build_pledge(game_id, actor, command.wonder_id, structure, context.timestamp);
-            self.add_pledge(game_id, command.structure_id, pledge, context.timestamp, game.end_at);
-            self.record_pledge(game_id, actor, command, pledge, context.timestamp);
+            self.add_pledge(game_id, command.structure_id, pledge, context.timestamp, game.end_at, ref story_cursor);
+            self.record_pledge(game_id, actor, command, pledge, context.timestamp, ref story_cursor);
+            ((), story_cursor)
         }
         fn remove_faith(
             ref self: ComponentState<TContractState>,
@@ -72,24 +74,32 @@ pub mod FaithState {
             actor: ContractAddress,
             structure_id: u32,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             let game = self.authorize(game_id, context.timestamp, context);
             crate::game::assert_playing(game, context.timestamp);
             let pledge = self.data.faith.faith_pledges.read((game_id, structure_id));
             assert!(pledge.wonder_id != 0, "structure is not faithful");
-            self.refresh_wonder(game_id, pledge.wonder_id, context.timestamp, game.end_at);
+            self.refresh_wonder(game_id, pledge.wonder_id, context.timestamp, game.end_at, ref story_cursor);
             let structure = self.structure(game_id, structure_id);
-            self.transfer(game_id, structure_id, structure.owner, context.timestamp, game.end_at);
+            self.transfer(game_id, structure_id, structure.owner, context.timestamp, game.end_at, ref story_cursor);
             let mut wonder = self.data.faith.faith_wonders.read((game_id, pledge.wonder_id));
             assert!(actor == structure.owner || actor == wonder.last_recorded_owner, "only structure or wonder owner");
             if structure_id == pledge.wonder_id {
                 assert!(wonder.num_structures_pledged <= 1, "wonder has active pledges");
             }
             let pledge = self.data.faith.faith_pledges.read((game_id, structure_id));
-            self.remove_pledge(game_id, structure_id, pledge, ref wonder, context.timestamp, game.end_at);
-            self.record_removal(game_id, structure.owner, structure_id, pledge.wonder_id, context.timestamp);
+            self
+                .remove_pledge(
+                    game_id, structure_id, pledge, ref wonder, context.timestamp, game.end_at, ref story_cursor,
+                );
+            self
+                .record_removal(
+                    game_id, structure.owner, structure_id, pledge.wonder_id, context.timestamp, ref story_cursor,
+                );
+            ((), story_cursor)
         }
         fn update_wonder_ownership(
             ref self: ComponentState<TContractState>,
@@ -97,12 +107,14 @@ pub mod FaithState {
             actor: ContractAddress,
             wonder_id: u32,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             let game = self.authorize(game_id, context.timestamp, context);
             crate::game::assert_playing(game, context.timestamp);
-            self.refresh_wonder(game_id, wonder_id, context.timestamp, game.end_at);
+            self.refresh_wonder(game_id, wonder_id, context.timestamp, game.end_at, ref story_cursor);
+            ((), story_cursor)
         }
         fn update_faithful_ownership(
             ref self: ComponentState<TContractState>,
@@ -110,15 +122,17 @@ pub mod FaithState {
             actor: ContractAddress,
             structure_id: u32,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             let game = self.authorize(game_id, context.timestamp, context);
             crate::game::assert_playing(game, context.timestamp);
             if self.data.faith.faith_pledges.read((game_id, structure_id)).wonder_id != 0 {
                 let structure = self.structure(game_id, structure_id);
-                self.transfer(game_id, structure_id, structure.owner, context.timestamp, game.end_at);
+                self.transfer(game_id, structure_id, structure.owner, context.timestamp, game.end_at, ref story_cursor);
             }
+            ((), story_cursor)
         }
         fn claim_wonder_points(
             ref self: ComponentState<TContractState>,
@@ -126,15 +140,17 @@ pub mod FaithState {
             actor: ContractAddress,
             wonder_id: u32,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             let game = self.authorize(game_id, context.timestamp, context);
             self.require_started(game, context.timestamp);
             self.wonder(game_id, wonder_id);
             let mut wonder = self.data.faith.faith_wonders.read((game_id, wonder_id));
-            self.settle_wonder(game_id, wonder_id, ref wonder, context.timestamp, game.end_at);
+            self.settle_wonder(game_id, wonder_id, ref wonder, context.timestamp, game.end_at, ref story_cursor);
             self.write_wonder(game_id, wonder_id, wonder);
+            ((), story_cursor)
         }
         fn claim_player_faith_points(
             ref self: ComponentState<TContractState>,
@@ -142,6 +158,7 @@ pub mod FaithState {
             actor: ContractAddress,
             command: crate::faith::ClaimPlayer,
             context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -164,6 +181,7 @@ pub mod FaithState {
             game_id: u32,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) -> u32 {
             let game = self.authorize_prizes(game_id, timestamp, game_context);
             let (start, mut high_score, mut winners) = self.data.faith.prize_checkpoint.read(game_id);
@@ -172,7 +190,7 @@ pub mod FaithState {
             for index in start..end {
                 let id = self.data.faith.faith_wonder_ids.read((game_id, index));
                 let mut wonder = self.data.faith.faith_wonders.read((game_id, id));
-                self.settle_wonder(game_id, id, ref wonder, game.end_at, game.end_at);
+                self.settle_wonder(game_id, id, ref wonder, game.end_at, game.end_at, ref story_cursor);
                 self.write_wonder(game_id, id, wonder);
                 if wonder.claimed_points > high_score {
                     high_score = wonder.claimed_points;
@@ -310,7 +328,14 @@ pub mod FaithState {
                 }
             }
         }
-        fn refresh_wonder(ref self: ComponentState<TContractState>, game_id: u32, id: u32, timestamp: u64, end: u64) {
+        fn refresh_wonder(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            id: u32,
+            timestamp: u64,
+            end: u64,
+            ref story_cursor: crate::ownership::StoryCursor,
+        ) {
             let structure = self.wonder(game_id, id);
             assert!(structure.owner != 0.try_into().unwrap(), "wonder has no owner");
             let mut wonder = self.data.faith.faith_wonders.read((game_id, id));
@@ -318,11 +343,11 @@ pub mod FaithState {
                 let count = self.data.faith.faith_wonder_count.read(game_id);
                 self.data.faith.faith_wonder_ids.write((game_id, count), id);
                 self.data.faith.faith_wonder_count.write(game_id, count + 1);
-                self.settle_wonder(game_id, id, ref wonder, timestamp, end);
+                self.settle_wonder(game_id, id, ref wonder, timestamp, end, ref story_cursor);
                 wonder.last_recorded_owner = structure.owner;
                 self.write_wonder(game_id, id, wonder);
             }
-            self.transfer(game_id, id, structure.owner, timestamp, end);
+            self.transfer(game_id, id, structure.owner, timestamp, end, ref story_cursor);
         }
         fn add_pledge(
             ref self: ComponentState<TContractState>,
@@ -331,9 +356,10 @@ pub mod FaithState {
             pledge: FaithfulStructure,
             timestamp: u64,
             end: u64,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             let mut wonder = self.data.faith.faith_wonders.read((game_id, pledge.wonder_id));
-            self.settle_wonder(game_id, pledge.wonder_id, ref wonder, timestamp, end);
+            self.settle_wonder(game_id, pledge.wonder_id, ref wonder, timestamp, end, ref story_cursor);
             wonder.claim_per_sec += pledge.fp_to_wonder_owner_per_sec.into() + pledge.fp_to_struct_owner_per_sec.into();
             wonder.owner_claim_per_sec += pledge.fp_to_wonder_owner_per_sec.into();
             wonder.num_structures_pledged += 1;
@@ -370,8 +396,9 @@ pub mod FaithState {
             ref wonder: WonderFaith,
             timestamp: u64,
             end: u64,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
-            self.settle_wonder(game_id, pledge.wonder_id, ref wonder, timestamp, end);
+            self.settle_wonder(game_id, pledge.wonder_id, ref wonder, timestamp, end, ref story_cursor);
             wonder.claim_per_sec -= pledge.fp_to_wonder_owner_per_sec.into() + pledge.fp_to_struct_owner_per_sec.into();
             wonder.owner_claim_per_sec -= pledge.fp_to_wonder_owner_per_sec.into();
             wonder.num_structures_pledged -= 1;
@@ -429,13 +456,15 @@ pub mod FaithState {
             new_points: u128,
             total_points: u128,
             timestamp: u64,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             self
                 .emit(
                     crate::ownership::StoryEvent {
                         version: 1,
                         game_id,
-                        id: crate::logic::game::allocate_entity(game_id),
+                        order: story_cursor.order,
+                        index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
                         entity_id: Some(wonder_id),
                         owner: None,
                         timestamp,
@@ -453,13 +482,15 @@ pub mod FaithState {
             command: crate::faith::Pledge,
             pledge: FaithfulStructure,
             timestamp: u64,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             self
                 .emit(
                     crate::ownership::StoryEvent {
                         version: 1,
                         game_id,
-                        id: crate::logic::game::allocate_entity(game_id),
+                        order: story_cursor.order,
+                        index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
                         entity_id: Some(command.structure_id),
                         owner: Some(owner),
                         timestamp,
@@ -482,13 +513,15 @@ pub mod FaithState {
             id: u32,
             wonder: u32,
             timestamp: u64,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             self
                 .emit(
                     crate::ownership::StoryEvent {
                         version: 1,
                         game_id,
-                        id: crate::logic::game::allocate_entity(game_id),
+                        order: story_cursor.order,
+                        index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
                         entity_id: Some(id),
                         owner: Some(owner),
                         timestamp,
@@ -507,10 +540,11 @@ pub mod FaithState {
             new_owner: ContractAddress,
             now: u64,
             season_end: u64,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             let mut wonder = self.data.faith.faith_wonders.read((game_id, structure_id));
             if wonder.last_recorded_owner != 0.try_into().unwrap() && wonder.last_recorded_owner != new_owner {
-                self.settle_wonder(game_id, structure_id, ref wonder, now, season_end);
+                self.settle_wonder(game_id, structure_id, ref wonder, now, season_end, ref story_cursor);
                 self
                     .update_rates(
                         game_id,
@@ -548,6 +582,7 @@ pub mod FaithState {
             ref wonder: WonderFaith,
             now: u64,
             season_end: u64,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             let end_time = if season_end < now {
                 season_end
@@ -563,7 +598,7 @@ pub mod FaithState {
             let new_points: u128 = wonder.claim_per_sec.into() * (end_time - wonder.claim_last_at).into();
             wonder.claimed_points += new_points;
             wonder.claim_last_at = end_time;
-            self.record_accrual(game_id, wonder_id, new_points, wonder.claimed_points, now);
+            self.record_accrual(game_id, wonder_id, new_points, wonder.claimed_points, now, ref story_cursor);
         }
         fn update_rates(
             ref self: ComponentState<TContractState>,

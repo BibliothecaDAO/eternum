@@ -157,6 +157,7 @@ pub mod HyperstructureState {
             actor: ContractAddress,
             id: u32,
             context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -179,6 +180,7 @@ pub mod HyperstructureState {
             actor: ContractAddress,
             contribution: Contribution,
             context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -219,7 +221,8 @@ pub mod HyperstructureState {
             actor: ContractAddress,
             command: AllocateShares,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
@@ -231,7 +234,7 @@ pub mod HyperstructureState {
                 crate::rules::rule_enabled(context.rules.unbox(), crate::rules::OWNER_ONLY_SHARES),
                 actor,
             );
-            self.checkpoint(key, context.timestamp, context);
+            self.checkpoint(key, context.timestamp, context, ref story_cursor);
             self
                 .write_shares(
                     key,
@@ -241,6 +244,7 @@ pub mod HyperstructureState {
                         shareholders: command.shareholders,
                     },
                 );
+            ((), story_cursor)
         }
         fn set_construction_access(
             ref self: ComponentState<TContractState>,
@@ -248,6 +252,7 @@ pub mod HyperstructureState {
             actor: ContractAddress,
             command: SetConstructionAccess,
             context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -269,7 +274,8 @@ pub mod HyperstructureState {
             game_id: u32,
             timestamp: u64,
             game_context: crate::commands::ActionContext,
-        ) -> u32 {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> (u32, crate::ownership::StoryCursor) {
             let game_context = crate::commands::load_context(game_id, game_context);
 
             let (cutoff, start, count) = self
@@ -278,7 +284,7 @@ pub mod HyperstructureState {
                 .close_attempt
                 .read(game_id)
                 .unwrap_or((timestamp, 0, self.data.hyperstructures.hyper_counts.read(game_id)));
-            let end = self.checkpoint_batch(game_id, cutoff, start, count, game_context);
+            let end = self.checkpoint_batch(game_id, cutoff, start, count, game_context, ref story_cursor);
             self
                 .data
                 .hyperstructures
@@ -288,23 +294,24 @@ pub mod HyperstructureState {
                 } else {
                     Some((cutoff, end, count))
                 });
-            count - end
+            (count - end, story_cursor)
         }
         fn settle_final_hyperstructures(
             ref self: ComponentState<TContractState>,
             game_id: u32,
             timestamp: u64,
             game_context: crate::commands::ActionContext,
-        ) -> u32 {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> (u32, crate::ownership::StoryCursor) {
             let game_context = crate::commands::load_context(game_id, game_context);
 
             let game = game_context.game.unbox();
             assert!(game.end_at != 0 && timestamp >= game.end_at, "game not ended");
             let count = self.data.hyperstructures.hyper_counts.read(game_id);
             let start = self.data.hyperstructures.final_checkpoint_cursor.read(game_id);
-            let end = self.checkpoint_batch(game_id, game.end_at, start, count, game_context);
+            let end = self.checkpoint_batch(game_id, game.end_at, start, count, game_context, ref story_cursor);
             self.data.hyperstructures.final_checkpoint_cursor.write(game_id, end);
-            count - end
+            (count - end, story_cursor)
         }
     }
     #[generate_trait]
@@ -321,12 +328,13 @@ pub mod HyperstructureState {
             start: u32,
             count: u32,
             game_context: crate::commands::ExecutionContext,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) -> u32 {
             let end = start + core::cmp::min(8, count - start);
             for index in start..end {
                 let id = self.data.hyperstructures.hyper_ids.read((game_id, index));
                 if self.data.hyperstructures.hyper_states.read((game_id, id)).stage == Stage::Complete {
-                    self.checkpoint(ResourceKey { game_id, entity_id: id }, cutoff, game_context);
+                    self.checkpoint(ResourceKey { game_id, entity_id: id }, cutoff, game_context, ref story_cursor);
                 }
             }
             end
@@ -500,6 +508,7 @@ pub mod HyperstructureState {
             key: ResourceKey,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             assert!(self.state(key).stage == Stage::Complete, "hyperstructure not complete");
             let game = game_context.game.unbox();
@@ -520,7 +529,7 @@ pub mod HyperstructureState {
                     * (*share.bps).into()
                     / 10000;
                 let points: u128 = points.try_into().unwrap();
-                self.register_share_points(key, *share.player, points, timestamp, game_context);
+                self.register_share_points(key, *share.player, points, timestamp, game_context, ref story_cursor);
             }
             self.data.hyperstructures.hyper_share_start.write((key.game_id, key.entity_id), cutoff);
             self
@@ -541,6 +550,7 @@ pub mod HyperstructureState {
             points: u128,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             if points == 0 {
                 return;
@@ -552,7 +562,8 @@ pub mod HyperstructureState {
                     crate::ownership::StoryEvent {
                         version: 1,
                         game_id: key.game_id,
-                        id: crate::logic::game::allocate_entity(key.game_id),
+                        order: story_cursor.order,
+                        index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
                         entity_id: Some(key.entity_id),
                         owner: Some(player),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,

@@ -3,7 +3,6 @@ import { Effect } from "effect";
 import {
   encodeStoryHistoryCursor,
   storyEventIdentity,
-  storyEventScopeKey,
   type HeraldGameDirectory,
   type HeraldHistoryEvent,
   type HeraldStoryHistoryPage,
@@ -317,14 +316,9 @@ const deliver = (env: IdentityEnv, entry: OutboxEntry, now: number) =>
     ),
   );
 
-/**
- * A StoryEvent keeps the identity the live page gives it, so a push and a page alert for one story are one alert. A
- * native battle or raid is named by where it sits in the chain.
- */
+/** History and the live page use the same action-local identity for stories, battles and raids. */
 const historyStoryIdentity = (scope: StoryEventScope, item: HeraldHistoryEvent) =>
-  item.model === "StoryEvent"
-    ? storyEventIdentity(scope, item.value)
-    : `${storyEventScopeKey(scope)}:0x${BigInt(item.transaction_hash).toString(16)}:${item.model}:${item.event_index}`;
+  storyEventIdentity(scope, item.value);
 
 const outboxKey = (entry: OutboxEntry) => `outbox:${entry.envelope.notification.id}:${entry.subscriptionId}`;
 

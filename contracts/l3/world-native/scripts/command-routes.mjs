@@ -19,16 +19,22 @@ function compileRoute(route, artifacts, types, logic, feltLength) {
   if (matches.length !== 1) throw new Error(`Missing or ambiguous command entrypoint ${route.entrypoint}`);
   const { inputs } = matches[0];
   if (
-    ![3, 4].includes(inputs.length) ||
+    ![4, 5].includes(inputs.length) ||
     inputs[0].type !== "core::integer::u32" ||
     inputs[1].type !== "core::starknet::contract_address::ContractAddress" ||
-    inputs.at(-1).type !== "world_native::commands::ActionContext"
+    inputs.at(-2).type !== "world_native::commands::ActionContext" ||
+    inputs.at(-1).type !== "world_native::ownership::StoryCursor"
   )
     throw new Error(`Invalid command entrypoint signature ${route.entrypoint}`);
-  const payload = inputs.length === 4 ? inputs[2].type : "()";
+  const payload = inputs.length === 5 ? inputs[2].type : "()";
   const classIndex = logic.indexOf(route.logic);
   if (classIndex < 0) throw new Error(`Unknown command logic ${route.logic}`);
-  return { ...route, payload, classIndex, itemsOffset: itemOffset(route, payload, types, feltLength) };
+  return {
+    ...route,
+    payload,
+    classIndex,
+    itemsOffset: itemOffset(route, payload, types, feltLength),
+  };
 }
 
 function itemOffset(route, payload, types, feltLength) {

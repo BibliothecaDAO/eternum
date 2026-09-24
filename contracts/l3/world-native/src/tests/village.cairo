@@ -17,6 +17,7 @@ use crate::settlement::{
     SettlementMode, SettlementRules,
 };
 use crate::structures::IStructureOperationsDispatcher;
+use crate::tests::StoryResultTestTrait;
 use crate::tests::state::{MapObservationTrait, ResourceObservationTrait, StructureObservationTrait};
 use crate::troops::Coord;
 use crate::village::{
@@ -84,7 +85,9 @@ fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::Slice
                 },
             ),
             crate::commands::action_context(context(deployment.games, 3)),
-        );
+            crate::tests::story_cursor(),
+        )
+        .story_result();
     stop_cheat_caller_address(deployment.games);
     (deployment, realm)
 }
@@ -311,17 +314,11 @@ fn created_realm(ref spy: snforge_std::EventSpy, deployment: Deployment) -> u32 
     let mut created = Option::None;
     for (_, event) in spy.get_events().emitted_by(deployment.games).events.span() {
         if *event.keys.at(0) == selector!("StoryEvent") {
-            let mut keys = event.keys.span();
-            let _ = keys.pop_front(); // event selector
-            let _ = keys.pop_front(); // version
-            let _ = keys.pop_front(); // game
-            let _ = keys.pop_front(); // story id
-            let _: Option<starknet::ContractAddress> = Serde::deserialize(ref keys).unwrap();
-            let entity: Option<u32> = Serde::deserialize(ref keys).unwrap();
+            let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
             let mut values = event.data.span();
-            let story: crate::ownership::Story = Serde::deserialize(ref values).unwrap();
-            if let crate::ownership::Story::RealmCreatedStory(_) = story {
-                created = entity;
+            let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref values).unwrap();
+            if let crate::ownership::Story::RealmCreatedStory(_) = story.story {
+                created = story.entity_id;
             }
         }
     }

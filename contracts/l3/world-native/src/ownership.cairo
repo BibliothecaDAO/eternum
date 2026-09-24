@@ -16,7 +16,8 @@ pub trait IStructureOwnership<T> {
         actor: ContractAddress,
         command: TransferOwnership,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -92,6 +93,30 @@ pub struct ResourceTransferStory {
     pub travel_time: u64,
 }
 
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct StoryCursor {
+    pub order: u64,
+    pub index: u32,
+}
+
+#[generate_trait]
+pub impl StoryCursorImpl of StoryCursorTrait {
+    fn next(ref self: StoryCursor) -> u32 {
+        let index = self.index;
+        self.index += 1;
+        index
+    }
+}
+
+#[generate_trait]
+pub impl StoryResultImpl<T> of StoryResultTrait<T> {
+    fn resume_story(self: (T, StoryCursor), ref cursor: StoryCursor) -> T {
+        let (result, next) = self;
+        cursor = next;
+        result
+    }
+}
+
 #[derive(Drop, starknet::Event)]
 pub struct StoryEvent {
     #[key]
@@ -99,7 +124,9 @@ pub struct StoryEvent {
     #[key]
     pub game_id: u32,
     #[key]
-    pub id: u32,
+    pub order: u64,
+    #[key]
+    pub index: u32,
     #[key]
     pub owner: Option<ContractAddress>,
     #[key]

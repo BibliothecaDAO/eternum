@@ -160,6 +160,10 @@ pub struct BattleEvent {
     #[key]
     pub game_id: u32,
     #[key]
+    pub order: u64,
+    #[key]
+    pub index: u32,
+    #[key]
     pub attacker_id: u32,
     #[key]
     pub defender_id: u32,

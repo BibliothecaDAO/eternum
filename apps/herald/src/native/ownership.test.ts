@@ -6,7 +6,7 @@ import { raw, receipt, rowEvent, rulesEvent, schema, setup, manifest } from "./f
 
 function faithStory() {
   const layout = schema.games.events.find((event) => event.name === "StoryEvent")!;
-  const keys = [...layout.prefix, "1", "1", "7", "1", "0", "3", "0x55"];
+  const keys = [...layout.prefix, "1", "1", "7", "0", "1", "0", "3", "0x55"];
   const values = ["0", "3", "30000", "30000", "1860"];
   return raw({ from_address: manifest.world.address, keys, data: values });
 }
@@ -18,7 +18,7 @@ describe("native ownership projections", () => {
     expect(decoded.kind).toBe("event");
     expect(decoded.model.name).toBe("StoryEvent");
     if (decoded.kind !== "event") throw new Error("Expected history event");
-    expect(toJsonValue(decoded.key)).toMatchObject({ game_id: "0x1", id: "0x7", tx_hash: "0x55" });
+    expect(toJsonValue(decoded.key)).toMatchObject({ game_id: "0x1", order: "0x7", index: "0x0", tx_hash: "0x55" });
     expect(toJsonValue(decoded.value)).toMatchObject({
       timestamp: "0x744",
       story: { FaithPointsClaimedStory: { wonder_id: "0x3", new_points: "0x7530", total_points: "0x7530" } },

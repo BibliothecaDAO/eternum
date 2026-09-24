@@ -57,8 +57,12 @@ pub struct EntryEntitlement {
 #[starknet::interface]
 pub trait ISettlementCommands<T> {
     fn settle_blitz_roster(
-        ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
-    ) -> u64;
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> (u64, crate::ownership::StoryCursor);
 }
 
 #[starknet::interface]
@@ -116,11 +120,21 @@ pub struct RealmGrants {
 #[starknet::interface]
 pub trait IRealmCreation<T> {
     fn provision_and_upgrade_realm(
-        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u32, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        structure_id: u32,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn activate_realm_economy(
-        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u32, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        structure_id: u32,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 
 #[starknet::interface]
@@ -131,7 +145,12 @@ pub trait ISettlementDisplacement<T> {
 #[starknet::interface]
 pub trait IBlitzHyperstructures<T> {
     fn create_reserved_hyperstructure(
-        ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, context: crate::commands::ActionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        coord: Coord,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
     );
 }
 
@@ -161,7 +180,8 @@ pub trait ISettlementCreation<T> {
         coord: Coord,
         creation: SettlementCreation,
         context: crate::commands::ActionContext,
-    ) -> u32;
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> (u32, crate::ownership::StoryCursor);
 }
 
 // Fisher-Yates selection fixes each roster position once from the first recorded batch root.

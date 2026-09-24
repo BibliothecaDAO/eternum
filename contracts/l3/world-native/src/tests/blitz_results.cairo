@@ -159,11 +159,21 @@ fn results_require_authority_and_finished_point_settlement() {
     let command = RecordBlitzResults { start: 0, players: array![result(0, 10, 1)].span() };
     let context = ExecutionContext { timestamp: 500, raw_root: 1, ..super::context(d.games, 3) };
     start_cheat_caller_address(d.games, d.games);
-    assert!(safe.record_blitz_results(3, player(99), command, crate::commands::action_context(context)).is_err());
     assert!(
         safe
             .record_blitz_results(
-                3, d.actor, command, crate::commands::action_context(ExecutionContext { timestamp: 199, ..context }),
+                3, player(99), command, crate::commands::action_context(context), crate::tests::story_cursor(),
+            )
+            .is_err(),
+    );
+    assert!(
+        safe
+            .record_blitz_results(
+                3,
+                d.actor,
+                command,
+                crate::commands::action_context(ExecutionContext { timestamp: 199, ..context }),
+                crate::tests::story_cursor(),
             )
             .is_err(),
     );

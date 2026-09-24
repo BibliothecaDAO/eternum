@@ -1,3 +1,4 @@
+import { storyEventKeys } from "@bibliothecadao/eternum/game-sync";
 import { type GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-models";
 import { normalizeFelt, type ModelCodec, type ModelRegistry } from "../model-registry";
 import type { DecodedWorldEvent, RawWorldEvent, RpcEvent } from "../types";
@@ -202,7 +203,11 @@ function decodeEvent(event: NativeRawEvent, schema: NativeSchema, layout: Native
       scope: projection.scope,
       deletion: "event-ephemeral",
     },
-    entityId: nativeEntityId([position.transactionHash, position.eventIndex]),
+    entityId: nativeEntityId(
+      ["StoryEvent", "BattleEvent", "RaidEvent"].includes(layout.name)
+        ? storyEventKeys(key)
+        : [position.transactionHash, position.eventIndex],
+    ),
     position,
     key,
     value: {

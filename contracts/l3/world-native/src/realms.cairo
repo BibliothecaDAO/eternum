@@ -37,7 +37,8 @@ pub trait ISeasonRealms<T> {
         actor: ContractAddress,
         command: SettleSeason,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 
 #[starknet::interface]

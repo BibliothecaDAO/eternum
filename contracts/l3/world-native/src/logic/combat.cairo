@@ -6,6 +6,7 @@ use crate::commands::{Battle, ExecutionContext};
 use crate::game::assert_playing;
 use crate::geometry::{distance, spire_neighbor, tile_key};
 use crate::map::{IMapLogicDispatcherTrait, IMapLogicLibraryDispatcher};
+use crate::ownership::StoryResultTrait;
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 use crate::rules::SliceRules;
 use crate::stamina::StaminaTrait;
@@ -14,7 +15,13 @@ use crate::troops::{
     Coord, ExplorerKey, ExplorerTroops, IBattleResolutionDispatcherTrait, IBattleResolutionLibraryDispatcher, Troops,
 };
 
-pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, context: ExecutionContext) {
+pub fn battle_guard(
+    game_id: u32,
+    actor: ContractAddress,
+    command: Battle,
+    context: ExecutionContext,
+    ref story_cursor: crate::ownership::StoryCursor,
+) {
     let rules = authorize(game_id, context);
     let key = ExplorerKey { game_id, explorer_id: command.attacker_id };
     let mut attacker = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
@@ -82,7 +89,7 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
             );
         crate::logic::troops::TroopState::save(key, attacker);
     }
-    try_capture(key, attacker, target_key, target, rules, context);
+    try_capture(key, attacker, target_key, target, rules, context, ref story_cursor);
     if slot.is_some() {
         let (attacker_roll, defender_roll) = rolls;
         let winner = if attacker.troops.count == 0 && guard.count != 0 {
@@ -96,6 +103,8 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
             crate::troops::BattleEvent {
                 version: 1,
                 game_id,
+                order: story_cursor.order,
+                index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
                 attacker_id: command.attacker_id,
                 defender_id: command.defender_id,
                 attacker_owner: attacker.owner,
@@ -108,13 +117,15 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
                 timestamp: context.timestamp,
             },
         );
-        crate::logic::game::allocate_entity(game_id);
-        crate::logic::game::allocate_entity(game_id);
     }
 }
 
 pub fn battle(
-    game_id: u32, actor: ContractAddress, command: crate::combat_actions::AttackExplorer, context: ExecutionContext,
+    game_id: u32,
+    actor: ContractAddress,
+    command: crate::combat_actions::AttackExplorer,
+    context: ExecutionContext,
+    ref story_cursor: crate::ownership::StoryCursor,
 ) {
     let rules = authorize(game_id, context);
     crate::resources::assert_unique_resources(command.steal_resources);
@@ -153,6 +164,8 @@ pub fn battle(
         crate::troops::BattleEvent {
             version: 1,
             game_id,
+            order: story_cursor.order,
+            index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
             attacker_id: command.attacker_id,
             defender_id: command.defender_id,
             attacker_owner: attacker.owner,
@@ -165,8 +178,6 @@ pub fn battle(
             timestamp: context.timestamp,
         },
     );
-    crate::logic::game::allocate_entity(game_id);
-    crate::logic::game::allocate_entity(game_id);
 }
 
 pub fn village_last_raided(key: ResourceKey) -> u64 {
@@ -174,7 +185,11 @@ pub fn village_last_raided(key: ResourceKey) -> u64 {
 }
 
 pub fn guard_attack(
-    game_id: u32, actor: ContractAddress, command: crate::combat_actions::GuardAttack, context: ExecutionContext,
+    game_id: u32,
+    actor: ContractAddress,
+    command: crate::combat_actions::GuardAttack,
+    context: ExecutionContext,
+    ref story_cursor: crate::ownership::StoryCursor,
 ) {
     let rules = authorize(game_id, context);
     let home = owned_structure(game_id, command.guard.structure_id, actor);
@@ -206,12 +221,20 @@ pub fn guard_attack(
     }
     crate::logic::guards::GuardState::save(guard_key, guard);
     try_capture(
-        defender_key, defender, ResourceKey { game_id, entity_id: command.guard.structure_id }, home, rules, context,
+        defender_key,
+        defender,
+        ResourceKey { game_id, entity_id: command.guard.structure_id },
+        home,
+        rules,
+        context,
+        ref story_cursor,
     );
     emit(
         crate::troops::BattleEvent {
             version: 1,
             game_id,
+            order: story_cursor.order,
+            index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
             attacker_id: command.guard.structure_id,
             defender_id: command.explorer_id,
             attacker_owner: 0,
@@ -224,11 +247,15 @@ pub fn guard_attack(
             timestamp: context.timestamp,
         },
     );
-    crate::logic::game::allocate_entity(game_id);
-    crate::logic::game::allocate_entity(game_id);
 }
 
-pub fn raid(game_id: u32, actor: ContractAddress, command: crate::combat_actions::Raid, context: ExecutionContext) {
+pub fn raid(
+    game_id: u32,
+    actor: ContractAddress,
+    command: crate::combat_actions::Raid,
+    context: ExecutionContext,
+    ref story_cursor: crate::ownership::StoryCursor,
+) {
     let rules = authorize(game_id, context);
     crate::resources::assert_unique_resources(command.steal_resources);
     let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
@@ -252,6 +279,8 @@ pub fn raid(game_id: u32, actor: ContractAddress, command: crate::combat_actions
         crate::combat_actions::RaidEvent {
             version: 1,
             game_id,
+            order: story_cursor.order,
+            index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
             explorer_id: command.explorer_id,
             structure_id: command.structure_id,
             success,
@@ -405,6 +434,7 @@ pub fn try_capture(
     target: Structure,
     rules: SliceRules,
     context: ExecutionContext,
+    ref story_cursor: crate::ownership::StoryCursor,
 ) {
     if explorer.troops.count == 0
         || (crate::rules::rule_enabled(rules, crate::rules::UNOWNED_TARGETS) && target.owner != 0.try_into().unwrap())
@@ -422,9 +452,11 @@ pub fn try_capture(
         explorer.owner,
         context.timestamp,
         crate::commands::action_context(context),
-    );
+        story_cursor,
+    )
+        .resume_story(ref story_cursor);
     if target.owner == 0.try_into().unwrap() {
-        grant_capture_rewards(explorer_key, explorer, key, target, rules, context);
+        grant_capture_rewards(explorer_key, explorer, key, target, rules, context, ref story_cursor);
     }
 }
 
@@ -435,6 +467,7 @@ pub fn grant_capture_rewards(
     target: Structure,
     rules: SliceRules,
     context: ExecutionContext,
+    ref story_cursor: crate::ownership::StoryCursor,
 ) {
     let refund = rules.troop_stamina_config.capture_stamina_refund;
     if refund != 0 {
@@ -488,7 +521,9 @@ pub fn grant_capture_rewards(
             actor,
             crate::relics::OpenChest { explorer_id: explorer_key.explorer_id, coord },
             crate::commands::action_context(context),
-        );
+            story_cursor,
+        )
+            .resume_story(ref story_cursor);
     }
 }
 

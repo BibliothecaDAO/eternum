@@ -10,6 +10,7 @@ use crate::settlement::{
     ISettlementPoolDispatcherTrait, ISettlementPoolSafeDispatcher, ISettlementViewsDispatcher,
     ISettlementViewsDispatcherTrait, SettlementMode, SettlementRules,
 };
+use crate::tests::StoryResultTestTrait;
 use crate::tests::state::MapObservationTrait;
 use super::{Deployment, authority, context, recorded, setup};
 
@@ -366,5 +367,7 @@ fn a_missing_ledger_operator_never_bypasses_eternum_entitlements() {
         d.actor,
         crate::realms::SettleSeason { name: 'Player', selected_realm: None },
         crate::commands::action_context(context(d.games, 3)),
-    );
+        crate::tests::story_cursor(),
+    )
+        .story_result();
 }

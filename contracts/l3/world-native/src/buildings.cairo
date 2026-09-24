@@ -188,28 +188,32 @@ pub trait IBuildingCommands<T> {
         actor: starknet::ContractAddress,
         command: CreateBuilding,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn destroy_building(
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
         command: ChangeBuilding,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn pause_building_production(
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
         command: ChangeBuilding,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn resume_building_production(
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
         command: ChangeBuilding,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 
 pub fn produced_resource(category: u8) -> u8 {

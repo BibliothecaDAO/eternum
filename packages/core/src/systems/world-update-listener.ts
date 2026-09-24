@@ -2,6 +2,7 @@ import { BuildingType, type HexPosition, type ID, type ResourcesIds } from "@bib
 import type { GameClientSetup } from "../client/game-client";
 import { configManager } from "../managers/config-manager";
 import { divideByPrecision } from "../utils/utils";
+import { storyEventKeys } from "../sync/story-event-identity";
 import type {
   BattleEventSystemUpdate,
   BuildingSystemUpdate,
@@ -98,6 +99,7 @@ export class WorldUpdateListener {
         this.onStory("ChestReward", (payload, event) => {
           const kind = typeof payload.kind === "string" ? payload.kind : Object.keys(fields(payload.kind) ?? {})[0];
           callback({
+            resultKey: storyEventKeys(event),
             explorerId: integer(payload.explorer_id),
             kind: kind === "Cosmetic" || kind === "Token" ? kind : "Relic",
             quality: integer(payload.quality),

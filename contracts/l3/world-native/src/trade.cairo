@@ -85,17 +85,24 @@ pub trait ITrade<T> {
         actor: ContractAddress,
         command: CreateOrder,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn accept_trade_order(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: AcceptOrder,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn cancel_trade_order(
-        ref self: T, game_id: u32, actor: ContractAddress, trade_id: u32, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        trade_id: u32,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 
 // Only the economy domain can release escrow or queue purchased resources.

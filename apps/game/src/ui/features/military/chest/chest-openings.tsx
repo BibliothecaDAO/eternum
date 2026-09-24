@@ -17,6 +17,7 @@ export const ChestOpenings = () => {
           explorer_id: reward.explorerId,
         });
         toast.success(`Chest opened · ${QUALITY[reward.quality] ?? "Common"} ${KIND[reward.kind]}`, {
+          id: `chest:${reward.resultKey.join(":")}`,
           location: army ? { x: army.coord.x, y: army.coord.y } : undefined,
         });
       }),

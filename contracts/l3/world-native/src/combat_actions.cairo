@@ -42,6 +42,10 @@ pub struct RaidEvent {
     #[key]
     pub game_id: u32,
     #[key]
+    pub order: u64,
+    #[key]
+    pub index: u32,
+    #[key]
     pub explorer_id: u32,
     #[key]
     pub structure_id: u32,
@@ -62,14 +66,16 @@ pub trait IBattles<T> {
         actor: starknet::ContractAddress,
         command: crate::combat_actions::AttackExplorer,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn guard_attack(
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
         command: crate::combat_actions::GuardAttack,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 #[starknet::interface]
 pub trait IRaids<T> {
@@ -79,6 +85,7 @@ pub trait IRaids<T> {
         actor: starknet::ContractAddress,
         command: crate::combat_actions::Raid,
         context: crate::commands::ActionContext,
-    );
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn village_last_raided(self: @T, key: crate::resources::ResourceKey) -> u64;
 }

@@ -21,5 +21,6 @@ pub trait INames<T> {
         actor: ContractAddress,
         command: SetEntityName,
         context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
     );
 }

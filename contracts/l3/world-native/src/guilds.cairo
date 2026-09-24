@@ -38,17 +38,30 @@ pub trait IGuilds<T> {
         actor: ContractAddress,
         command: CreateGuild,
         context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
     );
     fn join_guild(
-        ref self: T, game_id: u32, actor: ContractAddress, command: JoinGuild, context: crate::commands::ActionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: JoinGuild,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
     );
-    fn leave_guild(ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext);
+    fn leave_guild(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    );
     fn set_guild_whitelist(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: SetWhitelist,
         context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
     );
     fn remove_guild_member(
         ref self: T,
@@ -56,5 +69,6 @@ pub trait IGuilds<T> {
         actor: ContractAddress,
         member: ContractAddress,
         context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
     );
 }

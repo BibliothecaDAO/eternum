@@ -421,13 +421,14 @@ fn troop_actions_emit_one_unique_story_each_and_rejections_emit_none() {
         if *event.keys.at(0) != selector!("StoryEvent") {
             continue;
         }
-        let id = *event.keys.at(3);
-        assert!(id != 0 && ids.get(id) == 0, "duplicate story identity");
-        ids.insert(id, 1);
+        let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
         let mut data = event.data.span();
-        let story: Story = Serde::deserialize(ref data).unwrap();
-        assert_eq!(story, *expected.at(index));
-        assert_eq!(*data.at(0), 140);
+        let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
+        let id: felt252 = Into::<u64, felt252>::into(story.order) * 0x100000000 + story.index.into();
+        assert!(story.order != 0 && ids.get(id) == 0, "duplicate story identity");
+        ids.insert(id, 1);
+        assert_eq!(story.story, *expected.at(index));
+        assert_eq!(story.timestamp, 140);
         index += 1;
     }
     assert_eq!(index, expected.len());

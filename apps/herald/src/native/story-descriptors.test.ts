@@ -17,7 +17,7 @@ function decodedStory(name: string, payload: number[]) {
   const decoded = setup().decoder.decode(
     raw({
       from_address: manifest.world.address,
-      keys: [...layout.prefix, "1", "1", "100", "0", "0x123", "0", "3", "0x55"],
+      keys: [...layout.prefix, "1", "1", "100", "0", "0", "0x123", "0", "3", "0x55"],
       data: [String(variant), ...payload.map(String), "140"],
     }),
   );

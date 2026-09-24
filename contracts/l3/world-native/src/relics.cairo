@@ -122,19 +122,39 @@ pub trait IRelics<T> {
     fn chest_rules(self: @T, game_id: u32) -> Option<ChestRules>;
     fn chest_pity(self: @T, game_id: u32, player: ContractAddress, depth: u8) -> u16;
     fn chest_tokens(self: @T, game_id: u32, player: ContractAddress, epoch: u64) -> u16;
-    fn chest_reward(self: @T, game_id: u32, result_id: u32) -> Option<ChestReward>;
+    fn chest_reward(self: @T, game_id: u32, order: u64, index: u32) -> Option<ChestReward>;
     fn grant_reveal_chest(
-        ref self: T, game_id: u32, actor: ContractAddress, command: OpenChest, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: OpenChest,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn relic_rules(self: @T, game_id: u32) -> Span<RelicRule>;
     fn open_relic_chest(
-        ref self: T, game_id: u32, actor: ContractAddress, command: OpenChest, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: OpenChest,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn grant_site_chest(
-        ref self: T, game_id: u32, actor: ContractAddress, command: OpenChest, context: crate::commands::ActionContext,
-    );
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: OpenChest,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn apply_relic(
-        ref self: T, game_id: u32, actor: ContractAddress, command: ApplyRelic, context: crate::commands::ActionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: ApplyRelic,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
     );
 }
 #[starknet::interface]

@@ -102,9 +102,9 @@ pub mod RelicState {
             self.data.relics.chest_tokens.read((game_id, player, epoch))
         }
         fn chest_reward(
-            self: @ComponentState<TContractState>, game_id: u32, result_id: u32,
+            self: @ComponentState<TContractState>, game_id: u32, order: u64, index: u32,
         ) -> Option<crate::relics::ChestReward> {
-            self.data.relics.chest_rewards.read((game_id, result_id))
+            self.data.relics.chest_rewards.read((game_id, order, index))
         }
         fn grant_reveal_chest(
             ref self: ComponentState<TContractState>,
@@ -112,11 +112,12 @@ pub mod RelicState {
             actor: ContractAddress,
             command: OpenChest,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             let Some(rules) = self.chest_rules(game_id) else {
-                return;
+                return ((), story_cursor);
             };
             let game = context.game.unbox();
             assert_playing(game, context.timestamp);
@@ -128,8 +129,9 @@ pub mod RelicState {
             if crate::random::range(
                 seed, Into::<u64, u128>::into(context.timestamp) + 29, rules.loose_one_in.into(),
             ) == 0 {
-                self.pay_expedition_chest(game_id, actor, command, context, rules);
+                self.pay_expedition_chest(game_id, actor, command, context, rules, ref story_cursor);
             }
+            ((), story_cursor)
         }
 
         fn relic_rules(self: @ComponentState<TContractState>, game_id: u32) -> Span<RelicRule> {
@@ -146,7 +148,8 @@ pub mod RelicState {
             actor: ContractAddress,
             command: OpenChest,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
@@ -156,7 +159,8 @@ pub mod RelicState {
             );
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
             IRelicMapLibraryDispatcher { class_hash: classes.map.read() }.consume_relic_chest(game_id, command.coord);
-            self.pay_chest(game_id, actor, command, context);
+            self.pay_chest(game_id, actor, command, context, ref story_cursor);
+            ((), story_cursor)
         }
         fn grant_site_chest(
             ref self: ComponentState<TContractState>,
@@ -164,14 +168,16 @@ pub mod RelicState {
             actor: ContractAddress,
             command: OpenChest,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             assert_playing(context.game.unbox(), context.timestamp);
             crate::logic::troops::authorized_explorer(
                 ExplorerKey { game_id, explorer_id: command.explorer_id }, actor, context.timestamp, context,
             );
-            self.pay_chest(game_id, actor, command, context);
+            self.pay_chest(game_id, actor, command, context, ref story_cursor);
+            ((), story_cursor)
         }
         fn apply_relic(
             ref self: ComponentState<TContractState>,
@@ -179,6 +185,7 @@ pub mod RelicState {
             actor: ContractAddress,
             command: ApplyRelic,
             context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -241,7 +248,8 @@ pub mod RelicState {
             actor: ContractAddress,
             structure_id: u32,
             context: crate::commands::ActionContext,
-        ) {
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
@@ -272,7 +280,8 @@ pub mod RelicState {
                     context.timestamp,
                     crate::commands::resource_context(context),
                 );
-            self.record_crafted_relic(game_id, actor, structure_id, relic, context.timestamp);
+            self.record_crafted_relic(game_id, actor, structure_id, relic, context.timestamp, ref story_cursor);
+            ((), story_cursor)
         }
     }
     #[generate_trait]
@@ -288,9 +297,10 @@ pub mod RelicState {
             actor: ContractAddress,
             command: OpenChest,
             context: ExecutionContext,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             if let Some(rules) = self.chest_rules(game_id) {
-                self.pay_expedition_chest(game_id, actor, command, context, rules);
+                self.pay_expedition_chest(game_id, actor, command, context, rules, ref story_cursor);
                 return;
             }
             let mut root = context.raw_root;
@@ -314,7 +324,7 @@ pub mod RelicState {
             let points = config.victory_points_grant_config.relic_open_points.into();
             IPointsLibraryDispatcher { class_hash: get_dep_component!(@self, Life).classes(game_id).season.read() }
                 .register_relic_points(game_id, actor, crate::commands::action_context(context));
-            self.record_chest_opened(game_id, actor, command, relics, points, context.timestamp);
+            self.record_chest_opened(game_id, actor, command, relics, points, context.timestamp, ref story_cursor);
         }
 
         fn pay_expedition_chest(
@@ -324,6 +334,7 @@ pub mod RelicState {
             command: OpenChest,
             context: ExecutionContext,
             rules: crate::relics::ChestRules,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             let game = context.game.unbox();
             let game_rules = context.rules.unbox();
@@ -348,7 +359,7 @@ pub mod RelicState {
                 quality: roll.quality,
                 relic_id,
             };
-            self.record_expedition_chest(game_id, reward, context.timestamp);
+            self.record_expedition_chest(game_id, reward, context.timestamp, ref story_cursor);
         }
 
         fn grant_rolled_relic(
@@ -420,11 +431,16 @@ pub mod RelicState {
         }
 
         fn record_expedition_chest(
-            ref self: ComponentState<TContractState>, game_id: u32, reward: crate::relics::ChestReward, timestamp: u64,
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            reward: crate::relics::ChestReward,
+            timestamp: u64,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
-            let id = crate::logic::game::allocate_entity(game_id);
+            let order = story_cursor.order;
+            let index = crate::ownership::StoryCursorTrait::next(ref story_cursor);
             if reward.kind != crate::relics::ChestKind::Relic {
-                self.data.relics.chest_rewards.write((game_id, id), Some(reward));
+                self.data.relics.chest_rewards.write((game_id, order, index), Some(reward));
                 let mut values = array![];
                 reward.serialize(ref values);
                 self
@@ -432,7 +448,7 @@ pub mod RelicState {
                         crate::events::RowSet {
                             version: 1,
                             model: 'ChestReward',
-                            keys: array![game_id.into(), id.into()].span(),
+                            keys: array![game_id.into(), order.into(), index.into()].span(),
                             values: values.span(),
                         },
                     );
@@ -442,7 +458,8 @@ pub mod RelicState {
                     crate::ownership::StoryEvent {
                         version: 1,
                         game_id,
-                        id,
+                        order,
+                        index,
                         entity_id: Some(reward.explorer_id),
                         owner: Some(reward.player),
                         timestamp: timestamp,
@@ -459,13 +476,15 @@ pub mod RelicState {
             structure_id: u32,
             relic: u8,
             timestamp: u64,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             self
                 .emit(
                     crate::ownership::StoryEvent {
                         version: 1,
                         game_id,
-                        id: crate::logic::game::allocate_entity(game_id),
+                        order: story_cursor.order,
+                        index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
                         entity_id: Some(structure_id),
                         owner: Some(actor),
                         timestamp,
@@ -482,13 +501,15 @@ pub mod RelicState {
             relics: Span<u8>,
             points: u128,
             timestamp: u64,
+            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             self
                 .emit(
                     crate::ownership::StoryEvent {
                         version: 1,
                         game_id,
-                        id: crate::logic::game::allocate_entity(game_id),
+                        order: story_cursor.order,
+                        index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
                         entity_id: Some(command.explorer_id),
                         owner: Some(actor),
                         timestamp,

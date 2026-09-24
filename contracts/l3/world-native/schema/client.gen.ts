@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "aa893f88601705ba308de462910f5d9666dce1c3c78e647aa5f25b220d8b92e4";
+export const nativeFactSchemaIdentity = "2a6cb6fc1f6d602a69788c418c60a656ee0c7a5350685c48c4c52f2e9bde3e52";
 export const nativeRuleConstants = {
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
@@ -43,7 +43,7 @@ export interface NativeRows {
   ChestRules: { readonly game_id: number; readonly loose_one_in: number; readonly relic_probability: number; readonly cosmetic_probability: number; readonly token_cap: number };
   ChestPity: { readonly game_id: number; readonly player: bigint; readonly depth: number; readonly count: number };
   ChestTokens: { readonly game_id: number; readonly player: bigint; readonly epoch: bigint; readonly count: number };
-  ChestReward: { readonly game_id: number; readonly result_id: number; readonly player: bigint; readonly explorer_id: number; readonly epoch: bigint; readonly depth: number; readonly kind: "Relic" | "Cosmetic" | "Token"; readonly quality: number; readonly relic_id: number };
+  ChestReward: { readonly game_id: number; readonly order: bigint; readonly index: number; readonly player: bigint; readonly explorer_id: number; readonly epoch: bigint; readonly depth: number; readonly kind: "Relic" | "Cosmetic" | "Token"; readonly quality: number; readonly relic_id: number };
   RelicDiscovery: { readonly game_id: number; readonly last_at: bigint };
   DepositRules: { readonly game_id: number; readonly paused: boolean; readonly realm_fee_bps: number; readonly velords_fee_bps: number; readonly season_fee_bps: number; readonly client_fee_bps: number };
   WithdrawalRules: { readonly game_id: number; readonly paused: boolean; readonly bank_fee_bps: number; readonly velords_fee_bps: number; readonly season_fee_bps: number; readonly client_fee_bps: number; readonly velords_recipient: bigint; readonly season_recipient: bigint; readonly retention: readonly ({ readonly troop_percent: number; readonly resource_percent: number })[] };
@@ -132,7 +132,7 @@ export interface NativeKeys {
   ChestRules: { readonly game_id: number };
   ChestPity: { readonly game_id: number; readonly player: bigint; readonly depth: number };
   ChestTokens: { readonly game_id: number; readonly player: bigint; readonly epoch: bigint };
-  ChestReward: { readonly game_id: number; readonly result_id: number };
+  ChestReward: { readonly game_id: number; readonly order: bigint; readonly index: number };
   RelicDiscovery: { readonly game_id: number };
   DepositRules: { readonly game_id: number };
   WithdrawalRules: { readonly game_id: number };
@@ -432,12 +432,14 @@ export const nativeFactModels = {
   "ChestReward": {
     "keys": [
       "game_id",
-      "result_id"
+      "order",
+      "index"
     ],
     "scope": "game",
     "fields": {
       "game_id": "u32",
-      "result_id": "u32",
+      "order": "u64",
+      "index": "u32",
       "player": "felt",
       "explorer_id": "u32",
       "epoch": "u64",
