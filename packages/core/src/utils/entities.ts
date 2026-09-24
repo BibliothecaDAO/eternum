@@ -15,12 +15,13 @@ import { configManager } from "../managers/config-manager";
 import { getHyperstructureName } from "./hyperstructure";
 import { getRealmNameById } from "./realm";
 import { getStructureTypeName } from "./structure";
+import { isViewerOwner } from "./viewer";
 
 const knownAddressesJSON: Record<string, string> = knownAddressesJSONData;
 
 export const getEntityInfo = (
   entityId: ID,
-  playerAccount: ContractAddress,
+  playerAccount: ContractAddress | null,
   store: NativeFactStore,
   isBlitz: boolean,
 ) => {
@@ -72,7 +73,7 @@ export const getEntityInfo = (
         ? structureMapPosition(store, structure)
         : undefined,
     owner,
-    isMine: owner !== undefined && ContractAddress(owner) === playerAccount,
+    isMine: isViewerOwner(owner === undefined ? undefined : ContractAddress(owner), playerAccount),
     structureCategory: structure?.base.category,
     structure,
     explorer,

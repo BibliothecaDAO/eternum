@@ -35,6 +35,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { extractReadableErrorMessage, isInsufficientResourceBalanceRevert } from "@/utils/error-message";
+import { accountAddress } from "@/hooks/store/use-account-store";
 
 const resolveResourceLabel = (resourceId: number): string => {
   const label = ResourcesIds[resourceId as ResourcesIds];
@@ -208,7 +209,7 @@ export const useAutomation = () => {
       return { ran: false, anyExecuted: false };
     }
 
-    if (!starknetSignerAccount || !starknetSignerAccount.address || starknetSignerAccount.address === "0x0") {
+    if (!starknetSignerAccount || accountAddress() === null) {
       verboseLog("Automation: Missing Starknet signer. Skipping automation pass.");
       return { ran: false, anyExecuted: false };
     }
@@ -271,8 +272,8 @@ export const useAutomation = () => {
           continue;
         }
 
-        const accountAddress = starknetSignerAccount?.address;
-        if (!accountAddress || accountAddress === "0x0") {
+        const signerAddress = starknetSignerAccount?.address;
+        if (!signerAddress || accountAddress() === null) {
           skipRemainingRealmsMessage = "Signer unavailable";
           recordRealmSkippedStatus({
             realmId: realmConfig.realmId,
@@ -287,7 +288,7 @@ export const useAutomation = () => {
         if (
           Number.isFinite(realmIdNum) &&
           realmIdNum > 0 &&
-          !isEntityOwnedByAccount(store, realmIdNum, accountAddress)
+          !isEntityOwnedByAccount(store, realmIdNum, signerAddress)
         ) {
           recordRealmSkippedStatus({
             realmId: activeRealmConfig.realmId,
@@ -436,7 +437,7 @@ export const useAutomation = () => {
         if (
           Number.isFinite(realmIdNum) &&
           realmIdNum > 0 &&
-          !isEntityOwnedByAccount(store, realmIdNum, accountAddress)
+          !isEntityOwnedByAccount(store, realmIdNum, signerAddress)
         ) {
           recordRealmSkippedStatus({
             realmId: activeRealmConfig.realmId,

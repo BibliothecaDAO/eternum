@@ -10,8 +10,7 @@ interface UseGameReviewDataOptions {
 }
 
 export const useGameReviewData = ({ game, worldName, enabled = true }: UseGameReviewDataOptions) => {
-  const account = useAccountStore((state) => state.account);
-  const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
+  const playerAddress = useAccountStore((state) => state.account?.address ?? null);
 
   return useQuery({
     queryKey: ["gameReview", game?.chainId ?? "", game?.gameId ?? 0, playerAddress ?? "anonymous"],

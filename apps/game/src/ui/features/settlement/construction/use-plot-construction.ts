@@ -8,14 +8,9 @@ import {
   describeBoardBonus,
   getRealmInfo,
   resolveUseSimpleCost,
+  isViewerOwner,
 } from "@bibliothecadao/eternum";
-import {
-  BuildingType,
-  BuildingTypeToString,
-  ContractAddress,
-  getNeighborHexes,
-  type HexPosition,
-} from "@bibliothecadao/types";
+import { BuildingType, BuildingTypeToString, getNeighborHexes, type HexPosition } from "@bibliothecadao/types";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -25,6 +20,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { getConstructionBuildingGroups, resolveBuildingRequirements } from "./construction-groups";
 import { getPlayerName } from "@/services/identity/player-profiles";
+import { useAccountAddress } from "@/hooks/store/use-account-store";
 
 export interface PlotConstructionTarget {
   entityId: number;
@@ -38,6 +34,7 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
     setup: { store },
     account: { account },
   } = useGame();
+  const viewer = useAccountAddress();
   const mode = useGameModeConfig();
   const ordersAllowed = useUIStore(canIssueOrders);
   const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
@@ -64,7 +61,7 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
       label: `Beside ${BuildingTypeToString[bonus.neighbour as BuildingType] ?? "a neighbour"}: ${describeBoardBonus(bonus)}`,
       present: neighbourCategories.includes(bonus.neighbour),
     }));
-  const isOwner = Boolean(account?.address && realm?.owner === ContractAddress(account.address));
+  const isOwner = isViewerOwner(realm?.owner, viewer);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const submitting = useRef(false);

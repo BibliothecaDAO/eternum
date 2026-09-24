@@ -1,5 +1,4 @@
-import { useAccountStore } from "@/hooks/store/use-account-store";
-import { ContractAddress } from "@bibliothecadao/types";
+import { accountAddress } from "@/hooks/store/use-account-store";
 export { configureGltfTextureSupport, gltfLoader, loadKtx2Texture } from "./gltf-loader";
 
 export function createPausedLabel() {
@@ -30,20 +29,10 @@ const normalizeAddressToBigInt = (address: unknown): bigint | undefined => {
 };
 
 export function isAddressEqualToAccount(address: bigint | string | null | undefined): boolean {
-  const normalizedAddress = normalizeAddressToBigInt(address);
-  if (normalizedAddress === undefined) {
-    return false;
-  }
-
-  const normalizedAccount = normalizeAddressToBigInt(useAccountStore.getState().account?.address) ?? 0n;
-  return normalizedAddress === normalizedAccount;
+  return isViewerOwner(normalizeAddressToBigInt(address), accountAddress());
 }
 
-function loggedInAccount(): ContractAddress {
-  return ContractAddress(useAccountStore.getState().account?.address || "0");
-}
-
-import { calculateDistance } from "@bibliothecadao/eternum";
+import { calculateDistance, isViewerOwner } from "@bibliothecadao/eternum";
 import { HexPosition, Position } from "@bibliothecadao/types";
 import { Vector3 } from "three";
 import { HEX_SIZE } from "../constants";

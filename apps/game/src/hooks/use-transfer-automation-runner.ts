@@ -14,6 +14,7 @@ import { canTransferMilitaryInventoryBetweenStructureIds } from "@/ui/lib/struct
 import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
 import { useTransferAutomationStore } from "./store/use-transfer-automation-store";
 import { assessDonkeyCapacity, buildSendResourcesArgs, planTransferAmounts } from "./transfer-automation-planner";
+import { accountAddress } from "@/hooks/store/use-account-store";
 
 type PlannedDebits = Map<string, number>;
 
@@ -112,7 +113,7 @@ export const useTransferAutomationRunner = () => {
         scheduleNextCheck();
         return;
       }
-      if (!account || !account.address || account.address === "0x0") {
+      if (!account || accountAddress() === null) {
         scheduleNextCheck();
         return;
       }

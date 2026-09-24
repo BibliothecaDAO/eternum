@@ -12,7 +12,7 @@ import { PlayerList, type PlayerCustom } from "./player-list";
 import { normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "./use-in-game-leaderboard";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
-import { configManager, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
+import { configManager, getGuildFromPlayerAddress, isViewerOwner } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, BANDITS_NAME, PlayerInfo } from "@bibliothecadao/types";
@@ -107,7 +107,7 @@ export const PlayersPanel = ({
         return {
           ...player,
           structures,
-          isUser: player.address === ContractAddress(account.address),
+          isUser: isViewerOwner(player.address, ContractAddress(account.address)),
           points,
           rank,
           isInvited,

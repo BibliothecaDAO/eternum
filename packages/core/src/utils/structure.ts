@@ -16,10 +16,11 @@ import { displayPlayerName, type PlayerNameResolver } from "./entities";
 import { getTileAt } from "./tile";
 import { configManager } from "../managers";
 import { currentTickCount } from "./utils";
+import { isViewerOwner } from "./viewer";
 
 export const getStructureAtPosition = (
   { x, y, alt }: Position,
-  playerAddress: ContractAddress,
+  playerAddress: ContractAddress | null,
   store: NativeFactStore,
   playerName: PlayerNameResolver,
 ): Structure | undefined => {
@@ -29,7 +30,7 @@ export const getStructureAtPosition = (
 
 export const getStructure = (
   entityId: ID,
-  playerAddress: ContractAddress,
+  playerAddress: ContractAddress | null,
   store: NativeFactStore,
   playerName: PlayerNameResolver,
 ): Structure | undefined => {
@@ -40,7 +41,7 @@ export const getStructure = (
     structure,
     owner: structure.owner,
     position: structureMapPosition(store, structure),
-    isMine: structure.owner === playerAddress,
+    isMine: isViewerOwner(structure.owner, playerAddress),
     isMercenary: structure.owner === 0n,
     ownerName: structure.owner === 0n ? BANDITS_NAME : displayPlayerName(structure.owner, playerName(structure.owner)),
     category: structure.base.category,

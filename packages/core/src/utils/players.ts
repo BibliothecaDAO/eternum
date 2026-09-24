@@ -3,6 +3,7 @@ import type { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "../managers/config-manager";
 import { displayPlayerName } from "./entities";
 import { getGuild } from "./guild";
+import { isViewerOwner } from "./viewer";
 
 export const getPlayerInfo = (
   players: Player[],
@@ -60,7 +61,7 @@ export const getPlayerInfo = (
       banks: playerStructureCounts.get(player.address)?.banks ?? 0,
       isAlive: player.isAlive,
       guildName: player.guildName || "",
-      isUser: player.address === playerAddress,
+      isUser: isViewerOwner(player.address, playerAddress),
     };
   });
 };

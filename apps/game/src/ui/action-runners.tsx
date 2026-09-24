@@ -28,6 +28,7 @@ import {
 import { useGame } from "@/hooks/context/game-context";
 import { BuildingType, StructureType, type ResourceArrivalInfo } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { accountAddress } from "@/hooks/store/use-account-store";
 
 const getArrivalKey = (arrival: ResourceArrivalInfo) =>
   `${arrival.structureEntityId}-${arrival.day}-${arrival.slot.toString()}`;
@@ -108,13 +109,7 @@ const ResourceArrivalAutoClaim = () => {
       }
 
       const arrivals = playerResourceArrivals;
-      if (
-        !account ||
-        !account.address ||
-        account.address === "0x0" ||
-        playerStructures.length === 0 ||
-        arrivals.length === 0
-      ) {
+      if (!account || accountAddress() === null || playerStructures.length === 0 || arrivals.length === 0) {
         autoClaimedArrivals.current.clear();
         lastFailureRef.current.clear();
         updateArrivalIndicators([]);
@@ -204,7 +199,7 @@ const AutoProvisionRealms = () => {
   const isBlitzWorld = useResolvedWorldGameMode() === "blitz";
 
   useEffect(() => {
-    if (!isBlitzWorld || !account?.address || account.address === "0x0") return;
+    if (!isBlitzWorld || !account || accountAddress() === null) return;
 
     const readRealms = (): ProvisionableRealm[] =>
       readFactView(store, playerStructuresView)

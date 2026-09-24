@@ -1,5 +1,5 @@
 import { ContractAddress } from "@bibliothecadao/types";
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, isViewerOwner } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 // Addresses reach this comparison in every felt spelling the stack produces — padded from the gameplay account
@@ -21,9 +21,7 @@ export const isEntityOwnedByAccount = (
   if (!store || !Number.isSafeInteger(entityId) || entityId <= 0 || !accountAddress) return false;
   try {
     const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
-    const owner = toAddress(structure?.owner);
-    const accountOwner = toAddress(accountAddress);
-    return owner !== null && accountOwner !== null && owner === accountOwner;
+    return isViewerOwner(toAddress(structure?.owner), toAddress(accountAddress));
   } catch {
     return false;
   }
@@ -31,7 +29,7 @@ export const isEntityOwnedByAccount = (
 
 export function arePlayersAllied(
   store: NativeFactStore | null | undefined,
-  playerAddress: bigint | string | undefined,
+  playerAddress: bigint | string | null | undefined,
   ownerAddress: bigint | string | undefined,
 ): boolean {
   const player = toAddress(playerAddress);

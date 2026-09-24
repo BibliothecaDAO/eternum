@@ -8,14 +8,16 @@ import {
   getArmyName,
   getArmyRelicEffects,
   getGuildFromPlayerAddress,
+  isViewerOwner,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ContractAddress, ID } from "@bibliothecadao/types";
+import { ID } from "@bibliothecadao/types";
 import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
 import type { ArmyStaminaPresentation } from "@/lib/army-stamina/types";
 import { useCallback, useMemo, useState } from "react";
+import { useAccountAddress } from "@/hooks/store/use-account-store";
 
 interface UseArmyEntityDetailOptions {
   armyEntityId: ID;
@@ -47,7 +49,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const mode = useGameModeConfig();
 
   const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
-  const userAddress = ContractAddress(account.address);
+  const userAddress = useAccountAddress();
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
   const explorer = useNativeRow("ExplorerTroops", {
     game_id: configManager.getActiveGameId(),
@@ -93,7 +95,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
       : null;
 
     const guild = owner ? getGuildFromPlayerAddress(owner, store) : undefined;
-    const isMine = owner === userAddress;
+    const isMine = isViewerOwner(owner, userAddress);
 
     const addressName = owner ? (ownerProfile.name ?? undefined) : getArmyName(armyEntityId, store);
 

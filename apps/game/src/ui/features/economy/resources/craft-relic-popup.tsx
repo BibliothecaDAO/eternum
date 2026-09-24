@@ -9,11 +9,12 @@ import { configManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ContractAddress, findResourceById, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { findResourceById, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { useEffect, useMemo, useState } from "react";
 
 import Button from "@/ui/design-system/atoms/button";
+import { accountAddress, useAccountAddress } from "@/hooks/store/use-account-store";
 
 const BURN_RESEARCH_FOR_RELIC_EVENT_SELECTOR = hash.getSelectorFromName("BurnResearchForRelicEvent").toLowerCase();
 
@@ -196,10 +197,11 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
   const [craftedWithoutReveal, setCraftedWithoutReveal] = useState(false);
   const resourceManager = useResourceManager(structureId);
 
-  const structureInfo = useMemo(() => {
-    const playerAccount = ContractAddress(account?.address ?? "0x0");
-    return mode.structure.getEntityInfo(structureId, playerAccount, store);
-  }, [account?.address, store, mode.structure, structureId, revision]);
+  const viewer = useAccountAddress();
+  const structureInfo = useMemo(
+    () => mode.structure.getEntityInfo(structureId, viewer, store),
+    [viewer, store, mode.structure, structureId, revision],
+  );
 
   const structureCategory = Number(structureInfo.structureCategory ?? 0);
   const structureName = structureInfo.name?.name ?? `Structure #${structureId}`;
@@ -217,7 +219,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
 
   const canCraftStructureType =
     structureCategory === StructureType.Realm || structureCategory === StructureType.Village;
-  const isOwnedByCaller = Boolean(account?.address && structureInfo.isMine);
+  const isOwnedByCaller = structureInfo.isMine;
   const hasEnoughResearch = researchBalance !== undefined && researchBalance >= configuredResearchCost;
   const missingResearch =
     researchBalance === undefined ? undefined : Math.max(configuredResearchCost - researchBalance, 0);
@@ -257,7 +259,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
   }, [structureId]);
 
   const handleCraftRelic = async () => {
-    if (!account || account.address === "0x0") {
+    if (!account || accountAddress() === null) {
       setError("Account not connected.");
       return;
     }

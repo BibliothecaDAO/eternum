@@ -9,6 +9,7 @@ import {
 import { FELT_CENTER } from "../utils";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
+import { isViewerOwner } from "../utils/viewer";
 
 export class StructureActionManager {
   private readonly FELT_CENTER: number;
@@ -60,8 +61,10 @@ export class StructureActionManager {
       if (!isExplored && !expedition) continue;
 
       const hasArmy = armyHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
-      const isArmyMine =
-        armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER)?.owner === playerAddress || false;
+      const isArmyMine = isViewerOwner(
+        armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER)?.owner,
+        playerAddress,
+      );
 
       if (hasArmy) {
         const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
@@ -106,7 +109,7 @@ export class StructureActionManager {
       if (!exploredRow?.has(row - this.FELT_CENTER)) continue;
 
       const targetArmy = armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
-      if (!targetArmy || targetArmy.owner === playerAddress) continue;
+      if (!targetArmy || isViewerOwner(targetArmy.owner, playerAddress)) continue;
 
       const biome = exploredRow.get(row - this.FELT_CENTER);
 

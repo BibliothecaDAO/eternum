@@ -1,11 +1,10 @@
 import { getActiveGameStore } from "@/sync/active-game-client";
-import { useAccountStore } from "@/hooks/store/use-account-store";
+import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import type { PlayerRelicsData } from "@/types";
 import { readBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settlement-players";
 import { getPlayerName, readPlayerProfile } from "@/services/identity/player-profiles";
 import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/features/world/utils/season-timing";
-import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import {
   ClientConfigManager,
   configManager,
@@ -26,17 +25,13 @@ import { ContractAddress, EntityType, type Player, ResourcesIds, type Structure 
  */
 export interface FactView<T> {
   models: readonly NativeModelName[];
-  read: (store: NativeFactStore, account: string) => T;
+  /** `viewer` is the signed-in player, null for a spectator (see accountAddress). */
+  read: (store: NativeFactStore, viewer: ContractAddress | null) => T;
 }
-
-export const NO_ACCOUNT = "0x0";
-
-const currentAccount = (): string => useAccountStore.getState().account?.address ?? NO_ACCOUNT;
 
 interface ViewReading {
   store: NativeFactStore;
-  account: string;
-  spectating: boolean;
+  viewer: ContractAddress | null;
   revision: number;
   value: unknown;
 }
@@ -47,14 +42,12 @@ const lastReadings = new WeakMap<FactView<unknown>, ViewReading>();
  * One derivation per store revision and viewer, shared by every surface reading the view. The reading is keyed by the
  * store's own revision, so it can never disagree with the facts it was derived from.
  */
-export const readFactView = <T>(store: NativeFactStore, view: FactView<T>, account = currentAccount()): T => {
-  const spectating = isExplicitSpectateSession();
+export const readFactView = <T>(store: NativeFactStore, view: FactView<T>, viewer = accountAddress()): T => {
   const revision = store.getRevision();
   const last = lastReadings.get(view);
-  if (last?.store === store && last.account === account && last.spectating === spectating && last.revision === revision)
-    return last.value as T;
-  const value = view.read(store, account);
-  lastReadings.set(view, { store, account, spectating, revision, value });
+  if (last?.store === store && last.viewer === viewer && last.revision === revision) return last.value as T;
+  const value = view.read(store, viewer);
+  lastReadings.set(view, { store, viewer, revision, value });
   return value;
 };
 
@@ -79,14 +72,11 @@ export const watchFactView = <T>(
 
 const activeGameId = () => configManager.getActiveGameId();
 
-const readPlayerStructures = (store: NativeFactStore, account: string): Structure[] => {
-  if (account === NO_ACCOUNT || isExplicitSpectateSession()) return [];
-  const owner = ContractAddress(account);
-  return readStructures(store, owner, owner, getPlayerName);
-};
+const readPlayerStructures = (store: NativeFactStore, viewer: ContractAddress | null): Structure[] =>
+  viewer === null ? [] : readStructures(store, viewer, viewer, getPlayerName);
 
-const readSelectableArmies = (store: NativeFactStore, account: string) =>
-  formatArmies(store.inGame("ExplorerTroops", activeGameId()), ContractAddress(account), store, getPlayerName)
+const readSelectableArmies = (store: NativeFactStore, viewer: ContractAddress | null) =>
+  formatArmies(store.inGame("ExplorerTroops", activeGameId()), viewer, store, getPlayerName)
     .filter((army) => army.isMine)
     .map((army) => ({ entityId: army.entityId }));
 
@@ -98,9 +88,9 @@ const readRelicsOf = (store: NativeFactStore, entityId: number) =>
     ({ resourceId }) => resourceId >= RELIC_RESOURCES.first && resourceId <= RELIC_RESOURCES.last,
   );
 
-const readPlayerRelics = (store: NativeFactStore, account: string): PlayerRelicsData | null => {
-  if (account === NO_ACCOUNT) return null;
-  const structures = readPlayerStructures(store, account).flatMap((structure) => {
+const readPlayerRelics = (store: NativeFactStore, viewer: ContractAddress | null): PlayerRelicsData | null => {
+  if (viewer === null) return null;
+  const structures = readPlayerStructures(store, viewer).flatMap((structure) => {
     const relics = readRelicsOf(store, structure.entityId);
     if (relics.length === 0) return [];
     const position = { alt: structure.structure.base.alt, x: structure.position.x, y: structure.position.y };
@@ -114,7 +104,7 @@ const readPlayerRelics = (store: NativeFactStore, account: string): PlayerRelics
       },
     ];
   });
-  const armies = readSelectableArmies(store, account).flatMap(({ entityId }) => {
+  const armies = readSelectableArmies(store, viewer).flatMap(({ entityId }) => {
     const relics = readRelicsOf(store, entityId);
     const army = store.get("ExplorerTroops", { game_id: activeGameId(), explorer_id: entityId });
     if (relics.length === 0 || !army) return [];
@@ -161,10 +151,8 @@ export const playerRelicsView: FactView<PlayerRelicsData | null> = {
 
 export const guildsView: FactView<ReturnType<typeof formatGuilds>> = {
   models: ["Guild", "GuildMember"],
-  read: (store, account) =>
-    formatGuilds(store.inGame("Guild", activeGameId()), ContractAddress(account), store).filter(
-      (guild) => guild.memberCount > 0,
-    ),
+  read: (store, viewer) =>
+    formatGuilds(store.inGame("Guild", activeGameId()), viewer, store).filter((guild) => guild.memberCount > 0),
 };
 
 const inActiveGame =
@@ -196,7 +184,7 @@ export const incomingTroopArrivalsView: FactView<ReturnType<typeof summarizeInco
   models: ["ResourceArrival"],
   read: (store) =>
     summarizeIncomingTroopArrivals(
-      resourceArrivalsView.read(store, NO_ACCOUNT),
+      resourceArrivalsView.read(store, null),
       useChainTimeStore.getState().getNowSeconds(),
     ),
 };

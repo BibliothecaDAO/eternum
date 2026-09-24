@@ -3,6 +3,7 @@ import type { NativeFactStore } from "../native-fact-store";
 import { configManager } from "../../managers/config-manager";
 import { displayPlayerName, type PlayerNameResolver } from "../../utils/entities";
 import { formatGuildMembers } from "../../utils/guild";
+import { isViewerOwner } from "../../utils/viewer";
 
 export const readGuildMembers = (
   store: NativeFactStore,
@@ -30,6 +31,6 @@ export const readGuildWhitelist = (
       address: row.player,
       guildEntityId: row.guild_id,
       name: displayPlayerName(row.player, playerName(row.player)),
-      isUser: row.player === viewer,
+      isUser: isViewerOwner(row.player, viewer),
       isGuildMaster: row.player === row.guild_id,
     }));

@@ -13,6 +13,7 @@ import {
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
   structureMapPosition,
+  isViewerOwner,
 } from "@bibliothecadao/eternum";
 import { hyperstructurePointsPerSecond as sharedPointsPerSecond } from "@bibliothecadao/eternum/game-sync";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
@@ -21,6 +22,7 @@ import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-fact
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ContractAddress, ID, BANDITS_NAME, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
+import { useAccountAddress } from "@/hooks/store/use-account-store";
 
 interface UseStructureEntityDetailOptions {
   structureEntityId: ID;
@@ -34,14 +36,13 @@ interface AlignmentBadge {
 export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEntityDetailOptions) => {
   const {
     setup,
-    account,
     setup: { store },
   } = useGame();
   const mode = useGameModeConfig();
 
   const goToStructure = useGoToStructure(setup);
 
-  const userAddress = ContractAddress(account.account.address);
+  const userAddress = useAccountAddress();
   const structureEntityIdNumber = Number(structureEntityId ?? 0);
   const keys = { game_id: configManager.getActiveGameId(), entity_id: structureEntityIdNumber };
   const structure = useNativeRow("Structure", keys);
@@ -57,9 +58,9 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     "Structure",
   ]);
   const playerGuild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), store) : undefined;
-  const userGuild = getGuildFromPlayerAddress(userAddress, store);
+  const userGuild = userAddress === null ? undefined : getGuildFromPlayerAddress(userAddress, store);
   const guards = structure ? getGuardsByStructure(structure, store) : [];
-  const isMine = structure?.owner === userAddress;
+  const isMine = isViewerOwner(structure?.owner, userAddress);
   const isAlly = isMine || Boolean(playerGuild && userGuild && playerGuild.entityId === userGuild.entityId);
   const ownerProfile = usePlayerProfile(structure?.owner);
   const addressName = structure?.owner ? (ownerProfile.name ?? undefined) : BANDITS_NAME;

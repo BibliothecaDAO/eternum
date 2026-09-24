@@ -1,4 +1,5 @@
 import type { HexPosition, ID } from "@bibliothecadao/types";
+import { isViewerOwner } from "@bibliothecadao/eternum";
 
 interface OwnedEntitySummary {
   id: ID;
@@ -11,7 +12,7 @@ interface ChestSummary {
 
 interface ResolveWorldmapHexClickPlanInput {
   hexCoords: HexPosition | null;
-  accountAddress?: bigint;
+  accountAddress?: bigint | null;
   army?: OwnedEntitySummary;
   structure?: OwnedEntitySummary;
   chest?: ChestSummary;
@@ -36,10 +37,11 @@ export function resolveWorldmapHexClickPlan({
     return { kind: "ignore" };
   }
 
-  const isMine =
-    accountAddress !== undefined && (army?.owner === accountAddress || structure?.owner === accountAddress);
+  const ownsArmy = isViewerOwner(army?.owner, accountAddress);
+  const ownsStructure = isViewerOwner(structure?.owner, accountAddress);
+  const isMine = ownsArmy || ownsStructure;
 
-  if (army && army.owner === accountAddress) {
+  if (army && ownsArmy) {
     return {
       kind: "select",
       isMine: true,
@@ -50,7 +52,7 @@ export function resolveWorldmapHexClickPlan({
     };
   }
 
-  if (structure && structure.owner === accountAddress) {
+  if (structure && ownsStructure) {
     return {
       kind: "select",
       isMine: true,

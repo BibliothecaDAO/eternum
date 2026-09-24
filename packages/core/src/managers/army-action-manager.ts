@@ -22,6 +22,7 @@ import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
 import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils";
+import { isViewerOwner } from "../utils/viewer";
 
 export class ArmyActionManager {
   private readonly entityId: ID;
@@ -158,7 +159,7 @@ export class ArmyActionManager {
       const army = armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
       const structure = structureHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
       const target = army ?? structure;
-      if (!target || target.owner === playerAddress) continue;
+      if (!target || isViewerOwner(target.owner, playerAddress)) continue;
 
       const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
       actionPaths.set(ActionPaths.posKey({ col, row }), [
@@ -234,12 +235,16 @@ export class ArmyActionManager {
       const isSpire = this.isWorldSpireHex({ col, row });
       const isExplored = exploredHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
       const hasArmy = armyHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
-      const isArmyMine =
-        armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER)?.owner === playerAddress || false;
+      const isArmyMine = isViewerOwner(
+        armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER)?.owner,
+        playerAddress,
+      );
       const hasStructure = structureHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
       const hasChest = chestHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
-      const isStructureMine =
-        structureHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER)?.owner === playerAddress || false;
+      const isStructureMine = isViewerOwner(
+        structureHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER)?.owner,
+        playerAddress,
+      );
       const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
 
       // Skip if hex requires exploration but army can't explore

@@ -1,12 +1,13 @@
 import { knownBalance } from "@/ui/utils/utils";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { configManager, divideByPrecision, getBalance, getRealmInfo } from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, getBalance, getRealmInfo, isViewerOwner } from "@bibliothecadao/eternum";
 import { useArrivalsByStructure } from "@/hooks/helpers/use-resource-arrivals";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress, getLevelName } from "@bibliothecadao/types";
+import { getLevelName } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
 import { getPlayerName } from "@/services/identity/player-profiles";
+import { useAccountAddress } from "@/hooks/store/use-account-store";
 
 interface RawUpgradeCost {
   resource: number;
@@ -52,6 +53,7 @@ export const formatIncomingEta = (etaSeconds: number): string => {
 
 export const useStructureUpgrade = (structureEntityId: number | null): StructureUpgradeResult | null => {
   const { setup, account } = useGame();
+  const viewer = useAccountAddress();
   const currentDefaultTick = useCurrentDefaultTick();
   const [isUpgradeLocked, setUpgradeLocked] = useState(false);
   const revision = useNativeRevision([
@@ -176,7 +178,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
     upgradeProgress: upgradeReadiness.upgradeProgress,
     requirements,
     missingRequirements: upgradeReadiness.missingRequirements,
-    isOwner: structureInfo.owner === ContractAddress(account.account.address),
+    isOwner: isViewerOwner(structureInfo.owner, viewer),
     isMaxLevel: nextLevel === null,
     upgradeActionState: isUpgradeLocked ? "syncing" : "idle",
     isUpgradeLoading: isUpgradeLocked,

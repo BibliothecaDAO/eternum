@@ -66,9 +66,9 @@ export interface GameClient {
   /** The account that signs this client's actions; null until connect(). */
   readonly signer: AccountInterface | null;
   /**
-   * The game seen from the connected signer. Before connect() the client is a spectator: views see the game from no
-   * player, so isMine is false everywhere, and any action that submits throws. Callers wanting another viewer use
-   * createGameViews directly.
+   * The game seen from the connected signer. Before connect() the client is a spectator: views see the game from
+   * address zero, which owns nothing (isViewerOwner), so isMine is false everywhere, bandit rows included, and any
+   * action that submits throws. Callers wanting another viewer use createGameViews directly.
    */
   readonly views: GameViews;
   readonly actions: GameActions;

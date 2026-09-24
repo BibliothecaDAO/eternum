@@ -28,6 +28,7 @@ import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { Castle, Crown, Pickaxe, Hyperstructure, Star, Tent } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
+import { accountAddress } from "@/hooks/store/use-account-store";
 
 const VILLAGE_ICON_BY_KEY: Record<VillageIconKey, typeof Castle> = {
   castle: Castle,
@@ -567,7 +568,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
 
   const submit = useCallback(async () => {
     if (!store) return;
-    if (!account || !account.address || account.address === "0x0") {
+    if (!account || accountAddress() === null) {
       toast.error("Connect wallet to transfer.");
       return;
     }

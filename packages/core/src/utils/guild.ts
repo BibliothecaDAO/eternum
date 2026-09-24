@@ -4,19 +4,20 @@ import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers/config-manager";
 import { displayPlayerName, type PlayerNameResolver } from "./entities";
+import { isViewerOwner } from "./viewer";
 
 export const formatGuilds = (
   guilds: Iterable<NativeRows["Guild"]>,
-  playerAddress: ContractAddress,
+  playerAddress: ContractAddress | null,
   store: NativeFactStore,
 ): GuildInfo[] => {
   const game = configManager.getActiveGameId();
-  const member = store.get("GuildMember", { game_id: game, actor: playerAddress });
+  const member = playerAddress === null ? undefined : store.get("GuildMember", { game_id: game, actor: playerAddress });
   const members = [...store.inGame("GuildMember", game)];
   return [...guilds].map((guild) => ({
     entityId: guild.guild_id,
     name: shortString.decodeShortString(guild.name.toString()),
-    isOwner: guild.guild_id === playerAddress,
+    isOwner: isViewerOwner(guild.guild_id, playerAddress),
     isPublic: guild.public,
     isMember: guild.guild_id === member?.guild_id,
     memberCount: members.filter((row) => row.guild_id === guild.guild_id).length,
@@ -41,7 +42,7 @@ export const formatGuildMembers = (
     address: member.actor,
     guildEntityId: member.guild_id,
     name: displayPlayerName(member.actor, playerName(member.actor)),
-    isUser: member.actor === playerAddress,
+    isUser: isViewerOwner(member.actor, playerAddress),
     isGuildMaster: member.actor === member.guild_id,
   }));
 

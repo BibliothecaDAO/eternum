@@ -8,14 +8,13 @@ import Button from "@/ui/design-system/atoms/button";
 import { currencyFormat } from "@/ui/utils/utils";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress, EntityType, ID, RelicRecipientType, Troops } from "@bibliothecadao/types";
+import { EntityType, ID, RelicRecipientType, Troops } from "@bibliothecadao/types";
 
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../hooks/use-relic-activation";
 import type { RelicHolderPreview } from "./player-relic-tray";
 import { RelicEssenceRequirement, RelicIncompatibilityNotice, RelicSummary } from "./relic-activation-shared";
-
-const ZERO_CONTRACT_ADDRESS = ContractAddress("0x0");
+import { accountAddress } from "@/hooks/store/use-account-store";
 
 interface RelicActivationSelectorProps {
   resourceId: ID;
@@ -234,7 +233,7 @@ export const RelicActivationSelector = ({
       }
 
       try {
-        const parentInfo = mode.structure.getEntityInfo(structureId, ZERO_CONTRACT_ADDRESS, store);
+        const parentInfo = mode.structure.getEntityInfo(structureId, null, store);
         return parentInfo?.name?.name ?? null;
       } catch {
         return null;
@@ -242,7 +241,7 @@ export const RelicActivationSelector = ({
     };
 
     return holders.map((holder) => {
-      const entityInfo = mode.structure.getEntityInfo(holder.entityId, ZERO_CONTRACT_ADDRESS, store);
+      const entityInfo = mode.structure.getEntityInfo(holder.entityId, null, store);
       const entityName = entityInfo?.name?.name ?? `Entity ${holder.entityId}`;
       const selfId = toEntityId(holder.entityId, holder.entityId);
       const isArmy = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
@@ -281,7 +280,7 @@ export const RelicActivationSelector = ({
       return;
     }
 
-    if (!account || account.address === "0x0") {
+    if (!account || accountAddress() === null) {
       setActivationError({ holderId: holderKey, message: "Account not connected." });
       return;
     }

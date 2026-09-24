@@ -4,7 +4,7 @@ import { GuildInviteList } from "@/ui/features/social/guilds/guild-invites-list"
 import { GuildMemberList } from "./guild-member-list";
 import { useSocialStore } from "../components/use-social-store";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
-import { getGuild, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
+import { getGuild, getGuildFromPlayerAddress, isViewerOwner } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useGuildMembers, useGuildWhitelist } from "@/hooks/helpers/use-guilds";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
@@ -42,7 +42,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
   const userIsGuildMaster = userGuild?.isOwner ? userGuild.entityId === selectedGuildEntityId : false;
 
   const userIsInvited = useMemo(() => {
-    return invitedPlayers.some((list) => list.address === ContractAddress(account.address));
+    return invitedPlayers.some((list) => isViewerOwner(list.address, ContractAddress(account.address)));
   }, [invitedPlayers, account.address]);
 
   const guildMasterName = useMemo(() => {
@@ -53,7 +53,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
   }, [guildMembers, players]);
 
   const playerName = useMemo(() => {
-    return players.find((player) => player.address === ContractAddress(account.address))?.name;
+    return players.find((player) => isViewerOwner(player.address, ContractAddress(account.address)))?.name;
   }, [players, account.address]);
 
   const leaveGuild = useCallback(() => {

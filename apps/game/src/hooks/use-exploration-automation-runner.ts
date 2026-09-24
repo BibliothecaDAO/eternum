@@ -28,6 +28,7 @@ import {
   selectDueEntries,
   shouldRepeatExplore,
 } from "./exploration-automation-planner";
+import { accountAddress } from "@/hooks/store/use-account-store";
 
 const REPEAT_EXPLORE_DELAY_MS = 3_000;
 
@@ -129,7 +130,7 @@ export const useExplorationAutomationRunner = () => {
           snapshotCacheRef.current.clear();
         });
       }
-      if (!account || !account.address || account.address === "0x0") {
+      if (!account || accountAddress() === null) {
         scheduleNextCheck();
         return;
       }

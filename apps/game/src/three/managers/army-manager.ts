@@ -1,7 +1,7 @@
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
 import { arePlayersAllied } from "@/utils/entity-ownership";
-import { useAccountStore } from "@/hooks/store/use-account-store";
+import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { getPlayerDisplayName, watchPlayerNames } from "@/hooks/use-player-profile";
 import { gameWorkerManager } from "@/managers/game-worker-manager";
@@ -63,7 +63,7 @@ import type {
   ArmySpatialRenderable,
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
-import { BiomeType, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import * as THREE from "three";
@@ -658,7 +658,8 @@ export class ArmyManager {
       entityId: input.entityId,
       hexCoords: Position.fromNormalized({ x: input.col, y: input.row }),
       owner: {
-        address: input.isMine ? ContractAddress(useAccountStore.getState().account?.address || "0") : 0n,
+        // A debug army spawned as the viewer's with no viewer is neutral, owned by nobody.
+        address: input.isMine ? (accountAddress() ?? 0n) : 0n,
         // TODO: Add owner name and guild name
         ownerName: "Neutral",
         guildName: "None",
@@ -826,7 +827,7 @@ export class ArmyManager {
         entityId,
         hexCoords: Position.fromNormalized({ x: col, y: row }),
         owner: {
-          address: params.isMine ? ContractAddress(useAccountStore.getState().account?.address || "0") : BigInt(i + 1),
+          address: params.isMine ? (accountAddress() ?? 0n) : BigInt(i + 1),
           ownerName: `Debug Army ${i + 1}`,
           guildName: "Debug Guild",
         },
@@ -2787,7 +2788,7 @@ export class ArmyManager {
   }): PlayerColorProfile {
     return playerColorManager.getProfileForUnit(
       army.isMine,
-      army.isAlly ?? arePlayersAllied(this.store, useAccountStore.getState().account?.address, army.owner?.address),
+      army.isAlly ?? arePlayersAllied(this.store, accountAddress(), army.owner?.address),
       army.owner?.address,
     );
   }
@@ -3020,7 +3021,7 @@ export class ArmyManager {
       {
         entityId: this.toNumericId(army.entityId),
         isMine: army.isMine,
-        isAlly: arePlayersAllied(this.store, useAccountStore.getState().account?.address, army.owner.address),
+        isAlly: arePlayersAllied(this.store, accountAddress(), army.owner.address),
         ownerAddress: army.owner.address,
         underAttack: army.attackedFromDegrees !== undefined,
       },

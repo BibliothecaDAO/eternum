@@ -1,6 +1,6 @@
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
-import { useAccountStore } from "@/hooks/store/use-account-store";
+import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { Position, configManager, structureMapPosition } from "@bibliothecadao/eternum";
 
@@ -30,13 +30,6 @@ const readInitialSelectableStructures = (setup: SetupResult, owner?: bigint): In
     .sort((left, right) => left.entity_id - right.entity_id);
 };
 
-const resolveConnectedAccountAddress = (): string | undefined => {
-  const accountAddress = useAccountStore.getState().account?.address;
-  const hasConnectedAccount =
-    typeof accountAddress === "string" && accountAddress.length > 0 && accountAddress !== "0x0";
-  return hasConnectedAccount ? accountAddress : undefined;
-};
-
 /**
  * Keeps the UI on a structure for the life of the game session. The snapshot can land after boot and the account can
  * be restored after that, so a choice made once at boot left a reload with nothing selected. This chooses again when
@@ -59,8 +52,8 @@ const chooseInitialStructure = (setup: SetupResult, state: AppStore): void => {
   const hasSelection = Boolean(state.structureEntityId);
   if (hasSelection && !isSpectatorFallback(state)) return;
 
-  const address = resolveConnectedAccountAddress();
-  const ownedStructures = address ? readInitialSelectableStructures(setup, BigInt(address)) : [];
+  const viewer = accountAddress();
+  const ownedStructures = viewer === null ? [] : readInitialSelectableStructures(setup, viewer);
   // A spectator fallback yields only to the player's own realm.
   if (hasSelection && ownedStructures.length === 0) return;
 

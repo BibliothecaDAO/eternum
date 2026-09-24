@@ -40,7 +40,7 @@ export const readBuildingTiles = (
 export const readStructures = (
   store: NativeFactStore,
   owner: ContractAddress,
-  viewer: ContractAddress,
+  viewer: ContractAddress | null,
   playerName: PlayerNameResolver,
 ): Structure[] =>
   [...store.structuresOwnedBy(configManager.getActiveGameId(), owner)]

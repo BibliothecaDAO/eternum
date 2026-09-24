@@ -14,6 +14,7 @@ import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager, divideByPrecision, getArmyName, gramToKg, nanogramToKg, getTileAt } from "..";
 import type { PlayerNameResolver } from "./entities";
+import { isViewerOwner } from "./viewer";
 
 export const getExplorerOwner = (store: NativeFactStore, explorer: NativeRows["ExplorerTroops"]): bigint =>
   explorer.owner === 0
@@ -22,7 +23,7 @@ export const getExplorerOwner = (store: NativeFactStore, explorer: NativeRows["E
 
 export const formatArmies = (
   armies: Iterable<NativeRows["ExplorerTroops"]>,
-  playerAddress: ContractAddress,
+  playerAddress: ContractAddress | null,
   store: NativeFactStore,
   playerName: PlayerNameResolver,
 ): ArmyInfo[] =>
@@ -44,7 +45,7 @@ export const formatArmies = (
       ownerName: owner === 0n ? "" : (playerName(owner) ?? ""),
       structure,
       explorer,
-      isMine: owner === playerAddress,
+      isMine: isViewerOwner(owner, playerAddress),
       isMercenary: owner === 0n,
       isHome: home !== undefined && isArmyAdjacentToStructure(explorer.coord, home.x, home.y, home.alt),
       name: getArmyName(explorer.explorer_id, store),
@@ -164,16 +165,14 @@ export const getGuardSlotCooldownRemaining = (
 
 export const hasAdjacentOwnedStructure = (
   position: { x: number; y: number; alt: boolean },
-  playerAddress: ContractAddress,
+  playerAddress: ContractAddress | null,
   store: NativeFactStore,
 ) =>
   getLayerNeighborHexes(position.x, position.y, position.alt).some((hex) => {
     const tile = getTileAt(store, position.alt, hex.col, hex.row);
     if (!tile?.occupier_is_structure) return false;
-    return (
-      store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: tile.occupier_id })?.owner ===
-      playerAddress
-    );
+    const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: tile.occupier_id });
+    return isViewerOwner(structure?.owner, playerAddress);
   });
 
 export const isArmyAdjacentToStructure = (

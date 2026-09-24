@@ -59,7 +59,7 @@ export interface GameModeConfig {
     getTypeName: (structureType: StructureType, mineKind?: number) => string | undefined;
     getEntityInfo: (
       entityId: ID,
-      playerAccount: ContractAddress,
+      playerAccount: ContractAddress | null,
       store: NativeFactStore,
     ) => ReturnType<typeof getEntityInfo>;
   };
@@ -95,7 +95,7 @@ const buildStructureHelpers = (isBlitz: boolean) => ({
   getName: (structure: StructureNameInput, parentRealmContractPosition?: { col: number; row: number }) =>
     getStructureName(structure, isBlitz, parentRealmContractPosition),
   getTypeName: getStructureTypeName,
-  getEntityInfo: (entityId: ID, playerAccount: ContractAddress, store: NativeFactStore) =>
+  getEntityInfo: (entityId: ID, playerAccount: ContractAddress | null, store: NativeFactStore) =>
     getEntityInfo(entityId, playerAccount, store, isBlitz),
 });
 

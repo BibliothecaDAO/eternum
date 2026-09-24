@@ -18,7 +18,7 @@ import { formatReadableErrorForConsole } from "@/utils/error-message";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
-import { useAccountStore } from "@/hooks/store/use-account-store";
+import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveMovementStamina, type MovementStaminaResolution } from "@/lib/army-stamina/movement-affordability";
 import { resolveStoredWorldmapCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -58,6 +58,7 @@ import {
   NEUTRAL_BIOME_CLIMATE,
   Position,
   isOpenSpawnHex,
+  isViewerOwner,
   readExpeditionRules,
 } from "@bibliothecadao/eternum";
 import {
@@ -2376,8 +2377,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async enterStructureFromWorldmap(structure: HexEntityInfo, hexCoords: HexPosition) {
-    const accountAddress = ContractAddress(useAccountStore.getState().account?.address || "");
-    const isMine = structure.owner === accountAddress;
+    const isMine = isViewerOwner(structure.owner, accountAddress());
 
     const worldMapPosition = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row });
 
@@ -2503,13 +2503,13 @@ export default class WorldmapScene extends WarpTravel {
       resolveSpawnActionPath(hexCoords, getLiveWorldmapEntityActions().actionPaths)
     )
       return;
-    const accountAddress = ContractAddress(useAccountStore.getState().account?.address || "");
+    const viewer = accountAddress();
     const { army, structure, chest } = hexCoords
       ? this.getHexagonEntity(hexCoords)
       : { army: undefined, structure: undefined, chest: undefined };
     const clickPlan = resolveWorldmapHexClickPlan({
       hexCoords,
-      accountAddress,
+      accountAddress: viewer,
       army: army ? { id: army.id, owner: army.owner } : undefined,
       structure: structure ? { id: structure.id, owner: structure.owner } : undefined,
       chest: chest ? { id: chest.id } : undefined,
@@ -2532,7 +2532,8 @@ export default class WorldmapScene extends WarpTravel {
     if (clickPlan.selection.type === "army") {
       // The pulse marks a selected army; the selected-hex fill under it would only tint the unit.
       this.selectedHexManager.resetPosition();
-      this.onArmySelection(clickPlan.selection.entityId, accountAddress);
+      // The plan selects an army only for the viewer who owns it, so a viewer is present here.
+      this.onArmySelection(clickPlan.selection.entityId, viewer!);
       this.logInteractionDebug("army_selected_via_left_click", {
         entityId: clickPlan.selection.entityId,
         hexCoords,
@@ -3115,9 +3116,10 @@ export default class WorldmapScene extends WarpTravel {
     const target = this.getHexagonEntity(sceneHexOf(targetHex));
     const targetActor = actorOnHex(target);
     if (!targetActor) return;
-    const account = ContractAddress(useAccountStore.getState().account?.address || "");
-    const isTargetMine = target.army?.owner === account || target.structure?.owner === account;
-    const isSelectedMine = selected.army?.owner === account || selected.structure?.owner === account;
+    const viewer = accountAddress();
+    const isTargetMine = isViewerOwner(target.army?.owner, viewer) || isViewerOwner(target.structure?.owner, viewer);
+    const isSelectedMine =
+      isViewerOwner(selected.army?.owner, viewer) || isViewerOwner(selected.structure?.owner, viewer);
 
     this.openTargetActionSurface(targetHex, {
       id: "help",
@@ -3149,11 +3151,11 @@ export default class WorldmapScene extends WarpTravel {
       game_id: configManager.getActiveGameId(),
       entity_id: selectedEntityId,
     });
-    const playerAddress = useAccountStore.getState().account?.address;
+    const viewer = accountAddress();
 
     const canIssueStructureOrders =
       canIssueOrders() && Boolean(structureData && isAddressEqualToAccount(structureData.owner));
-    if (!playerAddress || !canIssueStructureOrders) {
+    if (viewer === null || !canIssueStructureOrders) {
       this.updateEntityActionPaths(new Map());
       this.highlightHexManager.highlightHexes([]);
       showArmyDeploymentTooltip(null);
@@ -3164,7 +3166,7 @@ export default class WorldmapScene extends WarpTravel {
       structureId: selectedEntityId,
       armyHexes: this.buildProjectedArmyActionIndex(),
       exploredHexes: this.buildProjectedExploredTileIndex(),
-      playerAddress: ContractAddress(playerAddress),
+      playerAddress: viewer,
     });
     const expedition = readExpeditionRules(this.game.store, configManager.getActiveGameId()) !== null;
 
@@ -8061,8 +8063,8 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async selectNextArmy(): Promise<void> {
-    if (this.selectableArmies.length === 0) return;
-    const account = ContractAddress(useAccountStore.getState().account?.address || "");
+    const account = accountAddress();
+    if (this.selectableArmies.length === 0 || account === null) return;
     this.isShortcutArmySelectionInFlight = true;
     if (this.chunkRefreshTimeout !== null || this.chunkRefreshRunning) {
       this.pendingChunkRefreshUiReason = resolvePendingChunkRefreshUiReason({

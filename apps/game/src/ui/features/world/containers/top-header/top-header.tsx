@@ -16,14 +16,10 @@ import { AttentionPill } from "./attention-pill";
 import { IdentityChip } from "./identity-chip";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress } from "@bibliothecadao/types";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 export const TopHeader = memo(() => {
   const lane = useCompactLane();
-  const {
-    setup,
-    account: { account },
-  } = useGame();
+  const { setup } = useGame();
 
   const playClick = useUISound("ui.click");
 
@@ -41,8 +37,9 @@ export const TopHeader = memo(() => {
     entity_id: structureEntityId,
   });
   const entityInfo = useMemo(
-    () => mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), setup.store),
-    [structureEntityId, currentDefaultTick, account.address, structure, mode, setup.store],
+    // Only the position is read here, so no viewer is needed.
+    () => mode.structure.getEntityInfo(structureEntityId, null, setup.store),
+    [structureEntityId, currentDefaultTick, structure, mode, setup.store],
   );
 
   // With nothing selected there is no structure to open: LOCAL is disabled rather than aimed at a default hex.

@@ -9,26 +9,9 @@ const ui = {
   },
 };
 
-type AccountState = { account: { address: string } | null };
-let accountState: AccountState = { account: null };
-const accountListeners = new Set<(state: AccountState, previous: AccountState) => void>();
-const setAccount = (account: AccountState["account"]) => {
-  const previous = accountState;
-  accountState = { account };
-  accountListeners.forEach((listener) => listener(accountState, previous));
-};
-
 vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: { getState: () => ui } }));
-vi.mock("@/hooks/store/use-account-store", () => ({
-  useAccountStore: {
-    getState: () => accountState,
-    subscribe: (listener: (state: AccountState, previous: AccountState) => void) => {
-      accountListeners.add(listener);
-      return () => accountListeners.delete(listener);
-    },
-  },
-}));
-vi.mock("@/utils/spectator-session", () => ({ isExplicitSpectateSession: () => false }));
+const spectateSession = vi.fn(() => false);
+vi.mock("@/utils/spectator-session", () => ({ isExplicitSpectateSession: () => spectateSession() }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   Position: (await importOriginal<typeof import("@bibliothecadao/eternum")>()).Position,
   configManager: { getActiveGameId: () => 1, getMapCenter: () => 0 },
@@ -39,6 +22,8 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
 }));
 
 const { followInitialStructure } = await import("./initial-structure");
+const { useAccountStore } = await import("@/hooks/store/use-account-store");
+const setAccount = (account: { address: string } | null) => useAccountStore.setState({ account: account as never });
 
 const PLAYER = "0x7d79";
 const structure = (entity_id: number, owner: string) => ({
@@ -67,7 +52,7 @@ const factStore = () => {
 describe("initial structure", () => {
   it("selects the player's realm when the snapshot lands after boot", () => {
     Object.assign(ui, { structureEntityId: 0, isSpectating: false });
-    accountState = { account: { address: PLAYER } };
+    setAccount({ address: PLAYER });
     const store = factStore();
     const stop = followInitialStructure({ store } as never);
     expect(ui.structureEntityId).toBe(0);
@@ -80,7 +65,7 @@ describe("initial structure", () => {
 
   it("moves from the spectator fallback to the player's realm when the account arrives", () => {
     Object.assign(ui, { structureEntityId: 0, isSpectating: false });
-    accountState = { account: null };
+    setAccount(null);
     const store = factStore();
     const stop = followInitialStructure({ store } as never);
     store.land([structure(5, "0x99"), structure(2790, PLAYER)]);
@@ -90,5 +75,18 @@ describe("initial structure", () => {
 
     expect(ui).toMatchObject({ structureEntityId: 2790, isSpectating: false });
     stop();
+  });
+
+  it("keeps a session entered to spectate off the signed-in player's realm", () => {
+    Object.assign(ui, { structureEntityId: 0, isSpectating: false });
+    spectateSession.mockReturnValue(true);
+    setAccount({ address: PLAYER });
+    const store = factStore();
+    const stop = followInitialStructure({ store } as never);
+    store.land([structure(5, "0x99"), structure(2790, PLAYER)]);
+
+    expect(ui).toMatchObject({ structureEntityId: 5, isSpectating: true });
+    stop();
+    spectateSession.mockReturnValue(false);
   });
 });

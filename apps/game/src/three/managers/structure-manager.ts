@@ -12,7 +12,7 @@ import { SettlementModel } from "../structures/settlement-model";
 import { resolveSettlementRelationship } from "../structures/settlement-appearance";
 import { RiftModelPath, VILLAGE_MODEL_PATH, isSettlementModelPath } from "../constants/scene-constants";
 import { arePlayersAllied } from "@/utils/entity-ownership";
-import { useAccountStore } from "@/hooks/store/use-account-store";
+import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
@@ -595,7 +595,7 @@ export class StructureManager {
       initialized: this.resolveHyperstructureInitialized(renderable.entityId, renderInfo.type),
       level: renderInfo.level,
       isMine: isAddressEqualToAccount(ownerAddress),
-      isAlly: arePlayersAllied(this.store, useAccountStore.getState().account?.address, ownerAddress),
+      isAlly: arePlayersAllied(this.store, accountAddress(), ownerAddress),
       owner: { address: ownerAddress, ownerName, guildName: "" },
       structureType: renderInfo.type,
       mineKind: structureComponent?.metadata.mine_kind,
