@@ -84,6 +84,7 @@ export const createGameSyncObserver = (input: GameSyncObserverInput): GameClient
     markGameEntryMilestone("initial-sync-started");
   },
   onSubscriptionActive: recordGamewideSubscriptionActive,
+  onConnection: (reachable) => useConnectionStore.getState().setGlobalStatus(reachable ? "connected" : "reconnecting"),
   onLiveUpdate: recordGamewideLiveUpdate,
   onLiveApplyFailed: () => useConnectionStore.getState().setGlobalStatus("failed"),
   onHead: createHeraldHeadRecorder(),

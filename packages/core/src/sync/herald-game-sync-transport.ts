@@ -76,6 +76,8 @@ interface Deferred<Value> {
 
 export interface HeraldGameSyncTransportOptions {
   modelDefinition: (name: string) => GameSyncModelDefinition;
+  /** Herald greeted the stream (true), or the socket was lost and is being retried (false). */
+  onConnection?: (reachable: boolean) => void;
   reconnectMs?: number;
   socketFactory?: (url: string) => HeraldSocket;
   url: string;
@@ -212,6 +214,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private reconnectSocket(socket: HeraldSocket): void {
     if (this.socket !== socket) return;
     this.closeSocket();
+    this.options.onConnection?.(false);
     // A snapshot cut short can only be completed by a fresh one.
     if (this.snapshotStreaming) this.forceFreshSnapshot = true;
     this.snapshotStreaming = false;
@@ -262,6 +265,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       });
     }
     this.clearHelloTimer();
+    this.options.onConnection?.(true);
     this.socket?.send(
       JSON.stringify({
         type: "resume",

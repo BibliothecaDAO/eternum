@@ -52,6 +52,7 @@ const streamHarness = () => {
   const snapshotProgress: GameSyncSnapshotChunkProgress[] = [];
   const transactions: GameSyncTransaction[] = [];
   const startFailures: Error[] = [];
+  const reachability: boolean[] = [];
   const handlers: GameSyncSubscriptionHandlers = {
     onSnapshotStart: () => deliveries.push({ kind: "snapshot-start" }),
     onSnapshotModel: (model, facts, progress) => {
@@ -68,6 +69,7 @@ const streamHarness = () => {
   };
   const transport = new HeraldGameSyncTransport({
     modelDefinition: nativeModelDefinition(bindings as unknown as NativeWorldBindings),
+    onConnection: (reachable) => reachability.push(reachable),
     reconnectMs: 200,
     socketFactory: (url) => {
       urls.push(url);
@@ -84,6 +86,7 @@ const streamHarness = () => {
     factBatches,
     handlers,
     heads,
+    reachability,
     snapshotProgress,
     sockets,
     startFailures,
@@ -273,6 +276,20 @@ describe("HeraldGameSyncTransport", () => {
     expect(harness.sockets).toHaveLength(2);
     writer.cancel();
     warning.mockRestore();
+  });
+
+  it("names a lost stream as unreachable while it retries, and reachable again on Herald's hello", async () => {
+    vi.useFakeTimers();
+    const harness = streamHarness();
+    const { socket, writer } = await attached(harness, "current");
+    socket.close();
+    await vi.advanceTimersByTimeAsync(200);
+    harness.sockets[1]!.close();
+    await vi.advanceTimersByTimeAsync(200);
+    expect(harness.reachability).toEqual([true, false, false]);
+    harness.sockets[2]!.receive(hello("current", 0));
+    expect(harness.reachability).toEqual([true, false, false, true]);
+    writer.cancel();
   });
 
   it("cancels the reconnect handshake when its subscription is stopped", async () => {

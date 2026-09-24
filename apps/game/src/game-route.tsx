@@ -9,7 +9,9 @@ import { TransactionAudioCues } from "@/ui/shared/components/transaction-audio-c
 import { useEffect } from "react";
 import { PlaySceneHandoff } from "./game-entry/play-scene-handoff";
 import { markGameEntryMilestone } from "./ui/layouts/game-entry-timeline";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { getShard } from "@bibliothecadao/eternum/game-client";
+import { useConnectionStore } from "./hooks/store/use-connection-store";
 import type { Account, AccountInterface } from "starknet";
 import { usePlayRouteBootController } from "./game-entry/play-route-boot";
 import { GameProvider } from "./hooks/context/game-context";
@@ -72,8 +74,17 @@ const resolveCurrentTaskLabel = ({
   return activeTask?.label ?? currentTask ?? phase;
 };
 
+/** While Herald's stream is lost and retrying, the loading screen names the shard it cannot reach. */
+const useUnreachableShard = (): string | null => {
+  const { chain } = useParams();
+  const retrying = useConnectionStore((state) => state.globalStatus === "reconnecting");
+  const url = retrying ? getShard(chain)?.url : undefined;
+  return url ? new URL(url).host : null;
+};
+
 const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   const navigate = useNavigate();
+  const unreachableShard = useUnreachableShard();
   const state = usePlayRouteBootController();
   const {
     phase,
@@ -124,7 +135,13 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
       {phase !== "ready" && (
         <LoadingScreen
           title="Entering the World"
-          subtitle={hasGameContext ? "Preparing your view…" : "Connecting to the world…"}
+          subtitle={
+            unreachableShard
+              ? `Can't reach ${unreachableShard}, retrying…`
+              : hasGameContext
+                ? "Preparing your view…"
+                : "Connecting to the world…"
+          }
           progress={progress > 0 ? progress : undefined}
           currentTaskLabel={currentTaskLabel}
         />

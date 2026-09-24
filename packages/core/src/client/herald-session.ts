@@ -27,6 +27,8 @@ export interface GameClientObserver {
   onSetupCompleted?: (setup: GameClientSetup) => void;
   /** The Herald subscription is active; the snapshot follows. */
   onSubscriptionActive?: () => void;
+  /** Herald's stream is up (true), or lost and being retried (false): a named state, never a timeout. */
+  onConnection?: (reachable: boolean) => void;
   /** A live delivery arrived: liveness, not content. */
   onLiveUpdate?: (kind: "entity" | "event") => void;
   /** A live entity batch failed to apply; the stream is no longer trustworthy. */
@@ -120,6 +122,7 @@ export function createHeraldGameSyncSession(
     store: input.store,
     transport: new HeraldGameSyncTransport({
       modelDefinition: input.modelDefinition,
+      onConnection: observer.onConnection,
       socketFactory: input.socketFactory,
       url: buildHeraldGameStreamUrl(input.baseUrl, input.gameId, input.actor),
     }),
