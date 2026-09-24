@@ -10,6 +10,7 @@ export * from "./combat-simulator";
 export * from "./constants";
 export * from "./entities";
 export * from "./native-preset-mode";
+export * from "./production-path";
 export * from "./entry-token";
 export * from "./expeditions";
 export * from "./guild";
