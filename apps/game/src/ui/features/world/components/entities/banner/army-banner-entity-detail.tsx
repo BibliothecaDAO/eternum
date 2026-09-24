@@ -9,6 +9,7 @@ import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import {
+  describeNextStaminaGain,
   isStaminaRecharging,
   STAMINA_RECHARGING_FILL_CLASS,
   STAMINA_RECHARGING_TEXT_CLASS,
@@ -96,7 +97,8 @@ const ArmyBannerEntityDetailContent = memo(
     const statusClass = derivedData.isMine
       ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200"
       : "border-red-400/40 bg-red-400/15 text-red-200";
-    const currentStamina = derivedData.staminaDisplay?.displayCurrent ?? Number(derivedData.stamina.amount);
+    const currentStamina = derivedData.staminaDisplay?.committedCurrent ?? Number(derivedData.stamina.amount);
+    const nextStaminaGain = derivedData.staminaDisplay ? describeNextStaminaGain(derivedData.staminaDisplay) : null;
     const maxStamina = derivedData.maxStamina;
     const travelBlocked = movementReadiness ? !movementReadiness.canTravel : false;
     const travelBlockedTitle = movementReadiness
@@ -183,9 +185,9 @@ const ArmyBannerEntityDetailContent = memo(
               rightAccessory={hasWarnings && movementReadiness ? <ArmyWarning readiness={movementReadiness} /> : null}
             />
           ) : null}
-          {derivedData.staminaDisplay && derivedData.staminaDisplay.secondsUntilFull > 0 ? (
+          {nextStaminaGain && derivedData.staminaDisplay ? (
             <p className="text-[10px] text-gold/60">
-              Rested in {formatRestTime(derivedData.staminaDisplay.secondsUntilFull)}
+              {nextStaminaGain} · rested in {formatRestTime(derivedData.staminaDisplay.secondsUntilFull)}
             </p>
           ) : null}
           {showRelicsInline && (
@@ -281,7 +283,7 @@ const InlineStaminaBar = ({
   rightAccessory?: ReactNode;
 }) => {
   if (maxStamina === 0) return null;
-  const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
+  const { committedPercentage, displayedCurrent } = resolveStaminaDisplay({
     current: currentStamina,
     max: maxStamina,
   });
@@ -292,7 +294,7 @@ const InlineStaminaBar = ({
   // blocked signal stays unambiguous. The readiness icons say why.
   const fillClass = travelBlocked
     ? "bg-progress-bar-danger"
-    : displayPercentage > 66
+    : committedPercentage > 66
       ? "bg-progress-bar-good"
       : "bg-progress-bar-medium";
 
@@ -309,16 +311,12 @@ const InlineStaminaBar = ({
         )}
       >
         <div
-          className={cn(fillClass, "h-full rounded-full opacity-45 transition-all duration-300")}
-          style={{ width: `${committedPercentage}%` }}
-        />
-        <div
           className={cn(
             fillClass,
-            "h-full rounded-full transition-all duration-1000 -mt-2",
+            "h-full rounded-full transition-all duration-300",
             recharging && STAMINA_RECHARGING_FILL_CLASS,
           )}
-          style={{ width: `${displayPercentage}%` }}
+          style={{ width: `${committedPercentage}%` }}
         />
       </div>
       <span className={cn("whitespace-nowrap", recharging && STAMINA_RECHARGING_TEXT_CLASS)}>

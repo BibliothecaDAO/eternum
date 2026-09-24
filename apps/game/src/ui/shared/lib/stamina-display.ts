@@ -7,7 +7,6 @@ interface StaminaDisplayInput {
 
 interface StaminaDisplay {
   committedPercentage: number;
-  displayPercentage: number;
   displayedCurrent: number;
 }
 
@@ -15,9 +14,5 @@ export const resolveStaminaDisplay = ({ current, max }: StaminaDisplayInput): St
   const percentage = max > 0 ? clampPercentage((current / max) * 100) : 0;
   const displayedCurrent = Math.round(current);
 
-  return {
-    committedPercentage: percentage,
-    displayPercentage: percentage,
-    displayedCurrent,
-  };
+  return { committedPercentage: percentage, displayedCurrent };
 };

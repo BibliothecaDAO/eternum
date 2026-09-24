@@ -13,7 +13,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ContractAddress, ID } from "@bibliothecadao/types";
-import { buildProjectedStaminaDisplayModel } from "@/lib/army-stamina/presentation";
+import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
 import type { ArmyStaminaPresentation } from "@/lib/army-stamina/types";
 import { useCallback, useMemo, useState } from "react";
 
@@ -83,7 +83,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     const maxStamina = staminaSnapshot?.max ?? 0;
     const stamina = staminaSnapshot?.stamina ?? { amount: 0n, updated_tick: 0n };
     const staminaDisplay = staminaSnapshot
-      ? buildProjectedStaminaDisplayModel({
+      ? buildStaminaDisplayModel({
           committedCurrent: staminaSnapshot.current,
           committedMax: maxStamina,
           armiesTickTimeRemaining,
