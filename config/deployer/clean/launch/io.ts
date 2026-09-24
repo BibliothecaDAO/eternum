@@ -4,10 +4,7 @@ import { ensureRepoDirectory, resolveRepoPath, writeRepoJsonFile } from "../shar
 import { toSafeSlug } from "../shared/slug";
 import type { LaunchGameSummary } from "../types";
 
-export function resolveLaunchSummaryRelativePath(
-  environmentId: LaunchGameSummary["environment"],
-  gameName: string,
-): string {
+function resolveLaunchSummaryRelativePath(environmentId: LaunchGameSummary["environment"], gameName: string): string {
   const filename = `${toSafeSlug(environmentId)}-${toSafeSlug(gameName)}.json`;
   return path.join(".context/game-launch", filename);
 }

@@ -4,26 +4,11 @@ on:
   workflow_call:
 
 jobs:
-  preferences-and-policy:
+  workers:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: identity_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d identity_test" --health-interval 5s --health-timeout 5s
-          --health-retries 10
-    env:
-      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/identity_test
-      DATABASE_SSL: "false"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,12 +32,48 @@ jobs:
         run: pnpm --dir apps/realms test
       - name: Test the launch Worker on D1
         run: pnpm --dir apps/launch-service test
-      - name: Initialize the portal test database
-        run: pnpm --dir packages/db exec drizzle-kit push --force
-      - name: Test account portal calculations and authentication
-        run: pnpm --dir apps/web test
       - name: Typecheck services
         run: |
           pnpm --dir apps/realms typecheck
           pnpm --dir apps/guardian typecheck
           pnpm --dir apps/launch-service typecheck
+
+  # The DAO pages (apps/web) are the only service still on Postgres; the Workers run on D1.
+  portal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: portal_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d portal_test" --health-interval 5s --health-timeout 5s --health-retries
+          10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/portal_test
+      DATABASE_SSL: "false"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Build shared packages
+        run: pnpm run build:packages
+      - name: Initialize the portal test database
+        run: pnpm --dir packages/db exec drizzle-kit push --force
+      - name: Test account portal calculations and authentication
+        run: pnpm --dir apps/web test

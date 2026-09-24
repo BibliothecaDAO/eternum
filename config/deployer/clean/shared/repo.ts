@@ -24,9 +24,3 @@ export function writeRepoJsonFile(relativePath: string, value: unknown): string 
   fs.writeFileSync(outputPath, `${JSON.stringify(value, null, 2)}\n`);
   return outputPath;
 }
-
-export function writeRepoTextFile(relativePath: string, value: string): string {
-  const outputPath = resolveRepoPath(relativePath);
-  fs.writeFileSync(outputPath, `${value}\n`);
-  return outputPath;
-}

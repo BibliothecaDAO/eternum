@@ -24,13 +24,7 @@ import {
 import { waitForGameRegistryById } from "../registrar/game-registry";
 import { resolveAccountCredentials } from "../shared/credentials";
 import { requireRpcUrl } from "../shared/rpc";
-import type {
-  DeploymentEnvironment,
-  LaunchGameRequest,
-  LaunchGameStepId,
-  LaunchGameStepRequest,
-  LaunchGameSummary,
-} from "../types";
+import type { DeploymentEnvironment, LaunchGameRequest, LaunchGameSummary } from "../types";
 import { createProgressReporter, formatDuration, type ProgressReporter } from "./progress";
 import { fileLaunchRunStore, type LaunchRunStore } from "./run-store";
 import { parseStartTime, toIsoUtc } from "./time";
@@ -316,18 +310,6 @@ async function createAndSettleGame(launch: PreparedLaunch): Promise<void> {
   launch.summary.settlementTransactions = settlement.settlementTransactions;
 }
 
-async function executeLaunchStep(launch: PreparedLaunch, stepId: LaunchGameStepId): Promise<void> {
-  if (stepId === "create-world") {
-    await createAndSettleGame(launch);
-    return;
-  }
-  if (stepId === "wait-for-factory-index") {
-    await waitForGameIndex(launch);
-    return;
-  }
-  throw new Error(`Launch step "${stepId}" is retired; persistent games are configured from a preset at creation`);
-}
-
 async function finishLaunch(launch: PreparedLaunch): Promise<LaunchGameSummary> {
   const summary = await launch.store.saveGame(launch.summary);
   launch.runtime.progress.log(`Launch summary written to ${summary.outputPath}`);
@@ -336,19 +318,6 @@ async function finishLaunch(launch: PreparedLaunch): Promise<LaunchGameSummary> 
 
 async function finishDryRun(launch: PreparedLaunch): Promise<LaunchGameSummary> {
   launch.runtime.progress.log("Dry run enabled; no transactions will be sent");
-  return finishLaunch(launch);
-}
-
-export async function runLaunchStep(
-  request: LaunchGameStepRequest,
-  store: LaunchRunStore = fileLaunchRunStore,
-): Promise<LaunchGameSummary> {
-  const launch = await prepareLaunch(request, store);
-  if (request.dryRun) {
-    return finishDryRun(launch);
-  }
-  await assertLaunchChainTargets(launch);
-  await executeLaunchStep(launch, request.stepId);
   return finishLaunch(launch);
 }
 

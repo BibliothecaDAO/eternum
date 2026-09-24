@@ -8,8 +8,8 @@ import {
   buildOfficialArenaResourceOutputs,
 } from "../common/arena/shared";
 
-export const DUEL_DURATION_MINUTES = 90;
-export const DUEL_DURATION_SECONDS = DUEL_DURATION_MINUTES * 60;
+const DUEL_DURATION_MINUTES = 90;
+const DUEL_DURATION_SECONDS = DUEL_DURATION_MINUTES * 60;
 
 const duelStartingResources = buildArenaStartingResources(
   {

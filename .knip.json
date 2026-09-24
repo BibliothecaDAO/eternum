@@ -6,18 +6,15 @@
     "apps/game-docs/docs/**",
     "apps/game-docs/vite-plugin-llm-txt.mjs",
     "apps/game-docs/env.ts",
-    "apps/game/src/ui/shared/components/blitz-awards-hero-left-card.tsx",
-    "apps/game/src/ui/shared/components/blitz-game-stats-card.tsx",
     "scripts/codemod-lucide-imports.mjs",
-    "config/**",
+    "config/generated/**",
     "contracts/**",
     "**/global.d.ts"
   ],
   "ignoreFiles": [
     "apps/amm-indexer/apibara.config.ts",
     "apps/amm-indexer/indexers/ammv2.indexer.ts",
-    "apps/amm-indexer/indexers/factory-client.ts",
-    "apps/indexer/drizzle.config.ts"
+    "apps/amm-indexer/indexers/factory-client.ts"
   ],
   "ignoreWorkspaces": [
     "packages/ammv2-sdk"
@@ -39,14 +36,23 @@
       }
     },
     "apps/launch-service": {
-      "entry": ["src/worker.ts"],
-      "ignoreDependencies": ["cloudflare"],
+      "entry": [
+        "src/worker.ts"
+      ],
+      "ignoreDependencies": [
+        "cloudflare"
+      ],
       "paths": {
-        "@bibliothecadao/eternum/shard": ["../../packages/core/src/client/shard-reader.ts"]
+        "@bibliothecadao/eternum/shard": [
+          "../../packages/core/src/client/shard-reader.ts"
+        ]
       }
     },
     "packages/identity": {
-      "entry": ["src/index.ts", "src/account.ts"]
+      "entry": [
+        "src/index.ts",
+        "src/account.ts"
+      ]
     },
     "apps/guardian": {
       "entry": [
@@ -57,7 +63,9 @@
       ]
     },
     "apps/realms": {
-      "entry": ["server/worker.ts"],
+      "entry": [
+        "server/worker.ts"
+      ],
       "ignoreDependencies": [
         "cloudflare"
       ],
@@ -65,8 +73,12 @@
         "dist/**"
       ],
       "paths": {
-        "@bibliothecadao/eternum/expeditions": ["../../packages/core/src/utils/expeditions.ts"],
-        "@bibliothecadao/eternum/troop-stamina": ["../../packages/core/src/managers/troop-stamina.ts"]
+        "@bibliothecadao/eternum/expeditions": [
+          "../../packages/core/src/utils/expeditions.ts"
+        ],
+        "@bibliothecadao/eternum/troop-stamina": [
+          "../../packages/core/src/managers/troop-stamina.ts"
+        ]
       }
     },
     "apps/indexer": {
@@ -169,14 +181,12 @@
       }
     },
     "config": {
-      "paths": {
-        "@bibliothecadao/provider": [
-          "../packages/provider/src/index.ts"
-        ],
-        "@bibliothecadao/types": [
-          "../packages/types/src/index.ts"
-        ]
-      }
+      "entry": [
+        "deployer/clean/cli/create.ts",
+        "deployer/clean/cli/deploy-world.ts",
+        "deployer/clean/registrar/register-preset.ts",
+        "utils/utils.ts"
+      ]
     }
   },
   "ignoreIssues": {

@@ -24,7 +24,7 @@ interface ManifestContract {
 
 export type RegistrarManifest = RegistrarWorld;
 
-export interface RegistrarTransactionResult {
+interface RegistrarTransactionResult {
   transactionHash: string;
   receipt: unknown;
 }
@@ -33,7 +33,7 @@ export interface CreateRegistrarGameResult extends RegistrarTransactionResult {
   gameId?: number;
 }
 
-export type RegistrarEnvironmentId = DeploymentEnvironmentId;
+type RegistrarEnvironmentId = DeploymentEnvironmentId;
 type RegistrarTarget = RegistrarEnvironmentId | RegistrarManifest;
 
 interface RegistrarContext {

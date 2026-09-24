@@ -10,9 +10,8 @@ export type DeploymentChain = ConfigurationNetwork;
 export type DeploymentGameType = import("../../source/common/types").GameType;
 export type DeploymentEnvironmentId = import("../../shared/game-environments").GameEnvironmentId;
 export type ExecutionMode = "batched" | "sequential";
-export type LaunchTargetKind = "game";
-export type LaunchStepStatus = "pending" | "running" | "succeeded" | "failed";
-export type LaunchGameStepId = "create-world" | "wait-for-factory-index";
+type LaunchStepStatus = "pending" | "running" | "succeeded" | "failed";
+type LaunchGameStepId = "create-world" | "wait-for-factory-index";
 
 export interface DeploymentEnvironment {
   id: DeploymentEnvironmentId;
@@ -64,10 +63,6 @@ export interface LaunchGameRequest {
   waitForFactoryIndexPollMs?: number;
   dryRun?: boolean;
   resumeSteps?: LaunchGameResumeStepState[];
-}
-
-export interface LaunchGameStepRequest extends LaunchGameRequest {
-  stepId: LaunchGameStepId;
 }
 
 export interface LaunchGameSummary {

@@ -10,8 +10,8 @@ import {
   buildOfficialArenaResourceOutputs,
 } from "../common/arena/shared";
 
-export const BLITZ_DURATION_MINUTES = 60;
-export const BLITZ_DURATION_SECONDS = BLITZ_DURATION_MINUTES * 60;
+const BLITZ_DURATION_MINUTES = 60;
+const BLITZ_DURATION_SECONDS = BLITZ_DURATION_MINUTES * 60;
 
 const blitzComplexBuildingCosts = {
   ...COMPLEX_BUILDING_COSTS,

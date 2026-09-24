@@ -35,7 +35,3 @@ export async function saveResolvedConfigJson(chain: ConfigurationNetwork, gameTy
   fs.writeFileSync(tmpPath, await renderResolvedConfigJson(chain, gameType));
   fs.renameSync(tmpPath, targetPath);
 }
-
-export function logNetwork(network: ConfigurationNetwork): void {
-  console.log(`Configuration profile: ${network}`);
-}

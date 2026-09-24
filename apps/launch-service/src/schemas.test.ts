@@ -35,5 +35,6 @@ it("never launches a Frontier fixture preset", () => {
   const decode = Schema.decodeUnknownSync(CreateGameRequestSchema);
   expect(() => decode({ environment: "madara.blitz", gameName: "fixture", version: "101" })).toThrow();
   expect(() => decode({ environment: "madara.frontier", gameName: "playtest", version: "102" })).toThrow();
+  expect(() => decode({ environment: "madara.frontier", gameName: "playtest", version: "103" })).toThrow();
   expect(decode({ environment: "madara.blitz", gameName: "blitz", version: "2" }).version).toBe("2");
 });

@@ -1,5 +1,5 @@
 /** Preset configuration profiles; shard identity is read separately from its manifest. */
-export type GameEnvironmentGameType = import("../source/common/types").GameType;
+type GameEnvironmentGameType = import("../source/common/types").GameType;
 
 export const GAME_ENVIRONMENTS = [
   { id: "madara.blitz", chain: "madara", gameType: "blitz" },

@@ -99,7 +99,7 @@ const BIOME_CLIMATE_OVERRIDE_LIMITS = {
   moistureSeed: U32_MAX,
 } satisfies Record<keyof FactoryBiomeClimateOverrides, number>;
 
-export function loadConfiguration(configPath: string): EternumConfig {
+function loadConfiguration(configPath: string): EternumConfig {
   return configurationOf(loadRepoJsonFile<StoredConfiguration>(configPath), configPath);
 }
 
@@ -201,7 +201,7 @@ function validateMapConfigOverridePairGroup(
   }
 }
 
-export function applyMapConfigOverrides(config: EternumConfig, overrides?: FactoryMapConfigOverrides): void {
+function applyMapConfigOverrides(config: EternumConfig, overrides?: FactoryMapConfigOverrides): void {
   if (!overrides) {
     return;
   }
@@ -232,7 +232,7 @@ function validateBiomeClimateOverrideValue(key: keyof FactoryBiomeClimateOverrid
   }
 }
 
-export function applyBiomeClimateOverrides(config: EternumConfig, overrides?: FactoryBiomeClimateOverrides): void {
+function applyBiomeClimateOverrides(config: EternumConfig, overrides?: FactoryBiomeClimateOverrides): void {
   if (!overrides) {
     return;
   }
@@ -309,7 +309,7 @@ function applyResolvedBlitzRegistrationOverrides(
   };
 }
 
-export function applyBlitzRegistrationOverrides(
+function applyBlitzRegistrationOverrides(
   config: EternumConfig,
   overrides: FactoryBlitzRegistrationOverrides | undefined,
   twoPlayerMode: boolean,
