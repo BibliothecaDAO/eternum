@@ -147,6 +147,20 @@ describe("native presets", () => {
     expect(laborPaid("madara.eternum", 3).length).toBeGreaterThan(0);
   });
 
+  test("only Frontier rolls a d20 per side in every battle", () => {
+    const rollsDice = (environment: Parameters<typeof loadNativePresetConfiguration>[0], presetId: number) =>
+      (buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId).rules.mode_rules &
+        nativeRuleConstants.COMBAT_DICE) !==
+      0;
+
+    expect(rollsDice("madara.frontier", FRONTIER_PRESET_ID)).toBe(true);
+    expect([rollsDice("madara.blitz", 2), rollsDice("madara.eternum", 3), rollsDice("madara.blitz", 4)]).toEqual([
+      false,
+      false,
+      false,
+    ]);
+  });
+
   test("Frontier combat is biome-neutral while Blitz keeps its terrain bonus", () => {
     const frontier = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),

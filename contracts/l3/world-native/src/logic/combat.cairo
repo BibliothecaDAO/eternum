@@ -542,7 +542,8 @@ pub fn combat_context(
     game_id: u32, attacker: ExplorerTroops, defender: ExplorerTroops, context: ExecutionContext,
 ) -> CombatContext {
     let biome: crate::biome::Biome = map_dispatcher(game_id).biome(tile_key(game_id, defender.coord)).into();
-    let (attacker_roll, defender_roll) = if defender.coord.alt {
+    let (attacker_roll, defender_roll) = if defender.coord.alt
+        || crate::rules::rule_enabled(crate::logic::game::rules(game_id), crate::rules::COMBAT_DICE) {
         let mut raw_root = context.raw_root;
         let seed = crate::random::game_root(ref raw_root, game_id, crate::logic::game::game(game_id).seed);
         (

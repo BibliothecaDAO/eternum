@@ -114,6 +114,14 @@ fn ethereal_d20_adds_each_sides_roll_as_a_positive_damage_percentage() {
 }
 
 #[test]
+fn the_rolls_decide_which_of_two_even_armies_deals_more_damage() {
+    let (outgoing, incoming) = dice_damage(20, 1);
+    assert!(outgoing > incoming, "the attacker's best roll should win the exchange");
+    let (outgoing, incoming) = dice_damage(1, 20);
+    assert!(outgoing < incoming, "the defender's best roll should win the exchange");
+}
+
+#[test]
 #[should_panic(expected: "invalid combat die")]
 fn combat_rejects_a_die_above_twenty() {
     dice_damage(21, 1);

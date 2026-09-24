@@ -5,7 +5,7 @@ use crate::combat_actions::{AttackExplorer, GuardAttack, Raid};
 use crate::commands::{Command, CreateExplorer};
 use crate::games::IGamesAuthenticationDispatcher;
 use crate::guards::{Guard, GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
-use crate::map::IMapLogicDispatcher;
+use crate::map::{IMapLogicDispatcher, IMapLogicDispatcherTrait};
 use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
 use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
@@ -21,12 +21,18 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32)
     setup_with_immunity(blitz, 0)
 }
 fn setup_with_immunity(blitz: bool, immunity: u8) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
+    setup_with_mode(blitz, immunity, 0)
+}
+fn setup_with_mode(
+    blitz: bool, immunity: u8, extra_mode_rules: u32,
+) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
     let mut rules = super::recorded::rules();
-    rules.mode_rules = if blitz {
-        super::recorded::BLITZ_RULES
-    } else {
-        super::recorded::ETERNUM_RULES
-    };
+    rules.mode_rules = extra_mode_rules
+        + if blitz {
+            super::recorded::BLITZ_RULES
+        } else {
+            super::recorded::ETERNUM_RULES
+        };
     rules
         .command_mask = if blitz {
             super::recorded::BLITZ_COMMAND_MASK
@@ -409,6 +415,81 @@ fn ethereal_battle_uses_both_recorded_d20_rolls_in_damage_and_history() {
                 defender_roll,
                 attacker_biome: crate::biome::Biome::Underground,
                 defender_biome: crate::biome::Biome::Underground,
+                attack_distance: 1,
+                attacker_is_structure_guard: false,
+                defender_is_structure_guard: false,
+            },
+            rules.troop_stamina_config,
+            rules.troop_damage_config,
+            16,
+            5,
+        );
+    let mut spy = spy_events();
+    assert!(
+        execute_recorded_at(
+            d,
+            Command::Battle(
+                AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
+            ),
+            80,
+            1000,
+        ),
+    );
+    assert_eq!(troop(d, attacker).unwrap().troops, expected_attacker);
+    assert_eq!(expected_defender.count, 0);
+    assert!(troop(d, defender).is_none());
+    let mut expected = array![];
+    before_attacker.owner.serialize(ref expected);
+    before_defender.coord.serialize(ref expected);
+    let empty: Span<ResourceAmount> = array![].span();
+    empty.serialize(ref expected);
+    crate::combat_actions::battle_side(d.actor, before_attacker.troops.count, expected_attacker, attacker_roll)
+        .serialize(ref expected);
+    crate::combat_actions::battle_side(
+        999.try_into().unwrap(), before_defender.troops.count, expected_defender, defender_roll,
+    )
+        .serialize(ref expected);
+    80_u64.serialize(ref expected);
+    let mut found = false;
+    for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
+        if *event.keys.at(0) == selector!("BattleEvent") {
+            assert_eq!(event.data.span(), expected.span());
+            found = true;
+        }
+    }
+    assert!(found);
+}
+
+#[test]
+fn a_dice_game_rolls_both_recorded_d20s_on_the_surface_too() {
+    let (d, _, _, attacker, defender) = setup_with_mode(false, 0, crate::rules::COMBAT_DICE);
+    // Away from the realms the fixture settles around (2000000, 2000000), so both armies stand on open surface.
+    let origin = Coord { alt: false, x: 2000500, y: 2000500 };
+    move_to(d, attacker, origin);
+    move_to(d, defender, crate::geometry::neighbor(origin, 0));
+    let surface: crate::biome::Biome = IMapLogicDispatcher { contract_address: d.games }
+        .biome(crate::geometry::tile_key(3, crate::geometry::neighbor(origin, 0)))
+        .into();
+    let before_attacker = troop(d, attacker).unwrap();
+    let before_defender = troop(d, defender).unwrap();
+    let game = crate::game::IGameDispatcher { contract_address: d.games };
+    let rules = crate::game::IGameDispatcherTrait::rules(game, 3);
+    let mut root = super::context().raw_root;
+    let seed = crate::random::game_root(ref root, 3, crate::game::IGameDispatcherTrait::game(game, 3).seed);
+    let attacker_roll: u8 = 1 + crate::random::range(seed, 1, 20).try_into().unwrap();
+    let defender_roll: u8 = 1 + crate::random::range(seed, 2, 20).try_into().unwrap();
+    assert!(attacker_roll >= 1 && attacker_roll <= 20 && defender_roll >= 1 && defender_roll <= 20);
+    let mut expected_attacker = before_attacker.troops;
+    let mut expected_defender = before_defender.troops;
+    expected_attacker
+        .attack_with_context(
+            ref expected_defender,
+            crate::combat::CombatContext {
+                timestamp: 80,
+                attacker_roll,
+                defender_roll,
+                attacker_biome: surface,
+                defender_biome: surface,
                 attack_distance: 1,
                 attacker_is_structure_guard: false,
                 defender_is_structure_guard: false,

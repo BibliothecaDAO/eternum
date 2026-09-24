@@ -43,6 +43,7 @@ export const frontierPreset: NativePreset = {
     rule.HOME_MINE_PRODUCTION |
     rule.HOME_CAMP_REWARDS |
     rule.REVEAL_SUPPLIES |
+    rule.COMBAT_DICE |
     rule.SEASON_CLOSE,
   entryRule: rule.ENTRY_OPEN,
   commandMask: (
