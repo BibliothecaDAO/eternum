@@ -8,6 +8,7 @@ import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import { buildNativePreset } from "../config/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
+  FRONTIER_PLAYTEST_PRESET_ID,
   FRONTIER_PRESET_ID,
   nativeGameModeOf,
 } from "../../../source/common/native-preset-modes";
@@ -65,6 +66,42 @@ describe("native presets", () => {
     ).not.toBe(buildNativePresetRegistration(canonical, FRONTIER_PRESET_ID, manifestPath).commitment);
   });
 
+  test("the playtest preset is Frontier's design compressed exactly 24 times: days, army tick and every rate", () => {
+    const design = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
+      FRONTIER_PRESET_ID,
+    );
+    const playtest = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_PLAYTEST_PRESET_ID),
+      FRONTIER_PLAYTEST_PRESET_ID,
+    );
+    const board = (preset: typeof design) => preset.structures.board.unwrap() as { workshop_rate: bigint };
+
+    expect(playtest.rules.epoch_seconds).toBe(3_600);
+    expect(playtest.rules.epoch_seconds * 24).toBe(design.rules.epoch_seconds);
+    expect(playtest.rules.tick_config.armies_tick_in_seconds).toBe(150);
+    expect(playtest.rules.tick_config.armies_tick_in_seconds * 24).toBe(
+      design.rules.tick_config.armies_tick_in_seconds,
+    );
+    expect(playtest.resources.resources).toEqual(
+      design.resources.resources.map((resource) => ({
+        ...resource,
+        realm_rate: resource.realm_rate * 24n,
+        village_rate: resource.village_rate * 24n,
+      })),
+    );
+    expect(board(playtest).workshop_rate).toBe(board(design).workshop_rate * 24n);
+    expect(playtest.settlement.depths.map(({ mine_rate }) => mine_rate)).toEqual(
+      design.settlement.depths.map(({ mine_rate }) => mine_rate * 24n),
+    );
+    expect(playtest.resources.mine_kinds.map(({ config }) => config.production_rate)).toEqual(
+      design.resources.mine_kinds.map(({ config }) => config.production_rate * 24n),
+    );
+    // Stamina is paid per tick, so a 24 times faster tick is a 24 times faster regen with the same numbers.
+    expect(playtest.rules.troop_stamina_config).toEqual(design.rules.troop_stamina_config);
+    expect(playtest.settlement.realms).toEqual(design.settlement.realms);
+  });
+
   test("Frontier's design preset carries the owner's balance: hourly stamina, a lean grant, slower barracks and farms", () => {
     const design = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
@@ -90,14 +127,11 @@ describe("native presets", () => {
   });
 
   test("every preset id names the mode it plays, and an unknown id fails by name", () => {
-    expect([1, 2, 3, 4, FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID].map(nativeGameModeOf)).toEqual([
-      "frontier",
-      "blitz",
-      "eternum",
-      "duel",
-      "frontier",
-      "frontier",
-    ]);
+    expect(
+      [1, 2, 3, 4, FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_PLAYTEST_PRESET_ID].map(
+        nativeGameModeOf,
+      ),
+    ).toEqual(["frontier", "blitz", "eternum", "duel", "frontier", "frontier", "frontier"]);
     expect(() => nativeGameModeOf(9)).toThrow("Unknown native preset 9");
   });
 
