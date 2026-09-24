@@ -655,11 +655,11 @@ pub fn resolve_battle(
 pub fn combat_troops(game_id: u32) -> IBattleResolutionLibraryDispatcher {
     IBattleResolutionLibraryDispatcher { class_hash: classes(game_id).troops.read() }
 }
-fn classes(game_id: u32) -> starknet::storage::StoragePath<games_storage::release::LogicClasses> {
+fn classes(game_id: u32) -> starknet::storage::StoragePointer<games_storage::release::LogicClasses> {
     let state = crate::state::read();
     let release_id = state.game_releases.read(game_id);
     assert!(release_id != 0, "game has no release");
-    state.releases.entry(release_id)
+    state.releases.entry(release_id).classes
 }
 fn emit<T, +starknet::event::Event<T>, +Into<T, crate::logic::combat_domain::CombatLogic::Event>>(event: T) {
     let event: crate::logic::combat_domain::CombatLogic::Event = event.into();

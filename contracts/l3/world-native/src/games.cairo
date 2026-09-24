@@ -9,7 +9,6 @@ pub struct Authentication {
 #[derive(Drop, Serde)]
 pub struct DeploymentConfiguration {
     pub authority: ContractAddress,
-    pub classes: games_storage::release::LogicClasses,
 }
 
 #[starknet::interface]
@@ -23,7 +22,6 @@ pub trait IGamesAuthentication<T> {
 
 #[starknet::contract]
 pub mod Games {
-    use games_storage::release::LogicClasses;
     use starknet::ContractAddress;
     use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
     use crate::games::Authentication;
@@ -39,6 +37,8 @@ pub mod Games {
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl EntryInternal = GamesEntry::InternalImpl<ContractState>;
     impl ReleaseInternal = ReleaseState::InternalImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl Releases = ReleaseState::ReleasesImpl<ContractState>;
     #[abi(embed_v0)]
     impl Season = GamesEntry::SeasonImpl<ContractState>;
     #[abi(embed_v0)]
@@ -72,16 +72,20 @@ pub mod Games {
     }
     #[constructor]
     fn constructor(
-        ref self: ContractState, authority: ContractAddress, authentication: Authentication, classes: LogicClasses,
+        ref self: ContractState,
+        authority: ContractAddress,
+        authentication: Authentication,
+        release_id: u32,
+        release: crate::logic::release::Release,
     ) {
-        self.entry.initializer(authority, authentication, classes);
+        self.entry.initializer(authority, authentication, release_id, release);
     }
 
     #[external(v0)]
     fn initialize_realm_traits(ref self: ContractState, first_realm: u32, packed_traits: Span<u32>) {
         let state = crate::state::read();
         // The immutable realm catalogue belongs to the shard, so administration uses the current release.
-        let classes = state.releases.read(state.current_release.read());
+        let classes = state.releases.read(state.current_release.read()).classes;
         crate::realms::ISeasonRealmsDispatcherTrait::initialize_realm_traits(
             crate::realms::ISeasonRealmsLibraryDispatcher { class_hash: classes.settlement },
             first_realm,
@@ -117,7 +121,7 @@ pub mod Games {
     }
     #[external(v0)]
     fn deployment_configuration(self: @ContractState) -> super::DeploymentConfiguration {
-        super::DeploymentConfiguration { authority: self.release.authority(), classes: self.release.current_classes() }
+        super::DeploymentConfiguration { authority: self.release.authority() }
     }
 
     #[external(v0)]

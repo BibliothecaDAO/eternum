@@ -22,6 +22,12 @@ pub struct LogicClasses {
     pub movement: ClassHash,
 }
 
+#[derive(Copy, Drop, Serde, PartialEq, Debug, starknet::Store)]
+pub struct Release {
+    pub classes: LogicClasses,
+    pub migration: ClassHash,
+}
+
 pub fn validate(classes: LogicClasses) {
     for class_hash in array![
         classes.season, classes.map, classes.placement, classes.construction, classes.production, classes.structures,

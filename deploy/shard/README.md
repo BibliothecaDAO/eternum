@@ -97,3 +97,61 @@ Anyone can host unranked games; ranked games require an approved shard.
 `docker compose stop` retains state. Starting the same package again audits the existing deployment. Changing the
 release is a separate operator action; never recreate genesis for an existing shard. CI publishes immutable images and
 this archive from `shard-v*` tags; it does not deploy a box or change a live hostname.
+
+## Operations: apply a logic hotfix
+
+Use the new package's init and Herald image digests in `.env`, keeping the existing shard identity, data and Games
+address. The build's immutable release id and schema come from its published release facts; changing an existing
+release's contents is refused. A hotfix must keep the shard's fact schema. The deployer refuses a changed schema with
+`NATIVE_HOTFIX_SCHEMA_CHANGE`; a schema-changing fix requires a new shard or season.
+The signing key must belong to the game's creator (the launch operator for our games).
+
+A release that migrates data includes a production contract named `ReleaseMigration` in its build artifacts. It
+implements `IReleaseMigration.migrate(game_id, previous_release, release_id)` and updates Games storage through a
+library call. The build records its class hash in the baked release facts. The deployer declares it and checks its
+declaration before registration. If a registered release's migration class is not declared, declare it, then apply.
+Bump `NATIVE_RELEASE_ID` in `deploy/release/facts.ts` for each release; never edit a published release's contents.
+
+Run these steps in order. The init image contains the CLI, compiled classes and published facts, so no host toolchain
+is needed. This helper loads the shard's private credentials inside the container without printing them:
+
+```sh
+hotfix() {
+  docker compose run --rm --no-deps --entrypoint /bin/sh init -ec '
+    set -a
+    . /data/harness.env
+    DEPLOYER_ACCOUNT_ADDRESS=$(bun -e "console.log(require(\"/data/host-keys.json\").deployerAddress)")
+    seed=$(bun -e "console.log(require(\"/data/native-world.json\").world.seed)")
+    submitter=$(bun -e "console.log(require(\"/data/authority.json\").address)")
+    exec bun config/deployer/clean/cli/deploy-world.ts \
+      --seed "$seed" --manifest /data/native-world.json \
+      --identity /data/gameplay-contracts.json --submitter "$submitter" \
+      --rpc-url http://madara:9944/rpc/v0_10_2 \
+      --world-address-file /data/world-address \
+      --release-facts /release/release-facts.json "$@"
+  ' hotfix "$@"
+}
+
+# 1. Register once and write the release-to-schema map. Existing games keep their pins.
+hotfix
+
+# 2. Update Herald with that manifest BEFORE applying to any game.
+docker compose run --rm --no-deps --entrypoint /bin/sh init -ec \
+  'cp /data/native-world.json /public/native-world.json; chmod 0644 /public/native-world.json'
+docker compose up -d --no-deps --force-recreate herald
+curl --fail https://herald.example.org/health
+curl --fail https://herald.example.org/manifest
+
+# 3. Apply to explicitly chosen games as their creator.
+hotfix --apply-games 1,2 --herald-url http://herald:3003
+```
+
+Step 3 reads Herald's live `/manifest` and refuses unless the release is already registered on chain and Herald lists
+every release the games will traverse for this shard. The CLI advances each game one release at a time, so each
+migration runs in order. Herald and the client refuse an unavailable decoder by name.
+
+Each apply emits `GameRelease` before the migration's facts in one transaction; migration failure rolls back the pin,
+data and event. Earlier successful steps remain applied if a later migration fails; retry resumes from the game's pin.
+Repeating registration or applying the already pinned release submits no transaction. Downgrade is refused. To roll
+back logic, register the old classes again as release N+1, with any required forward migration, then follow the same
+publication and apply sequence. Never recreate genesis to recover a failed migration.

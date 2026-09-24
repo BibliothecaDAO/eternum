@@ -10,7 +10,8 @@ import { loadNativeWorld } from "./artifacts";
 import { buildNativeManifest } from "./manifest";
 import { deployNativeWorld } from "./deploy";
 import { inspectNativeWorld } from "./plan";
-import type { NativeWorldManifest } from "./types";
+import type { NativeTransaction, NativeWorldManifest } from "./types";
+import { applyNativeRelease } from "./releases";
 
 export async function runNativeDeployment(args: CliArgs, root: string): Promise<void> {
   const manifestPath = args.manifest ?? requiredEnvironment("NATIVE_WORLD_MANIFEST");
@@ -30,6 +31,7 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
     seed,
     authority,
     previous,
+    release: JSON.parse(readFileSync(args["release-facts"] ?? "/release/release-facts.json", "utf8")),
     authentication: {
       submitter: required(args, "submitter"),
       account_class: manifest.shard.accountClassHash,
@@ -42,6 +44,21 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
     return;
   }
   const account = createOperatorAccount(provider, authority, requiredEnvironment("DEPLOYER_PRIVATE_KEY"));
+  if (args["apply-games"]) {
+    const transactions: NativeTransaction[] = [];
+    await applyNativeRelease(
+      local,
+      account,
+      args["apply-games"].split(",").map(Number),
+      args["herald-url"] ?? requiredEnvironment("HERALD_URL"),
+      (transaction) => {
+        transactions.push(transaction);
+        console.error(JSON.stringify({ event: "native_world_transaction", ...transaction }));
+      },
+    );
+    console.log(JSON.stringify({ event: "native_release_applied", transactions }, null, 2));
+    return;
+  }
   const declarer = createMadaraAccount(
     provider,
     requiredEnvironment("DEPLOYER_ACCOUNT_ADDRESS"),
@@ -69,7 +86,11 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
       {
         event: "native_world_deployment",
         ...report,
-        classSizes: [...local.logic, { name: "games", ...local.games }].map((domain) => ({
+        classSizes: [
+          ...local.logic,
+          ...(local.migration ? [local.migration] : []),
+          { name: "games", ...local.games },
+        ].map((domain) => ({
           domain: domain.name,
           sierraFelts: domain.sierra.sierra_program.length,
           casmFelts: domain.casm.bytecode.length,

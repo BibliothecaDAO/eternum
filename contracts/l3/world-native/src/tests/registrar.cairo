@@ -34,7 +34,7 @@ use crate::troops::ExplorerKey;
 use super::recorded_receipts::RecordedReceiptsTrait;
 use super::resource_commands::execute_in_game;
 
-fn setup() -> super::Deployment {
+pub fn setup() -> super::Deployment {
     let d = super::setup_with_domains(false, "StructuresLogic", "TroopsLogic");
     start_cheat_block_timestamp_global(100);
     d
@@ -47,7 +47,7 @@ fn safe(d: super::Deployment, caller: starknet::ContractAddress) -> IRegistrarSa
     snforge_std::cheat_caller_address(d.games, caller, snforge_std::CheatSpan::TargetCalls(1));
     IRegistrarSafeDispatcher { contract_address: d.games }
 }
-fn definition(blitz: bool) -> PresetDefinition {
+pub fn definition(blitz: bool) -> PresetDefinition {
     let mut resources = array![];
     for resource_type in 1_u8..59 {
         resources.append(ResourceRule { resource_type, unit_weight: 1, realm_rate: 10, village_rate: 5 });
@@ -158,7 +158,7 @@ fn roster(count: u32) -> Span<RosterPlayer> {
     }
     players.span()
 }
-fn params(blitz: bool) -> CreateGameParams {
+pub fn params(blitz: bool) -> CreateGameParams {
     CreateGameParams {
         name: 'native',
         preset_id: 1,
@@ -718,7 +718,7 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
 
 // An open expedition game with 100 s days, 1024-hex regions and two field armies a realm, in which realm 1 is settled
 // at t=350 as entity 1. Returns the game, its preset and the troop category of the realm's grant.
-fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
+pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
     let mut preset = definition(true);
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
     preset.rules.epoch_seconds = 100;
@@ -761,7 +761,7 @@ fn muster_command(category: u8, direction: u8) -> Command {
 }
 
 // Two armies of the expedition home, three troops each, mustered side by side around the day's site.
-fn expedition_armies(d: super::Deployment, game_id: u32, category: u8) -> (ExplorerKey, ExplorerKey) {
+pub fn expedition_armies(d: super::Deployment, game_id: u32, category: u8) -> (ExplorerKey, ExplorerKey) {
     let home = ResourceKey { game_id, entity_id: 1 };
     start_cheat_caller_address(d.games, d.games);
     for troop in array![26_u8, 29, 32] {
@@ -792,7 +792,7 @@ fn expedition_armies(d: super::Deployment, game_id: u32, category: u8) -> (Explo
     (ExplorerKey { game_id, explorer_id: *explorers.at(0) }, ExplorerKey { game_id, explorer_id: *explorers.at(1) })
 }
 
-fn transfer(source: ExplorerKey, target: ExplorerKey, troops: u128) -> Command {
+pub fn transfer(source: ExplorerKey, target: ExplorerKey, troops: u128) -> Command {
     Command::ManageTroops(
         crate::troop_management::ManageTroops::Transfer(
             crate::troop_management::TransferTroops {

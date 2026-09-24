@@ -250,7 +250,7 @@ pub mod SeasonLogic {
     }
 
     fn dispatch(
-        classes: starknet::storage::StoragePath<LogicClasses>,
+        classes: starknet::storage::StoragePointer<LogicClasses>,
         route: crate::command_routes::CommandRoute,
         game_id: u32,
         actor: ContractAddress,

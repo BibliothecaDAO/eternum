@@ -503,7 +503,7 @@ pub mod RelicState {
         }
         fn logic_classes(
             self: @ComponentState<TContractState>, game_id: u32,
-        ) -> starknet::storage::StoragePath<LogicClasses> {
+        ) -> starknet::storage::StoragePointer<LogicClasses> {
             get_dep_component!(self, Life).classes(game_id)
         }
         fn resources(self: @ComponentState<TContractState>, game_id: u32) -> IResourceOperationsLibraryDispatcher {

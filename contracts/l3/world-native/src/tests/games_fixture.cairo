@@ -14,7 +14,7 @@ pub mod GamesFixture {
     use crate::tests::fixtures::{IFixtureDispatcherTrait, IFixtureLibraryDispatcher};
 
     // Uncreated-game regressions used the deployed domain before a release pin existed.
-    fn fixture_classes(game_id: u32) -> starknet::storage::StoragePath<games_storage::release::LogicClasses> {
+    fn fixture_classes(game_id: u32) -> starknet::storage::StoragePointer<games_storage::release::LogicClasses> {
         let state = crate::state::read();
         let pin = state.game_releases.read(game_id);
         let release_id = if pin == 0 {
@@ -22,7 +22,7 @@ pub mod GamesFixture {
         } else {
             pin
         };
-        state.releases.entry(release_id)
+        state.releases.entry(release_id).classes
     }
 
     #[starknet::embeddable]
@@ -726,7 +726,7 @@ pub mod GamesFixture {
     > of crate::realms::ISeasonRealms<TContractState> {
         fn initialize_realm_traits(ref self: TContractState, first_realm: u32, packed_traits: Span<u32>) {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read());
+            let classes = state.releases.entry(state.current_release.read()).classes;
             crate::realms::ISeasonRealmsDispatcherTrait::initialize_realm_traits(
                 crate::realms::ISeasonRealmsLibraryDispatcher { class_hash: classes.settlement.read() },
                 first_realm,
@@ -735,14 +735,14 @@ pub mod GamesFixture {
         }
         fn realm_catalogue(self: @TContractState) -> crate::realms::RealmCatalogue {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read());
+            let classes = state.releases.entry(state.current_release.read()).classes;
             crate::realms::ISeasonRealmsDispatcherTrait::realm_catalogue(
                 crate::realms::ISeasonRealmsLibraryDispatcher { class_hash: classes.settlement.read() },
             )
         }
         fn realm_traits(self: @TContractState, realm_id: u32) -> crate::realms::RealmTraits {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read());
+            let classes = state.releases.entry(state.current_release.read()).classes;
             crate::realms::ISeasonRealmsDispatcherTrait::realm_traits(
                 crate::realms::ISeasonRealmsLibraryDispatcher { class_hash: classes.settlement.read() }, realm_id,
             )
@@ -891,7 +891,7 @@ pub mod GamesFixture {
             entitlement: crate::settlement::EntryEntitlement,
         ) {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read());
+            let classes = state.releases.entry(state.current_release.read()).classes;
             crate::settlement::ISettlementEntryDispatcherTrait::register_entitlement(
                 crate::settlement::ISettlementEntryLibraryDispatcher { class_hash: classes.settlement.read() },
                 key,
@@ -902,7 +902,7 @@ pub mod GamesFixture {
             self: @TContractState, key: crate::settlement::EntryKey,
         ) -> Option<crate::settlement::EntryEntitlement> {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read());
+            let classes = state.releases.entry(state.current_release.read()).classes;
             crate::settlement::ISettlementEntryDispatcherTrait::entry_entitlement(
                 crate::settlement::ISettlementEntryLibraryDispatcher { class_hash: classes.settlement.read() }, key,
             )
@@ -2290,14 +2290,14 @@ pub mod GamesFixture {
     > of crate::entry::ILedgerOperator<TContractState> {
         fn ledger_operator(self: @TContractState) -> starknet::ContractAddress {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read());
+            let classes = state.releases.entry(state.current_release.read()).classes;
             crate::entry::ILedgerOperatorDispatcherTrait::ledger_operator(
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.settlement.read() },
             )
         }
         fn set_ledger_operator(ref self: TContractState, operator: starknet::ContractAddress) {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read());
+            let classes = state.releases.entry(state.current_release.read()).classes;
             crate::entry::ILedgerOperatorDispatcherTrait::set_ledger_operator(
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.settlement.read() }, operator,
             )
@@ -2587,29 +2587,29 @@ pub mod GamesFixture {
     pub impl CaptureFixture<TContractState, +Drop<TContractState>> of super::ICapture<TContractState> {
         fn destroy(ref self: TContractState, key: crate::troops::ExplorerKey) {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read());
+            let classes = state.releases.entry(state.current_release.read()).classes;
             IFixtureDispatcherTrait::destroy(IFixtureLibraryDispatcher { class_hash: classes.troops.read() }, key)
         }
         fn update_troops(ref self: TContractState, key: crate::troops::ExplorerKey, troops: crate::troops::Troops) {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read());
+            let classes = state.releases.entry(state.current_release.read()).classes;
             IFixtureDispatcherTrait::update_troops(
                 IFixtureLibraryDispatcher { class_hash: classes.troops.read() }, key, troops,
             )
         }
         fn received_actor(self: @TContractState) -> starknet::ContractAddress {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read());
+            let classes = state.releases.entry(state.current_release.read()).classes;
             IFixtureDispatcherTrait::received_actor(IFixtureLibraryDispatcher { class_hash: classes.troops.read() })
         }
         fn received_root(self: @TContractState) -> u256 {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read());
+            let classes = state.releases.entry(state.current_release.read()).classes;
             IFixtureDispatcherTrait::received_root(IFixtureLibraryDispatcher { class_hash: classes.troops.read() })
         }
         fn received_timestamp(self: @TContractState) -> u64 {
             let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read());
+            let classes = state.releases.entry(state.current_release.read()).classes;
             IFixtureDispatcherTrait::received_timestamp(IFixtureLibraryDispatcher { class_hash: classes.troops.read() })
         }
     }
