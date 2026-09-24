@@ -310,13 +310,10 @@ class ShardTest(unittest.TestCase):
         for failure in (None, RuntimeError("workload failed")):
             with self.subTest(failure=failure), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
-                budget = root / "budget.json"
-                budget.write_text("{}")
                 matrix = {
                     "configurations": [configuration(), {**configuration(), "shard": "second"}],
                     "workload": {"games": 2, "accounts_per_game": 3, "minutes": 1,
                                  "interval_seconds": 16, "setup_concurrency": 3, "workload": "build-order"},
-                    "live": {"budget": str(budget)},
                 }
                 started = []
 
@@ -327,7 +324,7 @@ class ShardTest(unittest.TestCase):
                     (directory / "harness.env").write_text("COMPOSE_PROJECT_NAME=athanor-smoke\n")
 
                 with patch.object(shard, "start_shard", side_effect=start), \
-                     patch.object(shard, "capture_hosts") as hosts, \
+                     patch.object(shard, "capture_host") as hosts, \
                      patch.object(shard, "run") as stop, \
                      patch.object(shard, "run_workload", side_effect=failure):
                     output = root / "matrix"
