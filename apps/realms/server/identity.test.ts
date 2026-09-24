@@ -103,6 +103,13 @@ beforeAll(async () => {
 
 afterAll(() => proxy?.dispose());
 
+/** A shard manifest under our guardian and account class, the only kind our directory lists. */
+const shardManifest = (chainId: string) => ({
+  chainId,
+  accountClassHash: ACCOUNT_CLASS_HASH,
+  guardianPublicKey: ec.starkCurve.getStarkKey(GUARDIAN_KEY),
+});
+
 /**
  * A browser: one cookie jar, first-party requests to the app's /api. `parentDomainCookies` are cookies another
  * realms.party service set for the whole domain; the browser sends them first.
@@ -419,13 +426,13 @@ describe("identity Worker", () => {
     expect(await status()).toBe(false);
   });
 
-  it("lists each shard's live games under that shard, settled ones in a paged history, with a player's standing when asked, names a shard it cannot read, and refuses a listed chain id", async () => {
+  it("lists each shard's live games under that shard, settled ones in a paged history, with a player's standing when asked, names a shard it cannot read, and refuses a listed chain id or another guardian's shard", async () => {
     const operator = createBrowser();
     const game = (gameId: number, name: string) => ({ game_id: gameId, name, status: "Running" });
-    heralds.set("https://shard-a.test/manifest", { chainId: "0xa" });
+    heralds.set("https://shard-a.test/manifest", shardManifest("0xa"));
     heralds.set("https://shard-a.test/games", { chain: "0xa", games: [game(1, "frontier-a")] });
-    heralds.set("https://shard-b.test/manifest", { chainId: "0xb" });
-    heralds.set("https://shard-c.test/manifest", { chainId: "0x0a" });
+    heralds.set("https://shard-b.test/manifest", shardManifest("0xb"));
+    heralds.set("https://shard-c.test/manifest", shardManifest("0x0a"));
 
     expect((await operator.request("/api/directory/shards", { body: { url: "https://shard-a.test" } })).status).toBe(
       401,
@@ -439,6 +446,13 @@ describe("identity Worker", () => {
       token: OPERATOR_TOKEN,
     });
     expect(await duplicate.json()).toEqual({ error: "chain_id_listed", url: "https://shard-a.test" });
+    // A shard whose accounts sit under another guardian would place the same player at another address.
+    heralds.set("https://shard-f.test/manifest", { ...shardManifest("0xf"), guardianPublicKey: "0x5eed" });
+    const foreign = await operator.request("/api/directory/shards", {
+      body: { url: "https://shard-f.test" },
+      token: OPERATOR_TOKEN,
+    });
+    expect(await foreign.json()).toEqual({ error: "account_identity_differs" });
 
     const list = async (query = "") =>
       ((await (await createBrowser().request(`/api/directory${query}`)).json()) as { shards: unknown[] }).shards;
@@ -474,9 +488,9 @@ describe("identity Worker", () => {
       clock: { end_at: endAt },
     });
     const live = { ...game(1, "blitz-d"), clock: { end_at: 900 } };
-    heralds.set("https://shard-d.test/manifest", { chainId: "0xd" });
+    heralds.set("https://shard-d.test/manifest", shardManifest("0xd"));
     heralds.set("https://shard-d.test/games", { chain: "0xd", games: [live, settled(2, "blitz-d-old", 200)] });
-    heralds.set("https://shard-e.test/manifest", { chainId: "0xe" });
+    heralds.set("https://shard-e.test/manifest", shardManifest("0xe"));
     heralds.set("https://shard-e.test/games", {
       chain: "0xe",
       games: [settled(1, "e-first", 100), settled(2, "e-last", 300)],
@@ -524,7 +538,7 @@ describe("identity Worker", () => {
     }
 
     // A live shard's URL cannot take a new chain; once retired, it is listed again under the chain its manifest names.
-    heralds.set("https://shard-e.test/manifest", { chainId: "0xee" });
+    heralds.set("https://shard-e.test/manifest", shardManifest("0xee"));
     heralds.set("https://shard-e.test/games", { chain: "0xee", games: [live] });
     const admitE = () =>
       operator.request("/api/directory/shards", { body: { url: "https://shard-e.test" }, token: OPERATOR_TOKEN });

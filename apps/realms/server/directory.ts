@@ -156,16 +156,30 @@ const fetchShardGames = async (shard: ListedShard, url: string, fetchShard: type
   return directory.games;
 };
 
+/** The account class and guardian key that, with a Realms id, place a player's account on every shard we list. */
+interface AccountIdentity {
+  accountClassHash: string;
+  guardianPublicKey: string;
+}
+
 /**
  * POST /api/directory/shards {url} — lists a shard by its Herald URL under the chain id its manifest declares. A chain id
  * already listed under another URL is refused; the unique index is the race-proof guarantee. A retired shard's URL is
- * listed again under its new chain.
+ * listed again under its new chain. A shard whose accounts sit under another class or guardian is refused: the app
+ * places a player on every listed shard at one address, the one our guardian approves devices for.
  */
-export const handleAdmitShard = async (request: Request, db: D1Database, fetchShard: typeof fetch) => {
+export const handleAdmitShard = async (
+  request: Request,
+  db: D1Database,
+  fetchShard: typeof fetch,
+  identity: AccountIdentity,
+) => {
   const url = shardUrlOf(await readJsonField(request, "url"));
   if (!url) return json({ error: "invalid_shard_url" }, 400);
-  const chainId = await readManifestChainId(url, fetchShard);
-  if (!chainId) return json({ error: "manifest_unavailable" }, 502);
+  const manifest = await readManifest(url, fetchShard);
+  if (!manifest) return json({ error: "manifest_unavailable" }, 502);
+  if (!hasAccountIdentity(manifest, identity)) return json({ error: "account_identity_differs" }, 409);
+  const { chainId } = manifest;
   const listed = await db
     .prepare('SELECT "url" FROM "shards" WHERE "chainId" = ?')
     .bind(chainId)
@@ -220,7 +234,10 @@ const readJsonField = async (request: Request, field: string): Promise<unknown> 
   return body?.[field];
 };
 
-const readManifestChainId = async (url: string, fetchShard: typeof fetch): Promise<string | null> => {
+const FELT = /^0x[0-9a-fA-F]{1,64}$/;
+
+/** The manifest, its chain id normalized; null when it cannot be read or names no chain. */
+const readManifest = async (url: string, fetchShard: typeof fetch) => {
   try {
     const response = await fetchShard(`${url}/manifest`, {
       signal: AbortSignal.timeout(SHARD_TIMEOUT_MS),
@@ -228,13 +245,20 @@ const readManifestChainId = async (url: string, fetchShard: typeof fetch): Promi
     });
     if (!response.ok) return null;
     const manifest = (await response.json()) as Partial<ShardManifest>;
-    return typeof manifest.chainId === "string" && /^0x[0-9a-fA-F]{1,64}$/.test(manifest.chainId)
-      ? `0x${BigInt(manifest.chainId).toString(16)}`
+    return typeof manifest.chainId === "string" && FELT.test(manifest.chainId)
+      ? { ...manifest, chainId: `0x${BigInt(manifest.chainId).toString(16)}` }
       : null;
   } catch {
     return null;
   }
 };
+
+const hasAccountIdentity = (manifest: Partial<AccountIdentity>, identity: AccountIdentity) =>
+  sameFelt(manifest.accountClassHash, identity.accountClassHash) &&
+  sameFelt(manifest.guardianPublicKey, identity.guardianPublicKey);
+
+const sameFelt = (value: unknown, expected: string) =>
+  typeof value === "string" && FELT.test(value) && BigInt(value) === BigInt(expected);
 
 /** The directory's cron: every listed shard has a running notifier, and a retired one has none. */
 export const superviseNotifiers = async (db: D1Database, notifiers: IdentityEnv["SHARD_NOTIFIER"]): Promise<void> => {

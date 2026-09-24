@@ -57,7 +57,12 @@ export const routeIdentityRequest = async (
   }
   if (pathname.startsWith("/api/directory/shards") && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    if (pathname === "/api/directory/shards") return handleAdmitShard(request, env.DB, platform.fetchShard);
+    if (pathname === "/api/directory/shards") {
+      return handleAdmitShard(request, env.DB, platform.fetchShard, {
+        accountClassHash: env.ACCOUNT_CLASS_HASH,
+        guardianPublicKey: await env.GUARDIAN.publicKey(),
+      });
+    }
     if (pathname === "/api/directory/shards/status") return handleShardStatus(request, env.DB);
   }
   if (pathname === "/api/guardian" && request.method === "GET") {

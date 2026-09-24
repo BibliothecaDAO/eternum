@@ -4,10 +4,10 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { listOpenShards, openKnownShards } from "@/runtime/world/shards";
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import { connectRealmsAccount, getOrCreateDeviceKey, listDevices, revokeDevice } from "@bibliothecadao/eternum";
-import { realmsAccountAddress } from "@realms-world/identity/account";
 import type { Shard } from "@bibliothecadao/eternum/shard";
 
 import { shortAddress } from "./format";
+import { useRealmsPlayer } from "./herald";
 import { GhostButton, PanelTitle } from "./kit";
 
 /** One device key and the shards where it signs for the player's account. */
@@ -17,11 +17,10 @@ interface Device {
 }
 
 /** The account's devices across every shard this client knows, read from each shard's device events. */
-async function readDevices(realmsId: string): Promise<Device[]> {
+async function readDevices(address: string): Promise<Device[]> {
   await openKnownShards();
   const devices = new Map<string, Device>();
   for (const shard of listOpenShards()) {
-    const address = realmsAccountAddress(realmsId, shard.accountClassHash, shard.guardianPublicKey);
     for (const key of await listDevices(getCachedRpcProvider(shard.rpcUrl), address)) {
       const device = devices.get(key) ?? { key, shards: [] };
       device.shards.push(shard);
@@ -46,14 +45,16 @@ async function revokeEverywhere(realmsId: string, device: Device): Promise<void>
 
 export const DevicesPanel = ({ realmsId }: { realmsId: string }) => {
   const thisDevice = getOrCreateDeviceKey(localStorage).publicKey;
+  const address = useRealmsPlayer();
   const [devices, setDevices] = useState<Device[] | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(() => {
-    readDevices(realmsId).then(setDevices, (cause: unknown) =>
+    if (!address) return;
+    readDevices(address).then(setDevices, (cause: unknown) =>
       setError(cause instanceof Error ? cause.message : "Devices could not be read."),
     );
-  }, [realmsId]);
+  }, [address]);
   useEffect(load, [load]);
 
   const revoke = async (device: Device) => {

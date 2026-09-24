@@ -93,7 +93,10 @@ const fetchGuardian = async (): Promise<GuardianIdentity> => {
   return (await response.json()) as GuardianIdentity;
 };
 
-/** The signed-in player's account address on our shards, known from the session alone, before any game is joined. */
+/**
+ * The signed-in player's account address on every shard our directory lists, known from the session alone, before any
+ * game is joined: the directory admits only shards whose accounts sit under this guardian and class.
+ */
 export const realmsPlayerOf = (realmsId: string | undefined, guardian: GuardianIdentity | undefined): string | null =>
   realmsId && guardian ? realmsAccountAddress(realmsId, guardian.accountClassHash, guardian.publicKey) : null;
 
