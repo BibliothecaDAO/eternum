@@ -1,6 +1,7 @@
 import type { GameReviewData } from "@/services/review/game-review-service";
 import { AssetRarity } from "@/ui/features/cosmetics/chest-opening/utils/cosmetics";
-import { displayAddress } from "@/ui/utils/utils";
+import { identityProfiles } from "@/services/identity/player-profiles";
+import { displayPlayerName } from "@bibliothecadao/eternum";
 
 type TemplateVariables = {
   // player name and tribe
@@ -129,6 +130,9 @@ const formatDuration = (seconds: number): string => {
   return `${remaining}s`;
 };
 
+/** A player's identity name as the review cards already requested it, else the stock fallback. */
+const playerName = (address: string): string => displayPlayerName(address, identityProfiles.get(address)?.name);
+
 export const buildGameReviewStepShareMessage = ({
   step,
   data,
@@ -141,13 +145,6 @@ export const buildGameReviewStepShareMessage = ({
   const worldLabel = data.worldName;
 
   if (isAwardsShareStep(step)) {
-    const leaderboardNames = new Map<string, string>();
-    for (const entry of data.leaderboard) {
-      const normalized = normalizeAddress(entry.address);
-      if (!normalized) continue;
-      leaderboardNames.set(normalized, entry.displayName?.trim() || displayAddress(normalized));
-    }
-
     const resolveWinnerName = (
       metric: { playerAddress: string; value: number } | null,
       formatter: (value: number) => string,
@@ -155,8 +152,7 @@ export const buildGameReviewStepShareMessage = ({
       if (!metric) return "None";
       const normalized = normalizeAddress(metric.playerAddress);
       if (!normalized) return "None";
-      const name = leaderboardNames.get(normalized) || displayAddress(normalized);
-      return `${name} (${formatter(metric.value)})`;
+      return `${playerName(normalized)} (${formatter(metric.value)})`;
     };
 
     const includeOnlyTimeMetrics = isTimeFocusedAwardsShareStep(step);
@@ -180,8 +176,7 @@ export const buildGameReviewStepShareMessage = ({
 
   if (step === "leaderboard") {
     const podiumLines = data.topPlayers.map((entry) => {
-      const name = (entry.displayName?.trim() || displayAddress(entry.address)).trim();
-      return `#${entry.rank} ${name} - ${formatReviewValue(entry.points)} pts`;
+      return `#${entry.rank} ${playerName(entry.address)} - ${formatReviewValue(entry.points)} pts`;
     });
     return [
       `Final standings for ${worldLabel} on Realms Blitz`,

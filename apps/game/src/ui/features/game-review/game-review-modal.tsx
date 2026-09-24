@@ -5,7 +5,6 @@ import { BlitzLeaderboardCardWithSelector } from "@/ui/shared/components/blitz-l
 import { BlitzMapFingerprintCardWithSelector } from "@/ui/shared/components/blitz-map-fingerprint-card";
 import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
 import { buildGameReviewStepShareMessage } from "@/ui/shared/lib/x-share-messages";
-import { displayAddress } from "@/ui/utils/utils";
 import { toPng } from "html-to-image";
 import { ArrowLeft, ArrowRight, Copy, Flag, Gift, Loader2, Share2, X } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
@@ -14,6 +13,8 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { gameKey } from "@/runtime/world/store";
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 import { useGameReviewData } from "./use-game-review-data";
+import { useProfiles } from "@/shell/profiles";
+import { displayPlayerName } from "@bibliothecadao/eternum";
 import { ScoreCardContent } from "./score-card-content";
 
 /** The finished game under review, as the shell names it. */
@@ -66,7 +67,10 @@ const isAwardsStep = (step: ReviewStepId): boolean => {
 
 const GameFinishedStep = ({ data }: { data: GameReviewData }) => {
   const winner = data.topPlayers[0];
-  const winnerLabel = winner ? winner.displayName?.trim() || displayAddress(winner.address) : "No winner available yet";
+  const profileOf = useProfiles(winner ? [winner.address] : []);
+  const winnerLabel = winner
+    ? displayPlayerName(winner.address, profileOf(winner.address)?.name)
+    : "No winner available yet";
 
   return (
     <div className="space-y-4">
@@ -478,11 +482,7 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
               {currentStep === "awards" && (
                 <div className="space-y-3">
                   <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-                    <BlitzAwardsOptionSixCardWithSelector
-                      worldName={reviewData.worldName}
-                      stats={reviewData.stats}
-                      leaderboard={reviewData.leaderboard}
-                    />
+                    <BlitzAwardsOptionSixCardWithSelector worldName={reviewData.worldName} stats={reviewData.stats} />
                   </div>
                 </div>
               )}

@@ -2,6 +2,7 @@ import { forwardRef, type Ref, useState } from "react";
 import { createPortal } from "react-dom";
 
 import type { LandingLeaderboardEntry } from "@/services/leaderboard/landing-leaderboard-service";
+import { useProfiles } from "@/shell/profiles";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 import { BLITZ_CARD_DIMENSIONS, truncateText } from "../lib/blitz-highlight";
 import {
@@ -11,9 +12,6 @@ import {
   formatBlitzValue as formatValue,
   formatBlitzRankParts as formatRankParts,
 } from "../lib/blitz-card-shared";
-
-const getDisplayName = (entry: LandingLeaderboardEntry): string =>
-  displayPlayerName(entry.address, entry.displayName?.trim());
 
 const LEADERBOARD_CARD_STYLES = `
   ${BLITZ_CARD_FONT_IMPORT}
@@ -184,7 +182,8 @@ interface BlitzLeaderboardCardProps {
 
 const PodiumEntry = ({ entry, positionClass }: { entry: LandingLeaderboardEntry; positionClass: string }) => {
   const { value: rankValue, suffix: rankSuffix } = formatRankParts(entry.rank);
-  const name = truncateText(getDisplayName(entry), 20);
+  const profileOf = useProfiles([entry.address]);
+  const name = truncateText(displayPlayerName(entry.address, profileOf(entry.address)?.name), 20);
 
   return (
     <div className={`podium-entry ${positionClass}`}>

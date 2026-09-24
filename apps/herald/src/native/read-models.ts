@@ -150,30 +150,18 @@ export function buildNativeLeaderboard(
   const game = required(modelRows("GameRegistry"), gameId, "GameRegistry");
   const rules = required(modelRows("SliceRules"), gameId, "SliceRules");
   const result = rows("BlitzResult")[0];
-  const names = modelRows("AddressName");
-  if (result?.complete === true) return withRegisteredNames(finalStandings(gameId, result, activity), names);
+  // Standings carry addresses only: a player's name is their identity profile, resolved by the client.
+  if (result?.complete === true) return finalStandings(gameId, result, activity);
   const points = registeredPlayerPoints(rows("PlayerEntry"), rows("PlayerPoints"));
   addUnclaimedSharePoints(points, rows("HyperstructureShares"), game, rules, timestamp);
-  return withRegisteredNames(rankPlayers(gameId, points, activity), names);
-}
-
-type UnnamedLeaderboard = Omit<HeraldLeaderboard, "entries"> & {
-  entries: Omit<HeraldLeaderboard["entries"][number], "name">[];
-};
-
-function withRegisteredNames(leaderboard: UnnamedLeaderboard, addressNames: FoldRow[]): HeraldLeaderboard {
-  const names = new Map(addressNames.map(({ value }) => [address(value.address), shortString(value.name) || null]));
-  return {
-    ...leaderboard,
-    entries: leaderboard.entries.map((entry) => ({ ...entry, name: names.get(entry.address) ?? null })),
-  };
+  return rankPlayers(gameId, points, activity);
 }
 
 function finalStandings(
   gameId: string,
   result: Row,
   activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
-): UnnamedLeaderboard {
+): HeraldLeaderboard {
   return {
     game_id: integer(gameId).toString(),
     entries: (result.players as Row[]).map((player) => ({
@@ -218,7 +206,7 @@ function rankPlayers(
   gameId: string,
   points: Map<string, bigint>,
   activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
-): UnnamedLeaderboard {
+): HeraldLeaderboard {
   const ranked = [...points].sort(([left, a], [right, b]) => (a === b ? left.localeCompare(right) : a > b ? -1 : 1));
   const entries = ranked.map(([player, value], index) => ({
     address: player,

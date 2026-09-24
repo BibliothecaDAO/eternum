@@ -2,9 +2,10 @@ import { Hyperstructure, Swords, ChevronsUp } from "@/ui/design-system/atoms/gam
 import { forwardRef, useMemo, useState, type Ref } from "react";
 import { createPortal } from "react-dom";
 
-import type { LandingLeaderboardEntry } from "@/services/leaderboard/landing-leaderboard-service";
 import type { GameReviewStats } from "@/services/review/game-review-service";
-import { displayAddress } from "@/ui/utils/utils";
+import { useProfiles } from "@/shell/profiles";
+import { displayPlayerName } from "@bibliothecadao/eternum";
+import type { IdentityProfile } from "@realms-world/identity";
 import { BLITZ_CARD_DIMENSIONS } from "../lib/blitz-highlight";
 import {
   BLITZ_CARD_BASE_STYLES,
@@ -43,7 +44,6 @@ type AwardsCardVariant =
 interface BlitzAwardsVariantCardProps {
   worldName: string;
   stats: GameReviewStats;
-  leaderboard: LandingLeaderboardEntry[];
   player?: { name: string; address: string } | null;
   variant: AwardsCardVariant;
 }
@@ -60,14 +60,9 @@ interface AwardItem {
   metric: MetricValue;
 }
 
-interface LeaderboardIdentity {
-  displayName: string | null;
-}
-
 interface WinnerIdentity {
   normalizedAddress: string;
   name: string;
-  address?: string;
 }
 
 const normalizeAddress = (value: string | null | undefined): string | null => {
@@ -157,45 +152,13 @@ const OptionSixMetricIcon = ({ iconId }: { iconId: OptionSixMetricIconId }) => {
   return <ChevronsUp />;
 };
 
-const buildLeaderboardIdentityLookup = (leaderboard: LandingLeaderboardEntry[]): Map<string, LeaderboardIdentity> => {
-  const byAddress = new Map<string, LeaderboardIdentity>();
-
-  for (const entry of leaderboard) {
-    const normalized = normalizeAddress(entry.address);
-    if (!normalized) continue;
-    const displayName = entry.displayName?.trim() || null;
-    byAddress.set(normalized, {
-      displayName,
-    });
-  }
-
-  return byAddress;
-};
-
 const resolveWinner = (
   metric: MetricValue,
-  identityByAddress: Map<string, LeaderboardIdentity>,
+  profileOf: (account: string) => IdentityProfile | undefined,
 ): WinnerIdentity | null => {
-  if (!metric) return null;
-
-  const normalizedAddress = normalizeAddress(metric.playerAddress);
+  const normalizedAddress = normalizeAddress(metric?.playerAddress);
   if (!normalizedAddress) return null;
-
-  const identity = identityByAddress.get(normalizedAddress);
-  const displayName = identity?.displayName?.trim() || null;
-
-  if (displayName) {
-    return {
-      normalizedAddress,
-      name: displayName,
-    };
-  }
-
-  return {
-    normalizedAddress,
-    name: "Player",
-    address: displayAddress(normalizedAddress),
-  };
+  return { normalizedAddress, name: displayPlayerName(normalizedAddress, profileOf(normalizedAddress)?.name) };
 };
 
 const AWARDS_CARD_BASE_STYLES = `
@@ -346,23 +309,6 @@ const AWARDS_CARD_BASE_STYLES = `
   .blitz-card-root .award-bottom .award-winner {
     font-size: 16px;
     line-height: 20px;
-  }
-
-  .blitz-card-root .award-address {
-    font-family: "IM Fell English", serif;
-    font-style: italic;
-    font-size: 13px;
-    line-height: 16px;
-    color: #ffffff;
-    opacity: 0.74;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .blitz-card-root .award-bottom .award-address {
-    font-size: 12px;
-    line-height: 15px;
   }
 `;
 
@@ -1228,10 +1174,9 @@ const AWARDS_CARD_VARIANT_ROOT_CLASS: Record<AwardsCardVariant, string> = {
 };
 
 const BlitzAwardsVariantCard = forwardRef<SVGSVGElement, BlitzAwardsVariantCardProps>(
-  ({ worldName, stats, leaderboard, player, variant }, ref) => {
+  ({ worldName, stats, player, variant }, ref) => {
     const [portalTarget, setPortalTarget] = useState<SVGGElement | null>(null);
     const cardStyles = useMemo(() => `${AWARDS_CARD_BASE_STYLES}\n${AWARDS_CARD_VARIANT_STYLES[variant]}`, [variant]);
-    const leaderboardIdentityLookup = useMemo(() => buildLeaderboardIdentityLookup(leaderboard), [leaderboard]);
 
     const awards = useMemo<AwardItem[]>(() => {
       const baseAwards: AwardItem[] = [
@@ -1286,9 +1231,9 @@ const BlitzAwardsVariantCard = forwardRef<SVGSVGElement, BlitzAwardsVariantCardP
       return baseAwards;
     }, [stats, variant]);
 
-    const winnersByAward = useMemo(() => {
-      return awards.map((award) => resolveWinner(award.metric, leaderboardIdentityLookup));
-    }, [awards, leaderboardIdentityLookup]);
+    // Names re-read on each render: useProfiles re-renders this card when identity answers.
+    const profileOf = useProfiles(awards.flatMap((award) => normalizeAddress(award.metric?.playerAddress) ?? []));
+    const winnersByAward = awards.map((award) => resolveWinner(award.metric, profileOf));
 
     const cardMarkup = (
       <foreignObject width="100%" height="100%">
@@ -1362,7 +1307,6 @@ const BlitzAwardsVariantCard = forwardRef<SVGSVGElement, BlitzAwardsVariantCardP
                   {winner ? (
                     <div className="award-winner-row">
                       <div className="award-winner">{winner.name}</div>
-                      {winner.address ? <div className="award-address">{winner.address}</div> : null}
                     </div>
                   ) : null}
                 </div>

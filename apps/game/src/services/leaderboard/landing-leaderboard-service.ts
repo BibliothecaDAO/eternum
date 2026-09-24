@@ -7,7 +7,6 @@ const DEFAULT_LIMIT = 20;
 export interface LandingLeaderboardEntry {
   rank: number;
   address: string;
-  displayName: string | null;
   points: number;
   exploredTiles?: number;
   exploredTilePoints?: number;
@@ -47,7 +46,6 @@ export const buildLandingLeaderboard = (
     return {
       rank: entry.rank,
       address,
-      displayName: entry.name,
       points: entry.totalPoints,
       exploredTiles: activity.exploration.count,
       exploredTilePoints: activity.exploration.points,
