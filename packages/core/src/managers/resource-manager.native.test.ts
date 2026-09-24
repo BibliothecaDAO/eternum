@@ -132,6 +132,8 @@ describe("native resource facts", () => {
       }),
     ]);
     const manager = new ResourceManager(store, 7, 1);
+    expect(manager.trainsFromWheat()).toBe(true);
+    expect(new ResourceManager(store, 8, 1).trainsFromWheat()).toBe(false);
     expect(manager.balanceWithProduction(101, 26).balance).toBe(30);
     expect(manager.balanceWithProduction(101, 35).balance).toBe(70);
     expect(manager.balance(35)).toBe(60n);
