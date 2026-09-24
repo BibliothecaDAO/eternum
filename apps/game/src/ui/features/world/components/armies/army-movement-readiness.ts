@@ -26,6 +26,14 @@ interface ArmyFoodCosts {
  * now" — stamina and food together. The stamina bar's color and the
  * readiness icons both render from this; nothing re-derives it locally.
  */
+/** What keeps an army from marching (or, failing that, exploring) for lack of food; see formatFoodBlock. */
+export interface FoodBlock {
+  action: "travel" | "explore";
+  perStep: ArmyFoodCosts;
+  food: { wheat: number; fish: number };
+  trainingTakesWheat: boolean;
+}
+
 export interface ArmyMovementReadiness {
   canTravel: boolean;
   canExplore: boolean;
@@ -34,6 +42,7 @@ export interface ArmyMovementReadiness {
   foodWarnings: ReturnType<typeof getArmyMovementFoodRequirementWarnings>;
   minTravelStamina: number;
   minExploreStamina: number;
+  foodBlock: FoodBlock | null;
 }
 
 export const deriveArmyMovementReadiness = ({
@@ -43,6 +52,7 @@ export const deriveArmyMovementReadiness = ({
   travelFoodCosts,
   exploreFoodCosts,
   food,
+  trainingTakesWheat = false,
 }: {
   currentStamina: number;
   minTravelStamina: number;
@@ -50,6 +60,7 @@ export const deriveArmyMovementReadiness = ({
   travelFoodCosts: ArmyFoodCosts;
   exploreFoodCosts: ArmyFoodCosts;
   food: { wheat: number; fish: number };
+  trainingTakesWheat?: boolean;
 }): ArmyMovementReadiness => {
   const foodWarnings = getArmyMovementFoodRequirementWarnings({ travelFoodCosts, exploreFoodCosts, food });
   const { hasTravelStaminaWarning, hasExploreStaminaWarning } = getArmyStaminaRequirementWarnings({
@@ -66,6 +77,11 @@ export const deriveArmyMovementReadiness = ({
     foodWarnings,
     minTravelStamina,
     minExploreStamina,
+    foodBlock: foodWarnings.travel.hasWarning
+      ? { action: "travel", perStep: travelFoodCosts, food, trainingTakesWheat }
+      : foodWarnings.explore.hasWarning
+        ? { action: "explore", perStep: exploreFoodCosts, food, trainingTakesWheat }
+        : null,
   };
 };
 
@@ -93,6 +109,7 @@ export const useArmyMovementReadiness = (
       travelFoodCosts: movementFoodCosts.travel,
       exploreFoodCosts: movementFoodCosts.explore,
       food: resolveStructureFoodBalance(structureResources, currentDefaultTick),
+      trainingTakesWheat: structureResources?.hasResources() ? structureResources.trainsFromWheat() : false,
     });
   }, [army, structureResources, currentArmiesTick, currentDefaultTick]);
 };
