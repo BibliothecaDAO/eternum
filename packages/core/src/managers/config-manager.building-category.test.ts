@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BuildingType, CapacityConfig, TickIds } from "@bibliothecadao/types";
+import { BiomeType, BuildingType, CapacityConfig, TickIds, TroopType } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
 import { ClientConfigManager } from "./config-manager";
@@ -62,5 +62,16 @@ describe("native immutable configuration", () => {
     expect(() => manager.getTick(TickIds.Armies)).toThrow("not synchronized");
     write("SliceRules", [54], { ...preset.rules, game_id: 54 });
     expect(manager.getTick(TickIds.Armies)).toBe(Number(preset.rules.tick_config.armies_tick_in_seconds));
+  });
+
+  it("reads whether terrain changes combat from the game's damage rule", () => {
+    const { manager, write } = fixture();
+    expect(manager.hasBiomeCombatEffects()).toBe(true);
+    expect(manager.getBiomeCombatBonus(TroopType.Knight, BiomeType.Beach)).toBe(0.7);
+
+    const neutral = { ...preset.rules.troop_damage_config, damage_biome_bonus_num: 0 };
+    write("SliceRules", [54], { ...preset.rules, game_id: 54, troop_damage_config: neutral });
+    expect(manager.hasBiomeCombatEffects()).toBe(false);
+    expect(manager.getBiomeCombatBonus(TroopType.Knight, BiomeType.Beach)).toBe(1);
   });
 });
