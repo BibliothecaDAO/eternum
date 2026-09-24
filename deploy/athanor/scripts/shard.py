@@ -23,8 +23,9 @@ import candidate_guard
 ROOT = Path(__file__).resolve().parents[3]
 METRICS_CONTEXT = ROOT / "deploy/athanor/metrics"
 DOCKER = ["sudo", "-n", "docker"]
-# Admission connections: each player holds about two (a 100-connection node refused a 96-player slot at its
-# 48th player), plus a fixed allowance for the sequencing authority, Herald and tooling.
+# Gateway connections: each player holds about two (a 100-connection server refused a 96-player slot at its 48th
+# player), plus a fixed allowance for the sequencing authority, Herald and tooling. The node's own limit is the
+# package's: players never reach the node directly.
 CONNECTIONS_PER_PLAYER = 2
 TOOLING_CONNECTIONS = 32
 DEFAULT_NODE_MEMORY_MIB = 24576
@@ -145,10 +146,9 @@ def compose_configuration(config, directory):
                                    "target": "/template/chain-config.yaml", "read_only": True})
     node = compose["services"]["madara"]
     node["image"] = config["madara_image"]
-    replaced = ("--enable-native-execution=", "--native-compilation-mode=", "--rpc-max-connections=")
+    replaced = ("--enable-native-execution=", "--native-compilation-mode=")
     node["command"] = [flag for flag in node["command"] if not flag.startswith(replaced)] + [
-        f"--rpc-max-connections={admission_connections(config)}", "--otel-collector-endpoint=http://metrics:4317",
-        "--otel-export-metrics=true", *config["node_flags"],
+        "--otel-collector-endpoint=http://metrics:4317", "--otel-export-metrics=true", *config["node_flags"],
     ]
     node["ports"] = [f"127.0.0.1:{config['port_base']}:9944"]
     compose["services"]["postgres"]["ports"] = [f"127.0.0.1:{config['port_base'] + 2}:5432"]
