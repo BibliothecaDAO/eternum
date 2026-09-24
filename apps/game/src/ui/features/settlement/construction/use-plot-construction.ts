@@ -7,6 +7,7 @@ import {
   configManager,
   describeBoardBonus,
   getRealmInfo,
+  resolveUseSimpleCost,
 } from "@bibliothecadao/eternum";
 import {
   BuildingType,
@@ -40,7 +41,7 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
   const mode = useGameModeConfig();
   const ordersAllowed = useUIStore(canIssueOrders);
   const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
-  const useSimpleCost = mode.id !== "blitz" && requestedSimpleCost;
+  const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
   const setUseSimpleCost = useUIStore((state) => state.setUseSimpleCost);
   const currentDefaultTick = useCurrentDefaultTick();
   useNativeRevision([
@@ -122,7 +123,7 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
     groups,
     build,
     error,
-    allowSimpleCost: mode.id !== "blitz",
+    allowSimpleCost: configManager.buildingCostMode === "choice",
     useSimpleCost,
     setUseSimpleCost,
     visible: ordersAllowed && isOwner,

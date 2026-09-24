@@ -9,7 +9,13 @@ import { LeftView } from "@/types";
 import { buildRealmBuilding } from "@/ui/features/settlement/construction/realm-build-actions";
 import { ProductionModal } from "@/ui/features/settlement";
 import { useRealmActions } from "@/ui/modules/entity-details/hooks/use-realm-actions";
-import { getRealmInfo, Position, structureMapPosition } from "@bibliothecadao/eternum";
+import {
+  getRealmInfo,
+  Position,
+  structureMapPosition,
+  configManager,
+  resolveUseSimpleCost,
+} from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { type BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/types";
@@ -32,7 +38,7 @@ export const useSuggestionActions = () => {
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const openSurface = usePopoverStore((state) => state.openSurface);
   const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
-  const useSimpleCost = mode.id !== "blitz" && requestedSimpleCost;
+  const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
 
   const { fireUpgrade, pendingRealmId } = useRealmActions();
 

@@ -30,6 +30,7 @@ import {
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
   structureMapPosition,
+  resolveUseSimpleCost,
 } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { useGame } from "@/hooks/context/game-context";
@@ -198,7 +199,7 @@ const LocalTilePanel = () => {
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const currentDefaultTick = useCurrentDefaultTick();
   const mode = useGameModeConfig();
-  const useSimpleCost = mode.id !== "blitz" && requestedSimpleCost;
+  const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
 
   const liveStructure = useNativeRow("Structure", {
     game_id: configManager.getActiveGameId(),

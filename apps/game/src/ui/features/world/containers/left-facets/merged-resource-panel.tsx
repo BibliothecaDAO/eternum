@@ -15,7 +15,13 @@ import {
   resolveRealmHasAvailableBuildingTile,
 } from "@/ui/features/settlement/construction/realm-build-actions";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
-import { divideByPrecision, getRealmInfo, ResourceManager } from "@bibliothecadao/eternum";
+import {
+  divideByPrecision,
+  getRealmInfo,
+  ResourceManager,
+  configManager,
+  resolveUseSimpleCost,
+} from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import {
   BuildingType,
@@ -69,7 +75,7 @@ export const MergedResourcePanel = memo(
     const mode = useGameModeConfig();
     const currentDefaultTick = useCurrentDefaultTick();
     const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
-    const useSimpleCost = mode.id !== "blitz" && requestedSimpleCost;
+    const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
 
     const entityId = Number(structureEntityId);
     const realm = useMemo(

@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
-import { getRealmInfo } from "@bibliothecadao/eternum";
+import { getRealmInfo, configManager, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import {
   BuildingType,
   HexEntityInfo,
@@ -101,7 +101,7 @@ export const createConstructionMenu = ({
   const idString = structureId.toString();
   const structureEntityId = Number(structureId);
   const mode = getGameModeConfig();
-  const simpleCostEnabled = mode.id !== "blitz" && requestedSimpleCost;
+  const simpleCostEnabled = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
 
   const realmInfo = getRealmInfo(structureEntityId, store, getPlayerName);
 
