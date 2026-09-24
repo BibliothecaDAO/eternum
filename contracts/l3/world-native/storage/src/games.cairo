@@ -1,6 +1,6 @@
 use starknet::ContractAddress;
 use starknet::storage::Map;
-use crate::release::LogicClasses;
+use crate::release::Release;
 
 #[starknet::storage_node]
 pub struct GamesStorage<
@@ -58,7 +58,7 @@ pub struct GamesStorage<
     TRetention,
 > {
     pub authority: ContractAddress,
-    pub releases: Map<u32, LogicClasses>,
+    pub releases: Map<u32, Release>,
     pub game_releases: Map<u32, u32>,
     pub current_release: u32,
     pub arrivals: crate::arrivals::ArrivalStateStorage<TResourceAmount>,

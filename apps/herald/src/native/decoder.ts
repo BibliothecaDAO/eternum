@@ -13,6 +13,16 @@ import {
 
 export type NativeRawEvent = RawWorldEvent & RpcEvent;
 
+export class NativeReleaseSchemaUnavailable extends Error {
+  constructor(
+    readonly releaseId: string,
+    readonly schemaIdentity: string | undefined,
+  ) {
+    super(`Native release ${releaseId} requires unavailable schema ${schemaIdentity ?? "unknown"}`);
+    this.name = "NativeReleaseSchemaUnavailable";
+  }
+}
+
 export class NativeDecoder {
   readonly registry: ModelRegistry;
   private readonly emitter: string;
@@ -111,7 +121,14 @@ export class NativeDecoder {
       return { ...base, kind: "update-member", member: member.name, value: value[member.name] };
     }
     const value = decodeMembers(schema, model.members, frame.values);
+    if (model.name === "GameRelease") this.requireReleaseSchema(String(value.release_id));
     return { ...base, kind: "set", value };
+  }
+
+  private requireReleaseSchema(releaseId: string): void {
+    const identity = this.manifest.native.releaseSchemas[releaseId];
+    // This fold's registry and checkpoint use one schema. Refuse before any migration rows enter it.
+    if (identity !== this.schema.identity) throw new NativeReleaseSchemaUnavailable(releaseId, identity);
   }
 }
 

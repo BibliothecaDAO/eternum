@@ -152,7 +152,9 @@ pub fn setup() -> ContractAddress {
     };
     let mut args = array![administrator.into()];
     authentication.serialize(ref args);
+    args.append(1);
     classes.serialize(ref args);
+    args.append(0);
     let season = deploy("GamesTest", @args);
     provision_game(season, actor, administrator);
     start_cheat_caller_address(account, administrator);

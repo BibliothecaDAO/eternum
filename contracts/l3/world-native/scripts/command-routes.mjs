@@ -79,7 +79,7 @@ pub const COMMAND_ROUTES: [CommandRoute; ${routes.length}] = [
 ${definitions.join("\n")}
 ];
 
-pub fn logic_class(classes: starknet::storage::StoragePath<games_storage::release::LogicClasses>, index: u8) -> starknet::ClassHash {
+pub fn logic_class(classes: starknet::storage::StoragePointer<games_storage::release::LogicClasses>, index: u8) -> starknet::ClassHash {
     match index {
 ${logic.map((name, index) => `        ${index} => classes.${name}.read(),`).join("\n")}
         _ => panic!("unknown command logic"),

@@ -191,7 +191,7 @@ pub mod BridgeState {
     > of InternalTrait<TContractState> {
         fn logic_classes(
             self: @ComponentState<TContractState>, game_id: u32,
-        ) -> starknet::storage::StoragePath<games_storage::release::LogicClasses> {
+        ) -> starknet::storage::StoragePointer<games_storage::release::LogicClasses> {
             get_dep_component!(self, Life).classes(game_id)
         }
         fn withdrawals(self: @ComponentState<TContractState>) -> @WithdrawalState::ComponentState<TContractState> {

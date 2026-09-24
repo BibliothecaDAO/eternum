@@ -14,8 +14,11 @@ import { buildNativePreset } from "../../config/deployer/clean/config/native-pre
 import { isDeploymentEnvironmentId } from "../../config/deployer/clean/environment";
 import { loadNativePresetConfiguration, presetRegistrationCall } from "../../config/deployer/clean/registrar/native-preset";
 import { readClassArtifact } from "../../config/deployer/clean/shared/declare";
-import { NATIVE_RELEASE_ID, registrarWorldOf } from "../../config/deployer/clean/world/native/manifest";
+import { registrarWorldOf } from "../../config/deployer/clean/world/native/manifest";
 import { schemaIdentity, type NativeSchema } from "../../apps/herald/src/native/schema";
+
+// Bump for every published change to the logic table or migration.
+const NATIVE_RELEASE_ID = 1;
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const WORLD = resolve(ROOT, "contracts/l3/world-native");
@@ -40,6 +43,7 @@ function releaseFacts() {
   });
   return {
     releaseId: NATIVE_RELEASE_ID,
+    migrationClassHash: migrationClassHash(),
     schema: schema.identity,
     classes: {
       games: worldClass("Games"),
@@ -48,6 +52,18 @@ function releaseFacts() {
     },
     presets: Object.fromEntries(presets),
   };
+}
+
+function migrationClassHash(): string {
+  const index = JSON.parse(readFileSync(resolve(WORLD, "target/dev/world_native.starknet_artifacts.json"), "utf8")) as {
+    contracts: Array<{ contract_name: string; artifacts: { sierra: string; casm: string } }>;
+  };
+  const migration = index.contracts.find(({ contract_name }) => contract_name === "ReleaseMigration");
+  if (!migration) return "0x0";
+  return readClassArtifact(
+    resolve(WORLD, "target/dev", migration.artifacts.sierra),
+    resolve(WORLD, "target/dev", migration.artifacts.casm),
+  ).classHash;
 }
 
 console.log(JSON.stringify(releaseFacts(), null, 2));

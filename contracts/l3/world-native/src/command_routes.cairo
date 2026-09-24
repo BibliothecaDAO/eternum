@@ -93,7 +93,7 @@ pub const COMMAND_ROUTES: [CommandRoute; 68] = [
 ];
 
 pub fn logic_class(
-    classes: starknet::storage::StoragePath<games_storage::release::LogicClasses>, index: u8,
+    classes: starknet::storage::StoragePointer<games_storage::release::LogicClasses>, index: u8,
 ) -> starknet::ClassHash {
     match index {
         0 => classes.season.read(),

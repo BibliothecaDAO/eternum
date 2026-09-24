@@ -1892,6 +1892,81 @@
       },
       {
         "type": "function",
+        "name": "register_release",
+        "inputs": [
+          {
+            "name": "release_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "release",
+            "type": "games_storage::release::Release"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "apply_release",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "release_id",
+            "type": "core::integer::u32"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "current_release",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::integer::u32"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "game_release",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u32"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "release",
+        "inputs": [
+          {
+            "name": "release_id",
+            "type": "core::integer::u32"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "games_storage::release::Release"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
         "name": "set_authentication",
         "inputs": [
           {
@@ -6955,6 +7030,20 @@
         }
       ]
     },
+    "games_storage::release::Release": {
+      "type": "struct",
+      "name": "games_storage::release::Release",
+      "members": [
+        {
+          "name": "classes",
+          "type": "games_storage::release::LogicClasses"
+        },
+        {
+          "name": "migration",
+          "type": "core::starknet::class_hash::ClassHash"
+        }
+      ]
+    },
     "world_native::arrivals::Arrival": {
       "type": "struct",
       "name": "world_native::arrivals::Arrival",
@@ -8448,10 +8537,6 @@
         {
           "name": "authority",
           "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "classes",
-          "type": "games_storage::release::LogicClasses"
         }
       ]
     },
@@ -11790,5 +11875,5 @@
       ]
     }
   },
-  "identity": "052f35ff19da351dc6c23d04306a71e0c8cf2ae6cffe067327770bfb1991f05c"
+  "identity": "8473128f00e3b38599cf362a204fcbe1fc0e03b2f4fa1a77cb198142bdfc671e"
 }

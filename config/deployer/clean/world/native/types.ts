@@ -40,7 +40,15 @@ export interface NativeWorld {
   schema: NativeSchema;
   games: NativeGames;
   logic: NativeLogic[];
+  migration?: NativeLogic;
+  release: NativeReleaseFacts;
   previous?: NativeWorldManifest;
+}
+export interface NativeReleaseFacts {
+  releaseId: number;
+  schema: string;
+  migrationClassHash: string;
+  classes: { games: string; logic: Record<string, string>; account: string };
 }
 export interface NativeClassPlan {
   name: string;
@@ -53,11 +61,12 @@ export interface NativePlan {
   classes: NativeClassPlan[];
   deployedClassHash: string | null;
   realmCatalogue?: { initialized: number; digest: string };
+  releaseRegistered: boolean;
   blockers: string[];
   synced: boolean;
 }
 export interface NativeTransaction {
-  action: "declare" | "deploy" | "initialize_realm_traits";
+  action: "declare" | "deploy" | "initialize_realm_traits" | "register_release" | "apply_release";
   domain: string;
   hash: string;
 }

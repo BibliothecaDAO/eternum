@@ -47,7 +47,7 @@ pub fn remove_explorer(key: ResourceKey, explorer_id: u32) {
     assert!(release_id != 0, "game has no release");
     crate::resources::IResourceOperationsDispatcherTrait::destroy_resources(
         crate::resources::IResourceOperationsLibraryDispatcher {
-            class_hash: state.releases.entry(release_id).resources.read(),
+            class_hash: state.releases.entry(release_id).classes.resources.read(),
         },
         ResourceKey { game_id: key.game_id, entity_id: explorer_id },
     );

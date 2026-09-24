@@ -3,6 +3,7 @@ import { declareClass, waitForSuccess } from "../../shared/declare";
 import { canonicalRealmTraits } from "./realm-catalogue";
 import { inspectNativeWorld } from "./plan";
 import type { NativePlan, NativeTransaction, NativeWorld } from "./types";
+import { registerNativeRelease } from "./releases";
 
 export async function deployNativeWorld(
   local: NativeWorld,
@@ -19,10 +20,13 @@ export async function deployNativeWorld(
     onSubmitted(transaction);
   };
   for (const logic of local.logic) await declareClass(declarer, logic, (hash) => record("declare", logic.name, hash));
+  if (local.migration) await declareClass(declarer, local.migration, (hash) => record("declare", "migration", hash));
   await declareClass(declarer, local.games, (hash) => record("declare", "games", hash));
   if (!before.deployedClassHash) await deployGames(local, account, (hash) => record("deploy", "games", hash));
   const deployed = await inspectNativeWorld(local, account);
   if (deployed.blockers.length) throw new Error(deployed.blockers.join("; "));
+  if (!deployed.releaseRegistered)
+    await registerNativeRelease(local, account, (hash) => record("register_release", "games", hash));
   await initializeRealmCatalogue(local, account, deployed, (hash) => record("initialize_realm_traits", "games", hash));
   const after = await inspectNativeWorld(local, account);
   if (!after.synced) throw new Error("Native deployment did not converge");

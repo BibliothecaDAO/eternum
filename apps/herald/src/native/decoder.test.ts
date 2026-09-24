@@ -6,10 +6,31 @@ import deleteFixture from "../../../../contracts/l3/world-native/schema/fixtures
 import foreignFixture from "../../../../contracts/l3/world-native/schema/fixtures/foreign-emitter.json";
 import malformedFixture from "../../../../contracts/l3/world-native/schema/fixtures/malformed-row.json";
 import { WorldFold } from "../world-fold";
+import { NativeDecoder, NativeReleaseSchemaUnavailable } from "./decoder";
+import { NativeIngestion } from "./ingestion";
 
 import { schema, manifest, receipt, raw, setup, battleEvent, rowEvent } from "./fixtures";
 
 describe("native row decoder", () => {
+  it("folds a known same-schema hotfix and refuses an unavailable decoder before its migration rows", () => {
+    const released = structuredClone(manifest);
+    released.native.releaseSchemas["2"] = schema.identity;
+    const decoder = new NativeDecoder(released);
+    const ingestion = new NativeIngestion(decoder);
+    const fold = new WorldFold(decoder.registry);
+    ingestion.applyReceipt(fold, receipt([rowEvent("GameRelease", ["1"], ["1", "42"]), setFixture.raw]), 10, 0);
+    ingestion.applyReceipt(fold, receipt([rowEvent("GameRelease", ["1"], ["2", "42"]), memberFixture.raw]), 11, 0);
+    expect(BigInt(fold.modelRows("GameRelease")[0].value.release_id as string)).toBe(2n);
+    const before = fold.checkpoint();
+    expect(() =>
+      ingestion.applyReceipt(fold, receipt([rowEvent("GameRelease", ["1"], ["3", "42"]), deleteFixture.raw]), 12, 0),
+    ).toThrow(NativeReleaseSchemaUnavailable);
+    expect(fold.checkpoint()).toEqual(before);
+    released.native.releaseSchemas["3"] = "unavailable-schema";
+    expect(() =>
+      ingestion.applyReceipt(fold, receipt([rowEvent("GameRelease", ["1"], ["3", "42"]), deleteFixture.raw]), 12, 0),
+    ).toThrow("unavailable-schema");
+  });
   it("consumes the generated fixtures for set, member, deletion and recreation", () => {
     const { native, fold } = setup();
     for (const fixture of [setFixture, memberFixture]) {

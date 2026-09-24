@@ -198,6 +198,9 @@ node reports this identity, then preserves it in `shard.chainId` alongside
 `shard.chainId`, including the earlier top-level `chainId` shape, must be replaced by a fresh initialization with new
 node state. E1 provides no migration of an existing chain.
 
+Use the release facts JSON baked with the compiled artifacts (`/release/release-facts.json` in the init image).
+For host commands, set `NATIVE_RELEASE_FACTS` to that published file.
+
 On the already prepared isolated chain:
 
 ```bash
@@ -205,6 +208,7 @@ bun deploy/athanor/scripts/deploy-gameplay-contracts.ts
 bun deploy/athanor/harness/native/prepare-authority.ts "$NATIVE_WORLD_SEED"
 bun config/deployer/clean/cli/deploy-world.ts \
   --seed "$NATIVE_WORLD_SEED" \
+  --release-facts "$NATIVE_RELEASE_FACTS" \
   --identity "$GAMEPLAY_CONTRACTS_PATH" \
   --submitter "$SEQUENCING_SUBMITTER_ADDRESS"
 bun deploy/athanor/harness/native/prepare-authority.ts "$NATIVE_WORLD_SEED" "$NATIVE_WORLD_MANIFEST"
@@ -219,7 +223,8 @@ preparation and repeat world deployments; switch to the operator for preset regi
 Set `SEQUENCING_SUBMITTER_ADDRESS` to the address produced by authority preparation. Repeat deployment with the same
 seed, identity, submitter and manifest to check that an unchanged world submits zero transactions. Add `--inspect` to
 check class hashes, configuration and activation without mutation. Inspection does not prove storage compatibility; a
-populated upgrade needs its own read/mutate check. The event-codec cutover requires a fresh native deployment.
+populated upgrade needs its own read/mutate check. If a registered release's migration class is not declared, declare
+it, then apply. The event-codec cutover requires a fresh native deployment.
 
 Player identity deployment writes the explicit `GAMEPLAY_CONTRACTS_PATH`. No deployment output or private credential
 belongs in a tracked configuration file. The launch service and administrative commands use `ADMISSION_URL` for recorded

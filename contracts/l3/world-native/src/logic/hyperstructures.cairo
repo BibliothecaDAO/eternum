@@ -333,7 +333,7 @@ pub mod HyperstructureState {
         }
         fn logic_classes(
             self: @ComponentState<TContractState>, game_id: u32,
-        ) -> starknet::storage::StoragePath<LogicClasses> {
+        ) -> starknet::storage::StoragePointer<LogicClasses> {
             get_dep_component!(self, Life).classes(game_id)
         }
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> HyperstructureRules {

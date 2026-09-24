@@ -9,7 +9,6 @@ pub mod GamesEntry {
     use eternum_randomness_protocol::epochs::{IRandomnessEpochsDispatcher, IRandomnessEpochsDispatcherTrait};
     use eternum_randomness_protocol::recording::{Rejection, rejection};
     use eternum_randomness_protocol::{Envelope, Intent, action_identity, decode_envelope};
-    use games_storage::release::LogicClasses;
     use starknet::storage::{
         StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
@@ -181,13 +180,15 @@ pub mod GamesEntry {
             ref self: ComponentState<TContractState>,
             authority: ContractAddress,
             authentication: Authentication,
-            classes: LogicClasses,
+            release_id: u32,
+            release: crate::logic::release::Release,
         ) {
             assert!(authority.is_non_zero(), "zero authority");
-            games_storage::release::validate(classes);
+            games_storage::release::validate(release.classes);
+            assert!(release_id != 0, "zero release id");
             self.data.authority.write(authority);
-            self.data.current_release.write(1);
-            self.data.releases.write(1, classes);
+            self.data.current_release.write(release_id);
+            self.data.releases.write(release_id, release);
             self.data.registrar.next_game.write(1);
             self.write_authentication(authentication);
         }
@@ -337,7 +338,7 @@ pub mod GamesEntry {
             assert!(starknet::get_caller_address() == self.data.authority.read(), "only domain authority");
         }
         fn registrar(self: @ComponentState<TContractState>) -> IRegistrarLibraryDispatcher {
-            let classes = self.data.releases.read(self.data.current_release.read());
+            let classes = self.data.releases.read(self.data.current_release.read()).classes;
             IRegistrarLibraryDispatcher { class_hash: classes.registry }
         }
     }

@@ -24,6 +24,9 @@ async function main() {
     "identity",
     "submitter",
     "schema",
+    "release-facts",
+    "apply-games",
+    "herald-url",
   ]);
   for (const flag of Object.keys(args))
     if (!supported.has(flag)) throw new Error(`Unknown deployment option: --${flag}`);

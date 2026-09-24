@@ -1,24 +1,30 @@
+import { assertHotfixSchema } from "./artifacts";
 import { CallData, type RpcProvider } from "starknet";
 import { isClassDeclared, rpcErrorCode } from "../../shared/declare";
 import { canonicalRealmTraits, realmCatalogueDigest } from "./realm-catalogue";
 import type { NativePlan, NativeWorld } from "./types";
 
 export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvider): Promise<NativePlan> {
+  assertHotfixSchema(local.release, local.previous);
   const blockNumber = await provider.getBlockNumber();
   const blockers: string[] = [];
   const classes = await Promise.all(
-    [...local.logic, { name: "games", ...local.games }].map(async ({ name, classHash }) => ({
-      name,
-      classHash,
-      declared: await isClassDeclared(provider, classHash, blockNumber),
-    })),
+    [...local.logic, ...(local.migration ? [local.migration] : []), { name: "games", ...local.games }].map(
+      async ({ name, classHash }) => ({
+        name,
+        classHash,
+        declared: await isClassDeclared(provider, classHash, blockNumber),
+      }),
+    ),
   );
   const deployedClassHash = await deployedClass(provider, local.games.address, blockNumber);
   if (deployedClassHash && BigInt(deployedClassHash) !== BigInt(local.games.classHash))
     blockers.push("Games is immutable; the deployed class differs from this release");
   let realmCatalogue: NativePlan["realmCatalogue"];
+  let releaseRegistered = false;
   if (deployedClassHash && blockers.length === 0) {
     await inspectGamesConfiguration(local, provider, blockNumber, blockers);
+    releaseRegistered = await inspectRelease(local, provider, blockNumber, blockers);
     realmCatalogue = await inspectRealmCatalogue(local, provider, blockNumber, blockers);
   }
   return {
@@ -27,11 +33,13 @@ export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvid
     classes,
     deployedClassHash,
     realmCatalogue,
+    releaseRegistered,
     blockers,
     synced:
       blockers.length === 0 &&
       classes.every(({ declared }) => declared) &&
       deployedClassHash !== null &&
+      releaseRegistered &&
       realmCatalogue?.initialized === canonicalRealmTraits.length,
   };
 }
@@ -55,11 +63,40 @@ async function inspectGamesConfiguration(local: NativeWorld, provider: RpcProvid
     blockers.push("Games authentication mismatch");
   const configuration = (await read("deployment_configuration")) as {
     authority: bigint;
-    classes: Record<string, bigint>;
   };
   if (configuration.authority !== BigInt(local.authority)) blockers.push("Games authority mismatch");
-  if (!local.logic.every(({ name, classHash }) => configuration.classes[name] === BigInt(classHash)))
-    blockers.push("Games initial logic release mismatch");
+}
+
+async function inspectRelease(
+  local: NativeWorld,
+  provider: RpcProvider,
+  block: number,
+  blockers: string[],
+): Promise<boolean> {
+  const current = await provider.callContract(
+    { contractAddress: local.games.address, entrypoint: "current_release", calldata: [] },
+    block,
+  );
+  const currentId = Number(BigInt(current[0]));
+  if (local.release.releaseId < currentId) blockers.push("Cannot redeploy an older release over the current release");
+  if (local.release.releaseId > currentId) {
+    if (local.release.releaseId !== currentId + 1) blockers.push("Release must follow the current registered release");
+    return false;
+  }
+  const raw = await provider.callContract(
+    { contractAddress: local.games.address, entrypoint: "release", calldata: [String(local.release.releaseId)] },
+    block,
+  );
+  const registered = new CallData(local.games.sierra.abi).parse("release", raw) as {
+    classes: Record<string, bigint>;
+    migration: bigint;
+  };
+  if (
+    !local.logic.every(({ name, classHash }) => registered.classes[name] === BigInt(classHash)) ||
+    registered.migration !== BigInt(local.release.migrationClassHash)
+  )
+    blockers.push("Release is immutable; registered contents differ from release facts");
+  return blockers.length === 0;
 }
 
 async function inspectRealmCatalogue(local: NativeWorld, provider: RpcProvider, block: number, blockers: string[]) {

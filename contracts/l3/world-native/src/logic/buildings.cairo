@@ -126,7 +126,7 @@ pub mod BuildingState {
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
-            let classes = self.data.releases.entry(self.data.game_releases.read(key.game_id));
+            let classes = self.data.releases.entry(self.data.game_releases.read(key.game_id)).classes;
             let resources = IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() };
             let mut old_capacity = 0_u128;
             let mut new_capacity = 0_u128;

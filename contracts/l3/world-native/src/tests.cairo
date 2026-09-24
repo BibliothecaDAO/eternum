@@ -18,6 +18,7 @@ mod production;
 mod realms;
 mod recorded;
 mod registrar;
+mod releases;
 mod relics;
 mod resource_commands;
 mod resources;
@@ -133,7 +134,9 @@ fn setup_with_host(
     let authentication = crate::games::Authentication { submitter: submitter(), account_class };
     let mut calldata = array![authority().into()];
     authentication.serialize(ref calldata);
+    calldata.append(1);
     classes.serialize(ref calldata);
+    calldata.append(0);
     let (games, _) = deploy(host, @calldata);
     if seed_games {
         recorded::create_games(games, authority());
@@ -558,14 +561,17 @@ fn games_reinitialization_is_rejected_without_changing_authentication_or_state()
     let entry = IGamesAuthenticationDispatcher { contract_address: deployment.games };
     let authentication = entry.authentication();
     let classes = snforge_std::interact_with_state(
-        deployment.games, || {
+        deployment.games,
+        || {
             let state = crate::state::read();
-            state.releases.read(state.current_release.read())
+            state.releases.read(state.current_release.read()).classes
         },
     );
     let mut calldata = array![deployment.actor.into()];
     authentication.serialize(ref calldata);
+    calldata.append(1);
     classes.serialize(ref calldata);
+    calldata.append(0);
     start_cheat_caller_address(deployment.games, authority());
     assert!(
         starknet::syscalls::call_contract_syscall(deployment.games, selector!("constructor"), calldata.span()).is_err(),

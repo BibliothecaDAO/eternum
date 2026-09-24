@@ -1,7 +1,6 @@
 // This host replaces the separately deployed domains in behaviour fixtures.
 #[starknet::contract]
 pub mod GamesTest {
-    use games_storage::release::LogicClasses;
     use starknet::ContractAddress;
     use crate::games::Authentication;
     use crate::games_entry::GamesEntry;
@@ -11,6 +10,8 @@ pub mod GamesTest {
     component!(path: RecordedState, storage: recording, event: RecordingEvent);
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl EntryInternal = GamesEntry::InternalImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl Releases = ReleaseState::ReleasesImpl<ContractState>;
     #[abi(embed_v0)]
     impl Season = GamesEntry::SeasonImpl<ContractState>;
     #[abi(embed_v0)]
@@ -41,9 +42,13 @@ pub mod GamesTest {
     }
     #[constructor]
     fn constructor(
-        ref self: ContractState, authority: ContractAddress, authentication: Authentication, classes: LogicClasses,
+        ref self: ContractState,
+        authority: ContractAddress,
+        authentication: Authentication,
+        release_id: u32,
+        release: crate::logic::release::Release,
     ) {
-        self.entry.initializer(authority, authentication, classes);
+        self.entry.initializer(authority, authentication, release_id, release);
     }
     use crate::tests::games_fixture::GamesFixture;
     #[abi(embed_v0)]
