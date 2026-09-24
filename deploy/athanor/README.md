@@ -59,9 +59,10 @@ A shard runs the upstream Madara image unmodified. The current pin is
 docker build -t realms-gateway:REVISION apps/gateway
 ```
 
-Use the node, init, gateway and Herald release digests with `scripts/shard.py CONFIGURATION RUN_DIRECTORY`. The configuration
+Use the init, gateway and Herald release digests with `scripts/shard.py CONFIGURATION RUN_DIRECTORY`; the node runs the
+package's pin in `deploy/shard/compose.yml`, and a configuration naming another node image is refused. The configuration
 names `shard`, `chain_id`, `port_base` (free loopback ports at base through base+3 and base+5 above 27999), `cpuset`, `node_memory_mib`,
-`player_capacity`, `madara_image`, `init_image`, `gateway_image`, `herald_image`, `chain_config`, `node_flags`, `guardian_url`,
+`player_capacity`, `init_image`, `gateway_image`, `herald_image`, `chain_config`, `node_flags`, `guardian_url`,
 `public_rpc_url` and `public_admission_url`. Behind a tunnel or reverse proxy, also set `trusted_proxy` to the address
 the gateway sees for it: the gateway then limits each client by the last `X-Forwarded-For` entry, the one that proxy
 appended, and ignores the header from any other peer. Choose a unique `chain_id` of 1–31 ASCII letters,
