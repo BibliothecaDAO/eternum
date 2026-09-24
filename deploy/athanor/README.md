@@ -224,8 +224,9 @@ execution; the client reads the gateway's public admission URL from Herald's `/m
 ## Herald and client
 
 Create a separate PostgreSQL database and configure `HERALD_RPC_URL`, `HERALD_PUBLIC_RPC_URL`,
-`HERALD_PUBLIC_ADMISSION_URL`, `DATABASE_URL` and `NATIVE_WORLD_MANIFEST`. Start Herald with `pnpm --dir apps/herald start`, or package its real workspace graph with
-`deploy/athanor/release/build-herald.py`. The candidate service must use that same manifest and chain.
+`HERALD_PUBLIC_ADMISSION_URL`, `DATABASE_URL` and `NATIVE_WORLD_MANIFEST`. Start Herald with `pnpm --dir apps/herald start`, or
+build the shard package's Herald image, the one Herald build: `docker build --target herald -f deploy/shard/Dockerfile .`.
+The candidate service must use that same manifest and chain.
 
 Wait for `/health` and the confirmed snapshot before connecting the client. Run `pnpm --dir apps/game dev`; the app
 reads our directory (`/api/directory`, proxied to staging in development) and lists every shard on it, and a shard the
