@@ -95,6 +95,7 @@ import {
   getRealmInfo,
   getStructureStage,
   DEFAULT_COORD_ALT,
+  storedBiomeAt,
 } from "@bibliothecadao/eternum";
 import { requireActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import {
@@ -1326,7 +1327,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private presentProceduralTerrain(terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>): void {
-    const fallbackBiome = configManager.getBiome(this.centerColRow[0], this.centerColRow[1]);
+    const fallbackBiome = this.localBiome(this.centerColRow[0], this.centerColRow[1]);
     const cellsByKey = new Map<string, TerrainCellInput>();
     const worldPosition = new Vector3();
     // Only a cell with a building gets the packed structure pad; an empty buildable cell keeps its ground.
@@ -1648,7 +1649,7 @@ export default class HexceptionScene extends HexagonScene {
     existingBuildings: any[],
     terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
   ) => {
-    const biome = configManager.getBiome(targetHex.col, targetHex.row);
+    const biome = this.localBiome(targetHex.col, targetHex.row);
     const biomeVariant = biome;
     const buildableAreaBiome = "Empty";
     const isFlat = biome === "Ocean" || biome === "DeepOcean" || isMainHex;
@@ -1749,6 +1750,15 @@ export default class HexceptionScene extends HexagonScene {
     }
     this.computeHexMatrices(radius, dummy, center, targetHex, true, existingBuildings, terrainMatricesByBiome);
   };
+
+  /**
+   * A local-view hex's ground: its tile's stored biome, or the realm's own where a neighbour is not revealed yet. A view
+   * opened before the realm's tile row arrives shows grassland until it is rebuilt.
+   */
+  private localBiome(col: number, row: number): BiomeType {
+    const stored = (hexCol: number, hexRow: number) => storedBiomeAt(this.game.store, false, hexCol, hexRow);
+    return stored(col, row) ?? stored(this.centerColRow[0], this.centerColRow[1]) ?? BiomeType.Grassland;
+  }
 
   computeNeighborHexMatrices = (
     radius: number,

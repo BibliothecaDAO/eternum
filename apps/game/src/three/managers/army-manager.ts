@@ -54,13 +54,14 @@ import {
   getBlockTimestamp,
   getExplorerOwner,
   recordArmyMovementLatencyPhase,
+  storedBiomeAt,
 } from "@bibliothecadao/eternum";
 import type {
   ArmySpatialProjectionChange,
   ArmySpatialRenderable,
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
-import { ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import * as THREE from "three";
@@ -312,7 +313,13 @@ export class ArmyManager {
     this.worldSpatialProjection = worldSpatialProjection;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.contentLadder = resolveWorldmapContentLadder(this.currentCameraView);
-    this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView, compilePipelines);
+    this.armyModel = new ArmyModel(
+      scene,
+      (col, row) => this.groundBiomeOrLand(col, row),
+      labelsGroup,
+      this.currentCameraView,
+      compilePipelines,
+    );
     this.armyModel.setModelsVisible(this.contentLadder.armyModels);
     this.proceduralArmyCharacterLayer = new ProceduralArmyCharacterLayer(scene);
     this.proceduralArmyCharacterLayer.setShadowsEnabled(
@@ -937,7 +944,7 @@ export class ArmyManager {
     if (slot !== undefined && (ownerChanged || ownershipVisualChanged)) {
       const numericId = this.toNumericId(params.entityId);
       const { x, y } = army.hexCoords.getContract();
-      const biome = configManager.getBiome(x, y);
+      const biome = this.groundBiomeOrLand(x, y);
       const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
       this.refreshArmyInstance(army, slot, modelType, ownerChanged);
       this.markVisibleArmyPresentationDirty();
@@ -1109,7 +1116,7 @@ export class ArmyManager {
 
     armies.forEach((army) => {
       const { x, y } = army.hexCoords.getContract();
-      const biome = configManager.getBiome(x, y);
+      const biome = this.groundBiomeOrLand(x, y);
       const numericId = this.toNumericId(army.entityId);
       const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
       modelTypesByEntity.set(army.entityId, modelType);
@@ -1411,7 +1418,7 @@ export class ArmyManager {
         scale: this.scale,
         attachmentTransformScratch: this.armyAttachmentTransformScratch,
         getWorldPositionInto: (out, hexCoords) => this.getArmyWorldPositionInto(out, hexCoords),
-        resolveBiome: (x, y) => configManager.getBiome(x, y),
+        resolveBiome: (x, y) => this.groundBiomeOrLand(x, y),
         getModelTypeForEntity: (trackedEntityId, category, tier, biome) =>
           this.armyModel.getModelTypeForEntity(trackedEntityId, category, tier, biome),
         resolveMountTransforms: (modelType, baseTransform, scratch) =>
@@ -1706,7 +1713,7 @@ export class ArmyManager {
 
     const numericEntityId = this.toNumericId(entityId);
     const { x, y } = army.hexCoords.getContract();
-    const biome = configManager.getBiome(x, y);
+    const biome = this.groundBiomeOrLand(x, y);
     const modelType = this.armyModel.getModelTypeForEntity(numericEntityId, army.category, army.tier, biome);
     await this.armyModel.preloadModels([modelType]);
 
@@ -1845,7 +1852,7 @@ export class ArmyManager {
   private resolveArmyModelSelection(params: AddArmyParams, ownerAddress: bigint) {
     const numericEntityId = this.toNumericId(params.entityId);
     const { x, y } = params.hexCoords.getContract();
-    const biome = configManager.getBiome(x, y);
+    const biome = this.groundBiomeOrLand(x, y);
     const baseModelType = this.armyModel.getModelTypeForEntity(numericEntityId, params.category, params.tier, biome);
 
     const cosmetic = resolveArmyCosmetic({
@@ -2704,7 +2711,7 @@ export class ArmyManager {
           scale: this.scale,
           attachmentTransformScratch: this.armyAttachmentTransformScratch,
           getWorldPositionInto: (out, hexCoords) => this.getArmyWorldPositionInto(out, hexCoords),
-          resolveBiome: (x, y) => configManager.getBiome(x, y),
+          resolveBiome: (x, y) => this.groundBiomeOrLand(x, y),
           getModelTypeForEntity: (trackedEntityId, category, tier, biome) =>
             this.armyModel.getModelTypeForEntity(trackedEntityId, category, tier, biome),
           resolveMountTransforms: (modelType, baseTransform, scratch) =>
@@ -2733,6 +2740,14 @@ export class ArmyManager {
   private getArmyWorldPosition = (_armyEntityId: ID, hexCoords: Position) => {
     return this.getArmyWorldPositionInto(this.tempWorldPosition, hexCoords);
   };
+
+  /**
+   * The biome an army's model stands on: its tile's biome as the chain stored it, never a local derivation. An army's
+   * tile is revealed; before the game store is attached or the tile's row arrives, it stands on land.
+   */
+  private groundBiomeOrLand(col: number, row: number): BiomeType {
+    return (this.store ? storedBiomeAt(this.store, false, col, row) : undefined) ?? BiomeType.None;
+  }
 
   private toNumericId(entityId: ID | string | null | undefined): number {
     return typeof entityId === "number" ? entityId : Number(entityId ?? 0);
@@ -2801,7 +2816,7 @@ export class ArmyManager {
       }
       const numericId = this.toNumericId(army.entityId);
       const { x, y } = army.hexCoords.getContract();
-      const biome = configManager.getBiome(x, y);
+      const biome = this.groundBiomeOrLand(x, y);
       const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
       this.refreshArmyInstance(army, slot, modelType);
     });
@@ -3239,7 +3254,7 @@ ${
 
     const numericId = this.toNumericId(army.entityId);
     const { x, y } = army.hexCoords.getContract();
-    const biome = configManager.getBiome(x, y);
+    const biome = this.groundBiomeOrLand(x, y);
     const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
 
     this.refreshArmyInstance(army, slot, modelType);

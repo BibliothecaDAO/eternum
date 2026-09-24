@@ -5,11 +5,12 @@ import {
   getBuildingCosts,
   getGuardsByStructure,
   RaidSimulator,
+  storedBiomeAt,
   type Army,
   type GameClient,
 } from "@bibliothecadao/eternum";
 import {
-  type BiomeType,
+  BiomeType,
   BuildingType,
   BuildingTypeToString,
   findResourceById,
@@ -96,7 +97,7 @@ const simulateCombat = (client: GameClient, attackerId: ID, defenderId: ID): str
   if (!attacker) return `Explorer ${attackerId} is not in the native store.`;
   const defenders = explorerCombatant(client, defenderId) ?? strongestGuard(client, defenderId);
   if (!defenders) return `${defenderId} is neither an explorer nor a structure with guards.`;
-  const biome = biomeAt(defenders.hex);
+  const biome = biomeAt(client, defenders.hex);
   const result = new CombatSimulator(configManager.getCombatConfig()).simulateBattleWithParams(
     Math.floor(Date.now() / 1000),
     attacker.army,
@@ -123,7 +124,7 @@ const simulateRaid = (client: GameClient, attackerId: ID, structureId: ID): stri
   const guards = getGuardsByStructure(structure, client.setup.store)
     .filter((guard) => Number(guard.troops.count) > 0)
     .map((guard) => troopsToArmy(guard.troops));
-  const biome = biomeAt({ x: structure.base.coord_x, y: structure.base.coord_y });
+  const biome = biomeAt(client, { x: structure.base.coord_x, y: structure.base.coord_y });
   const result = new RaidSimulator(configManager.getCombatConfig()).simulateRaid(raider.army, guards, biome);
   return [
     `Raid on structure #${structureId} (${biome}) by ${describeArmy(raider.army)} against ${guards.length} guard slot(s).`,
@@ -196,7 +197,9 @@ const troopsToArmy = (troops: TroopsRow): Army => ({
   battle_cooldown_end: troops.battle_cooldown_end,
 });
 
-const biomeAt = (hex: { x: number; y: number }): BiomeType => configManager.getBiome(hex.x, hex.y);
+// A fight's terrain is the defender's tile as the chain stored it; an unrevealed tile has no terrain bonus.
+const biomeAt = (client: GameClient, hex: { x: number; y: number }): BiomeType =>
+  storedBiomeAt(client.setup.store, false, hex.x, hex.y, client.gameId) ?? BiomeType.None;
 
 const describeArmy = (army: Army): string =>
   `${army.troopCount} ${army.troopType} ${army.tier} (stamina ${army.stamina})`;

@@ -1,3 +1,4 @@
+import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { CompactBuildingCard } from "./compact-building-card";
 import { getConstructionBuildingGroups } from "./construction-groups";
@@ -344,11 +345,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     return map;
   }, [existingBuildings]);
 
-  const realmBiome = useMemo<BiomeType | null>(() => {
-    if (!realm?.position) return null;
-
-    return configManager.getBiome(Number(realm.position.x), Number(realm.position.y)) as BiomeType;
-  }, [realm?.position?.x, realm?.position?.y]);
+  const realmBiome =
+    useStoredBiome(
+      realm?.position ? Number(realm.position.x) : undefined,
+      realm?.position ? Number(realm.position.y) : undefined,
+    ) ?? null;
 
   const biomeRecommendation = useMemo(() => {
     if (!realmBiome) return null;

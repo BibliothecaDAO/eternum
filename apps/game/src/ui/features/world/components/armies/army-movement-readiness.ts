@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import { useGame } from "@/hooks/context/game-context";
 import { useCurrentArmiesTick, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import {
   computeExploreFoodCosts,
@@ -8,9 +9,10 @@ import {
   divideByPrecision,
   ResourceManager,
   StaminaManager,
+  storedBiomeAt,
 } from "@bibliothecadao/eternum";
 import { getNeighborHexes, ResourcesIds, TroopType } from "@bibliothecadao/types";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { getArmyMovementFoodRequirementWarnings, getArmyStaminaRequirementWarnings } from "./army-warning-copy";
 
 type ExplorerTroopsValue = NativeRows["ExplorerTroops"];
@@ -89,6 +91,9 @@ export const useArmyMovementReadiness = (
   army: ExplorerTroopsValue | null | undefined,
   structureResources: ResourceValue | null | undefined,
 ): ArmyMovementReadiness | null => {
+  const {
+    setup: { store },
+  } = useGame();
   const currentArmiesTick = useCurrentArmiesTick();
   const currentDefaultTick = useCurrentDefaultTick();
 
@@ -104,14 +109,14 @@ export const useArmyMovementReadiness = (
 
     return deriveArmyMovementReadiness({
       currentStamina: Number(StaminaManager.getStamina(army.troops, currentArmiesTick).amount),
-      minTravelStamina: resolveCheapestNeighborTravelStamina(army),
+      minTravelStamina: resolveCheapestNeighborTravelStamina(army, store),
       minExploreStamina: configManager.getExploreStaminaCost(),
       travelFoodCosts: movementFoodCosts.travel,
       exploreFoodCosts: movementFoodCosts.explore,
       food: resolveStructureFoodBalance(structureResources, currentDefaultTick),
       trainingTakesWheat: structureResources?.hasResources() ? structureResources.trainsFromWheat() : false,
     });
-  }, [army, structureResources, currentArmiesTick, currentDefaultTick]);
+  }, [army, structureResources, currentArmiesTick, currentDefaultTick, store]);
 };
 
 const resolveStructureFoodBalance = (
@@ -128,13 +133,13 @@ const resolveStructureFoodBalance = (
   return { wheat: divideByPrecision(wheat), fish: divideByPrecision(fish) };
 };
 
-const resolveCheapestNeighborTravelStamina = (army: ExplorerTroopsValue): number => {
+// Travel reaches only revealed tiles, so the cheapest step reads the neighbours' stored biomes and skips the rest.
+const resolveCheapestNeighborTravelStamina = (army: ExplorerTroopsValue, store: NativeFactStore): number => {
   const neighbors = getNeighborHexes(army.coord.x, army.coord.y);
   return neighbors.reduce((min, neighbor) => {
-    const staminaCost = configManager.getTravelStaminaCost(
-      configManager.getBiome(neighbor.col, neighbor.row),
-      army.troops.category as TroopType,
-    );
+    const biome = storedBiomeAt(store, army.coord.alt, neighbor.col, neighbor.row);
+    if (!biome) return min;
+    const staminaCost = configManager.getTravelStaminaCost(biome, army.troops.category as TroopType);
     return min === 0 ? staminaCost : Math.min(min, staminaCost);
   }, 0);
 };

@@ -19,7 +19,7 @@ import { troopStaminaLimits } from "./troop-stamina";
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
 import { getBlockTimestamp } from "../utils/timestamp";
 import { nativeGameModeOf } from "../utils/native-preset-mode";
-import { Biome, type BiomeClimateConfig } from "../utils/biome";
+import type { BiomeClimateConfig } from "../utils/biome";
 
 const MAP_CENTER = 2147483646;
 type ResourceAmount = { readonly resource_type: number; readonly amount: bigint };
@@ -572,9 +572,6 @@ export class ClientConfigManager {
   }
   getBiomeClimateConfig(): BiomeClimateConfig {
     return this.rules().biome_climate_config;
-  }
-  getBiome(col: number, row: number): BiomeType {
-    return Biome.getBiome(col, row, this.getBiomeClimateConfig());
   }
 }
 
