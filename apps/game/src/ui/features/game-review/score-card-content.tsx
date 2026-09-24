@@ -12,7 +12,8 @@ import {
 } from "@/ui/shared/lib/blitz-highlight";
 import { copyElementAsPng, openShareOnX } from "@/ui/shared/lib/share-image";
 import type { LandingLeaderboardEntry } from "@/services/leaderboard/landing-leaderboard-service";
-import { displayAddress } from "@/ui/utils/utils";
+import { useProfiles } from "@/shell/profiles";
+import { displayPlayerName } from "@bibliothecadao/eternum";
 
 interface ScoreCardContentProps {
   worldName: string;
@@ -22,17 +23,9 @@ interface ScoreCardContentProps {
   showActions?: boolean;
 }
 
-const getDisplayName = (entry: LandingLeaderboardEntry): string => {
-  const candidate = entry.displayName?.trim();
-  if (candidate) {
-    return candidate;
-  }
-  return displayAddress(entry.address);
-};
-
-const toHighlightPlayer = (entry: LandingLeaderboardEntry): BlitzHighlightPlayer => ({
+const toHighlightPlayer = (entry: LandingLeaderboardEntry, name: string): BlitzHighlightPlayer => ({
   rank: entry.rank,
-  name: getDisplayName(entry),
+  name,
   points: entry.points,
   address: entry.address,
   exploredTiles: entry.exploredTiles ?? null,
@@ -59,9 +52,11 @@ export const ScoreCardContent = ({
   const [isCopyingImage, setIsCopyingImage] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
+  const profileOf = useProfiles(playerEntry ? [playerEntry.address] : []);
+  const playerName = playerEntry ? displayPlayerName(playerEntry.address, profileOf(playerEntry.address)?.name) : null;
   const highlightPlayer = useMemo<BlitzHighlightPlayer | null>(
-    () => (playerEntry ? toHighlightPlayer(playerEntry) : null),
-    [playerEntry],
+    () => (playerEntry && playerName ? toHighlightPlayer(playerEntry, playerName) : null),
+    [playerEntry, playerName],
   );
 
   const highlightRank = highlightPlayer?.rank ?? null;

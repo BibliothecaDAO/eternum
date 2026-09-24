@@ -135,10 +135,12 @@ describe("native directory and leaderboard", () => {
       0,
     );
     const result = buildNativeLeaderboard((name) => fold.modelRows(name), "1", 30, new Map());
-    expect(result.entries.map(({ address, rank, name }) => [address, rank, name])).toEqual([
-      ["0x222", 1, null],
-      ["0x111", 2, "Alice"],
+    expect(result.entries.map(({ address, rank }) => [address, rank])).toEqual([
+      ["0x222", 1],
+      ["0x111", 2],
     ]);
+    // A chain name is not a player's name; the client resolves identity profiles by address.
+    expect(result.entries.every((entry) => !("name" in entry))).toBe(true);
   });
 
   it("fails loudly for missing native rules instead of publishing guessed scores", () => {

@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
+import { displayPlayerName } from "@bibliothecadao/eternum";
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 
-import { formatPoints, ordinal, sameAddress, shortAddress } from "./format";
+import { formatPoints, ordinal, sameAddress } from "./format";
 import { useLeaderboard } from "./herald";
 import { ErrorPanel, Loading } from "./kit";
 import { useProfiles } from "./profiles";
@@ -38,7 +39,7 @@ export const Standings = ({ game, highlight, limit }: { game: GameRef; highlight
             </span>
             <img src={portraitUrl(profile?.portrait ?? null)} alt="" className="h-7 w-7 rounded object-cover" />
             <Link to={`/p/${entry.address}`} className="min-w-0 flex-1 truncate font-semibold hover:text-gold">
-              {entry.name ?? profile?.name ?? shortAddress(entry.address)}
+              {displayPlayerName(entry.address, profile?.name)}
             </Link>
             <span className="font-mono text-[12px] tabular-nums text-gold">{formatPoints(entry.totalPoints)} VP</span>
           </li>

@@ -11,30 +11,20 @@ describe("native landing leaderboard", () => {
       { address: "0xd", rank: 3, totalPoints: 0 },
     ].map((entry) => ({
       ...entry,
-      name: entry.address === "0xa" ? "Alice" : null,
       activityBreakdown: createEmptyActivityBreakdown(),
     }));
-    expect(
-      buildLandingLeaderboard(entries).map(({ address, rank, points, displayName }) => ({
-        address,
-        rank,
-        points,
-        displayName,
-      })),
-    ).toEqual([
-      { address: "0xa", rank: 1, points: 200.5, displayName: "Alice" },
-      { address: "0xb", rank: 1, points: 200.5, displayName: null },
-      { address: "0xc", rank: 3, points: 0, displayName: null },
-      { address: "0xd", rank: 3, points: 0, displayName: null },
+    expect(buildLandingLeaderboard(entries).map(({ address, rank, points }) => ({ address, rank, points }))).toEqual([
+      { address: "0xa", rank: 1, points: 200.5 },
+      { address: "0xb", rank: 1, points: 200.5 },
+      { address: "0xc", rank: 3, points: 0 },
+      { address: "0xd", rank: 3, points: 0 },
     ]);
   });
   it("uses Herald’s complete breakdown instead of a page of stories", () => {
     const activityBreakdown = createEmptyActivityBreakdown();
     activityBreakdown.exploration = { count: 166, points: 830 };
     activityBreakdown.openRelicChest = { count: 3, points: 750 };
-    const [entry] = buildLandingLeaderboard([
-      { address: "0xa", name: null, rank: 1, totalPoints: 1580, activityBreakdown },
-    ]);
+    const [entry] = buildLandingLeaderboard([{ address: "0xa", rank: 1, totalPoints: 1580, activityBreakdown }]);
     expect(entry.exploredTiles).toBe(166);
     expect(entry.exploredTilePoints).toBe(830);
     expect(entry.relicCratesOpened).toBe(3);

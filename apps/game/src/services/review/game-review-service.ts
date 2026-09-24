@@ -79,7 +79,6 @@ export interface GameReviewData {
   worldName: string;
   chainId: string;
   topPlayers: LandingLeaderboardEntry[];
-  leaderboard: LandingLeaderboardEntry[];
   personalScore: LandingLeaderboardEntry | null;
   isParticipant: boolean;
   stats: GameReviewStats;
@@ -312,7 +311,6 @@ export const fetchGameReviewData = async (input: {
     worldName: input.worldName,
     chainId: input.game.chainId,
     topPlayers: leaderboard.slice(0, 3),
-    leaderboard,
     personalScore,
     isParticipant: Boolean(playerAddress && (finalization.registeredPlayers.includes(playerAddress) || personalScore)),
     stats,

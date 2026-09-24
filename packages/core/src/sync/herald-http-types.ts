@@ -126,10 +126,8 @@ export interface HeraldTransactionCount {
   game_id: string;
 }
 
-/** A ranked player with the name they registered in the game, or null before they register one. */
-export interface HeraldLeaderboardEntry extends PlayerLeaderboardActivityEntry {
-  name: string | null;
-}
+/** A ranked player by address; their name is their identity profile, which the client resolves. */
+export type HeraldLeaderboardEntry = PlayerLeaderboardActivityEntry;
 
 export interface HeraldLeaderboard {
   game_id: string;
