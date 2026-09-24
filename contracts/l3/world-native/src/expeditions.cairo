@@ -88,8 +88,6 @@ pub struct DepthRules {
     pub mine_cap_min: u128,
     pub mine_cap_max: u128,
     pub mine_rate: u64,
-    pub camp_reward_min: u128,
-    pub camp_reward_max: u128,
     pub mine_chest: bool,
     pub reveal_site_neighbors: bool,
     pub entry_stamina: u16,

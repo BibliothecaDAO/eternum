@@ -436,15 +436,6 @@ pub fn grant_capture_rewards(
             resources_dispatcher(key.game_id)
                 .grant_resource(home, *reward.resource_type, *reward.amount, context.timestamp);
         }
-        if let Some(depth) = depth {
-            let mut root = context.raw_root;
-            let seed = crate::random::game_root(ref root, key.game_id, crate::logic::game::game(key.game_id).seed);
-            let amount = depth.camp_reward_min
-                + crate::random::range(
-                    seed, key.entity_id.into() + 'CAMP_REWARD', depth.camp_reward_max - depth.camp_reward_min + 1,
-                );
-            resources_dispatcher(key.game_id).grant_resource(home, 38, amount, context.timestamp);
-        }
     }
     let mine_chest = target.base.category == 4 && depth.map(|value| value.mine_chest).unwrap_or(false);
     if chests && (camp || mine_chest) {

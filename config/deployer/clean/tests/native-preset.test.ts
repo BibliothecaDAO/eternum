@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CallData, type Account, type RpcProvider } from "starknet";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { buildNativePreset } from "../config/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
@@ -103,17 +104,14 @@ describe("native presets", () => {
     expect(playtest.settlement.realms).toEqual(design.settlement.realms);
   });
 
-  test("a Frontier camp pays its chest, never resources: no camp resources and no Essence at any depth", () => {
+  test("a Frontier camp pays its chest, never resources", () => {
     const design = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
       FRONTIER_PRESET_ID,
     );
 
     expect(design.structures.camps).toEqual([]);
-    expect(design.settlement.depths.length).toBeGreaterThan(0);
-    for (const depth of design.settlement.depths) {
-      expect([depth.camp_reward_min, depth.camp_reward_max]).toEqual([0n, 0n]);
-    }
+    expect(design.rules.mode_rules & nativeRuleConstants.CAPTURE_CHESTS).not.toBe(0);
   });
 
   test("Frontier's exploration finds a rift 4%, a camp 6% and a loose chest 1% of reveals, against surface guards of 1,000", () => {

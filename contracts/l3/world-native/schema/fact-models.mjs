@@ -1338,8 +1338,6 @@ const behaviouralFacts = {
       mineMinimum: "mine_cap_min",
       mineMaximum: "mine_cap_max",
       mineRate: "mine_rate",
-      campMinimum: "camp_reward_min",
-      campMaximum: "camp_reward_max",
       mineChest: "mine_chest",
       revealSiteNeighbors: "reveal_site_neighbors",
     },

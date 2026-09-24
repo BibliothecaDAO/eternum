@@ -9518,18 +9518,6 @@
           "feltLength": 1
         },
         {
-          "name": "camp_reward_min",
-          "type": "core::integer::u128",
-          "id": "0x63616d705f7265776172645f6d696e",
-          "feltLength": 1
-        },
-        {
-          "name": "camp_reward_max",
-          "type": "core::integer::u128",
-          "id": "0x63616d705f7265776172645f6d6178",
-          "feltLength": 1
-        },
-        {
           "name": "mine_chest",
           "type": "core::bool",
           "id": "0x6d696e655f6368657374",
@@ -9561,7 +9549,7 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 16,
+      "valueLength": 14,
       "observation": {
         "domain": "expedition",
         "fields": {
@@ -9571,8 +9559,6 @@
           "mineMinimum": "mine_cap_min",
           "mineMaximum": "mine_cap_max",
           "mineRate": "mine_rate",
-          "campMinimum": "camp_reward_min",
-          "campMaximum": "camp_reward_max",
           "mineChest": "mine_chest",
           "revealSiteNeighbors": "reveal_site_neighbors"
         }
@@ -12168,14 +12154,6 @@
         {
           "name": "mine_rate",
           "type": "core::integer::u64"
-        },
-        {
-          "name": "camp_reward_min",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "camp_reward_max",
-          "type": "core::integer::u128"
         },
         {
           "name": "mine_chest",
@@ -15868,5 +15846,5 @@
       ]
     }
   },
-  "identity": "0ee9e9949c3e20102ac7ca6db6625823f3074b5ccfe096bb87ad13632087e196"
+  "identity": "fecfb33a7d5a9732b03b65e931e440914cf6c4a267acf34bb024be6416c9970d"
 }

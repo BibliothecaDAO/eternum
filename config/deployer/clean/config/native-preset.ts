@@ -221,8 +221,6 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
       mine_cap_min: scaled(depth.mineCapMin),
       mine_cap_max: scaled(depth.mineCapMax),
       mine_rate: scaled(depth.mineRate),
-      camp_reward_min: scaled(depth.campRewardMin),
-      camp_reward_max: scaled(depth.campRewardMax),
       mine_chest: depth.mineChest,
       reveal_site_neighbors: depth.revealSiteNeighbors,
       entry_stamina: depth.entryStamina,

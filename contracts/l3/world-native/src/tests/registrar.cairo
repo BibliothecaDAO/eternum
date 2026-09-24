@@ -1140,8 +1140,6 @@ fn assert_expedition_capture(depth: u8) {
                         1000
                     } * RESOURCE_PRECISION,
                     mine_rate: ((Into::<u16, u128>::into(index) + 1) * RESOURCE_PRECISION).try_into().unwrap(),
-                    camp_reward_min: (Into::<u16, u128>::into(index) + 1) * 100 * RESOURCE_PRECISION,
-                    camp_reward_max: (Into::<u16, u128>::into(index) + 1) * 100 * RESOURCE_PRECISION,
                     mine_chest: index != 0,
                     reveal_site_neighbors: false,
                     entry_stamina: 0,
@@ -1233,15 +1231,21 @@ fn assert_expedition_capture(depth: u8) {
         (Into::<u8, u128>::into(depth) + 1) * RESOURCE_PRECISION,
     );
     let essence = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
-    let before_essence = resources.resource_balance(essence);
+    let mut home_before = array![];
+    for resource_type in 1_u8..39 {
+        home_before.append(resources.resource_balance(ResourceSlot { resource_type, ..essence }));
+    }
     let attack = Command::BattleGuard(crate::commands::Battle { attacker_id: explorer_id, defender_id: camp_id });
     assert!(execute_in_game(d, game_id, attack, 361, 361));
     assert_eq!(structures.structure(camp).unwrap().owner, d.actor);
     assert_eq!(troops.explorer(army_key).unwrap().troops.stamina.amount, 95);
-    assert_eq!(
-        resources.resource_balance(essence) - before_essence,
-        (Into::<u8, u128>::into(depth) + 1) * 100 * RESOURCE_PRECISION,
-    );
+    // A camp pays its chest to the army and nothing to the home.
+    for resource_type in 1_u8..39 {
+        assert_eq!(
+            resources.resource_balance(ResourceSlot { resource_type, ..essence }),
+            *home_before.at((resource_type - 1).into()),
+        );
+    }
     assert_eq!(resources.resource_balance(ResourceSlot { entity_id: camp_id, ..essence }), 0);
     assert_eq!(resources.resource_balance(ResourceSlot { entity_id: camp_id, resource_type: 23, ..essence }), 0);
     assert_eq!(
@@ -1326,8 +1330,6 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
                     mine_cap_min: 100 * RESOURCE_PRECISION,
                     mine_cap_max: 100 * RESOURCE_PRECISION,
                     mine_rate: RESOURCE_PRECISION.try_into().unwrap(),
-                    camp_reward_min: 100 * RESOURCE_PRECISION,
-                    camp_reward_max: 100 * RESOURCE_PRECISION,
                     mine_chest: depth != 0,
                     reveal_site_neighbors: false,
                     entry_stamina: if depth == 0 {
@@ -1499,8 +1501,6 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
                     mine_cap_min: RESOURCE_PRECISION,
                     mine_cap_max: RESOURCE_PRECISION,
                     mine_rate: 1,
-                    camp_reward_min: 0,
-                    camp_reward_max: 0,
                     mine_chest: depth != 0,
                     reveal_site_neighbors: false,
                     entry_stamina: 0,

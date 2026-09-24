@@ -57,8 +57,6 @@ export interface NativePreset {
     mineCapMin: number;
     mineCapMax: number;
     mineRate: number;
-    campRewardMin: number;
-    campRewardMax: number;
     mineChest: boolean;
     revealSiteNeighbors: boolean;
     entryStamina: number;

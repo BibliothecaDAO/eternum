@@ -112,7 +112,6 @@ pub mod SettlementLogic {
                 assert!(value.guard_lower < value.guard_upper, "invalid depth guards");
                 assert!(value.mine_cap_min != 0 && value.mine_cap_min <= value.mine_cap_max, "invalid depth mine cap");
                 assert!(value.mine_rate != 0, "zero depth mine rate");
-                assert!(value.camp_reward_min <= value.camp_reward_max, "invalid camp reward");
                 self.data.depths.depth_rules.write((game_id, index.try_into().unwrap()), Some(value));
                 let mut values = array![];
                 value.serialize(ref values);
