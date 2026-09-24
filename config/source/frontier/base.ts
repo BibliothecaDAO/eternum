@@ -59,7 +59,7 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
   buildings: {
     buildingFixedCostScalePercent: 1500,
     buildingPopulation: Object.fromEntries(
-      buildingIds.map((id) => [id, id === 1 || id === 25 ? 0 : id === 28 ? 3 : id === 37 ? 1 : 2]),
+      buildingIds.map((id) => [id, id === 1 ? 0 : id === 28 ? 3 : id === 37 ? 1 : 2]),
     ),
     buildingCapacity: Object.fromEntries(buildingIds.map((id) => [id, id === 1 ? 6 : 0])),
     simpleBuildingCost: buildingCosts,

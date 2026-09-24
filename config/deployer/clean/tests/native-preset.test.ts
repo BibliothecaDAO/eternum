@@ -138,6 +138,8 @@ describe("native presets", () => {
     ]);
     expect(design.settlement.realms.starting_troops.every((troop) => troop.activeVariant() === "Knight")).toBe(true);
     expect([perHour(26), perHour(35), perHour(23)]).toEqual([100n, 200n, 100n]);
+    // A Labor building a player builds costs 2 population; the castle the world places at founding costs none.
+    expect(design.structures.buildings.find(({ category }) => category === 25)?.rule.population_cost).toBe(2);
   });
 
   test("every preset id names the mode it plays, and an unknown id fails by name", () => {
