@@ -112,14 +112,14 @@ export const CompactDefenseDisplay = ({
   );
 
   const totalTroopCount = useMemo(
-    () => displayedTroops.reduce((total, defense) => total + Number(defense.troops.count || 0), 0),
+    () => displayedTroops.reduce((total, defense) => total + Number(defense.troops.count), 0),
     [displayedTroops],
   );
 
   const unlockedActiveSlotCount = useMemo(() => {
     return troops.filter((defense) => {
       const slotId = Number(defense.slot ?? -1);
-      const troopCount = Number(defense.troops.count ?? 0);
+      const troopCount = Number(defense.troops.count);
       return unlockedSlotSet.has(slotId) && troopCount > 0;
     }).length;
   }, [troops, unlockedSlotSet]);
@@ -162,11 +162,11 @@ export const CompactDefenseDisplay = ({
   };
 
   const renderSlot = (defense: DefenseTroop) => {
-    const troopCount = Number(defense.troops.count || 0);
+    const troopCount = Number(defense.troops.count);
     const staminaSnapshot = getGuardStaminaSnapshot(defense.troops, currentArmiesTick);
     const staminaCurrent = staminaSnapshot?.current;
     const staminaMax = staminaSnapshot?.max;
-    const rawSlot = Number(defense.slot ?? 0);
+    const rawSlot = defense.slot;
     const guardSlotKey = rawSlot as GuardSlot;
     const slotDisplayNumber = DISPLAYED_SLOT_NUMBER_MAP[guardSlotKey];
     const slotIconSrc = SLOT_ICON_MAP[rawSlot] ?? SLOT_ICON_MAP[guardSlotKey];

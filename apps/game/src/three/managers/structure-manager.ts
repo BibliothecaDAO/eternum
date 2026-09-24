@@ -646,7 +646,9 @@ export class StructureManager {
     if (!this.store) return [];
     const game = configManager.getActiveGameId();
     const structure = this.store.get("Structure", { game_id: game, entity_id: entityId });
-    return Array.from({ length: structure?.base.troop_max_guard_count ?? 0 }, (_, slot) =>
+    // A structure this client cannot see shows no guards.
+    if (!structure) return [];
+    return Array.from({ length: structure.base.troop_max_guard_count }, (_, slot) =>
       this.store!.get("Guard", { game_id: game, structure_id: entityId, slot }),
     ).filter((guard): guard is NativeRows["Guard"] => guard !== undefined);
   }

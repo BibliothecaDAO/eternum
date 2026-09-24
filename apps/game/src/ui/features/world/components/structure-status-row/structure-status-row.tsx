@@ -56,9 +56,8 @@ const resolveStatusTone = (
   const capabilities = resolveStructureUiCapabilities(structure.structure);
   if (!capabilities.hasPopulationDetails) return null;
 
-  const base = structure.structure.base;
   const occupied = structure.guardCount;
-  const max = Number(base?.troop_max_guard_count ?? 0);
+  const max = structure.structure.base.troop_max_guard_count;
 
   if (max > 0 && occupied === 0) {
     return { tone: "red", title: "No defenders stationed." };
@@ -148,9 +147,9 @@ export const StructureStatusRow = memo(
     // Military stats: occupied/max guards and current/max explorer armies.
     const base = structure.structure.base;
     const guardOccupied = structure.guardCount;
-    const guardMax = Number(base?.troop_max_guard_count ?? 0);
+    const guardMax = base.troop_max_guard_count;
     const explorerOccupied = structure.explorerCount;
-    const explorerMax = Number(base?.troop_max_explorer_count ?? 0);
+    const explorerMax = base.troop_max_explorer_count;
     const showMilitaryStats =
       statsVariant === "military" && capabilities.hasPopulationDetails && (guardMax > 0 || explorerMax > 0);
     const guardsLabel = showMilitaryStats && guardMax > 0 ? `${guardOccupied}/${guardMax}` : null;

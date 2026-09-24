@@ -8,7 +8,8 @@ interface ArmyTypeToggleProps {
   canCreateDefenseArmy: boolean;
   canInteractWithDefense: boolean;
   currentExplorersCount: number;
-  maxExplorers: number;
+  /** Undefined while the structure is unknown. */
+  maxExplorers: number | undefined;
   currentGuardsCount: number;
   maxGuards: number;
   onSelect: (isAttack: boolean) => void;
@@ -28,7 +29,9 @@ export const ArmyTypeToggle = ({
   const hasDefenseArmies = currentGuardsCount > 0;
 
   const limitMessage = armyType
-    ? `Maximum attack armies (${maxExplorers}) created. Delete an existing army to create a new one.`
+    ? maxExplorers === undefined
+      ? "This structure's army limit is unknown."
+      : `Maximum attack armies (${maxExplorers}) created. Delete an existing army to create a new one.`
     : hasDefenseArmies
       ? `All defense slots (${maxGuards}) are occupied. Reinforce an existing slot or delete one to free space.`
       : `This structure does not have available defense slots.`;
@@ -59,7 +62,7 @@ export const ArmyTypeToggle = ({
               armyType ? "bg-gold/20 text-gold" : "bg-brown/30 text-gold/70",
             )}
           >
-            {currentExplorersCount}/{maxExplorers}
+            {currentExplorersCount}/{maxExplorers ?? "—"}
           </span>
         </button>
         <button

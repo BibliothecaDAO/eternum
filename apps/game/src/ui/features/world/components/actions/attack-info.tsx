@@ -7,6 +7,7 @@ import { memo, useMemo } from "react";
 
 import { InfoLabel } from "./info-label";
 import { formatAmount } from "./format-amount";
+import { staminaTone } from "./stamina-tone";
 
 interface AttackInfoProps {
   selectedEntityId: ID;
@@ -20,10 +21,7 @@ export const AttackInfo = memo(({ selectedEntityId }: AttackInfoProps) => {
 
   const combatParams = useMemo(() => configManager.getCombatConfig(), []);
   const requiredStamina = combatParams.stamina_attack_req;
-  const currentStamina = Number(stamina?.amount ?? 0n);
-  const staminaRatio = requiredStamina === 0 ? Number.POSITIVE_INFINITY : currentStamina / requiredStamina;
-  const staminaColor =
-    staminaRatio >= 1 ? "text-order-brilliance" : staminaRatio >= 0.5 ? "text-gold" : "text-order-giants";
+  const { color: staminaColor, isLow } = staminaTone(stamina?.amount, requiredStamina);
   const displayStaminaCost = requiredStamina === 0 ? "0" : `-${formatAmount(requiredStamina)}`;
 
   return (
@@ -32,7 +30,7 @@ export const AttackInfo = memo(({ selectedEntityId }: AttackInfoProps) => {
         <span className="text-base leading-none">⚡</span>
         <span className={clsx("text-xs font-semibold", staminaColor)}>{displayStaminaCost}</span>
       </InfoLabel>
-      {staminaRatio < 1 && (
+      {isLow && (
         <InfoLabel variant="attack" className="items-center justify-center gap-1 text-xxs uppercase tracking-[0.2em]">
           <span className="text-[10px] font-semibold">Low stamina</span>
         </InfoLabel>

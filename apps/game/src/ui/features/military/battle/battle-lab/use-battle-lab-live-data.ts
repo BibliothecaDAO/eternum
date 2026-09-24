@@ -83,11 +83,11 @@ export const useBattleLabLiveData = (
         .map((guard) => {
           const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, currentArmiesTick);
           const army: WorkingArmy = {
-            stamina: Math.floor(staminaSnapshot?.current ?? Number(guard.troops.stamina?.amount ?? 0n)),
+            stamina: Math.floor(staminaSnapshot?.current ?? Number(guard.troops.stamina.amount)),
             troopCount: divideByPrecision(Number(guard.troops.count)),
             troopType: guard.troops.category as TroopType,
             tier: guard.troops.tier as TroopTier,
-            battle_cooldown_end: Number(guard.troops.battle_cooldown_end ?? 0),
+            battle_cooldown_end: Number(guard.troops.battle_cooldown_end),
             relics: attackerRelicIds,
           };
           const slotNumber = DISPLAYED_SLOT_NUMBER_MAP[guard.slot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP];
@@ -105,7 +105,7 @@ export const useBattleLabLiveData = (
           troopCount: divideByPrecision(Number(army.troops.count)),
           troopType: army.troops.category as TroopType,
           tier: army.troops.tier as TroopTier,
-          battle_cooldown_end: Number(army.troops.battle_cooldown_end ?? 0),
+          battle_cooldown_end: Number(army.troops.battle_cooldown_end),
           relics: attackerRelicIds,
         };
       }
@@ -119,7 +119,7 @@ export const useBattleLabLiveData = (
           troopCount: divideByPrecision(Number(defenderTroop.count)),
           troopType: defenderTroop.category as TroopType,
           tier: defenderTroop.tier as TroopTier,
-          battle_cooldown_end: Number(defenderTroop.battle_cooldown_end ?? 0),
+          battle_cooldown_end: Number(defenderTroop.battle_cooldown_end),
           relics: targetRelicIds,
         }
       : null;

@@ -17,8 +17,7 @@ export const filterPendingOrders = (
 
   // Lords locked: in bid orders, maker gives Lords for a resource
   const totalLordsLocked = myBids.reduce((sum, o) => {
-    const lordsAmount = o.makerGets[0]?.amount || 0;
-    return sum + lordsAmount;
+    return sum + o.makerGets[0].amount;
   }, 0);
 
   return { count: orders.length, totalLordsLocked, orders };

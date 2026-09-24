@@ -94,23 +94,23 @@ export const RaidContainer = ({
   // Get the current army states for display
   const attackerArmyData = useMemo(() => {
     const army = getArmy(attackerEntityId, ContractAddress(account.address), store, getPlayerName);
-    const projectedStamina = army
-      ? StaminaManager.getStamina(army.troops, currentArmiesTick)
-      : { amount: 0n, updated_tick: 0n };
+    // An army this client cannot see raids nothing: no simulation runs on a phantom attacker.
+    if (!army) return null;
 
     return {
-      capacity: army?.totalCapacity,
+      capacity: army.totalCapacity,
       troops: {
-        count: Number(army?.troops.count || 0),
-        category: army?.troops.category as TroopType,
-        tier: army?.troops.tier as TroopTier,
-        stamina: projectedStamina,
-        battle_cooldown_end: army?.troops.battle_cooldown_end || 0,
+        count: Number(army.troops.count),
+        category: army.troops.category as TroopType,
+        tier: army.troops.tier as TroopTier,
+        stamina: StaminaManager.getStamina(army.troops, currentArmiesTick),
+        battle_cooldown_end: army.troops.battle_cooldown_end,
       },
     };
   }, [account.address, attackerEntityId, store, currentArmiesTick, revision]);
-  const attackerCurrentStaminaValue = Number(attackerArmyData?.troops.stamina.amount ?? 0n);
-  const attackerRecharging = isStaminaRecharging(attackerCurrentStaminaValue, combatConfig.stamina_attack_req);
+  const attackerRecharging =
+    attackerArmyData !== null &&
+    isStaminaRecharging(Number(attackerArmyData.troops.stamina.amount), combatConfig.stamina_attack_req);
 
   const params = configManager.getCombatConfig();
   const combatSimulator = useMemo(() => new CombatSimulator(params), [params]);
@@ -132,12 +132,12 @@ export const RaidContainer = ({
 
     // Convert all defender troops into simulator armies
     const defenders = target.info.map((troop) => ({
-      entity_id: target?.id || 0,
-      stamina: Number(troop.stamina.amount || 0),
+      entity_id: target.id,
+      stamina: Number(troop.stamina.amount),
       troopCount: divideByPrecision(Number(troop.count)),
       troopType: troop.category as TroopType,
       tier: troop.tier as TroopTier,
-      battle_cooldown_end: troop.battle_cooldown_end || 0,
+      battle_cooldown_end: troop.battle_cooldown_end,
     }));
 
     // Use the raid simulator to predict the outcome
@@ -259,9 +259,9 @@ export const RaidContainer = ({
   };
 
   const buttonMessage = useMemo(() => {
-    if (attackerArmyData?.troops.stamina.amount < combatConfig.stamina_attack_req)
-      return `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`;
     if (!attackerArmyData) return "No Troops Present";
+    if (attackerArmyData.troops.stamina.amount < combatConfig.stamina_attack_req)
+      return `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`;
     if (target?.targetType !== TargetType.Structure) return "Only structures can be raided";
     if (stealableResources.length === 0) return "No resources raidable";
     return "Raid!";
@@ -269,8 +269,8 @@ export const RaidContainer = ({
 
   const canRaid = useMemo(() => {
     return (
-      attackerArmyData?.troops.stamina.amount >= combatConfig.stamina_attack_req &&
-      attackerArmyData &&
+      attackerArmyData !== null &&
+      attackerArmyData.troops.stamina.amount >= combatConfig.stamina_attack_req &&
       target?.targetType === TargetType.Structure &&
       stealableResources.some((r) => r.resourceId > 0 && r.amount > 0) &&
       (raidSimulation?.successChance ?? 0) > 0
@@ -550,7 +550,7 @@ export const RaidContainer = ({
               </div>
 
               {/* Raid Results Panel */}
-              {target?.targetType === TargetType.Structure && (
+              {target?.targetType === TargetType.Structure && raidSimulation && attackerArmyData && (
                 <Panel padding="md" blur shadow="lg" className="mt-2 sm:p-6 overflow-hidden">
                   <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gold border-b border-gold/20 pb-4 flex items-center">
                     <span className="mr-2">📜</span> Raid Prediction
@@ -726,7 +726,7 @@ export const RaidContainer = ({
                 {/* Additional feedback based on raid conditions */}
                 {!canRaid && (
                   <div className="mt-2 text-sm text-gold/60 flex items-center gap-2">
-                    {attackerArmyData?.troops.stamina.amount < combatConfig.stamina_attack_req && (
+                    {attackerArmyData && attackerArmyData.troops.stamina.amount < combatConfig.stamina_attack_req && (
                       <span className="flex items-center gap-1">
                         <span>⚡</span> Wait for stamina to recharge ({combatConfig.stamina_attack_req} required)
                       </span>

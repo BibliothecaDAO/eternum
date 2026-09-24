@@ -32,7 +32,7 @@ const MilitaryDeployHeader = ({ focusedRealmId }: { focusedRealmId: ID }) => {
     <header className="flex items-center gap-2 border-b border-gold/15 px-5 py-3">
       <Swords className="h-4 w-4 text-gold" />
       <span className={cn(HUD_LABEL_BRIGHT, "text-gold")}>{(detail.structureName ?? "Structure").toUpperCase()}</span>
-      <span className={cn(HUD_LABEL_BRIGHT, "text-gold/55")}>· Level {detail.structure.base?.level ?? 0}</span>
+      <span className={cn(HUD_LABEL_BRIGHT, "text-gold/55")}>· Level {detail.structure.base.level}</span>
     </header>
   );
 };
@@ -89,9 +89,8 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
 
   // Empty guard slot = attention.
   const attention = useCallback((structure: StructureWithMetadata) => {
-    const base = structure.structure?.base;
     const occupied = structure.guardCount;
-    const max = Number(base?.troop_max_guard_count ?? 0);
+    const max = structure.structure.base.troop_max_guard_count;
     return max > 0 && occupied < max;
   }, []);
 

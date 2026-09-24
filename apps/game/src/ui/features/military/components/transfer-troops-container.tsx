@@ -167,8 +167,9 @@ export const TransferTroopsContainer = ({
 
   const troopCapacityLimit = useMemo(() => {
     const tier = (targetExplorerTroops?.troops?.tier as TroopTier) ?? TroopTier.T1;
-    const level = targetStructure?.base?.level ?? targetExplorerConnectedStructure?.base?.level ?? 0;
-    return configManager.getMaxArmySize(level, tier) || null;
+    // A target still loading has no known level, so no cap is shown until it arrives.
+    const level = targetStructure?.base.level ?? targetExplorerConnectedStructure?.base.level;
+    return level === undefined ? null : configManager.getMaxArmySize(level, tier) || null;
   }, [targetExplorerTroops?.troops?.tier, targetStructure?.base?.level, targetExplorerConnectedStructure?.base?.level]);
 
   const targetStructureLevel = useMemo(() => {

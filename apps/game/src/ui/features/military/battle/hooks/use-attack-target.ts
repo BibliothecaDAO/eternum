@@ -150,7 +150,7 @@ export const useAttackTargetData = (
         id: targetEntityId,
         targetType: TargetType.Structure,
         structureCategory: targetStructure.base.category,
-        structureLevel: Number(targetStructure.base?.level ?? 0),
+        structureLevel: targetStructure.base.level,
         guardSlotLimit: resolveStructureGuardSlotLimit(targetStructure),
         hex: { x: targetTile.col, y: targetTile.row },
         addressOwner: targetStructure.owner,

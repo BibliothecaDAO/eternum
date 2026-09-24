@@ -203,9 +203,10 @@ export const useArmyCreation = ({
     guardsData?.filter(
       (guard) => guard.troops?.count && guard.troops.count > 0n && availableGuardSlotSet.has(Number(guard.slot)),
     ).length || 0;
-  const maxExplorers = Number(structureBase?.troop_max_explorer_count ?? 0);
+  // Undefined for a structure this client cannot see: no attack army can be created from it.
+  const maxExplorers = structureBase?.troop_max_explorer_count;
 
-  const canCreateAttackArmy = currentExplorersCount < maxExplorers;
+  const canCreateAttackArmy = maxExplorers !== undefined && currentExplorersCount < maxExplorers;
   const canCreateDefenseArmy = currentGuardsCount < resolvedMaxDefenseSlots;
   const hasDefenseArmies = currentGuardsCount > 0;
   const canInteractWithDefense = canCreateDefenseArmy || hasDefenseArmies;

@@ -203,7 +203,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
     [viewer, store, mode.structure, structureId, revision],
   );
 
-  const structureCategory = Number(structureInfo.structureCategory ?? 0);
+  const structureCategory = structureInfo.structureCategory;
   const structureName = structureInfo.name?.name ?? `Structure #${structureId}`;
 
   const configuredResearchCost = configManager.getArtificerConfig().research_cost_for_relic;

@@ -220,7 +220,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         game_id: configManager.getActiveGameId(),
         entity_id: structureColumn.entityId,
       });
-      const structureCategory = Number(structure?.base.category ?? 0);
+      const structureCategory = structure?.base.category;
 
       if (structureCategory === StructureType.Realm || structureCategory === StructureType.Village) {
         craftableStructureIds.add(structureColumn.entityId);

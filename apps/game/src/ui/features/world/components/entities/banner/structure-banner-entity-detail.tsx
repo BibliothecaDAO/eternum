@@ -169,7 +169,7 @@ const StructureBannerEntityDetailContent = memo(
     const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
     const isHyperstructureOwned = structure.owner !== undefined && structure.owner !== null && structure.owner !== 0n;
     const showHyperstructureVP = isHyperstructure && hyperstructurePointsPerSecond !== undefined;
-    const occupiedGuardSlots = guards.filter((guard) => Number(guard.troops?.count ?? 0) > 0).length;
+    const occupiedGuardSlots = guards.filter((guard) => guard.troops.count > 0n).length;
     const guardCue = guardSlotsMax !== undefined ? `${occupiedGuardSlots}/${guardSlotsMax}` : `${occupiedGuardSlots}`;
     const activeRelicIds = relicEffects.map((effect) => Number(effect.id));
 

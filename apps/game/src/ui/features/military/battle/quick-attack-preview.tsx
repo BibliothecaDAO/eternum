@@ -82,12 +82,12 @@ const buildTroopSnapshot = (troops: Troops) => ({
     incr_explore_reward_percent_num: 0,
     incr_explore_reward_end_tick: 0,
   },
-  battle_cooldown_end: troops.battle_cooldown_end || 0,
+  battle_cooldown_end: troops.battle_cooldown_end,
 });
 
 const buildProjectedTroopSnapshot = (
   troops: Troops,
-  stamina: { amount: bigint; updated_tick: bigint } = troops.stamina || { amount: 0n, updated_tick: 0n },
+  stamina: { amount: bigint; updated_tick: bigint } = troops.stamina,
 ) => ({
   ...buildTroopSnapshot(troops),
   stamina,
@@ -366,13 +366,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // (the guard swap asserts count <= live troops; the buffer also leaves >=1 troop on the explorer),
   // then capped to the structure's max guard army size so the swap never overfills the slot.
   const garrisonTroopCount = useMemo(() => {
-    if (!willCaptureStructure || !attackerArmyData) return 0;
+    // A structure whose level this client does not know takes no garrison: its cap is unknown.
+    const structureLevel = targetData?.structureLevel;
+    if (!willCaptureStructure || !attackerArmyData || structureLevel == null) return 0;
     const survivors = targetArmyData ? attackerRemaining : attackerTroopsTotal;
     const buffered = Math.floor(survivors * 0.99);
-    const maxArmySize = configManager.getMaxArmySize(
-      Number(targetData?.structureLevel ?? 0),
-      attackerArmyData.troops.tier as TroopTier,
-    );
+    const maxArmySize = configManager.getMaxArmySize(structureLevel, attackerArmyData.troops.tier as TroopTier);
     return Math.max(0, Math.min(buffered, maxArmySize));
   }, [willCaptureStructure, attackerArmyData, targetArmyData, attackerRemaining, attackerTroopsTotal, targetData]);
 

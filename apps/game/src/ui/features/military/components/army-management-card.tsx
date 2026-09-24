@@ -109,7 +109,9 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
 
   const revision = useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight"]);
   const structure = useNativeRow("Structure", { game_id: configManager.getActiveGameId(), entity_id: owner_entity });
-  const structureLevel = structure?.base?.level ?? 0;
+  // The player's own army card: a missing home structure is a synchronization bug, never a settlement.
+  if (!structure) throw new Error(`Structure ${owner_entity} is not synchronized`);
+  const structureLevel = structure.base.level;
   const troopCapacityLimit = configManager.getMaxArmySize(structureLevel, selectedTier) || null;
   const currentTroopCountValue = Number(army?.troops?.count ?? 0);
   const currentTroopCount = Number.isFinite(currentTroopCountValue) ? currentTroopCountValue : 0;
