@@ -141,7 +141,13 @@ interface Player {
   siteExchanges: Map<number, number>;
   nextActionAt: number;
 }
+/** A campaign burst on the Frontier shape: the booth, where every bot founds its realm inside the window. */
+export interface FrontierBurst {
+  shape: "booth";
+  windowSeconds: number;
+}
 export interface FrontierEvidence {
+  burst?: FrontierBurst;
   epochSeconds: number;
   timeScale: number;
   tokenCap: number;
@@ -155,6 +161,8 @@ export interface FrontierEvidence {
 }
 interface RunFrontierOptions {
   accelerated: boolean;
+  burst?: FrontierBurst;
+  setupConcurrency: number;
   onReady?: () => Promise<void>;
   client: GameClient;
   game: HarnessGame;
@@ -168,11 +176,12 @@ interface RunFrontierOptions {
 export async function runFrontierWorkload(options: RunFrontierOptions): Promise<WorkloadResult> {
   const { client, game, accounts, provider } = options;
   const epochSeconds = epochSecondsOf(client);
-  if (options.accelerated !== (epochSeconds === acceleratedEpochSeconds()))
+  // A burst measures one moment of load, which is the same on any day length; the plain shape plays its own days.
+  if (!options.burst && options.accelerated !== (epochSeconds === acceleratedEpochSeconds()))
     throw new Error(`Frontier ${options.accelerated ? "design run" : "capacity shape"} does not match the season's day length (${epochSeconds} s)`);
   await game.waitUntilPlaying();
-  const players: Player[] = [];
-  for (const identity of accounts) players.push(await settleFrontierPlayer(options, identity));
+  if (options.burst?.shape === "booth") return runBoothBurst(options, epochSeconds);
+  const players = await settleFrontierPlayers(options, accounts);
   for (const player of players) observeDay(client, game, player);
   await options.onReady?.();
   const startedAt = new Date().toISOString();
@@ -223,9 +232,44 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
     await sleep(1000);
   }
   for (const player of players) currentDay(player).endedAt = now();
+  return frontierResult(options, { players, actions, startedAt, ticks, epochSeconds });
+}
+
+/**
+ * The booth burst: every bot founds its realm inside the window, released evenly across it, and the foundings are the
+ * measured workload.
+ */
+async function runBoothBurst(options: RunFrontierOptions, epochSeconds: number): Promise<WorkloadResult> {
+  await options.onReady?.();
+  const startedAt = new Date().toISOString();
+  const releaseAtMs = Date.now();
+  const spacingMs = (options.burst!.windowSeconds * 1000) / options.accounts.length;
+  const founded = await Promise.all(
+    options.accounts.map(async (identity, index) => {
+      const scheduledAtMs = releaseAtMs + index * spacingMs;
+      await sleep(Math.max(0, scheduledAtMs - Date.now()));
+      return settleFrontierPlayer(options, identity, { stage: "workload", scheduledAtMs });
+    }),
+  );
+  return frontierResult(options, {
+    players: founded.flatMap(({ player }) => (player ? [player] : [])),
+    actions: founded.map(({ transaction }) => transaction),
+    startedAt,
+    ticks: 0,
+    epochSeconds,
+  });
+}
+
+async function frontierResult(
+  options: RunFrontierOptions,
+  run: { players: Player[]; actions: TrackedTransaction[]; startedAt: string; ticks: number; epochSeconds: number },
+): Promise<WorkloadResult> {
+  const { client, game, provider } = options;
+  const { players, actions, epochSeconds } = run;
   await attachAcceptedBlocks(provider, actions);
   const chests = await readChestHistory(client, Math.max(0, ...actions.map((action) => action.acceptedOnL2Block ?? 0)));
   const evidence: FrontierEvidence = {
+    ...(options.burst ? { burst: options.burst } : {}),
     epochSeconds,
     timeScale: PRODUCTION_EPOCH_SECONDS / epochSeconds,
     tokenCap: client.setup.store.require("ChestRules", { game_id: game.gameId }).token_cap,
@@ -244,9 +288,9 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
     actions,
     plannedActions: actions.length,
     overheadRpc: createRpcMetrics(),
-    startedAt,
+    startedAt: run.startedAt,
     endedAt: new Date().toISOString(),
-    ticks,
+    ticks: run.ticks,
     readinessWaitMs: 0,
   };
 }
@@ -284,26 +328,43 @@ async function readChestHistory(client: GameClient, confirmedBlock: number) {
   }
 }
 
+/** Settles every bot before the workload, a few at a time; a founding that fails stops the run. */
+async function settleFrontierPlayers(options: RunFrontierOptions, accounts: HarnessAccount[]): Promise<Player[]> {
+  const players: Player[] = [];
+  let next = 0;
+  const settleNext = async (): Promise<void> => {
+    for (let index = next++; index < accounts.length; index = next++) {
+      const { transaction, player } = await settleFrontierPlayer(options, accounts[index]!, { stage: "setup" });
+      options.setupTransactions.push(transaction);
+      if (!player) throw new Error(transaction.error ?? "Frontier settlement failed");
+      players[index] = player;
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(options.setupConcurrency, accounts.length) }, settleNext));
+  return players;
+}
+
 async function settleFrontierPlayer(
-  { game, provider, setupTransactions }: RunFrontierOptions,
+  { game, provider }: RunFrontierOptions,
   identity: HarnessAccount,
-): Promise<Player> {
-  const settled = await trackTransaction({
+  timing: { stage: "setup" | "workload"; scheduledAtMs?: number },
+): Promise<{ transaction: TrackedTransaction; player?: Player }> {
+  const transaction = await trackTransaction({
     botId: identity.botId,
     gameId: game.gameId,
     kind: "settle",
     provider,
-    stage: "setup",
+    stage: timing.stage,
+    scheduledAtMs: timing.scheduledAtMs,
     send: () =>
       game.submit(identity.account, () =>
         game.settle(identity.account, identity.owner, `Frontier${identity.botId}`, "frontier"),
       ),
   });
-  setupTransactions.push(settled);
-  if (settled.outcome !== "completed") throw new Error(settled.error ?? "Frontier settlement failed");
+  if (transaction.outcome !== "completed") return { transaction };
   const realmId = game.settlementStructureIds(identity.address)?.[0];
   if (realmId === undefined) throw new Error("Settlement did not publish the home realm");
-  return {
+  return { transaction, player: {
     identity,
     realmId,
     profile: identity.botId % 2 === 0 ? "check-in" : "daily",
@@ -314,7 +375,7 @@ async function settleFrontierPlayer(
     captures: [],
     siteExchanges: new Map(),
     nextActionAt: 0,
-  };
+  } };
 }
 
 const now = () => getBlockTimestamp().currentBlockTimestamp;

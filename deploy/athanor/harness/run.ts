@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { launchFrontierSeason, runFrontierWorkload } from "./frontier";
+import { launchFrontierSeason, runFrontierWorkload, type FrontierBurst } from "./frontier";
 import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { createBuildOrderWorkload } from "./build-order";
 import { runLayerRoundTrip } from "./layer-round-trip";
@@ -41,6 +41,8 @@ interface HarnessCliOptions {
   gameType: HarnessGameType;
   /** The preset new games are created from; the campaign names one per configuration. */
   presetId: number;
+  /** A campaign burst on the Frontier shape instead of its day-long play. */
+  frontierBurst?: FrontierBurst;
   bots: number;
   games?: number;
   accountsPerGame?: number;
@@ -116,12 +118,14 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     values["game-name"] = `game-${gameId}`;
   }
   const slot = resolveSlotOptions(values, gameType, games);
+  const frontierBurst = resolveFrontierBurst(values, gameType);
 
   return {
     gameType,
     workload,
     functional,
     presetId,
+    frontierBurst,
     bots,
     games,
     accountsPerGame,
@@ -205,6 +209,8 @@ async function main(): Promise<void> {
       options.workload === "frontier"
         ? await runFrontierWorkload({
             accelerated: options.functional,
+            burst: options.frontierBurst,
+            setupConcurrency: options.setupConcurrency,
             client,
             game: harnessGame,
             provider,
@@ -329,6 +335,17 @@ async function resolveHarnessGame(options: HarnessCliOptions, rosterAccounts: st
   return { gameId: summary.gameId, gameName, startAt, settlementTransactions: summary.settlementTransactions ?? 0 };
 }
 
+/** The booth burst founds every bot's realm inside a window: ten minutes unless the campaign names another. */
+function resolveFrontierBurst(values: Record<string, string>, gameType: HarnessGameType): FrontierBurst | undefined {
+  if (values["frontier-burst"] === undefined) {
+    if (values["burst-window-seconds"] !== undefined) throw new Error("--burst-window-seconds requires --frontier-burst");
+    return undefined;
+  }
+  if (gameType !== "frontier") throw new Error("--frontier-burst requires --game-type frontier");
+  if (values["frontier-burst"] !== "booth") throw new Error("--frontier-burst must be booth");
+  return { shape: "booth", windowSeconds: positiveNumber(values["burst-window-seconds"] ?? "600", "burst-window-seconds") };
+}
+
 function resolveSlotOptions(
   values: Record<string, string>,
   gameType: HarnessGameType,
@@ -383,6 +400,8 @@ function parseFlags(args: string[]): Record<string, string> {
         "slot",
         "launch-url",
         "slot-closes-in-seconds",
+        "frontier-burst",
+        "burst-window-seconds",
       ].includes(name)
     ) {
       throw new Error(`Unsupported harness option --${name}`);
@@ -688,6 +707,9 @@ Usage: bun deploy/athanor/harness/run.ts [options]
                                  creating games; needs OPERATOR_TOKEN and --launch-url or LAUNCH_URL
   --launch-url <origin>          the app origin the launch API is served under, e.g. https://staging.realms.party
   --slot-closes-in-seconds <s>   with --slot; default: 120; the cron freezes the slot within a minute of closing
+  --frontier-burst <booth>       Frontier campaign burst: booth founds every bot's realm inside the window,
+                                 measured as the workload
+  --burst-window-seconds <s>     with --frontier-burst; default: 600
   --functional                  omit capacity collection and latency gates; for Frontier, the accelerated design run
   --prepared-game <path>         resume a prepared roster using its private account file
   --game-id <id>                 use an existing Eternum game

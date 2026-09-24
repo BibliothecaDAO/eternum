@@ -867,6 +867,30 @@ describe("Madara harness CLI and concurrency", () => {
     ).toMatchObject({ bots: 4, minutes: 0.5, intervalSeconds: 5, gameId: 9, gameName: "game-9" });
   });
 
+  it("runs the Frontier booth burst inside a ten-minute window unless the campaign names another", () => {
+    expect(parseHarnessArgs(["--game-type", "frontier", "--bots", "250", "--frontier-burst", "booth"])).toMatchObject({
+      frontierBurst: { shape: "booth", windowSeconds: 600 },
+    });
+    expect(
+      parseHarnessArgs([
+        "--game-type",
+        "frontier",
+        "--frontier-burst",
+        "booth",
+        "--burst-window-seconds",
+        "120",
+      ]).frontierBurst,
+    ).toEqual({ shape: "booth", windowSeconds: 120 });
+    expect(parseHarnessArgs(["--game-type", "frontier"]).frontierBurst).toBeUndefined();
+    expect(() => parseHarnessArgs(["--frontier-burst", "booth"])).toThrow("--frontier-burst requires --game-type frontier");
+    expect(() => parseHarnessArgs(["--game-type", "frontier", "--frontier-burst", "stampede"])).toThrow(
+      "--frontier-burst must be booth",
+    );
+    expect(() => parseHarnessArgs(["--game-type", "frontier", "--burst-window-seconds", "60"])).toThrow(
+      "--burst-window-seconds requires --frontier-burst",
+    );
+  });
+
   it("sizes concurrent Regular rosters without relaxing the player cap", () => {
     expect(parseHarnessArgs([])).toMatchObject({
       bots: 96,
