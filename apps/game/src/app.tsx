@@ -1,11 +1,12 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 
 import "./index.css";
 import { PwaUpdatePrompt } from "./pwa/pwa-update-prompt";
 import { SceneRoute } from "./scene-route";
 import { PwaInstallRuntime } from "./pwa/pwa-install-control";
+import { appQueryClient } from "./runtime/query-client";
 import { AccountPage } from "./shell/account";
 import { FirstNamePrompt } from "./shell/first-name-prompt";
 import { AppShell } from "./shell/app-shell";
@@ -61,10 +62,6 @@ const AppFallback = () => <div className="min-h-screen bg-black" />;
 
 const LazyRoute = ({ children }: { children: ReactNode }) => <Suspense fallback={<AppFallback />}>{children}</Suspense>;
 
-const shellQueryClient = new QueryClient({
-  defaultOptions: { queries: { refetchOnWindowFocus: false, refetchOnReconnect: false, retry: 1 } },
-});
-
 /**
  * One app: the shell (home, play, results, account) is the cold path and carries no game module; a game, with the
  * 3D client and its mode's screens, loads only under `/g/:chain/:game`.
@@ -72,7 +69,7 @@ const shellQueryClient = new QueryClient({
 function App() {
   return (
     <BrowserRouter>
-      <QueryClientProvider client={shellQueryClient}>
+      <QueryClientProvider client={appQueryClient}>
         <PwaUpdatePrompt />
         <PwaInstallRuntime />
         <FirstNamePrompt />

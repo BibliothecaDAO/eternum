@@ -4,9 +4,7 @@ const pasted = vi.hoisted(() => ({ shards: [] as { url: string; chainId: string 
 vi.mock("@/runtime/world/shards", () => ({
   listPastedShards: () => pasted.shards,
   openPastedShards: async () => [],
-  requireOpenShard: async () => {
-    throw new Error("not needed");
-  },
+  requireOpenShard: async (chainId: string) => pasted.shards.find((shard) => shard.chainId === chainId),
 }));
 
 vi.mock("@bibliothecadao/eternum/shard", async (importOriginal) => ({

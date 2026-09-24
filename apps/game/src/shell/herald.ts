@@ -1,4 +1,4 @@
-import { fetchHeraldGameDirectory, fetchHeraldGameLeaderboard, type GameRef } from "@bibliothecadao/eternum/shard";
+import { fetchHeraldGameLeaderboard, type GameRef } from "@bibliothecadao/eternum/shard";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
@@ -6,6 +6,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 
 import { fetchDirectory, fetchDirectoryHistory, type DirectoryShard } from "@/runtime/world/directory";
+import { readShardDirectory } from "@/runtime/world/shard-directory";
 import { listPastedShards, openPastedShards, requireOpenShard } from "@/runtime/world/shards";
 
 /** A directory entry with the shard it came from, so the shell can address the game as (chain id, game id). */
@@ -45,9 +46,7 @@ export const fetchDirectories = async (player: string | null): Promise<ShardDire
   );
   const pasted = listPastedShards().filter((shard) => !listed.some((entry) => entry.url === shard.url));
   const pastedDirectories = await Promise.all(
-    pasted.map((shard) =>
-      fetchHeraldGameDirectory(shard, player ?? undefined).then((directory) => ({ shard, directory })),
-    ),
+    pasted.map((shard) => readShardDirectory(shard.chainId, player).then((directory) => ({ shard, directory }))),
   );
   const pastedGames = pastedDirectories.flatMap(({ shard, directory }) =>
     directory.games.map((game) => ({ ...game, chainId: shard.chainId })),

@@ -1,13 +1,11 @@
 /**
- * Per-game availability + metadata for a CHOSEN game, keyed by (chain id, game id).
- *
- * Herald's directory on the game's shard resolves registry/config metadata and the connected player's settlement
- * state. The card grid rides the same directory through the bulk worlds summary.
+ * Per-game availability and metadata for a CHOSEN game, read from its shard's directory with the connected player's
+ * standing. It shares that directory's one cache entry with every other reader of the shard's directory.
  */
-import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
+import type { HeraldGameDirectory, HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
-import { fetchHeraldGameDirectory, type GameRef, type Shard } from "@bibliothecadao/eternum/game-client";
-import { requireOpenShard } from "@/runtime/world/shards";
+import type { GameRef } from "@bibliothecadao/eternum/game-client";
+import { shardDirectoryQuery } from "@/runtime/world/shard-directory";
 import { gameKey } from "@/runtime/world/store";
 import { useQueries } from "@tanstack/react-query";
 
@@ -16,8 +14,6 @@ interface WorldConfigMeta {
   name: string | null;
   ready: boolean;
   mode: ResolvedGameMode;
-  // The shard this meta belongs to — downstream flows pick its Herald and contracts with it.
-  chainId: string | null;
   // The GameRegistry id this meta describes — the settle flow requires it
   // (registration targets a chosen game, never ambient scope).
   gameId: number | null;
@@ -67,7 +63,6 @@ interface WorldAvailability extends GameRef {
 const emptyWorldConfigMeta = (): WorldConfigMeta => ({
   name: null,
   mode: "unknown",
-  chainId: null,
   gameId: null,
   startSettlingAt: null,
   startMainAt: null,
@@ -126,30 +121,20 @@ const applyDirectoryGame = (meta: WorldConfigMeta, game: HeraldGameDirectoryEntr
   meta.settledVillagesCount = game.settled_villages_count;
 };
 
-const fetchGameMeta = async (shard: Shard, gameId: number, playerAddress?: string | null): Promise<WorldConfigMeta> => {
+/** The game's meta from its shard's directory; a game the directory does not list has no game id. */
+const readGameMeta = (directory: HeraldGameDirectory, game: GameRef, playerAddress: string | null) => {
   const meta = emptyWorldConfigMeta();
-  const directory = await fetchHeraldGameDirectory(shard, playerAddress ?? undefined);
-  const game = directory.games.find((candidate) => candidate.game_id === gameId);
-  if (!game) return meta;
+  const entry = directory.games.find((candidate) => candidate.game_id === game.gameId);
+  if (!entry) return { isAvailable: false, meta };
 
-  applyDirectoryGame(meta, game);
+  applyDirectoryGame(meta, entry);
   if (playerAddress && meta.mode === "blitz") {
-    meta.isPlayerRegistered = game.player_state?.registered ?? false;
-    meta.isRosterMember = game.player_state?.roster_member ?? false;
+    meta.isPlayerRegistered = entry.player_state?.registered ?? false;
+    meta.isRosterMember = entry.player_state?.roster_member ?? false;
   } else if (playerAddress && (meta.mode === "eternum" || meta.mode === "frontier")) {
-    meta.hasPlayerSettledRealm = game.player_state?.settled ?? false;
+    meta.hasPlayerSettledRealm = entry.player_state?.settled ?? false;
   }
-  return meta;
-};
-
-const checkWorldAvailability = async (
-  game: GameRef,
-  playerAddress?: string | null,
-): Promise<{ isAvailable: boolean; meta: WorldConfigMeta | null }> => {
-  const shard = await requireOpenShard(game.chainId);
-  const meta = await fetchGameMeta(shard, game.gameId, playerAddress);
-  meta.chainId = shard.chainId;
-  return { isAvailable: meta.gameId !== null, meta };
+  return { isAvailable: true, meta };
 };
 
 /**
@@ -164,9 +149,8 @@ export const useWorldsAvailability = (
 ) => {
   const queries = useQueries({
     queries: worlds.map((world) => ({
-      // Include playerAddress in query key so it refetches when user connects
-      queryKey: ["worldAvailability", gameKey(world), playerAddress ?? "anonymous"],
-      queryFn: () => checkWorldAvailability(world, playerAddress),
+      ...shardDirectoryQuery(world.chainId, playerAddress ?? null),
+      select: (directory: HeraldGameDirectory) => readGameMeta(directory, world, playerAddress ?? null),
       enabled,
       refetchInterval: refetchIntervalMs,
       staleTime: 30 * 1000,

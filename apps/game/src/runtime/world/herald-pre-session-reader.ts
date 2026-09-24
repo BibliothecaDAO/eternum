@@ -1,6 +1,6 @@
-import { fetchHeraldGameDirectory, type GameRef } from "@bibliothecadao/eternum/game-client";
+import type { GameRef } from "@bibliothecadao/eternum/game-client";
 import type { HeraldPlayerGameState, HeraldPlayerStructure } from "@bibliothecadao/eternum/game-sync";
-import { requireOpenShard } from "./shards";
+import { readGameEntry } from "./shard-directory";
 
 export type PlayerStructure = HeraldPlayerStructure;
 
@@ -12,10 +12,8 @@ export interface SettlementSnapshot {
 
 /** Before a player joins a game, the entry screens read only their own row of Herald's directory. */
 const fetchPlayerGameState = async (game: GameRef, player: string): Promise<HeraldPlayerGameState> => {
-  const shard = await requireOpenShard(game.chainId);
-  const directory = await fetchHeraldGameDirectory(shard, player);
-  const state = directory.games.find((entry) => entry.game_id === game.gameId)?.player_state;
-  if (!state) throw new Error(`Herald ${shard.url} lists no game ${game.gameId} for player ${player}`);
+  const state = (await readGameEntry(game, player)).player_state;
+  if (!state) throw new Error(`Shard ${game.chainId} answers no state in game ${game.gameId} for player ${player}`);
   return state;
 };
 
