@@ -123,3 +123,35 @@ test("bots settling at once each get their outcome through their own subscriptio
   );
   await expect(lone.confirmed).rejects.toThrow("Missing or ambiguous native ticket outcome");
 });
+
+test("a submission carries the provider's admission-to-visible time for its own transaction", async () => {
+  const provider = new EventEmitter();
+  const ticket = { gameId: "1", actor: "0x1", nonce: "0", order: "1", status: "SUCCEEDED", statusClass: "", reason: "" };
+  const game = createHarnessGame({
+    gameId: 1,
+    setup: { store: {}, systemCalls: {}, network: { provider } },
+    runtime: { waitForTransaction: async () => ({ status: "ACCEPTED_ON_L2", executions: [ticket] }) },
+  } as unknown as GameClient);
+  const submission = await game.submit({ address: "0x1" } as Account, async () => {
+    provider.emit("transactionSubmitted", { signerAddress: "0x1", transactionHash: "0x123", ticket });
+  });
+  provider.emit("transactionComplete", { details: { transaction_hash: "0x999" }, admissionToVisibleMs: 7 });
+  provider.emit("transactionComplete", { details: { transaction_hash: "0x0123" }, admissionToVisibleMs: 42 });
+  await expect(submission.admissionToVisibleMs).resolves.toBe(42);
+});
+
+test("a confirmed action the provider reported no figure for records none and leaves no listener", async () => {
+  const provider = new EventEmitter();
+  const ticket = { gameId: "1", actor: "0x1", nonce: "0", order: "1", status: "SUCCEEDED", statusClass: "", reason: "" };
+  const game = createHarnessGame({
+    gameId: 1,
+    setup: { store: {}, systemCalls: {}, network: { provider } },
+    runtime: { waitForTransaction: async () => ({ status: "ACCEPTED_ON_L2", executions: [ticket] }) },
+  } as unknown as GameClient);
+  const submission = await game.submit({ address: "0x1" } as Account, async () => {
+    provider.emit("transactionSubmitted", { signerAddress: "0x1", transactionHash: "0x123", ticket });
+  });
+  await submission.confirmed;
+  await expect(submission.admissionToVisibleMs).resolves.toBeUndefined();
+  expect(provider.listenerCount("transactionComplete")).toBe(0);
+});

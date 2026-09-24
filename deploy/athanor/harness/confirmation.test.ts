@@ -24,7 +24,7 @@ const track = (confirmed: Promise<unknown> | undefined, provider = accepted) =>
   });
 
 describe("transaction confirmation deadline", () => {
-  it("includes admission wait and Herald application in visible latency", async () => {
+  it("records the provider's admission-to-visible time, the figure the client reports", async () => {
     let clock = 1_000;
     const now = spyOn(Date, "now").mockImplementation(() => clock);
     let applied!: () => void;
@@ -47,13 +47,13 @@ describe("transaction confirmation deadline", () => {
         provider,
         send: async () => {
           clock = 1_300;
-          return { transactionHash: "0x123", confirmed };
+          return { transactionHash: "0x123", confirmed, admissionToVisibleMs: Promise.resolve(480) };
         },
       });
       expect(result.outcome).toBe("completed");
       expect(result.submitMs).toBe(300);
       expect(result.preConfirmedMs).toBe(200);
-      expect(result.admissionToVisibleMs).toBe(500);
+      expect(result.admissionToVisibleMs).toBe(480);
       expect(result.visibleAt).toBe(new Date(1_500).toISOString());
     } finally {
       now.mockRestore();
@@ -109,7 +109,10 @@ describe("transaction confirmation deadline", () => {
     expect(setup.outcome).toBe("completed");
     expect(setup.admissionToVisibleMs).toBeUndefined();
     expect(setup.heraldConfirmedLagMs).toBeUndefined();
-    expect((await track(Promise.resolve())).outcome).toBe("completed");
+    const unreported = await track(Promise.resolve());
+    expect(unreported.outcome).toBe("completed");
+    // No provider figure is reported as none, never recomputed on the harness's clock.
+    expect(unreported.admissionToVisibleMs).toBeUndefined();
   });
 });
 
