@@ -43,15 +43,7 @@ export const BuildingsList = ({
   }, [productionBoostBonus, currentDefaultTick]);
 
   const productions = useMemo(() => {
-    const isLaborProductionEnabled = configManager.isLaborProductionEnabled();
     return producedResources
-      .filter((resourceId) => {
-        // Exclude Labor if labor production is not enabled
-        if (resourceId === ResourcesIds.Labor && !isLaborProductionEnabled) {
-          return false;
-        }
-        return true;
-      })
       .map((resourceId) => {
         const buildingsForResource = productionBuildings.filter(
           (building) => building.produced.resource === resourceId,
@@ -65,7 +57,6 @@ export const BuildingsList = ({
           resource: resourceId,
           production,
           buildings: buildingsForResource,
-          isLabor: resourceId === ResourcesIds.Labor,
         };
       })
       .filter((production) => production !== null);

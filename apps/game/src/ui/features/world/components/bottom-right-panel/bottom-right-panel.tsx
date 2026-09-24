@@ -428,7 +428,6 @@ const LocalTilePanel = () => {
     return (
       <InfoBubble title={panelTitle} bodyClassName="pt-0">
         <RealmUpgradeCompact />
-        {canManageBuilding && <InlineProduction entityId={structureEntityId} resource={ResourcesIds.Labor} />}
       </InfoBubble>
     );
   }

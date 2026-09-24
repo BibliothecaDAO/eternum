@@ -1,6 +1,6 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { configManager, getRealmInfo } from "@bibliothecadao/eternum";
+import { getRealmInfo } from "@bibliothecadao/eternum";
 import { ResourcesIds, ContractAddress } from "@bibliothecadao/types";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -16,8 +16,5 @@ export function InlineProduction({ entityId, resource }: { entityId: number; res
   useNativeRevision(["Structure", "StructureBuildings", "ResourceWeight"]);
   const realm = getRealmInfo(entityId, store, getPlayerName);
   if (!ordersAllowed || !realm || !account?.address || realm.owner !== ContractAddress(account.address)) return null;
-  if (resource === ResourcesIds.Labor && !configManager.isLaborProductionEnabled()) {
-    return <p className="text-xs">Labor production is not available in this game.</p>;
-  }
   return <ProductionControls key={`${entityId}:${resource}`} realm={realm} selectedResource={resource} compact />;
 }
