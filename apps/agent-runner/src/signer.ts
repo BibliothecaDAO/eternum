@@ -3,8 +3,7 @@ import path from "node:path";
 import {
   DeviceSigner,
   deviceKeyOf,
-  joinRealmsAccount,
-  keyGuardian,
+  joinBotAccount,
   signGameplayIntent,
   type DeviceKey,
   type GameClient,
@@ -14,7 +13,7 @@ import { Account, BlockTag, RpcProvider, stark, type AccountInterface } from "st
 
 import { resolveDataDir, type RunnerConfig, type RunnerSigner } from "./config";
 
-const GUEST_KEY_FILE = "guest-key.json";
+const BOT_KEY_FILE = "bot-key.json";
 
 /** The account the runner plays as, connected to the client; null in spectate mode. */
 export async function resolveRunnerSigner(
@@ -26,8 +25,8 @@ export async function resolveRunnerSigner(
   const { shard } = client;
   const provider = new RpcProvider({ nodeUrl: shard.rpcUrl, blockIdentifier: BlockTag.PRE_CONFIRMED });
   const account =
-    config.signer.mode === "guest"
-      ? await connectGuestAccount(shard, provider, dataDir)
+    config.signer.mode === "bot"
+      ? await connectBotAccount(config.signer, shard, provider, dataDir)
       : connectKeyAccount(config.signer, provider);
   // Every send, raw or through the client's provider, takes the gameplay nonce and fee path.
   const signer = configureGameplayAccountSubmits(account, shard.chainId);
@@ -36,17 +35,22 @@ export async function resolveRunnerSigner(
 }
 
 /**
- * A guest is a Realms account that guards itself: its one key is its guardian and its only device, and its public key
- * names it. The key persists under the data dir so a restarted runner is the same player.
+ * A bot is a Realms account under the shard's guardian, named by its device key and approved through the identity
+ * Worker's operator route. The key persists under the data dir so a restarted runner is the same player.
  */
-const connectGuestAccount = async (shard: Shard, provider: RpcProvider, dataDir: string): Promise<Account> => {
-  const key = await loadOrMintGuestKey(dataDir);
-  return joinRealmsAccount({
+const connectBotAccount = async (
+  signer: Extract<RunnerSigner, { mode: "bot" }>,
+  shard: Shard,
+  provider: RpcProvider,
+  dataDir: string,
+): Promise<Account> => {
+  const key = await loadOrMintBotKey(dataDir);
+  return joinBotAccount({
     provider,
-    shard: { chainId: shard.chainId, accountClassHash: shard.accountClassHash, guardianPublicKey: key.publicKey },
-    realmsId: key.publicKey,
+    shard,
+    label: key.publicKey,
     device: key,
-    approve: keyGuardian(key.privateKey),
+    identity: { url: signer.identityUrl, operatorToken: signer.operatorToken },
   });
 };
 
@@ -58,8 +62,8 @@ const connectKeyAccount = (signer: Extract<RunnerSigner, { mode: "key" }>, provi
     cairoVersion: "1",
   });
 
-const loadOrMintGuestKey = async (dataDir: string): Promise<DeviceKey> => {
-  const file = path.join(dataDir, GUEST_KEY_FILE);
+const loadOrMintBotKey = async (dataDir: string): Promise<DeviceKey> => {
+  const file = path.join(dataDir, BOT_KEY_FILE);
   const stored = await readStoredKey(file);
   if (stored) return stored;
   const key = deviceKeyOf(stark.randomAddress());
@@ -76,7 +80,7 @@ const readStoredKey = async (file: string): Promise<DeviceKey | null> => {
     return null;
   }
   const record = JSON.parse(raw) as { privateKey?: unknown };
-  if (typeof record.privateKey !== "string") throw new Error(`Guest key file ${file} has no privateKey`);
+  if (typeof record.privateKey !== "string") throw new Error(`Bot key file ${file} has no privateKey`);
   return deviceKeyOf(record.privateKey);
 };
 
@@ -93,7 +97,7 @@ export async function signRunnerIntent(
       throw new Error("Gameplay identity changed before signing");
     return signGameplayIntent(digest, config.signer.gameplayPrivateKey);
   }
-  const key = await readStoredKey(path.join(resolveDataDir(config, gameId), GUEST_KEY_FILE));
-  if (!key) throw new Error("The guest gameplay key is missing");
+  const key = await readStoredKey(path.join(resolveDataDir(config, gameId), BOT_KEY_FILE));
+  if (!key) throw new Error("The bot gameplay key is missing");
   return signGameplayIntent(digest, key.privateKey);
 }

@@ -1,5 +1,5 @@
-import { ec, stark, type Account, type RpcProvider } from "starknet";
-import { deviceKeyOf, joinRealmsAccount, keyGuardian } from "@bibliothecadao/eternum";
+import { stark, type Account, type RpcProvider } from "starknet";
+import { deviceKeyOf, joinBotAccount, type OperatorIdentity, type RealmsAccountShard } from "@bibliothecadao/eternum";
 import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
 
 export interface HarnessAccount {
@@ -14,26 +14,25 @@ export interface HarnessAccount {
 }
 
 interface CreateHarnessAccountsOptions {
-  classHash: string;
   concurrency?: number;
   count: number;
   gameId: number;
+  identity: OperatorIdentity;
   provider: RpcProvider;
+  shard: RealmsAccountShard;
 }
 
 const DEFAULT_DEPLOY_CONCURRENCY = 12;
 
-/** Bots are Realms accounts under one throwaway guardian per run; our guardian never approves a bot. */
+/** Bots are Realms accounts under the shard's own guardian, each device approved through the operator route. */
 export async function createHarnessAccounts({
-  classHash,
   concurrency = DEFAULT_DEPLOY_CONCURRENCY,
   count,
   gameId,
+  identity,
   provider,
+  shard,
 }: CreateHarnessAccountsOptions): Promise<HarnessAccount[]> {
-  const chainId = await provider.getChainId();
-  const guardianKey = stark.randomAddress();
-  const shard = { chainId, accountClassHash: classHash, guardianPublicKey: ec.starkCurve.getStarkKey(guardianKey) };
   const botIds = Array.from({ length: count }, (_, botId) => botId);
   return mapWithConcurrency(botIds, concurrency, async (botId) => {
     const privateKey = stark.randomAddress();
@@ -43,14 +42,8 @@ export async function createHarnessAccounts({
     try {
       // Every send a bot makes, raw or through the client's provider, takes the client's nonce and fee path.
       const account = configureGameplayAccountSubmits(
-        await joinRealmsAccount({
-          provider,
-          shard,
-          realmsId: stark.randomAddress(),
-          device,
-          approve: keyGuardian(guardianKey),
-        }),
-        chainId,
+        await joinBotAccount({ provider, shard, label: stark.randomAddress(), device, identity }),
+        shard.chainId,
       );
 
       return {

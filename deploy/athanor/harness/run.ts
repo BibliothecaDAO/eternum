@@ -10,7 +10,7 @@ import { Worker, isMainThread, parentPort, workerData, threadId } from "node:wor
 import path from "node:path";
 import { DeviceSigner, deviceKeyOf, signGameplayIntent } from "@bibliothecadao/eternum";
 import { splitPlaytestRoster } from "../../../apps/launch-service/src/slots";
-import { configureGameplayAccountSubmits, openShard } from "@bibliothecadao/eternum/game-client";
+import { configureGameplayAccountSubmits, openShard, type Shard } from "@bibliothecadao/eternum/game-client";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { Account, logger } from "starknet";
 import { assertChainId } from "../../../packages/chain/chain-guard.js";
@@ -18,7 +18,7 @@ import { launchGame } from "../../../config/deployer/clean/launch/runner";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { createHarnessAccounts, type HarnessAccount } from "./account-factory";
-import { connectHarnessGameClient, type HarnessGameplayContracts } from "./game-client";
+import { connectHarnessGameClient } from "./game-client";
 import { createHarnessGame } from "./harness-game";
 import { HarnessProvider, measureHarnessRequests } from "./provider";
 import { prepareHarnessBots, runWorkload, type HarnessGameType, type TrackedTransaction } from "./driver";
@@ -60,15 +60,9 @@ interface HarnessCliOptions {
   heraldUrl: string;
 }
 
-interface GameplayContractsArtifact extends HarnessGameplayContracts {
-  rpcUrl?: string;
-}
-
 interface LaunchedGame extends Omit<HarnessGameInstance, "botCount"> {
   startAt?: number;
 }
-
-const REPOSITORY_ROOT = path.resolve(import.meta.dir, "../../..");
 
 logger.setLogLevel("FATAL");
 
@@ -152,20 +146,18 @@ async function main(): Promise<void> {
   const options = parseHarnessArgs(process.argv.slice(2));
   requiredEnvironmentValue("DEPLOYER_ACCOUNT_ADDRESS", "native harness");
   requiredEnvironmentValue("DEPLOYER_PRIVATE_KEY", "native harness");
-  const gameplayContractsPath = requiredEnvironmentValue("GAMEPLAY_CONTRACTS_PATH", "native harness");
   process.env.HERALD_URL = options.heraldUrl;
 
   const requests = options.functional ? undefined : measureHarnessRequests(options.rpcUrl);
   const provider = createHarnessProvider(options.rpcUrl);
-  const [chainId, gameplayContracts, shard] = await Promise.all([
+  const [chainId, shard] = await Promise.all([
     provider.getChainId(),
-    readJson<GameplayContractsArtifact>(path.resolve(REPOSITORY_ROOT, gameplayContractsPath)),
     openShard(options.heraldUrl, bindings.schemaIdentity),
   ]);
   assertChainId(chainId, { shard }, "RPC_URL");
   const prepared = options.preparedGamePath
     ? await readJson<PreparedGame>(path.resolve(options.preparedGamePath))
-    : await prepareGames(options, gameplayContracts, provider);
+    : await prepareGames(options, shard, provider);
   const players = playersOf(options.workload, prepared, options.workers);
   if (players.kind === "roster") {
     provider.dispose();
@@ -437,15 +429,19 @@ interface PreparedGame {
 
 async function prepareGames(
   options: HarnessCliOptions,
-  contracts: GameplayContractsArtifact,
+  shard: Shard,
   provider: HarnessProvider,
 ): Promise<PreparedGame | PreparedGame[]> {
   const accounts = await createHarnessAccounts({
-    classHash: contracts.playerAccountClassHash,
     concurrency: options.setupConcurrency,
     count: options.bots,
     gameId: 0,
+    identity: {
+      url: requiredEnvironmentValue("IDENTITY_URL", "bot enrolment"),
+      operatorToken: requiredEnvironmentValue("OPERATOR_TOKEN", "bot enrolment"),
+    },
     provider,
+    shard,
   });
   if (options.slot) return prepareSlotGames(options.slot, accounts);
   const groups =
@@ -750,6 +746,9 @@ Usage: bun deploy/athanor/harness/run.ts [options]
   --game-name <name>             name for a new game or report label for --game-id
   --rpc-url <url>                required, or RPC_URL; the node's internal URL, never the public RPC
   --herald-url <url>             required, or HERALD_URL
+
+New bots enrol through the shard's guardian: IDENTITY_URL (the environment's identity API, e.g.
+https://staging.realms.party/api) and OPERATOR_TOKEN are required unless --prepared-game is given.
 `);
 }
 

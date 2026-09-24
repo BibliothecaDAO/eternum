@@ -125,6 +125,10 @@ For the account-operation smoke, run `bun deploy/athanor/scripts/account-rpc-smo
 It refuses foreign account classes, guardian keys, targets, selectors and multi-calls, then joins and revokes a
 temporary device on the host operator through the public endpoint. The temporary key stays private in the run directory.
 
+The operator is a bot under the shard's guardian, so the deployment and the smoke need `OPERATOR_TOKEN`, the operator
+token of the environment `guardian_url` belongs to, in the environment. The runner derives that environment's identity
+API from `guardian_url` (which must end in `/guardian`) and records it as `IDENTITY_URL` in `harness.env`.
+
 The harness requires explicit `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_KEY`, including for resumed runs.
 
 For ordered trials, use `scripts/shard.py --matrix MATRIX_JSON RUN_DIRECTORY`. The matrix contains `configurations` (an
@@ -242,9 +246,15 @@ The harness uses the shared client, native fact store, recorded admission and no
 
 ```bash
 RPC_URL=http://127.0.0.1:<node-port>/rpc/v0_10_2 HERALD_URL=http://127.0.0.1:<herald-port> \
+IDENTITY_URL=https://staging.realms.party/api OPERATOR_TOKEN=... \
 bun deploy/athanor/harness/run.ts \
   --bots 6 --minutes 2.5 --interval-seconds 15 --setup-concurrency 6 --workload build-order
 ```
+
+Bots are Realms accounts under the shard's own guardian, like players. Each bot's device is approved by the
+environment's identity Worker through its operator route (`POST /api/devices/bots`), which approves devices only on
+accounts whose Realms id is a bot's. `IDENTITY_URL` is the identity API of the environment whose guardian the shard's
+manifest names, and `OPERATOR_TOKEN` is that environment's operator token.
 
 The node and Herald URLs are required (`--rpc-url`/`RPC_URL`, `--herald-url`/`HERALD_URL`) and have no default. Use
 the node's internal URL on the box, as the shard's `harness.env` records it: the public RPC refuses writes and

@@ -36,7 +36,7 @@ FROM oven/bun:${BUN_VERSION}-slim AS runtime
 WORKDIR /app
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=prod-deps /app/apps/agent-runner/node_modules ./apps/agent-runner/node_modules
-# The runner itself, by name: a local .agent-data (guest keys, runs) never rides along.
+# The runner itself, by name: a local .agent-data (bot keys, runs) never rides along.
 COPY apps/agent-runner/package.json apps/agent-runner/tsconfig.json ./apps/agent-runner/
 COPY apps/agent-runner/src ./apps/agent-runner/src
 COPY apps/agent-runner/templates ./apps/agent-runner/templates
@@ -52,6 +52,6 @@ COPY --from=build /app/packages/provider/dist ./packages/provider/dist
 COPY --from=build /app/packages/core/dist ./packages/core/dist
 COPY contracts/l3/world-native/schema/bindings.json ./contracts/l3/world-native/schema/bindings.json
 WORKDIR /app/apps/agent-runner
-# The supervisor seeds and reads the agent's files here: soul, skills, memory, directions, runs, and the guest key.
+# The supervisor seeds and reads the agent's files here: soul, skills, memory, directions, runs, and the bot key.
 ENV AGENT_DATA_DIR=/data
 ENTRYPOINT ["bun", "src/main.ts"]

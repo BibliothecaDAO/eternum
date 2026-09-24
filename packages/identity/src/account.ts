@@ -23,6 +23,7 @@ const toHex = (value: bigint | string): string => `0x${BigInt(value).toString(16
 const CONTRACT_ADDRESS_PREFIX = shortString("STARKNET_CONTRACT_ADDRESS");
 const ADDRESS_BOUND = 2n ** 251n - 256n;
 const DEVICE_CHANGE = shortString("REALMS_DEVICE_CHANGE");
+const REALMS_BOT = shortString("REALMS_BOT");
 
 /**
  * A Realms account's gameplay account on a shard: deployed with salt = Realms id and constructor
@@ -35,6 +36,13 @@ export const realmsAccountAddress = (realmsId: string, accountClassHash: string,
   // Pedersen over felts returns a hex string; the declared union also admits bytes.
   return toHex(BigInt(address as string) % ADDRESS_BOUND);
 };
+
+/**
+ * The Realms id of an operator or harness bot: Poseidon over exactly two felts, `'REALMS_BOT'` and the bot's label. A
+ * player's Realms id is Poseidon over a serialized ByteArray, which is never fewer than three felts, so no bot id is
+ * computed from the same input as any player's, and the operator's approvals can never reach a player's account.
+ */
+export const botRealmsId = (label: string): string => toHex(poseidonHashMany([REALMS_BOT, BigInt(label)]));
 
 /** `device_change_hash` in contracts/l3/player-account/src/realms_account.cairo: what a guardian signs. */
 export const deviceChangeHash = (change: DeviceChange): string =>

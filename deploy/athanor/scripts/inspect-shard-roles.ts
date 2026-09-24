@@ -74,7 +74,7 @@ async function assertHostKeys(): Promise<void> {
   equal(sequencingKey, host.sequencingPublicKey, "sequencing key");
   const operator = identity.operatorAccountAddress;
   equal(await provider.getClassHashAt(operator, "latest"), manifest.shard.accountClassHash, "operator class");
-  equal(await storage(operator, "guardian_public_key"), host.deployer.publicKey, "operator guardian");
+  equal(await storage(operator, "guardian_public_key"), manifest.shard.guardianPublicKey, "operator guardian");
   const [device] = await provider.callContract(
     {
       contractAddress: operator,

@@ -6,7 +6,7 @@ export function createMadaraAccount(provider: RpcProvider, address: string, sign
   return new Account({ provider, address, signer, deployer: legacyDeployer });
 }
 
-/** The shard operator's Realms account: its key is both its guardian and its one device. */
+/** The shard operator's Realms account, signed by its one device: the deployer key, under the shard's guardian. */
 export function createOperatorAccount(provider: RpcProvider, address: string, privateKey: string): Account {
   return new Account({
     provider,

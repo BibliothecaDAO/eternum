@@ -12,10 +12,6 @@ import { createMicrotaskGameSyncScheduler, type GameSyncTransaction } from "@bib
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
-export interface HarnessGameplayContracts {
-  playerAccountClassHash: string;
-}
-
 interface ConnectHarnessGameClientOptions {
   actor: string;
   gameId: number;

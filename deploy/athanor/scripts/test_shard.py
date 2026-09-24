@@ -40,6 +40,7 @@ class ShardTest(unittest.TestCase):
             ("port_base", 5050), ("cpuset", "0-23"), ("node_memory_mib", 65536), ("player_capacity", 0),
             ("madara_image", NODE_IMAGE), ("gateway_image", "gateway:latest"), ("shard", "../live"),
             ("trusted_proxy", "cloudflared"), ("presets", []), ("presets", ["2"]),
+            ("guardian_url", "https://identity.test/api"),
             ("node_flags", ["--base-path=/live"]),
             ("node_flags", [*config["node_flags"], "--db-fsync=false"]),
             ("node_flags", ["--enable-native-execution=true"]),
@@ -169,6 +170,7 @@ class ShardTest(unittest.TestCase):
             self.assertEqual(values["DEPLOYER_ACCOUNT_ADDRESS"], "0x789")
             self.assertEqual(values["DEPLOYER_PRIVATE_KEY"], "0xabc")
             self.assertEqual(values["RPC_URL"], "http://127.0.0.1:28050/rpc/v0_10_2")
+            self.assertEqual(values["IDENTITY_URL"], "https://identity.test/api")
             self.assertEqual(values["GAMEPLAY_CONTRACTS_PATH"], str(directory / "gameplay-contracts.json"))
             self.assertEqual(values["MADARA_METRICS_FILE"], str(directory / "metrics" / "metrics.jsonl"))
             self.assertEqual(values["MADARA_IMAGE"], NODE_IMAGE)

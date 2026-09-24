@@ -1,6 +1,6 @@
 import { utils as starknetKeyUtils } from "@scure/starknet";
 import { signGameplayIntent } from "@bibliothecadao/provider";
-import { deviceChangeHash, realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
+import { botRealmsId, realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
 import { Account, BlockTag, ec, hash, num, Signer, type ProviderInterface } from "starknet";
 
 /**
@@ -36,11 +36,53 @@ export interface RealmsAccountShard {
   guardianPublicKey: string;
 }
 
-/** A guardian held by a tool (harness, operator, agent runner) rather than by our guardian Worker. */
-export const keyGuardian =
-  (privateKey: string): GuardianApproval =>
-  async (change) =>
-    starkSignature(deviceChangeHash(change), privateKey);
+/** The identity Worker of the shard's environment, reached with that environment's operator token. */
+export interface OperatorIdentity {
+  /** The identity API's base, e.g. https://staging.realms.party/api. */
+  url: string;
+  operatorToken: string;
+}
+
+/**
+ * A bot (the shard's operator, a harness player) enrols through the environment's guardian like any player: the
+ * identity Worker's operator route approves its device changes, and only on the account the bot's label places.
+ */
+export const approveBotDevice =
+  (identity: OperatorIdentity, label: string): GuardianApproval =>
+  async (change) => {
+    const response = await fetch(`${identity.url}/devices/bots`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${identity.operatorToken}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        label,
+        chainId: change.chainId,
+        account: change.account,
+        action: change.action,
+        deviceKey: change.deviceKey,
+        counter: change.counter,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`Bot device approval for ${change.account} refused: ${response.status} ${await response.text()}`);
+    }
+    return ((await response.json()) as { signature: string[] }).signature;
+  };
+
+/** A bot's gameplay account on one shard, named by its label and joined with the guardian's approval. */
+export const joinBotAccount = (input: {
+  provider: ProviderInterface;
+  shard: RealmsAccountShard;
+  label: string;
+  device: DeviceKey;
+  identity: OperatorIdentity;
+}): Promise<Account> =>
+  joinRealmsAccount({
+    provider: input.provider,
+    shard: input.shard,
+    realmsId: botRealmsId(input.label),
+    device: input.device,
+    approve: approveBotDevice(input.identity, input.label),
+  });
 
 export const deviceKeyOf = (privateKey: string): DeviceKey => ({
   privateKey,
@@ -323,11 +365,6 @@ async function isAccountDeployed(provider: ProviderInterface, address: string, c
     if (rpcErrorCode(error) === CONTRACT_NOT_FOUND) return false;
     throw error;
   }
-}
-
-function starkSignature(digest: string, privateKey: string): string[] {
-  const { r, s } = ec.starkCurve.sign(num.toHex(digest), privateKey);
-  return [num.toHex(r), num.toHex(s)];
 }
 
 function parseStoredDeviceKey(serialized: string): string {

@@ -1,7 +1,7 @@
 import { assertPublicRpcBoundary } from "./public-rpc-check";
 import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
 import { Account, BlockTag, ec, RpcProvider } from "starknet";
-import { DeviceSigner, deviceKeyOf, keyGuardian } from "../../../packages/core/src/account/realms-account";
+import { approveBotDevice, DeviceSigner, deviceKeyOf } from "../../../packages/core/src/account/realms-account";
 const [directory, url] = process.argv.slice(2);
 if (!directory || !url) throw new Error("Usage: bun account-rpc-smoke.ts RUN_DIRECTORY PUBLIC_RPC_URL");
 const env = Object.fromEntries(
@@ -14,13 +14,17 @@ const env = Object.fromEntries(
     }),
 );
 const manifest = JSON.parse(readFileSync(`${directory}/native-world.json`, "utf8"));
-const operator = JSON.parse(readFileSync(`${directory}/gameplay-contracts.json`, "utf8")).operatorAccountAddress;
+const { operatorAccountAddress: operator, operatorLabel } = JSON.parse(
+  readFileSync(`${directory}/gameplay-contracts.json`, "utf8"),
+);
 console.log(JSON.stringify(await assertPublicRpcBoundary(url, { ...manifest.shard, operator })));
 const provider = new RpcProvider({ nodeUrl: url, blockIdentifier: BlockTag.PRE_CONFIRMED });
 const device = deviceKeyOf(`0x${Buffer.from(ec.starkCurve.utils.randomPrivateKey()).toString("hex")}`);
 const smoke = mkdtempSync(`${directory}/rpc-smoke-`);
 writeFileSync(`${smoke}/device.json`, JSON.stringify(device), { mode: 0o600, flag: "wx" });
-const approve = keyGuardian(env.DEPLOYER_PRIVATE_KEY);
+const operatorToken = process.env.OPERATOR_TOKEN;
+if (!operatorToken) throw new Error("OPERATOR_TOKEN is required: the operator's device changes pass the shard's guardian");
+const approve = approveBotDevice({ url: env.IDENTITY_URL, operatorToken }, operatorLabel);
 async function approval(action: "ADD" | "REVOKE") {
   const [counter] = await provider.callContract(
     { contractAddress: operator, entrypoint: "device_change_counter", calldata: [] },

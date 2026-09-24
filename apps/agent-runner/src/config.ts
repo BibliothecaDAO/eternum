@@ -12,7 +12,7 @@ export type RunnerGameSelector = { id: number } | { name: string };
 
 export type RunnerSigner =
   | { mode: "none" }
-  | { mode: "guest" }
+  | { mode: "bot"; identityUrl: string; operatorToken: string }
   | { mode: "key"; gameplayPrivateKey: string; gameplayAccountAddress: string };
 
 export interface RunnerConfig {
@@ -46,7 +46,7 @@ const FLAGS = {
   "game-id": { type: "string" },
   "game-name": { type: "string" },
   signer: { type: "string" },
-  "binding-authority-private-key": { type: "string" },
+  "identity-url": { type: "string" },
   "gameplay-private-key": { type: "string" },
   "gameplay-account-address": { type: "string" },
   "data-dir": { type: "string" },
@@ -87,6 +87,12 @@ const requireValue = (args: RunnerArgs, env: Env, source: { flag: string; envVar
   throw new RunnerConfigError(`Missing --${source.flag} (or ${source.envVars.join(" / ")} in the environment)`);
 };
 
+const requireEnvironment = (env: Env, name: string): string => {
+  const value = env[name]?.trim();
+  if (value) return value;
+  throw new RunnerConfigError(`Missing ${name} in the environment`);
+};
+
 const resolveGameSelector = (args: RunnerArgs): RunnerGameSelector => {
   const id = stringArg(args, "game-id");
   const name = stringArg(args, "game-name");
@@ -100,12 +106,17 @@ const resolveGameSelector = (args: RunnerArgs): RunnerGameSelector => {
 
 const resolveSigner = (args: RunnerArgs, env: Env): RunnerSigner => {
   const mode = stringArg(args, "signer");
-  if (mode === undefined) throw new RunnerConfigError("Missing --signer (guest | key | none)");
+  if (mode === undefined) throw new RunnerConfigError("Missing --signer (bot | key | none)");
   switch (mode) {
     case "none":
       return { mode };
-    case "guest":
-      return { mode };
+    case "bot":
+      return {
+        mode,
+        identityUrl: requireValue(args, env, { flag: "identity-url", envVars: ["IDENTITY_URL"] }),
+        // Environment only: a flag would show the token in the process list.
+        operatorToken: requireEnvironment(env, "OPERATOR_TOKEN"),
+      };
     case "key":
       return {
         mode,
@@ -119,7 +130,7 @@ const resolveSigner = (args: RunnerArgs, env: Env): RunnerSigner => {
         }),
       };
     default:
-      throw new RunnerConfigError(`--signer must be guest, key, or none; received ${mode}`);
+      throw new RunnerConfigError(`--signer must be bot, key, or none; received ${mode}`);
   }
 };
 

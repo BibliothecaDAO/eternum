@@ -91,6 +91,8 @@ def validate_shard_identity(config):
         url = urlparse(config[key])
         if url.scheme not in ("http", "https") or not url.netloc or url.username or url.password:
             raise ValueError(f"{key} must be an explicit HTTP endpoint without credentials")
+    if not urlparse(config["guardian_url"]).path.endswith("/guardian"):
+        raise ValueError("guardian_url must be an identity API's /guardian route")
     if not isinstance(config["player_capacity"], int) or not 1 <= config["player_capacity"] <= 1024:
         raise ValueError("player_capacity must be the shard's player count, 1 to 1024")
     if "trusted_proxy" in config:
@@ -115,6 +117,11 @@ def write_private_environment(path, values):
         raise ValueError("environment values must occupy one line")
     with open(path, "w", opener=lambda name, flags: os.open(name, flags, 0o600)) as stream:
         stream.write("".join(f"{key}={value}\n" for key, value in values.items()))
+
+
+def identity_url(config):
+    """The identity API whose guardian the shard names; the operator enrols its bots through it."""
+    return config["guardian_url"].removesuffix("/guardian")
 
 
 def admission_url(config):
@@ -254,6 +261,7 @@ def deployment_environment(config, directory):
     return {
         **os.environ, **credentials, "RPC_URL": f"http://127.0.0.1:{base}/rpc/v0_10_2",
         "ADMISSION_URL": admission_url(config),
+        "IDENTITY_URL": identity_url(config),
         "HERALD_URL": f"http://127.0.0.1:{base + 1}",
         "HERALD_PUBLIC_RPC_URL": config["public_rpc_url"],
         "HERALD_PUBLIC_ADMISSION_URL": config["public_admission_url"],
@@ -325,7 +333,7 @@ def write_gateway_environment(config, directory, environment, authority, world):
 
 def save_harness_environment(directory, environment):
     keys = (
-        "DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY", "RPC_URL", "ADMISSION_URL", "HERALD_URL",
+        "DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY", "RPC_URL", "ADMISSION_URL", "HERALD_URL", "IDENTITY_URL",
         "RANDOMNESS_PRIVATE_KEY",
         "SHARD_HOST_ACCOUNTS",
         "NATIVE_AUTHORITY_FILE", "NATIVE_WORLD_MANIFEST", "GAMEPLAY_CONTRACTS_PATH",

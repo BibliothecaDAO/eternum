@@ -20,8 +20,10 @@ Three signer modes, from the repository root:
 # Spectate: no key, act refuses to submit.
 pnpm --filter @bibliothecadao/agent-runner start -- --game-id 5 --signer none
 
-# Guest: a Realms account that guards itself, minted on first run and kept in <data dir>/guest-key.json.
-pnpm --filter @bibliothecadao/agent-runner start -- --game-name blitz-daily-0003 --signer guest
+# Bot: a Realms account under the shard's guardian, its key minted on first run and kept in <data dir>/bot-key.json,
+# its device approved through the identity Worker's operator route (the environment's identity API and operator token).
+IDENTITY_URL=https://staging.realms.party/api OPERATOR_TOKEN=... \
+  pnpm --filter @bibliothecadao/agent-runner start -- --game-name blitz-daily-0003 --signer bot
 
 # Key: an existing gameplay account.
 GAMEPLAY_PRIVATE_KEY=... GAMEPLAY_ACCOUNT_ADDRESS=... pnpm --filter @bibliothecadao/agent-runner start -- --game-id 5 --signer key
@@ -73,16 +75,17 @@ docker run --rm -v "$PWD/.agent-data/image-smoke:/data" \
 
 ## M2 gate: one full Blitz
 
-`scripts/play-blitz.sh` is the gate run: it plays the newest open Blitz game (or `--game-name`) in guest mode with a
+`scripts/play-blitz.sh` is the gate run: it plays the newest open Blitz game (or `--game-name`) in bot mode with a
 chosen `--model-profile` until the game ends, then prints the manifest path and its cost line. The gate is "one full
 Blitz under a measured cost envelope"; the envelope is whatever that manifest records, and no figure is written down
 until a run has produced one.
 
 ```sh
-OPENROUTER_API_KEY=... SHARD_URL=... apps/agent-runner/scripts/play-blitz.sh --model-profile balanced
+OPENROUTER_API_KEY=... SHARD_URL=... IDENTITY_URL=... OPERATOR_TOKEN=... \
+  apps/agent-runner/scripts/play-blitz.sh --model-profile balanced
 ```
 
-It has not been run yet: the OpenRouter key and the binding authority key live on the lab box.
+It has not been run yet: the OpenRouter key and the operator token live on the lab box.
 
 ## Tests
 

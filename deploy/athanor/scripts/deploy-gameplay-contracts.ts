@@ -2,8 +2,8 @@
 import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type Account, addAddressPadding, ec, RpcProvider } from "starknet";
-import { deviceKeyOf, joinRealmsAccount, keyGuardian } from "@bibliothecadao/eternum";
+import { type Account, addAddressPadding, RpcProvider } from "starknet";
+import { deviceKeyOf, joinBotAccount, type RealmsAccountShard } from "@bibliothecadao/eternum";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import type { ShardRecord } from "../../../apps/herald/src/shard-manifest";
@@ -32,6 +32,8 @@ const PLAYER_ACCOUNT_ARTIFACT = "realms_player_account_RealmsAccount.contract_cl
 
 interface GameplayDeploymentResult {
   operatorAccountAddress: string;
+  /** The bot label that names the operator's Realms account; its device changes are approved under it. */
+  operatorLabel: string;
   playerAccountClassHash: string;
   rpcUrl: string;
 }
@@ -64,9 +66,14 @@ async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
   await assertProviderChain(provider, manifest, "RPC_URL");
   const account = createMadaraAccount(provider, DEPLOYER_ADDRESS, DEPLOYER_PRIVATE_KEY);
   const playerAccountClassHash = await declareAccountClass(account, manifest.shard.accountClassHash);
-  const operatorAccountAddress = await prepareOperator(provider, playerAccountClassHash);
+  const operatorAccountAddress = await prepareOperator(provider, {
+    chainId: await provider.getChainId(),
+    accountClassHash: playerAccountClassHash,
+    guardianPublicKey: manifest.shard.guardianPublicKey,
+  });
   const result = {
     operatorAccountAddress,
+    operatorLabel: DEPLOYER_ADDRESS,
     playerAccountClassHash,
     rpcUrl: RPC_URL,
   } satisfies GameplayDeploymentResult;
@@ -74,18 +81,17 @@ async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
   return result;
 }
 
-/** The operator's Realms account, named by its deployer address; its one key is its own guardian and device. */
-async function prepareOperator(provider: RpcProvider, classHash: string): Promise<string> {
-  const operator = await joinRealmsAccount({
+/**
+ * The operator is a bot named by its deployer address: a Realms account under the shard's guardian, its one device the
+ * deployer key, approved through the identity Worker's operator route like every bot.
+ */
+async function prepareOperator(provider: RpcProvider, shard: RealmsAccountShard): Promise<string> {
+  const operator = await joinBotAccount({
     provider,
-    shard: {
-      chainId: await provider.getChainId(),
-      accountClassHash: classHash,
-      guardianPublicKey: ec.starkCurve.getStarkKey(DEPLOYER_PRIVATE_KEY),
-    },
-    realmsId: DEPLOYER_ADDRESS,
+    shard,
+    label: DEPLOYER_ADDRESS,
     device: deviceKeyOf(DEPLOYER_PRIVATE_KEY),
-    approve: keyGuardian(DEPLOYER_PRIVATE_KEY),
+    identity: { url: requiredEnvironment("IDENTITY_URL"), operatorToken: requiredEnvironment("OPERATOR_TOKEN") },
   });
   return addAddressPadding(operator.address);
 }

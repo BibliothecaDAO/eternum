@@ -1,5 +1,5 @@
 import { Data, Effect, Schema } from "effect";
-import { realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
+import { botRealmsId, realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
 import type { Guardian } from "@realms-world/guardian";
 
 import { hasVerifiedSignIn, type IdentityAuth } from "./auth";
@@ -73,6 +73,47 @@ const approveDeviceChange = (request: Request, { auth, db, guardian, accountClas
     if (change.action === "REVOKE") yield* removeDevice(db, realmsId, change.deviceKey);
     return { ...change, signature: [signature.r, signature.s] };
   });
+
+const BotDeviceRequest = Schema.Struct({
+  label: Felt,
+  chainId: Felt,
+  account: Felt,
+  action: Schema.Literals(["ADD", "REVOKE"]),
+  deviceKey: Felt,
+  counter: Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER }))),
+});
+
+/**
+ * POST /api/devices/bots (operator token): the guardian's approval for a device change on an operator or harness bot's
+ * account, so bots enrol through the same guardian as players. The account must be the one the bot's label places on
+ * every shard, and a bot's Realms id is domain-separated from every player's, so the token never approves a device on a
+ * player's account. Bots are never recorded as Realms accounts: they have no name and receive no alerts.
+ */
+export const handleBotDeviceApproval = (
+  request: Request,
+  { guardian, accountClassHash }: Pick<DeviceChangeDependencies, "guardian" | "accountClassHash">,
+): Promise<Response> =>
+  Effect.runPromise(
+    Effect.gen(function* () {
+      const { label, ...requested } = yield* Effect.tryPromise({
+        try: () => request.json(),
+        catch: () => undefined,
+      }).pipe(
+        Effect.flatMap(Schema.decodeUnknownEffect(BotDeviceRequest)),
+        Effect.mapError(() => new DeviceRequestError({ code: "invalid_device_change", status: 400 })),
+      );
+      const guardianPublicKey = yield* Effect.promise(() => guardian.publicKey());
+      const botAccount = realmsAccountAddress(botRealmsId(label), accountClassHash, guardianPublicKey);
+      if (BigInt(requested.account) !== BigInt(botAccount)) {
+        return yield* new DeviceRequestError({ code: "not_a_bot_account", status: 403 });
+      }
+      const change: DeviceChange = requested;
+      const signature = yield* Effect.promise(() => guardian.signDeviceChange(change));
+      return json({ ...change, signature: [signature.r, signature.s] });
+    }).pipe(
+      Effect.catchTag("DeviceRequestError", (error) => Effect.succeed(json({ error: error.code }, error.status))),
+    ),
+  );
 
 const readDeviceChange = (request: Request) =>
   Effect.tryPromise({ try: () => request.json(), catch: () => undefined }).pipe(

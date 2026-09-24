@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# Play one Blitz game end to end as a guest agent: the M2 gate, "one full Blitz under a measured cost envelope".
+# Play one Blitz game end to end as a bot agent: the M2 gate, "one full Blitz under a measured cost envelope".
 #
-# Runs the runner in guest mode against a named Blitz game, or the newest one still open (Registration or Live and
+# Runs the runner in bot mode against a named Blitz game, or the newest one still open (Registration or Live and
 # not past its end), with a chosen model profile, until the game ends. Then prints the manifest path and its cost
 # line. No cost figure is asserted here: the number is whatever the manifest of a real run records.
 #
-# Environment: OPENROUTER_API_KEY and SHARD_URL, the shard's Herald.
+# Environment: OPENROUTER_API_KEY; SHARD_URL, the shard's Herald; IDENTITY_URL and OPERATOR_TOKEN, the identity API and
+# operator token of the environment whose guardian the shard names.
 #
 # Usage, from anywhere:
-#   OPENROUTER_API_KEY=... SHARD_URL=... \
+#   OPENROUTER_API_KEY=... SHARD_URL=... IDENTITY_URL=... OPERATOR_TOKEN=... \
 #     apps/agent-runner/scripts/play-blitz.sh [--game-name <name>] [--model-profile cheap|balanced|strong] [--data-dir <dir>]
 set -euo pipefail
 
@@ -77,7 +78,7 @@ PY
 
 # The same command the image's ENTRYPOINT runs; the runner exits 0 when the game ends and 1 when its sync fails.
 play_game() {
-  (cd "$RUNNER_DIR" && bun src/main.ts --game-id "$1" --signer guest --model-profile "$MODEL_PROFILE" --data-dir "$2")
+  (cd "$RUNNER_DIR" && bun src/main.ts --game-id "$1" --signer bot --model-profile "$MODEL_PROFILE" --data-dir "$2")
 }
 
 report() {

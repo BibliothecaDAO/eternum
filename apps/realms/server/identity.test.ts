@@ -1,8 +1,8 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { buildSiwsMessage } from "@realms-world/identity";
-import { deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
+import { botRealmsId, deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
 import { createGuardian } from "@realms-world/guardian";
-import { ec, typedData, type TypedData } from "starknet";
+import { byteArray, CallData, ec, hash, typedData, type TypedData } from "starknet";
 import { getPlatformProxy } from "wrangler";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -394,6 +394,48 @@ describe("identity Worker", () => {
     expect((await kept.request("/api/devices", { body: freshKey })).status).toBe(200);
   });
 
+  it("approves a bot's device change only for the operator and only on the account the bot's label places", async () => {
+    const guardianPublicKey = ec.starkCurve.getStarkKey(GUARDIAN_KEY);
+    const botAccount = realmsAccountAddress(botRealmsId("0xb07"), ACCOUNT_CLASS_HASH, guardianPublicKey);
+    const change = {
+      chainId: CHAIN_ID,
+      account: botAccount,
+      action: "ADD" as const,
+      deviceKey: "0xb0d1ce",
+      counter: 1,
+    };
+    const request = { label: "0xb07", ...change };
+    const operator = createBrowser();
+    const ask = (body: unknown, token?: string) =>
+      operator.request("/api/devices/bots", token === undefined ? { body } : { body, token });
+
+    expect((await ask(request)).status).toBe(401);
+    expect((await ask(request, "not-the-operator-token")).status).toBe(401);
+
+    for (const signed of [change, { ...change, action: "REVOKE" as const, counter: 2 }]) {
+      const approval = (await (await ask({ label: "0xb07", ...signed }, OPERATOR_TOKEN)).json()) as {
+        signature: [string, string];
+      };
+      const [r, s] = approval.signature;
+      expect(
+        ec.starkCurve.verify(
+          new ec.starkCurve.Signature(BigInt(r), BigInt(s)),
+          deviceChangeHash(signed),
+          ec.starkCurve.getPublicKey(GUARDIAN_KEY),
+        ),
+      ).toBe(true);
+    }
+
+    // A signed-in player's account, asked for under any label, is not a bot's.
+    const player = createBrowser();
+    await signInWithCode(player, "not-a-bot@realms.test");
+    const playerAccount = deviceChangeFor((await player.session())!.user.realmsId).account;
+    const refused = await ask({ ...request, account: playerAccount }, OPERATOR_TOKEN);
+    expect(refused.status).toBe(403);
+    expect(await refused.json()).toEqual({ error: "not_a_bot_account" });
+    expect((await ask({ ...request, action: "REVOKE", account: playerAccount }, OPERATOR_TOKEN)).status).toBe(403);
+  });
+
   it("names an account only through our guardian's approval, never through the Realms id it claims", async () => {
     const browser = createBrowser();
     await signInWithCode(browser, "galen@realms.test");
@@ -657,6 +699,21 @@ describe("identity Worker", () => {
     }
     expect((await stranger.request("/api/auth/passkey/generate-authenticate-options")).status).toBe(404);
     expect(await stranger.session()).toBeNull();
+  });
+});
+
+// The proof that no bot shares a player's Realms id is domain separation, not a search: a player's id is Poseidon over a
+// serialized ByteArray, which is never fewer than three felts ([data_len, ...data, pending_word, pending_word_len]),
+// and a bot's is Poseidon over exactly two, ['REALMS_BOT', label]. Distinct inputs, so a shared id would be a Poseidon
+// collision. This test pins both input shapes so a change to either derivation breaks it.
+describe("bot and player Realms ids", () => {
+  it("are derived from inputs of different lengths, so they never coincide", () => {
+    for (const userId of ["", "a", crypto.randomUUID().replaceAll("-", ""), "x".repeat(31), "x".repeat(62)]) {
+      expect(CallData.compile(byteArray.byteArrayFromString(userId)).length).toBeGreaterThanOrEqual(3);
+    }
+    const tag = `0x${Buffer.from("REALMS_BOT").toString("hex")}`;
+    expect(botRealmsId("0xb07")).toBe(`0x${BigInt(hash.computePoseidonHashOnElements([tag, "0xb07"])).toString(16)}`);
+    expect(botRealmsId("0xb07")).not.toBe(realmsIdOf("0xb07"));
   });
 });
 

@@ -64,13 +64,17 @@ describe("runner config", () => {
   });
 
   it("rejects an unknown signer mode or a game selected twice", () => {
-    expect(() => resolve(["--game-id", "1", "--signer", "wallet"])).toThrow("--signer must be guest, key, or none");
+    expect(() => resolve(["--game-id", "1", "--signer", "wallet"])).toThrow("--signer must be bot, key, or none");
     expect(() => resolve(["--game-id", "1", "--game-name", "x", "--signer", "none"])).toThrow("not both");
     expect(() => resolve(["--game-id", "zero", "--signer", "none"])).toThrow("--game-id must be a positive integer");
   });
 
-  it("carries the guest and key credentials it was given", () => {
-    const guest = resolve(["--game-id", "1", "--signer", "guest"], FULL_ENV);
+  it("carries the bot and key credentials it was given", () => {
+    const bot = resolve(["--game-id", "1", "--signer", "bot"], {
+      ...FULL_ENV,
+      IDENTITY_URL: "https://identity.example/api",
+      OPERATOR_TOKEN: "operator",
+    });
     const key = resolve([
       "--game-id",
       "1",
@@ -82,7 +86,10 @@ describe("runner config", () => {
       "0xc",
     ]);
 
-    expect(guest.signer).toEqual({ mode: "guest" });
+    expect(bot.signer).toEqual({ mode: "bot", identityUrl: "https://identity.example/api", operatorToken: "operator" });
+    expect(() =>
+      resolve(["--game-id", "1", "--signer", "bot", "--identity-url", "https://identity.example/api"]),
+    ).toThrow("Missing OPERATOR_TOKEN");
     expect(key.signer).toEqual({ mode: "key", gameplayPrivateKey: "0xb", gameplayAccountAddress: "0xc" });
   });
 });

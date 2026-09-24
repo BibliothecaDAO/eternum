@@ -2,7 +2,7 @@ import { presentsOperatorToken } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
 import { routeChat } from "./chat/routes";
-import { handleDeviceChange } from "./devices";
+import { handleBotDeviceApproval, handleDeviceChange } from "./devices";
 import { handleAdmitShard, handleDirectory, handleDirectoryHistory, handleShardStatus } from "./directory";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
@@ -35,6 +35,10 @@ export const routeIdentityRequest = async (
       guardian: env.GUARDIAN,
       accountClassHash: env.ACCOUNT_CLASS_HASH,
     });
+  }
+  if (pathname === "/api/devices/bots" && request.method === "POST") {
+    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
+    return handleBotDeviceApproval(request, { guardian: env.GUARDIAN, accountClassHash: env.ACCOUNT_CLASS_HASH });
   }
   if (pathname === "/api/profiles" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "profiles", request))) return json({ error: "too_many_requests" }, 429);
