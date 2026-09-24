@@ -1,43 +1,49 @@
 name: Deploy Client
 
-# Ships the game client to play.realms.party as a Cloudflare Pages project
-# (project name in vars.CLOUDFLARE_PAGES_PROJECT; the custom domain is attached
-# in the Pages dashboard once). Every push to next that touches the client's inputs
-# deploys, like the box services; manual dispatch remains for a redeploy or a version label.
-# The build reads .env.production plus the identity RPC secret and stamps the version from the ref.
+# Ships the game client as a Cloudflare Pages project per GitHub environment, by dispatch only: production is the
+# live client, and it moves to the native client only as the cutover's switch step, never on a push to next. Each
+# environment names its Pages project (vars.CLOUDFLARE_PAGES_PROJECT), the origin the client is served from
+# (vars.CLIENT_ORIGIN, whose /api belongs to that environment's identity Worker) and its zone (vars.CLIENT_ZONE), and
+# holds its identity RPC secret; the custom domain is attached in the Pages dashboard once. The build reads
+# .env.production plus the identity RPC secret and stamps the version from the ref.
 on:
-  push:
-    branches: [next]
-    paths:
-      - "apps/game/**"
-      - "packages/**"
-      - "config/**"
-      - "pnpm-lock.yaml"
-      - ".github/workflows/deploy-client.yml"
   workflow_dispatch:
     inputs:
       version:
         description: "Version label shown in-app (defaults to the short SHA)"
         required: false
+      environment:
+        description: "GitHub environment to deploy"
+        type: choice
+        options: [staging, production]
+        required: true
 
 permissions:
   contents: read
 
 concurrency:
-  group: deploy-client
+  group: deploy-client-${{ inputs.environment }}
   cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    environment: ${{ inputs.environment }}
     env:
       VITE_PUBLIC_IDENTITY_RPC_URL: ${{ secrets.CLIENT_IDENTITY_RPC_URL }}
+      CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
+      CLIENT_ZONE: ${{ vars.CLIENT_ZONE }}
+      PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
     steps:
-      - name: Validate identity RPC configuration
+      - name: Validate the environment's configuration
         run: |
-          if [ -z "$VITE_PUBLIC_IDENTITY_RPC_URL" ]; then
-            echo "::error::CLIENT_IDENTITY_RPC_URL is required"
+          missing=()
+          for name in VITE_PUBLIC_IDENTITY_RPC_URL CLIENT_ORIGIN CLIENT_ZONE PAGES_PROJECT; do
+            [ -n "${!name}" ] || missing+=("$name")
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::this environment has no ${missing[*]} (CLIENT_IDENTITY_RPC_URL secret; CLIENT_ORIGIN, CLIENT_ZONE, CLOUDFLARE_PAGES_PROJECT vars)"
             exit 1
           fi
 
@@ -92,7 +98,7 @@ jobs:
       - name: Enforce origin cache headers for PWA resources
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: node apps/game/scripts/ensure-pwa-cache-rule.mjs https://play.realms.party realms.party
+        run: node apps/game/scripts/ensure-pwa-cache-rule.mjs "$CLIENT_ORIGIN" "$CLIENT_ZONE"
 
       # wrangler-action@v3 auto-installs wrangler with `pnpm add`, which pnpm refuses at a workspace root
       # (ERR_PNPM_ADDING_TO_ROOT). Run wrangler with `pnpm dlx` instead — isolated, no workspace mutation.
@@ -102,12 +108,12 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           pnpm dlx wrangler@3 pages deploy apps/game/dist \
-            --project-name="${{ vars.CLOUDFLARE_PAGES_PROJECT }}" \
+            --project-name="$PAGES_PROJECT" \
             --branch=main --commit-hash="${{ github.sha }}"
 
       - name: Verify published client modules and routes
         run:
-          node apps/game/scripts/verify-client-deployment.mjs apps/game/dist https://play.realms.party
+          node apps/game/scripts/verify-client-deployment.mjs apps/game/dist "$CLIENT_ORIGIN"
           client-deployment-check.json
 
       - name: Upload deployment verification
