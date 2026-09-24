@@ -20,11 +20,12 @@ use std::{
 };
 use tokio::sync::{mpsc, watch};
 
-/// Player tickets per batch. One transaction may execute 1.1e9 Sierra gas (versioned constants
-/// 0.14.2); the costliest player action in single-ticket receipts, an explore, took 171.5M L2 gas
-/// with the batch wrapper, so six fit where sixteen reverted out of gas in the 96-player run.
-/// world-native's tests/packer_bound.cairo holds the same number and fails if that many of the
-/// costliest explores outgrow the cap; change both together.
+/// Player tickets per batch, against the 1.2e9 L2 gas each sequencing transaction is signed for.
+/// Measured on A4: one transaction's wrapper (validation and `__execute__`) is 0.47M; the costliest
+/// single-ticket receipt, an explore that discovers a mine, adds 6.8M of calldata and events; and
+/// six camp-discovering explores execute in 612M Sierra gas (world-native tests/packer_bound.cairo).
+/// A worst-case batch of six is about 654M, a 45% margin. The Cairo test holds the same number;
+/// change both together, and measure again before raising it.
 const MAX_BATCH: usize = 6;
 const PACK_DELAY: Duration = Duration::from_millis(10);
 const EPOCH_TICKETS: u64 = 100_000;
