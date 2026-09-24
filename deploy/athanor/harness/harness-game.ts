@@ -1,6 +1,6 @@
 import { requireNativeExecutionOutcome } from "@bibliothecadao/provider";
 import { setTimeout as sleep } from "node:timers/promises";
-import type { HeraldConfirmations } from "./game-client";
+import { actorKey, type HarnessGameClient, type HeraldConfirmations } from "./game-client";
 import {
   buildArmyPathIndexes,
   configManager,
@@ -54,9 +54,11 @@ interface SubmittedEvent {
   transactionHash: string;
 }
 
-/** The game as the harness plays it: native facts, the projection's occupancy, and per-bot action facades over one client. */
+/** The game as the harness plays it: native facts, the projection's occupancy, and per-bot action facades. */
 export interface HarnessGame {
   gameId: number;
+  /** The game as this bot's own client sees and acts on it. */
+  forActor(address: string): HarnessGame;
   waitUntilPlaying(): Promise<void>;
   /** Actions signed by this bot; every bot gets its own facade over the shared world. */
   actionsFor(signer: Account): GameActions;
@@ -94,13 +96,46 @@ export interface TileView {
 export const EXPLORER_TROOP_COUNT = 10;
 const T1_TROOP_TYPES: readonly TroopType[] = [TroopType.Knight, TroopType.Paladin, TroopType.Crossbowman];
 
-export function createHarnessGame(client: GameClient, heraldConfirmations?: HeraldConfirmations): HarnessGame {
+/**
+ * Without actor clients, the game one client sees and acts on, as one bot. With them, reads come from `client` and
+ * everything a signer does (its calls, nonce, submission and outcome) goes through that signer's own client.
+ */
+export function createHarnessGame(
+  client: GameClient,
+  heraldConfirmations?: HeraldConfirmations,
+  actorClients?: ReadonlyMap<string, HarnessGameClient>,
+): HarnessGame {
+  const game = createClientGame(client, heraldConfirmations);
+  if (!actorClients) return game;
+  const actorGames = new Map<string, HarnessGame>();
+  const forActor = (address: string): HarnessGame => {
+    const key = actorKey(address);
+    const known = actorGames.get(key);
+    if (known) return known;
+    const own = actorClients.get(key);
+    if (!own) throw new Error(`Bot ${address} has no client of its own`);
+    const actorGame = createClientGame(own.client, own.heraldConfirmations);
+    actorGames.set(key, actorGame);
+    return actorGame;
+  };
+  return {
+    ...game,
+    forActor,
+    actionsFor: (signer) => forActor(signer.address).actionsFor(signer),
+    settle: (signer, owner, name, gameType) => forActor(signer.address).settle(signer, owner, name, gameType),
+    produceWood: (signer, structureId) => forActor(signer.address).produceWood(signer, structureId),
+    submit: (signer, act) => forActor(signer.address).submit(signer, act),
+  };
+}
+
+function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfirmations): HarnessGame {
   const { store, systemCalls } = client.setup;
   const game_id = client.gameId;
   const awaitingHash = new Set<string>();
 
-  return {
+  const game: HarnessGame = {
     gameId: client.gameId,
+    forActor: () => game,
     waitUntilPlaying: () => waitUntilPlaying(client),
     actionsFor: (signer) => createGameActions(client, { signer }),
     currentTicks: () => {
@@ -177,6 +212,7 @@ export function createHarnessGame(client: GameClient, heraldConfirmations?: Hera
     submit: (signer, act) => captureSubmission(client, heraldConfirmations, awaitingHash, signer.address, act),
     waitFor: (read, timeoutMs, describe) => waitForWorldState(client, read, timeoutMs, describe),
   };
+  return game;
 }
 
 async function waitUntilPlaying({ setup: { store }, gameId: game_id }: GameClient): Promise<void> {
@@ -211,7 +247,7 @@ const captureSubmission = (
   signerAddress: string,
   act: () => Promise<unknown>,
 ): Promise<HarnessSubmission> => {
-  const signer = normalizeAddress(signerAddress);
+  const signer = actorKey(signerAddress);
   if (awaitingHash.has(signer)) throw new Error(`Signer ${signerAddress} already has a submission awaiting its hash`);
   awaitingHash.add(signer);
   const provider = client.setup.network.provider;
@@ -222,7 +258,7 @@ const captureSubmission = (
       provider.off("transactionSubmitted", onSubmitted);
     };
     const onSubmitted = (event: SubmittedEvent) => {
-      if (!event.signerAddress || normalizeAddress(event.signerAddress) !== signer) return;
+      if (!event.signerAddress || actorKey(event.signerAddress) !== signer) return;
       settle();
       if (!event.ticket) return reject(new Error("Native submission has no ticket identity"));
       const ticket = event.ticket;
@@ -246,4 +282,3 @@ const captureSubmission = (
   });
 };
 
-const normalizeAddress = (address: string): string => `0x${BigInt(address).toString(16)}`;

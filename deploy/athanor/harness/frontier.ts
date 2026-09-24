@@ -34,6 +34,7 @@ import {
   registerNativePreset,
 } from "../../../config/deployer/clean/registrar/native-preset";
 import type { HarnessAccount } from "./account-factory";
+import { actorKey, type HarnessGameClient } from "./game-client";
 import { createRpcMetrics, trackTransaction, type TrackedTransaction, type WorkloadResult } from "./driver";
 import type { HarnessGame } from "./harness-game";
 import type { HarnessProvider } from "./provider";
@@ -120,6 +121,9 @@ interface Day {
 }
 interface Player {
   identity: HarnessAccount;
+  /** The bot's own client and the game as it sees and acts on it. */
+  client: GameClient;
+  game: HarnessGame;
   realmId: number;
   profile: Profile;
   settledAt: number;
@@ -167,7 +171,9 @@ interface RunFrontierOptions {
   burst?: FrontierBurst;
   setupConcurrency: number;
   onReady?: () => Promise<void>;
+  /** Observes the season as a whole: its day length, epoch and chest history. */
   client: GameClient;
+  actorClients: ReadonlyMap<string, HarnessGameClient>;
   game: HarnessGame;
   provider: HarnessProvider;
   accounts: HarnessAccount[];
@@ -186,7 +192,7 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
   if (options.burst?.shape === "booth") return runBoothBurst(options, epochSeconds);
   const players = await settleFrontierPlayers(options, accounts);
   if (options.burst?.shape === "rollover") return runRolloverBurst(options, players, epochSeconds);
-  for (const player of players) observeDay(client, game, player);
+  for (const player of players) observeDay(player);
   await options.onReady?.();
   const startedAt = new Date().toISOString();
   const deadline = Date.now() + options.minutes * 60000;
@@ -196,9 +202,9 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
   while (Date.now() < deadline && !failed) {
     await Promise.all(
       players.map(async (player) => {
-        observeDay(client, game, player);
-        if (now() < player.nextActionAt || !inSession(client, player)) return;
-        const action = chooseAction(client, game, player);
+        observeDay(player);
+        if (now() < player.nextActionAt || !inSession(player.client, player)) return;
+        const action = chooseAction(player.client, player.game, player);
         if (!action) return;
         const result = await playAction(options, player, action);
         actions.push(result);
@@ -261,13 +267,13 @@ async function runRolloverBurst(
   players: Player[],
   epochSeconds: number,
 ): Promise<WorkloadResult> {
-  const { client, game } = options;
+  const { client } = options;
   // Workers sharing the season are all settled before any waits, so they wait for the same boundary.
   await options.onReady?.();
   const settledEpoch = currentEpoch(client);
   console.log(JSON.stringify({ frontierRolloverWaitSeconds: epochSeconds - (now() % epochSeconds) }));
   while (currentEpoch(client) === settledEpoch) await sleep(1000);
-  for (const player of players) observeDay(client, game, player);
+  for (const player of players) observeDay(player);
   const startedAt = new Date().toISOString();
   const releaseAtMs = Date.now();
   const spacingMs = (options.burst!.windowSeconds * 1000) / players.length;
@@ -287,13 +293,12 @@ async function playRollover(
   player: Player,
   scheduledAtMs: number,
 ): Promise<TrackedTransaction[]> {
-  const { client, game } = options;
-  const muster = planMuster(client, player);
+  const muster = planMuster(player.client, player);
   if (!muster) return [];
   const mustered = await playAction(options, player, muster, scheduledAtMs);
   if (mustered.outcome !== "completed") return [mustered];
-  const move = await game.waitFor(
-    () => planExpedition(client, game, player),
+  const move = await player.game.waitFor(
+    () => planExpedition(player.client, player.game, player),
     30_000,
     () => `bot ${player.identity.botId} has no move for its fresh army`,
   );
@@ -301,7 +306,7 @@ async function playRollover(
 }
 
 async function playAction(
-  { client, game, provider }: RunFrontierOptions,
+  { game, provider }: RunFrontierOptions,
   player: Player,
   action: Action,
   scheduledAtMs?: number,
@@ -314,12 +319,12 @@ async function playAction(
     stage: "workload",
     tick: currentDay(player).epoch,
     scheduledAtMs,
-    send: () => game.submit(player.identity.account, action.run),
+    send: () => player.game.submit(player.identity.account, action.run),
   });
   if (result.outcome !== "completed") return result;
   currentDay(player).actions++;
   action.after?.();
-  observeProgress(client, game, player);
+  observeProgress(player.client, player.game, player);
   return result;
 }
 
@@ -408,10 +413,13 @@ async function settleFrontierPlayers(options: RunFrontierOptions, accounts: Harn
 }
 
 async function settleFrontierPlayer(
-  { game, provider }: RunFrontierOptions,
+  { game, provider, actorClients }: RunFrontierOptions,
   identity: HarnessAccount,
   timing: { stage: "setup" | "workload"; scheduledAtMs?: number },
 ): Promise<{ transaction: TrackedTransaction; player?: Player }> {
+  const own = game.forActor(identity.address);
+  const client = actorClients.get(actorKey(identity.address))?.client;
+  if (!client) throw new Error(`Bot ${identity.botId} has no client of its own`);
   const transaction = await trackTransaction({
     botId: identity.botId,
     gameId: game.gameId,
@@ -420,15 +428,17 @@ async function settleFrontierPlayer(
     stage: timing.stage,
     scheduledAtMs: timing.scheduledAtMs,
     send: () =>
-      game.submit(identity.account, () =>
-        game.settle(identity.account, identity.owner, `Frontier${identity.botId}`, "frontier"),
+      own.submit(identity.account, () =>
+        own.settle(identity.account, identity.owner, `Frontier${identity.botId}`, "frontier"),
       ),
   });
   if (transaction.outcome !== "completed") return { transaction };
-  const realmId = game.settlementStructureIds(identity.address)?.[0];
+  const realmId = own.settlementStructureIds(identity.address)?.[0];
   if (realmId === undefined) throw new Error("Settlement did not publish the home realm");
   return { transaction, player: {
     identity,
+    client,
+    game: own,
     realmId,
     profile: identity.botId % 2 === 0 ? "check-in" : "daily",
     settledAt: now(),
@@ -457,7 +467,8 @@ function currentEpoch(client: GameClient): number {
   const epochSeconds = epochSecondsOf(client);
   return Math.floor(now() / epochSeconds) - Math.floor(Number(registry.start_main_at) / epochSeconds);
 }
-function observeDay(client: GameClient, game: HarnessGame, player: Player) {
+function observeDay(player: Player) {
+  const { client, game } = player;
   const epoch = currentEpoch(client);
   if (currentDay(player)?.epoch === epoch) return;
   const previous = currentDay(player);

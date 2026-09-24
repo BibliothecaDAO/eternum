@@ -18,7 +18,7 @@ import { launchGame } from "../../../config/deployer/clean/launch/runner";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { createHarnessAccounts, type HarnessAccount } from "./account-factory";
-import { connectHarnessGameClient } from "./game-client";
+import { connectActorClients, connectHarnessGameClient } from "./game-client";
 import { createHarnessGame } from "./harness-game";
 import { HarnessProvider, measureHarnessRequests } from "./provider";
 import { prepareHarnessBots, runWorkload, type HarnessGameType, type TrackedTransaction } from "./driver";
@@ -175,19 +175,27 @@ async function main(): Promise<void> {
     ),
   }));
   const signingKeys = new Map(accounts.map(({ address, privateKey }) => [BigInt(address), privateKey]));
-  const { client, heraldConfirmations } = await connectHarnessGameClient({
-    actor: accounts[0].address,
-    shard,
-    signIntent: async (actor, digest) => {
-      const key = signingKeys.get(BigInt(actor.address));
-      if (!key) throw new Error(`No harness signing key for ${actor.address}`);
-      return signGameplayIntent(digest, key);
-    },
-    gameId: game.gameId,
-  });
+  const connect = (actor: string) =>
+    connectHarnessGameClient({
+      actor,
+      shard,
+      signIntent: async (signer, digest) => {
+        const key = signingKeys.get(BigInt(signer.address));
+        if (!key) throw new Error(`No harness signing key for ${signer.address}`);
+        return signGameplayIntent(digest, key);
+      },
+      gameId: game.gameId,
+    });
+  // The shared client launches and observes the game; every bot acts through its own client, as a player does.
+  const { client, heraldConfirmations } = await connect(accounts[0].address);
+  const actorClients = await connectActorClients(
+    accounts.map(({ address }) => address),
+    options.setupConcurrency,
+    connect,
+  );
 
   try {
-    const harnessGame = createHarnessGame(client, heraldConfirmations);
+    const harnessGame = createHarnessGame(client, heraldConfirmations, actorClients);
     const setupTransactions: TrackedTransaction[] = [];
     const bots =
       options.gameType === "frontier"
@@ -211,6 +219,7 @@ async function main(): Promise<void> {
             burst: options.frontierBurst,
             setupConcurrency: options.setupConcurrency,
             client,
+            actorClients,
             game: harnessGame,
             provider,
             accounts,
@@ -293,6 +302,7 @@ async function main(): Promise<void> {
     console.log(`${report.passed ? "PASS" : "FAIL"}: ${report.path}`);
     if (!report.passed) process.exitCode = 1;
   } finally {
+    for (const actor of actorClients.values()) actor.client.dispose();
     client.dispose();
     provider.dispose();
     requests?.dispose();

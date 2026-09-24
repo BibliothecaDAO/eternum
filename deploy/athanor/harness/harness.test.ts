@@ -1031,6 +1031,7 @@ function fakeWorld(extraExplorer?: [number, ExplorerRow]): FakeWorld {
 
   const game: HarnessGame = {
     gameId: 1,
+    forActor: () => game,
     actionsFor: () => actions,
     currentTicks: () => ({ armies: 1, default: 60 }),
     mapCenter: () => ({ x: 0, y: 0 }),

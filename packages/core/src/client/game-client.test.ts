@@ -6,7 +6,7 @@ import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json
 import { hash, type AccountInterface } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
+import { disposeActiveGameSyncRuntime, installFreshGameSyncRuntime } from "../sync/game-sync-runtime";
 import type { HeraldSocket } from "../sync/herald-game-sync-transport";
 import { createManualGameSyncScheduler } from "../sync/scheduler";
 import { createGameClient, type CreateGameClientInput } from "./game-client";
@@ -118,7 +118,31 @@ const actionNonce = (epoch: string, nextNonce: number) => ({
   ],
 });
 
+const bootClient = async (harness: ReturnType<typeof createHarness>) => {
+  const creation = createGameClient(harness.input);
+  await vi.waitFor(() => expect(harness.sockets).toHaveLength(1));
+  harness.sockets[0]!.receive(hello);
+  await flushMicrotasks();
+  harness.sockets[0]!.receive(rulesSnapshot);
+  harness.sockets[0]!.receive(snapshotEnd);
+  return harness.settle(creation);
+};
+
 describe("createGameClient", () => {
+  it("keeps every client in one process live: each owns its runtime", async () => {
+    const first = createHarness({ actor: "0x111" });
+    const second = createHarness({ actor: "0x222" });
+    const firstClient = await bootClient(first);
+    const secondClient = await bootClient(second);
+
+    expect(first.sockets[0]!.closed).toBe(false);
+    expect(firstClient.runtime.getStatus()).toBe("running");
+    expect(secondClient.runtime.getStatus()).toBe("running");
+    firstClient.dispose();
+    expect(second.sockets[0]!.closed).toBe(false);
+    secondClient.dispose();
+  });
+
   it("dispose() clears a pending reconnect so no timer outlives the client", async () => {
     vi.useFakeTimers();
     const harness = createHarness();
@@ -165,7 +189,8 @@ describe("createGameClient", () => {
 
   it("tearing down the active runtime fails a subscribe that never resolved and leaves no timer", async () => {
     vi.useFakeTimers();
-    const harness = createHarness();
+    // The web app's client: its runtime is the active one.
+    const harness = createHarness({ createRuntime: installFreshGameSyncRuntime });
     const creation = createGameClient(harness.input);
     await vi.waitFor(() => expect(harness.sockets).toHaveLength(1));
 
