@@ -539,8 +539,9 @@ export function playersOf(
 async function runRosterGroups(options: HarnessCliOptions, players: PreparedGame[]): Promise<void> {
   const directory = path.join(HARNESS_OUTPUT_DIRECTORY, `rosters-${Date.now()}`);
   await mkdir(directory, { recursive: true, mode: 0o700 });
-  const workers: Worker[] = [];
+  const workers: LabelledWorker[] = [];
   const reports: GameWorkerReport[] = [];
+  let outcomes: WorkerOutcome[] = [];
   const evidenceBefore = await collectHarnessEvidenceBeforeRun(options.functional);
   let failure: unknown;
   try {
@@ -551,12 +552,14 @@ async function runRosterGroups(options: HarnessCliOptions, players: PreparedGame
         return file;
       }),
     );
-    for (const [index, game] of players.entries()) workers.push(startGameWorker(options, game, paths[index]));
-    await waitForGameWorkers(workers, reports);
+    for (const [index, game] of players.entries())
+      workers.push({ label: workerLabel(game), worker: startGameWorker(options, game, paths[index]) });
+    outcomes = await waitForGameWorkers(workers, reports);
   } catch (error) {
     failure = error;
+    if (error instanceof GameWorkersFailed) outcomes = error.outcomes;
   } finally {
-    await Promise.all(workers.map((worker) => worker.terminate()));
+    await Promise.all(workers.map(({ worker }) => worker.terminate()));
   }
   let evidence: HarnessEvidence | null = null;
   try {
@@ -582,6 +585,7 @@ async function runRosterGroups(options: HarnessCliOptions, players: PreparedGame
     games: gamesPlayed(players),
     gates: { ...gates, checks: { ...gates.checks, workers: workersPassed } },
     reports: reports.map(({ workload: _workload, ...report }) => report),
+    workers: outcomes,
     evidence,
     error: failure instanceof Error ? failure.message : failure === undefined ? undefined : String(failure),
   };
@@ -612,16 +616,15 @@ async function finishRosterEvidence(
   return finishHarnessEvidence(before, startedAt, endedAt, functional);
 }
 
+/** A worker is named by the game it plays and its first bot, as its output directory is. */
+const workerLabel = (game: PreparedGame): string => `${game.game.gameId}-${game.accounts[0].botId}`;
+
 function startGameWorker(options: HarnessCliOptions, game: PreparedGame, file: string): Worker {
   return new Worker(import.meta.filename, {
     workerData: { harness: true },
     env: {
       ...process.env,
-      HARNESS_OUTPUT_DIRECTORY: path.join(
-        path.dirname(file),
-        "players",
-        `${game.game.gameId}-${game.accounts[0].botId}`,
-      ),
+      HARNESS_OUTPUT_DIRECTORY: path.join(path.dirname(file), "players", workerLabel(game)),
     },
     argv: [
       ...(options.functional ? ["--functional"] : []),
@@ -652,36 +655,84 @@ function startGameWorker(options: HarnessCliOptions, game: PreparedGame, file: s
   });
 }
 
-export async function waitForGameWorkers(workers: Worker[], reports: GameWorkerReport[]): Promise<void> {
+interface LabelledWorker {
+  label: string;
+  worker: Worker;
+}
+
+/** How one worker ended: its report, or the failure it posted, threw, or left by exiting without a report. */
+export interface WorkerOutcome {
+  worker: string;
+  outcome: "result" | "failure" | "error" | "exit";
+  passed?: boolean;
+  exitCode?: number;
+  error?: string;
+  stack?: string;
+}
+
+export class GameWorkersFailed extends Error {
+  constructor(readonly outcomes: WorkerOutcome[]) {
+    super(
+      outcomes
+        .filter(({ outcome }) => outcome !== "result")
+        .map(({ worker, error }) => `worker ${worker}: ${error}`)
+        .join("; "),
+    );
+  }
+}
+
+/**
+ * Waits for every worker to end and names how each did. The workers start together once all are ready; one that ends
+ * before that start would leave the others waiting for it, so they are stopped and named as stopped.
+ */
+export async function waitForGameWorkers(
+  workers: LabelledWorker[],
+  reports: GameWorkerReport[],
+): Promise<WorkerOutcome[]> {
   const ready = new Set<Worker>();
-  await Promise.all(
+  let started = false;
+  const outcomes = await Promise.all(
     workers.map(
-      (worker) =>
-        new Promise<void>((resolve, reject) => {
+      ({ label, worker }) =>
+        new Promise<WorkerOutcome>((resolve) => {
           let reported: GameWorkerReport | undefined;
+          let failed: WorkerOutcome | undefined;
           worker.on("message", (message) => {
             if (message.type === "failure") {
-              reject(new Error(message.error));
+              failed ??= { worker: label, outcome: "failure", error: message.error, stack: message.stack };
             } else if (message.type === "ready" && !ready.has(worker)) {
               ready.add(worker);
               if (ready.size === workers.length) {
+                started = true;
                 const startAt = Date.now() + 1_000;
-                for (const player of workers) player.postMessage({ type: "start", startAt });
+                for (const player of workers) player.worker.postMessage({ type: "start", startAt });
               }
             } else if (message.type === "result" && !reported) {
               reported = message;
               reports.push(message);
             }
           });
-          worker.once("error", reject);
-          worker.once("exit", (code) =>
-            reported && code === (reported.passed ? 0 : 1)
-              ? resolve()
-              : reject(new Error(`Game worker exited ${code} without a matching result`)),
-          );
+          worker.once("error", (error: Error) => {
+            failed ??= { worker: label, outcome: "error", error: error.message, stack: error.stack };
+          });
+          worker.once("exit", (code: number) => {
+            if (!started) for (const other of workers) if (other.worker !== worker) void other.worker.terminate?.();
+            if (reported && code === (reported.passed ? 0 : 1))
+              return resolve({ worker: label, outcome: "result", passed: reported.passed, exitCode: code });
+            resolve(
+              failed ?? {
+                worker: label,
+                outcome: "exit",
+                exitCode: code,
+                error: started ? `exited ${code} without a matching result` : `stopped before the start (exit ${code})`,
+              },
+            );
+          });
         }),
     ),
   );
+  if (outcomes.some(({ outcome }) => outcome !== "result")) throw new GameWorkersFailed(outcomes);
+  return outcomes;
 }
 
 async function waitForWorkloadStart(): Promise<void> {
@@ -763,10 +814,19 @@ Usage: bun deploy/athanor/harness/run.ts [options]
 `);
 }
 
+// A failure is recorded in the run's own output directory, so its stack survives whatever the caller does with stderr.
+async function recordFailure(error: unknown): Promise<{ error: string; stack?: string }> {
+  const failure = error instanceof Error ? { error: error.message, stack: error.stack } : { error: String(error) };
+  await mkdir(HARNESS_OUTPUT_DIRECTORY, { recursive: true, mode: 0o700 });
+  await writeFile(path.join(HARNESS_OUTPUT_DIRECTORY, "failure.json"), JSON.stringify(failure, null, 2) + "\n");
+  return failure;
+}
+
 if (import.meta.main || (!isMainThread && workerData?.harness)) {
-  await main().catch((error: unknown) => {
-    parentPort?.postMessage({ type: "failure", error: error instanceof Error ? error.message : String(error) });
-    console.error(error instanceof Error ? error.stack || error.message : String(error));
+  await main().catch(async (error: unknown) => {
+    const failure = await recordFailure(error);
+    parentPort?.postMessage({ type: "failure", ...failure });
+    console.error(failure.stack ?? failure.error);
     process.exit(1);
   });
 }
