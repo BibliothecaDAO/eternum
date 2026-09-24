@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import "./index.css";
 import { PwaUpdatePrompt } from "./pwa/pwa-update-prompt";
+import { SceneRoute } from "./scene-route";
 import { PwaInstallRuntime } from "./pwa/pwa-install-control";
 import { AccountPage } from "./shell/account";
 import { FirstNamePrompt } from "./shell/first-name-prompt";
@@ -122,73 +123,73 @@ function App() {
           <Route
             path="/g/:chain/:game/*"
             element={
-              <LazyRoute>
+              <SceneRoute fallback={<AppFallback />}>
                 <GameClientApp />
-              </LazyRoute>
+              </SceneRoute>
             }
           />
           <Route
             path="/lab/*"
             element={
-              <LazyRoute>
+              <SceneRoute fallback={<AppFallback />}>
                 <GraphicsLabView />
-              </LazyRoute>
+              </SceneRoute>
             }
           />
           <Route
             path="/debug/three-chunks"
             element={
-              <LazyRoute>
+              <SceneRoute fallback={<AppFallback />}>
                 <DebugThreeChunkView />
-              </LazyRoute>
+              </SceneRoute>
             }
           />
           <Route
             path="/debug/procedural-characters"
             element={
-              <LazyRoute>
+              <SceneRoute fallback={<AppFallback />}>
                 <DebugProceduralCharacterGymView />
-              </LazyRoute>
+              </SceneRoute>
             }
           />
           <Route
             path="/debug/procedural-character-benchmark"
             element={
-              <LazyRoute>
+              <SceneRoute fallback={<AppFallback />}>
                 <DebugProceduralCharacterBenchmarkView />
-              </LazyRoute>
+              </SceneRoute>
             }
           />
           <Route
             path="/debug/procedural-world-gym"
             element={
-              <LazyRoute>
+              <SceneRoute fallback={<AppFallback />}>
                 <DebugProceduralWorldGymView />
-              </LazyRoute>
+              </SceneRoute>
             }
           />
           <Route
             path="/debug/terrain-props"
             element={
-              <LazyRoute>
+              <SceneRoute fallback={<AppFallback />}>
                 <DebugTerrainPropView />
-              </LazyRoute>
+              </SceneRoute>
             }
           />
           <Route
             path="/debug/procedural-terrain-benchmark"
             element={
-              <LazyRoute>
+              <SceneRoute fallback={<AppFallback />}>
                 <DebugProceduralTerrainBenchmarkView />
-              </LazyRoute>
+              </SceneRoute>
             }
           />
           <Route
             path="/debug/world-fx"
             element={
-              <LazyRoute>
+              <SceneRoute fallback={<AppFallback />}>
                 <DebugWorldFxGymView />
-              </LazyRoute>
+              </SceneRoute>
             }
           />
         </Routes>
