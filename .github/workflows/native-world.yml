@@ -193,14 +193,14 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      # The account package declares its own toolchain (repository root), not world-native's.
+      # The account package pins its own toolchain: its compiler fixes the account class every player address derives from.
       - uses: software-mansion/setup-scarb@v1
         with:
-          tool-versions: .tool-versions
+          tool-versions: contracts/l3/player-account/.tool-versions
           scarb-lock: contracts/l3/player-account/Scarb.lock
       - uses: foundry-rs/setup-snfoundry@v3
         with:
-          tool-versions: .tool-versions
+          tool-versions: contracts/l3/player-account/.tool-versions
       - uses: software-mansion/setup-universal-sierra-compiler@v1
       - name: Build and test the player account
         working-directory: contracts/l3/player-account
