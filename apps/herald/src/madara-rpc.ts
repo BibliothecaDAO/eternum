@@ -1,3 +1,4 @@
+import { hash } from "starknet";
 import type { RpcBlockWithReceipts, RpcHead } from "./types";
 
 interface JsonRpcSuccess<Result> {
@@ -33,6 +34,14 @@ export class MadaraRpc {
   public getBlockWithReceipts(block: number | "pre_confirmed"): Promise<RpcBlockWithReceipts> {
     return this.request<RpcBlockWithReceipts>("starknet_getBlockWithReceipts", [
       typeof block === "number" ? { block_number: block } : block,
+    ]);
+  }
+
+  /** A read-only contract call at a confirmed block, returning its serialized result. */
+  public call(contractAddress: string, entrypoint: string, calldata: string[], block: number): Promise<string[]> {
+    return this.request<string[]>("starknet_call", [
+      { contract_address: contractAddress, entry_point_selector: hash.getSelectorFromName(entrypoint), calldata },
+      { block_number: block },
     ]);
   }
 

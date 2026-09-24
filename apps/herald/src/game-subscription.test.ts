@@ -59,4 +59,35 @@ describe("GameSubscription", () => {
     subscription.project(head);
     expect(subscriptionScope).toHaveBeenCalledTimes(4);
   });
+
+  it("shows a home-ring tile once, and the chain writing the same tile changes nothing until it differs", () => {
+    const tile = (data: string) => ({
+      model: "TileOpt",
+      key: "0x77",
+      value: { game_id: "1", alt: false, col: "3", row: "3", data },
+    });
+    const ringRow = tile("0xa0000000000");
+    const fold = {
+      subscriptionScope: expeditionScope,
+      scopeValidUntil: () => 86_400,
+      subscriptionSnapshot: () => ({ confirmed_block: 1, game_id: "1", models: [] }),
+      currentRow: () => undefined,
+    } as unknown as WorldFold;
+    const ring = { rows: () => [ringRow], row: (key: string) => (key === ringRow.key ? ringRow : undefined) };
+    const subscription = new GameSubscription(
+      "1",
+      "0x111",
+      () => fold,
+      () => 1,
+      () => 100,
+      ring,
+    );
+    const snapshot = subscription.snapshot();
+    expect(snapshot.models).toEqual([{ model: "TileOpt", rows: [{ key: ringRow.key, value: ringRow.value }] }]);
+
+    const chainWrites = (row: ReturnType<typeof tile>) =>
+      subscription.project({ type: "diff", block: 2, preconfirmed: false, set: [row], del: [] });
+    expect(chainWrites(tile("0xa0000000000"))).toEqual([]);
+    expect(chainWrites(tile("0xa0000000201"))).toHaveLength(1);
+  });
 });

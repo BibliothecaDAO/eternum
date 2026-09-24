@@ -1,6 +1,7 @@
 import { rowInGameSyncScope, type GameSyncScope } from "@bibliothecadao/eternum/game-sync-models";
 import type { PublishedBody, SnapshotOverlayDiff } from "./game-stream";
 import type { FoldDelete, FoldSet, GameSnapshot } from "./types";
+import type { HomeRing } from "./home-ring";
 import { movesSubscriptionScope, SCOPE_INPUT_MODELS, scopeInputInterest, scopeStreamKeys } from "./subscription-keys";
 import type { WorldFold } from "./world-fold";
 
@@ -29,11 +30,12 @@ export class GameSubscription {
     private readonly fold: (preconfirmed: boolean) => WorldFold,
     private readonly block: () => number,
     private readonly timestamp: () => number,
+    private readonly ring?: Pick<HomeRing, "rows" | "row">,
   ) {}
 
   public snapshot(): GameSnapshot {
     const scope = this.scope(false);
-    const snapshot = this.fold(false).subscriptionSnapshot(this.gameId, this.block(), scope);
+    const snapshot = this.scopeSnapshot(false, scope);
     this.remember(snapshot, scope);
     return snapshot;
   }
@@ -72,7 +74,9 @@ export class GameSubscription {
     if (scope !== this.rememberedScope && scopeIdentity(scope) !== this.scopeKey)
       return this.replaceScope(body, scope, preconfirmed);
     if (body.type === "head") return [body];
-    const set = body.set.filter((row) => rowInGameSyncScope(row.model, row.value, scope));
+    const set = body.set.filter(
+      (row) => rowInGameSyncScope(row.model, row.value, scope) && !this.repeatsShownRingRow(row),
+    );
     const del = body.del.filter((row) => this.visible.has(identity(row)));
     this.track(set, del);
     return set.length || del.length ? [{ ...body, set, del }] : [];
@@ -116,7 +120,7 @@ export class GameSubscription {
     scope: GameSyncScope,
     preconfirmed: boolean,
   ): PublishedBody[] {
-    const snapshot = this.fold(preconfirmed).subscriptionSnapshot(this.gameId, this.block(), scope);
+    const snapshot = this.scopeSnapshot(preconfirmed, scope);
     const set = snapshot.models.flatMap(({ model, rows }) => rows.map((row) => ({ ...row, model })));
     const next = new Set(set.map(identity));
     const del = [...this.visible.entries()].filter(([key]) => !next.has(key)).map(([, row]) => row);
@@ -146,8 +150,37 @@ export class GameSubscription {
 
   private track(set: FoldSet[], del: FoldDelete[]): void {
     for (const row of set)
-      if (this.fold(true).currentRow(row.model, row.key))
+      if (this.fold(true).currentRow(row.model, row.key) || this.ring?.row(row.key))
         this.visible.set(identity(row), { model: row.model, key: row.key });
     for (const row of del) this.visible.delete(identity(row));
   }
+
+  /** The fold's snapshot for this scope, with the home-ring tiles the chain has not written yet. */
+  private scopeSnapshot(preconfirmed: boolean, scope: GameSyncScope): GameSnapshot {
+    const snapshot = this.fold(preconfirmed).subscriptionSnapshot(this.gameId, this.block(), scope);
+    const ring = (this.ring?.rows(this.gameId, scope, this.timestamp()) ?? []).filter((row) =>
+      rowInGameSyncScope(row.model, row.value, scope),
+    );
+    const tiles = snapshot.models.find(({ model }) => model === RING_MODEL);
+    const written = new Set(tiles?.rows.map(({ key }) => key));
+    // A tile the chain has written is a fact of the fold; the rule's copy of it is never shown beside it.
+    const unwritten = ring.filter(({ key }) => !written.has(key)).map(({ key, value }) => ({ key, value }));
+    if (unwritten.length === 0) return snapshot;
+    const models = tiles
+      ? snapshot.models.map((entry) => (entry === tiles ? { ...entry, rows: [...entry.rows, ...unwritten] } : entry))
+      : [...snapshot.models, { model: RING_MODEL, rows: unwritten }];
+    return { ...snapshot, models };
+  }
+
+  /** The chain writing a ring tile this subscription already shows, with the same value, changes nothing for it. */
+  private repeatsShownRingRow(row: FoldSet): boolean {
+    const ringRow = this.ring?.row(row.key);
+    return (
+      ringRow !== undefined &&
+      this.visible.has(identity(row)) &&
+      JSON.stringify(ringRow.value) === JSON.stringify(row.value)
+    );
+  }
 }
+
+const RING_MODEL = "TileOpt";

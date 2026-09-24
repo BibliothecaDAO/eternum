@@ -57,6 +57,22 @@ export class NativeDecoder {
   owns(address: string): boolean {
     return normalizeFelt(address) === this.emitter;
   }
+  /** A model row decoded exactly as the chain's own RowSet for it would be, for a row Herald takes from a rule. */
+  decodeRowSet(model: string, keys: readonly string[], values: readonly string[]): DecodedWorldEvent {
+    const definition = this.schema.models.find((candidate) => candidate.name === model);
+    if (!definition) throw new Error(`Unknown native model ${model}`);
+    const layout = this.schema.domains[definition.owners[0]!]?.events.find((event) => event.name === "RowSet");
+    if (!layout) throw new Error(`Native model ${model} has no RowSet event`);
+    return this.decode({
+      from_address: this.emitter,
+      keys: [...layout.prefix, "1", definition.identity],
+      data: [String(keys.length), ...keys, String(values.length), ...values],
+      block_number: null,
+      transaction_hash: "0x0",
+      transaction_index: 0,
+      event_index: 0,
+    });
+  }
   decode(event: NativeRawEvent): DecodedWorldEvent {
     if (!this.owns(event.from_address)) throw new Error(`Foreign native emitter ${event.from_address}`);
     const schema = this.schema;

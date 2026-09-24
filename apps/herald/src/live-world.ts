@@ -1,4 +1,5 @@
 import { GameSubscription } from "./game-subscription";
+import { decodeHomeRing, HomeRing, revealedTileData, type HomeRingTile, type HomeRingView } from "./home-ring";
 import { NativeReceiptRejected, type NativeIngestion, type PreconfirmedDecode } from "./native/ingestion";
 import { normalizeFelt, type ModelRegistry } from "./model-registry";
 import type { CheckpointStore } from "./checkpoint-store";
@@ -32,6 +33,8 @@ export interface LiveWorldInput {
   hub?: GameStreamHub;
   diffLatency?: DiffLatencyMonitor;
   historyStore?: HistoryStore;
+  /** Reads a realm's home ring from the chain; by default MapLogic.expedition_home_ring at the confirmed block. */
+  homeRingView?: HomeRingView;
 }
 
 interface GameChanges {
@@ -104,8 +107,20 @@ export class LiveWorld {
 
   private readonly native: NativeIngestion;
 
+  private readonly homeRing: HomeRing;
+
   constructor(private readonly input: LiveWorldInput & { native: NativeIngestion }) {
     this.native = input.native;
+    this.homeRing = new HomeRing({
+      view: input.homeRingView ?? ((gameId, realmId, timestamp) => this.readHomeRing(gameId, realmId, timestamp)),
+      rowOf: (gameId, tile) => this.revealedTileRow(gameId, tile),
+      onReady: (gameId, rows) =>
+        this.hub.publishDiff(
+          gameId,
+          { block: this.confirmedBlockValue, del: [], preconfirmed: false, set: rows },
+          this.confirmedFold.streamKeys(gameId),
+        ),
+    });
     this.hub = input.hub ?? new GameStreamHub();
     this.diffLatency = input.diffLatency ?? new DiffLatencyMonitor();
     this.confirmedFold = input.confirmedFold;
@@ -177,6 +192,7 @@ export class LiveWorld {
       (preconfirmed) => (preconfirmed ? this.overlayFold : this.confirmedFold),
       () => this.confirmedBlockValue,
       () => this.lastClockTimestamp,
+      this.homeRing,
     );
     return {
       actor,
@@ -191,6 +207,29 @@ export class LiveWorld {
       interest: () => subscription.interest(),
       socket,
     };
+  }
+
+  /** The chain's own home-ring rule, read at the confirmed block so its biomes are the chain's. */
+  private async readHomeRing(gameId: string, realmId: number, timestamp: number): Promise<HomeRingTile[]> {
+    const felts = await this.input.rpc.call(
+      this.input.registry.worldAddress,
+      "expedition_home_ring",
+      [gameId, String(realmId), String(timestamp)],
+      this.confirmedBlockValue,
+    );
+    return decodeHomeRing(felts);
+  }
+
+  /** The row the chain writes when it reveals this surface tile, in the fold's own shape, without touching the fold. */
+  private revealedTileRow(gameId: string, tile: HomeRingTile): FoldSet {
+    const event = this.native.decoder.decodeRowSet(
+      "TileOpt",
+      [gameId, "0", String(tile.col), String(tile.row)],
+      [revealedTileData(tile).toString()],
+    );
+    const change = new WorldFold(this.input.registry).apply(event);
+    if (!change?.set) throw new Error(`Home ring tile ${tile.col},${tile.row} decoded to no row`);
+    return change.set;
   }
 
   public resume(session: GameStreamSession, request: ResumeRequest): void {
