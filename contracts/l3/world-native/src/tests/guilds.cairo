@@ -10,7 +10,7 @@ use crate::resources::ResourceKey;
 use super::resource_commands::{execute, execute_recorded_at, setup_with_rules};
 fn setup() -> (super::Deployment, ResourceKey, ResourceKey, ContractAddress) {
     let (d, home, second) = setup_with_rules(super::recorded::rules());
-    let (friend, _) = super::deploy("AccountFixture", @array![super::keypair(12345).public_key]);
+    let (friend, _) = super::deploy_player(3, super::GUARDIAN);
     assert!(
         execute(
             d,

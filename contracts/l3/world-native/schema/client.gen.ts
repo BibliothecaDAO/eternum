@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "8473128f00e3b38599cf362a204fcbe1fc0e03b2f4fa1a77cb198142bdfc671e";
+export const nativeFactSchemaIdentity = "aa893f88601705ba308de462910f5d9666dce1c3c78e647aa5f25b220d8b92e4";
 export const nativeRuleConstants = {
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
@@ -111,7 +111,7 @@ export interface NativeRows {
   EntitySequence: { readonly game_id: number; readonly next_entity_id: number };
   PlayerPoints: { readonly game_id: number; readonly address: bigint; readonly points: bigint };
   PointsTotal: { readonly game_id: number; readonly total: bigint };
-  Authentication: { readonly address: bigint; readonly submitter: bigint; readonly account_class: bigint };
+  Authentication: { readonly address: bigint; readonly submitter: bigint; readonly account_class: bigint; readonly guardian_public_key: bigint };
   ActionNonce: { readonly game_id: number; readonly actor: bigint; readonly next_nonce: bigint };
 }
 export interface NativeKeys {
@@ -1729,7 +1729,8 @@ export const nativeFactModels = {
     "fields": {
       "address": "felt",
       "submitter": "felt",
-      "account_class": "felt"
+      "account_class": "felt",
+      "guardian_public_key": "felt"
     }
   },
   "ActionNonce": {

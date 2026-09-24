@@ -1,9 +1,21 @@
+use core::pedersen::pedersen;
 use starknet::{ClassHash, ContractAddress};
 
 #[derive(Copy, Drop, Serde, starknet::Store)]
 pub struct Authentication {
     pub submitter: ContractAddress,
     pub account_class: ClassHash,
+    pub guardian_public_key: felt252,
+}
+
+/// The shard fixes both the account class and guardian; both determine every player address.
+pub fn player_account_address(realms_id: felt252, class: ClassHash, guardian: felt252) -> ContractAddress {
+    let calldata_hash = pedersen(pedersen(pedersen(0, realms_id), guardian), 2);
+    let prefix = pedersen(pedersen(0, 'STARKNET_CONTRACT_ADDRESS'), 0);
+    let raw = pedersen(pedersen(pedersen(pedersen(prefix, realms_id), class.into()), calldata_hash), 5);
+    let normalized: u256 = raw.into() % 0x7ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00;
+    let address: felt252 = normalized.try_into().unwrap();
+    address.try_into().unwrap()
 }
 
 #[derive(Drop, Serde)]

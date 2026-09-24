@@ -20,7 +20,7 @@ function serveHerald(local: NativeWorld, releaseSchemas: Record<string, string>)
   }) as typeof fetch;
 }
 
-const authentication = { submitter: "0x99", account_class: "0x77" };
+const authentication = { submitter: "0x99", account_class: "0x77", guardian_public_key: "0x88" };
 function fixture() {
   const logic = Object.keys(schemaJson.logicClasses).map((name) => ({ name, classHash: "0x123", sierra: { abi: [] } }));
   const local = {

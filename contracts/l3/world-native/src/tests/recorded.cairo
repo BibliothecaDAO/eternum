@@ -93,7 +93,7 @@ pub fn deploy_submitter(address: ContractAddress) {
         declare("SequencingAccount")
             .unwrap()
             .contract_class()
-            .deploy_at(@array![0x111, signer.public_key], address)
+            .deploy_at(@array![super::authority().into(), signer.public_key], address)
             .unwrap();
     }
 }
@@ -451,7 +451,7 @@ fn release_admission_uses_the_game_pin_and_refusals_preserve_nonce_and_gameplay(
     assert_eq!(view.get_admission(1, d.actor.into()).nonce, admission.nonce + 1);
 }
 
-fn gameplay_snapshot(games: ContractAddress) -> Array<felt252> {
+pub(crate) fn gameplay_snapshot(games: ContractAddress) -> Array<felt252> {
     snforge_std::interact_with_state(
         games,
         || {

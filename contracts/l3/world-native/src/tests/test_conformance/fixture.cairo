@@ -94,6 +94,10 @@ fn submit(
         .map(|_results| ())
 }
 
+fn actor() -> felt252 {
+    crate::tests::player_address(456).into()
+}
+
 pub fn pair() -> StarkCurveKeyPair {
     KeyPairTrait::from_secret_key(12345)
 }
@@ -121,11 +125,7 @@ pub fn setup() -> ContractAddress {
     start_cheat_block_timestamp_global(900);
     start_cheat_chain_id_global('TEST');
     let administrator: ContractAddress = 222.try_into().unwrap();
-    let actor: ContractAddress = 456.try_into().unwrap();
-    let player_class = declare("ProtocolPlayerFixture").unwrap().contract_class();
-    if starknet::syscalls::get_class_hash_at_syscall(actor).unwrap() == 0.try_into().unwrap() {
-        player_class.deploy_at(@array![pair().public_key], actor).unwrap();
-    }
+    let (actor, player_class) = crate::tests::deploy_player(456, crate::tests::GUARDIAN);
     let signer: StarkCurveKeyPair = KeyPairTrait::from_secret_key(54321);
     let account = deploy("SequencingAccount", @array![administrator.into(), signer.public_key]);
     let classes = games_storage::release::LogicClasses {
@@ -148,7 +148,7 @@ pub fn setup() -> ContractAddress {
         bridge: *declare("BridgeLogic").unwrap().contract_class().class_hash,
     };
     let authentication = world_native::games::Authentication {
-        submitter: account, account_class: *player_class.class_hash,
+        submitter: account, account_class: player_class, guardian_public_key: crate::tests::GUARDIAN,
     };
     let mut args = array![administrator.into()];
     authentication.serialize(ref args);
@@ -283,7 +283,7 @@ pub fn intent(address: ContractAddress) -> Intent {
     let preset_commitment = if address == 123.try_into().unwrap() {
         789
     } else {
-        IRecordedExecutionViewsDispatcher { contract_address: address }.get_admission(7, 456).preset_commitment
+        IRecordedExecutionViewsDispatcher { contract_address: address }.get_admission(7, actor()).preset_commitment
     };
     let command = Command::Explore(Explore { explorer_id: 2, direction: 0 });
     let mut arguments = array![];
@@ -292,7 +292,11 @@ pub fn intent(address: ContractAddress) -> Intent {
         chain: 'TEST',
         deployment: address.into(),
         game_id: 7,
-        actor: 456,
+        actor: if address == 123.try_into().unwrap() {
+            456
+        } else {
+            actor()
+        },
         nonce: 0,
         command: command_commitment(command),
         release_id: 1,
@@ -336,35 +340,6 @@ pub impl IFixtureDispatcherImpl of IFixtureDispatcherTrait {
     }
 }
 
-#[starknet::contract]
-mod ProtocolPlayerFixture {
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-    #[storage]
-    struct Storage {
-        key: felt252,
-    }
-    #[constructor]
-    fn constructor(ref self: ContractState, key: felt252) {
-        self.key.write(key);
-    }
-    #[starknet::interface]
-    trait IDeviceSignature<T> {
-        fn is_valid_signature(self: @T, hash: felt252, signature: Array<felt252>) -> felt252;
-    }
-    #[abi(embed_v0)]
-    impl Signature of IDeviceSignature<ContractState> {
-        fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
-            let key = self.key.read();
-            if signature.len() == 3
-                && *signature[0] == key
-                && core::ecdsa::check_ecdsa_signature(hash, key, *signature[1], *signature[2]) {
-                starknet::VALIDATED
-            } else {
-                0
-            }
-        }
-    }
-}
 #[test]
 #[feature("safe_dispatcher")]
 fn exploration_fixture_runs_the_real_domain() {
@@ -374,7 +349,7 @@ fn exploration_fixture_runs_the_real_domain() {
     IExploreSafeDispatcher { contract_address: season }
         .explore(
             7,
-            456.try_into().unwrap(),
+            actor().try_into().unwrap(),
             Explore { explorer_id: 2, direction: 0 },
             crate::commands::action_context(
                 world_native::commands::ExecutionContext {
@@ -420,10 +395,10 @@ fn accepted_malformed_commands_are_terminal_and_cannot_stall_the_stream() {
         assert_eq!(rejected.status_class, expected_class);
         assert!(rejected.reason.len() != 0, "malformed command needs a named error");
         assert_eq!(gameplay_state(address), before);
-        let next = views.get_admission(7, 456);
+        let next = views.get_admission(7, actor());
         assert!(next.nonce == nonce + 1 && next.order == nonce + 2, "malformed command must consume its ticket");
     }
-    let next = views.get_admission(7, 456);
+    let next = views.get_admission(7, actor());
     let mut valid = intent(address);
     valid.nonce = next.nonce;
     let mut successor = envelope(@valid);
@@ -487,7 +462,7 @@ fn gameplay_state(address: ContractAddress) -> Array<felt252> {
             },
         )
         .serialize(ref values);
-    points.player_points(7, 456.try_into().unwrap()).serialize(ref values);
+    points.player_points(7, actor().try_into().unwrap()).serialize(ref values);
     points.season_points(7).serialize(ref values);
     IHyperstructuresDispatcher { contract_address: season }.hyperstructure_count(7).serialize(ref values);
     values

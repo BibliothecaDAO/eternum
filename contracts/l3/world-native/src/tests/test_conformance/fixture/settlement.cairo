@@ -111,14 +111,14 @@ fn prepare_without_entitlement(
 }
 
 fn accepted(season: ContractAddress, command: Command, timestamp: u64) -> (Intent, Envelope) {
-    let admission = IRecordedExecutionViewsDispatcher { contract_address: season }.get_admission(8, 456);
+    let admission = IRecordedExecutionViewsDispatcher { contract_address: season }.get_admission(8, super::actor());
     let mut arguments = array![];
     command.serialize(ref arguments);
     let action = Intent {
         chain: 'TEST',
         deployment: season.into(),
         game_id: 8,
-        actor: 456,
+        actor: super::actor(),
         nonce: admission.nonce,
         command: command_commitment(command),
         release_id: admission.release_id,
@@ -171,7 +171,7 @@ fn unprovisioned_realm(season: ContractAddress, grant_troops: bool) {
     ISettlementCreationDispatcher { contract_address: season }
         .create_settlement(
             8,
-            456.try_into().unwrap(),
+            super::actor().try_into().unwrap(),
             coord,
             SettlementCreation::Realm(
                 RealmCreation {
@@ -193,7 +193,7 @@ fn settled_facts(season: ContractAddress) -> Array<felt252> {
     let views = ISettlementViewsDispatcher { contract_address: season };
     let mut facts = array![];
     views.settlement_progress(8).serialize(ref facts);
-    views.player_entry(EntryKey { game_id: 8, owner: 456.try_into().unwrap() }).serialize(ref facts);
+    views.player_entry(EntryKey { game_id: 8, owner: super::actor().try_into().unwrap() }).serialize(ref facts);
     IStructureOperationsDispatcher { contract_address: season }
         .structure(ResourceKey { game_id: 8, entity_id: 1 })
         .serialize(ref facts);
@@ -205,7 +205,7 @@ fn accepted_eternum_settlement_keeps_recorded_time_after_game_end() {
     let mut immediate = array![].span();
     for clock in array![1100_u64, 100000] {
         let season = prepare_without_entitlement(None, false);
-        grant_entry(season, 456.try_into().unwrap());
+        grant_entry(season, super::actor().try_into().unwrap());
         let (action, envelope) = accepted(season, command(), 1005);
         start_cheat_block_timestamp_global(clock);
         submit(season, action, envelope);
@@ -231,14 +231,14 @@ fn settlement_uses_the_players_account_and_cannot_spend_another_owners_entitleme
     assert!(results.recorded_outcome(8, 1).unwrap().status == 2);
     assert!(views.player_entry(EntryKey { game_id: 8, owner: 789.try_into().unwrap() }).is_none());
     assert!(views.settlement_progress(8).realm_count == 0);
-    grant_entry(season, 456.try_into().unwrap());
+    grant_entry(season, super::actor().try_into().unwrap());
     execute(season, command(), 1005);
     assert!(results.recorded_outcome(8, 2).unwrap().status == 1);
     assert!(
         views
-            .player_entry(EntryKey { game_id: 8, owner: 456.try_into().unwrap() })
+            .player_entry(EntryKey { game_id: 8, owner: super::actor().try_into().unwrap() })
             .unwrap()
-            .player == 456
+            .player == super::actor()
             .try_into()
             .unwrap(),
     );
@@ -247,12 +247,12 @@ fn settlement_uses_the_players_account_and_cannot_spend_another_owners_entitleme
 #[test]
 fn rejected_settlement_rolls_back_entry_and_leaves_later_ticket_executable() {
     let season = prepare_without_entitlement(None, false);
-    grant_entry(season, 456.try_into().unwrap());
+    grant_entry(season, super::actor().try_into().unwrap());
     execute(season, Command::SettleSeason(world_native::realms::SettleSeason { name: 0, selected_realm: None }), 1005);
     let results = IRecordedExecutionViewsDispatcher { contract_address: season };
     assert!(results.recorded_outcome(8, 1).unwrap().status == 2);
     let views = ISettlementViewsDispatcher { contract_address: season };
-    assert!(views.player_entry(EntryKey { game_id: 8, owner: 456.try_into().unwrap() }).is_none());
+    assert!(views.player_entry(EntryKey { game_id: 8, owner: super::actor().try_into().unwrap() }).is_none());
     assert!(views.settlement_progress(8).realm_count == 0);
     execute(season, command(), 1005);
     assert!(results.recorded_outcome(8, 2).unwrap().status == 1);
@@ -409,7 +409,8 @@ fn provision_and_upgrade_is_one_atomic_recorded_action() {
             assert!(resources.resource_production(labor) == production_before);
         }
         assert!(
-            IGamesAuthenticationDispatcher { contract_address: season }.next_nonce(8, 456.try_into().unwrap()) == 1,
+            IGamesAuthenticationDispatcher { contract_address: season }
+                .next_nonce(8, super::actor().try_into().unwrap()) == 1,
         );
     }
 }

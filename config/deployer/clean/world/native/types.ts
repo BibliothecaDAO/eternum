@@ -24,6 +24,7 @@ export interface RegistrarWorld {
 export interface NativeAuthentication {
   submitter: string;
   account_class: string;
+  guardian_public_key: string;
 }
 export interface NativeLogic extends ClassArtifact {
   name: string;
