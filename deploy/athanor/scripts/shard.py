@@ -54,7 +54,9 @@ def validate_configuration(config, allowed_cpus):
     if not re.fullmatch(r"[a-z][a-z0-9-]{0,39}", config["shard"]):
         raise ValueError("shard must be a lowercase identifier")
     validate_shard_identity(config)
-    for key in ("madara_image", "herald_image", "gateway_image", "init_image"):
+    if "madara_image" in config:
+        raise ValueError("the node image is the package's pin in deploy/shard/compose.yml")
+    for key in ("herald_image", "gateway_image", "init_image"):
         if not re.fullmatch(r"(?:[^\s]+@)?sha256:[a-f0-9]{64}", config[key]):
             raise ValueError(f"{key} must be pinned by digest")
     port = config["port_base"]
@@ -141,12 +143,10 @@ def compose_configuration(config, directory):
     for name in ("prepare", "init"):
         service = compose["services"][name]
         service.update({"mem_limit": "8g", "memswap_limit": "8g"})
-        service["environment"]["MADARA_IMAGE"] = config["madara_image"]
         service["environment"]["CHAIN_CONFIG"] = "/template/chain-config.yaml"
         service["volumes"].append({"type": "bind", "source": str(Path(config["chain_config"]).resolve()),
                                    "target": "/template/chain-config.yaml", "read_only": True})
     node = compose["services"]["madara"]
-    node["image"] = config["madara_image"]
     replaced = ("--enable-native-execution=", "--native-compilation-mode=")
     node["command"] = [flag for flag in node["command"] if not flag.startswith(replaced)] + [
         "--otel-collector-endpoint=http://metrics:4317", "--otel-export-metrics=true", *config["node_flags"],
@@ -386,9 +386,11 @@ def start_shard(config, directory):
         raise ValueError("shard preparation does not deploy or configure the deferred ledger")
     directory = directory.resolve()
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
-    write_json(directory / "configuration.json", config)
     compose = compose_configuration(config, directory)
     check_slice_memory(compose)
+    # The run records the node image it ran: the package pin.
+    config = {**config, "madara_image": compose["services"]["madara"]["image"]}
+    write_json(directory / "configuration.json", config)
     write_json(directory / "compose.json", compose)
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
     run([*command, "up", "-d"], directory, "shard-start")

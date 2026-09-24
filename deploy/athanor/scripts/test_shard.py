@@ -9,11 +9,14 @@ from unittest.mock import patch
 import shard
 
 
+NODE_IMAGE = "ghcr.io/madara-alliance/madara@sha256:" + "a" * 64
+
+
 def configuration():
     return {
         "shard": "smoke", "chain_id": "SHARD_A", "port_base": 28050, "cpuset": "8-11,20-23", "node_memory_mib": 16384,
         "player_capacity": 96,
-        "madara_image": "sha256:" + "a" * 64, "herald_image": "sha256:" + "b" * 64,
+        "herald_image": "sha256:" + "b" * 64,
         "gateway_image": "sha256:" + "c" * 64, "init_image": "sha256:" + "d" * 64,
         "chain_config": "/tmp/chain-config.yaml",
         "guardian_url": "https://identity.test/api/guardian",
@@ -34,7 +37,7 @@ class ShardTest(unittest.TestCase):
         for key, value in (
             ("chain_id", ""), ("chain_id", "a" * 32), ("chain_id", "a\nb"),
             ("port_base", 5050), ("cpuset", "0-23"), ("node_memory_mib", 65536), ("player_capacity", 0),
-            ("madara_image", "madara:latest"), ("gateway_image", "gateway:latest"), ("shard", "../live"),
+            ("madara_image", NODE_IMAGE), ("gateway_image", "gateway:latest"), ("shard", "../live"),
             ("trusted_proxy", "cloudflared"),
             ("node_flags", ["--base-path=/live"]),
             ("node_flags", [*config["node_flags"], "--db-fsync=false"]),
@@ -51,7 +54,7 @@ class ShardTest(unittest.TestCase):
         values = {
             "CHAIN_ID": "COMMUNITY", "GUARDIAN_URL": config["guardian_url"],
             "PUBLIC_RPC_URL": config["public_rpc_url"], "PUBLIC_ADMISSION_URL": config["public_admission_url"],
-            "PLAYER_CAPACITY": "16", "MADARA_IMAGE": config["madara_image"],
+            "PLAYER_CAPACITY": "16", "MADARA_IMAGE": NODE_IMAGE,
             "MADARA_CONTAINER": "community-madara-1",
         }
         with tempfile.TemporaryDirectory() as temporary, patch.dict(shard.os.environ, values):
@@ -63,7 +66,7 @@ class ShardTest(unittest.TestCase):
                 environment = package.environment(package.configuration())
             shard.save_harness_environment(directory, environment)
             saved = dict(line.split("=", 1) for line in (directory / "harness.env").read_text().splitlines())
-            self.assertEqual(saved["MADARA_IMAGE"], config["madara_image"])
+            self.assertEqual(saved["MADARA_IMAGE"], NODE_IMAGE)
             self.assertEqual(saved["MADARA_CONTAINER"], "community-madara-1")
 
     def test_initialization_replaces_template_identity_for_each_shard(self):
@@ -130,7 +133,7 @@ class ShardTest(unittest.TestCase):
                 "DEPLOYER_ACCOUNT_ADDRESS": "0x123", "DEPLOYER_PRIVATE_KEY": "0x456",
                 "UNRELATED_SECRET": "not-for-this-shard",
             }):
-                environment = shard.deployment_environment(configuration(), directory)
+                environment = shard.deployment_environment({**configuration(), "madara_image": NODE_IMAGE}, directory)
                 shard.save_harness_environment(directory, environment)
             output = directory / "harness.env"
             values = dict(line.split("=", 1) for line in output.read_text().splitlines())
@@ -141,7 +144,7 @@ class ShardTest(unittest.TestCase):
             self.assertEqual(values["RPC_URL"], "http://127.0.0.1:28050/rpc/v0_10_2")
             self.assertEqual(values["GAMEPLAY_CONTRACTS_PATH"], str(directory / "gameplay-contracts.json"))
             self.assertEqual(values["MADARA_METRICS_FILE"], str(directory / "metrics" / "metrics.jsonl"))
-            self.assertEqual(values["MADARA_IMAGE"], configuration()["madara_image"])
+            self.assertEqual(values["MADARA_IMAGE"], NODE_IMAGE)
             self.assertEqual(values["MADARA_CONTAINER"], f"athanor-{configuration()['shard']}-madara-1")
 
     def test_collector_output_is_the_harness_metrics_input(self):
