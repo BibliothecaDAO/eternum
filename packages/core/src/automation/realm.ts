@@ -1,5 +1,4 @@
 import {
-  Biome,
   configManager,
   divideByPrecision,
   getBalance,
@@ -7,19 +6,12 @@ import {
   getBuildingCount,
   getGuardsByStructure,
   getBlockTimestamp,
+  storedBiomeAt,
   type TileManager,
 } from "../index";
 import type { NativeFactStore } from "../client/index";
 import { liveHomeArmies } from "../utils/expeditions";
-import {
-  type BiomeType,
-  BuildingType,
-  type ID,
-  ResourcesIds,
-  StructureType,
-  TroopType,
-  BUILDINGS_CENTER,
-} from "@bibliothecadao/types";
+import { BuildingType, type ID, ResourcesIds, StructureType, TroopType, BUILDINGS_CENTER } from "@bibliothecadao/types";
 import {
   buildBlitzRealmSuggestions,
   type BlitzBuildKey,
@@ -124,12 +116,14 @@ const resolveBlitzBuildability = (
 });
 
 const resolveRecommendedMilitaryTarget = (
+  store: NativeFactStore,
   realm: ReturnType<typeof getRealmInfo> | null | undefined,
   buildingCounts: BlitzBuildingCounts,
 ): BlitzMilitaryTarget | null => {
   if (!realm?.position) return null;
 
-  const realmBiome = Biome.getBiome(Number(realm.position.x), Number(realm.position.y)) as BiomeType;
+  const realmBiome = storedBiomeAt(store, false, Number(realm.position.x), Number(realm.position.y));
+  if (!realmBiome) return null;
   const best = T1_MILITARY_OPTIONS.map((option) => ({
     ...option,
     bonus: configManager.getBiomeCombatBonus(option.troopType, realmBiome),
@@ -176,7 +170,7 @@ export function readBlitzRealmSuggestions(input: {
   };
   // Suggestions weigh the realm itself; they never show its owner, so no player is named.
   const realm = getRealmInfo(realmId, store, () => null);
-  const militaryTarget = resolveRecommendedMilitaryTarget(realm, buildingCounts);
+  const militaryTarget = resolveRecommendedMilitaryTarget(store, realm, buildingCounts);
   const hasAvailableBuildingTile = generateBuildablePositions(Math.max(1, structure.base.level + 1)).some(
     (spot) => (spot.col !== BUILDINGS_CENTER[0] || spot.row !== BUILDINGS_CENTER[1]) && !tiles.isHexOccupied(spot),
   );

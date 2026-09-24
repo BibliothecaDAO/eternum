@@ -1,5 +1,6 @@
 import { getExplorerOwner } from "../../utils/army";
-import { BiomeIdToType, type BiomeType, ContractAddress, type HexEntityInfo, type ID } from "@bibliothecadao/types";
+import { type BiomeType, ContractAddress, type HexEntityInfo, type ID } from "@bibliothecadao/types";
+import { biomeTypeOf } from "../../utils/tile";
 
 import { configManager } from "../../managers/config-manager";
 import { FELT_CENTER } from "../../utils/utils";
@@ -61,10 +62,4 @@ const indexHex = <T>(index: HexIndex<T>, hex: { col: number; row: number }, valu
   const row = index.get(col) ?? new Map<number, T>();
   row.set(hex.row - FELT_CENTER(), value);
   index.set(col, row);
-};
-
-const biomeTypeOf = (biomeId: number): BiomeType => {
-  const biome = BiomeIdToType[biomeId];
-  if (!biome) throw new Error(`Tile carries unknown biome id ${biomeId}`);
-  return biome;
 };

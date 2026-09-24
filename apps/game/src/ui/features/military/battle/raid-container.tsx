@@ -1,3 +1,4 @@
+import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
@@ -25,6 +26,7 @@ import {
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import {
+  BiomeType,
   CapacityConfig,
   ContractAddress,
   getDirectionBetweenAdjacentHexes,
@@ -87,9 +89,7 @@ export const RaidContainer = ({
     return configManager.getCombatConfig();
   }, []);
 
-  const biome = useMemo(() => {
-    return configManager.getBiome(target.hex.x, target.hex.y);
-  }, [target]);
+  const biome = useStoredBiome(target.hex.x, target.hex.y) ?? BiomeType.None;
 
   // Get the current army states for display
   const attackerArmyData = useMemo(() => {

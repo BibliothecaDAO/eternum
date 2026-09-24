@@ -1,5 +1,11 @@
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
-import { Biome, configManager, divideByPrecision, getGuardsByStructure, StaminaManager } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  divideByPrecision,
+  getGuardsByStructure,
+  StaminaManager,
+  storedBiomeAt,
+} from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import {
@@ -60,7 +66,9 @@ export const useBattleLabLiveData = (
     if (!enabled) return null;
 
     const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: attackerEntityId });
-    const biome = alt ? BiomeType.Underground : Biome.getBiome(targetHex.x, targetHex.y);
+    const biome = alt
+      ? BiomeType.Underground
+      : (storedBiomeAt(store, false, targetHex.x, targetHex.y) ?? BiomeType.None);
 
     // Attacker: structure (guard slots) vs explorer army.
     let attackerType: "structure" | "army" = "army";

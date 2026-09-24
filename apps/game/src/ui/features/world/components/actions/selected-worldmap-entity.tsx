@@ -23,6 +23,7 @@ import { useStructureEntityDetail } from "@/ui/features/world/components/entitie
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
 import { BiomeType, HexPosition, ID, TileOccupier, TroopType } from "@bibliothecadao/types";
 import {
+  biomeTypeOf,
   configManager,
   Position,
   hasTileOccupier,
@@ -73,9 +74,7 @@ const SelectedWorldmapEntityContent = ({
   const tile = useTileAt(selectedHex.col, selectedHex.row);
   const crateOpening = useRelicCrateOpening(selectedHex);
 
-  const biome = useMemo(() => {
-    return configManager.getBiome(selectedHex.col || 0, selectedHex.row || 0);
-  }, [selectedHex.col, selectedHex.row]);
+  const biome = tile && tile.biome !== 0 ? biomeTypeOf(tile.biome) : BiomeType.None;
   const handleSimulateBattle = useCallback(() => {
     openSurface({ id: "battle-lab", content: <BattleLab mode="sim" initialBiome={biome} /> });
   }, [biome, openSurface]);

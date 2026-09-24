@@ -1,3 +1,4 @@
+import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
 
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
@@ -133,10 +134,8 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const combatConfig = useMemo(() => configManager.getCombatConfig(), []);
   const ethereal = target.alt ?? false;
-  const biome = useMemo(
-    () => (ethereal ? BiomeType.Underground : configManager.getBiome(target.hex.x, target.hex.y)),
-    [ethereal, target.hex.x, target.hex.y],
-  );
+  const surfaceBiome = useStoredBiome(target.hex.x, target.hex.y) ?? BiomeType.None;
+  const biome = ethereal ? BiomeType.Underground : surfaceBiome;
   const combatSimulator = useMemo(() => new CombatSimulator(combatConfig), [combatConfig]);
   const rollsDice = useMemo(() => configManager.rollsCombatDice(ethereal), [ethereal]);
 
