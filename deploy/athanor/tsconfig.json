@@ -7,6 +7,6 @@
     "sourceMap": false,
     "types": ["bun-types", "node"]
   },
-  "include": ["harness/**/*.ts", "scripts/**/*.ts"],
+  "include": ["harness/**/*.ts", "scripts/**/*.ts", "../release/**/*.ts"],
   "exclude": ["node_modules"]
 }

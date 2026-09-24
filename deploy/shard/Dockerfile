@@ -22,6 +22,7 @@ RUN --mount=type=cache,target=/scarb-cache version=$(awk '$1=="scarb" {print $2}
     for attempt in 1 2 3; do "/tools/$version/bin/scarb" fetch && break; test "$attempt" -lt 3 || exit 1; sleep 5; done && \
     "/tools/$version/bin/scarb" build
 RUN bun contracts/l3/world-native/scripts/generate-schema.mjs --check && \
+    bun deploy/release/facts.ts > /release/release-facts.json && \
     bun build apps/herald/src/server.ts --target=bun --outfile=/release/herald.js && \
     bun build deploy/athanor/scripts/read-rpc.ts --target=bun --outfile=/release/read-rpc.js
 

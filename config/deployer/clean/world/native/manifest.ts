@@ -30,6 +30,9 @@ export function registrarWorldOf(
   };
 }
 
+/** The logic release a fresh Games contract is initialized with. */
+export const NATIVE_RELEASE_ID = 1;
+
 export function buildNativeManifest(local: NativeWorld, before: NativePlan, shard: ShardRecord): NativeWorldManifest {
   const games = local.games;
   const abis = new Map(
@@ -65,7 +68,7 @@ export function buildNativeManifest(local: NativeWorld, before: NativePlan, shar
       activeSchema: local.schema.identity,
       schemas: { ...local.previous?.native.schemas, [local.schema.identity]: local.schema },
       gamesClassHash: games.classHash,
-      releaseId: 1,
+      releaseId: NATIVE_RELEASE_ID,
       logic: Object.fromEntries(local.logic.map(({ name, classHash }) => [name, classHash])),
     },
   };

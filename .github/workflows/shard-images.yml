@@ -80,6 +80,20 @@ jobs:
           for image in init herald gateway; do
             printf 'SHARD_%s_IMAGE=%s\n' "${image^^}" "$(cat "images/$image.image")" >> shard/images.env
           done
+      # The release facts the init image was built with, plus what CI knows of the release, in one file the deploy
+      # command compares a deployed shard against.
+      - name: Record the release facts
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          docker run --rm --entrypoint cat "$(cat images/init.image)" /release/release-facts.json > facts.json
+          node_image=$(awk '$1 == "x-madara-image:" {print $3}' deploy/shard/compose.yml)
+          test -n "$node_image"
+          jq --arg tag "$TAG" --arg commit "$GITHUB_SHA" --arg node "$node_image" \
+            --arg init "$(cat images/init.image)" --arg herald "$(cat images/herald.image)" \
+            --arg gateway "$(cat images/gateway.image)" \
+            '{tag: $tag, commit: $commit, images: {init: $init, herald: $herald, gateway: $gateway}, node: $node} + .' \
+            facts.json > shard/release.json
           tar -czf shard.tar.gz shard
       - name: Publish the package beside its image tag
         env:

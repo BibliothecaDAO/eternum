@@ -26,6 +26,7 @@
     ".": {
       "entry": [
         "deploy/athanor/scripts/host-accounts.ts",
+        "deploy/release/facts.ts",
         "deploy/athanor/scripts/inspect-shard-roles.ts",
         "deploy/athanor/scripts/read-rpc.ts",
         "deploy/athanor/scripts/account-rpc-smoke.ts"

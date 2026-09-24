@@ -78,6 +78,7 @@ jobs:
                   "packages/**",
                   "config/**",
                   "deploy/athanor/**",
+                  "deploy/release/**",
                   "deploy/shard/**",
                   "scripts/generate-realm-metadata.py"
               ],
