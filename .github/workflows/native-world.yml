@@ -208,6 +208,23 @@ jobs:
           scarb fmt --check
           snforge test
 
+  # Releases build this image only on shard-v* tags; building it on every change to its inputs catches a broken
+  # package before a tag does. It pushes nothing and reads the release build's cache.
+  shard-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/shard/Dockerfile
+          target: init
+          platforms: linux/amd64
+          push: false
+          cache-from: type=gha,scope=shard-init
+
   native-deployer:
     runs-on: ubuntu-latest
     timeout-minutes: 15
