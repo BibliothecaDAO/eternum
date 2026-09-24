@@ -29,6 +29,7 @@ const snapshotProgressPercentage = ({ completed, phase, total }: GameSyncSnapsho
 const heraldHeartbeat = (head: GameSyncHead) => ({
   blockNumber: head.block,
   source: head.preconfirmed ? "herald-clock" : "herald-head",
+  preconfirmed: head.preconfirmed,
   timestamp: head.timestamp * 1_000,
 });
 

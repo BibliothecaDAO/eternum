@@ -45,7 +45,13 @@ afterEach(() => vi.restoreAllMocks());
 
 it("renders spectator entry before any head without reading the chain clock", async () => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
-  useChainTimeStore.setState({ lastHeartbeat: null, anchorTimestampMs: null, anchorPerfMs: null, nowMs: null });
+  useChainTimeStore.setState({
+    lastHeartbeat: null,
+    executionFloorMs: null,
+    anchorTimestampMs: null,
+    anchorPerfMs: null,
+    nowMs: null,
+  });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const container = document.createElement("div");
   const root = createRoot(container);
