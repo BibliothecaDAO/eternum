@@ -1,7 +1,8 @@
 name: Deploy Workers
 
-# Deploys the central-service Workers to Cloudflare. Staging, which the isolated box stack uses, deploys on every push to
-# the native branches; production deploys only by dispatch, at the cutover. Each environment has its own D1 databases
+# Deploys the central-service Workers to Cloudflare. Staging deploys on every push to native-staging, the branch its
+# chains and client are built from, so its Workers always speak the contracts its shards run; the integration branch
+# may run ahead of them. Production deploys only by dispatch, at the cutover. Each environment has its own D1 databases
 # and secrets. The guardian Worker is deployed by the owner alone and is not listed here. The launch Worker targets the
 # shard its environment's LAUNCH_SHARD_URL names (the shard's Herald, whose /manifest says the rest), with
 # LAUNCH_DEPLOYER_ACCOUNT_ADDRESS and LAUNCHER_ALLOWLIST, and signs with its
@@ -9,7 +10,7 @@ name: Deploy Workers
 # automation.
 on:
   push:
-    branches: [native-services, native-world-foundation]
+    branches: [native-staging]
     paths:
       - "apps/realms/**"
       - "apps/guardian/**"
