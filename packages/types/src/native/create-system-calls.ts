@@ -35,7 +35,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   const enter_depth = (props: Parameters<typeof provider.enter_depth>[0]) => provider.enter_depth(props);
   const buy_realm_upgrade = (props: Parameters<typeof provider.buy_realm_upgrade>[0]) =>
     provider.buy_realm_upgrade(props);
-  const settle_village = (props: Parameters<typeof provider.settle_village>[0]) => provider.settle_village(props);
 
   const bitcoin_mine_contribute_labor = async (
     props: SystemProps.BitcoinMineContributeLaborProps,
@@ -399,7 +398,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     settle_season: withAuth(settle_season),
     enter_depth: withAuth(enter_depth),
     buy_realm_upgrade: withAuth(buy_realm_upgrade),
-    settle_village: withAuth(settle_village),
     bridge_deposit_into_realm: withAuth(bridge_deposit_into_realm),
     bridge_withdraw_from_realm: withAuth(bridge_withdraw_from_realm),
 

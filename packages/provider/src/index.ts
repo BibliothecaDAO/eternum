@@ -900,17 +900,6 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  public async settle_village(props: SystemProps.SystemSigner & { passId: bigint; connectedRealmEntityId: number }) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "SettleVillage",
-        value: { pass_id: props.passId, connected_realm_entity_id: props.connectedRealmEntityId },
-      },
-      TransactionType.SETTLE,
-    );
-  }
-
   public async upgrade_realm(props: SystemProps.UpgradeRealmProps) {
     return this.submitCommand(
       props.signer,
