@@ -67,6 +67,8 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
   /** Called by the directory's cron for every listed shard; starting an already running notifier changes nothing. */
   async watch(shard: { url: string; chainId: string }): Promise<void> {
     const current = await this.ctx.storage.get<WatchedShard>("shard");
+    // Its cursor, wake times and outbox belong to one chain: a new chain at this URL is read from its own head.
+    if (current && BigInt(current.chainId) !== BigInt(shard.chainId)) await this.ctx.storage.deleteAll();
     if (current?.url !== shard.url || current.chainId !== shard.chainId) await this.ctx.storage.put("shard", shard);
     if ((await this.ctx.storage.getAlarm()) === null) await this.ctx.storage.setAlarm(Date.now());
   }

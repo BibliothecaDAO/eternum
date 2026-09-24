@@ -80,14 +80,15 @@ const createHerald = () => {
     /** The neighbour's army, spent whenever the player acts, so it rests alongside the player's. */
     neighbourArmy: null as null | { amount: number; updatedTick: number; day: number },
     status: "Live" as "Live" | "Settled",
+    chain: CHAIN_ID,
     /** Snapshot reads answered, and whether this Herald is failing them. */
     snapshotReads: 0,
     snapshotFails: false,
   };
   const answer = (url: URL): unknown => {
-    if (url.pathname === "/manifest") return { version: 1, chainId: CHAIN_ID, contracts: { games: "0x5e45" } };
+    if (url.pathname === "/manifest") return { version: 1, chainId: state.chain, contracts: { games: "0x5e45" } };
     if (url.pathname === "/games")
-      return { chain: CHAIN_ID, games: [{ game_id: GAME_ID, name: "frontier-a", status: state.status }] };
+      return { chain: state.chain, games: [{ game_id: GAME_ID, name: "frontier-a", status: state.status }] };
     if (url.pathname === `/games/${GAME_ID}/snapshot`) state.snapshotReads++;
     if (url.pathname === `/games/${GAME_ID}/snapshot` && state.snapshotFails)
       return Response.json({ error: "snapshot unavailable" }, { status: 500 });
@@ -98,7 +99,7 @@ const createHerald = () => {
       );
     if (url.pathname === `/games/${GAME_ID}/snapshot`)
       return snapshot(state.army, state.neighbourArmy, url.searchParams.get("owner"));
-    const page = { chain: CHAIN_ID, world_address: "0x5e45", complete_through_block: 10 + log.length };
+    const page = { chain: state.chain, world_address: "0x5e45", complete_through_block: 10 + log.length };
     const after = url.searchParams.get("after");
     if (!after) return { ...page, next_cursor: { block: 10, transaction: 2147483647, event: 2147483647 }, items: [] };
     const [block, transaction, event] = after.split(":").map(Number);
@@ -151,7 +152,12 @@ const createHerald = () => {
       timestamp: Math.floor(Date.now() / 1000),
     });
   };
-  return { answer, act, battle, state };
+  /** The same host now serves a fresh chain: another chain id, and a history that starts again at block 11. */
+  const newChain = (chain: string) => {
+    state.chain = chain;
+    log.length = 0;
+  };
+  return { answer, act, battle, newChain, state };
 };
 
 /** The game's rules with a short armies tick, the player's home realm, and their army if it still exists. */
@@ -393,3 +399,24 @@ it("a wake that keeps failing is retried, then dropped, and every other alert st
   expect(herald.state.snapshotReads).toBe(reads); // the watch was given up, not retried forever
   await worker.dispose();
 }, 120_000);
+
+it("reads a new chain at the same URL from its own head, and sends nothing twice", async () => {
+  const { herald, push, worker } = await createHarness("important");
+  await worker.runCron();
+  await pause(polls(5)); // the notifier reaches the shard's head
+  herald.battle();
+  herald.battle();
+  await waitUntil(() => push.received.length >= 2, 20_000);
+  expect(push.received).toEqual([201, 201]);
+
+  // The host now serves a fresh chain whose history restarts below the old chain's cursor, and the directory says so.
+  herald.newChain("0xb");
+  await worker.db.prepare('UPDATE "shards" SET "chainId" = ? WHERE "url" = ?').bind("0xb", SHARD).run();
+  await worker.runCron();
+  await pause(polls(5)); // the notifier reaches the new chain's head
+  herald.battle();
+  await waitUntil(() => push.received.length >= 3, 20_000);
+  await pause(polls(10));
+  expect(push.received).toEqual([201, 201, 201]);
+  await worker.dispose();
+}, 60_000);
