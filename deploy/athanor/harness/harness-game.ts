@@ -46,12 +46,22 @@ export interface HarnessSubmission {
   confirmed?: Promise<unknown>;
   /** When Herald reported the transaction confirmed, in driver-clock milliseconds. */
   heraldConfirmedAtMs?: Promise<number>;
+  /**
+   * The provider's admission-to-visible time for this action, the figure the client reports too: from just before
+   * submission until the provider's wait on Herald's stream resolved. Undefined when the provider reported none.
+   */
+  admissionToVisibleMs?: Promise<number | undefined>;
 }
 
 interface SubmittedEvent {
   ticket?: NativeTicketIdentity;
   signerAddress?: string;
   transactionHash: string;
+}
+
+interface CompletedEvent {
+  details?: { transaction_hash?: string };
+  admissionToVisibleMs?: number;
 }
 
 /** The game as the harness plays it: native facts, the projection's occupancy, and per-bot action facades. */
@@ -240,6 +250,26 @@ async function waitUntilPlaying({ setup: { store }, gameId: game_id }: GameClien
  * so the next announcement for this signer is this action's. Confirmation waits explicitly for applied Herald state;
  * queued calls may resolve at submission and cannot serve as that barrier.
  */
+/** The provider stamps each completed action with its admission-to-visible time; a failed action carries none. */
+const providerAdmissionToVisible = (
+  provider: GameClient["setup"]["network"]["provider"],
+  transactionHash: string,
+  confirmed: Promise<unknown>,
+): Promise<number | undefined> =>
+  new Promise((resolve) => {
+    const hash = actorKey(transactionHash);
+    const onComplete = (event: CompletedEvent) => {
+      if (!event.details?.transaction_hash || actorKey(event.details.transaction_hash) !== hash) return;
+      provider.off("transactionComplete", onComplete);
+      resolve(event.admissionToVisibleMs);
+    };
+    provider.on("transactionComplete", onComplete);
+    confirmed.catch(() => {
+      provider.off("transactionComplete", onComplete);
+      resolve(undefined);
+    });
+  });
+
 const captureSubmission = (
   client: GameClient,
   heraldConfirmations: HeraldConfirmations | undefined,
@@ -262,14 +292,16 @@ const captureSubmission = (
       settle();
       if (!event.ticket) return reject(new Error("Native submission has no ticket identity"));
       const ticket = event.ticket;
+      const confirmed = client.runtime.waitForTransaction(event.transactionHash).then((transaction) => {
+        if (transaction.status === "REVERTED") throw new Error(transaction.revertReason ?? "Transaction reverted");
+        const outcome = requireNativeExecutionOutcome(transaction.executions, ticket);
+        if (outcome.status === "REVERTED") throw new Error(`Native action rejected: ${outcome.statusClass}: ${outcome.reason}`);
+      });
       resolve({
         transactionHash: event.transactionHash,
         heraldConfirmedAtMs: heraldConfirmations?.confirmedAt(event.transactionHash),
-        confirmed: client.runtime.waitForTransaction(event.transactionHash).then((transaction) => {
-          if (transaction.status === "REVERTED") throw new Error(transaction.revertReason ?? "Transaction reverted");
-          const outcome = requireNativeExecutionOutcome(transaction.executions, ticket);
-          if (outcome.status === "REVERTED") throw new Error(`Native action rejected: ${outcome.statusClass}: ${outcome.reason}`);
-        }),
+        confirmed,
+        admissionToVisibleMs: providerAdmissionToVisible(provider, event.transactionHash, confirmed),
       });
     };
     provider.on("transactionSubmitted", onSubmitted);

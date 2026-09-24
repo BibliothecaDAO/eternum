@@ -988,14 +988,7 @@ export async function trackTransaction(options: TrackTransactionOptions): Promis
 
   Object.assign(
     record,
-    await waitForConfirmation(
-      options,
-      submission,
-      transactionHash,
-      Date.parse(record.submitStartedAt),
-      Date.parse(record.submittedAt!),
-      rpc,
-    ),
+    await waitForConfirmation(options, submission, transactionHash, Date.parse(record.submittedAt!), rpc),
   );
   record.rpc = snapshotRpcMetrics(rpc);
   return record;
@@ -1006,7 +999,6 @@ async function waitForConfirmation(
   options: TrackTransactionOptions,
   submission: HarnessSubmission,
   transactionHash: string,
-  submitStartedAtMs: number,
   submittedAtMs: number,
   rpc: RpcMetrics,
 ): Promise<Partial<TrackedTransaction>> {
@@ -1028,9 +1020,8 @@ async function waitForConfirmation(
   let visibility: Partial<TrackedTransaction> = {};
   const confirmed =
     submission.confirmed?.then(
-      () => {
-        const visibleAtMs = Date.now();
-        visibility = { visibleAt: toIso(visibleAtMs), admissionToVisibleMs: visibleAtMs - submitStartedAtMs };
+      async () => {
+        visibility = { visibleAt: toIso(Date.now()), admissionToVisibleMs: await submission.admissionToVisibleMs };
         return undefined;
       },
       (error: unknown) => errorMessage(error),
