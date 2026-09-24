@@ -2,7 +2,7 @@ import { useParams } from "react-router-dom";
 
 import { formatDate, ordinal, sameAddress, shortAddress } from "./format";
 import { modeLabel } from "./game-links";
-import { type DirectoryGame, finishedGames, useDirectory, useLeaderboard } from "./herald";
+import { type DirectoryGame, useLeaderboard, useRecentResults } from "./herald";
 import { portraitUrl } from "./identity-chip";
 import { ErrorPanel, Loading, Panel, PanelTitle } from "./kit";
 import { NotFoundPage } from "./not-found";
@@ -34,10 +34,10 @@ export const PlayerPage = () => {
   const { address = "" } = useParams();
   const isAddress = /^0x[0-9a-fA-F]{1,64}$/.test(address);
   const profileOf = useProfiles(isAddress ? [address] : []);
-  const directory = useDirectory();
+  const history = useRecentResults(HISTORY_LIMIT, isAddress ? address : null);
   if (!isAddress) return <NotFoundPage title="No such lord">That is not a gameplay account address.</NotFoundPage>;
   const profile = profileOf(address);
-  const games = finishedGames(directory.data?.games ?? []).slice(0, HISTORY_LIMIT);
+  const games = history.data?.games ?? [];
   return (
     <div className="grid max-w-[880px] items-start gap-4 lg:grid-cols-[300px_1fr]">
       <Panel>
@@ -55,15 +55,15 @@ export const PlayerPage = () => {
       </Panel>
       <Panel>
         <PanelTitle>Match history</PanelTitle>
-        {directory.isPending ? <Loading /> : null}
-        {directory.isError ? (
+        {history.isPending ? <Loading /> : null}
+        {history.isError ? (
           <ErrorPanel
             message="This player's games are unavailable right now."
-            error={directory.error}
-            retry={() => void directory.refetch()}
+            error={history.error}
+            retry={() => void history.refetch()}
           />
         ) : null}
-        {directory.isSuccess && games.length === 0 ? (
+        {history.isSuccess && games.length === 0 ? (
           <p className="text-sm text-gold/60">No finished games on record.</p>
         ) : null}
         <ul>

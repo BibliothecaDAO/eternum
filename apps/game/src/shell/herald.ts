@@ -1,11 +1,11 @@
 import { fetchHeraldGameDirectory, fetchHeraldGameLeaderboard, type GameRef } from "@bibliothecadao/eternum/shard";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import { realmsAccountAddress } from "@realms-world/identity/account";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 
-import { fetchDirectory, type DirectoryShard } from "@/runtime/world/directory";
+import { fetchDirectory, fetchDirectoryHistory, type DirectoryShard } from "@/runtime/world/directory";
 import { listPastedShards, openPastedShards, requireOpenShard } from "@/runtime/world/shards";
 
 /** A directory entry with the shard it came from, so the shell can address the game as (chain id, game id). */
@@ -22,7 +22,10 @@ interface ShardListing {
 }
 
 interface ShardDirectory {
+  /** Live and upcoming games; a settled game lives in the history instead. */
   games: DirectoryGame[];
+  /** Settled games on the shards the player pasted, which our history does not list. */
+  pastedFinished: DirectoryGame[];
   shards: ShardListing[];
   /** Shards known but not readable, by URL and reason: the directory's own, and pasted ones that would not open. */
   failures: { url: string; error: Error }[];
@@ -46,13 +49,15 @@ export const fetchDirectories = async (player: string | null): Promise<ShardDire
       fetchHeraldGameDirectory(shard, player ?? undefined).then((directory) => ({ shard, directory })),
     ),
   );
+  const pastedGames = pastedDirectories.flatMap(({ shard, directory }) =>
+    directory.games.map((game) => ({ ...game, chainId: shard.chainId })),
+  );
   return {
     games: [
       ...listed.flatMap((shard) => (shard.games ?? []).map((game) => ({ ...game, chainId: shard.chainId }))),
-      ...pastedDirectories.flatMap(({ shard, directory }) =>
-        directory.games.map((game) => ({ ...game, chainId: shard.chainId })),
-      ),
+      ...pastedGames.filter((game) => !isSettled(game)),
     ],
+    pastedFinished: pastedGames.filter(isSettled).toSorted((a, b) => b.clock.end_at - a.clock.end_at),
     shards: [
       ...listed.map((shard) => ({
         url: shard.url,
@@ -112,6 +117,28 @@ export const useDirectory = (player: string | null = null) =>
     retry: 1,
   });
 
+const HISTORY_PAGE_SIZE = 20;
+
+/** Settled games on our shards, newest first, a page at a time; with a player, only that player's games. */
+export const useHistory = (player: string | null = null) =>
+  useInfiniteQuery({
+    queryKey: ["shell", "history", player],
+    queryFn: ({ pageParam }) => fetchDirectoryHistory({ limit: HISTORY_PAGE_SIZE, cursor: pageParam, player }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (page) => page.next,
+    staleTime: 30_000,
+    retry: 1,
+  });
+
+/** The first few settled games, as a short list shows them (the latest result, a player's recent matches). */
+export const useRecentResults = (limit: number, player: string | null = null) =>
+  useQuery({
+    queryKey: ["shell", "history", "recent", limit, player],
+    queryFn: () => fetchDirectoryHistory({ limit, player }),
+    staleTime: 30_000,
+    retry: 1,
+  });
+
 /** Live points while a game runs; the recorded final standings once its result is complete. */
 export const useLeaderboard = (game: GameRef | null) =>
   useQuery({
@@ -137,9 +164,8 @@ export const nextOpenGame = (games: readonly DirectoryGame[]): DirectoryGame | u
 
 export const isGameOver = (game: DirectoryGame): boolean => game.status === "Ended" || game.status === "Settled";
 
-/** Games with a recorded result, newest first. */
-export const finishedGames = (games: readonly DirectoryGame[]): DirectoryGame[] =>
-  games.filter((game) => game.status === "Settled").toSorted((a, b) => b.clock.end_at - a.clock.end_at);
+/** A settled game has its recorded result and belongs to the history, not the game list. */
+const isSettled = (game: DirectoryGame): boolean => game.status === "Settled";
 
 export const sameGame = (left: GameRef, right: GameRef): boolean =>
   left.chainId === right.chainId && left.gameId === right.gameId;
