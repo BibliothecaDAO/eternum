@@ -333,21 +333,23 @@ fn labor_buildings_cannot_be_destroyed_and_population_blocks_overbuilding() {
 #[test]
 fn a_labor_building_a_player_builds_costs_its_rule_population() {
     let (deployment, home) = building_world(None);
-    let mut labor_costs_two = array![];
-    for rule in rules() {
-        labor_costs_two
-            .append(
-                if *rule.category == 25 {
-                    BuildingRuleConfig { category: 25, rule: BuildingRule { population_cost: 2, ..*rule.rule } }
-                } else {
-                    *rule
-                },
-            );
-    }
-    start_cheat_caller_address(deployment.games, super::authority());
-    IBuildingRulesDispatcher { contract_address: deployment.games }
-        .configure_buildings(3, labor_costs_two.span(), Option::None);
-    stop_cheat_caller_address(deployment.games);
+    // Labor costs 2 population in this game; its rules are immutable once created, so the fixture sets them directly.
+    let labor = crate::buildings::IBuildingRulesDispatcherTrait::building_rule(
+        IBuildingRulesDispatcher { contract_address: deployment.games },
+        crate::buildings::BuildingRuleKey { game_id: 3, category: 25 },
+    );
+    set_fixture(
+        deployment.games,
+        selector!("buildings"),
+        selector!("terms"),
+        array![3, 25].span(),
+        crate::buildings::BuildingTerms {
+            population_cost: 2,
+            capacity_grant: labor.capacity_grant,
+            simple_count: labor.simple_cost.len().try_into().unwrap(),
+            complex_count: labor.complex_cost.len().try_into().unwrap(),
+        },
+    );
     let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
     let structure = structures.structure(home).unwrap();
     set_fixture(
