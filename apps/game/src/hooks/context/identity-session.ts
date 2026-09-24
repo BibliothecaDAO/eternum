@@ -1,32 +1,31 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import type { LandingEntryRouteState } from "@/ui/features/landing/lib/landing-entry-state";
-import { resolveEndpoint } from "@realms-world/chain";
 import { createIdentityClient, profileOfIdentityUser, type Session } from "@realms-world/identity";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { create } from "zustand";
-import { env } from "../../../env";
 
 /**
  * The identity session is the one "logged in" fact. Every surface that used to ask whether the gameplay account
- * had a non-zero address (the landing gate, the sign-in prompts, the HUD banner) reads this store instead; the
+ * had a non-zero address (the shell, the sign-in prompts, the HUD banner) reads this store instead; the
  * gameplay account is derived from the session by `GameplayAccountSync` and may lag it while it deploys.
  */
-export const identityOrigin = resolveEndpoint(env.VITE_PUBLIC_IDENTITY_ORIGIN, {
-  name: "VITE_PUBLIC_IDENTITY_ORIGIN",
-  browserFacing: true,
-});
+/** The identity Worker answers under this app's own /api, so its origin is the page's and no request crosses origins. */
+export const identityOrigin = (): string => window.location.origin;
 
-export const identityClient = createIdentityClient({ baseUrl: `${identityOrigin}/api/auth` });
+export const identityClient = createIdentityClient({ apiUrl: "/api" });
 
 /** The identity chip's popover id: sign-in requests open it wherever the chip is mounted. */
 export const IDENTITY_POPOVER_ID = "identity";
 
 export type IdentitySessionStatus = "loading" | "anonymous" | "signed-in";
 
-/** A surface that needs a signed-in identity asks for one; the landing chip replays the redirect after sign-in. */
+/**
+ * A surface that needs a signed-in identity asks for one. A request without a redirect means "sign in here": the
+ * chip opens the sign-in view and stays on the page; with one, the chip replays the redirect after sign-in.
+ */
 interface SignInRequest {
-  redirectTo: string;
-  redirectState?: LandingEntryRouteState;
+  redirectTo?: string;
+  redirectState?: Record<string, unknown>;
 }
 
 interface IdentitySessionStore {
@@ -40,6 +39,9 @@ interface IdentitySessionStore {
 }
 
 const resolveStatus = (session: Session | null): IdentitySessionStatus => (session ? "signed-in" : "anonymous");
+
+/** Notifications belong to the Realms account, named by its Realms id: every notification surface reads the owner here. */
+export const notificationOwnerOf = (session: Session | null): string | null => session?.user.realmsId ?? null;
 
 /** The signed-in user's chosen username, null before they choose one (the name then still reads as the address). */
 export const identityUsername = (session: Session | null): string | null =>
@@ -59,22 +61,17 @@ export const useIdentitySessionStore = create<IdentitySessionStore>()((set) => (
       set({ session: null, status: "anonymous" });
     }
   },
-  requestSignIn: (request) => {
-    set({ signInRequest: request ?? null });
+  requestSignIn: (request = {}) => {
+    set({ signInRequest: request });
     usePopoverStore.getState().open(IDENTITY_POPOVER_ID);
   },
   clearSignInRequest: () => set({ signInRequest: null }),
 }));
 
-/** End the identity session before detaching its wallet in every sign-out surface. */
-export async function signOutIdentitySession(disconnect: () => Promise<unknown>): Promise<void> {
+/** Ends the identity session; no wallet stays connected to detach, since wallets only link or recover. */
+export async function signOutIdentitySession(): Promise<void> {
   await identityClient.signOut();
   useIdentitySessionStore.getState().applySession(null);
-  try {
-    await disconnect();
-  } catch (error) {
-    console.error("identity_wallet_disconnect_failed", error);
-  }
 }
 
 let initialLoad: Promise<void> | null = null;
@@ -91,4 +88,20 @@ export const useIdentitySession = () => {
   }, []);
 
   return { status, session };
+};
+
+/**
+ * Signs in from any page: the account page carries the sign-in view, and the identity chip there sends the player back
+ * to `returnTo` once the session lands. A surface outside the app shell (the game entry) has no chip of its own.
+ */
+export const useSignInAndReturn = () => {
+  const navigate = useNavigate();
+  const requestSignIn = useIdentitySessionStore((state) => state.requestSignIn);
+  return useCallback(
+    (returnTo: string) => {
+      requestSignIn({ redirectTo: returnTo });
+      navigate("/account");
+    },
+    [navigate, requestSignIn],
+  );
 };

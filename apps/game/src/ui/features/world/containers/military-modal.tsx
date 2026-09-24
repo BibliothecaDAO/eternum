@@ -90,7 +90,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
   // Empty guard slot = attention.
   const attention = useCallback((structure: StructureWithMetadata) => {
     const base = structure.structure?.base;
-    const occupied = Number(base?.troop_guard_count ?? 0);
+    const occupied = structure.guardCount;
     const max = Number(base?.troop_max_guard_count ?? 0);
     return max > 0 && occupied < max;
   }, []);

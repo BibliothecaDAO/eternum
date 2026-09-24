@@ -1,11 +1,8 @@
+import { duelBaseConfig } from "./duel/base";
+import { frontierBaseConfig } from "./frontier/base";
 import type { Config } from "../../packages/types/src/types/common";
-import type { GameChain } from "@realms-world/chain";
-import {
-  applyBlitzBalanceProfile,
-  blitzBaseConfig,
-  resolveBlitzBalanceProfileIdFromDurationMinutes,
-  resolveBlitzBalanceProfileIdFromDurationSeconds,
-} from "./blitz";
+import type { ConfigurationNetwork } from "../shared/game-environments";
+import { blitzBaseConfig } from "./blitz";
 import {
   buildEnvironmentContextConfig,
   resolveEnvironmentContext,
@@ -20,36 +17,30 @@ import { resolveEternumChainConfig } from "./eternum/chains";
 export type { BuildConfigOptions, GameType };
 
 function resolveBaseGameConfig(gameType: GameType) {
-  return gameType === "blitz" ? blitzBaseConfig : eternumBaseConfig;
+  return { blitz: blitzBaseConfig, eternum: eternumBaseConfig, frontier: frontierBaseConfig, duel: duelBaseConfig }[
+    gameType
+  ];
 }
 
-function resolveGameChainConfig(gameType: GameType, chain: GameChain, context: EnvironmentContext) {
-  return gameType === "blitz" ? resolveBlitzChainConfig(chain, context) : resolveEternumChainConfig(chain, context);
-}
-
-function resolveOptionalBlitzBalanceProfileId(options: BuildConfigOptions) {
-  if (options.gameType !== "blitz") {
-    return null;
-  }
-
-  return (
-    resolveBlitzBalanceProfileIdFromDurationMinutes(options.durationMinutes) ??
-    resolveBlitzBalanceProfileIdFromDurationSeconds(options.durationSeconds)
-  );
-}
+const chainConfigByMode: Record<
+  GameType,
+  (chain: ConfigurationNetwork, context: EnvironmentContext) => ReturnType<typeof resolveBlitzChainConfig>
+> = {
+  frontier: () => ({}),
+  blitz: resolveBlitzChainConfig,
+  duel: resolveBlitzChainConfig,
+  eternum: resolveEternumChainConfig,
+};
 
 export async function buildConfig(options: BuildConfigOptions): Promise<Config> {
-  const environmentContext = await resolveEnvironmentContext(options.chain, options.gameType);
+  const environmentContext = resolveEnvironmentContext(options.chain);
   const baseConfig = mergeConfigPatches<Config>(
     resolveBaseGameConfig(options.gameType),
     buildEnvironmentContextConfig(environmentContext),
-    resolveGameChainConfig(options.gameType, options.chain, environmentContext),
+    chainConfigByMode[options.gameType](options.chain, environmentContext),
   );
-  const profileId = resolveOptionalBlitzBalanceProfileId(options);
-
-  if (!profileId) {
-    return baseConfig;
-  }
-
-  return applyBlitzBalanceProfile(baseConfig, profileId);
+  const durationSeconds =
+    options.durationSeconds ?? (options.durationMinutes == null ? undefined : options.durationMinutes * 60);
+  if (durationSeconds !== undefined) baseConfig.season.durationSeconds = durationSeconds;
+  return baseConfig;
 }

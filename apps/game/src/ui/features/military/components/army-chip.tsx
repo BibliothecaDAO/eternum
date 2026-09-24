@@ -1,3 +1,4 @@
+import { ArrowLeftRight, ArrowRight, CirclePlus } from "@/ui/design-system/atoms/game-icons";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -11,17 +12,16 @@ import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { InventoryResources } from "@/ui/features/economy/resources";
-import { armyHasTroops, getArmyRelicEffects, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { armyHasTroops, getArmyRelicEffects, configManager, StaminaManager } from "@bibliothecadao/eternum";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
+import { useQuery } from "@/hooks/helpers/use-query";
 import { ActorType, ArmyInfo, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
-import { ArrowLeftRight, ArrowRight, CirclePlus } from "@/ui/design-system/atoms/game-icons";
 import React, { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArmyManagementCard } from "./army-management-card";
 import { HelpModal } from "./help-modal";
 import { TroopChip } from "./troop-chip";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 export const NavigateToPositionIcon = ({
   position,
@@ -41,7 +41,7 @@ export const NavigateToPositionIcon = ({
     <CircleButton
       image="/image-icons/compass.png"
       size="md"
-      className={`  hover:opacity-50 transition-all duration-300 ${className}`}
+      className={` fill-gold hover:fill-gold/50 transition-all duration-300 ${className}`}
       onClick={() => {
         const { x, y } = position.getNormalized();
         setNavigationTarget({
@@ -74,9 +74,6 @@ const ArmyChip = ({
   showButtons?: boolean;
   currentArmiesTick?: number;
 }) => {
-  const {
-    setup: { components },
-  } = useDojo();
   const setTooltip = useTooltipStore((state) => state.setTooltip);
   const openSurface = usePopoverStore((state) => state.openSurface);
 
@@ -91,7 +88,11 @@ const ArmyChip = ({
 
   const isOnMap = useMemo(() => location.pathname.includes("/play"), [location.pathname]);
 
-  const resources = useComponentValue(components.Resource, gameEntityKey([BigInt(army.entityId)]));
+  const inventory = useResourceManager(army.entityId);
+  const resources = useNativeRow("ResourceWeight", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: army.entityId,
+  });
 
   const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
   const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
@@ -124,12 +125,12 @@ const ArmyChip = ({
             selected={{
               type: ActorType.Explorer,
               id: army.entityId,
-              hex: new Position({ x: Number(army.position.x), y: Number(army.position.y) }).getContract(),
+              hex: Position.fromContract({ x: Number(army.position.x), y: Number(army.position.y) }).getContract(),
             }}
             target={{
               type: ActorType.Structure,
               id: army.entity_owner_id,
-              hex: new Position({ x: Number(hexPosition?.col), y: Number(hexPosition?.row) }).getContract(),
+              hex: Position.fromNormalized({ x: Number(hexPosition?.col), y: Number(hexPosition?.row) }).getContract(),
             }}
             allowBothDirections={true}
           />
@@ -176,7 +177,7 @@ const ArmyChip = ({
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {isHome && (
                       <CirclePlus
-                        className={`w-5 h-5 hover:opacity-50 hover:scale-110 transition-all duration-300 cursor-pointer ${
+                        className={`w-5 h-5 hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${
                           army.troops.count === 0n ? "animate-pulse" : ""
                         } ${army ? "defensive-army-edit-selector" : "attacking-army-edit-selector"}`}
                         onClick={() => {
@@ -191,7 +192,7 @@ const ArmyChip = ({
                       <React.Fragment>
                         {(isHome || hasAdjacentOwnedStructure) && (
                           <ArrowLeftRight
-                            className={`w-5 h-5  hover:opacity-50 hover:scale-110 transition-all duration-300 cursor-pointer ${
+                            className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${
                               army ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
                             }`}
                             onClick={(event) => {
@@ -211,7 +212,7 @@ const ArmyChip = ({
                         {
                           <ViewOnMapIcon
                             className="w-5 h-5 hover:scale-110 transition-all duration-300 cursor-pointer"
-                            position={new Position({ x: Number(army.position.x), y: Number(army.position.y) })}
+                            position={Position.fromContract({ x: Number(army.position.x), y: Number(army.position.y) })}
                             // onClick={() => {
                             //   if (!isOnMap) {
                             //     navigate("/play/map");
@@ -219,7 +220,7 @@ const ArmyChip = ({
                             // }}
                           />
                         }
-                        {isOnMap && <NavigateToPositionIcon position={new Position(army.position)} />}
+                        {isOnMap && <NavigateToPositionIcon position={Position.fromContract(army.position)} />}
                       </React.Fragment>
                     )}
                   </div>
@@ -283,7 +284,7 @@ const ArmyChip = ({
               <TroopChip troops={army.troops} className="h-auto" size="lg" />
               {army.troops.count > 0n && resources && (
                 <InventoryResources
-                  resources={resources}
+                  resources={inventory}
                   relicEffects={relicEffects}
                   className="flex gap-1 h-14 overflow-x-auto no-scrollbar"
                   resourcesIconSize="xs"

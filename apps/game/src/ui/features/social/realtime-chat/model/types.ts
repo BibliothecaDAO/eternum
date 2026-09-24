@@ -85,6 +85,8 @@ export interface RealtimeChatState {
   pendingReadReceipts: DirectMessageReadReceipt[];
   openTabs: ChatTab[];
   activeTabId: string | null;
+  /** Accounts this player blocked: their direct messages never arrive, and their threads are hidden. */
+  blockedPlayers: string[];
 }
 
 export interface InitializeRealtimeClientParams {
@@ -130,6 +132,9 @@ export interface RealtimeChatActions {
   removeTab(tabId: string): void;
   setActiveTab(tabId: string | null): void;
   updateTabUnread(tabId: string, unreadCount: number): void;
+  loadBlockedPlayers(): Promise<void>;
+  blockPlayer(playerId: string): Promise<void>;
+  unblockPlayer(playerId: string): Promise<void>;
 }
 
 export type RealtimeChatStore = RealtimeChatState & {

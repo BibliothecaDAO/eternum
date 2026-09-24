@@ -7,22 +7,14 @@ import { ASSET_CHECK_FILES } from "./vitest.assets.files";
 export default defineConfig({
   plugins: [react(), wasm()],
   test: {
-    // A handful of load-sensitive files (instanced-model, game-entry-preload,
-    // play-asset-manifest) time out under full-suite parallelism but pass in
-    // isolation. One CI retry turns those known flakes from an 11-minute job
+    // Two load-sensitive files (instanced-model, game-entry-preload) time out
+    // under full-suite parallelism but pass in isolation. One CI retry turns those known flakes from an 11-minute job
     // rerun into a few retried seconds; locally failures stay loud.
     retry: process.env.CI ? 1 : 0,
     // The asset and CLI checks run through vitest.assets.config.ts (`pnpm verify:assets`) where the artefacts
     // they check are produced; the PR gate stays a behaviour suite.
     exclude: ["**/node_modules/**", "**/dist/**", ...ASSET_CHECK_FILES],
     env: {
-      VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH: "0x0000000000000000000000000000000000000002",
-      VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS: "0x0000000000000000000000000000000000000003",
-      VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS: "0x0000000000000000000000000000000000000004",
-      VITE_PUBLIC_FEE_TOKEN_ADDRESS: "0x0000000000000000000000000000000000000001",
-      VITE_PUBLIC_NODE_URL: "https://rpc.realms.test/rpc/v0_9_0",
-      VITE_PUBLIC_HERALD_URL: "https://herald.realms.test",
-      VITE_PUBLIC_IDENTITY_ORIGIN: "https://realms.test",
       VITE_PUBLIC_IDENTITY_RPC_URL: "https://identity-rpc.realms.test",
     },
     globals: true,
@@ -48,10 +40,11 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // As in vite.config.ts: public assets precede the source root, since alias matching is first-match.
+      "@/assets": path.resolve(__dirname, "./public/assets"),
       "@": path.resolve(__dirname, "./src"),
       "@config": path.resolve(__dirname, "../../config/utils/utils"),
       "@config-deployer": path.resolve(__dirname, "../../config/deployer"),
-      "@contracts": path.resolve(__dirname, "../../contracts/utils/utils"),
       "@bibliothecadao/ammv2-sdk": path.resolve(__dirname, "../../packages/ammv2-sdk/src/index.ts"),
       // Subpath alias must precede the package root: alias matching is
       // prefix-based, so the root entry would otherwise swallow it.
@@ -59,8 +52,10 @@ export default defineConfig({
         __dirname,
         "../../packages/core/src/managers/game-entity-keys.ts",
       ),
+      "@bibliothecadao/eternum/automation": path.resolve(__dirname, "../../packages/core/src/automation/index.ts"),
       "@bibliothecadao/eternum/game-sync": path.resolve(__dirname, "../../packages/core/src/sync/index.ts"),
       "@bibliothecadao/eternum/game-client": path.resolve(__dirname, "../../packages/core/src/client/index.ts"),
+      "@bibliothecadao/eternum/shard": path.resolve(__dirname, "../../packages/core/src/client/shard-reader.ts"),
       "@bibliothecadao/eternum/biome": path.resolve(__dirname, "../../packages/core/src/utils/biome/biome.ts"),
       "@bibliothecadao/eternum": path.resolve(__dirname, "../../packages/core/src/index.ts"),
       // Subpath alias must precede the package root: alias matching is
@@ -70,10 +65,8 @@ export default defineConfig({
         "../../packages/provider/src/classify-transaction-error.ts",
       ),
       "@bibliothecadao/provider": path.resolve(__dirname, "../../packages/provider/src/index.ts"),
-      "@bibliothecadao/react": path.resolve(__dirname, "../../packages/react/src/index.ts"),
       "@bibliothecadao/types/terrain": path.resolve(__dirname, "../../packages/types/src/terrain.ts"),
       "@bibliothecadao/types": path.resolve(__dirname, "../../packages/types/src/index.ts"),
-      "@manifests": path.resolve(__dirname, "../../contracts/l3/game"),
       "@pm": path.resolve(__dirname, "./src/pm"),
       "@videos": path.resolve(__dirname, "./src/assets/videos"),
     },

@@ -23,7 +23,7 @@
 **/gql
 **/*.graphql
 **/*.gen.ts
-apps/web/src/site/generated/scroll-posts.ts
+apps/game/src/shell/generated/scroll-posts.ts
 
 # ignore json files
 **/*.json

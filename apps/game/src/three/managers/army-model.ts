@@ -2,7 +2,6 @@ import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { CameraView } from "@/three/scenes/hexagon-scene";
 import { gltfLoader } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
-import { getCharacterModel } from "@/utils/agent";
 import { SHIP_WORLD_SCALE } from "@/three/characters/ships/ship-design";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -92,11 +91,12 @@ const flushArmyModelSlotUploads = (modelData: ModelData): void => {
   ]);
 };
 
-/** Instanced meshes draw raw geometry, so a hull's world scale is written into its vertices once at load. */
+/** Bake authored -Z bows into the movement system's +Z forward axis and tile scale. */
 function bakeShipWorldScale(scene: Object3D): void {
   const scaled = new Set<BufferGeometry>();
   scene.traverse((child) => {
     if (!(child instanceof Mesh) || scaled.has(child.geometry)) return;
+    child.geometry.rotateY(Math.PI);
     child.geometry.scale(SHIP_WORLD_SCALE, SHIP_WORLD_SCALE, SHIP_WORLD_SCALE);
     scaled.add(child.geometry);
   });
@@ -196,7 +196,6 @@ export class ArmyModel {
   private readonly ROTATION_SPEED = 5.0;
   private readonly zeroScale = new Vector3(0, 0, 0);
   private readonly normalScale = new Vector3(1, 1, 1);
-  private readonly agentScale = new Vector3(2, 2, 2);
   private readonly zeroInstanceMatrix = new Matrix4().makeScale(0, 0, 0);
   private readonly MODEL_ANIMATION_UPDATE_INTERVAL = 1000 / 20; // 20 FPS per model
   // Fixed for the mesh's whole life. The renderer's node pipeline captures
@@ -218,8 +217,6 @@ export class ArmyModel {
   private readonly resolveBiomeForHex = (col: number, row: number): BiomeType =>
     configManager.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
 
-  // agent
-  private isAgent: boolean = false;
   private hasWarnedInstanceCapacityOverflow = false;
   private contactShadowsEnabled = true;
 
@@ -857,13 +854,6 @@ export class ArmyModel {
     }
   }
 
-  private getScaleForModelType(modelType: ModelType): Vector3 {
-    if (modelType === ModelType.AgentIstarai || modelType === ModelType.AgentElisa) {
-      return this.agentScale;
-    }
-    return this.normalScale;
-  }
-
   public updateInstance(
     entityId: number,
     index: number,
@@ -931,7 +921,7 @@ export class ArmyModel {
     if (activeBaseModel) {
       const modelData = this.models.get(activeBaseModel);
       if (modelData) {
-        this.syncRenderableInstance(modelData, state, index, entityId, this.getScaleForModelType(activeBaseModel));
+        this.syncRenderableInstance(modelData, state, index, entityId, this.normalScale);
       }
     }
 
@@ -2060,12 +2050,6 @@ export class ArmyModel {
       return resolveTroopModel(TROOP_TO_SHIP_MODEL, troopType, troopTier, entityId);
     }
 
-    if (this.isAgent) {
-      if (getCharacterModel(troopTier, troopType, entityId) !== undefined) {
-        return getCharacterModel(troopTier, troopType, entityId)!;
-      }
-    }
-
     return resolveTroopModel(TROOP_TO_MODEL, troopType, troopTier, entityId);
   }
 
@@ -2130,14 +2114,6 @@ export class ArmyModel {
       currentRotation: movement.currentRotation,
       targetRotation: movement.currentRotation,
     });
-  }
-
-  /**
-   * Sets the isAgent flag
-   * @param isAgent - Whether the entity is an agent
-   */
-  public setIsAgent(isAgent: boolean): void {
-    this.isAgent = isAgent;
   }
 
   /**

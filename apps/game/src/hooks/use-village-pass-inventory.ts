@@ -1,7 +1,5 @@
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { GameChain as Chain } from "@realms-world/chain";
-import { getRpcUrlForChain } from "@/runtime/chain-rpc";
 import { createContractEntrypointSupportResolver, parseUint256CallResult } from "./pass-inventory-rpc";
 
 export interface VillagePassInventoryItem {
@@ -9,10 +7,9 @@ export interface VillagePassInventoryItem {
 }
 
 interface UseVillagePassInventoryProps {
-  chain: Chain;
   ownerAddress?: string | null;
   villagePassAddress?: string | null;
-  rpcUrl?: string | null;
+  rpcUrl: string | null;
   enabled?: boolean;
 }
 
@@ -25,7 +22,6 @@ interface UseVillagePassInventoryReturn {
 }
 
 export const useVillagePassInventory = ({
-  chain,
   ownerAddress,
   villagePassAddress,
   rpcUrl,
@@ -37,14 +33,11 @@ export const useVillagePassInventory = ({
   const [error, setError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
 
-  const resolvedRpcUrl = useMemo(() => {
-    const customRpcUrl = rpcUrl?.trim();
-    if (customRpcUrl) return customRpcUrl;
-    return getRpcUrlForChain(chain);
-  }, [chain, rpcUrl]);
-
-  const provider = useMemo(() => getCachedRpcProvider(resolvedRpcUrl), [resolvedRpcUrl]);
-  const supportsEntrypoint = useMemo(() => createContractEntrypointSupportResolver(provider), [provider]);
+  const provider = useMemo(() => (rpcUrl ? getCachedRpcProvider(rpcUrl) : null), [rpcUrl]);
+  const supportsEntrypoint = useMemo(
+    () => (provider ? createContractEntrypointSupportResolver(provider) : null),
+    [provider],
+  );
 
   const refetch = useCallback(() => {
     setRefreshTick((prev) => prev + 1);
@@ -53,7 +46,7 @@ export const useVillagePassInventory = ({
   useEffect(() => {
     let cancelled = false;
 
-    if (!enabled || !ownerAddress || !villagePassAddress) {
+    if (!enabled || !ownerAddress || !villagePassAddress || !provider || !supportsEntrypoint) {
       setVillagePassBalance(0n);
       setVillagePasses([]);
       setIsLoading(false);

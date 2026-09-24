@@ -10,7 +10,7 @@ import { LogOut } from "lucide-react";
 
 import { createIdentityClient } from "@realms-world/identity";
 
-const identityClient = createIdentityClient({ baseUrl: `${env.VITE_BASE_URL}/api/auth` });
+const identityClient = createIdentityClient({ apiUrl: `${env.VITE_BASE_URL}/api` });
 
 export function Login() {
   const { address } = useAccount();

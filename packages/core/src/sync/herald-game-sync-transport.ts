@@ -1,7 +1,8 @@
-import { getGameSyncModel } from "./model-manifest";
+import type { NativeExecutionOutcome } from "@bibliothecadao/types";
+import type { GameSyncModelDefinition } from "./model-manifest";
+import { HERALD_GAME_FINALIZED_CLOSE } from "./herald-http-types";
 import type {
-  GameSyncSnapshotPage,
-  GameSyncEntity,
+  GameSyncFact,
   GameSyncHead,
   GameSyncSubscriptionHandlers,
   GameSyncTransaction,
@@ -32,10 +33,12 @@ type HeraldMessage =
   | (HeraldMessageBase & {
       type: "hello";
       confirmed_block: number;
+      confirmed_timestamp?: number | null;
       preconfirmed_block: number | null;
     })
   | (HeraldMessageBase & { type: "snapshot"; model: string; rows: HeraldRow[] })
   | (HeraldMessageBase & { type: "snapshot_end" })
+  | (HeraldMessageBase & { type: "scope"; actor?: string; expedition: boolean; set: HeraldSet[] })
   | (HeraldMessageBase & {
       type: "diff";
       block: number | null;
@@ -51,12 +54,13 @@ type HeraldMessage =
       status: string;
       block: number | null;
       revert_reason?: string;
+      executions?: NativeExecutionOutcome[];
     })
   | (HeraldMessageBase & { type: "head"; block: number; timestamp: number; preconfirmed?: boolean });
 
 export interface HeraldSocket {
   close(): void;
-  onclose: (() => void) | null;
+  onclose: ((event?: { code?: number; reason?: string }) => void) | null;
   onerror: (() => void) | null;
   onmessage: ((event: { data: unknown }) => void) | null;
   onopen: (() => void) | null;
@@ -70,14 +74,8 @@ interface Deferred<Value> {
   settled: boolean;
 }
 
-interface EntityDelivery {
-  preconfirmed: boolean;
-  transactionHash?: string;
-}
-
-type StoredRow = HeraldSet;
-
 export interface HeraldGameSyncTransportOptions {
+  modelDefinition: (name: string) => GameSyncModelDefinition;
   reconnectMs?: number;
   socketFactory?: (url: string) => HeraldSocket;
   url: string;
@@ -110,72 +108,57 @@ const deferred = <Value>(): Deferred<Value> => {
   return result;
 };
 
-const rowIdentity = (model: string, key: string): string => `${model}:${key}`;
+const toFact = ({ model, key, value }: HeraldSet): GameSyncFact => ({ model, key, value });
 
-const toEntity = ({ key, model, value }: StoredRow): GameSyncEntity => ({
-  hashed_keys: key,
-  models: { [model]: value },
-});
+const toRemoval = ({ model, key }: HeraldDelete): GameSyncFact => ({ model, key, value: null });
 
-const toRemoval = ({ key, model }: HeraldDelete): GameSyncEntity => ({
-  hashed_keys: key,
-  models: { [model]: {} },
-});
-
-/** Herald rows are JSON records; two deliveries of the same value are one fact, not two RECS writes. */
-const isSameRowValue = (left: unknown, right: unknown): boolean => {
-  if (left === right) return true;
-  if (typeof left !== "object" || typeof right !== "object" || left === null || right === null) return false;
-  if (Array.isArray(left) || Array.isArray(right)) {
-    return (
-      Array.isArray(left) &&
-      Array.isArray(right) &&
-      left.length === right.length &&
-      left.every((item, index) => isSameRowValue(item, right[index]))
-    );
-  }
-  const leftRecord = left as Record<string, unknown>;
-  const rightRecord = right as Record<string, unknown>;
-  const leftKeys = Object.keys(leftRecord);
-  return (
-    leftKeys.length === Object.keys(rightRecord).length &&
-    leftKeys.every((key) => key in rightRecord && isSameRowValue(leftRecord[key], rightRecord[key]))
-  );
-};
-
+/**
+ * Herald's stream, forwarded in order: snapshots, scope replacements and diffs become store facts, event rows become
+ * events. The transport keeps no copy of the rows it forwards; the native store is the one place they live.
+ */
 export class HeraldGameSyncTransport implements GameSyncTransport {
   public readonly transactionStatusChannel = true;
   private readonly reconnectMs: number;
   private readonly socketFactory: (url: string) => HeraldSocket;
-  // The one client-side copy of what herald has delivered: confirmed rows and the pre-confirmed
-  // overlay alike. Herald publishes the overlay as a delta with explicit reverts, so a row keeps
-  // its value until a diff changes it; `overlay_reset` carries no rows of its own.
-  private readonly currentRows = new Map<string, StoredRow>();
   private handlers?: GameSyncSubscriptionHandlers;
-  // The first snapshot streams to the runtime one model page at a time; later snapshots reconcile as one batch.
-  private readonly initialSnapshotPages: GameSyncSnapshotPage[] = [];
-  private initialSnapshotPageWaiter: ReturnType<typeof deferred<GameSyncSnapshotPage>> | null = null;
-  private initialSnapshotComplete = false;
-  private initialSnapshotFailure: Error | null = null;
   private ready = deferred<void>();
-  private snapshotRows?: Map<string, StoredRow>;
   private socket?: HeraldSocket;
   private reconnectTimer?: ReturnType<typeof setTimeout>;
   private helloTimer?: ReturnType<typeof setTimeout>;
+  private pendingActor?: string | null;
+  private resumed = false;
   private epoch = "";
   private seq = 0;
   private attachedThroughBlock = Number.MAX_SAFE_INTEGER;
   private stopped = true;
   private forceFreshSnapshot = true;
+  private firstSnapshotEnded = false;
+  private snapshotStreaming = false;
   private acceptingSnapshotOverlay = false;
   private snapshotBytesReceived = 0;
   private snapshotModelsReceived = 0;
   private snapshotRowsReceived = 0;
-  private initialSnapshotPageCursor = 0;
 
   constructor(private readonly options: HeraldGameSyncTransportOptions) {
     this.reconnectMs = options.reconnectMs ?? DEFAULT_RECONNECT_MS;
     this.socketFactory = options.socketFactory ?? ((url) => new WebSocket(url) as unknown as HeraldSocket);
+  }
+
+  public selectActor(actor: string | undefined): void {
+    const url = new URL(this.options.url);
+    const address = actor === undefined ? null : `0x${BigInt(actor).toString(16)}`;
+    if (url.searchParams.get("actor") === address) return;
+    if (address === null) url.searchParams.delete("actor");
+    else url.searchParams.set("actor", address);
+    this.options.url = url.toString();
+    this.pendingActor = address;
+    this.sendActorSelection();
+  }
+
+  private sendActorSelection(): void {
+    if (!this.resumed || !this.socket || this.pendingActor === undefined) return;
+    this.socket.send(JSON.stringify({ type: "select_actor", actor: this.pendingActor }));
+    this.pendingActor = undefined;
   }
 
   public async subscribe(handlers: GameSyncSubscriptionHandlers): Promise<GameSyncWriter> {
@@ -186,53 +169,21 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     return { cancel: () => this.stop() };
   }
 
-  public async fetchSnapshotPage(): Promise<GameSyncSnapshotPage> {
-    if (this.initialSnapshotFailure) throw this.initialSnapshotFailure;
-    const page = this.initialSnapshotPages.shift();
-    if (page) return this.withNextCursor(page);
-    if (this.initialSnapshotComplete) return { items: [] };
-    this.initialSnapshotPageWaiter ??= deferred<GameSyncSnapshotPage>();
-    return this.initialSnapshotPageWaiter.promise;
-  }
-
-  /** A cursor means "ask again": more model pages are buffered or still streaming. */
-  private withNextCursor(page: GameSyncSnapshotPage): GameSyncSnapshotPage {
-    const hasMore = this.initialSnapshotPages.length > 0 || !this.initialSnapshotComplete;
-    return hasMore ? { ...page, nextCursor: `page-${++this.initialSnapshotPageCursor}` } : page;
-  }
-
-  private deliverInitialSnapshotPage(page: GameSyncSnapshotPage): void {
-    const waiter = this.initialSnapshotPageWaiter;
-    if (waiter) {
-      this.initialSnapshotPageWaiter = null;
-      waiter.resolve(this.withNextCursor(page));
-      return;
-    }
-    this.initialSnapshotPages.push(page);
-  }
-
   private resetSession(handlers: GameSyncSubscriptionHandlers): void {
     this.handlers = handlers;
     this.ready = deferred<void>();
-    this.initialSnapshotPages.length = 0;
-    this.initialSnapshotPageWaiter = null;
-    this.initialSnapshotComplete = false;
-    this.initialSnapshotFailure = null;
-    this.initialSnapshotPageCursor = 0;
-    this.currentRows.clear();
-    this.snapshotRows = undefined;
     this.epoch = "";
     this.seq = 0;
     this.forceFreshSnapshot = true;
+    this.firstSnapshotEnded = false;
+    this.snapshotStreaming = false;
     this.acceptingSnapshotOverlay = false;
-    this.snapshotBytesReceived = 0;
-    this.snapshotModelsReceived = 0;
-    this.snapshotRowsReceived = 0;
     this.stopped = false;
   }
 
   private connect(): void {
     if (this.stopped) return;
+    this.resumed = false;
     const socket = this.socketFactory(this.options.url);
     this.socket = socket;
     this.helloTimer = setTimeout(() => {
@@ -244,13 +195,26 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       if (this.socket === socket) this.acceptMessage(data);
     };
     socket.onerror = () => this.reconnectSocket(socket);
-    socket.onclose = () => this.reconnectSocket(socket);
+    socket.onclose = (event) =>
+      event?.code === HERALD_GAME_FINALIZED_CLOSE ? this.endFinalized(socket) : this.reconnectSocket(socket);
+  }
+
+  /** Herald will never serve a finalized game again, so the stream ends instead of reconnecting. */
+  private endFinalized(socket: HeraldSocket): void {
+    if (this.socket !== socket) return;
+    this.stop();
+    const failure = new Error(`The game at ${this.options.url} is finalized; its review holds the final state`);
+    console.warn(`[Herald] ${failure.message}; not reconnecting`);
+    if (!this.ready.settled) this.ready.reject(failure);
+    else if (!this.firstSnapshotEnded) this.handlers?.onStartFailure(failure);
   }
 
   private reconnectSocket(socket: HeraldSocket): void {
     if (this.socket !== socket) return;
     this.closeSocket();
-    this.snapshotRows = undefined;
+    // A snapshot cut short can only be completed by a fresh one.
+    if (this.snapshotStreaming) this.forceFreshSnapshot = true;
+    this.snapshotStreaming = false;
     this.scheduleReconnect();
   }
 
@@ -272,27 +236,16 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     try {
       const serialized = String(data);
       const message = this.parseMessage(serialized);
-      if (message.type === "hello") {
-        this.acceptHello(message);
-        return;
-      }
-      if (message.type === "snapshot") {
-        this.acceptSnapshotChunk(message, serialized.length);
-        return;
-      }
-      if (message.type === "snapshot_end") {
-        this.acceptSnapshotEnd(message);
-        return;
-      }
-      this.acceptSequencedMessage(message);
+      if (message.type === "hello") this.acceptHello(message);
+      else if (message.type === "scope") this.acceptScope(message);
+      else if (message.type === "snapshot") this.acceptSnapshotModel(message, serialized.length);
+      else if (message.type === "snapshot_end") this.acceptSnapshotEnd(message);
+      else this.acceptSequencedMessage(message);
     } catch (error) {
       const failure = error instanceof Error ? error : new Error(String(error));
+      console.error(`[GameSync] Herald message rejected: ${failure.message}`);
       if (!this.ready.settled) this.ready.reject(failure);
-      if (!this.initialSnapshotComplete) {
-        this.initialSnapshotFailure = failure;
-        this.initialSnapshotPageWaiter?.reject(failure);
-        this.initialSnapshotPageWaiter = null;
-      }
+      else if (!this.firstSnapshotEnded) this.handlers?.onStartFailure(failure);
       this.forceFreshSnapshot = true;
       if (this.socket) this.reconnectSocket(this.socket);
     }
@@ -300,6 +253,14 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private acceptHello(message: Extract<HeraldMessage, { type: "hello" }>): void {
     this.attachedThroughBlock = message.confirmed_block;
+    // Chain time before any row: a snapshot's first reader (a Frontier realm's daily site) must not guess the clock.
+    if (typeof message.confirmed_timestamp === "number" && message.confirmed_timestamp > 0) {
+      this.handlers?.onHead({
+        block: message.confirmed_block,
+        preconfirmed: false,
+        timestamp: message.confirmed_timestamp,
+      });
+    }
     this.clearHelloTimer();
     this.socket?.send(
       JSON.stringify({
@@ -308,36 +269,44 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
         seq: this.forceFreshSnapshot ? 0 : this.seq,
       }),
     );
+    this.resumed = true;
+    this.sendActorSelection();
     this.ready.resolve();
   }
 
-  private acceptSnapshotChunk(message: Extract<HeraldMessage, { type: "snapshot" }>, bytesReceived: number): void {
-    this.snapshotRows ??= new Map();
-    const stored = message.rows.map((row) => ({ ...row, model: message.model }));
-    stored.forEach((row) => this.snapshotRows?.set(rowIdentity(row.model, row.key), row));
-    if (!this.initialSnapshotComplete) this.deliverInitialSnapshotPage({ items: stored.map(toEntity) });
+  private acceptScope(message: Extract<HeraldMessage, { type: "scope" }>): void {
+    this.handlers?.onScope(message.set.map(toFact), message.expedition);
+    this.epoch = message.epoch;
+    this.seq = message.seq;
+    this.acceptingSnapshotOverlay = true;
+  }
+
+  private acceptSnapshotModel(message: Extract<HeraldMessage, { type: "snapshot" }>, bytesReceived: number): void {
+    if (!this.snapshotStreaming) {
+      this.snapshotStreaming = true;
+      this.snapshotBytesReceived = this.snapshotModelsReceived = this.snapshotRowsReceived = 0;
+      this.handlers?.onSnapshotStart();
+    }
     this.snapshotBytesReceived += bytesReceived;
     this.snapshotModelsReceived += 1;
     this.snapshotRowsReceived += message.rows.length;
-    this.handlers?.onSnapshotChunk?.({
-      bytesReceived: this.snapshotBytesReceived,
-      model: message.model,
-      modelsReceived: this.snapshotModelsReceived,
-      rowsReceived: this.snapshotRowsReceived,
-    });
+    this.handlers?.onSnapshotModel(
+      message.model,
+      message.rows.map((row) => toFact({ ...row, model: message.model })),
+      {
+        bytesReceived: this.snapshotBytesReceived,
+        model: message.model,
+        modelsReceived: this.snapshotModelsReceived,
+        rowsReceived: this.snapshotRowsReceived,
+      },
+    );
   }
 
   private acceptSnapshotEnd(message: Extract<HeraldMessage, { type: "snapshot_end" }>): void {
-    const rows = this.snapshotRows ?? new Map<string, StoredRow>();
-    if (!this.initialSnapshotComplete) {
-      this.replaceState(rows);
-      this.initialSnapshotComplete = true;
-      this.initialSnapshotPageWaiter?.resolve({ items: [] });
-      this.initialSnapshotPageWaiter = null;
-    } else {
-      this.reconcileSnapshot(rows);
-    }
-    this.snapshotRows = undefined;
+    if (!this.snapshotStreaming) this.handlers?.onSnapshotStart();
+    this.snapshotStreaming = false;
+    this.firstSnapshotEnded = true;
+    this.handlers?.onSnapshotEnd();
     this.epoch = message.epoch;
     this.seq = message.seq;
     this.forceFreshSnapshot = false;
@@ -345,7 +314,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   }
 
   private acceptSequencedMessage(
-    message: Exclude<HeraldMessage, { type: "hello" | "snapshot" | "snapshot_end" }>,
+    message: Exclude<HeraldMessage, { type: "hello" | "snapshot" | "snapshot_end" | "scope" }>,
   ): void {
     if (this.acceptSnapshotOverlay(message)) return;
     this.acceptingSnapshotOverlay = false;
@@ -362,7 +331,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   }
 
   private acceptSnapshotOverlay(
-    message: Exclude<HeraldMessage, { type: "hello" | "snapshot" | "snapshot_end" }>,
+    message: Exclude<HeraldMessage, { type: "hello" | "snapshot" | "snapshot_end" | "scope" }>,
   ): boolean {
     if (!this.acceptingSnapshotOverlay || message.type !== "diff") return false;
     if (!message.preconfirmed || message.epoch !== this.epoch || message.seq !== this.seq) return false;
@@ -370,53 +339,39 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     return true;
   }
 
+  /** Facts and events are split before anything is delivered, so a rejected diff delivers nothing. */
   private acceptDiff(message: Extract<HeraldMessage, { type: "diff" }>): void {
-    const entities = [
-      ...message.set.flatMap((change) => this.acceptSet(change, message)),
-      ...message.del.flatMap((change) => this.acceptDelete(change)),
+    const isEvent = (model: string) => this.options.modelDefinition(model).deletion === "event-ephemeral";
+    const events = message.set.filter((row) => isEvent(row.model));
+    const facts = [
+      ...message.set.filter((row) => !isEvent(row.model)).map(toFact),
+      ...message.del.filter((row) => !isEvent(row.model)).map(toRemoval),
     ];
-    this.deliverEntities(entities, {
-      preconfirmed: message.preconfirmed,
-      ...(message.transaction_hash ? { transactionHash: message.transaction_hash } : {}),
-    });
-  }
-
-  private acceptSet(
-    change: HeraldSet,
-    confirmation: { block: number | null; preconfirmed: boolean },
-  ): GameSyncEntity[] {
-    if (getGameSyncModel(change.model).deletion === "event-ephemeral") {
-      this.handlers?.onEvent(toEntity(change), {
-        block: confirmation.block,
-        preconfirmed: confirmation.preconfirmed,
-        confirmedAfterAttach:
-          !confirmation.preconfirmed && confirmation.block !== null && confirmation.block > this.attachedThroughBlock,
+    if (facts.length > 0) {
+      this.handlers?.onFacts({
+        facts,
+        preconfirmed: message.preconfirmed,
+        ...(message.transaction_hash ? { transactionHash: message.transaction_hash } : {}),
       });
-      return [];
     }
-
-    const identity = rowIdentity(change.model, change.key);
-    const current = this.currentRows.get(identity);
-    if (current && isSameRowValue(current.value, change.value)) return [];
-    this.currentRows.set(identity, change);
-    return [toEntity(change)];
+    for (const event of events) this.deliverEvent(event, message);
   }
 
-  // A delete is delivered even when the row is unknown here: removing an absent component is
-  // free, and it keeps RECS honest for rows that reached it outside this stream.
-  private acceptDelete(change: HeraldDelete): GameSyncEntity[] {
-    if (getGameSyncModel(change.model).deletion === "event-ephemeral") return [];
-    this.currentRows.delete(rowIdentity(change.model, change.key));
-    return [toRemoval(change)];
-  }
-
-  private deliverEntities(entities: GameSyncEntity[], delivery: EntityDelivery): void {
-    if (entities.length === 0) return;
-    if (this.handlers?.onEntityBatch) {
-      this.handlers.onEntityBatch({ entities, ...delivery });
-      return;
+  private deliverEvent(event: HeraldSet, confirmation: { block: number | null; preconfirmed: boolean }): void {
+    try {
+      this.handlers?.onEvent(
+        { model: event.model, key: event.key, value: event.value },
+        {
+          block: confirmation.block,
+          preconfirmed: confirmation.preconfirmed,
+          confirmedAfterAttach:
+            !confirmation.preconfirmed && confirmation.block !== null && confirmation.block > this.attachedThroughBlock,
+        },
+      );
+    } catch (error) {
+      // Ephemeral delivery cannot undo persistent rows or interrupt following transaction status.
+      console.error(`[GameSync] event delivery failed for ${event.model}: ${String(error)}`);
     }
-    entities.forEach((entity) => this.handlers?.onEntity(entity));
   }
 
   private acceptTransaction(message: Extract<HeraldMessage, { type: "tx" }>): void {
@@ -424,9 +379,10 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       block: message.block,
       hash: message.hash,
       status: message.status,
+      ...(message.executions !== undefined ? { executions: message.executions } : {}),
       ...(message.revert_reason ? { revertReason: message.revert_reason } : {}),
     };
-    this.handlers?.onTransaction?.(transaction);
+    this.handlers?.onTransaction(transaction);
   }
 
   private acceptHead(message: Extract<HeraldMessage, { type: "head" }>): void {
@@ -435,26 +391,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       preconfirmed: message.preconfirmed === true,
       timestamp: message.timestamp,
     };
-    this.handlers?.onHead?.(head);
-  }
-
-  /** A fresh snapshot after a failed resume: one batch carrying only what the world changed while we were away. */
-  private reconcileSnapshot(rows: Map<string, StoredRow>): void {
-    const entities: GameSyncEntity[] = [];
-    this.currentRows.forEach((row, identity) => {
-      if (!rows.has(identity)) entities.push(toRemoval(row));
-    });
-    rows.forEach((row, identity) => {
-      const current = this.currentRows.get(identity);
-      if (!current || !isSameRowValue(current.value, row.value)) entities.push(toEntity(row));
-    });
-    this.replaceState(rows);
-    this.deliverEntities(entities, { preconfirmed: false });
-  }
-
-  private replaceState(rows: Map<string, StoredRow>): void {
-    this.currentRows.clear();
-    rows.forEach((row, identity) => this.currentRows.set(identity, row));
+    this.handlers?.onHead(head);
   }
 
   private parseMessage(data: string): HeraldMessage {
@@ -476,15 +413,14 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     }, this.reconnectMs);
   }
 
-  /** Stops reconnecting and fails a subscribe or snapshot page still waiting on the socket. */
+  /** Stops reconnecting and fails a subscribe or first snapshot still waiting on the socket. */
   public dispose(): void {
     const wasRunning = !this.stopped;
     this.stop();
     if (!wasRunning) return;
     const failure = new Error("Herald transport was disposed before its subscription became active");
-    this.ready.reject(failure);
-    this.initialSnapshotPageWaiter?.reject(failure);
-    this.initialSnapshotPageWaiter = null;
+    if (!this.ready.settled) this.ready.reject(failure);
+    else if (!this.firstSnapshotEnded) this.handlers?.onStartFailure(failure);
   }
 
   private stop(): void {

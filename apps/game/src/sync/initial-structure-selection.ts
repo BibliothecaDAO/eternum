@@ -9,7 +9,8 @@ interface SyncedStructureRecord {
 
 interface InitialStructureSelectionInput {
   ownedStructures: SyncedStructureRecord[];
-  firstGlobalStructure: SyncedStructureRecord | null;
+  /** Every structure in the game, in entity order; read only when the account owns none. */
+  globalStructures: SyncedStructureRecord[];
 }
 
 interface InitialStructureSelectionResult {
@@ -31,23 +32,16 @@ const toSelection = (
   };
 };
 
+/** The first realm, else the first structure: a spectator opens where the game is played, as a player does. */
+const preferRealm = (structures: SyncedStructureRecord[]): SyncedStructureRecord | null =>
+  structures.find((structure) => Number(structure.category) === StructureType.Realm) ?? structures[0] ?? null;
+
 export const resolveInitialStructureSelection = (
   input: InitialStructureSelectionInput,
 ): InitialStructureSelectionResult => {
-  const preferredOwnedStructure =
-    input.ownedStructures.find((structure) => Number(structure.category) === StructureType.Realm) ??
-    input.ownedStructures[0] ??
-    null;
-
-  if (preferredOwnedStructure) {
-    return {
-      selectedStructure: toSelection(preferredOwnedStructure),
-      spectator: false,
-    };
+  const ownedStructure = preferRealm(input.ownedStructures);
+  if (ownedStructure) {
+    return { selectedStructure: toSelection(ownedStructure), spectator: false };
   }
-
-  return {
-    selectedStructure: toSelection(input.firstGlobalStructure),
-    spectator: true,
-  };
+  return { selectedStructure: toSelection(preferRealm(input.globalStructures)), spectator: true };
 };

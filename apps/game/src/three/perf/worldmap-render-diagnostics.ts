@@ -89,16 +89,10 @@ export type WorldmapRenderCounter =
   | "pendingArmyRemovalCancelledBySuperseded"
   | "pendingArmyRemovalCancelledByExplorerTroopsZero"
   | "pendingArmyRemovalCancelledByExplorerTroopsLiveRecovery"
-  | "pendingArmyRemovalCancelledByRecsSweep"
   | "armyAuthoritativeSweepConfirmedDead"
   | "armyAuthoritativeSweepReapplied"
   | "armyAuthoritativeSweepFailed"
   | "armyAuthoritativeSweepSlowOp"
-  | "armyRecsSweepSlowPass"
-  | "armyRecsSweepRemovedDeadZero"
-  | "armyRecsSweepRemovedDeadMissing"
-  | "armyRecsSweepSnappedPosition"
-  | "armyRecsSweepRestoredAlive"
   | "armyRenderIntegrityHealOrphanSlot"
   | "armyRenderIntegrityHealVisibleUndrawn"
   | "armyRenderIntegrityHealStalePosition"
@@ -242,16 +236,10 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     pendingArmyRemovalCancelledBySuperseded: 0,
     pendingArmyRemovalCancelledByExplorerTroopsZero: 0,
     pendingArmyRemovalCancelledByExplorerTroopsLiveRecovery: 0,
-    pendingArmyRemovalCancelledByRecsSweep: 0,
     armyAuthoritativeSweepConfirmedDead: 0,
     armyAuthoritativeSweepReapplied: 0,
     armyAuthoritativeSweepFailed: 0,
     armyAuthoritativeSweepSlowOp: 0,
-    armyRecsSweepSlowPass: 0,
-    armyRecsSweepRemovedDeadZero: 0,
-    armyRecsSweepRemovedDeadMissing: 0,
-    armyRecsSweepSnappedPosition: 0,
-    armyRecsSweepRestoredAlive: 0,
     armyRenderIntegrityHealOrphanSlot: 0,
     armyRenderIntegrityHealVisibleUndrawn: 0,
     armyRenderIntegrityHealStalePosition: 0,

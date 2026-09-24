@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/site/components/ui/button";
 import { useNavigate, Link, useLocation } from "@tanstack/react-router";
+import { appUrl } from "@/site/lib/app-links";
 import { cn } from "@/site/lib/utils";
 import { HEADER_SCROLL_OFFSET } from "@/site/lib/constants";
 import { Bot, Coins, Compass, Gamepad2, Github, Handshake, Home, Menu, type LucideIcon } from "lucide-react";
@@ -219,13 +220,12 @@ export function TopBar() {
                 >
                   Marketplace
                 </a>
-                <Link
-                  to="/scroll"
+                <a
+                  href={appUrl("/scroll")}
                   className="realm-nav-link text-xs uppercase tracking-[0.15em] text-foreground/75 hover:text-primary transition-colors"
-                  activeProps={{ className: "realm-nav-link-active text-primary" }}
                 >
                   Scroll
-                </Link>
+                </a>
               </nav>
 
               <div className="flex items-center justify-end gap-2 sm:gap-3">
@@ -267,9 +267,9 @@ export function TopBar() {
                       </a>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/scroll" className="w-full">
+                      <a href={appUrl("/scroll")} className="w-full">
                         Scroll
-                      </Link>
+                      </a>
                     </DropdownMenuItem>
 
                     {pageSections.length > 0 && (

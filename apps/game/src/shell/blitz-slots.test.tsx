@@ -1,0 +1,44 @@
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { afterEach, expect, it, vi } from "vitest";
+
+vi.hoisted(() => vi.stubGlobal("fetch", async () => new Response(null, { status: 401 })));
+vi.mock("@/ui/features/factory-v2/api/factory-worker", () => ({
+  fetchPlaytestSlots: async () => {
+    throw new Error("not_found");
+  },
+  registerPlaytestSlot: async () => undefined,
+}));
+
+import { BlitzSlots } from "./blitz-slots";
+
+const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+afterEach(() => consoleError.mockClear());
+
+it("renders a failed slots read as a named state with a retry, never the service's code", async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  await act(async () =>
+    root.render(
+      <QueryClientProvider client={client}>
+        <BlitzSlots />
+      </QueryClientProvider>,
+    ),
+  );
+  for (let tick = 0; tick < 5 && !container.querySelector("[role='alert']"); tick += 1) await act(async () => {});
+  try {
+    const alert = container.querySelector("[role='alert']");
+    expect(alert?.textContent).toContain("Blitz slots are unavailable right now.");
+    expect(alert?.querySelector("button")?.textContent).toBe("Retry");
+    expect(container.textContent).not.toContain("not_found");
+    expect(consoleError).toHaveBeenCalledWith(
+      "shell_read_failed",
+      expect.objectContaining({ message: "Blitz slots are unavailable right now." }),
+    );
+  } finally {
+    await act(async () => root.unmount());
+  }
+});

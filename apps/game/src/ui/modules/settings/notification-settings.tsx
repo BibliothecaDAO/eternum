@@ -1,5 +1,5 @@
 import { PushNotificationSettings } from "./push-notification-settings";
-import { useIdentitySession } from "@/hooks/context/identity-session";
+import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identity-session";
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
 import { HUD_BODY, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
@@ -21,7 +21,7 @@ export function NotificationSettings() {
           Loading account…
         </p>
       ) : (
-        <PreferenceEditor key={session?.user.id ?? "anonymous"} owner={session?.user.id ?? null} />
+        <PreferenceEditor key={notificationOwnerOf(session) ?? "anonymous"} owner={notificationOwnerOf(session)} />
       )}
     </section>
   );

@@ -1,4 +1,4 @@
-import { ComponentValue, Entity } from "@dojoengine/recs";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { Account, AccountInterface } from "starknet";
 import {
   BiomeType,
@@ -9,8 +9,6 @@ import {
   ResourceTier,
   StructureType,
 } from "../constants";
-import { ClientComponents } from "../dojo/create-client-components";
-import type { Manifest } from "./manifest";
 
 export interface RelicEffect {
   end_tick: number;
@@ -40,11 +38,9 @@ export enum TileOccupier {
   RealmWonderLevel3 = 7,
   RealmWonderLevel4 = 8,
   //
-  HyperstructureLevel1 = 9,
-  HyperstructureLevel2 = 10,
-  HyperstructureLevel3 = 11,
+  Hyperstructure = 9,
   //
-  FragmentMine = 12,
+  Mine = 12,
   Village = 13,
   Bank = 14,
   //
@@ -58,15 +54,6 @@ export enum TileOccupier {
   ExplorerCrossbowmanT2Regular = 22,
   ExplorerCrossbowmanT3Regular = 23,
   //
-  ExplorerKnightT1Daydreams = 24,
-  ExplorerKnightT2Daydreams = 25,
-  ExplorerKnightT3Daydreams = 26,
-  ExplorerPaladinT1Daydreams = 27,
-  ExplorerPaladinT2Daydreams = 28,
-  ExplorerPaladinT3Daydreams = 29,
-  ExplorerCrossbowmanT1Daydreams = 30,
-  ExplorerCrossbowmanT2Daydreams = 31,
-  ExplorerCrossbowmanT3Daydreams = 32,
   //
   Chest = 34,
   Spire = 35,
@@ -103,8 +90,8 @@ export type ResourceArrivalInfo = {
 
 export type HyperstructureInfo = {
   entity_id: ID;
-  hyperstructure: ComponentValue<ClientComponents["Hyperstructure"]["schema"]>;
-  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
+  hyperstructure: NativeRows["Hyperstructure"];
+  structure: NativeRows["Structure"];
   position: Position;
   owner: bigint;
   ownerName: string;
@@ -112,7 +99,7 @@ export type HyperstructureInfo = {
   access: string;
 };
 
-export type DojoAccount = Account | AccountInterface;
+export type GameplayAccount = Account | AccountInterface;
 
 export type ArmyInfo = {
   entityId: ID;
@@ -130,15 +117,14 @@ export type ArmyInfo = {
   totalCapacity: number;
   // without precision and in kg
   weight: number;
-  explorer: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
-  structure: ComponentValue<ClientComponents["Structure"]["schema"]> | undefined;
+  explorer: NativeRows["ExplorerTroops"];
+  structure: NativeRows["Structure"] | undefined;
   hasAdjacentStructure: boolean;
-  relicEffects: ResourcesIds[];
 };
 
 export type Structure = {
   entityId: ID;
-  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
+  structure: NativeRows["Structure"];
   isMine: boolean;
   isMercenary: boolean;
   category: StructureType;
@@ -174,13 +160,13 @@ export type TroopFoodConsumption = {
 
 export type PlayerStructure = {
   entityId: ID;
-  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
+  structure: NativeRows["Structure"];
   position: Position;
   category: StructureType;
   owner: ContractAddress;
 };
 
-export type RealmWithPosition = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+export type RealmWithPosition = NativeRows["Structure"] & {
   entityId: ID;
   position: Position;
   name: string;
@@ -193,7 +179,6 @@ export interface Building {
   paused: boolean;
   produced: ResourceCost;
   consumed: ResourceCost[];
-  bonusPercent: number;
   innerCol: number;
   innerRow: number;
 }
@@ -237,40 +222,12 @@ export enum TravelTypes {
 
 export type RelicEffectWithEndTick = { id: ResourcesIds; endTick: number };
 
-export interface TroopBoosts {
-  incr_damage_dealt_percent_num: number;
-  incr_damage_dealt_end_tick: number;
-  decr_damage_gotten_percent_num: number;
-  decr_damage_gotten_end_tick: number;
-  incr_stamina_regen_percent_num: number;
-  incr_stamina_regen_tick_count: number;
-  incr_explore_reward_percent_num: number;
-  incr_explore_reward_end_tick: number;
-}
-
-export interface Troops {
-  category: string;
-  tier: string;
-  count: bigint;
-  stamina: {
-    amount: bigint;
-    updated_tick: bigint;
-  };
-  boosts: TroopBoosts;
-  battle_cooldown_end: number;
-}
-
-export enum TroopTier {
-  T1 = "T1",
-  T2 = "T2",
-  T3 = "T3",
-}
-
-export enum TroopType {
-  Knight = "Knight",
-  Paladin = "Paladin",
-  Crossbowman = "Crossbowman",
-}
+export type Troops = NativeRows["ExplorerTroops"]["troops"];
+export type TroopBoosts = Troops["boosts"];
+export type TroopTier = Troops["tier"];
+export const TroopTier = { T1: "T1", T2: "T2", T3: "T3" } as const;
+export type TroopType = Troops["category"];
+export const TroopType = { Knight: "Knight", Paladin: "Paladin", Crossbowman: "Crossbowman" } as const;
 
 /// TRADING
 export interface MarketInterface {
@@ -377,8 +334,6 @@ export interface ResourceOutputs {
   [key: number]: number;
 }
 
-export type BlitzExplorationRewardProfileId = "official-60" | "official-90";
-
 export interface BlitzExplorationReward {
   rewardId: ResourcesIds;
   amount: number;
@@ -386,14 +341,8 @@ export interface BlitzExplorationReward {
 }
 
 export interface Config {
+  presetId: number;
   spireTravelEssenceCost: number;
-  agent: {
-    controller_address: string;
-    max_lifetime_count: number;
-    max_current_count: number;
-    min_spawn_lords_amount: number;
-    max_spawn_lords_amount: number;
-  };
   village: {
     village_pass_nft_address: string;
     village_mint_initial_recipient: string;
@@ -404,7 +353,6 @@ export interface Config {
     productionByComplexRecipeOutputs: ResourceOutputs;
     productionBySimpleRecipe: ResourceInputs;
     productionBySimpleRecipeOutputs: ResourceOutputs;
-    laborOutputPerResource: ResourceOutputs;
 
     resourceWeightsGrams: { [key in ResourcesIds]: number };
     resourceRarity: { [key in ResourcesIds]?: number };
@@ -430,8 +378,6 @@ export interface Config {
     reward: number;
     shardsMinesFailProbability: number;
     shardsMinesWinProbability: number;
-    agentFindProbability: number;
-    agentFindFailProbability: number;
     campFindProbability: number;
     campFindFailProbability: number;
     hyperstructureWinProbAtCenter: number;
@@ -471,10 +417,6 @@ export interface Config {
       damageRaidPercentNum: number;
       damageBiomeBonusNum: number;
       damageScalingFactor: bigint;
-      damageC0: bigint;
-      damageDelta: bigint;
-      damageBetaSmall: bigint;
-      damageBetaLarge: bigint;
     };
     stamina: {
       staminaGainPerTick: number;
@@ -491,13 +433,24 @@ export interface Config {
       staminaTravelWheatCost: number;
       staminaTravelFishCost: number;
       staminaTravelStaminaCost: number;
+      damageStaminaRefund: boolean;
+      captureStaminaRefund: number;
     };
     limit: {
       guardResurrectionDelay: number;
+      settlementArmies: number;
+      cityArmies: number;
+      kingdomArmies: number;
+      empireArmies: number;
+      settlementGuardSlots: number;
+      cityGuardSlots: number;
+      kingdomGuardSlots: number;
+      empireGuardSlots: number;
+      startingGuard: number;
+      campArmies: number;
+
       mercenariesTroopLowerBound: number;
       mercenariesTroopUpperBound: number;
-      agentTroopLowerBound: number;
-      agentTroopUpperBound: number;
       settlementDeploymentCap: number;
       cityDeploymentCap: number;
       kingdomDeploymentCap: number;
@@ -558,9 +511,6 @@ export interface Config {
     realm_fee_dpt_percent: number;
     realm_fee_wtdr_percent: number;
   };
-  vrf: {
-    vrfProviderAddress: string;
-  };
   buildings: {
     buildingCapacity: Partial<{ [key in BuildingType]: number }>;
     buildingPopulation: Partial<{ [key in BuildingType]: number }>;
@@ -599,18 +549,12 @@ export interface Config {
     };
   };
   blitz: {
-    mode: {
-      on: boolean;
-    };
     exploration: {
-      rewardProfileId: BlitzExplorationRewardProfileId;
       rewards: BlitzExplorationReward[];
     };
     registration: {
       registration_count_max: number;
       registration_delay_seconds: number;
-      collectible_cosmetics_max_items: number;
-      collectible_cosmetics_address: string;
       collectible_timelock_address: string;
       collectibles_lootchest_address: string;
       collectibles_elitenft_address: string;
@@ -619,13 +563,30 @@ export interface Config {
   factory: {
     address: string;
   };
+  bitcoin?: {
+    prizePerPhase: number;
+    minimumLabor: number;
+    ownerCutBps: number;
+  };
+  mines?: {
+    kinds: Record<
+      number,
+      {
+        resourceType: number;
+        buildingCategory: number;
+        productionRate: number;
+        capMinimum: number;
+        capSteps: number;
+      }
+    >;
+    surfacePool: Array<{ kind: number; weight: number }>;
+  };
   faith?: {
     enabled: boolean;
     wonder_base_fp_per_sec: number;
     realm_fp_per_sec: number;
     village_fp_per_sec: number;
     owner_share_percent: number;
-    reward_token: string;
   };
   artificer?: {
     research_cost_for_relic: number;
@@ -635,7 +596,6 @@ export interface Config {
   setup?: {
     chain: string;
     addresses: SeasonAddresses;
-    manifest: Manifest;
   };
 }
 
@@ -644,8 +604,6 @@ export type FactoryMapConfigOverrides = Partial<
     Config["exploration"],
     | "shardsMinesWinProbability"
     | "shardsMinesFailProbability"
-    | "agentFindProbability"
-    | "agentFindFailProbability"
     | "campFindProbability"
     | "campFindFailProbability"
     | "bitcoinMineWinProbability"
@@ -685,11 +643,11 @@ export interface RealmInfo {
   ownerName: string;
   hasWonder: boolean;
   level: number;
-  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
+  structure: NativeRows["Structure"];
 }
 
 export interface PlayerInfo {
-  entity: Entity;
+  entity: string;
   rank: number;
   address: bigint;
   name: string;
@@ -705,7 +663,7 @@ export interface PlayerInfo {
 
 /** A registered player: the identity username (else the chosen chain name), or null when neither was chosen. */
 export interface Player {
-  entity: Entity;
+  entity: string;
   address: ContractAddress;
   name: string | null;
   /** The identity portrait id ("01".."12") when the player picked one. */
@@ -722,7 +680,7 @@ export type GuildInfo = {
 };
 
 export type GuildMemberInfo = {
-  guildEntityId: ID;
+  guildEntityId: ContractAddress;
   name: string;
   address: ContractAddress;
   isUser: boolean;

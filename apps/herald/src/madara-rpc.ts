@@ -1,4 +1,5 @@
-import type { Felt, RawWorldEvent, RpcBlockWithReceipts, RpcHead } from "./types";
+import { hash } from "starknet";
+import type { RpcBlockWithReceipts, RpcHead } from "./types";
 
 interface JsonRpcSuccess<Result> {
   jsonrpc: "2.0";
@@ -12,29 +13,14 @@ interface JsonRpcFailure {
   error: { code: number; message: string; data?: unknown };
 }
 
-interface EventPage {
-  events: RawWorldEvent[];
-  continuation_token?: string;
-}
-
-interface GetEventsInput {
-  worldAddress: Felt;
-  eventSelectors: readonly Felt[];
-  modelSelectors: readonly Felt[];
-  fromBlock: number;
-  toBlock: number;
-  chunkSize?: number;
-}
-
-export interface EventPageResult {
-  events: RawWorldEvent[];
-  page: number;
-}
-
 export class MadaraRpc {
   private requestId = 0;
 
   constructor(private readonly url: string) {}
+
+  public chainId(): Promise<string> {
+    return this.request<string>("starknet_chainId", []);
+  }
 
   public blockNumber(): Promise<number> {
     return this.request<number>("starknet_blockNumber", []);
@@ -51,31 +37,12 @@ export class MadaraRpc {
     ]);
   }
 
-  public async *getEvents(input: GetEventsInput): AsyncGenerator<EventPageResult> {
-    const seenTokens = new Set<string>();
-    let continuationToken: string | undefined;
-    let page = 0;
-
-    do {
-      const result = await this.request<EventPage>("starknet_getEvents", [
-        {
-          address: input.worldAddress,
-          chunk_size: input.chunkSize ?? 1_000,
-          continuation_token: continuationToken,
-          from_block: { block_number: input.fromBlock },
-          keys: [input.eventSelectors, input.modelSelectors],
-          to_block: { block_number: input.toBlock },
-        },
-      ]);
-      page += 1;
-      yield { events: result.events, page };
-
-      continuationToken = result.continuation_token;
-      if (continuationToken && seenTokens.has(continuationToken)) {
-        throw new Error(`Madara repeated getEvents continuation token ${continuationToken}`);
-      }
-      if (continuationToken) seenTokens.add(continuationToken);
-    } while (continuationToken);
+  /** A read-only contract call at a confirmed block, returning its serialized result. */
+  public call(contractAddress: string, entrypoint: string, calldata: string[], block: number): Promise<string[]> {
+    return this.request<string[]>("starknet_call", [
+      { contract_address: contractAddress, entry_point_selector: hash.getSelectorFromName(entrypoint), calldata },
+      { block_number: block },
+    ]);
   }
 
   private async request<Result>(method: string, params: unknown[]): Promise<Result> {

@@ -1,0 +1,63 @@
+pub type Storage =
+    games_storage::games::GamesStorage<
+        crate::resources::ResourceAmount,
+        crate::bitcoin::Phase,
+        crate::bitcoin::Contribution,
+        crate::bitcoin::MineFunding,
+        crate::blitz_results::PlayerResult,
+        crate::bridge::DepositRules,
+        crate::buildings::Building,
+        crate::buildings::StructureBuildings,
+        crate::buildings::BoardTerms,
+        crate::buildings::NeighborBonus,
+        crate::buildings::BuildingTerms,
+        crate::faith::WonderFaith,
+        crate::faith::FaithfulStructure,
+        crate::faith::PlayerFaithPoints,
+        crate::faith::FaithRules,
+        crate::game::GameRegistry,
+        crate::rules::SliceRules,
+        crate::guards::Guard,
+        crate::guilds::Guild,
+        crate::hyperstructures::Hyperstructure,
+        crate::hyperstructures::ConstructionResource,
+        crate::hyperstructures::Share,
+        crate::spires::SpireLayout,
+        crate::exploration_rewards::ExplorationReward,
+        crate::market::Market,
+        crate::market::BankRules,
+        crate::mines::MineKindConfig,
+        crate::mines::MineWeight,
+        crate::production::RecipeTerms,
+        crate::production::ProductionBonus,
+        crate::registrar::RosterPlayer,
+        crate::relics::RelicRule,
+        crate::relics::ChestRules,
+        crate::relics::ChestReward,
+        crate::resources::Production,
+        crate::resources::ProductionReceiver,
+        crate::resources::Weight,
+        crate::settlement::SettlementRules,
+        crate::settlement::SettlementProgress,
+        crate::settlement::PlayerEntry,
+        crate::troops::TroopType,
+        crate::settlement::EntryEntitlement,
+        crate::expeditions::DepthRules,
+        crate::structures::StructureRecord,
+        crate::trade::TradeOrder,
+        crate::trade::TradeRules,
+        crate::troops::ExplorerTroops,
+        crate::upgrades::UpgradeLimits,
+        crate::village::VillageResource,
+        crate::village::VillagePass,
+        crate::withdrawals::WithdrawalTerms,
+        crate::withdrawals::Retention,
+    >;
+
+pub fn read() -> starknet::storage::FlattenedStorage<Storage> {
+    starknet::storage::FlattenedStorage {}
+}
+
+pub fn write() -> starknet::storage::FlattenedStorage<starknet::storage::Mutable<Storage>> {
+    starknet::storage::FlattenedStorage {}
+}

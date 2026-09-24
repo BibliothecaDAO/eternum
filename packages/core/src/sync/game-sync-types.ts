@@ -1,15 +1,29 @@
+import type { NativeExecutionOutcome } from "@bibliothecadao/types";
 import type { GameSyncScheduler } from "./scheduler";
 
-export interface GameSyncEntity {
-  hashed_keys: string;
-  models: Record<string, unknown>;
+/** One Herald fact: a model row named by its Herald key. A null value removes the row. */
+export interface GameSyncFact {
+  model: string;
+  key: string;
+  value: Record<string, unknown> | null;
 }
 
-export interface GameSyncEntityBatch {
-  entities: GameSyncEntity[];
+/** An ephemeral Herald row: it drives flourishes such as toasts, never current state. */
+export interface GameSyncEvent {
+  model: string;
+  key: string;
+  value: Record<string, unknown>;
+}
+
+/** The facts of one Herald diff. One player action becomes visible in one store write. */
+export interface GameSyncFactBatch {
+  facts: GameSyncFact[];
   preconfirmed: boolean;
   transactionHash?: string;
 }
+
+/** The only keys a replacement keeps for each listed model; every other stored row of those models is removed. */
+export type GameSyncRetainedKeys = ReadonlyMap<string, ReadonlySet<string>>;
 
 export interface GameSyncEventConfirmation {
   block: number | null;
@@ -28,14 +42,11 @@ export interface GameSyncSnapshotChunkProgress {
 export interface GameSyncSnapshotProgress {
   completed: number;
   phase: "receiving" | "applying";
+  /** Snapshot bytes received so far; reported while receiving. */
+  bytesReceived?: number;
   /** True while more snapshot pages may still arrive, so `completed >= total` is not yet the end of the phase. */
   streaming: boolean;
   total: number;
-}
-
-export interface GameSyncSnapshotPage {
-  items: GameSyncEntity[];
-  nextCursor?: string;
 }
 
 export interface GameSyncWriter {
@@ -43,19 +54,23 @@ export interface GameSyncWriter {
 }
 
 export interface GameSyncSubscriptionHandlers {
-  onEntity: (entity: GameSyncEntity) => void;
-  onEntityBatch?: (batch: GameSyncEntityBatch) => void;
-  onEvent: (event: GameSyncEntity, confirmation?: GameSyncEventConfirmation) => void;
-  onEventGapFill: (replayedEventCount: number) => void;
-  onHead?: (head: GameSyncHead) => void;
-  onSnapshotChunk?: (progress: GameSyncSnapshotChunkProgress) => void;
-  onTransaction?: (transaction: GameSyncTransaction) => void;
+  /** A snapshot replaces every row of every model it lists; its models follow until onSnapshotEnd. */
+  onSnapshotStart: () => void;
+  onSnapshotModel: (model: string, facts: GameSyncFact[], progress: GameSyncSnapshotChunkProgress) => void;
+  onSnapshotEnd: () => void;
+  /** Selecting an actor replaces the rows of the actor-scoped models. */
+  onScope: (facts: GameSyncFact[], expedition: boolean) => void;
+  onFacts: (batch: GameSyncFactBatch) => void;
+  onEvent: (event: GameSyncEvent, confirmation: GameSyncEventConfirmation) => void;
+  onHead: (head: GameSyncHead) => void;
+  onTransaction: (transaction: GameSyncTransaction) => void;
+  /** The stream failed before its first snapshot ended, so the session cannot start. */
+  onStartFailure: (error: Error) => void;
 }
 
 export interface GameSyncTransport {
-  /** Resolves only after both entity and event subscriptions are active. */
+  /** Resolves once the stream is attached; the snapshot and the ordered diffs follow through the handlers. */
   subscribe: (handlers: GameSyncSubscriptionHandlers) => Promise<GameSyncWriter>;
-  fetchSnapshotPage: (cursor?: string) => Promise<GameSyncSnapshotPage>;
   transactionStatusChannel?: true;
   /**
    * Tears the transport down, failing a subscribe or snapshot page still in flight. A resolved subscribe is
@@ -72,26 +87,20 @@ export interface GameSyncHead {
 }
 
 export interface GameSyncTransaction {
+  executions?: NativeExecutionOutcome[];
   block: number | null;
   hash: string;
   revertReason?: string;
   status: string;
 }
 
-export type GameSyncEntityStoreOperation =
-  | { type: "upsert"; entities: GameSyncEntity[] }
-  | { type: "remove-components"; entityId: string; models: string[] }
-  | { type: "delete-entity"; entityId: string };
-
 export interface GameSyncStore {
-  applyEntityOperations: (operations: readonly GameSyncEntityStoreOperation[]) => Promise<void> | void;
-  applyEvent: (event: GameSyncEntity) => Promise<void> | void;
-  listModelEntityIds: (model: string) => Iterable<string>;
+  applyFacts: (facts: readonly GameSyncFact[], retain?: GameSyncRetainedKeys) => Promise<void> | void;
+  applyEvent: (event: GameSyncEvent) => Promise<void> | void;
 }
 
 export interface GameSyncRuntimeMetrics {
   appliedBatchCount: number;
-  eventGapFillReplayCount: number;
   lastRecoveryDurationMs: number;
   maxBatchApplyDurationMs: number;
   /** Same as maxBatchApplyDurationMs over running-status slices only: neither the snapshot nor the boot replay hides the churn number. */
@@ -107,10 +116,10 @@ export interface GameSyncRuntimeMetrics {
   /** Component writes the store performed for live rows (replay + running); with totalLiveEntityUpdates it is the L1 amplification ratio. */
   totalLiveEntityOperationsApplied: number;
   totalLiveEventUpdates: number;
-  totalReplayedEventUpdates: number;
 }
 
 export interface GameSyncSessionStart {
+  onDispose?: () => void;
   transport: GameSyncTransport;
   store: GameSyncStore;
   snapshotModels: readonly string[];
@@ -120,7 +129,7 @@ export interface GameSyncSessionStart {
   onSubscriptionActive?: () => void;
   onLiveUpdate?: (kind: "entity" | "event") => void;
   onError?: (error: Error) => void;
-  onEvent?: (event: GameSyncEntity, confirmation?: GameSyncEventConfirmation) => void;
+  onEvent?: (event: GameSyncEvent, confirmation: GameSyncEventConfirmation) => void;
   onMetrics?: (metrics: GameSyncRuntimeMetrics) => void;
   onSnapshotProgress?: (progress: GameSyncSnapshotProgress) => void;
   onHead?: (head: GameSyncHead) => void;

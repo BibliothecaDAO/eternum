@@ -1,7 +1,9 @@
+import { MineKinds } from "@bibliothecadao/types";
+import { configManager, getRealmCountPerHyperstructure } from "@bibliothecadao/eternum";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
-import { getPlayerDisplayName } from "@/hooks/use-player-profile";
+import { getPlayerDisplayName, watchPlayerNames } from "@/hooks/use-player-profile";
 import { RewardTileModel } from "../rewards/reward-tile-model";
 import { resolveRewardNightAmount } from "../rewards/reward-lighting";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -11,7 +13,6 @@ import { resolveSettlementRelationship } from "../structures/settlement-appearan
 import { RiftModelPath, VILLAGE_MODEL_PATH, isSettlementModelPath } from "../constants/scene-constants";
 import { arePlayersAllied } from "@/utils/entity-ownership";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
@@ -33,7 +34,7 @@ import {
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
-import type { SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {
   divideByPrecision,
   getIsBlitz,
@@ -50,8 +51,7 @@ import type {
   WorldSpatialBounds,
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
-import { BuildingType, ClientComponents, GuardSlot, ID, StructureType } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { BuildingType, ID, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { Box3, Euler, Group, Object3D, Scene, Sphere, Vector3 } from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
@@ -59,7 +59,6 @@ import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmeti
 import {
   CosmeticAttachmentManager,
   findCosmeticById,
-  playerCosmeticsStore,
   resolveStructureCosmetic,
   resolveStructureMountTransforms,
 } from "../cosmetics";
@@ -119,7 +118,7 @@ import {
 } from "./structure-label-state";
 import { removeStructureLabels, syncStructureLabelVisibility } from "./structure-label-visibility";
 import { normalizeStructureEntityId as normalizeEntityId } from "./structure-entity-id";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import {
   isFrameBudgetWorkQueueDisposedError,
@@ -218,7 +217,7 @@ interface VisibleStructurePassScratch {
   dirtyModels: Set<StructureModel>;
 }
 
-// A running battle cooldown (troop_guards.*.battle_cooldown_end in RECS) is the structure's
+// A running battle cooldown (troop_guards.*.battle_cooldown_end in native store) is the structure's
 // "under attack" fact: its guards fought and the penalty timer is still counting down.
 function isStructureUnderAttack(structure: StructureInfo): boolean {
   return (structure.battleTimerLeft ?? 0) > 0;
@@ -261,7 +260,7 @@ export class StructureManager {
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
-  private components?: ClientComponents;
+  private store?: NativeFactStore;
   private mode: GameModeConfig;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private latestTransitionToken = 0;
@@ -271,7 +270,7 @@ export class StructureManager {
   private unsubscribeAccountStore?: () => void;
   private unsubscribePlayers?: () => void;
   private readonly unsubscribeProjection: () => void;
-  private readonly recsUnsubscribes: Array<() => void> = [];
+  private readonly storeUnsubscribes: Array<() => void> = [];
   private readonly incomingTroopArrivalsByStructure = new Map<ID, IncomingTroopArrival[]>();
   private readonly battleDirectionsByStructure = new Map<
     ID,
@@ -337,7 +336,7 @@ export class StructureManager {
     labelsGroup?: Group,
     hexagonScene?: HexagonScene,
     fxManager?: FXManager,
-    dojoContext?: SetupResult,
+    gameContext?: SetupResult,
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
     private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
@@ -355,7 +354,7 @@ export class StructureManager {
     this.labelsGroup.visible = this.contentLadder.textLabels !== "none";
     this.fxManager = fxManager || new FXManager(scene);
     this.attachmentManager = new CosmeticAttachmentManager(scene);
-    this.components = dojoContext?.components as ClientComponents | undefined;
+    this.store = gameContext?.store as NativeFactStore | undefined;
     this.visibilityManager = visibilityManager;
     if (this.visibilityManager) {
       this.frustumVisibilityDirty = true;
@@ -382,12 +381,13 @@ export class StructureManager {
       this.structureInfoCache.clear();
       this.requestVisibleStructuresRefresh({ refreshExisting: true });
     });
-    this.unsubscribePlayers = useWorldSlicesStore.subscribe((state, previous) => {
-      if (state.players === previous.players) return;
-      // Owner names are folded into every cached record; a profile landing after the label re-resolves them.
-      this.structureInfoCache.clear();
-      this.requestVisibleStructuresRefresh({ refreshExisting: true });
-    });
+    // Owner names are folded into every cached record; a profile landing after the label re-resolves them.
+    this.unsubscribePlayers =
+      this.store &&
+      watchPlayerNames(() => {
+        this.structureInfoCache.clear();
+        this.requestVisibleStructuresRefresh({ refreshExisting: true });
+      });
 
     this.compactLabelRenderer = compactLabelRenderer;
 
@@ -467,54 +467,44 @@ export class StructureManager {
   }
 
   private subscribeToStructurePresentationComponents(): void {
-    const guildSubscription = this.components?.GuildMember?.update$.subscribe(() => {
-      this.structureInfoCache.clear();
-      this.requestVisibleStructuresRefresh({ refreshExisting: true });
-    });
-    if (guildSubscription) this.recsUnsubscribes.push(() => guildSubscription.unsubscribe());
-    const structureSubscription = this.components?.Structure?.update$.subscribe(({ value }) => {
-      const [current, previous] = value;
-      const entityId = normalizeEntityId(current?.entity_id ?? previous?.entity_id);
-      if (entityId === undefined) return;
-
-      this.playStructureGuardDifferenceFx(
-        entityId,
-        this.resolveGuardArmies(previous?.troop_guards),
-        this.resolveGuardArmies(current?.troop_guards),
-      );
-      this.refreshStructurePresentation(entityId);
-    });
-    if (structureSubscription) this.recsUnsubscribes.push(() => structureSubscription.unsubscribe());
-
-    const buildingSubscription = this.components?.StructureBuildings?.update$.subscribe(({ value }) => {
-      const [current, previous] = value;
-      const entityId = normalizeEntityId(current?.entity_id ?? previous?.entity_id);
-      if (entityId !== undefined) this.refreshStructurePresentation(entityId);
-    });
-    if (buildingSubscription) this.recsUnsubscribes.push(() => buildingSubscription.unsubscribe());
-
-    const hyperstructureSubscription = this.components?.Hyperstructure?.update$.subscribe(({ value }) => {
-      const [current, previous] = value;
-      const entityId = normalizeEntityId(current?.hyperstructure_id ?? previous?.hyperstructure_id);
-      if (entityId !== undefined) this.refreshStructurePresentation(entityId);
-    });
-    if (hyperstructureSubscription) this.recsUnsubscribes.push(() => hyperstructureSubscription.unsubscribe());
-
-    const requirementsSubscription = this.components?.HyperstructureRequirements?.update$.subscribe(({ value }) => {
-      const [current, previous] = value;
-      const entityId = normalizeEntityId(current?.hyperstructure_id ?? previous?.hyperstructure_id);
-      if (entityId !== undefined) this.refreshStructurePresentation(entityId);
-    });
-    if (requirementsSubscription) this.recsUnsubscribes.push(() => requirementsSubscription.unsubscribe());
-
-    const addressNameSubscription = this.components?.AddressName?.update$.subscribe(() => {
-      // Owner names are folded into every cached record.
-      this.structureInfoCache.clear();
-      this.entityIdLabels.forEach((_label, entityId) => {
-        this.refreshTrackedStructureLabelOrPrune(entityId);
-      });
-    });
-    if (addressNameSubscription) this.recsUnsubscribes.push(() => addressNameSubscription.unsubscribe());
+    if (!this.store) return;
+    this.storeUnsubscribes.push(
+      this.store.subscribe((changes) => {
+        const touched = new Set<number>();
+        let refreshAll = false;
+        for (const change of changes) {
+          if (change.model === "GuildMember") {
+            if ((change.current ?? change.previous)?.game_id === configManager.getActiveGameId()) refreshAll = true;
+            continue;
+          }
+          if (change.model === "Guard") {
+            const guard = change.current ?? change.previous;
+            if (!guard || guard.game_id !== configManager.getActiveGameId()) continue;
+            this.playStructureGuardDifferenceFx(
+              guard.structure_id,
+              this.resolveGuardArmies(change.previous ? [change.previous] : []),
+              this.resolveGuardArmies(change.current ? [change.current] : []),
+            );
+            touched.add(guard.structure_id);
+          } else if (
+            change.model === "Structure" ||
+            change.model === "StructureBuildings" ||
+            change.model === "Hyperstructure" ||
+            change.model === "HyperstructureProgress" ||
+            change.model === "HyperstructureShares"
+          ) {
+            const row = change.current ?? change.previous;
+            if (row?.game_id === configManager.getActiveGameId()) touched.add(row.entity_id);
+          }
+        }
+        if (refreshAll) {
+          this.structureInfoCache.clear();
+          this.requestVisibleStructuresRefresh({ refreshExisting: true });
+        } else {
+          touched.forEach((id) => this.refreshStructurePresentation(id));
+        }
+      }),
+    );
   }
 
   private refreshStructurePresentation(entityId: ID): void {
@@ -576,17 +566,20 @@ export class StructureManager {
     const renderInfo = getStructureInfoFromTileOccupier(renderable.occupierType);
     if (!renderInfo || renderInfo.reserved) return undefined;
 
-    const structureComponent = this.components?.Structure
-      ? getComponentValue(this.components.Structure, gameEntityKey([BigInt(renderable.entityId)]))
-      : undefined;
-    const ownerAddress = structureComponent?.owner ?? 0n;
+    const structureComponent = this.store?.get("Structure", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: renderable.entityId,
+    });
+    if (!structureComponent) return undefined;
+    const guards = this.readGuards(renderable.entityId);
+    const ownerAddress = structureComponent.owner;
     const ownerName = this.resolveLiveStructureOwnerName(ownerAddress, "");
     const cosmetic = this.resolveStructureCosmeticSelection({
       owner: ownerAddress,
       structureType: renderInfo.type,
       stage: renderInfo.stage,
     });
-    const battleCooldownEnd = this.resolveBattleCooldownEnd(structureComponent?.troop_guards);
+    const battleCooldownEnd = Math.max(0, ...guards.map((guard) => guard.troops.battle_cooldown_end));
     const battleDirections = this.battleDirectionsByStructure.get(renderable.entityId);
 
     return {
@@ -602,19 +595,22 @@ export class StructureManager {
       initialized: this.resolveHyperstructureInitialized(renderable.entityId, renderInfo.type),
       level: renderInfo.level,
       isMine: isAddressEqualToAccount(ownerAddress),
-      isAlly: arePlayersAllied(this.components, useAccountStore.getState().account?.address, ownerAddress),
+      isAlly: arePlayersAllied(this.store, useAccountStore.getState().account?.address, ownerAddress),
       owner: { address: ownerAddress, ownerName, guildName: "" },
       structureType: renderInfo.type,
+      mineKind: structureComponent?.metadata.mine_kind,
       hasWonder: renderInfo.hasWonder,
       realmOrder: renderInfo.type === StructureType.Realm ? structureComponent?.metadata.order : undefined,
       cosmeticId: cosmetic.skin.cosmeticId,
       cosmeticAssetPaths: cosmetic.skin.assetPaths,
       usesFallbackCosmeticSkin: cosmetic.skin.isFallback,
       attachments: cosmetic.attachments,
-      guardArmies: this.resolveGuardArmies(structureComponent?.troop_guards),
+      guardArmies: this.resolveGuardArmies(guards),
       activeProductions: this.resolveActiveProductions(renderable.entityId),
       incomingTroopArrivals: this.incomingTroopArrivalsByStructure.get(renderable.entityId),
-      hyperstructureRealmCount: structureComponent?.metadata?.villages_count,
+      hyperstructureRealmCount: this.store
+        ? getRealmCountPerHyperstructure(this.store).get(renderable.entityId)
+        : undefined,
       attackedFromDegrees: battleDirections?.attackedFromDegrees,
       attackedTowardDegrees: battleDirections?.attackedTowardDegrees,
       battleCooldownEnd,
@@ -623,13 +619,17 @@ export class StructureManager {
   }
 
   private resolveHyperstructureInitialized(entityId: ID, structureType: StructureType): boolean {
-    if (structureType !== StructureType.Hyperstructure || !this.components?.Hyperstructure) return false;
-    return Boolean(getComponentValue(this.components.Hyperstructure, gameEntityKey([BigInt(entityId)]))?.initialized);
+    if (structureType !== StructureType.Hyperstructure || !this.store) return false;
+    const row = this.store.get("Hyperstructure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
+    return row !== undefined && row.stage !== "Foundation";
   }
 
   private resolveActiveProductions(entityId: ID): Array<{ buildingCount: number; buildingType: BuildingType }> {
-    if (!this.components?.StructureBuildings) return [];
-    const buildings = getComponentValue(this.components.StructureBuildings, gameEntityKey([BigInt(entityId)]));
+    if (!this.store) return [];
+    const buildings = this.store.get("StructureBuildings", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: entityId,
+    });
     if (!buildings) return [];
 
     const counts = unpackBuildingCounts([
@@ -642,32 +642,22 @@ export class StructureManager {
     );
   }
 
-  private resolveGuardArmies(troopGuards: any): GuardArmy[] {
-    if (!troopGuards) return [];
-
-    const resolveGuard = (slot: GuardSlot, guard: any): GuardArmy => ({
-      slot,
-      category: guard?.category ?? null,
-      tier: TROOP_TIERS[guard?.tier] ?? 1,
-      count: divideByPrecision(Number(guard?.count ?? 0)),
-    });
-
-    return [
-      resolveGuard(GuardSlot.Delta, troopGuards.delta),
-      resolveGuard(GuardSlot.Charlie, troopGuards.charlie),
-      resolveGuard(GuardSlot.Bravo, troopGuards.bravo),
-      resolveGuard(GuardSlot.Alpha, troopGuards.alpha),
-    ];
+  private readGuards(entityId: ID): NativeRows["Guard"][] {
+    if (!this.store) return [];
+    const game = configManager.getActiveGameId();
+    const structure = this.store.get("Structure", { game_id: game, entity_id: entityId });
+    return Array.from({ length: structure?.base.troop_max_guard_count ?? 0 }, (_, slot) =>
+      this.store!.get("Guard", { game_id: game, structure_id: entityId, slot }),
+    ).filter((guard): guard is NativeRows["Guard"] => guard !== undefined);
   }
 
-  private resolveBattleCooldownEnd(troopGuards: any): number {
-    if (!troopGuards) return 0;
-    return Math.max(
-      troopGuards.alpha?.battle_cooldown_end ?? 0,
-      troopGuards.bravo?.battle_cooldown_end ?? 0,
-      troopGuards.charlie?.battle_cooldown_end ?? 0,
-      troopGuards.delta?.battle_cooldown_end ?? 0,
-    );
+  private resolveGuardArmies(guards: readonly NativeRows["Guard"][]): GuardArmy[] {
+    return guards.map(({ slot, troops }) => ({
+      slot,
+      category: troops.category,
+      tier: TROOP_TIERS[troops.tier],
+      count: divideByPrecision(Number(troops.count)),
+    }));
   }
 
   private handleCameraViewChange = (view: CameraView) => {
@@ -792,7 +782,7 @@ export class StructureManager {
     if (this.isDestroyed) return;
     const terrain = this.resolveTerrainSurface();
     for (const [entityId, bindings] of this.structureInstanceBindings) {
-      // Every page completion visits every bound structure: sample from the binding and touch RECS only on a change.
+      // Every page completion visits every bound structure: sample from the binding and read the store only on a change.
       const height = terrain.sampleSurface(bindings[0].worldX, bindings[0].worldZ).height;
       if (bindings.every((binding) => binding.terrainHeight === height)) continue;
       const structure = this.resolveStructureInfoByEntityId(entityId);
@@ -853,7 +843,7 @@ export class StructureManager {
     }
     this.isDestroyed = true;
     this.unsubscribeProjection();
-    this.recsUnsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
+    this.storeUnsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
 
     if (this.unsubscribeAccountStore) {
       this.unsubscribeAccountStore();
@@ -1105,10 +1095,6 @@ export class StructureManager {
     structureType: StructureType;
     stage: number;
   }): ReturnType<typeof resolveStructureCosmetic> {
-    if (this.components && input.owner !== 0n) {
-      playerCosmeticsStore.hydrateFromBlitzComponent(this.components, input.owner);
-    }
-
     const enumName = StructureType[input.structureType as unknown as keyof typeof StructureType];
     const defaultModelKey = typeof enumName === "string" ? enumName : String(input.structureType);
 
@@ -1222,19 +1208,6 @@ export class StructureManager {
     return { ...this.metrics };
   }
 
-  public refreshCosmeticsForOwner(owner: string | bigint): void {
-    const normalizedOwner = BigInt(owner);
-    const refreshEntityIds = this.worldSpatialProjection.getStructures(activeMapLayer()).flatMap((renderable) => {
-      if (renderable.reserved || !this.components?.Structure) return [];
-      const matchesOwner =
-        getComponentValue(this.components.Structure, gameEntityKey([BigInt(renderable.entityId)]))?.owner ===
-        normalizedOwner;
-      return matchesOwner ? [renderable.entityId] : [];
-    });
-    refreshEntityIds.forEach((entityId) => this.invalidateStructureInfo(entityId));
-    this.requestVisibleStructuresRefreshForEntities(refreshEntityIds);
-  }
-
   // Component rows change facts, not positions: only structures inside the window need a pass.
   private requestVisibleStructuresRefreshForEntities(entityIds: readonly ID[]): void {
     const refreshEntityIds = entityIds.filter((entityId) => this.visibleStructureWindow?.structures.has(entityId));
@@ -1335,6 +1308,11 @@ export class StructureManager {
 
   private getBaseStructureModelIndex(structure: StructureInfo): number {
     if (structure.structureType === StructureType.Hyperstructure) return 0;
+    if (structure.structureType === StructureType.Mine) {
+      const index = Object.keys(MineKinds).map(Number).indexOf(structure.mineKind!);
+      if (index < 0) throw new Error(`Unknown mine kind ${structure.mineKind}`);
+      return index;
+    }
     return structure.structureType === StructureType.Realm ? structure.level : structure.stage;
   }
 
@@ -1602,10 +1580,10 @@ export class StructureManager {
       ? this.addVisibleCosmeticStructureInstances(structure, dirtyModels)
       : this.addVisibleBaseStructureInstances(structure, dirtyModels);
     for (const binding of bindings) {
-      if (binding.model instanceof HyperstructureModel && this.components) {
+      if (binding.model instanceof HyperstructureModel && this.store) {
         binding.model.setConstructionAt(
           binding.instanceIndex,
-          readHyperstructureConstruction(this.components, Number(structure.entityId)),
+          readHyperstructureConstruction(this.store, Number(structure.entityId)),
           this.pendingHyperstructureBuilds.delete(structure.entityId),
         );
       }

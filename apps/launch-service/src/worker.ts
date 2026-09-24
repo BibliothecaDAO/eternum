@@ -1,70 +1,52 @@
-import { Duration, Effect, Result } from "effect";
-import { LaunchExecutor } from "./executor";
-import { LaunchExecutionFailure } from "./errors";
-import type { ClaimedLaunchRun } from "./model";
-import { databaseOperation, LaunchDatabase } from "./store";
+import { Effect } from "effect";
+import { realmsAccountAddress } from "@realms-world/identity/account";
+import { createLaunchApp } from "./app";
+import { createIdentityResolver } from "./auth";
+import { D1CalendarStore } from "./calendar-store";
+import { decodeLaunchEnv, type LaunchEnv } from "./env";
+import { readLaunchShard } from "./executor";
+import { runLaunchSchedule } from "./schedule";
+import { D1SlotStore } from "./slot-store";
+import { D1LaunchStore } from "./store";
 
-const errorMessage = (error: LaunchExecutionFailure): string =>
-  error.cause instanceof Error ? error.cause.message : String(error.cause);
+/**
+ * The launch Worker, served under the app's /api beside identity: /api/factory/* for launchers and /api/slots/* for
+ * players. Its cron tick follows the season calendar: it creates the Frontier season game at its start and the next
+ * Blitz slot inside the Blitz window, freezes closed slots, and wakes the registrar that executes launches.
+ */
+export default {
+  fetch(request: Request, rawEnv: Record<string, unknown>): Response | Promise<Response> {
+    return launchAppOf(decodeLaunchEnv(rawEnv)).fetch(request);
+  },
+  async scheduled(_controller: ScheduledController, rawEnv: Record<string, unknown>): Promise<void> {
+    const env = decodeLaunchEnv(rawEnv);
+    await Effect.runPromise(
+      runLaunchSchedule(new D1LaunchStore(env.DB), new D1SlotStore(env.DB), new D1CalendarStore(env.DB), new Date()),
+    );
+    // The backstop: whatever a tick queued, and anything due that no queueing path armed, runs now.
+    await registrarOf(env).armFor(Date.now());
+  },
+};
 
-const heartbeat = (run: ClaimedLaunchRun, leaseMs: number) =>
-  Effect.forever(
-    Effect.sleep(Duration.millis(Math.max(50, Math.floor(leaseMs / 3)))).pipe(
-      Effect.andThen(
-        LaunchDatabase.pipe(
-          Effect.flatMap((store) =>
-            databaseOperation("heartbeat launch lease", () => store.heartbeat(run.id, run.leaseToken, leaseMs)),
-          ),
-          Effect.filterOrFail(
-            (leaseActive) => leaseActive,
-            () => new LaunchExecutionFailure({ runId: run.id, cause: "launch lease was lost" }),
-          ),
-        ),
-      ),
-    ),
-  ).pipe(
-    Effect.mapError((cause) =>
-      cause instanceof LaunchExecutionFailure ? cause : new LaunchExecutionFailure({ runId: run.id, cause }),
-    ),
-  );
+const registrarOf = (env: LaunchEnv) => env.REGISTRAR.get(env.REGISTRAR.idFromName("registrar"));
 
-export const processNextLaunch = (leaseMs: number) =>
-  Effect.gen(function* () {
-    const store = yield* LaunchDatabase;
-    const executor = yield* LaunchExecutor;
-    const run = yield* databaseOperation("claim launch", () => store.claim(leaseMs));
-    if (!run) return false;
+export { Registrar } from "./registrar";
 
-    yield* Effect.logInfo("launch_claimed", {
-      runId: run.id,
-      kind: run.kind,
-      name: run.name,
-      attempt: run.attempts,
-    });
-
-    const result = yield* Effect.result(Effect.raceFirst(executor.execute(run, store), heartbeat(run, leaseMs)));
-
-    if (Result.isSuccess(result)) {
-      yield* databaseOperation("complete launch", () => store.complete(run.id, run.leaseToken, result.success));
-      yield* Effect.logInfo("launch_completed", { runId: run.id, name: run.name });
-      return true;
-    }
-
-    const message = errorMessage(result.failure);
-    if (run.attempts < 3) {
-      yield* databaseOperation("retry launch", () => store.retry(run.id, run.leaseToken, message, 5_000));
-      yield* Effect.logWarning("launch_retry_queued", { runId: run.id, attempt: run.attempts, error: message });
-    } else {
-      yield* databaseOperation("fail launch", () => store.fail(run.id, run.leaseToken, message));
-      yield* Effect.logError("launch_failed", { runId: run.id, attempt: run.attempts, error: message });
-    }
-    return true;
+const launchAppOf = (env: LaunchEnv) =>
+  createLaunchApp({
+    config: {
+      allowedOrigins: new Set([new URL(env.BASE_URL).origin]),
+      launcherAllowlist: env.launchers,
+      operatorToken: env.OPERATOR_TOKEN,
+    },
+    deployment: { environment: env.ENVIRONMENT, version: env.VERSION.id },
+    identity: createIdentityResolver(env.BASE_URL, (url, init) => env.IDENTITY.fetch(url, init)),
+    store: new D1LaunchStore(env.DB),
+    slots: new D1SlotStore(env.DB),
+    calendar: new D1CalendarStore(env.DB),
+    registrar: { armFor: (dueAt) => registrarOf(env).armFor(dueAt) },
+    playerAccount: async (realmsId) => {
+      const { shard } = await readLaunchShard(env.SHARD_URL);
+      return realmsAccountAddress(realmsId, shard.accountClassHash, shard.guardianPublicKey);
+    },
   });
-
-export const launchWorkerLoop = (leaseMs: number, pollMs: number) =>
-  Effect.forever(
-    processNextLaunch(leaseMs).pipe(
-      Effect.catchCause((cause) => Effect.logError("launch_worker_iteration_failed", { cause: String(cause) })),
-      Effect.andThen(Effect.sleep(Duration.millis(pollMs))),
-    ),
-  );

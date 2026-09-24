@@ -1,7 +1,8 @@
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
 import { useTransferPanelDraftStore } from "@/hooks/store/use-transfer-panel-draft-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
   canTransferMilitaryInventoryBetweenStructures,
   canTransferMilitaryInventoryFromStructure,
@@ -18,40 +19,21 @@ import {
   isMilitaryResource,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import type { GameModeId, VillageIconKey } from "@/config/game-modes";
+import type { VillageIconKey } from "@/config/game-modes";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useDojo } from "@bibliothecadao/react";
-import {
-  CapacityConfig,
-  ClientComponents,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  Structure,
-  StructureType,
-} from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { CapacityConfig, RESOURCE_PRECISION, ResourcesIds, Structure, StructureType } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { Castle, Crown, Pickaxe, Hyperstructure, Star, Tent } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
-
-const BLITZ_FRAGMENT_MINE_ALLOWED_RESOURCES = new Set<ResourcesIds>([ResourcesIds.Donkey, ResourcesIds.Essence]);
-const ETERNUM_FRAGMENT_MINE_ALLOWED_RESOURCES = new Set<ResourcesIds>([
-  ResourcesIds.Donkey,
-  ResourcesIds.AncientFragment,
-]);
-const FRAGMENT_MINE_TRANSFER_MESSAGE_BY_MODE: Record<GameModeId, string> = {
-  blitz: "For non-military transfers, Essence rifts can only transfer Donkeys and Essence.",
-  eternum: "Fragment mines can only transfer Donkeys and Ancient Fragments.",
-};
 
 const VILLAGE_ICON_BY_KEY: Record<VillageIconKey, typeof Castle> = {
   castle: Castle,
   tent: Tent,
 };
 
-const isFragmentMine = (structure: Structure | undefined) => structure?.category === StructureType.FragmentMine;
 const canOpenTransferInventory = (structure: Structure) =>
   resolveStructureUiCapabilities(structure.structure).canOpenTransferInventory;
 
@@ -62,7 +44,7 @@ const getStructureIcon = (category: StructureType, villageIconKey: VillageIconKe
     case StructureType.Village:
     case StructureType.Camp:
       return VILLAGE_ICON_BY_KEY[villageIconKey];
-    case StructureType.FragmentMine:
+    case StructureType.Mine:
       return Pickaxe;
     case StructureType.Hyperstructure:
       return Hyperstructure;
@@ -121,7 +103,7 @@ interface TransferAutomationPanelProps {
 }
 
 export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationPanelProps) => {
-  const playerStructures = useUIStore((s) => s.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
   const currentDefaultTick = useCurrentDefaultTick();
   const mode = useGameModeConfig();
   const { favorites } = useFavoriteStructures();
@@ -133,9 +115,10 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
 
   // Aggregate available resources across owned sources (balance > 0)
   const {
-    setup: { components, systemCalls },
+    setup: { store, systemCalls },
     account: { account },
-  } = useDojo();
+  } = useGame();
+  const revision = useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight"]);
 
   // UI state
   const [selectedResources, setSelectedResources] = useState<ResourcesIds[]>([]);
@@ -150,11 +133,6 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   const [interval, setIntervalMinutes] = useState(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const fragmentMineAllowedResources = useMemo(
-    () => (mode.id === "blitz" ? BLITZ_FRAGMENT_MINE_ALLOWED_RESOURCES : ETERNUM_FRAGMENT_MINE_ALLOWED_RESOURCES),
-    [mode.id],
-  );
-  const fragmentMineTransferMessage = FRAGMENT_MINE_TRANSFER_MESSAGE_BY_MODE[mode.id];
   const allowMultiDestination = selectedResources.length > 0;
   const actualDestinationCount = allowMultiDestination ? destinationIds.length : Math.min(destinationIds.length, 1);
   const destinationCountForLimits = allowMultiDestination ? Math.max(1, destinationIds.length || 1) : 1;
@@ -207,19 +185,14 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
 
   const resourceTotals = useMemo(() => {
     const totals = new Map<ResourcesIds, number>();
-    if (!components) return totals;
-    const clientComponents = components as ClientComponents;
+    if (!store) return totals;
     const sourcesToUse =
       selectedSourceId !== null
         ? ownedSources.filter((ps) => Number(ps.entityId) === Number(selectedSourceId))
         : ownedSources;
 
     for (const ps of sourcesToUse) {
-      const entityKey = gameEntityKey([BigInt(ps.entityId)]);
-      const resourceComponent = getComponentValue(clientComponents.Resource, entityKey);
-      if (!resourceComponent) continue;
-
-      const balances = ResourceManager.getResourceBalancesWithProduction(resourceComponent, currentDefaultTick);
+      const balances = new ResourceManager(store, ps.entityId).balances(currentDefaultTick);
 
       for (const { resourceId, amount } of balances) {
         const rid = resourceId as ResourcesIds;
@@ -234,7 +207,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       }
     }
     return totals;
-  }, [components, ownedSources, currentDefaultTick, selectedSourceId, mode.id]);
+  }, [store, revision, ownedSources, currentDefaultTick, selectedSourceId, mode.id]);
 
   const availableResources = useMemo(() => new Set(resourceTotals.keys()), [resourceTotals]);
 
@@ -293,14 +266,13 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   }, [ownedSources, hasMilitarySelection, mode.id]);
 
   const eligibleSources = useMemo(() => {
-    if (!components) return filteredOwnedSources;
+    if (!store) return filteredOwnedSources;
     if (selectedResources.length === 0) return filteredOwnedSources;
-    const clientComponents = components as ClientComponents;
     const eligible: Structure[] = [];
     const balanceSums = new Map<number, number>();
 
     for (const ps of filteredOwnedSources) {
-      const rm = new ResourceManager(clientComponents, ps.entityId);
+      const rm = new ResourceManager(store, ps.entityId);
       let sum = 0;
       let hasAllResources = true;
       for (const rid of selectedResources) {
@@ -321,7 +293,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       (a, b) => (balanceSums.get(Number(b.entityId)) ?? 0) - (balanceSums.get(Number(a.entityId)) ?? 0),
     );
     return sortedEligible;
-  }, [components, filteredOwnedSources, selectedResources, currentDefaultTick]);
+  }, [store, revision, filteredOwnedSources, selectedResources, currentDefaultTick]);
 
   const selectedSource = useMemo(() => {
     if (!selectedSourceId) return null;
@@ -355,15 +327,9 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     return map;
   }, [ownedDestinations]);
 
-  const allowFragmentMineDestinationPayload = useMemo(
-    () => hasMilitarySelection || selectedResources.every((rid) => fragmentMineAllowedResources.has(rid)),
-    [hasMilitarySelection, selectedResources, fragmentMineAllowedResources],
-  );
-
   const destinations = useMemo(() => {
     const filtered = filteredOwnedDestinations
       .filter((ps) => Number(ps.entityId) !== Number(selectedSourceId))
-      .filter((ps) => (allowFragmentMineDestinationPayload ? true : !isFragmentMine(ps)))
       .filter((ps) => destCategoryFilter.size === 0 || destCategoryFilter.has(ps.category as StructureType));
     return filtered.toSorted((a, b) => {
       const aFav = favoriteDestinationIds.has(Number(a.entityId));
@@ -372,13 +338,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       if (!aFav && bFav) return 1;
       return 0;
     });
-  }, [
-    filteredOwnedDestinations,
-    selectedSourceId,
-    allowFragmentMineDestinationPayload,
-    destCategoryFilter,
-    favoriteDestinationIds,
-  ]);
+  }, [filteredOwnedDestinations, selectedSourceId, destCategoryFilter, favoriteDestinationIds]);
 
   // Categories present among the eligible source/destination structures, used to
   // render the category-filter chips (and hide them when there's nothing to pick).
@@ -447,16 +407,6 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     }
   }, [hasMilitarySelection, selectedSourceId, filteredOwnedSources]);
 
-  useEffect(() => {
-    if (allowFragmentMineDestinationPayload) return;
-    setDestinationIds((prev) =>
-      prev.filter((id) => {
-        const destination = destinationLookup.get(id);
-        return destination ? !isFragmentMine(destination) : false;
-      }),
-    );
-  }, [allowFragmentMineDestinationPayload, destinationLookup]);
-
   // Ensure resourceConfigs exist for selected resources and remove stale ones
   useEffect(() => {
     setResourceConfigs((prev) => {
@@ -476,9 +426,9 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   // Compute current source balances (human units) for flat slider maxes
   const sourceBalances = useMemo(() => {
     const map = new Map<number, number>();
-    if (!components || !selectedSourceId) return map;
+    if (!store || !selectedSourceId) return map;
     try {
-      const rm = new ResourceManager(components as ClientComponents, selectedSourceId);
+      const rm = new ResourceManager(store, selectedSourceId);
       for (const rid of selectedResources) {
         const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
         map.set(rid, Math.max(0, Math.floor(Number(bal) / RESOURCE_PRECISION)));
@@ -487,19 +437,19 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       // ignore balance fetch errors
     }
     return map;
-  }, [components, selectedSourceId, selectedResources, currentDefaultTick]);
+  }, [store, revision, selectedSourceId, selectedResources, currentDefaultTick]);
 
   // Donkey availability separate to avoid re-computation on slider changes
   const donkeyAvailable = useMemo(() => {
-    if (!components || !selectedSourceId) return 0;
+    if (!store || !selectedSourceId) return 0;
     try {
-      const rm = new ResourceManager(components as ClientComponents, selectedSourceId);
+      const rm = new ResourceManager(store, selectedSourceId);
       const raw = rm.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance ?? 0n;
       return Math.max(0, Math.floor(Number(raw) / RESOURCE_PRECISION));
     } catch {
       return 0;
     }
-  }, [components, selectedSourceId, currentDefaultTick]);
+  }, [store, revision, selectedSourceId, currentDefaultTick]);
 
   const donkeyCapacityKgPerUnit = useMemo(() => {
     try {
@@ -509,15 +459,9 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     }
   }, []);
 
-  const restrictToFragmentMinePayload =
-    selectedSource?.category === StructureType.FragmentMine && !hasMilitarySelection;
-
   const visibleResourceIds = useMemo(() => {
     return Array.from(availableResources)
       .filter((rid) => {
-        if (restrictToFragmentMinePayload && !fragmentMineAllowedResources.has(rid as ResourcesIds)) {
-          return false;
-        }
         if (resourceFilter === "military") return isMilitaryResource(rid as ResourcesIds);
         if (resourceFilter === "production") return !isMilitaryResource(rid as ResourcesIds);
         return true;
@@ -531,27 +475,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         if (priA.position !== priB.position) return priA.position - priB.position;
         return ra - rb;
       });
-  }, [
-    availableResources,
-    restrictToFragmentMinePayload,
-    resourceFilter,
-    getResourcePriority,
-    fragmentMineAllowedResources,
-  ]);
-
-  const hasRestrictedResourcesSelected = useMemo(
-    () =>
-      Boolean(restrictToFragmentMinePayload && selectedResources.some((rid) => !fragmentMineAllowedResources.has(rid))),
-    [restrictToFragmentMinePayload, selectedResources, fragmentMineAllowedResources],
-  );
-
-  useEffect(() => {
-    if (!hasRestrictedResourcesSelected) return;
-    setSelectedResources((prev) => {
-      const filtered = prev.filter((rid) => fragmentMineAllowedResources.has(rid));
-      return filtered.length === prev.length ? prev : filtered;
-    });
-  }, [hasRestrictedResourcesSelected, fragmentMineAllowedResources]);
+  }, [availableResources, resourceFilter, getResourcePriority]);
 
   // Computed preview for absolute amounts and donkey capacity (fast path)
   const transferPreview = useMemo(() => {
@@ -642,7 +566,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   );
 
   const submit = useCallback(async () => {
-    if (!components) return;
+    if (!store) return;
     if (!account || !account.address || account.address === "0x0") {
       toast.error("Connect wallet to transfer.");
       return;
@@ -694,13 +618,6 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         );
         return;
       }
-    }
-
-    const fragmentMineDestinationInvalid =
-      !allowFragmentMineDestinationPayload && resolvedDestinations.some((dst) => isFragmentMine(dst));
-    if (fragmentMineDestinationInvalid) {
-      toast.error(fragmentMineTransferMessage);
-      return;
     }
 
     if (!transferPreview) {
@@ -812,7 +729,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     toast.success(resolvedDestinationIds.length > 1 ? "Scheduled transfers created." : "Scheduled transfer created.");
     setIsSubmitting(false);
   }, [
-    components,
+    store,
     account,
     selectedResources,
     selectedSourceId,
@@ -826,8 +743,6 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     systemCalls,
     destinationLookup,
     allowMultiDestination,
-    allowFragmentMineDestinationPayload,
-    fragmentMineTransferMessage,
     mode.structure,
   ]);
 
@@ -909,7 +824,6 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
             Reset
           </Button>
         </div>
-        {restrictToFragmentMinePayload && <p className="text-xxs text-gold/60">{fragmentMineTransferMessage}</p>}
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,140px),1fr))] gap-2">
           {visibleResourceIds.map((rid) => {
             const resourceId = rid as ResourcesIds;

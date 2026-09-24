@@ -19,7 +19,7 @@ const RESERVED_HYPERSTRUCTURE_OPACITY = 0.42;
 const RESERVED_HYPERSTRUCTURE_Y_OFFSET = 0.05;
 
 /** Ordinary structure churn never touches the reserved instances; only a reserved site appearing, moving or being claimed does. */
-export const changesTouchReservedSites = (changes: readonly StructureSpatialProjectionChange[]): boolean =>
+const changesTouchReservedSites = (changes: readonly StructureSpatialProjectionChange[]): boolean =>
   changes.some((change) => change.previous?.reserved === true || change.current?.reserved === true);
 
 const cloneReservedHyperstructureMaterial = (material: Material) => {

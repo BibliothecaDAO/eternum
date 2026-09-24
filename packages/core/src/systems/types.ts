@@ -28,15 +28,14 @@ export interface ActiveProduction {
   buildingType: BuildingType;
 }
 
-// Spatial identity and live RECS presentation facts consumed by map renderers.
+// Spatial identity and live native store presentation facts consumed by map renderers.
 export type ExplorerTroopsTileSystemUpdate = {
   entityId: ID;
   hexCoords: HexPosition;
   troopType: TroopType;
   troopTier: TroopTier;
-  isDaydreamsAgent: boolean;
   removed?: boolean;
-  // Live presentation facts derived from RECS
+  // Live presentation facts derived from native store
   ownerName: string;
   guildName: string;
   troopCount?: number | undefined;
@@ -91,7 +90,7 @@ export type StructureTileSystemUpdate = {
   isAlly: boolean;
   owner: { address: bigint | undefined; ownerName: string; guildName: string };
   hasWonder: boolean;
-  // Live presentation facts derived from RECS
+  // Live presentation facts derived from native store
   guardArmies?: GuardArmy[];
   activeProductions?: ActiveProduction[];
   hyperstructureRealmCount?: number;
@@ -148,6 +147,15 @@ export type ExplorerRewardSystemUpdate = {
   rawAmount: bigint | number | string | null;
   timestamp: number;
 };
+/** A Frontier chest opened on capture: what the army found and how deep it stood. */
+export type ChestRewardSystemUpdate = {
+  explorerId: ID;
+  kind: "Relic" | "Cosmetic" | "Token";
+  quality: number;
+  depth: number;
+  timestamp: number;
+};
+
 /** A relic crate opened by an explorer: the contract hex it stood on and the relics it yielded. */
 export type RelicChestOpenedSystemUpdate = {
   explorerId: ID;

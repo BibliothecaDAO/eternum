@@ -68,10 +68,6 @@ export const MODEL_TYPE_TO_FILE: Record<ModelType, string> = {
   [ModelType.ShipPaladin1]: "ships/paladin-t1.glb",
   [ModelType.ShipPaladin2]: "ships/paladin-t2.glb",
   [ModelType.ShipPaladin3]: "ships/paladin-t3.glb",
-  [ModelType.AgentApix]: "agents/apix.glb",
-  [ModelType.AgentElisa]: "agents/elisa.glb",
-  [ModelType.AgentIstarai]: "agents/istarai.glb",
-  [ModelType.AgentYP]: "agents/ypanther.glb",
 };
 
 export const buildArmyModelAssetPath = (modelType: ModelType): string => {

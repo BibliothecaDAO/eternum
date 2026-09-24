@@ -1,3 +1,17 @@
+import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
+import {
+  Castle,
+  Crosshair,
+  Crown,
+  Hexagon,
+  Pencil,
+  Pickaxe,
+  Shield,
+  Sparkles,
+  Star,
+  Tent,
+  Users,
+} from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { STRUCTURE_GROUP_CONFIG } from "@/ui/features/world/containers/top-header/structure-groups";
@@ -11,20 +25,6 @@ import {
 } from "@/ui/features/world/containers/structure-status";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { type ID, StructureType } from "@bibliothecadao/types";
-import {
-  Castle,
-  Crosshair,
-  Crown,
-  Hexagon,
-  Pencil,
-  Pickaxe,
-  Shield,
-  Hyperstructure,
-  Star,
-  Tent,
-  Users,
-} from "@/ui/design-system/atoms/game-icons";
-import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
 import { createElement, memo, useCallback } from "react";
 
 // Category → icon, same lookup the picker uses elsewhere. Centralized here so
@@ -33,8 +33,8 @@ const CATEGORY_ICONS: Partial<Record<StructureType, GameIcon>> = {
   [StructureType.Realm]: Crown,
   [StructureType.Village]: Castle,
   [StructureType.Camp]: Tent,
-  [StructureType.FragmentMine]: Pickaxe,
-  [StructureType.Hyperstructure]: Hyperstructure,
+  [StructureType.Mine]: Pickaxe,
+  [StructureType.Hyperstructure]: Sparkles,
 };
 
 const getCategoryIcon = (category: StructureType | number | undefined): GameIcon => {
@@ -57,7 +57,7 @@ const resolveStatusTone = (
   if (!capabilities.hasPopulationDetails) return null;
 
   const base = structure.structure.base;
-  const occupied = Number(base?.troop_guard_count ?? 0);
+  const occupied = structure.guardCount;
   const max = Number(base?.troop_max_guard_count ?? 0);
 
   if (max > 0 && occupied === 0) {
@@ -146,11 +146,10 @@ export const StructureStatusRow = memo(
         : null;
 
     // Military stats: occupied/max guards and current/max explorer armies.
-    // Both numbers live on the structure base — no extra hooks needed.
     const base = structure.structure.base;
-    const guardOccupied = Number(base?.troop_guard_count ?? 0);
+    const guardOccupied = structure.guardCount;
     const guardMax = Number(base?.troop_max_guard_count ?? 0);
-    const explorerOccupied = Number(base?.troop_explorer_count ?? 0);
+    const explorerOccupied = structure.explorerCount;
     const explorerMax = Number(base?.troop_max_explorer_count ?? 0);
     const showMilitaryStats =
       statsVariant === "military" && capabilities.hasPopulationDetails && (guardMax > 0 || explorerMax > 0);
@@ -215,7 +214,7 @@ export const StructureStatusRow = memo(
             title={starTitle}
             aria-label={starTitle}
           >
-            <Star className={cn("h-3.5 w-3.5", isFavorite ? "opacity-100" : "opacity-40 grayscale")} />
+            <Star className={cn("h-3.5 w-3.5", isFavorite && "fill-current")} />
           </button>
           {isFull && onRequestRename && (
             <button

@@ -1,5 +1,7 @@
+import { MusicRouterProvider } from "@/audio";
+import { getGameModeId } from "@/config/game-modes";
 /**
- * Game route module - lazy loaded to avoid pulling heavy deps (World, Dojo, Three.js, etc.)
+ * Game route module - lazy loaded to avoid pulling heavy deps (World, native contracts, Three.js, etc.)
  * into the landing page bundle.
  */
 import { ChunkTransitionIndicator, ErrorBoundary, WorldLoading } from "@/ui/shared";
@@ -10,7 +12,7 @@ import { markGameEntryMilestone } from "./ui/layouts/game-entry-timeline";
 import { Navigate, useNavigate } from "react-router-dom";
 import type { Account, AccountInterface } from "starknet";
 import { usePlayRouteBootController } from "./game-entry/play-route-boot";
-import { DojoProvider } from "./hooks/context/dojo-context";
+import { GameProvider } from "./hooks/context/game-context";
 import { useTransactionListener } from "./hooks/use-transaction-listener";
 import type { SetupResult } from "./init/bootstrap";
 import { PlayRouteBootstrapErrorScreen } from "./ui/layouts/play-route-bootstrap-error-screen";
@@ -22,6 +24,8 @@ import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { World } from "./ui/layouts/world";
 import { resolveGameRouteView } from "./game-route.utils";
 import type { BootstrapTask } from "./game-entry/bootstrap-controller";
+
+if (import.meta.env.DEV) void import("./hooks/store/transaction-debug");
 
 type ReadyAppProps = {
   backgroundImage: string;
@@ -36,18 +40,20 @@ const TransactionListenerBridge = () => {
 
 const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
   return (
-    <DojoProvider value={setupResult} account={account}>
-      <ErrorBoundary>
-        <PlaySceneHandoff />
-        <StoryEventAudioCues />
-        <NewsHeadlineBridge />
-        <TransactionListenerBridge />
-        <TransactionAudioCues />
-        <World backgroundImage={backgroundImage} />
-        <ChunkTransitionIndicator />
-        <WorldLoading />
-      </ErrorBoundary>
-    </DojoProvider>
+    <GameProvider value={setupResult} account={account}>
+      <MusicRouterProvider modeId={getGameModeId()}>
+        <ErrorBoundary>
+          <PlaySceneHandoff />
+          <StoryEventAudioCues />
+          <NewsHeadlineBridge />
+          <TransactionListenerBridge />
+          <TransactionAudioCues />
+          <World backgroundImage={backgroundImage} />
+          <ChunkTransitionIndicator />
+          <WorldLoading />
+        </ErrorBoundary>
+      </MusicRouterProvider>
+    </GameProvider>
   );
 };
 

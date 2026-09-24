@@ -21,10 +21,11 @@ import { TopHeader } from "../features/world/containers/top-header/top-header";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { GameCycleEffects } from "../shared/components/game-cycle-effects";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
-import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { ActionRunners } from "../action-runners";
 import { RelicCrateOpenings } from "../features/military/chest/relic-crate-openings";
-import { RecsStoreBridge } from "./recs-store-bridge";
+import { ChestOpenings } from "../features/military/chest/chest-openings";
+import { ExpeditionRollover } from "../features/world/components/expeditions/expedition-rollover";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { FLIGHT_TRACE_ENABLED, traceFlightCommit } from "@/three/flight-trace";
 import { Profiler } from "react";
 import { PlayOverlayManager } from "./play-overlay-manager";
@@ -76,20 +77,30 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
  */
 const BackgroundSystems = () => (
   <>
-    <RecsStoreBridge />
     <LeaderboardActivitySync />
     <ActionRunners />
     <RelicCrateOpenings />
     <BlockTimestampPoller />
     <GameCycleEffects />
-    <ChainTimePoller />
     <BlitzSetHyperstructureShareholdersTo100 />
-    <AutomationManager />
-    <TransferAutomationManager />
-    <ExplorationAutomationManager />
+    <AutomationSystems />
+    <ChestOpenings />
+    <ExpeditionRollover />
     <SentryUserSync />
   </>
 );
+
+/** Automation exists only where the mode sells it; Frontier hides every automated surface. */
+const AutomationSystems = () => {
+  if (!useGameModeConfig().ui.showAutomation) return null;
+  return (
+    <>
+      <AutomationManager />
+      <TransferAutomationManager />
+      <ExplorationAutomationManager />
+    </>
+  );
+};
 
 /**
  * Core game systems that render interactive content.

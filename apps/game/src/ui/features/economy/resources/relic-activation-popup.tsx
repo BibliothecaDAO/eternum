@@ -1,8 +1,7 @@
 import Button from "@/ui/design-system/atoms/button";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getRecipientTypeColor, getRelicTypeColor } from "@/ui/design-system/molecules/relic-colors";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { ID, RelicRecipientType } from "@bibliothecadao/types";
 import React, { useState } from "react";
 
@@ -38,9 +37,8 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
   const {
     setup: { systemCalls },
     account: { account },
-  } = useDojo();
+  } = useGame();
 
-  const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
   const { relicInfo, resourceName, resourceKey, essenceCost } = useRelicMetadata(relicId);
   const { essenceBalance, hasEnoughEssence, missingEssence } = useRelicEssenceStatus(entityOwnerId, essenceCost);
   const compatible = isRelicCompatible(relicInfo, recipientType);
@@ -76,7 +74,6 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
         relic_resource_id: relicId,
         recipient_type: relicInfo.recipientTypeParam,
       });
-      triggerRelicsRefresh();
 
       onActivated?.();
       onClose();

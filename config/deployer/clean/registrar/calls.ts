@@ -1,16 +1,15 @@
-import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
-import { Account, CallData, type Call } from "starknet";
-import { resolveDeploymentEnvironment } from "../environment";
-import { openLedgerGame, type LedgerTarget } from "../ledger/calls";
+import { presetRegistrationCall } from "./native-preset";
+import { confirmedTransactionReceipt } from "../shared/transaction";
+import { completeNativeAdminCommand } from "../world/native/command";
+import { nativeGamesAbi, nativeWorldSchema } from "../world/native/manifest";
+import type { RegistrarWorld } from "../world/native/types";
+import type { buildNativePreset } from "../config/native-preset";
+import { resolveGameTransactionResourceBounds, worldView } from "@bibliothecadao/eternum";
+import { Account, CallData, shortString, type Call, type RawArgs, RpcProvider } from "starknet";
 import { loadRepoJsonFile } from "../shared/repo";
-import type { DeploymentEnvironmentId, WorldDeployment } from "../types";
+import type { DeploymentEnvironmentId } from "../types";
 
-type RegistrarEntrypoint =
-  | "bootstrap_chain_config"
-  | "register_preset"
-  | "register_series"
-  | "create_game"
-  | "backfill_completed_hyperstructures";
+type RegistrarEntrypoint = "register_preset" | "create_game";
 
 interface ManifestAbiEntry {
   type?: string;
@@ -19,25 +18,11 @@ interface ManifestAbiEntry {
 }
 
 interface ManifestContract {
-  tag?: string;
   address?: string;
   abi?: ManifestAbiEntry[];
-  systems?: string[];
 }
 
-interface ManifestEvent {
-  tag?: string;
-  selector?: string;
-}
-
-export interface RegistrarManifest {
-  world?: {
-    address?: string;
-    seed?: string;
-  };
-  contracts?: ManifestContract[];
-  events?: ManifestEvent[];
-}
+export type RegistrarManifest = RegistrarWorld;
 
 export interface RegistrarTransactionResult {
   transactionHash: string;
@@ -46,15 +31,6 @@ export interface RegistrarTransactionResult {
 
 export interface CreateRegistrarGameResult extends RegistrarTransactionResult {
   gameId?: number;
-  openLedgerTxHash?: string;
-}
-
-export interface RegistrarLedgerGameTarget {
-  account: Account;
-  target: LedgerTarget;
-  presetId: number;
-  start: number;
-  end: number;
 }
 
 export type RegistrarEnvironmentId = DeploymentEnvironmentId;
@@ -63,32 +39,27 @@ type RegistrarTarget = RegistrarEnvironmentId | RegistrarManifest;
 interface RegistrarContext {
   environmentId?: RegistrarEnvironmentId;
   manifest: RegistrarManifest;
-  registrarAddress?: string;
 }
 
 const DEFAULT_ENVIRONMENT_ID: RegistrarEnvironmentId = "madara.blitz";
-const APPCHAIN_NAMESPACE = "s2";
-
-function resolveEnvironmentManifest(deployment: WorldDeployment): RegistrarManifest {
-  const manifestPath = process.env.GAME_MANIFEST_PATH || deployment.manifestPath;
-  return loadRepoJsonFile<RegistrarManifest>(manifestPath);
-}
 
 function resolveRegistrarContext(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): RegistrarContext {
   if (typeof target !== "string") {
+    nativeGamesAbi(target);
     return { manifest: target };
   }
-
-  const environment = resolveDeploymentEnvironment(target);
-  return {
-    environmentId: target,
-    manifest: resolveEnvironmentManifest(environment.world),
-    registrarAddress: process.env.GAME_MANIFEST_PATH ? undefined : environment.world.registrarAddress,
-  };
+  const path = process.env.NATIVE_WORLD_MANIFEST;
+  if (!path) throw new Error("NATIVE_WORLD_MANIFEST is required");
+  const manifest = loadRepoJsonFile<RegistrarManifest>(path);
+  nativeGamesAbi(manifest);
+  return { environmentId: target, manifest };
 }
 
-function findContract(context: RegistrarContext, contractName: string): ManifestContract | undefined {
-  return context.manifest.contracts?.find((contract) => contract.tag === `${APPCHAIN_NAMESPACE}-${contractName}`);
+function registrarContract(context: RegistrarContext): ManifestContract {
+  return {
+    address: context.manifest.world.address,
+    abi: nativeGamesAbi(context.manifest) as ManifestAbiEntry[],
+  };
 }
 
 function hasDeployedAddress(address: string | undefined): address is string {
@@ -105,20 +76,18 @@ function abiIncludesEntrypoint(entries: ManifestAbiEntry[] | undefined, entrypoi
 }
 
 function requireRegistrarContract(context: RegistrarContext, entrypoint: RegistrarEntrypoint): ManifestContract {
-  const registrar = findContract(context, "registrar_systems");
-  const registrarAddress = context.registrarAddress ?? registrar?.address;
+  const registrar = registrarContract(context);
+  const registrarAddress = registrar.address;
   if (!registrar || !hasDeployedAddress(registrarAddress)) {
     if (context.environmentId) {
       throw new Error(
-        `${context.environmentId} world not deployed yet; set its registrar address after migrating ${context.manifest.world?.seed ?? "the configured profile"}`,
+        `${context.environmentId} world is not deployed; set its registrar address in the native manifest`,
       );
     }
-    throw new Error(
-      `${APPCHAIN_NAMESPACE}-registrar_systems is missing from the appchain manifest; migrate the s2 world first`,
-    );
+    throw new Error(`Native registry is missing from the manifest`);
   }
-  if (!registrar.systems?.includes(entrypoint) && !abiIncludesEntrypoint(registrar.abi, entrypoint)) {
-    throw new Error(`registrar_systems manifest is missing ${entrypoint}`);
+  if (!abiIncludesEntrypoint(registrar.abi, entrypoint)) {
+    throw new Error(`Native registry ABI is missing ${entrypoint}`);
   }
   return { ...registrar, address: registrarAddress };
 }
@@ -136,29 +105,11 @@ function buildRegistrarCall(
   };
 }
 
-function transactionSucceeded(receipt: unknown): boolean {
-  const helper = receipt as { isSuccess?: () => boolean; execution_status?: string };
-  if (typeof helper.isSuccess === "function") {
-    return helper.isSuccess();
-  }
-  return !helper.execution_status || helper.execution_status === "SUCCEEDED";
-}
-
-// The revert reason must ride in the thrown error: the idempotency matchers (isRegistrarAlreadyInitializedError,
-// isRegistrarAlreadyRegisteredError) test the message, so a bare "failed for transaction 0x…" hides the on-chain
-// assert and turns an expected already-initialized/-registered revert into a hard failure.
-function receiptRevertReason(receipt: unknown): string | undefined {
-  const reason = (receipt as { revert_reason?: unknown }).revert_reason;
-  return typeof reason === "string" && reason.length > 0 ? reason : undefined;
-}
-
-export function resolveRegistrarExecutionDetails(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID) {
-  const chain = typeof target === "string" ? resolveDeploymentEnvironment(target).chain : "appchain";
-  const resourceBounds = resolveGameTransactionResourceBounds(chain);
+export function resolveRegistrarExecutionDetails() {
   return {
     version: 3 as const,
     tip: 0,
-    ...(resourceBounds ? { resourceBounds } : {}),
+    resourceBounds: resolveGameTransactionResourceBounds(),
   };
 }
 
@@ -167,31 +118,14 @@ async function executeRegistrarCall(
   call: Call,
   target: RegistrarTarget,
 ): Promise<RegistrarTransactionResult> {
-  const transaction = await account.execute(call, resolveRegistrarExecutionDetails(target));
-  const receipt = await account.waitForTransaction(transaction.transaction_hash);
-  if (!transactionSucceeded(receipt)) {
-    const reason = receiptRevertReason(receipt);
-    throw new Error(
-      `${call.entrypoint} failed for transaction ${transaction.transaction_hash}${reason ? `: ${reason}` : ""}`,
-    );
-  }
+  const transaction = await account.execute(call, resolveRegistrarExecutionDetails());
+  const receipt = await confirmedTransactionReceipt(account, transaction.transaction_hash);
   return { transactionHash: transaction.transaction_hash, receipt };
 }
 
-function normalizeFelt(value: string): string {
-  return `0x${BigInt(value).toString(16)}`;
-}
-
-function resolveGameCreatedSelector(context: RegistrarContext): string | undefined {
-  const selector = context.manifest.events?.find(
-    (event) => event.tag === `${APPCHAIN_NAMESPACE}-GameCreated`,
-  )?.selector;
-  return selector ? normalizeFelt(selector) : undefined;
-}
-
-function readReceiptEvents(receipt: unknown): Array<{ keys?: string[]; data?: string[] }> {
+function readReceiptEvents(receipt: unknown): Array<{ from_address?: string; keys?: string[]; data?: string[] }> {
   const events = (receipt as { events?: unknown }).events;
-  return Array.isArray(events) ? (events as Array<{ keys?: string[]; data?: string[] }>) : [];
+  return Array.isArray(events) ? (events as Array<{ from_address?: string; keys?: string[]; data?: string[] }>) : [];
 }
 
 function parseGameId(value: string | undefined): number | undefined {
@@ -206,23 +140,62 @@ export function resolveCreatedGameId(
   receipt: unknown,
   target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
 ): number | undefined {
-  const gameCreatedSelector = resolveGameCreatedSelector(resolveRegistrarContext(target));
-  if (!gameCreatedSelector) {
-    return undefined;
-  }
+  const context = resolveRegistrarContext(target);
+  return resolveNativeCreatedGameId(receipt, context.manifest);
+}
 
+function resolveNativeCreatedGameId(receipt: unknown, manifest: RegistrarWorld): number | undefined {
+  const schema = manifest.native.schemas[manifest.native.activeSchema];
+  const model = schema.models.find((model) => model.name === "GameRegistry");
+  const layouts = schema.domains.registry.events.filter((event) => event.name === "RowSet");
+  if (!model || !layouts.length) throw new Error("Native manifest has no game registry event");
   for (const event of readReceiptEvents(receipt)) {
-    const keys = event.keys?.map(normalizeFelt) ?? [];
-    const selectorIndex = keys.indexOf(gameCreatedSelector);
-    if (selectorIndex === 0) {
-      return parseGameId(event.keys?.[1]);
-    }
-    if (selectorIndex > 0 && Number(BigInt(event.data?.[0] ?? "0")) > 0) {
-      return parseGameId(event.data?.[1]);
-    }
+    if (!event.from_address || BigInt(event.from_address) !== BigInt(manifest.world.address)) continue;
+    const keys = event.keys ?? [];
+    if (
+      !layouts.some(
+        (layout) =>
+          keys.length === layout.prefix.length + 2 &&
+          layout.prefix.every((key, index) => BigInt(key) === BigInt(keys[index])),
+      )
+    )
+      continue;
+    if (BigInt(keys.at(-2)!) !== 1n || BigInt(keys.at(-1)!) !== BigInt(model.identity)) continue;
+    const data = event.data ?? [];
+    if (BigInt(data[0] ?? 0) !== 1n || Number(BigInt(data[2] ?? -1)) !== data.length - 3) continue;
+    return parseGameId(data[1]);
   }
+}
 
-  return undefined;
+export async function findRegistrarGame(
+  provider: RpcProvider,
+  name: string,
+  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
+): Promise<{ gameId: number } | null> {
+  const { manifest } = resolveRegistrarContext(target);
+  const [id] = await provider.callContract({
+    contractAddress: manifest.world.address,
+    entrypoint: worldView(nativeWorldSchema(manifest), "game_id_by_name"),
+    calldata: [shortString.encodeShortString(name)],
+  });
+  if (id === undefined) throw new Error("Registrar returned no game identity");
+  const value = BigInt(id);
+  if (value < 0n || value > 0xffffffffn) throw new Error("Registrar returned an invalid game identity");
+  return value === 0n ? null : { gameId: Number(value) };
+}
+
+/**
+ * A Blitz roster is its players' gameplay accounts: the contract authenticates each command through the account, so an
+ * account needs no registry binding and need not be deployed yet.
+ */
+export function blitzRosterOf(accounts: readonly string[]) {
+  if (accounts.length < 1 || accounts.length > 24) throw new Error("Blitz requires 1 to 24 registered players");
+  const normalized = accounts.map((account) => {
+    if (!/^0x[0-9a-f]+$/i.test(account) || BigInt(account) === 0n) throw new Error("Invalid roster account");
+    return `0x${BigInt(account).toString(16)}`;
+  });
+  if (new Set(normalized).size !== normalized.length) throw new Error("Duplicate roster account");
+  return normalized.map((account) => ({ account }));
 }
 
 export function resolveRegistrarWorldAddress(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): string {
@@ -235,139 +208,71 @@ export function resolveRegistrarWorldAddress(target: RegistrarTarget = DEFAULT_E
   return worldAddress;
 }
 
-export function resolveRegistrarContractAddress(
-  contractName: string,
-  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
-): string {
-  const contract = findContract(resolveRegistrarContext(target), contractName);
-  const contractAddress = contract?.address;
-  if (!hasDeployedAddress(contractAddress)) {
-    throw new Error(`${APPCHAIN_NAMESPACE}-${contractName} is missing from the appchain manifest`);
-  }
-  return contractAddress;
-}
-
-export function resolveRegistrarEnvironmentId(environmentId: DeploymentEnvironmentId): RegistrarEnvironmentId {
-  return environmentId;
-}
-
-export function buildRegisterPresetCalldata(payload: {
-  presetConfig: unknown;
-  gameConfig: unknown;
-  sideTables: unknown;
-}): string[] {
-  return CallData.compile([payload.presetConfig, payload.gameConfig, payload.sideTables] as never);
-}
-
-export function buildCreateGameCalldata(params: unknown): string[] {
-  return CallData.compile([params] as never);
-}
-
 export function assertRegistrarAvailable(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): void {
   const context = resolveRegistrarContext(target);
-  const requiredEntrypoints: RegistrarEntrypoint[] = [
-    "bootstrap_chain_config",
-    "register_preset",
-    "register_series",
-    "create_game",
-  ];
+  const requiredEntrypoints: RegistrarEntrypoint[] = ["register_preset", "create_game"];
   requiredEntrypoints.forEach((entrypoint) => requireRegistrarContract(context, entrypoint));
-}
-
-export async function bootstrapChainConfig(
-  account: Account,
-  chainConfig: unknown,
-  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
-): Promise<RegistrarTransactionResult> {
-  return executeRegistrarCall(
-    account,
-    buildRegistrarCall("bootstrap_chain_config", CallData.compile([chainConfig] as never), target),
-    target,
-  );
-}
-
-export async function registerPreset(
-  account: Account,
-  payload: { presetConfig: unknown; gameConfig: unknown; sideTables: unknown },
-  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
-): Promise<RegistrarTransactionResult> {
-  return executeRegistrarCall(
-    account,
-    buildRegistrarCall("register_preset", buildRegisterPresetCalldata(payload), target),
-    target,
-  );
-}
-
-export async function registerSeries(
-  account: Account,
-  params: {
-    seriesId: string;
-    owner: string;
-    numGames: number;
-    totalChests?: bigint | number;
-    capRatioBps?: bigint | number;
-  },
-  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
-): Promise<RegistrarTransactionResult> {
-  return executeRegistrarCall(
-    account,
-    buildRegistrarCall(
-      "register_series",
-      CallData.compile([
-        params.seriesId,
-        params.owner,
-        params.numGames,
-        params.totalChests ?? 0,
-        params.capRatioBps ?? 10_000,
-      ] as never),
-      target,
-    ),
-    target,
-  );
 }
 
 export async function createRegistrarGame(
   account: Account,
   params: unknown,
   target: RegistrarTarget,
-  ledger?: RegistrarLedgerGameTarget,
+  nativeDefinition?: ReturnType<typeof buildNativePreset>,
 ): Promise<CreateRegistrarGameResult> {
-  const result = await executeRegistrarCall(
-    account,
-    buildRegistrarCall("create_game", buildCreateGameCalldata(params), target),
-    target,
+  const context = resolveRegistrarContext(target);
+  if (!nativeDefinition) throw new Error("Native game creation requires its current preset definition");
+  const presetId = Number((params as { preset_id: number }).preset_id);
+  const registration = presetRegistrationCall(nativeDefinition, presetId, context.manifest);
+  const [commitment] = await account.callContract(
+    {
+      contractAddress: registration.address,
+      entrypoint: registration.commitmentView,
+      calldata: [presetId],
+    },
+    "latest",
   );
-  const gameId = resolveCreatedGameId(result.receipt, target);
-  const ledgerResult =
-    gameId && ledger
-      ? await openLedgerGame(ledger.account, ledger.target, gameId, ledger.presetId, ledger.start, ledger.end)
-      : null;
-  return {
-    ...result,
-    gameId,
-    openLedgerTxHash: ledgerResult?.transactionHash,
-  };
+  if (commitment === undefined || BigInt(commitment) !== BigInt(registration.commitment))
+    throw new Error("Current preset differs from the launch configuration; reload its balance before creating a game");
+  const calldata = new CallData(nativeGamesAbi(context.manifest)).compile("create_game", {
+    params: params as RawArgs,
+    definition: nativeDefinition,
+  });
+  const result = await executeRegistrarCall(account, buildRegistrarCall("create_game", calldata, target), target);
+  return { ...result, gameId: resolveCreatedGameId(result.receipt, target) };
 }
 
-export function isRegistrarAlreadyInitializedError(error: unknown): boolean {
-  return /chain config already initialized/i.test(error instanceof Error ? error.message : String(error));
-}
-
-export function isRegistrarAlreadyRegisteredError(error: unknown): boolean {
-  return /(preset|series) already registered/i.test(error instanceof Error ? error.message : String(error));
-}
-
-export async function backfillCompletedHyperstructures(
-  account: Account,
+export async function settleBlitzRoster(
+  provider: RpcProvider,
   gameId: number,
-  startIndex: number,
-  ids: number[],
+  credentials: { accountAddress: string; privateKey: string },
   target: RegistrarTarget,
-): Promise<RegistrarTransactionResult> {
-  const calldata = CallData.compile([gameId, startIndex, ids]);
-  return executeRegistrarCall(
-    account,
-    buildRegistrarCall("backfill_completed_hyperstructures", calldata, target),
-    target,
-  );
+  admissionUrl: string,
+): Promise<BlitzRosterSettlement> {
+  const { manifest } = resolveRegistrarContext(target);
+  const registry = manifest.world.address;
+  const read = async () =>
+    new CallData(nativeGamesAbi(manifest)).parse(
+      "game",
+      await provider.callContract({ contractAddress: registry, entrypoint: "game", calldata: [gameId] }, "latest"),
+    ) as { ready: boolean; end_at: bigint; end_grace_seconds: bigint };
+  let game = await read();
+  if (game.ready) return { finalizeAt: Number(game.end_at + game.end_grace_seconds), settlementTransactions: 0 };
+  const settled = await completeNativeAdminCommand({
+    provider,
+    manifest,
+    admissionUrl,
+    gameId,
+    ...credentials,
+    command: { kind: "SettleBlitzRoster", value: undefined },
+  });
+  game = await read();
+  if (!game.ready) throw new Error("Roster settlement did not make the game ready");
+  return { finalizeAt: Number(game.end_at + game.end_grace_seconds), settlementTransactions: settled.transactions };
+}
+
+export interface BlitzRosterSettlement {
+  finalizeAt: number;
+  /** Transactions the settlement burst took at this game start; zero when the roster was already settled. */
+  settlementTransactions: number;
 }

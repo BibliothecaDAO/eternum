@@ -1,5 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import type { GameClient } from "@bibliothecadao/eternum";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { disposeActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import type { AccountInterface } from "starknet";
 
@@ -36,6 +37,9 @@ export const requireActiveGameClient = (): GameClient => {
   if (!activeGameClient) throw new Error("No game client is active; bootstrap installs one before the game renders");
   return activeGameClient;
 };
+
+/** The store of the game this client plays, or null before a game boots; names read as unregistered until then. */
+export const getActiveGameStore = (): NativeFactStore | null => activeGameClient?.setup.store ?? null;
 
 export const disposeGameSyncSession = (): void => {
   unsubscribeAccount?.();

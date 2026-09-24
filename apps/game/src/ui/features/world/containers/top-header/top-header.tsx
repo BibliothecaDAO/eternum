@@ -1,3 +1,4 @@
+import { Eye as EyeIcon, Swords } from "@/ui/design-system/atoms/game-icons";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { HudHeaderLayout } from "./hud-header-layout";
@@ -6,25 +7,23 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@bibliothecadao/eternum";
+import { Position, configManager } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameClock } from "./game-clock";
 import { AttentionPill } from "./attention-pill";
 import { IdentityChip } from "./identity-chip";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
-import { Eye as EyeIcon, Swords } from "@/ui/design-system/atoms/game-icons";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 export const TopHeader = memo(() => {
   const lane = useCompactLane();
   const {
     setup,
     account: { account },
-  } = useDojo();
+  } = useGame();
 
   const playClick = useUISound("ui.click");
 
@@ -37,19 +36,20 @@ export const TopHeader = memo(() => {
   const currentDefaultTick = useCurrentDefaultTick();
 
   // force a refresh of getEntityInfo when the structure data arrives
-  const structure = useComponentValue(setup.components.Structure, gameEntityKey([BigInt(structureEntityId)]));
+  const structure = useNativeRow("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: structureEntityId,
+  });
   const entityInfo = useMemo(
-    () => mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components),
-    [structureEntityId, currentDefaultTick, account.address, structure, mode],
+    () => mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), setup.store),
+    [structureEntityId, currentDefaultTick, account.address, structure, mode, setup.store],
   );
 
-  const selectedStructure = useMemo(() => {
-    return entityInfo;
-  }, [structureEntityId, entityInfo]);
-
-  const selectedStructurePosition = useMemo(() => {
-    return new Position(selectedStructure?.position || { x: 0, y: 0 }).getNormalized();
-  }, [selectedStructure]);
+  // With nothing selected there is no structure to open: LOCAL is disabled rather than aimed at a default hex.
+  const selectedStructurePosition = useMemo(
+    () => (entityInfo?.position ? Position.fromContract(entityInfo.position) : null),
+    [entityInfo],
+  );
   const [currentPathname, setCurrentPathname] = useState(() =>
     typeof window !== "undefined" ? window.location.pathname : "/play/hex",
   );
@@ -87,10 +87,11 @@ export const TopHeader = memo(() => {
 
   const navigateToView = useCallback(
     (world: boolean) => {
+      if (!selectedStructurePosition) return;
       playClick();
       goToStructure(
         world ? lastControlledStructureEntityId || structureEntityId : structureEntityId,
-        new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
+        selectedStructurePosition,
         world,
       );
     },
@@ -109,6 +110,7 @@ export const TopHeader = memo(() => {
           <MapViewControls
             compact={lane !== null}
             isLocalView={isLocalView}
+            canOpenLocal={selectedStructurePosition !== null}
             mapLayer={mapLayer}
             showLayerSwitch={showLayerSwitch}
             onNavigate={navigateToView}

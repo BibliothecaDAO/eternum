@@ -24,9 +24,9 @@ import { CHAT_SHORTCUT } from "@/ui/features/world/containers/chat-shortcut";
 import { getShortcutManager } from "@/utils/shortcuts/centralized-shortcut-manager";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
-import { useDisconnect } from "@starknet-react/core";
 import { Pencil } from "@/ui/design-system/atoms/game-icons";
 import { type ReactNode, useState } from "react";
 import { NotificationSettings } from "./notification-settings";
@@ -55,14 +55,15 @@ function ProfileHeader() {
   const profile = usePlayerProfile(address);
   const { standingsByAddress } = useInGameLeaderboard();
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
+  useNativeRevision(["Guild", "GuildMember"]);
   const [error, setError] = useState<string | null>(null);
   const owner = address ? ContractAddress(address) : null;
   // The players slice already prefers the session username for the signed-in user.
   const name = profile.name;
   const standing = owner === null ? null : (standingsByAddress.get(normalizeLeaderboardAddress(owner)) ?? null);
-  const guild = owner === null ? null : (getGuildFromPlayerAddress(owner, components)?.name ?? null);
+  const guild = owner === null ? null : (getGuildFromPlayerAddress(owner, store)?.name ?? null);
   const spectating = isExplicitSpectateSession();
   const facts = [
     standing && `#${standing.rank} · ${Math.round(standing.points).toLocaleString()} VP`,
@@ -341,7 +342,6 @@ function ShortcutsSection() {
 
 function SessionActions() {
   const { session } = useIdentitySession();
-  const { disconnectAsync } = useDisconnect();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const canSignOut = Boolean(session) && !isExplicitSpectateSession();
@@ -349,7 +349,7 @@ function SessionActions() {
     setPending(true);
     setError(null);
     try {
-      await signOutIdentitySession(disconnectAsync);
+      await signOutIdentitySession();
     } catch (error) {
       setError(error instanceof Error ? error.message : "Sign out failed");
     } finally {

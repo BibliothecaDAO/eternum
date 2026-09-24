@@ -1,5 +1,4 @@
 import {
-  ClientComponents,
   RelicEffect,
   RelicEffectWithEndTick,
   RelicRecipientType,
@@ -8,7 +7,7 @@ import {
   ResourcesIds,
   Troops,
 } from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 export const getArmyRelicEffects = (troops: Troops, currentTick: number): RelicEffectWithEndTick[] => {
   const relicEffects: RelicEffectWithEndTick[] = [];
@@ -61,7 +60,7 @@ export const getArmyRelicEffects = (troops: Troops, currentTick: number): RelicE
 };
 
 export const getStructureRelicEffects = (
-  productionBoostBonus: ComponentValue<ClientComponents["ProductionBoostBonus"]["schema"]>,
+  productionBoostBonus: NativeRows["ProductionBonus"],
   currentTick: number,
 ): RelicEffectWithEndTick[] => {
   const relicEffects: RelicEffectWithEndTick[] = [];
@@ -71,7 +70,7 @@ export const getStructureRelicEffects = (
   // Resource Production Relics
   if (
     productionBoostBonus.incr_resource_rate_percent_num > 0 &&
-    productionBoostBonus.incr_resource_rate_end_tick > currentTick
+    productionBoostBonus.incr_resource_rate_end_tick >= currentTick
   ) {
     const productionRelics = RELICS.filter(
       (r) =>
@@ -88,7 +87,7 @@ export const getStructureRelicEffects = (
   // Labor Production Relics
   if (
     productionBoostBonus.incr_labor_rate_percent_num > 0 &&
-    productionBoostBonus.incr_labor_rate_end_tick > currentTick
+    productionBoostBonus.incr_labor_rate_end_tick >= currentTick
   ) {
     const laborProductionRelics = RELICS.filter(
       (r) =>
@@ -105,7 +104,7 @@ export const getStructureRelicEffects = (
   // Troop Production Relics
   if (
     productionBoostBonus.incr_troop_rate_percent_num > 0 &&
-    productionBoostBonus.incr_troop_rate_end_tick > currentTick
+    productionBoostBonus.incr_troop_rate_end_tick >= currentTick
   ) {
     const troopProductionRelics = RELICS.filter(
       (r) =>
@@ -123,10 +122,10 @@ export const getStructureRelicEffects = (
 };
 
 export const getStructureArmyRelicEffects = (
-  structure: ComponentValue<ClientComponents["Structure"]["schema"]>,
+  guard: Pick<NativeRows["Guard"], "troops"> | undefined,
   currentTick: number,
 ): RelicEffectWithEndTick[] => {
-  const troopBoosts = structure.troop_guards?.alpha?.boosts;
+  const troopBoosts = guard?.troops.boosts;
 
   const relicEffects: RelicEffectWithEndTick[] = [];
 

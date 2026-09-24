@@ -136,7 +136,7 @@ class GameWorkerManager {
   }
 
   private buildResolvedPath(path: GameWorkerPosition[]): Position[] {
-    return path.map((position) => new Position({ x: position.x, y: position.y }));
+    return path.map((position) => Position.fromNormalized({ x: position.x, y: position.y }));
   }
 
   private finishPathRequest(requestId: number) {
@@ -172,7 +172,7 @@ function hasWorldStateEntries(worldState: GameWorkerWorldState): boolean {
   return worldState.armies.length > 0 || worldState.exploredTiles.length > 0 || worldState.structures.length > 0;
 }
 
-export const createGameWorkerManager = (input: CreateGameWorkerManagerInput = {}): GameWorkerManager =>
+const createGameWorkerManager = (input: CreateGameWorkerManagerInput = {}): GameWorkerManager =>
   new GameWorkerManager({
     createWorker: input.createWorker ?? (() => new GameWorker()),
     incrementCounter: input.incrementCounter ?? incrementWorldmapRenderCounter,

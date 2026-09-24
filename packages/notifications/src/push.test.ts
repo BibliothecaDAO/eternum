@@ -38,7 +38,7 @@ it("validates the nested notification and its expiry before push dispatch", () =
     owner: "0x1",
     title: "Test",
     body: "Message",
-    target: "/enter/madara/game-1",
+    target: "/g/0xa1/1",
     createdAt: 1000,
     expiresAt: 2000,
   };

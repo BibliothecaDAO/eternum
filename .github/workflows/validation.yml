@@ -1,0 +1,204 @@
+name: validation
+
+on:
+  pull_request:
+  push:
+    branches: [next, "native-*"]
+
+permissions:
+  contents: read
+
+# A push run scopes itself from the previous push, so it must never be cancelled or replaced: each push is its own
+# group. A pull request scopes from its base, so its newest run covers everything and older ones cancel.
+concurrency:
+  group: validation-${{ github.event.pull_request.number || format('{0}@{1}', github.ref, github.sha) }}
+  cancel-in-progress: true
+
+jobs:
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      client: ${{ steps.paths.outputs.client }}
+      herald: ${{ steps.paths.outputs.herald }}
+      services: ${{ steps.paths.outputs.services }}
+      native: ${{ steps.paths.outputs.native }}
+      native_world: ${{ steps.paths.outputs.native_world }}
+      runtime: ${{ steps.paths.outputs.runtime }}
+      terrain: ${{ steps.paths.outputs.terrain }}
+      amm: ${{ steps.paths.outputs.amm }}
+      collectibles: ${{ steps.paths.outputs.collectibles }}
+      mmr: ${{ steps.paths.outputs.mmr }}
+      season_pass: ${{ steps.paths.outputs.season_pass }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Select validation areas
+        id: paths
+        env:
+          EVENT: ${{ github.event_name }}
+          BRANCH: ${{ github.ref_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          BASE_SHA=$(bash .github/scripts/diff-base.sh)
+          export BASE_SHA
+          echo "Measuring $HEAD_SHA from $BASE_SHA"
+          python3 - <<'PYTHON'
+          import fnmatch, json, os, subprocess
+          files = subprocess.check_output(["git", "diff", "--name-only", "-z", os.environ["BASE_SHA"], os.environ["HEAD_SHA"]]).decode().split("\0")
+          shared = [".github/workflows/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
+          areas = {
+              "client": [
+                  "apps/game/**",
+                  "packages/**",
+                  "contracts/l3/world-native/schema/**"
+              ],
+              "herald": [
+                  "apps/herald/**",
+                  "packages/**",
+                  "contracts/l3/world-native/schema/**"
+              ],
+              "services": [
+                  "apps/launch-service/**",
+                  "apps/realms/**",
+                  "apps/guardian/**",
+                  "apps/web/**",
+                  "packages/**",
+                  "config/**",
+                  "contracts/l3/world-native/schema/**"
+              ],
+              "native": [
+                  "apps/gateway/**",
+                  "apps/herald/src/model-registry.ts",
+                  "contracts/l3/**",
+                  "contracts/common/addresses/**",
+                  "contracts/utils/**",
+                  "packages/**",
+                  "config/**",
+                  "deploy/athanor/**",
+                  "deploy/shard/**",
+                  "scripts/generate-realm-metadata.py"
+              ],
+              # The native-world contract suite inside the native area: its build, tests and schema generation read
+              # the L3 contracts and one Herald module, never the app, core packages, config or deploy tooling.
+              "native_world": [
+                  "contracts/l3/**",
+                  "apps/herald/src/model-registry.ts"
+              ],
+              "runtime": [
+                  "apps/agent-runner/**",
+                  "deploy/athanor/**",
+                  "deploy/shard/**",
+                  "packages/**",
+                  "config/**"
+              ],
+              "terrain": [
+                  "apps/game/src/three/**",
+                  "apps/game/scripts/**",
+                  "apps/game/public/**",
+                  "apps/game/vitest.assets.*",
+                  "packages/core/src/utils/biome/**"
+              ],
+              "amm": [
+                  "contracts/l2/ammv2/**"
+              ],
+              "collectibles": [
+                  "contracts/l2/collectibles/**"
+              ],
+              "mmr": [
+                  "contracts/l2/mmr/**"
+              ],
+              "season_pass": [
+                  "contracts/l2/season_pass/**"
+              ]
+          }
+          selected = {area: any(fnmatch.fnmatch(path, pattern) for path in files for pattern in shared + patterns) for area, patterns in areas.items()}
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              for area, enabled in selected.items():
+                  print(f"{area}={str(enabled).lower()}", file=output)
+          print(json.dumps(selected, sort_keys=True))
+          PYTHON
+
+  static:
+    uses: ./.github/workflows/static.yml
+
+  client:
+    needs: scope
+    if: needs.scope.outputs.client == 'true'
+    uses: ./.github/workflows/test-client.yml
+
+  herald:
+    needs: scope
+    if: needs.scope.outputs.herald == 'true'
+    uses: ./.github/workflows/test-herald.yml
+
+  services:
+    needs: scope
+    if: needs.scope.outputs.services == 'true'
+    uses: ./.github/workflows/test-services.yml
+
+  native:
+    needs: scope
+    if: needs.scope.outputs.native == 'true'
+    uses: ./.github/workflows/native-world.yml
+    # Only the called workflow's publish-snforge job uses write, and it runs on push events alone.
+    permissions:
+      contents: write
+    with:
+      world: ${{ needs.scope.outputs.native_world == 'true' }}
+
+  runtime:
+    needs: scope
+    if: needs.scope.outputs.runtime == 'true'
+    uses: ./.github/workflows/test-agent-runtime.yml
+
+  terrain:
+    needs: scope
+    if: needs.scope.outputs.terrain == 'true'
+    uses: ./.github/workflows/verify-terrain.yml
+
+  amm:
+    needs: scope
+    if: needs.scope.outputs.amm == 'true'
+    uses: ./.github/workflows/test-ammv2.yml
+
+  collectibles:
+    needs: scope
+    if: needs.scope.outputs.collectibles == 'true'
+    uses: ./.github/workflows/test-collectibles.yml
+
+  mmr:
+    needs: scope
+    if: needs.scope.outputs.mmr == 'true'
+    uses: ./.github/workflows/test-mmr.yml
+
+  season_pass:
+    needs: scope
+    if: needs.scope.outputs.season_pass == 'true'
+    uses: ./.github/workflows/test-season-pass.yml
+
+  validation:
+    name: validation
+    if: always()
+    needs: [scope, static, client, herald, services, native, runtime, terrain, amm, collectibles, mmr, season_pass]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every selected area
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PYTHON'
+          import json, os
+          results = json.loads(os.environ["RESULTS"])
+          scope = results["scope"]
+          passed = scope["result"] == "success" and results["static"]["result"] == "success"
+          for area, job in results.items():
+              if area in ("scope", "static"):
+                  continue
+              expected = "success" if scope["outputs"].get(area) == "true" else "skipped"
+              passed = passed and job["result"] == expected
+          print(json.dumps({"passed": passed, "areas": results}, sort_keys=True))
+          raise SystemExit(0 if passed else 1)
+          PYTHON

@@ -1,4 +1,5 @@
 import { ChestTileDetails } from "./chest-tile-details";
+import { SpireDepthActions } from "./spire-depth-actions";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useRelicCrateOpening } from "@/hooks/store/use-relic-crate-store";
@@ -29,7 +30,7 @@ import {
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { type ReactNode, useCallback, useMemo } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -200,7 +201,7 @@ const RelicCrateTilePanel = ({
 }) => {
   const {
     setup: { systemCalls },
-  } = useDojo();
+  } = useGame();
   const account = useAccountStore((state) => state.account);
   const explorerId = useAdjacentOwnExplorer(selectedHex);
   const canOpen = Boolean(account) && explorerId !== null;
@@ -252,6 +253,8 @@ const SelectedArmyTilePanel = ({
         compact
         layoutVariant="banner"
       />
+
+      <SpireDepthActions armyEntityId={armyEntityId} />
 
       <BiomeSummaryCard
         biome={biome}

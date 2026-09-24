@@ -4,18 +4,13 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
 
-import {
-  configManager,
-  getEntityIdFromKeys,
-  getRealmInfo,
-  getStructureRelicEffects,
-  ResourceManager,
-} from "@bibliothecadao/eternum";
-import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { configManager, getRealmInfo, getStructureRelicEffects } from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { Building, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
 import { useMemo } from "react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 export const BuildingsList = ({
   realm,
@@ -31,34 +26,16 @@ export const BuildingsList = ({
   productionBuildings: Building[];
 }) => {
   const currentDefaultTick = useCoarseCurrentDefaultTick();
-  // Guard against invalid realm data to prevent crashes
-  if (!realm || !realm.position || !realm.entityId) {
-    return <p className={cn(HUD_BODY_MUTED, "p-3")}>Realm data is currently unavailable.</p>;
-  }
-
-  const { setup } = useDojo();
+  const { setup } = useGame();
 
   const resourceManager = useResourceManager(realm.entityId);
-  const resources = useComponentValue(setup.components.Resource, gameEntityKey([BigInt(realm.entityId)]));
-
-  const structureBuildings = useComponentValue(
-    setup.components.StructureBuildings,
-    gameEntityKey([BigInt(realm.entityId)]),
-  );
-
-  const productionBoostBonus = useComponentValue(
-    setup.components.ProductionBoostBonus,
-    gameEntityKey([BigInt(realm.entityId)]),
-  );
-
+  const keys = { game_id: configManager.getActiveGameId(), entity_id: realm.entityId };
+  const structureBuildings = useNativeRow("StructureBuildings", keys);
+  const productionBoostBonus = useNativeRow("ProductionBonus", keys);
   const realmInfo = useMemo(
-    () => getRealmInfo(gameEntityKey([BigInt(realm.entityId)]), setup.components),
-    [realm.entityId, structureBuildings, resources],
+    () => getRealmInfo(realm.entityId, setup.store, getPlayerName),
+    [realm.entityId, setup.store, structureBuildings, resourceManager],
   );
-
-  const resource = useMemo(() => {
-    return resourceManager.getResource();
-  }, [resourceManager]);
 
   const activeRelicEffects = useMemo(() => {
     if (!productionBoostBonus) return [];
@@ -66,32 +43,24 @@ export const BuildingsList = ({
   }, [productionBoostBonus, currentDefaultTick]);
 
   const productions = useMemo(() => {
-    const isLaborProductionEnabled = configManager.isLaborProductionEnabled();
     return producedResources
-      .filter((resourceId) => {
-        // Exclude Labor if labor production is not enabled
-        if (resourceId === ResourcesIds.Labor && !isLaborProductionEnabled) {
-          return false;
-        }
-        return true;
-      })
       .map((resourceId) => {
         const buildingsForResource = productionBuildings.filter(
           (building) => building.produced.resource === resourceId,
         );
 
-        if (!resource) return null;
-        const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
+        const current = resourceManager.current(resourceId);
+        if (!current) return null;
+        const production = current.production;
 
         return {
           resource: resourceId,
           production,
           buildings: buildingsForResource,
-          isLabor: resourceId === ResourcesIds.Labor,
         };
       })
       .filter((production) => production !== null);
-  }, [producedResources, productionBuildings, resourceManager, resource, currentDefaultTick]);
+  }, [producedResources, productionBuildings, resourceManager, currentDefaultTick]);
 
   const selectedProduction =
     selectedResource !== null ? productions.find((p) => p.resource === selectedResource) : null;

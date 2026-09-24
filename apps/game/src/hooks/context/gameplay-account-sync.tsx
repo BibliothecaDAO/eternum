@@ -1,194 +1,96 @@
-import { recoverGameplaySigner, rotateBoundGameplaySigner } from "@/account/gameplay-signer-recovery";
-import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
-import { identityOrigin, useIdentitySession } from "@/hooks/context/identity-session";
-import { getDefaultWorld } from "@/runtime/world/world-directory";
+import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
+import { parseEntryRoute, parsePlayRoute } from "@/play/navigation/play-route";
+import { requireOpenShard } from "@/runtime/world/shards";
+import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
-import {
-  assertGameplayAccountClassDeclared,
-  connectGameplayAccount,
-  createGameplayAccountApi,
-  ensureGameplayAccount,
-  getOrCreateGameplayKey,
-  getStoredGameplayKey,
-  readBoundGameplayAccount,
-  readGameplayAccountPublicKey,
-} from "@bibliothecadao/eternum";
-import type { GameChain } from "@realms-world/chain";
-import { useAccount } from "@starknet-react/core";
+import { DeviceRemovedError, getOrCreateDeviceKey, joinRealmsAccount } from "@bibliothecadao/eternum";
+import type { Shard } from "@bibliothecadao/eternum/game-client";
 import type { ReactNode } from "react";
-import { useEffect, useMemo } from "react";
-import { addAddressPadding, num } from "starknet";
+import { useCallback, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 
-const gameplayAccountApi = createGameplayAccountApi({ baseUrl: identityOrigin });
+// The account is joined when a player enters a game to play: its deploy happens at game entry, not in the first click,
+// and never for a shard the player only opens or spectates.
+const usePlayingShardChainId = (): string | null => {
+  const location = useLocation();
+  const game = parsePlayRoute(location) ?? parseEntryRoute(location);
+  return game && !isExplicitSpectateSession() ? game.chainId : null;
+};
 
-interface GameplayWorldTarget {
-  chain: GameChain;
-  rpcUrl: string;
-  bindingAuthorityAddress: string;
-  playerAccountClassHash: string;
-  playerRegistryAddress: string;
-}
-
-// The gameplay account is an identity-level fact of the chain, not per-game state. Its target comes from
-// the world directory (committed env), so a signed-in user provisions and binds from the landing — before
-// any world is entered. Gating this on the active world profile was the dead end that stranded fresh
-// players at "Connect wallet": registration needed the account, the account needed an entered world.
-const useGameplayWorldTarget = (): GameplayWorldTarget =>
-  useMemo(() => {
-    const world = getDefaultWorld();
-    return {
-      chain: world.chain,
-      rpcUrl: world.rpcUrl,
-      bindingAuthorityAddress: world.bindingAuthorityAddress,
-      playerAccountClassHash: world.playerAccountClassHash,
-      playerRegistryAddress: world.playerRegistryAddress,
-    };
-  }, []);
-
-export function GameplayAccountSync({ children }: { children: ReactNode }) {
-  const worldTarget = useGameplayWorldTarget();
-  const { address: connectedIdentityAddress } = useAccount();
-  const { status: identityStatus, session } = useIdentitySession();
-  const sessionOwner = session?.user.id ?? null;
-  const setGameplayAccount = useAccountStore((state) => state.setGameplayAccount);
-
+/** Keyed by chain id, so moving between the scenes of one game keeps the joined account. */
+const useGameplayShard = (onError: (message: string) => void): Shard | null => {
+  const routeChainId = usePlayingShardChainId();
+  const [shard, setShard] = useState<Shard | null>(null);
   useEffect(() => {
-    if (identityStatus === "loading") return;
-
+    if (!routeChainId) return;
     let active = true;
-    setGameplayAccount(null, null);
-
-    const sync = async () => {
-      try {
-        const owner = resolveGameplayOwner(sessionOwner, connectedIdentityAddress);
-        if (owner === null) return;
-
-        const accountConfig = resolveGameplayAccountConfig(worldTarget);
-        const provider = getCachedRpcProvider(worldTarget.rpcUrl);
-        await assertGameplayAccountClassDeclared(provider, accountConfig.classHash);
-        const chainId = await provider.getChainId();
-        const storedKey = getStoredGameplayKey({ storage: localStorage, chainId, owner });
-        const key =
-          storedKey ?? getOrCreateGameplayKey({ storage: localStorage, chain: worldTarget.chain, chainId, owner });
-        const boundAccount = await readBoundGameplayAccount(provider, accountConfig.registryAddress, owner);
-
-        const account = boundAccount
-          ? await recoverBoundGameplayAccount({
-              provider,
-              boundAccount,
-              classHash: accountConfig.classHash,
-              key,
-              needsRotation: storedKey === null,
-            })
-          : await deployAndBindGameplayAccount({
-              provider,
-              authority: accountConfig.authority,
-              classHash: accountConfig.classHash,
-              key,
-              owner,
-            });
-
-        if (active) {
-          setGameplayAccount(
-            configureGameplayAccountSubmits(account, worldTarget.chain, () =>
-              recoverGameplaySigner({
-                provider,
-                address: account.address,
-                publicKey: key.publicKey,
-                api: gameplayAccountApi,
-                isCurrent: () => active && canIssueOrders(),
-              }),
-            ),
-            addAddressPadding(owner),
-          );
-        }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Gameplay account provisioning failed";
-        console.error("gameplay_account_sync_failed", { error: message });
-        if (active) {
-          setGameplayAccount(null, null, message);
-        }
-      }
-    };
-
-    void sync();
+    requireOpenShard(routeChainId).then(
+      (resolved) => active && setShard((current) => (current?.chainId === resolved.chainId ? current : resolved)),
+      (error: unknown) => active && onError(error instanceof Error ? error.message : "Shard could not be opened"),
+    );
     return () => {
       active = false;
     };
-  }, [connectedIdentityAddress, identityStatus, sessionOwner, setGameplayAccount, worldTarget]);
+  }, [routeChainId, onError]);
+  return shard;
+};
+
+/**
+ * Makes this browser's device key a signer of the signed-in player's Realms account on the current shard: the
+ * account is deployed on first play, or this device is added to it, each with the guardian's approval.
+ */
+export function GameplayAccountSync({ children }: { children: ReactNode }) {
+  // Keyed by the session object, not only the Realms id: a new sign-in retries the join.
+  const { session } = useIdentitySession();
+  const setGameplayAccount = useAccountStore((state) => state.setGameplayAccount);
+  const reportShardFailure = useCallback(
+    (message: string) => {
+      console.error("gameplay_shard_open_failed", { error: message });
+      setGameplayAccount(null, null, ACCOUNT_SETUP_FAILED);
+    },
+    [setGameplayAccount],
+  );
+  const shard = useGameplayShard(reportShardFailure);
+
+  useEffect(() => {
+    const realmsId = session?.user.realmsId;
+    if (!realmsId || !shard) return;
+    let active = true;
+    setGameplayAccount(null, null);
+    joinRealmsAccount({
+      provider: getCachedRpcProvider(shard.rpcUrl),
+      shard,
+      realmsId,
+      device: getOrCreateDeviceKey(localStorage),
+      approve: identityClient.approveDeviceChange,
+    }).then(
+      (account) => active && setGameplayAccount(configureGameplayAccountSubmits(account, shard.chainId), realmsId),
+      (error: unknown) => {
+        const state = accountStateOf(error);
+        if (!state) {
+          const message = error instanceof Error ? error.message : "Gameplay account provisioning failed";
+          console.error("gameplay_account_sync_failed", { error: message });
+        }
+        if (active) setGameplayAccount(null, null, state ?? ACCOUNT_SETUP_FAILED);
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [session, setGameplayAccount, shard]);
 
   return <>{children}</>;
 }
 
-function resolveGameplayOwner(
-  sessionOwner: string | null,
-  connectedIdentityAddress: string | undefined,
-): string | null {
-  if (!sessionOwner) return null;
-  if (connectedIdentityAddress && BigInt(sessionOwner) !== BigInt(connectedIdentityAddress)) {
-    throw new Error("Connected wallet does not match the Realms identity session");
-  }
-  return num.toHex(sessionOwner);
-}
+/** The account state a player resolves themselves; it is not a failure and is not logged as an error. */
+const DEVICE_REMOVED = "device_removed";
 
-function resolveGameplayAccountConfig(profile: {
-  bindingAuthorityAddress?: string;
-  playerAccountClassHash?: string;
-  playerRegistryAddress?: string;
-}) {
-  if (!profile.playerAccountClassHash) throw new Error("World profile has no player account class hash");
-  if (!profile.playerRegistryAddress) throw new Error("World profile has no player registry address");
-  if (!profile.bindingAuthorityAddress) throw new Error("World profile has no binding authority address");
-  return {
-    authority: profile.bindingAuthorityAddress,
-    classHash: profile.playerAccountClassHash,
-    registryAddress: profile.playerRegistryAddress,
-  };
-}
+export const isAccountStatePrompt = (provisioningError: string | null): boolean => provisioningError === DEVICE_REMOVED;
 
-async function recoverBoundGameplayAccount({
-  provider,
-  boundAccount,
-  classHash,
-  key,
-  needsRotation,
-}: {
-  provider: ReturnType<typeof getCachedRpcProvider>;
-  boundAccount: string;
-  classHash: string;
-  key: { privateKey: string; publicKey: string };
-  needsRotation: boolean;
-}) {
-  const currentPublicKey = await readGameplayAccountPublicKey(provider, boundAccount);
-  if (needsRotation || BigInt(currentPublicKey) !== BigInt(key.publicKey)) {
-    await rotateBoundGameplaySigner(gameplayAccountApi, boundAccount, key.publicKey);
-  }
-  return connectGameplayAccount({ address: boundAccount, classHash, privateKey: key.privateKey, provider });
-}
+// Every surface shows the provisioning error to the player as is, so a failure is stored as one sentence and its
+// detail (an RPC dump, a transaction's params) goes to the console only.
+const ACCOUNT_SETUP_FAILED = "Your account could not be set up for this game. Try again in a moment.";
 
-async function deployAndBindGameplayAccount({
-  provider,
-  authority,
-  classHash,
-  key,
-  owner,
-}: {
-  provider: ReturnType<typeof getCachedRpcProvider>;
-  authority: string;
-  classHash: string;
-  key: { privateKey: string; publicKey: string };
-  owner: string;
-}) {
-  const account = await ensureGameplayAccount({
-    authority,
-    classHash,
-    owner,
-    privateKey: key.privateKey,
-    provider,
-    publicKey: key.publicKey,
-  });
-  await gameplayAccountApi.bind(account.address, key.publicKey);
-  return account;
-}
+const accountStateOf = (error: unknown): string | null => (error instanceof DeviceRemovedError ? DEVICE_REMOVED : null);

@@ -1,4 +1,4 @@
-import type { SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import type { Raycaster, Vector2 } from "three";
 import type { MapControls } from "three/addons/controls/MapControls.js";
 import type { SceneManager } from "@/three/scene-manager";
@@ -19,7 +19,7 @@ type GameRendererSceneRegistry = RendererSceneRegistry<TransitionManager, SceneM
 interface PrepareGameRendererScenesInput {
   applySceneRegistry: (registry: GameRendererSceneRegistry) => void;
   controls: MapControls;
-  dojo: SetupResult;
+  game: SetupResult;
   effectsBridgeRuntime: Pick<
     RendererEffectsBridgeRuntime,
     "applyEnvironment" | "applyRenderVisualProfile" | "setupPostProcessingEffects"
@@ -36,7 +36,7 @@ export function prepareGameRendererScenes(input: PrepareGameRendererScenesInput)
   const sceneRegistry = createGameRendererSceneRegistry({
     compilePipelines: input.compilePipelines,
     controls: input.controls,
-    dojo: input.dojo,
+    game: input.game,
     inputSurface: input.inputSurface,
     markLabelsDirty: input.markLabelsDirty,
     mouse: input.mouse,

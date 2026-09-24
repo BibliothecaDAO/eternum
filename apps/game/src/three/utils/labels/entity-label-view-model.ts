@@ -4,7 +4,7 @@ import type { ID } from "@bibliothecadao/types";
 import type { ArmyData, StructureInfo } from "../../types";
 
 type EntityLabelKind = "army" | "chest" | "structure";
-export type EntityLabelRelation = "agent" | "ally" | "enemy" | "mine" | "neutral";
+export type EntityLabelRelation = "ally" | "enemy" | "mine" | "neutral";
 export type EntityLabelVariant = EntityLabelRelation | "structure";
 
 interface EntityLabelDetailRow {
@@ -27,13 +27,21 @@ export interface EntityLabelViewModel {
 }
 
 type ArmyLabelSource = Pick<ArmyData, "entityId" | "owner"> &
-  Partial<
-    Pick<ArmyData, "category" | "currentStamina" | "isDaydreamsAgent" | "isMine" | "maxStamina" | "tier" | "troopCount">
-  > & { isAlly?: boolean };
+  Partial<Pick<ArmyData, "category" | "currentStamina" | "isMine" | "maxStamina" | "tier" | "troopCount">> & {
+    isAlly?: boolean;
+  };
 
 type StructureLabelSource = Pick<
   StructureInfo,
-  "activeProductions" | "entityId" | "guardArmies" | "isAlly" | "isMine" | "owner" | "structureName" | "structureType"
+  | "activeProductions"
+  | "entityId"
+  | "guardArmies"
+  | "isAlly"
+  | "isMine"
+  | "owner"
+  | "structureName"
+  | "structureType"
+  | "mineKind"
 >;
 
 export function buildArmyEntityLabelViewModel(army: ArmyLabelSource): EntityLabelViewModel {
@@ -44,7 +52,7 @@ export function buildArmyEntityLabelViewModel(army: ArmyLabelSource): EntityLabe
     compactText: title,
     detailRows: buildArmyDetailRows(army),
     entityId: army.entityId,
-    iconKey: army.isDaydreamsAgent ? "daydreams" : army.isMine ? "army" : "enemy_army",
+    iconKey: army.isMine ? "army" : "enemy_army",
     kind: "army",
     relation,
     title,
@@ -88,15 +96,7 @@ export function applyEntityLabelViewModelMetadata(element: HTMLElement, model: E
   element.dataset.labelVariant = model.variant;
 }
 
-export function resolveEntityLabelRelation(input: {
-  isAlly?: boolean;
-  isDaydreamsAgent?: boolean;
-  isMine?: boolean;
-}): EntityLabelRelation {
-  if (input.isDaydreamsAgent) {
-    return "agent";
-  }
-
+export function resolveEntityLabelRelation(input: { isAlly?: boolean; isMine?: boolean }): EntityLabelRelation {
   if (input.isMine) {
     return "mine";
   }
@@ -173,44 +173,22 @@ export function resolveArmyTitle(army: Pick<ArmyData, "entityId" | "owner">): st
 }
 
 export function resolveStructureTitle(
-  structure: Pick<StructureInfo, "entityId" | "structureName" | "structureType">,
+  structure: Pick<StructureInfo, "entityId" | "structureName" | "structureType" | "mineKind">,
 ): string {
   const structureName = structure.structureName.trim();
   if (structureName.length > 0) {
     return structureName;
   }
 
-  return `${resolveStructureTypeLabel(structure.structureType)} #${structure.entityId}`;
+  return `${resolveStructureTypeLabel(structure.structureType, structure.mineKind)} #${structure.entityId}`;
 }
 
 function resolveOwnerName(ownerName?: string): string {
   return ownerName?.trim() ?? "";
 }
 
-function resolveStructureTypeLabel(structureType: StructureType): string {
-  const modeLabel = getGameModeConfig().structure.getTypeName(structureType);
-  if (modeLabel) {
-    return modeLabel;
-  }
-
-  switch (structureType) {
-    case StructureType.Realm:
-      return "Realm";
-    case StructureType.Camp:
-      return "Camp";
-    case StructureType.Village:
-      return "Village";
-    case StructureType.Hyperstructure:
-      return "Hyperstructure";
-    case StructureType.Bank:
-      return "Bank";
-    case StructureType.FragmentMine:
-      return "Fragment Mine";
-    case StructureType.BitcoinMine:
-      return "Mine";
-    default:
-      return "Structure";
-  }
+function resolveStructureTypeLabel(structureType: StructureType, mineKind?: number): string {
+  return getGameModeConfig().structure.getTypeName(structureType, mineKind) ?? "Structure";
 }
 
 function resolveStructureIconKey(structure: Pick<StructureInfo, "structureType">): string {

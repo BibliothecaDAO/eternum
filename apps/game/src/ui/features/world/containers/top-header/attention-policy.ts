@@ -1,17 +1,19 @@
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { Structure, ID } from "@bibliothecadao/types";
 import { getBattleTimerLeft } from "@/three/utils/combat-directions";
 
-export function resolveStructureAttention(structures: Structure[], arrivedStructureIds: ID[], now: number) {
-  // Match the map's battle badge: a guard's battle cooldown is still running.
-  const attacked = structures.filter(({ structure }) =>
-    Object.values(structure.troop_guards).some(
-      (guard) =>
-        typeof guard === "object" &&
-        guard !== null &&
-        "battle_cooldown_end" in guard &&
-        getBattleTimerLeft(Number(guard.battle_cooldown_end), now) !== undefined,
-    ),
+export function resolveStructureAttention(
+  structures: Structure[],
+  arrivedStructureIds: ID[],
+  now: number,
+  guards: readonly NativeRows["Guard"][],
+) {
+  const attackedIds = new Set(
+    guards
+      .filter((guard) => getBattleTimerLeft(guard.troops.battle_cooldown_end, now) !== undefined)
+      .map((guard) => guard.structure_id),
   );
+  const attacked = structures.filter((structure) => attackedIds.has(structure.entityId));
   const attentionIds = new Set([...attacked.map((structure) => structure.entityId), ...arrivedStructureIds]);
   const targets = structures
     .filter((structure) => attentionIds.has(structure.entityId))

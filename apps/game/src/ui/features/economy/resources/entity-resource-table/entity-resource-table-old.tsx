@@ -1,6 +1,7 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
 import {
+  configManager,
   getBuildingCount,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
@@ -8,15 +9,15 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
+import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { BuildingType, getBuildingFromResource, ID, ResourcesIds } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
 import { HUD_CUE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ChevronDown } from "@/ui/design-system/atoms/game-icons";
 import React, { useCallback, useMemo, useState } from "react";
 import { ALWAYS_SHOW_RESOURCES, TIER_DISPLAY_NAMES } from "./utils";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 interface EntityResourceTableOldProps {
   entityId: ID | undefined;
@@ -41,39 +42,27 @@ export const EntityResourceTableOld = React.memo(
       }
     });
 
-    const { setup } = useDojo();
+    const { setup } = useGame();
     const mode = useGameModeConfig();
 
-    if (!entityId || entityId === 0) {
-      return <div>No Entity Selected</div>;
-    }
-
-    const resources = useComponentValue(setup.components.Resource, gameEntityKey([BigInt(entityId)]));
-
-    const structureBuildings = useComponentValue(
-      setup.components.StructureBuildings,
-      gameEntityKey([BigInt(entityId)]),
-    );
-
-    const productionBoostBonus = useComponentValue(
-      setup.components.ProductionBoostBonus,
-      gameEntityKey([BigInt(entityId)]),
-    );
-
-    const structure = useComponentValue(setup.components.Structure, gameEntityKey([BigInt(entityId)]));
-
+    const keys = entityId ? { game_id: configManager.getActiveGameId(), entity_id: entityId } : undefined;
+    const structureBuildings = useNativeRow("StructureBuildings", keys);
+    const productionBoostBonus = useNativeRow("ProductionBonus", keys);
+    const guardRevision = useNativeRevision(["Guard"]);
     const { currentDefaultTick, currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
     const currentTick = currentDefaultTick || 0;
 
     const activeRelicEffects = useMemo(() => {
-      const structureArmyRelicEffects = structure ? getStructureArmyRelicEffects(structure, currentArmiesTick) : [];
+      const structureArmyRelicEffects = [...setup.store.inGame("Guard", configManager.getActiveGameId())]
+        .filter((guard) => guard.structure_id === entityId)
+        .flatMap((guard) => getStructureArmyRelicEffects(guard, currentArmiesTick));
       const structureRelicEffects = productionBoostBonus
         ? getStructureRelicEffects(productionBoostBonus, currentArmiesTick)
         : [];
       return [...structureRelicEffects, ...structureArmyRelicEffects];
-    }, [currentArmiesTick, productionBoostBonus, structure]);
+    }, [currentArmiesTick, productionBoostBonus, guardRevision, entityId, setup.store]);
 
-    const resourceManager = useResourceManager(entityId);
+    const resourceManager = useResourceManager(entityId ?? 0);
 
     const handleToggleTierVisibility = useCallback((tierKey: string) => {
       setCollapsedTiers((prev) => {
@@ -82,6 +71,8 @@ export const EntityResourceTableOld = React.memo(
         return next;
       });
     }, []);
+
+    if (!entityId) return <div>No Entity Selected</div>;
 
     return (
       <div className="flex flex-col gap-3">
@@ -125,13 +116,8 @@ export const EntityResourceTableOld = React.memo(
               }
 
               if (showProductionOnly) {
-                const resourceComponent = resources;
-
-                if (!resourceComponent) {
-                  return false;
-                }
-
-                const productionInfo = ResourceManager.balanceAndProduction(resourceComponent, resourceId);
+                const productionInfo = resourceManager.current(resourceId);
+                if (!productionInfo) return false;
                 const { isProducing } = ResourceManager.calculateResourceProductionData(
                   resourceId,
                   productionInfo,

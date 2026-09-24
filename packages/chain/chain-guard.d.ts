@@ -1,16 +1,13 @@
 export const CHAIN_NAMES: Readonly<{
   mainnet: "SN_MAIN";
   sepolia: "SN_SEPOLIA";
-  appchain: "WP_REALMS_DEV";
-  madara: "WP_REALMS_MADARA_LAB";
 }>;
 
-export const GAME_CHAIN_NAMES: Readonly<{
-  appchain: "WP_REALMS_DEV";
-  madara: "WP_REALMS_MADARA_LAB";
-}>;
-
-export type ChainTarget = keyof typeof CHAIN_NAMES;
+export interface ShardIdentity {
+  shard: { chainId: string };
+}
+export type ChainTarget = keyof typeof CHAIN_NAMES | ShardIdentity;
+export function shardChainId(manifest: unknown): string;
 
 export interface ChainIdProvider {
   getChainId(): Promise<string>;

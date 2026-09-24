@@ -1,9 +1,5 @@
-import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
-import {
-  automaticPushSourceKey,
-  parseWebPushSubscription,
-  type AutomaticPushSource,
-} from "@bibliothecadao/notifications";
+import { identityClient, notificationOwnerOf, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { parseWebPushSubscription } from "@bibliothecadao/notifications";
 import type { PushNotificationDevice } from "./notification-database";
 import { notificationWorkerRequest } from "./local-notification-client";
 
@@ -13,7 +9,7 @@ export const readPushDevice = () => notificationWorkerRequest<PushNotificationDe
 export async function enablePushNotifications(
   owner: string,
   publicKey: string,
-  automatic: AutomaticPushSource | null = null,
+  gameAlerts = false,
   directMessages = false,
 ): Promise<void> {
   // Permission must begin in the button gesture, before waiting for a cross-tab lock or a worker.
@@ -22,7 +18,7 @@ export async function enablePushNotifications(
   if ((await permission) !== "granted") throw new Error("Notification permission was not granted.");
   await navigator.locks.request(pushLock, async () => {
     assertCurrentOwner(owner);
-    if (automatic || directMessages) {
+    if (gameAlerts || directMessages) {
       const capabilities = await notificationWorkerRequest<{
         automaticGameAlerts: boolean;
         directMessageAlerts: boolean;
@@ -32,7 +28,7 @@ export async function enablePushNotifications(
       });
       if (
         !capabilities.gameForegroundLease ||
-        (automatic && !capabilities.automaticGameAlerts) ||
+        (gameAlerts && !capabilities.automaticGameAlerts) ||
         (directMessages && !capabilities.directMessageAlerts)
       )
         throw new Error("Apply the latest game update before enabling background alerts.");
@@ -52,17 +48,14 @@ export async function enablePushNotifications(
       });
       assertCurrentOwner(owner);
       await notificationWorkerRequest(owner, "activate-push", { id: device.id });
-      if (automatic || directMessages) await syncPushGameForeground(owner);
+      if (gameAlerts || directMessages) await syncPushGameForeground(owner);
       assertCurrentOwner(owner);
-      if (automatic) {
-        await notificationWorkerRequest(owner, "prepare-automatic", { id: device.id, source: automatic });
-        await completeAutomaticSetup(
-          { ...device, state: "active", automatic: { ...automatic, acknowledged: false } },
-          registration,
-        );
+      if (gameAlerts) {
+        await notificationWorkerRequest(owner, "prepare-automatic", { id: device.id });
+        await completeAutomaticSetup({ ...device, state: "active", automatic: { acknowledged: false } }, registration);
       }
       if (directMessages) await registerDirectMessageAlerts(device, subscription);
-      if (automatic || directMessages) await syncPushGameForeground(owner);
+      if (gameAlerts || directMessages) await syncPushGameForeground(owner);
       window.dispatchEvent(new Event("pushRegistrationChanged"));
       assertCurrentOwner(owner);
     } catch (error) {
@@ -139,7 +132,7 @@ export async function reconcilePushAccount(): Promise<void> {
 }
 
 function requiresPushRevocation(device: PushNotificationDevice): boolean {
-  const owner = useIdentitySessionStore.getState().session?.user.id ?? null;
+  const owner = notificationOwnerOf(useIdentitySessionStore.getState().session) ?? null;
   return device.owner !== owner || device.state === "revoking";
 }
 
@@ -153,14 +146,6 @@ async function readInstalledPushDevice(
     if (!(await registration.pushManager?.getSubscription())) return null;
     throw error;
   }
-}
-
-export async function sendBackgroundPushTest(owner: string, target: string): Promise<void> {
-  assertCurrentOwner(owner);
-  const device = await readPushDevice();
-  if (device?.owner !== owner || device.state !== "active")
-    throw new Error("Enable background notifications on this device first.");
-  await identityClient.sendPushTest(owner, device.id, target);
 }
 
 /** Refreshes the server lease that prevents automatic push while any game window is visible. */
@@ -184,7 +169,7 @@ async function completeAutomaticSetup(
     await revokePushDevice(device.owner);
     throw new Error("This push registration expired. Enable background notifications again.");
   }
-  if (!status.automatic || automaticPushSourceKey(status.automatic) !== automaticPushSourceKey(device.automatic)) {
+  if (!status.gameAlerts) {
     const subscription = await registration.pushManager.getSubscription();
     if (!subscription)
       throw new Error("This device needs to be registered again. Disable background notifications, then enable them.");
@@ -195,11 +180,10 @@ async function completeAutomaticSetup(
       token: device.token,
       subscription: parseWebPushSubscription(subscription.toJSON()),
       gameAlerts: true,
-      source: device.automatic,
     });
   }
   assertCurrentOwner(device.owner);
-  await notificationWorkerRequest(device.owner, "acknowledge-automatic", { id: device.id, source: device.automatic });
+  await notificationWorkerRequest(device.owner, "acknowledge-automatic", { id: device.id });
 }
 
 async function resolveBrowserSubscription(
@@ -224,7 +208,7 @@ async function requireRegistration() {
   return registration;
 }
 function assertCurrentOwner(owner: string) {
-  if (useIdentitySessionStore.getState().session?.user.id !== owner)
+  if (notificationOwnerOf(useIdentitySessionStore.getState().session) !== owner)
     throw new Error("Your account changed. Reopen Settings.");
 }
 function publicKeyBytes(key: string): Uint8Array<ArrayBuffer> {

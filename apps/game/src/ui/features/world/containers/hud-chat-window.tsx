@@ -1,4 +1,4 @@
-import { useAccountStore } from "@/hooks/store/use-account-store";
+import { identityOrigin, useIdentitySession } from "@/hooks/context/identity-session";
 import { resolveChatSenderName } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY } from "@/ui/design-system/atoms/hud-typography";
@@ -13,7 +13,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 import { MessageSquare } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useMemo, useRef } from "react";
-import { env } from "../../../../../env";
+import { getActiveGame } from "@/runtime/world";
 import { CHAT_SHORTCUT } from "./chat-shortcut";
 
 const isTypingTarget = (target: EventTarget | null) =>
@@ -23,14 +23,16 @@ const isTypingTarget = (target: EventTarget | null) =>
 /** The strip at the foot of the right column: last message and unread count. Open, a fixed-height pane rises
  *  above the strip and the details above keep whatever room is left. */
 export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const address = useAccountStore((state) => state.account?.address);
-  const gameZoneId = `game:${configManager.getActiveGameId()}`;
+  const signedIn = useIdentitySession().status === "signed-in";
+  const game = getActiveGame();
+  // A game room is named by its shard's chain and the game: game ids repeat across shards.
+  const gameZoneId = game ? `game:0x${BigInt(game.chainId).toString(16)}:${configManager.getActiveGameId()}` : "";
   const zoneId = useRealtimeChatSelector((state) =>
     state.activeZoneId === gameZoneId ? gameZoneId : GLOBAL_CHAT_CHANNEL_ID,
   );
   const initializer = useMemo<InitializeRealtimeClientParams | null>(
-    () => (address && env.VITE_PUBLIC_CHAT_URL ? { baseUrl: env.VITE_PUBLIC_CHAT_URL, joinZones: [gameZoneId] } : null),
-    [address, gameZoneId],
+    () => (signedIn ? { baseUrl: identityOrigin(), joinZones: gameZoneId ? [gameZoneId] : [] } : null),
+    [signedIn, gameZoneId],
   );
   useRealtimeChatInitializer(initializer);
   const connection = useRealtimeChatSelector((state) => state.connectionStatus);

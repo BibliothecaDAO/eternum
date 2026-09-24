@@ -19,7 +19,7 @@ import { createObserveTool, OBSERVE_FOCUSES, OBSERVE_TEXT_LIMIT, renderFocus } f
 const RIVAL = ContractAddress(0xdefn);
 
 afterEach(() => {
-  ClientConfigManager.instance().setActiveGame(0, 0);
+  ClientConfigManager.instance().setActiveGame(28, 0);
 });
 
 describe("action catalog", () => {
@@ -51,12 +51,12 @@ describe("list_actions", () => {
 describe("observe_game", () => {
   it("renders every focus for a settled player and stays under the size cap", async () => {
     const game = createFakeGame();
-    seedGameRegistry(game.components, { status: "Live", startMainAt: 0, endAt: 0 });
-    seedStructure(game.components, { entityId: 12, owner: PLAYER, x: 100, y: 100 });
-    seedStructure(game.components, { entityId: 13, owner: RIVAL, x: 102, y: 100 });
+    seedGameRegistry(game.store, { status: "Live", startMainAt: 0, endAt: 0 });
+    seedStructure(game.store, { entityId: 12, owner: PLAYER, x: 100, y: 100 });
+    seedStructure(game.store, { entityId: 13, owner: RIVAL, x: 102, y: 100 });
     const homeHex = getNeighborHexes(100, 100)[0]!;
-    seedExplorer(game.components, { explorerId: 101, owner: 12, x: homeHex.col, y: homeHex.row });
-    seedExplorer(game.components, { explorerId: 201, owner: 13, x: 101, y: 101 });
+    seedExplorer(game.store, { explorerId: 101, owner: 12, x: homeHex.col, y: homeHex.row });
+    seedExplorer(game.store, { explorerId: 201, owner: 13, x: 101, y: 101 });
     game.events.push({ at: 0, models: ["StoryEvent"], summary: "{}" });
     const tool = createObserveTool(game);
 
@@ -69,7 +69,7 @@ describe("observe_game", () => {
 
     expect(renderFocus(game, "empire")).toContain("#12 Realm L1 at (100,100)");
     expect(renderFocus(game, "empire")).not.toContain("#13");
-    expect(renderFocus(game, "armies")).toContain("#101 (home #12): 10 Knight T1, stamina 50");
+    expect(renderFocus(game, "armies")).toContain("#101 (home #12): 10 Knight T1, stamina 20");
     expect(renderFocus(game, "armies")).toContain("at home");
     // The projection places structures from TileOpt rows, which this world does not seed; armies come from ExplorerTroops.
     expect(renderFocus(game, "nearby")).toContain("Explorer #101 at (101,100)");
@@ -147,8 +147,8 @@ describe("act", () => {
 
   it("resolves a move's path from armyPaths and refuses an unreachable target", async () => {
     const game = createFakeGame();
-    seedStructure(game.components, { entityId: 12, owner: PLAYER, x: 100, y: 100 });
-    seedExplorer(game.components, { explorerId: 101, owner: 12, x: 120, y: 120 });
+    seedStructure(game.store, { entityId: 12, owner: PLAYER, x: 100, y: 100 });
+    seedExplorer(game.store, { explorerId: 101, owner: 12, x: 120, y: 120 });
     const reachable = { hex: getNeighborHexes(120, 120)[0]!, actionType: ActionType.Explore };
     game.actions.armyPaths.mockImplementation(() => {
       const paths = new ActionPaths();
@@ -196,7 +196,8 @@ describe("createRunnerTools", () => {
 describe("army planner layers", () => {
   it.each([false, true])("uses the explorer layer (alt=%s) for every index", async (alt) => {
     const game = createFakeGame();
-    seedExplorer(game.components, { explorerId: 101, owner: 12, x: 100, y: 100, alt });
+    seedStructure(game.store, { entityId: 12, owner: PLAYER, x: 100, y: 100 });
+    seedExplorer(game.store, { explorerId: 101, owner: 12, x: 100, y: 100, alt });
     const armies = vi.spyOn(game.client.projection, "getArmies");
     const tiles = vi.spyOn(game.client.projection, "getTiles");
     game.actions.armyPaths.mockReturnValue(new ActionPaths());

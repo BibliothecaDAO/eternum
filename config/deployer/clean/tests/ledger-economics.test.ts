@@ -1,9 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import {
-  buildLedgerEconomicPreset,
-  buildRegisterLedgerPresetCalldata,
-  resolveLedgerFundingAmount,
-} from "../ledger/economics";
+import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
 
 describe("ledger economics", () => {
   it("builds the approved Blitz preset", () => {
@@ -37,11 +33,5 @@ describe("ledger economics", () => {
     expect(BigInt(preset.sword_price.low)).toBe(500_000_000_000_000_000_000n);
     expect(preset.protocol_cut_bps).toBe(2_000);
     expect(preset.mmr.enabled).toBe(true);
-  });
-
-  it("tops a sponsored pool up idempotently", () => {
-    expect(resolveLedgerFundingAmount(12n, 20n)).toBe(8n);
-    expect(resolveLedgerFundingAmount(20n, 20n)).toBe(0n);
-    expect(resolveLedgerFundingAmount(24n, 20n)).toBe(0n);
   });
 });

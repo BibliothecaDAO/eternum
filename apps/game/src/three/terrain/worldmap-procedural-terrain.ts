@@ -240,7 +240,7 @@ export class WorldmapProceduralTerrain {
     string,
     { page: PreparedTerrainPage; revision: number; signature: string }
   >();
-  private visibleCellCount = 0;
+  private presentedCellCount = 0;
   private surfacePresentation: "world" | "ethereal" = "world";
   private disposed = false;
 
@@ -333,8 +333,9 @@ export class WorldmapProceduralTerrain {
     return [...this.presentedPages.keys()];
   }
 
-  getVisibleCellCount(): number {
-    return this.visibleCellCount;
+  /** Cells on screen, explored or fog: an unexplored region is presented terrain, not missing terrain. */
+  getPresentedCellCount(): number {
+    return this.presentedCellCount;
   }
 
   getPresentationCoverage(): TerrainPresentationCoverage {
@@ -357,7 +358,7 @@ export class WorldmapProceduralTerrain {
     this.terrain.present([]);
     this.presentedPages.clear();
     this.clearPreparedWork();
-    this.visibleCellCount = 0;
+    this.presentedCellCount = 0;
   }
 
   dispose(): void {
@@ -367,7 +368,7 @@ export class WorldmapProceduralTerrain {
     this.presentationRevision += 1;
     this.clearPreparedWork();
     this.presentedPages.clear();
-    this.visibleCellCount = 0;
+    this.presentedCellCount = 0;
     this.terrain.dispose();
   }
 
@@ -472,7 +473,7 @@ export class WorldmapProceduralTerrain {
         signature,
       });
     });
-    this.refreshVisibleCellCount();
+    this.refreshPresentedCellCount();
     const changedPageKeys = new Set(changedPages.map(({ page }) => page.request.pageKey));
     const commitCpuMs = timing.taskMs / changedPages.length;
     const queueWaitMs = timing.queueWaitMs / changedPages.length;
@@ -615,7 +616,7 @@ export class WorldmapProceduralTerrain {
       this.terrain.commitPages([], releasedPageKeys, fogMask),
     );
     releasedPageKeys.forEach((pageKey) => this.presentedPages.delete(pageKey));
-    this.refreshVisibleCellCount();
+    this.refreshPresentedCellCount();
   }
 
   private completePage(
@@ -688,9 +689,9 @@ export class WorldmapProceduralTerrain {
     return run.sourceReadyAtMs;
   }
 
-  private refreshVisibleCellCount(): void {
-    this.visibleCellCount = Array.from(this.presentedPages.values()).reduce(
-      (count, { page }) => count + page.request.cells.filter(({ explored }) => explored).length,
+  private refreshPresentedCellCount(): void {
+    this.presentedCellCount = Array.from(this.presentedPages.values()).reduce(
+      (count, { page }) => count + page.request.cells.length,
       0,
     );
   }

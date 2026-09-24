@@ -1,4 +1,6 @@
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { StructureSelect } from "@/ui/design-system/molecules/structure-select";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
@@ -10,7 +12,7 @@ import {
   useStructureCategoryFilter,
 } from "@/ui/features/world/containers/left-facets/structure-category-filter";
 import { sortStructures } from "@/ui/features/world/containers/structure-list-utils";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { type ID, StructureType } from "@bibliothecadao/types";
 import { memo, useMemo } from "react";
 import type { StructureWithMetadata } from "./top-header/structure-picker/chip";
@@ -62,16 +64,16 @@ export const StructureSidebar = memo(
   }: StructureSidebarProps) => {
     const lane = useCompactLane();
     const {
-      setup: { components },
-    } = useDojo();
-    const playerStructures = useUIStore((state) => state.playerStructures);
+      setup: { store },
+    } = useGame();
+    const playerStructures = useFactView(playerStructuresView);
     const structureNameVersion = useUIStore((state) => state.structureNameVersion);
     const leftListSort = useUIStore((state) => state.leftListSort);
     const { favorites } = useFavoriteStructures();
 
     const allMetadata = useStructuresWithMetadata({
       structures: playerStructures,
-      components,
+      store,
       nameUpdateVersion: structureNameVersion,
     });
 

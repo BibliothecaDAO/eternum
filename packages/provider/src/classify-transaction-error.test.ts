@@ -35,7 +35,7 @@ describe("classifyTransactionError", () => {
   });
 
   describe("revert-marker strings", () => {
-    it("classifies a katana failure-reason string as reverted with the innermost panic text", () => {
+    it("classifies an RPC failure-reason string as reverted with the innermost panic text", () => {
       const classified = classifyTransactionError(
         "Transaction failed with reason: Execution failed. " +
           "Failure reason: 0x6e6f7420656e6f756768207374616d696e61 ('not enough stamina').",

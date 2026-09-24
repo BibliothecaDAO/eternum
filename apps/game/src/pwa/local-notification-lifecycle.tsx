@@ -1,6 +1,6 @@
 import { reconcilePushAccount } from "./push-notification-client";
 import { useEffect, useState } from "react";
-import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { notificationOwnerOf, useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
 import { notificationWorkerRequest, reportNotificationDeliveryError } from "./local-notification-client";
 import { startPushForegroundLifecycle } from "./push-foreground-lifecycle";
@@ -8,12 +8,13 @@ import { startPushForegroundLifecycle } from "./push-foreground-lifecycle";
 /** Keeps account preferences available outside Settings and revokes local device delivery on logout/account switch. */
 export function LocalNotificationLifecycle() {
   const { session, status } = useIdentitySession();
+  const owner = notificationOwnerOf(session);
   const [detachOwner, setDetachOwner] = useState<string | null>(null);
   const detach = async (owner: string) => {
     try {
       if (
         (await navigator.serviceWorker.getRegistration("/"))?.active &&
-        useIdentitySessionStore.getState().session?.user.id !== owner
+        notificationOwnerOf(useIdentitySessionStore.getState().session) !== owner
       )
         await notificationWorkerRequest(owner, "disable");
       await reconcilePushAccount();
@@ -26,8 +27,8 @@ export function LocalNotificationLifecycle() {
   useEffect(
     () =>
       useIdentitySessionStore.subscribe((next, previous) => {
-        const oldOwner = previous.session?.user.id;
-        if (!oldOwner || oldOwner === next.session?.user.id || !("serviceWorker" in navigator)) return;
+        const oldOwner = notificationOwnerOf(previous.session);
+        if (!oldOwner || oldOwner === notificationOwnerOf(next.session) || !("serviceWorker" in navigator)) return;
         void detach(oldOwner);
       }),
     [],
@@ -35,19 +36,17 @@ export function LocalNotificationLifecycle() {
   useEffect(() => {
     if (status === "loading") return;
     void reconcilePushAccount().catch((error) => {
-      setDetachOwner(session?.user.id ?? "0x0");
+      setDetachOwner(owner ?? "0x0");
       reportNotificationDeliveryError(error);
     });
-  }, [status, session?.user.id]);
+  }, [status, owner]);
   useEffect(() => {
-    if (!session?.user.id) return;
-    return startPushForegroundLifecycle(session.user.id);
-  }, [session?.user.id]);
+    if (!owner) return;
+    return startPushForegroundLifecycle(owner);
+  }, [owner]);
   return (
     <>
-      {status !== "loading" && (
-        <LoadPreferences key={session?.user.id ?? "anonymous"} owner={session?.user.id ?? null} />
-      )}
+      {status !== "loading" && <LoadPreferences key={owner ?? "anonymous"} owner={owner} />}
       {detachOwner && (
         <aside
           role="alert"

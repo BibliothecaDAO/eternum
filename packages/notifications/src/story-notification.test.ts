@@ -1,11 +1,11 @@
 import { expect, it } from "vitest";
 import { buildStoryNotification, storyNotificationCopy, storyNotificationCreatedAt } from "./story-notification";
 const input = {
-  sourceId: "story:v1:madara:0x123:0x7:0xabc:0x64",
+  sourceId: "story:v1:0xa1:0x123:0x7:0xabc:0x64",
   value: { timestamp: "0x1", story: { RealmCreatedStory: {} } },
   owner: "0x1",
   gameName: "game",
-  target: "/enter/madara/game",
+  target: "/g/0xa1/7",
   now: 1100,
 };
 it("builds shared display content from the original event clock", () => {

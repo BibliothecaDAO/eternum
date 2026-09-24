@@ -1,37 +1,59 @@
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { getPlayerDisplayName, identityProfiles, readPlayerProfile } from "@/services/identity/player-profiles";
+import { readPlayers } from "@/sync/fact-views";
 import { displayPlayerName } from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import type { ContractAddress, Player } from "@bibliothecadao/types";
+import { useMemo, useSyncExternalStore } from "react";
 
 /** What every surface shows for a player: the resolved name (or nothing) and the portrait. */
 type PlayerProfile = Pick<Player, "name" | "portrait">;
 
 const NO_PROFILE: PlayerProfile = { name: null, portrait: null };
 const PORTRAIT_COUNT = 12;
+const PLAYER_FACTS = ["PlayerEntry"] as const;
 
 const toAddress = (address: string | bigint): ContractAddress => BigInt(address);
 
-/**
- * The one player resolver. Names and portraits come from the players slice, where the bridge merges identity's
- * profile over the chain name; nothing re-derives a name from the chain or the URL.
- */
-const getPlayerProfile = (address: string | bigint): PlayerProfile => {
-  const owner = toAddress(address);
-  return useWorldSlicesStore.getState().players.find((player) => player.address === owner) ?? NO_PROFILE;
+export { getPlayerDisplayName, getPlayerName } from "@/services/identity/player-profiles";
+
+/** Changes whenever a player name may: an identity answer, or the signed-in session. Names never come from the chain. */
+export const usePlayerNamesRevision = () => {
+  const profiles = useSyncExternalStore(identityProfiles.subscribe, identityProfiles.getVersion);
+  const user = useIdentitySessionStore((state) => state.session?.user);
+  const account = useAccountStore((state) => state.account?.address);
+  return [profiles, user, account] as const;
+};
+
+/** Calls `onChange` whenever a player name may have changed: an identity answer, or the session. */
+export const watchPlayerNames = (onChange: () => void): (() => void) => {
+  const stopProfiles = identityProfiles.subscribe(onChange);
+  const stopSession = useIdentitySessionStore.subscribe((state, previous) => {
+    if (state.session?.user !== previous.session?.user) onChange();
+  });
+  return () => {
+    stopProfiles();
+    stopSession();
+  };
+};
+
+/** The game's registered players, each with their name and portrait. */
+export const usePlayers = (): Player[] => {
+  const {
+    setup: { store },
+  } = useGame();
+  const registrations = useNativeRevision(PLAYER_FACTS);
+  const names = usePlayerNamesRevision();
+  return useMemo(() => readPlayers(store), [store, registrations, ...names]);
 };
 
 export const usePlayerProfile = (address: string | bigint | null | undefined): PlayerProfile => {
+  const names = usePlayerNamesRevision();
   const owner = address === null || address === undefined ? null : toAddress(address);
-  return useWorldSlicesStore((state) =>
-    owner === null ? NO_PROFILE : (state.players.find((player) => player.address === owner) ?? NO_PROFILE),
-  );
+  return useMemo(() => (owner === null ? NO_PROFILE : readPlayerProfile(owner)), [owner, ...names]);
 };
-
-/** The resolved name alone, for callers that keep their own fallback (the story formatter shortens itself). */
-export const getPlayerName = (address: string | bigint): string | null => getPlayerProfile(address).name;
-
-/** The name a surface shows for an address: resolved name, else the shortened address. */
-export const getPlayerDisplayName = (address: string | bigint): string =>
-  displayPlayerName(toAddress(address), getPlayerProfile(address).name);
 
 export const usePlayerDisplayName = (address: string | bigint | null | undefined): string | null => {
   const profile = usePlayerProfile(address);
@@ -39,8 +61,10 @@ export const usePlayerDisplayName = (address: string | bigint | null | undefined
 };
 
 /** The chosen portrait, else one of the stock portraits picked from the address so it stays stable. */
-export const playerAvatarUrl = (address: string | bigint, profile: PlayerProfile = getPlayerProfile(address)): string =>
-  `/images/avatars/${profile.portrait ?? stockPortrait(address)}.png`;
+export const playerAvatarUrl = (
+  address: string | bigint,
+  profile: PlayerProfile = readPlayerProfile(address),
+): string => `/images/avatars/${profile.portrait ?? stockPortrait(address)}.png`;
 
 const stockPortrait = (address: string | bigint): string => {
   const key = toAddress(address).toString();
@@ -59,7 +83,7 @@ export const resolveChatSenderName = (playerId: string, displayName: string | nu
   // The chat server stores the sender's address as its display name when they had none; that never shows.
   const serverName = displayName?.trim();
   return (
-    getPlayerProfile(playerId).name ??
+    readPlayerProfile(playerId).name ??
     (serverName && !isStarknetAddress(serverName) ? serverName : null) ??
     getPlayerDisplayName(playerId)
   );

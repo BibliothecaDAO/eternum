@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
-import { Position, configManager } from "@bibliothecadao/eternum";
+import { Position, configManager, structureMapPosition } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useGame } from "@/hooks/context/game-context";
+import { useFactView } from "@/hooks/use-fact-view";
+import { usePlayers } from "@/hooks/use-player-profile";
+import { gameStructuresView } from "@/sync/fact-views";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -38,8 +41,11 @@ function StandingsRows() {
   const { data, isError } = useLeaderboardActivity();
   const tick = useCurrentArmiesTick();
   const [history, setHistory] = useState<StandingsTick | null>(null);
-  const structures = useWorldSlicesStore((state) => state.structures);
-  const players = useWorldSlicesStore((state) => state.players);
+  const structures = useFactView(gameStructuresView);
+  const {
+    setup: { store },
+  } = useGame();
+  const players = usePlayers();
   const selectedId = useUIStore((state) => state.structureEntityId);
   const navigate = useNavigateToMapView();
   useEffect(() => {
@@ -69,7 +75,7 @@ function StandingsRows() {
             type="button"
             disabled={!capital}
             aria-current={row.pinned ? "true" : undefined}
-            onClick={() => capital && navigate(new Position({ x: capital.base.coord_x, y: capital.base.coord_y }))}
+            onClick={() => capital && navigate(Position.fromContract(structureMapPosition(store, capital)))}
             title={capital ? `Fly to ${name}'s capital` : "No surviving realm"}
             className={cn(
               "grid w-full grid-cols-[2rem_1fr_4rem_3rem] items-center px-3 py-2 font-sans text-xs normal-case tracking-normal text-gold enabled:hover:bg-gold/10 disabled:opacity-60",

@@ -7,37 +7,37 @@ import {
 } from "@/ui/features/story-events/story-event-utils";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
-import { Position } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import type { ClientComponents } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { Position, configManager } from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { formatFeedTime } from "./important-feed-rows";
 
-export function resolveStoryEventPosition(event: ProcessedStoryEvent, components: ClientComponents): Position | null {
+export function resolveStoryEventPosition(event: ProcessedStoryEvent, store: NativeFactStore): Position | null {
   const coord = event.storyPayload.end_coord ?? event.storyPayload.coord;
   if (coord && typeof coord === "object" && "x" in coord && "y" in coord) {
-    return new Position({ x: Number(coord.x), y: Number(coord.y) });
+    return Position.fromContract({ x: Number(coord.x), y: Number(coord.y) });
   }
-  // Battle stories contain participant IDs but no historical hex. Resolve surviving entities from RECS.
+  // Battle stories contain participant IDs but no historical hex. Resolve surviving entities from native facts.
   for (const id of [event.storyPayload.defender_id, event.entity_id, event.storyPayload.attacker_id]) {
     if (id == null) continue;
-    const key = gameEntityKey([BigInt(String(id))]);
-    const structure = getComponentValue(components.Structure, key);
-    if (structure) return new Position({ x: structure.base.coord_x, y: structure.base.coord_y });
-    const army = getComponentValue(components.ExplorerTroops, key);
-    if (army) return new Position({ x: army.coord.x, y: army.coord.y });
+    const key = { game_id: configManager.getActiveGameId(), entity_id: Number(id) };
+    const structure = store.get("Structure", key);
+    if (structure) return Position.fromContract({ x: structure.base.coord_x, y: structure.base.coord_y });
+    const army = store.get("ExplorerTroops", { game_id: key.game_id, explorer_id: key.entity_id });
+    if (army) return Position.fromContract({ x: army.coord.x, y: army.coord.y });
   }
   return null;
 }
 
 export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
+  useNativeRevision(["Structure", "ExplorerTroops"]);
   const navigate = useNavigateToMapView();
-  const position = resolveStoryEventPosition(event, components);
-  const battle = event.story === "BattleStory";
+  const position = resolveStoryEventPosition(event, store);
+  const battle = event.story === "BattleEvent";
   return (
     <button
       type="button"

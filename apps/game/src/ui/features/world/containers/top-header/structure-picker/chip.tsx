@@ -36,6 +36,9 @@ export type StructureWithMetadata = Structure & {
   realmLevel: number;
   realmLevelLabel: string | null;
   population: number;
+  guardCount: number;
+  /** Field armies alive today; an army from an earlier expedition day is dead by rule and never counts. */
+  explorerCount: number;
   populationCapacity: number;
   buildingTilesOccupied: number | null;
   buildingTilesTotal: number | null;

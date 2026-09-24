@@ -1,3 +1,5 @@
+import { nativePresetForId } from "../../../source/native";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import type {
   Config as EternumConfig,
   FactoryBiomeClimateOverrides,
@@ -5,12 +7,11 @@ import type {
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
 import { applyBiomeClimateDefaults } from "../../biome-climate-defaults";
-import { applyBlitzBalanceProfile, resolveBlitzBalanceProfileIdFromDurationSeconds } from "../../../source/blitz";
 import { resolveDeploymentEnvironment } from "../environment";
 import { loadRepoJsonFile } from "../shared/repo";
 import type { DeploymentEnvironmentId } from "../types";
 
-interface StoredConfiguration {
+export interface StoredConfiguration {
   configuration?: EternumConfig;
 }
 
@@ -49,8 +50,6 @@ const BLITZ_MAX_PLAYERS_MIN = 1;
 const MAP_CONFIG_OVERRIDE_LIMITS = {
   shardsMinesWinProbability: U16_MAX,
   shardsMinesFailProbability: U16_MAX,
-  agentFindProbability: U16_MAX,
-  agentFindFailProbability: U16_MAX,
   campFindProbability: U16_MAX,
   campFindFailProbability: U16_MAX,
   bitcoinMineWinProbability: U16_MAX,
@@ -69,12 +68,6 @@ const MAP_CONFIG_OVERRIDE_PAIR_GROUPS = [
     label: "Shard Mine chance",
     winKey: "shardsMinesWinProbability",
     failKey: "shardsMinesFailProbability",
-    sum: U16_MAX,
-  },
-  {
-    label: "Agent chance",
-    winKey: "agentFindProbability",
-    failKey: "agentFindFailProbability",
     sum: U16_MAX,
   },
   {
@@ -106,24 +99,17 @@ const BIOME_CLIMATE_OVERRIDE_LIMITS = {
   moistureSeed: U32_MAX,
 } satisfies Record<keyof FactoryBiomeClimateOverrides, number>;
 
-function loadStoredConfiguration(configPath: string): StoredConfiguration {
-  return loadRepoJsonFile<StoredConfiguration>(configPath);
+export function loadConfiguration(configPath: string): EternumConfig {
+  return configurationOf(loadRepoJsonFile<StoredConfiguration>(configPath), configPath);
 }
 
-function requireConfigurationObject(configPath: string, parsed: StoredConfiguration): EternumConfig {
-  if (!parsed.configuration) {
-    throw new Error(`No configuration object found in ${configPath}`);
-  }
-
-  return applyBiomeClimateDefaults(parsed.configuration);
-}
-
-function requiresSeasonDurationOverride(baseConfig: EternumConfig): boolean {
-  return Boolean(baseConfig.blitz?.mode?.on);
+export function configurationOf(stored: StoredConfiguration, source: string): EternumConfig {
+  if (!stored.configuration) throw new Error(`No configuration object found in ${source}`);
+  return applyBiomeClimateDefaults(stored.configuration);
 }
 
 function resolveDurationSeconds(baseConfig: EternumConfig, overrides: ConfigOverrides): number | undefined {
-  if (!requiresSeasonDurationOverride(baseConfig)) {
+  if (!usesFixedRoster(baseConfig) && overrides.durationSeconds === undefined) {
     return undefined;
   }
 
@@ -152,29 +138,8 @@ function resolveBooleanOverrides(baseConfig: EternumConfig, overrides: ConfigOve
   };
 }
 
-function isBlitzConfiguration(config: EternumConfig): boolean {
-  return Boolean(config.blitz?.mode?.on);
-}
-
-function resolveInferredBlitzBalanceProfileId(baseConfig: EternumConfig, overrides: ConfigOverrides) {
-  if (!isBlitzConfiguration(baseConfig)) {
-    return null;
-  }
-
-  return resolveBlitzBalanceProfileIdFromDurationSeconds(overrides.durationSeconds);
-}
-
-function resolveBaseConfigWithInferredBlitzProfile(
-  baseConfig: EternumConfig,
-  overrides: ConfigOverrides,
-): EternumConfig {
-  const profileId = resolveInferredBlitzBalanceProfileId(baseConfig, overrides);
-
-  if (!profileId) {
-    return structuredClone(baseConfig);
-  }
-
-  return applyBlitzBalanceProfile(baseConfig, profileId);
+function usesFixedRoster(config: EternumConfig): boolean {
+  return nativePresetForId(config.presetId).entryRule === nativeRuleConstants.ENTRY_ROSTER;
 }
 
 function applyModeOverrides(
@@ -353,7 +318,7 @@ export function applyBlitzRegistrationOverrides(
     return;
   }
 
-  if (!config.blitz?.mode?.on) {
+  if (!usesFixedRoster(config)) {
     throw new Error("blitz registration overrides are only supported for blitz environments");
   }
 
@@ -363,22 +328,18 @@ export function applyBlitzRegistrationOverrides(
 
 export function loadEnvironmentConfiguration(environmentId: DeploymentEnvironmentId): EternumConfig {
   const environment = resolveDeploymentEnvironment(environmentId);
-  return requireConfigurationObject(environment.configPath, loadStoredConfiguration(environment.configPath));
+  return loadConfiguration(environment.configPath);
 }
 
 export function applyDeploymentConfigOverrides(baseConfig: EternumConfig, overrides: ConfigOverrides): EternumConfig {
-  const configWithInferredBlitzProfile = resolveBaseConfigWithInferredBlitzProfile(baseConfig, overrides);
-  const resolvedOverrides = resolveBooleanOverrides(configWithInferredBlitzProfile, overrides);
+  const config = structuredClone(baseConfig);
+  const resolvedOverrides = resolveBooleanOverrides(config, overrides);
 
-  applyModeOverrides(configWithInferredBlitzProfile, resolvedOverrides, overrides);
-  applyFactoryAddressOverride(configWithInferredBlitzProfile, overrides.factoryAddress);
-  applyMapConfigOverrides(configWithInferredBlitzProfile, overrides.mapConfigOverrides);
-  applyBiomeClimateOverrides(configWithInferredBlitzProfile, overrides.biomeClimateOverrides);
-  applyBlitzRegistrationOverrides(
-    configWithInferredBlitzProfile,
-    overrides.blitzRegistrationOverrides,
-    resolvedOverrides.twoPlayerMode,
-  );
+  applyModeOverrides(config, resolvedOverrides, overrides);
+  applyFactoryAddressOverride(config, overrides.factoryAddress);
+  applyMapConfigOverrides(config, overrides.mapConfigOverrides);
+  applyBiomeClimateOverrides(config, overrides.biomeClimateOverrides);
+  applyBlitzRegistrationOverrides(config, overrides.blitzRegistrationOverrides, resolvedOverrides.twoPlayerMode);
 
-  return configWithInferredBlitzProfile;
+  return config;
 }

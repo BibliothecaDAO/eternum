@@ -1,13 +1,14 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
-import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { configManager } from "@bibliothecadao/eternum";
-import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ContractAddress, findResourceById, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { useEffect, useMemo, useState } from "react";
@@ -176,14 +177,14 @@ interface CraftRelicPopupProps {
 
 export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) => {
   const {
-    setup: { components, systemCalls },
+    setup: { store, systemCalls },
     account: { account },
-  } = useDojo();
+  } = useGame();
   const mode = useGameModeConfig();
+  const revision = useNativeRevision(["Structure"]);
 
-  const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
   const currentDefaultTick = useBlockTimestampStore((state) => state.currentDefaultTick);
-  const nowSeconds = useChainTimeStore((state) => Math.floor(state.nowMs / 1000));
+  const nowSeconds = useNowSeconds();
 
   const [isCrafting, setIsCrafting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -193,8 +194,8 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
 
   const structureInfo = useMemo(() => {
     const playerAccount = ContractAddress(account?.address ?? "0x0");
-    return mode.structure.getEntityInfo(structureId, playerAccount, components);
-  }, [account?.address, components, mode.structure, structureId]);
+    return mode.structure.getEntityInfo(structureId, playerAccount, store);
+  }, [account?.address, store, mode.structure, structureId, revision]);
 
   const structureCategory = Number(structureInfo.structureCategory ?? 0);
   const structureName = structureInfo.name?.name ?? `Structure #${structureId}`;
@@ -283,7 +284,6 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
       const craftedRelic = extractCraftedRelicId(receipt, structureId);
       setCraftedRelicId(craftedRelic);
       setCraftedWithoutReveal(craftedRelic === null);
-      triggerRelicsRefresh();
     } catch (craftError) {
       setError(mapCraftRelicError(craftError));
     } finally {

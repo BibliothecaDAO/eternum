@@ -1,0 +1,90 @@
+name: shard images
+on:
+  push:
+    tags: ["shard-v*"]
+permissions:
+  contents: read
+  packages: write
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        image: [init, herald, gateway]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Choose build target
+        id: target
+        env:
+          IMAGE: ${{ matrix.image }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          echo "name=ghcr.io/${OWNER,,}/eternum-shard-$IMAGE" >> "$GITHUB_OUTPUT"
+          if [ "$IMAGE" = gateway ]; then
+            echo 'context=apps/gateway' >> "$GITHUB_OUTPUT"
+            echo 'file=apps/gateway/Dockerfile' >> "$GITHUB_OUTPUT"
+          else
+            echo 'context=.' >> "$GITHUB_OUTPUT"
+            echo 'file=deploy/shard/Dockerfile' >> "$GITHUB_OUTPUT"
+            echo "target=$IMAGE" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: docker/build-push-action@v6
+        id: build
+        with:
+          context: ${{ steps.target.outputs.context }}
+          file: ${{ steps.target.outputs.file }}
+          target: ${{ steps.target.outputs.target }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.target.outputs.name }}:${{ github.ref_name }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=shard-${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=shard-${{ matrix.image }}
+      - name: Record the immutable image
+        env:
+          IMAGE: ${{ matrix.image }}
+          NAME: ${{ steps.target.outputs.name }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: printf '%s@%s\n' "$NAME" "$DIGEST" > "$IMAGE.image"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shard-${{ matrix.image }}
+          path: "*.image"
+  package:
+    needs: images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: shard-*
+          merge-multiple: true
+          path: images
+      - name: Verify anonymous image pulls
+        run: |
+          export DOCKER_CONFIG="$(mktemp -d)"
+          for image in images/*.image; do docker pull "$(cat "$image")"; done
+      - name: Assemble the Docker-only download
+        run: |
+          mkdir shard
+          cp deploy/shard/compose.yml deploy/shard/README.md shard/
+          for image in init herald gateway; do
+            printf 'SHARD_%s_IMAGE=%s\n' "${image^^}" "$(cat "images/$image.image")" >> shard/images.env
+          done
+          tar -czf shard.tar.gz shard
+      - name: Publish the package beside its image tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run:
+          gh release create "$TAG" shard.tar.gz --prerelease --title "$TAG" --notes 'Docker-only shard package. Images
+          are pinned by digest in images.env.'

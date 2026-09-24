@@ -15,14 +15,13 @@ Read [`AGENTS.md`](../AGENTS.md) first. It is the coding and review standard for
 ### Where things live
 
 - Contributing: [`CONTRIBUTING.md`](../CONTRIBUTING.md)
-- Chain and box infrastructure (the self-hosted Madara L3):
-  [`deploy/madara-lab/README.md`](../deploy/madara-lab/README.md)
+- Chain and box infrastructure (the self-hosted Madara L3): [`deploy/athanor/README.md`](../deploy/athanor/README.md)
 - Game launch and balance config: [`config/deployer/clean/README.md`](../config/deployer/clean/README.md) and
   [`config/README.md`](../config/README.md)
 - Herald (block folding, snapshots, ordered diffs): [`apps/herald/README.md`](../apps/herald/README.md)
 - Launch service: [`apps/launch-service/README.md`](../apps/launch-service/README.md)
-- Contracts: [`contracts/l3`](../contracts/l3) (game world and factory) and [`contracts/l2`](../contracts/l2) (ledger,
-  tokens, collectibles)
+- Contracts: [`contracts/l3/world-native`](../contracts/l3/world-native) (native game domains) and
+  [`contracts/l2`](../contracts/l2) (ledger, tokens, collectibles)
 - Packages and SDK: [`packages/README.md`](../packages/README.md)
 - Game client: [`apps/game/README.md`](../apps/game/README.md) and
   [`apps/game/src/three/README.md`](../apps/game/src/three/README.md)
@@ -30,8 +29,7 @@ Read [`AGENTS.md`](../AGENTS.md) first. It is the coding and review standard for
 ### Architecture (`docs/architecture`)
 
 - [AI-first harness architecture](./architecture/ai-first-harness-architecture.md)
-- [Sync S2 recovery contract](./architecture/sync-s2-recovery-contract.md) and
-  [Sync S4 recovery proofs](./architecture/sync-s4-recovery-proofs.md)
+- [Herald fold and recovery](../apps/herald/README.md) and [shared native client](../packages/core/readme.md)
 - [Procedural character pipeline](./architecture/procedural-character-pipeline.md): model onboarding, gym evaluation,
   game promotion. The `procedural-*-research.md` files beside it are the research behind it.
 

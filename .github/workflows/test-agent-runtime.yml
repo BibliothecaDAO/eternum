@@ -1,21 +1,7 @@
 name: agent-runtime
 
 on:
-  pull_request:
-    paths:
-      - "apps/agent-runner/**"
-      - "deploy/madara-lab/harness/**"
-      - "deploy/madara-lab/scripts/**"
-      - "packages/**"
-      - "config/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - ".github/workflows/test-agent-runtime.yml"
-
-concurrency:
-  group: agent-runtime-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  workflow_call:
 
 jobs:
   offline-tests:
@@ -53,7 +39,7 @@ jobs:
           pnpm --dir apps/agent-runner typecheck
       - name: Test harness without a chain
         if: matrix.suite == 'harness'
-        run: bun test deploy/madara-lab/harness
+        run: bun test deploy/athanor/harness
       - name: Test sandbox proxy without external services
         if: matrix.suite == 'sandbox-proxy'
-        run: bun test deploy/madara-lab/scripts/sandbox-proxy-handler.test.ts
+        run: bun test deploy/athanor/scripts/sandbox-proxy-handler.test.ts

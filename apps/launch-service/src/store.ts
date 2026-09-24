@@ -1,317 +1,261 @@
 import type { GameEnvironmentId } from "../../../config/shared/game-environments";
-import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
 import { Context, Effect, Layer } from "effect";
-import { Pool, type PoolClient, type QueryResultRow } from "pg";
 import type { LaunchRunStore } from "../../../config/deployer/clean/launch/run-store";
-import type {
-  LaunchGameSummary,
-  LaunchRotationSummary,
-  LaunchSeriesSummary,
-} from "../../../config/deployer/clean/types";
+import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
 import { DatabaseFailure } from "./errors";
-import { launchName, type ClaimedLaunchRun, type LaunchRun, type LaunchSummary } from "./model";
+import { launchName, launchRunPath, type LaunchRun, type LaunchSummary } from "./model";
 import { applyDurableLaunchDefaults, type LaunchJobRequest, type LaunchKind } from "./schemas";
 
-const migrationUrl = new URL("../migrations/0001_launch_runs.sql", import.meta.url);
-
-interface LaunchRunRow extends QueryResultRow {
+interface LaunchRunRow {
   id: string;
   kind: LaunchKind;
   environment: GameEnvironmentId;
   name: string;
-  request: LaunchJobRequest;
+  request: string;
   status: LaunchRun["status"];
   attempts: number;
-  claimed_until: Date | null;
-  lease_token: string | null;
+  available_at: number;
   error_message: string | null;
-  summary: LaunchSummary | null;
-  created_at: Date;
-  updated_at: Date;
-  completed_at: Date | null;
+  summary: string | null;
+  created_at: number;
+  updated_at: number;
+  completed_at: number | null;
 }
 
 export interface LaunchServiceStore extends LaunchRunStore {
-  initialize(): Promise<void>;
-  close(): Promise<void>;
+  /** Queues a run; a running or complete run of the same name is handed back as it is. */
   enqueue(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
+  /** Creates a run once; whatever run already has that name is handed back untouched. */
+  schedule(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
   list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]>;
+  /** Every run that failed and waits for a launcher to continue it, in any environment. */
+  failed(): Promise<LaunchRun[]>;
   find(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<LaunchRun | null>;
-  claim(leaseMs: number): Promise<ClaimedLaunchRun | null>;
-  heartbeat(runId: string, leaseToken: string, leaseMs: number): Promise<boolean>;
-  complete(runId: string, leaseToken: string, summary: LaunchSummary): Promise<LaunchRun>;
-  retry(runId: string, leaseToken: string, errorMessage: string, retryDelayMs: number): Promise<void>;
-  fail(runId: string, leaseToken: string, errorMessage: string): Promise<void>;
-  cancel(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean>;
+  /** The run to execute now: one interrupted while running, else the oldest due queued run. Either costs an attempt. */
+  startNext(now: number): Promise<LaunchRun | null>;
+  /** When the next queued run falls due, if any. */
+  nextDue(): Promise<number | null>;
+  complete(runId: string, summary: LaunchSummary): Promise<void>;
+  retry(runId: string, errorMessage: string, retryDelayMs: number): Promise<void>;
+  /** Requeues a run that ran too early; the attempt is given back. */
+  defer(runId: string, delayMs: number): Promise<void>;
+  fail(runId: string, errorMessage: string): Promise<void>;
   delete(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean>;
 }
 
 export class LaunchDatabase extends Context.Service<LaunchDatabase, LaunchServiceStore>()("launch/LaunchDatabase") {}
+
+const iso = (time: number) => new Date(time).toISOString();
 
 const toRun = (row: LaunchRunRow): LaunchRun => ({
   id: row.id,
   kind: row.kind,
   environment: row.environment,
   name: row.name,
-  request: row.request,
+  request: JSON.parse(row.request) as LaunchJobRequest,
   status: row.status,
   attempts: row.attempts,
-  createdAt: row.created_at.toISOString(),
-  updatedAt: row.updated_at.toISOString(),
-  ...(row.claimed_until ? { claimedUntil: row.claimed_until.toISOString() } : {}),
-  ...(row.lease_token ? { leaseToken: row.lease_token } : {}),
-  ...(row.completed_at ? { completedAt: row.completed_at.toISOString() } : {}),
+  dueAt: iso(row.available_at),
+  createdAt: iso(row.created_at),
+  updatedAt: iso(row.updated_at),
+  ...(row.completed_at ? { completedAt: iso(row.completed_at) } : {}),
   ...(row.error_message ? { errorMessage: row.error_message } : {}),
-  ...(row.summary ? { summary: row.summary } : {}),
+  ...(row.summary ? { summary: JSON.parse(row.summary) as LaunchSummary } : {}),
 });
 
-const summaryName = (summary: LaunchSummary): string => {
-  if ("gameName" in summary) return summary.gameName;
-  if ("rotationName" in summary) return summary.rotationName;
-  return summary.seriesName;
-};
+const storedSummary = <S extends LaunchSummary>(runId: string, summary: S): S => ({
+  ...summary,
+  outputPath: `${launchRunPath(runId)}/summary`,
+});
 
-const summaryKind = (summary: LaunchSummary): LaunchKind => {
-  if ("gameName" in summary) return "game";
-  if ("rotationName" in summary) return "rotation";
-  return "series";
-};
+const SELECT_RUN = "SELECT * FROM launch_runs WHERE kind = ? AND environment = ? AND name = ?";
 
-export class PostgresLaunchStore implements LaunchServiceStore {
-  readonly pool: Pool;
-
-  constructor(databaseUrl: string) {
-    this.pool = new Pool({ connectionString: databaseUrl, max: 6, idleTimeoutMillis: 30_000 });
-  }
-
-  async initialize(): Promise<void> {
-    await this.pool.query(await readFile(migrationUrl, "utf8"));
-  }
-
-  async close(): Promise<void> {
-    await this.pool.end();
-  }
+export class D1LaunchStore implements LaunchServiceStore {
+  constructor(private readonly db: D1Database) {}
 
   async enqueue(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun> {
-    const durableRequest = applyDurableLaunchDefaults(kind, request);
-    const id = randomUUID();
-    const name = launchName(kind, durableRequest);
-    const result = await this.pool.query<LaunchRunRow>(
-      `INSERT INTO launch_runs (id, kind, environment, name, request, status)
-       VALUES ($1, $2, $3, $4, $5::jsonb, 'queued')
-       ON CONFLICT (kind, environment, name) DO UPDATE SET
-         id = CASE WHEN launch_runs.status = 'running' THEN launch_runs.id ELSE EXCLUDED.id END,
-         request = CASE WHEN launch_runs.status = 'running' THEN launch_runs.request ELSE EXCLUDED.request END,
-         status = CASE WHEN launch_runs.status = 'running' THEN launch_runs.status ELSE 'queued' END,
-         attempts = CASE WHEN launch_runs.status = 'running' THEN launch_runs.attempts ELSE 0 END,
-         available_at = CASE WHEN launch_runs.status = 'running' THEN launch_runs.available_at ELSE now() END,
-         claimed_until = CASE WHEN launch_runs.status = 'running' THEN launch_runs.claimed_until ELSE NULL END,
-         lease_token = CASE WHEN launch_runs.status = 'running' THEN launch_runs.lease_token ELSE NULL END,
-         error_message = CASE WHEN launch_runs.status = 'running' THEN launch_runs.error_message ELSE NULL END,
-         completed_at = CASE WHEN launch_runs.status = 'running' THEN launch_runs.completed_at ELSE NULL END,
-         updated_at = now()
-       RETURNING *`,
-      [id, kind, durableRequest.environment, name, JSON.stringify(durableRequest)],
+    // One rule for every environment: a running or complete run is handed back as it is (create_game is idempotent by
+    // name, so nothing is lost); anything else is queued again with the new request.
+    return this.insertRun(
+      kind,
+      request,
+      `ON CONFLICT (kind, environment, name) DO UPDATE SET
+         id = excluded.id, request = excluded.request, status = 'queued', attempts = 0,
+         available_at = excluded.available_at, error_message = NULL, completed_at = NULL, updated_at = excluded.updated_at
+       WHERE launch_runs.status NOT IN ('running', 'complete')`,
     );
-    const run = toRun(result.rows[0]!);
-    if (run.status === "running" && run.id !== id) throw new Error(`${kind} launch "${name}" is already running`);
-    return run;
+  }
+
+  async schedule(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun> {
+    return this.insertRun(kind, request, "ON CONFLICT (kind, environment, name) DO NOTHING");
   }
 
   async list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]> {
-    const result = kind
-      ? await this.pool.query<LaunchRunRow>(
-          "SELECT * FROM launch_runs WHERE environment = $1 AND kind = $2 ORDER BY updated_at DESC",
-          [environment, kind],
-        )
-      : await this.pool.query<LaunchRunRow>(
-          "SELECT * FROM launch_runs WHERE environment = $1 ORDER BY updated_at DESC",
-          [environment],
-        );
-    return result.rows.map(toRun);
+    const statement = kind
+      ? this.db
+          .prepare("SELECT * FROM launch_runs WHERE environment = ? AND kind = ? ORDER BY updated_at DESC, id")
+          .bind(environment, kind)
+      : this.db
+          .prepare("SELECT * FROM launch_runs WHERE environment = ? ORDER BY updated_at DESC, id")
+          .bind(environment);
+    return (await statement.all<LaunchRunRow>()).results.map(toRun);
+  }
+
+  async failed(): Promise<LaunchRun[]> {
+    const rows = await this.db
+      .prepare("SELECT * FROM launch_runs WHERE status = 'failed' ORDER BY updated_at DESC, id")
+      .all<LaunchRunRow>();
+    return rows.results.map(toRun);
   }
 
   async find(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<LaunchRun | null> {
-    const result = await this.pool.query<LaunchRunRow>(
-      "SELECT * FROM launch_runs WHERE kind = $1 AND environment = $2 AND name = $3",
-      [kind, environment, name],
-    );
-    return result.rows[0] ? toRun(result.rows[0]) : null;
+    const row = await this.db.prepare(SELECT_RUN).bind(kind, environment, name).first<LaunchRunRow>();
+    return row ? toRun(row) : null;
   }
 
-  async claim(leaseMs: number): Promise<ClaimedLaunchRun | null> {
-    const client = await this.pool.connect();
-    try {
-      await client.query("BEGIN");
-      await client.query(
-        `UPDATE launch_runs SET status = 'queued', claimed_until = NULL, lease_token = NULL, updated_at = now()
-         WHERE status = 'running' AND claimed_until < now()`,
-      );
-      const candidate = await client.query<LaunchRunRow>(
-        `SELECT * FROM launch_runs
-         WHERE status = 'queued' AND available_at <= now()
-         ORDER BY created_at ASC FOR UPDATE SKIP LOCKED LIMIT 1`,
-      );
-      if (!candidate.rows[0]) {
-        await client.query("COMMIT");
-        return null;
-      }
-      const leaseToken = randomUUID();
-      const claimedUntil = new Date(Date.now() + leaseMs);
-      const claimed = await client.query<LaunchRunRow>(
-        `UPDATE launch_runs SET status = 'running', attempts = attempts + 1,
-           lease_token = $2, claimed_until = $3, updated_at = now()
-         WHERE id = $1 RETURNING *`,
-        [candidate.rows[0].id, leaseToken, claimedUntil],
-      );
-      await client.query("COMMIT");
-      return toRun(claimed.rows[0]!) as ClaimedLaunchRun;
-    } catch (error) {
-      await rollback(client);
-      if (isSingleWriterConflict(error)) return null;
-      throw error;
-    } finally {
-      client.release();
-    }
+  async startNext(now: number): Promise<LaunchRun | null> {
+    const interrupted = await this.db
+      .prepare("UPDATE launch_runs SET attempts = attempts + 1, updated_at = ? WHERE status = 'running' RETURNING *")
+      .bind(now)
+      .first<LaunchRunRow>();
+    if (interrupted) return toRun(interrupted);
+    const due = await this.db
+      .prepare(
+        `UPDATE launch_runs SET status = 'running', attempts = attempts + 1, updated_at = ?1
+         WHERE id = (SELECT id FROM launch_runs WHERE status = 'queued' AND available_at <= ?1
+                     ORDER BY created_at, id LIMIT 1)
+         RETURNING *`,
+      )
+      .bind(now)
+      .first<LaunchRunRow>();
+    return due ? toRun(due) : null;
   }
 
-  async heartbeat(runId: string, leaseToken: string, leaseMs: number): Promise<boolean> {
-    const result = await this.pool.query(
-      `UPDATE launch_runs SET claimed_until = $3, updated_at = now()
-       WHERE id = $1 AND lease_token = $2 AND status = 'running'`,
-      [runId, leaseToken, new Date(Date.now() + leaseMs)],
-    );
-    return result.rowCount === 1;
+  async nextDue(): Promise<number | null> {
+    const row = await this.db
+      .prepare("SELECT MIN(available_at) AS due FROM launch_runs WHERE status = 'queued'")
+      .first<{ due: number | null }>();
+    return row?.due ?? null;
   }
 
-  async complete(runId: string, leaseToken: string, summary: LaunchSummary): Promise<LaunchRun> {
-    const storedSummary = { ...summary, outputPath: `postgres://launch_runs/${runId}/summary` };
-    const result = await this.pool.query<LaunchRunRow>(
-      `UPDATE launch_runs SET status = 'complete', summary = $3::jsonb, claimed_until = NULL,
-         lease_token = NULL, error_message = NULL, completed_at = now(), updated_at = now()
-       WHERE id = $1 AND lease_token = $2 AND status = 'running' RETURNING *`,
-      [runId, leaseToken, JSON.stringify(storedSummary)],
-    );
-    if (!result.rows[0]) throw new Error(`Launch lease for ${runId} was lost before completion`);
-    return toRun(result.rows[0]);
+  async complete(runId: string, summary: LaunchSummary): Promise<void> {
+    const now = Date.now();
+    await this.db.batch([
+      this.db
+        .prepare(
+          `UPDATE launch_runs SET status = 'complete', summary = ?, error_message = NULL, completed_at = ?, updated_at = ?
+           WHERE id = ? AND status = 'running'`,
+        )
+        .bind(JSON.stringify(storedSummary(runId, summary)), now, now, runId),
+      ...this.resultRunFor(summary, now),
+    ]);
   }
 
-  async retry(runId: string, leaseToken: string, errorMessage: string, retryDelayMs: number): Promise<void> {
-    await this.pool.query(
-      `UPDATE launch_runs SET status = 'queued', available_at = $4, claimed_until = NULL,
-         lease_token = NULL, error_message = $3, updated_at = now()
-       WHERE id = $1 AND lease_token = $2 AND status = 'running'`,
-      [runId, leaseToken, errorMessage, new Date(Date.now() + retryDelayMs)],
-    );
+  /** A launched Blitz game has its result recorded at its actual end, in the same write as the launch completes. */
+  private resultRunFor(summary: LaunchSummary, now: number): D1PreparedStatement[] {
+    if (!("startTime" in summary) || summary.gameType !== "blitz" || summary.dryRun) return [];
+    if (!summary.gameId || !summary.finalizeAt) throw new Error("Settled Blitz game has no finalization schedule");
+    const request = { environment: summary.environment, gameName: summary.gameName, gameId: summary.gameId };
+    return [
+      this.db
+        .prepare(
+          `INSERT INTO launch_runs (id, kind, environment, name, request, status, available_at, created_at, updated_at)
+           VALUES (?, 'result', ?, ?, ?, 'queued', ?, ?, ?)
+           ON CONFLICT (kind, environment, name) DO NOTHING`,
+        )
+        .bind(
+          crypto.randomUUID(),
+          summary.environment,
+          summary.gameName,
+          JSON.stringify(request),
+          summary.finalizeAt * 1_000,
+          now,
+          now,
+        ),
+    ];
   }
 
-  async fail(runId: string, leaseToken: string, errorMessage: string): Promise<void> {
-    await this.pool.query(
-      `UPDATE launch_runs SET status = 'failed', claimed_until = NULL, lease_token = NULL,
-         error_message = $3, updated_at = now()
-       WHERE id = $1 AND lease_token = $2 AND status = 'running'`,
-      [runId, leaseToken, errorMessage],
-    );
+  async retry(runId: string, errorMessage: string, retryDelayMs: number): Promise<void> {
+    const now = Date.now();
+    await this.db
+      .prepare(
+        `UPDATE launch_runs SET status = 'queued', available_at = ?, error_message = ?, updated_at = ?
+         WHERE id = ? AND status = 'running'`,
+      )
+      .bind(now + retryDelayMs, errorMessage, now, runId)
+      .run();
   }
 
-  async cancel(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean> {
-    const result = await this.pool.query(
-      `UPDATE launch_runs SET status = 'cancelled', claimed_until = NULL, lease_token = NULL, updated_at = now()
-       WHERE kind = $1 AND environment = $2 AND name = $3 AND status <> 'running'`,
-      [kind, environment, name],
-    );
-    return result.rowCount === 1;
+  async defer(runId: string, delayMs: number): Promise<void> {
+    const now = Date.now();
+    await this.db
+      .prepare(
+        `UPDATE launch_runs SET status = 'queued', attempts = attempts - 1, available_at = ?, error_message = NULL,
+           updated_at = ?
+         WHERE id = ? AND status = 'running'`,
+      )
+      .bind(now + delayMs, now, runId)
+      .run();
+  }
+
+  async fail(runId: string, errorMessage: string): Promise<void> {
+    await this.db
+      .prepare(
+        "UPDATE launch_runs SET status = 'failed', error_message = ?, updated_at = ? WHERE id = ? AND status = 'running'",
+      )
+      .bind(errorMessage, Date.now(), runId)
+      .run();
   }
 
   async delete(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean> {
-    const result = await this.pool.query(
-      "DELETE FROM launch_runs WHERE kind = $1 AND environment = $2 AND name = $3 AND status <> 'running'",
-      [kind, environment, name],
-    );
-    return result.rowCount === 1;
+    const result = await this.db
+      .prepare("DELETE FROM launch_runs WHERE kind = ? AND environment = ? AND name = ? AND status <> 'running'")
+      .bind(kind, environment, name)
+      .run();
+    return result.meta.changes === 1;
   }
 
-  loadGame(environment: LaunchGameSummary["environment"], gameName: string): Promise<LaunchGameSummary | null> {
-    return this.loadSummary("game", environment, gameName) as Promise<LaunchGameSummary | null>;
+  async loadGame(environment: LaunchGameSummary["environment"], gameName: string): Promise<LaunchGameSummary | null> {
+    const run = await this.find("game", environment, gameName);
+    return (run?.summary as LaunchGameSummary | undefined) ?? null;
   }
 
   async saveGame(summary: LaunchGameSummary): Promise<LaunchGameSummary> {
-    return this.saveSummary(summary) as Promise<LaunchGameSummary>;
+    const run = await this.find("game", summary.environment, summary.gameName);
+    if (!run) throw new Error(`No queued launch owns summary ${summary.gameName}`);
+    const stored = storedSummary(run.id, summary);
+    await this.db
+      .prepare("UPDATE launch_runs SET summary = ?, updated_at = ? WHERE id = ?")
+      .bind(JSON.stringify(stored), Date.now(), run.id)
+      .run();
+    return stored;
   }
 
-  loadSeries(environment: LaunchSeriesSummary["environment"], seriesName: string): Promise<LaunchSeriesSummary | null> {
-    return this.loadSummary("series", environment, seriesName) as Promise<LaunchSeriesSummary | null>;
-  }
-
-  async saveSeries(summary: LaunchSeriesSummary): Promise<LaunchSeriesSummary> {
-    return this.saveSummary(summary) as Promise<LaunchSeriesSummary>;
-  }
-
-  loadRotation(
-    environment: LaunchRotationSummary["environment"],
-    rotationName: string,
-  ): Promise<LaunchRotationSummary | null> {
-    return this.loadSummary("rotation", environment, rotationName) as Promise<LaunchRotationSummary | null>;
-  }
-
-  async saveRotation(summary: LaunchRotationSummary): Promise<LaunchRotationSummary> {
-    return this.saveSummary(summary) as Promise<LaunchRotationSummary>;
-  }
-
-  private async loadSummary(kind: LaunchKind, environment: string, name: string): Promise<LaunchSummary | null> {
-    const result = await this.pool.query<{ summary: LaunchSummary | null }>(
-      "SELECT summary FROM launch_runs WHERE kind = $1 AND environment = $2 AND name = $3",
-      [kind, environment, name],
-    );
-    return result.rows[0]?.summary ?? null;
-  }
-
-  private async saveSummary(summary: LaunchSummary): Promise<LaunchSummary> {
-    const kind = summaryKind(summary);
-    const name = summaryName(summary);
-    const result = await this.pool.query<{ id: string }>(
-      "SELECT id FROM launch_runs WHERE kind = $1 AND environment = $2 AND name = $3",
-      [kind, summary.environment, name],
-    );
-    const runId = result.rows[0]?.id;
-    if (runId) {
-      const stored = { ...summary, outputPath: `postgres://launch_runs/${runId}/summary` };
-      await this.pool.query("UPDATE launch_runs SET summary = $2::jsonb, updated_at = now() WHERE id = $1", [
-        runId,
-        JSON.stringify(stored),
-      ]);
-      return stored;
-    }
-    const parentId = kind === "game" ? await this.findParentRunId(summary.environment, name) : null;
-    if (!parentId) throw new Error(`No queued launch owns summary ${name}`);
-    return { ...summary, outputPath: `postgres://launch_runs/${parentId}/summary` };
-  }
-
-  // A rotation or series child has no row of its own. Its parent's games list is
-  // its record: the series runner folds the summary returned here into that list
-  // and persists the parent right after, and Herald answers whether the game
-  // exists on chain when the child step runs again.
-  private async findParentRunId(environment: string, gameName: string): Promise<string | null> {
-    const result = await this.pool.query<{ id: string }>(
-      `SELECT id FROM launch_runs
-       WHERE kind IN ('series', 'rotation') AND environment = $1 AND summary->'games' @> $2::jsonb`,
-      [environment, JSON.stringify([{ gameName }])],
-    );
-    return result.rows[0]?.id ?? null;
+  private async insertRun(kind: LaunchKind, request: LaunchJobRequest, conflict: string): Promise<LaunchRun> {
+    const durableRequest = applyDurableLaunchDefaults(kind, request);
+    const name = launchName(kind, durableRequest);
+    const now = Date.now();
+    const [, selected] = await this.db.batch<LaunchRunRow>([
+      this.db
+        .prepare(
+          `INSERT INTO launch_runs (id, kind, environment, name, request, status, available_at, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, 'queued', ?, ?, ?) ${conflict}`,
+        )
+        .bind(
+          crypto.randomUUID(),
+          kind,
+          durableRequest.environment,
+          name,
+          JSON.stringify(durableRequest),
+          now,
+          now,
+          now,
+        ),
+      this.db.prepare(SELECT_RUN).bind(kind, durableRequest.environment, name),
+    ]);
+    return toRun(selected!.results[0]!);
   }
 }
-
-const rollback = async (client: PoolClient): Promise<void> => {
-  try {
-    await client.query("ROLLBACK");
-  } catch {
-    // The original transaction error is the useful failure.
-  }
-};
-
-const isSingleWriterConflict = (error: unknown): boolean =>
-  typeof error === "object" && error !== null && "code" in error && error.code === "23505";
 
 export const databaseLayer = (store: LaunchServiceStore): Layer.Layer<LaunchDatabase> =>
   Layer.succeed(LaunchDatabase, store);

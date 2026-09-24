@@ -12,7 +12,6 @@ export default defineConfig({
       alias: {
         "@": path.resolve(__dirname, "./docs"),
         "@config": path.resolve(__dirname, "../../config/utils/utils"),
-        "@contracts": path.resolve(__dirname, "../../contracts/utils"),
       },
     },
     plugins: [llmTxtPlugin()],
@@ -135,6 +134,15 @@ export default defineConfig({
       ],
     },
     {
+      text: "Frontier",
+      items: [
+        { text: "Introduction", link: "/frontier/introduction" },
+        { text: "Your Realm", link: "/frontier/realm" },
+        { text: "The Expedition", link: "/frontier/expedition" },
+        { text: "Chests", link: "/frontier/chests" },
+      ],
+    },
+    {
       text: "Blitz",
       items: [
         { text: "Key Concepts", link: "/blitz/key-concepts" },
@@ -180,8 +188,7 @@ export default defineConfig({
         },
         { text: "World Structures", link: "/blitz/world-structures" },
         { text: "Victory", link: "/blitz/victory" },
-        { text: "Prize Pool", link: "/blitz/prize-pool" },
-        { text: "MMR", link: "/blitz/mmr" },
+        { text: "Game Results", link: "/blitz/prize-pool" },
         { text: "Achievements", link: "/blitz/achievements" },
       ],
     },

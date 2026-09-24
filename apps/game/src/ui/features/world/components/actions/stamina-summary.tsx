@@ -2,7 +2,7 @@ import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { configManager } from "@bibliothecadao/eternum";
 import type { ActionPath } from "@bibliothecadao/eternum";
 import type { ID } from "@bibliothecadao/types";
-import { useStaminaManager } from "@bibliothecadao/react";
+import { useStaminaManager } from "@/hooks/helpers/use-stamina";
 import clsx from "clsx";
 import { useMemo } from "react";
 
@@ -24,7 +24,7 @@ export const StaminaSummary = ({ selectedEntityId, isExplored, path }: StaminaSu
   }, [path]);
 
   const requiredStamina = Math.max(0, isExplored ? totalCost : configManager.getExploreStaminaCost());
-  const currentStamina = Number(stamina.amount ?? 0n);
+  const currentStamina = Number(stamina?.amount ?? 0n);
   const staminaRatio = requiredStamina === 0 ? Number.POSITIVE_INFINITY : currentStamina / requiredStamina;
   const statusColor =
     staminaRatio >= 1 ? "text-order-brilliance" : staminaRatio >= 0.5 ? "text-gold" : "text-order-giants";

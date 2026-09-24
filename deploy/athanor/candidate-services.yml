@@ -1,0 +1,23 @@
+name: athanor-staging-app
+
+x-budget: &budget
+  cgroup_parent: athanor.slice
+  cpuset: "8-11,20-23"
+  pids_limit: 512
+  restart: on-failure
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "3"
+
+services:
+  client:
+    <<: *budget
+    image: ${CANDIDATE_CADDY_IMAGE:?Set the pinned Caddy image digest}
+    mem_limit: 256m
+    memswap_limit: 256m
+    ports: ["127.0.0.1:28314:8080"]
+    volumes:
+      - ./staging.Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${CANDIDATE_CHECKOUT:?Set the built candidate checkout}/apps/game/dist:/srv:ro

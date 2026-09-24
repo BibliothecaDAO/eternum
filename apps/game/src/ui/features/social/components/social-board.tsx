@@ -1,11 +1,14 @@
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
-import { useWorldSlicesStore, type WorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { usePlayers } from "@/hooks/use-player-profile";
+import { gameStructuresView, settlementPlayersView } from "@/sync/fact-views";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { filterPlayersByBlitzSettlement } from "@/services/blitz/blitz-settlement-players";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Tabs } from "@/ui/design-system/atoms/tab";
-import { PrizePanel } from "@/ui/features/prize";
+import { ResultsPanel } from "@/ui/features/results";
 import { getPlayerInfo } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { Shapes, Sparkles, Users } from "@/ui/design-system/atoms/game-icons";
 import { ReactNode, useCallback, useEffect, useMemo } from "react";
@@ -32,7 +35,7 @@ type PlayerStructureCounts = {
   villages: number;
 };
 
-const countStructuresByOwner = (structures: WorldSlicesStore["structures"]) =>
+const countStructuresByOwner = (structures: NativeRows["Structure"][]) =>
   structures.reduce<Map<bigint, PlayerStructureCounts>>((countsByOwner, structure) => {
     const counts = countsByOwner.get(structure.owner) ?? {
       banks: 0,
@@ -44,7 +47,7 @@ const countStructuresByOwner = (structures: WorldSlicesStore["structures"]) =>
     if (structure.base.category === StructureType.Realm) counts.realms += 1;
     if (structure.base.category === StructureType.Hyperstructure) counts.hyperstructures += 1;
     if (structure.base.category === StructureType.Bank) counts.banks += 1;
-    if (structure.base.category === StructureType.FragmentMine) counts.mines += 1;
+    if (structure.base.category === StructureType.Mine) counts.mines += 1;
     if (structure.base.category === StructureType.Village) counts.villages += 1;
     countsByOwner.set(structure.owner, counts);
     return countsByOwner;
@@ -59,8 +62,8 @@ export const LEADERBOARD_POPOVER_ID = "leaderboard";
 export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) => {
   const {
     account: { account },
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
 
   const selectedTab = useSocialStore((state) => state.selectedTab);
   const isExpanded = useSocialStore((state) => state.isExpanded);
@@ -82,9 +85,9 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
   const showGuildsTab = isEternumMode && mode.ui.showGuildsTab;
 
   // The world slices are the subscription: the bridge publishes each once per ingest slice, already active-game scoped.
-  const allPlayers = useWorldSlicesStore((state) => state.players);
-  const blitzSettlementPlayerAddresses = useWorldSlicesStore((state) => state.blitzSettlementPlayers);
-  const structures = useWorldSlicesStore((state) => state.structures);
+  const allPlayers = usePlayers();
+  const blitzSettlementPlayerAddresses = useFactView(settlementPlayersView);
+  const structures = useFactView(gameStructuresView);
   const players = useMemo(
     () => (isBlitzMode ? filterPlayersByBlitzSettlement(allPlayers, blitzSettlementPlayerAddresses) : allPlayers),
     [allPlayers, blitzSettlementPlayerAddresses, isBlitzMode],
@@ -108,9 +111,9 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
 
   useEffect(() => {
     setPlayerInfo(
-      getPlayerInfo(players, ContractAddress(account.address), playersByRank, playerStructureCountsMap, components),
+      getPlayerInfo(players, ContractAddress(account.address), playersByRank, playerStructureCountsMap, store),
     );
-  }, [players, account.address, playersByRank, playerStructureCountsMap, components, setPlayerInfo]);
+  }, [players, account.address, playersByRank, playerStructureCountsMap, store, setPlayerInfo]);
 
   const viewGuildMembers = useCallback(
     (guildEntityId: ContractAddress) => {
@@ -188,13 +191,13 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
 
     if (isBlitzMode) {
       baseTabs.push({
-        key: "Blitz Prize",
+        key: "Results",
         label: (
           <div className="flex items-center gap-2">
-            <span>Blitz Prize</span>
+            <span>Results</span>
           </div>
         ),
-        component: <PrizePanel />,
+        component: <ResultsPanel />,
         expandedContent: null,
       });
     }

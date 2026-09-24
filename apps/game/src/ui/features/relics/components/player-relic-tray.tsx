@@ -1,7 +1,8 @@
 import { memo, useCallback, useMemo } from "react";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerRelicsView } from "@/sync/fact-views";
 
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
@@ -121,8 +122,7 @@ const RelicGrid = ({ relics, gridClass, iconSize, onRelicClick }: RelicGridProps
 );
 
 const PlayerRelicTray = memo(({ variant = "floating", className }: PlayerRelicTrayProps = {}) => {
-  const playerRelics = useUIStore((state) => state.playerRelics);
-  const playerRelicsLoading = useUIStore((state) => state.playerRelicsLoading);
+  const playerRelics = useFactView(playerRelicsView);
   const openSurface = usePopoverStore((state) => state.openSurface);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
 
@@ -168,11 +168,6 @@ const PlayerRelicTray = memo(({ variant = "floating", className }: PlayerRelicTr
             No relics discovered yet.
           </div>
         )}
-        {playerRelicsLoading && (
-          <div className="flex items-center gap-1 text-[10px] uppercase tracking-[0.2em] text-gold/60">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-gold/70" /> Updating
-          </div>
-        )}
       </div>
     );
   }
@@ -186,11 +181,6 @@ const PlayerRelicTray = memo(({ variant = "floating", className }: PlayerRelicTr
       <div className="rounded-xl border border-gold/25 bg-black/80 p-2 shadow-[0_6px_18px_rgba(0,0,0,0.45)] backdrop-blur-md">
         <div className="mb-1 flex items-center justify-between gap-2">
           <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gold/60">Relics</span>
-          {playerRelicsLoading && (
-            <div className="flex items-center gap-1 text-[9px] uppercase tracking-[0.2em] text-gold/60">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gold/70" /> Updating
-            </div>
-          )}
         </div>
         <div className="max-w-xs overflow-x-auto">
           <RelicGrid

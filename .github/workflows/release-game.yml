@@ -104,105 +104,19 @@ jobs:
           echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
           echo "New version: ${NEW_VERSION}"
 
-      - name: Collect raw changes
-        id: raw_changes
+      - name: Write release notes from the commit log
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LATEST_TAG: ${{ steps.latest_tag.outputs.tag }}
-        run: |
-          if git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
-            RANGE="${LATEST_TAG}..HEAD"
-          else
-            RANGE="HEAD"
-          fi
-
-          # Collect PR titles
-          {
-            git log "$RANGE" --merges --pretty=format:"%s" | while IFS= read -r line; do
-              PR_NUM=$(echo "$line" | grep -oP '#\d+' | head -1)
-              if [ -n "$PR_NUM" ]; then
-                PR_TITLE=$(gh pr view "${PR_NUM#\#}" --json title,labels --jq '"\(.title) [\(.labels | map(.name) | join(","))]"' 2>/dev/null || echo "")
-                if [ -n "$PR_TITLE" ]; then
-                  echo "PR ${PR_NUM}: ${PR_TITLE}"
-                fi
-              fi
-            done
-
-            # Direct commits (skip noise)
-            git log "$RANGE" --no-merges --pretty=format:"COMMIT: %s" \
-              | grep -v "COMMIT: chore:" \
-              | grep -v "COMMIT: factory-runs:" \
-              | grep -v "COMMIT: Merge " \
-              | head -30
-          } > /tmp/raw-changes.txt
-
-          echo "Collected changes:"
-          cat /tmp/raw-changes.txt
-
-      - name: Generate release notes with Claude
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           NEW_VERSION: ${{ steps.new_version.outputs.version }}
           LATEST_TAG: ${{ steps.latest_tag.outputs.tag }}
           REPO: ${{ github.repository }}
         run: |
-          RAW_CHANGES=$(cat /tmp/raw-changes.txt)
-
-          # Build the prompt
-          PROMPT="You are writing release notes for Eternum, an onchain game built on Starknet/Dojo. Write concise, human-readable release notes for version v${NEW_VERSION}.
-
-          Here are the raw PR titles and commits since the last release (${LATEST_TAG}):
-
-          ${RAW_CHANGES}
-
-          Write the release notes in this format:
-          - Start with a 1-2 sentence summary of the most important changes
-          - Group changes into sections: Features, Improvements, Bug Fixes (only include sections that have items)
-          - Each item should be a single clear sentence, not just the PR title - rewrite them to be understandable by players and community members
-          - Skip internal/CI changes, factory-runs, and other noise that users don't care about
-          - Keep it concise - no more than 15 bullet points total
-          - Do NOT include a heading or version number (that's added separately)
-          - Do NOT include markdown headers (##) - just use **bold** for section names
-          - End with nothing - no sign-off or footer"
-
-          # Call Claude API
-          RESPONSE=$(curl -s https://api.anthropic.com/v1/messages \
-            -H "x-api-key: ${ANTHROPIC_API_KEY}" \
-            -H "anthropic-version: 2023-06-01" \
-            -H "content-type: application/json" \
-            -d "$(jq -n \
-              --arg prompt "$PROMPT" \
-              '{
-                model: "claude-sonnet-4-20250514",
-                max_tokens: 1024,
-                messages: [{role: "user", content: $prompt}]
-              }')")
-
-          # Extract the text content
-          NOTES=$(echo "$RESPONSE" | jq -r '.content[0].text // empty')
-
-          if [ -z "$NOTES" ]; then
-            echo "Claude API call failed, falling back to raw notes"
-            echo "Error response: $RESPONSE"
-            # Fallback: use raw changes formatted simply
-            {
-              echo "### Changes"
-              echo ""
-              cat /tmp/raw-changes.txt | sed 's/^PR #/- /' | sed 's/^COMMIT: /- /'
-            } > /tmp/release-notes.md
-          else
-            echo "$NOTES" > /tmp/release-notes.md
-          fi
-
-          # Append changelog link
           {
+            echo "### Changes"
             echo ""
-            echo "---"
+            git log "${LATEST_TAG}..HEAD" --no-merges --format='- %s (%h)'
             echo ""
             echo "**Full Changelog**: https://github.com/${REPO}/compare/${LATEST_TAG}...game-v${NEW_VERSION}"
-          } >> /tmp/release-notes.md
-
-          echo "Generated release notes:"
+          } > /tmp/release-notes.md
           cat /tmp/release-notes.md
 
       - name: Setup Node.js

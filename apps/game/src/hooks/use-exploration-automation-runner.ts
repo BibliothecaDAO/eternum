@@ -1,10 +1,15 @@
-import { ActionPaths, configManager, getBlockTimestamp, Position, StaminaManager } from "@bibliothecadao/eternum";
+import {
+  ActionPaths,
+  configManager,
+  getExplorerOwner,
+  getBlockTimestamp,
+  Position,
+  StaminaManager,
+} from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress } from "@bibliothecadao/types";
-import { getComponentValue, getEntityString } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -16,32 +21,13 @@ import {
   DEFAULT_STRATEGY_ID,
   useExplorationAutomationStore,
 } from "@/hooks/store/use-exploration-automation-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { requireActiveGameClient } from "@/sync/active-game-client";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import {
   computeEffectiveStaminaCost,
   filterFreshExplorationPaths,
   selectDueEntries,
   shouldRepeatExplore,
 } from "./exploration-automation-planner";
-
-const isExplorerOwnedByAccount = (
-  components: any,
-  explorerOwnerEntityId: number,
-  accountAddress: string | undefined,
-): boolean => {
-  if (!accountAddress) return false;
-
-  // explorer.owner is a realm/structure entity ID, not an address
-  // Look up the Structure to get the actual player address
-  const structureEntity = gameEntityKey([BigInt(explorerOwnerEntityId)]);
-  const structure = getComponentValue(components.Structure, structureEntity);
-  if (!structure?.owner) return false;
-
-  // Compare using ContractAddress for proper normalization
-  return ContractAddress(structure.owner) === ContractAddress(accountAddress);
-};
 
 const REPEAT_EXPLORE_DELAY_MS = 3_000;
 
@@ -53,17 +39,15 @@ type SnapshotCache = {
 
 export const useExplorationAutomationRunner = () => {
   const {
-    setup: { components },
+    setup: { store },
     account: { account },
-  } = useDojo();
+  } = useGame();
 
   const entries = useExplorationAutomationStore((s) => s.entries);
   const update = useExplorationAutomationStore((s) => s.update);
   const scheduleNext = useExplorationAutomationStore((s) => s.scheduleNext);
   const remove = useExplorationAutomationStore((s) => s.remove);
   const pruneForGame = useExplorationAutomationStore((s) => s.pruneForGame);
-  const gameEndAt = useUIStore((state) => state.gameEndAt);
-  const gameWinner = useUIStore((state) => state.gameWinner);
 
   const processingRef = useRef(false);
   const processRef = useRef<() => Promise<void>>(async () => {});
@@ -80,34 +64,10 @@ export const useExplorationAutomationRunner = () => {
   }, [activeEntries]);
 
   const resolveExplorerEntity = useCallback(
-    (explorerId: number) => {
-      if (!components) {
-        return { explorer: undefined };
-      }
-
-      const primaryEntity = gameEntityKey([BigInt(explorerId)]);
-      let explorer = getComponentValue(components.ExplorerTroops, primaryEntity);
-      if (explorer) {
-        return { explorer };
-      }
-
-      console.warn(
-        `[ExplorationAutomation] resolveExplorerEntity: primary lookup failed for explorerId=${explorerId}, falling back to linear scan`,
-      );
-      const explorerIdMap = components.ExplorerTroops.values.explorer_id;
-      for (const [entitySymbol, value] of explorerIdMap.entries()) {
-        if (Number(value) === explorerId) {
-          const entityId = getEntityString(entitySymbol);
-          explorer = getComponentValue(components.ExplorerTroops, entityId);
-          if (explorer) {
-            return { explorer };
-          }
-        }
-      }
-
-      return { explorer: undefined };
-    },
-    [components],
+    (explorerId: number) => ({
+      explorer: store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId }),
+    }),
+    [store],
   );
 
   const stopAutomation = useCallback(() => {
@@ -117,21 +77,8 @@ export const useExplorationAutomationRunner = () => {
     }
   }, []);
 
-  const isSeasonOver = useCallback(
-    (blockTimestampSeconds?: number) => {
-      if (gameWinner) return true;
-      if (typeof gameEndAt !== "number") {
-        return false;
-      }
-      const timestamp =
-        typeof blockTimestampSeconds === "number" ? blockTimestampSeconds : getBlockTimestamp().currentBlockTimestamp;
-      return timestamp >= gameEndAt;
-    },
-    [gameEndAt, gameWinner],
-  );
-
   useEffect(() => {
-    if (!components) {
+    if (!store) {
       return;
     }
     const season = configManager.getSeasonConfig();
@@ -139,10 +86,10 @@ export const useExplorationAutomationRunner = () => {
     pruneForGame(gameId);
     // Clear snapshot cache when game changes - old snapshots are invalid
     snapshotCacheRef.current.clear();
-  }, [components, pruneForGame]);
+  }, [store, pruneForGame]);
 
   const scheduleNextCheck = useCallback(() => {
-    if (isSeasonOver()) {
+    if (configManager.isGameOver()) {
       stopAutomation();
       return;
     }
@@ -157,11 +104,11 @@ export const useExplorationAutomationRunner = () => {
     timeoutIdRef.current = window.setTimeout(() => {
       void processRef.current();
     }, delay);
-  }, [isSeasonOver, stopAutomation]);
+  }, [stopAutomation]);
 
   useEffect(() => {
     processRef.current = async () => {
-      if (isSeasonOver()) {
+      if (configManager.isGameOver()) {
         stopAutomation();
         return;
       }
@@ -170,7 +117,7 @@ export const useExplorationAutomationRunner = () => {
         return;
       }
       const worldSpatialProjection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
-      if (!components || !worldSpatialProjection) {
+      if (!store || !worldSpatialProjection) {
         scheduleNextCheck();
         return;
       }
@@ -188,7 +135,7 @@ export const useExplorationAutomationRunner = () => {
       }
 
       const { currentBlockTimestamp, currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
-      if (isSeasonOver(currentBlockTimestamp)) {
+      if (configManager.isGameOver()) {
         stopAutomation();
         return;
       }
@@ -222,7 +169,7 @@ export const useExplorationAutomationRunner = () => {
               continue;
             }
 
-            if (!isExplorerOwnedByAccount(components, explorer.owner, account.address)) {
+            if (getExplorerOwner(store, explorer) !== ContractAddress(account.address)) {
               // Explorer owned by someone else - remove automation
               remove(entry.id);
               snapshotCacheRef.current.delete(entry.id);
@@ -230,10 +177,10 @@ export const useExplorationAutomationRunner = () => {
             }
 
             // Check stamina before doing anything - wait for regen if too low
-            const staminaManager = new StaminaManager(components, explorerId);
+            const staminaManager = new StaminaManager(store, explorerId);
             const currentStamina = staminaManager.getStamina(currentArmiesTick);
             const exploreStaminaCost = configManager.getExploreStaminaCost();
-            if (Number(currentStamina.amount) < exploreStaminaCost) {
+            if (!currentStamina || Number(currentStamina.amount) < exploreStaminaCost) {
               update(entry.id, { blockedReason: "low-stamina", lastError: null });
               scheduleNext(entry.id, nowMs);
               continue;
@@ -245,7 +192,7 @@ export const useExplorationAutomationRunner = () => {
               useFastCache && cached?.snapshot
                 ? cached.snapshot
                 : await buildExplorationSnapshot({
-                    components,
+                    store,
                     explorerId,
                     scopeRadius: entry.scopeRadius ?? DEFAULT_SCOPE_RADIUS,
                     worldSpatialProjection,
@@ -283,13 +230,13 @@ export const useExplorationAutomationRunner = () => {
 
             if (useFastCache && cached) {
               const filtered = filterFreshExplorationPaths(actionPathMap, cached.recentlyExplored, (hex) => {
-                const normalized = new Position({ x: hex.col, y: hex.row }).getNormalized();
+                const normalized = Position.fromContract({ x: hex.col, y: hex.row }).getNormalized();
                 return { x: normalized.x, y: normalized.y };
               });
 
               if (filtered.size === 0) {
                 const refreshed = await buildExplorationSnapshot({
-                  components,
+                  store,
                   explorerId,
                   scopeRadius: entry.scopeRadius ?? DEFAULT_SCOPE_RADIUS,
                   worldSpatialProjection,
@@ -335,7 +282,7 @@ export const useExplorationAutomationRunner = () => {
             if (shouldRepeat) {
               const endHex = selection.path[selection.path.length - 1]?.hex;
               if (endHex) {
-                const normalized = new Position({ x: endHex.col, y: endHex.row }).getNormalized();
+                const normalized = Position.fromContract({ x: endHex.col, y: endHex.row }).getNormalized();
                 const cache = snapshotCacheRef.current.get(entry.id);
                 if (cache) {
                   cache.recentlyExplored.add(`${normalized.x},${normalized.y}`);
@@ -369,17 +316,7 @@ export const useExplorationAutomationRunner = () => {
         scheduleNextCheck();
       }
     };
-  }, [
-    account,
-    components,
-    isSeasonOver,
-    scheduleNext,
-    scheduleNextCheck,
-    stopAutomation,
-    remove,
-    resolveExplorerEntity,
-    update,
-  ]);
+  }, [account, store, scheduleNext, scheduleNextCheck, stopAutomation, remove, resolveExplorerEntity, update]);
 
   useEffect(() => {
     scheduleNextCheck();

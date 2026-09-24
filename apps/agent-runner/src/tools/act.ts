@@ -2,14 +2,11 @@ import {
   ActionPaths,
   buildArmyPathIndexes,
   getBlockTimestamp,
-  getGuardsByStructure,
-  gameEntityKey,
   type ActionPath,
   type GameClient,
 } from "@bibliothecadao/eternum";
 import { classifyTransactionError, type ClassifiedTransactionError } from "@bibliothecadao/provider/errors";
-import { getTroopAttackRange, type HexPosition, type ID, type TroopType } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import type { HexPosition, ID } from "@bibliothecadao/types";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type, type Static } from "typebox";
 import { Value } from "typebox/value";
@@ -85,8 +82,8 @@ const plan = (client: GameClient, action: PlannerName, params: Params): ActOutco
 };
 
 const armyPaths = (client: GameClient, explorerId: ID): ActionPaths => {
-  const explorer = getComponentValue(client.setup.components.ExplorerTroops, gameEntityKey([BigInt(explorerId)]));
-  if (!explorer) throw new Error(`Explorer ${explorerId} is not in RECS`);
+  const explorer = client.setup.store.get("ExplorerTroops", { game_id: client.gameId, explorer_id: explorerId });
+  if (!explorer) throw new Error(`Explorer ${explorerId} is not in the native store`);
   const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
   return client.actions.armyPaths({
     explorerId,
@@ -98,29 +95,9 @@ const armyPaths = (client: GameClient, explorerId: ID): ActionPaths => {
 };
 
 const structurePaths = (client: GameClient, structureId: ID): ActionPaths => {
-  const structure = structureRow(client, structureId);
-  if (!structure) throw new Error(`Structure ${structureId} is not in RECS`);
   const { armyHexes, exploredHexes } = buildArmyPathIndexes(client);
-  return client.actions.structurePaths({
-    hex: { col: structure.base.coord_x, row: structure.base.coord_y },
-    armyHexes,
-    exploredHexes,
-    playerAddress: viewerOf(client),
-    attackRange: guardAttackRange(structure),
-  });
+  return client.actions.structurePaths({ structureId, armyHexes, exploredHexes, playerAddress: viewerOf(client) });
 };
-
-/** The reach of the strongest-ranged guard with troops, as the worldmap computes it on structure selection. */
-const guardAttackRange = (structure: NonNullable<ReturnType<typeof structureRow>>): number =>
-  Math.max(
-    0,
-    ...getGuardsByStructure(structure)
-      .filter((guard) => Number(guard.troops.count) > 0)
-      .map((guard) => getTroopAttackRange(guard.troops.category as TroopType)),
-  );
-
-const structureRow = (client: GameClient, structureId: ID) =>
-  getComponentValue(client.setup.components.Structure, gameEntityKey([BigInt(structureId)]));
 
 // Submitting actions
 

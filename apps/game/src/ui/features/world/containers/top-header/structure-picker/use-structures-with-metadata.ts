@@ -1,5 +1,6 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { buildingTilesView } from "@/sync/fact-views";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import { useStructureGroups } from "@/ui/features/world/containers/top-header/structure-groups";
 import {
@@ -7,21 +8,20 @@ import {
   resolveAvailableBuildingTiles,
 } from "@/ui/features/world/containers/structure-status";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
-import { configManager, getBuildingCount } from "@bibliothecadao/eternum";
+import { configManager, getBuildingCount, getGuardsByStructure, liveHomeArmies } from "@bibliothecadao/eternum";
 import {
   BuildingType,
-  type ClientComponents,
   ContractAddress,
   getLevelName,
   RealmLevels,
   type Structure,
   StructureType,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import type { StructureWithMetadata } from "./chip";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 
 const readPackedCount = (value: bigint | number | string | undefined): bigint => {
   if (value === undefined || value === null) return 0n;
@@ -30,7 +30,7 @@ const readPackedCount = (value: bigint | number | string | undefined): bigint =>
 
 interface UseStructuresWithMetadataArgs {
   structures: Structure[];
-  components: ClientComponents;
+  store: NativeFactStore;
   /**
    * Local rename version counter. Bump to force re-derivation when a name
    * changes in localStorage without an underlying chain event.
@@ -45,10 +45,13 @@ interface UseStructuresWithMetadataArgs {
  */
 export const useStructuresWithMetadata = ({
   structures,
-  components,
+  store,
   nameUpdateVersion = 0,
 }: UseStructuresWithMetadataArgs): StructureWithMetadata[] => {
   const mode = useGameModeConfig();
+  const revision = useNativeRevision(["StructureBuildings", "Guard", "ExplorerTroops"]);
+  // A day's rollover ends yesterday's armies with no row changing, so the live-army count also follows the clock.
+  const armiesClock = useCoarseCurrentDefaultTick(10);
   const { favorites } = useFavoriteStructures();
   const { structureGroups } = useStructureGroups();
 
@@ -64,8 +67,8 @@ export const useStructuresWithMetadata = ({
     [structures],
   );
   const trackedStructureIds = useMemo(() => new Set(structureTileStatIds), [structureTileStatIds]);
-  // The bridge publishes every building tile once per ingest slice; the picker only counts the tracked ones.
-  const buildings = useWorldSlicesStore((state) => state.buildings);
+  // Every building tile of the game is read when one changes; the picker only counts the tracked ones.
+  const buildings = useFactView(buildingTilesView);
   const buildingTileCountsByStructure = useMemo(
     () => countOccupiedBuildingTilesByStructure({ trackedStructureIds, buildings }),
     [buildings, trackedStructureIds],
@@ -85,10 +88,10 @@ export const useStructuresWithMetadata = ({
       const realmLevelLabel = structureCapabilities.hasPopulationDetails
         ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
         : null;
-      const structureEntity = gameEntityKey([BigInt(structure.entityId)]);
-      const structureBuildings = components.StructureBuildings
-        ? getComponentValue(components.StructureBuildings, structureEntity)
-        : null;
+      const structureBuildings = store.get("StructureBuildings", {
+        game_id: configManager.getActiveGameId(),
+        entity_id: structure.entityId,
+      });
       const population = Number(structureBuildings?.population.current ?? 0);
       const normalizedBasePopulationCapacity = structureCapabilities.hasPopulationDetails
         ? Math.max(Number(basePopulationCapacityValue ?? 0), 6)
@@ -130,6 +133,8 @@ export const useStructuresWithMetadata = ({
         realmLevel: normalizedLevel,
         realmLevelLabel,
         population,
+        guardCount: getGuardsByStructure(structure.structure, store).filter((guard) => guard.troops.count > 0n).length,
+        explorerCount: liveHomeArmies(store, Number(structure.entityId), configManager.getActiveGameId()).length,
         populationCapacity,
         buildingTilesOccupied: buildingTileSummary?.occupied ?? null,
         buildingTilesTotal: buildingTileSummary?.total ?? null,
@@ -141,11 +146,13 @@ export const useStructuresWithMetadata = ({
     });
   }, [
     structures,
-    components.StructureBuildings,
+    store,
+    revision,
     structureGroups,
     nameUpdateVersion,
     favoritesSet,
     mode,
     buildingTileCountsByStructure,
+    armiesClock,
   ]);
 };

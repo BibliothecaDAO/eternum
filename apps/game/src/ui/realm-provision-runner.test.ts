@@ -24,7 +24,7 @@ const harness = (
 ) => {
   const store = {
     realms: overrides.realms ?? [realm(1), realm(2, true), realm(3)],
-    phase: { mainStartsAt: 100, endsAt: 1_000, devModeOn: false, ...overrides.phase },
+    phase: { mainStartsAt: 100, over: false, devModeOn: false, ...overrides.phase },
     now: overrides.now ?? 150,
     signer: overrides.signer ?? true,
   };
@@ -58,7 +58,7 @@ describe("realm provision runner", () => {
     store.now = 100;
     await runner.onConfirmedHead();
     expect(submit).toHaveBeenCalledTimes(1);
-    const late = harness({ now: 1_001 });
+    const late = harness({ now: 1_001, phase: { over: true } });
     await late.runner.onConfirmedHead();
     expect(late.submit).not.toHaveBeenCalled();
   });
@@ -72,7 +72,7 @@ describe("realm provision runner", () => {
     expect(submit).toHaveBeenCalledWith([1, 3]);
   });
 
-  it("does not resend a confirmed realm before RECS catches up", async () => {
+  it("does not resend a confirmed realm before native store catches up", async () => {
     const { runner, submit, store } = harness();
     await runner.onConfirmedHead();
     // The diff has not landed yet: the realms still read unprovisioned, but nothing is sent again.
@@ -146,8 +146,8 @@ describe("realm provision runner", () => {
   });
 });
 
-it("closes dev provisioning at the exact finite end timestamp", async () => {
-  const { runner, submit } = harness({ now: 1000, phase: { devModeOn: true } });
+it("closes dev provisioning once the registry says the season is over", async () => {
+  const { runner, submit } = harness({ now: 1000, phase: { devModeOn: true, over: true } });
   await runner.onConfirmedHead();
   expect(submit).not.toHaveBeenCalled();
 });

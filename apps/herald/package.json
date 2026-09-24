@@ -6,12 +6,14 @@
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit",
     "dev": "bun run --watch src/server.ts",
+    "measure:load": "bun scripts/measure-load.ts",
     "start": "bun run src/server.ts",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@bibliothecadao/eternum": "workspace:*",
+    "@bibliothecadao/provider": "workspace:*",
     "pg": "^8.18.0",
     "starknet": "catalog:web"
   },

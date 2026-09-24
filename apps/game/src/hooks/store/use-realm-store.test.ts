@@ -1,9 +1,12 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from "vitest";
-import { configManager } from "@bibliothecadao/eternum";
-import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
+import { configManager, Position } from "@bibliothecadao/eternum";
+import type { Structure } from "@bibliothecadao/types";
 import type { RealmStore } from "./use-realm-store";
+
+const ownedStructures = vi.hoisted(() => ({ current: [] as Structure[] }));
+vi.mock("@/sync/fact-views", () => ({ readActivePlayerStructures: () => ownedStructures.current }));
 
 vi.mock("@bibliothecadao/types", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@bibliothecadao/types")>();
@@ -13,7 +16,7 @@ vi.mock("@bibliothecadao/types", async (importOriginal) => {
       Realm: 1,
       Village: 2,
       Bank: 3,
-      FragmentMine: 4,
+      Mine: 4,
     },
     RelicRecipientType: {
       Structure: "Structure",
@@ -26,15 +29,14 @@ const StructureType = {
   Realm: 1,
   Village: 2,
   Bank: 3,
-  FragmentMine: 4,
+  Mine: 4,
 } as const;
 
 const { createRealmStoreSlice } = await import("./use-realm-store");
 
-configManager.mapCenter = 2010831280;
+vi.spyOn(configManager, "getMapCenter").mockReturnValue(2010831280);
 
 type RealmStoreState = RealmStore;
-type PlayerStructure = RealmStoreState["playerStructures"][number];
 
 const createRealmStoreTestHarness = () => {
   let state = {} as RealmStoreState;
@@ -64,7 +66,7 @@ const makeStructure = (
   ({
     entityId,
     category,
-  }) as unknown as PlayerStructure;
+  }) as unknown as Structure;
 
 describe("use-realm-store spectator lifecycle", () => {
   it("enters spectator mode while preserving last controlled owned structure", () => {
@@ -72,12 +74,12 @@ describe("use-realm-store spectator lifecycle", () => {
     harness.setState({
       structureEntityId: 101,
       isSpectating: false,
-      playerStructures: [makeStructure(101), makeStructure(202)],
     });
+    ownedStructures.current = [makeStructure(101), makeStructure(202)];
 
     harness.getState().setStructureEntityId(303, {
       spectator: true,
-      worldMapPosition: { col: 12, row: 34 },
+      worldMapPosition: Position.fromNormalized({ x: 12, y: 34 }),
     });
 
     const next = harness.getState();
@@ -87,38 +89,25 @@ describe("use-realm-store spectator lifecycle", () => {
     expect(next.worldMapReturnPosition).toEqual({ col: 12, row: 34 });
   });
 
-  it("normalizes contract-space world map positions before storing route resume state", () => {
+  it("stores a contract position as its normalized map hex, near the centre or at a Frontier site far from it", () => {
     const harness = createRealmStoreTestHarness();
     harness.setState({
       structureEntityId: 101,
       isSpectating: false,
-      playerStructures: [makeStructure(101), makeStructure(202)],
     });
+    ownedStructures.current = [makeStructure(101), makeStructure(202)];
 
     harness.getState().setStructureEntityId(303, {
       spectator: true,
-      worldMapPosition: { col: 2010831286, row: 2010831278 },
+      worldMapPosition: Position.fromContract({ x: 2010831286, y: 2010831278 }),
     });
+    expect(harness.getState().worldMapReturnPosition).toEqual({ col: 6, row: -2 });
 
-    const next = harness.getState();
-    expect(next.worldMapReturnPosition).toEqual({ col: 6, row: -2 });
-  });
-
-  it("recovers from startup spectator state when player structures become available", () => {
-    const harness = createRealmStoreTestHarness();
-    harness.setState({
-      isSpectating: true,
-      structureEntityId: 999,
-      lastControlledStructureEntityId: UNDEFINED_STRUCTURE_ENTITY_ID,
-      playerStructures: [],
+    harness.getState().setStructureEntityId(303, {
+      spectator: true,
+      worldMapPosition: Position.fromContract({ x: 13850, y: 19650 }),
     });
-
-    harness.getState().setPlayerStructures([makeStructure(777), makeStructure(888, StructureType.Village)]);
-
-    const next = harness.getState();
-    expect(next.isSpectating).toBe(false);
-    expect(next.structureEntityId).toBe(777);
-    expect(next.lastControlledStructureEntityId).toBe(777);
+    expect(harness.getState().worldMapReturnPosition).toEqual({ col: 13850 - 2010831280, row: 19650 - 2010831280 });
   });
 
   it("exits spectator mode using last controlled structure fallback", () => {

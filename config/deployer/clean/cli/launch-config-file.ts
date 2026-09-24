@@ -6,10 +6,6 @@ import { resolveOptionalArg } from "./args";
 
 const SHARED_STRING_FIELDS = [
   ["rpcUrl", "rpc-url"],
-  ["ledgerAddress", "ledger"],
-  ["ledgerRpcUrl", "ledger-rpc-url"],
-  ["lordsAddress", "lords"],
-  ["sponsoredPoolLords", "sponsored-pool-lords"],
   ["accountAddress", "account-address"],
   ["privateKey", "private-key"],
   ["executionMode", "mode"],
@@ -137,47 +133,13 @@ function setOptionalJsonArg(args: CliArgs, flag: string, value: unknown): void {
   }
 }
 
-function resolveLaunchKind(record: LaunchConfigRecord, configPath: string): "game" | "series" | "rotation" {
+function resolveLaunchKind(record: LaunchConfigRecord, configPath: string): "game" {
   const launchKind = resolveRequiredStringValue(record, ["launchKind", "launch_kind"], "launchKind", configPath);
-  if (launchKind === "game" || launchKind === "series" || launchKind === "rotation") {
+  if (launchKind === "game") {
     return launchKind;
   }
 
-  throw new Error(`launchKind in ${configPath} must be "game", "series", or "rotation"`);
-}
-
-function resolveSeriesGames(record: LaunchConfigRecord, configPath: string): Array<Record<string, string | number>> {
-  const games = resolveValue(record, ["games"]);
-  if (!Array.isArray(games) || games.length === 0) {
-    throw new Error(`games must be a non-empty array in ${configPath}`);
-  }
-
-  return games.map((entry, index) => {
-    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-      throw new Error(`games[${index}] in ${configPath} must be an object`);
-    }
-
-    const game = entry as LaunchConfigRecord;
-    const gameName = resolveRequiredStringValue(
-      game,
-      ["gameName", "game_name"],
-      `games[${index}].gameName`,
-      configPath,
-    );
-    const startTime = resolveValue(game, ["startTime", "start_time"]);
-
-    if (typeof startTime !== "string" && typeof startTime !== "number") {
-      throw new Error(`games[${index}].startTime is required in ${configPath}`);
-    }
-
-    const seriesGameNumber = resolveOptionalNumberValue(game, ["seriesGameNumber", "series_game_number"]);
-
-    return {
-      gameName,
-      startTime,
-      ...(seriesGameNumber !== undefined ? { seriesGameNumber } : {}),
-    };
-  });
+  throw new Error(`launchKind in ${configPath} must be "game"`);
 }
 
 function applySharedLaunchArgs(record: LaunchConfigRecord, args: CliArgs): void {
@@ -224,93 +186,12 @@ function buildGameLaunchConfigArgs(record: LaunchConfigRecord, configPath: strin
 
   args["start-time"] = String(startTime);
   applySharedLaunchArgs(record, args);
-  setOptionalStringArg(args, "series-name", resolveOptionalStringValue(record, ["seriesName", "series_name"]));
-  setOptionalNumberArg(
-    args,
-    "series-game-number",
-    resolveOptionalNumberValue(record, ["seriesGameNumber", "series_game_number"]),
-  );
-  return args;
-}
-
-function buildSeriesLaunchConfigArgs(record: LaunchConfigRecord, configPath: string): CliArgs {
-  const args: CliArgs = {
-    "launch-kind": "series",
-    environment: resolveRequiredStringValue(record, ["environmentId", "environment"], "environmentId", configPath),
-    "series-name": resolveRequiredStringValue(record, ["seriesName", "series_name"], "seriesName", configPath),
-    "series-games-json": JSON.stringify(resolveSeriesGames(record, configPath)),
-  };
-
-  applySharedLaunchArgs(record, args);
-  setOptionalJsonArg(args, "target-game-names-json", resolveValue(record, ["targetGameNames", "target_game_names"]));
-  setOptionalBooleanArg(
-    args,
-    "auto-retry-enabled",
-    resolveOptionalBooleanValue(record, ["autoRetryEnabled", "auto_retry_enabled"]),
-  );
-  setOptionalNumberArg(
-    args,
-    "auto-retry-interval-minutes",
-    resolveOptionalNumberValue(record, ["autoRetryIntervalMinutes", "auto_retry_interval_minutes"]),
-  );
-  return args;
-}
-
-function buildRotationLaunchConfigArgs(record: LaunchConfigRecord, configPath: string): CliArgs {
-  const args: CliArgs = {
-    "launch-kind": "rotation",
-    environment: resolveRequiredStringValue(record, ["environmentId", "environment"], "environmentId", configPath),
-    "rotation-name": resolveRequiredStringValue(record, ["rotationName", "rotation_name"], "rotationName", configPath),
-  };
-
-  const firstGameStartTime = resolveValue(record, ["firstGameStartTime", "first_game_start_time"]);
-  if (typeof firstGameStartTime !== "string" && typeof firstGameStartTime !== "number") {
-    throw new Error(`firstGameStartTime is required in ${configPath}`);
-  }
-
-  args["first-game-start-time"] = String(firstGameStartTime);
-  setOptionalNumberArg(
-    args,
-    "game-interval-minutes",
-    resolveOptionalNumberValue(record, ["gameIntervalMinutes", "game_interval_minutes"]),
-  );
-  setOptionalNumberArg(args, "max-games", resolveOptionalNumberValue(record, ["maxGames", "max_games"]));
-  setOptionalNumberArg(
-    args,
-    "advance-window-games",
-    resolveOptionalNumberValue(record, ["advanceWindowGames", "advance_window_games"]),
-  );
-  setOptionalNumberArg(
-    args,
-    "evaluation-interval-minutes",
-    resolveOptionalNumberValue(record, ["evaluationIntervalMinutes", "evaluation_interval_minutes"]),
-  );
-  setOptionalJsonArg(args, "weekly-cadence-json", resolveValue(record, ["weeklyCadence", "weekly_cadence"]));
-  applySharedLaunchArgs(record, args);
-  setOptionalJsonArg(args, "target-game-names-json", resolveValue(record, ["targetGameNames", "target_game_names"]));
-  setOptionalBooleanArg(
-    args,
-    "auto-retry-enabled",
-    resolveOptionalBooleanValue(record, ["autoRetryEnabled", "auto_retry_enabled"]),
-  );
-  setOptionalNumberArg(
-    args,
-    "auto-retry-interval-minutes",
-    resolveOptionalNumberValue(record, ["autoRetryIntervalMinutes", "auto_retry_interval_minutes"]),
-  );
   return args;
 }
 
 function buildLaunchConfigArgs(record: LaunchConfigRecord, configPath: string): CliArgs {
-  switch (resolveLaunchKind(record, configPath)) {
-    case "series":
-      return buildSeriesLaunchConfigArgs(record, configPath);
-    case "rotation":
-      return buildRotationLaunchConfigArgs(record, configPath);
-    case "game":
-    default:
-      return buildGameLaunchConfigArgs(record, configPath);
-  }
+  resolveLaunchKind(record, configPath);
+  return buildGameLaunchConfigArgs(record, configPath);
 }
 
 function validateExplicitRoutingArgs(args: CliArgs, configArgs: CliArgs, configPath: string): void {
@@ -331,57 +212,8 @@ function applyConfigOwnedTargetArgs(mergedArgs: CliArgs, configArgs: CliArgs): v
   mergedArgs["launch-kind"] = configArgs["launch-kind"];
   mergedArgs.environment = configArgs.environment;
 
-  switch (configArgs["launch-kind"]) {
-    case "series":
-      mergedArgs["series-name"] = configArgs["series-name"];
-      mergedArgs["series-games-json"] = configArgs["series-games-json"];
-      delete mergedArgs.game;
-      delete mergedArgs["start-time"];
-      delete mergedArgs["rotation-name"];
-      delete mergedArgs["first-game-start-time"];
-      delete mergedArgs["game-interval-minutes"];
-      delete mergedArgs["max-games"];
-      delete mergedArgs["advance-window-games"];
-      delete mergedArgs["evaluation-interval-minutes"];
-      delete mergedArgs["weekly-cadence-json"];
-      return;
-    case "rotation":
-      mergedArgs["rotation-name"] = configArgs["rotation-name"];
-      mergedArgs["first-game-start-time"] = configArgs["first-game-start-time"];
-      mergedArgs["game-interval-minutes"] = configArgs["game-interval-minutes"];
-      mergedArgs["max-games"] = configArgs["max-games"];
-      if (configArgs["advance-window-games"]) {
-        mergedArgs["advance-window-games"] = configArgs["advance-window-games"];
-      }
-      mergedArgs["evaluation-interval-minutes"] = configArgs["evaluation-interval-minutes"];
-      if (configArgs["weekly-cadence-json"]) {
-        mergedArgs["weekly-cadence-json"] = configArgs["weekly-cadence-json"];
-      }
-      delete mergedArgs.game;
-      delete mergedArgs["start-time"];
-      delete mergedArgs["series-name"];
-      delete mergedArgs["series-games-json"];
-      return;
-    case "game":
-    default:
-      mergedArgs.game = configArgs.game;
-      mergedArgs["start-time"] = configArgs["start-time"];
-      if (configArgs["series-name"]) {
-        mergedArgs["series-name"] = configArgs["series-name"];
-      }
-      if (configArgs["series-game-number"]) {
-        mergedArgs["series-game-number"] = configArgs["series-game-number"];
-      }
-      delete mergedArgs["series-games-json"];
-      delete mergedArgs["rotation-name"];
-      delete mergedArgs["first-game-start-time"];
-      delete mergedArgs["game-interval-minutes"];
-      delete mergedArgs["max-games"];
-      delete mergedArgs["advance-window-games"];
-      delete mergedArgs["evaluation-interval-minutes"];
-      delete mergedArgs["weekly-cadence-json"];
-      return;
-  }
+  mergedArgs.game = configArgs.game;
+  mergedArgs["start-time"] = configArgs["start-time"];
 }
 
 export function resolveLaunchRequestArgs(args: CliArgs): CliArgs {

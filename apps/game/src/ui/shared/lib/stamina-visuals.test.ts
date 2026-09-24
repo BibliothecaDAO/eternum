@@ -24,7 +24,7 @@ vi.mock("@bibliothecadao/types", () => ({
   },
 }));
 
-import { buildProjectedStaminaDisplayModel, isStaminaRecharging } from "./stamina-visuals";
+import { buildStaminaDisplayModel, describeNextStaminaGain, isStaminaRecharging } from "./stamina-visuals";
 
 describe("stamina visuals", () => {
   it("treats partially filled stamina as recharging", () => {
@@ -40,43 +40,41 @@ describe("stamina visuals", () => {
     expect(isStaminaRecharging(20, 0)).toBe(false);
   });
 
-  it("builds projected fill growth between armies ticks", () => {
-    const display = buildProjectedStaminaDisplayModel({
+  const knights = {
+    category: "Knight",
+    tier: 1,
+    count: 10n,
+    stamina: { amount: 80n, updated_tick: 5n },
+    boosts: {
+      incr_damage_dealt_percent_num: 0,
+      incr_damage_dealt_end_tick: 0,
+      decr_damage_gotten_percent_num: 0,
+      decr_damage_gotten_end_tick: 0,
+      incr_stamina_regen_percent_num: 0,
+      incr_stamina_regen_tick_count: 0,
+      incr_explore_reward_percent_num: 0,
+      incr_explore_reward_end_tick: 0,
+    },
+    battle_cooldown_end: 0,
+  } as never;
+
+  it("shows only the stamina the chain holds mid-tick, and names the next gain and when it lands", () => {
+    const display = buildStaminaDisplayModel({
       committedCurrent: 80,
       committedMax: 120,
-      armiesTickTimeRemaining: 5,
+      armiesTickTimeRemaining: 72,
       currentArmiesTick: 5,
-      troops: {
-        category: "Knight",
-        tier: 1,
-        count: 10n,
-        stamina: {
-          amount: 80n,
-          updated_tick: 5n,
-        },
-        boosts: {
-          incr_damage_dealt_percent_num: 0,
-          incr_damage_dealt_end_tick: 0,
-          decr_damage_gotten_percent_num: 0,
-          decr_damage_gotten_end_tick: 0,
-          incr_stamina_regen_percent_num: 0,
-          incr_stamina_regen_tick_count: 0,
-          incr_explore_reward_percent_num: 0,
-          incr_explore_reward_end_tick: 0,
-        },
-        battle_cooldown_end: 0,
-      } as never,
+      troops: knights,
     });
 
-    expect(display.isRecharging).toBe(true);
+    expect(display).toMatchObject({ committedCurrent: 80, committedRatio: 80 / 120, isRecharging: true });
+    expect(display).not.toHaveProperty("displayCurrent");
     expect(display.nextTickGain).toBe(20);
-    expect(display.progressToNextTick).toBe(0.5);
-    expect(display.displayCurrent).toBe(90);
-    expect(display.displayRatio).toBe(0.75);
+    expect(describeNextStaminaGain(display)).toBe("+20 in 1:12");
   });
 
-  it("disables projected growth when stamina is full", () => {
-    const display = buildProjectedStaminaDisplayModel({
+  it("names no next gain when stamina is full", () => {
+    const display = buildStaminaDisplayModel({
       committedCurrent: 120,
       committedMax: 120,
       armiesTickTimeRemaining: 5,
@@ -85,37 +83,6 @@ describe("stamina visuals", () => {
     });
 
     expect(display.isRecharging).toBe(false);
-    expect(display.nextTickGain).toBe(0);
-    expect(display.displayCurrent).toBe(120);
-  });
-
-  it("keeps committed and projected stamina separate", () => {
-    const display = buildProjectedStaminaDisplayModel({
-      committedCurrent: 80,
-      committedMax: 120,
-      armiesTickTimeRemaining: 7,
-      currentArmiesTick: 5,
-      troops: {
-        category: "Knight",
-        tier: 1,
-        count: 10n,
-        stamina: { amount: 80n, updated_tick: 5n },
-        boosts: {
-          incr_damage_dealt_percent_num: 0,
-          incr_damage_dealt_end_tick: 0,
-          decr_damage_gotten_percent_num: 0,
-          decr_damage_gotten_end_tick: 0,
-          incr_stamina_regen_percent_num: 0,
-          incr_stamina_regen_tick_count: 0,
-          incr_explore_reward_percent_num: 0,
-          incr_explore_reward_end_tick: 0,
-        },
-        battle_cooldown_end: 0,
-      } as never,
-    });
-
-    expect(display.committedCurrent).toBe(80);
-    expect(display.displayCurrent).toBeGreaterThan(display.committedCurrent);
-    expect(display.displayRatio).toBeGreaterThan(display.committedRatio);
+    expect(describeNextStaminaGain(display)).toBeNull();
   });
 });

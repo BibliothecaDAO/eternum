@@ -1,0 +1,26 @@
+name: Fetch Cairo dependencies
+description: >-
+  Fetch a Scarb workspace's dependencies once, retrying with backoff, before any build or test runs. The git
+  dependencies (OpenZeppelin, Alexandria, graffiti) come from GitHub and an Actions cache saved on another branch is not
+  readable here, so a push run often fetches cold; one flaky clone must not fail the job, and once this step has
+  succeeded every later step reads the dependencies from disk.
+inputs:
+  working-directory:
+    description: The Scarb workspace
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Fetch dependencies with retries
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        for attempt in 1 2 3 4; do
+          scarb fetch && exit 0
+          [ "$attempt" = 4 ] && break
+          delay=$((15 * 2 ** (attempt - 1)))
+          echo "::warning::scarb fetch failed (attempt $attempt of 4); retrying in ${delay}s"
+          sleep "$delay"
+        done
+        echo "::error::scarb fetch failed four times"
+        exit 1

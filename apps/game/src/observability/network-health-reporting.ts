@@ -5,10 +5,7 @@ import { env } from "../../env";
 type NetworkStreamType = "global" | "both";
 type NetworkHealthEvent = "reconnect_start" | "reconnect_success" | "reconnect_failure" | "force_retry";
 
-let enabledOverride: boolean | null = null;
-
 const isEnabled = (): boolean => {
-  if (enabledOverride !== null) return enabledOverride;
   return import.meta.env.PROD && Boolean(env.VITE_PUBLIC_SENTRY_DSN) && env.VITE_PUBLIC_SENTRY_NETWORK_HEALTH_ENABLED;
 };
 
@@ -38,12 +35,4 @@ export const addNetworkBreadcrumb = ({
       ...(reason ? { reason: sanitizeReason(reason) } : {}),
     },
   });
-};
-
-export const resetNetworkHealthStateForTests = (): void => {
-  enabledOverride = null;
-};
-
-export const setNetworkHealthEnabledForTests = (enabled: boolean): void => {
-  enabledOverride = enabled;
 };

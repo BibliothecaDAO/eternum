@@ -1,12 +1,16 @@
-import { EntityIngestQueue, type EntityIngestBatchInfo } from "./entity-ingest-queue";
+import { FactIngestQueue, type FactIngestBatchInfo } from "./fact-ingest-queue";
 import type {
-  GameSyncEntity,
+  GameSyncEvent,
   GameSyncEventConfirmation,
+  GameSyncFact,
   GameSyncRuntimeMetrics,
+  GameSyncSnapshotChunkProgress,
   GameSyncSessionStart,
+  GameSyncSubscriptionHandlers,
   GameSyncTransaction,
   GameSyncWriter,
 } from "./game-sync-types";
+import { isScopedGameSyncModel } from "./model-manifest";
 import { createMicrotaskGameSyncScheduler } from "./scheduler";
 import type { WorldSpatialProjection } from "./world-spatial-projection";
 import { eventConfirmationRank } from "./event-confirmation";
@@ -20,13 +24,16 @@ export class SupersededGameSyncStartError extends Error {
   }
 }
 
-interface BufferedEntityUpdate {
-  entity: GameSyncEntity;
-  receiveSequence: number;
+/** A snapshot being received: the keys it lists per model, and its facts while they are held for one write. */
+interface SnapshotAssembly {
+  retained: Map<string, Set<string>>;
+  held: GameSyncFact[] | null;
 }
 
 const DEFAULT_EVENT_IDENTITY_LIMIT = 512;
 const DEFAULT_TRANSACTION_STATUS_LIMIT = 512;
+// The first snapshot is bulk work spread over frames in pieces of this size; nothing renders it until it ends.
+const SNAPSHOT_PIECE_FACTS = 1_000;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
 
@@ -43,9 +50,27 @@ const resolveEventTimestamp = (model: string, value: unknown): string => {
   return String(timestamp);
 };
 
+const eventIdentity = ({ model, key, value }: GameSyncEvent): string => {
+  if (isRecord(value) && "event_position" in value) {
+    const position = value.event_position;
+    if (
+      !isRecord(position) ||
+      typeof position.transaction_hash !== "string" ||
+      !/^0x[0-9a-f]+$/i.test(position.transaction_hash) ||
+      !Number.isSafeInteger(position.event_index) ||
+      Number(position.event_index) < 0
+    ) {
+      throw new Error(`Game sync event ${model} has an invalid event position`);
+    }
+    return `${model}:${BigInt(position.transaction_hash)}:${position.event_index}`;
+  }
+  // Historical story keys already identify the event; confirmation may correct its timestamp.
+  if (model === "StoryEvent" || model.endsWith("-StoryEvent")) return `${model}:${key}`;
+  return `${model}:${key}:${resolveEventTimestamp(model, value)}`;
+};
+
 const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
   appliedBatchCount: 0,
-  eventGapFillReplayCount: 0,
   lastRecoveryDurationMs: 0,
   maxBatchApplyDurationMs: 0,
   maxLiveBatchApplyDurationMs: 0,
@@ -57,27 +82,30 @@ const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
   totalLiveEntityUpdates: 0,
   totalLiveEntityOperationsApplied: 0,
   totalLiveEventUpdates: 0,
-  totalReplayedEventUpdates: 0,
 });
 
-/** Owns the session-scoped stream, snapshot hydration, and ordered RECS writes. */
+/** Owns the session-scoped stream, snapshot hydration, and ordered native store writes. */
 export class GameSyncRuntime {
   private generation = 0;
   private writer: GameSyncWriter | null = null;
   private status: GameSyncRuntimeStatus = "idle";
   private session: GameSyncSessionStart | null = null;
-  private ingestQueue: EntityIngestQueue | null = null;
+  /** Settles on the session's first confirmed head: chain time is unknown before it, so nothing reads the clock. */
+  private confirmedHead: Deferred = createDeferred();
+  private ingestQueue: FactIngestQueue | null = null;
+  /** The running start's wait for its first snapshot; a newer session or dispose ends it. */
+  private firstSnapshot: Deferred | null = null;
   private worldSpatialProjection: WorldSpatialProjection | null = null;
   private recentEventIdentities = new Map<string, number>();
   private liveUpdateSamples: Array<{ at: number; count: number }> = [];
-  private receiveSequence = 0;
   private metrics = createEmptyMetrics();
   private recentTransactions = new Map<string, GameSyncTransaction>();
   private localTransactions = new Map<string, true>();
   private snapshotAppliedOperations = 0;
   private snapshotExpectedOperations = 0;
-  private snapshotPagesPending = false;
+  private snapshotStreaming = false;
   private readonly sliceAppliedListeners = new Set<() => void>();
+  private readonly resyncListeners = new Set<() => void>();
   private transactionWaiters = new Map<
     string,
     Array<{ reject: (error: Error) => void; resolve: (transaction: GameSyncTransaction) => void }>
@@ -128,12 +156,13 @@ export class GameSyncRuntime {
   public async startSession(input: GameSyncSessionStart): Promise<void> {
     this.disposeWorldSpatialProjection();
     this.session = input;
+    this.confirmedHead.reject(new Error("Game sync session was replaced"));
+    this.confirmedHead = createDeferred();
     this.recentEventIdentities.clear();
     this.rejectTransactionWaiters("Game sync session was replaced");
     this.recentTransactions.clear();
     this.localTransactions.clear();
     this.liveUpdateSamples = [];
-    this.receiveSequence = 0;
     this.snapshotAppliedOperations = 0;
     this.snapshotExpectedOperations = 0;
     this.metrics = createEmptyMetrics();
@@ -149,6 +178,11 @@ export class GameSyncRuntime {
   public cancelGlobalWriter(): void {
     if (this.isStarting()) return;
     this.cancelWriterImmediately();
+  }
+
+  /** Resolves once the session has a confirmed head, the moment chain time becomes known. */
+  public waitForConfirmedHead(): Promise<void> {
+    return this.confirmedHead.promise;
   }
 
   public installWorldSpatialProjection(projection: WorldSpatialProjection): void {
@@ -177,7 +211,7 @@ export class GameSyncRuntime {
   }
 
   /**
-   * Fires once per applied ingest slice, after the spatial projection flushed. Store bridges derive from RECS here,
+   * Fires once per applied ingest slice, after the spatial projection flushed. Store bridges derive from native store here,
    * so a slice that touched a thousand rows costs the overlay one recompute, not a thousand.
    */
   public subscribeSliceApplied(listener: () => void): () => void {
@@ -185,25 +219,31 @@ export class GameSyncRuntime {
     return () => this.sliceAppliedListeners.delete(listener);
   }
 
-  public async applyAuthoritativeEntities(entities: readonly GameSyncEntity[]): Promise<void> {
-    if (this.status !== "running" || !this.ingestQueue) {
-      throw new Error("GameSyncRuntime cannot apply an authoritative query outside a running session");
-    }
-    entities.forEach((entity) => this.ingestQueue?.enqueueEntity(entity));
-    await this.ingestQueue.drain();
+  /**
+   * Fires once a reconnect's fresh snapshot has replaced the store. Herald streams a transaction's status only once, so
+   * a status it sent before the reconnect, or a transaction it recorded while it was down, will never arrive; waits for
+   * one must settle from the store after this.
+   */
+  public subscribeResynced(listener: () => void): () => void {
+    this.resyncListeners.add(listener);
+    return () => this.resyncListeners.delete(listener);
   }
 
   public dispose(): void {
     this.generation += 1;
+    this.abandonFirstSnapshot();
     this.cancelWriterImmediately();
     // A subscribe that never resolved has no writer to cancel; only the transport can stop its reconnects.
     this.session?.transport.dispose?.();
+    this.session?.onDispose?.();
     this.sliceAppliedListeners.clear();
+    this.resyncListeners.clear();
     this.disposeWorldSpatialProjection();
     this.ingestQueue?.dispose();
     this.ingestQueue = null;
     this.session = null;
     this.rejectTransactionWaiters("Game sync runtime stopped");
+    this.confirmedHead.reject(new Error("Game sync runtime stopped"));
     this.recentTransactions.clear();
     this.localTransactions.clear();
     this.status = "stopped";
@@ -215,87 +255,27 @@ export class GameSyncRuntime {
 
     const generation = this.beginRun("subscribing");
     const recoveryStartedAt = this.now();
-    const bufferedUpdates: BufferedEntityUpdate[] = [];
-    const existingEntitiesByModel = this.captureExistingEntities(session);
-    const seenEntitiesByModel = new Map(session.snapshotModels.map((model) => [model, new Set<string>()]));
     this.snapshotAppliedOperations = 0;
     this.snapshotExpectedOperations = 0;
     this.ingestQueue = this.createIngestQueue(session);
+    const firstSnapshot = (this.firstSnapshot = createDeferred());
 
     try {
-      const writer = await session.transport.subscribe({
-        onEntity: (entity) => {
-          if (!this.isCurrentGeneration(generation)) return;
-          const update = { entity, receiveSequence: ++this.receiveSequence };
-          this.recordLiveUpdates("entity", 1);
-          if (this.status === "running") this.ingestQueue?.enqueueEntity(entity);
-          else bufferedUpdates.push(update);
-        },
-        onEntityBatch: (batch) => {
-          if (!this.isCurrentGeneration(generation)) return;
-          this.recordLiveUpdates("entity", batch.entities.length);
-          if (this.status !== "running") {
-            batch.entities.forEach((entity) => {
-              bufferedUpdates.push({ entity, receiveSequence: ++this.receiveSequence });
-            });
-            return;
-          }
-
-          const transactionHash = batch.transactionHash;
-          if (transactionHash) session.onTransactionEntitiesReceived?.(transactionHash);
-          const isLocalTransaction = transactionHash
-            ? this.localTransactions.has(normalizeTransactionHash(transactionHash))
-            : false;
-          const queue = this.ingestQueue;
-          if (!queue) return;
-          void queue
-            .enqueueEntityBatch(batch.entities, batch.preconfirmed && isLocalTransaction)
-            .then(() => {
-              if (transactionHash) session.onTransactionEntitiesApplied?.(transactionHash);
-            })
-            .catch((error) => this.stopAfterLiveBatchFailure(generation, error));
-        },
-        onEvent: (event, confirmation) => {
-          if (!this.isCurrentGeneration(generation)) return;
-          this.recordLiveUpdates("event", 1);
-          this.enqueueEventOnce(event, confirmation);
-        },
-        onEventGapFill: (replayedEventCount) => {
-          if (!this.isCurrentGeneration(generation) || replayedEventCount <= 0) return;
-          this.metrics.eventGapFillReplayCount += 1;
-          this.metrics.totalReplayedEventUpdates += replayedEventCount;
-          this.publishMetrics();
-        },
-        onHead: (head) => {
-          if (!this.isCurrentGeneration(generation)) return;
-          session.onHead?.(head);
-        },
-        onSnapshotChunk: (progress) => {
-          if (!this.isCurrentGeneration(generation)) return;
-          session.onSnapshotProgress?.({
-            completed: Math.min(progress.modelsReceived, session.snapshotModels.length),
-            phase: "receiving",
-            streaming: progress.modelsReceived < session.snapshotModels.length,
-            total: session.snapshotModels.length,
-          });
-        },
-        onTransaction: (transaction) => {
-          if (!this.isCurrentGeneration(generation)) return;
-          this.acceptTransaction(transaction);
-        },
-      });
+      const writer = await session.transport.subscribe(this.createStreamHandlers(generation, session, firstSnapshot));
       this.adoptWriter(generation, writer);
       session.onSubscriptionActive?.();
 
       this.status = "snapshotting";
-      await this.hydrateSnapshot(generation, session, seenEntitiesByModel);
-      this.reconcileAbsentSnapshotComponents(existingEntitiesByModel, seenEntitiesByModel);
-      await this.ingestQueue.drain();
-
-      this.status = "replaying";
-      await this.replayBufferedUpdates(generation, bufferedUpdates);
+      this.snapshotStreaming = true;
+      await firstSnapshot.promise;
       this.assertCurrentGeneration(generation);
+      await this.ingestQueue.drain();
+      this.assertCurrentGeneration(generation);
+      this.snapshotStreaming = false;
+      if (this.snapshotExpectedOperations > 0) this.reportSnapshotApplyProgress();
+
       this.status = "running";
+      this.firstSnapshot = null;
       this.metrics.lastRecoveryDurationMs = this.now() - recoveryStartedAt;
       this.publishMetrics();
     } catch (error) {
@@ -304,115 +284,167 @@ export class GameSyncRuntime {
     }
   }
 
-  private captureExistingEntities(session: GameSyncSessionStart): Map<string, Set<string>> {
-    return new Map(
-      session.snapshotModels.map((model) => [model, new Set(session.store.listModelEntityIds(model))] as const),
+  /** Herald's stream is ordered, so every delivery goes straight into the one ingest queue in arrival order. */
+  private createStreamHandlers(
+    generation: number,
+    session: GameSyncSessionStart,
+    firstSnapshot: Deferred,
+  ): GameSyncSubscriptionHandlers {
+    let snapshot: SnapshotAssembly | null = null;
+    const current = () => this.isCurrentGeneration(generation);
+    return {
+      onSnapshotStart: () => {
+        if (!current()) return;
+        // Before the session runs, pieces are applied as they arrive; afterwards the refreshed snapshot is held and
+        // replaces the store in one write, so a reconnect never shows a half-applied world.
+        snapshot = {
+          retained: new Map(session.snapshotModels.map((model) => [model, new Set<string>()])),
+          held: this.status === "running" ? [] : null,
+        };
+      },
+      onSnapshotModel: (model, facts, progress) => {
+        if (!current() || !snapshot) return;
+        this.metrics.snapshotPageCount += 1;
+        this.metrics.snapshotEntityCount += facts.length;
+        this.reportSnapshotReceived(session, progress);
+        const keys = snapshot.retained.get(model) ?? new Set<string>();
+        snapshot.retained.set(model, keys);
+        facts.forEach((fact) => keys.add(fact.key));
+        if (snapshot.held) {
+          snapshot.held.push(...facts);
+          return;
+        }
+        this.snapshotExpectedOperations += facts.length;
+        for (let start = 0; start < facts.length; start += SNAPSHOT_PIECE_FACTS)
+          void this.ingestQueue?.enqueueFacts(facts.slice(start, start + SNAPSHOT_PIECE_FACTS));
+      },
+      onSnapshotEnd: () => {
+        if (!current() || !snapshot) return;
+        const { held, retained } = snapshot;
+        snapshot = null;
+        const replaced = this.enqueueReplacement(generation, held ?? [], retained);
+        if (held)
+          void replaced.then((applied) => {
+            if (applied && current()) this.resyncListeners.forEach((listener) => listener());
+          });
+        firstSnapshot.resolve();
+      },
+      onScope: (facts, expedition) => {
+        if (!current()) return;
+        const retained = new Map(
+          session.snapshotModels
+            .filter((model) => isScopedGameSyncModel(model, expedition))
+            .map((model) => [model, new Set(facts.filter((fact) => fact.model === model).map((fact) => fact.key))]),
+        );
+        void this.enqueueReplacement(generation, facts, retained);
+      },
+      onFacts: (batch) => {
+        if (!current()) return;
+        this.recordLiveUpdates("entity", batch.facts.length);
+        const { transactionHash } = batch;
+        if (transactionHash) session.onTransactionEntitiesReceived?.(transactionHash);
+        const isLocalTransaction =
+          transactionHash !== undefined && this.localTransactions.has(normalizeTransactionHash(transactionHash));
+        void this.ingestQueue
+          ?.enqueueFacts(batch.facts, { immediate: batch.preconfirmed && isLocalTransaction })
+          .then(() => {
+            if (transactionHash) session.onTransactionEntitiesApplied?.(transactionHash);
+          })
+          .catch((error) => this.stopAfterLiveBatchFailure(generation, error));
+      },
+      onEvent: (event, confirmation) => {
+        if (!current()) return;
+        this.recordLiveUpdates("event", 1);
+        this.enqueueEventOnce(event, confirmation);
+      },
+      onHead: (head) => {
+        if (!current()) return;
+        session.onHead?.(head);
+        if (!head.preconfirmed) this.confirmedHead.resolve();
+      },
+      onTransaction: (transaction) => {
+        if (!current()) return;
+        // A status follows its rows on the wire, but their scheduled store write may still be pending.
+        void this.ingestQueue
+          ?.drain()
+          .then(() => {
+            if (current()) this.acceptTransaction(transaction);
+          })
+          .catch((error) => this.stopAfterLiveBatchFailure(generation, error));
+      },
+      onStartFailure: (error) => {
+        if (current()) firstSnapshot.reject(error);
+      },
+    };
+  }
+
+  /** Resolves true once the replacement is in the store, false if it failed (which stops the live stream). */
+  private enqueueReplacement(
+    generation: number,
+    facts: GameSyncFact[],
+    retained: Map<string, Set<string>>,
+  ): Promise<boolean> {
+    if (!this.ingestQueue) return Promise.resolve(false);
+    return this.ingestQueue.enqueueFacts(facts, { retain: retained }).then(
+      () => true,
+      (error) => {
+        this.stopAfterLiveBatchFailure(generation, error);
+        return false;
+      },
     );
+  }
+
+  private reportSnapshotReceived(
+    session: GameSyncSessionStart,
+    { bytesReceived, modelsReceived }: GameSyncSnapshotChunkProgress,
+  ): void {
+    session.onSnapshotProgress?.({
+      bytesReceived,
+      completed: Math.min(modelsReceived, session.snapshotModels.length),
+      phase: "receiving",
+      streaming: modelsReceived < session.snapshotModels.length,
+      total: session.snapshotModels.length,
+    });
   }
 
   private reportSnapshotApplyProgress(): void {
     this.session?.onSnapshotProgress?.({
       completed: Math.min(this.snapshotAppliedOperations, this.snapshotExpectedOperations),
       phase: "applying",
-      streaming: this.snapshotPagesPending,
+      streaming: this.snapshotStreaming,
       total: this.snapshotExpectedOperations,
     });
   }
 
-  private async hydrateSnapshot(
-    generation: number,
-    session: GameSyncSessionStart,
-    seenEntitiesByModel: Map<string, Set<string>>,
-  ): Promise<void> {
-    const visitedCursors = new Set<string>();
-    let cursor: string | undefined;
-    this.snapshotPagesPending = true;
-
-    do {
-      const page = await session.transport.fetchSnapshotPage(cursor);
-      this.assertCurrentGeneration(generation);
-      this.metrics.snapshotPageCount += 1;
-      this.metrics.snapshotEntityCount += page.items.length;
-      this.snapshotExpectedOperations += page.items.reduce(
-        (count, entity) => count + Object.keys(entity.models).length,
-        0,
-      );
-
-      page.items.forEach((entity) => {
-        Object.keys(entity.models).forEach((model) => seenEntitiesByModel.get(model)?.add(entity.hashed_keys));
-        this.ingestQueue?.enqueueEntity(entity);
-      });
-      await this.ingestQueue?.drain();
-
-      cursor = page.nextCursor;
-      if (cursor) {
-        if (visitedCursors.has(cursor)) throw new Error(`Game sync snapshot cursor repeated: ${cursor}`);
-        visitedCursors.add(cursor);
-      }
-    } while (cursor);
-
-    this.snapshotPagesPending = false;
-    if (this.snapshotExpectedOperations > 0) this.reportSnapshotApplyProgress();
-  }
-
-  private reconcileAbsentSnapshotComponents(
-    existingEntitiesByModel: Map<string, Set<string>>,
-    seenEntitiesByModel: Map<string, Set<string>>,
-  ): void {
-    existingEntitiesByModel.forEach((existingEntities, model) => {
-      const seenEntities = seenEntitiesByModel.get(model) ?? new Set<string>();
-      existingEntities.forEach((entityId) => {
-        if (!seenEntities.has(entityId)) this.ingestQueue?.enqueueComponentRemoval(entityId, model);
-      });
-    });
-  }
-
-  private async replayBufferedUpdates(generation: number, bufferedUpdates: BufferedEntityUpdate[]): Promise<void> {
-    while (bufferedUpdates.length > 0) {
-      this.assertCurrentGeneration(generation);
-      const replay = bufferedUpdates.splice(0).sort((left, right) => left.receiveSequence - right.receiveSequence);
-      replay.forEach(({ entity }) => this.ingestQueue?.enqueueEntity(entity));
-      await this.ingestQueue?.drain();
-    }
-  }
-
-  private enqueueEventOnce(event: GameSyncEntity, confirmation?: GameSyncEventConfirmation): void {
+  private enqueueEventOnce(event: GameSyncEvent, confirmation: GameSyncEventConfirmation): void {
     const session = this.session;
     if (!session) return;
 
-    Object.entries(event.models).forEach(([model, value]) => {
-      const timestamp = resolveEventTimestamp(model, value);
-      // StoryEvent keys include a uuid and transaction hash; confirmation may correct the provisional timestamp.
-      const identity =
-        model === "StoryEvent" || model.endsWith("-StoryEvent")
-          ? `${model}:${event.hashed_keys}`
-          : `${model}:${event.hashed_keys}:${timestamp}`;
-      const previous = this.recentEventIdentities.get(identity);
-      const rank = eventConfirmationRank(confirmation);
-      if (previous !== undefined && rank <= previous) return;
+    const identity = eventIdentity(event);
+    const previous = this.recentEventIdentities.get(identity);
+    const rank = eventConfirmationRank(confirmation);
+    if (previous !== undefined && rank <= previous) return;
 
-      this.recentEventIdentities.set(identity, rank);
-      const limit = session.eventIdentityLimit ?? DEFAULT_EVENT_IDENTITY_LIMIT;
-      while (this.recentEventIdentities.size > limit) {
-        const oldest = this.recentEventIdentities.keys().next().value;
-        if (oldest === undefined) break;
-        this.recentEventIdentities.delete(oldest);
-      }
-      const delivered = { hashed_keys: event.hashed_keys, models: { [model]: value } };
-      try {
-        session.onEvent?.(delivered, confirmation);
-      } catch (error) {
-        // Events are ephemera: a presentation failure must not abort the diff carrying entity rows.
-        const message = error instanceof Error ? error.message : String(error);
-        console.error(`[GameSync] event handler failed for ${model}: ${message}`);
-      }
-      // Promote the story's metadata without replaying its already-delivered ephemeral effects.
-      if (previous === undefined) this.ingestQueue?.enqueueEvent(delivered);
-    });
+    this.recentEventIdentities.set(identity, rank);
+    const limit = session.eventIdentityLimit ?? DEFAULT_EVENT_IDENTITY_LIMIT;
+    while (this.recentEventIdentities.size > limit) {
+      const oldest = this.recentEventIdentities.keys().next().value;
+      if (oldest === undefined) break;
+      this.recentEventIdentities.delete(oldest);
+    }
+    try {
+      session.onEvent?.(event, confirmation);
+    } catch (error) {
+      // Events are ephemera: a presentation failure must not abort the diff carrying fact rows.
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`[GameSync] event handler failed for ${event.model}: ${message}`);
+    }
+    // Promote the story's metadata without replaying its already-delivered ephemeral effects.
+    if (previous === undefined) this.ingestQueue?.enqueueEvent(event);
   }
 
-  private createIngestQueue(session: GameSyncSessionStart): EntityIngestQueue {
-    return new EntityIngestQueue({
+  private createIngestQueue(session: GameSyncSessionStart): FactIngestQueue {
+    return new FactIngestQueue({
       scheduler: session.scheduler ?? createMicrotaskGameSyncScheduler(),
       store: session.store,
       now: session.now ?? (() => Date.now()),
@@ -420,7 +452,7 @@ export class GameSyncRuntime {
     });
   }
 
-  private recordAppliedBatch(info: EntityIngestBatchInfo): void {
+  private recordAppliedBatch(info: FactIngestBatchInfo): void {
     this.metrics.appliedBatchCount += 1;
     this.metrics.maxBatchApplyDurationMs = Math.max(this.metrics.maxBatchApplyDurationMs, info.applyDurationMs);
     if (this.status === "replaying" || this.status === "running") {
@@ -499,11 +531,17 @@ export class GameSyncRuntime {
 
   private beginRun(status: GameSyncRuntimeStatus): number {
     this.generation += 1;
+    this.abandonFirstSnapshot();
     this.cancelWriterImmediately();
     this.ingestQueue?.dispose();
     this.ingestQueue = null;
     this.status = status;
     return this.generation;
+  }
+
+  private abandonFirstSnapshot(): void {
+    this.firstSnapshot?.reject(new SupersededGameSyncStartError());
+    this.firstSnapshot = null;
   }
 
   private adoptWriter(generation: number, writer: GameSyncWriter): void {
@@ -591,4 +629,22 @@ function settleTransaction(transaction: GameSyncTransaction): Promise<GameSyncTr
   return transaction.status === "REVERTED"
     ? Promise.reject(transactionError(transaction))
     : Promise.resolve(transaction);
+}
+
+interface Deferred {
+  promise: Promise<void>;
+  resolve: () => void;
+  reject: (error: Error) => void;
+}
+
+function createDeferred(): Deferred {
+  let resolve!: () => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<void>((onResolve, onReject) => {
+    resolve = onResolve;
+    reject = onReject;
+  });
+  // A start superseded before it awaits the snapshot learns so from its own generation check instead.
+  promise.catch(() => undefined);
+  return { promise, resolve, reject };
 }

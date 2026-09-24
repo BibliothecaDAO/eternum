@@ -2,7 +2,8 @@ import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
-import { useDojo, useOwnedHyperstructuresEntityIds } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useOwnedHyperstructuresEntityIds } from "@/hooks/helpers/use-hyperstructures";
 import { ContractAddress, type ID } from "@bibliothecadao/types";
 import React, { useEffect, useRef } from "react";
 
@@ -12,14 +13,13 @@ export const BlitzSetHyperstructureShareholdersTo100 = React.memo(() => {
   const {
     account: { account },
     setup: {
-      components,
+      store,
       systemCalls: { allocate_shares },
     },
-  } = useDojo();
+  } = useGame();
   const mode = useGameModeConfig();
   const ordersAllowed = useUIStore(canIssueOrders);
 
-  // listen to all the hyperstructures where you are owner with useEntityQuery
   const ownedHyperstructures = useOwnedHyperstructuresEntityIds();
   const previousOwnedHyperstructures = useRef<ID[]>([]);
   const allocateSharesDelayUntil = useRef<number>(0);
@@ -50,7 +50,7 @@ export const BlitzSetHyperstructureShareholdersTo100 = React.memo(() => {
       // Skip if no hyperstructures or effect was cancelled
       if (cancelled || ownedHyperstructures.length === 0) return;
 
-      const leaderboardManager = LeaderboardManager.instance(components);
+      const leaderboardManager = LeaderboardManager.instance(store);
 
       for (const hyperstructure of ownedHyperstructures) {
         // Skip if this hyperstructure was already processed or effect was cancelled
@@ -91,7 +91,7 @@ export const BlitzSetHyperstructureShareholdersTo100 = React.memo(() => {
         allocateSharesTimeoutId.current = null;
       }
     };
-  }, [ownedHyperstructures, account, components, allocate_shares, mode, ordersAllowed]);
+  }, [ownedHyperstructures, account, store, allocate_shares, mode, ordersAllowed]);
 
   return null;
 });

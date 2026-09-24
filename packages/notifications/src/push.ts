@@ -1,4 +1,3 @@
-import { parseAutomaticPushSource, notificationMatchesSource, type AutomaticPushSource } from "./automatic-source";
 import { parseNotificationPayload, type LocalNotificationPayload } from "./delivery";
 
 export interface WebPushSubscription {
@@ -12,15 +11,14 @@ export interface PushRegistration {
   subscription: WebPushSubscription;
   gameAlerts?: boolean;
   directMessages?: boolean;
-  source?: AutomaticPushSource;
 }
+/** Game alerts come from the shards in our directory; a device consents to them as a whole. */
 export type PushConfiguration =
   | { enabled: false }
-  | { enabled: true; publicKey: string; automatic?: AutomaticPushSource | null; directMessages?: boolean };
+  | { enabled: true; publicKey: string; gameAlerts: boolean; directMessages: boolean };
 export interface PushEnvelope {
   version: 1;
   kind?: "test" | "game" | "direct-message";
-  source?: AutomaticPushSource;
   subscriptionId: string;
   notification: LocalNotificationPayload;
 }
@@ -42,7 +40,6 @@ export function parsePushRegistration(value: unknown): PushRegistration {
   return {
     ...(input.directMessages === undefined ? {} : { directMessages: input.directMessages }),
     ...(input.gameAlerts === undefined ? {} : { gameAlerts: input.gameAlerts }),
-    ...(input.gameAlerts === true ? { source: parseAutomaticPushSource(input.source) } : {}),
     owner: input.owner,
     id: input.id,
     token: input.token,
@@ -80,11 +77,8 @@ export function parsePushEnvelope(value: unknown, now: number): PushEnvelope {
   if (input.version !== 1 || !isPushDeviceId(input.subscriptionId)) throw new Error("invalid_push_envelope");
   if (input.kind !== undefined && !isPushKind(input.kind)) throw new Error("invalid_push_kind");
   const notification = parseNotificationPayload(input.notification, now);
-  const source = input.kind === "game" ? parseAutomaticPushSource(input.source) : undefined;
-  if (source && !notificationMatchesSource(notification, source)) throw new Error("push_source_mismatch");
   return {
     version: 1,
-    ...(source ? { source } : {}),
     ...(isPushKind(input.kind) ? { kind: input.kind } : {}),
     subscriptionId: input.subscriptionId,
     notification,

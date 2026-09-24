@@ -1,17 +1,7 @@
 name: herald
 
 on:
-  pull_request:
-    paths:
-      - "apps/herald/**"
-      - "packages/**"
-      - "pnpm-lock.yaml"
-      - "package.json"
-      - ".github/workflows/test-herald.yml"
-
-concurrency:
-  group: herald-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  workflow_call:
 
 jobs:
   history-and-stream:

@@ -1,19 +1,7 @@
 name: Verify procedural terrain
 
 on:
-  pull_request:
-    paths:
-      - "apps/game/src/three/terrain/**"
-      - "apps/game/src/three/scenes/worldmap.tsx"
-      - "apps/game/src/three/scenes/worldmap-*.ts"
-      - "apps/game/src/three/renderer-frame-runtime*.ts"
-      - "apps/game/scripts/terrain-*/**"
-      - "apps/game/scripts/*worldmap-terrain*.mjs"
-      - "apps/game/public/models/procedural-terrain/**"
-      - "apps/game/public/textures/procedural-terrain/**"
-      - "packages/core/src/utils/biome/**"
-      - "apps/game/vitest.assets.*"
-      - ".github/workflows/verify-terrain.yml"
+  workflow_call:
 
 jobs:
   gallery:
@@ -38,22 +26,17 @@ jobs:
       - name: Build shared packages
         run: pnpm run build:packages
 
-      - name: Verify terrain contracts
-        run: pnpm --dir apps/game test src/three/terrain
-
       - name: Verify shipped assets and verification scripts
         run: pnpm --dir apps/game verify:assets
 
-      - name: Verify worldmap presentation and authoritative update integration
-        run: >-
-          pnpm --dir apps/game test src/three/scenes/worldmap src/three/renderer-frame-runtime.test.ts
-          src/three/frame-budget-work-queue.test.ts src/three/utils/chunk-geometry.test.ts src/three/perf/worldmap
-
       - name: Start auth-free terrain host
+        env:
+          # A placeholder the dev server requires to start; the terrain lab never signs in, so nothing calls it.
+          VITE_PUBLIC_IDENTITY_RPC_URL: http://127.0.0.1:1
         run: |
           pnpm --dir apps/game dev --host 127.0.0.1 --port 4173 > terrain-vite.log 2>&1 &
           for attempt in $(seq 1 60); do
-            curl --fail --silent http://127.0.0.1:4173/debug/procedural-terrain && exit 0
+            curl --fail --silent http://127.0.0.1:4173/lab && exit 0
             sleep 1
           done
           cat terrain-vite.log

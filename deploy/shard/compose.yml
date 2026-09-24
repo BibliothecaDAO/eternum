@@ -1,0 +1,114 @@
+name: ${SHARD_NAME:?Choose a unique shard name}
+
+x-madara-image: &madara-image ghcr.io/madara-alliance/madara@sha256:efaa800354602ad89fa2f22492e55188f50b0fc5675f66cba8184f0e261394f5
+
+x-init: &init
+  image: ${SHARD_INIT_IMAGE:?Use the published init image digest}
+  volumes: ["${SHARD_DATA:-./data}:/data", "public-config:/public", "herald-config:/herald-config", "gateway-config:/gateway-config", "postgres-config:/postgres-config"]
+  environment:
+    MADARA_IMAGE: *madara-image
+    MADARA_CONTAINER: ${SHARD_NAME:?Choose a unique shard name}-madara-1
+    CHAIN_ID: ${CHAIN_ID:?Choose a unique chain id}
+    GUARDIAN_URL: ${GUARDIAN_URL:?Set the identity guardian endpoint}
+    PUBLIC_RPC_URL: ${PUBLIC_RPC_URL:?Set the read RPC URL}
+    PUBLIC_ADMISSION_URL: ${PUBLIC_ADMISSION_URL:?Set the admission URL}
+    PLAYER_CAPACITY: ${PLAYER_CAPACITY:-96}
+    TRUSTED_PROXY: ${TRUSTED_PROXY:-}
+    HOST_UID: ${HOST_UID:-0}
+    HOST_GID: ${HOST_GID:-0}
+
+services:
+  prepare:
+    <<: *init
+    command: ["prepare"]
+  madara:
+    image: *madara-image
+    entrypoint: ["tini", "--", "/bin/madara"]
+    command:
+      - --devnet
+      - --devnet-contracts=0
+      - --base-path=/data
+      - --db-fsync
+      - --db-wal
+      - --chain-config-path=/config/chain-config.yaml
+      - --rpc-external
+      - --rpc-cors=all
+      - --rpc-port=9944
+      - --rpc-max-connections=4096
+      - --no-charge-fee
+      - --l1-sync-disabled
+      - --enable-native-execution=true
+      - --native-compilation-mode=async
+    volumes: ["chain:/data", "public-config:/config:ro"]
+    mem_limit: ${NODE_MEMORY:-24g}
+    memswap_limit: ${NODE_MEMORY:-24g}
+    restart: on-failure
+    stop_grace_period: 60s
+    depends_on:
+      prepare: { condition: service_completed_successfully }
+  init:
+    <<: *init
+    command: ["deploy"]
+    depends_on:
+      madara: { condition: service_started }
+  postgres:
+    image: postgres@sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73
+    environment:
+      POSTGRES_USER: herald
+      POSTGRES_DB: herald
+      POSTGRES_PASSWORD_FILE: /config/postgres-password
+    volumes: ["postgres:/var/lib/postgresql/data", "postgres-config:/config:ro"]
+    mem_limit: 512m
+    memswap_limit: 512m
+    restart: on-failure
+    depends_on:
+      prepare: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "herald", "-d", "herald"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  herald:
+    image: ${SHARD_HERALD_IMAGE:?Use the published Herald image digest}
+    entrypoint: ["/bin/sh", "-ec", "set -a; . /runtime/herald.env; exec bun /app/herald.js"]
+    volumes: ["public-config:/config:ro", "herald-config:/runtime:ro"]
+    ports: ["${BIND_ADDRESS:-127.0.0.1}:${HERALD_PORT:-8081}:3003"]
+    mem_limit: ${HERALD_MEMORY:-6g}
+    memswap_limit: ${HERALD_MEMORY:-6g}
+    restart: on-failure
+    depends_on:
+      init: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+  gateway:
+    image: ${SHARD_GATEWAY_IMAGE:?Use the published gateway image digest}
+    entrypoint: ["/bin/sh", "-ec", "set -a; . /config/gateway.env; exec /usr/local/bin/realms-gateway"]
+    volumes: ["gateway:/data", "gateway-config:/config:ro"]
+    ports: ["${BIND_ADDRESS:-127.0.0.1}:${ADMISSION_PORT:-8082}:9950"]
+    mem_limit: 1g
+    memswap_limit: 1g
+    restart: on-failure
+    depends_on:
+      init: { condition: service_completed_successfully }
+  rpc:
+    image: ${SHARD_HERALD_IMAGE:?Use the published Herald image digest}
+    entrypoint: ["bun", "/app/read-rpc.js"]
+    environment:
+      NODE_RPC_URL: http://madara:9944
+      NATIVE_WORLD_MANIFEST: /config/native-world.json
+      RPC_TRUSTED_PROXY: ${TRUSTED_PROXY:-}
+    volumes: ["public-config:/config:ro"]
+    ports: ["${BIND_ADDRESS:-127.0.0.1}:${RPC_PORT:-8080}:8080"]
+    mem_limit: 256m
+    memswap_limit: 256m
+    restart: on-failure
+    depends_on:
+      init: { condition: service_completed_successfully }
+
+volumes:
+  chain:
+  postgres:
+  gateway:
+  public-config:
+  herald-config:
+  gateway-config:
+  postgres-config:

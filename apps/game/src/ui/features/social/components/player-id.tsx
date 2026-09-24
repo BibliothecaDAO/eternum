@@ -1,20 +1,17 @@
+import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { ArrowLeft, MapPin } from "@/ui/design-system/atoms/game-icons";
-import { Position as PositionType } from "@bibliothecadao/eternum";
-import { playerAvatarUrl } from "@/hooks/use-player-profile";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { Position as PositionType, structureMapPosition } from "@bibliothecadao/eternum";
+import { playerAvatarUrl, usePlayerDisplayName } from "@/hooks/use-player-profile";
+import { useFactView } from "@/hooks/use-fact-view";
+import { gameStructuresView } from "@/sync/fact-views";
 
 import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
 import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
-import {
-  configManager,
-  getAddressName,
-  getRealmNameById,
-  LeaderboardManager,
-  toHexString,
-} from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { configManager, getRealmNameById, LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
@@ -37,24 +34,26 @@ export const PlayerId = ({
   back?: () => void;
 }) => {
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
 
   const mode = useGameModeConfig();
   // The world slices are the subscription: the bridge publishes them once per ingest slice.
-  const structures = useWorldSlicesStore((state) => state.structures);
-  const hyperstructures = useWorldSlicesStore((state) => state.hyperstructures);
+  const structures = useFactView(gameStructuresView);
+  const revision = useNativeRevision(["HyperstructureShares", "PlayerPoints"]);
+  const now = useCoarseNowSeconds(30);
 
   const playerStructures = useMemo(
     () =>
       structures.flatMap((structure) => {
         if (structure.owner !== selectedPlayer) return [];
 
+        const position = structureMapPosition(store, structure);
         return [
           {
             entity_id: Number(structure.entity_id),
-            coord_x: Number(structure.base.coord_x),
-            coord_y: Number(structure.base.coord_y),
+            coord_x: position.x,
+            coord_y: position.y,
             category: Number(structure.base.category) as StructureType,
             realm_id: Number(structure.metadata.realm_id),
             has_wonder: Boolean(structure.metadata.has_wonder),
@@ -64,21 +63,7 @@ export const PlayerId = ({
     [selectedPlayer, structures],
   );
 
-  const playerName = useMemo(() => {
-    if (!selectedPlayer) return;
-
-    const playerName = getAddressName(selectedPlayer, components);
-    return playerName;
-  }, [selectedPlayer]);
-
-  const hyperstructuresPointsGivenPerSecondMap = useMemo(() => {
-    const hyperstructureConfig = configManager.getHyperstructureConfig();
-    const hyps: Map<string, number> = new Map();
-    hyperstructures.forEach((hyp) => {
-      hyps.set(hyp.hyperstructure_id.toString(), hyperstructureConfig.pointsPerCycle * hyp.points_multiplier);
-    });
-    return hyps;
-  }, [hyperstructures]);
+  const playerName = usePlayerDisplayName(selectedPlayer);
 
   // getHyperstructureConfig
   // Count structure types
@@ -89,7 +74,7 @@ export const PlayerId = ({
       (acc, structure) => {
         if (structure.category === StructureType.Realm) {
           acc.realms++;
-        } else if (structure.category === StructureType.FragmentMine) {
+        } else if (structure.category === StructureType.Mine) {
           acc.mines++;
         } else if (structure.category === StructureType.Hyperstructure) {
           acc.hyperstructures++;
@@ -108,8 +93,8 @@ export const PlayerId = ({
   // Get hyperstructure shareholder points breakdown
   const unregisteredShareholderPointsBreakdown = useMemo(() => {
     if (!selectedPlayer) return [];
-    return LeaderboardManager.instance(components).getPlayerHyperstructurePointsBreakdown(selectedPlayer);
-  }, [selectedPlayer, components]);
+    return LeaderboardManager.instance(store).getPlayerHyperstructurePointsBreakdown(selectedPlayer);
+  }, [selectedPlayer, store, revision, now]);
 
   // Helper function to get structure name
   const getStructureName = (structure: PlayerStructureView): string => {
@@ -119,7 +104,7 @@ export const PlayerId = ({
     }
 
     // For other structure types, use the type name with entity ID
-    return `${mode.structure.getTypeName(structure.category as StructureType) ?? "Structure"} ${structure.entity_id}`;
+    return `${mode.structure.getTypeName(structure.category as StructureType, store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structure.entity_id })?.metadata.mine_kind) ?? "Structure"} ${structure.entity_id}`;
   };
 
   return (
@@ -161,7 +146,7 @@ export const PlayerId = ({
             </div>
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.mines}</span>
-              <span className="text-xs text-gold/80 h6">{mode.labels.fragmentMines}</span>
+              <span className="text-xs text-gold/80 h6">Mines</span>
             </div>
             {structureCounts.banks > 0 && (
               <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
@@ -178,9 +163,7 @@ export const PlayerId = ({
             <h5 className="text-sm font-semibold text-gold mb-3 px-1">Hyperstructure Shareholdings</h5>
             <div className="space-y-2">
               {unregisteredShareholderPointsBreakdown.map((breakdown) => {
-                const hyperstructurePointsPerSecond =
-                  hyperstructuresPointsGivenPerSecondMap.get(breakdown.hyperstructureId.toString()) ?? 0;
-                const pointsPerSecond = (breakdown.shareholderPercentage * hyperstructurePointsPerSecond).toFixed(2);
+                const pointsPerSecond = breakdown.pointsPerSecond.toFixed(2);
                 return (
                   <div
                     key={breakdown.hyperstructureId}
@@ -217,7 +200,7 @@ export const PlayerId = ({
         <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
           <div className="grid grid-cols-1 gap-3">
             {playerStructures.map((structure) => {
-              const position = new PositionType({ x: structure.coord_x, y: structure.coord_y });
+              const position = PositionType.fromContract({ x: structure.coord_x, y: structure.coord_y });
               const structureName = getStructureName(structure);
 
               return (

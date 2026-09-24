@@ -1,6 +1,6 @@
 import type { GameReviewData } from "@/services/review/game-review-service";
 import { AssetRarity } from "@/ui/features/cosmetics/chest-opening/utils/cosmetics";
-import { displayAddress } from "@/ui/utils/utils";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 type TemplateVariables = {
   // player name and tribe
@@ -34,11 +34,6 @@ type TemplateVariables = {
   placement: string;
   eventLabel: string;
   pointsLabel: string;
-  profileTitle: string;
-  shareName: string;
-  tierLabel: string;
-  mmrLabel: string;
-  profileUrl: string;
 };
 
 export const formatSocialText = (template: string, variables: Partial<TemplateVariables>): string => {
@@ -80,30 +75,6 @@ export const buildBlitzShareMessageText = ({
     placement,
     eventLabel,
     pointsLabel,
-  });
-};
-
-const profileShareTemplate = `{profileTitle}\n\nPlayer: {shareName}\nTier: {tierLabel}\nMMR: {mmrLabel}\n\n${tweetFooter}`;
-
-export const buildProfileShareMessage = ({
-  isOwnProfile,
-  shareName,
-  tierLabel,
-  mmrLabel,
-  profileUrl,
-}: {
-  isOwnProfile: boolean;
-  shareName: string;
-  tierLabel: string;
-  mmrLabel: string;
-  profileUrl: string;
-}): string => {
-  return formatSocialText(profileShareTemplate, {
-    profileTitle: isOwnProfile ? "My Realms Blitz profile" : "Realms Blitz profile",
-    shareName,
-    tierLabel,
-    mmrLabel,
-    profileUrl,
   });
 };
 
@@ -158,6 +129,8 @@ const formatDuration = (seconds: number): string => {
   return `${remaining}s`;
 };
 
+/** A player's identity name as the review cards already requested it, else the stock fallback. */
+
 export const buildGameReviewStepShareMessage = ({
   step,
   data,
@@ -170,13 +143,6 @@ export const buildGameReviewStepShareMessage = ({
   const worldLabel = data.worldName;
 
   if (isAwardsShareStep(step)) {
-    const leaderboardNames = new Map<string, string>();
-    for (const entry of data.leaderboard) {
-      const normalized = normalizeAddress(entry.address);
-      if (!normalized) continue;
-      leaderboardNames.set(normalized, entry.displayName?.trim() || displayAddress(normalized));
-    }
-
     const resolveWinnerName = (
       metric: { playerAddress: string; value: number } | null,
       formatter: (value: number) => string,
@@ -184,8 +150,7 @@ export const buildGameReviewStepShareMessage = ({
       if (!metric) return "None";
       const normalized = normalizeAddress(metric.playerAddress);
       if (!normalized) return "None";
-      const name = leaderboardNames.get(normalized) || displayAddress(normalized);
-      return `${name} (${formatter(metric.value)})`;
+      return `${getPlayerDisplayName(normalized)} (${formatter(metric.value)})`;
     };
 
     const includeOnlyTimeMetrics = isTimeFocusedAwardsShareStep(step);
@@ -209,8 +174,7 @@ export const buildGameReviewStepShareMessage = ({
 
   if (step === "leaderboard") {
     const podiumLines = data.topPlayers.map((entry) => {
-      const name = (entry.displayName?.trim() || displayAddress(entry.address)).trim();
-      return `#${entry.rank} ${name} - ${formatReviewValue(entry.points)} pts`;
+      return `#${entry.rank} ${getPlayerDisplayName(entry.address)} - ${formatReviewValue(entry.points)} pts`;
     });
     return [
       `Final standings for ${worldLabel} on Realms Blitz`,
@@ -246,7 +210,7 @@ export const buildGameReviewStepShareMessage = ({
     ].join("\n");
   }
 
-  if (step === "result-outcome" && data.rewards) {
+  if (step === "result-outcome" && data.finalization.rankingFinalized && data.personalScore) {
     const finalRank =
       typeof data.personalScore?.rank === "number" &&
       Number.isFinite(data.personalScore.rank) &&
@@ -257,8 +221,7 @@ export const buildGameReviewStepShareMessage = ({
     return [
       `${worldLabel} result on Realms Blitz:`,
       `Final rank: ${finalRank}`,
-      `Chest entitlement: +${formatReviewValue(data.rewards.chests)}`,
-      "Mainnet settlement follows the operator-posted result.",
+      `Victory points: ${formatReviewValue(data.personalScore.points)}`,
       "",
       ...tweetFooterLines,
     ].join("\n");

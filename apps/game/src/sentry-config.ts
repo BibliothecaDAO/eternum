@@ -31,8 +31,7 @@ export function resolveSentryRuntimeOptions(env: SentryEnvironment): SentryRunti
     tracePropagationTargets: ["localhost"],
     replaysSessionSampleRate: readNumberEnv(env, "VITE_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE", 0.1),
     replaysOnErrorSampleRate: readNumberEnv(env, "VITE_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE", 1),
-    environment:
-      readStringEnv(env, "VITE_PUBLIC_SENTRY_ENVIRONMENT") || readStringEnv(env, "VITE_PUBLIC_CHAIN") || "development",
+    environment: readStringEnv(env, "VITE_PUBLIC_SENTRY_ENVIRONMENT") || "development",
     release: readStringEnv(env, "VITE_PUBLIC_SENTRY_RELEASE") || readStringEnv(env, "VITE_PUBLIC_GAME_VERSION"),
     txFailuresEnabled,
     txFailureSampleRate: readNumberEnv(env, "VITE_PUBLIC_SENTRY_TX_FAILURE_SAMPLE_RATE", 1),

@@ -1,6 +1,7 @@
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { gameStructuresView, resourceArrivalsView } from "@/sync/fact-views";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { feltEquals } from "@bibliothecadao/eternum/game-client";
 import { useMemo } from "react";
@@ -11,8 +12,8 @@ import { useEventFeedStore } from "./event-feed-store";
 export const useFeedRows = (): FeedRows => {
   const transactions = useTransactionStore((state) => state.transactions);
   const stuckThresholdMs = useTransactionStore((state) => state.stuckThresholdMs);
-  const arrivals = useWorldSlicesStore((state) => state.resourceArrivals);
-  const structures = useWorldSlicesStore((state) => state.structures);
+  const arrivals = useFactView(resourceArrivalsView);
+  const structures = useFactView(gameStructuresView);
   const address = useAccountStore((state) => state.account?.address);
   const ownedStructureIds = useMemo(
     () =>

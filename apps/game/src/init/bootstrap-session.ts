@@ -1,10 +1,8 @@
 export interface BootstrapSelection {
   cacheKey: string | null;
-  chain: string | null;
-  worldName: string | null;
 }
 
-type BootstrapResetReason = "chain-changed" | "world-changed";
+type BootstrapResetReason = "game-changed";
 
 export interface BootstrapSession<TResult> {
   clearFailure(): void;
@@ -20,12 +18,12 @@ export function createBootstrapSession<TResult>(): BootstrapSession<TResult> {
   let cachedResult: TResult | null = null;
   let promise: Promise<TResult> | null = null;
   let rendererCleanup: (() => void) | null = null;
-  let trackedSelection: BootstrapSelection = { cacheKey: null, chain: null, worldName: null };
+  let trackedSelection: BootstrapSelection = { cacheKey: null };
 
   const clearSessionState = () => {
     cachedResult = null;
     promise = null;
-    trackedSelection = { cacheKey: null, chain: null, worldName: null };
+    trackedSelection = { cacheKey: null };
   };
 
   return {
@@ -42,19 +40,7 @@ export function createBootstrapSession<TResult>(): BootstrapSession<TResult> {
         return null;
       }
 
-      if (trackedSelection.cacheKey !== null && trackedSelection.cacheKey === nextSelection.cacheKey) {
-        return null;
-      }
-
-      if (trackedSelection.chain && nextSelection.chain && trackedSelection.chain !== nextSelection.chain) {
-        return "chain-changed";
-      }
-
-      if (trackedSelection.worldName !== nextSelection.worldName) {
-        return "world-changed";
-      }
-
-      return null;
+      return trackedSelection.cacheKey === nextSelection.cacheKey ? null : "game-changed";
     },
 
     getTrackedSelection() {

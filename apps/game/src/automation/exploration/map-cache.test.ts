@@ -1,26 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-vi.mock("@bibliothecadao/eternum/game-client", () => ({ gameEntityKey: (keys: bigint[]) => keys[0].toString() }));
-
-vi.mock("@dojoengine/recs", () => ({
-  getComponentValue: (component: unknown, entity: unknown) =>
-    component instanceof Map ? component.get(entity) : undefined,
-}));
-
-vi.mock("@bibliothecadao/eternum", () => ({
-  Position: class {
-    constructor(private readonly coords: { x: number; y: number }) {}
-
-    getNormalized() {
-      return this.coords;
-    }
-  },
-}));
+import { configManager } from "@bibliothecadao/eternum";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { hash } from "starknet";
+import preset from "../../../../../contracts/l3/world-native/fixtures/preset-3.json";
+import explorerFixture from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 
 import { buildExplorationSnapshot } from "./map-cache";
 
 describe("buildExplorationSnapshot", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    configManager.setActiveGame(1, 1);
+  });
 
   it.each([false, true])("builds the automation view on the exploring army layer (alt=%s)", async (alt) => {
     const explorerOwnerStructureId = 2001;
@@ -28,16 +19,59 @@ describe("buildExplorationSnapshot", () => {
     const armyId = 301;
     const structureOwner = 0xabcden;
     const armyOwner = 0x98765n;
-    const components = {
-      ExplorerTroops: new Map([
-        ["1", { coord: { alt, x: 10, y: 10 } }],
-        [armyId.toString(), { owner: explorerOwnerStructureId }],
-      ]),
-      Structure: new Map([
-        [structureId.toString(), { owner: structureOwner }],
-        [explorerOwnerStructureId.toString(), { owner: armyOwner }],
-      ]),
+    const store = new NativeFactStore();
+    store.applyFacts([
+      {
+        model: "SliceRules",
+        key: hash.computePoseidonHashOnElements([1]),
+        value: { ...preset.rules, game_id: 1, map_center_offset: 0 },
+      },
+    ]);
+    configManager.setStore(store);
+    const write = (model: string, id: number, row: Record<string, unknown>) =>
+      store.applyFacts([
+        { model: model, key: hash.computePoseidonHashOnElements([1, id]), value: { game_id: 1, ...row } },
+      ]);
+    const base = {
+      category: 1,
+      level: 0,
+      created_at: 0,
+      coord_x: 0,
+      coord_y: 0,
+      alt,
+      troop_explorer_count: 0,
+      troop_max_guard_count: 1,
+      troop_max_explorer_count: 1,
+      starting_troops_granted: false,
     };
+    for (const [id, owner] of [
+      [structureId, structureOwner],
+      [explorerOwnerStructureId, armyOwner],
+    ] as const) {
+      write("Structure", id, {
+        entity_id: id,
+        owner,
+        base,
+        resources_packed: "0",
+        troop_explorers: [],
+        metadata: {
+          realm_id: id,
+          order: 0,
+          has_wonder: false,
+          village_realm: 0,
+          mine_kind: 0,
+          attunement: 0,
+          barracks_tier: 0,
+        },
+      });
+    }
+    for (const id of [1, armyId])
+      write("ExplorerTroops", id, {
+        ...explorerFixture.expected.value,
+        explorer_id: id,
+        owner: explorerOwnerStructureId,
+        coord: { alt, x: 10, y: 10 },
+      });
     const worldSpatialProjection = {
       getTilesInBounds: vi.fn(() => [
         {
@@ -52,7 +86,7 @@ describe("buildExplorationSnapshot", () => {
     };
 
     const snapshot = await buildExplorationSnapshot({
-      components: components as never,
+      store,
       explorerId: 1,
       scopeRadius: 1,
       worldSpatialProjection: worldSpatialProjection as never,
@@ -65,8 +99,10 @@ describe("buildExplorationSnapshot", () => {
       worldSpatialProjection.getArmiesInBounds,
     ])
       expect(query).toHaveBeenCalledWith(expect.objectContaining({ alt }));
-    expect(snapshot?.structureHexes.get(10)?.get(11)?.owner).toBe(structureOwner);
-    expect(snapshot?.armyHexes.get(11)?.get(10)?.owner).toBe(armyOwner);
-    expect(snapshot?.exploredTiles.get(10)?.get(10)).toBe(1);
+    // The projection carries contract hexes; the snapshot keys them by normalized hex (contract minus the map centre).
+    const center = configManager.getMapCenter();
+    expect(snapshot?.structureHexes.get(10 - center)?.get(11 - center)?.owner).toBe(structureOwner);
+    expect(snapshot?.armyHexes.get(11 - center)?.get(10 - center)?.owner).toBe(armyOwner);
+    expect(snapshot?.exploredTiles.get(10 - center)?.get(10 - center)).toBe(1);
   });
 });

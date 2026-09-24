@@ -3,16 +3,22 @@ import { logicalStoryIdentity, parseNotificationPayload, type LocalNotificationP
 /** Shared display content and logical identity for live-page and server delivery. */
 export function buildStoryNotification(input: {
   sourceId: string;
+  /** The history model the value came from; StoryEvent unless it is a native battle or raid. */
+  model?: string;
+  /** The account the alert is for, which native battles and raids need to tell victory from defeat. */
+  recipient?: string;
   value: Record<string, unknown>;
   owner: string;
   gameName: string;
   target: string;
   now: number;
 }): LocalNotificationPayload | null {
-  const { story, payload } = readNotificationStory(input.value);
+  const read = readHistoryStory(input.model ?? "StoryEvent", input.value);
+  if (!read) throw new Error(`Not a notification story: ${input.model}`);
+  const { story, payload } = read;
   const createdAt = storyNotificationCreatedAt(input.value);
   if (createdAt + 120_000 <= input.now) return null;
-  const copy = storyNotificationCopy(story, payload, input.value);
+  const copy = storyNotificationCopy(story, payload, input.value, input.recipient);
   return parseNotificationPayload(
     {
       version: 1,
@@ -38,10 +44,19 @@ export function storyNotificationCopy(
   story: string,
   payload: Record<string, unknown>,
   value: Record<string, unknown>,
+  recipient?: string,
 ): NotificationCopy {
   switch (story) {
     case "BattleStory":
       return battleCopy(payload, value);
+    case "BattleEvent":
+      return nativeBattleCopy(payload, recipient);
+    case "RaidEvent":
+      return raidCopy(payload, recipient);
+    case "StructureCapturedStory":
+      return compareInteger(payload.new_owner, recipient) === true
+        ? { title: "The stronghold is yours", body: "Your banner now flies over the captured site." }
+        : { title: "A stronghold has fallen", body: "The enemy broke through. Rally the realm." };
     case "RealmCreatedStory":
       return { title: "A new realm rises", body: "Your banner now flies over fresh lands." };
     case "BuildingPlacementStory":
@@ -78,6 +93,10 @@ export function storyNotificationCopy(
     case "ExplorerGuardSwapStory":
     case "GuardExplorerSwapStory":
       return { title: "Troops redeployed", body: "Your ranks have shifted into position." };
+    case "ChestReward":
+      return { title: "A chest cracks open", body: "Your army's find is yours to keep." };
+    case "RelicChestOpened":
+      return { title: "A crate is open", body: "Your army has pulled relics from the fog." };
     default:
       if (process.env.NODE_ENV !== "production") throw new Error(`Unknown notification copy: ${story}`);
       return { title: "The realm is stirring", body: "New confirmed activity awaits your attention." };
@@ -97,6 +116,28 @@ function battleCopy(payload: Record<string, unknown>, value: Record<string, unkn
   if (victory === false)
     return { title: "Your forces were defeated", body: "The battle is over. Your next move awaits." };
   return { title: "Battle lines have shifted", body: "The clash is over. Survey the field." };
+}
+
+/** A native battle names each side's player; the recipient's side tells victory from defeat. */
+function nativeBattleCopy(payload: Record<string, unknown>, recipient: string | undefined): NotificationCopy {
+  const attacker = compareInteger(record(payload.attacker).player, recipient) === true;
+  const side = attacker ? payload.attacker_id : payload.defender_id;
+  if (compareInteger(payload.winner_id, 0) !== false)
+    return { title: "Battle lines have shifted", body: "The clash is over. Survey the field." };
+  return compareInteger(payload.winner_id, side) === true
+    ? { title: "Victory on the field", body: "Your forces carried the day." }
+    : { title: "Your forces were defeated", body: "The battle is over. Your next move awaits." };
+}
+
+function raidCopy(payload: Record<string, unknown>, recipient: string | undefined): NotificationCopy {
+  const target = compareInteger(payload.target_owner, recipient) === true;
+  if (target)
+    return payload.success === true
+      ? { title: "Your realm was raided", body: "Raiders made off with supplies." }
+      : { title: "A raid was repelled", body: "Your defenders held the walls." };
+  return payload.success === true
+    ? { title: "The raid succeeded", body: "Your army returns with its spoils." }
+    : { title: "The raid failed", body: "The defenders held. Your army falls back." };
 }
 
 function battleVictory(payload: Record<string, unknown>, value: Record<string, unknown>): boolean | null {
@@ -150,6 +191,20 @@ function compareInteger(left: unknown, right: unknown): boolean | null {
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
+/**
+ * A story from the history cursor: a StoryEvent names its variant inside the value, while a native battle or raid is
+ * its own event whose value is the payload. The cursor also carries events that are not stories (recorded executions,
+ * batch progress, points); those are null.
+ */
+export function readHistoryStory(
+  model: string,
+  value: Record<string, unknown>,
+): { story: string; payload: Record<string, unknown> } | null {
+  if (model === "BattleEvent" || model === "RaidEvent") return { story: model, payload: value };
+  if (model !== "StoryEvent") return null;
+  return readNotificationStory(value);
+}
+
 export function readNotificationStory(value: Record<string, unknown>): {
   story: string;
   payload: Record<string, unknown>;

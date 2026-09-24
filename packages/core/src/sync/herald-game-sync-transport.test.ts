@@ -1,7 +1,17 @@
+import type { NativeWorldBindings } from "@bibliothecadao/types";
+import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
+import { nativeModelDefinition } from "../client/native-models";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { HeraldGameSyncTransport, type HeraldSocket } from "./herald-game-sync-transport";
-import type { GameSyncEntity, GameSyncSubscriptionHandlers, GameSyncTransaction } from "./game-sync-types";
+import type {
+  GameSyncEvent,
+  GameSyncFact,
+  GameSyncFactBatch,
+  GameSyncSnapshotChunkProgress,
+  GameSyncSubscriptionHandlers,
+  GameSyncTransaction,
+} from "./game-sync-types";
 
 class FakeSocket implements HeraldSocket {
   public onclose: (() => void) | null = null;
@@ -26,36 +36,61 @@ class FakeSocket implements HeraldSocket {
   }
 }
 
+type Delivery =
+  | { kind: "snapshot-start" }
+  | { kind: "snapshot-model"; model: string; facts: GameSyncFact[] }
+  | { kind: "snapshot-end" }
+  | { kind: "scope"; facts: GameSyncFact[]; expedition: boolean }
+  | ({ kind: "facts" } & GameSyncFactBatch);
+
 const streamHarness = () => {
   const sockets: FakeSocket[] = [];
-  const entities: GameSyncEntity[] = [];
-  const events: GameSyncEntity[] = [];
+  const urls: string[] = [];
+  const deliveries: Delivery[] = [];
+  const events: GameSyncEvent[] = [];
   const heads: Array<{ block: number; timestamp: number }> = [];
-  const snapshotProgress: Array<{
-    bytesReceived: number;
-    model: string;
-    modelsReceived: number;
-    rowsReceived: number;
-  }> = [];
+  const snapshotProgress: GameSyncSnapshotChunkProgress[] = [];
   const transactions: GameSyncTransaction[] = [];
+  const startFailures: Error[] = [];
   const handlers: GameSyncSubscriptionHandlers = {
-    onEntity: (entity) => entities.push(entity),
+    onSnapshotStart: () => deliveries.push({ kind: "snapshot-start" }),
+    onSnapshotModel: (model, facts, progress) => {
+      deliveries.push({ kind: "snapshot-model", model, facts });
+      snapshotProgress.push(progress);
+    },
+    onSnapshotEnd: () => deliveries.push({ kind: "snapshot-end" }),
+    onScope: (facts, expedition) => deliveries.push({ kind: "scope", facts, expedition }),
+    onFacts: (batch) => deliveries.push({ kind: "facts", ...batch }),
     onEvent: (event) => events.push(event),
-    onEventGapFill: () => undefined,
     onHead: (head) => heads.push(head),
-    onSnapshotChunk: (progress) => snapshotProgress.push(progress),
     onTransaction: (transaction) => transactions.push(transaction),
+    onStartFailure: (error) => startFailures.push(error),
   };
   const transport = new HeraldGameSyncTransport({
+    modelDefinition: nativeModelDefinition(bindings as unknown as NativeWorldBindings),
     reconnectMs: 200,
-    socketFactory: () => {
+    socketFactory: (url) => {
+      urls.push(url);
       const socket = new FakeSocket();
       sockets.push(socket);
       return socket;
     },
-    url: "wss://herald.test/madara/games/54",
+    url: "wss://herald.test/games/54",
   });
-  return { entities, events, handlers, heads, snapshotProgress, sockets, transactions, transport };
+  const factBatches = () => deliveries.filter((delivery) => delivery.kind === "facts");
+  return {
+    deliveries,
+    events,
+    factBatches,
+    handlers,
+    heads,
+    snapshotProgress,
+    sockets,
+    startFailures,
+    transactions,
+    transport,
+    urls,
+  };
 };
 
 const hello = (epoch: string, seq: number) => ({
@@ -81,20 +116,76 @@ const diff = (epoch: string, seq: number, key: string, value: number, preconfirm
   type: "diff",
 });
 
+const troops = (key: string, value: number): GameSyncFact => ({
+  model: "ExplorerTroops",
+  key,
+  value: { game_id: "0x36", value },
+});
+
+const attached = async (harness: ReturnType<typeof streamHarness>, epoch = "epoch-a", seq = 0) => {
+  const subscribed = harness.transport.subscribe(harness.handlers);
+  const socket = harness.sockets.at(-1)!;
+  socket.receive(hello(epoch, seq));
+  const writer = await subscribed;
+  return { socket, writer };
+};
+
 afterEach(() => {
   vi.useRealTimers();
 });
 
 describe("HeraldGameSyncTransport", () => {
+  it("knows the chain time from Herald's hello, before the first snapshot row", async () => {
+    const harness = streamHarness();
+    const subscribed = harness.transport.subscribe(harness.handlers);
+    harness.sockets.at(-1)!.receive({ ...hello("epoch-a", 0), confirmed_timestamp: 1_790_194_601 });
+    await subscribed;
+    expect(harness.heads).toEqual([{ block: 12, preconfirmed: false, timestamp: 1_790_194_601 }]);
+
+    // A Herald before its first confirmed head names no time; the clock then waits for the stream's head.
+    const early = streamHarness();
+    const earlySubscribed = early.transport.subscribe(early.handlers);
+    early.sockets.at(-1)!.receive({ ...hello("epoch-a", 0), confirmed_timestamp: null });
+    await earlySubscribed;
+    expect(early.heads).toEqual([]);
+  });
+
+  it("forwards an actor's scope replacement and resumes that actor after reconnect", async () => {
+    vi.useFakeTimers();
+    const harness = streamHarness();
+    const { socket, writer } = await attached(harness);
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
+    harness.transport.selectActor("0x000111");
+    expect(socket.sent.at(-1)).toEqual({ type: "select_actor", actor: "0x111" });
+    expect(socket.closed).toBe(false);
+    socket.receive({
+      type: "scope",
+      epoch: "epoch-a:273",
+      seq: 5,
+      actor: "0x111",
+      expedition: true,
+      set: [{ model: "ActionNonce", key: "0x2", value: { actor: "0x111", next_nonce: "4" } }],
+    });
+    expect(harness.deliveries.at(-1)).toEqual({
+      kind: "scope",
+      facts: [{ model: "ActionNonce", key: "0x2", value: { actor: "0x111", next_nonce: "4" } }],
+      expedition: true,
+    });
+    harness.transport.selectActor("0x222");
+    socket.receive({ type: "scope", epoch: "epoch-a:546", seq: 1, actor: "0x222", expedition: false, set: [] });
+    socket.close();
+    await vi.advanceTimersByTimeAsync(200);
+    expect(new URL(harness.urls[1]).searchParams.get("actor")).toBe("0x222");
+    harness.sockets[1].receive(hello("epoch-a:546", 2));
+    expect(harness.sockets[1].sent.at(-1)).toEqual({ type: "resume", epoch: "epoch-a:546", seq: 1 });
+    writer.cancel();
+  });
+
   it("preserves each story event's provisional or confirmed block metadata", async () => {
     const harness = streamHarness();
     harness.handlers.onEvent = vi.fn();
-    const subscribed = harness.transport.subscribe(harness.handlers);
-    const socket = harness.sockets[0]!;
-    socket.receive(hello("epoch-a", 0));
-    const writer = await subscribed;
+    const { socket, writer } = await attached(harness);
     snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
-    await harness.transport.fetchSnapshotPage();
     const set = [{ key: "0xstory", model: "StoryEvent", value: { timestamp: 100 } }];
     socket.receive({ ...diff("epoch-a", 1, "0x1", 1, true), set });
     socket.receive({ ...diff("epoch-a", 2, "0x1", 1, false), set });
@@ -116,6 +207,51 @@ describe("HeraldGameSyncTransport", () => {
     });
     writer.cancel();
   });
+
+  it("delivers nothing from a rejected diff and recovers through a fresh snapshot", async () => {
+    vi.useFakeTimers();
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const harness = streamHarness();
+    const { socket, writer } = await attached(harness);
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
+    const update = diff("epoch-a", 1, "0x1", 2, true);
+    socket.receive({ ...update, set: [...update.set, { key: "0xbad", model: "UnknownModel", value: {} }] });
+    expect(harness.factBatches()).toHaveLength(0);
+    expect(socket.closed).toBe(true);
+    await vi.advanceTimersByTimeAsync(200);
+    const recovered = harness.sockets[1]!;
+    recovered.receive(hello("epoch-a", 1));
+    expect(recovered.sent.at(-1)).toEqual({ type: "resume", epoch: "", seq: 0 });
+    snapshot("epoch-a", 1, "0x1", 2).forEach((message) => recovered.receive(message));
+    expect(harness.deliveries.slice(-3)).toEqual([
+      { kind: "snapshot-start" },
+      { kind: "snapshot-model", model: "ExplorerTroops", facts: [troops("0x1", 2)] },
+      { kind: "snapshot-end" },
+    ]);
+    expect(error).toHaveBeenCalledOnce();
+    writer.cancel();
+    error.mockRestore();
+  });
+
+  it("delivers the whole fact batch and transaction status when an ephemeral callback fails", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const harness = streamHarness();
+    harness.handlers.onEvent = () => {
+      throw new Error("presentation failed");
+    };
+    const { socket, writer } = await attached(harness);
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
+    const update = diff("epoch-a", 1, "0x1", 2, true);
+    socket.receive({ ...update, set: [...update.set, { key: "0xstory", model: "StoryEvent", value: {} }] });
+    socket.receive({ type: "tx", epoch: "epoch-a", seq: 2, hash: "0x123", block: null, status: "PRE_CONFIRMED" });
+    expect(harness.factBatches()).toHaveLength(1);
+    expect(harness.transactions).toHaveLength(1);
+    expect(socket.closed).toBe(false);
+    expect(error).toHaveBeenCalledOnce();
+    writer.cancel();
+    error.mockRestore();
+  });
+
   it("retries a stalled handshake without waiting for the browser's close event", async () => {
     vi.useFakeTimers();
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -142,10 +278,8 @@ describe("HeraldGameSyncTransport", () => {
   it("cancels the reconnect handshake when its subscription is stopped", async () => {
     vi.useFakeTimers();
     const harness = streamHarness();
-    const subscribed = harness.transport.subscribe(harness.handlers);
-    harness.sockets[0]!.receive(hello("current", 0));
-    const writer = await subscribed;
-    harness.sockets[0]!.close();
+    const { socket, writer } = await attached(harness, "current");
+    socket.close();
     await vi.advanceTimersByTimeAsync(200);
     expect(harness.sockets).toHaveLength(2);
     writer.cancel();
@@ -154,22 +288,32 @@ describe("HeraldGameSyncTransport", () => {
     expect(harness.sockets[1]!.closed).toBe(true);
   });
 
-  it("hydrates a snapshot and keeps a pre-confirmed row through an overlay reset", async () => {
+  it("streams the snapshot model by model and forwards every diff through an overlay reset", async () => {
     const harness = streamHarness();
-    const subscribed = harness.transport.subscribe(harness.handlers);
-    const socket = harness.sockets[0]!;
-    socket.receive(hello("epoch-a", 0));
-    await subscribed;
+    const { socket } = await attached(harness);
     expect(socket.sent).toEqual([{ epoch: "", seq: 0, type: "resume" }]);
 
-    const snapshotPage = harness.transport.fetchSnapshotPage();
-    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
-    await expect(snapshotPage).resolves.toMatchObject({
-      items: [{ hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 1 } } }],
+    socket.receive({
+      epoch: "epoch-a",
+      model: "Structure",
+      rows: [{ key: "0x9", value: { game_id: "0x36" } }],
+      seq: 0,
+      type: "snapshot",
     });
-    expect(harness.snapshotProgress).toEqual([
-      expect.objectContaining({ model: "ExplorerTroops", modelsReceived: 1, rowsReceived: 1 }),
+    expect(harness.deliveries).toEqual([
+      { kind: "snapshot-start" },
+      {
+        kind: "snapshot-model",
+        model: "Structure",
+        facts: [{ model: "Structure", key: "0x9", value: { game_id: "0x36" } }],
+      },
     ]);
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
+    expect(harness.snapshotProgress.at(-1)).toMatchObject({
+      model: "ExplorerTroops",
+      modelsReceived: 2,
+      rowsReceived: 2,
+    });
     expect(harness.snapshotProgress[0]?.bytesReceived).toBeGreaterThan(0);
 
     socket.receive(diff("epoch-a", 1, "0x1", 2, true));
@@ -177,128 +321,30 @@ describe("HeraldGameSyncTransport", () => {
     socket.receive(diff("epoch-a", 3, "0x1", 2, false));
     socket.receive(diff("epoch-a", 4, "0x1", 1, true));
 
-    // The reset carries no rows and the confirmed diff repeats the pending value: neither reaches RECS.
-    expect(harness.entities).toEqual([
-      { hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 2 } } },
-      { hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 1 } } },
+    // The reset carries no rows; the native store drops the confirmed repeat of the pending value.
+    expect(harness.factBatches().map((batch) => batch.facts)).toEqual([
+      [troops("0x1", 2)],
+      [troops("0x1", 2)],
+      [troops("0x1", 1)],
     ]);
-  });
-
-  it("streams the first snapshot to the runtime one model page at a time, before snapshot_end", async () => {
-    const harness = streamHarness();
-    const subscribed = harness.transport.subscribe(harness.handlers);
-    const socket = harness.sockets[0]!;
-    socket.receive(hello("epoch-a", 0));
-    await subscribed;
-
-    socket.receive({
-      epoch: "epoch-a",
-      model: "Structure",
-      rows: [{ key: "0x1", value: { game_id: "0x36" } }],
-      seq: 0,
-      type: "snapshot",
-    });
-    const first = await harness.transport.fetchSnapshotPage();
-    expect(first.items).toEqual([{ hashed_keys: "0x1", models: { Structure: { game_id: "0x36" } } }]);
-    expect(first.nextCursor).toBeDefined();
-
-    const pending = harness.transport.fetchSnapshotPage();
-    socket.receive({
-      epoch: "epoch-a",
-      model: "Tile",
-      rows: [{ key: "0x2", value: { game_id: "0x36" } }],
-      seq: 0,
-      type: "snapshot",
-    });
-    const second = await pending;
-    expect(second.items).toEqual([{ hashed_keys: "0x2", models: { Tile: { game_id: "0x36" } } }]);
-    expect(second.nextCursor).toBeDefined();
-
-    const last = harness.transport.fetchSnapshotPage();
-    socket.receive({ epoch: "epoch-a", seq: 0, type: "snapshot_end" });
-    expect(await last).toEqual({ items: [] });
-  });
-
-  it("delivers a reconciled snapshot as one batch of changed rows only", async () => {
-    vi.useFakeTimers();
-    const harness = streamHarness();
-    const batches: unknown[] = [];
-    harness.handlers.onEntityBatch = (batch) => batches.push(batch);
-    const subscribed = harness.transport.subscribe(harness.handlers);
-    const first = harness.sockets[0]!;
-    first.receive(hello("epoch-a", 0));
-    await subscribed;
-    first.receive({
-      epoch: "epoch-a",
-      model: "ExplorerTroops",
-      rows: [
-        { key: "0x1", value: { game_id: "0x36", value: 1 } },
-        { key: "0x2", value: { game_id: "0x36", value: 2 } },
-      ],
-      seq: 0,
-      type: "snapshot",
-    });
-    first.receive({ epoch: "epoch-a", seq: 0, type: "snapshot_end" });
-    await harness.transport.fetchSnapshotPage();
-
-    first.close();
-    await vi.advanceTimersByTimeAsync(200);
-    const restarted = harness.sockets[1]!;
-    restarted.receive(hello("epoch-b", 0));
-    restarted.receive({
-      epoch: "epoch-b",
-      model: "ExplorerTroops",
-      rows: [
-        { key: "0x1", value: { game_id: "0x36", value: 1 } },
-        { key: "0x3", value: { game_id: "0x36", value: 3 } },
-      ],
-      seq: 0,
-      type: "snapshot",
-    });
-    restarted.receive({ epoch: "epoch-b", seq: 0, type: "snapshot_end" });
-
-    expect(batches).toEqual([
-      {
-        entities: [
-          { hashed_keys: "0x2", models: { ExplorerTroops: {} } },
-          { hashed_keys: "0x3", models: { ExplorerTroops: { game_id: "0x36", value: 3 } } },
-        ],
-        preconfirmed: false,
-      },
-    ]);
-    expect(harness.entities).toEqual([]);
   });
 
   it("applies snapshot-boundary overlay transactions before the live sequence", async () => {
     const harness = streamHarness();
-    const subscribed = harness.transport.subscribe(harness.handlers);
-    const socket = harness.sockets[0]!;
-    socket.receive(hello("epoch-a", 0));
-    await subscribed;
-
-    const snapshotPage = harness.transport.fetchSnapshotPage();
+    const { socket } = await attached(harness);
     snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
     socket.receive(diff("epoch-a", 0, "0x1", 2, true));
     socket.receive(diff("epoch-a", 0, "0x2", 3, true));
     socket.receive({ confirmed_block: 12, epoch: "epoch-a", seq: 1, type: "overlay_reset" });
 
-    await expect(snapshotPage).resolves.toMatchObject({
-      items: [{ hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 1 } } }],
-    });
-    expect(harness.entities).toEqual([
-      { hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 2 } } },
-      { hashed_keys: "0x2", models: { ExplorerTroops: { game_id: "0x36", value: 3 } } },
-    ]);
+    expect(harness.factBatches().map((batch) => batch.facts)).toEqual([[troops("0x1", 2)], [troops("0x2", 3)]]);
+    expect(socket.closed).toBe(false);
   });
 
   it("routes event effects, transaction status, and heads on their own channels", async () => {
     const harness = streamHarness();
-    const subscribed = harness.transport.subscribe(harness.handlers);
-    const socket = harness.sockets[0]!;
-    socket.receive(hello("epoch-a", 0));
-    await subscribed;
+    const { socket } = await attached(harness);
     snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
-    await harness.transport.fetchSnapshotPage();
 
     socket.receive({
       block: null,
@@ -316,26 +362,51 @@ describe("HeraldGameSyncTransport", () => {
       seq: 2,
       status: "PRE_CONFIRMED",
       type: "tx",
+      executions: [
+        {
+          gameId: "54",
+          actor: "291",
+          nonce: "3",
+          order: "8",
+          nonceConsumed: true,
+          status: "SUCCEEDED",
+          reason: "",
+          batchRemaining: "9",
+        },
+      ],
     });
     socket.receive({ block: 13, epoch: "epoch-a", seq: 3, timestamp: 100, type: "head" });
 
     expect(harness.events).toEqual([
-      { hashed_keys: "0xbeef", models: { BattleEvent: { game_id: "0x36", timestamp: "0x7" } } },
+      { model: "BattleEvent", key: "0xbeef", value: { game_id: "0x36", timestamp: "0x7" } },
     ]);
-    expect(harness.transactions).toEqual([{ block: null, hash: "0xabc", status: "PRE_CONFIRMED" }]);
+    expect(harness.factBatches()).toEqual([]);
+    expect(harness.transactions).toEqual([
+      {
+        block: null,
+        hash: "0xabc",
+        status: "PRE_CONFIRMED",
+        executions: [
+          {
+            gameId: "54",
+            actor: "291",
+            nonce: "3",
+            order: "8",
+            nonceConsumed: true,
+            status: "SUCCEEDED",
+            reason: "",
+            batchRemaining: "9",
+          },
+        ],
+      },
+    ]);
     expect(harness.heads).toEqual([{ block: 13, preconfirmed: false, timestamp: 100 }]);
   });
 
-  it("preserves the pre-confirmed transaction boundary for atomic ingest", async () => {
+  it("delivers one Herald diff as one fact batch with its transaction boundary", async () => {
     const harness = streamHarness();
-    const batches: unknown[] = [];
-    harness.handlers.onEntityBatch = (batch) => batches.push(batch);
-    const subscribed = harness.transport.subscribe(harness.handlers);
-    const socket = harness.sockets[0]!;
-    socket.receive(hello("epoch-a", 0));
-    await subscribed;
+    const { socket } = await attached(harness);
     snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
-    await harness.transport.fetchSnapshotPage();
 
     socket.receive({
       block: null,
@@ -351,29 +422,25 @@ describe("HeraldGameSyncTransport", () => {
       type: "diff",
     });
 
-    expect(batches).toEqual([
+    expect(harness.factBatches()).toEqual([
       {
-        entities: [
-          { hashed_keys: "0x1", models: { ExplorerTroops: { x: 2 } } },
-          { hashed_keys: "0x2", models: { TileOpt: { biome: 3 } } },
-          { hashed_keys: "0x3", models: { ExplorerTroops: {} } },
+        kind: "facts",
+        facts: [
+          { model: "ExplorerTroops", key: "0x1", value: { x: 2 } },
+          { model: "TileOpt", key: "0x2", value: { biome: 3 } },
+          { model: "ExplorerTroops", key: "0x3", value: null },
         ],
         preconfirmed: true,
         transactionHash: "0xabc",
       },
     ]);
-    expect(harness.entities).toEqual([]);
   });
 
-  it("resumes by sequence and reconciles a snapshot after an epoch change", async () => {
+  it("resumes by sequence and takes a fresh snapshot after an epoch change", async () => {
     vi.useFakeTimers();
     const harness = streamHarness();
-    const subscribed = harness.transport.subscribe(harness.handlers);
-    const first = harness.sockets[0]!;
-    first.receive(hello("epoch-a", 5));
-    await subscribed;
+    const { socket: first } = await attached(harness, "epoch-a", 5);
     snapshot("epoch-a", 5, "0x1", 1).forEach((message) => first.receive(message));
-    await harness.transport.fetchSnapshotPage();
 
     first.close();
     await vi.advanceTimersByTimeAsync(200);
@@ -390,21 +457,35 @@ describe("HeraldGameSyncTransport", () => {
     expect(restarted.sent).toEqual([{ epoch: "epoch-a", seq: 7, type: "resume" }]);
     snapshot("epoch-b", 0, "0x2", 9).forEach((message) => restarted.receive(message));
 
-    expect(harness.entities.slice(-2)).toEqual([
-      { hashed_keys: "0x1", models: { ExplorerTroops: {} } },
-      { hashed_keys: "0x2", models: { ExplorerTroops: { game_id: "0x36", value: 9 } } },
+    expect(harness.deliveries.slice(-3)).toEqual([
+      { kind: "snapshot-start" },
+      { kind: "snapshot-model", model: "ExplorerTroops", facts: [troops("0x2", 9)] },
+      { kind: "snapshot-end" },
     ]);
+  });
+
+  it("asks for a fresh snapshot when a reconnect cuts one short", async () => {
+    vi.useFakeTimers();
+    const harness = streamHarness();
+    const { socket: first } = await attached(harness);
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => first.receive(message));
+    first.close();
+    await vi.advanceTimersByTimeAsync(200);
+    const second = harness.sockets[1]!;
+    second.receive(hello("epoch-b", 0));
+    second.receive(snapshot("epoch-b", 0, "0x1", 2)[0]);
+    second.close();
+    await vi.advanceTimersByTimeAsync(200);
+    harness.sockets[2]!.receive(hello("epoch-b", 0));
+
+    expect(harness.sockets[2]!.sent).toEqual([{ epoch: "", seq: 0, type: "resume" }]);
   });
 
   it("requests a fresh snapshot after detecting a sequence gap", async () => {
     vi.useFakeTimers();
     const harness = streamHarness();
-    const subscribed = harness.transport.subscribe(harness.handlers);
-    const first = harness.sockets[0]!;
-    first.receive(hello("epoch-a", 0));
-    await subscribed;
+    const { socket: first } = await attached(harness);
     snapshot("epoch-a", 0, "0x1", 1).forEach((message) => first.receive(message));
-    await harness.transport.fetchSnapshotPage();
 
     first.receive({ block: 13, epoch: "epoch-a", seq: 2, timestamp: 100, type: "head" });
     expect(first.closed).toBe(true);
@@ -413,5 +494,15 @@ describe("HeraldGameSyncTransport", () => {
     replacement.receive(hello("epoch-a", 2));
 
     expect(replacement.sent).toEqual([{ epoch: "", seq: 0, type: "resume" }]);
+  });
+
+  it("fails the session start when the stream breaks before its first snapshot ends", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const harness = streamHarness();
+    const { socket, writer } = await attached(harness);
+    socket.receive({ type: "snapshot", epoch: "epoch-a", seq: 0 });
+    expect(harness.startFailures).toHaveLength(1);
+    writer.cancel();
+    error.mockRestore();
   });
 });

@@ -1,112 +1,77 @@
 // @vitest-environment node
-import { describe, expect, it, vi } from "vitest";
-
-vi.mock("@dojoengine/recs", () => ({
-  getComponentValue: (component: unknown, entity: unknown) => {
-    if (component instanceof Map) return component.get(entity);
-    return undefined;
-  },
-}));
-
-vi.mock("@bibliothecadao/eternum/game-client", () => ({
-  gameEntityKey: (keys: bigint[]) => keys.map((k) => k.toString()).join(":"),
-}));
-
-// Imported after mocks to ensure they take effect.
+import { configManager } from "@bibliothecadao/eternum";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { hash } from "starknet";
+import { describe, expect, it } from "vitest";
 import { arePlayersAllied, isEntityOwnedByAccount } from "./entity-ownership";
 
-type FakeStructure = { owner: unknown };
-const makeComponents = (structures: Record<string, FakeStructure>) =>
-  ({
-    Structure: new Map<string, FakeStructure>(Object.entries(structures)),
-  }) as unknown as Parameters<typeof isEntityOwnedByAccount>[0];
-
-describe("isEntityOwnedByAccount", () => {
-  it("returns true when the structure owner matches the account address (case-insensitive, trimmed)", () => {
-    const components = makeComponents({ "1": { owner: "0xABC" } });
-    expect(isEntityOwnedByAccount(components, 1, "  0xabc  ")).toBe(true);
+const fixture = () => {
+  configManager.setActiveGame(1, 1);
+  const store = new NativeFactStore();
+  const write = (model: string, keys: (number | bigint)[], row: Record<string, unknown>) =>
+    store.applyFacts([{ model: model, key: hash.computePoseidonHashOnElements(keys), value: row }]);
+  write("Structure", [1, 1], {
+    game_id: 1,
+    entity_id: 1,
+    owner: "0xabc",
+    resources_packed: "0",
+    troop_explorers: [],
+    base: {
+      category: 1,
+      level: 0,
+      created_at: 0,
+      coord_x: 0,
+      coord_y: 0,
+      alt: false,
+      troop_explorer_count: 0,
+      troop_max_guard_count: 1,
+      troop_max_explorer_count: 1,
+      starting_troops_granted: false,
+    },
+    metadata: {
+      realm_id: 1,
+      order: 0,
+      has_wonder: false,
+      village_realm: 0,
+      mine_kind: 0,
+      attunement: 0,
+      barracks_tier: 0,
+    },
   });
-
-  it("returns false when the structure has a different owner", () => {
-    const components = makeComponents({ "1": { owner: "0xdef" } });
-    expect(isEntityOwnedByAccount(components, 1, "0xabc")).toBe(false);
+  return { store, write };
+};
+describe("native ownership", () => {
+  it("compares padded and unpadded addresses numerically", () => {
+    const { store } = fixture();
+    expect(isEntityOwnedByAccount(store, 1, "  0xABC ")).toBe(true);
+    expect(isEntityOwnedByAccount(store, 1, "0x000abc")).toBe(true);
+    expect(isEntityOwnedByAccount(store, 1, "0xdef")).toBe(false);
   });
-
-  it("treats padded, unpadded and bigint spellings of one address as equal", () => {
-    const components = makeComponents({
-      "1": { owner: BigInt("0x7ef0bf1e20711c90929db26f509e78c270edf5a1c14b0287d34377bb9825dbf") },
-    });
-    expect(
-      isEntityOwnedByAccount(components, 1, "0x07ef0bf1e20711c90929db26f509e78c270edf5a1c14b0287d34377bb9825dbf"),
-    ).toBe(true);
-    expect(
-      isEntityOwnedByAccount(components, 1, "0x7ef0bf1e20711c90929db26f509e78c270edf5a1c14b0287d34377bb9825dbf"),
-    ).toBe(true);
-  });
-
-  it("normalizes bigint owner values to hex", () => {
-    const components = makeComponents({ "1": { owner: BigInt("0xabc") } });
-    expect(isEntityOwnedByAccount(components, 1, "0xabc")).toBe(true);
-  });
-
-  it("normalizes finite number owner values to hex", () => {
-    const components = makeComponents({ "1": { owner: 0xabc } });
-    expect(isEntityOwnedByAccount(components, 1, "0xabc")).toBe(true);
-  });
-
-  it("returns false when the structure is missing", () => {
-    const components = makeComponents({});
-    expect(isEntityOwnedByAccount(components, 1, "0xabc")).toBe(false);
-  });
-
-  it("returns false when the structure has no owner field", () => {
-    const components = makeComponents({ "1": { owner: undefined } });
-    expect(isEntityOwnedByAccount(components, 1, "0xabc")).toBe(false);
-  });
-
-  it("returns false when components is null or undefined", () => {
+  it("rejects missing rows, invalid IDs and missing accounts", () => {
+    const { store } = fixture();
+    for (const id of [0, 1.5, NaN, 2]) expect(isEntityOwnedByAccount(store, id, "0xabc")).toBe(false);
+    expect(isEntityOwnedByAccount(store, 1, undefined)).toBe(false);
+    expect(isEntityOwnedByAccount(store, 1, "invalid")).toBe(false);
     expect(isEntityOwnedByAccount(null, 1, "0xabc")).toBe(false);
-    expect(isEntityOwnedByAccount(undefined, 1, "0xabc")).toBe(false);
   });
-
-  it("returns false when accountAddress is missing", () => {
-    const components = makeComponents({ "1": { owner: "0xabc" } });
-    expect(isEntityOwnedByAccount(components, 1, undefined)).toBe(false);
+  it("does not reuse ownership from another game", () => {
+    const { store } = fixture();
+    configManager.setActiveGame(2, 1);
+    expect(isEntityOwnedByAccount(store, 1, "0xabc")).toBe(false);
   });
-
-  it("returns false when entityId is 0 or NaN", () => {
-    const components = makeComponents({ "0": { owner: "0xabc" } });
-    expect(isEntityOwnedByAccount(components, 0, "0xabc")).toBe(false);
-    expect(isEntityOwnedByAccount(components, Number.NaN, "0xabc")).toBe(false);
-  });
-
-  it("returns false when the owner type is unsupported (e.g. plain object)", () => {
-    const components = makeComponents({ "1": { owner: { address: "0xabc" } } });
-    expect(isEntityOwnedByAccount(components, 1, "0xabc")).toBe(false);
-  });
-
-  it("returns false if getComponentValue throws (e.g. bad BigInt conversion)", () => {
-    const components = { Structure: new Map() } as unknown as Parameters<typeof isEntityOwnedByAccount>[0];
-    // Passing a non-integer forces BigInt to throw.
-    expect(isEntityOwnedByAccount(components, 1.5, "0xabc")).toBe(false);
-  });
-});
-
-describe("arePlayersAllied", () => {
-  it("resolves current guild membership, including leaving, without an army update", () => {
-    const members = new Map<string, { guild_id: bigint }>([
-      ["1", { guild_id: 99n }],
-      ["2", { guild_id: 99n }],
-    ]);
-    const components = { GuildMember: members } as any;
-    expect(arePlayersAllied(components, "0x01", 2n)).toBe(true);
-    members.set("2", { guild_id: 88n });
-    expect(arePlayersAllied(components, 1n, 2n)).toBe(false);
-    members.set("2", { guild_id: 0n });
-    expect(arePlayersAllied(components, 1n, 2n)).toBe(false);
-    expect(arePlayersAllied(components, 1n, 1n)).toBe(false);
-    expect(arePlayersAllied(components, undefined, 2n)).toBe(false);
-    members.set("1", { guild_id: 0n });
-    expect(arePlayersAllied(components, 1n, 2n)).toBe(false);
+  it("follows membership changes and deletion without an army update", () => {
+    const { store, write } = fixture();
+    const member = (actor: number, guild: number) =>
+      write("GuildMember", [1, actor], { game_id: 1, actor, guild_id: guild });
+    member(1, 99);
+    member(2, 99);
+    expect(arePlayersAllied(store, "0x01", 2n)).toBe(true);
+    member(2, 88);
+    expect(arePlayersAllied(store, 1n, 2n)).toBe(false);
+    member(2, 99);
+    store.applyFacts([{ model: "GuildMember", key: hash.computePoseidonHashOnElements([1, 2]), value: null }]);
+    expect(arePlayersAllied(store, 1n, 2n)).toBe(false);
+    expect(arePlayersAllied(store, 1n, 1n)).toBe(false);
+    expect(arePlayersAllied(store, undefined, 2n)).toBe(false);
   });
 });

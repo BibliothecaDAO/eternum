@@ -1,9 +1,8 @@
 import { getPlayerName } from "@/hooks/use-player-profile";
-import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
-import { requireWorldById } from "@/runtime/world/world-directory";
-import { getActiveWorld } from "@/runtime/world";
+import { fetchHeraldGameHistory, requireShard } from "@bibliothecadao/eternum/game-client";
+import { getActiveGame } from "@/runtime/world";
 import { buildStoryEventPresentation, configManager } from "@bibliothecadao/eternum";
-import type { GameSyncEntity, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
+import type { GameSyncEvent, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import {
   eventConfirmationRank,
   storyEventIdentity,
@@ -11,7 +10,7 @@ import {
   type GameSyncEventConfirmation,
   type StoryEventScope,
 } from "@bibliothecadao/eternum/game-sync";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { create } from "zustand";
@@ -83,62 +82,72 @@ const storyVariant = (story: unknown): { payload: Record<string, unknown>; type:
   const record = asRecord(story);
   const entry = record ? Object.entries(record)[0] : undefined;
   if (!entry) return null;
-  return { type: entry[0], payload: asRecord(entry[1]) ?? {} };
+  return { type: entry[0], payload: asRecord(entry[1]) ?? { value: entry[1] } };
 };
 
-const legacyHeadlineFields = (type: string, payload: Record<string, unknown>): Record<string, unknown> => {
-  if (type === "BattleStory") {
-    return Object.fromEntries(Object.entries(payload).map(([key, value]) => [`battle_${key}`, value]));
-  }
-  if (type === "ExplorerCreateStory") {
-    return Object.fromEntries(Object.entries(payload).map(([key, value]) => [`explorer_create_${key}`, value]));
-  }
-  return {};
-};
-
-// The leaderboard carries registered points; the log does not repeat them as a story.
-const STORIES_OUTSIDE_THE_LOG = new Set(["PointsRegisteredStory"]);
+const EVENT_MODELS = new Set(["StoryEvent", "BattleEvent", "RaidEvent"]);
 
 const storyEventFromValue = (
+  model: string,
   value: Record<string, unknown>,
   scope: StoryEventScope,
   confirmation?: GameSyncEventConfirmation,
 ): StreamStoryEvent | null => {
-  const variant = storyVariant(value.story);
-  if (!variant || STORIES_OUTSIDE_THE_LOG.has(variant.type)) return null;
+  const variant = model === "StoryEvent" ? storyVariant(value.story) : { type: model, payload: value };
+  if (!variant || !EVENT_MODELS.has(model)) return null;
+  const position = asRecord(value.event_position);
+  const transactionHash = String(position?.transaction_hash ?? value.tx_hash);
+  const eventId =
+    model === "StoryEvent"
+      ? storyEventIdentity(scope, value)
+      : nativeEventIdentity(scope, value, transactionHash, position?.event_index);
+  const owner = value.owner ?? value.player ?? asRecord(value.attacker)?.player;
   return {
     scopeKey: storyEventScopeKey(scope),
     confirmation: confirmation ?? null,
-    owner: value.owner === null || value.owner === undefined ? null : String(value.owner),
-    entity_id: toOptionalNumber(value.entity_id),
+    owner: owner === null || owner === undefined ? null : String(owner),
+    entity_id: toOptionalNumber(value.entity_id ?? value.explorer_id ?? value.attacker_id),
     id: value.id === undefined ? null : String(value.id),
-    tx_hash: String(value.tx_hash),
+    tx_hash: transactionHash,
     story: variant.type,
     timestamp: String(value.timestamp ?? "0x0"),
-    event_id: storyEventIdentity(scope, value),
+    event_id: eventId,
     storyPayload: variant.payload,
     rawStory: value.story,
-    ...legacyHeadlineFields(variant.type, variant.payload),
   };
 };
 
+function nativeEventIdentity(
+  scope: StoryEventScope,
+  value: Record<string, unknown>,
+  transactionHash: string,
+  index: unknown,
+): string {
+  if (BigInt(String(value.game_id)) !== BigInt(scope.gameId)) throw new Error("Native event game mismatch");
+  if (!/^0x[0-9a-f]+$/i.test(transactionHash) || BigInt(transactionHash) === 0n)
+    throw new Error("Native event requires a transaction hash");
+  const eventIndex = toOptionalNumber(index);
+  if (eventIndex === null || eventIndex < 0) throw new Error("Native event requires a receipt index");
+  return `${storyEventScopeKey(scope)}:receipt:0x${BigInt(transactionHash).toString(16)}:${eventIndex}`;
+}
+
 export const toStreamStoryEvent = (
-  event: GameSyncEntity,
+  event: GameSyncEvent,
   scope: StoryEventScope,
   confirmation?: GameSyncEventConfirmation,
-): StreamStoryEvent | null => {
-  const modelEntry = Object.entries(event.models).find(
-    ([model]) => model === "StoryEvent" || model.endsWith("-StoryEvent"),
-  );
-  const value = modelEntry ? asRecord(modelEntry[1]) : null;
-  return value ? storyEventFromValue(value, scope, confirmation) : null;
-};
+): StreamStoryEvent | null =>
+  EVENT_MODELS.has(event.model) ? storyEventFromValue(event.model, event.value, scope, confirmation) : null;
 
 const historyStoryEvent = (event: HeraldHistoryEvent, scope: StoryEventScope): StreamStoryEvent | null =>
-  storyEventFromValue(event.value, scope, { block: event.block_number, preconfirmed: false });
+  storyEventFromValue(
+    event.model,
+    { ...event.value, event_position: { transaction_hash: event.transaction_hash, event_index: event.event_index } },
+    scope,
+    { block: event.block_number, preconfirmed: false },
+  );
 
 export const acceptGameSyncStoryEvent = (
-  event: GameSyncEntity,
+  event: GameSyncEvent,
   scope: StoryEventScope,
   confirmation?: GameSyncEventConfirmation,
 ): void => {
@@ -150,7 +159,7 @@ export const resetGameSyncStoryEvents = (): void => useStoryEventsStore.getState
 
 const processStoryEvent = (
   event: StoryEventData | StreamStoryEvent,
-  components: Parameters<typeof buildStoryEventPresentation>[1],
+  store: Parameters<typeof buildStoryEventPresentation>[1],
 ): ProcessedStoryEvent => {
   const timestampMs = Number(BigInt(event.timestamp)) * 1_000;
   const presentation = buildStoryEventPresentation(
@@ -164,30 +173,33 @@ const processStoryEvent = (
       storyPayload: event.storyPayload,
       rawStory: event.rawStory,
     },
-    components,
+    store,
     getPlayerName,
   );
   return { ...event, id: event.event_id, timestampMs, presentation };
 };
 
-export const useStoryEvents = (limit: number = 100, story?: string) => {
+export const useStoryEvents = (limit: number = 100, story?: string, owner?: string) => {
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
   const streamed = useStoryEventsStore((state) => state.streamed);
-  const profile = getActiveWorld();
-  const world = requireWorldById(profile?.worldId);
+  const shard = requireShard(getActiveGame()?.chainId);
   const gameId = configManager.getActiveGameId();
-  const scope = { chain: world.chain, worldAddress: world.worldAddress, gameId };
+  const scope = { chainId: shard.chainId, worldAddress: shard.worldAddress, gameId };
   const scopeKey = storyEventScopeKey(scope);
 
   const confirmedBlock = useConnectionStore((state) => (story ? state.lastConfirmedBlock : null));
   const handshake = useConnectionStore((state) => (story ? state.lastGlobalHandshake : null));
 
   const query = useQuery({
-    queryKey: ["heraldStoryEvents", world.heraldBaseUrl, scopeKey, limit, story],
+    queryKey: ["heraldStoryEvents", shard.url, scopeKey, limit, story, owner],
     queryFn: async (): Promise<StoryEventData[]> => {
-      const page = await fetchHeraldGameHistory(world, gameId, { limit, model: "StoryEvent", story });
+      const page = await fetchHeraldGameHistory(shard, gameId, {
+        limit,
+        ...(story ? (EVENT_MODELS.has(story) ? { model: story } : { model: "StoryEvent", story }) : {}),
+        owner,
+      });
       return page.items.flatMap((event) => {
         const story = historyStoryEvent(event, scope);
         return story ? [story] : [];
@@ -207,6 +219,7 @@ export const useStoryEvents = (limit: number = 100, story?: string) => {
     const events = new Map<string, StoryEventData>();
     for (const event of [...streamed, ...(query.data ?? [])]) {
       if (event.scopeKey !== scopeKey || (story && event.story !== story)) continue;
+      if (owner && (event.owner === null || BigInt(event.owner) !== BigInt(owner))) continue;
       const previous = events.get(event.event_id);
       if (!previous || eventConfirmationRank(event.confirmation) > eventConfirmationRank(previous.confirmation))
         events.set(event.event_id, event);
@@ -214,8 +227,15 @@ export const useStoryEvents = (limit: number = 100, story?: string) => {
     return [...events.values()]
       .sort((left, right) => Number(BigInt(right.timestamp) - BigInt(left.timestamp)))
       .slice(0, limit)
-      .map((event) => processStoryEvent(event, components));
-  }, [components, limit, query.data, streamed, story, scopeKey]);
+      .map((event) => processStoryEvent(event, store));
+  }, [store, limit, query.data, streamed, story, scopeKey, owner]);
 
   return { ...query, data };
+};
+
+/** The season's winner once its SeasonEnded story is in history; null until then. */
+export const useSeasonWinner = (): bigint | null => {
+  const { data: ended } = useStoryEvents(1, "SeasonEnded");
+  const winner = ended[0]?.owner;
+  return winner ? BigInt(winner) : null;
 };

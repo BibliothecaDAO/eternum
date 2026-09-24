@@ -1,4 +1,4 @@
-import { IOrder } from "../types";
+import type { IOrder } from "../types";
 
 export const ORDER_NAME_DICT: { [key: number]: string } = {
   0: "gods",

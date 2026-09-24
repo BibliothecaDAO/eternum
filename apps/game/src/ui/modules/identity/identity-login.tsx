@@ -1,93 +1,130 @@
-import {
-  identityClient,
-  identityOrigin,
-  useIdentitySession,
-  useIdentitySessionStore,
-} from "@/hooks/context/identity-session";
+import { identityClient, useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import Button from "@/ui/design-system/atoms/button";
-import { useAccount, useConnect, useSignTypedData } from "@starknet-react/core";
-import type { Connector } from "@starknet-react/core";
-import { useCallback, useMemo, useState } from "react";
-import { addAddressPadding } from "starknet";
+import { useCallback, useRef, useState, type FormEvent } from "react";
+import { useLocation } from "react-router-dom";
 
-interface IdentityLoginProps {
-  className?: string;
-}
+import { failureSentence, type IdentityAction } from "./identity-failures";
 
-export const IdentityLogin = ({ className = "" }: IdentityLoginProps) => {
-  const { address } = useAccount();
-  const { connectAsync, connectors, isPending: isConnecting } = useConnect();
-  const { signTypedDataAsync, isPending: isSigning } = useSignTypedData({});
+const INPUT_CLASS =
+  "w-full rounded-lg border border-gold/30 bg-black/40 px-3 py-2.5 text-[14px] text-gold outline-none placeholder:text-gold/40 focus:border-gold";
+
+/**
+ * Sign-in to a Realms account: Discord, or a code emailed to the player. The first sign-in creates the account. No
+ * wallet loads here; a wallet is linked afterwards on the account page.
+ */
+export const IdentityLogin = ({ className = "" }: { className?: string }) => {
   const { status, session } = useIdentitySession();
   const applySession = useIdentitySessionStore((state) => state.applySession);
-  const [error, setError] = useState<string | null>(null);
+  const signInRequest = useIdentitySessionStore((state) => state.signInRequest);
+  const location = useLocation();
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [codeSentTo, setCodeSentTo] = useState<string | null>(null);
+  const [pending, setPending] = useState<IdentityAction | null>(null);
+  // Discord returns here with an `error` query parameter when sign-in did not complete.
+  const [error, setError] = useState<string | null>(() => discordReturnError(location.search));
+  const running = useRef(false);
 
-  const isSignedIn = useMemo(
-    () => Boolean(address && session?.user.id && BigInt(address) === BigInt(session.user.id)),
-    [address, session?.user.id],
-  );
+  const run = useCallback(async (action: IdentityAction, body: () => Promise<void>) => {
+    if (running.current) return;
+    running.current = true;
+    setPending(action);
+    setError(null);
+    try {
+      await body();
+    } catch (cause) {
+      setError(failureSentence(action, cause));
+    } finally {
+      running.current = false;
+      setPending(null);
+    }
+  }, []);
 
-  const handleLogin = useCallback(
-    async (connector?: Connector) => {
-      setError(null);
-      try {
-        if (!address) {
-          if (!connector) throw new Error("No Starknet identity wallet is available");
-          await connectAsync({ connector });
-          return;
-        }
+  // Discord returns the player to the page that asked for sign-in, or to this one.
+  const continueWithDiscord = () =>
+    run("discord", async () => {
+      const returnTo = signInRequest?.redirectTo ?? `${location.pathname}${location.search}`;
+      window.location.assign(await identityClient.discordSignInUrl(returnTo));
+    });
 
-        const nextSession = await identityClient.signIn({
-          address: addAddressPadding(address),
-          chainId: "SN_MAIN",
-          domain: new URL(identityOrigin).host,
-          uri: identityOrigin,
-          signTypedData: (message) => signTypedDataAsync(message),
-        });
-        applySession(nextSession);
-      } catch (loginError) {
-        const message = loginError instanceof Error ? loginError.message : "Identity login failed";
-        console.error("identity_login_failed", { error: message });
-        setError(message);
-      }
-    },
-    [address, applySession, connectAsync, signTypedDataAsync],
-  );
+  const emailCode = (event: FormEvent) => {
+    event.preventDefault();
+    const address = email.trim();
+    void run("send-code", async () => {
+      await identityClient.sendSignInCode(address);
+      setCode("");
+      setCodeSentTo(address);
+    });
+  };
 
-  const isPending = isConnecting || isSigning || status === "loading";
-  const label = isSignedIn ? shortAddress(address!) : address ? "Sign in" : "Connect wallet";
+  const signInWithCode = (event: FormEvent) => {
+    event.preventDefault();
+    if (!codeSentTo) return;
+    void run("code", async () => applySession(await identityClient.signInWithCode(codeSentTo, code.trim())));
+  };
+
+  if (status === "signed-in" && session) return null;
+  const busy = pending !== null || status === "loading";
 
   return (
-    <div className={`flex flex-col gap-1 ${className}`}>
-      {address ? (
-        <Button
-          className="h-9 min-w-[128px] px-4"
-          disabled={isSignedIn}
-          isLoading={isPending}
-          onClick={() => void handleLogin()}
-        >
-          {label}
-        </Button>
+    <div className={`flex w-full flex-col gap-2 ${className}`}>
+      <Button
+        className="w-full px-4 py-2"
+        disabled={busy}
+        isLoading={pending === "discord"}
+        onClick={() => void continueWithDiscord()}
+      >
+        Continue with Discord
+      </Button>
+      {codeSentTo === null ? (
+        <form className="flex w-full flex-col gap-1" onSubmit={emailCode}>
+          <input
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="Your email"
+            className={INPUT_CLASS}
+          />
+          <Button type="submit" className="w-full px-4 py-2" disabled={busy} isLoading={pending === "send-code"}>
+            Email me a code
+          </Button>
+        </form>
       ) : (
-        // One button per installed wallet: the identity step must offer every configured connector,
-        // not silently try the first one and fail when that extension is absent. Stacked, wrapping
-        // buttons: this renders inside a popover, and a connector name can be long.
-        <div className="flex w-full flex-col gap-1">
-          {connectors.map((connector) => (
-            <Button
-              key={connector.id}
-              className="w-full !whitespace-normal px-4 py-2 leading-tight"
-              isLoading={isPending}
-              onClick={() => void handleLogin(connector)}
-            >
-              {connector.name}
-            </Button>
-          ))}
-        </div>
+        <form className="flex w-full flex-col gap-1" onSubmit={signInWithCode}>
+          <span className="text-xs text-gold/60">We sent a six-digit code to {codeSentTo}.</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]{6}"
+            maxLength={6}
+            required
+            value={code}
+            onChange={(event) => setCode(event.target.value)}
+            placeholder="Code"
+            className={INPUT_CLASS}
+          />
+          <Button type="submit" className="w-full px-4 py-2" disabled={busy} isLoading={pending === "code"}>
+            Sign in
+          </Button>
+          <button
+            type="button"
+            className="pt-1 text-left text-xs text-gold/60 underline"
+            onClick={() => setCodeSentTo(null)}
+          >
+            Use another address or send a new code
+          </button>
+        </form>
       )}
-      {error && <span className="max-w-[240px] text-center text-xs text-danger">{error}</span>}
+      {error && <span className="text-xs text-danger">{error}</span>}
     </div>
   );
 };
 
-const shortAddress = (address: string): string => `${address.slice(0, 6)}…${address.slice(-4)}`;
+const discordReturnError = (search: string): string | null => {
+  const returned = new URLSearchParams(search).get("error");
+  return returned ? failureSentence("discord", new Error(returned)) : null;
+};

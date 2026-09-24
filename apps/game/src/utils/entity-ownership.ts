@@ -1,9 +1,9 @@
-import { ClientComponents, ContractAddress } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
+import { ContractAddress } from "@bibliothecadao/types";
+import { configManager } from "@bibliothecadao/eternum";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 // Addresses reach this comparison in every felt spelling the stack produces — padded from the gameplay account
-// (`addAddressPadding`), unpadded from herald rows, bigint from RECS — so equality is numeric, never textual.
+// (`addAddressPadding`), unpadded from herald rows, bigint from native facts — so equality is numeric, never textual.
 const toAddress = (value: unknown): bigint | null => {
   if (typeof value !== "string" && typeof value !== "bigint" && typeof value !== "number") return null;
   try {
@@ -14,13 +14,13 @@ const toAddress = (value: unknown): bigint | null => {
 };
 
 export const isEntityOwnedByAccount = (
-  components: ClientComponents | null | undefined,
+  store: NativeFactStore | null | undefined,
   entityId: number,
   accountAddress: string | undefined,
 ): boolean => {
-  if (!components || !entityId || !accountAddress) return false;
+  if (!store || !Number.isSafeInteger(entityId) || entityId <= 0 || !accountAddress) return false;
   try {
-    const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(entityId)]));
+    const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
     const owner = toAddress(structure?.owner);
     const accountOwner = toAddress(accountAddress);
     return owner !== null && accountOwner !== null && owner === accountOwner;
@@ -30,14 +30,14 @@ export const isEntityOwnedByAccount = (
 };
 
 export function arePlayersAllied(
-  components: ClientComponents | null | undefined,
+  store: NativeFactStore | null | undefined,
   playerAddress: bigint | string | undefined,
   ownerAddress: bigint | string | undefined,
 ): boolean {
   const player = toAddress(playerAddress);
   const owner = toAddress(ownerAddress);
-  if (!components?.GuildMember || !player || !owner || player === owner) return false;
-  const playerGuild = getComponentValue(components.GuildMember, gameEntityKey([player]))?.guild_id;
+  if (!store || !player || !owner || player === owner) return false;
+  const playerGuild = store.get("GuildMember", { game_id: configManager.getActiveGameId(), actor: player })?.guild_id;
   if (!playerGuild) return false;
-  return getComponentValue(components.GuildMember, gameEntityKey([owner]))?.guild_id === playerGuild;
+  return store.get("GuildMember", { game_id: configManager.getActiveGameId(), actor: owner })?.guild_id === playerGuild;
 }

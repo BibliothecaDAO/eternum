@@ -2,7 +2,7 @@ import { RainEffect } from "@/three/effects/rain-effect";
 import { configureWorldSunShadows } from "@/three/effects/world-sun-shadows";
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { TERRAIN_DEEP_FOG_COLOR } from "@/three/terrain/terrain-fog-style";
-import { CAMERA_CONFIG, FOG_CONFIG, HEX_SIZE } from "@/three/constants";
+import { CAMERA_CONFIG, FOG_CONFIG } from "@/three/constants";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
 import { type WeatherState } from "@/three/managers/weather-manager";
@@ -23,7 +23,7 @@ import { ShadowRefreshPolicy } from "@/three/shadow-refresh-policy";
 import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import { LeftView } from "@/types";
 import { IS_FLAT_MODE } from "@/ui/config";
-import { type SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import { type HexPosition } from "@bibliothecadao/types";
 import gsap from "gsap";
@@ -44,7 +44,6 @@ import {
   Plane,
   PlaneGeometry,
   PointLight,
-  Quaternion,
   Raycaster,
   Scene,
   Texture,
@@ -54,7 +53,7 @@ import {
 import { type MapControls } from "three/addons/controls/MapControls.js";
 import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
 import { SceneName } from "../types";
-import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
+import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { CameraView } from "./camera-view";
 import {
@@ -141,7 +140,7 @@ export abstract class HexagonScene {
   constructor(
     protected sceneName: SceneName,
     protected controls: MapControls,
-    protected dojo: SetupResult,
+    protected game: SetupResult,
     private mouse: Vector2,
     private raycaster: Raycaster,
     protected sceneManager: SceneManager,
@@ -192,7 +191,7 @@ export abstract class HexagonScene {
       markVisibilityDirty: () => {
         incrementWorldmapRenderCounter("controlsChangeEvents");
         this.visibilityManager?.markDirty();
-        const targetHex = getHexForWorldPosition(this.controls.target);
+        const targetHex = this.hexSpace.hexForPosition(this.controls.target);
         this.shadowRefreshPolicy.markCameraCell(targetHex.col, targetHex.row);
       },
     });
@@ -216,15 +215,18 @@ export abstract class HexagonScene {
         changed: () => this.notifyControlsChanged(),
       }),
     );
-    this.interactiveHexManager = new InteractiveHexManager(this.scene, {
-      sampleSurface: (x, z) => this.getTerrainSurface().sampleSurface(x, z),
-    });
-    this.worldUpdateListener = new WorldUpdateListener(this.dojo);
-    this.highlightHexManager = new HighlightHexManager(this.scene);
+    this.interactiveHexManager = new InteractiveHexManager(
+      this.scene,
+      { sampleSurface: (x, z) => this.getTerrainSurface().sampleSurface(x, z) },
+      this.hexSpace,
+    );
+    this.worldUpdateListener = new WorldUpdateListener(this.game);
+    this.highlightHexManager = new HighlightHexManager(this.scene, this.hexSpace);
     this.thunderBoltManager = new ThunderBoltManager(
       this.scene,
       this.controls,
       (x, z) => this.getTerrainSurface().sampleSurface(x, z).height,
+      this.hexSpace,
     );
     this.rainEffect = new RainEffect(this.scene, (x, z) => this.getTerrainSurface().sampleSurface(x, z).height);
     this.scene.background = new Color(this.sceneName === SceneName.WorldMap ? TERRAIN_DEEP_FOG_COLOR : 0x2a1a3e);
@@ -379,7 +381,7 @@ export abstract class HexagonScene {
     if (fallbackHex) {
       this.onHexagonMouseMove({
         hexCoords: fallbackHex,
-        position: getWorldPositionForHex(fallbackHex),
+        position: this.hexSpace.positionForHex(fallbackHex),
       });
       return;
     }
@@ -399,14 +401,14 @@ export abstract class HexagonScene {
       return null;
     }
 
-    const hexCoords = getHexForWorldPosition(intersection);
+    const hexCoords = this.hexSpace.hexForPosition(intersection);
     if (!this.interactiveHexManager.isHexInteractive(hexCoords)) {
       return null;
     }
 
     return {
       hexCoords,
-      position: getWorldPositionForHex(hexCoords),
+      position: this.hexSpace.positionForHex(hexCoords),
     };
   }
 
@@ -431,7 +433,7 @@ export abstract class HexagonScene {
     }
     // Fallback: try direct army model raycasting when hex picking fails
     const fallbackHex = this.tryArmyRaycastFallback(raycaster);
-    return fallbackHex ? { hexCoords: fallbackHex, position: getWorldPositionForHex(fallbackHex) } : null;
+    return fallbackHex ? { hexCoords: fallbackHex, position: this.hexSpace.positionForHex(fallbackHex) } : null;
   }
 
   private handleRightClick(event: MouseEvent, raycaster: Raycaster): void {
@@ -663,7 +665,7 @@ export abstract class HexagonScene {
 
     // Get current camera target position for centering
     const target = this.controls.target;
-    const centerHex = this.getHexFromWorldPosition(target);
+    const centerHex = this.hexSpace.hexForPosition(target);
 
     if (this.sceneName === SceneName.Hexception) {
       // For Hexception (persistent mode): use addHex + renderAllHexes
@@ -814,47 +816,24 @@ export abstract class HexagonScene {
     return this.state.leftNavigationView !== LeftView.None;
   }
 
+  /**
+   * How this scene turns its hexes into drawn positions and back. The world map draws through its floating origin;
+   * the local realm scene overrides this with its own building lattice, which the world origin must never move.
+   */
+  protected get hexSpace(): HexSpace {
+    return WORLD_HEX_SPACE;
+  }
+
   protected hashCoordinates(x: number, y: number): number {
     // Simple hash function to generate a deterministic value between 0 and 1
     const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
     return hash - Math.floor(hash);
   }
 
-  private getHexFromWorldPosition(position: Vector3): HexPosition {
-    const horizontalSpacing = HEX_SIZE * Math.sqrt(3);
-    const verticalSpacing = (HEX_SIZE * 3) / 2;
-
-    // Then use col to calculate row
-    const row = Math.round(-position.z / verticalSpacing);
-
-    // Adjust x position based on row parity
-    const adjustedX = position.x - (row % 2) * (horizontalSpacing / 2);
-
-    // Recalculate col using adjusted x
-    const adjustedCol = Math.round(adjustedX / horizontalSpacing);
-
-    return { row, col: adjustedCol };
-  }
-
-  getHexagonCoordinates(instancedMesh: InstancedMesh, instanceId: number): HexPosition & { x: number; z: number } {
-    const matrixPool = MatrixPool.getInstance();
-    const matrix = matrixPool.getMatrix();
-    instancedMesh.getMatrixAt(instanceId, matrix);
-    const position = new Vector3();
-    matrix.decompose(position, new Quaternion(), new Vector3());
-
-    const { row, col } = this.getHexFromWorldPosition(position);
-
-    // Release matrix back to pool
-    matrixPool.releaseMatrix(matrix);
-
-    return { row, col, x: position.x, z: position.z };
-  }
-
   getLocationCoordinates() {
     const col = this.locationManager.getCol()!;
     const row = this.locationManager.getRow()!;
-    const { x, z } = getWorldPositionForHex({ col, row });
+    const { x, z } = this.hexSpace.positionForHex({ col, row });
     return { col, row, x, z };
   }
 
@@ -952,7 +931,7 @@ export abstract class HexagonScene {
   }
 
   public moveCameraToColRow(col: number, row: number, duration: number = 2) {
-    const { x, y, z } = getWorldPositionForHex({ col, row });
+    const { x, y, z } = this.hexSpace.positionForHex({ col, row });
 
     const newTarget = new Vector3(x, y, z);
 
@@ -981,7 +960,7 @@ export abstract class HexagonScene {
   }
 
   public getCameraTargetHex(): HexPosition {
-    return getHexForWorldPosition(this.controls.target);
+    return this.hexSpace.hexForPosition(this.controls.target);
   }
 
   private createGroundMesh() {
@@ -998,7 +977,7 @@ export abstract class HexagonScene {
 
     const mesh = new Mesh(geometry, material);
     mesh.rotation.set(Math.PI / 2, 0, Math.PI);
-    const { x, z } = getWorldPositionForHex({ col: 185, row: 150 });
+    const { x, z } = this.hexSpace.positionForHex({ col: 185, row: 150 });
     mesh.position.set(x, -0.05, z);
     mesh.receiveShadow = false;
     // disable raycast

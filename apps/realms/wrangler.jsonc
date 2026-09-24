@@ -1,0 +1,72 @@
+// The identity Worker. Staging serves staging.realms.party/api beside the isolated box stack's app; production serves
+// play.realms.party/api at the cutover. Either way the app and its identity routes share one origin.
+// Each environment has its own D1 database and its own secrets (BETTER_AUTH_SECRET, IDENTITY_RPC_URL), which the
+// deploy workflow sets from that environment's GitHub secrets.
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "realms-identity",
+  "main": "server/worker.ts",
+  "compatibility_date": "2026-09-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["ShardNotifier"] },
+    { "tag": "v2", "new_sqlite_classes": ["ChatRoom", "ChatInbox"] },
+  ],
+  "env": {
+    "staging": {
+      "name": "realms-identity-staging",
+      "workers_dev": false,
+      "routes": [{ "pattern": "staging.realms.party/api/*", "zone_name": "realms.party" }],
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "BASE_URL": "https://staging.realms.party",
+        "ACCOUNT_CLASS_HASH": "0x68995feeefffc1647118073e1ff16179f07eb8eed6c8fb03cce73109f5fbacd",
+        "SHARD_NOTIFIER_POLL_MS": "3000",
+      },
+      "d1_databases": [{ "binding": "DB", "database_name": "realms-identity-staging", "migrations_dir": "migrations" }],
+      "ratelimits": [
+        { "name": "PUBLIC_RATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
+        { "name": "SIGN_IN_CODE_RATE_LIMIT", "namespace_id": "1003", "simple": { "limit": 3, "period": 60 } },
+      ],
+      "services": [{ "binding": "GUARDIAN", "service": "realms-guardian-staging" }],
+      "durable_objects": {
+        "bindings": [
+          { "name": "SHARD_NOTIFIER", "class_name": "ShardNotifier" },
+          { "name": "CHAT_ROOM", "class_name": "ChatRoom" },
+          { "name": "CHAT_INBOX", "class_name": "ChatInbox" },
+        ],
+      },
+      "triggers": { "crons": ["* * * * *"] },
+      "version_metadata": { "binding": "VERSION" },
+    },
+    "production": {
+      "name": "realms-identity",
+      "workers_dev": false,
+      "routes": [{ "pattern": "play.realms.party/api/*", "zone_name": "realms.party" }],
+      "vars": {
+        "ENVIRONMENT": "production",
+        "BASE_URL": "https://play.realms.party",
+        "ACCOUNT_CLASS_HASH": "0x68995feeefffc1647118073e1ff16179f07eb8eed6c8fb03cce73109f5fbacd",
+        "SHARD_NOTIFIER_POLL_MS": "3000",
+      },
+      "d1_databases": [
+        { "binding": "DB", "database_name": "realms-identity-production", "migrations_dir": "migrations" },
+      ],
+      "ratelimits": [
+        { "name": "PUBLIC_RATE_LIMIT", "namespace_id": "1002", "simple": { "limit": 30, "period": 60 } },
+        { "name": "SIGN_IN_CODE_RATE_LIMIT", "namespace_id": "1004", "simple": { "limit": 3, "period": 60 } },
+      ],
+      "services": [{ "binding": "GUARDIAN", "service": "realms-guardian" }],
+      "durable_objects": {
+        "bindings": [
+          { "name": "SHARD_NOTIFIER", "class_name": "ShardNotifier" },
+          { "name": "CHAT_ROOM", "class_name": "ChatRoom" },
+          { "name": "CHAT_INBOX", "class_name": "ChatInbox" },
+        ],
+      },
+      "triggers": { "crons": ["* * * * *"] },
+      "version_metadata": { "binding": "VERSION" },
+    },
+  },
+}

@@ -1,18 +1,13 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useGameEntityComponentValue } from "@/hooks/helpers/use-game-entity-component-value";
 import { MaxButton } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 
-import {
-  configManager,
-  divideByPrecision,
-  getArmyTotalCapacityInKg,
-  gramToKg,
-  ResourceManager,
-} from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { configManager, divideByPrecision, getArmyTotalCapacityInKg, gramToKg } from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ActorType, ID, RelicRecipientType, RELICS, resources, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { getActorTypes, TransferDirection } from "./transfer-troops/transfer-direction";
@@ -49,21 +44,29 @@ export const TransferResourcesContainer = ({
   const {
     account: { account },
     setup: {
-      components,
       systemCalls: {
         troop_structure_adjacent_transfer,
         structure_troop_adjacent_transfer,
         troop_troop_adjacent_transfer,
       },
     },
-  } = useDojo();
+  } = useGame();
   const mode = useGameModeConfig();
   const currentDefaultTick = useCurrentDefaultTick();
   const actorTypes = useMemo(() => getActorTypes(transferDirection), [transferDirection]);
-  const selectedResourceState = useGameEntityComponentValue(components.Resource, selectedEntityId);
-  const targetResourceState = useGameEntityComponentValue(components.Resource, targetEntityId);
-  const selectedStructure = useGameEntityComponentValue(components.Structure, selectedEntityId);
-  const targetStructure = useGameEntityComponentValue(components.Structure, targetEntityId);
+  const selectedResourceState = useResourceManager(selectedEntityId);
+  const targetResourceState = useNativeRow("ResourceWeight", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: targetEntityId,
+  });
+  const selectedStructure = useNativeRow("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: selectedEntityId,
+  });
+  const targetStructure = useNativeRow("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: targetEntityId,
+  });
 
   const [loading, setLoading] = useState(false);
   const [selectedResources, setSelectedResources] = useState<ResourceTransfer[]>([]);
@@ -85,13 +88,13 @@ export const TransferResourcesContainer = ({
   }, [transferDirection, selectedEntityId, targetEntityId]);
 
   const availableResources = useMemo(() => {
-    if (!selectedResourceState) return [];
+    if (!selectedResourceState.hasResources()) return [];
     const allowedRelicIds = actorTypes.target === ActorType.Structure ? STRUCTURE_RELIC_IDS : ALL_RELIC_IDS;
     return resources
       .filter(({ id }) => allowedRelicIds.has(id))
       .map(({ id }) => ({
         resourceId: id,
-        amount: ResourceManager.balanceWithProduction(selectedResourceState, currentDefaultTick, id).balance,
+        amount: selectedResourceState.balanceWithProduction(currentDefaultTick, id).balance,
       }))
       .filter(({ amount }) => amount > 0);
   }, [actorTypes.target, currentDefaultTick, selectedResourceState]);
@@ -99,7 +102,7 @@ export const TransferResourcesContainer = ({
   const explorerCapacity = useMemo(() => {
     if (actorTypes.target !== ActorType.Explorer || !mode.ui.showExplorerCapacity || !targetResourceState) return null;
     const maxCapacity = getArmyTotalCapacityInKg(targetResourceState);
-    const currentLoad = gramToKg(divideByPrecision(Number(targetResourceState.weight.weight)));
+    const currentLoad = gramToKg(divideByPrecision(Number(targetResourceState.weight)));
     return {
       maxCapacityKg: maxCapacity,
       currentLoadKg: currentLoad,
@@ -310,7 +313,7 @@ export const TransferResourcesContainer = ({
     try {
       setLoading(true);
 
-      // Re-check every requested amount against the latest RECS balance at
+      // Re-check every requested amount against the latest native store balance at
       // submit time. A source spend received while this panel is open must not
       // leave stale calldata behind in local selection state.
       let remainingCapacityKg = explorerCapacity

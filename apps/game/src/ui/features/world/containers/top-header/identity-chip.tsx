@@ -1,11 +1,15 @@
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { identityUsername, IDENTITY_POPOVER_ID, useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
+import { AccountStatePrompt } from "@/shell/account-state";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { usePlayers } from "@/hooks/use-player-profile";
+import { gameStructuresView } from "@/sync/fact-views";
 import { resetBootstrap } from "@/init/bootstrap";
 import { buildEntryHref } from "@/play/navigation/play-route";
-import { getActiveWorld } from "@/runtime/world";
+import { getActiveGame } from "@/runtime/world";
 import { BuildingThumbs } from "@/ui/config";
 import Button from "@/ui/design-system/atoms/button";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
@@ -35,8 +39,8 @@ const useIdentityChipState = (): IdentityChipState => {
   const { status, session } = useIdentitySession();
   const gameplayAddress = useAccountStore((state) => state.account?.address ?? null);
   const provisioningError = useAccountStore((state) => state.provisioningError);
-  const players = useWorldSlicesStore((state) => state.players);
-  const structures = useWorldSlicesStore((state) => state.structures);
+  const players = usePlayers();
+  const structures = useFactView(gameStructuresView);
   const { standingsByAddress } = useInGameLeaderboard();
 
   return useMemo(() => {
@@ -189,7 +193,7 @@ const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { 
     case "signed-out":
       return (
         <SignInSurface>
-          You are not signed in, so this game is view only. Sign in with your Starknet identity wallet to play.
+          You are not signed in, so this game is view only. Sign in with your Realms account to play.
         </SignInSurface>
       );
     case "connecting":
@@ -197,7 +201,11 @@ const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { 
         <div className="flex flex-col gap-1">
           <span className={HUD_HEADLINE}>{state.name ?? "Signing in"}</span>
           <span className={HUD_BODY}>Preparing your gameplay account…</span>
-          {state.error && <span className="text-xs text-danger">{state.error}</span>}
+          {isAccountStatePrompt(state.error) ? (
+            <AccountStatePrompt />
+          ) : (
+            state.error && <span className="text-xs text-danger">{state.error}</span>
+          )}
         </div>
       );
     case "spectating":
@@ -238,9 +246,9 @@ const useEnterActiveGameAsPlayer = () => {
   const navigate = useNavigate();
 
   return useCallback(() => {
-    const world = getActiveWorld();
+    const world = getActiveGame();
     if (!world) return;
     resetBootstrap();
-    navigate(buildEntryHref({ chain: world.chain, worldName: world.name, intent: "play", autoSettle: false }));
+    navigate(buildEntryHref({ chainId: world.chainId, gameId: world.gameId, intent: "play", autoSettle: false }));
   }, [navigate]);
 };

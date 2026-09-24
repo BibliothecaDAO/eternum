@@ -1,39 +1,37 @@
+import { structureMapPosition } from "./expeditions";
 import {
   CapacityConfig,
-  ClientComponents,
   ContractAddress,
   DirectionName,
   getDirectionBetweenAdjacentHexes,
   ID,
   StructureType,
 } from "@bibliothecadao/types";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "../managers/game-entity-keys";
+import type { NativeFactStore } from "../client/native-fact-store";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { shortString } from "starknet";
 import knownAddressesJSONData from "../data/known-addresses.json";
 import { configManager } from "../managers/config-manager";
 import { getHyperstructureName } from "./hyperstructure";
 import { getRealmNameById } from "./realm";
 import { getStructureTypeName } from "./structure";
-import { gameEntityKey } from "../managers/config-manager";
 
 const knownAddressesJSON: Record<string, string> = knownAddressesJSONData;
 
 export const getEntityInfo = (
   entityId: ID,
   playerAccount: ContractAddress,
-  components: ClientComponents,
+  store: NativeFactStore,
   isBlitz: boolean,
 ) => {
-  const { Structure, ExplorerTroops } = components;
-  const entityIdBigInt = BigInt(entityId);
+  const game_id = configManager.getActiveGameId();
 
-  const explorer = getComponentValue(ExplorerTroops, gameEntityKey([entityIdBigInt]));
-  const structure = getComponentValue(Structure, gameEntityKey([entityIdBigInt]));
+  const explorer = store.get("ExplorerTroops", { game_id, explorer_id: entityId });
+  const structure = store.get("Structure", { game_id, entity_id: entityId });
 
   let name = undefined;
   if (explorer) {
-    const armyName = getArmyName(explorer.explorer_id);
+    const armyName = getArmyName(explorer.explorer_id, store);
     name = {
       name: armyName,
       originalName: armyName,
@@ -47,7 +45,7 @@ export const getEntityInfo = (
   let owner = undefined;
   if (explorer) {
     owner = explorer.owner;
-    const structureOwner = getComponentValue(Structure, gameEntityKey([BigInt(explorer.owner)]));
+    const structureOwner = store.get("Structure", { game_id, entity_id: explorer.owner });
     owner = structureOwner?.owner;
   } else if (structure) {
     owner = structure.owner;
@@ -71,10 +69,10 @@ export const getEntityInfo = (
     position: explorer
       ? { x: explorer.coord.x, y: explorer.coord.y }
       : structure
-        ? { x: structure.base.coord_x, y: structure.base.coord_y }
+        ? structureMapPosition(store, structure)
         : undefined,
     owner,
-    isMine: ContractAddress(owner || 0n) === playerAccount,
+    isMine: owner !== undefined && ContractAddress(owner) === playerAccount,
     structureCategory: structure?.base.category,
     structure,
     explorer,
@@ -82,17 +80,18 @@ export const getEntityInfo = (
   };
 };
 
-export const getArmyName = (armyEntityId: ID) => {
-  return `Army ${armyEntityId}`;
+export const getArmyName = (armyEntityId: ID, store: NativeFactStore) => {
+  const named = store.get("EntityName", { game_id: configManager.getActiveGameId(), entity_id: armyEntityId });
+  return named && named.name !== 0n ? shortString.decodeShortString(named.name.toString()) : `Army ${armyEntityId}`;
 };
 
-const getRealmName = (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
+const getRealmName = (structure: NativeRows["Structure"]) => {
   const baseName = getRealmNameById(structure.metadata.realm_id);
   return structure.metadata.has_wonder ? `WONDER - ${baseName}` : baseName;
 };
 
 export const getStructureName = (
-  structure: ComponentValue<ClientComponents["Structure"]["schema"]>,
+  structure: NativeRows["Structure"],
   isBlitz: boolean,
   parentRealmContractPosition?: { col: number; row: number },
 ) => {
@@ -106,7 +105,8 @@ export const getStructureName = (
   } else if (structure.base.category === StructureType.Hyperstructure) {
     originalName = getHyperstructureName(structure);
   } else {
-    const structureTypeName = getStructureTypeName(structure.base.category as StructureType, isBlitz) || "Structure";
+    const structureTypeName =
+      getStructureTypeName(structure.base.category as StructureType, structure.metadata.mine_kind) || "Structure";
     originalName = `${structureTypeName} ${structure.entity_id}`;
   }
 
@@ -114,7 +114,7 @@ export const getStructureName = (
 };
 
 export const getVillageName = (
-  structure: ComponentValue<ClientComponents["Structure"]["schema"]>,
+  structure: NativeRows["Structure"],
   parentRealmPosition: { col: number; row: number },
 ) => {
   const direction = getDirectionBetweenAdjacentHexes(parentRealmPosition, {
@@ -149,27 +149,15 @@ export const isFallbackPlayerName = (name: string): boolean => /^Player-[0-9a-fA
 export const displayPlayerName = (address: ContractAddress | string, name: string | null | undefined): string =>
   name || buildFallbackPlayerName(typeof address === "string" ? address : `0x${address.toString(16)}`);
 
-export const getAddressName = (address: ContractAddress, components: ClientComponents) => {
-  const internalName = getInternalAddressName(address.toString());
-  if (internalName) return internalName;
+/**
+ * A player's name, from the one place names live: the player's Realms profile, looked up by the client that owns the
+ * store (a headless client may name no one). Null when the player has not chosen a name; `displayPlayerName` then
+ * shows the fallback.
+ */
+export type PlayerNameResolver = (address: ContractAddress | string) => string | null;
 
-  const addressBigInt = BigInt(address);
-  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([addressBigInt]));
-  if (!addressName) return undefined;
-  const name = shortString.decodeShortString(addressName.name.toString());
-  return isFallbackPlayerName(name) ? undefined : name;
-};
-
-export const getAddressNameFromEntity = (entityId: ID, components: ClientComponents): string | undefined => {
-  const address = getAddressFromStructureEntity(entityId, components);
-  return address ? getAddressName(address, components) : undefined;
-};
-
-export const getAddressFromStructureEntity = (
-  entityId: ID,
-  components: ClientComponents,
-): ContractAddress | undefined => {
-  return getComponentValue(components.Structure, gameEntityKey([BigInt(entityId)]))?.owner || undefined;
+export const getAddressFromStructureEntity = (entityId: ID, store: NativeFactStore): ContractAddress | undefined => {
+  return store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.owner;
 };
 
 export const getInternalAddressName = (address: string): string | undefined => {

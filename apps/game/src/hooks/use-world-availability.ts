@@ -1,25 +1,23 @@
 /**
- * Per-game availability + metadata for a CHOSEN game, keyed by launch name.
+ * Per-game availability + metadata for a CHOSEN game, keyed by (chain id, game id).
  *
- * Appchain-only (amendment S1): a "world" ref here is a game row inside a
- * directory world. Herald's directory resolves registry/config metadata; a
- * selective snapshot adds the connected player's settlement state. The card
- * grid rides the same directory through the bulk worlds summary.
+ * Herald's directory on the game's shard resolves registry/config metadata and the connected player's settlement
+ * state. The card grid rides the same directory through the bulk worlds summary.
  */
-import { WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
-import { fetchHeraldGameDirectory, resolveWorldIdForGame } from "@bibliothecadao/eternum/game-client";
-import { requireWorldById } from "@/runtime/world/world-directory";
-import type { WorldDeployment } from "@/runtime/world/world-directory";
-import type { GameChain as Chain } from "@realms-world/chain";
+import { fetchHeraldGameDirectory, type GameRef, type Shard } from "@bibliothecadao/eternum/game-client";
+import { requireOpenShard } from "@/runtime/world/shards";
+import { gameKey } from "@/runtime/world/store";
 import { useQueries } from "@tanstack/react-query";
 
-export interface WorldConfigMeta {
+interface WorldConfigMeta {
+  /** The game's display name from its shard's directory. */
+  name: string | null;
+  ready: boolean;
   mode: ResolvedGameMode;
-  // The directory world this meta belongs to — downstream flows pick their
-  // deployment (Herald, contract map) with it.
-  worldId: string | null;
+  // The shard this meta belongs to — downstream flows pick its Herald and contracts with it.
+  chainId: string | null;
   // The GameRegistry id this meta describes — the settle flow requires it
   // (registration targets a chosen game, never ambient scope).
   gameId: number | null;
@@ -34,7 +32,6 @@ export interface WorldConfigMeta {
   spiresSettledCount: number | null;
   settlementLayerMax: number | null;
   settlementLayersSkipped: number | null;
-  mapCenterOffset: number | null;
   seasonPassAddress: string | null;
   villagePassAddress: string | null;
   registrationCount: number | null;
@@ -47,6 +44,10 @@ export interface WorldConfigMeta {
   devModeOn: boolean;
   // Blitz-only: whether the connected player already settled into the game.
   isPlayerRegistered: boolean | null;
+  // Blitz-only: whether the connected player is on the game's fixed roster.
+  isRosterMember: boolean | null;
+  // Blitz-only: players on the fixed roster; settlement progress is settledPlayersCount over this.
+  rosterCount: number | null;
   // Eternum-only: whether the connected player already has at least one settled realm.
   hasPlayerSettledRealm: boolean | null;
   // Global settled structure counts used by landing cards.
@@ -55,18 +56,8 @@ export interface WorldConfigMeta {
   settledVillagesCount: number | null;
 }
 
-interface WorldRef {
-  name: string;
-  chain?: Chain;
-  worldId?: string;
-}
-
-export const getWorldKey = (world: WorldRef): string => (world.chain ? `${world.chain}:${world.name}` : world.name);
-
-interface WorldAvailability {
+interface WorldAvailability extends GameRef {
   worldKey: string;
-  worldName: string;
-  chain?: Chain;
   isAvailable: boolean;
   meta: WorldConfigMeta | null;
   isLoading: boolean;
@@ -74,8 +65,9 @@ interface WorldAvailability {
 }
 
 const emptyWorldConfigMeta = (): WorldConfigMeta => ({
+  name: null,
   mode: "unknown",
-  worldId: null,
+  chainId: null,
   gameId: null,
   startSettlingAt: null,
   startMainAt: null,
@@ -87,7 +79,6 @@ const emptyWorldConfigMeta = (): WorldConfigMeta => ({
   spiresSettledCount: null,
   settlementLayerMax: null,
   settlementLayersSkipped: null,
-  mapCenterOffset: null,
   seasonPassAddress: null,
   villagePassAddress: null,
   registrationCount: null,
@@ -97,7 +88,10 @@ const emptyWorldConfigMeta = (): WorldConfigMeta => ({
   registrationStartAt: null,
   registrationEndAt: null,
   devModeOn: false,
+  ready: false,
   isPlayerRegistered: null,
+  isRosterMember: null,
+  rosterCount: null,
   hasPlayerSettledRealm: null,
   settledPlayersCount: null,
   settledRealmsCount: null,
@@ -105,7 +99,9 @@ const emptyWorldConfigMeta = (): WorldConfigMeta => ({
 });
 
 const applyDirectoryGame = (meta: WorldConfigMeta, game: HeraldGameDirectoryEntry): void => {
+  meta.name = game.name;
   meta.gameId = game.game_id;
+  meta.ready = game.ready;
   meta.mode = game.mode ?? "unknown";
   meta.startSettlingAt = game.clock.start_settling_at;
   meta.startMainAt = game.clock.start_main_at;
@@ -124,40 +120,35 @@ const applyDirectoryGame = (meta: WorldConfigMeta, game: HeraldGameDirectoryEntr
   meta.spiresLayerDistance = game.settlement?.spires_layer_distance ?? null;
   meta.spiresMaxCount = game.settlement?.spires_max_count ?? null;
   meta.spiresSettledCount = game.settlement?.spires_settled_count ?? null;
-  meta.mapCenterOffset = game.settlement?.map_center_offset ?? null;
   meta.settledPlayersCount = game.player_count;
+  meta.rosterCount = game.roster_count;
   meta.settledRealmsCount = game.settled_realms_count;
   meta.settledVillagesCount = game.settled_villages_count;
 };
 
-const fetchGameMeta = async (
-  world: WorldDeployment,
-  gameName: string,
-  playerAddress?: string | null,
-): Promise<WorldConfigMeta> => {
+const fetchGameMeta = async (shard: Shard, gameId: number, playerAddress?: string | null): Promise<WorldConfigMeta> => {
   const meta = emptyWorldConfigMeta();
-  const directory = await fetchHeraldGameDirectory(world, playerAddress ?? undefined);
-  const game = directory.games.find((candidate) => candidate.name === gameName);
+  const directory = await fetchHeraldGameDirectory(shard, playerAddress ?? undefined);
+  const game = directory.games.find((candidate) => candidate.game_id === gameId);
   if (!game) return meta;
 
   applyDirectoryGame(meta, game);
   if (playerAddress && meta.mode === "blitz") {
     meta.isPlayerRegistered = game.player_state?.registered ?? false;
-  } else if (playerAddress && meta.mode === "eternum") {
+    meta.isRosterMember = game.player_state?.roster_member ?? false;
+  } else if (playerAddress && (meta.mode === "eternum" || meta.mode === "frontier")) {
     meta.hasPlayerSettledRealm = game.player_state?.settled ?? false;
   }
   return meta;
 };
 
 const checkWorldAvailability = async (
-  world: WorldRef,
+  game: GameRef,
   playerAddress?: string | null,
 ): Promise<{ isAvailable: boolean; meta: WorldConfigMeta | null }> => {
-  const worldId = world.worldId ?? (await resolveWorldIdForGame(world.name)) ?? undefined;
-  const deployment = requireWorldById(worldId);
-
-  const meta = await fetchGameMeta(deployment, world.name, playerAddress);
-  if (meta) meta.worldId = deployment.id;
+  const shard = await requireOpenShard(game.chainId);
+  const meta = await fetchGameMeta(shard, game.gameId, playerAddress);
+  meta.chainId = shard.chainId;
   return { isAvailable: meta.gameId !== null, meta };
 };
 
@@ -165,13 +156,19 @@ const checkWorldAvailability = async (
  * Hook to check multiple games' availability with batched queries.
  * Auto-refreshes every 30 seconds to catch registration and phase updates.
  */
-export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, playerAddress?: string | null) => {
+export const useWorldsAvailability = (
+  worlds: GameRef[],
+  enabled = true,
+  playerAddress?: string | null,
+  refetchIntervalMs?: number,
+) => {
   const queries = useQueries({
     queries: worlds.map((world) => ({
       // Include playerAddress in query key so it refetches when user connects
-      queryKey: [...WORLD_AVAILABILITY_QUERY_KEY, getWorldKey(world), playerAddress ?? "anonymous"],
+      queryKey: ["worldAvailability", gameKey(world), playerAddress ?? "anonymous"],
       queryFn: () => checkWorldAvailability(world, playerAddress),
-      enabled: enabled && !!world.name,
+      enabled,
+      refetchInterval: refetchIntervalMs,
       staleTime: 30 * 1000,
       gcTime: 10 * 60 * 1000,
       retry: 1,
@@ -182,11 +179,11 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
 
   queries.forEach((query, index) => {
     const world = worlds[index];
-    const worldKey = getWorldKey(world);
+    const worldKey = gameKey(world);
     results.set(worldKey, {
       worldKey,
-      worldName: world.name,
-      chain: world.chain,
+      chainId: world.chainId,
+      gameId: world.gameId,
       isAvailable: query.data?.isAvailable ?? false,
       meta: query.data?.meta ?? null,
       isLoading: query.isLoading || (query.data === undefined && query.error == null),

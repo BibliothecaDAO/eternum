@@ -1,8 +1,8 @@
-import type { AppStore } from "@/hooks/store/use-ui-store";
+import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
+import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import type { SetupResult } from "@bibliothecadao/dojo";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
-import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
+import { Position, configManager, structureMapPosition } from "@bibliothecadao/eternum";
 
 import { resolveInitialStructureSelection } from "../sync/initial-structure-selection";
 
@@ -13,33 +13,21 @@ interface InitialSelectableStructure {
   category: number;
 }
 
-const readInitialSelectableStructures = (setup: SetupResult): InitialSelectableStructure[] =>
-  Array.from(runQuery([Has(setup.components.Structure)]))
-    .flatMap((entity) => {
-      const structure = getComponentValue(setup.components.Structure, entity);
-      if (!structure) return [];
-
-      return [
-        {
-          entity_id: Number(structure.entity_id),
-          coord_x: Number(structure.base.coord_x),
-          coord_y: Number(structure.base.coord_y),
-          category: Number(structure.base.category),
-        },
-      ];
+const readInitialSelectableStructures = (setup: SetupResult, owner?: bigint): InitialSelectableStructure[] => {
+  const gameId = configManager.getActiveGameId();
+  const structures =
+    owner === undefined ? setup.store.inGame("Structure", gameId) : setup.store.structuresOwnedBy(gameId, owner);
+  return [...structures]
+    .map((structure) => {
+      const position = structureMapPosition(setup.store, structure);
+      return {
+        entity_id: structure.entity_id,
+        coord_x: position.x,
+        coord_y: position.y,
+        category: structure.base.category,
+      };
     })
     .sort((left, right) => left.entity_id - right.entity_id);
-
-const readOwnedInitialStructures = (
-  setup: SetupResult,
-  ownerAddress: string | undefined,
-): InitialSelectableStructure[] => {
-  if (!ownerAddress) return [];
-  const owner = BigInt(ownerAddress);
-  return readInitialSelectableStructures(setup).filter((candidate) => {
-    const structure = getComponentValue(setup.components.Structure, gameEntityKey([BigInt(candidate.entity_id)]));
-    return structure?.owner === owner;
-  });
 };
 
 const resolveConnectedAccountAddress = (): string | undefined => {
@@ -49,20 +37,42 @@ const resolveConnectedAccountAddress = (): string | undefined => {
   return hasConnectedAccount ? accountAddress : undefined;
 };
 
-/** Opens the UI on the player's realm, or the first structure in spectator mode, once the snapshot is in RECS. */
-export const selectInitialStructure = (setup: SetupResult, state: AppStore): void => {
-  if (state.structureEntityId && state.structureEntityId !== 0) return;
-
-  const ownedStructures = readOwnedInitialStructures(setup, resolveConnectedAccountAddress());
-  const firstGlobalStructure = ownedStructures.length > 0 ? null : (readInitialSelectableStructures(setup)[0] ?? null);
-  const { selectedStructure, spectator } = resolveInitialStructureSelection({
-    ownedStructures,
-    firstGlobalStructure,
+/**
+ * Keeps the UI on a structure for the life of the game session. The snapshot can land after boot and the account can
+ * be restored after that, so a choice made once at boot left a reload with nothing selected. This chooses again when
+ * the facts or the account change: the player's realm once they own one, else the first structure as a spectator.
+ */
+export const followInitialStructure = (setup: SetupResult): (() => void) => {
+  const choose = () => chooseInitialStructure(setup, useUIStore.getState());
+  choose();
+  const stopFacts = setup.store.subscribe(choose);
+  const stopAccount = useAccountStore.subscribe((state, previous) => {
+    if (state.account !== previous.account) choose();
   });
+  return () => {
+    stopFacts();
+    stopAccount();
+  };
+};
+
+const chooseInitialStructure = (setup: SetupResult, state: AppStore): void => {
+  const hasSelection = Boolean(state.structureEntityId);
+  if (hasSelection && !isSpectatorFallback(state)) return;
+
+  const address = resolveConnectedAccountAddress();
+  const ownedStructures = address ? readInitialSelectableStructures(setup, BigInt(address)) : [];
+  // A spectator fallback yields only to the player's own realm.
+  if (hasSelection && ownedStructures.length === 0) return;
+
+  const globalStructures = ownedStructures.length > 0 ? [] : readInitialSelectableStructures(setup);
+  const { selectedStructure, spectator } = resolveInitialStructureSelection({ ownedStructures, globalStructures });
   if (!selectedStructure) return;
 
   state.setStructureEntityId(selectedStructure.entity_id, {
     spectator,
-    worldMapPosition: { col: selectedStructure.coord_x, row: selectedStructure.coord_y },
+    worldMapPosition: Position.fromContract({ x: selectedStructure.coord_x, y: selectedStructure.coord_y }),
   });
 };
+
+/** Spectating because no account had arrived, not because the player asked to spectate. */
+const isSpectatorFallback = (state: AppStore): boolean => state.isSpectating && !isExplicitSpectateSession();

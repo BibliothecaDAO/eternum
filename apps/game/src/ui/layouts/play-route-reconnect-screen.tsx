@@ -14,7 +14,7 @@ export const PlayRouteReconnectScreen = ({ onReturnToDashboard, reconnectError }
   <BootLoaderShell
     mode="indeterminate"
     title="Sign in to Continue"
-    subtitle="This world route is still valid. Sign in with your Starknet identity wallet and your gameplay account is prepared here."
+    subtitle="This world route is still valid. Sign in with your Realms account and your gameplay account is prepared here."
     caption="Account Recovery"
     detail={
       <div className="flex flex-col items-center gap-3">

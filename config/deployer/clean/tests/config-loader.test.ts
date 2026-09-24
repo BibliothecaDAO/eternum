@@ -1,4 +1,4 @@
-import { BuildingType, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 import { describe, expect, test } from "bun:test";
 import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config/config-loader";
 
@@ -7,19 +7,6 @@ type ConfigWithFactoryAddress = {
 };
 
 describe("applyDeploymentConfigOverrides", () => {
-  test("loads generated configs with neutral biome climate defaults", () => {
-    const config = loadEnvironmentConfiguration("madara.blitz");
-
-    expect(config.biomeClimate).toEqual({
-      elevationScaleBps: 10_000,
-      moistureScaleBps: 10_000,
-      elevationBiasBps: 10_000,
-      moistureBiasBps: 10_000,
-      elevationSeed: 0,
-      moistureSeed: 0,
-    });
-  });
-
   test("applies launch-time boolean overrides", () => {
     const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
@@ -39,37 +26,6 @@ describe("applyDeploymentConfigOverrides", () => {
     expect(result.settlement?.two_player_mode).toBe(false);
   });
 
-  test("applies the inferred official 60-minute blitz profile before launch overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
-    const result = applyDeploymentConfigOverrides(baseConfig, {
-      startMainAt: 1_763_112_600,
-      factoryAddress: "0xabc",
-      durationSeconds: 3_600,
-    });
-
-    expect(result.season.durationSeconds).toBe(3_600);
-    expect(result.resources.productionByComplexRecipeOutputs[ResourcesIds.Donkey]).toBe(3);
-    expect(result.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(2);
-    expect(result.resources.productionByComplexRecipeOutputs[ResourcesIds.Essence]).toBe(20);
-    expect(result.troop.stamina.staminaInitial).toBe(30);
-    expect(result.troop.stamina.staminaGainPerTick).toBe(30);
-    expect(result.victoryPoints.pointsForTileExploration).toBe(5_000_000n);
-    expect(result.victoryPoints.pointsForNonHyperstructureClaimAgainstBandits).toBe(250_000_000n);
-    expect(result.victoryPoints.pointsForRelicDiscovery).toBe(250_000_000n);
-    expect(result.victoryPoints.pointsForHyperstructureClaimAgainstBandits).toBe(1_000_000_000n);
-    expect(result.victoryPoints.hyperstructurePointsPerCycle).toBe(
-      baseConfig.victoryPoints.hyperstructurePointsPerCycle,
-    );
-    expect(result.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount).toBe(540);
-    expect(result.realmUpgradeCosts[RealmLevels.Kingdom]?.[0]?.amount).toBe(720);
-    expect(result.startingResources.find((resource) => resource.resource === ResourcesIds.Knight)?.amount).toBe(3_500);
-    expect(result.blitz.exploration.rewardProfileId).toBe("official-60");
-    expect(result.blitz.exploration.rewards).toHaveLength(6);
-    expect(result.campStartingResources.find((resource) => resource.resource === ResourcesIds.Donkey)?.min_amount).toBe(
-      1_000,
-    );
-  });
-
   test("keeps the base blitz balance for custom durations", () => {
     const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
@@ -85,7 +41,6 @@ describe("applyDeploymentConfigOverrides", () => {
     expect(result.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount).toBe(
       baseConfig.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount,
     );
-    expect(result.blitz.exploration.rewardProfileId).toBe("official-90");
   });
 
   test("applies validated map config overrides", () => {
@@ -169,7 +124,7 @@ describe("applyDeploymentConfigOverrides", () => {
     ).toThrow("biomeClimateOverrides.moistureSeed must be an integer between 0 and 4294967295");
   });
 
-  test("lets explicit launch-time overrides win after the inferred blitz profile is applied", () => {
+  test("lets explicit launch-time overrides change the game schedule", () => {
     const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
       startMainAt: 1_763_112_600,

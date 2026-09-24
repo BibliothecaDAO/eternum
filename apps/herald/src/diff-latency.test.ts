@@ -27,7 +27,7 @@ describe("DiffLatencyMonitor", () => {
     expect(warnings()).toEqual([{ durationMs: 201, event: "herald_diff_slow", kind: "confirmed" }]);
   });
 
-  it("digests a kind when a record arrives a window after its last digest", () => {
+  it("digests every kind when a record arrives a window after the window opened", () => {
     const { advance, digests, monitor } = monitorFixture();
     for (let sample = 1; sample <= 98; sample += 1) monitor.record("preconfirmed", sample);
     advance(59_999);
@@ -46,34 +46,31 @@ describe("DiffLatencyMonitor", () => {
         p95Ms: 95,
         windowMs: 60_000,
       },
+      { count: 0, event: "herald_diff_latency_digest", kind: "confirmed", windowMs: 60_000 },
     ]);
 
     advance(59_999);
     monitor.record("preconfirmed", 7);
-    expect(digests()).toHaveLength(1);
+    expect(digests()).toHaveLength(2);
     advance(1);
     monitor.record("preconfirmed", 9);
-    expect(digests().at(-1)).toMatchObject({ count: 2, maxMs: 9, p50Ms: 7, p95Ms: 9, windowMs: 60_000 });
+    expect(digests().at(-2)).toMatchObject({ count: 2, maxMs: 9, p50Ms: 7, p95Ms: 9, windowMs: 60_000 });
   });
 
-  it("keeps each kind's window separate", () => {
+  it("shows a kind with no samples in an active window as a zero count, and stays silent when idle", () => {
     const { advance, digests, monitor } = monitorFixture();
     const digestedKinds = () => digests().map(({ count, kind }) => [kind, count]);
 
-    monitor.record("preconfirmed", 1);
-    advance(30_000);
     monitor.record("confirmed", 2);
-    advance(30_000);
-    monitor.record("preconfirmed", 3);
+    advance(60_000);
     monitor.record("confirmed", 4);
-    expect(digestedKinds()).toEqual([["preconfirmed", 2]]);
-
-    advance(30_000);
-    monitor.record("confirmed", 5);
     expect(digestedKinds()).toEqual([
-      ["preconfirmed", 2],
-      ["confirmed", 3],
+      ["preconfirmed", 0],
+      ["confirmed", 2],
     ]);
+
+    advance(600_000);
+    expect(digests()).toHaveLength(2);
   });
 
   it("bounds the samples kept for percentiles while counting every diff", () => {
@@ -85,6 +82,7 @@ describe("DiffLatencyMonitor", () => {
     monitor.record("confirmed", 1_000);
 
     expect(digests()).toEqual([
+      { count: 0, event: "herald_diff_latency_digest", kind: "preconfirmed", windowMs: 60_000 },
       {
         count: 3_049,
         event: "herald_diff_latency_digest",

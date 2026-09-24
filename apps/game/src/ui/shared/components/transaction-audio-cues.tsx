@@ -1,5 +1,5 @@
 import { classifyTransactionError } from "@bibliothecadao/provider";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { useEffect } from "react";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
@@ -21,7 +21,7 @@ export function TransactionAudioCues() {
     setup: {
       network: { provider },
     },
-  } = useDojo();
+  } = useGame();
 
   useEffect(() => {
     const handleTransactionPending = (receipt: unknown) => {
@@ -35,7 +35,7 @@ export function TransactionAudioCues() {
     };
 
     const handleTransactionFailed = (payload: TransactionFailurePayload) => {
-      if (payload.failureKind === "submission_timeout_no_hash") {
+      if (payload.failureKind === "action_outcome_unknown") {
         AudioManager.getInstance().play("ui.tx_fail");
         return;
       }

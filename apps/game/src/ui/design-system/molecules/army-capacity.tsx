@@ -1,13 +1,12 @@
 import { Backpack as Inventory } from "@/ui/design-system/atoms/game-icons";
 import { formatNumber, formatStringNumber } from "@/ui/utils/utils";
 import { configManager, getArmyTotalCapacityInKg, getRemainingCapacityInKg } from "@bibliothecadao/eternum";
-import { ClientComponents } from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useMemo } from "react";
 import { ProgressBar } from "./progress-bar";
 
 type ArmyCapacityProps = {
-  resource: ComponentValue<ClientComponents["Resource"]["schema"]> | undefined;
+  resource: NativeRows["ResourceWeight"] | undefined;
   className?: string;
 };
 

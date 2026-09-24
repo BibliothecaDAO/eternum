@@ -1,0 +1,258 @@
+name: native-world
+
+on:
+  workflow_call:
+    inputs:
+      world:
+        description: Run the native-world contract suite; the caller sets it when the suite's own inputs changed.
+        type: boolean
+        default: true
+
+# Every job here reads only. The one exception, publish-snforge, runs on push events alone, so no pull request run,
+# from a fork or not, ever holds a token that can write to the repository.
+permissions:
+  contents: read
+
+jobs:
+  native-world:
+    if: inputs.world
+    runs-on: ubuntu-latest
+    outputs:
+      built-snforge: ${{ steps.snforge.outputs.built }}
+    # 1.5x the slowest green run (33 min): a cold snforge rebuild (13-18 min, when its cache is not readable on the
+    # ref) plus the full suite (13-23 min) overran the former 35.
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+          scarb-lock: contracts/l3/world-native/Scarb.lock
+      # The corrected snforge takes 13-18 minutes to build, and an Actions cache saved on one branch is not readable
+      # on another, so every branch rebuilt it cold. It is published once per patch hash as an asset of the
+      # ci-toolchain release, which every ref can download.
+      - name: Install corrected snforge
+        id: snforge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ASSET:
+            snforge-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('contracts/l3/world-native/.tool-versions',
+            'contracts/l3/world-native/build-snforge.sh',
+            'contracts/l3/world-native/toolchain/library-call-rollback.patch') }}
+        run: |
+          bin="$RUNNER_TEMP/native-snforge/bin"
+          mkdir -p "$bin"
+          if gh release download ci-toolchain --repo "$GITHUB_REPOSITORY" --pattern "$ASSET.gz" --dir "$RUNNER_TEMP"; then
+            gunzip -c "$RUNNER_TEMP/$ASSET.gz" > "$bin/snforge"
+            chmod 755 "$bin/snforge"
+            echo "Restored $ASSET from the ci-toolchain release"
+          else
+            echo "::notice::$ASSET is not published yet; building it"
+            bash contracts/l3/world-native/build-snforge.sh "$bin"
+            gzip -c "$bin/snforge" > "$RUNNER_TEMP/$ASSET.gz"
+            echo "built=$ASSET" >> "$GITHUB_OUTPUT"
+          fi
+          "$bin/snforge" --version
+          echo "$bin" >> "$GITHUB_PATH"
+      - name: Keep the freshly built snforge for the publish job
+        if: steps.snforge.outputs.built != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: corrected-snforge
+          path: ${{ runner.temp }}/${{ steps.snforge.outputs.built }}.gz
+          if-no-files-found: error
+          retention-days: 1
+      - uses: software-mansion/setup-universal-sierra-compiler@v1
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - uses: oven-sh/setup-bun@v2
+      - name: Install schema dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build native contracts
+        id: native-build
+        working-directory: contracts/l3/world-native
+        run: scarb build
+      - name: Enforce class size headroom
+        run: |
+          node --test contracts/l3/world-native/scripts/check-class-sizes.test.mjs contracts/l3/world-native/scripts/event-layouts.test.mjs
+          node contracts/l3/world-native/scripts/check-class-sizes.mjs > "$RUNNER_TEMP/native-class-sizes.json"
+      - name: Upload class size report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-class-sizes
+          path: ${{ runner.temp }}/native-class-sizes.json
+          if-no-files-found: error
+      - name: Check recorded entrypoint ABI
+        run: |
+          (cd contracts/l3/randomness-protocol && scarb build)
+          python3 contracts/l3/randomness-protocol/check-entrypoint.py \
+            contracts/l3/world-native/target/dev/world_native_Games.contract_class.json \
+            "$RUNNER_TEMP/recorded-entrypoint.json"
+      - name: Test all native rules and recorded execution
+        working-directory: contracts/l3/world-native
+        run: /usr/bin/time -v scarb test
+      - name: Check fact wire declarations against the test-profile ABI
+        run: node contracts/l3/world-native/scripts/check-fact-wire.mjs
+      - name: Regenerate production schema and reject drift
+        if: ${{ !cancelled() && steps.native-build.outcome == 'success' }}
+        run: |
+          bun contracts/l3/world-native/scripts/generate-schema.mjs
+          git diff --exit-code -- contracts/l3/world-native/schema
+      - name: Format native sources and reject drift
+        if: ${{ !cancelled() }}
+        working-directory: contracts/l3/world-native
+        run: |
+          scarb fmt
+          git diff --exit-code -- src storage
+      - name: Record native regeneration diff
+        if: always()
+        run: git diff --binary -- contracts/l3/world-native > "$RUNNER_TEMP/native-regeneration.patch"
+      - name: Upload native regeneration diff
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-regeneration
+          path: ${{ runner.temp }}/native-regeneration.patch
+          if-no-files-found: error
+
+  publish-snforge:
+    needs: native-world
+    if: github.event_name == 'push' && needs.native-world.outputs.built-snforge != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: corrected-snforge
+      - name: Publish the corrected snforge to the ci-toolchain release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ASSET: ${{ needs.native-world.outputs.built-snforge }}
+        run: |
+          # Another run may create the release first; either way it exists before the upload.
+          gh release view ci-toolchain --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1 ||
+            gh release create ci-toolchain --repo "$GITHUB_REPOSITORY" --prerelease --title "CI toolchain" \
+              --notes "Tool binaries the validation workflow builds once per input hash and every branch downloads." ||
+            gh release view ci-toolchain --repo "$GITHUB_REPOSITORY" > /dev/null
+          gh release upload ci-toolchain "$ASSET.gz" --repo "$GITHUB_REPOSITORY" --clobber
+
+  randomness-protocol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+          scarb-lock: contracts/l3/randomness-protocol/Scarb.lock
+      - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+      - uses: software-mansion/setup-universal-sierra-compiler@v1
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+      - name: Build and test recorded execution protocol
+        working-directory: contracts/l3/randomness-protocol
+        run: |
+          scarb fmt --check
+          scarb build
+          /usr/bin/time -v scarb test
+
+  gateway:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/gateway
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/gateway/target
+          key: gateway-${{ hashFiles('apps/gateway/Cargo.lock', 'apps/gateway/rust-toolchain.toml') }}
+      - name: Check, lint and test the admission gateway
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets --locked -- -D warnings
+          cargo test --locked
+
+  player-account:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      # The account package declares its own toolchain (repository root), not world-native's.
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: .tool-versions
+          scarb-lock: contracts/l3/player-account/Scarb.lock
+      - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          tool-versions: .tool-versions
+      - uses: software-mansion/setup-universal-sierra-compiler@v1
+      - name: Build and test the player account
+        working-directory: contracts/l3/player-account
+        run: |
+          scarb fmt --check
+          snforge test
+
+  native-deployer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build shared packages
+        run: pnpm run build:packages
+      - name: Check canonical realm metadata
+        run: python3 scripts/generate-realm-metadata.py --check
+      - name: Check generated configs match the config source
+        run: pnpm run config:generate --check
+      - name: Type-check the shard tooling and harness
+        run: pnpm exec tsc -p deploy/athanor/tsconfig.json
+      - name: Test native deployment and registrar
+        run: |
+          for file in config/deployer/clean/world/native/*.test.ts config/deployer/clean/tests/*.test.ts; do
+            bun test "$file"
+          done
+      - name: Check the public RPC boundary
+        run: bun test deploy/athanor/scripts/read-rpc.test.ts
+      - name: Test fail-closed deployment paths
+        run: |
+          python3 -m unittest discover -s deploy/athanor/scripts -p "test_*.py" -v
+
+  native-provider:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build provider dependencies
+        run: pnpm --filter @bibliothecadao/provider... run build
+      - name: Test native command provider
+        run: pnpm --dir packages/provider exec vitest run

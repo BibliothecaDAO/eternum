@@ -1,18 +1,18 @@
-import type { ArmyInfo, ClientComponents, ContractAddress, ID } from "@bibliothecadao/types";
-import { type Entity, HasValue, type QueryFragment } from "@dojoengine/recs";
-
+import type { ArmyInfo, ContractAddress, ID } from "@bibliothecadao/types";
+import type { NativeFactStore } from "../native-fact-store";
+import { configManager } from "../../managers/config-manager";
 import { StaminaManager } from "../../managers/stamina-manager";
 import { formatArmies } from "../../utils/army";
+import type { PlayerNameResolver } from "../../utils/entities";
+import { liveHomeArmies } from "../../utils/expeditions";
 
-/** The explorer armies a structure fields. */
-export const explorersByStructureQuery = (components: ClientComponents, structureEntityId: ID): QueryFragment[] => [
-  HasValue(components.ExplorerTroops, { owner: structureEntityId }),
-];
+export const readExplorers = (
+  store: NativeFactStore,
+  structureEntityId: ID,
+  viewer: ContractAddress,
+  playerName: PlayerNameResolver,
+): ArmyInfo[] =>
+  formatArmies(liveHomeArmies(store, structureEntityId, configManager.getActiveGameId()), viewer, store, playerName);
 
-/** isMine, isHome, and adjacency are relative to the viewer, so the same army reads differently per player. */
-export const readExplorers = (components: ClientComponents, entities: Entity[], viewer: ContractAddress): ArmyInfo[] =>
-  formatArmies(entities, viewer, components);
-
-/** The manager reads the army's ExplorerTroops row on every call; a hook re-creates it when that row changes. */
-export const readStaminaManager = (components: ClientComponents, armyEntityId: ID): StaminaManager =>
-  new StaminaManager(components, armyEntityId);
+export const readStaminaManager = (store: NativeFactStore, armyEntityId: ID): StaminaManager =>
+  new StaminaManager(store, armyEntityId);

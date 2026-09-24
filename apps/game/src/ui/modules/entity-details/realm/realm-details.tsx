@@ -1,3 +1,6 @@
+import { NativeBridgePanel } from "@/ui/features/world/components/actions/native-bridge-panel";
+import { RealmLadders } from "./realm-ladders";
+import Button from "@/ui/design-system/atoms/button";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
@@ -19,7 +22,8 @@ import {
   isStructureImmune,
   toHexString,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -27,6 +31,7 @@ import { formatIncomingEta, useStructureUpgrade } from "@/ui/modules/entity-deta
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { ChevronsUp, Crown as CrownIcon } from "@/ui/design-system/atoms/game-icons";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 // One chip style for every requirement / produces row — matches the
 // building-tile inspector so the castle reads with the same vocabulary.
@@ -40,15 +45,18 @@ const SectionRow = ({ label, children }: { label: string; children: React.ReactN
 );
 
 const RealmVillageDetails = () => {
-  const dojo = useDojo();
+  const ordersAllowed = useUIStore(canIssueOrders);
+  const game = useGame();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setTooltip = useTooltipStore((state) => state.setTooltip);
   const mode = useGameModeConfig();
+  const revision = useNativeRevision(["Structure", "Guard", "GuildMember"]);
 
   const structure = useMemo(
-    () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.components),
-    [structureEntityId, dojo.account.account.address, dojo.setup.components],
+    () =>
+      getStructure(structureEntityId, ContractAddress(game.account.account.address), game.setup.store, getPlayerName),
+    [structureEntityId, game.account.account.address, game.setup.store, revision],
   );
 
   const isRealm = useMemo(() => {
@@ -64,7 +72,7 @@ const RealmVillageDetails = () => {
   }, [mode, structure]);
 
   const address = useMemo(() => {
-    return toHexString(structure?.owner || 0n);
+    return structure ? toHexString(structure.owner) : undefined;
   }, [structure]);
 
   const isImmune = useMemo(() => isStructureImmune(currentBlockTimestamp || 0), [structure, currentBlockTimestamp]);
@@ -109,12 +117,24 @@ const RealmVillageDetails = () => {
               className="uppercase hover:text-white cursor-pointer transition-colors"
               onClick={() => copyPlayerAddressToClipboard(structure.owner, structure.ownerName || "")}
             >
-              {displayAddress(address)}
+              {address ? displayAddress(address) : "Loading owner"}
             </span>
           </div>
         </div>
 
         {(isRealm || isVillageLike) && <Castle />}
+        {ordersAllowed && isVillageLike && structure.isMine && !structure.structure.base.starting_troops_granted && (
+          <Button
+            onClick={() =>
+              void game.setup.systemCalls
+                .receive_army_grant({ signer: game.account.account, village_id: structureEntityId })
+                .catch((error: unknown) => toast.error(extractReadableErrorMessage(error)))
+            }
+          >
+            Receive village army
+          </Button>
+        )}
+        {(isRealm || isVillageLike) && <NativeBridgePanel structureId={structureEntityId} />}
       </div>
     )
   );
@@ -123,6 +143,7 @@ const RealmVillageDetails = () => {
 export const RealmUpgradeCompact = () => {
   const ordersAllowed = useUIStore(canIssueOrders);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const ladders = <RealmLadders structureEntityId={structureEntityId} />;
   const upgradeInfo = useStructureUpgrade(structureEntityId);
   if (!upgradeInfo) return null;
 
@@ -154,6 +175,7 @@ export const RealmUpgradeCompact = () => {
             <span className="text-gold">Max</span>
           </span>
         </SectionRow>
+        {ladders}
       </div>
     );
   }
@@ -206,6 +228,7 @@ export const RealmUpgradeCompact = () => {
           </button>
         </div>
       )}
+      {ladders}
     </div>
   );
 };

@@ -1,82 +1,73 @@
-import { describe, expect, test } from "bun:test";
-import type { RegistrarManifest } from "../registrar/calls";
-
-const {
+import type { RpcProvider } from "starknet";
+import { describe, expect, test, mock } from "bun:test";
+import schema from "../../../../contracts/l3/world-native/schema/schema.json";
+import {
   assertRegistrarAvailable,
-  resolveRegistrarExecutionDetails,
-  resolveRegistrarContractAddress,
-  resolveRegistrarWorldAddress,
+  settleBlitzRoster,
   resolveCreatedGameId,
-} = await import("../registrar/calls");
+  resolveRegistrarExecutionDetails,
+  resolveRegistrarWorldAddress,
+  type RegistrarManifest,
+} from "../registrar/calls";
 
-const manifest: RegistrarManifest = {
-  events: [{ tag: "s2-GameCreated", selector: "0xabc" }],
-};
+const manifest = {
+  world: { address: "0x123", abi: [...Object.values(schema.types), ...schema.domains.season.entrypoints] },
+  native: {
+    activeSchema: schema.identity,
+    schemas: { [schema.identity]: schema },
+    version: 2,
+  },
+} as unknown as RegistrarManifest;
 
-describe("registrar receipt parsing", () => {
-  test("uses fixed zero-price bounds on the fee-free lab chain", () => {
-    expect(resolveRegistrarExecutionDetails("madara.blitz")).toEqual({
-      version: 3,
-      tip: 0,
-      resourceBounds: {
-        l1_gas: { max_amount: 0n, max_price_per_unit: 0n },
-        l1_data_gas: { max_amount: 0n, max_price_per_unit: 0n },
-        l2_gas: { max_amount: 1_200_000_000n, max_price_per_unit: 0n },
-      },
+describe("native registrar", () => {
+  test("uses fixed zero-price bounds on the lab chain", () => {
+    expect(resolveRegistrarExecutionDetails().resourceBounds?.l2_gas).toEqual({
+      max_amount: 1_200_000_000n,
+      max_price_per_unit: 0n,
     });
   });
-
-  test("reads a directly emitted GameCreated key", () => {
-    const receipt = {
-      events: [{ keys: ["0xabc", "0x7"], data: [] }],
-    };
-
-    expect(resolveCreatedGameId(receipt, manifest)).toBe(7);
-  });
-
-  test("reads GameCreated from the Dojo EventEmitted envelope", () => {
-    const receipt = {
-      events: [
-        {
-          keys: ["0x111", "0xabc", "0x222"],
-          data: ["0x2", "0x7", "0x1", "0x4", "0x0", "0x123", "0x456", "0x789"],
-        },
-      ],
-    };
-
-    expect(resolveCreatedGameId(receipt, manifest)).toBe(7);
-  });
-
-  test("ignores unrelated events", () => {
-    const receipt = {
-      events: [{ keys: ["0xdef", "0x7"], data: [] }],
-    };
-
-    expect(resolveCreatedGameId(receipt, manifest)).toBeUndefined();
-  });
-
-  test("rejects a stale pre-A2 appchain manifest", () => {
-    const staleManifest: RegistrarManifest = {
-      world: { address: "0xstaleworld" },
-      contracts: [
-        {
-          tag: "s1_eternum-registrar_systems",
-          address: "0xstaleregistrar",
-          systems: ["create_game"],
-        },
-        { tag: "s1_eternum-blitz_realm_systems", address: "0xstaleblitz" },
-      ],
-    };
-
-    expect(() => resolveRegistrarWorldAddress(staleManifest)).toThrow("s2-registrar_systems is missing");
-    expect(() => resolveRegistrarContractAddress("blitz_realm_systems", staleManifest)).toThrow(
-      "blitz_realm_systems is missing",
+  test("rejects a non-native manifest before any transaction", () => {
+    expect(() => assertRegistrarAvailable({ world: { address: "0x123" } } as RegistrarManifest)).toThrow(
+      "no active native schema",
     );
+    const legacy = structuredClone(manifest);
+    legacy.native.schemas[schema.identity].domains.season.contract = "SeasonDomain";
+    expect(() => assertRegistrarAvailable(legacy)).toThrow("Games ABI");
   });
+  test("resolves the world from the validated native deployment", () => {
+    assertRegistrarAvailable(manifest);
+    expect(resolveRegistrarWorldAddress(manifest)).toBe("0x123");
+  });
+  test("accepts each declared game row prefix only from Games", () => {
+    const model = schema.models.find((model) => model.name === "GameRegistry")!;
+    for (const layout of schema.domains.registry.events.filter((event) => event.name === "RowSet")) {
+      const event = {
+        from_address: "0x123",
+        keys: [...layout.prefix, "1", model.identity],
+        data: ["1", "7", "1", "0"],
+      };
+      expect(resolveCreatedGameId({ events: [event] }, manifest)).toBe(7);
+      expect(resolveCreatedGameId({ events: [{ ...event, from_address: "0x999" }] }, manifest)).toBeUndefined();
+      expect(resolveCreatedGameId({ events: [{ ...event, data: ["1", "7", "2", "0"] }] }, manifest)).toBeUndefined();
+    }
+  });
+});
 
-  test("resolves the Madara registrar from the deployed manifest", () => {
-    expect(resolveRegistrarContractAddress("registrar_systems", "madara.blitz")).toBe(
-      "0x765e9ea6caf96b51e28c22337869615e101db8f61665750830c2bf51eb6a553",
-    );
-  });
+test("a ready roster submits no settlement transactions on retry", async () => {
+  const provider = {
+    callContract: mock(async () => ["1", "2", "291", "0", "1", "0", "100", "200", "300", "5", "1"]),
+  };
+  const settlement = await settleBlitzRoster(
+    provider as unknown as RpcProvider,
+    7,
+    { accountAddress: "0x123", privateKey: "0x1234" },
+    manifest,
+    "http://unused.invalid",
+  );
+  expect(settlement).toEqual({ finalizeAt: 305, settlementTransactions: 0 });
+  expect(provider.callContract).toHaveBeenCalledTimes(1);
+  expect(provider.callContract).toHaveBeenCalledWith(
+    { contractAddress: "0x123", entrypoint: "game", calldata: [7] },
+    "latest",
+  );
 });

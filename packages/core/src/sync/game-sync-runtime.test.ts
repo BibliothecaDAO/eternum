@@ -8,9 +8,10 @@ import {
   SupersededGameSyncStartError,
 } from "./game-sync-runtime";
 import type {
-  GameSyncEntity,
+  GameSyncEvent,
   GameSyncEventConfirmation,
-  GameSyncEntityStoreOperation,
+  GameSyncFact,
+  GameSyncFactBatch,
   GameSyncSessionStart,
   GameSyncStore,
   GameSyncSubscriptionHandlers,
@@ -18,98 +19,120 @@ import type {
   GameSyncWriter,
 } from "./game-sync-types";
 
-const entity = (id: string, models: Record<string, unknown>): GameSyncEntity => ({ hashed_keys: id, models });
+const fact = (key: string, model: string, value: Record<string, unknown> | null): GameSyncFact => ({
+  model,
+  key,
+  value,
+});
+const event = (key: string, model: string, value: Record<string, unknown>): GameSyncEvent => ({ model, key, value });
+const confirmed: GameSyncEventConfirmation = { block: 12, preconfirmed: false };
+const provisional: GameSyncEventConfirmation = { block: null, preconfirmed: true };
 
 const flushMicrotasks = async (count = 8): Promise<void> => {
   for (let index = 0; index < count; index += 1) await Promise.resolve();
 };
 
-const createMemoryStore = (initial: Record<string, Record<string, unknown>> = {}) => {
-  const rows = new Map(Object.entries(initial).map(([id, models]) => [id, { ...models }]));
-  const events: GameSyncEntity[] = [];
-  const operations: GameSyncEntityStoreOperation[] = [];
-
+/** Rows by "model:key", with the native store's replacement rule; writes and events are recorded. */
+const createMemoryStore = (initial: GameSyncFact[] = []) => {
+  const rows = new Map<string, Record<string, unknown>>();
+  const events: GameSyncEvent[] = [];
+  const writes: number[] = [];
   const store: GameSyncStore = {
-    applyEntityOperations(nextOperations) {
-      operations.push(...nextOperations);
-      nextOperations.forEach((operation) => {
-        if (operation.type === "upsert") {
-          operation.entities.forEach((update) => {
-            rows.set(update.hashed_keys, { ...rows.get(update.hashed_keys), ...update.models });
-          });
-        } else if (operation.type === "remove-components") {
-          const models = rows.get(operation.entityId);
-          operation.models.forEach((model) => {
-            delete models?.[model];
-          });
-        } else {
-          rows.delete(operation.entityId);
-        }
-      });
+    applyFacts(facts, retain) {
+      writes.push(facts.length);
+      for (const { model, key, value } of facts) {
+        if (value === null) rows.delete(`${model}:${key}`);
+        else rows.set(`${model}:${key}`, value);
+      }
+      for (const [model, keys] of retain ?? []) {
+        for (const identity of [...rows.keys()])
+          if (identity.startsWith(`${model}:`) && !keys.has(identity.slice(model.length + 1))) rows.delete(identity);
+      }
     },
-    applyEvent(eventUpdate) {
-      events.push(eventUpdate);
-    },
-    listModelEntityIds(model) {
-      return [...rows].filter(([, models]) => model in models).map(([id]) => id);
+    applyEvent(update) {
+      events.push(update);
     },
   };
-
-  return { events, operations, rows, store };
+  store.applyFacts(initial);
+  writes.length = 0;
+  return { events, rows, store, writes };
 };
 
+type Snapshot = Record<string, GameSyncFact[]>;
+
 const createSessionHarness = (input: {
-  pages?: Array<{ items: GameSyncEntity[]; nextCursor?: string }>;
+  snapshot?: Snapshot;
   store?: GameSyncStore;
   transactionStatusChannel?: true;
-  onFetchPage?: (pageIndex: number, handlers: GameSyncSubscriptionHandlers) => void | Promise<void>;
+  /** Runs inside subscribe, after the handlers are known and before the snapshot is sent. */
+  beforeSnapshot?: (handlers: GameSyncSubscriptionHandlers) => void;
+  sendSnapshot?: boolean;
 }) => {
   const order: string[] = [];
   const writers: Array<GameSyncWriter & { cancel: ReturnType<typeof vi.fn> }> = [];
   let handlers: GameSyncSubscriptionHandlers | null = null;
-  let pageIndex = 0;
-  let pages = input.pages ?? [{ items: [] }];
+  let snapshot = input.snapshot ?? {};
+  let failNextSnapshot: Error | null = null;
+
+  const sendSnapshot = (models: Snapshot) => {
+    handlers!.onSnapshotStart();
+    let modelsReceived = 0;
+    for (const [model, facts] of Object.entries(models)) {
+      modelsReceived += 1;
+      order.push(`snapshot-${model}`);
+      handlers!.onSnapshotModel(model, facts, {
+        bytesReceived: 1,
+        model,
+        modelsReceived,
+        rowsReceived: facts.length,
+      });
+      if (failNextSnapshot) {
+        const failure = failNextSnapshot;
+        failNextSnapshot = null;
+        handlers!.onStartFailure(failure);
+        return;
+      }
+    }
+    handlers!.onSnapshotEnd();
+  };
 
   const session: GameSyncSessionStart = {
-    snapshotModels: ["Position", "Stats"],
+    snapshotModels: ["Position", "Stats", "ActionNonce"],
     store: input.store ?? createMemoryStore().store,
     transport: {
       transactionStatusChannel: input.transactionStatusChannel,
       async subscribe(nextHandlers) {
         order.push("subscribe-active");
         handlers = nextHandlers;
-        const nextWriter = { cancel: vi.fn() };
-        writers.push(nextWriter);
-        return nextWriter;
-      },
-      async fetchSnapshotPage() {
-        order.push(`snapshot-page-${pageIndex + 1}`);
-        await input.onFetchPage?.(pageIndex, handlers!);
-        return pages[pageIndex++] ?? { items: [] };
+        const writer = { cancel: vi.fn() };
+        writers.push(writer);
+        input.beforeSnapshot?.(nextHandlers);
+        if (input.sendSnapshot !== false) sendSnapshot(snapshot);
+        return writer;
       },
     },
   };
 
   return {
-    emitEntity(update: GameSyncEntity) {
-      handlers?.onEntity(update);
+    emitFacts(batch: GameSyncFactBatch) {
+      handlers?.onFacts(batch);
     },
-    emitEntityBatch(batch: Parameters<NonNullable<GameSyncSubscriptionHandlers["onEntityBatch"]>>[0]) {
-      handlers?.onEntityBatch?.(batch);
-    },
-    emitEvent(update: GameSyncEntity, confirmation?: GameSyncEventConfirmation) {
+    emitEvent(update: GameSyncEvent, confirmation: GameSyncEventConfirmation = { block: null, preconfirmed: false }) {
       handlers?.onEvent(update, confirmation);
     },
-    emitTransaction(transaction: GameSyncTransaction) {
-      handlers?.onTransaction?.(transaction);
+    emitScope(facts: GameSyncFact[], expedition = false) {
+      handlers?.onScope(facts, expedition);
     },
-    recordEventGapFill(replayedEventCount: number) {
-      handlers?.onEventGapFill(replayedEventCount);
+    emitSnapshot: sendSnapshot,
+    emitTransaction(transaction: GameSyncTransaction) {
+      handlers?.onTransaction(transaction);
+    },
+    failNextSnapshot(error: Error) {
+      failNextSnapshot = error;
     },
     order,
-    resetPages(nextPages: typeof pages) {
-      pages = nextPages;
-      pageIndex = 0;
+    resetSnapshot(next: Snapshot) {
+      snapshot = next;
     },
     session,
     writers,
@@ -119,14 +142,14 @@ const createSessionHarness = (input: {
 afterEach(() => disposeActiveGameSyncRuntime());
 
 describe("GameSyncRuntime recovery", () => {
-  it("activates subscriptions before hydrating every snapshot page", async () => {
+  it("activates the subscription before hydrating every snapshot model", async () => {
     const memory = createMemoryStore();
     const harness = createSessionHarness({
       store: memory.store,
-      pages: [
-        { items: [entity("one", { Position: { x: 1 } })], nextCursor: "page-2" },
-        { items: [entity("two", { Position: { x: 2 } })] },
-      ],
+      snapshot: {
+        Position: [fact("one", "Position", { x: 1 })],
+        Stats: [fact("two", "Stats", { hp: 2 })],
+      },
     });
     const runtime = new GameSyncRuntime();
     const snapshotProgress = vi.fn();
@@ -134,26 +157,11 @@ describe("GameSyncRuntime recovery", () => {
 
     await runtime.startSession(harness.session);
 
-    expect(harness.order).toEqual(["subscribe-active", "snapshot-page-1", "snapshot-page-2"]);
-    expect([...memory.rows.keys()]).toEqual(["one", "two"]);
+    expect(harness.order).toEqual(["subscribe-active", "snapshot-Position", "snapshot-Stats"]);
+    expect([...memory.rows.keys()]).toEqual(["Position:one", "Stats:two"]);
     expect(runtime.getMetrics()).toMatchObject({ snapshotEntityCount: 2, snapshotPageCount: 2 });
     expect(snapshotProgress).toHaveBeenLastCalledWith({ completed: 2, phase: "applying", streaming: false, total: 2 });
     expect(runtime.getStatus()).toBe("running");
-  });
-
-  it("routes targeted authoritative queries through the active ingest queue", async () => {
-    const memory = createMemoryStore();
-    const harness = createSessionHarness({ store: memory.store });
-    const runtime = new GameSyncRuntime();
-    await runtime.startSession(harness.session);
-
-    await runtime.applyAuthoritativeEntities([entity("queried-army", { ExplorerTroops: { coord: { x: 12, y: 9 } } })]);
-
-    expect(memory.rows.get("queried-army")).toEqual({ ExplorerTroops: { coord: { x: 12, y: 9 } } });
-    expect(memory.operations.at(-1)).toEqual({
-      type: "upsert",
-      entities: [entity("queried-army", { ExplorerTroops: { coord: { x: 12, y: 9 } } })],
-    });
   });
 
   it("applies a submitted transaction on arrival and reports both latency boundaries", async () => {
@@ -166,34 +174,36 @@ describe("GameSyncRuntime recovery", () => {
     const runtime = new GameSyncRuntime();
     await runtime.startSession(harness.session);
     runtime.recordSubmittedTransaction("0x0abc");
+    const writesBefore = memory.writes.length;
 
-    harness.emitEntityBatch({
-      entities: [entity("army", { ExplorerTroops: { x: 4 } }), entity("tile", { TileOpt: { biome: 2 } })],
+    harness.emitFacts({
+      facts: [fact("army", "ExplorerTroops", { x: 4 }), fact("tile", "TileOpt", { biome: 2 })],
       preconfirmed: true,
       transactionHash: "0xabc",
     });
     await flushMicrotasks();
 
-    expect(memory.rows.get("army")).toEqual({ ExplorerTroops: { x: 4 } });
-    expect(memory.rows.get("tile")).toEqual({ TileOpt: { biome: 2 } });
+    expect(memory.rows.get("ExplorerTroops:army")).toEqual({ x: 4 });
+    expect(memory.rows.get("TileOpt:tile")).toEqual({ biome: 2 });
+    expect(memory.writes.slice(writesBefore)).toEqual([2]);
     expect(received).toHaveBeenCalledWith("0xabc");
     expect(applied).toHaveBeenCalledWith("0xabc");
   });
 
   it("stops the live session and reports one actionable error when an atomic batch cannot apply", async () => {
-    const failure = new Error("RECS write failed");
+    const failure = new Error("native store write failed");
     const store = createMemoryStore().store;
-    store.applyEntityOperations = () => {
-      throw failure;
-    };
     const harness = createSessionHarness({ store });
     const onError = vi.fn();
     harness.session.onError = onError;
     const runtime = new GameSyncRuntime();
     await runtime.startSession(harness.session);
+    store.applyFacts = () => {
+      throw failure;
+    };
 
-    harness.emitEntityBatch({
-      entities: [entity("army", { ExplorerTroops: { x: 4 } })],
+    harness.emitFacts({
+      facts: [fact("army", "ExplorerTroops", { x: 4 })],
       preconfirmed: true,
       transactionHash: "0xabc",
     });
@@ -205,79 +215,114 @@ describe("GameSyncRuntime recovery", () => {
     expect(runtime.getStatus()).toBe("stopped");
   });
 
-  it("replays live updates in client receive order after the snapshot", async () => {
+  it("applies the diffs that follow the snapshot in stream order", async () => {
     const memory = createMemoryStore();
     const harness = createSessionHarness({
       store: memory.store,
-      pages: [{ items: [entity("army", { Position: { x: 1 } })] }],
-      onFetchPage: (_pageIndex, handlers) => {
-        handlers.onEntity(entity("army", { Position: { x: 2 } }));
-        handlers.onEntity(entity("army", { Position: { x: 3 } }));
+      snapshot: { Position: [fact("army", "Position", { x: 1 })] },
+    });
+    await new GameSyncRuntime().startSession(harness.session);
+    harness.emitFacts({ facts: [fact("army", "Position", { x: 2 })], preconfirmed: true });
+    harness.emitFacts({ facts: [fact("army", "Position", { x: 3 })], preconfirmed: false });
+    await flushMicrotasks();
+
+    expect(memory.rows.get("Position:army")).toEqual({ x: 3 });
+  });
+
+  it("removes one model's row without touching another model at the same key", async () => {
+    const memory = createMemoryStore();
+    const harness = createSessionHarness({
+      store: memory.store,
+      snapshot: { Position: [fact("army", "Position", { x: 1 })], Stats: [fact("army", "Stats", { health: 5 })] },
+    });
+    await new GameSyncRuntime().startSession(harness.session);
+
+    harness.emitFacts({ facts: [fact("army", "Position", null)], preconfirmed: false });
+    await flushMicrotasks();
+
+    expect([...memory.rows.entries()]).toEqual([["Stats:army", { health: 5 }]]);
+  });
+
+  it("removes the rows a snapshot no longer lists without touching the rows it keeps", async () => {
+    const memory = createMemoryStore([fact("army", "Position", { x: 9 }), fact("army", "Stats", { health: 5 })]);
+    const harness = createSessionHarness({
+      store: memory.store,
+      snapshot: { Position: [], Stats: [fact("army", "Stats", { health: 6 })] },
+    });
+
+    await new GameSyncRuntime().startSession(harness.session);
+
+    expect([...memory.rows.entries()]).toEqual([["Stats:army", { health: 6 }]]);
+  });
+
+  it("replaces the store in one write when a running session receives a fresh snapshot, then announces the resync", async () => {
+    const memory = createMemoryStore();
+    const harness = createSessionHarness({
+      store: memory.store,
+      snapshot: {
+        Position: [fact("one", "Position", { x: 1 }), fact("two", "Position", { x: 2 })],
+        Stats: [fact("one", "Stats", { hp: 1 })],
       },
     });
-
-    await new GameSyncRuntime().startSession(harness.session);
-
-    expect(memory.rows.get("army")?.Position).toEqual({ x: 3 });
-  });
-
-  it("applies component tombstones without deleting sibling components", async () => {
-    const memory = createMemoryStore({ army: { Position: { x: 1 }, Stats: { health: 5 } } });
-    const harness = createSessionHarness({
-      store: memory.store,
-      pages: [{ items: [entity("army", { Position: { x: 1 }, Stats: { health: 5 } })] }],
-    });
     const runtime = new GameSyncRuntime();
+    const resynced = vi.fn();
+    runtime.subscribeResynced(resynced);
     await runtime.startSession(harness.session);
+    expect(resynced).not.toHaveBeenCalled();
+    const writesBefore = memory.writes.length;
 
-    harness.emitEntity(entity("army", { Position: {} }));
-    await Promise.resolve();
-    await Promise.resolve();
+    harness.emitSnapshot({ Position: [fact("one", "Position", { x: 1 }), fact("three", "Position", { x: 3 })] });
+    await flushMicrotasks();
 
-    expect(memory.rows.get("army")).toEqual({ Stats: { health: 5 } });
+    expect(memory.writes.slice(writesBefore)).toEqual([2]);
+    expect(resynced).toHaveBeenCalledOnce();
+    expect([...memory.rows.entries()]).toEqual([
+      ["Position:one", { x: 1 }],
+      ["Position:three", { x: 3 }],
+    ]);
   });
 
-  it("diffs absent snapshot components without deleting siblings", async () => {
-    const memory = createMemoryStore({ army: { Position: { x: 9 }, Stats: { health: 5 } } });
-    const harness = createSessionHarness({
-      store: memory.store,
-      pages: [{ items: [entity("army", { Stats: { health: 6 } })] }],
-    });
-
-    await new GameSyncRuntime().startSession(harness.session);
-
-    expect(memory.rows.get("army")).toEqual({ Stats: { health: 6 } });
-  });
-
-  it("reruns the same recovery after a connection loss during pagination", async () => {
+  it("replaces only the actor-scoped rows when the actor changes", async () => {
     const memory = createMemoryStore();
     const harness = createSessionHarness({
       store: memory.store,
-      pages: [
-        { items: [entity("one", { Position: { x: 1 } })], nextCursor: "page-2" },
-        { items: [entity("two", { Position: { x: 2 } })] },
-      ],
+      snapshot: {
+        Structure: [fact("realm", "Structure", { entity_id: 1 })],
+        ActionNonce: [fact("first", "ActionNonce", { next_nonce: 4 })],
+      },
     });
-    const originalFetch = harness.session.transport.fetchSnapshotPage;
-    let failSecondPage = true;
-    harness.session.transport.fetchSnapshotPage = async (cursor) => {
-      if (cursor && failSecondPage) throw new Error("connection lost");
-      return originalFetch(cursor);
-    };
+    harness.session.snapshotModels = ["Structure", "ActionNonce"];
+    await new GameSyncRuntime().startSession(harness.session);
+
+    harness.emitScope([fact("second", "ActionNonce", { next_nonce: 0 })]);
+    await flushMicrotasks();
+
+    expect([...memory.rows.entries()]).toEqual([
+      ["Structure:realm", { entity_id: 1 }],
+      ["ActionNonce:second", { next_nonce: 0 }],
+    ]);
+  });
+
+  it("reruns the same recovery after a connection loss during the snapshot", async () => {
+    const memory = createMemoryStore();
+    const harness = createSessionHarness({
+      store: memory.store,
+      snapshot: { Position: [fact("one", "Position", { x: 1 })], Stats: [fact("two", "Stats", { hp: 2 })] },
+    });
+    harness.failNextSnapshot(new Error("connection lost"));
     const runtime = new GameSyncRuntime();
 
     await expect(runtime.startSession(harness.session)).rejects.toThrow("connection lost");
     expect(runtime.getStatus()).toBe("stopped");
 
-    failSecondPage = false;
-    harness.resetPages([
-      { items: [entity("one", { Position: { x: 10 } })], nextCursor: "page-2" },
-      { items: [entity("two", { Position: { x: 20 } })] },
-    ]);
+    harness.resetSnapshot({
+      Position: [fact("one", "Position", { x: 10 })],
+      Stats: [fact("two", "Stats", { hp: 20 })],
+    });
     await runtime.recover();
 
-    expect(memory.rows.get("one")?.Position).toEqual({ x: 10 });
-    expect(memory.rows.get("two")?.Position).toEqual({ x: 20 });
+    expect(memory.rows.get("Position:one")).toEqual({ x: 10 });
+    expect(memory.rows.get("Stats:two")).toEqual({ hp: 20 });
     expect(harness.writers[0].cancel).toHaveBeenCalledOnce();
   });
 
@@ -295,38 +340,36 @@ describe("GameSyncRuntime recovery", () => {
           oldHandlers = handlers;
           return new Promise((resolve) => (resolveOldWriter = resolve));
         },
-        fetchSnapshotPage: async () => ({ items: [] }),
       },
     });
     const nextHarness = createSessionHarness({ store: memory.store });
 
     await runtime.startSession(nextHarness.session);
-    oldHandlers.onEntity(entity("old", { Position: { x: 99 } }));
+    oldHandlers.onFacts({ facts: [fact("old", "Position", { x: 99 })], preconfirmed: false });
     resolveOldWriter(lateWriter);
+    await flushMicrotasks();
 
     await expect(oldStart).rejects.toBeInstanceOf(SupersededGameSyncStartError);
     expect(lateWriter.cancel).toHaveBeenCalledOnce();
-    expect(memory.rows.has("old")).toBe(false);
+    expect(memory.rows.has("Position:old")).toBe(false);
   });
 
-  it("deduplicates event effects across recovery without snapshotting event rows", async () => {
+  it("deduplicates event effects across recovery without storing event rows", async () => {
     const memory = createMemoryStore();
     const harness = createSessionHarness({ store: memory.store });
     const runtime = new GameSyncRuntime();
     await runtime.startSession(harness.session);
 
-    const battle = entity("event-1", { BattleEvent: { timestamp: 100, winner: 1 } });
+    const battle = event("event-1", "BattleEvent", { timestamp: 100, winner: 1 });
     harness.emitEvent(battle);
-    await Promise.resolve();
-    await Promise.resolve();
+    await flushMicrotasks();
     await runtime.recover();
     harness.emitEvent(battle);
-    harness.emitEvent(entity("event-2", { BattleEvent: { timestamp: 101, winner: 2 } }));
-    await Promise.resolve();
-    await Promise.resolve();
+    harness.emitEvent(event("event-2", "BattleEvent", { timestamp: 101, winner: 2 }));
+    await flushMicrotasks();
 
-    expect(memory.events.map(({ hashed_keys }) => hashed_keys)).toEqual(["event-1", "event-2"]);
-    expect([...memory.rows.values()].some((models) => "BattleEvent" in models)).toBe(false);
+    expect(memory.events.map(({ key }) => key)).toEqual(["event-1", "event-2"]);
+    expect([...memory.rows.keys()].some((identity) => identity.startsWith("BattleEvent:"))).toBe(false);
   });
 
   it("promotes a provisional event to confirmed once without replaying effects or downgrading it", async () => {
@@ -335,19 +378,42 @@ describe("GameSyncRuntime recovery", () => {
     harness.session.onEvent = vi.fn();
     const runtime = new GameSyncRuntime();
     await runtime.startSession(harness.session);
-    const event = entity("story-1", { StoryEvent: { timestamp: 100 } });
-    const confirmed = entity("story-1", { StoryEvent: { timestamp: 101 } });
-    harness.emitEvent(event, { block: null, preconfirmed: true });
-    harness.emitEvent(confirmed, { block: 12, preconfirmed: false });
-    harness.emitEvent(event, { block: null, preconfirmed: true });
-    harness.emitEvent(event);
+    const pending = event("story-1", "StoryEvent", { timestamp: 100 });
+    const settled = event("story-1", "StoryEvent", { timestamp: 101 });
+    harness.emitEvent(pending, provisional);
+    harness.emitEvent(settled, confirmed);
+    harness.emitEvent(pending, provisional);
+    harness.emitEvent(pending, { block: null, preconfirmed: false });
     await flushMicrotasks();
     await runtime.recover();
-    harness.emitEvent(confirmed, { block: 12, preconfirmed: false });
+    harness.emitEvent(settled, confirmed);
     await flushMicrotasks();
     expect(harness.session.onEvent).toHaveBeenCalledTimes(2);
-    expect(harness.session.onEvent).toHaveBeenLastCalledWith(confirmed, { block: 12, preconfirmed: false });
+    expect(harness.session.onEvent).toHaveBeenLastCalledWith(settled, confirmed);
     expect(memory.events).toHaveLength(1);
+  });
+
+  it("identifies timestamp-free native events by transaction position across confirmation and recovery", async () => {
+    const memory = createMemoryStore();
+    const harness = createSessionHarness({ store: memory.store });
+    harness.session.onEvent = vi.fn();
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+    const award = (index: number, hash = "0x123") =>
+      event("award", "PointsAwarded", {
+        points: "0x10",
+        event_position: { transaction_hash: hash, event_index: index },
+      });
+    harness.emitEvent(award(3), provisional);
+    harness.emitEvent(award(3, "0x0123"), confirmed);
+    harness.emitEvent(award(4), confirmed);
+    harness.emitEvent(award(3, "0x124"), confirmed);
+    await flushMicrotasks();
+    await runtime.recover();
+    harness.emitEvent(award(3), confirmed);
+    await flushMicrotasks();
+    expect(harness.session.onEvent).toHaveBeenCalledTimes(4);
+    expect(memory.events).toHaveLength(3);
   });
 
   it("keeps delivering the diff when a session event handler throws", async () => {
@@ -360,11 +426,10 @@ describe("GameSyncRuntime recovery", () => {
     await runtime.startSession(harness.session);
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    expect(() => harness.emitEvent(entity("event-1", { BattleEvent: { timestamp: 100, winner: 1 } }))).not.toThrow();
-    await Promise.resolve();
-    await Promise.resolve();
+    expect(() => harness.emitEvent(event("event-1", "BattleEvent", { timestamp: 100, winner: 1 }))).not.toThrow();
+    await flushMicrotasks();
 
-    expect(memory.events.map(({ hashed_keys }) => hashed_keys)).toEqual(["event-1"]);
+    expect(memory.events.map(({ key }) => key)).toEqual(["event-1"]);
     expect(consoleError).toHaveBeenCalledOnce();
     consoleError.mockRestore();
   });
@@ -375,15 +440,11 @@ describe("GameSyncRuntime recovery", () => {
     const runtime = new GameSyncRuntime();
     await runtime.startSession(harness.session);
 
-    harness.emitEvent(entity("same-participants", { BattleEvent: { timestamp: 100, winner: 1 } }));
-    harness.emitEvent(
-      entity("same-participants", {
-        BattleEvent: { timestamp: 101, winner: 2 },
-      }),
-    );
+    harness.emitEvent(event("same-participants", "BattleEvent", { timestamp: 100, winner: 1 }));
+    harness.emitEvent(event("same-participants", "BattleEvent", { timestamp: 101, winner: 2 }));
     await flushMicrotasks();
 
-    expect(memory.events.map(({ models }) => models.BattleEvent)).toEqual([
+    expect(memory.events.map(({ value }) => value)).toEqual([
       { timestamp: 100, winner: 1 },
       { timestamp: 101, winner: 2 },
     ]);
@@ -396,28 +457,14 @@ describe("GameSyncRuntime recovery", () => {
     const runtime = new GameSyncRuntime();
     await runtime.startSession(harness.session);
 
-    harness.emitEvent(entity("event-1", { BattleEvent: { timestamp: 100, winner: 1 } }));
-    harness.emitEvent(entity("event-2", { BattleEvent: { timestamp: 101, winner: 2 } }));
-    harness.emitEvent(entity("event-3", { BattleEvent: { timestamp: 102, winner: 3 } }));
+    harness.emitEvent(event("event-1", "BattleEvent", { timestamp: 100, winner: 1 }));
+    harness.emitEvent(event("event-2", "BattleEvent", { timestamp: 101, winner: 2 }));
+    harness.emitEvent(event("event-3", "BattleEvent", { timestamp: 102, winner: 3 }));
     await flushMicrotasks();
-    harness.emitEvent(entity("event-1", { BattleEvent: { timestamp: 100, winner: 1 } }));
+    harness.emitEvent(event("event-1", "BattleEvent", { timestamp: 100, winner: 1 }));
     await flushMicrotasks();
 
-    expect(memory.events.map(({ hashed_keys }) => hashed_keys)).toEqual(["event-1", "event-2", "event-3", "event-1"]);
-  });
-
-  it("reports event gap-fill replay counts in runtime metrics", async () => {
-    const harness = createSessionHarness({});
-    const runtime = new GameSyncRuntime();
-    await runtime.startSession(harness.session);
-
-    harness.recordEventGapFill(3);
-    harness.recordEventGapFill(2);
-
-    expect(runtime.getMetrics()).toMatchObject({
-      eventGapFillReplayCount: 2,
-      totalReplayedEventUpdates: 5,
-    });
+    expect(memory.events.map(({ key }) => key)).toEqual(["event-1", "event-2", "event-3", "event-1"]);
   });
 });
 
@@ -435,6 +482,40 @@ describe("GameSyncRuntime lifecycle", () => {
     const reverted = runtime.waitForTransaction("0xdef");
     harness.emitTransaction({ block: null, hash: "0x0def", revertReason: "game rule", status: "REVERTED" });
     await expect(reverted).rejects.toThrow("game rule");
+  });
+
+  it("waits for scheduled rows before publishing a transaction status or releasing its waiters", async () => {
+    const memory = createMemoryStore();
+    const harness = createSessionHarness({ store: memory.store, transactionStatusChannel: true });
+    let flush: (() => void) | undefined;
+    harness.session.scheduler = {
+      schedule: (task) => {
+        flush = task;
+        return () => {};
+      },
+    };
+    const published = vi.fn();
+    harness.session.onTransaction = published;
+    const runtime = new GameSyncRuntime();
+    const started = runtime.startSession(harness.session);
+    await flushMicrotasks();
+    flush!();
+    await started;
+    const completed = vi.fn();
+    const wait = runtime.waitForTransaction("0xabc").then(completed);
+    harness.emitFacts({
+      facts: [fact("player", "ActionNonce", { next_nonce: 2 })],
+      preconfirmed: true,
+      transactionHash: "0xabc",
+    });
+    harness.emitTransaction({ block: null, hash: "0xabc", status: "PRE_CONFIRMED" });
+    await flushMicrotasks();
+    expect(completed).not.toHaveBeenCalled();
+    expect(published).not.toHaveBeenCalled();
+    flush!();
+    await wait;
+    expect(memory.rows.get("ActionNonce:player")).toEqual({ next_nonce: 2 });
+    expect(published).toHaveBeenCalledOnce();
   });
 
   it("refuses transaction waits when the transport has no status channel", async () => {
@@ -479,12 +560,7 @@ describe("GameSyncRuntime lifecycle", () => {
 
   it("preserves the cancellation guard but force-cancels on dispose", async () => {
     const runtime = new GameSyncRuntime();
-    let finishSnapshot!: () => void;
-    const harness = createSessionHarness({
-      async onFetchPage() {
-        await new Promise<void>((resolve) => (finishSnapshot = resolve));
-      },
-    });
+    const harness = createSessionHarness({ sendSnapshot: false });
     const start = runtime.startSession(harness.session);
     await flushMicrotasks();
 
@@ -492,7 +568,7 @@ describe("GameSyncRuntime lifecycle", () => {
     expect(harness.writers[0].cancel).not.toHaveBeenCalled();
     runtime.dispose();
     expect(harness.writers[0].cancel).toHaveBeenCalledOnce();
-    finishSnapshot();
+    harness.emitSnapshot({});
     await expect(start).rejects.toBeInstanceOf(SupersededGameSyncStartError);
   });
 
@@ -505,29 +581,5 @@ describe("GameSyncRuntime lifecycle", () => {
 
     expect(harness.writers[0].cancel).toHaveBeenCalledOnce();
     expect(getActiveGameSyncRuntime()).toBeNull();
-  });
-
-  it("rejects buffered updates from the previous game when the active game changes", async () => {
-    const memory = createMemoryStore();
-    let finishSnapshot!: () => void;
-    const snapshotBlocked = new Promise<void>((resolve) => (finishSnapshot = resolve));
-    const harness = createSessionHarness({
-      store: memory.store,
-      pages: [{ items: [] }],
-      async onFetchPage(_pageIndex, handlers) {
-        handlers.onEntity(entity("old-game-army", { Position: { x: 99 } }));
-        await snapshotBlocked;
-      },
-    });
-    const runtime = installGameSyncRuntime(new GameSyncRuntime());
-    const start = runtime.startSession(harness.session);
-    await flushMicrotasks();
-
-    configManager.setActiveGame(15, 7);
-    finishSnapshot();
-
-    await expect(start).rejects.toBeInstanceOf(SupersededGameSyncStartError);
-    expect(memory.rows.has("old-game-army")).toBe(false);
-    expect(harness.writers[0].cancel).toHaveBeenCalledOnce();
   });
 });

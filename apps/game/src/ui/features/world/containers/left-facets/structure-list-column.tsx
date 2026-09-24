@@ -1,4 +1,6 @@
 import { HUD_SECTION_HEIGHT } from "../hud-layout";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -12,8 +14,9 @@ import {
   useStructureCategoryFilter,
 } from "@/ui/features/world/containers/left-facets/structure-category-filter";
 import { filterStructures, sortStructures } from "@/ui/features/world/containers/structure-list-utils";
-import { Position } from "@bibliothecadao/eternum";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { Position, structureMapPosition } from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
+import { useQuery } from "@/hooks/helpers/use-query";
 import { type ID } from "@bibliothecadao/types";
 import { memo, useCallback, useMemo } from "react";
 
@@ -28,14 +31,14 @@ import { memo, useCallback, useMemo } from "react";
  * full realm rows before scrolling for larger empires.
  */
 export const StructureListColumn = memo(() => {
-  const { setup } = useDojo();
-  const components = setup.components;
+  const { setup } = useGame();
+  const store = setup.store;
   const { isMapView } = useQuery();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
   const structureNameVersion = useUIStore((state) => state.structureNameVersion);
   const setPendingRenameStructureEntityId = useUIStore((state) => state.setPendingRenameStructureEntityId);
 
@@ -44,7 +47,7 @@ export const StructureListColumn = memo(() => {
 
   const allStructures = useStructuresWithMetadata({
     structures: playerStructures,
-    components,
+    store,
     nameUpdateVersion: structureNameVersion,
   });
 
@@ -63,14 +66,10 @@ export const StructureListColumn = memo(() => {
   const handleSelectStructure = useCallback(
     (entityId: ID) => {
       const target = playerStructures.find((structure) => structure.entityId === entityId);
-      const coords = target?.structure?.base;
-      if (coords && coords.coord_x !== undefined && coords.coord_y !== undefined) {
-        const col = Number(coords.coord_x);
-        const row = Number(coords.coord_y);
-        if (Number.isFinite(col) && Number.isFinite(row)) {
-          setSelectedHex({ col, row });
-        }
-        void goToStructure(entityId, new Position({ x: coords.coord_x, y: coords.coord_y }), isMapView);
+      if (target?.structure) {
+        const position = structureMapPosition(store, target.structure);
+        setSelectedHex({ col: position.x, row: position.y });
+        void goToStructure(entityId, Position.fromContract(position), isMapView);
       } else {
         setStructureEntityId(entityId);
       }

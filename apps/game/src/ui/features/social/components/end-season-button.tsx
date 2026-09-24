@@ -1,3 +1,7 @@
+import { completeNativeBatches } from "@bibliothecadao/provider";
+import { useSeasonWinner } from "@/hooks/store/use-story-events-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { seasonClockView } from "@/sync/fact-views";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import Button from "@/ui/design-system/atoms/button";
@@ -6,7 +10,8 @@ import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
 
@@ -15,31 +20,32 @@ interface EndSeasonButtonProps {
 }
 
 export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
-  const dojo = useDojo();
+  const game = useGame();
+  const revision = useNativeRevision(["PlayerPoints"]);
   const {
     setup,
     account: { account },
-  } = dojo;
+  } = game;
 
   const [isLoading, setIsLoading] = useState(false);
   const [showCongratsPopup, setShowCongratsPopup] = useState(false);
   const setTooltip = useTooltipStore((state) => state.setTooltip);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const gameEndAt = useUIStore((state) => state.gameEndAt);
+  const { gameEndAt } = useFactView(seasonClockView);
   const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
-  const seasonWinner = useUIStore((state) => state.gameWinner);
+  const seasonWinner = useSeasonWinner();
   const hasFiniteGameEnd = useMemo(() => hasFiniteSeasonEnd(gameEndAt), [gameEndAt]);
 
-  const isSeasonOver = Boolean(seasonWinner);
+  const isSeasonOver = seasonWinner !== null;
 
   const pointsForWin = configManager.getHyperstructureConfig().pointsForWin;
 
   const { registeredPoints, percentageOfPoints } = useMemo(() => {
-    const leaderboardManager = LeaderboardManager.instance(setup.components);
+    const leaderboardManager = LeaderboardManager.instance(setup.store);
     const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(ContractAddress(account.address));
 
     return { registeredPoints, percentageOfPoints: Math.min((registeredPoints / pointsForWin) * 100, 100) };
-  }, [structureEntityId, currentBlockTimestamp]);
+  }, [structureEntityId, currentBlockTimestamp, revision, setup.store, account.address, pointsForWin]);
 
   const hasReachedFinalPoints = useMemo(() => {
     return percentageOfPoints >= 100;
@@ -51,15 +57,13 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
     }
     setIsLoading(true);
     try {
-      await setup.systemCalls.end_game({
-        signer: account,
-      });
-      // Show congratulations popup on successful season end
-      setShowCongratsPopup(true);
+      await completeNativeBatches(() => setup.systemCalls.end_game({ signer: account }));
+      const game = setup.store.require("GameRegistry", { game_id: configManager.getActiveGameId() });
+      setShowCongratsPopup(Number(game.end_at) <= getBlockTimestamp().currentBlockTimestamp);
     } finally {
       setIsLoading(false);
     }
-  }, [hasFiniteGameEnd, hasReachedFinalPoints, isSeasonOver]);
+  }, [hasFiniteGameEnd, hasReachedFinalPoints, isSeasonOver, setup, account]);
 
   if (!hasFiniteGameEnd) {
     return null;

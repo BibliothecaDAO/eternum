@@ -8,12 +8,13 @@ import {
   type TransactionType,
 } from "@bibliothecadao/provider";
 import { env } from "../../env";
-import { getActiveWorld } from "@/runtime/world";
+import { getShard } from "@bibliothecadao/eternum/game-client";
+import { getActiveGame } from "@/runtime/world";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { resolveUserIdentity, resolveWalletIdentityMode } from "./wallet-identity";
 
-export type ClientTransactionSurface =
-  | "dojo_provider"
+type ClientTransactionSurface =
+  | "game_provider"
   | "registration"
   | "settlement"
   | "amm"
@@ -23,13 +24,13 @@ export type ClientTransactionSurface =
   | "cosmetics"
   | "admin";
 
-export type ClientTransactionFailureStage =
+type ClientTransactionFailureStage =
   | TransactionFailureStage
   | "wallet_rejected"
   | "validation"
   | "confirmation_unverified";
 
-export interface ClientTransactionFailureContext {
+interface ClientTransactionFailureContext {
   surface: ClientTransactionSurface;
   operation: string;
   stage: ClientTransactionFailureStage;
@@ -76,12 +77,6 @@ const REVERT_REASON_PATTERNS = [
   /\brevert(?:ed)?\b/i,
   /\bentrypoint_failed\b/i,
 ];
-// Matches the "VrfProvider: not consumed" signature that fires when
-// `request_random` and the subsequent `consume_random` disagree on source —
-// typically a sign of stale-position salt drift or concurrent-account-explore
-// race. Tagged separately so Phase E regressions are easy to flag in Sentry.
-const VRF_NOT_CONSUMED_PATTERN = /vrf\s*provider[^a-z]*not\s*consumed/i;
-
 const reportedFailureKeys = new Map<string, number>();
 
 const readString = (value: unknown): string | undefined =>
@@ -187,11 +182,11 @@ const buildNormalizedReason = (error: unknown): string => {
 };
 
 const resolveDefaultContext = () => {
-  const activeWorld = getActiveWorld();
+  const activeGame = getActiveGame();
   return {
-    chain: activeWorld?.chain ?? env.VITE_PUBLIC_CHAIN,
-    worldName: activeWorld?.name,
-    worldAddress: activeWorld?.worldAddress,
+    chain: activeGame?.chainId,
+    worldName: activeGame?.name,
+    worldAddress: getShard(activeGame?.chainId)?.worldAddress,
   };
 };
 
@@ -212,7 +207,7 @@ const buildFingerprint = ({
 }) => {
   if (
     stage === "submit" &&
-    (failureKind === "provider_connection_destroyed" || failureKind === "submission_timeout_no_hash")
+    (failureKind === "provider_connection_destroyed" || failureKind === "action_outcome_unknown")
   ) {
     return ["client-transaction-submission", failureKind, surface, transactionType ?? operation];
   }
@@ -263,7 +258,7 @@ const buildBreadcrumbData = (context: Partial<Omit<ClientTransactionFailureConte
   });
 };
 
-export const isWalletRejectedError = (error: unknown): boolean => {
+const isWalletRejectedError = (error: unknown): boolean => {
   const readableMessage = extractReadableErrorMessage(error, "").trim();
   if (!readableMessage) {
     return false;
@@ -272,15 +267,7 @@ export const isWalletRejectedError = (error: unknown): boolean => {
   return WALLET_REJECTION_PATTERNS.some((pattern) => pattern.test(readableMessage));
 };
 
-export const isVrfNotConsumedError = (error: unknown): boolean => {
-  const readableMessage = extractReadableErrorMessage(error, "").trim();
-  if (!readableMessage) {
-    return false;
-  }
-  return VRF_NOT_CONSUMED_PATTERN.test(readableMessage);
-};
-
-export const resolveClientTransactionFailureStageFromError = (
+const resolveClientTransactionFailureStageFromError = (
   error: unknown,
   fallback: Extract<ClientTransactionFailureStage, "submit" | "confirmation" | "background_confirmation">,
 ): ClientTransactionFailureStage => {
@@ -371,7 +358,6 @@ export const reportClientTransactionFailure = async ({
 
   const walletIdentity = await resolveUserIdentity(failureContext.walletAddress);
   const sanitizedError = error instanceof Error ? error : new Error(readableMessage);
-  const vrfNotConsumed = isVrfNotConsumedError(error);
   const hasTransactionHash = failureContext.hasTxHash ?? Boolean(failureContext.transactionHash);
   const tags = {
     feature: "transactions",
@@ -383,7 +369,6 @@ export const reportClientTransactionFailure = async ({
     ...(failureContext.chain ? { chain: failureContext.chain } : {}),
     ...(failureContext.worldName ? { world: failureContext.worldName } : {}),
     has_tx_hash: hasTransactionHash ? "true" : "false",
-    ...(vrfNotConsumed ? { "tx.vrf_not_consumed": "true" } : {}),
   };
   const transactionContext = sanitizeValue({
     operation: failureContext.operation,

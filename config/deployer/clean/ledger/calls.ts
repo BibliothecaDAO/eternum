@@ -1,8 +1,7 @@
-import { decodeGameLedgerGame } from "@bibliothecadao/eternum";
-import { Account, CallData, RpcProvider, uint256, type Call } from "starknet";
+import { Account, RpcProvider, type Call } from "starknet";
 import { resolveAccountCredentials } from "../shared/credentials";
 import type { LedgerEconomicPreset } from "./economics";
-import { buildRegisterLedgerPresetCalldata, resolveLedgerFundingAmount } from "./economics";
+import { buildRegisterLedgerPresetCalldata } from "./economics";
 
 export interface LedgerTarget {
   address: string;
@@ -20,9 +19,9 @@ function transactionSucceeded(receipt: unknown): boolean {
   return !helper.execution_status || helper.execution_status === "SUCCEEDED";
 }
 
-function isAlreadyWritten(error: unknown, subject: "game" | "preset"): boolean {
+function isAlreadyRegistered(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
-  return new RegExp(`${subject} already (opened|registered)`, "i").test(message);
+  return /preset already registered/i.test(message);
 }
 
 function createLedgerAccount(
@@ -47,31 +46,13 @@ export function createLedgerAdminAccount(target: LedgerTarget, context: string):
   return createLedgerAccount(target, context, process.env.LEDGER_ADMIN_ADDRESS, process.env.LEDGER_ADMIN_PRIVATE_KEY);
 }
 
-export function createLedgerOperatorAccount(target: LedgerTarget, context: string): Account {
-  return createLedgerAccount(
-    target,
-    context,
-    process.env.LEDGER_OPERATOR_ADDRESS,
-    process.env.LEDGER_OPERATOR_PRIVATE_KEY,
-  );
-}
-
-export function createLedgerTreasuryAccount(target: LedgerTarget, context: string): Account {
-  return createLedgerAccount(
-    target,
-    context,
-    process.env.LEDGER_TREASURY_ADDRESS,
-    process.env.LEDGER_TREASURY_PRIVATE_KEY,
-  );
-}
-
 // Include the revert reason so callers' idempotency matchers (e.g. ledger preset already registered) can read it.
 function receiptRevertReason(receipt: unknown): string | undefined {
   const reason = (receipt as { revert_reason?: unknown }).revert_reason;
   return typeof reason === "string" && reason.length > 0 ? reason : undefined;
 }
 
-async function executeAndWait(account: Account, calls: Call | Call[], label: string): Promise<LedgerTransactionResult> {
+async function executeAndWait(account: Account, calls: Call, label: string): Promise<LedgerTransactionResult> {
   const transaction = await account.execute(calls);
   const receipt = await account.waitForTransaction(transaction.transaction_hash);
   if (!transactionSucceeded(receipt)) {
@@ -81,61 +62,13 @@ async function executeAndWait(account: Account, calls: Call | Call[], label: str
   return { transactionHash: transaction.transaction_hash, receipt };
 }
 
-async function executeLedgerCall(
-  account: Account,
-  call: Call,
-  alreadyWrittenSubject: "game" | "preset",
-): Promise<LedgerTransactionResult | null> {
+async function executeLedgerCall(account: Account, call: Call): Promise<LedgerTransactionResult | null> {
   try {
     return await executeAndWait(account, call, call.entrypoint);
   } catch (error) {
-    if (isAlreadyWritten(error, alreadyWrittenSubject)) return null;
+    if (isAlreadyRegistered(error)) return null;
     throw error;
   }
-}
-
-async function readLedgerGamePool(target: LedgerTarget, gameId: number): Promise<bigint> {
-  const result = await new RpcProvider({ nodeUrl: target.rpcUrl }).callContract(
-    {
-      contractAddress: target.address,
-      entrypoint: "get_game",
-      calldata: CallData.compile([gameId]),
-    },
-    "latest",
-  );
-  const game = decodeGameLedgerGame(result);
-  if (!game.exists) {
-    throw new Error(`Ledger game ${gameId} does not exist`);
-  }
-  return game.pool;
-}
-
-export async function fundLedgerGameToTargetPool(
-  account: Account,
-  target: LedgerTarget,
-  lordsAddress: string,
-  gameId: number,
-  targetPool: bigint,
-): Promise<LedgerTransactionResult | null> {
-  const amount = resolveLedgerFundingAmount(await readLedgerGamePool(target, gameId), targetPool);
-  if (amount === 0n) return null;
-
-  return executeAndWait(
-    account,
-    [
-      {
-        contractAddress: lordsAddress,
-        entrypoint: "approve",
-        calldata: CallData.compile([target.address, uint256.bnToUint256(amount)]),
-      },
-      {
-        contractAddress: target.address,
-        entrypoint: "fund",
-        calldata: CallData.compile([gameId, uint256.bnToUint256(amount)]),
-      },
-    ],
-    `fund ledger game ${gameId}`,
-  );
 }
 
 export async function registerLedgerPreset(
@@ -144,32 +77,9 @@ export async function registerLedgerPreset(
   presetId: number,
   preset: LedgerEconomicPreset,
 ): Promise<LedgerTransactionResult | null> {
-  return executeLedgerCall(
-    account,
-    {
-      contractAddress: target.address,
-      entrypoint: "register_preset",
-      calldata: buildRegisterLedgerPresetCalldata(presetId, preset),
-    },
-    "preset",
-  );
-}
-
-export async function openLedgerGame(
-  account: Account,
-  target: LedgerTarget,
-  gameId: number,
-  presetId: number,
-  start: number,
-  end: number,
-): Promise<LedgerTransactionResult | null> {
-  return executeLedgerCall(
-    account,
-    {
-      contractAddress: target.address,
-      entrypoint: "open_game",
-      calldata: CallData.compile([gameId, presetId, start, end]),
-    },
-    "game",
-  );
+  return executeLedgerCall(account, {
+    contractAddress: target.address,
+    entrypoint: "register_preset",
+    calldata: buildRegisterLedgerPresetCalldata(presetId, preset),
+  });
 }

@@ -1,4 +1,3 @@
-import { getCharacterName } from "@/utils/agent";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/camera-view";
 import {
@@ -20,7 +19,6 @@ export interface ArmyLabelData extends LabelData {
   category: TroopType;
   tier: TroopTier;
   isMine: boolean;
-  isDaydreamsAgent: boolean;
   owner: {
     address: bigint;
     ownerName: string;
@@ -30,7 +28,6 @@ export interface ArmyLabelData extends LabelData {
   troopCount: number;
   currentStamina: number;
   maxStamina: number;
-  displayStaminaRatio?: number;
   attackedFromDegrees?: number;
   attackedTowardDegrees?: number;
   battleTimerLeft?: number;
@@ -44,7 +41,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     const cameraView = resolveCameraView(inputView);
     const labelModel = buildArmyEntityLabelViewModel(data);
     // Create base label
-    const labelDiv = createLabelBase(data.isMine, cameraView, data.isDaydreamsAgent);
+    const labelDiv = createLabelBase(data.isMine, cameraView);
     applyEntityLabelViewModelMetadata(labelDiv, labelModel);
     labelDiv.style.transform = "scale(0.5)";
     labelDiv.style.transformOrigin = "center bottom";
@@ -55,9 +52,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 
     // Add army icon
     const img = document.createElement("img");
-    img.src = data.isDaydreamsAgent
-      ? "/images/logos/daydreams.png"
-      : `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
+    img.src = `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
     img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
     img.setAttribute("data-component", "army-icon");
 
@@ -70,16 +65,8 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
       isMine: data.isMine,
       cameraView,
       color: data.color,
-      isDaydreamsAgent: data.isDaydreamsAgent,
     });
     textContainer.appendChild(ownerDisplay);
-
-    // Add troop type information for Daydreams agents
-    if (data.isDaydreamsAgent) {
-      const line2 = document.createElement("strong");
-      line2.textContent = getCharacterName(data.tier, data.category, data.entityId) || "";
-      textContainer.appendChild(line2);
-    }
 
     // Add troop count display
     let troopCountDisplay: HTMLElement | undefined;
@@ -182,7 +169,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     }
 
     // Update container colors based on ownership
-    const styles = getOwnershipStyle(data.isMine, data.isDaydreamsAgent);
+    const styles = getOwnershipStyle(data.isMine);
     element.style.setProperty("background-color", styles.default.backgroundColor!, "important");
     element.style.setProperty("border", `1px solid ${styles.default.borderColor}`, "important");
     element.style.setProperty("color", styles.default.textColor!, "important");
@@ -219,15 +206,8 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
         isMine: data.isMine,
         cameraView,
         color: data.color,
-        isDaydreamsAgent: data.isDaydreamsAgent,
       });
       contentContainer.appendChild(ownerDisplay);
-
-      if (data.isDaydreamsAgent) {
-        const line2 = document.createElement("strong");
-        line2.textContent = getCharacterName(data.tier, data.category, data.entityId) || "";
-        contentContainer.appendChild(line2);
-      }
 
       let troopCountDisplay: HTMLElement | undefined;
       if (data.troopCount !== undefined) {
@@ -274,9 +254,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 
     const armyIcon = element.querySelector('[data-component="army-icon"]') as HTMLImageElement;
     if (armyIcon) {
-      armyIcon.src = data.isDaydreamsAgent
-        ? "/images/logos/daydreams.png"
-        : `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
+      armyIcon.src = `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
     }
 
     const staminaBar = element.querySelector('[data-component="stamina-bar"]');

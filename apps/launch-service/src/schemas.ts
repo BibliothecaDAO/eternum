@@ -1,16 +1,17 @@
-import { DEFAULT_ETERNUM_PRESET_ID, defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
+import { resolveDeploymentEnvironment } from "../../../config/deployer/clean/environment";
+import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
+import { nativePresetForId, nativePresetIdFor } from "../../../config/source/native";
 import { Schema } from "effect";
-import type { LaunchRotationWeekday } from "../../../config/deployer/clean/types";
 
 const NonEmptyString = Schema.NonEmptyString;
 const OptionalNumberRecord = Schema.optional(Schema.Record(Schema.String, Schema.Number));
 
 const SharedOptions = {
+  // Frontier is never created through the API: the season schedule owns it.
   environment: Schema.Literals(["madara.blitz", "madara.eternum"]),
-  // Registrar presets: 1 = Eternum, 2 = Regular Fast, 3 = Duel.
-  version: Schema.optional(Schema.Literals(["1", "2", "3"])),
+  // One preset id per game mode; Duel (4) is registered but has no launch flow.
+  version: Schema.optional(Schema.Literals(["2", "3"])),
   devModeOn: Schema.optional(Schema.Boolean),
-  twoPlayerMode: Schema.optional(Schema.Boolean),
   singleRealmMode: Schema.optional(Schema.Boolean),
   durationSeconds: Schema.optional(Schema.Number),
   mapConfigOverrides: OptionalNumberRecord,
@@ -21,54 +22,15 @@ const SharedOptions = {
 export const CreateGameRequestSchema = Schema.Struct({
   ...SharedOptions,
   gameName: NonEmptyString,
+  rosterAccounts: Schema.optional(Schema.Array(Schema.String.pipe(Schema.check(Schema.isPattern(/^0x[0-9a-fA-F]+$/))))),
   gameStartTime: Schema.optional(NonEmptyString),
   workflowRef: Schema.optional(NonEmptyString),
 });
 
-const SeriesGameSchema = Schema.Struct({
-  gameName: NonEmptyString,
-  startTime: NonEmptyString,
-  seriesGameNumber: Schema.optional(Schema.Number),
-  biomeClimateOverrides: OptionalNumberRecord,
-});
-
-export const CreateSeriesRequestSchema = Schema.Struct({
-  ...SharedOptions,
-  seriesName: NonEmptyString,
-  workflowRef: Schema.optional(NonEmptyString),
-  games: Schema.Array(SeriesGameSchema),
-  autoRetryIntervalMinutes: Schema.optional(Schema.Number),
-});
-
-const WeeklyCadenceSchema = Schema.Struct({
-  gameNamePrefix: Schema.optional(NonEmptyString),
-  weekday: Schema.Literals(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]),
-  utcTime: NonEmptyString,
-  biomeClimateOverrides: OptionalNumberRecord,
-  blitzRegistrationOverrides: OptionalNumberRecord,
-});
-
-export const CreateRotationRequestSchema = Schema.Struct({
-  ...SharedOptions,
-  rotationName: NonEmptyString,
-  workflowRef: Schema.optional(NonEmptyString),
-  firstGameStartTime: NonEmptyString,
-  gameIntervalMinutes: Schema.Number,
-  maxGames: Schema.Number,
-  advanceWindowGames: Schema.optional(Schema.Number),
-  evaluationIntervalMinutes: Schema.Number,
-  weeklyCadence: Schema.optional(Schema.Array(WeeklyCadenceSchema)),
-  biomeClimateOverridesByGameNumber: Schema.optional(
-    Schema.Record(Schema.String, Schema.Record(Schema.String, Schema.Number)),
-  ),
-  autoRetryIntervalMinutes: Schema.optional(Schema.Number),
-});
-
 interface SharedLaunchOptions {
-  environment: "madara.blitz" | "madara.eternum";
-  version?: "1" | "2" | "3";
+  environment: "madara.blitz" | "madara.eternum" | "madara.frontier";
+  version?: "5" | "2" | "3";
   devModeOn?: boolean;
-  twoPlayerMode?: boolean;
   singleRealmMode?: boolean;
   durationSeconds?: number;
   mapConfigOverrides?: Record<string, number>;
@@ -77,56 +39,62 @@ interface SharedLaunchOptions {
 }
 
 export interface CreateGameRequest extends SharedLaunchOptions {
+  rosterAccounts?: readonly string[];
   gameName: string;
   gameStartTime?: string;
   workflowRef?: string;
 }
-
-export interface CreateSeriesRequest extends SharedLaunchOptions {
-  seriesName: string;
-  workflowRef?: string;
-  games: ReadonlyArray<{
-    gameName: string;
-    startTime: string;
-    seriesGameNumber?: number;
-    biomeClimateOverrides?: Record<string, number>;
-  }>;
-  autoRetryIntervalMinutes?: number;
+export interface FinalizeGameRequest {
+  environment: "madara.blitz";
+  gameName: string;
+  gameId: number;
 }
 
-export interface CreateRotationRequest extends SharedLaunchOptions {
-  rotationName: string;
-  workflowRef?: string;
-  firstGameStartTime: string;
-  gameIntervalMinutes: number;
-  maxGames: number;
-  advanceWindowGames?: number;
-  evaluationIntervalMinutes: number;
-  weeklyCadence?: ReadonlyArray<{
-    gameNamePrefix?: string;
-    weekday: LaunchRotationWeekday;
-    utcTime: string;
-    biomeClimateOverrides?: Record<string, number>;
-    blitzRegistrationOverrides?: Record<string, number>;
-  }>;
-  biomeClimateOverridesByGameNumber?: Record<number, Record<string, number>>;
-  autoRetryIntervalMinutes?: number;
-}
-export type LaunchJobRequest = CreateGameRequest | CreateSeriesRequest | CreateRotationRequest;
-export type LaunchKind = "game" | "series" | "rotation";
+export type LaunchJobRequest = CreateGameRequest | FinalizeGameRequest;
+export type LaunchKind = "game" | "result";
 
-export const applyDurableLaunchDefaults = (
+/**
+ * A season is one open-entry game named by its start, so scheduling the same start twice names the same game. It runs
+ * to the calendar's planned end; the preset's own duration is only a fallback for games created outside the calendar.
+ */
+export const frontierSeasonRequest = (season: { startsAt: string; endsAt: string }): CreateGameRequest => {
+  const start = Date.parse(season.startsAt);
+  const end = Date.parse(season.endsAt);
+  if (!Number.isSafeInteger(start) || start % 1000 !== 0 || !Number.isSafeInteger(end) || end % 1000 !== 0) {
+    throw new Error("A Frontier season starts and ends on a whole second");
+  }
+  return {
+    environment: "madara.frontier",
+    version: String(nativePresetIdFor("frontier")) as "5",
+    gameName: `frontier-${start / 1000}`,
+    gameStartTime: new Date(start).toISOString(),
+    durationSeconds: (end - start) / 1000,
+  };
+};
+
+export function applyDurableLaunchDefaults(kind: "game", request: CreateGameRequest, now?: number): CreateGameRequest;
+export function applyDurableLaunchDefaults(
+  kind: "result",
+  request: FinalizeGameRequest,
+  now?: number,
+): FinalizeGameRequest;
+export function applyDurableLaunchDefaults(kind: LaunchKind, request: LaunchJobRequest, now?: number): LaunchJobRequest;
+export function applyDurableLaunchDefaults(
   kind: LaunchKind,
   request: LaunchJobRequest,
   now = Date.now(),
-): LaunchJobRequest => {
-  const version = request.version ?? (defaultPresetForEnvironment(request.environment) as "1" | "2");
-  if ((request.environment === "madara.eternum") !== (version === DEFAULT_ETERNUM_PRESET_ID)) {
+): LaunchJobRequest {
+  if (kind === "result") return request;
+  if (!("gameName" in request) || "gameId" in request) throw new Error("Invalid game request");
+  const version =
+    request.version ?? (defaultPresetForEnvironment(request.environment) as NonNullable<CreateGameRequest["version"]>);
+  const preset = nativePresetForId(Number(version));
+  if (preset.environmentGameType !== resolveDeploymentEnvironment(request.environment).gameType) {
     throw new Error("Preset does not match the requested game format");
   }
-  const shared = { ...request, version };
-  if (kind === "game" && "gameName" in shared) {
-    return { ...shared, gameStartTime: shared.gameStartTime ?? new Date(now + 15 * 60_000).toISOString() };
-  }
-  return shared;
-};
+  return {
+    ...request,
+    version,
+    gameStartTime: request.gameStartTime ?? new Date(now + 15 * 60_000).toISOString(),
+  };
+}

@@ -1,3 +1,4 @@
+import { ArrowLeft, Plus } from "@/ui/design-system/atoms/game-icons";
 import { ARMY_DEPLOYMENT_SURFACE_ID, openArmyDeploymentPicker } from "../utils/open-army-deployment-picker";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -9,8 +10,13 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import { currencyFormat } from "@/ui/utils/utils";
-import { getGuardSlotCooldownRemaining, getGuardsByStructure, getTroopResourceId } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import {
+  getGuardSlotCooldownRemaining,
+  configManager,
+  getGuardsByStructure,
+  getTroopResourceId,
+} from "@bibliothecadao/eternum";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import {
   DISPLAYED_SLOT_NUMBER_MAP,
   GUARD_SLOT_NAMES,
@@ -20,8 +26,6 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
-import { ArrowLeft, Plus } from "@/ui/design-system/atoms/game-icons";
 import type { KeyboardEvent } from "react";
 import { useMemo, useState } from "react";
 
@@ -32,7 +36,6 @@ import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
 import { GuardStaminaBar } from "./guard-stamina-bar";
 import { SLOT_ICON_MAP } from "./slot-icon-map";
 import { GuardCooldownBadge } from "./guard-cooldown-badge";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 type DefenseTroop = ReturnType<typeof getGuardsByStructure>[number];
 
@@ -69,9 +72,6 @@ export const CompactDefenseDisplay = ({
   hideSlotSummary = false,
 }: CompactDefenseDisplayProps) => {
   const ordersAllowed = useUIStore(canIssueOrders);
-  const {
-    setup: { components },
-  } = useDojo();
   const currentArmiesTick = useCurrentArmiesTick();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const isBanner = variant === "banner";
@@ -80,13 +80,10 @@ export const CompactDefenseDisplay = ({
   const [pickerSlot, setPickerSlot] = useState<GuardSlot | null>(null);
   const isPickerOpen = usePopoverStore((state) => state.openId === ARMY_DEPLOYMENT_SURFACE_ID);
   const highlightedSlot = isPickerOpen ? pickerSlot : null;
-  const structureComponent = useMemo(() => {
-    if (!structureId || !components?.Structure) {
-      return null;
-    }
-
-    return getComponentValue(components.Structure, gameEntityKey([BigInt(structureId)]));
-  }, [components, structureId]);
+  const structureComponent = useNativeRow(
+    "Structure",
+    structureId ? { game_id: configManager.getActiveGameId(), entity_id: structureId } : undefined,
+  );
 
   const structureCategory = structureComponent?.base?.category as StructureType | undefined;
   const structureLevel = structureComponent?.base?.level as number | bigint | undefined;
@@ -170,9 +167,7 @@ export const CompactDefenseDisplay = ({
     const staminaCurrent = staminaSnapshot?.current;
     const staminaMax = staminaSnapshot?.max;
     const rawSlot = Number(defense.slot ?? 0);
-    const guardSlotKey = (
-      Object.prototype.hasOwnProperty.call(GUARD_SLOT_NAMES, rawSlot) ? rawSlot : rawSlot + 1
-    ) as GuardSlot;
+    const guardSlotKey = rawSlot as GuardSlot;
     const slotDisplayNumber = DISPLAYED_SLOT_NUMBER_MAP[guardSlotKey];
     const slotIconSrc = SLOT_ICON_MAP[rawSlot] ?? SLOT_ICON_MAP[guardSlotKey];
     const slotName = GUARD_SLOT_NAMES[guardSlotKey] ?? `Slot ${slotDisplayNumber}`;

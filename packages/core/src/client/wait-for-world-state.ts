@@ -4,7 +4,7 @@ type SliceSource = { runtime: Pick<GameSyncRuntime, "subscribeSliceApplied"> };
 
 /**
  * Resolves once `read` returns a value, re-reading after every applied sync slice. This is how a headless caller
- * waits for the RECS row an action produces: the row is the fact, the slice is only the moment to look again.
+ * waits for the native store row an action produces: the row is the fact, the slice is only the moment to look again.
  */
 export const waitForWorldState = <T>(
   client: SliceSource,

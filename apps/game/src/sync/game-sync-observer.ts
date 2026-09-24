@@ -1,11 +1,11 @@
-import type { SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import type { GameClientObserver, GameSyncSnapshotPhase } from "@bibliothecadao/eternum/game-client";
 import type { GameSyncHead, GameSyncSnapshotProgress } from "@bibliothecadao/eternum/game-sync";
 
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents } from "@/hooks/store/use-story-events-store";
-import { recordClientActionDiffReceived, recordClientActionRecsApplied } from "@/observability/client-action-latency";
+import { recordClientActionDiffReceived, recordClientActionStoreApplied } from "@/observability/client-action-latency";
 import { dispatchLocalStoryNotification } from "@/pwa/local-story-notifications";
 import { publishSyncMetrics } from "@/observability/sync-metrics";
 import { markGameEntryMilestone, recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
@@ -26,13 +26,34 @@ const snapshotProgressPercentage = ({ completed, phase, total }: GameSyncSnapsho
   return phase === "receiving" ? 5 + ratio * 40 : 45 + ratio * 45;
 };
 
-const recordHeraldHead = (head: GameSyncHead): void => {
-  if (!head.preconfirmed) useConnectionStore.getState().recordConfirmedHead(head.block);
-  useChainTimeStore.getState().setHeartbeat({
-    blockNumber: head.block,
-    source: head.preconfirmed ? "herald-clock" : "herald-head",
-    timestamp: head.timestamp * 1_000,
-  });
+const heraldHeartbeat = (head: GameSyncHead) => ({
+  blockNumber: head.block,
+  source: head.preconfirmed ? "herald-clock" : "herald-head",
+  preconfirmed: head.preconfirmed,
+  timestamp: head.timestamp * 1_000,
+});
+
+/**
+ * Records Herald heads for one game client. Its first confirmed head anchors the game's chain time outright: the clock
+ * then belongs to this game, and the previous game's stays readable until this one has its own, so no render ever
+ * meets an unknown clock during a switch.
+ */
+const createHeraldHeadRecorder = () => {
+  let anchored = false;
+  return (head: GameSyncHead): void => {
+    const chainTime = useChainTimeStore.getState();
+    if (head.preconfirmed) {
+      chainTime.setHeartbeat(heraldHeartbeat(head));
+      return;
+    }
+    useConnectionStore.getState().recordConfirmedHead(head.block);
+    if (anchored) {
+      chainTime.setHeartbeat(heraldHeartbeat(head));
+      return;
+    }
+    anchored = true;
+    chainTime.anchor(heraldHeartbeat(head));
+  };
 };
 
 const recordGamewideSubscriptionActive = (): void => {
@@ -65,14 +86,14 @@ export const createGameSyncObserver = (input: GameSyncObserverInput): GameClient
   onSubscriptionActive: recordGamewideSubscriptionActive,
   onLiveUpdate: recordGamewideLiveUpdate,
   onLiveApplyFailed: () => useConnectionStore.getState().setGlobalStatus("failed"),
-  onHead: recordHeraldHead,
+  onHead: createHeraldHeadRecorder(),
   onStoryEvent: (event, scope, confirmation) => {
     acceptGameSyncStoryEvent(event, scope, confirmation);
     dispatchLocalStoryNotification(event, scope, confirmation);
   },
   onStoryEventsReset: resetGameSyncStoryEvents,
   onDiffReceived: recordClientActionDiffReceived,
-  onRecsApplied: recordClientActionRecsApplied,
+  onEntitiesApplied: recordClientActionStoreApplied,
   onMetrics: DEV_MODE_ENABLED ? publishSyncMetrics : undefined,
   onSnapshotProgress: (progress) => input.reportProgress(snapshotProgressPercentage(progress)),
   onSnapshotPhaseStarted: (phase) => markGameEntryMilestone(`${snapshotPhaseMilestone(phase)}-started`),
@@ -80,5 +101,9 @@ export const createGameSyncObserver = (input: GameSyncObserverInput): GameClient
     const milestone = snapshotPhaseMilestone(phase);
     markGameEntryMilestone(`${milestone}-completed`);
     recordGameEntryDuration(milestone, durationMs);
+  },
+  onSnapshotCoherent: (transfer) => {
+    recordGameEntryDuration("snapshot-coherent", transfer.coherentMs);
+    console.info(JSON.stringify({ event: "client_snapshot_coherent", ...transfer }));
   },
 });

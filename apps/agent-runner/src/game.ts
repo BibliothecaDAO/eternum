@@ -1,27 +1,23 @@
-import { readFile } from "node:fs/promises";
 import {
   createGameClient,
-  resolveGameTransactionResourceBounds,
+  createNativeTicketSubmission,
+  setBlockTimestampSource,
   setChainProvenTimestampSource,
-  type CreateGameClientInput,
   type GameClient,
 } from "@bibliothecadao/eternum";
 import {
-  buildWorldDeployment,
   fetchHeraldGameDirectory,
-  worldConfigKey,
-  type CommittedManifest,
+  openShard,
   type GameClientObserver,
-  type WorldDeployment,
+  type Shard,
 } from "@bibliothecadao/eternum/game-client";
 import { createMicrotaskGameSyncScheduler } from "@bibliothecadao/eternum/game-sync";
-import type { GameSyncEntity, HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
-import { type Config, ContractAddress } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import type { GameSyncEvent, HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
+import { type NativeWorldBindings, ContractAddress } from "@bibliothecadao/types";
+import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
+import { signRunnerIntent } from "./signer";
 
-import blitzMadaraConfig from "../../../config/generated/blitz.madara.json";
-import eternumMadaraConfig from "../../../config/generated/eternum.madara.json";
-import type { RunnerChain, RunnerConfig, RunnerGameSelector } from "./config";
+import type { RunnerConfig, RunnerGameSelector } from "./config";
 import { logEvent } from "./log";
 
 /** A story event as the `events` focus shows it: model names and a clipped payload, never a row store. */
@@ -31,11 +27,10 @@ export interface RecentStoryEvent {
   summary: string;
 }
 
-/** The game as the runner holds it: one client, the Herald listing it booted from, and the world's systems. */
+/** The game as the runner holds it: one client and the Herald listing it booted from. */
 export interface RunnerGame {
   client: GameClient;
   listing: HeraldGameDirectoryEntry;
-  systems: { blitzRealm: string };
   /** The connected signer's address, or zero while spectating. */
   viewer(): ContractAddress;
   recentEvents(): RecentStoryEvent[];
@@ -43,47 +38,32 @@ export interface RunnerGame {
   onSyncFailed(listener: (error: Error) => void): () => void;
 }
 
-/** The manifest's contracts carry the tag the harness resolves systems by; the world deployment keeps only selectors. */
-interface TaggedManifest extends CommittedManifest {
-  contracts: { selector: string; address: string; tag: string }[];
-}
-
-// Every deployed lab world is the Blitz world; the id only labels the deployment.
-const WORLD_ID = "blitz";
-/**
- * The generated balance documents, imported directly: the runner ships these two files, not the config authoring
- * sources that `config/utils` drags in behind `getConfigFromNetwork`.
- */
-const GAME_CONFIGS: Record<RunnerChain, Record<"blitz" | "eternum", { configuration: unknown }>> = {
-  madara: { blitz: blitzMadaraConfig, eternum: eternumMadaraConfig },
-};
-const BLITZ_REALM_SYSTEMS_TAG = "s2-blitz_realm_systems";
 const RECENT_EVENT_LIMIT = 50;
 const EVENT_SUMMARY_LENGTH = 200;
 
 export async function connectRunnerGame(config: RunnerConfig): Promise<RunnerGame> {
-  const manifest = await readCommittedManifest(config.manifestPath);
-  const world = buildRunnerWorld(config, manifest);
-  const listing = await resolveGameListing(world, config.game);
+  const shard = await openShard(config.shardUrl, bindings.schemaIdentity);
+  const listing = await resolveGameListing(shard, config.game);
   const events = createStoryEventRing();
   const syncFailures = new Set<(error: Error) => void>();
   const client = await createGameClient({
-    world,
+    shard,
     gameId: listing.game_id,
     presetId: listing.preset_id,
-    dojoConfig: { rpcUrl: config.rpcUrl, manifest },
-    setupEnvironment: {
-      vrfProviderAddress: "0x0",
-      executionResourceBounds: resolveGameTransactionResourceBounds(config.chain),
+    // The runner reads Realms profiles from nowhere, so it names no player; its prompts speak in addresses.
+    playerNames: () => null,
+    native: {
+      bindings: bindings as unknown as NativeWorldBindings,
+      chainId: shard.chainId,
+      signIntent: (actor, digest) => signRunnerIntent(config, listing.game_id, actor, digest),
+      submitIntent: createNativeTicketSubmission(shard.admissionUrl),
     },
     scheduler: createMicrotaskGameSyncScheduler(),
     observer: createRunnerObserver(listing.game_id, events, syncFailures),
-    resolveGameConfig: resolveGameConfig(config),
   });
   return {
     client,
     listing,
-    systems: { blitzRealm: requireContract(manifest, BLITZ_REALM_SYSTEMS_TAG) },
     viewer: () => ContractAddress(client.signer?.address ?? 0n),
     recentEvents: events.list,
     onSyncFailed: (listener) => {
@@ -93,61 +73,24 @@ export async function connectRunnerGame(config: RunnerConfig): Promise<RunnerGam
   };
 }
 
-const readCommittedManifest = async (manifestPath: string): Promise<TaggedManifest> => {
-  try {
-    return JSON.parse(await readFile(manifestPath, "utf8")) as TaggedManifest;
-  } catch (error) {
-    throw new Error(`Cannot read the world manifest at ${manifestPath}`, { cause: error });
-  }
-};
-
-const buildRunnerWorld = (config: RunnerConfig, manifest: CommittedManifest): WorldDeployment =>
-  buildWorldDeployment({
-    id: WORLD_ID,
-    chain: config.chain,
-    manifest,
-    heraldBaseUrl: config.heraldUrl,
-    rpcUrl: config.rpcUrl,
-    browserFacing: false,
-    playerAccountClassHash: config.playerAccountClassHash,
-    playerRegistryAddress: config.playerRegistryAddress,
-    bindingAuthorityAddress: config.bindingAuthorityAddress,
-  });
-
 /** Herald's directory names the game and carries its preset; an unknown game lists what Herald does know. */
-const resolveGameListing = async (
-  world: WorldDeployment,
-  selector: RunnerGameSelector,
-): Promise<HeraldGameDirectoryEntry> => {
-  const directory = await fetchHeraldGameDirectory(world);
+const resolveGameListing = async (shard: Shard, selector: RunnerGameSelector): Promise<HeraldGameDirectoryEntry> => {
+  const directory = await fetchHeraldGameDirectory(shard);
   const listing = directory.games.find((game) =>
     "id" in selector ? game.game_id === selector.id : game.name === selector.name,
   );
   if (listing) return listing;
   const known = directory.games.map((game) => `${game.game_id}:${game.name}`).join(", ") || "none";
-  throw new Error(`Herald at ${world.heraldBaseUrl} does not list game ${describeSelector(selector)}; known: ${known}`);
+  throw new Error(`Herald at ${shard.url} does not list game ${describeSelector(selector)}; known: ${known}`);
 };
 
 const describeSelector = (selector: RunnerGameSelector): string =>
   "id" in selector ? `id ${selector.id}` : `named "${selector.name}"`;
 
-const requireContract = (manifest: TaggedManifest, tag: string): string => {
-  const contract = manifest.contracts.find((candidate) => candidate.tag === tag);
-  if (!contract) throw new Error(`World manifest has no contract tagged ${tag}`);
-  return contract.address;
-};
-
-/** The balance config the client's managers read; the mode flag is on WorldConfig once the snapshot landed. */
-const resolveGameConfig =
-  (config: RunnerConfig): CreateGameClientInput["resolveGameConfig"] =>
-  (setup) => {
-    const worldConfig = getComponentValue(setup.components.WorldConfig, worldConfigKey());
-    return GAME_CONFIGS[config.chain][worldConfig?.blitz_mode_on ? "blitz" : "eternum"].configuration as Config;
-  };
-
 /**
- * One JSON line per sync milestone, and two side effects the runner needs from the stream: confirmed heads anchor
- * the chain-proven clock production math reads, and story events feed the bounded ring the `events` focus shows.
+ * One JSON line per sync milestone, and the side effects the runner needs from the stream: heads are its chain clock,
+ * confirmed heads anchor the chain-proven clock production math reads, and story events feed the bounded ring the
+ * `events` focus shows. Before the first head there is no chain time, and a reader fails by name.
  */
 const createRunnerObserver = (
   gameId: number,
@@ -155,6 +98,11 @@ const createRunnerObserver = (
   syncFailures: Set<(error: Error) => void>,
 ): GameClientObserver => {
   let confirmedHeadTimestamp: number | null = null;
+  let clockTimestamp: number | null = null;
+  setBlockTimestampSource(() => {
+    if (clockTimestamp === null) throw new Error("Chain time is not known yet: no head has arrived");
+    return clockTimestamp;
+  });
   setChainProvenTimestampSource(() => confirmedHeadTimestamp);
   return {
     onSubscriptionActive: () => logSync("subscribed", { gameId }),
@@ -164,6 +112,7 @@ const createRunnerObserver = (
       syncFailures.forEach((listener) => listener(error));
     },
     onHead: (head) => {
+      clockTimestamp = Math.max(clockTimestamp ?? 0, head.timestamp);
       if (!head.preconfirmed) confirmedHeadTimestamp = head.timestamp;
     },
     onStoryEvent: (event) => events.push(event),
@@ -174,7 +123,7 @@ const createRunnerObserver = (
 const logSync = (name: string, fields: Record<string, unknown>): void => logEvent(`agent_runner_sync_${name}`, fields);
 
 interface StoryEventRing {
-  push(event: GameSyncEntity): void;
+  push(event: GameSyncEvent): void;
   clear(): void;
   list(): RecentStoryEvent[];
 }
@@ -183,7 +132,7 @@ const createStoryEventRing = (): StoryEventRing => {
   const ring: RecentStoryEvent[] = [];
   return {
     push: (event) => {
-      ring.push({ at: Date.now(), models: Object.keys(event.models), summary: summarizeModels(event.models) });
+      ring.push({ at: Date.now(), models: [event.model], summary: summarizeModels({ [event.model]: event.value }) });
       if (ring.length > RECENT_EVENT_LIMIT) ring.shift();
     },
     clear: () => {

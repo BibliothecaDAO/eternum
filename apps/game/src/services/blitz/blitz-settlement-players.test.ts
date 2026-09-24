@@ -1,24 +1,21 @@
-import { defineContractComponents } from "@bibliothecadao/types";
-import { createWorld, setComponent } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { configManager } from "@bibliothecadao/eternum";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { hash } from "starknet";
 import { describe, expect, it } from "vitest";
-
 import { filterPlayersByBlitzSettlement, readBlitzSettlementPlayerAddresses } from "./blitz-settlement-players";
 
 describe("readBlitzSettlementPlayerAddresses", () => {
-  it("reads players from the typed BlitzSettlement component", () => {
-    const components = defineContractComponents(createWorld(), "s2");
-    const playerAddress = 0x123n;
-    const settlementEntity = getEntityIdFromKeys([playerAddress]);
-    const missingEntity = getEntityIdFromKeys([0x456n]);
-
-    setComponent(components.BlitzSettlement, settlementEntity, {
-      game_id: 1,
-      player: playerAddress,
-      structure_ids: [1, 2, 3],
-    });
-
-    expect(readBlitzSettlementPlayerAddresses(components, [settlementEntity, missingEntity])).toEqual([playerAddress]);
+  it("reads the entered gameplay account and isolates the active game", () => {
+    const store = new NativeFactStore();
+    configManager.setActiveGame(1, 1);
+    store.applyFacts(
+      [1, 2].map((game) => ({
+        model: "PlayerEntry",
+        key: hash.computePoseidonHashOnElements([game, 0x456]),
+        value: { game_id: game, owner: "0x456", player: "0x123" },
+      })),
+    );
+    expect(readBlitzSettlementPlayerAddresses(store)).toEqual([0x123n]);
   });
 });
 

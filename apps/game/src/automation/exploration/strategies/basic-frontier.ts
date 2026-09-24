@@ -20,7 +20,7 @@ const comparePaths = (a: ActionPath[], b: ActionPath[]) => {
 const isFrontierTile = (context: ExplorationStrategyContext, target: { col: number; row: number }) => {
   const neighbors = getLayerNeighborHexes(target.col, target.row, context.alt);
   for (const neighbor of neighbors) {
-    const normalized = new Position({ x: neighbor.col, y: neighbor.row }).getNormalized();
+    const normalized = Position.fromContract({ x: neighbor.col, y: neighbor.row }).getNormalized();
     const explored = context.exploredTiles.get(normalized.x)?.has(normalized.y) ?? false;
     if (!explored) {
       return true;

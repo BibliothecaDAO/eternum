@@ -542,7 +542,7 @@ function resizeRenderer(canvas: HTMLCanvasElement, runtime: TerrainBenchmarkRunt
 function readBenchmarkSnapshot(runtime: TerrainBenchmarkRuntime): TerrainBenchmarkSnapshot {
   const recorder = runtime.recorder.snapshot();
   const memory = readRendererMemory(runtime.renderer);
-  const propInstances = runtime.terrain.getVisibleCellCount() === 0 ? 0 : countVisiblePropInstances(runtime.terrain);
+  const propInstances = runtime.terrain.getPresentedCellCount() === 0 ? 0 : countVisiblePropInstances(runtime.terrain);
   return {
     activeMode: resolveWebGpuRendererActiveMode(runtime.renderer),
     assets: readAssetRequestCounts(),

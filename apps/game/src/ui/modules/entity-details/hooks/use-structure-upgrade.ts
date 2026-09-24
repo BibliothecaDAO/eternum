@@ -1,10 +1,11 @@
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { configManager, divideByPrecision, getBalance, getRealmInfo } from "@bibliothecadao/eternum";
-import { useArrivalsByStructure, useDojo } from "@bibliothecadao/react";
+import { useArrivalsByStructure } from "@/hooks/helpers/use-resource-arrivals";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, getLevelName } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useMemo, useState } from "react";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 interface RawUpgradeCost {
   resource: number;
@@ -42,9 +43,6 @@ interface StructureUpgradeResult {
   handleUpgrade: () => Promise<void>;
 }
 
-const readRealmInfo = (realmEntity: string, components: unknown) =>
-  getRealmInfo(realmEntity as never, components as never) ?? null;
-
 export const formatIncomingEta = (etaSeconds: number): string => {
   if (etaSeconds <= 0) return "landing";
   if (etaSeconds < 90) return `in ${Math.ceil(etaSeconds)}s`;
@@ -52,22 +50,30 @@ export const formatIncomingEta = (etaSeconds: number): string => {
 };
 
 export const useStructureUpgrade = (structureEntityId: number | null): StructureUpgradeResult | null => {
-  const { setup, account } = useDojo();
+  const { setup, account } = useGame();
   const currentDefaultTick = useCurrentDefaultTick();
-  const realmEntity = useMemo(
-    () => (structureEntityId ? gameEntityKey([BigInt(structureEntityId)]) : null),
-    [structureEntityId],
-  );
   const [isUpgradeLocked, setUpgradeLocked] = useState(false);
-
-  const liveStructure = useComponentValue(setup.components.Structure, realmEntity as never);
-  const liveStructureBuildings = useComponentValue(setup.components.StructureBuildings, realmEntity as never);
-  const liveResources = useComponentValue(setup.components.Resource, realmEntity as never);
-
-  const structureInfo = useMemo(() => {
-    if (!structureEntityId || !realmEntity || !liveStructure) return null;
-    return readRealmInfo(realmEntity, setup.components);
-  }, [liveResources, liveStructure, liveStructureBuildings, realmEntity, setup.components, structureEntityId]);
+  const revision = useNativeRevision([
+    "StructureBuildings",
+    "ResourceWeight",
+    "ResourceBalance",
+    "ResourceProduction",
+    "ProductionBonus",
+  ]);
+  const liveStructure = useNativeRow(
+    "Structure",
+    structureEntityId
+      ? {
+          game_id: configManager.getActiveGameId(),
+          entity_id: structureEntityId,
+        }
+      : undefined,
+  );
+  const structureInfo = useMemo(
+    () =>
+      liveStructure && structureEntityId ? (getRealmInfo(structureEntityId, setup.store, getPlayerName) ?? null) : null,
+    [liveStructure, setup.store, structureEntityId, revision],
+  );
 
   const nextLevel = useMemo(() => {
     if (!structureInfo) return null;
@@ -101,8 +107,8 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
   const requirements = useMemo<UpgradeRequirement[]>(() => {
     if (!structureInfo || !nextLevel || !structureEntityId) return [];
     return rawCosts.map((cost) => {
-      const rawBalance = getBalance(structureEntityId, cost.resource, currentDefaultTick, setup.components).balance;
-      const current = divideByPrecision(Number.isFinite(rawBalance) ? rawBalance : 0);
+      const rawBalance = getBalance(structureEntityId, cost.resource, currentDefaultTick, setup.store).balance;
+      const current = divideByPrecision(rawBalance);
       const incoming = incomingByResource.get(cost.resource) ?? null;
       return {
         resource: cost.resource,
@@ -112,7 +118,16 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
         incoming: incoming && incoming.amount > 0 ? incoming : null,
       };
     });
-  }, [currentDefaultTick, incomingByResource, nextLevel, rawCosts, setup.components, structureEntityId, structureInfo]);
+  }, [
+    revision,
+    currentDefaultTick,
+    incomingByResource,
+    nextLevel,
+    rawCosts,
+    setup.store,
+    structureEntityId,
+    structureInfo,
+  ]);
 
   const upgradeReadiness = useMemo(() => {
     if (!structureInfo || !nextLevel) {
@@ -132,7 +147,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
   }, [nextLevel, requirements, structureInfo]);
 
   const handleUpgrade = useCallback(async () => {
-    if (!structureInfo || !nextLevel || !realmEntity) return;
+    if (!structureInfo || !nextLevel || !structureEntityId) return;
     if (isUpgradeLocked) return;
 
     setUpgradeLocked(true);
@@ -144,7 +159,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
     } finally {
       setUpgradeLocked(false);
     }
-  }, [account.account, isUpgradeLocked, nextLevel, realmEntity, setup.systemCalls, structureInfo]);
+  }, [account.account, isUpgradeLocked, nextLevel, structureEntityId, setup.systemCalls, structureInfo]);
 
   if (!structureInfo) return null;
 

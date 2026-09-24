@@ -36,6 +36,9 @@ export const getNetwork = (network) => {
   if (!NETWORKS[network.toLowerCase()]) {
     throw new Error(`Network ${network} not found`);
   }
+  if (!process.env.STARKNET_RPC) {
+    throw new Error(`STARKNET_RPC is required for ${network}: a keyed RPC URL, from the repo-root .env or your shell`);
+  }
   return NETWORKS[network.toLowerCase()];
 };
 

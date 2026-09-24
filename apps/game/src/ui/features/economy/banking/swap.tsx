@@ -9,7 +9,6 @@ import { TravelInfo } from "@/ui/features/economy/resources";
 import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
-import { setup } from "@bibliothecadao/dojo";
 import {
   computeTravelTime,
   configManager,
@@ -21,19 +20,26 @@ import {
   MarketManager,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, ID, Resources, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
   const mode = useGameModeConfig();
   const {
     account: { account },
-    setup: { components, systemCalls },
-  } = useDojo();
+    setup: { store, systemCalls },
+  } = useGame();
 
+  const revision = useNativeRevision([
+    "ResourceBalance",
+    "ResourceProduction",
+    "ResourceWeight",
+    "Market",
+    "Liquidity",
+    "Structure",
+  ]);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const playTradeExecuteSound = useUISound("ui.trade_execute");
@@ -50,8 +56,8 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
   const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * configManager.getAdminBankLpFee();
 
   const marketManager = useMemo(
-    () => new MarketManager(components, ContractAddress(account.address), resourceId),
-    [components, resourceId, account.address],
+    () => new MarketManager(store, ContractAddress(account.address), resourceId),
+    [store, resourceId, account.address, revision],
   );
 
   useEffect(() => {
@@ -68,12 +74,12 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
   }, [marketManager.resourceId]);
 
   const lordsBalance = useMemo(
-    () => getBalance(entityId, ResourcesIds.Lords, currentDefaultTick, components).balance,
-    [entityId, currentDefaultTick, getBalance],
+    () => getBalance(entityId, ResourcesIds.Lords, currentDefaultTick, store).balance,
+    [entityId, currentDefaultTick, store, revision],
   );
   const resourceBalance = useMemo(
-    () => getBalance(entityId, resourceId, currentDefaultTick, components).balance,
-    [entityId, resourceId, currentDefaultTick, getBalance],
+    () => getBalance(entityId, resourceId, currentDefaultTick, store).balance,
+    [entityId, resourceId, currentDefaultTick, store, revision],
   );
 
   const hasEnough = useMemo(() => {
@@ -92,7 +98,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     setIsLoading(true);
     const operation = isBuyResource ? systemCalls.buy_resources : systemCalls.sell_resources;
 
-    const closestBank = getClosestBank(entityId, components);
+    const closestBank = getClosestBank(entityId, store);
 
     if (!closestBank) return;
     const performSwap = () => {
@@ -114,7 +120,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
   }, [
     isBuyResource,
     account,
-    components,
+    store,
     entityId,
     lordsAmount,
     ownerFee,
@@ -224,13 +230,13 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
       ? [{ resourceId: Number(resourceId), amount: resourceAmount }]
       : [{ resourceId: ResourcesIds.Lords, amount: lordsAmount }];
 
-    const closestBank = getClosestBank(entityId, components);
+    const closestBank = getClosestBank(entityId, store);
 
     if (!closestBank) return;
 
     const isVillageAndMilitaryResource =
-      getComponentValue(components.Structure, gameEntityKey([BigInt(entityId)]))?.category === StructureType.Village &&
-      isMilitaryResource(resourceId);
+      store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category ===
+        StructureType.Village && isMilitaryResource(resourceId);
 
     return (
       <ConfirmationPopup

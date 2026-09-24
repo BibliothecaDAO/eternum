@@ -156,8 +156,7 @@ Current preferred music volume is very low, with category volume set around `0.0
   which keeps a single instance alive across routes.
 - Route and mode specific playlists live in `src/audio/config/route-tracks.ts`; update this map when adding new pages or
   seasonal cues.
-- Consumers should prefer `useBackgroundMusic()` (or the legacy `useMusicPlayer()` wrapper) to react to the shared
-  player state and trigger manual transitions.
+- Consumers read `MusicRouterProvider`'s context to react to the shared player state and trigger manual transitions.
 - Track handoffs use an ~800 ms crossfade implemented via `AudioManager.fadeOutAndStopMusic`, so new playlists can
   transition smoothly without hard cuts.
 

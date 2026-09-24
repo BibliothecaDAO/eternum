@@ -1,8 +1,8 @@
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceManager } from "@bibliothecadao/eternum";
-import { useBuildings } from "@bibliothecadao/react";
-import { ClientComponents, ResourcesIds, getProducedResource } from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
+import { useBuildings } from "@/hooks/helpers/use-buildings";
+import { ResourcesIds, getProducedResource } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 export interface ResourceProductionSummaryItem {
@@ -31,7 +31,7 @@ interface ProductionBuildingLike {
 
 interface BuildStructureProductionSummaryInput {
   productionBuildings: ProductionBuildingLike[];
-  resources: ComponentValue<ClientComponents["Resource"]["schema"]>;
+  resources: ResourceManager;
   currentDefaultTick: number;
   calculatedAt?: number;
 }
@@ -49,7 +49,7 @@ const isProductionBuilding = (
   return Boolean(getProducedResource(Number(building.category)));
 };
 
-export const buildStructureProductionSummary = ({
+const buildStructureProductionSummary = ({
   productionBuildings,
   resources,
   currentDefaultTick,
@@ -75,31 +75,32 @@ export const buildStructureProductionSummary = ({
     summaries.set(resourceId, { totalBuildings: 1 });
   });
 
-  const items = Array.from(summaries.entries()).map(([resourceId, stats]) => {
-    const productionInfo = ResourceManager.balanceAndProduction(resources, resourceId);
+  const items = Array.from(summaries.entries()).flatMap(([resourceId, stats]) => {
+    const productionInfo = resources.current(resourceId);
+    if (!productionInfo) return [];
     const productionData = ResourceManager.calculateResourceProductionData(
       resourceId,
       productionInfo,
       currentDefaultTick || 0,
     );
     const isProducing = productionData.isProducing;
-    const buildingCount = Number(productionInfo.production?.building_count ?? 0);
+    const buildingCount = Number(productionInfo?.production?.building_count ?? 0);
     const activeBuildings = isProducing ? (buildingCount > 0 ? buildingCount : stats.totalBuildings) : 0;
 
-    return {
-      resourceId,
-      totalBuildings: stats.totalBuildings,
-      activeBuildings,
-      isProducing,
-      timeRemainingSeconds: Number.isFinite(productionData.timeRemainingSeconds)
-        ? productionData.timeRemainingSeconds
-        : null,
-      productionPerSecond: Number.isFinite(productionData.productionPerSecond)
-        ? productionData.productionPerSecond
-        : null,
-      outputRemaining: Number.isFinite(productionData.outputRemaining) ? productionData.outputRemaining : null,
-      calculatedAt,
-    };
+    return [
+      {
+        resourceId,
+        totalBuildings: stats.totalBuildings,
+        activeBuildings,
+        isProducing,
+        timeRemainingSeconds: productionData.timeRemainingSeconds,
+        productionPerSecond: Number.isFinite(productionData.productionPerSecond)
+          ? productionData.productionPerSecond
+          : null,
+        outputRemaining: productionData.outputRemaining,
+        calculatedAt,
+      },
+    ];
   });
 
   return summarizeProductionItems(items);
@@ -112,11 +113,15 @@ const summarizeProductionItems = (items: ResourceProductionSummaryItem[]): Struc
 });
 
 export const useStructureProductionSummary = (
-  structure?: ComponentValue<ClientComponents["Structure"]["schema"]> | null,
-  resources?: ComponentValue<ClientComponents["Resource"]["schema"]> | null,
+  structure?: NativeRows["Structure"] | null,
+  resources?: ResourceManager | null,
 ): StructureProductionSummary => {
   const currentDefaultTick = useCurrentDefaultTick();
-  const buildingsData = useBuildings(Number(structure?.base.coord_x ?? 0), Number(structure?.base.coord_y ?? 0));
+  const buildingsData = useBuildings(
+    Number(structure?.base.coord_x ?? 0),
+    Number(structure?.base.coord_y ?? 0),
+    structure?.base.alt ?? false,
+  );
 
   return useMemo(() => {
     if (!structure || !resources) return EMPTY_PRODUCTION_SUMMARY;

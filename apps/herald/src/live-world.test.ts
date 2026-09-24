@@ -1,883 +1,380 @@
-import type { GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-models";
 import { describe, expect, it, vi } from "vitest";
-
-import type { DiffLatencyMonitor } from "./diff-latency";
-import { GameStreamHub, type StreamSocket } from "./game-stream";
-import type { HistoryStore } from "./history-store";
 import { LiveWorld } from "./live-world";
+import type { HistoryStore } from "./history-store";
 import type { MadaraRpc } from "./madara-rpc";
-import type { ModelCodec, ModelRegistry } from "./model-registry";
-import type { RawWorldEvent, RpcBlockTransaction, RpcBlockWithReceipts, RpcSubscribedEvent } from "./types";
-import { WORLD_EVENT_SELECTORS, WorldEventDecodeMonitor, decodeWorldEvent } from "./world-event-decoder";
-import { WorldFold } from "./world-fold";
+import { raw, receipt, rowEvent, rulesEvent, schema, setup } from "./native/fixtures";
+import type { HeraldStreamMessage } from "./stream-protocol";
+import type { RpcBlockWithReceipts } from "./types";
 
-const gameModel: GameSyncModelDefinition = {
-  availability: "all",
-  channels: ["gamewide-entity"],
-  deletion: "component",
-  name: "TestModel",
-  recovery: "convergent-snapshot",
-  s2Scope: "game",
-};
-
-const settlementModel: GameSyncModelDefinition = {
-  ...gameModel,
-  name: "BlitzSettlement",
-};
-
-const codec = (definition: GameSyncModelDefinition, selector: string): ModelCodec => ({
-  decodeKey: (felts) =>
-    definition.name === "BlitzSettlement"
-      ? { game_id: BigInt(felts[0]!), player: BigInt(felts[1]!) }
-      : { game_id: BigInt(felts[0]!) },
-  decodeMember: () => {
-    throw new Error("Fixture has no member updates");
-  },
-  decodeValue: (felts) => (felts.length === 0 ? {} : { value: BigInt(felts[0]!) }),
-  definition,
-  manifest: {
-    members: [],
-    selector,
-    tag: `s2-${definition.name}`,
-  },
-});
-
-const gameCodec = codec(gameModel, "0x101");
-const settlementCodec = codec(settlementModel, "0x102");
-const registry: ModelRegistry = {
-  bySelector: new Map([
-    ["0x101", gameCodec],
-    ["0x102", settlementCodec],
-  ]),
-  events: [],
-  persistent: [gameCodec, settlementCodec],
-  worldAddress: "0x123",
-};
-
-const setEvent = (
-  model: string,
-  transactionHash: string,
-  data: string[],
-  eventIndex = 0,
-  entityId = "0xabc",
-): RawWorldEvent => ({
-  block_number: 12,
-  data,
-  event_index: eventIndex,
-  keys: [WORLD_EVENT_SELECTORS.set, model, entityId],
-  transaction_hash: transactionHash,
-  transaction_index: 0,
-});
-
-const subscribedSet = (
-  transactionHash: string,
-  value: string,
-  eventIndex = 0,
-  entityId = "0xabc",
-): RpcSubscribedEvent => ({
-  ...setEvent("0x101", transactionHash, ["0x1", "0x7", "0x1", value], eventIndex, entityId),
-  block_number: null,
-  finality_status: "PRE_CONFIRMED",
-  from_address: registry.worldAddress,
-});
-
-const blockSet = (transactionHash: string, rows: Array<[entityId: string, value: string]>): RpcBlockTransaction => ({
-  receipt: {
-    events: rows.map(([entityId, value]) => ({
-      data: ["0x1", "0x7", "0x1", value],
-      from_address: registry.worldAddress,
-      keys: [WORLD_EVENT_SELECTORS.set, "0x101", entityId],
-    })),
-    execution_status: "SUCCEEDED",
-    finality_status: "PRE_CONFIRMED",
-    transaction_hash: transactionHash,
-  },
-  transaction: { sender_address: "0xabc", type: "INVOKE" },
-});
-
-const replacementBlock = (): RpcBlockWithReceipts => ({
-  block_number: 13,
-  timestamp: 100,
-  transactions: [blockSet("0x333", [["0xabc", "0x3"]])],
-});
-
-const rpcFixture = (block: RpcBlockWithReceipts, confirmedEvents: RawWorldEvent[] = []): MadaraRpc =>
-  ({
-    blockNumber: async () => 12,
-    getBlockWithReceipts: async () => block,
-    getPreconfirmedHeader: async () => ({ block_number: block.block_number, timestamp: block.timestamp + 3 }),
-    getEvents: async function* () {
-      if (confirmedEvents.length > 0) yield { events: confirmedEvents, page: 1 };
-    },
-  }) as unknown as MadaraRpc;
-
-const recordingSocket = (): StreamSocket & { messages: Array<Record<string, unknown>> } => {
-  const messages: Array<Record<string, unknown>> = [];
-  return {
-    messages,
-    send: (data) => messages.push(JSON.parse(data) as Record<string, unknown>),
-  };
-};
-
-const endMacrotask = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
-
-const preconfirmedReceipt = (events: RpcSubscribedEvent[]) => ({
-  events: events.map((event) => ({ data: event.data, from_address: event.from_address, keys: event.keys })),
-  execution_status: "SUCCEEDED",
-  finality_status: "PRE_CONFIRMED",
-  transaction_hash: events[0]!.transaction_hash,
-});
-
-interface LiveFixtureOptions {
-  block?: RpcBlockWithReceipts;
-  diffLatency?: DiffLatencyMonitor;
-  historyStore?: HistoryStore;
-  rpc?: MadaraRpc;
-}
-
-const liveFixture = (options: LiveFixtureOptions = {}) => {
-  const confirmedFold = new WorldFold(registry);
-  confirmedFold.apply(decodeWorldEvent(registry, setEvent("0x101", "0x111", ["0x1", "0x7", "0x1", "0x1"]))!);
-  confirmedFold.apply(decodeWorldEvent(registry, setEvent("0x102", "0x112", ["0x2", "0x7", "0xabc", "0x0"]))!);
-  const block = options.block ?? replacementBlock();
+function fixture(historyStore?: HistoryStore) {
+  const { native, fold, decoder } = setup();
+  const tile = (value: string) => rowEvent("TileOpt", ["1", "0", "12", "34"], [value]);
+  const confirmed: RpcBlockWithReceipts = { block_number: 10, timestamp: 100, transactions: [] };
+  const pending: RpcBlockWithReceipts = { block_number: 11, timestamp: 101, transactions: [] };
+  const rpc = {
+    blockNumber: async () => confirmed.block_number,
+    getPreconfirmedHeader: async () => pending,
+    getBlockWithReceipts: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
+  } as unknown as MadaraRpc;
   const live = new LiveWorld({
+    native,
+    registry: decoder.registry,
     chain: "madara",
     checkpointEveryBlocks: 100,
-    checkpointStore: { save: async () => undefined },
-    confirmedBlock: 12,
-    confirmedFold,
-    decodeMonitor: new WorldEventDecodeMonitor(),
-    diffLatency: options.diffLatency,
-    historyStore: options.historyStore,
-    hub: new GameStreamHub("epoch-a"),
-    registry,
-    rpc: options.rpc ?? rpcFixture(block),
+    checkpointStore: { save: vi.fn() },
+    confirmedBlock: 9,
+    confirmedFold: fold,
+    rpc,
+    historyStore,
   });
-  return { block, live };
-};
+  const messages: Array<Record<string, unknown>> = [];
+  const connection = live.attach("1", { send: (text) => messages.push(JSON.parse(text)) });
+  live.resume(connection, { type: "resume", epoch: "old", seq: 0 });
+  messages.length = 0;
+  const submit = (value: string, hash = "0x1") =>
+    live.acceptReceipt({ ...receipt([tile(value)], hash), finality_status: "PRE_CONFIRMED" });
+  const confirm = (value: string) =>
+    confirmed.transactions.push({ receipt: receipt([tile(value)]), transaction: { type: "INVOKE" } });
+  return { live, messages, submit, confirm, confirmed, pending, fold, native, tile };
+}
 
-const attachResumed = (live: LiveWorld) => {
-  const socket = recordingSocket();
-  live.resume(live.attach("7", socket), { epoch: "", seq: 0, type: "resume" });
-  return socket;
-};
-
-describe("LiveWorld", () => {
-  it("keeps confirmed snapshots atomic across getEvents pages", async () => {
-    let markFirstPageConsumed!: () => void;
-    let releaseSecondPage!: () => void;
-    const firstPageConsumed = new Promise<void>((resolve) => {
-      markFirstPageConsumed = resolve;
-    });
-    const secondPageReleased = new Promise<void>((resolve) => {
-      releaseSecondPage = resolve;
-    });
-    const first = { ...setEvent("0x101", "0x201", ["0x1", "0x7", "0x1", "0x2"]), block_number: 13 };
-    const second = { ...setEvent("0x101", "0x202", ["0x1", "0x7", "0x1", "0x3"]), block_number: 13 };
-    const block = replacementBlock();
-    const rpc = {
-      blockNumber: async () => 13,
-      getBlockWithReceipts: async () => ({ ...block, transactions: [] }),
-      getEvents: async function* () {
-        yield { events: [first], page: 1 };
-        markFirstPageConsumed();
-        await secondPageReleased;
-        yield { events: [second], page: 2 };
-      },
-    } as unknown as MadaraRpc;
-    const { live } = liveFixture({ rpc });
-
-    const advancing = live.acceptSubscribedHead({ block_number: 13, timestamp: 100 });
-    await firstPageConsumed;
-
-    expect(live.snapshot("7").models[0].rows[0].value.value).toBe("0x1");
-
-    releaseSecondPage();
-    await advancing;
-    expect(live.snapshot("7").models[0].rows[0].value.value).toBe("0x3");
+describe("native live publication", () => {
+  it("publishes complete receipts once and keeps confirmed snapshots separate from the overlay", () => {
+    const { live, messages, submit } = fixture();
+    submit("1");
+    submit("1");
+    expect(messages.filter((message) => message.type === "diff")).toHaveLength(1);
+    expect(live.snapshot("1").models.find((model) => model.model === "TileOpt")!.rows).toEqual([]);
   });
 
-  it("publishes the confirmed head only after the history aggregate commits", async () => {
-    let releaseCommit!: () => void;
-    let startedCommit!: () => void;
-    const commitStarted = new Promise<void>((resolve) => {
-      startedCommit = resolve;
-    });
-    const committed = new Promise<void>((resolve) => {
-      releaseCommit = resolve;
-    });
-    const historyStore = {
-      appendEvents: async () => {
-        startedCommit();
-        await committed;
-      },
-      freezeReviewSnapshot: async () => undefined,
-    } as unknown as HistoryStore;
-    const { live } = liveFixture({ historyStore });
-    const socket = attachResumed(live);
-    const advancing = live.acceptSubscribedHead({ block_number: 13, timestamp: 100 });
-    await commitStarted;
-    expect(socket.messages.some((message) => message.type === "head")).toBe(false);
-    releaseCommit();
-    await advancing;
-    expect(socket.messages).toContainEqual(expect.objectContaining({ type: "head", block: 13 }));
+  it("waits for the history commit before publishing the confirmed head", async () => {
+    let release!: () => void;
+    const appendEvents = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        }),
+    );
+    const { live, messages, confirm } = fixture({
+      appendEvents,
+      freezeReviewSnapshot: vi.fn(),
+    } as unknown as HistoryStore);
+    confirm("1");
+    const update = live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
+    await vi.waitFor(() => expect(appendEvents).toHaveBeenCalledOnce());
+    expect(messages.filter((message) => message.type === "head")).toEqual([]);
+    release();
+    await update;
+    expect(live.confirmedBlock).toBe(10);
+    expect(messages.some((message) => message.type === "head")).toBe(true);
   });
 
-  it("publishes the pre-confirmed clock as a head only while it advances", async () => {
-    const { live } = liveFixture();
-    const socket = attachResumed(live);
+  it("advances completeness even when the confirmed block has no story events", async () => {
+    const appendEvents = vi.fn(async () => {});
+    const { live } = fixture({ appendEvents, freezeReviewSnapshot: vi.fn() } as unknown as HistoryStore);
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
+    expect(appendEvents).toHaveBeenCalledWith([], 10);
+  });
+
+  it("does not republish repeated heads or a clock that has not advanced", async () => {
+    const { live, messages, pending } = fixture();
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
+    messages.length = 0;
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
+    expect(messages).toEqual([]);
     await live.publishChainClock();
     await live.publishChainClock();
-    const clocks = socket.messages.filter((message) => message.type === "head" && message.preconfirmed === true);
-    expect(clocks).toEqual([expect.objectContaining({ block: 13, preconfirmed: true, timestamp: 103 })]);
+    expect(messages.filter((message) => message.type === "head")).toHaveLength(1);
+    pending.timestamp++;
+    await live.publishChainClock();
+    expect(messages.filter((message) => message.type === "head")).toHaveLength(2);
   });
 
-  it("advances history completeness through confirmed blocks without history events", async () => {
-    const historyStore = {
-      appendEvents: vi.fn(async () => undefined),
-      freezeReviewSnapshot: vi.fn(async () => undefined),
-    } as unknown as HistoryStore;
-    const { live } = liveFixture({ historyStore });
-
-    await live.acceptSubscribedHead({ block_number: 13, timestamp: 100 });
-
-    expect(historyStore.appendEvents).toHaveBeenCalledWith([], 13);
-  });
-
-  it("deduplicates hints and replaces the overlay from one pre-confirmed block read", async () => {
-    const { live } = liveFixture();
-    const socket = attachResumed(live);
-    const hint = subscribedSet("0x222", "0x2");
-
-    live.acceptPreconfirmedEvent(hint);
-    live.acceptPreconfirmedEvent(hint);
-    await live.reconcileAfterSubscribe();
-
-    expect(socket.messages.map(({ type }) => type)).toEqual([
-      "hello",
-      "snapshot",
-      "snapshot",
-      "snapshot_end",
-      "diff",
-      "overlay_reset",
-      "diff",
-      "head",
-    ]);
-    const postResetDiff = socket.messages.at(-2)!;
-    expect(postResetDiff).toMatchObject({ block: 13, preconfirmed: true, type: "diff" });
-    expect((postResetDiff.set as Array<Record<string, unknown>>)[0]).toMatchObject({
-      key: "0xabc",
-      model: "TestModel",
-      value: { game_id: "0x7", value: "0x3" },
-    });
-    expect(live.snapshot("7").models[0].rows[0].value.value).toBe("0x1");
-
-    const attachedDuringOverlay = attachResumed(live);
-
-    expect(attachedDuringOverlay.messages.map(({ type }) => type)).toEqual([
-      "hello",
-      "snapshot",
-      "snapshot",
-      "snapshot_end",
-      "diff",
-    ]);
-    expect(attachedDuringOverlay.messages[1]).toMatchObject({
-      model: "TestModel",
-      rows: [{ key: "0xabc", value: { game_id: "0x7", value: "0x1" } }],
-    });
-    expect(attachedDuringOverlay.messages.at(-1)).toMatchObject({
-      preconfirmed: true,
-      set: [{ key: "0xabc", model: "TestModel", value: { game_id: "0x7", value: "0x3" } }],
-      type: "diff",
-    });
-  });
-
-  it("publishes one pre-confirmed diff per transaction and game", async () => {
-    const { live } = liveFixture();
-    const socket = attachResumed(live);
-
-    const first = subscribedSet("0x222", "0x2", 0);
-    const second = subscribedSet("0x222", "0x3", 1, "0xdef");
-    live.acceptPreconfirmedEvent(first);
-    const receipt = live.acceptReceipt(preconfirmedReceipt([first, second]));
-    await endMacrotask();
-    expect(socket.messages.filter(({ type }) => type === "diff")).toHaveLength(0);
-
-    live.acceptPreconfirmedEvent(second);
-    await endMacrotask();
-    await receipt;
-    const coalescedDiffs = socket.messages.filter(({ type }) => type === "diff");
-    expect(coalescedDiffs).toHaveLength(1);
-    expect(coalescedDiffs[0]!.set).toHaveLength(2);
-    expect(coalescedDiffs[0]).toMatchObject({ transaction_hash: "0x222" });
-
-    const nextTransaction = subscribedSet("0x333", "0x4");
-    live.acceptPreconfirmedEvent(nextTransaction);
-    const lastTransaction = subscribedSet("0x444", "0x5", 0, "0x456");
-    live.acceptPreconfirmedEvent(lastTransaction);
-    expect(socket.messages.filter(({ type }) => type === "diff")).toHaveLength(2);
-    const lastReceipt = live.acceptReceipt(preconfirmedReceipt([lastTransaction]));
-    await endMacrotask();
-    await lastReceipt;
-
-    const diffs = socket.messages.filter(({ type }) => type === "diff");
-    expect(diffs).toHaveLength(3);
-    expect(diffs.every(({ preconfirmed, type }) => preconfirmed === true && type === "diff")).toBe(true);
-    expect(diffs[1]!.set).toHaveLength(1);
-    expect(diffs[2]!.set).toHaveLength(1);
-  });
-
-  it("ignores finalized copies of subscribed pre-confirmed events", async () => {
-    const { block, live } = liveFixture();
-    const socket = attachResumed(live);
-
-    await live.reconcileAfterSubscribe();
-    const boundary = socket.messages.length;
-    live.acceptPreconfirmedEvent({
-      ...subscribedSet("0x333", "0x3"),
-      block_number: block.block_number,
-      finality_status: "ACCEPTED_ON_L2",
-    });
-    await endMacrotask();
-
-    expect(socket.messages).toHaveLength(boundary);
-  });
-
-  it("emits one reset and head when subscription heads repeat the reconciled block", async () => {
-    const { block, live } = liveFixture();
-    const socket = attachResumed(live);
-
-    await live.reconcileAfterSubscribe();
-    const boundary = socket.messages.length;
-    await live.acceptSubscribedHead({ block_number: block.block_number, timestamp: block.timestamp });
-    await live.acceptSubscribedHead({ block_number: block.block_number - 1, timestamp: block.timestamp });
-
-    expect(socket.messages).toHaveLength(boundary);
-    expect(socket.messages.filter(({ type }) => type === "overlay_reset")).toHaveLength(1);
-    expect(socket.messages.filter(({ type }) => type === "head")).toHaveLength(1);
-  });
-
-  it("resolves a reverted receipt for a sender settled in the game", async () => {
-    const { live } = liveFixture();
-    const socket = attachResumed(live);
-
-    live.acceptTransaction({
-      finality_status: "PRE_CONFIRMED",
-      sender_address: "0xabc",
-      transaction_hash: "0x444",
-      type: "INVOKE",
-    });
-    live.acceptReceipt({
-      block_number: 13,
-      events: [],
-      execution_status: "REVERTED",
-      finality_status: "PRE_CONFIRMED",
-      revert_reason: "fixture revert",
-      transaction_hash: "0x444",
-    });
-
-    expect(socket.messages.at(-1)).toMatchObject({
-      block: 13,
-      hash: "0x444",
-      revert_reason: "fixture revert",
-      status: "REVERTED",
-      type: "tx",
-    });
-  });
-
-  it("holds a receipt until the transaction subscription supplies its sender", () => {
-    const { live } = liveFixture();
-    const socket = attachResumed(live);
-
-    live.acceptReceipt({
-      block_number: 13,
-      events: [],
-      execution_status: "SUCCEEDED",
-      finality_status: "PRE_CONFIRMED",
-      transaction_hash: "0x555",
-    });
-    expect(socket.messages.some(({ type }) => type === "tx")).toBe(false);
-
-    live.acceptTransaction({
-      finality_status: "PRE_CONFIRMED",
-      transaction: { sender_address: "0xabc", transaction_hash: "0x555", type: "INVOKE" },
-    });
-    expect(socket.messages.at(-1)).toMatchObject({ hash: "0x555", status: "PRE_CONFIRMED", type: "tx" });
-  });
-
-  it("bounds transaction state when final receipts never arrive", () => {
-    const { live } = liveFixture();
-    const transactionCount = 2_049;
-
-    for (let index = 0; index < transactionCount; index += 1) {
-      const transactionHash = `0x${(index + 0x1_000).toString(16)}`;
-      live.acceptTransaction({
-        finality_status: "PRE_CONFIRMED",
-        sender_address: "0xabc",
-        transaction_hash: transactionHash,
-        type: "INVOKE",
-      });
-      live.acceptReceipt({
-        events: [
-          {
-            data: ["0x1", "0x7", "0x1", "0x2"],
-            from_address: registry.worldAddress,
-            keys: [WORLD_EVENT_SELECTORS.set, "0x101", "0xabc"],
-          },
-        ],
-        execution_status: "SUCCEEDED",
-        finality_status: "PRE_CONFIRMED",
-        transaction_hash: `0x${(index + 0x10_000).toString(16)}`,
-      });
-    }
-
-    const transactionState = live as unknown as {
-      pendingReceipts: Map<string, unknown>;
-      preconfirmedReceiptEvents: Map<string, unknown>;
-      transactionSenders: Map<string, unknown>;
+  it("names the last confirmed head's time in hello, which a pre-confirmed clock tick leaves as it is", async () => {
+    const { live, pending } = fixture();
+    const hello = () => {
+      const sent: Array<Record<string, unknown>> = [];
+      live.attach("1", { send: (text) => sent.push(JSON.parse(text)) });
+      return sent[0];
     };
-    expect(transactionState.transactionSenders.size).toBe(2_048);
-    expect(transactionState.pendingReceipts.size).toBe(2_048);
-    expect(transactionState.preconfirmedReceiptEvents.size).toBe(2_048);
+    expect(hello()).toMatchObject({ type: "hello", confirmed_timestamp: null });
+
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
+    pending.timestamp = 500;
+    await live.publishChainClock();
+
+    expect(hello()).toMatchObject({ type: "hello", confirmed_block: 10, confirmed_timestamp: 100 });
   });
 
-  it("logs an undecodable event and keeps serving later transactions", async () => {
-    const { live } = liveFixture();
-    const socket = attachResumed(live);
-    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  it("invalidates directory readers only after confirmed changes", async () => {
+    const { live, submit, confirm } = fixture();
+    const changed = vi.fn();
+    const unsubscribe = live.subscribeConfirmedChanges(changed);
+    submit("1");
+    expect(changed).not.toHaveBeenCalled();
+    confirm("1");
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
+    expect(changed).toHaveBeenCalledWith(new Set(["TileOpt"]));
+    unsubscribe();
+  });
 
-    live.acceptPreconfirmedEvent({ ...subscribedSet("0xbad", "0x2", 7), data: ["0x1"] });
-    const nextTransaction = subscribedSet("0x600d", "0x3");
-    live.acceptPreconfirmedEvent(nextTransaction);
-    const receipt = live.acceptReceipt(preconfirmedReceipt([nextTransaction]));
-    await endMacrotask();
-    await receipt;
+  it("reverts a provisional row missing from the rebuilt block", async () => {
+    const { live, messages, submit } = fixture();
+    submit("1");
+    messages.length = 0;
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
+    const diffs = messages.filter((message) => message.type === "diff");
+    expect(diffs.some((message) => (message.del as unknown[]).length === 1)).toBe(true);
+  });
 
-    expect(log).toHaveBeenCalledWith(
-      expect.stringContaining(
-        '"event":"herald_event_decode_failed","eventIndex":7,"model":"TestModel","transactionHash":"0xbad"',
+  it("keeps two expedition scopes isolated through depth changes, overlay reset, reconnect and rollover", async () => {
+    const { native, decoder, fold } = setup();
+    const rules = decoder.decode(raw(rulesEvent()));
+    if (rules.kind !== "set") throw new Error("Expected rules row");
+    rules.value.epoch_seconds = 86_400;
+    const dayStart = Date.parse("2026-09-22T00:00:00Z") / 1000;
+    const beforeMidnight = dayStart + 86_399;
+    fold.apply(rules);
+    const homes = [1, 2].map((id) =>
+      rowEvent(
+        "Structure",
+        ["1", String(id)],
+        [
+          String(id + 9),
+          "0",
+          "0",
+          "2",
+          "120",
+          "1",
+          "0",
+          "0",
+          "0",
+          "1",
+          "0",
+          "0",
+          "0",
+          String(id),
+          "0",
+          "0",
+          "0",
+          "0",
+          "1",
+          "0",
+        ],
       ),
     );
-    expect(socket.messages.filter(({ type }) => type === "diff")).toHaveLength(1);
-    expect(socket.messages.at(-1)).toMatchObject({
-      preconfirmed: true,
-      set: [{ key: "0xabc", model: "TestModel", value: { game_id: "0x7", value: "0x3" } }],
-      type: "diff",
-    });
-
-    log.mockRestore();
-  });
-
-  it("keeps a streamed transaction off the wire when the rebuilt overlay leaves its rows unchanged", async () => {
-    const { live } = liveFixture();
-    const socket = attachResumed(live);
-
-    live.acceptPreconfirmedEvent(subscribedSet("0x333", "0x3"));
-    await live.reconcileAfterSubscribe();
-
-    expect(socket.messages.map(({ type }) => type)).toEqual([
-      "hello",
-      "snapshot",
-      "snapshot",
-      "snapshot_end",
-      "diff",
-      "overlay_reset",
-      "head",
-    ]);
-    expect(socket.messages[4]).toMatchObject({
-      block: null,
-      preconfirmed: true,
-      set: [{ key: "0xabc", model: "TestModel", value: { game_id: "0x7", value: "0x3" } }],
-      transaction_hash: "0x333",
-    });
-
-    const lateSubscriber = attachResumed(live);
-    expect(lateSubscriber.messages.map(({ type }) => type)).toEqual([
-      "hello",
-      "snapshot",
-      "snapshot",
-      "snapshot_end",
-      "diff",
-    ]);
-    expect(lateSubscriber.messages.at(-1)).toMatchObject({
-      block: 13,
-      preconfirmed: true,
-      set: [{ key: "0xabc", model: "TestModel", value: { game_id: "0x7", value: "0x3" } }],
-      transaction_hash: "0x333",
-    });
-  });
-
-  it("publishes only the rows a rebuilt transaction changed", async () => {
-    const block = {
-      ...replacementBlock(),
-      transactions: [
-        blockSet("0x333", [
-          ["0xabc", "0x3"],
-          ["0xdef", "0x6"],
-        ]),
-      ],
-    };
-    const { live } = liveFixture({ block });
-    const socket = attachResumed(live);
-
-    live.acceptPreconfirmedEvent(subscribedSet("0x333", "0x3", 0));
-    live.acceptPreconfirmedEvent(subscribedSet("0x333", "0x5", 1, "0xdef"));
-    await live.reconcileAfterSubscribe();
-
-    expect(socket.messages.map(({ type }) => type)).toEqual([
-      "hello",
-      "snapshot",
-      "snapshot",
-      "snapshot_end",
-      "diff",
-      "overlay_reset",
-      "diff",
-      "head",
-    ]);
-    expect(socket.messages[4]!.set).toHaveLength(2);
-    expect(socket.messages[6]).toMatchObject({
-      block: 13,
-      del: [],
-      preconfirmed: true,
-      set: [{ key: "0xdef", model: "TestModel", value: { game_id: "0x7", value: "0x6" } }],
-      transaction_hash: "0x333",
-    });
-  });
-
-  it("reverts overlay rows the rebuilt block no longer carries", async () => {
-    const { live } = liveFixture({ block: { ...replacementBlock(), transactions: [] } });
-    const socket = attachResumed(live);
-
-    live.acceptPreconfirmedEvent(subscribedSet("0x222", "0x2", 0));
-    live.acceptPreconfirmedEvent(subscribedSet("0x222", "0x4", 1, "0xdef"));
-    await live.reconcileAfterSubscribe();
-
-    expect(socket.messages.map(({ type }) => type)).toEqual([
-      "hello",
-      "snapshot",
-      "snapshot",
-      "snapshot_end",
-      "diff",
-      "overlay_reset",
-      "diff",
-      "head",
-    ]);
-    const revert = socket.messages[6]!;
-    expect(revert).toMatchObject({
-      block: 13,
-      del: [{ key: "0xdef", model: "TestModel" }],
-      preconfirmed: true,
-      set: [{ key: "0xabc", model: "TestModel", value: { game_id: "0x7", value: "0x1" } }],
-    });
-    expect(revert).not.toHaveProperty("transaction_hash");
-  });
-
-  it("drops a streamed set that repeats the published overlay value", () => {
-    const { live } = liveFixture();
-    const socket = attachResumed(live);
-
-    live.acceptPreconfirmedEvent(subscribedSet("0x222", "0x2"));
-    live.acceptPreconfirmedEvent(subscribedSet("0x333", "0x2"));
-    live.acceptPreconfirmedEvent(subscribedSet("0x444", "0x5"));
-
-    const diffs = socket.messages.filter(({ type }) => type === "diff");
-    expect(diffs).toHaveLength(1);
-    expect(diffs[0]).toMatchObject({ transaction_hash: "0x222" });
-
-    const lateSubscriber = attachResumed(live);
-    const overlayTransactions = lateSubscriber.messages.filter(({ type }) => type === "diff");
-    expect(overlayTransactions.map(({ transaction_hash }) => transaction_hash)).toEqual(["0x222", "0x333"]);
-  });
-
-  it("publishes a rebuilt row the confirmed diff moved, even when it repeats the old overlay value", async () => {
-    const confirmed = { ...setEvent("0x101", "0x201", ["0x1", "0x7", "0x1", "0x3"]), block_number: 13 };
-    const block = { ...replacementBlock(), transactions: [blockSet("0x333", [["0xabc", "0x2"]])] };
-    const { live } = liveFixture({ rpc: rpcFixture(block, [confirmed]) });
-    const socket = attachResumed(live);
-
-    live.acceptPreconfirmedEvent(subscribedSet("0x222", "0x2"));
-    await live.reconcileAfterSubscribe();
-
-    expect(socket.messages.map(({ type }) => type)).toEqual([
-      "hello",
-      "snapshot",
-      "snapshot",
-      "snapshot_end",
-      "diff",
-      "diff",
-      "overlay_reset",
-      "diff",
-      "head",
-    ]);
-    expect(socket.messages[5]).toMatchObject({
-      block: 13,
-      preconfirmed: false,
-      set: [{ key: "0xabc", model: "TestModel", value: { game_id: "0x7", value: "0x3" } }],
-    });
-    expect(socket.messages[7]).toMatchObject({
-      block: 13,
-      preconfirmed: true,
-      set: [{ key: "0xabc", model: "TestModel", value: { game_id: "0x7", value: "0x2" } }],
-      transaction_hash: "0x333",
-    });
-  });
-
-  it("does not revert a row the confirmed diff already superseded", async () => {
-    const confirmed = { ...setEvent("0x101", "0x201", ["0x1", "0x7", "0x1", "0x3"]), block_number: 13 };
-    const block = { ...replacementBlock(), transactions: [] };
-    const { live } = liveFixture({ rpc: rpcFixture(block, [confirmed]) });
-    const socket = attachResumed(live);
-
-    live.acceptPreconfirmedEvent(subscribedSet("0x222", "0x2"));
-    await live.reconcileAfterSubscribe();
-
-    expect(socket.messages.map(({ type }) => type)).toEqual([
-      "hello",
-      "snapshot",
-      "snapshot",
-      "snapshot_end",
-      "diff",
-      "diff",
-      "overlay_reset",
-      "head",
-    ]);
-  });
-
-  it("records fold-to-publish latency for pre-confirmed and confirmed diffs", async () => {
-    const diffLatency = { record: vi.fn() } as unknown as DiffLatencyMonitor;
-    const { live } = liveFixture({ diffLatency });
-    attachResumed(live);
-
-    live.acceptPreconfirmedEvent(subscribedSet("0x222", "0x2"));
-    live.acceptPreconfirmedEvent(subscribedSet("0x333", "0x3"));
-    expect(diffLatency.record).toHaveBeenCalledWith("preconfirmed", expect.any(Number));
-    expect(diffLatency.record).not.toHaveBeenCalledWith("confirmed", expect.any(Number));
-
-    await live.reconcileAfterSubscribe();
-    expect(diffLatency.record).toHaveBeenCalledWith("confirmed", expect.any(Number));
-  });
-});
-
-// Two subscriber models over the recorded wire: the pre-phase-1 transport reverts pending rows to its confirmed copy
-// at overlay_reset; the phase-1 transport keeps every row until a diff changes it. Both are reduced from the same
-// messages a socket recorded, and compared to what a fresh subscriber is handed at that moment.
-type SubscriberRows = Map<string, unknown>;
-
-const rowsOf = (message: Record<string, unknown>, field: "set" | "del") =>
-  (message[field] as Array<{ key: string; model: string; value?: unknown }> | undefined) ?? [];
-
-const reduceKeepingRows = (messages: Array<Record<string, unknown>>): SubscriberRows => {
-  const current: SubscriberRows = new Map();
-  for (const message of messages) {
-    if (message.type === "snapshot") {
-      for (const row of message.rows as Array<{ key: string; value: unknown }>) {
-        current.set(`${message.model as string}:${row.key}`, row.value);
-      }
-    }
-    if (message.type === "diff") {
-      for (const row of rowsOf(message, "set")) current.set(`${row.model}:${row.key}`, row.value);
-      for (const row of rowsOf(message, "del")) current.delete(`${row.model}:${row.key}`);
-    }
-  }
-  return current;
-};
-
-const reduceRevertingRows = (messages: Array<Record<string, unknown>>): SubscriberRows => {
-  const confirmed: SubscriberRows = new Map();
-  const current: SubscriberRows = new Map();
-  const pending = new Set<string>();
-  for (const message of messages) {
-    if (message.type === "snapshot") {
-      for (const row of message.rows as Array<{ key: string; value: unknown }>) {
-        const identity = `${message.model as string}:${row.key}`;
-        confirmed.set(identity, row.value);
-        current.set(identity, row.value);
-      }
-    }
-    if (message.type === "diff") {
-      for (const row of rowsOf(message, "set")) {
-        const identity = `${row.model}:${row.key}`;
-        if (message.preconfirmed) pending.add(identity);
-        else confirmed.set(identity, row.value);
-        current.set(identity, row.value);
-      }
-      for (const row of rowsOf(message, "del")) {
-        const identity = `${row.model}:${row.key}`;
-        if (message.preconfirmed) pending.add(identity);
-        else confirmed.delete(identity);
-        current.delete(identity);
-      }
-    }
-    if (message.type === "overlay_reset") {
-      for (const identity of pending) {
-        if (confirmed.has(identity)) current.set(identity, confirmed.get(identity));
-        else current.delete(identity);
-      }
-      pending.clear();
-    }
-  }
-  return current;
-};
-
-const testModelRows = (rows: SubscriberRows) =>
-  Object.fromEntries([...rows].filter(([identity]) => identity.startsWith("TestModel:")).sort());
-
-/** Head 13 confirms the streamed transaction and opens block 14's overlay; head 14 confirms that overlay. */
-const twoHeadRpc = (): MadaraRpc & { advanceTo: (block: number) => void } => {
-  const confirmedByBlock = new Map<number, RawWorldEvent[]>([
-    [
-      13,
-      [
-        setEvent("0x101", "0x222", ["0x1", "0x7", "0x1", "0x2"], 0),
-        setEvent("0x101", "0x222", ["0x1", "0x7", "0x1", "0x4"], 1),
-      ],
-    ],
-    [
-      14,
-      [
-        setEvent("0x101", "0x333", ["0x1", "0x7", "0x1", "0x5"], 0),
-        setEvent("0x101", "0x333", ["0x1", "0x7", "0x1", "0x6"], 1, "0xdef"),
-      ],
-    ],
-  ]);
-  const preconfirmedByHead = new Map<number, RpcBlockWithReceipts>([
-    [
-      13,
-      {
-        block_number: 14,
-        timestamp: 100,
-        transactions: [
-          blockSet("0x333", [
-            ["0xabc", "0x5"],
-            ["0xdef", "0x6"],
-          ]),
+    const armies = [1, 2].map((id) =>
+      rowEvent(
+        "ExplorerTroops",
+        ["1", String(id * 10)],
+        [
+          String(id),
+          "0",
+          "0",
+          "1000",
+          "120",
+          "1",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          String(id * 100 - 50),
+          "50",
         ],
-      },
-    ],
-    [14, { block_number: 15, timestamp: 101, transactions: [] }],
-  ]);
-  let head = 12;
-  return {
-    advanceTo: (block: number) => {
-      head = block;
-    },
-    blockNumber: async () => head,
-    getBlockWithReceipts: async () => preconfirmedByHead.get(head)!,
-    getEvents: async function* ({ fromBlock, toBlock }: { fromBlock: number; toBlock: number }) {
-      for (let block = fromBlock; block <= toBlock; block += 1) {
-        const events = (confirmedByBlock.get(block) ?? []).map((event) => ({ ...event, block_number: block }));
-        if (events.length > 0) yield { events, page: block };
-      }
-    },
-  } as unknown as MadaraRpc & { advanceTo: (block: number) => void };
-};
-
-describe("LiveWorld wire economy", () => {
-  it("publishes a row once per diff however many events touched it", async () => {
-    const confirmed = [
-      { ...setEvent("0x101", "0x222", ["0x1", "0x7", "0x1", "0x2"], 0), block_number: 13 },
-      { ...setEvent("0x101", "0x222", ["0x1", "0x7", "0x1", "0x4"], 1), block_number: 13 },
-    ];
-    const { live } = liveFixture({ rpc: rpcFixture({ ...replacementBlock(), transactions: [] }, confirmed) });
-    const socket = attachResumed(live);
-
-    const first = subscribedSet("0x222", "0x2", 0);
-    const second = subscribedSet("0x222", "0x4", 1);
-    live.acceptPreconfirmedEvent(first);
-    const receipt = live.acceptReceipt(preconfirmedReceipt([first, second]));
-    live.acceptPreconfirmedEvent(second);
-    await endMacrotask();
-    await receipt;
-
-    const streamed = socket.messages.filter(({ type }) => type === "diff");
-    expect(streamed).toHaveLength(1);
-    expect(streamed[0]).toMatchObject({
-      preconfirmed: true,
-      set: [{ key: "0xabc", model: "TestModel", value: { game_id: "0x7", value: "0x4" } }],
-    });
-
-    // The head confirms the value subscribers already hold, so the confirmed diff carries nothing at all.
-    await live.reconcileAfterSubscribe();
-    expect(socket.messages.filter(({ preconfirmed, type }) => type === "diff" && preconfirmed === false)).toEqual([]);
-  });
-
-  it("converges a row-keeping subscriber at every head; a reverting subscriber only until a held row is confirmed", async () => {
-    const rpc = twoHeadRpc();
-    const { live } = liveFixture({ rpc });
-    const socket = attachResumed(live);
-    const first = subscribedSet("0x222", "0x2", 0);
-    const second = subscribedSet("0x222", "0x4", 1);
-    live.acceptPreconfirmedEvent(first);
-    live.acceptPreconfirmedEvent(second);
-    live.acceptReceipt(preconfirmedReceipt([first, second]));
-    await endMacrotask();
-
-    rpc.advanceTo(13);
-    await live.acceptSubscribedHead({ block_number: 13, timestamp: 100 });
-    const freshAt13 = testModelRows(reduceKeepingRows(attachResumed(live).messages));
-    expect(testModelRows(reduceKeepingRows(socket.messages)), "phase-1 subscriber at head 13").toEqual(freshAt13);
-    expect(testModelRows(reduceRevertingRows(socket.messages)), "pre-phase-1 subscriber at head 13").toEqual(freshAt13);
-
-    rpc.advanceTo(14);
-    await live.acceptSubscribedHead({ block_number: 14, timestamp: 101 });
-    const freshAt14 = testModelRows(reduceKeepingRows(attachResumed(live).messages));
-    expect(freshAt14).toEqual({
-      "TestModel:0xabc": { game_id: "0x7", value: "0x5" },
-      "TestModel:0xdef": { game_id: "0x7", value: "0x6" },
-    });
-    expect(testModelRows(reduceKeepingRows(socket.messages)), "phase-1 subscriber at head 14").toEqual(freshAt14);
-    // The confirmed diff that repeats a held value stays off the wire, so a pre-phase-1 subscriber's confirmed copy
-    // never learns it and its revert at overlay_reset lands on stale rows. This is why step B reaches the box only
-    // after every served client keeps rows across resets.
-    expect(testModelRows(reduceRevertingRows(socket.messages)), "pre-phase-1 subscriber at head 14").toEqual({
-      "TestModel:0xabc": { game_id: "0x7", value: "0x1" },
-    });
-  });
-});
-
-describe("timed review snapshots", () => {
-  it("freezes a dev game's confirmed snapshot when its clock ends without a status change", async () => {
-    const registryCodec = codec({ ...gameModel, name: "GameRegistry" }, "0x103");
-    const timedRegistry: ModelRegistry = { ...registry, persistent: [registryCodec] };
-    const fold = WorldFold.restore(timedRegistry, {
-      version: 1,
-      world_address: registry.worldAddress,
-      models: [
-        {
-          model: "GameRegistry",
-          rows: [
-            { entity_id: "0x1", key: { game_id: "0x7" }, value: { status: "Live", end_at: "0x64", dev_mode_on: true } },
+      ),
+    );
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent(
+          "GameRegistry",
+          ["1"],
+          [
+            "7",
+            "1",
+            "10",
+            "0",
+            "1",
+            "0",
+            String(dayStart + 120),
+            String(dayStart + 120),
+            String(dayStart + 864_000),
+            "0",
+            "7",
           ],
-        },
-        { model: "LastBattle", rows: [] },
-      ],
-    });
-    const historyStore = {
-      appendEvents: vi.fn(async () => undefined),
-      freezeReviewSnapshot: vi.fn(async () => undefined),
-    } as unknown as HistoryStore;
+        ),
+        rowEvent("SettlementRules", ["1"], ["0", "0", "0", "100"]),
+        ...homes,
+        ...armies,
+        rowEvent("ResourceBalance", ["1", "1", "28"], ["100"]),
+        rowEvent("ResourceBalance", ["1", "2", "28"], ["200"]),
+        ...[1, 2, 10, 20].flatMap((entityId) => [
+          rowEvent("ResourceWeight", ["1", String(entityId)], ["1000", "100"]),
+          rowEvent("EntityName", ["1", String(entityId)], [String(entityId)]),
+        ]),
+        rowEvent("ProductionReceiver", ["1", "100", "29"], ["2", "240"]),
+        rowEvent("ResourceProduction", ["1", "100", "29"], ["1", "10", "100", "120"]),
+        rowEvent("ProductionReceiver", ["1", "99", "29"], ["1", "240"]),
+        rowEvent("ResourceProduction", ["1", "99", "29"], ["1", "10", "100", "120"]),
+        rowEvent("TileOpt", ["1", "0", "50", "50"], ["1"]),
+        rowEvent("TileOpt", ["1", "0", "150", "50"], ["1"]),
+        rowEvent("TileOpt", ["1", "0", "50", "150"], ["1"]),
+        rowEvent("TileOpt", ["1", "0", "50", "450"], ["1"]),
+        rowEvent("TileOpt", ["1", "0", "150", "450"], ["1"]),
+      ]),
+      9,
+      0,
+    );
+    const confirmed: RpcBlockWithReceipts = { block_number: 10, timestamp: beforeMidnight, transactions: [] };
+    const pending: RpcBlockWithReceipts = { block_number: 11, timestamp: beforeMidnight, transactions: [] };
     const live = new LiveWorld({
+      native,
+      registry: decoder.registry,
       chain: "madara",
       checkpointEveryBlocks: 100,
       checkpointStore: { save: async () => undefined },
-      confirmedBlock: 12,
+      confirmedBlock: 9,
       confirmedFold: fold,
-      decodeMonitor: new WorldEventDecodeMonitor(),
-      historyStore,
-      registry: timedRegistry,
-      rpc: rpcFixture({ ...replacementBlock(), transactions: [] }),
+      rpc: {
+        getPreconfirmedHeader: async () => pending,
+        getBlockWithReceipts: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
+      } as unknown as MadaraRpc,
     });
-    await live.freezeEndedReviewSnapshots(99);
-    expect(historyStore.freezeReviewSnapshot).not.toHaveBeenCalled();
-    await live.acceptSubscribedHead({ block_number: 13, timestamp: 100 });
-    expect(historyStore.freezeReviewSnapshot).toHaveBeenCalledWith(
-      expect.objectContaining({ game_id: "7", confirmed_block: 13 }),
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: beforeMidnight });
+    const messages: HeraldStreamMessage[][] = [[], []];
+    const sessions = ["0xa", "0xb"].map((actor, index) => {
+      const session = live.attach("1", { send: (text) => messages[index].push(JSON.parse(text)) }, actor);
+      live.resume(session, { type: "resume", epoch: "", seq: 0 });
+      return session;
+    });
+    for (const [index, stream] of messages.entries()) {
+      const snapshots = stream.filter((message) => message.type === "snapshot");
+      const foreignEntities = new Set(index === 0 ? [2, 20, 100] : [1, 10, 99]);
+      const checkedEntityKeys = new Set<string>();
+      for (const snapshot of snapshots) {
+        const model = schema.models.find(({ name }) => name === snapshot.model)!;
+        // Entity-id aliases become u32 in the schema; check every non-game u32 key, including spatial keys.
+        const entityKeys = model.keys.filter(({ name, type }) => name !== "game_id" && type === "core::integer::u32");
+        for (const row of snapshot.rows) {
+          for (const { name } of entityKeys) {
+            checkedEntityKeys.add(`${snapshot.model}.${name}`);
+            expect(foreignEntities.has(Number(row.value[name])), `${snapshot.model}.${name}`).toBe(false);
+          }
+        }
+      }
+      expect(checkedEntityKeys.size).toBeGreaterThan(0);
+      expect(
+        snapshots.find((message) => message.model === "Structure")?.rows.map((row) => Number(row.value.entity_id)),
+      ).toEqual([index + 1]);
+      expect(
+        snapshots
+          .find((message) => message.model === "ExplorerTroops")
+          ?.rows.map((row) => Number(row.value.explorer_id)),
+      ).toEqual([(index + 1) * 10]);
+      expect(
+        snapshots.find((message) => message.model === "TileOpt")?.rows.map((row) => Number(row.value.col)),
+      ).toEqual([index * 100 + 50]);
+    }
+    messages.forEach((stream) => {
+      stream.length = 0;
+    });
+    live.acceptReceipt({
+      ...receipt(
+        [rowEvent("TileOpt", ["1", "0", "150", "50"], ["2"]), rowEvent("ResourceBalance", ["1", "2", "28"], ["180"])],
+        "0x70",
+      ),
+      finality_status: "PRE_CONFIRMED",
+    });
+    expect(messages[0]).toEqual([]);
+    const otherRegion = messages[1].filter((message) => message.type === "diff");
+    expect(otherRegion).toHaveLength(1);
+    expect(otherRegion[0].set.map((row) => row.model).sort()).toEqual(["ResourceBalance", "TileOpt"]);
+    const surfaceKey = fold
+      .gameRows("TileOpt", "1")
+      .find((row) => Number(row.value.col) === 50 && Number(row.value.row) === 50)!.key;
+    const depthKey = fold.gameRows("TileOpt", "1").find((row) => Number(row.value.row) === 150)!.key;
+    messages.forEach((stream) => {
+      stream.length = 0;
+    });
+    const descended = { ...armies[0], data: [...armies[0].data] };
+    descended.data[descended.data.length - 1] = "150";
+    live.acceptReceipt({
+      ...receipt([descended, rowEvent("ResourceBalance", ["1", "1", "28"], ["80"])], "0x71"),
+      finality_status: "PRE_CONFIRMED",
+    });
+    const depthDiffs = messages[0].filter((message) => message.type === "diff");
+    expect(depthDiffs).toHaveLength(1);
+    expect(depthDiffs[0].set).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ model: "TileOpt", key: depthKey }),
+        expect.objectContaining({ model: "ResourceBalance", value: expect.objectContaining({ balance: "0x50" }) }),
+      ]),
     );
-    expect(historyStore.appendEvents).toHaveBeenCalledWith([], 13);
-    // Startup recovery uses the timestamp of the loaded confirmed head as well.
-    await live.freezeEndedReviewSnapshots(101);
-    expect(historyStore.freezeReviewSnapshot).toHaveBeenLastCalledWith(
-      expect.objectContaining({ game_id: "7", confirmed_block: 13 }),
+    expect(depthDiffs[0].del).toContainEqual({ model: "TileOpt", key: surfaceKey });
+    expect(messages[1]).toEqual([]);
+
+    confirmed.block_number = 11;
+    pending.block_number = 12;
+    messages[0].length = 0;
+    await live.acceptSubscribedHead({ block_number: 11, timestamp: beforeMidnight });
+    expect(messages[0].filter((message) => message.type === "diff").flatMap((message) => message.del)).toContainEqual({
+      model: "TileOpt",
+      key: depthKey,
+    });
+    expect(messages[0].filter((message) => message.type === "diff").flatMap((message) => message.set)).toContainEqual(
+      expect.objectContaining({ model: "TileOpt", key: surfaceKey }),
     );
+
+    const boundary = messages[0].at(-1)!;
+    messages.forEach((stream) => {
+      stream.length = 0;
+    });
+    pending.timestamp = dayStart + 86_400;
+    await live.publishChainClock();
+    for (const [index, stream] of messages.entries()) {
+      expect(stream.some((message) => message.type === "hello" || message.type === "snapshot")).toBe(false);
+      const diffs = stream.filter((message) => message.type === "diff");
+      const tiles = diffs.flatMap((message) => message.set).filter((row) => row.model === "TileOpt");
+      expect(tiles.map((row) => [Number(row.value.col), Number(row.value.row)])).toEqual([[index * 100 + 50, 450]]);
+      const yesterday = fold
+        .gameRows("TileOpt", "1")
+        .find((row) => Number(row.value.col) === index * 100 + 50 && Number(row.value.row) === 50)!;
+      expect(diffs.flatMap((message) => message.del)).toContainEqual({ model: "TileOpt", key: yesterday.key });
+    }
+    live.detach(sessions[0]);
+    const reconnected: HeraldStreamMessage[] = [];
+    const resumed = live.attach("1", { send: (text) => reconnected.push(JSON.parse(text)) }, "0xa");
+    live.resume(resumed, { type: "resume", epoch: boundary.epoch, seq: boundary.seq });
+    expect(reconnected.some((message) => message.type === "snapshot")).toBe(false);
+    const removed = reconnected.filter((message) => message.type === "diff").flatMap((message) => message.del);
+    expect(removed).toContainEqual({ model: "TileOpt", key: surfaceKey });
+    expect(removed.some((row) => row.model === "ExplorerTroops")).toBe(true);
+    expect(removed.some((row) => row.model === "Structure" || row.model === "ResourceBalance")).toBe(false);
+    const today = live.snapshot("1", undefined, "0xa");
+    expect(today.models.find((model) => model.model === "ExplorerTroops")?.rows).toEqual([]);
+    expect(today.models.find((model) => model.model === "Structure")?.rows).toHaveLength(1);
+    expect(
+      today.models.find((model) => model.model === "ProductionReceiver")?.rows.map((row) => Number(row.value.home)),
+    ).toEqual([1]);
+    expect(
+      today.models
+        .find((model) => model.model === "ResourceProduction")
+        ?.rows.map((row) => Number(row.value.entity_id)),
+    ).toEqual([99]);
+
+    reconnected.length = 0;
+    live.selectActor(resumed, "0xb");
+    expect(reconnected.some((message) => message.type === "snapshot")).toBe(false);
+    const selection = reconnected.find((message) => message.type === "scope")!;
+    expect(selection.set.filter((row) => row.model === "Structure").map((row) => Number(row.value.entity_id))).toEqual([
+      2,
+    ]);
+    expect(selection.set.some((row) => row.model === "SliceRules")).toBe(false);
   });
 });

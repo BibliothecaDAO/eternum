@@ -1,94 +1,31 @@
-import { decodeHyperstructureShares } from "../utils/hyperstructure-shareholders";
-
-interface ShareholderPointRows {
-  gameRegistry: readonly Record<string, unknown>[];
-  hyperstructures: readonly Record<string, unknown>[];
-  presets: readonly Record<string, unknown>[];
-  shareholders: readonly Record<string, unknown>[];
+/** A hyperstructure's share allocation as its HyperstructureShares fact carries it. */
+export interface ShareAllocation {
+  start_at: bigint | number | string;
+  multiplier: bigint | number | string;
+  shareholders: readonly { player: bigint | number | string; bps: bigint | number | string }[];
 }
 
-const POINTS_PRECISION = 1_000_000n;
-const SHARE_BASIS_POINTS = 10_000n;
+/** Outside development mode, share points stop accruing at the game's end. */
+export const sharePointCutoff = (
+  game: { dev_mode_on: boolean; end_at: bigint | number | string },
+  now: bigint,
+): bigint => (!game.dev_mode_on && now > BigInt(game.end_at) ? BigInt(game.end_at) : now);
 
-const scalar = (value: unknown, field: string): bigint => {
-  if (!["bigint", "number", "string"].includes(typeof value)) {
-    throw new Error(`${field} is not a scalar`);
-  }
-  try {
-    return BigInt(value as bigint | number | string);
-  } catch {
-    throw new Error(`${field} is not an integer`);
-  }
-};
-
-const record = (value: unknown, field: string): Record<string, unknown> => {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new Error(`${field} is not a record`);
-  }
-  return value as Record<string, unknown>;
-};
-
-const normalizeAddress = (value: bigint): string => `0x${value.toString(16)}`;
-
-const gameClock = (rows: ShareholderPointRows, gameId: bigint, nowSeconds: number) => {
-  const game = rows.gameRegistry.find((row) => scalar(row.game_id, "GameRegistry.game_id") === gameId);
-  if (!game) throw new Error(`GameRegistry row missing for game ${gameId}`);
-  const endAt = scalar(game.end_at, "GameRegistry.end_at");
-  const now = BigInt(Math.floor(nowSeconds));
-  return {
-    currentTimestamp: game.dev_mode_on !== true && endAt > 0n && now >= endAt ? endAt : now,
-    presetId: scalar(game.preset_id, "GameRegistry.preset_id"),
-  };
-};
-
-const pointsPerSecond = (rows: ShareholderPointRows, presetId: bigint): bigint => {
-  const preset = rows.presets.find((row) => scalar(row.preset_id, "PresetConfig.preset_id") === presetId);
-  if (!preset) throw new Error(`PresetConfig row missing for preset ${presetId}`);
-  const grant = record(preset.victory_points_grant_config, "PresetConfig.victory_points_grant_config");
-  return scalar(grant.hyp_points_per_second, "VictoryPointsGrantConfig.hyp_points_per_second");
-};
-
-const hyperstructureMultipliers = (rows: ShareholderPointRows, gameId: bigint): Map<string, bigint> =>
-  new Map(
-    rows.hyperstructures
-      .filter((row) => scalar(row.game_id, "Hyperstructure.game_id") === gameId)
-      .map((row) => [
-        scalar(row.hyperstructure_id, "Hyperstructure.hyperstructure_id").toString(),
-        scalar(row.points_multiplier, "Hyperstructure.points_multiplier"),
-      ]),
-  );
-
-export const calculateUnregisteredShareholderPoints = (
-  rows: ShareholderPointRows,
-  gameIdInput: bigint | number | string,
-  nowSeconds: number = Date.now() / 1_000,
-): ReadonlyMap<string, number> => {
-  if (rows.shareholders.length === 0) return new Map();
-  const gameId = BigInt(gameIdInput);
-  const clock = gameClock(rows, gameId, nowSeconds);
-  const basePointsPerSecond = pointsPerSecond(rows, clock.presetId);
-  const multipliers = hyperstructureMultipliers(rows, gameId);
-  const points = new Map<string, number>();
-
-  for (const row of rows.shareholders) {
-    if (scalar(row.game_id, "HyperstructureShareholders.game_id") !== gameId) continue;
-    const hyperstructureId = scalar(row.hyperstructure_id, "HyperstructureShareholders.hyperstructure_id").toString();
-    const multiplier = multipliers.get(hyperstructureId);
-    if (multiplier === undefined) throw new Error(`Hyperstructure row missing for shareholders ${hyperstructureId}`);
-    const startAt = scalar(row.start_at, "HyperstructureShareholders.start_at");
-    if (startAt === 0n) continue;
-    const elapsed = clock.currentTimestamp - startAt;
-    if (elapsed <= 0n) continue;
-    for (const { playerAddress, basisPoints } of decodeHyperstructureShares(row.shareholders)) {
-      const address = normalizeAddress(playerAddress);
-      const earned = accruedSharePoints(basePointsPerSecond, multiplier, basisPoints, elapsed);
-      points.set(address, (points.get(address) ?? 0) + Number(earned) / Number(POINTS_PRECISION));
-    }
-  }
-
-  return points;
-};
-
-/** Contract precision: round each share entry once, before converting to display points. */
-export const accruedSharePoints = (rate: bigint, multiplier: bigint, basisPoints: bigint, elapsed: bigint): bigint =>
-  elapsed > 0n ? (rate * multiplier * basisPoints * elapsed) / SHARE_BASIS_POINTS : 0n;
+/**
+ * Points each shareholder has earned since the allocation's last checkpoint, at contract precision (points × 1e6).
+ * This is the contract's hyperstructure checkpoint: every share rounds on its own, so the leaderboard, Herald and
+ * the chain agree to the unit.
+ */
+export function unclaimedSharePoints(
+  allocation: ShareAllocation,
+  pointsPerSecond: bigint | number | string,
+  cutoff: bigint,
+): { player: bigint; points: bigint }[] {
+  const elapsed = cutoff - BigInt(allocation.start_at);
+  if (elapsed <= 0n) return [];
+  const rate = BigInt(pointsPerSecond) * BigInt(allocation.multiplier);
+  return allocation.shareholders.map((share) => ({
+    player: BigInt(share.player),
+    points: (elapsed * rate * BigInt(share.bps)) / 10_000n,
+  }));
+}

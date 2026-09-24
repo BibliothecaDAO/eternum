@@ -28,20 +28,56 @@ export interface HeraldGameSettlementConfig {
   two_player_mode: boolean;
 }
 
+/** One structure the requesting player owns in the game. */
+export interface HeraldPlayerStructure {
+  entity_id: number;
+  category: number;
+  realm_id: number;
+  coord_x: number;
+  coord_y: number;
+  resources_packed: string;
+}
+
+/** The requesting player's standing in one game: everything the entry screens read before the player joins. */
+export interface HeraldPlayerGameState {
+  registered: boolean;
+  settled: boolean;
+  roster_member: boolean;
+  structures: HeraldPlayerStructure[];
+}
+
 export interface HeraldGameDirectoryEntry {
+  ready: boolean;
   clock: HeraldGameClock;
   dev_mode_on: boolean;
   game_id: number;
-  mode: "blitz" | "eternum" | null;
+  mode: "blitz" | "eternum" | "frontier" | "duel" | null;
   name: string;
   player_count: number;
-  player_state: { registered: boolean; settled: boolean } | null;
+  player_state: HeraldPlayerGameState | null;
+  /** Players on a Blitz game's fixed roster; 0 for open-entry games. */
+  roster_count: number;
   preset_id: number;
   registration: HeraldGameRegistration | null;
   settled_realms_count: number;
   settled_villages_count: number;
   settlement: HeraldGameSettlementConfig | null;
+  /** Effective phase at Herald's chain clock; Settled requires recorded settlement. */
   status: HeraldGameStatus;
+}
+
+/** GET /manifest: everything a client needs to open a shard beyond the shard's own URL. */
+export interface ShardManifest {
+  version: 1;
+  chainId: string;
+  releaseId: string;
+  schemaHash: string;
+  rpcUrl: string;
+  admissionUrl: string;
+  accountClassHash: string;
+  contracts: Record<string, string>;
+  /** The key that authorizes device keys on this shard's Realms accounts. */
+  guardianPublicKey: string;
 }
 
 export interface HeraldGameDirectory {
@@ -90,7 +126,13 @@ export interface HeraldTransactionCount {
   game_id: string;
 }
 
+/** A ranked player by address; their name is their identity profile, which the client resolves. */
+export type HeraldLeaderboardEntry = PlayerLeaderboardActivityEntry;
+
 export interface HeraldLeaderboard {
   game_id: string;
-  entries: PlayerLeaderboardActivityEntry[];
+  entries: HeraldLeaderboardEntry[];
 }
+
+/** Herald closes a game stream with this code when the game is finalized; the stream will never serve it again. */
+export const HERALD_GAME_FINALIZED_CLOSE = 4409;

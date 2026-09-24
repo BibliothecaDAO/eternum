@@ -5,7 +5,7 @@ import { buildMapResumeHref } from "@/play/navigation/play-route-boot-normalizat
 import { buildPlayHref, parsePlayRoute } from "@/play/navigation/play-route";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { Position } from "@bibliothecadao/eternum";
-import { usePlayerStructures } from "@bibliothecadao/react";
+import { usePlayerStructures } from "@/hooks/helpers/use-structures";
 import { useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -27,7 +27,7 @@ export const PlaySceneHandoff = () => {
     }
 
     const first = playerStructures[0];
-    const normalized = new Position({
+    const normalized = Position.fromContract({
       x: first.position.x,
       y: first.position.y,
     }).getNormalized();

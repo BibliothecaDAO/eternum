@@ -1,3 +1,4 @@
+import type { NativeExecutionOutcome } from "@bibliothecadao/provider";
 import type { FoldDelete, FoldRow, FoldSet } from "./types";
 
 // Model values retain starknet.js' decoded wire shape. In particular, Cairo tuples
@@ -11,10 +12,13 @@ export type HeraldStreamMessage =
   | (StreamMessageBase & {
       type: "hello";
       confirmed_block: number;
+      /** The chain time of the last confirmed head Herald published; null before its first. */
+      confirmed_timestamp: number | null;
       preconfirmed_block: number | null;
     })
   | (StreamMessageBase & { type: "snapshot"; model: string; rows: FoldRow[] })
   | (StreamMessageBase & { type: "snapshot_end" })
+  | (StreamMessageBase & { type: "scope"; actor?: string; expedition: boolean; set: FoldSet[] })
   | (StreamMessageBase & {
       type: "diff";
       block: number | null;
@@ -30,6 +34,7 @@ export type HeraldStreamMessage =
       status: string;
       block: number | null;
       revert_reason?: string;
+      executions?: NativeExecutionOutcome[];
     })
   | (StreamMessageBase & { type: "head"; block: number; timestamp: number; preconfirmed: boolean });
 

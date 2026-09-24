@@ -1,3 +1,4 @@
+import { Position } from "@bibliothecadao/eternum";
 import { AudioManager } from "@/audio/core/AudioManager";
 import type { HexEntityInfo, HexPosition, ID } from "@bibliothecadao/types";
 import { navigateToStructure } from "../utils/navigation";
@@ -12,7 +13,7 @@ interface WorldmapInteractionState {
     structureId: ID,
     options: {
       spectator: boolean;
-      worldMapPosition?: { col: number; row: number };
+      worldMapPosition?: Position;
     },
   ): void;
 }
@@ -24,26 +25,26 @@ interface SelectedHexManagerLike {
 interface CreateWorldmapInteractionAdapterInput {
   state: WorldmapInteractionState;
   selectedHexManager?: SelectedHexManagerLike;
-  dojoComponents?: OpenStructureContextMenuInput["components"];
+  store?: OpenStructureContextMenuInput["store"];
 }
 
 export function createWorldmapInteractionAdapter({
   state,
   selectedHexManager,
-  dojoComponents,
+  store,
 }: CreateWorldmapInteractionAdapterInput) {
   return {
     enterStructure(input: {
       hexCoords: HexPosition;
       structureId: ID;
       spectator: boolean;
-      worldMapPosition?: { col: number; row: number };
+      worldMapPosition?: Position;
     }) {
       state.setStructureEntityId(input.structureId, {
         spectator: input.spectator,
         worldMapPosition: input.worldMapPosition,
       });
-      navigateToStructure(input.hexCoords.col, input.hexCoords.row, "hex");
+      navigateToStructure(Position.fromNormalized({ x: input.hexCoords.col, y: input.hexCoords.row }), "hex");
     },
 
     selectHex(input: {
@@ -72,14 +73,14 @@ export function createWorldmapInteractionAdapter({
     },
 
     openOwnedStructureContextMenu(input: { event: MouseEvent; hexCoords: HexPosition; structure: HexEntityInfo }) {
-      if (!dojoComponents) {
+      if (!store) {
         return;
       }
       openStructureContextMenu({
         event: input.event,
         structure: input.structure,
         hexCoords: input.hexCoords,
-        components: dojoComponents,
+        store,
       });
     },
   };

@@ -107,10 +107,7 @@ export const PlayerList = ({
   const playersWithActivityStats = useMemo(() => players.map(resolvePlayerActivityStats), [players]);
 
   const filteredPlayers = useMemo(
-    () =>
-      playersWithActivityStats.filter(
-        (player) => !player.name.includes("Daydreams") && !player.name.includes("Central Bank"),
-      ),
+    () => playersWithActivityStats.filter((player) => !player.name.includes("Central Bank")),
     [playersWithActivityStats],
   );
 

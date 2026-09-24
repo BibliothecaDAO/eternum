@@ -1,5 +1,18 @@
-import { hasGameEnded } from "@bibliothecadao/eternum/game-sync";
+import { expeditionEpoch, isCurrentExpeditionArmy } from "@bibliothecadao/eternum/expeditions";
+import {
+  gameSyncRegion,
+  gameSyncRowKeys,
+  gameSyncScopeKeys,
+  isScopedGameSyncModel,
+  rowInGameSyncScope,
+  syncScalar,
+  type GameSyncScope,
+} from "@bibliothecadao/eternum/game-sync-models";
+import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { toJsonValue, type ModelRegistry } from "./model-registry";
+import { FINALIZED_GAME_MODELS } from "./native/read-models";
+import { nativeEntityId } from "./native/entity-id";
+import { rowStreamKeys, scopeInputKeys } from "./subscription-keys";
 import type {
   DecodedRecord,
   DecodedWorldEvent,
@@ -16,11 +29,8 @@ interface StoredModelRow {
   value: DecodedRecord;
 }
 
-const LAST_BATTLE_MODEL = "LastBattle";
-
 const persistentModelNames = (registry: ModelRegistry): readonly string[] => [
   ...registry.persistent.map(({ definition }) => definition.name),
-  LAST_BATTLE_MODEL,
 ];
 
 const asJsonRecord = (value: DecodedRecord): DecodedRecord => {
@@ -65,6 +75,7 @@ const checkpointRow = ([entityId, row]: [string, StoredModelRow]): FoldCheckpoin
  * Returns the human-readable difference, or undefined when the sets match.
  */
 export const checkpointModelMismatch = (registry: ModelRegistry, checkpoint: FoldCheckpoint): string | undefined => {
+  if (registry.nativeSchemaIdentity !== checkpoint.native_schema_identity) return "native schema identity differs";
   const expectedModels = new Set(persistentModelNames(registry));
   const restoredModels = new Set(checkpoint.models.map(({ model }) => model));
   const missing = [...expectedModels].filter((model) => !restoredModels.has(model));
@@ -77,7 +88,7 @@ export const checkpointModelMismatch = (registry: ModelRegistry, checkpoint: Fol
 // carry the world's structures and explored tiles; those go first, the rest keep registry order.
 const SNAPSHOT_STREAMING_PRIORITY: readonly string[] = ["TileOpt", "Structure"];
 
-export const orderSnapshotModelsForStreaming = <TDefinition extends { name: string }>(
+const orderSnapshotModelsForStreaming = <TDefinition extends { name: string }>(
   definitions: readonly TDefinition[],
 ): TDefinition[] => {
   const rank = (name: string) => {
@@ -87,21 +98,57 @@ export const orderSnapshotModelsForStreaming = <TDefinition extends { name: stri
   return [...definitions].sort((left, right) => rank(left.name) - rank(right.name));
 };
 
+/** The index owner of deployment-wide rows, beside one per game. */
+const DEPLOYMENT_ROWS = "deployment";
+
+/** The keys a row is indexed by: the lookups subscriptionScope makes, and the keys a scope holds rows by. */
+const indexKeys = (model: string, row: StoredModelRow, spacing: number): string[] => {
+  const facts = { ...row.key, ...row.value };
+  const held = gameSyncRowKeys(model, facts, spacing);
+  return [...scopeInputKeys(model, facts, spacing), ...(held === "shared" ? [] : held.filter((key) => key !== "*"))];
+};
+
+/** A request for rows a finalized game no longer keeps; its review snapshot holds them. */
+export class GameFinalizedError extends Error {
+  constructor(
+    readonly gameId: string,
+    models: readonly string[],
+  ) {
+    super(`Game ${gameId} is finalized; its review snapshot holds ${models.join(", ")}`);
+  }
+}
+
+interface ScopeIndex {
+  spacing: number;
+  /** Entity ids per `model|key`. */
+  entityIds: Map<string, Set<string>>;
+}
+
 export class WorldFold {
   private readonly registry: ModelRegistry;
+
   private readonly parent?: WorldFold;
+
   private readonly rowsByModel = new Map<string, Map<string, StoredModelRow | null>>();
+
   private readonly entityIdsByGameByModel = new Map<string, Map<string, Set<string>>>();
+
+  /**
+   * Built for a game on its first expedition scope and kept current as rows change, so a scope and a scoped snapshot
+   * cost the scope's own rows.
+   */
+  private readonly scopeIndexes = new Map<string, ScopeIndex>();
+
+  /** Finalized games whose other rows are evicted: later writes to those rows are dropped the same way. */
+  private readonly evictedGames = new Set<string>();
 
   constructor(registry: ModelRegistry, parent?: WorldFold) {
     this.registry = registry;
     this.parent = parent;
     registry.persistent.forEach(({ definition }) => {
       this.rowsByModel.set(definition.name, new Map());
-      if (definition.s2Scope === "game") this.entityIdsByGameByModel.set(definition.name, new Map());
+      if (definition.scope === "game") this.entityIdsByGameByModel.set(definition.name, new Map());
     });
-    this.rowsByModel.set(LAST_BATTLE_MODEL, new Map());
-    this.entityIdsByGameByModel.set(LAST_BATTLE_MODEL, new Map());
   }
 
   public static restore(registry: ModelRegistry, checkpoint: FoldCheckpoint): WorldFold {
@@ -110,10 +157,10 @@ export class WorldFold {
       throw new Error(`Checkpoint world ${checkpoint.world_address} does not match ${registry.worldAddress}`);
     }
 
+    const fold = new this(registry);
     const mismatch = checkpointModelMismatch(registry, checkpoint);
     if (mismatch) throw new Error(`Checkpoint model mismatch; ${mismatch}`);
 
-    const fold = new WorldFold(registry);
     for (const model of checkpoint.models) {
       const rows = fold.rowsByModel.get(model.model)!;
       for (const row of model.rows) {
@@ -122,12 +169,14 @@ export class WorldFold {
         fold.addEntityToGameIndex(model.model, row.entity_id, stored);
       }
     }
+    // A checkpoint may predate a game's eviction, but no write after its finalization is kept.
+    for (const gameId of fold.finalizedGameIds()) fold.evictedGames.add(gameId);
     return fold;
   }
 
-  public apply(event: DecodedWorldEvent): FoldChange | undefined {
+  public apply(event: DecodedWorldEvent, onDerivedRow?: (change: FoldChange) => void): FoldChange | undefined {
     if (event.kind === "event") {
-      if (event.model.name === "BattleEvent") this.applyLastBattle(event);
+      this.applyEventRows(event).forEach((change) => onDerivedRow?.(change));
       return {
         event: true,
         gameId: this.eventGameId(event),
@@ -142,12 +191,10 @@ export class WorldFold {
     const rows = this.rowsByModel.get(event.model.name);
     if (!rows) throw new Error(`Store event ${event.model.name} is not a persistent sync model`);
 
+    const gameId = this.eventGameId(event);
+    if (gameId !== undefined && this.isEvicted(gameId, event.model.name)) return undefined;
     const existing = this.storedRow(event.model.name, event.entityId);
-    // Dojo's erase_model emits StoreDelRecord whether or not the row was ever written (ResourceArrival
-    // is erased when an arrival day settles to zero, initialized or not), so a delete for a row this
-    // fold never held is chain-legal: nothing to remove, nothing to broadcast.
     if (event.kind === "delete" && !existing) return undefined;
-    const gameId = event.model.s2Scope === "game" ? this.eventGameId(event, existing) : undefined;
 
     if (event.kind === "set") {
       rows.set(event.entityId, { key: event.key, value: event.value });
@@ -155,7 +202,7 @@ export class WorldFold {
       if (this.parent) rows.set(event.entityId, null);
       else rows.delete(event.entityId);
     } else if (!existing) {
-      throw new Error(`${event.kind} for ${event.model.name}:${event.entityId} has no preceding StoreSetRecord`);
+      throw new Error(`${event.kind} for ${event.model.name}:${event.entityId} has no preceding RowSet`);
     } else if (event.kind === "update") {
       rows.set(event.entityId, { key: existing.key, value: event.value });
     } else {
@@ -166,12 +213,12 @@ export class WorldFold {
     }
 
     this.updateGameIndex(event.model.name, event.entityId, existing, rows.get(event.entityId) ?? undefined);
+    if (!this.parent) this.updateScopeIndex(event.model.name, event.entityId, existing, rows.get(event.entityId));
 
     if (event.kind === "delete") return { del: { key: event.entityId, model: event.model.name }, gameId };
     return { gameId, set: this.currentRow(event.model.name, event.entityId)! };
   }
 
-  /** The row as a diff `set` would carry it, or undefined when neither this fold nor its parent holds it. */
   public currentRow(model: string, entityId: string): FoldSet | undefined {
     const row = this.storedRow(model, entityId);
     return row ? { key: entityId, model, value: asJsonRecord({ ...row.key, ...row.value }) } : undefined;
@@ -188,6 +235,7 @@ export class WorldFold {
         }),
       })),
       version: 1,
+      native_schema_identity: this.registry.nativeSchemaIdentity,
       world_address: this.registry.worldAddress,
     };
   }
@@ -196,52 +244,9 @@ export class WorldFold {
     return new WorldFold(this.registry, this);
   }
 
-  public snapshot(
-    gameIdInput: string | number | bigint,
-    confirmedBlock: number,
-    requestedModels?: readonly string[],
-  ): GameSnapshot {
-    const gameId = BigInt(gameIdInput);
-    const definitions = this.snapshotDefinitions(requestedModels);
-    const models = definitions.map((definition) => {
-      const rows =
-        definition.s2Scope === "chain"
-          ? this.materializedRows(definition.name)
-          : this.materializedGameRows(definition.name, gameId);
-      const gameRows = [...rows.entries()]
-        .map(([key, row]): FoldRow => ({ key, value: asJsonRecord({ ...row.key, ...row.value }) }))
-        .sort(compareEntityKeys);
-      return { model: definition.name, rows: gameRows };
-    });
-
-    return {
-      game_id: gameId.toString(),
-      confirmed_block: confirmedBlock,
-      models,
-    };
-  }
-
+  /** Every row the fold holds for the game, even one already marked for eviction: a review is frozen before eviction. */
   public reviewSnapshot(gameId: string | number | bigint, confirmedBlock: number): GameSnapshot {
-    return this.snapshot(gameId, confirmedBlock, persistentModelNames(this.registry));
-  }
-
-  private snapshotDefinitions(requestedModels?: readonly string[]) {
-    const definitions = [
-      ...this.registry.persistent.map(({ definition }) => definition),
-      {
-        name: LAST_BATTLE_MODEL,
-        s2Scope: "game" as const,
-      },
-    ];
-    if (!requestedModels || requestedModels.length === 0) {
-      return orderSnapshotModelsForStreaming(this.registry.persistent.map(({ definition }) => definition));
-    }
-
-    const requested = new Set(requestedModels);
-    const available = new Set(definitions.map(({ name }) => name));
-    const missing = [...requested].filter((model) => !available.has(model));
-    if (missing.length > 0) throw new Error(`Unknown snapshot models: ${missing.join(", ")}`);
-    return orderSnapshotModelsForStreaming(definitions.filter(({ name }) => requested.has(name)));
+    return this.snapshotRows(gameId, confirmedBlock, persistentModelNames(this.registry));
   }
 
   public retainedRowCount(): number {
@@ -254,17 +259,6 @@ export class WorldFold {
       .sort(compareEntityKeys);
   }
 
-  public gameplayAccounts(gameIdInput: string | number | bigint): ReadonlySet<string> {
-    if (!this.rowsByModel.has("BlitzSettlement")) return new Set();
-    const gameId = BigInt(gameIdInput);
-    return new Set(
-      [...this.materializedGameRows("BlitzSettlement", gameId).values()]
-        .map((row) => row.key.player)
-        .filter((player): player is string | number | bigint => ["string", "number", "bigint"].includes(typeof player))
-        .map((player) => `0x${BigInt(player).toString(16)}`),
-    );
-  }
-
   public gameIds(): readonly string[] {
     if (!this.rowsByModel.has("GameRegistry")) return [];
     return [...this.materializedRows("GameRegistry").values()]
@@ -272,55 +266,365 @@ export class WorldFold {
       .sort((left, right) => Number(left) - Number(right));
   }
 
-  public endedGameIds(confirmedTimestamp: number): readonly string[] {
-    if (!this.rowsByModel.has("GameRegistry")) return [];
-    return [...this.materializedRows("GameRegistry").values()]
-      .filter((row) => hasGameEnded(String(row.value.status), Number(row.value.end_at), confirmedTimestamp))
-      .map((row) => scalarGameId(row.key, "GameRegistry"));
+  public snapshot(
+    gameId: string | number | bigint,
+    confirmedBlock: number,
+    models?: readonly string[],
+    actor?: string,
+    scope?: GameSyncScope,
+  ): GameSnapshot {
+    this.refuseEvictedModels(BigInt(gameId).toString(), models);
+    const snapshot = this.snapshotRows(gameId, confirmedBlock, models, scope);
+    if (actor === undefined) return snapshot;
+    const account = BigInt(actor);
+    if (account <= 0n || account >= (1n << 251n) - 256n) throw new Error("Invalid gameplay account");
+    const nonces = snapshot.models.find(({ model }) => model === "ActionNonce");
+    if (!nonces) throw new Error("Actor snapshot requires ActionNonce");
+    const key = nativeEntityId([gameId, account]);
+    if (!nonces.rows.some((row) => BigInt(row.key) === BigInt(key))) {
+      // Complete confirmed history establishes the initial nonce; the overlay follows this snapshot.
+      nonces.rows.push({ key, value: { game_id: BigInt(gameId).toString(), actor, next_nonce: "0" } });
+    }
+    return snapshot;
   }
 
-  private applyLastBattle(event: Extract<DecodedWorldEvent, { kind: "event" }>): void {
-    const gameId = scalarGameId(event.key, event.model.name);
-    const attackerId = this.scalarBattleField(event.key.attacker_id, "attacker_id");
-    const defenderId = this.scalarBattleField(event.key.defender_id, "defender_id");
-    const timestamp = this.scalarBattleField(event.value.timestamp, "timestamp");
-
-    this.updateLastBattleParticipant(gameId, defenderId, {
-      latest_attacker_id: attackerId,
-      latest_attack_timestamp: timestamp,
-    });
-    this.updateLastBattleParticipant(gameId, attackerId, {
-      latest_defender_id: defenderId,
-      latest_defense_timestamp: timestamp,
-    });
+  public gameRows(model: string, gameId: string): FoldRow[] {
+    return [...this.materializedGameRows(model, BigInt(gameId)).entries()].map(([key, row]) => ({
+      key,
+      value: asJsonRecord({ ...row.key, ...row.value }),
+    }));
   }
 
-  private updateLastBattleParticipant(gameId: string, entityId: bigint, update: DecodedRecord): void {
-    const rows = this.rowsByModel.get(LAST_BATTLE_MODEL)!;
-    const storageKey = ((BigInt(gameId) << 128n) | entityId).toString();
-    const existing = rows.get(storageKey);
-    const row: StoredModelRow = {
-      key: { game_id: BigInt(gameId), entity_id: entityId },
-      value: { ...(existing?.value ?? {}), ...update },
+  public subscriptionScope(gameId: string, actor: string | undefined, timestamp: number): GameSyncScope {
+    if (actor !== undefined && (BigInt(actor) <= 0n || BigInt(actor) >= (1n << 251n) - 256n))
+      throw new Error("Invalid gameplay account");
+    const scope: GameSyncScope = { actor };
+    const rules = this.gameRows("SliceRules", gameId)[0]?.value;
+    const game = this.gameRows("GameRegistry", gameId)[0]?.value;
+    if (!rules && game) throw new Error("Game subscription requires its rules");
+    if (!rules || Number(rules.epoch_seconds) === 0) return scope;
+    const settlement = this.gameRows("SettlementRules", gameId)[0]?.value;
+    if (!game || !settlement || Number(settlement.spacing) <= 0)
+      throw new Error("Expedition scope requires game and settlement rules");
+    const spacing = Number(settlement.spacing);
+    const expedition = {
+      epochSeconds: Number(rules.epoch_seconds),
+      spacing,
+      startMainAt: Number(game.start_main_at),
     };
-    rows.set(storageKey, row);
-    this.addEntityToGameIndex(LAST_BATTLE_MODEL, storageKey, row);
+    const epoch = expeditionEpoch(expedition, timestamp);
+    const owners = new Set<string>(actor === undefined ? [] : [syncScalar(actor)]);
+    if (actor !== undefined)
+      for (const { value } of this.scopeRows("PlayerEntry", gameId, spacing, [
+        `PlayerEntry.player:${syncScalar(actor)}`,
+      ]))
+        owners.add(syncScalar(value.owner));
+    const homes = this.scopeRows(
+      "Structure",
+      gameId,
+      spacing,
+      [...owners].map((owner) => `Structure.owner:${owner}`),
+    ).filter(({ value }) => Number((value.base as DecodedRecord).category) === 1);
+    const realms = new Set(homes.map(({ value }) => syncScalar(value.entity_id)));
+    const realmTraits = new Set(homes.map(({ value }) => syncScalar((value.metadata as DecodedRecord).realm_id)));
+    const regions = new Set<string>();
+    const armies = this.scopeRows(
+      "ExplorerTroops",
+      gameId,
+      spacing,
+      [...realms].map((realm) => `ExplorerTroops.owner:${realm}`),
+    ).filter(({ value }) => {
+      const coord = value.coord as DecodedRecord;
+      return (
+        BigInt((value.troops as DecodedRecord).count as string) > 0n &&
+        isCurrentExpeditionArmy(
+          expedition,
+          { x: Number(coord.x), y: Number(coord.y), alt: coord.alt === true },
+          timestamp,
+        )
+      );
+    });
+    // With no current army, morning muster starts on the surface.
+    if (epoch >= 0 && armies.length === 0)
+      for (const realm of realmTraits) regions.add(`${Number(realm) - 1}:${epoch * 4}`);
+    for (const { value } of armies) {
+      const region = gameSyncRegion(value.coord as DecodedRecord, spacing);
+      if (region !== undefined) regions.add(region);
+    }
+    const entities = new Set([...realms, ...armies.map(({ value }) => syncScalar(value.explorer_id))]);
+    const regionKeys = [...regions].map((region) => `Structure.region:${region}`);
+    for (const { value } of this.scopeRows("Structure", gameId, spacing, regionKeys)) {
+      if (Number((value.base as DecodedRecord).category) !== 1) entities.add(syncScalar(value.entity_id));
+    }
+    const productionSources = new Set(
+      this.scopeRows(
+        "ProductionReceiver",
+        gameId,
+        spacing,
+        [...realms].map((realm) => `ProductionReceiver.home:${realm}`),
+      ).map(({ value }) => syncScalar(value.entity_id)),
+    );
+    scope.expedition = { epoch, spacing, owners, realms, realmTraits, regions, entities, productionSources };
+    return scope;
   }
 
-  private scalarBattleField(value: unknown, field: string): bigint {
-    if (typeof value !== "bigint" && typeof value !== "number" && typeof value !== "string") {
-      throw new Error(`BattleEvent.${field} is not a scalar`);
-    }
-    return BigInt(value);
+  /** The first timestamp at which the scope must be taken again: the game's start, or the expedition's rollover. */
+  public scopeValidUntil(gameId: string, timestamp: number): number {
+    const epochSeconds = Number(this.gameRows("SliceRules", gameId)[0]?.value.epoch_seconds ?? 0);
+    if (epochSeconds === 0) return Number.POSITIVE_INFINITY;
+    const startMainAt = Number(this.gameRows("GameRegistry", gameId)[0]?.value.start_main_at ?? 0);
+    const rollover = (Math.floor(timestamp / epochSeconds) + 1) * epochSeconds;
+    return timestamp < startMainAt ? Math.min(startMainAt, rollover) : rollover;
   }
 
-  private eventGameId(event: DecodedWorldEvent, existing?: StoredModelRow): string | undefined {
-    if (event.model.s2Scope === "chain") return undefined;
-    if (event.kind === "set" || event.kind === "event") return scalarGameId(event.key, event.model.name);
-    if (!existing) {
-      throw new Error(`${event.kind} for ${event.model.name}:${event.entityId} has no preceding StoreSetRecord`);
+  public subscriptionSnapshot(
+    gameId: string,
+    block: number,
+    scope: GameSyncScope,
+    models?: readonly string[],
+  ): GameSnapshot {
+    return this.snapshot(
+      gameId,
+      block,
+      models,
+      models && !models.includes("ActionNonce") ? undefined : scope.actor,
+      scope,
+    );
+  }
+
+  /**
+   * Narrows every model with an `owner` to one account's rows: those it owns, and those owned by one of its structures
+   * (an army's owner is its home structure). An account is a felt far above any structure id, so one rule covers both.
+   * Models without an owner pass whole.
+   */
+  public ownedBy(gameId: string, snapshot: GameSnapshot, account: string): GameSnapshot {
+    const owner = BigInt(account);
+    if (owner <= 0n || owner >= (1n << 251n) - 256n) throw new Error("Invalid owner account");
+    const structures = new Set(
+      [...this.materializedGameRows("Structure", BigInt(gameId)).values()]
+        .filter(({ value }) => BigInt(value.owner as bigint) === owner)
+        .map(({ key }) => BigInt(key.entity_id as bigint)),
+    );
+    const owns = (value: DecodedRecord) =>
+      value.owner === undefined ||
+      BigInt(value.owner as string) === owner ||
+      structures.has(BigInt(value.owner as string));
+    return {
+      ...snapshot,
+      models: snapshot.models.map(({ model, rows }) => ({ model, rows: rows.filter(({ value }) => owns(value)) })),
+    };
+  }
+
+  /** How this game's changed rows reach subscriptions: rowStreamKeys at the game's spacing. */
+  public streamKeys(gameId: string): (row: FoldSet) => readonly string[] | "everyone" {
+    const spacing = Number(this.gameRows("SettlementRules", gameId)[0]?.value.spacing ?? 0);
+    return (row) => rowStreamKeys(row.model, row.value, spacing);
+  }
+
+  public finalizedGameIds(): readonly string[] {
+    const rules = new Map(
+      this.modelRows("SliceRules").map(({ value }) => [BigInt(value.game_id as string).toString(), value]),
+    );
+    const results = new Set(
+      this.modelRows("BlitzResult")
+        .filter(({ value }) => value.complete === true)
+        .map(({ value }) => BigInt(value.game_id as string).toString()),
+    );
+    return this.modelRows("GameRegistry")
+      .filter(({ value }) => {
+        if (value.settled !== true) return false;
+        const gameId = BigInt(value.game_id as string).toString();
+        const config = rules.get(gameId);
+        if (!config) throw new Error(`Finalized game ${gameId} has no rules`);
+        return (Number(config.mode_rules) & nativeRuleConstants.SEASON_CLOSE) !== 0 || results.has(gameId);
+      })
+      .map(({ value }) => BigInt(value.game_id as string).toString());
+  }
+
+  /** Drops each finalized game's rows beyond its directory and standings; call once its review snapshot is frozen. */
+  public evictFinalizedGames(): void {
+    if (this.parent) throw new Error("Only the confirmed fold evicts finalized games");
+    for (const gameId of this.finalizedGameIds()) {
+      this.evictedGames.add(gameId);
+      this.scopeIndexes.delete(gameId);
+      for (const [model, games] of this.entityIdsByGameByModel) {
+        if (FINALIZED_GAME_MODELS.has(model)) continue;
+        const rows = this.rowsByModel.get(model)!;
+        for (const entityId of games.get(gameId) ?? []) rows.delete(entityId);
+        games.delete(gameId);
+      }
     }
-    return scalarGameId(existing.key, event.model.name);
+  }
+
+  public gameplayAccounts(gameId: string | number | bigint): ReadonlySet<string> {
+    return new Set(
+      this.modelRows("PlayerEntry")
+        .filter(({ value }) => BigInt(value.game_id as string) === BigInt(gameId))
+        .map(({ value }) => `0x${BigInt(value.player as string).toString(16)}`),
+    );
+  }
+
+  private snapshotRows(
+    gameIdInput: string | number | bigint,
+    confirmedBlock: number,
+    requestedModels?: readonly string[],
+    scope?: GameSyncScope,
+  ): GameSnapshot {
+    const gameId = BigInt(gameIdInput);
+    const definitions = this.snapshotDefinitions(requestedModels);
+    const scopeKeys = scope?.expedition ? gameSyncScopeKeys(scope) : undefined;
+    const models = definitions.map((definition) => {
+      const gameRows = this.snapshotModelRows(definition, gameId, scope, scopeKeys)
+        .map(([key, row]): FoldRow => ({ key, value: asJsonRecord({ ...row.key, ...row.value }) }))
+        .sort(compareEntityKeys);
+      return { model: definition.name, rows: gameRows };
+    });
+
+    return {
+      game_id: gameId.toString(),
+      confirmed_block: confirmedBlock,
+      models,
+    };
+  }
+
+  private snapshotDefinitions(requestedModels?: readonly string[]) {
+    const definitions = [...this.registry.persistent.map(({ definition }) => definition)];
+    if (!requestedModels || requestedModels.length === 0) {
+      return orderSnapshotModelsForStreaming(this.registry.persistent.map(({ definition }) => definition));
+    }
+
+    const requested = new Set(requestedModels);
+    const available = new Set(definitions.map(({ name }) => name));
+    const missing = [...requested].filter((model) => !available.has(model));
+    if (missing.length > 0) throw new Error(`Unknown snapshot models: ${missing.join(", ")}`);
+    return orderSnapshotModelsForStreaming(definitions.filter(({ name }) => requested.has(name)));
+  }
+
+  /**
+   * A model's rows in a snapshot: every row; with a scope, the rows it holds. An expedition scope finds its rows through
+   * the index, so a scoped snapshot costs the scope's rows, not the game's.
+   */
+  private snapshotModelRows(
+    definition: { name: string; scope: "game" | "deployment" },
+    gameId: bigint,
+    scope?: GameSyncScope,
+    scopeKeys?: ReadonlySet<string>,
+  ): [string, StoredModelRow][] {
+    const { name } = definition;
+    const owner = definition.scope === "deployment" ? DEPLOYMENT_ROWS : gameId.toString();
+    if (scope?.expedition && scopeKeys && isScopedGameSyncModel(name, true))
+      return [...this.scopeEntityIds(name, owner, scope.expedition.spacing, scopeKeys)].map((entityId) => [
+        entityId,
+        this.storedRow(name, entityId)!,
+      ]);
+    const rows = [
+      ...(owner === DEPLOYMENT_ROWS ? this.materializedRows(name) : this.materializedGameRows(name, gameId)).entries(),
+    ];
+    return scope ? rows.filter(([, row]) => rowInGameSyncScope(name, { ...row.key, ...row.value }, scope)) : rows;
+  }
+
+  /** The game's rows of a scope model matching any of these index keys. */
+  private scopeRows(model: string, gameId: string, spacing: number, keys: readonly string[]): FoldRow[] {
+    return [...this.scopeEntityIds(model, gameId, spacing, new Set(keys))].map((key) => {
+      const row = this.storedRow(model, key)!;
+      return { key, value: asJsonRecord({ ...row.key, ...row.value }) };
+    });
+  }
+
+  /** Entity ids of a model's rows, in a game or deployment-wide, with any of these index keys. */
+  private scopeEntityIds(model: string, owner: string, spacing: number, keys: ReadonlySet<string>): Set<string> {
+    if (!this.parent) {
+      const index = this.scopeIndex(owner, spacing);
+      const entityIds = new Set<string>();
+      for (const key of keys) for (const entityId of index.get(`${model}|${key}`) ?? []) entityIds.add(entityId);
+      return entityIds;
+    }
+    // An overlay corrects its parent's answer with the few rows it changed.
+    const entityIds = this.parent.scopeEntityIds(model, owner, spacing, keys);
+    const rows = this.rowsByModel.get(model)!;
+    const changed =
+      owner === DEPLOYMENT_ROWS ? rows.keys() : (this.entityIdsByGameByModel.get(model)?.get(owner) ?? []);
+    for (const entityId of changed) {
+      const row = rows.get(entityId);
+      entityIds.delete(entityId);
+      if (row && indexKeys(model, row, spacing).some((key) => keys.has(key))) entityIds.add(entityId);
+    }
+    return entityIds;
+  }
+
+  private scopeIndex(owner: string, spacing: number): Map<string, Set<string>> {
+    const existing = this.scopeIndexes.get(owner);
+    // Deployment-wide rows carry no region, so their keys do not depend on a game's spacing.
+    if (existing && (owner === DEPLOYMENT_ROWS || existing.spacing === spacing)) return existing.entityIds;
+    const index: ScopeIndex = { spacing, entityIds: new Map() };
+    this.scopeIndexes.set(owner, index);
+    for (const { definition } of this.registry.persistent) {
+      if (!isScopedGameSyncModel(definition.name, true)) continue;
+      if ((definition.scope === "deployment") !== (owner === DEPLOYMENT_ROWS)) continue;
+      const rows =
+        owner === DEPLOYMENT_ROWS
+          ? this.materializedRows(definition.name)
+          : this.materializedGameRows(definition.name, BigInt(owner));
+      for (const [entityId, row] of rows) this.addToScopeIndex(definition.name, entityId, row);
+    }
+    return index.entityIds;
+  }
+
+  private updateScopeIndex(
+    model: string,
+    entityId: string,
+    previous: StoredModelRow | undefined,
+    current: StoredModelRow | null | undefined,
+  ): void {
+    if (!isScopedGameSyncModel(model, true)) return;
+    if (previous) this.removeFromScopeIndex(model, entityId, previous);
+    if (current) this.addToScopeIndex(model, entityId, current);
+  }
+
+  private scopeIndexOwner(model: string, row: StoredModelRow): string {
+    return this.entityIdsByGameByModel.has(model) ? scalarGameId(row.key, model) : DEPLOYMENT_ROWS;
+  }
+
+  private addToScopeIndex(model: string, entityId: string, row: StoredModelRow): void {
+    const index = this.scopeIndexes.get(this.scopeIndexOwner(model, row));
+    if (!index) return;
+    for (const key of indexKeys(model, row, index.spacing)) {
+      const entityIds = index.entityIds.get(`${model}|${key}`) ?? new Set<string>();
+      entityIds.add(entityId);
+      index.entityIds.set(`${model}|${key}`, entityIds);
+    }
+  }
+
+  private removeFromScopeIndex(model: string, entityId: string, row: StoredModelRow): void {
+    const index = this.scopeIndexes.get(this.scopeIndexOwner(model, row));
+    if (!index) return;
+    for (const key of indexKeys(model, row, index.spacing)) {
+      const entityIds = index.entityIds.get(`${model}|${key}`);
+      entityIds?.delete(entityId);
+      if (entityIds?.size === 0) index.entityIds.delete(`${model}|${key}`);
+    }
+  }
+
+  private eventGameId(event: DecodedWorldEvent): string | undefined {
+    if (event.kind === "event" && event.value.game_id !== undefined) return scalarGameId(event.value, event.model.name);
+    if (event.model.scope === "deployment") return undefined;
+    return scalarGameId(event.key, event.model.name);
+  }
+
+  private refuseEvictedModels(gameId: string, models?: readonly string[]): void {
+    const evicted = this.snapshotDefinitions(models).filter(
+      ({ name, scope }) => scope === "game" && this.isEvicted(gameId, name),
+    );
+    if (evicted.length > 0)
+      throw new GameFinalizedError(
+        gameId,
+        evicted.map(({ name }) => name),
+      );
+  }
+
+  private isEvicted(gameId: string, model: string): boolean {
+    const evicted = this.parent ? this.parent.isEvicted(gameId, model) : this.evictedGames.has(gameId);
+    return evicted && !FINALIZED_GAME_MODELS.has(model);
   }
 
   private storedRow(model: string, entityId: string): StoredModelRow | undefined {
@@ -392,5 +696,43 @@ export class WorldFold {
     if (!entityIds) return;
     entityIds.delete(entityId);
     if (entityIds.size === 0) games.delete(gameId);
+  }
+
+  private applyEventRows(event: Extract<DecodedWorldEvent, { kind: "event" }>): FoldChange[] {
+    if (event.model.name !== "ExecutionRecorded") return [];
+    const { game_id, actor, nonce, nonce_consumed, order, status, status_class, reason } = event.value;
+    const game = BigInt(String(game_id));
+    const account = BigInt(String(actor));
+    const submitted = BigInt(String(nonce));
+    const result = BigInt(String(status));
+    const code = BigInt(String(status_class));
+    if (
+      BigInt(String(order)) === 0n ||
+      !(
+        (result === 1n && code === 0n && reason === "") ||
+        (result === 2n && code !== 0n && typeof reason === "string" && reason.length > 0)
+      )
+    )
+      throw new Error("Invalid native execution outcome");
+    if (!nonce_consumed) return [];
+    if (
+      game === 0n ||
+      game >= 1n << 32n ||
+      account === 0n ||
+      account >= (1n << 251n) - 256n ||
+      submitted === (1n << 64n) - 1n
+    )
+      throw new Error("Invalid consumed native nonce");
+    const codec = this.registry.persistent.find((codec) => codec.definition.name === "ActionNonce");
+    if (!codec) throw new Error("Missing native nonce schema");
+    const change = this.apply({
+      kind: "set",
+      model: codec.definition,
+      entityId: nativeEntityId([game, account]),
+      position: event.position,
+      key: { game_id: game, actor: account },
+      value: { next_nonce: submitted + 1n },
+    });
+    return change ? [change] : [];
   }
 }

@@ -17,7 +17,7 @@ pnpm ledger:deploy:mainnet
 ```
 
 The command declares and deploys `GameLedger`, writes `ledger` to `contracts/common/addresses/mainnet.json`, and exports
-the public value-plane addresses to the ignored `deploy/madara-lab/.env`. It does not upgrade live dependencies or grant
+the public value-plane addresses to the ignored `deploy/athanor/.env`. It does not upgrade live dependencies or grant
 roles. The MMRToken, Season Pass, and Village Pass upgrades and their ledger role grants are one ordered B.2 operation.
 
 The shared deployment runtime loads public network defaults from `contracts/common/.env.mainnet`, then overlays secrets
@@ -53,30 +53,3 @@ live-gate artifact.
 pnpm ledger:check-live-assets:mainnet
 pnpm ledger:upgrade-live-assets:mainnet
 ```
-
-## Sponsored first games
-
-Register a dedicated zero-entry-fee ledger preset, then launch a game with a target sponsored pool. Funding is
-idempotent: retries top the game up only to the requested pool.
-
-```sh
-bun config/deployer/clean/registrar/register-preset.ts \
-  --preset-id <id> \
-  --environment madara.blitz \
-  --balance-profile official-60 \
-  --ledger <ledger-address> \
-  --ledger-rpc-url <mainnet-rpc> \
-  --sponsored
-
-bun config/deployer/clean/cli/create.ts \
-  --environment madara.blitz \
-  --game <game-name> \
-  --start-time <unix-or-iso> \
-  --version <id> \
-  --ledger <ledger-address> \
-  --ledger-rpc-url <mainnet-rpc> \
-  --lords <lords-address> \
-  --sponsored-pool-lords <whole-lords>
-```
-
-The funding account comes from `LEDGER_TREASURY_ADDRESS` and `LEDGER_TREASURY_PRIVATE_KEY`.

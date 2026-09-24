@@ -1,27 +1,27 @@
-import { Account, RpcProvider } from "starknet";
+import { nativePresetForId } from "../../../source/native";
+import { buildNativePreset } from "../config/native-preset";
+import { RpcProvider } from "starknet";
+import { createOperatorAccount } from "../shared/madara-account";
+import { readShardManifest } from "@realms-world/chain/shard-manifest";
 import { assertProviderChain } from "@realms-world/chain";
-import { applyBlitzBalanceProfile, type BlitzBalanceProfileId } from "../../../source/blitz";
-import { loadEnvironmentConfiguration } from "../config/config-loader";
 import { DEPLOYMENT_ENVIRONMENTS } from "../constants";
-import { isDeploymentEnvironmentId, resolveDeploymentEnvironment } from "../environment";
+import { isDeploymentEnvironmentId } from "../environment";
 import { createLedgerAdminAccount, registerLedgerPreset, type LedgerTarget } from "../ledger/calls";
 import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
 import { resolveAccountCredentials } from "../shared/credentials";
 import { requireRpcUrl } from "../shared/rpc";
 import type { DeploymentEnvironmentId } from "../types";
-import { buildRegisterPresetCalldata, isRegistrarAlreadyRegisteredError, registerPreset } from "./calls";
-import { buildPresetRegistration, summarizePresetSideTables } from "./preset";
-import { BALANCE_PROFILE_IDS, validatePresetBalanceProfile } from "./preset-profile";
+import { buildNativePresetRegistration, registerNativePreset, loadNativePresetConfiguration } from "./native-preset";
 
 interface RegisterPresetOptions {
   presetId: number;
   environmentId: DeploymentEnvironmentId;
   rpcUrl?: string;
-  balanceProfile?: BlitzBalanceProfileId;
   ledgerAddress?: string;
   ledgerRpcUrl?: string;
   sponsored: boolean;
   dryRun: boolean;
+  nativeManifest: string;
 }
 
 function readArgument(name: string): string | undefined {
@@ -32,60 +32,28 @@ function readArgument(name: string): string | undefined {
 function parseOptions(): RegisterPresetOptions {
   const presetId = Number(readArgument("--preset-id"));
   const environmentId = readArgument("--environment") ?? "madara.blitz";
-  const balanceProfile = readArgument("--balance-profile") as BlitzBalanceProfileId | undefined;
   if (!Number.isInteger(presetId) || presetId <= 0) {
     throw new Error(
-      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> --ledger <address> --ledger-rpc-url <mainnet RPC> [--environment madara.blitz] [--balance-profile official-60|official-90] [--sponsored] [--dry-run]",
+      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> [--ledger <address> --ledger-rpc-url <mainnet RPC>] [--environment madara.blitz] [--native-manifest path] [--sponsored] [--dry-run]",
     );
   }
   if (!isDeploymentEnvironmentId(environmentId)) {
     throw new Error(`--environment must be one of: ${Object.keys(DEPLOYMENT_ENVIRONMENTS).join(", ")}`);
   }
-  validatePresetBalanceProfile(environmentId, balanceProfile);
   return {
     presetId,
     environmentId,
     rpcUrl: readArgument("--rpc-url") || process.env.RPC_URL,
-    balanceProfile,
     ledgerAddress: readArgument("--ledger") || process.env.LEDGER_ADDRESS,
     ledgerRpcUrl: readArgument("--ledger-rpc-url") || process.env.LEDGER_RPC_URL,
     sponsored: process.argv.includes("--sponsored"),
     dryRun: process.argv.includes("--dry-run"),
+    nativeManifest: requiredManifest(),
   };
-}
-
-// The stored environment JSON is the raw base sheet: balance profiles
-// (official-60 "Regular Fast", official-90) are applied at preset registration,
-// not baked into the stored config. A preset registered without the profile
-// silently ships base balance under a profile-flavored label (preset 4 bug).
-function loadPresetConfiguration(environmentId: DeploymentEnvironmentId, balanceProfile?: BlitzBalanceProfileId) {
-  const config = loadEnvironmentConfiguration(environmentId);
-  return balanceProfile ? applyBlitzBalanceProfile(config, balanceProfile) : config;
 }
 
 function stringify(value: unknown): string {
   return JSON.stringify(value, (_key, entry) => (typeof entry === "bigint" ? entry.toString() : entry), 2);
-}
-
-export function buildPresetDryRun(
-  presetId: number,
-  environmentId: DeploymentEnvironmentId = "madara.blitz",
-  balanceProfile?: BlitzBalanceProfileId,
-  sponsored = false,
-) {
-  const config = loadPresetConfiguration(environmentId, balanceProfile);
-  const payload = buildPresetRegistration(config, presetId);
-  const calldata = buildRegisterPresetCalldata(payload);
-  const ledgerPreset = buildLedgerEconomicPreset(resolveDeploymentEnvironment(environmentId).gameType, { sponsored });
-  return {
-    presetId,
-    balanceProfile: balanceProfile ?? null,
-    sponsored,
-    calldataLength: calldata.length,
-    counts: summarizePresetSideTables(payload),
-    calldata,
-    ledgerCalldata: buildRegisterLedgerPresetCalldata(presetId, ledgerPreset),
-  };
 }
 
 // The ledger is the L2 value plane. A dev-mode lab with L2 deferred registers only the L3 registrar preset;
@@ -99,17 +67,16 @@ function resolveOptionalLedgerTarget(options: RegisterPresetOptions): LedgerTarg
 }
 
 export async function registerEnvironmentPreset(options: RegisterPresetOptions): Promise<void> {
-  const config = loadPresetConfiguration(options.environmentId, options.balanceProfile);
-  const payload = buildPresetRegistration(config, options.presetId);
-  const calldata = buildRegisterPresetCalldata(payload);
-  const ledgerPreset = buildLedgerEconomicPreset(resolveDeploymentEnvironment(options.environmentId).gameType, {
+  const config = loadNativePresetConfiguration(options.environmentId, options.presetId);
+  const registration = buildRegistration(config, options);
+  const { calldata } = registration;
+  const ledgerPreset = buildLedgerEconomicPreset(nativePresetForId(options.presetId).gameType, {
     sponsored: options.sponsored,
   });
   const summary = {
     presetId: options.presetId,
-    balanceProfile: options.balanceProfile ?? null,
     calldataLength: calldata.length,
-    counts: summarizePresetSideTables(payload),
+    ...registration.summary,
     sponsored: options.sponsored,
     calldata,
     ledgerCalldata: buildRegisterLedgerPresetCalldata(options.presetId, ledgerPreset),
@@ -121,34 +88,26 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
   }
 
   const ledgerTarget = resolveOptionalLedgerTarget(options);
-  const environment = resolveDeploymentEnvironment(options.environmentId);
   const provider = new RpcProvider({ nodeUrl: requireRpcUrl(options.rpcUrl, "--rpc-url or RPC_URL") });
   await Promise.all([
-    assertProviderChain(provider, environment.chain, "RPC_URL"),
+    assertProviderChain(provider, readShardManifest(options.nativeManifest), "RPC_URL"),
     ...(ledgerTarget
       ? [assertProviderChain(new RpcProvider({ nodeUrl: ledgerTarget.rpcUrl }), "mainnet", "LEDGER_RPC_URL")]
       : []),
   ]);
   const credentials = resolveAccountCredentials({
-    accountAddress: process.env.DOJO_ACCOUNT_ADDRESS,
-    privateKey: process.env.DOJO_PRIVATE_KEY,
+    accountAddress: process.env.DEPLOYER_ACCOUNT_ADDRESS,
+    privateKey: process.env.DEPLOYER_PRIVATE_KEY,
     context: `${options.environmentId} preset registration`,
   });
-  const account = new Account({
-    provider,
-    address: credentials.accountAddress,
-    signer: credentials.privateKey,
-  });
+  const account = createOperatorAccount(provider, credentials.accountAddress, credentials.privateKey);
 
-  try {
-    const result = await registerPreset(account, payload, options.environmentId);
-    console.log(`Registered preset ${options.presetId}: ${result.transactionHash}`);
-  } catch (error) {
-    if (!isRegistrarAlreadyRegisteredError(error)) {
-      throw error;
-    }
-    console.log(`Preset ${options.presetId} is already registered; skipping.`);
-  }
+  const transaction = await registerNativePreset(account, options.presetId, registration.native);
+  console.log(
+    transaction
+      ? `Registered native preset ${options.presetId}: ${transaction}`
+      : `Native preset ${options.presetId} is unchanged.`,
+  );
 
   if (!ledgerTarget) {
     console.log(`No ledger configured; skipping ledger preset ${options.presetId} (L2 deferred).`);
@@ -161,6 +120,25 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
       ? `Registered ledger preset ${options.presetId}: ${ledgerResult.transactionHash}`
       : `Ledger preset ${options.presetId} is already registered; skipping.`,
   );
+}
+
+function buildRegistration(config: ReturnType<typeof loadNativePresetConfiguration>, options: RegisterPresetOptions) {
+  const native = buildNativePresetRegistration(
+    buildNativePreset(config, options.presetId),
+    options.presetId,
+    options.nativeManifest,
+  );
+  return {
+    native,
+    calldata: native.calldata,
+    summary: { nativeRegistrar: native.address, commitment: native.commitment },
+  };
+}
+
+function requiredManifest(): string {
+  const path = readArgument("--native-manifest") ?? process.env.NATIVE_WORLD_MANIFEST;
+  if (!path) throw new Error("NATIVE_WORLD_MANIFEST is required");
+  return path;
 }
 
 if (import.meta.main) {

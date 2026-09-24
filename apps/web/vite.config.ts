@@ -7,7 +7,7 @@ import svgr from "vite-plugin-svgr";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-  // Behind Caddy on https://realms.test in the lab (deploy/madara-lab/Caddyfile) — same contract as the game.
+  // Allow the local TLS proxy to reach the dev server.
   server: {
     port: 3000,
     host: true,

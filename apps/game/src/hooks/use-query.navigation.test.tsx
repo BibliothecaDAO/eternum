@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it } from "vitest";
-import { useQuery } from "../../../../packages/react/src/hooks/helpers/use-query";
+import { useQuery } from "@/hooks/helpers/use-query";
 
 function navigate(path: string) {
   window.history.pushState({}, "", path);
@@ -21,12 +21,12 @@ it("keeps the world inspector selected through scene navigation and later UI tic
     );
   }
   try {
-    navigate("/play/madara/blitz-daily-0001/map?col=2&row=9");
+    navigate("/g/0xa1/1/map?col=2&row=9");
     await act(async () => root.render(<Inspector tick={0} />));
     expect(container.textContent).toBe("world:2,9");
-    await act(async () => navigate("/play/madara/blitz-daily-0001/hex?col=2&row=9"));
+    await act(async () => navigate("/g/0xa1/1/hex?col=2&row=9"));
     expect(container.textContent).toBe("local:2,9");
-    await act(async () => navigate("/play/madara/blitz-daily-0001/map?col=12&row=0"));
+    await act(async () => navigate("/g/0xa1/1/map?col=12&row=0"));
     expect(container.textContent).toBe("world:12,0");
     await act(async () => root.render(<Inspector tick={1} />));
     expect(container.textContent).toBe("world:12,0");

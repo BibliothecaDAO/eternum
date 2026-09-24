@@ -18,6 +18,15 @@ describe("production worldmap terrain verification", () => {
     expect(evaluateWorldmapTerrainObservation(observation(), expected)).toMatchObject({ status: "pass", reasons: [] });
   });
 
+  it.each([null, 0])("requires visible terrain cells even when presentation coverage is complete (%s)", (count) => {
+    const input = observation();
+    input.visibleTerrainCells = count;
+    expect(evaluateWorldmapTerrainObservation(input, expected)).toMatchObject({
+      status: "inconclusive",
+      reasons: ["no populated authoritative terrain was observed"],
+    });
+  });
+
   it.each(["geometry", "props", "fog"])("never accepts missing %s writes", (kind) => {
     const input = observation();
     input.renderDiagnostics.terrainPresentation.current.coverage[kind] = false;
@@ -68,12 +77,11 @@ describe("production worldmap terrain verification", () => {
     });
   });
 
-  it("requires active game identity and populated authoritative RECS rows", () => {
+  it("requires active game identity and populated authoritative native store rows", () => {
     const input = observation();
     input.gameIdentity = {
       pathname: expected.pathname,
       gameId: null,
-      namespace: null,
       structureRows: 0,
       tileRows: 0,
       worldAddress: null,
@@ -166,7 +174,6 @@ function observation() {
     errors: [],
     gameIdentity: {
       gameId: 21,
-      namespace: "s2",
       pathname: expected.pathname,
       structureRows: 2,
       tileRows: 10,
@@ -179,8 +186,8 @@ function observation() {
       { event: "visual_window_resolved", details: { activePageKeys: ["-12,-12"] } },
       { event: "terrain_composite_rebuilt" },
     ],
+    visibleTerrainCells: 40,
     renderDiagnostics: {
-      gauges: { worldBiomeSurfaceInstances: 10 },
       terrainPresentation: {
         contractVersion: 2,
         current: {

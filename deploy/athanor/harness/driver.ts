@@ -1,0 +1,1433 @@
+import type { FrontierEvidence } from "./frontier";
+import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
+import type { BuildOrderWorkload } from "./build-order";
+import { setTimeout as sleep } from "node:timers/promises";
+import { type Account } from "starknet";
+import type { HarnessProvider } from "./provider";
+import { type ActionPath, ActionPaths, ActionType, type GameActions } from "@bibliothecadao/eternum";
+import { ContractAddress, TroopTier, type ID, type TroopType } from "@bibliothecadao/types";
+import { mapWithConcurrency, type HarnessAccount } from "./account-factory";
+import {
+  EXPLORER_TROOP_COUNT,
+  type ChainTicks,
+  type Coord,
+  type ExplorerRow,
+  type HarnessGame,
+  type HarnessSubmission,
+  type ProductionState,
+  type TileView,
+} from "./harness-game";
+
+export type WorkloadActionKind = "move" | "explore" | "produce";
+export type TransactionStage = "setup" | "workload" | "finalization";
+export type MeasuredRpcMethod = "estimateInvokeFee" | "getBlock" | "getTransactionStatus";
+export type WorkloadFailureClass =
+  | "game_rule_limit"
+  | "harness_pathing"
+  | "gameplay_rejection"
+  | "gameplay_race"
+  | "chain_or_driver";
+export type WorkloadRevertReason = "tile_contention" | "stamina" | "labor" | "other";
+export type TransactionOutcome =
+  | "completed"
+  | "reverted"
+  | "rejected"
+  | "submit_failed"
+  | "confirmation_timeout"
+  | "driver_failed";
+
+interface RpcMethodMetrics {
+  calls: number;
+  wallMs: number;
+}
+
+export type RpcMetrics = Record<MeasuredRpcMethod, RpcMethodMetrics>;
+
+export interface ProductionDelta {
+  laborBalance: string;
+  laborDelta: string;
+  woodOutput: string;
+  woodOutputDelta: string;
+}
+
+export interface TrackedTransaction {
+  acceptedOnL2At?: string;
+  acceptedOnL2Block?: number;
+  acceptedOnL2Ms?: number;
+  admissionToVisibleMs?: number;
+  actionIndex?: number;
+  botId: number;
+  error?: string;
+  exploreRequested?: boolean;
+  /** What a move or explore was planned on, so a rejection can be judged against the bot's own view. */
+  explorerPlan?: ExplorerPlanEvidence;
+  finalityStatus?: string;
+  failureClass?: WorkloadFailureClass;
+  gameId: number;
+  /** Herald's confirmed state behind the node: its confirmed notice minus the node's ACCEPTED_ON_L2, one clock. */
+  heraldConfirmedAt?: string;
+  heraldConfirmedLagMs?: number;
+  kind: string;
+  outcome: TransactionOutcome;
+  preConfirmedAt?: string;
+  preConfirmedMs?: number;
+  productionDelta?: ProductionDelta;
+  revertReason?: WorkloadRevertReason;
+  rpc: RpcMetrics;
+  scheduledAt?: string;
+  stage: TransactionStage;
+  submitDelayMs?: number;
+  submitStartedAt: string;
+  submittedAt?: string;
+  submitMs?: number;
+  tick?: number;
+  transactionHash?: string;
+  visibleAt?: string;
+}
+
+interface ExplorerPlanEvidence {
+  direction: number;
+  explorerId: ID;
+  /** The block the bot's facts were confirmed through when it planned; null when Herald had named none. */
+  factHeadBlock: number | null;
+  from: Coord;
+  target: Coord;
+  targetInView: TileView;
+  /** The target as the facts showed it once the chain's outcome for this action had arrived. */
+  targetAfter?: TileView;
+}
+
+export interface HarnessBot {
+  account: Account;
+  /** This bot's facade over the shared client: every submit signs with `account`. */
+  actions: GameActions;
+  address: string;
+  botId: number;
+  explorers: ExplorerState[];
+  gameId: number;
+  nextProductionStructure: number;
+  structures: StructureState[];
+}
+
+export interface WorkloadResult {
+  profile?: "build-order" | "burst" | "cadence" | "frontier";
+  frontier?: FrontierEvidence;
+  actions: TrackedTransaction[];
+  endedAt: string;
+  plannedActions: number;
+  overheadRpc: RpcMetrics;
+  readinessWaitMs: number;
+  startedAt: string;
+  ticks: number;
+}
+
+/** The harness's own route memory for an explorer; its position and stamina are read from the shared store when needed. */
+interface ExplorerState {
+  explorerId: ID;
+  lastUsedAt: number;
+  outwardDirection: number;
+  lastDirection?: number;
+}
+
+interface StructureState {
+  coord: Coord;
+  direction: number;
+  structureId: ID;
+}
+
+interface ExplorerPriority {
+  lastUsedAt: number;
+}
+
+interface PrepareHarnessBotsOptions {
+  gameType?: HarnessGameType;
+  accounts: HarnessAccount[];
+  game: HarnessGame;
+  provider: HarnessProvider;
+  setupConcurrency?: number;
+  setupTransactions: TrackedTransaction[];
+}
+
+interface RunWorkloadOptions {
+  buildOrder?: BuildOrderWorkload;
+  /** Every bot submits its whole plan at once, each next action as soon as the previous one lands. */
+  burst?: boolean;
+  bots: HarnessBot[];
+  game: HarnessGame;
+  intervalSeconds: number;
+  minutes: number;
+  onReady?: () => Promise<void>;
+  onTick?: (completedTicks: number, totalTicks: number) => void;
+  provider: HarnessProvider;
+}
+
+interface ExplorerActionPlan {
+  direction: number;
+  explorer: ExplorerState;
+  from: Coord;
+  path: ActionPath[];
+  target: Coord;
+}
+
+interface PathReservation {
+  explorerId: ID;
+  from: Coord;
+  target: Coord;
+}
+
+interface TrackTransactionOptions {
+  confirmationTimeoutMs?: number;
+  actionIndex?: number;
+  botId: number;
+  exploreRequested?: boolean;
+  gameId: number;
+  kind: string;
+  provider: HarnessProvider;
+  rpc?: RpcMetrics;
+  scheduledAtMs?: number;
+  /** Sends the transaction and resolves with its hash once the chain accepted it. */
+  send: () => Promise<HarnessSubmission>;
+  stage: TransactionStage;
+  tick?: number;
+}
+
+export type HarnessGameType = "blitz" | "eternum" | "frontier";
+
+const BLITZ_STRUCTURES_PER_BOT = 3;
+const ETERNUM_STRUCTURES_PER_BOT = 1;
+
+const settlementStructureCount = (gameType: HarnessGameType) =>
+  gameType === "blitz" ? BLITZ_STRUCTURES_PER_BOT : ETERNUM_STRUCTURES_PER_BOT;
+const TRANSACTION_TIMEOUT_MS = 30_000;
+const SETUP_TRANSACTION_TIMEOUT_MS = 120_000;
+const MODEL_UPDATE_TIMEOUT_MS = 30_000;
+const ACTION_READINESS_TIMEOUT_MS = 360_000;
+const ACTION_READINESS_POLL_INTERVAL_MS = 1_000;
+const DEFAULT_SETUP_CONCURRENCY = 6;
+
+class GameRuleLimitError extends Error {}
+class HarnessPathingError extends Error {}
+
+/** Where bots intend to be: the shared store knows where they are, this knows which tiles are spoken for by an in-flight move. */
+class PathReservations {
+  private readonly occupiedByExplorer = new Map<string, ID>();
+  private readonly reservedByExplorer = new Map<string, ID>();
+  private readonly structureCoords = new Set<string>();
+
+  constructor(bots: readonly HarnessBot[], game: HarnessGame) {
+    for (const bot of bots) {
+      for (const structure of bot.structures) this.structureCoords.add(coordKey(structure.coord));
+      for (const explorer of bot.explorers) {
+        const key = coordKey(requireExplorer(game, explorer.explorerId).coord);
+        const occupant = this.occupiedByExplorer.get(key);
+        if (occupant !== undefined) throw new Error(`Explorers ${occupant} and ${explorer.explorerId} share ${key}`);
+        this.occupiedByExplorer.set(key, explorer.explorerId);
+      }
+    }
+  }
+
+  canReserve(explorerId: ID, target: Coord): boolean {
+    const key = coordKey(target);
+    if (this.structureCoords.has(key)) return false;
+    const occupant = this.occupiedByExplorer.get(key);
+    if (occupant !== undefined && occupant !== explorerId) return false;
+    const reservation = this.reservedByExplorer.get(key);
+    return reservation === undefined || reservation === explorerId;
+  }
+
+  reserve(explorerId: ID, from: Coord, target: Coord): PathReservation {
+    if (!this.canReserve(explorerId, target)) {
+      throw new HarnessPathingError(`Explorer ${explorerId} target ${coordKey(target)} is occupied`);
+    }
+    this.reservedByExplorer.set(coordKey(target), explorerId);
+    return { explorerId, from, target };
+  }
+
+  complete(reservation: PathReservation, actual: Coord): void {
+    this.reservedByExplorer.delete(coordKey(reservation.target));
+    if (this.occupiedByExplorer.get(coordKey(reservation.from)) === reservation.explorerId) {
+      this.occupiedByExplorer.delete(coordKey(reservation.from));
+    }
+    this.occupiedByExplorer.set(coordKey(actual), reservation.explorerId);
+  }
+
+  cancel(reservation: PathReservation): void {
+    this.reservedByExplorer.delete(coordKey(reservation.target));
+  }
+}
+
+// The ten-minute acceptance window gives the exact requested 50/30/20 mix. Three explores prime independent travel
+// routes, then later explores are spaced across stamina ticks instead of being re-bursted at each ten-action boundary.
+const ACTION_PATTERN: readonly WorkloadActionKind[] = [
+  "explore",
+  "explore",
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
+  "move",
+  "move",
+  "move",
+  "explore",
+  "move",
+];
+const STEADY_ACTION_PATTERN: readonly WorkloadActionKind[] = [
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
+  "move",
+];
+
+export async function prepareHarnessBots({
+  gameType = "blitz",
+  accounts,
+  game,
+  provider,
+  setupConcurrency = DEFAULT_SETUP_CONCURRENCY,
+  setupTransactions,
+}: PrepareHarnessBotsOptions): Promise<HarnessBot[]> {
+  await game.waitUntilPlaying();
+  if (gameType === "eternum") {
+    await mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
+      const settle = await settleEternumBot({ harnessAccount, game, provider });
+      setupTransactions.push(settle);
+      assertCompleted(settle);
+    });
+  }
+
+  const bots = await mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
+    const structureIds = await waitForSettlement(game, harnessAccount.address, gameType);
+    const structures = await waitForStructures(game, structureIds);
+
+    const unprepared = structures.filter((structure) => game.explorersOf(structure.structureId).length === 0);
+    const troopTypes = await waitForStartingTroopTypes(
+      game,
+      unprepared.map((structure) => structure.structureId),
+    );
+    const actions = game.actionsFor(harnessAccount.account);
+    for (const structure of unprepared) {
+      const createExplorer = await createBotExplorer({
+        actions,
+        harnessAccount,
+        game,
+        provider,
+        structure,
+        troopTypes,
+      });
+      setupTransactions.push(createExplorer);
+      assertCompleted(createExplorer);
+    }
+
+    const explorers = await waitForExplorers(game, structures);
+    return {
+      account: harnessAccount.account,
+      actions,
+      address: harnessAccount.address,
+      botId: harnessAccount.botId,
+      explorers,
+      gameId: game.gameId,
+      nextProductionStructure: 0,
+      structures,
+    };
+  });
+  const reservations = new PathReservations(bots, game);
+  await mapWithConcurrency(bots, setupConcurrency, async (bot) => {
+    for (const explorer of bot.explorers) {
+      await prepareExplorerRoute(bot, explorer, game, provider, reservations, setupTransactions);
+    }
+  });
+  return bots;
+}
+
+/** Measured travel starts from a revealed route origin. */
+async function prepareExplorerRoute(
+  bot: HarnessBot,
+  explorer: ExplorerState,
+  game: HarnessGame,
+  provider: HarnessProvider,
+  pathReservations: PathReservations,
+  setupTransactions: TrackedTransaction[],
+): Promise<void> {
+  const deadline = Date.now() + ACTION_READINESS_TIMEOUT_MS;
+  const rpc = createRpcMetrics();
+  const center = game.mapCenter();
+  while (Date.now() < deadline) {
+    const { coord } = requireExplorer(game, explorer.explorerId);
+    if (
+      game
+        .armyPathIndexes()
+        .exploredHexes.get(coord.x - center.x)
+        ?.has(coord.y - center.y)
+    ) {
+      return;
+    }
+    const chainTicks = game.currentTicks();
+    if (game.explorerStamina(explorer.explorerId, chainTicks.armies) < game.minimumStaminaFor("explore")) {
+      await sleep(ACTION_READINESS_POLL_INTERVAL_MS);
+      continue;
+    }
+    const transaction = await runExplorerAction({
+      actionIndex: 0,
+      bot: { ...bot, explorers: [explorer] },
+      chainTicks,
+      game,
+      kind: "explore",
+      pathReservations,
+      provider,
+      rpc,
+      scheduledAtMs: Date.now(),
+      stage: "setup",
+      tick: 0,
+    });
+    setupTransactions.push(transaction);
+    assertCompleted(transaction);
+  }
+  throw new Error(`Explorer ${explorer.explorerId} did not reach an explored route origin before setup timed out`);
+}
+
+export async function runWorkload({
+  bots,
+  game,
+  intervalSeconds,
+  minutes,
+  onTick,
+  onReady,
+  provider,
+  buildOrder,
+  burst = false,
+}: RunWorkloadOptions): Promise<WorkloadResult> {
+  const ticks = resolveWorkloadTicks(minutes, intervalSeconds);
+  const overheadRpc = createRpcMetrics();
+  const readinessWaitMs = await waitForExplorerStaminaRestored(game, bots);
+  await onReady?.();
+
+  const workloadStartedAtMs = Date.now();
+  const actions: TrackedTransaction[] = [];
+  const botQueues = new Map(bots.map((bot) => [bot.botId, Promise.resolve()]));
+  const nextAutomation = new Map(bots.map((bot) => [bot.botId, workloadStartedAtMs]));
+  const pathReservations = new PathReservations(bots, game);
+
+  for (let tick = 0; tick < ticks; tick += 1) {
+    const scheduledAtMs = burst ? workloadStartedAtMs : workloadStartedAtMs + tick * intervalSeconds * 1_000;
+    await sleepUntil(scheduledAtMs);
+    for (const [botIndex, bot] of bots.entries()) {
+      const actionIndex = tick * bots.length + botIndex;
+      const previous = botQueues.get(bot.botId)!;
+      botQueues.set(
+        bot.botId,
+        previous.then(async () => {
+          if (buildOrder) {
+            const due = Date.now() >= nextAutomation.get(bot.botId)!;
+            if (due) nextAutomation.set(bot.botId, Date.now() + PROCESS_INTERVAL_MS);
+            const steps = await runBuildOrderTurn({ bot, game, provider, buildOrder, due, scheduledAtMs, tick });
+            actions.push(...steps);
+            for (const structure of bot.structures) {
+              for (const explorerId of buildOrder.explorers(structure.structureId)) {
+                if (!bot.explorers.some((explorer) => explorer.explorerId === explorerId)) {
+                  bot.explorers.push(buildExplorerState(structure, explorerId));
+                }
+              }
+            }
+          }
+          if (buildOrder && resolveActionKind(tick) === "produce") return;
+          const rpc = createRpcMetrics();
+          const action = await runBotAction({
+            actionIndex,
+            bot,
+            game,
+            kind: resolveActionKind(tick),
+            pathReservations,
+            provider,
+            rpc,
+            scheduledAtMs,
+            tick,
+          });
+          actions.push(action);
+        }),
+      );
+    }
+
+    onTick?.(tick + 1, ticks);
+  }
+
+  await Promise.all(botQueues.values());
+  actions.sort((left, right) => left.submitStartedAt.localeCompare(right.submitStartedAt));
+
+  return {
+    profile: buildOrder ? "build-order" : burst ? "burst" : "cadence",
+    actions,
+    endedAt: new Date().toISOString(),
+    overheadRpc,
+    plannedActions: bots.length * ticks,
+    readinessWaitMs,
+    startedAt: new Date(workloadStartedAtMs).toISOString(),
+    ticks,
+  };
+}
+
+async function runBuildOrderTurn({
+  bot,
+  game,
+  provider,
+  buildOrder,
+  due,
+  scheduledAtMs,
+  tick,
+}: {
+  bot: HarnessBot;
+  game: HarnessGame;
+  provider: HarnessProvider;
+  buildOrder: BuildOrderWorkload;
+  due: boolean;
+  scheduledAtMs: number;
+  tick: number;
+}): Promise<TrackedTransaction[]> {
+  const transactions: TrackedTransaction[] = [];
+  for (const structure of bot.structures) {
+    for (const step of (due ? ["automate", "build"] : ["build"]) as Array<"automate" | "build">) {
+      let planned;
+      try {
+        planned = buildOrder[step](bot.account, structure.structureId);
+      } catch (error) {
+        transactions.push(
+          driverFailure({
+            actionIndex: tick,
+            botId: bot.botId,
+            gameId: bot.gameId,
+            kind: "produce",
+            error,
+            rpc: createRpcMetrics(),
+            scheduledAtMs,
+            tick,
+          }),
+        );
+        return transactions;
+      }
+      if (!planned) continue;
+      const transaction = await trackTransaction({
+        botId: bot.botId,
+        gameId: bot.gameId,
+        kind: planned.kind,
+        provider,
+        scheduledAtMs,
+        tick,
+        stage: "workload",
+        send: () => game.submit(bot.account, planned.run),
+      });
+      classifyTransactionFailure(transaction);
+      transactions.push(transaction);
+      if (transaction.outcome !== "completed") return transactions;
+    }
+  }
+  return transactions;
+}
+
+export function resolveActionKind(tick: number): WorkloadActionKind {
+  if (tick < ACTION_PATTERN.length) return ACTION_PATTERN[tick]!;
+  return STEADY_ACTION_PATTERN[(tick - ACTION_PATTERN.length) % STEADY_ACTION_PATTERN.length]!;
+}
+
+export function resolveWorkloadTicks(minutes: number, intervalSeconds: number): number {
+  return Math.ceil((minutes * 60) / intervalSeconds);
+}
+
+export function chooseOutwardDirection(coord: Coord, center: Coord): number {
+  return [0, 1, 2, 3, 4, 5]
+    .map((direction) => ({ direction, distance: cubeDistance(neighbor(coord, direction), center) }))
+    .sort((left, right) => right.distance - left.distance || left.direction - right.direction)[0]!.direction;
+}
+
+export function neighbor(coord: Coord, direction: number): Coord {
+  const evenRow = coord.y % 2 === 0;
+  const deltas = evenRow
+    ? [
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [-1, 0],
+        [0, -1],
+        [1, -1],
+      ]
+    : [
+        [1, 0],
+        [0, 1],
+        [-1, 1],
+        [-1, 0],
+        [-1, -1],
+        [0, -1],
+      ];
+  const [x, y] = deltas[direction] ?? [];
+  if (x === undefined || y === undefined) throw new Error(`Unknown direction ${direction}`);
+  return { x: coord.x + x, y: coord.y + y };
+}
+
+export function oppositeDirection(direction: number): number {
+  if (!Number.isInteger(direction) || direction < 0 || direction > 5) {
+    throw new Error(`Unknown direction ${direction}`);
+  }
+  return (direction + 3) % 6;
+}
+
+export function prioritizeExplorer<T extends ExplorerPriority>(candidates: T[]): T | undefined {
+  return [...candidates].sort((left, right) => left.lastUsedAt - right.lastUsedAt)[0];
+}
+
+async function settleEternumBot({
+  harnessAccount,
+  game,
+  provider,
+}: {
+  harnessAccount: HarnessAccount;
+  game: HarnessGame;
+  provider: HarnessProvider;
+}): Promise<TrackedTransaction> {
+  const name = `bot-${harnessAccount.botId.toString().padStart(3, "0")}`;
+  return trackTransaction({
+    botId: harnessAccount.botId,
+    gameId: game.gameId,
+    kind: "settle",
+    provider,
+    send: () =>
+      game.submit(harnessAccount.account, () =>
+        game.settle(harnessAccount.account, harnessAccount.owner, name, "eternum"),
+      ),
+    stage: "setup",
+  });
+}
+
+async function createBotExplorer({
+  actions,
+  harnessAccount,
+  game,
+  provider,
+  structure,
+  troopTypes,
+}: {
+  actions: GameActions;
+  harnessAccount: HarnessAccount;
+  game: HarnessGame;
+  provider: HarnessProvider;
+  structure: StructureState;
+  troopTypes: Map<ID, TroopType>;
+}): Promise<TrackedTransaction> {
+  const troopType = troopTypes.get(structure.structureId);
+  if (troopType === undefined) throw new Error(`No starting troop type exists for structure ${structure.structureId}`);
+  return trackTransaction({
+    botId: harnessAccount.botId,
+    gameId: game.gameId,
+    kind: "create-explorer",
+    provider,
+    send: () =>
+      game.submit(harnessAccount.account, () =>
+        actions.createExplorerArmy({
+          structureId: structure.structureId,
+          troopType,
+          troopTier: TroopTier.T1,
+          troopCount: EXPLORER_TROOP_COUNT,
+          spawnDirection: structure.direction,
+        }),
+      ),
+    stage: "setup",
+  });
+}
+
+interface RunBotActionOptions {
+  actionIndex: number;
+  bot: HarnessBot;
+  game: HarnessGame;
+  kind: WorkloadActionKind;
+  pathReservations: PathReservations;
+  provider: HarnessProvider;
+  rpc: RpcMetrics;
+  scheduledAtMs: number;
+  tick: number;
+}
+
+type ExecuteBotActionOptions = RunBotActionOptions & { chainTicks: ChainTicks };
+
+async function runBotAction(options: RunBotActionOptions): Promise<TrackedTransaction> {
+  try {
+    const chainTicks = options.game.currentTicks();
+    const transaction = await executeBotAction({ ...options, chainTicks });
+    classifyTransactionFailure(transaction);
+    return transaction;
+  } catch (error) {
+    const { actionIndex, bot, kind, rpc, scheduledAtMs, tick } = options;
+    return driverFailure({ actionIndex, botId: bot.botId, error, gameId: bot.gameId, kind, rpc, scheduledAtMs, tick });
+  }
+}
+
+async function executeBotAction(options: ExecuteBotActionOptions): Promise<TrackedTransaction> {
+  if (options.kind === "produce") return runProductionAction(options);
+  return runExplorerAction({ ...options, kind: options.kind });
+}
+
+async function runProductionAction({
+  actionIndex,
+  bot,
+  game,
+  provider,
+  rpc,
+  scheduledAtMs,
+  tick,
+}: Omit<ExecuteBotActionOptions, "chainTicks" | "kind" | "pathReservations">): Promise<TrackedTransaction> {
+  const structure = bot.structures[bot.nextProductionStructure % bot.structures.length]!;
+  bot.nextProductionStructure += 1;
+  const before = requireProduction(game, structure.structureId);
+
+  const transaction = await trackTransaction({
+    actionIndex,
+    botId: bot.botId,
+    gameId: bot.gameId,
+    kind: "produce",
+    provider,
+    rpc,
+    scheduledAtMs,
+    send: () => game.submit(bot.account, () => game.produceWood(bot.account, structure.structureId)),
+    stage: "workload",
+    tick,
+  });
+  if (transaction.outcome !== "completed") {
+    return transaction;
+  }
+
+  try {
+    const after = await game.waitFor(
+      () => changedProduction(before, game.production(structure.structureId)),
+      MODEL_UPDATE_TIMEOUT_MS,
+      () => `Resource ${structure.structureId} labor or wood output delta`,
+    );
+    transaction.productionDelta = {
+      laborBalance: after.laborBalance.toString(),
+      laborDelta: (after.laborBalance - before.laborBalance).toString(),
+      woodOutput: after.woodOutput.toString(),
+      woodOutputDelta: (after.woodOutput - before.woodOutput).toString(),
+    };
+  } catch (error) {
+    transaction.outcome = "driver_failed";
+    transaction.error = errorMessage(error);
+    transaction.failureClass = classifyWorkloadFailure(error);
+  }
+  return transaction;
+}
+
+async function runExplorerAction({
+  actionIndex,
+  bot,
+  chainTicks,
+  game,
+  kind,
+  pathReservations,
+  provider,
+  rpc,
+  scheduledAtMs,
+  tick,
+  stage = "workload",
+}: ExecuteBotActionOptions & { kind: "move" | "explore"; stage?: TransactionStage }): Promise<TrackedTransaction> {
+  const plan = planExplorerAction(bot, kind, chainTicks, game, pathReservations);
+  const selectedExplorer = plan.explorer;
+  selectedExplorer.lastUsedAt = actionIndex;
+  const reservation = pathReservations.reserve(selectedExplorer.explorerId, plan.from, plan.target);
+  const before = requireExplorer(game, selectedExplorer.explorerId);
+  const evidence = recordExplorerPlan(game, plan);
+
+  const transaction = await trackTransaction({
+    actionIndex,
+    botId: bot.botId,
+    exploreRequested: kind === "explore",
+    gameId: bot.gameId,
+    kind,
+    provider,
+    rpc,
+    scheduledAtMs,
+    send: () =>
+      game.submit(bot.account, () =>
+        bot.actions.moveArmy({
+          explorerId: selectedExplorer.explorerId,
+          path: plan.path,
+          currentArmiesTick: chainTicks.armies,
+        }),
+      ),
+    stage,
+    tick,
+  });
+  transaction.explorerPlan = evidence;
+  if (transaction.outcome !== "completed") {
+    pathReservations.cancel(reservation);
+    if (transaction.failureClass === "gameplay_rejection") {
+      classifyExplorerRejection(transaction, kind, evidence, game.tileView(plan.target));
+    }
+    return transaction;
+  }
+
+  try {
+    const after = await game.waitFor(
+      () => changedExplorer(before, game.explorer(selectedExplorer.explorerId)),
+      MODEL_UPDATE_TIMEOUT_MS,
+      () => `Explorer ${selectedExplorer.explorerId}`,
+    );
+    pathReservations.complete(reservation, after.coord);
+    if (after.coord.x !== before.coord.x || after.coord.y !== before.coord.y) {
+      selectedExplorer.lastDirection = plan.direction;
+    }
+  } catch (error) {
+    pathReservations.complete(reservation, plan.target);
+    transaction.outcome = "driver_failed";
+    transaction.error = errorMessage(error);
+    transaction.failureClass = classifyWorkloadFailure(error);
+  }
+  return transaction;
+}
+
+function recordExplorerPlan(game: HarnessGame, plan: ExplorerActionPlan): ExplorerPlanEvidence {
+  return {
+    direction: plan.direction,
+    explorerId: plan.explorer.explorerId,
+    factHeadBlock: game.factHeadBlock(),
+    from: plan.from,
+    target: plan.target,
+    targetInView: game.tileView(plan.target),
+  };
+}
+
+/**
+ * A rejected step whose target was open in the bot's own view and changed before the chain ran it lost a race to
+ * another player's action: it is counted apart, is not blocking, and the bot re-plans from fresh facts next tick. A
+ * target already closed in its view is the bot's bug, and a step with no view to judge by cannot be classified; both
+ * stay blocking gameplay rejections.
+ */
+export function classifyExplorerRejection(
+  transaction: TrackedTransaction,
+  kind: "move" | "explore",
+  plan: ExplorerPlanEvidence,
+  targetAfter: TileView,
+): void {
+  plan.targetAfter = targetAfter;
+  if (plan.factHeadBlock === null || !isOpenTarget(kind, plan.targetInView)) return;
+  if (sameTileView(plan.targetInView, targetAfter)) return;
+  transaction.failureClass = "gameplay_race";
+  transaction.revertReason = "tile_contention";
+}
+
+/** An explore opens an unexplored hex and a move enters an explored one; neither may enter an occupied hex. */
+const isOpenTarget = (kind: "move" | "explore", tile: TileView): boolean =>
+  tile.occupierId === 0 && tile.explored === (kind === "move");
+
+const sameTileView = (left: TileView, right: TileView): boolean =>
+  left.explored === right.explored && left.occupierId === right.occupierId;
+
+/**
+ * The client plans every legal step from the explorer's synchronized position (occupancy, biome stamina, food); the harness
+ * only chooses which of those steps keeps its route outward and clear of the other bots' reservations.
+ */
+function planExplorerAction(
+  bot: HarnessBot,
+  kind: "move" | "explore",
+  chainTicks: ChainTicks,
+  game: HarnessGame,
+  pathReservations: PathReservations,
+): ExplorerActionPlan {
+  const indexes = game.armyPathIndexes();
+  const wantedActionType = kind === "explore" ? ActionType.Explore : ActionType.Move;
+  const remaining = [...bot.explorers];
+  let staminaShort = false;
+  while (remaining.length > 0) {
+    const explorer = prioritizeExplorer(remaining)!;
+    remaining.splice(remaining.indexOf(explorer), 1);
+    const from = requireExplorer(game, explorer.explorerId).coord;
+    const paths = bot.actions.armyPaths({
+      explorerId: explorer.explorerId,
+      ...indexes,
+      currentDefaultTick: chainTicks.default,
+      currentArmiesTick: chainTicks.armies,
+      playerAddress: ContractAddress(bot.address),
+    });
+    const directions = chooseDirections(explorer, kind, from, bot.structures);
+    for (const direction of directions) {
+      const target = neighbor(from, direction);
+      if (!pathReservations.canReserve(explorer.explorerId, target)) continue;
+      const path = paths.get(ActionPaths.posKey({ col: target.x, row: target.y }));
+      if (path && ActionPaths.getActionType(path) === wantedActionType) {
+        return { direction, explorer, from, path, target };
+      }
+      staminaShort ||= game.explorerStamina(explorer.explorerId, chainTicks.armies) < game.minimumStaminaFor(kind);
+    }
+  }
+
+  if (staminaShort) {
+    throw new GameRuleLimitError(
+      `No explorer has enough stamina for ${kind}; the cheapest ${kind} costs ${game.minimumStaminaFor(kind)}`,
+    );
+  }
+  const routeState = bot.explorers
+    .map((explorer) => {
+      const at = coordKey(requireExplorer(game, explorer.explorerId).coord);
+      return `${explorer.explorerId}@${at}`;
+    })
+    .join("; ");
+  throw new HarnessPathingError(`No collision-free ${kind} route is available for bot ${bot.botId}: ${routeState}`);
+}
+
+function chooseDirections(
+  explorer: ExplorerState,
+  kind: "move" | "explore",
+  from: Coord,
+  structures: StructureState[],
+): number[] {
+  const previousDirection = explorer.lastDirection;
+  const preferredDirection =
+    kind === "move" && previousDirection !== undefined
+      ? oppositeDirection(previousDirection)
+      : (previousDirection ?? explorer.outwardDirection);
+  const center = resolveSettlementCenter(structures);
+  return [0, 1, 2, 3, 4, 5]
+    .map((direction) => ({
+      direction,
+      preferred: direction === preferredDirection,
+      distance: cubeDistance(neighbor(from, direction), center),
+    }))
+    .sort((left, right) => {
+      return (
+        Number(right.preferred) - Number(left.preferred) ||
+        right.distance - left.distance ||
+        left.direction - right.direction
+      );
+    })
+    .map(({ direction }) => direction);
+}
+
+async function waitForExplorerStaminaRestored(game: HarnessGame, bots: HarnessBot[]): Promise<number> {
+  const startedAtMs = Date.now();
+  const deadline = startedAtMs + ACTION_READINESS_TIMEOUT_MS;
+
+  while (Date.now() <= deadline) {
+    const { armies } = game.currentTicks();
+    const everyBotReady = bots.every((bot) =>
+      bot.explorers.every(
+        (explorer) => game.explorerStamina(explorer.explorerId, armies) >= game.explorerMaxStamina(explorer.explorerId),
+      ),
+    );
+    if (everyBotReady) return Date.now() - startedAtMs;
+    await sleep(ACTION_READINESS_POLL_INTERVAL_MS);
+  }
+
+  throw new Error("Explorers did not restore their configured stamina capacity within 360 seconds of chain time");
+}
+
+export async function trackTransaction(options: TrackTransactionOptions): Promise<TrackedTransaction> {
+  const preflightStartedAtMs = Date.now();
+  const rpc = options.rpc ?? createRpcMetrics();
+  const record: TrackedTransaction = {
+    actionIndex: options.actionIndex,
+    botId: options.botId,
+    exploreRequested: options.exploreRequested,
+    gameId: options.gameId,
+    kind: options.kind,
+    outcome: "submit_failed",
+    rpc: snapshotRpcMetrics(rpc),
+    scheduledAt: options.scheduledAtMs === undefined ? undefined : toIso(options.scheduledAtMs),
+    stage: options.stage,
+    submitDelayMs:
+      options.scheduledAtMs === undefined ? undefined : Math.max(0, preflightStartedAtMs - options.scheduledAtMs),
+    submitStartedAt: toIso(preflightStartedAtMs),
+    tick: options.tick,
+  };
+
+  let submission: HarnessSubmission;
+  let transactionHash: string;
+  try {
+    const submitStartedAtMs = Date.now();
+    record.submitStartedAt = toIso(submitStartedAtMs);
+    submission = await options.send();
+    const submittedAtMs = Date.now();
+    transactionHash = normalizeTransactionHash(submission.transactionHash);
+    record.transactionHash = transactionHash;
+    record.submittedAt = toIso(submittedAtMs);
+    record.submitMs = submittedAtMs - submitStartedAtMs;
+    if (options.scheduledAtMs !== undefined) record.submitDelayMs = Math.max(0, submittedAtMs - options.scheduledAtMs);
+  } catch (error) {
+    record.error = errorMessage(error);
+    record.rpc = snapshotRpcMetrics(rpc);
+    return record;
+  }
+
+  Object.assign(
+    record,
+    await waitForConfirmation(
+      options,
+      submission,
+      transactionHash,
+      Date.parse(record.submitStartedAt),
+      Date.parse(record.submittedAt!),
+      rpc,
+    ),
+  );
+  record.rpc = snapshotRpcMetrics(rpc);
+  return record;
+}
+
+/** Receipt measurements and the Herald state barrier share one deadline, including stalled RPC requests. */
+async function waitForConfirmation(
+  options: TrackTransactionOptions,
+  submission: HarnessSubmission,
+  transactionHash: string,
+  submitStartedAtMs: number,
+  submittedAtMs: number,
+  rpc: RpcMetrics,
+): Promise<Partial<TrackedTransaction>> {
+  const timeoutMs = options.confirmationTimeoutMs ?? transactionTimeoutMs(options.stage);
+  const stop = new AbortController();
+  let lifecycle: Partial<TrackedTransaction> = {};
+  let timer: ReturnType<typeof setTimeout>;
+  const deadline = new Promise<Partial<TrackedTransaction>>((resolve) => {
+    timer = setTimeout(
+      () =>
+        resolve({
+          ...lifecycle,
+          outcome: "confirmation_timeout",
+          error: `Receipt and Herald confirmation did not both complete within ${timeoutMs} ms`,
+        }),
+      timeoutMs,
+    );
+  });
+  let visibility: Partial<TrackedTransaction> = {};
+  const confirmed =
+    submission.confirmed?.then(
+      () => {
+        const visibleAtMs = Date.now();
+        visibility = { visibleAt: toIso(visibleAtMs), admissionToVisibleMs: visibleAtMs - submitStartedAtMs };
+        return undefined;
+      },
+      (error: unknown) => errorMessage(error),
+    ) ?? Promise.resolve(undefined);
+  const measured = waitForReceiptLifecycle(
+    options.provider,
+    transactionHash,
+    submittedAtMs,
+    timeoutMs,
+    rpc,
+    stop.signal,
+  )
+    .catch((error: unknown): Partial<TrackedTransaction> => ({ outcome: "driver_failed", error: errorMessage(error) }))
+    .then((result) => {
+      lifecycle = result;
+      return result;
+    });
+  const complete = measured.then(async (result) => {
+    if (result.outcome !== "completed") return result;
+    const failure = await confirmed;
+    return failure === undefined
+      ? { ...result, ...visibility, ...(await heraldConfirmedLag(submission, result)) }
+      : {
+          ...result,
+          outcome: isGameplayRejection(failure) ? ("rejected" as const) : ("driver_failed" as const),
+          error: `Herald confirmation failed: ${failure}`,
+        };
+  });
+  try {
+    return await Promise.race([complete, deadline]);
+  } finally {
+    clearTimeout(timer!);
+    stop.abort();
+  }
+}
+
+async function heraldConfirmedLag(
+  submission: HarnessSubmission,
+  result: Partial<TrackedTransaction>,
+): Promise<Partial<TrackedTransaction>> {
+  if (!submission.heraldConfirmedAtMs || result.acceptedOnL2At === undefined) return {};
+  const heraldConfirmedAtMs = await submission.heraldConfirmedAtMs;
+  return {
+    heraldConfirmedAt: toIso(heraldConfirmedAtMs),
+    heraldConfirmedLagMs: heraldConfirmedAtMs - Date.parse(result.acceptedOnL2At),
+  };
+}
+
+async function waitForReceiptLifecycle(
+  provider: HarnessProvider,
+  transactionHash: string,
+  submittedAtMs: number,
+  timeoutMs: number,
+  rpc: RpcMetrics,
+  signal: AbortSignal,
+): Promise<Partial<TrackedTransaction>> {
+  let preConfirmedAtMs: number | undefined;
+  let lastStatus: string | undefined;
+  let finished = false;
+  const subscription = await provider.subscribeTransactionStatus(transactionHash);
+  const unsubscribe = () => {
+    void subscription.unsubscribe().catch(() => {});
+  };
+  if (signal.aborted) {
+    unsubscribe();
+    return { outcome: "confirmation_timeout" };
+  }
+  return new Promise<Partial<TrackedTransaction>>((resolve) => {
+    const finish = (result: Partial<TrackedTransaction>) => {
+      subscription.channel.off("open", catchUp);
+      signal.removeEventListener("abort", abort);
+      unsubscribe();
+      resolve(result);
+    };
+    const abort = () => {
+      finished = true;
+      finish({
+        outcome: "confirmation_timeout",
+        finalityStatus: lastStatus,
+        error: `Transaction did not reach ACCEPTED_ON_L2 within ${timeoutMs / 1_000} seconds`,
+      });
+    };
+    signal.addEventListener("abort", abort, { once: true });
+    const observe = (status: { finality_status: string; execution_status?: string; failure_reason?: string }) => {
+      if (finished) return;
+      lastStatus = status.finality_status;
+      const observedAtMs = Date.now();
+      if (status.execution_status === "REVERTED" || status.finality_status === "REJECTED") {
+        finished = true;
+        finish({
+          error: status.failure_reason ?? JSON.stringify(status),
+          finalityStatus: lastStatus,
+          outcome: status.execution_status === "REVERTED" ? "reverted" : "rejected",
+        });
+        return;
+      }
+      if (["PRE_CONFIRMED", "ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(lastStatus)) {
+        preConfirmedAtMs ??= observedAtMs;
+      }
+      if (!["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(lastStatus)) return;
+      finished = true;
+      // The receipt (block, gas, fee) is read after the window by the gas collector from the recorded hash; nothing
+      // on the timed path waits for it.
+      finish({
+        acceptedOnL2At: toIso(observedAtMs),
+        acceptedOnL2Ms: observedAtMs - submittedAtMs,
+        finalityStatus: lastStatus,
+        outcome: "completed",
+        preConfirmedAt: toIso(preConfirmedAtMs ?? observedAtMs),
+        preConfirmedMs: (preConfirmedAtMs ?? observedAtMs) - submittedAtMs,
+      });
+    };
+    let observedSocket: unknown;
+    const catchUp = () => {
+      if (finished || observedSocket === subscription.channel.websocket) return;
+      observedSocket = subscription.channel.websocket;
+      void measureRpc(rpc, "getTransactionStatus", () => provider.getTransactionStatus(transactionHash))
+        .then((status) => {
+          if (!finished) observe(status);
+        })
+        .catch((error: unknown) => {
+          if (!finished) {
+            finished = true;
+            finish({ outcome: "driver_failed", error: errorMessage(error) });
+          }
+        });
+    };
+    subscription.channel.on("open", catchUp);
+    subscription.on(({ status }) => observe(status));
+    catchUp();
+  });
+}
+
+async function waitForSettlement(game: HarnessGame, address: string, gameType: HarnessGameType): Promise<ID[]> {
+  const structureIds = await game.waitFor(
+    () => game.settlementStructureIds(address),
+    MODEL_UPDATE_TIMEOUT_MS,
+    () => `Settlement for ${address} in game ${game.gameId}`,
+  );
+  const expected = settlementStructureCount(gameType);
+  if (structureIds.length !== expected) {
+    throw new Error(`Expected ${expected} structures for ${address}, found ${structureIds.length}`);
+  }
+  return structureIds;
+}
+
+async function waitForStructures(game: HarnessGame, structureIds: ID[]): Promise<StructureState[]> {
+  const mapCenter = game.mapCenter();
+  return game.waitFor(
+    () =>
+      collectAll(structureIds, (structureId) => {
+        const coord = game.structureCoord(structureId);
+        return coord && { coord, direction: chooseOutwardDirection(coord, mapCenter), structureId };
+      }),
+    MODEL_UPDATE_TIMEOUT_MS,
+    () => `Structures ${structureIds.join(", ")}`,
+  );
+}
+
+async function waitForStartingTroopTypes(game: HarnessGame, structureIds: ID[]): Promise<Map<ID, TroopType>> {
+  const troopTypes = await game.waitFor(
+    () => collectAll(structureIds, (structureId) => game.startingTroopType(structureId)),
+    MODEL_UPDATE_TIMEOUT_MS,
+    () => `Resources of structures ${structureIds.join(", ")}`,
+  );
+  return new Map(structureIds.map((structureId, index) => [structureId, troopTypes[index]!]));
+}
+
+async function waitForExplorers(game: HarnessGame, structures: StructureState[]): Promise<ExplorerState[]> {
+  return game.waitFor(
+    () =>
+      collectAll(structures, (structure) => {
+        const ids = game.explorersOf(structure.structureId);
+        return ids.length === 0 ? undefined : ids.map((id) => buildExplorerState(structure, id));
+      })?.flat(),
+    MODEL_UPDATE_TIMEOUT_MS,
+    () => `Explorers of structures ${structures.map(({ structureId }) => structureId).join(", ")}`,
+  );
+}
+
+/** Every item resolved, or nothing yet: the shape a native store wait needs for a set of rows that land independently. */
+function collectAll<T, R>(items: readonly T[], read: (item: T) => R | undefined): R[] | undefined {
+  const collected: R[] = [];
+  for (const item of items) {
+    const value = read(item);
+    if (value === undefined) return undefined;
+    collected.push(value);
+  }
+  return collected;
+}
+
+function buildExplorerState(structure: StructureState, explorerId: ID): ExplorerState {
+  return {
+    explorerId,
+    lastUsedAt: -1,
+    outwardDirection: structure.direction,
+  };
+}
+
+function requireExplorer(game: HarnessGame, explorerId: ID): ExplorerRow {
+  const explorer = game.explorer(explorerId);
+  if (!explorer) throw new Error(`Explorer ${explorerId} is not synchronized`);
+  return explorer;
+}
+
+function requireProduction(game: HarnessGame, structureId: ID): ProductionState {
+  const production = game.production(structureId);
+  if (!production) throw new Error(`Resource ${structureId} is not synchronized`);
+  return production;
+}
+
+const changedExplorer = (before: ExplorerRow, current: ExplorerRow | undefined): ExplorerRow | undefined =>
+  current &&
+  (current.coord.x !== before.coord.x ||
+    current.coord.y !== before.coord.y ||
+    current.staminaAmount !== before.staminaAmount ||
+    current.staminaUpdatedTick !== before.staminaUpdatedTick)
+    ? current
+    : undefined;
+
+const changedProduction = (
+  before: ProductionState,
+  current: ProductionState | undefined,
+): ProductionState | undefined =>
+  current && (current.laborBalance !== before.laborBalance || current.woodOutput !== before.woodOutput)
+    ? current
+    : undefined;
+
+function assertCompleted(transaction: TrackedTransaction): void {
+  if (transaction.outcome !== "completed") {
+    throw new Error(
+      `Bot ${transaction.botId} ${transaction.kind} failed (${transaction.outcome}): ${transaction.error ?? "unknown error"}`,
+    );
+  }
+}
+
+function driverFailure({
+  actionIndex,
+  botId,
+  error,
+  gameId,
+  kind,
+  rpc,
+  scheduledAtMs,
+  tick,
+}: {
+  actionIndex: number;
+  botId: number;
+  error: unknown;
+  gameId: number;
+  kind: WorkloadActionKind;
+  rpc: RpcMetrics;
+  scheduledAtMs: number;
+  tick: number;
+}): TrackedTransaction {
+  const now = Date.now();
+  return {
+    actionIndex,
+    botId,
+    error: errorMessage(error),
+    failureClass: classifyWorkloadFailure(error),
+    gameId,
+    kind,
+    outcome: "driver_failed",
+    rpc: snapshotRpcMetrics(rpc),
+    scheduledAt: toIso(scheduledAtMs),
+    stage: "workload",
+    submitDelayMs: Math.max(0, now - scheduledAtMs),
+    submitStartedAt: toIso(now),
+    tick,
+  };
+}
+
+/**
+ * The season contract's named refusals of a well-formed intent: a game rule said no to the move. INVALID_ACTOR and
+ * INVALID_COMMAND are malformed intents, which are the driver's fault, so they stay chain-or-driver failures.
+ */
+const GAMEPLAY_REJECTION = /Native action rejected: (?:GAMEPLAY_REJECTED|COMMAND_DISABLED|ROSTER_NOT_READY)\b/;
+
+function isGameplayRejection(error: unknown): boolean {
+  return GAMEPLAY_REJECTION.test(errorMessage(error));
+}
+
+export function classifyWorkloadFailure(error: unknown): WorkloadFailureClass {
+  if (error instanceof GameRuleLimitError) return "game_rule_limit";
+  if (error instanceof HarnessPathingError) return "harness_pathing";
+  if (isGameplayRejection(error)) return "gameplay_rejection";
+  const message = errorMessage(error);
+  if (
+    /(?:insufficient|not enough|requires?).*stamina|no explorer has \d+ stamina|stamina.*(?:depleted|required)/i.test(
+      message,
+    ) ||
+    /(?:insufficient|not enough).*labor|labor.*(?:depleted|required)/i.test(message)
+  ) {
+    return "game_rule_limit";
+  }
+  if (/occupied|collision|no .*path|no .*route|path.*not explored|unoccupied exploration direction/i.test(message)) {
+    return "harness_pathing";
+  }
+  return "chain_or_driver";
+}
+
+export function classifyWorkloadRevertReason(error: unknown): WorkloadRevertReason {
+  const message = errorMessage(error);
+  if (/one of the tiles in path is occupied|tile.*occupied/i.test(message)) return "tile_contention";
+  if (/stamina/i.test(message)) return "stamina";
+  if (/labor/i.test(message)) return "labor";
+  return "other";
+}
+
+function classifyTransactionFailure(transaction: TrackedTransaction): void {
+  if (transaction.outcome === "completed") return;
+  transaction.failureClass = classifyWorkloadFailure(transaction.error);
+  if (transaction.outcome === "reverted" || transaction.outcome === "rejected") {
+    transaction.revertReason = classifyWorkloadRevertReason(transaction.error);
+  }
+}
+
+export function createRpcMetrics(): RpcMetrics {
+  return {
+    estimateInvokeFee: { calls: 0, wallMs: 0 },
+    getBlock: { calls: 0, wallMs: 0 },
+    getTransactionStatus: { calls: 0, wallMs: 0 },
+  };
+}
+
+async function measureRpc<T>(rpc: RpcMetrics, method: MeasuredRpcMethod, call: () => Promise<T>): Promise<T> {
+  const startedAt = performance.now();
+  rpc[method].calls += 1;
+  try {
+    return await call();
+  } finally {
+    rpc[method].wallMs += performance.now() - startedAt;
+  }
+}
+
+function snapshotRpcMetrics(rpc: RpcMetrics): RpcMetrics {
+  return {
+    estimateInvokeFee: snapshotRpcMethod(rpc.estimateInvokeFee),
+    getBlock: snapshotRpcMethod(rpc.getBlock),
+    getTransactionStatus: snapshotRpcMethod(rpc.getTransactionStatus),
+  };
+}
+
+function snapshotRpcMethod(method: RpcMethodMetrics): RpcMethodMetrics {
+  return { calls: method.calls, wallMs: roundMilliseconds(method.wallMs) };
+}
+
+function roundMilliseconds(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function resolveSettlementCenter(structures: StructureState[]): Coord {
+  const x = Math.round(structures.reduce((sum, structure) => sum + structure.coord.x, 0) / structures.length);
+  const y = Math.round(structures.reduce((sum, structure) => sum + structure.coord.y, 0) / structures.length);
+  return { x, y };
+}
+
+export function cubeDistance(left: Coord, right: Coord): number {
+  const leftCube = evenRowToCube(left);
+  const rightCube = evenRowToCube(right);
+  return Math.max(
+    Math.abs(leftCube.q - rightCube.q),
+    Math.abs(leftCube.r - rightCube.r),
+    Math.abs(leftCube.s - rightCube.s),
+  );
+}
+
+function evenRowToCube(coord: Coord): { q: number; r: number; s: number } {
+  const q = coord.x - (coord.y + (coord.y & 1)) / 2;
+  const r = coord.y;
+  return { q, r, s: -q - r };
+}
+
+function normalizeTransactionHash(value: string): string {
+  const digits = value.toLowerCase().replace(/^0x/, "");
+  if (!/^[0-9a-f]+$/.test(digits)) throw new Error(`Invalid transaction hash ${value}`);
+  return `0x${digits.padStart(64, "0")}`;
+}
+
+function coordKey(coord: Coord): string {
+  return `${coord.x}:${coord.y}`;
+}
+
+async function sleepUntil(timestampMs: number): Promise<void> {
+  const waitMs = timestampMs - Date.now();
+  if (waitMs > 0) await sleep(waitMs);
+}
+
+function toIso(timestampMs: number): string {
+  return new Date(timestampMs).toISOString();
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.stack || error.message : String(error);
+}
+
+function transactionTimeoutMs(stage: TransactionStage): number {
+  return stage === "workload" ? TRANSACTION_TIMEOUT_MS : SETUP_TRANSACTION_TIMEOUT_MS;
+}

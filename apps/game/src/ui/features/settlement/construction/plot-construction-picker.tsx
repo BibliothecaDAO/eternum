@@ -17,15 +17,17 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
     <div className="w-[420px] max-w-full space-y-3 p-3">
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-semibold">Build on this plot</span>
-        <label className="flex items-center gap-2 text-xs">
-          Simple cost
-          <input
-            type="checkbox"
-            role="switch"
-            checked={form.useSimpleCost}
-            onChange={(event) => form.setUseSimpleCost(event.target.checked)}
-          />
-        </label>
+        {form.allowSimpleCost && (
+          <label className="flex items-center gap-2 text-xs">
+            Simple cost
+            <input
+              type="checkbox"
+              role="switch"
+              checked={form.useSimpleCost}
+              onChange={(event) => form.setUseSimpleCost(event.target.checked)}
+            />
+          </label>
+        )}
       </div>
       {form.error && (
         <p role="status" className="text-xs">
@@ -77,6 +79,16 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
                       </span>
                     ))}
                   </span>
+                  {building.neighbourHints.length > 0 && (
+                    <span className="block space-y-0.5 pb-1 text-left text-[10px] leading-tight text-gold/70">
+                      {building.neighbourHints.map((hint) => (
+                        <span key={hint.label} className={hint.present ? "block text-emerald-300" : "block"}>
+                          {hint.present ? "✓ " : ""}
+                          {hint.label}
+                        </span>
+                      ))}
+                    </span>
+                  )}
                   {building.disabled && (
                     <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/50" />
                   )}

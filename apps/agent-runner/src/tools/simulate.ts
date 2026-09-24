@@ -2,7 +2,6 @@ import {
   CombatSimulator,
   configManager,
   divideByPrecision,
-  gameEntityKey,
   getBuildingCosts,
   getGuardsByStructure,
   RaidSimulator,
@@ -18,7 +17,6 @@ import {
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type, type Static } from "typebox";
 
@@ -95,7 +93,7 @@ const missingInputs = (input: SimulateInput): string[] =>
 
 const simulateCombat = (client: GameClient, attackerId: ID, defenderId: ID): string => {
   const attacker = explorerCombatant(client, attackerId);
-  if (!attacker) return `Explorer ${attackerId} is not in RECS.`;
+  if (!attacker) return `Explorer ${attackerId} is not in the native store.`;
   const defenders = explorerCombatant(client, defenderId) ?? strongestGuard(client, defenderId);
   if (!defenders) return `${defenderId} is neither an explorer nor a structure with guards.`;
   const biome = biomeAt(defenders.hex);
@@ -119,10 +117,10 @@ const simulateCombat = (client: GameClient, attackerId: ID, defenderId: ID): str
 
 const simulateRaid = (client: GameClient, attackerId: ID, structureId: ID): string => {
   const raider = explorerCombatant(client, attackerId);
-  if (!raider) return `Explorer ${attackerId} is not in RECS.`;
-  const structure = getComponentValue(client.setup.components.Structure, gameEntityKey([BigInt(structureId)]));
-  if (!structure) return `Structure ${structureId} is not in RECS.`;
-  const guards = getGuardsByStructure(structure)
+  if (!raider) return `Explorer ${attackerId} is not in the native store.`;
+  const structure = client.setup.store.get("Structure", { game_id: client.gameId, entity_id: structureId });
+  if (!structure) return `Structure ${structureId} is not in the native store.`;
+  const guards = getGuardsByStructure(structure, client.setup.store)
     .filter((guard) => Number(guard.troops.count) > 0)
     .map((guard) => troopsToArmy(guard.troops));
   const biome = biomeAt({ x: structure.base.coord_x, y: structure.base.coord_y });
@@ -142,7 +140,7 @@ const simulateBuildingCost = (
   buildingType: BuildingType,
   useSimpleCost: boolean,
 ): string => {
-  const costs = getBuildingCosts(structureId, client.setup.components, buildingType, useSimpleCost);
+  const costs = getBuildingCosts(structureId, client.setup.store, buildingType, useSimpleCost);
   if (!costs || costs.length === 0) {
     return `No ${useSimpleCost ? "simple" : "complex"} cost is configured for ${BuildingTypeToString[buildingType]}.`;
   }
@@ -159,19 +157,19 @@ const simulateBuildingCost = (
   ].join("\n");
 };
 
-// RECS reads
+// Native facts
 
 const explorerCombatant = (client: GameClient, explorerId: ID): Combatant | undefined => {
-  const row = getComponentValue(client.setup.components.ExplorerTroops, gameEntityKey([BigInt(explorerId)]));
+  const row = client.setup.store.get("ExplorerTroops", { game_id: client.gameId, explorer_id: explorerId });
   if (!row) return undefined;
   return { army: troopsToArmy(row.troops), hex: { x: row.coord.x, y: row.coord.y }, isStructureGuard: false };
 };
 
 /** The guard slot with the most troops stands for the structure in a one-on-one preview. */
 const strongestGuard = (client: GameClient, structureId: ID): Combatant | undefined => {
-  const structure = getComponentValue(client.setup.components.Structure, gameEntityKey([BigInt(structureId)]));
+  const structure = client.setup.store.get("Structure", { game_id: client.gameId, entity_id: structureId });
   if (!structure) return undefined;
-  const guard = getGuardsByStructure(structure)
+  const guard = getGuardsByStructure(structure, client.setup.store)
     .filter((candidate) => Number(candidate.troops.count) > 0)
     .sort((left, right) => Number(right.troops.count - left.troops.count))[0];
   if (!guard) return undefined;

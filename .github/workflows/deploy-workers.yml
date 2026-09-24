@@ -1,0 +1,174 @@
+name: Deploy Workers
+
+# Deploys the central-service Workers to Cloudflare. Staging deploys on every push to native-staging, the branch its
+# chains and client are built from, so its Workers always speak the contracts its shards run; the integration branch
+# may run ahead of them. Production deploys only by dispatch, at the cutover. Each environment has its own D1 databases
+# and secrets. The guardian Worker is deployed by the owner alone and is not listed here. The launch Worker targets the
+# shard its environment's LAUNCH_SHARD_URL names (the shard's Herald, whose /manifest says the rest), with
+# LAUNCH_DEPLOYER_ACCOUNT_ADDRESS and LAUNCHER_ALLOWLIST, and signs with its
+# LAUNCH_DEPLOYER_PRIVATE_KEY secret. Both Workers accept the environment's one OPERATOR_TOKEN secret from operator
+# automation.
+on:
+  push:
+    branches: [native-staging]
+    paths:
+      - "apps/realms/**"
+      - "apps/guardian/**"
+      - "apps/launch-service/**"
+      - "config/**"
+      - "packages/identity/**"
+      - "packages/notifications/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/deploy-workers.yml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Cloudflare environment"
+        type: choice
+        options: [staging, production]
+        default: staging
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-workers-${{ inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy ${{ matrix.worker }} to ${{ inputs.environment || 'staging' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ inputs.environment || 'staging' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - worker: apps/realms
+            package: "@realms-world/realms"
+            database: realms-identity
+            health: /api/health
+          - worker: apps/launch-service
+            package: "@bibliothecadao/launch-service"
+            database: realms-launch
+            health: /api/factory/health
+    env:
+      TARGET: ${{ inputs.environment || 'staging' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build workspace dependencies
+        run: pnpm --filter "${{ matrix.package }}^..." run build
+
+      # Migrations run before the code that needs them; the database is created on its environment's first deploy.
+      - name: Prepare the database
+        if: matrix.database
+        working-directory: ${{ matrix.worker }}
+        run: |
+          set -euo pipefail
+          name="${{ matrix.database }}-$TARGET"
+          if ! pnpm exec wrangler d1 list --json | jq -e --arg name "$name" 'any(.[]; .name == $name)' > /dev/null; then
+            pnpm exec wrangler d1 create "$name"
+          fi
+          pnpm exec wrangler d1 migrations apply DB --env "$TARGET" --remote
+
+      # Secrets come from the environment's GitHub secrets and are set before the code that reads them deploys.
+      - name: Set identity secrets
+        if: matrix.worker == 'apps/realms'
+        working-directory: ${{ matrix.worker }}
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          IDENTITY_RPC_URL: ${{ secrets.CLIENT_IDENTITY_RPC_URL }}
+          OPERATOR_TOKEN: ${{ secrets.OPERATOR_TOKEN }}
+          WEB_PUSH_VAPID_PUBLIC_KEY: ${{ secrets.WEB_PUSH_VAPID_PUBLIC_KEY }}
+          WEB_PUSH_VAPID_PRIVATE_KEY: ${{ secrets.WEB_PUSH_VAPID_PRIVATE_KEY }}
+          WEB_PUSH_VAPID_SUBJECT: ${{ secrets.WEB_PUSH_VAPID_SUBJECT }}
+          DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+          DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          set -euo pipefail
+          names="BETTER_AUTH_SECRET IDENTITY_RPC_URL OPERATOR_TOKEN WEB_PUSH_VAPID_PUBLIC_KEY WEB_PUSH_VAPID_PRIVATE_KEY WEB_PUSH_VAPID_SUBJECT DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET RESEND_API_KEY"
+          for name in $names; do
+            [ -n "${!name}" ] || { echo "::error::$name is not set for the $TARGET environment"; exit 1; }
+          done
+          jq -n --arg names "$names" 'env as $env | $names | split(" ") | map({(.): $env[.]}) | add' |
+            pnpm exec wrangler secret bulk --env "$TARGET"
+
+      - name: Set launch secrets
+        if: matrix.worker == 'apps/launch-service'
+        working-directory: ${{ matrix.worker }}
+        env:
+          DEPLOYER_PRIVATE_KEY: ${{ secrets.LAUNCH_DEPLOYER_PRIVATE_KEY }}
+          OPERATOR_TOKEN: ${{ secrets.OPERATOR_TOKEN }}
+        run: |
+          set -euo pipefail
+          [ -n "$DEPLOYER_PRIVATE_KEY" ] || { echo "::error::LAUNCH_DEPLOYER_PRIVATE_KEY is not set for the $TARGET environment"; exit 1; }
+          [ -n "$OPERATOR_TOKEN" ] || { echo "::error::OPERATOR_TOKEN is not set for the $TARGET environment"; exit 1; }
+          jq -n '{DEPLOYER_PRIVATE_KEY: env.DEPLOYER_PRIVATE_KEY, OPERATOR_TOKEN: env.OPERATOR_TOKEN}' |
+            pnpm exec wrangler secret bulk --env "$TARGET"
+
+      - name: Deploy
+        if: matrix.worker != 'apps/launch-service'
+        working-directory: ${{ matrix.worker }}
+        env:
+          WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
+        run: pnpm exec wrangler deploy --env "$TARGET"
+
+      # The shard a launch writes to is the environment's decision, set beside the shard, not code.
+      - name: Deploy the launch Worker at its shard
+        if: matrix.worker == 'apps/launch-service'
+        working-directory: ${{ matrix.worker }}
+        env:
+          WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
+          SHARD_URL: ${{ vars.LAUNCH_SHARD_URL }}
+          DEPLOYER_ACCOUNT_ADDRESS: ${{ vars.LAUNCH_DEPLOYER_ACCOUNT_ADDRESS }}
+          LAUNCHER_ALLOWLIST: ${{ vars.LAUNCHER_ALLOWLIST }}
+        run: |
+          set -euo pipefail
+          args=()
+          for name in SHARD_URL DEPLOYER_ACCOUNT_ADDRESS LAUNCHER_ALLOWLIST; do
+            [ -n "${!name}" ] || { echo "::error::the $TARGET environment has no variable for $name"; exit 1; }
+            args+=(--var "$name:${!name}")
+          done
+          pnpm exec wrangler deploy --env "$TARGET" "${args[@]}"
+
+      # The deploy record names the Worker's route pattern and the version it deployed; the route must answer its health
+      # path from that version, not from the one it replaced.
+      - name: Verify the deployed version answers
+        env:
+          WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
+        run: |
+          set -euo pipefail
+          record=$(jq -c 'select(.type == "deploy")' "$WRANGLER_OUTPUT_FILE_PATH")
+          target=$(jq -r '.targets[0]' <<< "$record")
+          version=$(jq -r '.version_id' <<< "$record")
+          host=${target#https://}
+          host=${host%%/*}
+          for attempt in $(seq 1 20); do
+            if curl -fsS "https://$host${{ matrix.health }}" > health.json &&
+              jq -e --arg env "$TARGET" --arg version "$version" \
+                '.environment == $env and .version == $version' health.json > /dev/null; then
+              cat health.json
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::https://$host${{ matrix.health }} did not answer from version $version"
+          cat health.json || true
+          exit 1

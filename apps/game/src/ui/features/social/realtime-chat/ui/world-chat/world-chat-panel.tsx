@@ -128,7 +128,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   const navigateToMapView = useNavigateToMapView();
   const handleNavigateToCoordinates = useCallback(
     (coordinates: { x: number; y: number }) => {
-      navigateToMapView(new Position({ x: coordinates.x, y: coordinates.y }));
+      navigateToMapView(Position.fromNormalized({ x: coordinates.x, y: coordinates.y }));
     },
     [navigateToMapView],
   );

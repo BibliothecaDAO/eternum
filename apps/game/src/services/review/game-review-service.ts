@@ -3,17 +3,16 @@ import {
   fetchHeraldGameLeaderboard,
   fetchHeraldGameReviewSnapshot,
   fetchHeraldTransactionCount,
-  resolveGameId,
-  resolveWorldIdForGame,
+  type GameRef,
+  type Shard,
 } from "@bibliothecadao/eternum/game-client";
-import { getWorldById, type WorldDeployment } from "@/runtime/world/world-directory";
+import { requireOpenShard } from "@/runtime/world/shards";
 import {
   buildLandingLeaderboard,
   normalizeLeaderboardAddress,
   type LandingLeaderboardEntry,
 } from "@/services/leaderboard/landing-leaderboard-service";
 
-import type { GameChain as Chain } from "@realms-world/chain";
 import type { HeraldGameSnapshot, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { RESOURCE_PRECISION, tileDataToTile } from "@bibliothecadao/types";
 
@@ -29,7 +28,7 @@ type Row = Record<string, unknown>;
 interface ReviewFinalizationMeta {
   registeredPlayers: string[];
   registrationCount: number;
-  finalTrialId: bigint | null;
+  resultCommitment: bigint | null;
   rankingFinalized: boolean;
   devModeOn: boolean;
   seasonEndAt: number | null;
@@ -76,25 +75,15 @@ export type GameReviewMapSnapshot =
     }
   | { available: false; reason: string };
 
-export interface GameReviewRewards {
-  scoreSubmitted: boolean;
-  isRanked: boolean;
-  chests: number;
-  eliteTicketEarned: boolean;
-  eliteTicketReason: string;
-}
-
 export interface GameReviewData {
   worldName: string;
-  chain: Chain;
+  chainId: string;
   topPlayers: LandingLeaderboardEntry[];
-  leaderboard: LandingLeaderboardEntry[];
   personalScore: LandingLeaderboardEntry | null;
   isParticipant: boolean;
   stats: GameReviewStats;
   mapSnapshot: GameReviewMapSnapshot;
   finalization: ReviewFinalizationMeta;
-  rewards: GameReviewRewards | null;
 }
 
 interface ReviewSource {
@@ -102,7 +91,7 @@ interface ReviewSource {
   history: HeraldHistoryEvent[];
   snapshot: HeraldGameSnapshot;
   transactionCount: number;
-  world: WorldDeployment;
+  world: Shard;
 }
 
 const record = (value: unknown): Row =>
@@ -139,28 +128,13 @@ const uniqueAddresses = (values: readonly unknown[]): string[] => {
   return [...result];
 };
 
-const sameFelt = (left: unknown, right: unknown): boolean => {
-  const leftValue = toBigInt(left);
-  const rightValue = toBigInt(right);
-  return leftValue !== null && rightValue !== null && leftValue === rightValue;
-};
-
 const story = (event: HeraldHistoryEvent, variant: string): Row | null => {
   const payload = record(event.value.story)[variant];
   return typeof payload === "object" && payload !== null && !Array.isArray(payload) ? (payload as Row) : null;
 };
 
-const resolveReviewContext = async (worldName: string): Promise<{ gameId: number; world: WorldDeployment }> => {
-  const worldId = await resolveWorldIdForGame(worldName);
-  const world = getWorldById(worldId);
-  if (!world) throw new Error(`Game "${worldName}" was not found in the world directory.`);
-  const gameId = await resolveGameId(worldName, world.id);
-  if (!gameId || gameId <= 0) throw new Error(`Game "${worldName}" has no registry id in ${world.id}.`);
-  return { gameId, world };
-};
-
 const fetchCompleteHistory = async (
-  world: WorldDeployment,
+  world: Shard,
   gameId: number,
 ): Promise<{
   completeThroughBlock: number | null;
@@ -176,8 +150,8 @@ const fetchCompleteHistory = async (
   }
 };
 
-const loadReviewSource = async (worldName: string): Promise<ReviewSource> => {
-  const { gameId, world } = await resolveReviewContext(worldName);
+const loadReviewSource = async ({ chainId, gameId }: GameRef): Promise<ReviewSource> => {
+  const world = await requireOpenShard(chainId);
   const [snapshot, history, transactionCount] = await Promise.all([
     fetchHeraldGameReviewSnapshot(world, gameId),
     fetchCompleteHistory(world, gameId),
@@ -193,18 +167,15 @@ const loadReviewSource = async (worldName: string): Promise<ReviewSource> => {
 
 const buildFinalization = (source: ReviewSource): ReviewFinalizationMeta => {
   const registry = modelRows(source.snapshot, "GameRegistry")[0] ?? {};
-  const config = modelRows(source.snapshot, "WorldConfig")[0] ?? {};
-  const registration = record(config.blitz_registration_config);
-  const registeredPlayers = uniqueAddresses(modelRows(source.snapshot, "BlitzSettlement").map((row) => row.player));
-  const configuredRegistrations = Math.max(0, toNumber(registration.registration_count));
-  const finalTrialId = toBigInt(registry.final_trial_id);
+  const result = modelRows(source.snapshot, "BlitzResult")[0];
+  const registeredPlayers = uniqueAddresses(modelRows(source.snapshot, "PlayerEntry").map((row) => row.player));
   const seasonEndAtValue = toNumber(registry.end_at);
   const seasonEndAt = seasonEndAtValue > 0 ? seasonEndAtValue : null;
   return {
     registeredPlayers,
-    registrationCount: configuredRegistrations || registeredPlayers.length,
-    finalTrialId,
-    rankingFinalized: finalTrialId !== null && finalTrialId > 0n,
+    registrationCount: registeredPlayers.length,
+    resultCommitment: result?.complete === true ? toBigInt(result.commitment) : null,
+    rankingFinalized: result?.complete === true,
     devModeOn: toBoolean(registry.dev_mode_on),
     seasonEndAt,
   };
@@ -306,61 +277,15 @@ const highestExploredTiles = (rows: LandingLeaderboardEntry[]): GameReviewValueM
   return top ? { playerAddress: top.address, value: top.exploredTiles ?? 0 } : null;
 };
 
-const buildEliteTicketReason = (eligible: boolean, rank: number, totalPlayers: number): string => {
-  const cutoff = totalPlayers <= 132 ? Math.floor(totalPlayers / 2) : 66;
-  return eligible
-    ? `Eligible: rank #${rank} is within the top ${cutoff} ranks.`
-    : `Not eligible: elite ticket cutoff is rank #${cutoff} (you are #${rank}).`;
-};
-
-const buildReviewRewards = (
-  source: ReviewSource,
-  playerAddress: string,
-  finalization: ReviewFinalizationMeta,
-  personalScore: LandingLeaderboardEntry | null,
-): GameReviewRewards => {
-  if (!finalization.rankingFinalized || finalization.finalTrialId === null) {
-    return {
-      scoreSubmitted: false,
-      isRanked: false,
-      chests: 0,
-      eliteTicketEarned: false,
-      eliteTicketReason: "Elite ticket eligibility is available once the game operator finalizes results.",
-    };
-  }
-  const rankRow = modelRows(source.snapshot, "PlayerRank").find((row) => sameFelt(row.player, playerAddress));
-  const rank = Math.max(0, toNumber(rankRow?.rank) || personalScore?.rank || 0);
-  if (rank <= 0) {
-    return {
-      scoreSubmitted: true,
-      isRanked: false,
-      chests: 0,
-      eliteTicketEarned: false,
-      eliteTicketReason: "Player is not ranked in the final results.",
-    };
-  }
-  const prize = modelRows(source.snapshot, "RankPrize").find((row) => toNumber(row.rank) === rank) ?? {};
-  const trial =
-    modelRows(source.snapshot, "PlayersRankTrial").find((row) => sameFelt(row.nonce, finalization.finalTrialId)) ?? {};
-  const eliteTicketEarned = toBoolean(prize.grant_elite_nft);
-  return {
-    scoreSubmitted: true,
-    isRanked: true,
-    chests: Math.max(0, toNumber(rankRow?.chests)),
-    eliteTicketEarned,
-    eliteTicketReason: buildEliteTicketReason(eliteTicketEarned, rank, toNumber(trial.total_player_count_committed)),
-  };
-};
-
 export const fetchGameReviewData = async (input: {
+  game: GameRef;
   worldName: string;
-  chain: Chain;
   playerAddress: string | null;
 }): Promise<GameReviewData> => {
-  const source = await loadReviewSource(input.worldName);
+  const source = await loadReviewSource(input.game);
   const finalization = buildFinalization(source);
   const activity = await fetchHeraldGameLeaderboard(source.world, source.gameId);
-  const leaderboard = buildLandingLeaderboard(source.snapshot, activity.entries);
+  const leaderboard = buildLandingLeaderboard(activity.entries);
   const playerAddress = parseAddress(input.playerAddress);
   const personalScore = playerAddress ? (leaderboard.find((entry) => entry.address === playerAddress) ?? null) : null;
   const structures = modelRows(source.snapshot, "Structure");
@@ -384,14 +309,12 @@ export const fetchGameReviewData = async (input: {
   };
   return {
     worldName: input.worldName,
-    chain: input.chain,
+    chainId: input.game.chainId,
     topPlayers: leaderboard.slice(0, 3),
-    leaderboard,
     personalScore,
     isParticipant: Boolean(playerAddress && (finalization.registeredPlayers.includes(playerAddress) || personalScore)),
     stats,
     mapSnapshot: buildMapSnapshot(source.snapshot),
     finalization,
-    rewards: playerAddress ? buildReviewRewards(source, playerAddress, finalization, personalScore) : null,
   };
 };

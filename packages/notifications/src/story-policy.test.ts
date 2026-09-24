@@ -29,7 +29,6 @@ const levels = {
   ],
   excluded: [
     "PointsRegisteredStory",
-    "PrizeDistributionFinalStory",
     "FaithPledgedStory",
     "FaithRemovedStory",
     "FaithPointsClaimedStory",
@@ -38,17 +37,60 @@ const levels = {
   ],
 } as const;
 
-it("covers the exact deployed Story enum and tests every cumulative level", () => {
-  const manifest = JSON.parse(
-    readFileSync(new URL("../../../contracts/l3/game/manifest_madara.json", import.meta.url), "utf8"),
+it("covers every native story and tests every cumulative level", () => {
+  const schema = JSON.parse(
+    readFileSync(new URL("../../../contracts/l3/world-native/schema/schema.json", import.meta.url), "utf8"),
   );
-  const event = manifest.events.find((event: { tag: string }) => event.tag.endsWith("-StoryEvent"));
-  const storyType = event.members.find((member: { name: string }) => member.name === "story").type;
-  const storyEnum = manifest.abis.find(
-    (entry: { name?: string; type: string }) => entry.name === storyType && entry.type === "enum",
-  );
-  const variants = storyEnum.variants.map((variant: { name: string }) => variant.name);
-  expect(variants.sort()).toEqual(Object.values(levels).flat().sort());
+  const event = schema.events.find((event: { name: string }) => event.name === "StoryEvent");
+  const storyType = event.event.members.find((member: { name: string }) => member.name === "story").type;
+  const variants = schema.types[storyType].variants.map((variant: { name: string }) => variant.name);
+  const nativeLevels = {
+    important: ["BattleEvent", "RaidEvent"],
+    standard: ["RealmCreatedStory", "BuildingPlacementStory", "StructureLevelUpStory", "ResourceReceiveArrivalStory"],
+    all: [
+      "ProductionStory",
+      "BuildingPaymentStory",
+      "ResourceTransferStory",
+      "ResourceBurnStory",
+      "ExplorerCreateStory",
+      "ExplorerAddStory",
+      "ExplorerDeleteStory",
+      "GuardAddStory",
+      "GuardDeleteStory",
+      "StructureCapturedStory",
+      "BitcoinAwardStory",
+      "TradeCreated",
+      "TradeAccepted",
+      "TradeCancelled",
+      "BankSwap",
+      "BankLiquidity",
+      "HyperstructurePoints",
+      "RelicChestOpened",
+      "ChestReward",
+      "ExplorationReward",
+      "SeasonEnded",
+      "FaithPledged",
+      "FaithRemoved",
+      "BlitzFinalized",
+      "RelicCrafted",
+      "TroopsTransferred",
+    ],
+    excluded: ["FaithPointsClaimedStory"],
+  };
+  expect([...variants, "BattleEvent", "RaidEvent"].sort()).toEqual(Object.values(nativeLevels).flat().sort());
+  for (const [minimum, stories] of Object.entries(nativeLevels)) {
+    for (const story of stories) {
+      expect(storyNotificationRule(story)).toBeDefined();
+      for (const level of NOTIFICATION_LEVELS) {
+        const expected =
+          minimum !== "excluded" && NOTIFICATION_LEVELS.indexOf(level) >= NOTIFICATION_LEVELS.indexOf(minimum as "all");
+        expect(includesStoryNotification(level, story), `${story} at ${level}`).toBe(expected);
+      }
+    }
+  }
+});
+
+it("keeps retained story aliases at their existing notification levels", () => {
   for (const [minimum, stories] of Object.entries(levels)) {
     for (const story of stories) {
       expect(storyNotificationRule(story)).toBeDefined();
@@ -59,7 +101,6 @@ it("covers the exact deployed Story enum and tests every cumulative level", () =
       }
     }
   }
-  expect(() => includesStoryNotification("off", "PrizeDistributedStory")).toThrow("Unknown");
 });
 
 it("uses event-time recipients, normalizes duplicates, and excludes neutral addresses", () => {
@@ -117,4 +158,19 @@ it("excludes unknown variants in production and diagnoses them in development", 
   } finally {
     vi.unstubAllEnvs();
   }
+});
+
+it("routes native battles and raids to the owners recorded in the event", () => {
+  expect(includesStoryNotification("important", "BattleEvent")).toBe(true);
+  expect(storyRecipients("BattleEvent", null, { attacker: { player: "0x11" }, defender: { player: "0x12" } })).toEqual([
+    "0x11",
+    "0x12",
+  ]);
+  expect(storyRecipients("RaidEvent", null, { player: "0x11", target_owner: "0x12" })).toEqual(["0x11", "0x12"]);
+});
+
+it("notifies the acting owner of a native troop transfer only at all activity level", () => {
+  expect(includesStoryNotification("standard", "TroopsTransferred")).toBe(false);
+  expect(includesStoryNotification("all", "TroopsTransferred")).toBe(true);
+  expect(storyRecipients("TroopsTransferred", "0x0003", {})).toEqual(["0x3"]);
 });

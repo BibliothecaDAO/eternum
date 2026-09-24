@@ -5,11 +5,10 @@
 # not past its end), with a chosen model profile, until the game ends. Then prints the manifest path and its cost
 # line. No cost figure is asserted here: the number is whatever the manifest of a real run records.
 #
-# Environment: OPENROUTER_API_KEY, BINDING_AUTHORITY_PRIVATE_KEY, and the VITE_PUBLIC_* values from apps/game/.env.
+# Environment: OPENROUTER_API_KEY and SHARD_URL, the shard's Herald.
 #
 # Usage, from anywhere:
-#   set -a; source apps/game/.env; set +a
-#   OPENROUTER_API_KEY=... BINDING_AUTHORITY_PRIVATE_KEY=... \
+#   OPENROUTER_API_KEY=... SHARD_URL=... \
 #     apps/agent-runner/scripts/play-blitz.sh [--game-name <name>] [--model-profile cheap|balanced|strong] [--data-dir <dir>]
 set -euo pipefail
 
@@ -20,8 +19,7 @@ DATA_DIR=""
 
 main() {
   parse_args "$@"
-  require_env OPENROUTER_API_KEY BINDING_AUTHORITY_PRIVATE_KEY VITE_PUBLIC_HERALD_URL VITE_PUBLIC_NODE_URL \
-    VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS
+  require_env OPENROUTER_API_KEY SHARD_URL
   local game_id data_dir log
   game_id=$(resolve_game_id)
   data_dir=${DATA_DIR:-$RUNNER_DIR/.agent-data/$game_id}
@@ -55,7 +53,7 @@ require_env() {
 # The newest open Blitz game on Herald, or the named one if it is open. Ended games are excluded by their clock, the
 # way the runner's phase check excludes them, so the run does not stop at its first tick.
 resolve_game_id() {
-  curl -fsS --max-time 15 "${VITE_PUBLIC_HERALD_URL%/}/madara/games" | python3 -c "$(cat <<'PY'
+  curl -fsS --max-time 15 "${SHARD_URL%/}/games" | python3 -c "$(cat <<'PY'
 import json, sys, time
 
 name = sys.argv[1]

@@ -396,11 +396,16 @@ body {
 
 html,
 body {
-  overflow: hidden;
   font-family: "Exo 2", "Space Grotesk", sans-serif;
-  touch-action: none;
   text-shadow: 2px 2px 4px rgba(255, 255, 0, 0.1);
   @apply cursor-fancy text-gold;
+}
+
+/* A full-screen scene owns the viewport (SceneRoute sets the class); every other page scrolls. */
+html.scene-viewport,
+html.scene-viewport body {
+  overflow: hidden;
+  touch-action: none;
 }
 /* A long press on the map is an order, not a request for the browser's callout or a text selection. */
 #main-canvas {

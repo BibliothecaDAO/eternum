@@ -61,6 +61,20 @@ describe("PromiseQueue", () => {
     });
   });
 
+  it("keeps native commands separate even when one signer queues them together", async () => {
+    const queue = new PromiseQueue(executor, { batchDelayMs: 0, batchCalls: false });
+    const signer = makeSigner();
+    const calls = [makeCall("first"), makeCall("second")];
+    await Promise.all(calls.map((call) => queue.enqueue({ signer, calls: call })));
+    expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
+    calls.forEach((call, index) =>
+      expect(executor.executeAndCheckTransaction).toHaveBeenNthCalledWith(index + 1, signer, call, undefined, {
+        waitForConfirmation: false,
+        transactionType: undefined,
+      }),
+    );
+  });
+
   // 2 -----------------------------------------------------------------------
   it("multiple items within batch delay are grouped by category", async () => {
     vi.useFakeTimers();
@@ -271,7 +285,7 @@ describe("Configurable Batch Delay", () => {
     const p = queue.enqueue({
       signer,
       calls: makeCall("battle"),
-      transactionType: TransactionType.BATTLE_START,
+      transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
     });
 
     await vi.advanceTimersByTimeAsync(0);
@@ -335,7 +349,7 @@ describe("Configurable Batch Delay", () => {
     const pHigh = queue.enqueue({
       signer,
       calls: makeCall("battle"),
-      transactionType: TransactionType.BATTLE_START,
+      transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
     });
 
     await vi.advanceTimersByTimeAsync(0);
@@ -384,7 +398,7 @@ describe("Configurable Batch Delay", () => {
     const pHigh = queue.enqueue({
       signer,
       calls: makeCall("battle"),
-      transactionType: TransactionType.BATTLE_START,
+      transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
     });
 
     // The timer should fire at 0ms from now (immediate reschedule)
@@ -425,10 +439,18 @@ describe("Parallel Category Processing", () => {
 
     // Enqueue 2 HIGH items and 2 LOW items
     const promises = [
-      queue.enqueue({ signer, calls: makeCall("battle1"), transactionType: TransactionType.BATTLE_START }),
-      queue.enqueue({ signer, calls: makeCall("battle2"), transactionType: TransactionType.BATTLE_RESOLVE }),
+      queue.enqueue({
+        signer,
+        calls: makeCall("battle1"),
+        transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
+      }),
+      queue.enqueue({
+        signer,
+        calls: makeCall("battle2"),
+        transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
+      }),
       queue.enqueue({ signer, calls: makeCall("name1"), transactionType: TransactionType.SET_ENTITY_NAME }),
-      queue.enqueue({ signer, calls: makeCall("name2"), transactionType: TransactionType.SET_ADDRESS_NAME }),
+      queue.enqueue({ signer, calls: makeCall("name2"), transactionType: TransactionType.SET_ENTITY_NAME }),
     ];
 
     await Promise.all(promises);
@@ -495,9 +517,9 @@ describe("Parallel Category Processing", () => {
     const queue = new PromiseQueue(executor, { batchDelayMs: 0 });
     const signer = makeSigner();
 
-    const pA = queue.enqueue({ signer, calls: makeCall("explorer_move"), transactionType: TransactionType.EXPLORE });
+    const pA = queue.enqueue({ signer, calls: makeCall("explorer_explore"), transactionType: TransactionType.EXPLORE });
     await vi.advanceTimersByTimeAsync(0);
-    const pB = queue.enqueue({ signer, calls: makeCall("explorer_move"), transactionType: TransactionType.EXPLORE });
+    const pB = queue.enqueue({ signer, calls: makeCall("explorer_explore"), transactionType: TransactionType.EXPLORE });
     await vi.advanceTimersByTimeAsync(0);
 
     expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
@@ -531,7 +553,7 @@ describe("Parallel Category Processing", () => {
       executeAndCheckTransaction: vi.fn().mockImplementation((signer, calls, batchDetails, options) => {
         // Fail for HIGH items (BATTLE_START), succeed for LOW items
         const txType = options?.transactionType;
-        if (txType === TransactionType.BATTLE_START) {
+        if (txType === TransactionType.ATTACK_EXPLORER_VS_EXPLORER) {
           return Promise.reject(new Error("HIGH category failed"));
         }
         return Promise.resolve({ statusReceipt: "PENDING", transaction_hash: "0xok" });
@@ -542,7 +564,7 @@ describe("Parallel Category Processing", () => {
     const signer = makeSigner();
 
     const pHigh = queue
-      .enqueue({ signer, calls: makeCall("battle"), transactionType: TransactionType.BATTLE_START })
+      .enqueue({ signer, calls: makeCall("battle"), transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER })
       .catch((e: unknown) => e);
 
     const pLow = queue.enqueue({
@@ -569,12 +591,12 @@ describe("Parallel Category Processing", () => {
 
     const pA = queue.enqueue({
       signer,
-      calls: [makeCall("request_random"), makeCall("explorer_move"), makeCall("explorer_extract_reward")],
+      calls: [makeCall("Explore")],
       transactionType: TransactionType.EXPLORE,
     });
     const pB = queue.enqueue({
       signer,
-      calls: [makeCall("request_random"), makeCall("explorer_move"), makeCall("explorer_extract_reward")],
+      calls: [makeCall("Explore")],
       transactionType: TransactionType.EXPLORE,
     });
 
@@ -586,30 +608,6 @@ describe("Parallel Category Processing", () => {
     for (const call of (localExecutor.executeAndCheckTransaction as ReturnType<typeof vi.fn>).mock.calls) {
       // Third arg is batchDetails — for a solo-submitted explore it must be
       // absent (undefined), which is the "single item" branch of processBatch.
-      expect(call[2]).toBeUndefined();
-    }
-  });
-
-  it("never merges queued VRF request_random transactions into one multicall", async () => {
-    const localExecutor = makeExecutor();
-    const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });
-    const signer = makeSigner();
-
-    const pA = queue.enqueue({
-      signer,
-      calls: [makeCall("request_random"), makeCall("open_chest")],
-      transactionType: TransactionType.OPEN_CHEST,
-    });
-    const pB = queue.enqueue({
-      signer,
-      calls: [makeCall("request_random"), makeCall("open_chest")],
-      transactionType: TransactionType.OPEN_CHEST,
-    });
-
-    await Promise.all([pA, pB]);
-
-    expect(localExecutor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
-    for (const call of (localExecutor.executeAndCheckTransaction as ReturnType<typeof vi.fn>).mock.calls) {
       expect(call[2]).toBeUndefined();
     }
   });
@@ -670,66 +668,6 @@ describe("Parallel Category Processing", () => {
         transactionType: TransactionType.DESTROY_BUILDING,
       });
     }
-  });
-
-  it("keeps non-VRF HIGH transactions batched around isolated VRF submissions", async () => {
-    const localExecutor = makeExecutor();
-    const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });
-    const signer = makeSigner();
-
-    const battleA = makeCall("battle_a");
-    const battleB = makeCall("battle_b");
-    const battleC = makeCall("battle_c");
-    const battleD = makeCall("battle_d");
-    const vrfCalls = [makeCall("request_random"), makeCall("open_chest")];
-
-    await Promise.all([
-      queue.enqueue({
-        signer,
-        calls: battleA,
-        transactionType: TransactionType.BATTLE_START,
-      }),
-      queue.enqueue({
-        signer,
-        calls: battleB,
-        transactionType: TransactionType.BATTLE_START,
-      }),
-      queue.enqueue({
-        signer,
-        calls: vrfCalls,
-        transactionType: TransactionType.OPEN_CHEST,
-      }),
-      queue.enqueue({
-        signer,
-        calls: battleC,
-        transactionType: TransactionType.BATTLE_START,
-      }),
-      queue.enqueue({
-        signer,
-        calls: battleD,
-        transactionType: TransactionType.BATTLE_START,
-      }),
-    ]);
-
-    expect(localExecutor.executeAndCheckTransaction).toHaveBeenCalledTimes(3);
-
-    const executorCalls = (localExecutor.executeAndCheckTransaction as ReturnType<typeof vi.fn>).mock.calls;
-    expect(executorCalls[0][1]).toEqual([battleA, battleB]);
-    expect(executorCalls[0][2]).toEqual(
-      expect.arrayContaining([expect.objectContaining({ type: TransactionType.BATTLE_START, count: 2 })]),
-    );
-
-    expect(executorCalls[1][1]).toEqual(vrfCalls);
-    expect(executorCalls[1][2]).toBeUndefined();
-    expect(executorCalls[1][3]).toEqual({
-      waitForConfirmation: false,
-      transactionType: TransactionType.OPEN_CHEST,
-    });
-
-    expect(executorCalls[2][1]).toEqual([battleC, battleD]);
-    expect(executorCalls[2][2]).toEqual(
-      expect.arrayContaining([expect.objectContaining({ type: TransactionType.BATTLE_START, count: 2 })]),
-    );
   });
 
   it("still batches non-EXPLORE HIGH txs together", async () => {

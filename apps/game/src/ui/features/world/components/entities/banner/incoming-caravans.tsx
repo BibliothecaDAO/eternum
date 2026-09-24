@@ -1,9 +1,10 @@
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { resourceArrivalsView } from "@/sync/fact-views";
 import type { ResourceArrivalInfo } from "@bibliothecadao/types";
 import { formatTime } from "@bibliothecadao/eternum";
 
-export function summarizeIncomingCaravans(arrivals: readonly ResourceArrivalInfo[], structureId: number, now: number) {
+function summarizeIncomingCaravans(arrivals: readonly ResourceArrivalInfo[], structureId: number, now: number) {
   const incoming = arrivals.filter(
     (arrival) => arrival.structureEntityId === structureId && Number(arrival.arrivesAt) > now,
   );
@@ -15,7 +16,7 @@ export function summarizeIncomingCaravans(arrivals: readonly ResourceArrivalInfo
 }
 
 export function IncomingCaravans({ structureId, isOwner }: { structureId: number; isOwner: boolean }) {
-  const arrivals = useWorldSlicesStore((state) => state.resourceArrivals);
+  const arrivals = useFactView(resourceArrivalsView);
   const now = useCurrentBlockTimestamp();
   const incoming = isOwner ? summarizeIncomingCaravans(arrivals, structureId, now) : null;
   if (!incoming) return null;

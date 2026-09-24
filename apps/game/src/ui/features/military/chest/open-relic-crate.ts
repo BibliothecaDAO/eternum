@@ -1,7 +1,7 @@
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { DEFAULT_COORD_ALT } from "@bibliothecadao/eternum";
-import type { SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import type { ID } from "@bibliothecadao/types";
 import type { Account, AccountInterface } from "starknet";
 

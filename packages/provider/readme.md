@@ -1,139 +1,19 @@
 # Eternum Provider
 
-The Eternum Provider package provides a comprehensive interface for interacting with the Eternum game contracts. It
-handles all game transactions, state management, and contract interactions in a type-safe manner.
+`@bibliothecadao/provider` encodes typed native commands from the compiled Cairo ABI and submits them through the game's
+recorded-intent admission path. Set up a playable client with `createGameClient` from `@bibliothecadao/eternum`, which
+installs the manifest, ABI, signing and submission dependencies together.
 
-## Features
+The provider serializes a player's pending commands and waits for the ticket's own outcome. Several players' tickets may
+share one transaction; transaction success alone does not establish that an individual action succeeded. Herald's
+transaction stream supplies confirmation, while the native fact store supplies resulting game state.
 
-- **Transaction Management**: Support for all game transactions including:
-  - Army operations (create, delete, buy troops, merge)
-  - Battle system (start, resolve, join, leave, claim)
-  - Trading system (buy, sell, create/accept orders)
-  - Guild management (create, join, leave, transfer ownership)
-  - Structure management (create, destroy, upgrade, transfer)
-  - Resource management (mint, pickup, send)
-- **Contract Interactions**: Type-safe methods for all contract calls
-- **Promise Queue**: Batches and manages transaction execution for optimal performance
+`native-command.ts` defines the command payload types, backed by the generated contract ABI. Provider methods with UI
+callers delegate to these commands. Administrative commands use the typed deployer and launch-service paths.
 
-## Installation
+From the repository root:
 
-```bash
-pnpm add @bibliothecadao/provider
+```sh
+pnpm --dir packages/provider build
+pnpm --dir packages/provider exec vitest run
 ```
-
-## Usage
-
-### Basic Provider Setup
-
-```typescript
-import { EternumProvider } from "@bibliothecadao/provider";
-
-// Initialize the provider
-const provider = new EternumProvider(katanaManifest, rpcUrl, vrfProviderAddress);
-```
-
-### Transaction Examples
-
-#### Create a Trade Order
-
-```typescript
-// Create a trade offering 100 wood for 50 stone
-const tx = await provider.create_order({
-  maker_id: 123,
-  taker_id: 456,
-  maker_gives_resource_type: 1, // wood
-  taker_pays_resource_type: 2, // stone
-  maker_gives_min_resource_amount: 100,
-  maker_gives_max_count: 1,
-  taker_pays_min_resource_amount: 50,
-  expires_at: 1704067200,
-  signer: account,
-});
-```
-
-#### Accept a Trade Order
-
-```typescript
-// Accept a trade order
-const tx = await provider.accept_order({
-  taker_id: 123,
-  trade_id: 789,
-  taker_buys_count: 1,
-  signer: account,
-});
-```
-
-#### Upgrade a Realm
-
-```typescript
-// Upgrade a realm's level
-const tx = await provider.upgrade_realm({
-  realm_entity_id: 123,
-  signer: account,
-});
-```
-
-#### Bridge Operations
-
-```typescript
-// Deposit resources into a realm
-const tx = await provider.bridge_deposit_into_realm({
-  resources: [{ tokenAddress: "0x...", amount: 100 }],
-  recipient_structure_id: 123,
-  client_fee_recipient: "0x...",
-  signer: account,
-});
-
-// Withdraw resources from a realm
-const tx = await provider.bridge_withdraw_from_realm({
-  resources: [{ tokenAddress: "0x...", amount: 100 }],
-  from_structure_id: 123,
-  recipient_address: "0x...",
-  client_fee_recipient: "0x...",
-  signer: account,
-});
-```
-
-### Promise Queue System
-
-The provider includes a smart transaction queue system that:
-
-- Batches related transactions together
-- Optimizes transaction execution
-- Handles transaction dependencies
-- Provides automatic retry and error handling
-
-```typescript
-// Transactions are automatically queued and batched
-const tx1 = provider.create_order({ ... }); // Queued
-const tx2 = provider.accept_order({ ... }); // Queued
-const tx3 = provider.upgrade_realm({ ... }); // Queued
-
-// Transactions are executed in optimal batches
-// Related transactions are grouped together
-// Maximum batch size is 3 transactions
-```
-
-## Dependencies
-
-- `@bibliothecadao/types`: Type definitions
-- `@dojoengine/core`: Core Dojo functionality
-- `starknet`: Starknet SDK
-- `@scure/starknet`: Additional Starknet utilities
-
-## Development
-
-```bash
-# Install dependencies
-pnpm install
-
-# Build the package
-pnpm build
-
-# Generate documentation
-pnpm gen:docs
-```
-
-## License
-
-MIT

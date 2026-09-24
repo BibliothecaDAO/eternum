@@ -1,0 +1,80 @@
+import type { NativeWorldManifest } from "../../../../config/deployer/clean/world/native/types";
+import { assertProviderChain } from "../../../../packages/chain/chain-guard.js";
+import { readShardManifest } from "../../../../packages/chain/shard-manifest.js";
+import { writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { ec, hash, RpcProvider } from "starknet";
+import { createMadaraAccount } from "../../../../config/deployer/clean/shared/madara-account";
+import {
+  declareClass,
+  readClassArtifact,
+  rpcErrorCode,
+  waitForSuccess,
+} from "../../../../config/deployer/clean/shared/declare";
+
+const SIGNING_KEY = process.env.RANDOMNESS_PRIVATE_KEY;
+const rpcUrl = process.env.RPC_URL;
+const authorityFile = process.env.NATIVE_AUTHORITY_FILE;
+if (!SIGNING_KEY || !rpcUrl || !authorityFile)
+  throw new Error("RANDOMNESS_PRIVATE_KEY, RPC_URL and NATIVE_AUTHORITY_FILE are required");
+const root = resolve(import.meta.dir, "../../../..");
+const output = resolve(authorityFile);
+const provider = new RpcProvider({ nodeUrl: rpcUrl });
+const adminAddress = process.env.DEPLOYER_ACCOUNT_ADDRESS;
+const adminKey = process.env.DEPLOYER_PRIVATE_KEY;
+if (!adminAddress || !adminKey) throw new Error("DEPLOYER_ACCOUNT_ADDRESS and DEPLOYER_PRIVATE_KEY are required");
+const admin = createMadaraAccount(provider, adminAddress, adminKey);
+const transactions: string[] = [];
+const seed = process.argv[2];
+if (!seed) throw new Error("Usage: bun prepare-authority.ts SEED [NATIVE_MANIFEST]");
+const prefix = resolve(root, "contracts/l3/world-native/target/dev/world_native_SequencingAccount");
+const artifact = readClassArtifact(`${prefix}.contract_class.json`, `${prefix}.compiled_contract_class.json`);
+const constructorCalldata = [admin.address, ec.starkCurve.getStarkKey(SIGNING_KEY)];
+const salt = hash.starknetKeccak(`${seed}:sequencing-authority`).toString();
+const address = hash.calculateContractAddressFromHash(salt, artifact.classHash, constructorCalldata, 0);
+
+await assertProviderChain(provider, readShardManifest(process.argv[3] ?? process.env.NATIVE_WORLD_MANIFEST), "RPC_URL");
+await prepareAccount();
+if (process.argv[3]) await bindWorld(process.argv[3]);
+await writeFile(
+  output,
+  `${JSON.stringify({ address, classHash: artifact.classHash, seed, signingKey: SIGNING_KEY, transactions }, null, 2)}\n`,
+  { mode: 0o600 },
+);
+console.log(JSON.stringify({ event: "native_lab_authority", address, transactions, output }));
+
+async function prepareAccount() {
+  await declareClass(admin, artifact, (transaction) => transactions.push(transaction));
+  try {
+    const actual = await provider.getClassHashAt(address, "latest");
+    if (BigInt(actual) !== BigInt(artifact.classHash)) throw new Error("Authority class differs");
+    return;
+  } catch (error) {
+    if (rpcErrorCode(error) !== 20) throw error;
+  }
+  const transaction = await admin.deployContract(
+    { classHash: artifact.classHash, salt, constructorCalldata, unique: false },
+    { tip: 0 },
+  );
+  await record(transaction.transaction_hash);
+}
+
+async function bindWorld(path: string) {
+  const manifest = readShardManifest<NativeWorldManifest>(path);
+  await assertProviderChain(provider, manifest, "RPC_URL");
+  if (!manifest.native) throw new Error("Expected a native manifest");
+  // The pinned account stores this immutable peer under its named storage slot.
+  const current = BigInt(await provider.getStorageAt(address, hash.starknetKeccak("deployment"), "latest"));
+  if (current === BigInt(manifest.world.address)) return;
+  if (current !== 0n) throw new Error("Authority is already bound to another world");
+  const transaction = await admin.execute(
+    { contractAddress: address, entrypoint: "configure", calldata: [manifest.world.address] },
+    { tip: 0 },
+  );
+  await record(transaction.transaction_hash);
+}
+
+async function record(transaction: string) {
+  transactions.push(transaction);
+  await waitForSuccess(provider, transaction);
+}

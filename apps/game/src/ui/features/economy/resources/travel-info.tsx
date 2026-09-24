@@ -1,16 +1,11 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { calculateArrivalTime, formatArrivalTime } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 
-import {
-  calculateDonkeysNeeded,
-  divideByPrecision,
-  getBalance,
-  getTotalResourceWeightKg,
-} from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { calculateDonkeysNeeded, divideByPrecision, getTotalResourceWeightKg } from "@bibliothecadao/eternum";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ResourcesIds, type ID, type Resource } from "@bibliothecadao/types";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
 
 export const TravelInfo = ({
   entityId,
@@ -25,40 +20,25 @@ export const TravelInfo = ({
   setCanCarry?: (canContinue: boolean) => void;
   isAmm?: boolean;
 }) => {
-  const dojo = useDojo();
-  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-  const [resourceWeightKg, setResourceWeightKg] = useState(0);
-  const [donkeyBalance, setDonkeyBalance] = useState(0);
-  const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeightKg), [resourceWeightKg]);
-
-  const arrivalTime = calculateArrivalTime(travelTime);
-  const formattedArrivalTime = formatArrivalTime(arrivalTime);
+  const resourceManager = useResourceManager(entityId);
+  const currentDefaultTick = useCurrentDefaultTick();
+  const resourceWeightKg = getTotalResourceWeightKg(resources);
+  const neededDonkeys = calculateDonkeysNeeded(resourceWeightKg);
+  const transferredDonkeys = isAmm
+    ? 0
+    : (resources.find((resource) => resource.resourceId === ResourcesIds.Donkey)?.amount ?? 0);
+  const donkeyBalance =
+    divideByPrecision(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance) -
+    transferredDonkeys;
+  const onlyWeightlessResources = resources.every(
+    (resource) => resource.resourceId === ResourcesIds.Donkey || resource.resourceId === ResourcesIds.Lords,
+  );
+  const canCarry = onlyWeightlessResources || donkeyBalance >= neededDonkeys;
+  const formattedArrivalTime = formatArrivalTime(calculateArrivalTime(travelTime));
 
   useEffect(() => {
-    const totalWeight = getTotalResourceWeightKg(resources);
-    setResourceWeightKg(totalWeight);
-
-    const { balance } = getBalance(entityId, ResourcesIds.Donkey, currentDefaultTick, dojo.setup.components);
-
-    const currentDonkeyAmount = isAmm ? 0 : resources.find((r) => r.resourceId === ResourcesIds.Donkey)?.amount || 0;
-
-    const calculatedDonkeyBalance = divideByPrecision(balance) - currentDonkeyAmount;
-
-    setDonkeyBalance(calculatedDonkeyBalance);
-
-    const onlyDonkeysAndLords = resources.every(
-      (r) => r.resourceId === ResourcesIds.Donkey || r.resourceId === ResourcesIds.Lords,
-    );
-
-    if (setCanCarry) {
-      // Calculate needed donkeys from totalWeight directly to avoid stale state
-      const donkeysNeeded = calculateDonkeysNeeded(totalWeight);
-      // TODO: hacky way to set can carry to true if only donkeys and lords
-      onlyDonkeysAndLords ? setCanCarry(true) : setCanCarry(calculatedDonkeyBalance >= donkeysNeeded);
-    }
-    // Note: resourceWeightKg and donkeyBalance are outputs of this effect, not inputs.
-    // They were removed from deps to fix the circular dependency that caused re-render storms.
-  }, [resources, entityId, currentDefaultTick, dojo.setup.components, isAmm, setCanCarry]);
+    setCanCarry?.(canCarry);
+  }, [canCarry, setCanCarry]);
 
   return (
     <>

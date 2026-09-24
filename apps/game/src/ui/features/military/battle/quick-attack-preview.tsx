@@ -17,13 +17,12 @@ import {
   configManager,
   DEFAULT_COORD_ALT,
   formatTime,
-  getEntityIdFromKeys,
   getGuardsByStructure,
   getTroopResourceId,
   StaminaManager,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 
 import { X } from "@/ui/design-system/atoms/game-icons";
 import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from "./attack-stamina-state";
@@ -31,7 +30,6 @@ import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/de
 import { CombatModal } from "./combat-modal";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 import {
   BiomeType,
@@ -106,10 +104,10 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         attack_explorer_vs_guard_and_garrison,
         attack_guard_vs_explorer,
       },
-      components,
-      components: { Structure, ExplorerTroops },
+      store,
     },
-  } = useDojo();
+  } = useGame();
+  const revision = useNativeRevision(["Structure", "Guard", "ExplorerTroops"]);
 
   const accountName = usePlayerDisplayName(account?.address);
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -144,19 +142,19 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const targetRelicResourceIds = useMemo(() => toRelicResourceIds(targetRelicEffects), [targetRelicEffects]);
 
   const attackerType = useMemo(() => {
-    const structure = getComponentValue(Structure, gameEntityKey([BigInt(attacker.id)]));
+    const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: attacker.id });
     return structure ? AttackerType.Structure : AttackerType.Army;
-  }, [attacker.id, Structure]);
+  }, [attacker.id, store, revision]);
 
   const structureGuards = useMemo(() => {
     if (attackerType !== AttackerType.Structure) return [];
-    const structure = getComponentValue(Structure, gameEntityKey([BigInt(attacker.id)]));
+    const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: attacker.id });
     return structure
-      ? getGuardsByStructure(structure)
+      ? getGuardsByStructure(structure, store)
           .filter((guard) => guard.troops.count > 0n)
           .toSorted((a, b) => a.slot - b.slot)
       : [];
-  }, [attackerType, attacker.id, Structure]);
+  }, [attackerType, attacker.id, store, revision]);
 
   // Hex distance from the attacker to the target. Crossbowmen can poke at range 2; everything else
   // is adjacency-only, so this drives which guards may fire and whether a structure can be claimed.
@@ -182,8 +180,8 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       return StaminaManager.getStamina(activeGuard.troops, currentArmiesTick).amount;
     }
 
-    return new StaminaManager(components, attacker.id).getStamina(currentArmiesTick).amount;
-  }, [attackerType, activeGuard, components, attacker.id, currentArmiesTick]);
+    return new StaminaManager(store, attacker.id).getStamina(currentArmiesTick)?.amount ?? 0n;
+  }, [attackerType, activeGuard, store, attacker.id, currentArmiesTick]);
 
   const attackerStaminaValue = Number(attackerStamina);
   const requiredAttackStamina = Number(combatConfig.stamina_attack_req);
@@ -221,7 +219,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       };
     }
 
-    const army = getComponentValue(ExplorerTroops, gameEntityKey([BigInt(attacker.id)]));
+    const army = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: attacker.id });
     return army
       ? {
           troops: buildProjectedTroopSnapshot(army.troops, {
@@ -230,7 +228,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           }),
         }
       : null;
-  }, [ExplorerTroops, attacker.id, attackerStamina, attackerType, currentArmiesTick, activeGuard]);
+  }, [store, revision, attacker.id, attackerStamina, attackerType, currentArmiesTick, activeGuard]);
 
   const targetTroopSnapshots = useMemo(() => {
     if (!targetData?.info) return [];
@@ -478,7 +476,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
         return attack_guard_vs_explorer({
           signer: account,
-          ethereal,
           structure_id: attacker.id,
           structure_guard_slot: guardSlot,
           explorer_id: resolvedTarget.id,
@@ -486,7 +483,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       } else if (resolvedTarget.targetType === TargetType.Army) {
         return attack_explorer_vs_explorer({
           signer: account,
-          ethereal,
           aggressor_id: attacker.id,
           defender_id: resolvedTarget.id,
           steal_resources: targetResources,
@@ -494,7 +490,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       } else {
         return attack_explorer_vs_guard({
           signer: account,
-          ethereal,
           explorer_id: attacker.id,
           structure_id: resolvedTarget.id,
         });
@@ -511,7 +506,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
       return attack_explorer_vs_guard_and_garrison({
         signer: account,
-        ethereal,
         explorer_id: attacker.id,
         structure_id: resolvedTarget.id,
         structure_direction: direction,

@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { currencyFormat } from "@/ui/utils/utils";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, EntityType, ID, RelicRecipientType, Troops } from "@bibliothecadao/types";
 
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
@@ -173,13 +175,13 @@ export const RelicActivationSelector = ({
   onClose,
 }: RelicActivationSelectorProps) => {
   const {
-    setup: { components, systemCalls },
+    setup: { store, systemCalls },
     account: { account },
-  } = useDojo();
+  } = useGame();
   const mode = useGameModeConfig();
+  const revision = useNativeRevision(["Structure", "ExplorerTroops"]);
 
-  const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
 
   const [activatingHolderId, setActivatingHolderId] = useState<string | null>(null);
   const [activationError, setActivationError] = useState<{ holderId: string | null; message: string | null }>({
@@ -232,7 +234,7 @@ export const RelicActivationSelector = ({
       }
 
       try {
-        const parentInfo = mode.structure.getEntityInfo(structureId, ZERO_CONTRACT_ADDRESS, components);
+        const parentInfo = mode.structure.getEntityInfo(structureId, ZERO_CONTRACT_ADDRESS, store);
         return parentInfo?.name?.name ?? null;
       } catch {
         return null;
@@ -240,7 +242,7 @@ export const RelicActivationSelector = ({
     };
 
     return holders.map((holder) => {
-      const entityInfo = mode.structure.getEntityInfo(holder.entityId, ZERO_CONTRACT_ADDRESS, components);
+      const entityInfo = mode.structure.getEntityInfo(holder.entityId, ZERO_CONTRACT_ADDRESS, store);
       const entityName = entityInfo?.name?.name ?? `Entity ${holder.entityId}`;
       const selfId = toEntityId(holder.entityId, holder.entityId);
       const isArmy = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
@@ -260,7 +262,7 @@ export const RelicActivationSelector = ({
         troops,
       };
     });
-  }, [components, holders, mode, structureNameMap]);
+  }, [store, holders, mode, structureNameMap, revision]);
 
   const visibleHolders = enrichedHolders;
   const visibleDisplayAmount = _initialDisplayAmount;
@@ -308,7 +310,6 @@ export const RelicActivationSelector = ({
         relic_resource_id: resourceId,
         recipient_type: relicInfo.recipientTypeParam,
       });
-      triggerRelicsRefresh();
 
       setActivationError({ holderId: null, message: null });
       onClose();

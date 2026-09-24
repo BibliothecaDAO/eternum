@@ -1,48 +1,10 @@
 // @vitest-environment node
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { matchRoutePlaylist } from "./route-tracks";
-import { getGameModeId } from "@/config/game-modes";
-
-vi.mock("@/config/game-modes", () => ({
-  getGameModeId: vi.fn(),
-}));
-
-const mockedGetGameModeId = vi.mocked(getGameModeId);
-
 describe("matchRoutePlaylist", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockedGetGameModeId.mockReturnValue("eternum");
-  });
-
-  it("prefers landing overview playlist for root path", () => {
-    mockedGetGameModeId.mockReturnValue("eternum");
-    const match = matchRoutePlaylist("/");
-    expect(match.key).toBe("landing:overview");
-    expect(match.tracks.length).toBeGreaterThan(0);
-    expect(match.tracks).toContain("music.birds_paradise");
-  });
-
-  it("matches the markets route with a trading playlist", () => {
-    mockedGetGameModeId.mockReturnValue("eternum");
-    const match = matchRoutePlaylist("/markets");
-    expect(match.key).toBe("landing:markets");
-    expect(match.tracks.length).toBeGreaterThan(0);
-    expect(match.tracks).toContain("music.bumu_bun");
-  });
-
-  it("matches the amm route with a dedicated trading playlist", () => {
-    mockedGetGameModeId.mockReturnValue("eternum");
-    const match = matchRoutePlaylist("/amm");
-    expect(match.key).toBe("landing:amm");
-    expect(match.tracks.length).toBeGreaterThan(0);
-    expect(match.tracks).toContain("music.monophonic_mixtape_13");
-  });
-
   it("switches to blitz playlist when blitz flag is true", () => {
-    mockedGetGameModeId.mockReturnValue("blitz");
-    const match = matchRoutePlaylist("/play");
+    const match = matchRoutePlaylist("/g/WP_REALMS_MADARA_LAB/1/map", { modeId: "blitz" });
     expect(match.key).toBe("play:blitz");
     expect(match.mode).toBe("shuffle");
     expect(match.tracks).toEqual([
@@ -57,15 +19,13 @@ describe("matchRoutePlaylist", () => {
   });
 
   it("falls back to main play playlist when not in blitz", () => {
-    mockedGetGameModeId.mockReturnValue("eternum");
-    const match = matchRoutePlaylist("/play/world");
+    const match = matchRoutePlaylist("/g/WP_REALMS_MADARA_LAB/1/hex", { modeId: "eternum" });
     expect(match.key).toBe("play:main");
     expect(match.tracks).toContain("music.cha_cha_chi");
     expect(match.tracks).toContain("music.monophonic_mixtape_14");
   });
 
   it("always returns a playlist even for unknown routes", () => {
-    mockedGetGameModeId.mockReturnValue("eternum");
     const match = matchRoutePlaylist("/unknown/path");
     expect(match.tracks.length).toBeGreaterThan(0);
   });

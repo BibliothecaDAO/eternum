@@ -12,7 +12,7 @@ interface ControlledAsyncCall<TArgs extends unknown[], TResult> {
   pendingCount: () => number;
 }
 
-export function createDeferred<T = void>(): Deferred<T> {
+function createDeferred<T = void>(): Deferred<T> {
   let resolve!: (value: T | PromiseLike<T>) => void;
   let reject!: (reason?: unknown) => void;
 

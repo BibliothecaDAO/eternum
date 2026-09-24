@@ -20,7 +20,7 @@ type SpireTraversalAction =
 
 function isExplorerTileOccupier(occupierType: number): boolean {
   return (
-    occupierType >= TileOccupier.ExplorerKnightT1Regular && occupierType <= TileOccupier.ExplorerCrossbowmanT3Daydreams
+    occupierType >= TileOccupier.ExplorerKnightT1Regular && occupierType <= TileOccupier.ExplorerCrossbowmanT3Regular
   );
 }
 

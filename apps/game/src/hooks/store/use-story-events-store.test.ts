@@ -2,69 +2,49 @@ import { describe, expect, it } from "vitest";
 
 import { toStreamStoryEvent } from "./use-story-events-store";
 
-const scope = { chain: "madara", worldAddress: "0xabc", gameId: 54 };
+const scope = { chainId: "0x1", worldAddress: "0xabc", gameId: 54 };
 
 describe("story event stream", () => {
-  it("adapts a Herald StoryEvent to the existing presentation shape", () => {
+  it("retains the native story payload and receipt identity", () => {
     const event = toStreamStoryEvent(
       {
-        hashed_keys: "0xstory",
-        models: {
-          StoryEvent: {
-            game_id: "0x36",
-            id: "0x7",
-            owner: "0xabc",
-            entity_id: "0x2a",
-            tx_hash: "0xfeed",
-            story: {
-              BattleStory: {
-                attacker_id: "0x2a",
-                defender_id: "0x2b",
-                winner_id: "0x2a",
-                attacker_owner_address: "0xabc",
-                defender_owner_address: "0xdef",
-              },
-            },
-            timestamp: "0x64",
+        model: "StoryEvent",
+        key: "0xstory",
+        value: {
+          game_id: "0x36",
+          id: "0x7",
+          owner: "0xabc",
+          entity_id: "0x2a",
+          tx_hash: "0xfeed",
+          story: {
+            BankSwap: { structure_id: "0x2a", bank_id: "0x2b", buy: true },
           },
+          timestamp: "0x64",
         },
       },
       scope,
     );
 
     expect(event).toMatchObject({
-      battle_attacker_id: "0x2a",
-      battle_defender_id: "0x2b",
-      battle_winner_id: "0x2a",
+      storyPayload: { structure_id: "0x2a", bank_id: "0x2b", buy: true },
       entity_id: 42,
-      event_id: "story:v1:madara:0xabc:0x36:0xfeed:0x7",
+      event_id: "story:v1:0x1:0xabc:0x36:0xfeed:0x7",
       owner: "0xabc",
-      story: "BattleStory",
+      story: "BankSwap",
       timestamp: "0x64",
       tx_hash: "0xfeed",
     });
   });
 
-  it("keeps the points-registered story out of the log; the leaderboard carries it", () => {
-    const event = toStreamStoryEvent(
-      {
-        hashed_keys: "0x2",
-        models: {
-          StoryEvent: {
-            owner: "0xabc",
-            entity_id: "0x1",
-            tx_hash: "0x9",
-            story: { PointsRegisteredStory: { points: "0x64" } },
-            timestamp: "0x64",
-          },
-        },
-      },
-      scope,
-    );
-    expect(event).toBeNull();
+  it("leaves persistent rows and point awards out of the activity stream", () => {
+    for (const model of ["PlayerPoints", "PointsAwarded"]) {
+      expect(toStreamStoryEvent({ model, key: "0x1", value: { game_id: 54 } }, scope)).toBeNull();
+    }
   });
 
-  it("ignores non-story event models", () => {
-    expect(toStreamStoryEvent({ hashed_keys: "0x1", models: { BattleEvent: {} } }, scope)).toBeNull();
+  it("rejects a combat event without its receipt identity", () => {
+    expect(() => toStreamStoryEvent({ model: "BattleEvent", key: "0x1", value: { game_id: 54 } }, scope)).toThrow(
+      "transaction hash",
+    );
   });
 });

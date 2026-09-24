@@ -1,43 +1,35 @@
-import type { ClientComponents, ContractAddress, GuildMemberInfo } from "@bibliothecadao/types";
-import { type ComponentValue, type Entity, HasValue, type QueryFragment } from "@dojoengine/recs";
-
-import { getAddressName } from "../../utils/entities";
+import type { ContractAddress, GuildMemberInfo } from "@bibliothecadao/types";
+import type { NativeFactStore } from "../native-fact-store";
+import { configManager } from "../../managers/config-manager";
+import { displayPlayerName, type PlayerNameResolver } from "../../utils/entities";
 import { formatGuildMembers } from "../../utils/guild";
-import { readRows } from "./rows";
 
-type GuildWhitelistRow = ComponentValue<ClientComponents["GuildWhitelist"]["schema"]>;
-
-export const guildMembersQuery = (components: ClientComponents, guildEntityId: ContractAddress): QueryFragment[] => [
-  HasValue(components.GuildMember, { guild_id: guildEntityId }),
-];
-
-/** isUser is relative to the viewer. */
 export const readGuildMembers = (
-  components: ClientComponents,
-  entities: Entity[],
+  store: NativeFactStore,
+  guildId: ContractAddress,
   viewer: ContractAddress,
-): GuildMemberInfo[] => formatGuildMembers(entities, viewer, components);
+  playerName: PlayerNameResolver,
+): GuildMemberInfo[] =>
+  formatGuildMembers(
+    [...store.inGame("GuildMember", configManager.getActiveGameId())].filter((row) => row.guild_id === guildId),
+    viewer,
+    playerName,
+  );
 
-/** Players a guild has invited. */
-export const guildWhitelistQuery = (components: ClientComponents, guildEntityId: ContractAddress): QueryFragment[] => [
-  HasValue(components.GuildWhitelist, { guild_id: guildEntityId, whitelisted: true }),
-];
-
-/** Guilds that have invited a player. */
-export const playerWhitelistQuery = (components: ClientComponents, playerAddress: ContractAddress): QueryFragment[] => [
-  HasValue(components.GuildWhitelist, { address: playerAddress, whitelisted: true }),
-];
-
-/**
- * A whitelist row names the invitee and the guild but carries no membership flags. The app's invite lists are typed
- * against GuildMemberInfo, so the entries keep that type as they always have: isUser and isGuildMaster are absent
- * and name is undefined for a player without a registered name.
- */
-export const readGuildWhitelist = (components: ClientComponents, entities: Entity[]): GuildMemberInfo[] =>
-  readRows(components.GuildWhitelist, entities).map((row) => toWhitelistEntry(components, row)) as GuildMemberInfo[];
-
-const toWhitelistEntry = (components: ClientComponents, whitelist: GuildWhitelistRow) => ({
-  address: whitelist.address,
-  guildEntityId: Number(whitelist.guild_id),
-  name: getAddressName(whitelist.address, components),
-});
+export const readGuildWhitelist = (
+  store: NativeFactStore,
+  viewer: ContractAddress,
+  filter: { guildId: ContractAddress } | { player: ContractAddress },
+  playerName: PlayerNameResolver,
+): GuildMemberInfo[] =>
+  [...store.inGame("GuildWhitelist", configManager.getActiveGameId())]
+    .filter(
+      (row) => row.allowed && ("guildId" in filter ? row.guild_id === filter.guildId : row.player === filter.player),
+    )
+    .map((row) => ({
+      address: row.player,
+      guildEntityId: row.guild_id,
+      name: displayPlayerName(row.player, playerName(row.player)),
+      isUser: row.player === viewer,
+      isGuildMaster: row.player === row.guild_id,
+    }));

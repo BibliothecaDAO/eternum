@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { notificationOwnerOf, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import {
   localNotificationCapability,
   notificationWorkerRequest,
@@ -7,7 +7,7 @@ import {
   useNotificationDeliveryError,
 } from "@/pwa/local-notification-client";
 import type { NotificationDevice } from "@/pwa/notification-database";
-import { getActiveWorld } from "@/runtime/world";
+import { getActiveGame } from "@/runtime/world/store";
 import { buildEntryHref } from "@/play/navigation/play-route";
 import { parseNotificationPayload } from "@bibliothecadao/notifications";
 import { HUD_BODY } from "@/ui/design-system/atoms/hud-typography";
@@ -62,7 +62,7 @@ export function NotificationDeviceSettings({
         if ((await Notification.requestPermission()) !== "granted")
           throw new Error("Notification permission was not granted.");
       }
-      if (useIdentitySessionStore.getState().session?.user.id !== owner)
+      if (notificationOwnerOf(useIdentitySessionStore.getState().session) !== owner)
         throw new Error("Your account changed. Reopen Settings.");
       if (action === "test") {
         const current = await readLocalNotificationDevice(owner);
@@ -78,7 +78,7 @@ export function NotificationDeviceSettings({
         );
       } else {
         const next = await notificationWorkerRequest<NotificationDevice | null>(owner, action);
-        if (useIdentitySessionStore.getState().session?.user.id !== owner) {
+        if (notificationOwnerOf(useIdentitySessionStore.getState().session) !== owner) {
           await notificationWorkerRequest(owner, "disable");
           throw new Error("Your account changed. Device delivery remains off.");
         }
@@ -153,7 +153,7 @@ export function NotificationDeviceSettings({
 }
 
 function testNotification(owner: string) {
-  const world = getActiveWorld();
+  const world = getActiveGame();
   if (!world) throw new Error("Enter a game before sending a test notification.");
   const createdAt = Date.now();
   return parseNotificationPayload(
@@ -163,7 +163,7 @@ function testNotification(owner: string) {
       id: `test:${crypto.randomUUID()}`,
       title: "Realms notifications",
       body: "This device can receive local game notifications.",
-      target: buildEntryHref({ chain: world.chain, worldName: world.name, intent: "play", autoSettle: false }),
+      target: buildEntryHref({ chainId: world.chainId, gameId: world.gameId, intent: "play", autoSettle: false }),
       createdAt,
       expiresAt: createdAt + 120_000,
     },

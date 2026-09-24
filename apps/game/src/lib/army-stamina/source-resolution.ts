@@ -9,11 +9,6 @@ interface ExplorerStaminaSnapshotInput {
   liveTroops?: Troops | null;
 }
 
-export const getTroopsStaminaUpdatedTick = (troops: Troops | null | undefined): bigint => {
-  const updatedTick = troops?.stamina?.updated_tick;
-  return typeof updatedTick === "bigint" ? updatedTick : 0n;
-};
-
 export const selectFreshestArmyStaminaSource = (input: {
   entityId?: ID;
   liveTroops?: Troops | null;
@@ -29,7 +24,7 @@ export const selectFreshestArmyStaminaSource = (input: {
   };
 };
 
-export const selectFreshestTroopsSnapshot = (input: { entityId?: ID; liveTroops?: Troops | null }): Troops | null =>
+const selectFreshestTroopsSnapshot = (input: { entityId?: ID; liveTroops?: Troops | null }): Troops | null =>
   selectFreshestArmyStaminaSource(input)?.troops ?? null;
 
 export const getExplorerStaminaSnapshot = (

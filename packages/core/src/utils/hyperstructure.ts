@@ -1,70 +1,30 @@
-import { ClientComponents, type ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { ComponentValue, getComponentValue, Has, runQuery } from "@dojoengine/recs";
+import { type ID, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import type { NativeFactStore } from "../client/native-fact-store";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers";
 import { divideByPrecision } from "./utils";
-import { belongsToActiveGame, gameEntityKey } from "../managers/config-manager";
-
-type BlitzMapDistanceProfile = {
-  baseDistance: number;
-  centerTileRadius: number;
-};
 
 const HYPERSTRUCTURE_REALM_COUNT_TWO_PLAYER_MODE = 2;
-const OFFICIAL_60_BLITZ_PROFILE_ID = 1;
-const OFFICIAL_90_BLITZ_PROFILE_ID = 2;
-
-const OFFICIAL_60_BLITZ_MAP_DISTANCE_PROFILE: BlitzMapDistanceProfile = {
-  baseDistance: 6,
-  centerTileRadius: 2,
-};
-
-const OFFICIAL_90_BLITZ_MAP_DISTANCE_PROFILE: BlitzMapDistanceProfile = {
-  baseDistance: 8,
-  centerTileRadius: 2,
-};
-
-export const resolveBlitzMapDistanceProfile = (blitzProfileId: number): BlitzMapDistanceProfile => {
-  switch (blitzProfileId) {
-    case OFFICIAL_60_BLITZ_PROFILE_ID:
-      return OFFICIAL_60_BLITZ_MAP_DISTANCE_PROFILE;
-    case 0:
-    case OFFICIAL_90_BLITZ_PROFILE_ID:
-      return OFFICIAL_90_BLITZ_MAP_DISTANCE_PROFILE;
-    default:
-      throw new Error("unknown blitz map distance profile");
-  }
-};
-
-export const resolveHyperstructureRealmCheckRadius = (
-  distanceProfile: BlitzMapDistanceProfile,
-  singleRealmMode: boolean,
-) => distanceProfile.baseDistance + (singleRealmMode ? distanceProfile.centerTileRadius : 0);
 
 export const getHyperstructureRealmCheckRadius = () => {
-  const blitzConfig = configManager.getBlitzConfig();
-  const distanceProfile = resolveBlitzMapDistanceProfile(blitzConfig?.blitz_exploration_config?.reward_profile_id ?? 0);
-  const isSingleRealmMode = blitzConfig?.blitz_settlement_config?.single_realm_mode ?? false;
-  return resolveHyperstructureRealmCheckRadius(distanceProfile, isSingleRealmMode);
+  const { spacing, mode } = configManager.getSettlementConfig();
+  if (!Number.isSafeInteger(spacing) || spacing < 2) throw new Error("Invalid settlement spacing");
+  return spacing + (mode === "Single" ? 2 : 0);
 };
 
 export const getEffectiveHyperstructureRealmCount = (realmCountWithinRadius: number): number => {
-  const isTwoPlayerMode = configManager.getBlitzConfig()?.blitz_settlement_config?.two_player_mode ?? false;
+  const isTwoPlayerMode = configManager.getSettlementConfig().mode === "Duel";
   return isTwoPlayerMode ? HYPERSTRUCTURE_REALM_COUNT_TWO_PLAYER_MODE : realmCountWithinRadius;
 };
 
-export const getRealmCountPerHyperstructure = (components: ClientComponents): Map<ID, number> => {
-  // Every game shares the same settlement coordinate space, so an unscoped
-  // Structure sweep would count other games' realms into this game's radii.
-  const structures = [...runQuery([Has(components.Structure)])].flatMap((entity) => {
-    const structure = getComponentValue(components.Structure, entity);
-    return structure && belongsToActiveGame(structure) ? [structure] : [];
-  });
-  const realms = structures.filter((structure) => structure.category === StructureType.Realm);
+export const getRealmCountPerHyperstructure = (store: NativeFactStore): Map<ID, number> => {
+  const structures = [...store.inGame("Structure", configManager.getActiveGameId())];
+  const realms = structures.filter((structure) => structure.base.category === StructureType.Realm);
   const radiusSquared = getHyperstructureRealmCheckRadius() ** 2;
   const realmCounts = new Map<ID, number>();
 
   structures
-    .filter((structure) => structure.category === StructureType.Hyperstructure)
+    .filter((structure) => structure.base.category === StructureType.Hyperstructure)
     .forEach((hyperstructure) => {
       const count = realms.filter((realm) => {
         const colDistance = realm.base.coord_x - hyperstructure.base.coord_x;
@@ -77,194 +37,52 @@ export const getRealmCountPerHyperstructure = (components: ClientComponents): Ma
   return realmCounts;
 };
 
-export const getHyperstructureProgress = (hyperstructureId: number, components: ClientComponents) => {
-  const hyperstructure = getComponentValue(components.Hyperstructure, gameEntityKey([BigInt(hyperstructureId)]));
-
-  const hyperstructureRequiredAmounts = getComponentValue(
-    components.HyperstructureRequirements,
-    gameEntityKey([BigInt(hyperstructureId)]),
+export const getHyperstructureProgress = (hyperstructureId: number, store: NativeFactStore) => {
+  const game = configManager.getActiveGameId();
+  const hyperstructure = store.get("Hyperstructure", { game_id: game, entity_id: hyperstructureId });
+  const completed = hyperstructure?.stage === "Complete";
+  const required = getHyperstructureTotalContributableAmounts(hyperstructureId, store).reduce(
+    (sum, row) => sum + BigInt(row.amount) * BigInt(RESOURCE_PRECISION),
+    0n,
   );
-
-  const percentage = hyperstructureRequiredAmounts?.current_resource_total
-    ? Number(
-        (hyperstructureRequiredAmounts.current_resource_total * 100n) /
-          hyperstructureRequiredAmounts.needed_resource_total,
-      )
-    : 0;
-
+  const current = [...store.inGame("HyperstructureProgress", game)]
+    .filter((row) => row.entity_id === hyperstructureId)
+    .reduce((sum, row) => sum + row.contributed, 0n);
+  if (!completed && required === 0n && current > 0n) {
+    throw new Error(`Hyperstructure ${hyperstructureId} has contributions without resource requirements`);
+  }
   return {
-    percentage,
-    initialized: hyperstructure?.initialized || false,
+    percentage: completed ? 100 : required === 0n ? 0 : Math.min(100, Number((current * 10000n) / required) / 100),
+    initialized: hyperstructure !== undefined && hyperstructure.stage !== "Foundation",
+    completed,
   };
 };
 
 export const getHyperstructureTotalContributableAmounts = (
   hyperstructureId: number,
-  components: ClientComponents,
+  store: NativeFactStore,
 ): { resource: ResourcesIds; amount: number }[] => {
-  const hyperstructure = getComponentValue(components.Hyperstructure, gameEntityKey([BigInt(hyperstructureId)]));
-
-  if (!hyperstructure?.randomness) {
-    return [];
-  }
-
-  const result: { resource: ResourcesIds; amount: number }[] = [];
-  const randomness = BigInt(hyperstructure.randomness);
-
-  for (const resourceConfig of configManager.getHyperstructureTotalCosts()) {
-    const { resource, min_amount, max_amount } = resourceConfig;
-
-    let neededAmount;
-    if (min_amount === max_amount) {
-      neededAmount = max_amount;
-    } else {
-      const uniqueResourceRandomness = randomness / BigInt(resource);
-      const additional = Number(uniqueResourceRandomness % BigInt(max_amount - min_amount));
-      neededAmount = min_amount + additional;
-    }
-
-    result.push({
-      resource,
-      amount: neededAmount,
-    });
-  }
-
-  return result;
+  const game = configManager.getActiveGameId();
+  const hyperstructure = store.get("Hyperstructure", { game_id: game, entity_id: hyperstructureId });
+  if (!hyperstructure || hyperstructure.stage === "Foundation") return [];
+  return store
+    .require("HyperstructureRules", { game_id: game })
+    .resources.map(({ resource_type, minimum, maximum }) => ({
+      resource: resource_type as ResourcesIds,
+      amount:
+        minimum +
+        (minimum === maximum ? 0 : Number((hyperstructure.seed / BigInt(resource_type)) % BigInt(maximum - minimum))),
+    }));
 };
 
-export const getHyperstructureCurrentAmounts = (hyperstructureId: number, components: ClientComponents) => {
-  const hyperstructureRequirements = getComponentValue(
-    components.HyperstructureRequirements,
-    gameEntityKey([BigInt(hyperstructureId)]),
-  );
+export const getHyperstructureCurrentAmounts = (hyperstructureId: number, store: NativeFactStore) =>
+  [...store.inGame("HyperstructureProgress", configManager.getActiveGameId())]
+    .filter((row) => row.entity_id === hyperstructureId)
+    .map((row) => ({
+      resource: row.resource_type as ResourcesIds,
+      amount: divideByPrecision(Number(row.contributed)),
+    }));
 
-  if (!hyperstructureRequirements) {
-    return [];
-  }
-
-  const requiredAmounts: { resource: ResourcesIds; amount: number }[] = [];
-
-  // Map all resources from the HyperstructureRequirements component
-  if (hyperstructureRequirements.stone_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Stone,
-      amount: divideByPrecision(Number(hyperstructureRequirements.stone_amount_current)),
-    });
-  if (hyperstructureRequirements.coal_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Coal,
-      amount: divideByPrecision(Number(hyperstructureRequirements.coal_amount_current)),
-    });
-  if (hyperstructureRequirements.wood_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Wood,
-      amount: divideByPrecision(Number(hyperstructureRequirements.wood_amount_current)),
-    });
-  if (hyperstructureRequirements.copper_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Copper,
-      amount: divideByPrecision(Number(hyperstructureRequirements.copper_amount_current)),
-    });
-  if (hyperstructureRequirements.ironwood_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Ironwood,
-      amount: divideByPrecision(Number(hyperstructureRequirements.ironwood_amount_current)),
-    });
-  if (hyperstructureRequirements.obsidian_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Obsidian,
-      amount: divideByPrecision(Number(hyperstructureRequirements.obsidian_amount_current)),
-    });
-  if (hyperstructureRequirements.gold_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Gold,
-      amount: divideByPrecision(Number(hyperstructureRequirements.gold_amount_current)),
-    });
-  if (hyperstructureRequirements.silver_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Silver,
-      amount: divideByPrecision(Number(hyperstructureRequirements.silver_amount_current)),
-    });
-  if (hyperstructureRequirements.mithral_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Mithral,
-      amount: divideByPrecision(Number(hyperstructureRequirements.mithral_amount_current)),
-    });
-  if (hyperstructureRequirements.alchemicsilver_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.AlchemicalSilver,
-      amount: divideByPrecision(Number(hyperstructureRequirements.alchemicsilver_amount_current)),
-    });
-  if (hyperstructureRequirements.coldiron_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.ColdIron,
-      amount: divideByPrecision(Number(hyperstructureRequirements.coldiron_amount_current)),
-    });
-  if (hyperstructureRequirements.deepcrystal_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.DeepCrystal,
-      amount: divideByPrecision(Number(hyperstructureRequirements.deepcrystal_amount_current)),
-    });
-  if (hyperstructureRequirements.ruby_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Ruby,
-      amount: divideByPrecision(Number(hyperstructureRequirements.ruby_amount_current)),
-    });
-  if (hyperstructureRequirements.diamonds_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Diamonds,
-      amount: divideByPrecision(Number(hyperstructureRequirements.diamonds_amount_current)),
-    });
-  if (hyperstructureRequirements.hartwood_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Hartwood,
-      amount: divideByPrecision(Number(hyperstructureRequirements.hartwood_amount_current)),
-    });
-  if (hyperstructureRequirements.ignium_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Ignium,
-      amount: divideByPrecision(Number(hyperstructureRequirements.ignium_amount_current)),
-    });
-  if (hyperstructureRequirements.twilightquartz_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.TwilightQuartz,
-      amount: divideByPrecision(Number(hyperstructureRequirements.twilightquartz_amount_current)),
-    });
-  if (hyperstructureRequirements.trueice_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.TrueIce,
-      amount: divideByPrecision(Number(hyperstructureRequirements.trueice_amount_current)),
-    });
-  if (hyperstructureRequirements.adamantine_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Adamantine,
-      amount: divideByPrecision(Number(hyperstructureRequirements.adamantine_amount_current)),
-    });
-  if (hyperstructureRequirements.sapphire_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Sapphire,
-      amount: divideByPrecision(Number(hyperstructureRequirements.sapphire_amount_current)),
-    });
-  if (hyperstructureRequirements.etherealsilica_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.EtherealSilica,
-      amount: divideByPrecision(Number(hyperstructureRequirements.etherealsilica_amount_current)),
-    });
-  if (hyperstructureRequirements.dragonhide_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Dragonhide,
-      amount: divideByPrecision(Number(hyperstructureRequirements.dragonhide_amount_current)),
-    });
-  if (hyperstructureRequirements.labor_amount_current)
-    requiredAmounts.push({
-      resource: ResourcesIds.Labor,
-      amount: divideByPrecision(Number(hyperstructureRequirements.labor_amount_current)),
-    });
-
-  return requiredAmounts;
-};
-
-// Fantasy name generation for hyperstructures
 const hyperstructureAdjectives = [
   "Majestic",
   "Towering",
@@ -389,7 +207,7 @@ const hyperstructureSuffixes = [
   "of Time",
 ];
 
-export const getHyperstructureName = (structure: ComponentValue<ClientComponents["Structure"]["schema"]>): string => {
+export const getHyperstructureName = (structure: NativeRows["Structure"]): string => {
   const seed = structure.entity_id;
 
   // Same hash function as chest naming for consistency

@@ -1,4 +1,6 @@
-import { Check, ChevronDown, Flame, Search, ShieldCheck, X } from "@/ui/design-system/atoms/game-icons";
+import { ChevronDown, Flame, Search, ShieldCheck, X } from "@/ui/design-system/atoms/game-icons";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -12,17 +14,17 @@ import { currencyFormat } from "@/ui/utils/utils";
 import {
   calculateDistance,
   calculateDonkeysNeeded,
-  getEntityIdFromKeys,
+  configManager,
   getTotalResourceWeightKg,
   isMilitaryResource,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
+import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { findResourceById, ID, PlayerStructure, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import { Dispatch, memo, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { BigNumberish } from "starknet";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 type transferCall = {
   structureId: ID;
@@ -36,11 +38,11 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const mode = useGameModeConfig();
   const {
     setup: {
-      components,
+      store,
       systemCalls: { send_resources_multiple, structure_burn },
     },
     account: { account },
-  } = useDojo();
+  } = useGame();
 
   const tick = useCurrentDefaultTick();
 
@@ -52,11 +54,13 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     return resourceManager.balanceWithProduction(tick, resource).balance;
   }, [resourceManager, tick, resource]);
 
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
 
-  const selectedStructure = useMemo(() => {
-    return getComponentValue(components.Structure, gameEntityKey([BigInt(selectedStructureEntityId)]));
-  }, [components.Structure, selectedStructureEntityId]);
+  const selectedStructure = useNativeRow("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: selectedStructureEntityId,
+  });
+  const resourceRevision = useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight"]);
 
   const playerStructuresFiltered = useMemo(() => {
     const playerStructuresWithName = playerStructures.map((structure) => ({
@@ -152,7 +156,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
         if (type === "send") {
           relevantBalanceValue = availableBalance;
         } else {
-          const otherStructureManager = new ResourceManager(components, structure.structure.entity_id);
+          const otherStructureManager = new ResourceManager(store, structure.structure.entity_id);
           const receivedBalance = otherStructureManager.balanceWithProduction(tick, resource).balance;
           relevantBalanceValue = receivedBalance ? Number(receivedBalance) : 0;
         }
@@ -173,7 +177,8 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     normalizedSearchTerm,
     type,
     availableBalance,
-    components,
+    resourceRevision,
+    store,
     tick,
     resource,
   ]);
@@ -206,7 +211,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     } finally {
       setIsLoading(false);
     }
-  }, [burnAmount, account, components, structure_burn, selectedStructureEntityId, resource]);
+  }, [burnAmount, account, store, structure_burn, selectedStructureEntityId, resource]);
 
   const handleTransfer = useCallback(async () => {
     setIsLoading(true);
@@ -227,7 +232,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     }
 
     setCalls([]);
-  }, [account, calls, components, send_resources_multiple]);
+  }, [account, calls, store, send_resources_multiple]);
 
   const handleBurnAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setBurnAmount(Number(event.target.value));
@@ -335,7 +340,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
           >
             <div className="space-y-2 text-xs text-gold/80">
               <div className="flex items-start gap-2">
-                <Check className="h-4 w-4" />
+                <span className="text-green">✓</span>
                 <span>
                   {mode.id === "blitz"
                     ? "Owned structure → owned structure troop transfers allowed"
@@ -343,7 +348,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
                 </span>
               </div>
               <div className="flex items-start gap-2">
-                <X className="h-4 w-4" />
+                <span className="text-red">✗</span>
                 <span>
                   {mode.id === "blitz"
                     ? "Direct structure → army troop transfers are not available in Blitz"
@@ -537,13 +542,11 @@ const RealmTransferBalance = memo(
     const [input, setInput] = useState(0);
     const mode = useGameModeConfig();
     const {
-      setup: { components },
-    } = useDojo();
+      setup: { store },
+    } = useGame();
 
-    const sourceResourceManager = useMemo(
-      () =>
-        new ResourceManager(components, type === "send" ? selectedStructureEntityId : structure.structure.entity_id),
-      [components, structure.structure.entity_id, selectedStructureEntityId, type],
+    const sourceResourceManager = useResourceManager(
+      type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
     );
 
     const getSourceBalance = useCallback(() => {

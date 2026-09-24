@@ -1,7 +1,22 @@
-import { Account, AccountInterface, BigNumberish } from "starknet";
+import { Account, AccountInterface, type BigNumberish } from "starknet";
 import { ResourcesIds } from "../constants";
 import { BuildingType } from "../constants/structures";
-import { Resource } from "./common";
+import type { Resource } from "./common";
+
+export interface NativeTicketIdentity {
+  gameId: string;
+  actor: string;
+  nonce: string;
+  order: string;
+}
+
+export interface NativeExecutionOutcome extends NativeTicketIdentity {
+  nonceConsumed: boolean;
+  status: "SUCCEEDED" | "REVERTED";
+  statusClass: string;
+  reason: string;
+  batchRemaining?: string;
+}
 
 export interface SystemSigner {
   signer: AccountInterface | Account;
@@ -31,6 +46,7 @@ export interface MintAndSettleTestRealmProps extends SystemSigner {
 export interface BridgeDepositIntoRealmProps extends SystemSigner {
   resources: {
     tokenAddress: BigNumberish;
+    resource_type: BigNumberish;
     amount: BigNumberish;
   }[];
   recipient_structure_id: BigNumberish;
@@ -40,15 +56,12 @@ export interface BridgeDepositIntoRealmProps extends SystemSigner {
 export interface BridgeWithdrawFromRealmProps extends SystemSigner {
   resources: {
     tokenAddress: BigNumberish;
+    resource_type: BigNumberish;
     amount: BigNumberish;
   }[];
   from_structure_id: BigNumberish;
   recipient_address: BigNumberish;
   client_fee_recipient: BigNumberish;
-}
-
-export interface SetAddressNameProps extends SystemSigner {
-  name: BigNumberish;
 }
 
 export interface SetEntityNameProps extends SystemSigner {
@@ -89,12 +102,6 @@ export interface SendResourcesMultipleProps extends SystemSigner {
     recipient_entity_id: BigNumberish;
     resources: BigNumberish[];
   }[];
-}
-
-export interface PickupResourcesProps extends SystemSigner {
-  recipient_entity_id: BigNumberish;
-  owner_entity_id: BigNumberish;
-  resources: ResourceCosts[];
 }
 
 export interface ArrivalsOffloadProps extends SystemSigner {
@@ -348,8 +355,6 @@ export interface TroopLimitConfigProps {
   guard_resurrection_delay: BigNumberish;
   mercenaries_troop_lower_bound: BigNumberish;
   mercenaries_troop_upper_bound: BigNumberish;
-  agent_troop_lower_bound: BigNumberish;
-  agent_troop_upper_bound: BigNumberish;
   settlement_deployment_cap: BigNumberish;
   city_deployment_cap: BigNumberish;
   kingdom_deployment_cap: BigNumberish;
@@ -365,11 +370,7 @@ export interface TroopLimitConfigProps {
 export interface TroopDamageConfigProps {
   damage_raid_percent_num: BigNumberish;
   damage_biome_bonus_num: BigNumberish;
-  damage_beta_small: BigNumberish;
-  damage_beta_large: BigNumberish;
   damage_scaling_factor: BigNumberish;
-  damage_c0: BigNumberish;
-  damage_delta: BigNumberish;
   t1_damage_value: BigNumberish;
   t2_damage_multiplier: BigNumberish;
   t3_damage_multiplier: BigNumberish;
@@ -396,7 +397,7 @@ export interface InitializeHyperstructureProps extends SystemSigner {
 export interface ContributeToConstructionProps extends SystemSigner {
   hyperstructure_entity_id: BigNumberish;
   contributor_entity_id: BigNumberish;
-  contributions: { resource: number; amount: number }[];
+  contributions: { resource: number; amount: BigNumberish }[];
 }
 
 export interface SetAccessProps extends SystemSigner {
@@ -450,17 +451,6 @@ export interface MintTestLordsProps extends SystemSigner {
 /**
  * Props for burning resources to produce labor
  */
-export interface BurnOtherResourcesForLaborProductionProps {
-  /** ID of the realm entity */
-  entity_id: number;
-  /** Array of resource types to burn */
-  resource_types: number[];
-  /** Array of resource amounts to burn */
-  resource_amounts: number[];
-  /** Account executing the transaction */
-  signer: Account | AccountInterface;
-}
-
 /**
  * Props for burning labor to produce other resources
  */
@@ -492,17 +482,6 @@ export interface BurnOtherPredefinedResourcesForResourcesProps {
 /**
  * Properties for moving an explorer
  */
-export interface ExplorerMoveProps extends SystemSigner {
-  /** ID of the explorer to move */
-  explorer_id: number;
-  /** Array of directions to move in */
-  directions: number[];
-  /** Whether to explore new tiles along the way */
-  explore: boolean;
-  /** Optional VRF source salt (packed tile seed) required when explore=true and VRF is enabled */
-  vrf_source_salt?: BigNumberish;
-}
-
 /**
  * Properties for traveling an explorer (no exploration)
  */
@@ -524,15 +503,13 @@ export interface ToggleAlternateProps extends SystemSigner {
 }
 
 /**
- * Properties for exploring with an explorer (includes VRF and reward extraction)
+ * Properties for exploring and receiving the discovery reward
  */
 export interface ExplorerExploreProps extends SystemSigner {
   /** ID of the explorer to move */
   explorer_id: number;
   /** Array of directions to move in */
   directions: number[];
-  /** VRF source salt (packed tile seed for the destination tile) */
-  vrf_source_salt?: BigNumberish;
 }
 
 /**
@@ -585,8 +562,6 @@ export interface GuardExplorerSwapProps extends SystemSigner {
  * Properties for explorer vs explorer attack
  */
 export interface AttackExplorerVsExplorerProps extends SystemSigner {
-  /** The defending tile is ethereal and needs a combat VRF seed. */
-  ethereal?: boolean;
   /** ID of the attacking explorer */
   aggressor_id: number;
   /** ID of the defending explorer */
@@ -599,8 +574,6 @@ export interface AttackExplorerVsExplorerProps extends SystemSigner {
  * Properties for explorer vs guard attack
  */
 export interface AttackExplorerVsGuardProps extends SystemSigner {
-  /** The defending tile is ethereal and needs a combat VRF seed. */
-  ethereal?: boolean;
   /** ID of the attacking explorer */
   explorer_id: number;
   /** ID of the structure with defending guard */
@@ -611,8 +584,6 @@ export interface AttackExplorerVsGuardProps extends SystemSigner {
  * Properties for an explorer vs guard attack that garrisons surviving troops into the captured structure
  */
 export interface AttackExplorerVsGuardAndGarrisonProps extends SystemSigner {
-  /** The defending tile is ethereal and needs a combat VRF seed. */
-  ethereal?: boolean;
   /** ID of the attacking explorer */
   explorer_id: number;
   /** ID of the structure with defending guard */
@@ -629,8 +600,6 @@ export interface AttackExplorerVsGuardAndGarrisonProps extends SystemSigner {
  * Properties for guard vs explorer attack
  */
 export interface AttackGuardVsExplorerProps extends SystemSigner {
-  /** The defending tile is ethereal and needs a combat VRF seed. */
-  ethereal?: boolean;
   /** ID of the structure with attacking guard */
   structure_id: number;
   /** Guard slot of the attacking troops */
@@ -796,18 +765,8 @@ export interface TransferStructureOwnershipProps extends SystemSigner {
   new_owner: BigNumberish;
 }
 
-export interface TransferAgentOwnershipProps extends SystemSigner {
-  explorer_id: BigNumberish;
-  new_owner: BigNumberish;
-}
-
 export interface StructureBurnProps extends SystemSigner {
   structure_id: BigNumberish;
-  resources: Resource[];
-}
-
-export interface TroopBurnProps extends SystemSigner {
-  explorer_id: BigNumberish;
   resources: Resource[];
 }
 
@@ -831,12 +790,14 @@ export interface ApplyRelicProps extends SystemSigner {
 }
 
 export interface BitcoinMineContributeLaborProps extends SystemSigner {
-  mine_id: BigNumberish;
-  target_phase_id: BigNumberish;
+  structure_id: BigNumberish;
   labor_amount: BigNumberish;
 }
 
-export interface BitcoinMineClaimPhaseRewardProps extends SystemSigner {
+export interface BitcoinMinePhaseProps extends SystemSigner {
   phase_id: BigNumberish;
+}
+
+export interface BitcoinMineClaimPhaseRewardProps extends BitcoinMinePhaseProps {
   mine_ids: BigNumberish[];
 }

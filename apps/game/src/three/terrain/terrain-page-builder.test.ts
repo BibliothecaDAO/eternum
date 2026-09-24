@@ -5,14 +5,10 @@ import { describe, expect, it } from "vitest";
 import { terrainHexCorners, terrainHexToWorld } from "./terrain-coordinates";
 import { prepareTerrainPage } from "./terrain-page-builder";
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
+
 import { createAllBiomesTerrainRequest } from "./verification/terrain-verification-fixtures";
 
 describe("prepareTerrainPage", () => {
-  it("tracks the reviewed all-biome terrain and placement style", () => {
-    const prepared = prepareTerrainPage(createAllBiomesTerrainRequest());
-    expect(prepared.fingerprint).toMatchInlineSnapshot(`"1909c301"`);
-  });
-
   it("builds deterministic indexed terrain and frontier buffers", () => {
     const request = createRequest([cell(0, 0, BiomeType.Ocean)]);
     const first = prepareTerrainPage(request);

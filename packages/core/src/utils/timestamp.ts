@@ -6,9 +6,11 @@ import { configManager } from "../managers/config-manager";
 
 type TimestampSource = () => number;
 
-const defaultTimestampSource: TimestampSource = () => Math.floor(Date.now() / 1000);
-/** The client's running estimate of chain time: clocks, cooldowns and stamina read it. */
-let timestampSource: TimestampSource = defaultTimestampSource;
+/**
+ * The client's running estimate of chain time: clocks, cooldowns and stamina read it. It is bound from confirmed
+ * heads; until one is known there is no chain time, and a reader fails by name instead of guessing a wall clock.
+ */
+let timestampSource: TimestampSource | null = null;
 /** The newest timestamp the chain itself has written (a closed head or a row). Null until one is known. */
 let chainProvenTimestampSource: (() => number | null) | null = null;
 
@@ -22,7 +24,7 @@ let chainProvenTimestampSource: (() => number | null) | null = null;
 const CONSERVATIVE_TICK_BUFFER_AUTOMATION = 3;
 
 export const setBlockTimestampSource = (source: TimestampSource | null) => {
-  timestampSource = source ? () => Math.floor(source()) : defaultTimestampSource;
+  timestampSource = source ? () => Math.floor(source()) : null;
 };
 
 /**
@@ -51,21 +53,23 @@ export const reportObservedChainTimestamp = (timestampSeconds: number) => {
 };
 
 export const getBlockTimestamp = () => {
+  if (!timestampSource) throw new Error("Chain time is not known yet: no confirmed head has bound a clock");
   const timestamp = timestampSource();
   const provenTimestamp = chainProvenTimestampSource?.() ?? timestamp;
-  const tickConfigArmies = configManager.getTick(TickIds.Armies);
-  const tickConfigDefault = configManager.getTick(TickIds.Default);
-
-  // Config not hydrated yet reads as interval 0; report tick 0 (not Infinity) until it lands.
-  const tickOrZero = (seconds: number, interval: number) =>
-    Number.isFinite(interval) && interval > 0 ? Math.floor(seconds / interval) : 0;
-  const currentDefaultTick = tickOrZero(provenTimestamp, Number(tickConfigDefault));
-  const currentArmiesTick = tickOrZero(timestamp, Number(tickConfigArmies));
+  const tickAt = (seconds: number, tick: TickIds) => {
+    const interval = Number(configManager.getTick(tick));
+    if (!Number.isFinite(interval) || interval <= 0) throw new Error(`Invalid tick interval for ${tick}`);
+    return Math.floor(seconds / interval);
+  };
 
   return {
     currentBlockTimestamp: timestamp,
-    currentDefaultTick,
-    currentArmiesTick,
+    get currentDefaultTick() {
+      return tickAt(provenTimestamp, TickIds.Default);
+    },
+    get currentArmiesTick() {
+      return tickAt(timestamp, TickIds.Armies);
+    },
   };
 };
 

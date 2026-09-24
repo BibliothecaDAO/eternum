@@ -2,11 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SPIRE_MODEL_PATH } from "@/three/constants/scene-constants";
 import { activeMapLayer } from "@/three/map-layer";
 import { FELT_CENTER } from "@/ui/config";
-import {
-  projectionChangesForLayer,
-  type TileSpatialRenderable,
-  type WorldSpatialProjection,
-} from "@bibliothecadao/eternum/game-sync";
+import { projectionChangesForLayer, type WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { TileOccupier } from "@bibliothecadao/types";
 import { Camera, Group, Object3D, Scene } from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
@@ -15,11 +11,21 @@ import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } fro
 import { getWorldPositionForHex } from "../utils";
 import { gltfLoader } from "../utils/utils";
 
-/** Spires belong to tiles, so they never require a Structure component. */
+/** Spires stood on the surface by a rule rather than a tile: a Frontier realm's spire, lit by attunement. */
+export interface RuleSpires {
+  /** Their hexes on the surface, in contract coordinates. */
+  hexes(): Array<{ col: number; row: number }>;
+  /** Calls back when a rule input changes: a realm's attunement, or the day turning over. */
+  subscribe(onChange: () => void): () => void;
+}
+
+type SpireHex = { col: number; row: number };
+
+/** Spires belong to tiles or to a rule, so they never require a Structure component. */
 export class SpireManager {
   private readonly dummy = new Object3D();
   private readonly subscriptions: Array<() => void>;
-  private placements: Array<{ tile: TileSpatialRenderable; label: CSS2DObject }> = [];
+  private placements: Array<{ hex: SpireHex; label: CSS2DObject }> = [];
   private model: SpireModel | null = null;
   private loading: Promise<void> | null = null;
   private capacity = 0;
@@ -32,6 +38,7 @@ export class SpireManager {
     private readonly labels: Group,
     private readonly terrain: TerrainSurface = FLAT_TERRAIN_SURFACE,
     private readonly markLabelsDirty: () => void = () => {},
+    private readonly ruleSpires?: RuleSpires,
   ) {
     this.subscriptions = [
       projection.subscribeTiles((changes) => {
@@ -48,6 +55,7 @@ export class SpireManager {
         (state) => state.mapLayer,
         () => this.refresh(),
       ),
+      ...(ruleSpires ? [ruleSpires.subscribe(() => this.refresh())] : []),
     ];
     this.refresh();
   }
@@ -65,8 +73,8 @@ export class SpireManager {
   public refreshTerrainPlacement(): void {
     if (!this.model || this.destroyed) return;
     let changed = false;
-    this.placements.forEach(({ tile, label }, index) => {
-      const position = this.getSpirePosition(tile);
+    this.placements.forEach(({ hex, label }, index) => {
+      const position = this.getSpirePosition(hex);
       const labelHeight = position.y + this.model!.labelHeight;
       if (label.position.y === labelHeight) return;
       this.dummy.position.copy(position);
@@ -91,7 +99,7 @@ export class SpireManager {
 
   private refresh(): void {
     if (this.destroyed) return;
-    const tiles = this.getSpireTiles();
+    const tiles = this.getSpireHexes();
     this.clearLabels();
     this.model?.setCount(0);
     if (!tiles.length) return;
@@ -109,8 +117,8 @@ export class SpireManager {
     this.model.needsUpdate();
   }
 
-  private placeSpire(tile: TileSpatialRenderable, index: number): void {
-    const position = this.getSpirePosition(tile);
+  private placeSpire(hex: SpireHex, index: number): void {
+    const position = this.getSpirePosition(hex);
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
     this.model!.setMatrixAt(index, this.dummy.matrix);
@@ -122,14 +130,11 @@ export class SpireManager {
     label.position.copy(position);
     label.position.y += this.model!.labelHeight;
     this.labels.add(label);
-    this.placements.push({ tile, label });
+    this.placements.push({ hex, label });
   }
 
-  private getSpirePosition(tile: TileSpatialRenderable) {
-    const position = getWorldPositionForHex({
-      col: tile.hexCoords.col - FELT_CENTER(),
-      row: tile.hexCoords.row - FELT_CENTER(),
-    });
+  private getSpirePosition(hex: SpireHex) {
+    const position = getWorldPositionForHex({ col: hex.col - FELT_CENTER(), row: hex.row - FELT_CENTER() });
     return placePositionOnTerrain(position, this.terrain);
   }
 
@@ -141,7 +146,7 @@ export class SpireManager {
       ]);
       if (this.destroyed) return;
       this.model?.dispose();
-      this.capacity = Math.max(capacity, this.getSpireTiles().length);
+      this.capacity = Math.max(capacity, this.getSpireHexes().length);
       this.model = new SpireModel(gltf, this.capacity);
       this.model.group.visible = this.modelVisible;
       this.scene.add(this.model.group);
@@ -151,8 +156,14 @@ export class SpireManager {
     }
   }
 
-  private getSpireTiles() {
-    return this.projection.getTiles(activeMapLayer()).filter((tile) => tile.occupierType === TileOccupier.Spire);
+  private getSpireHexes(): SpireHex[] {
+    const layer = activeMapLayer();
+    const tileSpires = this.projection
+      .getTiles(layer)
+      .filter((tile) => tile.occupierType === TileOccupier.Spire)
+      .map((tile) => ({ col: tile.hexCoords.col, row: tile.hexCoords.row }));
+    // A rule spire stands on the realm's surface ring.
+    return !layer && this.ruleSpires ? [...tileSpires, ...this.ruleSpires.hexes()] : tileSpires;
   }
 
   private clearLabels(): void {

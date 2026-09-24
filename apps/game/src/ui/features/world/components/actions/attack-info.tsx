@@ -1,6 +1,6 @@
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { ActionPath, configManager } from "@bibliothecadao/eternum";
-import { useStaminaManager } from "@bibliothecadao/react";
+import { useStaminaManager } from "@/hooks/helpers/use-stamina";
 import { ID } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { memo, useMemo } from "react";
@@ -20,7 +20,7 @@ export const AttackInfo = memo(({ selectedEntityId }: AttackInfoProps) => {
 
   const combatParams = useMemo(() => configManager.getCombatConfig(), []);
   const requiredStamina = combatParams.stamina_attack_req;
-  const currentStamina = Number(stamina.amount ?? 0n);
+  const currentStamina = Number(stamina?.amount ?? 0n);
   const staminaRatio = requiredStamina === 0 ? Number.POSITIVE_INFINITY : currentStamina / requiredStamina;
   const staminaColor =
     staminaRatio >= 1 ? "text-order-brilliance" : staminaRatio >= 0.5 ? "text-gold" : "text-order-giants";

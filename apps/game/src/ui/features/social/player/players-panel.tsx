@@ -1,3 +1,4 @@
+import { ChevronDown, ChevronUp, Search } from "@/ui/design-system/atoms/game-icons";
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -11,13 +12,11 @@ import { PlayerList, type PlayerCustom } from "./player-list";
 import { normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "./use-in-game-leaderboard";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
-import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { configManager, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, BANDITS_NAME, PlayerInfo } from "@bibliothecadao/types";
-import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
-import { ChevronDown, ChevronUp, Search } from "@/ui/design-system/atoms/game-icons";
 import { KeyboardEvent, useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 const buildActivityBreakdownLookup = (entries: PlayerLeaderboardActivityEntry[]) =>
   new Map(entries.map((entry) => [normalizeLeaderboardAddress(entry.address), entry]));
@@ -33,15 +32,15 @@ export const PlayersPanel = ({
 }) => {
   const {
     setup: {
-      components,
+      store,
       systemCalls: { update_whitelist },
     },
     account: { account },
-  } = useDojo();
+  } = useGame();
 
-  const { Structure, GuildWhitelist } = components;
+  const revision = useNativeRevision(["Structure", "Guild", "GuildMember", "GuildWhitelist"]);
 
-  const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address), components);
+  const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address), store);
   const { isFinalized, standingsByAddress } = useInGameLeaderboard();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -75,34 +74,28 @@ export const PlayersPanel = ({
       // filter out players with no address
       .filter((player) => player.address !== 0n)
       .map((player) => {
-        const structuresEntityIds = runQuery([HasValue(Structure, { owner: ContractAddress(player.address) })]);
-        const structures = Array.from(structuresEntityIds)
-          .map((entityId) => {
-            const structure = getComponentValue(Structure, entityId);
-            if (!structure) return undefined;
+        const structures = [...store.structuresOwnedBy(configManager.getActiveGameId(), player.address)].map(
+          (structure) => mode.structure.getName(structure).name,
+        );
 
-            return mode.structure.getName(structure).name;
-          })
-          .filter((structure): structure is string => structure !== undefined);
+        const guild = getGuildFromPlayerAddress(player.address, store);
 
-        const guild = getGuildFromPlayerAddress(player.address, components);
-
-        let isInvited = false;
-        if (userGuild) {
-          isInvited =
-            // GuildWhitelist is keyed (guild_id, address) — guild first.
-            getComponentValue(GuildWhitelist, gameEntityKey([BigInt(userGuild?.entityId), player.address]))
-              ?.whitelisted ?? false;
-        }
+        const isInvited = userGuild
+          ? (store.get("GuildWhitelist", {
+              game_id: configManager.getActiveGameId(),
+              guild_id: userGuild.entityId,
+              player: player.address,
+            })?.allowed ?? false)
+          : false;
         const standing = standingsByAddress.get(normalizeLeaderboardAddress(player.address));
         const activityEntry = activityBreakdownsByAddress.get(normalizeLeaderboardAddress(player.address)) ?? null;
 
         // Finalized games rank by the on-chain final standings. Live games rank
         // by Herald’s prepared history total — the same source as the breakdown
         // columns, so POINTS is always the sum of what the row displays (owner
-        // ruling). The RECS standing is only the pre-fetch fallback.
-        const liveRank = activityEntry?.rank ?? standing?.rank ?? player.rank;
-        const livePoints = activityEntry?.totalPoints ?? standing?.points ?? player.points;
+        // ruling). The native store standing is only the pre-fetch fallback.
+        const liveRank = standing?.rank ?? player.rank;
+        const livePoints = standing?.points ?? player.points;
         const rank = isFinalized ? (standing?.rank ?? Number.MAX_SAFE_INTEGER) : liveRank;
         const points = isFinalized ? (standing?.points ?? 0) : livePoints;
         const includesLiveShareholderPoints = isFinalized
@@ -125,11 +118,10 @@ export const PlayersPanel = ({
       });
     return playersWithStructures;
   }, [
-    GuildWhitelist,
-    Structure,
+    revision,
     account.address,
     activityBreakdownsByAddress,
-    components,
+    store,
     isFinalized,
     mode,
     players,

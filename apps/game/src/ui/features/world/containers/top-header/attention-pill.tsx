@@ -1,8 +1,12 @@
+import { Bell } from "@/ui/design-system/atoms/game-icons";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
+import { configManager, structureMapPosition } from "@bibliothecadao/eternum";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { memo, useMemo, useRef } from "react";
-import { Bell } from "@/ui/design-system/atoms/game-icons";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { Position } from "@bibliothecadao/eternum";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -21,16 +25,20 @@ export const AttentionPill = memo(() => {
 AttentionPill.displayName = "AttentionPill";
 
 function AttentionCycle() {
-  const { setup } = useDojo();
+  const { setup } = useGame();
   const goToStructure = useGoToStructure(setup);
-  const structures = useUIStore((state) => state.playerStructures);
+  const structures = useFactView(playerStructuresView);
   const arrivedIds = useUIStore((state) => state.arrivedArrivalStructureIds);
   const suggestions = useEmpireSuggestions();
   const previousKey = useRef<string | null>(null);
   const now = Math.floor(useNowMs() / 1000);
+  const revision = useNativeRevision(["Guard"]);
   const { targets } = useMemo(
-    () => resolveStructureAttention(structures, arrivedIds, now),
-    [structures, arrivedIds, now],
+    () =>
+      resolveStructureAttention(structures, arrivedIds, now, [
+        ...setup.store.inGame("Guard", configManager.getActiveGameId()),
+      ]),
+    [structures, arrivedIds, now, setup.store, revision],
   );
   const items = [
     ...targets.map((target) => ({
@@ -51,8 +59,7 @@ function AttentionCycle() {
     previousKey.current = next.key;
     const target = structures.find((structure) => structure.entityId === next.realmId);
     if (!target) return;
-    const { coord_x, coord_y } = target.structure.base;
-    void goToStructure(target.entityId, new Position({ x: coord_x, y: coord_y }), true);
+    const position = structureMapPosition(setup.store, target.structure);
     if (next.suggestionId) {
       usePopoverStore.getState().openSurface({
         id: "suggestions",
@@ -61,6 +68,7 @@ function AttentionCycle() {
         mapClick: "dismiss",
       });
     } else {
+      void goToStructure(target.entityId, Position.fromContract(position), true);
       usePopoverStore.getState().close("suggestions");
     }
   };

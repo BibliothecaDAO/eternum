@@ -1,5 +1,6 @@
-import { IncomingCaravans } from "./incoming-caravans";
 import { ArrowLeftRight, Factory, Loader, Shield, Sparkles } from "@/ui/design-system/atoms/game-icons";
+import { IncomingCaravans } from "./incoming-caravans";
+import { StructureOwnershipTransfer } from "./structure-ownership-transfer";
 import { memo, useCallback } from "react";
 
 import Button from "@/ui/design-system/atoms/button";
@@ -9,6 +10,7 @@ import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { InfoBubble } from "../collapsible-bubble";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
+import { HyperstructureConstruction } from "@/ui/features/world/components/hyperstructures/hyperstructure-construction";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -23,6 +25,7 @@ import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
 import { EntityDetailLayoutVariant } from "../layout";
 import { useStructureProductionSummary } from "../structure-production-summary";
 import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
+import { BitcoinMiningActionPanel } from "../../actions/bitcoin-mining-action-panel";
 import { FaithDevotionActionPanel } from "../../actions/faith-devotion-action-panel";
 
 interface StructureBannerEntityDetailProps {
@@ -156,7 +159,7 @@ const StructureBannerEntityDetailContent = memo(
     const canOpenTransferPanel =
       isMine &&
       structureCategory !== undefined &&
-      [StructureType.Realm, StructureType.Village, StructureType.Camp, StructureType.FragmentMine].includes(
+      [StructureType.Realm, StructureType.Village, StructureType.Camp, StructureType.Mine].includes(
         structureCategory as StructureType,
       ) &&
       typeof structure.entity_id !== "undefined";
@@ -216,6 +219,7 @@ const StructureBannerEntityDetailContent = memo(
                 </Button>
               )}
             </div>
+            <StructureOwnershipTransfer key={structureEntityId} structureId={structureEntityId} />
             {showHyperstructureVP && (
               <div className="mt-2 border-t border-gold/15 pt-2">
                 <HyperstructureVPDisplay
@@ -227,6 +231,10 @@ const StructureBannerEntityDetailContent = memo(
               </div>
             )}
           </InfoBubble>
+        )}
+
+        {isEternumMode && isHyperstructure && (
+          <HyperstructureConstruction key={structureEntityId} entityId={structureEntityId} />
         )}
 
         {relicEffects.length > 0 && (
@@ -304,6 +312,8 @@ const StructureBannerEntityDetailContent = memo(
             <p className={HUD_BODY_MUTED}>No resources stored.</p>
           )}
         </InfoBubble>
+
+        <BitcoinMiningActionPanel structureEntityId={structureEntityId} />
 
         {showFaithTab && (
           <InfoBubble variant="section" title="Faith" icon={Sparkles}>

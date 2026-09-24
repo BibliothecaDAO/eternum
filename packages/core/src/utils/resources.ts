@@ -1,22 +1,19 @@
 import {
-  type ClientComponents,
   type HyperstructureResourceCostMinMax,
   type ID,
   type Resource,
   ResourcesIds,
-  StructureType,
   resources,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import type { NativeFactStore } from "../client/native-fact-store";
 import { ResourceManager } from "../managers";
-import { getIsBlitz } from "./utils";
-import { gameEntityKey } from "../managers/config-manager";
+import { configManager } from "../managers/config-manager";
 
 // used for entities that don't have any production
-export const getInventoryResources = (entityId: ID, components: ClientComponents): Resource[] => {
+export const getInventoryResources = (entityId: ID, store: NativeFactStore): Resource[] => {
   return resources
     .map(({ id }) => {
-      const resourceManager = new ResourceManager(components, entityId);
+      const resourceManager = new ResourceManager(store, entityId);
       const balance = resourceManager.balance(id);
       if (balance > 0) {
         return { resourceId: id, amount: Number(balance) };
@@ -31,9 +28,9 @@ export const getBalance = (
   entityId: ID,
   resourceId: ResourcesIds,
   currentDefaultTick: number,
-  components: ClientComponents,
+  store: NativeFactStore,
 ) => {
-  const resourceManager = new ResourceManager(components, entityId);
+  const resourceManager = new ResourceManager(store, entityId);
   return {
     balance: resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance,
     resourceId,
@@ -65,25 +62,10 @@ export const isMilitaryResource = (resourceId: ResourcesIds) => {
   );
 };
 
-export const canTransferMilitaryResources = (fromEntityId: ID, toEntityId: ID, components: ClientComponents) => {
-  const fromStructure = getComponentValue(components.Structure, gameEntityKey([BigInt(fromEntityId)]));
-
-  const toStructure = getComponentValue(components.Structure, gameEntityKey([BigInt(toEntityId)]));
-
-  if (getIsBlitz()) {
-    return Boolean(fromStructure && toStructure && fromStructure.owner === toStructure.owner);
-  }
-
-  // If from structure is a village, can only transfer to its connected realm
-  if (fromStructure?.category === StructureType.Village) {
-    return toStructure?.entity_id === fromStructure.metadata.village_realm;
-  }
-
-  // If to structure is a village, can only transfer from its connected realm
-  if (toStructure?.category === StructureType.Village) {
-    return fromStructure?.entity_id === toStructure.metadata.village_realm;
-  }
-
-  // Otherwise, transfer is allowed
-  return true;
+export const canTransferMilitaryResources = (fromEntityId: ID, toEntityId: ID, store: NativeFactStore) => {
+  const game_id = configManager.getActiveGameId();
+  const explorer = store.get("ExplorerTroops", { game_id, explorer_id: fromEntityId });
+  const home = store.get("Structure", { game_id, entity_id: explorer?.owner ?? fromEntityId });
+  const target = store.get("Structure", { game_id, entity_id: toEntityId });
+  return home !== undefined && target !== undefined && home.owner === target.owner;
 };

@@ -1,15 +1,17 @@
 import {
   createEmptyActivityBreakdown,
   readPointsRegistration,
-  type HeraldLeaderboard,
-  type PlayerLeaderboardActivityEntry,
+  type PlayerActivityBreakdown,
 } from "@bibliothecadao/eternum/game-sync";
 
 type Registration = NonNullable<ReturnType<typeof readPointsRegistration>>;
 
-/** A history aggregate restored before serving requests, then updated only by newly committed events. */
+/**
+ * Each player's registered points by activity: restored from history before serving requests, then updated only by
+ * newly committed events. Totals and ranks come from current facts in the leaderboard read model, not from here.
+ */
 export class PointsLeaderboard {
-  private readonly games = new Map<string, Map<string, PlayerLeaderboardActivityEntry>>();
+  private readonly games = new Map<string, Map<string, PlayerActivityBreakdown>>();
 
   public accept(gameId: string, registration: Registration): void {
     const key = BigInt(gameId).toString();
@@ -18,30 +20,17 @@ export class PointsLeaderboard {
       players = new Map();
       this.games.set(key, players);
     }
-    let entry = players.get(registration.address);
-    if (!entry) {
-      entry = {
-        address: registration.address,
-        activityBreakdown: createEmptyActivityBreakdown(),
-        totalPoints: 0,
-        rank: 0,
-      };
-      players.set(registration.address, entry);
+    let breakdown = players.get(registration.address);
+    if (!breakdown) {
+      breakdown = createEmptyActivityBreakdown();
+      players.set(registration.address, breakdown);
     }
-    entry.activityBreakdown[registration.activity].count += 1;
-    entry.activityBreakdown[registration.activity].points += registration.points;
-    entry.totalPoints += registration.points;
+    breakdown[registration.activity].count += 1;
+    breakdown[registration.activity].points += registration.points;
   }
 
-  public snapshot(gameId: string): HeraldLeaderboard {
-    const key = BigInt(gameId).toString();
-    const entries = [...(this.games.get(key)?.values() ?? [])]
-      .sort((left, right) => right.totalPoints - left.totalPoints || left.address.localeCompare(right.address))
-      .map((entry, index) => ({
-        ...entry,
-        activityBreakdown: structuredClone(entry.activityBreakdown),
-        rank: index + 1,
-      }));
-    return { game_id: key, entries };
+  public activity(gameId: string): ReadonlyMap<string, PlayerActivityBreakdown> {
+    const players = this.games.get(BigInt(gameId).toString()) ?? new Map();
+    return new Map([...players].map(([address, breakdown]) => [address, structuredClone(breakdown)]));
   }
 }

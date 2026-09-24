@@ -1,3 +1,4 @@
+import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -12,12 +13,10 @@ import {
   getClosestBank,
   isMilitaryResource,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, ID, ResourcesIds, StructureType, resources } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
-import { getComponentValue } from "@dojoengine/recs";
 import React, { useCallback, useMemo, useState } from "react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 type LiquidityResourceRowProps = {
   playerStructureIds: ID[];
@@ -32,26 +31,23 @@ export const LiquidityResourceRow = ({
   resourceId,
   isFirst,
 }: LiquidityResourceRowProps) => {
-  const dojoContext = useDojo();
+  const gameContext = useGame();
   const [isLoading, setIsLoading] = useState(false);
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
   const [showInputResourcesPrice, setShowInputResourcesPrice] = useState(false);
   const [withdrawalPercentage, setWithdrawalPercentage] = useState(100);
 
-  const marketEntityId = useMemo(() => gameEntityKey([BigInt(resourceId)]), [resourceId]);
-  const liquidityEntityId = useMemo(
-    () => gameEntityKey([BigInt(dojoContext.account.account.address), BigInt(resourceId)]),
-    [resourceId],
-  );
-
-  const market = useComponentValue(dojoContext.setup.components.Market, marketEntityId);
-  const liquidity = useComponentValue(dojoContext.setup.components.Liquidity, liquidityEntityId);
+  const market = useNativeRow("Market", { game_id: configManager.getActiveGameId(), resource_type: resourceId });
+  const liquidity = useNativeRow("Liquidity", {
+    game_id: configManager.getActiveGameId(),
+    owner: BigInt(gameContext.account.account.address),
+    resource_type: resourceId,
+  });
 
   const marketManager = useMemo(
-    () =>
-      new MarketManager(dojoContext.setup.components, ContractAddress(dojoContext.account.account.address), resourceId),
-    [dojoContext, resourceId, market, liquidity],
+    () => new MarketManager(gameContext.setup.store, ContractAddress(gameContext.account.account.address), resourceId),
+    [gameContext, resourceId, market, liquidity],
   );
 
   const resource = useMemo(() => resources.find((r) => r.id === resourceId), [resourceId]);
@@ -81,7 +77,7 @@ export const LiquidityResourceRow = ({
       setIsLoading(true);
       const { withdrawShares } = calculateWithdrawAmounts(percentage);
 
-      const closestBank = getClosestBank(entityId, dojoContext.setup.components);
+      const closestBank = getClosestBank(entityId, gameContext.setup.store);
 
       if (!closestBank) return;
 
@@ -90,15 +86,15 @@ export const LiquidityResourceRow = ({
         entity_id: entityId,
         resource_type: BigInt(resourceId),
         shares: withdrawShares,
-        signer: dojoContext.account.account,
+        signer: gameContext.account.account,
       };
 
-      dojoContext.setup.systemCalls.remove_liquidity(calldata).finally(() => {
+      gameContext.setup.systemCalls.remove_liquidity(calldata).finally(() => {
         setIsLoading(false);
         setOpenConfirmation(false);
       });
     },
-    [dojoContext, entityId, resourceId, marketManager],
+    [gameContext, entityId, resourceId, marketManager],
   );
 
   const calculateWithdrawAmounts = useCallback(
@@ -124,15 +120,15 @@ export const LiquidityResourceRow = ({
     const { lords, resource } = calculateWithdrawAmounts(withdrawalPercentage);
 
     const isVillageAndMilitaryResource =
-      getComponentValue(dojoContext.setup.components.Structure, gameEntityKey([BigInt(entityId)]))?.category ===
-        StructureType.Village && isMilitaryResource(resourceId);
+      gameContext.setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base
+        .category === StructureType.Village && isMilitaryResource(resourceId);
 
     const travelResources = [
       { amount: divideByPrecision(lords), resourceId: ResourcesIds.Lords },
       { amount: divideByPrecision(resource), resourceId: resourceId },
     ];
 
-    const closestBank = getClosestBank(entityId, dojoContext.setup.components);
+    const closestBank = getClosestBank(entityId, gameContext.setup.store);
 
     if (!closestBank) return null;
 
@@ -289,9 +285,13 @@ const MyLiquidity = ({
 }) => {
   const resourceId = marketManager.resourceId;
 
-  const playerLiquidityInfo = useMemo(() => {
-    return marketManager.getLatestLiquidityEvent(playerStructureIds);
-  }, [playerStructureIds, marketManager]);
+  const { data: history } = useStoryEvents(100, "BankLiquidity", `0x${marketManager.player.toString(16)}`);
+  const playerLiquidityInfo = history.find(
+    (event) =>
+      event.storyPayload.add === true &&
+      Number(event.storyPayload.resource_type) === resourceId &&
+      playerStructureIds.includes(Number(event.storyPayload.structure_id)),
+  )?.storyPayload;
 
   const [lordsDifferencePercentage, resourceDifferencePercentage] = useMemo(() => {
     if (!playerLiquidityInfo) return [0, 0];
@@ -319,7 +319,7 @@ const MyLiquidity = ({
       <div className="flex">
         <div>{divideByPrecision(lordsAmount).toLocaleString()}</div>
         <ResourceIcon resource="Lords" size="sm" />
-        {lordsAmount > 0 && (
+        {playerLiquidityInfo && lordsAmount > 0 && (
           <span className={`ml-1 text-xs ${lordsDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
             ({lordsDifferencePercentage > 0 ? "+" : ""}
             {formatNumber(lordsDifferencePercentage, 4)}%)
@@ -330,7 +330,7 @@ const MyLiquidity = ({
       <div className="flex">
         <div>{divideByPrecision(resourceAmount).toLocaleString()}</div>
         <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
-        {resourceAmount > 0 && (
+        {playerLiquidityInfo && resourceAmount > 0 && (
           <span className={`ml-1 text-xs ${resourceDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
             ({resourceDifferencePercentage > 0 ? "+" : ""}
             {formatNumber(resourceDifferencePercentage, 4)}%)
@@ -351,14 +351,15 @@ const MyLiquidity = ({
 };
 
 const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }) => {
-  const { setup } = useDojo();
+  const { setup } = useGame();
+  useNativeRevision(["Market"]);
   const inputResources = configManager.complexSystemResourceInputs[marketManager.resourceId];
   const outputAmount = configManager.complexSystemResourceOutput[marketManager.resourceId].amount;
 
   if (!inputResources?.length) return null;
   const totalPrice =
     inputResources.reduce((sum, resource) => {
-      const price = new MarketManager(setup.components, marketManager.player, resource.resource).getMarketPrice();
+      const price = new MarketManager(setup.store, marketManager.player, resource.resource).getMarketPrice();
       return sum + Number(price) * resource.amount;
     }, 0) / outputAmount;
   return (

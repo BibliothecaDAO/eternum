@@ -1,4 +1,5 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { StructureArrivals } from "@/ui/features/economy/resources/resource-arrival";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { PackageOpen } from "@/ui/design-system/atoms/game-icons";
@@ -6,7 +7,7 @@ import { memo } from "react";
 
 export const AllResourceArrivals = memo(
   ({ className = "", hasArrivals = false }: { className?: string; hasArrivals?: boolean }) => {
-    const playerStructures = useUIStore((state) => state.playerStructures);
+    const playerStructures = useFactView(playerStructuresView);
     const { currentBlockTimestamp } = getBlockTimestamp();
     const now = currentBlockTimestamp;
 

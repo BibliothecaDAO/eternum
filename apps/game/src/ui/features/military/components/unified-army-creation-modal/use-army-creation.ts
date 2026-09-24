@@ -13,12 +13,20 @@ import {
   getGuardSlotCooldownRemaining,
   getGuardsByStructure,
   getTroopResourceId,
+  liveHomeArmies,
+  ResourceManager,
+  structureMapPosition,
+  openSpawnDirections,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import {
+  BuildingType,
+  BuildingTypeToString,
   Direction,
   DISPLAYED_SLOT_NUMBER_MAP,
-  getDirectionBetweenAdjacentHexes,
+  getBuildingFromResource,
   getNeighborHexes,
   GUARD_SLOT_NAMES,
   GuardSlot,
@@ -28,7 +36,6 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -38,11 +45,18 @@ import {
 } from "../../utils/defense-slot-utils";
 import { getGuardStaminaSnapshot } from "../../utils/guard-stamina";
 import type { GuardSummary, SelectedTroopCombo, TroopSelectionOption } from "./types";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 
 import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
-import { resolveArmyCreationBlockedReason, resolveArmyTroopAvailability } from "./army-creation-policy";
+import {
+  describeTroopTraining,
+  resolveArmyCreationBlockedReason,
+  resolveArmyTroopAvailability,
+  resolveInitialTroop,
+  resolveSpawnDirection,
+  resolveTroopAvailabilityReason,
+  type TroopSupply,
+} from "./army-creation-policy";
 
 interface ArmyCreationOptions {
   structureId: number;
@@ -73,8 +87,9 @@ export const useArmyCreation = ({
   onSubmit,
 }: ArmyCreationOptions) => {
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
+  const mode = useGameModeConfig();
   const submittingRef = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(
@@ -97,8 +112,17 @@ export const useArmyCreation = ({
     }
   }, [initialGuardSlot]);
 
-  const structureComponent = useComponentValue(components.Structure, gameEntityKey([BigInt(activeStructureId || 0)]));
-  const resourceComponent = useComponentValue(components.Resource, gameEntityKey([BigInt(activeStructureId)]));
+  const structureComponent = useNativeRow("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: activeStructureId,
+  });
+  const revision = useNativeRevision([
+    "ResourceBalance",
+    "ResourceProduction",
+    "ResourceWeight",
+    "Guard",
+    "ExplorerTroops",
+  ]);
   const provision = useBlitzRealmProvision(activeStructureId);
 
   const troopOptions = useMemo<TroopSelectionOption[]>(() => {
@@ -115,7 +139,7 @@ export const useArmyCreation = ({
       label: formatTroopTypeLabel(type),
       tiers: TROOP_TIERS.map((tier) => {
         const resourceId = getTroopResourceId(type, tier);
-        const balance = getBalance(activeStructureId, resourceId, currentDefaultTick, components).balance;
+        const balance = getBalance(activeStructureId, resourceId, currentDefaultTick, store).balance;
         const available = Number(divideByPrecision(balance));
         const resource = resources.find((item) => item.id === resourceId);
         if (!resource) throw new Error(`Missing troop resource ${resourceId}`);
@@ -127,7 +151,7 @@ export const useArmyCreation = ({
         };
       }),
     }));
-  }, [activeStructureId, currentDefaultTick, components, resourceComponent]);
+  }, [activeStructureId, currentDefaultTick, store, revision]);
 
   const structureBase = structureComponent?.base;
   const structureCategory = structureBase?.category as StructureType | undefined;
@@ -165,11 +189,14 @@ export const useArmyCreation = ({
   const availableGuardSlotSet = useMemo(() => new Set(availableGuardSlots), [availableGuardSlots]);
 
   const guardsData = useMemo(
-    () => (structureComponent ? getGuardsByStructure(structureComponent) : []),
-    [structureComponent],
+    () => (structureComponent ? getGuardsByStructure(structureComponent, store) : []),
+    [structureComponent, store, revision],
   );
 
-  const currentExplorersCount = Number(structureBase?.troop_explorer_count ?? 0);
+  const currentExplorersCount = useMemo(
+    () => liveHomeArmies(store, activeStructureId, configManager.getActiveGameId()).length,
+    [store, activeStructureId, revision, currentDefaultTick],
+  );
   const currentGuardsCount =
     guardsData?.filter(
       (guard) => guard.troops?.count && guard.troops.count > 0n && availableGuardSlotSet.has(Number(guard.slot)),
@@ -234,8 +261,10 @@ export const useArmyCreation = ({
     (selectedGuardCategory === selectedTroopCombo.type && selectedGuardTier === selectedTroopCombo.tier);
   const isDefenseSlotCreationBlocked = !isSelectedSlotOccupied && !canCreateDefenseArmy;
   const selectedSlotCooldown = selectedGuard?.cooldownRemaining ?? 0;
-  const structureCoordX = structureBase?.coord_x;
-  const structureCoordY = structureBase?.coord_y;
+  // Spawn hexes surround the structure's map position: for a Frontier realm the day's site, as the contract spawns.
+  const structurePosition = structureComponent ? structureMapPosition(store, structureComponent) : undefined;
+  const structureCoordX = structurePosition?.x;
+  const structureCoordY = structurePosition?.y;
 
   useEffect(() => {
     if (armyType || fixedContext) {
@@ -277,13 +306,15 @@ export const useArmyCreation = ({
   const neighborTiles = useWorldSpatialTiles(neighborHexes);
   const freeDirections = useMemo(
     () =>
-      neighborTiles
-        .filter((tile) => Number(tile.occupierId) === 0)
-        .map((tile) =>
-          getDirectionBetweenAdjacentHexes({ col: structureCoordX ?? 0, row: structureCoordY ?? 0 }, tile.hexCoords),
-        )
-        .filter((candidate): candidate is Direction => candidate !== null),
-    [neighborTiles, structureCoordX, structureCoordY],
+      structureComponent
+        ? openSpawnDirections(store, structureComponent, (hex) => {
+            const tile = neighborTiles.find(
+              (candidate) => candidate.hexCoords.col === hex.col && candidate.hexCoords.row === hex.row,
+            );
+            return tile ? Number(tile.occupierId) : undefined;
+          })
+        : [],
+    [neighborTiles, store, structureComponent],
   );
 
   const isDefenseTroopLocked = !armyType && isSelectedSlotOccupied;
@@ -291,15 +322,16 @@ export const useArmyCreation = ({
   useEffect(() => {
     if (previousStructureIdRef.current === activeStructureId) return;
     previousStructureIdRef.current = activeStructureId;
-    const option = troopOptions.find((option) => option.tiers.some((tier) => tier.available >= 1));
-    const tier = option?.tiers.find((tier) => tier.available >= 1);
-    setSelectedTroopCombo(option && tier ? { type: option.type, tier: tier.tier } : DEFAULT_TROOP_COMBO);
-  }, [activeStructureId, troopOptions]);
+    const isTrainable = (troop: SelectedTroopCombo) =>
+      mode.rules.isBuildingTypeAllowed(
+        BuildingType[getBuildingFromResource(getTroopResourceId(troop.type, troop.tier))],
+      );
+    setSelectedTroopCombo(resolveInitialTroop(troopOptions, isTrainable) ?? DEFAULT_TROOP_COMBO);
+  }, [activeStructureId, troopOptions, mode]);
 
   useEffect(() => {
-    if (freeDirections.length > 0 && selectedDirection === null && direction === undefined) {
-      setSelectedDirection(freeDirections[0]);
-    }
+    const next = resolveSpawnDirection(selectedDirection, freeDirections, direction);
+    if (next !== selectedDirection) setSelectedDirection(next);
   }, [freeDirections, selectedDirection, direction]);
 
   useEffect(() => {
@@ -364,6 +396,16 @@ export const useArmyCreation = ({
     setTroopCount((current) => Math.max(0, Math.min(current, maxAffordable)));
   }, [maxAffordable]);
 
+  const troopSupply = useMemo(
+    () => readTroopSupply(store, activeStructureId, selectedTroopCombo, selectedAvailable, troopCapacityLimit),
+    [store, activeStructureId, selectedTroopCombo, selectedAvailable, troopCapacityLimit, revision],
+  );
+  const troopAvailabilityReason = resolveTroopAvailabilityReason({
+    capacityRemaining: capacityRemainingForSelector,
+    available: selectedAvailable,
+    supply: troopSupply,
+  });
+
   const selectedGuardLabel =
     selectedGuardTier && selectedGuardCategory ? `${selectedGuardTier} ${selectedGuardCategory}` : null;
   const selectedGuardLabelUpper = selectedGuardLabel?.toUpperCase() ?? null;
@@ -400,10 +442,13 @@ export const useArmyCreation = ({
     hasGuardSlot: availableGuardSlotSet.has(guardSlot) && !isDefenseActionDisabled,
     capacityRemaining: capacityRemainingForSelector,
     available: selectedAvailable,
+    supply: troopSupply,
     troopCount,
     isLoading,
   });
   const isActionDisabled = blockedReason !== null;
+  // The count controls already show the availability reason; the submit button names only a different one.
+  const submitBlockedReason = blockedReason === troopAvailabilityReason ? null : blockedReason;
 
   const handleCreate = async () => {
     if (!activeStructureId || isActionDisabled || submittingRef.current) return;
@@ -475,9 +520,29 @@ export const useArmyCreation = ({
     isLoading,
     isActionDisabled,
     handleCreate,
-    blockedReason,
+    troopAvailabilityReason,
+    submitBlockedReason,
+    // With no troop on hand the availability reason already carries the training line.
+    troopTrainingLine: troopAvailabilityReason ? null : describeTroopTraining(troopSupply),
   };
 };
+
+/** The selected troop's barracks output now, read the way the resource bar reads production. */
+function readTroopSupply(
+  store: ReturnType<typeof useGame>["setup"]["store"],
+  structureId: ID,
+  troop: SelectedTroopCombo,
+  available: number,
+  fullArmy: number | null,
+): TroopSupply {
+  const resourceId = getTroopResourceId(troop.type, troop.tier);
+  const name = BuildingTypeToString[getBuildingFromResource(resourceId)];
+  const manager = new ResourceManager(store, structureId);
+  const production = manager.isActive(resourceId) ? manager.current(resourceId)?.production : undefined;
+  const perSecond = production ? divideByPrecision(Number(production.production_rate), false) : 0;
+  const secondsToFullArmy = perSecond > 0 && fullArmy !== null ? Math.max(0, (fullArmy - available) / perSecond) : null;
+  return { name, perHour: Math.floor(perSecond * 3600), secondsToFullArmy };
+}
 
 /** Both surfaces submit through ArmyManager and its existing observed system calls. */
 async function submitArmyCreation(

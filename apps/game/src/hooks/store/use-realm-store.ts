@@ -1,9 +1,8 @@
-import { normalizeWorldMapRoutePosition } from "@/play/navigation/play-route-target";
+import { mapRouteHex } from "@/play/navigation/play-route";
+import type { Position } from "@bibliothecadao/eternum";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
-import { countAvailableRelics } from "@/ui/features/relics/utils/count-available-relics";
-import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
-import type { PlayerRelicsData } from "@/types";
-import { ID, Structure, StructureType } from "@bibliothecadao/types";
+import { readActivePlayerStructures } from "@/sync/fact-views";
+import { ID } from "@bibliothecadao/types";
 import { isExplicitSpectateSession, overrideSpectateIntent } from "@/utils/spectator-session";
 
 const idsMatch = (left: unknown, right: unknown) => String(left) === String(right);
@@ -32,40 +31,21 @@ const normalizeStructureId = (value: ID | unknown): ID | null => {
   return null;
 };
 
-const resolvePreferredControlledStructureId = (playerStructures: Structure[]): ID => {
-  const firstRealm = playerStructures.find((structure) => structure.category === StructureType.Realm);
-  return firstRealm?.entityId ?? playerStructures[0]?.entityId ?? UNDEFINED_STRUCTURE_ENTITY_ID;
-};
-
 export interface RealmStore {
   structureEntityId: ID;
   lastControlledStructureEntityId: ID;
   isSpectating: boolean;
+  /** Where the world map re-opens: a map URL's hex, normalized (mapRouteHex). */
   worldMapReturnPosition: { col: number; row: number } | null;
-  setStructureEntityId: (
-    structureEntityId: ID,
-    options?: { spectator?: boolean; worldMapPosition?: { col: number; row: number } },
-  ) => void;
+  setStructureEntityId: (structureEntityId: ID, options?: { spectator?: boolean; worldMapPosition?: Position }) => void;
   setLastControlledStructureEntityId: (structureEntityId: ID) => void;
   exitSpectatorMode: () => void;
-  playerStructures: Structure[];
-  setPlayerStructures: (playerStructures: Structure[]) => void;
   arrivedArrivalsNumber: number;
   arrivedArrivalStructureIds: ID[];
   setArrivalIndicators: (
     indicators: Pick<RealmStore, "arrivedArrivalsNumber" | "pendingArrivalsNumber" | "arrivedArrivalStructureIds">,
   ) => void;
   pendingArrivalsNumber: number;
-  publicIncomingTroopArrivalsByStructure: Record<string, IncomingTroopArrival[]>;
-  setPublicIncomingTroopArrivalsByStructure: (value: Record<string, IncomingTroopArrival[]>) => void;
-  availableRelicsNumber: number;
-  setAvailableRelicsNumber: (availableRelicsNumber: number) => void;
-  playerRelics: PlayerRelicsData | null;
-  setPlayerRelics: (playerRelics: PlayerRelicsData | null) => void;
-  playerRelicsLoading: boolean;
-  setPlayerRelicsLoading: (loading: boolean) => void;
-  relicsRefreshNonce: number;
-  triggerRelicsRefresh: () => void;
 }
 
 export const createRealmStoreSlice = (
@@ -75,10 +55,7 @@ export const createRealmStoreSlice = (
   lastControlledStructureEntityId: UNDEFINED_STRUCTURE_ENTITY_ID,
   isSpectating: false,
   worldMapReturnPosition: null,
-  setStructureEntityId: (
-    structureEntityId: ID,
-    options?: { spectator?: boolean; worldMapPosition?: { col: number; row: number } },
-  ) =>
+  setStructureEntityId: (structureEntityId: ID, options?: { spectator?: boolean; worldMapPosition?: Position }) =>
     set((state: RealmStore) => {
       const normalizedId = normalizeStructureId(structureEntityId);
       if (normalizedId === null) {
@@ -86,7 +63,8 @@ export const createRealmStoreSlice = (
         return state;
       }
 
-      const ownsStructure = state.playerStructures.some((structure) => idsMatch(structure.entityId, normalizedId));
+      const playerStructures = readActivePlayerStructures();
+      const ownsStructure = playerStructures.some((structure) => idsMatch(structure.entityId, normalizedId));
       // Owning a structure means you're playing it — never auto-set spectator
       // mode while the player is looking at one of their own structures, even
       // if the caller passed spectator: true. worldmap.tsx forwards the stale
@@ -97,7 +75,7 @@ export const createRealmStoreSlice = (
       const explicitSpectate = isExplicitSpectateSession();
       const requestedSpectate = options?.spectator ?? (explicitSpectate || !ownsStructure);
       const shouldSpectate = ownsStructure && !explicitSpectate ? false : requestedSpectate;
-      const currentStructureIsOwned = state.playerStructures.some((structure) =>
+      const currentStructureIsOwned = playerStructures.some((structure) =>
         idsMatch(structure.entityId, state.structureEntityId),
       );
 
@@ -107,7 +85,7 @@ export const createRealmStoreSlice = (
       };
 
       if (options?.worldMapPosition) {
-        updates.worldMapReturnPosition = normalizeWorldMapRoutePosition(options.worldMapPosition);
+        updates.worldMapReturnPosition = mapRouteHex(options.worldMapPosition);
       }
 
       if (shouldSpectate) {
@@ -153,74 +131,8 @@ export const createRealmStoreSlice = (
         isSpectating: false,
       } as Partial<RealmStore>;
     }),
-  playerStructures: [],
-  setPlayerStructures: (playerStructures: Structure[]) =>
-    set((state: RealmStore) => {
-      const lastControlledExists = playerStructures.some((structure) =>
-        idsMatch(structure.entityId, state.lastControlledStructureEntityId),
-      );
-      const currentStructureIsOwned = playerStructures.some((structure) =>
-        idsMatch(structure.entityId, state.structureEntityId),
-      );
-
-      const updates: Partial<RealmStore> = {
-        playerStructures,
-      };
-
-      const shouldRecoverFromStartupSpectator =
-        state.isSpectating &&
-        !isExplicitSpectateSession() &&
-        state.lastControlledStructureEntityId === UNDEFINED_STRUCTURE_ENTITY_ID &&
-        !currentStructureIsOwned &&
-        playerStructures.length > 0;
-
-      if (shouldRecoverFromStartupSpectator) {
-        const nextControlled = resolvePreferredControlledStructureId(playerStructures);
-        updates.lastControlledStructureEntityId = nextControlled;
-        updates.structureEntityId = nextControlled;
-        updates.isSpectating = false;
-        return updates;
-      }
-
-      // Mid-session settle: the player started as a spectator and has just
-      // acquired the very structure they were viewing. Drop the stale flag so
-      // the HUD chrome (structure list, action buttons) reappears.
-      if (state.isSpectating && currentStructureIsOwned && !isExplicitSpectateSession()) {
-        updates.isSpectating = false;
-        if (state.lastControlledStructureEntityId === UNDEFINED_STRUCTURE_ENTITY_ID) {
-          updates.lastControlledStructureEntityId = state.structureEntityId;
-        }
-      }
-
-      if (!lastControlledExists) {
-        const nextControlled = resolvePreferredControlledStructureId(playerStructures);
-        updates.lastControlledStructureEntityId = nextControlled;
-
-        if (!state.isSpectating) {
-          updates.structureEntityId = nextControlled;
-        }
-      }
-
-      return updates;
-    }),
   arrivedArrivalsNumber: 0,
   arrivedArrivalStructureIds: [],
   setArrivalIndicators: (indicators: Parameters<RealmStore["setArrivalIndicators"]>[0]) => set(indicators),
   pendingArrivalsNumber: 0,
-  publicIncomingTroopArrivalsByStructure: {},
-  setPublicIncomingTroopArrivalsByStructure: (
-    publicIncomingTroopArrivalsByStructure: Record<string, IncomingTroopArrival[]>,
-  ) => set({ publicIncomingTroopArrivalsByStructure }),
-  availableRelicsNumber: 0,
-  setAvailableRelicsNumber: (availableRelicsNumber: number) => set({ availableRelicsNumber }),
-  playerRelics: null,
-  setPlayerRelics: (playerRelics: PlayerRelicsData | null) =>
-    set({
-      playerRelics,
-      availableRelicsNumber: countAvailableRelics(playerRelics),
-    }),
-  playerRelicsLoading: true,
-  setPlayerRelicsLoading: (loading: boolean) => set({ playerRelicsLoading: loading }),
-  relicsRefreshNonce: 0,
-  triggerRelicsRefresh: () => set((state: RealmStore) => ({ relicsRefreshNonce: state.relicsRefreshNonce + 1 })),
 });

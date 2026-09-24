@@ -75,6 +75,10 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
   }, [recipientId, onlinePlayers]);
 
   const { sendMessage, loadHistory, markAsRead } = useDirectMessageControls(resolvedThreadId, recipientId);
+  const isRecipientBlocked = useRealtimeChatSelector(
+    (state) => recipientId !== undefined && state.blockedPlayers.includes(recipientId),
+  );
+  const chatActions = useRealtimeChatSelector((state) => state.actions);
   const topSentinelRef = useRef<HTMLDivElement | null>(null);
   const isLoadingRef = useRef(false);
 
@@ -181,6 +185,23 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
 
   return (
     <section className={`flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
+      {thread && recipientId && (
+        <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-4 py-2 text-xs">
+          <span className="text-gold/70">{recipientLabel}</span>
+          <button
+            type="button"
+            className="rounded border border-gold/30 px-2 py-0.5 text-gold/80 hover:bg-gold/10"
+            onClick={() =>
+              (isRecipientBlocked
+                ? chatActions.unblockPlayer(recipientId)
+                : chatActions.blockPlayer(recipientId)
+              ).catch((error) => console.error("chat_block_failed", error))
+            }
+          >
+            {isRecipientBlocked ? "Unblock" : "Block"}
+          </button>
+        </header>
+      )}
       <div className="flex-1 min-h-0 px-4 py-3">
         {!thread && <p className="text-sm text-gold/50">Select a conversation to get started.</p>}
         {thread && (

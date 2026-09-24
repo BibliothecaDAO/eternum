@@ -1,13 +1,13 @@
-import { useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { notificationOwnerOf, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useNotificationPreferenceStore } from "@/hooks/use-notification-preferences";
-import { getActiveWorld } from "@/runtime/world";
+import { getActiveGame } from "@/runtime/world";
 import { buildEntryHref, parsePlayRoute } from "@/play/navigation/play-route";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import {
   eventConfirmationRank,
   storyEventIdentity,
-  type GameSyncEntity,
+  type GameSyncEvent,
   type GameSyncEventConfirmation,
   type StoryEventScope,
 } from "@bibliothecadao/eternum/game-sync";
@@ -26,7 +26,7 @@ import {
 
 /** Called only from the live event callback. History hydration never enters the OS delivery path. */
 export function dispatchLocalStoryNotification(
-  event: GameSyncEntity,
+  event: GameSyncEvent,
   scope: StoryEventScope,
   confirmation?: GameSyncEventConfirmation,
 ): void {
@@ -36,9 +36,8 @@ export function dispatchLocalStoryNotification(
     isExplicitSpectateSession()
   )
     return;
-  const entry = Object.entries(event.models).find(([model]) => model === "StoryEvent" || model.endsWith("-StoryEvent"));
-  if (!entry) return;
-  void deliverStory(entry[1] as Record<string, unknown>, scope).catch(reportNotificationDeliveryError);
+  if (event.model !== "StoryEvent" && !event.model.endsWith("-StoryEvent")) return;
+  void deliverStory(event.value, scope).catch(reportNotificationDeliveryError);
 }
 
 type DeliveryContext = NonNullable<ReturnType<typeof resolveDeliveryContext>>;
@@ -54,7 +53,7 @@ async function deliverStory(value: Record<string, unknown>, scope: StoryEventSco
 }
 
 function resolveDeliveryContext(scope: StoryEventScope) {
-  const identity = useIdentitySessionStore.getState().session?.user.id;
+  const identity = notificationOwnerOf(useIdentitySessionStore.getState().session);
   const account = useAccountStore.getState().account?.address;
   const preferences = useNotificationPreferenceStore.getState();
   if (
@@ -66,15 +65,15 @@ function resolveDeliveryContext(scope: StoryEventScope) {
   )
     return null;
   if (localNotificationCapability() || Notification.permission !== "granted") return null;
-  const world = getActiveWorld();
+  const world = getActiveGame();
   const route = parsePlayRoute(window.location);
   if (
     !world ||
     !route ||
     world.gameId !== scope.gameId ||
-    world.chain !== scope.chain ||
-    BigInt(world.worldAddress) !== BigInt(scope.worldAddress) ||
-    route.worldName !== world.name
+    world.chainId !== scope.chainId ||
+    route.chainId !== world.chainId ||
+    route.gameId !== world.gameId
   )
     return null;
   return { identity, account, preference: preferences.saved, world };
@@ -87,8 +86,8 @@ function isCurrentDeliveryContext(scope: StoryEventScope, expected: DeliveryCont
     current !== null &&
     current.identity === expected.identity &&
     current.account === expected.account &&
-    current.world.worldAddress === expected.world.worldAddress &&
-    current.world.name === expected.world.name &&
+    current.world.chainId === expected.world.chainId &&
+    current.world.gameId === expected.world.gameId &&
     current.preference === expected.preference
   );
 }
@@ -106,8 +105,8 @@ function buildEligibleNotification(value: Record<string, unknown>, scope: StoryE
     owner: context.identity,
     gameName: context.world.name,
     target: buildEntryHref({
-      chain: context.world.chain,
-      worldName: context.world.name,
+      chainId: context.world.chainId,
+      gameId: context.world.gameId,
       intent: "play",
       autoSettle: false,
     }),

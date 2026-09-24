@@ -1,90 +1,43 @@
-import type { WorldProfile } from "@/runtime/world/types";
 import { describe, expect, it } from "vitest";
 
-import {
-  buildEntryHref,
-  buildPlayHref,
-  normalizeLegacyPlayLocation,
-  parseEntryRoute,
-  parsePlayRoute,
-} from "./play-route";
+import { buildEntryHref, buildPlayHref, parseEntryRoute, parsePlayRoute } from "./play-route";
 
 const createLocation = (pathname: string, search = ""): Location => ({ pathname, search }) as Location;
 
-const FALLBACK_WORLD: WorldProfile = {
-  name: "aurora-blitz",
-  chain: "appchain",
-  heraldBaseUrl: "https://herald.realms.test",
-  worldAddress: "0x1",
-  contractsBySelector: {},
-  fetchedAt: 0,
-};
-
 describe("play-route", () => {
-  it("parses a canonical play route descriptor from the URL", () => {
-    expect(parsePlayRoute(createLocation("/play/appchain/aurora-blitz/map", "?col=12&row=34&spectate=true"))).toEqual({
-      chain: "appchain",
-      worldName: "aurora-blitz",
-      scene: "map",
-      col: 12,
-      row: 34,
-      bootMode: "direct",
-      resumeScene: null,
-    });
-  });
-
-  it("builds a canonical play href from a descriptor", () => {
-    expect(
-      buildPlayHref({
-        chain: "madara",
-        worldName: "iron-age",
-        scene: "hex",
-        col: 7,
-        row: 9,
-      }),
-    ).toBe("/play/madara/iron-age/hex?col=7&row=9");
-  });
-
-  it("retains renderer diagnostics when switching scenes and finishing the loading handoff", () => {
+  it("round-trips a scene route through its chain id and game id", () => {
     const route = parsePlayRoute(
       createLocation(
-        "/play/madara/iron-age/map",
+        "/g/0xA1/3/map",
         "?col=1&row=2&boot=map-first&resumeScene=hex&rendererMode=webgpu-force-webgl&logs=1",
       ),
-    )!;
-    expect(buildPlayHref({ ...route, scene: "hex", bootMode: "direct", resumeScene: null, spectate: false })).toBe(
-      "/play/madara/iron-age/hex?col=1&row=2&rendererMode=webgpu-force-webgl&logs=1",
+    );
+    expect(route).toMatchObject({ chainId: "0xa1", gameId: 3, scene: "map", col: 1, row: 2, resumeScene: "hex" });
+    expect(buildPlayHref({ ...route!, scene: "hex", bootMode: "direct", resumeScene: null, spectate: true })).toBe(
+      "/g/0xa1/3/hex?col=1&row=2&spectate=true&rendererMode=webgpu-force-webgl&logs=1",
     );
   });
 
-  it("parses and builds canonical entry routes", () => {
-    const route = parseEntryRoute(createLocation("/enter/appchain/aurora-blitz", "?intent=settle&autoSettle=true"));
+  it("refuses a chain that is not a hex felt and a game id that is not a positive integer", () => {
+    expect(parsePlayRoute(createLocation("/g/madara/3/map"))).toBeNull();
+    expect(parseEntryRoute(createLocation("/g/0xa1/iron-age"))).toBeNull();
+    expect(parseEntryRoute(createLocation("/g/0xa1/0"))).toBeNull();
+  });
 
-    expect(route).toEqual({
-      chain: "appchain",
-      worldName: "aurora-blitz",
-      intent: "settle",
-      autoSettle: true,
+  it("tells a game's entry apart from its scenes", () => {
+    expect(parseEntryRoute(createLocation("/g/0xb2/9", "?spectate=true"))).toEqual({
+      chainId: "0xb2",
+      gameId: 9,
+      intent: "spectate",
+      autoSettle: false,
     });
-
-    expect(buildEntryHref(route!)).toBe("/enter/appchain/aurora-blitz?intent=settle&autoSettle=true");
-  });
-
-  it("normalizes legacy scene routes into canonical play URLs when a fallback world exists", () => {
-    expect(normalizeLegacyPlayLocation(createLocation("/play/map", "?col=1&row=2&spectate=true"), FALLBACK_WORLD)).toBe(
-      "/play/appchain/aurora-blitz/map?col=1&row=2&spectate=true",
+    expect(parseEntryRoute(createLocation("/g/0xb2/9/map"))).toBeNull();
+    expect(parsePlayRoute(createLocation("/g/0xb2/9"))).toBeNull();
+    expect(buildEntryHref({ chainId: "0xb2", gameId: 9, intent: "settle", autoSettle: true })).toBe(
+      "/g/0xb2/9?intent=settle&autoSettle=true",
     );
-  });
-
-  it("normalizes bare scene routes emitted by legacy helpers into canonical play URLs", () => {
-    expect(normalizeLegacyPlayLocation(createLocation("/hex", "?col=4&row=9"), FALLBACK_WORLD)).toBe(
-      "/play/appchain/aurora-blitz/hex?col=4&row=9",
-    );
-  });
-
-  it("normalizes legacy world routes into canonical map routes when a fallback chain exists", () => {
-    expect(normalizeLegacyPlayLocation(createLocation("/play/iron-age"), FALLBACK_WORLD)).toBe(
-      "/play/appchain/iron-age/map",
+    expect(buildEntryHref({ chainId: "0xa1", gameId: 3, intent: "spectate", autoSettle: false })).toBe(
+      "/g/0xa1/3?spectate=true",
     );
   });
 });

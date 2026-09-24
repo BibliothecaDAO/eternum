@@ -1,144 +1,42 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
-import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
-import Button from "@/ui/design-system/atoms/button";
-import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
-import { ProductionModal } from "@/ui/features/settlement";
-import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
-import { useRealmUpgradeAndProvision } from "@/ui/modules/entity-details/hooks/use-realm-upgrade-and-provision";
-import { resolveRealmBootstrapErrorMessage } from "@/ui/modules/entity-details/hooks/realm-bootstrap-error";
-import { configManager, divideByPrecision, getBalance, getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, ID, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
-import { useMemo, useState } from "react";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
-
-import { useComponentValue } from "@dojoengine/react";
 import {
   AlertCircle as AlertCircleIcon,
   ArrowUpRight as ArrowUpRightIcon,
   ChevronDown as ChevronDownIcon,
   Crown as CrownIcon,
   Plus as PlusIcon,
-  Hyperstructure as WonderIcon,
   Pickaxe,
 } from "@/ui/design-system/atoms/game-icons";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
-
-const WONDER_BONUS_DISTANCE = 12;
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import Button from "@/ui/design-system/atoms/button";
+import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
+import { ProductionModal } from "@/ui/features/settlement";
+import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
+import { useRealmUpgradeAndProvision } from "@/ui/modules/entity-details/hooks/use-realm-upgrade-and-provision";
+import { resolveRealmBootstrapErrorMessage } from "@/ui/modules/entity-details/hooks/realm-bootstrap-error";
+import { configManager } from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
+import { ContractAddress, LEVEL_DESCRIPTIONS, RealmLevels } from "@bibliothecadao/types";
+import { useState } from "react";
+import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 
 export const Castle = () => {
-  const dojo = useDojo();
-  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const game = useGame();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const openSurface = usePopoverStore((state) => state.openSurface);
-  const [isWonderBonusLoading, setIsWonderBonusLoading] = useState(false);
-  const [isLevelUpLoading, setIsLevelUpLoading] = useState(false);
   const [showMissingResources, setShowMissingResources] = useState(false);
-
-  const productionBoostBonus = useComponentValue(
-    dojo.setup.components.ProductionBoostBonus,
-    gameEntityKey([BigInt(structureEntityId)]),
-  );
-  const hasActivatedWonderBonus = productionBoostBonus && productionBoostBonus.wonder_incr_percent_num > 0;
-
-  const isLaborProductionEnabled = configManager.isLaborProductionEnabled();
-
-  const onActivateWonderBonus = async () => {
-    setIsWonderBonusLoading(true);
-    if (!wonderStructureId) return;
-
-    try {
-      await dojo.setup.systemCalls.claim_wonder_production_bonus({
-        signer: dojo.account.account,
-        wonder_structure_id: wonderStructureId,
-        structure_id: structureEntityId,
-      });
-      setIsWonderBonusLoading(false);
-    } catch (error) {
-      console.error("Error claiming wonder production bonus:", error);
-      setIsWonderBonusLoading(false);
-    }
-    setIsWonderBonusLoading(false);
-  };
-
-  const structure = useComponentValue(dojo.setup.components.Structure, gameEntityKey([BigInt(structureEntityId)]));
-  // The wonder search scans the bridge's structures slice, published once per ingest slice.
-  const structures = useWorldSlicesStore((state) => state.structures);
-  const wonderStructureId = useMemo<ID | null>(() => {
-    if (!structure) return null;
-
-    const wonder = structures.find(
-      (candidate) =>
-        candidate?.metadata.has_wonder &&
-        Math.abs(candidate.base.coord_x - structure.base.coord_x) <= WONDER_BONUS_DISTANCE &&
-        Math.abs(candidate.base.coord_y - structure.base.coord_y) <= WONDER_BONUS_DISTANCE,
-    );
-    return wonder?.entity_id ?? null;
-  }, [structure, structures]);
-
-  const getNextRealmLevel = useMemo(() => {
-    if (!structure) return null;
-    const nextLevel = structure.base.level + 1;
-    const res = nextLevel <= configManager.getMaxLevel(structure.base.category) ? nextLevel : null;
-    return res;
-  }, [structure]);
-
-  const checkBalance = useMemo(() => {
-    if (!getNextRealmLevel) return false;
-
-    const cost = configManager.realmUpgradeCosts[getNextRealmLevel];
-    if (!cost) return false;
-
-    return Object.keys(cost).every((resourceId) => {
-      const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(structureEntityId, resourceCost.resource, currentDefaultTick, dojo.setup.components);
-      return divideByPrecision(balance.balance) >= resourceCost.amount;
-    });
-  }, [getNextRealmLevel, structureEntityId, currentDefaultTick, dojo.setup.components]);
-
-  const missingResources = useMemo(() => {
-    if (!getNextRealmLevel) return [];
-
-    const cost = configManager.realmUpgradeCosts[getNextRealmLevel];
-    if (!cost) return [];
-
-    const missing: { resource: number; amount: number; current: number }[] = [];
-
-    Object.keys(cost).forEach((resourceId) => {
-      const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(structureEntityId, resourceCost.resource, currentDefaultTick, dojo.setup.components);
-      const currentAmount = divideByPrecision(balance.balance);
-
-      if (currentAmount < resourceCost.amount) {
-        missing.push({
-          resource: resourceCost.resource,
-          amount: resourceCost.amount - currentAmount,
-          current: currentAmount,
-        });
-      }
-    });
-
-    return missing;
-  }, [getNextRealmLevel, structureEntityId, currentDefaultTick, dojo.setup.components]);
-
-  const levelUpRealm = async () => {
-    setIsLevelUpLoading(true);
-    if (!structure) return;
-
-    try {
-      await dojo.setup.systemCalls.upgrade_realm({
-        signer: dojo.account.account,
-        realm_entity_id: structure?.entity_id,
-      });
-      setIsLevelUpLoading(false);
-    } catch (error) {
-      console.error("Error upgrading realm:", error);
-      setIsLevelUpLoading(false);
-    }
-    setIsLevelUpLoading(false);
-  };
+  const structure = useNativeRow("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: structureEntityId,
+  });
+  const upgrade = useStructureUpgrade(structureEntityId);
+  const getNextRealmLevel = upgrade?.nextLevel;
+  const checkBalance = upgrade?.canUpgrade ?? false;
+  const missingResources = upgrade?.missingRequirements ?? [];
+  const isLevelUpLoading = upgrade?.isUpgradeLoading ?? false;
+  const levelUpRealm = upgrade?.handleUpgrade;
 
   const provisionInfo = useBlitzRealmProvision(structureEntityId ?? null);
   const bootstrapInfo = useRealmUpgradeAndProvision(structureEntityId ?? null);
@@ -153,46 +51,12 @@ export const Castle = () => {
   };
 
   if (!structure) return null;
-  const isOwner = structure.owner === ContractAddress(dojo.account.account.address);
+  const isOwner = structure.owner === ContractAddress(game.account.account.address);
 
   return (
     structure && (
       <div className="castle-selector w-full text-sm">
         <div className="space-y-2">
-          {/* Wonder Bonus Section */}
-          {wonderStructureId && (
-            <div className="bg-gradient-to-r from-gold/20 to-gold/5 border-2 border-gold/30 rounded-lg px-6 py-4 shadow-lg shadow-gold/10 relative overflow-hidden">
-              <div className="absolute inset-0 opacity-5"></div>
-              <div className="relative">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-gold/20 p-3 rounded-lg">
-                      <WonderIcon className="w-7 h-7 text-gold" />
-                    </div>
-                    <div>
-                      <h6 className="text-gold font-bold text-lg mb-1">Wonder Bonus Available</h6>
-                      <p className="text-gold/90 text-sm">
-                        {hasActivatedWonderBonus
-                          ? "✨ Currently receiving +20% production bonus"
-                          : "Activate to receive +20% production bonus"}
-                      </p>
-                    </div>
-                  </div>
-                  {!hasActivatedWonderBonus && (
-                    <Button
-                      variant="outline"
-                      onClick={onActivateWonderBonus}
-                      isLoading={isWonderBonusLoading}
-                      className="min-w-[160px] hover:bg-gold/10 animate-pulse"
-                    >
-                      Activate Bonus
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Realm Level Section */}
           <div className="bg-gold/5 border border-gold/20 rounded-lg p-4">
             <div className="flex flex-col gap-4">
@@ -303,29 +167,6 @@ export const Castle = () => {
               </div>
             )}
           </div>
-
-          {/* Labor Production Button */}
-          {isOwner && isLaborProductionEnabled && (
-            <div className="flex justify-center">
-              <Button
-                onClick={(event) =>
-                  openSurface({
-                    id: "production",
-                    content: <ProductionModal preSelectedResource={ResourcesIds.Labor} />,
-                    anchor: surfaceAnchorFrom(event.currentTarget),
-                  })
-                }
-                variant="primary"
-                withoutSound
-                className="w-full max-w-[300px]"
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <PlusIcon className="w-4 h-4" />
-                  Produce Labor
-                </div>
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     )

@@ -56,55 +56,6 @@ export interface CosmeticRegistryEntry {
   ownershipKeys?: string[];
 }
 
-interface ArmyCosmeticSelection {
-  skin?: string;
-  attachments?: string[];
-}
-
-interface StructureCosmeticSelection {
-  skin?: string;
-  attachments?: string[];
-}
-
-export interface PlayerCosmeticSelection {
-  armies?: Record<string, ArmyCosmeticSelection>; // key: troopType|tier -> selection
-  structures?: Record<string, StructureCosmeticSelection>; // key: structureType|stage -> selection
-  globalAttachments?: string[]; // cosmetics applied to every entity (auras etc.)
-}
-
-export interface CosmeticOwnershipSnapshot {
-  owner: string;
-  version: number;
-  ownedAttrs: string[];
-  eligibleCosmeticIds: string[];
-}
-
-export interface BlitzLoadoutSlotSelection {
-  tokenId: string;
-  cosmeticIds: string[];
-  ownershipKey?: string;
-  label?: string;
-}
-
-export interface BlitzGameLoadoutDraft {
-  tokenIds: string[];
-  selectedBySlot?: Record<string, BlitzLoadoutSlotSelection>;
-}
-
-export interface BlitzGameLoadoutApplied {
-  tokenIds: string[];
-  selectedBySlot?: Record<string, BlitzLoadoutSlotSelection>;
-}
-
-export interface PlayerCosmeticsSnapshot {
-  owner: string; // ContractAddress serialized as hex string
-  version: number;
-  ownership: CosmeticOwnershipSnapshot;
-  selection: PlayerCosmeticSelection;
-  pendingBlitzLoadouts?: Record<string, BlitzGameLoadoutDraft>;
-  activeBlitzLoadouts?: Record<string, BlitzGameLoadoutApplied>;
-}
-
 export interface ArmyCosmeticParams {
   owner: string | bigint | undefined;
   troopType: TroopType;

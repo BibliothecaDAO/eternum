@@ -19,7 +19,7 @@ describe("Herald GameRegistry directory", () => {
     process.env.HERALD_URL = "https://herald.example/base";
     respondWithGames([{ game_id: "0x7", name: "alpha" }]);
 
-    const row = await findGameRegistryById(7, { chain: "madara" });
+    const row = await findGameRegistryById(7, {});
 
     expect(row?.gameId).toBe(7);
   });
@@ -31,9 +31,9 @@ describe("Herald GameRegistry directory", () => {
     );
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    const row = await findGameRegistryByName("alpha", { chain: "madara" });
+    const row = await findGameRegistryByName("alpha", {});
 
     expect(row?.gameId).toBe(7);
-    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("https://herald.example/base/madara/games");
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe("https://herald.example/base/games");
   });
 });

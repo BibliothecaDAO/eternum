@@ -22,12 +22,12 @@ describe("buildRendererLoadBenchmarkUrl", () => {
     assert.equal(
       buildRendererLoadBenchmarkUrl({
         baseUrl: "https://127.0.0.1:4173",
-        chain: "slot",
+        chainId: "0xa1",
+        gameId: 4,
         rendererMode: "webgpu-auto",
         scene: "map",
-        worldName: "eternum-blitz-slot-4",
       }),
-      "https://127.0.0.1:4173/play/slot/eternum-blitz-slot-4/map?col=0&row=0&spectate=true&rendererMode=webgpu-auto",
+      "https://127.0.0.1:4173/g/0xa1/4/map?col=0&row=0&spectate=true&rendererMode=webgpu-auto",
     );
   });
 });

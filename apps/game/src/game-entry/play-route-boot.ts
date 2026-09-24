@@ -20,7 +20,7 @@ const READ_ONLY_SPECTATOR_ACCOUNT = {
   },
 } as unknown as AccountInterface;
 
-type CanonicalPlayEntry = Pick<ResolvedEntryContext, "chain" | "intent" | "worldName">;
+type CanonicalPlayEntry = Pick<ResolvedEntryContext, "chainId" | "gameId" | "intent">;
 
 const resolveCanonicalPlayEntry = (entryContext: ResolvedEntryContext | null): CanonicalPlayEntry | null => {
   if (!entryContext) {
@@ -28,9 +28,9 @@ const resolveCanonicalPlayEntry = (entryContext: ResolvedEntryContext | null): C
   }
 
   return {
-    chain: entryContext.chain,
+    chainId: entryContext.chainId,
+    gameId: entryContext.gameId,
     intent: entryContext.intent,
-    worldName: entryContext.worldName,
   };
 };
 
@@ -39,9 +39,9 @@ const matchesCanonicalPlayEntry = (
   currentEntry: CanonicalPlayEntry | null,
 ): boolean => {
   return (
-    previousEntry?.chain === currentEntry?.chain &&
-    previousEntry?.intent === currentEntry?.intent &&
-    previousEntry?.worldName === currentEntry?.worldName
+    previousEntry?.chainId === currentEntry?.chainId &&
+    previousEntry?.gameId === currentEntry?.gameId &&
+    previousEntry?.intent === currentEntry?.intent
   );
 };
 
@@ -67,7 +67,7 @@ export type PlayRouteBootPhase =
   | "normalize_route"
   | "await_account"
   | "select_world"
-  | "setup_dojo"
+  | "setup_game"
   | "initial_sync"
   | "seed_entry_state"
   | "init_renderer"
@@ -101,7 +101,7 @@ interface PlayRouteBootControllerState extends PlayRouteBootSnapshot {
 const createPendingTasks = (): BootstrapTask[] => [
   { id: "world", label: "Selecting world", status: "pending" },
   { id: "manifest", label: "Loading game config", status: "pending" },
-  { id: "dojo", label: "Connecting to world", status: "pending" },
+  { id: "game", label: "Connecting to world", status: "pending" },
   { id: "sync", label: "Syncing game state", status: "pending" },
   { id: "renderer", label: "Preparing graphics", status: "pending" },
 ];
@@ -186,7 +186,7 @@ const resolveBootPhase = ({
   }
 
   if (bootstrapStatus === "loading") {
-    return "setup_dojo";
+    return "setup_game";
   }
 
   if (!readiness.worldmapReady) {

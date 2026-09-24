@@ -22,7 +22,7 @@ self.addEventListener("fetch", (event) => {
 function isGameNavigation(request: Request): boolean {
   const url = new URL(request.url);
   if (request.mode !== "navigate" || url.origin !== self.location.origin) return false;
-  return /^\/(?:$|(?:play|enter|factory|debug|lab)(?:\/|$)|(?:index\.html|learn|news|profile|markets|amm|leaderboard|biome-lab|local-lab)$)/.test(
+  return /^\/(?:$|(?:g|p|scroll|factory|debug|lab)(?:\/|$)|(?:index\.html|play|results|account|learn|news|terms|privacy)$)/.test(
     url.pathname,
   );
 }

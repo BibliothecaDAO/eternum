@@ -1,10 +1,10 @@
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
-import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 
 import { divideByPrecision, formatTime } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useArrivalsByStructure } from "@bibliothecadao/react";
+import { useArrivalsByStructure } from "@/hooks/helpers/use-resource-arrivals";
 import { ResourcesIds, Structure } from "@bibliothecadao/types";
 import { Loader2, Clock3, Check } from "@/ui/design-system/atoms/game-icons";
 import { memo, useMemo } from "react";
@@ -31,7 +31,7 @@ function isDefined<T>(value: T | null | undefined): value is T {
 }
 
 export const StructureArrivals = memo(({ structure, now: nowOverride }: { structure: Structure; now?: number }) => {
-  const chainNowMs = useChainTimeStore((state) => state.nowMs);
+  const chainNowMs = useNowMs();
   const arrivals = useArrivalsByStructure(structure.entityId);
 
   const now = nowOverride ?? Math.floor(chainNowMs / 1000);

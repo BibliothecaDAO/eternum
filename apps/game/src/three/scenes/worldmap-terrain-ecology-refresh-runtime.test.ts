@@ -1,12 +1,10 @@
 // @vitest-environment node
 
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-
-import { createRecsGameSyncStore } from "@bibliothecadao/eternum/game-client";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
-import { BiomeType, StructureType, TileOccupier, defineContractComponents } from "@bibliothecadao/types";
-import { createWorld, getComponentValue } from "@dojoengine/recs";
+import { BiomeType, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { configManager } from "@bibliothecadao/eternum";
+import { hash } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { FrameBudgetWorkQueue } from "@/three/frame-budget-work-queue";
@@ -23,28 +21,10 @@ import {
   collectWorldmapTerrainEcologyAnchors,
 } from "./worldmap-terrain-ecology-refresh-runtime";
 
-interface FixtureEntity {
-  models: Record<string, Record<string, unknown>>;
-}
-
-interface StructureComponentValue {
-  base: { category: number; level: number };
-  entity_id: number;
-  owner: bigint;
-}
-
-const structureTemplate = (
-  JSON.parse(
-    readFileSync(resolve(process.cwd(), "../../packages/core/src/client/recs-game-sync-store.parity.json"), "utf8"),
-  ) as {
-    entities: FixtureEntity[];
-  }
-).entities.find((entity) => "Structure" in entity.models)!.models.Structure;
-
 describe("worldmap terrain ecology refresh", () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it("presents current RECS owner/category/level and projection placement/removal with a fixed window", async () => {
+  it("presents current native owner/category/level and projection placement/removal with a fixed window", async () => {
     stubTerrainWorker();
     const harness = createHarness();
     await harness.seedStructure(1, 0, 1n, StructureType.Realm, 1);
@@ -84,7 +64,7 @@ describe("worldmap terrain ecology refresh", () => {
     expect(harness.latestAnchors().settlementAnchors.map(({ structureId }) => structureId)).toEqual(["1", "2"]);
 
     await harness.writeStructure(3, 3n, StructureType.Hyperstructure, 1);
-    await harness.writeTile("reserved", 2, 0, 3, TileOccupier.HyperstructureLevel1);
+    await harness.writeTile("reserved", 2, 0, 3, TileOccupier.Hyperstructure);
     harness.projection.flush();
     await harness.waitForPresentation(5);
     expect(harness.latestAnchors().settlementAnchors).toContainEqual(
@@ -99,7 +79,7 @@ describe("worldmap terrain ecology refresh", () => {
     harness.dispose();
   });
 
-  it("coalesces a component batch, refreshes cross-page roads, and commits the newest overlapping facts", async () => {
+  it("coalesces a fact batch, refreshes cross-page roads, and commits the newest overlapping facts", async () => {
     stubTerrainWorker();
     const harness = createHarness();
     await harness.seedStructure(1, 0, 1n, StructureType.Realm, 1);
@@ -138,16 +118,10 @@ describe("worldmap terrain ecology refresh", () => {
 });
 
 function createHarness() {
-  const world = createWorld();
-  const components = defineContractComponents(world, "s2");
-  const store = createRecsGameSyncStore({ network: { contractComponents: components, world } } as never, [
-    "Structure",
-    "TileOpt",
-  ]);
-  const projection = new WorldSpatialProjection({
-    explorerTroopsComponent: components.ExplorerTroops,
-    tileOptComponent: components.TileOpt,
-  });
+  configManager.setActiveGame(11, 1);
+  const store = new NativeFactStore();
+  const tileKeys = new Map<string, string>();
+  const projection = new WorldSpatialProjection({ store });
   const terrain = new WorldmapProceduralTerrain();
   const queue = new FrameBudgetWorkQueue({
     requestDrain: (drain) => {
@@ -166,7 +140,7 @@ function createHarness() {
   let compositeQueued = false;
 
   const buildCurrentInput = (): WorldmapProceduralPresentationInput => {
-    const { roadAnchors, settlementAnchors } = collectCurrentAnchors(cells, projection, components.Structure);
+    const { roadAnchors, settlementAnchors } = collectCurrentAnchors(cells, projection, store);
     return {
       cells: cells.map((cell) => ({
         ...cell,
@@ -202,36 +176,25 @@ function createHarness() {
     );
   };
   const writeStructure = (entityId: number, owner: bigint, category: StructureType, level: number) =>
-    store.applyEntityOperations([
+    store.applyFacts([
       {
-        type: "upsert",
-        entities: [
-          {
-            hashed_keys: structureEntityKey(entityId),
-            models: { Structure: structureModel(entityId, owner, category, level) },
-          },
-        ],
+        model: "Structure",
+        key: structureEntityKey(entityId),
+        value: structureModel(entityId, owner, category, level),
       },
     ]);
-  const writeTile = (tileId: string, col: number, row: number, entityId: number, occupierType: TileOccupier) =>
-    store.applyEntityOperations([
-      {
-        type: "upsert",
-        entities: [
-          {
-            hashed_keys: tileEntityKey(tileId),
-            models: { TileOpt: tileModel(col, row, entityId, occupierType) },
-          },
-        ],
-      },
-    ]);
+  const writeTile = (tileId: string, col: number, row: number, entityId: number, occupierType: TileOccupier) => {
+    const key = hash.computePoseidonHashOnElements([11, 0, col, row]);
+    tileKeys.set(tileId, key);
+    return store.applyFacts([{ model: "TileOpt", key: key, value: tileModel(col, row, entityId, occupierType) }]);
+  };
 
   return {
     bindEcologyRefresh: () =>
       bindWorldmapTerrainEcologyRefresh({
         projection,
         requestRefresh,
-        structureComponent: components.Structure,
+        store,
       }),
     dispose: () => {
       projection.dispose();
@@ -249,9 +212,9 @@ function createHarness() {
     presentationCount: () => inputs.length,
     projection,
     removeStructureAndTile: async (entityId: number, tileId: string) => {
-      await store.applyEntityOperations([
-        { type: "remove-components", entityId: structureEntityKey(entityId), models: ["Structure"] },
-        { type: "remove-components", entityId: tileEntityKey(tileId), models: ["TileOpt"] },
+      await store.applyFacts([
+        { model: "Structure", key: structureEntityKey(entityId), value: null },
+        { model: "TileOpt", key: tileKeys.get(tileId)!, value: null },
       ]);
       projection.flush();
     },
@@ -268,28 +231,11 @@ function createHarness() {
 function collectCurrentAnchors(
   cells: readonly { biomeKey: string; col: number; row: number }[],
   projection: WorldSpatialProjection,
-  structureComponent: ReturnType<typeof defineContractComponents>["Structure"],
+  store: NativeFactStore,
 ): ReturnType<typeof collectWorldmapTerrainEcologyAnchors> {
-  const componentsByEntityId = new Map<number, StructureComponentValue>();
-  for (const entity of structureComponent.entities()) {
-    const component = getComponentValue(structureComponent, entity) as StructureComponentValue | undefined;
-    if (component) componentsByEntityId.set(component.entity_id, component);
-  }
   return collectWorldmapTerrainEcologyAnchors({
     cells,
-    getStructureFacts: (entityId) => {
-      const component = componentsByEntityId.get(entityId);
-      return component
-        ? {
-            base: {
-              category: component.base.category as StructureType,
-              level: component.base.level,
-            },
-            entity_id: component.entity_id,
-            owner: component.owner,
-          }
-        : undefined;
-    },
+    getStructureFacts: (entityId) => store.get("Structure", { game_id: 11, entity_id: entityId }),
     normalizeStructureHex: ({ col, row }) => ({ col, row }),
     projection,
     toProjectionBounds: (bounds) => ({ ...bounds, alt: false }),
@@ -298,14 +244,32 @@ function collectCurrentAnchors(
 
 function structureModel(entityId: number, owner: bigint, category: StructureType, level: number) {
   return {
-    ...structureTemplate,
+    game_id: 11,
+    entity_id: entityId,
+    owner,
     base: {
-      ...(structureTemplate.base as Record<string, unknown>),
       category,
       level,
+      created_at: 0,
+      coord_x: 0,
+      coord_y: 0,
+      alt: false,
+      troop_explorer_count: 0,
+      troop_max_guard_count: 1,
+      troop_max_explorer_count: 1,
+      starting_troops_granted: false,
     },
-    entity_id: entityId,
-    owner: `0x${owner.toString(16)}`,
+    metadata: {
+      realm_id: 0,
+      order: 0,
+      has_wonder: false,
+      village_realm: 0,
+      mine_kind: 0,
+      attunement: 0,
+      barracks_tier: 0,
+    },
+    resources_packed: "0",
+    troop_explorers: [],
   };
 }
 
@@ -332,11 +296,7 @@ function encodeTile(col: number, row: number, entityId: number, occupierType: Ti
 }
 
 function structureEntityKey(entityId: number): string {
-  return `structure-${entityId}`;
-}
-
-function tileEntityKey(tileId: string): string {
-  return `tile-${tileId}`;
+  return hash.computePoseidonHashOnElements([11, entityId]);
 }
 
 function stubTerrainWorker(): void {

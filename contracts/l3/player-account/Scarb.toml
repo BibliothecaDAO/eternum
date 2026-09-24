@@ -10,7 +10,6 @@ sierra-replace-ids = true
 [dependencies]
 starknet = "2.13.1"
 openzeppelin_account = "=2.0.0"
-openzeppelin_introspection = "=2.0.0"
 
 [dev-dependencies]
 snforge_std = "0.51.2"
