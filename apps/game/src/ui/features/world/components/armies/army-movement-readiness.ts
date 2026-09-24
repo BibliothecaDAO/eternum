@@ -87,6 +87,38 @@ export const deriveArmyMovementReadiness = ({
   };
 };
 
+/** An army's movement readiness from the facts, outside React too: the world-map labels read the same answer. */
+export const readArmyMovementReadiness = ({
+  army,
+  structureResources,
+  store,
+  currentArmiesTick,
+  currentDefaultTick,
+}: {
+  army: ExplorerTroopsValue;
+  structureResources: ResourceValue | null | undefined;
+  store: NativeFactStore;
+  currentArmiesTick: number;
+  currentDefaultTick: number;
+}): ArmyMovementReadiness => {
+  const movementFoodCosts = army.owner
+    ? { travel: computeTravelFoodCosts(army.troops), explore: computeExploreFoodCosts(army.troops) }
+    : {
+        travel: { wheatPayAmount: 0, fishPayAmount: 0 },
+        explore: { wheatPayAmount: 0, fishPayAmount: 0 },
+      };
+
+  return deriveArmyMovementReadiness({
+    currentStamina: Number(StaminaManager.getStamina(army.troops, currentArmiesTick).amount),
+    minTravelStamina: resolveCheapestNeighborTravelStamina(army, store),
+    minExploreStamina: configManager.getExploreStaminaCost(),
+    travelFoodCosts: movementFoodCosts.travel,
+    exploreFoodCosts: movementFoodCosts.explore,
+    food: resolveStructureFoodBalance(structureResources, currentDefaultTick),
+    trainingTakesWheat: structureResources?.hasResources() ? structureResources.trainsFromWheat() : false,
+  });
+};
+
 export const useArmyMovementReadiness = (
   army: ExplorerTroopsValue | null | undefined,
   structureResources: ResourceValue | null | undefined,
@@ -97,26 +129,13 @@ export const useArmyMovementReadiness = (
   const currentArmiesTick = useCurrentArmiesTick();
   const currentDefaultTick = useCurrentDefaultTick();
 
-  return useMemo(() => {
-    if (!army) return null;
-
-    const movementFoodCosts = army.owner
-      ? { travel: computeTravelFoodCosts(army.troops), explore: computeExploreFoodCosts(army.troops) }
-      : {
-          travel: { wheatPayAmount: 0, fishPayAmount: 0 },
-          explore: { wheatPayAmount: 0, fishPayAmount: 0 },
-        };
-
-    return deriveArmyMovementReadiness({
-      currentStamina: Number(StaminaManager.getStamina(army.troops, currentArmiesTick).amount),
-      minTravelStamina: resolveCheapestNeighborTravelStamina(army, store),
-      minExploreStamina: configManager.getExploreStaminaCost(),
-      travelFoodCosts: movementFoodCosts.travel,
-      exploreFoodCosts: movementFoodCosts.explore,
-      food: resolveStructureFoodBalance(structureResources, currentDefaultTick),
-      trainingTakesWheat: structureResources?.hasResources() ? structureResources.trainsFromWheat() : false,
-    });
-  }, [army, structureResources, currentArmiesTick, currentDefaultTick, store]);
+  return useMemo(
+    () =>
+      army
+        ? readArmyMovementReadiness({ army, structureResources, store, currentArmiesTick, currentDefaultTick })
+        : null,
+    [army, structureResources, currentArmiesTick, currentDefaultTick, store],
+  );
 };
 
 const resolveStructureFoodBalance = (

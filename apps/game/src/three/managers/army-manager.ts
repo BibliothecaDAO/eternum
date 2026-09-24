@@ -44,6 +44,7 @@ import { ModelType } from "@/three/types/army";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
+import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {
   FELT_CENTER,
@@ -54,6 +55,7 @@ import {
   getBlockTimestamp,
   getExplorerOwner,
   recordArmyMovementLatencyPhase,
+  ResourceManager,
   storedBiomeAt,
 } from "@bibliothecadao/eternum";
 import type {
@@ -1843,6 +1845,7 @@ export class ArmyManager {
         attackedTowardDegrees: attackTowardDegrees ?? undefined,
         battleCooldownEnd: finalBattleCooldownEnd,
         battleTimerLeft: finalBattleTimerLeft,
+        foodBlocked: this.resolveFoodBlocked(params.entityId, isMine),
       }),
     );
 
@@ -2742,6 +2745,26 @@ export class ArmyManager {
   };
 
   /**
+   * Whether the player's own army is kept from marching for food: the same readiness the army panel states, read on each
+   * armies tick so the label's wheat marker follows the realm's wheat within a tick.
+   */
+  private resolveFoodBlocked(entityId: ID, isMine: boolean): boolean {
+    if (!isMine || !this.store) return false;
+    const army = this.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId });
+    if (!army?.owner) return false;
+    const { currentArmiesTick, currentDefaultTick } = getBlockTimestamp();
+    return (
+      readArmyMovementReadiness({
+        army,
+        structureResources: new ResourceManager(this.store, army.owner),
+        store: this.store,
+        currentArmiesTick,
+        currentDefaultTick,
+      }).foodBlock !== null
+    );
+  }
+
+  /**
    * The biome an army's model stands on: its tile's biome as the chain stored it, never a local derivation. An army's
    * tile is revealed; before the game store is attached or the tile's row arrives, it stands on land.
    */
@@ -3120,6 +3143,7 @@ ${
       this.staminaUnresolved.delete(entityId);
       army.currentStamina = staminaSnapshot.current;
       army.maxStamina = staminaSnapshot.max;
+      army.foodBlocked = this.resolveFoodBlocked(entityId, army.isMine);
       const label = this.entityIdLabels.get(entityId);
       if (label) this.updateArmyLabelData(entityId, army, label);
     } catch {

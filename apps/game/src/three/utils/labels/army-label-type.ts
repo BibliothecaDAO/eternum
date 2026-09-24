@@ -1,4 +1,4 @@
-import { TroopTier, TroopType } from "@bibliothecadao/types";
+import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/camera-view";
 import {
   createContentContainer,
@@ -31,7 +31,20 @@ export interface ArmyLabelData extends LabelData {
   attackedFromDegrees?: number;
   attackedTowardDegrees?: number;
   battleTimerLeft?: number;
+  /** Its realm cannot pay a step's food: a wheat marker shows the block before the army is selected. */
+  foodBlocked?: boolean;
 }
+
+// The wheat marker uses the resource bars' own wheat art, so it reads as the same resource across the HUD.
+const createFoodBlockedMarker = (): HTMLElement => {
+  const marker = document.createElement("img");
+  marker.src = `/images/resources/${ResourcesIds.Wheat}.png`;
+  marker.alt = "Not enough wheat to march";
+  marker.title = "Not enough wheat to march";
+  marker.setAttribute("data-component", "food-blocked");
+  marker.classList.add("inline-block", "h-3", "w-3", "object-contain");
+  return marker;
+};
 
 export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
   type: "army",
@@ -74,6 +87,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
       troopCountDisplay = createTroopCountDisplay(data.troopCount, data.category, data.tier, cameraView);
       textContainer.appendChild(troopCountDisplay);
     }
+    if (data.foodBlocked && troopCountDisplay) troopCountDisplay.appendChild(createFoodBlockedMarker());
 
     let staminaHandledInline = false;
     if (
@@ -214,6 +228,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
         troopCountDisplay = createTroopCountDisplay(data.troopCount, data.category, data.tier, cameraView);
         contentContainer.appendChild(troopCountDisplay);
       }
+      if (data.foodBlocked && troopCountDisplay) troopCountDisplay.appendChild(createFoodBlockedMarker());
 
       let staminaHandledInline = false;
       if (
