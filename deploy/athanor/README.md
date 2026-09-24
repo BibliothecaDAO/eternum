@@ -128,24 +128,10 @@ temporary device on the host operator through the public endpoint. The temporary
 The harness requires explicit `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_KEY`, including for resumed runs.
 
 For ordered trials, use `scripts/shard.py --matrix MATRIX_JSON RUN_DIRECTORY`. The matrix contains `configurations` (an
-ordered list of shard configurations), `workload` (`games`, `accounts_per_game`, `minutes`, `interval_seconds`,
-`setup_concurrency`, `workload`) and `live` (`container`, `chain_config`). The live container and chain configuration
-are read only for host snapshots. Each trial stores its configuration, deployment, workload reports, live-health samples
-and start/end host snapshots under the run directory. A failed workload aborts the matrix; the live budget never does.
-Each completed or failed candidate is stopped with its volumes retained; the next configuration starts fresh.
-
-The checked-in live budget replaces the box-only budget file. Its 2026-09-22 baseline used 130 confirmed-diff windows
-from 13:20–15:30 UTC while the candidate was frozen: window p95 ranged from 225 to 237 ms. The 300 ms confirmed budget
-gives that maximum roughly 25% headroom. The preceding 24 hours contained 64 non-empty preconfirmed windows (1,728
-observations), with window p95 from 2 to 41 ms; their budget is 60 ms. Twelve live-health samples had zero lag and
-responses from 2.3 to 13.8 ms; the health budget is 50 ms and lag allowance remains three blocks. Disk reserves remain
-10 GiB for the candidate and 100 GiB for the host. Raw measurements stay with the run artifacts.
-
-The live budget is a measurement, not a rule. `athanor-live-guard` samples live every five seconds into
-`/opt/athanor/logs/live-guard.jsonl`, and each timed workload records the same samples in its `live-health.jsonl`. A
-sample lists the budgets it exceeded (`over_budget`), the budgets it could not measure, and what the slice was doing: the
-isolated-stack lock holder and the cores it used since the previous sample. Nothing is paused; the slice's core pin and
-these budgets are tuned from that log.
+ordered list of shard configurations) and `workload` (`games`, `accounts_per_game`, `minutes`, `interval_seconds`,
+`setup_concurrency`, `workload`). Each trial stores its configuration, deployment, workload reports and start/end host
+snapshots under the run directory. A failed workload aborts the matrix. Each completed or failed candidate is stopped
+with its volumes retained; the next configuration starts fresh.
 
 The runner starts the gateway after deployment with the new world's sequencing account and address. The gateway
 persists its epoch secret in its own volume. Pending assignments are volatile across restart; recorded nonces prevent

@@ -16,8 +16,6 @@ import time
 from urllib.request import Request, urlopen
 from urllib.parse import urlparse
 
-import candidate_guard
-
 
 ROOT = Path(__file__).resolve().parents[3]
 METRICS_CONTEXT = ROOT / "deploy/athanor/metrics"
@@ -419,32 +417,15 @@ def workload_command(workload):
     ]]
 
 
-def record_live_health(budget, since, until):
-    try:
-        return candidate_guard.sample_live(budget, since, until)
-    except Exception as error:
-        return {"event": "live_health_unavailable", "error": type(error).__name__}
-
-
-def run_workload(command, directory, environment, budget):
-    """Runs the workload to its end, recording live health beside it; the live budget never stops it."""
-    since = time.time()
-    with (directory / "harness.log").open("w") as output, (directory / "live-health.jsonl").open("w") as health:
+def run_workload(command, directory, environment):
+    """Runs the workload to its end; an interrupted run stops the workload's whole process group."""
+    with (directory / "harness.log").open("w") as output:
         process = subprocess.Popen(command, cwd=ROOT, env=environment, stdout=output,
                                    stderr=subprocess.STDOUT, start_new_session=True)
         try:
-            while True:
-                now = time.time()
-                health.write(json.dumps({"at": now, **record_live_health(budget, since, now)}) + "\n")
-                health.flush()
-                since = now
-                try:
-                    code = process.wait(timeout=5)
-                    if code:
-                        raise subprocess.CalledProcessError(code, command)
-                    return
-                except subprocess.TimeoutExpired:
-                    pass
+            code = process.wait()
+            if code:
+                raise subprocess.CalledProcessError(code, command)
         finally:
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGTERM)
@@ -455,17 +436,12 @@ def run_workload(command, directory, environment, budget):
                     process.wait()
 
 
-def capture_hosts(directory, environment, live, phase):
-    script = ["bash", "deploy/athanor/scripts/host-state.sh"]
-    for label, target in (("candidate", {}), ("live", {
-        "MADARA_CONTAINER": live["container"], "CHAIN_CONFIG_PATH": live["chain_config"],
-    })):
-        run(script, directory, f"host-{label}-{phase}", {**environment, **target})
+def capture_host(directory, environment, phase):
+    run(["bash", "deploy/athanor/scripts/host-state.sh"], directory, f"host-{phase}", environment)
 
 
 def run_matrix(matrix, directory):
     command = workload_command(matrix["workload"])
-    budget = json.loads(candidate_guard.LIVE_BUDGET_PATH.read_text())
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
     write_json(directory / "matrix.json", matrix)
     for config in matrix["configurations"]:
@@ -478,8 +454,8 @@ def run_matrix(matrix, directory):
             start_shard(config, target)
             private = dict(line.split("=", 1) for line in (target / "harness.env").read_text().splitlines())
             environment = {**os.environ, **private, "HARNESS_OUTPUT_DIRECTORY": str(target / "workload")}
-            capture_hosts(target, environment, matrix["live"], "start")
-            run_workload(command, target, environment, budget)
+            capture_host(target, environment, "start")
+            run_workload(command, target, environment)
             result["passed"] = True
         except Exception as error:
             result["error"] = str(error)
@@ -487,7 +463,7 @@ def run_matrix(matrix, directory):
         finally:
             try:
                 if environment:
-                    capture_hosts(target, environment, matrix["live"], "end")
+                    capture_host(target, environment, "end")
             except Exception as error:
                 result.update(passed=False, error=str(error))
                 raise
