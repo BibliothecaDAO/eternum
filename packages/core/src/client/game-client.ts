@@ -15,10 +15,9 @@ import { resolveGameTransactionResourceBounds } from "../account/transaction-res
 import { configManager } from "../managers/config-manager";
 import {
   disposeActiveGameSyncRuntime,
+  GameSyncRuntime,
   getActiveGameSyncRuntime,
-  installFreshGameSyncRuntime,
   SupersededGameSyncStartError,
-  type GameSyncRuntime,
 } from "../sync/game-sync-runtime";
 import type { HeraldGameSyncTransport, HeraldSocket } from "../sync/herald-game-sync-transport";
 import type { GameSyncScheduler } from "../sync/scheduler";
@@ -49,6 +48,12 @@ export interface CreateGameClientInput {
   observer?: GameClientObserver;
   /** Names players for this client's views: the app's Realms profiles, or a headless client's choice to name no one. */
   playerNames: PlayerNameResolver;
+  /**
+   * Makes the client's sync runtime. By default the client owns a private one, so several clients of one game live
+   * in one process (the active game and its scope stay process-wide); the web app passes installFreshGameSyncRuntime
+   * so its scenes find its one client's runtime as the active one.
+   */
+  createRuntime?: () => GameSyncRuntime;
 }
 
 export interface GameClient {
@@ -81,7 +86,7 @@ export async function createGameClient(input: CreateGameClientInput): Promise<Ga
   selectGame(input);
   const setupResult = await bootstrapWorld(input);
   input.observer?.onSetupCompleted?.(setupResult);
-  const runtime = installFreshGameSyncRuntime();
+  const runtime = (input.createRuntime ?? (() => new GameSyncRuntime()))();
   try {
     const { projection, transport } = await startSync(runtime, setupResult, input);
     applyGameConfig(setupResult);

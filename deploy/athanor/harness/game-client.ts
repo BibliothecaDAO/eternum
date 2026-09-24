@@ -65,6 +65,29 @@ export async function connectHarnessGameClient(options: ConnectHarnessGameClient
   return { client, heraldConfirmations };
 }
 
+/** One spelling per account address, so a bot's own client is found whichever form its address arrives in. */
+export const actorKey = (address: string): string => `0x${BigInt(address).toString(16)}`;
+
+/**
+ * Every bot's own client, connected a few at a time before the workload: its Herald subscription carries its own
+ * nonce, scope and action outcomes, as a player's does, so bots acting at once never share one actor selection.
+ */
+export async function connectActorClients(
+  addresses: readonly string[],
+  concurrency: number,
+  connect: (address: string) => Promise<HarnessGameClient>,
+): Promise<Map<string, HarnessGameClient>> {
+  const clients = new Map<string, HarnessGameClient>();
+  let next = 0;
+  const connectNext = async (): Promise<void> => {
+    for (let index = next++; index < addresses.length; index = next++) {
+      clients.set(actorKey(addresses[index]!), await connect(addresses[index]!));
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, addresses.length) }, connectNext));
+  return clients;
+}
+
 function createHeraldConfirmations() {
   const confirmedAtMs = new Map<string, number>();
   const waiters = new Map<string, Array<(atMs: number) => void>>();
