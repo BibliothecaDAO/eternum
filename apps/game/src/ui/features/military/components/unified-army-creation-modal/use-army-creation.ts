@@ -13,6 +13,7 @@ import {
   getGuardSlotCooldownRemaining,
   getGuardsByStructure,
   getTroopResourceId,
+  liveHomeArmies,
   ResourceManager,
   structureMapPosition,
   openSpawnDirections,
@@ -114,7 +115,13 @@ export const useArmyCreation = ({
     game_id: configManager.getActiveGameId(),
     entity_id: activeStructureId,
   });
-  const revision = useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Guard"]);
+  const revision = useNativeRevision([
+    "ResourceBalance",
+    "ResourceProduction",
+    "ResourceWeight",
+    "Guard",
+    "ExplorerTroops",
+  ]);
   const provision = useBlitzRealmProvision(activeStructureId);
 
   const troopOptions = useMemo<TroopSelectionOption[]>(() => {
@@ -185,7 +192,10 @@ export const useArmyCreation = ({
     [structureComponent, store, revision],
   );
 
-  const currentExplorersCount = Number(structureBase?.troop_explorer_count ?? 0);
+  const currentExplorersCount = useMemo(
+    () => liveHomeArmies(store, activeStructureId, configManager.getActiveGameId()).length,
+    [store, activeStructureId, revision, currentDefaultTick],
+  );
   const currentGuardsCount =
     guardsData?.filter(
       (guard) => guard.troops?.count && guard.troops.count > 0n && availableGuardSlotSet.has(Number(guard.slot)),

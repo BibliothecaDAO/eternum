@@ -9,6 +9,7 @@ import {
   getBuildingCosts,
   getBlockTimestamp,
   getTileAt,
+  liveHomeArmies,
   ResourceManager,
   type GameClient,
 } from "@bibliothecadao/eternum";
@@ -322,13 +323,7 @@ function home(client: GameClient, player: Player): Home {
   return client.setup.store.require("Structure", { game_id: client.gameId, entity_id: player.realmId });
 }
 function activeArmies(client: GameClient, player: Player): Army[] {
-  const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
-  return [...client.setup.store.inGame("ExplorerTroops", client.gameId)].filter(
-    (army) =>
-      army.owner === player.realmId &&
-      army.troops.count > 0n &&
-      Math.floor(army.coord.y / spacing / 4) === currentDay(player).epoch,
-  );
+  return liveHomeArmies(client.setup.store, player.realmId, client.gameId);
 }
 function epochSecondsOf(client: GameClient): number {
   return client.setup.store.require("SliceRules", { game_id: client.gameId }).epoch_seconds;

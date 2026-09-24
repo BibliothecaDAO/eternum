@@ -149,7 +149,7 @@ export const StructureStatusRow = memo(
     const base = structure.structure.base;
     const guardOccupied = structure.guardCount;
     const guardMax = Number(base?.troop_max_guard_count ?? 0);
-    const explorerOccupied = Number(base?.troop_explorer_count ?? 0);
+    const explorerOccupied = structure.explorerCount;
     const explorerMax = Number(base?.troop_max_explorer_count ?? 0);
     const showMilitaryStats =
       statsVariant === "military" && capabilities.hasPopulationDetails && (guardMax > 0 || explorerMax > 0);

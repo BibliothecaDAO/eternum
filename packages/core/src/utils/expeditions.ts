@@ -38,6 +38,26 @@ export const isCurrentExpeditionArmy = (
   nowSeconds >= rules.startMainAt &&
   Math.floor(Math.floor(coord.y / rules.spacing) / 4) === expeditionEpoch(rules, nowSeconds);
 
+/**
+ * A structure's living field armies: troops left and, in a game with expeditions, standing in today's region. An army
+ * from an earlier day is dead by rule: every command refuses it, and the contract destroys it before checking the army
+ * cap when the realm next musters. So it never counts toward that cap or shows as the realm's army, even while its row
+ * is still a fact. Today is judged at the execution floor, the time the next command will run at.
+ */
+export const liveHomeArmies = (
+  store: Pick<NativeFactStore, "get" | "require" | "inGame">,
+  structureId: number,
+  gameId: number,
+): NativeRows["ExplorerTroops"][] => {
+  const armies = [...store.inGame("ExplorerTroops", gameId)].filter(
+    (army) => army.owner === structureId && army.troops.count > 0n,
+  );
+  const rules = readExpeditionRules(store, gameId);
+  if (!rules) return armies;
+  const floorSeconds = getBlockTimestamp().currentDefaultTick;
+  return armies.filter((army) => isCurrentExpeditionArmy(rules, army.coord, floorSeconds));
+};
+
 /** A Frontier realm keeps no map coordinate of its own: the contract parks it at a sentinel and raises it daily. */
 export const isExpeditionRealm = (structure: NativeRows["Structure"]): boolean =>
   !structure.base.alt && structure.base.coord_y === EXPEDITION_SENTINEL_ROW;

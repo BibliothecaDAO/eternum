@@ -1,4 +1,4 @@
-import { getBlockTimestamp, type GameClient } from "@bibliothecadao/eternum";
+import { getBlockTimestamp, liveHomeArmies, type GameClient } from "@bibliothecadao/eternum";
 import type { ArmyInfo, ID, Structure } from "@bibliothecadao/types";
 
 import type { RunnerGame } from "./game";
@@ -98,7 +98,7 @@ const fingerprintStructure = (client: GameClient, structure: Structure): string 
       [...client.setup.store.inGame("Guard", client.gameId)].filter((row) => row.structure_id === structure.entityId),
       bigintAsString,
     ),
-    base.troop_explorer_count,
+    liveHomeArmies(client.setup.store, structure.entityId, client.gameId).length,
     buildings,
     JSON.stringify([resources, production], bigintAsString),
   ].join("|");
