@@ -513,6 +513,41 @@ describe("HeraldGameSyncTransport", () => {
     expect(replacement.sent).toEqual([{ epoch: "", seq: 0, type: "resume" }]);
   });
 
+  it("fails the session start, naming it, when a frame that is not JSON arrives before the first snapshot", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const harness = streamHarness();
+    const { socket, writer } = await attached(harness);
+    socket.onmessage?.({ data: '{"type":"snapshot","epoch":"epoch-a"' });
+    expect(harness.startFailures).toHaveLength(1);
+    expect(harness.startFailures[0]!.message).toMatch(/JSON/);
+    writer.cancel();
+    error.mockRestore();
+  });
+
+  it("recovers from a frame that is not JSON after the first snapshot through a fresh snapshot", async () => {
+    vi.useFakeTimers();
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const harness = streamHarness();
+    const { socket, writer } = await attached(harness);
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
+    socket.onmessage?.({ data: '{"type":"diff","epoch":"epoch-a","seq":1,"set":[' });
+    expect(harness.factBatches()).toHaveLength(0);
+    expect(harness.startFailures).toHaveLength(0);
+    expect(socket.closed).toBe(true);
+    await vi.advanceTimersByTimeAsync(200);
+    const recovered = harness.sockets[1]!;
+    recovered.receive(hello("epoch-a", 1));
+    expect(recovered.sent.at(-1)).toEqual({ type: "resume", epoch: "", seq: 0 });
+    snapshot("epoch-a", 1, "0x1", 2).forEach((message) => recovered.receive(message));
+    expect(harness.deliveries.slice(-3)).toEqual([
+      { kind: "snapshot-start" },
+      { kind: "snapshot-model", model: "ExplorerTroops", facts: [troops("0x1", 2)] },
+      { kind: "snapshot-end" },
+    ]);
+    writer.cancel();
+    error.mockRestore();
+  });
+
   it("fails the session start when the stream breaks before its first snapshot ends", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const harness = streamHarness();
