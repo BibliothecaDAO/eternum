@@ -5,7 +5,6 @@ pub mod PrizesLogic {
     use starknet::ContractAddress;
     #[cfg(test)]
     use starknet::storage::StorageMapReadAccess;
-    use crate::commands::ExecutionContext;
     use crate::events::RowSet;
     #[cfg(test)]
     use crate::faith::{FaithfulStructure, PlayerFaithKey, PlayerFaithPoints, WonderFaith, WonderFaithWinners};
@@ -70,8 +69,16 @@ pub mod PrizesLogic {
     }
     #[abi(embed_v0)]
     impl FaithOwnership of crate::faith::IFaithOwnership<ContractState> {
-        fn transfer_faith_ownership(ref self: ContractState, key: ResourceKey, owner: ContractAddress, timestamp: u64) {
-            let game = crate::logic::game::game(key.game_id);
+        fn transfer_faith_ownership(
+            ref self: ContractState,
+            key: ResourceKey,
+            owner: ContractAddress,
+            timestamp: u64,
+            game_context: crate::commands::ActionContext,
+        ) {
+            let game_context = crate::commands::load_context(key.game_id, game_context);
+
+            let game = game_context.game.unbox();
             self.faith.transfer(key.game_id, key.entity_id, owner, timestamp, game.end_at);
         }
     }
@@ -102,14 +109,26 @@ pub mod PrizesLogic {
     }
     #[abi(embed_v0)]
     impl BitcoinFunding of crate::bitcoin::IBitcoinFunding<ContractState> {
-        fn register_bitcoin_structure(ref self: ContractState, key: ResourceKey, category: u8, timestamp: u64) {
+        fn register_bitcoin_structure(
+            ref self: ContractState,
+            key: ResourceKey,
+            category: u8,
+            timestamp: u64,
+            game_context: crate::commands::ActionContext,
+        ) {
+            let game_context = crate::commands::load_context(key.game_id, game_context);
+
             assert!(category == 8, "not a Bitcoin mine");
-            let interval = crate::logic::game::rules(key.game_id).tick_config.bitcoin_phase_in_seconds;
+            let interval = game_context.rules.unbox().tick_config.bitcoin_phase_in_seconds;
             assert!(interval != 0, "zero Bitcoin phase duration");
             self.bitcoin.register_mine(key, timestamp / interval + 1);
         }
-        fn bitcoin_mine_captured(ref self: ContractState, key: ResourceKey, timestamp: u64) {
-            let rules = crate::logic::game::rules(key.game_id);
+        fn bitcoin_mine_captured(
+            ref self: ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ActionContext,
+        ) {
+            let game_context = crate::commands::load_context(key.game_id, game_context);
+
+            let rules = game_context.rules.unbox();
             let mine = crate::logic::structures::structure(key).expect('missing Bitcoin mine');
             let prize = if mine.owner == 0.try_into().unwrap() {
                 0
@@ -133,9 +152,11 @@ pub mod PrizesLogic {
             game_id: u32,
             actor: ContractAddress,
             command: crate::bitcoin::ClaimPhase,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) -> u64 {
-            self.assert_bitcoin_phase_closed(game_id, command.phase, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.assert_bitcoin_phase_closed(game_id, command.phase, context.timestamp, context);
             assert!(!command.mine_ids.is_empty(), "empty Bitcoin claim batch");
             assert!(command.mine_ids.len() <= crate::commands::MAX_COMMAND_ITEMS, "too many Bitcoin mines");
             crate::commands::assert_unique_entity_ids(command.mine_ids);
@@ -146,7 +167,7 @@ pub mod PrizesLogic {
             for mine_id in command.mine_ids {
                 remaining += self
                     .claim_bound_phases(
-                        ResourceKey { game_id, entity_id: *mine_id }, command.phase, limit, context.timestamp,
+                        ResourceKey { game_id, entity_id: *mine_id }, command.phase, limit, context.timestamp, context,
                     );
             }
             remaining
@@ -157,12 +178,14 @@ pub mod PrizesLogic {
             game_id: u32,
             actor: ContractAddress,
             command: crate::bitcoin::ContributeLabor,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            self.assert_bitcoin_command(game_id, context.timestamp);
-            let game = crate::logic::game::game(game_id);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.assert_bitcoin_command(game_id, context.timestamp, context);
+            let game = context.game.unbox();
             assert_playing(game, context.timestamp);
-            let rules = crate::logic::game::rules(game_id);
+            let rules = context.rules.unbox();
             let phase = context.timestamp / rules.tick_config.bitcoin_phase_in_seconds;
             let end = crate::bitcoin::phase_end(phase, rules.tick_config.bitcoin_phase_in_seconds);
             assert!(context.timestamp < end, "Bitcoin contribution window is closed");
@@ -173,7 +196,9 @@ pub mod PrizesLogic {
             );
             let key = ResourceKey { game_id, entity_id: command.structure_id };
             assert!(crate::logic::structures::owner(key) == actor, "actor does not own labor source");
-            self.resources(game_id).spend_resource(key, 23, command.amount, context.timestamp);
+            self
+                .resources(game_id)
+                .spend_resource(key, 23, command.amount, context.timestamp, crate::commands::resource_context(context));
             self
                 .bitcoin
                 .contribute(
@@ -183,15 +208,27 @@ pub mod PrizesLogic {
                 );
         }
         fn close_bitcoin_phase(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, phase: u64, context: ExecutionContext,
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            phase: u64,
+            context: crate::commands::ActionContext,
         ) {
-            self.assert_bitcoin_phase_closed(game_id, phase, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.assert_bitcoin_phase_closed(game_id, phase, context.timestamp, context);
             self.bitcoin.close(crate::bitcoin::PhaseKey { game_id, phase });
         }
         fn bind_bitcoin_phase(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, phase: u64, context: ExecutionContext,
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            phase: u64,
+            context: crate::commands::ActionContext,
         ) {
-            self.assert_bitcoin_phase_closed(game_id, phase, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.assert_bitcoin_phase_closed(game_id, phase, context.timestamp, context);
             self.bitcoin.bind(crate::bitcoin::PhaseKey { game_id, phase }, context.raw_root);
         }
     }
@@ -201,7 +238,12 @@ pub mod PrizesLogic {
             IResourceOperationsLibraryDispatcher { class_hash: self.release.classes(game_id).resources.read() }
         }
         fn claim_bound_phases(
-            ref self: ContractState, mine: ResourceKey, through: u64, limit: u32, timestamp: u64,
+            ref self: ContractState,
+            mine: ResourceKey,
+            through: u64,
+            limit: u32,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) -> u64 {
             let mut phase_id = self.bitcoin.mine(mine).next_phase;
             for _ in 0..limit {
@@ -218,6 +260,7 @@ pub mod PrizesLogic {
                         crate::bitcoin::ClaimKey { game_id: mine.game_id, phase: phase_id, mine_id: mine.entity_id },
                         phase,
                         timestamp,
+                        game_context,
                     );
                 phase_id += 1;
             }
@@ -228,7 +271,11 @@ pub mod PrizesLogic {
             }
         }
         fn claim_bitcoin_mine(
-            ref self: ContractState, key: crate::bitcoin::ClaimKey, phase: crate::bitcoin::Phase, timestamp: u64,
+            ref self: ContractState,
+            key: crate::bitcoin::ClaimKey,
+            phase: crate::bitcoin::Phase,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) {
             if self.bitcoin.was_claimed(key) {
                 return;
@@ -239,7 +286,7 @@ pub mod PrizesLogic {
             let mine = crate::logic::structures::structure(resource_key).expect('missing Bitcoin mine');
             assert!(mine.base.category == 8, "not a Bitcoin mine");
             if mine.owner != 0.try_into().unwrap() && key.phase >= funding.eligible_from {
-                let config = crate::logic::game::rules(key.game_id).bitcoin_mine_config;
+                let config = game_context.rules.unbox().bitcoin_mine_config;
                 if phase.total_labor == 0 {
                     funding.unsplit_carry += config.prize_per_phase;
                 } else {
@@ -249,9 +296,9 @@ pub mod PrizesLogic {
                     );
                     let winner_share = winner_share + funding.winner_carry;
                     let (winner_destination, winner_paid) = self
-                        .pay_bitcoin_winner(key, winner, winner_share, timestamp);
+                        .pay_bitcoin_winner(key, winner, winner_share, timestamp, game_context);
                     let owner_destination = key.mine_id;
-                    let owner_paid = self.pay_bitcoin_share(resource_key, owner_share, timestamp);
+                    let owner_paid = self.pay_bitcoin_share(resource_key, owner_share, timestamp, game_context);
                     funding.unsplit_carry = 0;
                     funding.winner_carry = winner_share - winner_paid;
                     self
@@ -279,6 +326,7 @@ pub mod PrizesLogic {
             winner: ContractAddress,
             amount: u128,
             timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) -> (u32, u128) {
             let contribution = self
                 .bitcoin
@@ -289,7 +337,7 @@ pub mod PrizesLogic {
             if crate::logic::structures::owner(destination) != winner || amount == 0 {
                 return (0, 0);
             }
-            (destination.entity_id, self.pay_bitcoin_share(destination, amount, timestamp))
+            (destination.entity_id, self.pay_bitcoin_share(destination, amount, timestamp, game_context))
         }
         fn emit_bitcoin_award(
             ref self: ContractState, game_id: u32, timestamp: u64, award: crate::bitcoin::BitcoinAwardStory,
@@ -308,26 +356,39 @@ pub mod PrizesLogic {
                     },
                 );
         }
-        fn pay_bitcoin_share(ref self: ContractState, destination: ResourceKey, amount: u128, timestamp: u64) -> u128 {
+        fn pay_bitcoin_share(
+            ref self: ContractState,
+            destination: ResourceKey,
+            amount: u128,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) -> u128 {
             if amount == 0 {
                 return 0;
             }
             let rule = crate::logic::resources::rule(destination.game_id, 58);
             assert!(rule.unit_weight == 0, "SAT must be weightless");
-            let paid = self.resources(destination.game_id).grant_resource(destination, 58, amount, timestamp);
+            let paid = self
+                .resources(destination.game_id)
+                .grant_resource(destination, 58, amount, timestamp, crate::commands::resource_context(game_context));
             assert!(paid == amount, "incomplete Bitcoin award");
             paid
         }
-        fn assert_bitcoin_command(self: @ContractState, game_id: u32, timestamp: u64) {
-            crate::commands::assert_context_time(timestamp);
-            assert!(crate::logic::game::rules(game_id).bitcoin_mine_config.enabled, "Bitcoin mining disabled");
+        fn assert_bitcoin_command(
+            self: @ContractState, game_id: u32, timestamp: u64, game_context: crate::commands::ExecutionContext,
+        ) {
+            assert!(game_context.rules.unbox().bitcoin_mine_config.enabled, "Bitcoin mining disabled");
         }
-        fn assert_bitcoin_phase_closed(self: @ContractState, game_id: u32, phase: u64, timestamp: u64) {
-            self.assert_bitcoin_command(game_id, timestamp);
-            let end = crate::bitcoin::phase_end(
-                phase, crate::logic::game::rules(game_id).tick_config.bitcoin_phase_in_seconds,
-            );
-            let game = crate::logic::game::game(game_id);
+        fn assert_bitcoin_phase_closed(
+            self: @ContractState,
+            game_id: u32,
+            phase: u64,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) {
+            self.assert_bitcoin_command(game_id, timestamp, game_context);
+            let end = crate::bitcoin::phase_end(phase, game_context.rules.unbox().tick_config.bitcoin_phase_in_seconds);
+            let game = game_context.game.unbox();
             assert!(
                 end >= game.start_main_at && (game.end_at == 0 || end <= game.end_at), "Bitcoin phase outside game",
             );

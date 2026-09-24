@@ -73,34 +73,26 @@ pub trait IFaith<T> {
     fn configure_faith(ref self: T, game_id: u32, rules: FaithRules);
     fn faith_rules(self: @T, game_id: u32) -> FaithRules;
     fn pledge_faith(
-        ref self: T, game_id: u32, actor: ContractAddress, command: Pledge, context: crate::commands::ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: Pledge, context: crate::commands::ActionContext,
     );
     fn remove_faith(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        structure_id: u32,
-        context: crate::commands::ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u32, context: crate::commands::ActionContext,
     );
     fn update_wonder_ownership(
-        ref self: T, game_id: u32, actor: ContractAddress, wonder_id: u32, context: crate::commands::ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, wonder_id: u32, context: crate::commands::ActionContext,
     );
     fn update_faithful_ownership(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        structure_id: u32,
-        context: crate::commands::ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u32, context: crate::commands::ActionContext,
     );
     fn claim_wonder_points(
-        ref self: T, game_id: u32, actor: ContractAddress, wonder_id: u32, context: crate::commands::ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, wonder_id: u32, context: crate::commands::ActionContext,
     );
     fn claim_player_faith_points(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: ClaimPlayer,
-        context: crate::commands::ExecutionContext,
+        context: crate::commands::ActionContext,
     );
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -114,6 +106,10 @@ pub struct PledgeStory {
 #[starknet::interface]
 pub trait IFaithOwnership<T> {
     fn transfer_faith_ownership(
-        ref self: T, key: crate::resources::ResourceKey, owner: ContractAddress, timestamp: u64,
+        ref self: T,
+        key: crate::resources::ResourceKey,
+        owner: ContractAddress,
+        timestamp: u64,
+        game_context: crate::commands::ActionContext,
     );
 }

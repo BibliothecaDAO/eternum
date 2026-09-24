@@ -157,12 +157,14 @@ pub mod SettlementLogic {
             game_id: u32,
             actor: ContractAddress,
             command: crate::realms::SettleSeason,
-            context: DomainContext,
+            context: crate::commands::ActionContext,
         ) {
+            let context = crate::commands::load_context(game_id, context);
+
             let classes = self.release.classes(game_id);
             let owner = actor;
-            let game = crate::logic::game::game(game_id);
-            let rules = crate::logic::game::rules(game_id);
+            let game = context.game.unbox();
+            let rules = context.rules.unbox();
             assert!(rules.entry_rule != crate::rules::ENTRY_ROSTER, "not a season game");
             assert!(command.name != 0, "name cannot be empty");
             assert!(game.dev_mode_on || context.timestamp >= game.start_settling_at, "settling not started");
@@ -172,18 +174,21 @@ pub mod SettlementLogic {
                 assert!(game.dev_mode_on, "development mode required");
                 self.settlements.record_entry(key, actor);
             } else {
-                let requires_entitlement = !crate::logic::game::game(game_id).dev_mode_on
+                let requires_entitlement = !context.game.unbox().dev_mode_on
                     && rules.entry_rule == crate::rules::ENTRY_ENTITLEMENT;
                 self.settlements.reserve_entry(key, actor, requires_entitlement);
             }
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, game_id, game.seed);
             let mut progress = self.settlements.data.settlements.progress.read(game_id);
-            let (realm_id, traits) = self.resolve_season_realm(key, command.selected_realm, progress.realm_count, seed);
+            let (realm_id, traits) = self
+                .resolve_season_realm(key, command.selected_realm, progress.realm_count, seed, context);
             self.realms.reserve(game_id, realm_id, progress.realm_count);
             let coord = if rules.epoch_seconds == 0 {
                 ISeasonPlacementLibraryDispatcher { class_hash: classes.placement.read() }
-                    .claim_season_settlement(game_id, progress.realm_count, seed)
+                    .claim_season_settlement(
+                        game_id, progress.realm_count, seed, crate::commands::action_context(context),
+                    )
             } else {
                 crate::troops::Coord { alt: false, x: 0xffffffff - realm_id, y: 0xffffffff }
             };
@@ -197,7 +202,7 @@ pub mod SettlementLogic {
                             realm_id: realm_id.try_into().unwrap(), traits, grant_troops: true, activate_economy: true,
                         },
                     ),
-                    context,
+                    crate::commands::action_context(context),
                 );
             progress.realm_count += 1;
             self.settlements.write_progress(game_id, progress);
@@ -230,12 +235,14 @@ pub mod SettlementLogic {
             game_id: u32,
             actor: ContractAddress,
             command: SettleVillage,
-            context: DomainContext,
+            context: crate::commands::ActionContext,
         ) {
+            let context = crate::commands::load_context(game_id, context);
+
             let classes = self.release.classes(game_id);
             let owner = actor;
-            let game = crate::logic::game::game(game_id);
-            let rules = crate::logic::game::rules(game_id);
+            let game = context.game.unbox();
+            let rules = context.rules.unbox();
             assert!(game.dev_mode_on || context.timestamp >= game.start_settling_at, "settling not started");
             assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
             let dev_entry = game.dev_mode_on && crate::rules::rule_enabled(rules, crate::rules::DEV_VILLAGE_ENTRY);
@@ -249,7 +256,7 @@ pub mod SettlementLogic {
             let resource = crate::village::select_resource(village_rules.resource_pool, seed, context.timestamp);
             let progress = self.settlements.data.settlements.progress.read(game_id);
             let coord = ISettlementPoolLibraryDispatcher { class_hash: classes.placement.read() }
-                .claim_village(game_id, progress.registered, seed);
+                .claim_village(game_id, progress.registered, seed, crate::commands::action_context(context));
             let village_id = ISettlementCreationLibraryDispatcher { class_hash: classes.structures.read() }
                 .create_settlement(
                     game_id,
@@ -258,7 +265,7 @@ pub mod SettlementLogic {
                     SettlementCreation::Village(
                         VillageCreation { connected_realm: command.connected_realm_entity_id, resource },
                     ),
-                    context,
+                    crate::commands::action_context(context),
                 );
             if !dev_entry {
                 self.villages.consume(pass, owner, village_id);
@@ -324,12 +331,14 @@ pub mod SettlementLogic {
     #[abi(embed_v0)]
     impl SettlementCommands of crate::settlement::ISettlementCommands<ContractState> {
         fn settle_blitz_roster(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, context: DomainContext,
+            ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
         ) -> u64 {
+            let context = crate::commands::load_context(game_id, context);
+
             let _ = self.release.classes(game_id);
             assert!(actor == self.release.authority(), "only launch authority");
-            let game = crate::logic::game::game(game_id);
-            assert!(crate::logic::game::rules(game_id).entry_rule == crate::rules::ENTRY_ROSTER, "not a Blitz game");
+            let game = context.game.unbox();
+            assert!(context.rules.unbox().entry_rule == crate::rules::ENTRY_ROSTER, "not a Blitz game");
             assert!(context.timestamp >= game.start_settling_at, "settling not started");
             let roster = crate::logic::registrar::blitz_roster(game_id);
             let progress = self.settlements.data.settlements.progress.read(game_id);
@@ -345,7 +354,7 @@ pub mod SettlementLogic {
             let player = *roster.at((*order.at(progress.registered.into())).into());
             self.settlements.record_entry(EntryKey { game_id, owner: player.account }, player.account);
             let rules = crate::logic::settlement::rules(game_id);
-            let center = 2147483646 - crate::logic::game::rules(game_id).map_center_offset;
+            let center = 2147483646 - context.rules.unbox().map_center_offset;
             let coords = crate::settlement_grid::settlement_location(
                 crate::troops::Coord { alt: false, x: center, y: center },
                 rules.mode,
@@ -355,7 +364,7 @@ pub mod SettlementLogic {
             self.create_settlement_realms(game_id, player.account, coords, context);
             let remaining: u64 = (roster.len() - Into::<u16, u32>::into(progress.registered) - 1).into();
             if remaining == 0 {
-                crate::logic::game::start_blitz(game_id, context.timestamp);
+                crate::logic::game::start_blitz(game_id, context);
             }
             remaining
         }
@@ -363,13 +372,18 @@ pub mod SettlementLogic {
     #[generate_trait]
     impl Internal of InternalTrait {
         fn resolve_season_realm(
-            self: @ContractState, key: EntryKey, selected: Option<u32>, settled: u16, seed: u256,
+            self: @ContractState,
+            key: EntryKey,
+            selected: Option<u32>,
+            settled: u16,
+            seed: u256,
+            game_context: crate::commands::ExecutionContext,
         ) -> (u32, crate::realms::RealmTraits) {
             if let Some(realm_id) = selected {
                 return (realm_id, self.realms.traits(realm_id));
             }
-            let rules = crate::logic::game::rules(key.game_id);
-            if crate::logic::game::game(key.game_id).dev_mode_on || rules.entry_rule == crate::rules::ENTRY_OPEN {
+            let rules = game_context.rules.unbox();
+            if game_context.game.unbox().dev_mode_on || rules.entry_rule == crate::rules::ENTRY_OPEN {
                 let remaining = crate::realms::CANONICAL_REALM_COUNT - settled.into();
                 assert!(remaining > 0, "all canonical realms allocated");
                 let index = crate::random::range(seed, 71419, remaining.into()).try_into().unwrap();
@@ -418,7 +432,7 @@ pub mod SettlementLogic {
                                 activate_economy: true,
                             },
                         ),
-                        context,
+                        crate::commands::action_context(context),
                     );
                 if first_realm == 0 {
                     first_realm = realm;

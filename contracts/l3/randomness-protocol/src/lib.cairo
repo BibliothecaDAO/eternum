@@ -16,7 +16,8 @@ pub struct Intent {
     pub actor: felt252,
     pub nonce: u64,
     pub command: felt252,
-    pub rules: felt252,
+    pub release_id: u32,
+    pub preset_commitment: felt252,
     pub valid_from: u64,
     pub valid_until: u64,
     pub last_order: u64,
@@ -29,7 +30,8 @@ pub struct Envelope {
     /// Position in the action's own game, starting at one.
     pub order: u64,
     pub timestamp: u64,
-    pub execution_config: felt252,
+    pub release_id: u32,
+    pub preset_commitment: felt252,
     /// The sequencing account's randomness epoch whose secret derived the root.
     pub epoch: u64,
     pub root: u256,
@@ -39,13 +41,13 @@ pub fn encode_intent(intent: @Intent) -> Array<felt252> {
     assert!(intent.valid_from <= intent.valid_until, "invalid validity");
     assert!(*intent.last_order > 0, "invalid last order");
     assert!(intent.arguments.len() <= 256, "too many arguments");
-    let mut fields = array![ACTION_TAG, 1];
+    let mut fields = array![ACTION_TAG, 2];
     intent.serialize(ref fields);
     fields
 }
 
 pub fn decode_intent(mut fields: Span<felt252>) -> Option<Intent> {
-    if *fields.pop_front()? != ACTION_TAG || *fields.pop_front()? != 1 {
+    if *fields.pop_front()? != ACTION_TAG || *fields.pop_front()? != 2 {
         return Option::None;
     }
     let intent: Intent = Serde::deserialize(ref fields)?;
@@ -64,13 +66,13 @@ pub fn action_identity(intent: @Intent) -> felt252 {
 
 pub fn encode_envelope(envelope: @Envelope) -> Array<felt252> {
     assert!(*envelope.order > 0, "invalid execution order");
-    let mut fields = array![ENVELOPE_TAG, 5];
+    let mut fields = array![ENVELOPE_TAG, 6];
     envelope.serialize(ref fields);
     fields
 }
 
 pub fn decode_envelope(mut fields: Span<felt252>) -> Option<Envelope> {
-    if *fields.pop_front()? != ENVELOPE_TAG || *fields.pop_front()? != 5 {
+    if *fields.pop_front()? != ENVELOPE_TAG || *fields.pop_front()? != 6 {
         return Option::None;
     }
     let envelope: Envelope = Serde::deserialize(ref fields)?;

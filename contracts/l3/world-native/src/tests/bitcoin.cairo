@@ -72,10 +72,14 @@ fn contribution_requires_the_source_owner() {
     let (deployment, first, _) = setup();
     let calls = IBitcoinCommandsSafeDispatcher { contract_address: deployment.games };
     let command = ContributeLabor { structure_id: first.entity_id, amount: 10 };
-    let context = ExecutionContext { raw_root: 123, timestamp: 30 };
+    let context = ExecutionContext { raw_root: 123, timestamp: 30, ..super::context(deployment.games, 3) };
     start_cheat_block_timestamp_global(30);
     start_cheat_caller_address(deployment.games, deployment.games);
-    assert!(calls.contribute_bitcoin_labor(3, 0x777.try_into().unwrap(), command, context).is_err());
+    assert!(
+        calls
+            .contribute_bitcoin_labor(3, 0x777.try_into().unwrap(), command, crate::commands::action_context(context))
+            .is_err(),
+    );
     assert_eq!(balance(deployment, first), 1000);
     stop_cheat_caller_address(deployment.games);
 }
@@ -93,7 +97,7 @@ fn binding_requires_a_closed_pool_and_cannot_replace_its_root() {
     assert!(execute(deployment, Command::BindBitcoinPhase(3), 40));
     let bound = view.bitcoin_phase(key);
     assert_eq!(bound.state, PhaseStatus::Bound);
-    assert_eq!(bound.root, super::context().raw_root);
+    assert_eq!(bound.root, super::context(deployment.games, 3).raw_root);
     assert_terminal_rejection(deployment, Command::BindBitcoinPhase(3), 41);
     assert!(execute(deployment, Command::CloseBitcoinPhase(3), 42));
     assert_eq!(view.bitcoin_phase(key), bound);
@@ -108,7 +112,7 @@ fn delayed_contribution_and_phase_binding_keep_recorded_context_after_game_end()
     let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     let phase = view.bitcoin_phase(PhaseKey { game_id: 3, phase: 3 });
     assert_eq!(phase.total_labor, 100);
-    assert_eq!(phase.root, super::context().raw_root);
+    assert_eq!(phase.root, super::context(deployment.games, 3).raw_root);
     assert_eq!(phase.state, PhaseStatus::Bound);
     assert_eq!(balance(deployment, first), 900);
 }
@@ -146,6 +150,9 @@ fn mine(deployment: super::Deployment, x: u32) -> ResourceKey {
         crate::discovery::Discovery::BitcoinMine,
         99,
         30,
+        crate::commands::action_context(
+            crate::commands::ExecutionContext { timestamp: 30, ..crate::tests::context(deployment.games, 3) },
+        ),
     );
     stop_cheat_caller_address(deployment.games);
     ResourceKey { game_id: 3, entity_id: id }
@@ -154,7 +161,14 @@ fn mine(deployment: super::Deployment, x: u32) -> ResourceKey {
 fn capture(deployment: super::Deployment, mine: ResourceKey, owner: starknet::ContractAddress, timestamp: u64) {
     start_cheat_caller_address(deployment.games, deployment.games);
     crate::bitcoin::IBitcoinFundingDispatcherTrait::bitcoin_mine_captured(
-        crate::bitcoin::IBitcoinFundingDispatcher { contract_address: deployment.games }, mine, timestamp,
+        crate::bitcoin::IBitcoinFundingDispatcher { contract_address: deployment.games },
+        mine,
+        timestamp,
+        crate::commands::action_context(
+            crate::commands::ExecutionContext {
+                timestamp: timestamp, ..crate::tests::context(deployment.games, (mine).game_id),
+            },
+        ),
     );
     stop_cheat_caller_address(deployment.games);
     set_owner(deployment, mine, owner);
@@ -336,18 +350,29 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
     for phase in 4_u64..16 {
         start_cheat_block_timestamp_global(phase * 10);
         start_cheat_caller_address(deployment.games, deployment.games);
-        let context = ExecutionContext { timestamp: phase * 10, raw_root: phase.into() };
+        let context = ExecutionContext {
+            timestamp: phase * 10, raw_root: phase.into(), ..super::context(deployment.games, 3),
+        };
         calls
             .contribute_bitcoin_labor(
-                3, deployment.actor, ContributeLabor { structure_id: first.entity_id, amount: 10 }, context,
+                3,
+                deployment.actor,
+                ContributeLabor { structure_id: first.entity_id, amount: 10 },
+                crate::commands::action_context(context),
             );
         calls
             .contribute_bitcoin_labor(
-                3, other, ContributeLabor { structure_id: second.entity_id, amount: 10 }, context,
+                3,
+                other,
+                ContributeLabor { structure_id: second.entity_id, amount: 10 },
+                crate::commands::action_context(context),
             );
         calls
             .contribute_bitcoin_labor(
-                3, other, ContributeLabor { structure_id: second.entity_id, amount: 20 }, context,
+                3,
+                other,
+                ContributeLabor { structure_id: second.entity_id, amount: 20 },
+                crate::commands::action_context(context),
             );
         let key = PhaseKey { game_id: 3, phase };
         assert_eq!(view.bitcoin_phase(key).contributors, 2);
@@ -355,8 +380,8 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
         assert_eq!(view.bitcoin_contribution(ContributionKey { game_id: 3, phase, player: other }).labor, 30);
         let context = ExecutionContext { timestamp: (phase + 1) * 10, ..context };
         start_cheat_block_timestamp_global(context.timestamp);
-        calls.close_bitcoin_phase(3, deployment.actor, phase, context);
-        calls.bind_bitcoin_phase(3, other, phase, context);
+        calls.close_bitcoin_phase(3, deployment.actor, phase, crate::commands::action_context(context));
+        calls.bind_bitcoin_phase(3, other, phase, crate::commands::action_context(context));
         let mut winners = array![];
         for id in array![first_mine.entity_id, second_mine.entity_id] {
             let roll: u256 = core::poseidon::poseidon_hash_span(
@@ -374,7 +399,7 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
             }
         }
         repeated_winner = repeated_winner || winners.at(0) == winners.at(1);
-        let unrelated_context = ExecutionContext { raw_root: 999999, ..context };
+        let unrelated_context = crate::commands::action_context(ExecutionContext { raw_root: 999999, ..context });
         // Alternate one reversed batch and separate calls; neither can select contributors or reroll.
         if phase % 2 == 0 {
             calls
@@ -401,7 +426,7 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
                 crate::bitcoin::ClaimPhase {
                     phase, mine_ids: array![first_mine.entity_id, second_mine.entity_id].span(),
                 },
-                context,
+                crate::commands::action_context(context),
             );
         stop_cheat_caller_address(deployment.games);
         assert_eq!(sat(deployment, first), expected_first);
@@ -467,7 +492,15 @@ fn attacking_explorer(deployment: super::Deployment, home: ResourceKey, x: u32) 
     );
     start_cheat_caller_address(deployment.games, deployment.games);
     IResourceOperationsDispatcher { contract_address: deployment.games }
-        .initialize_resources(ResourceKey { game_id: 3, entity_id: id }, 100000000000000000000, 0, 30);
+        .initialize_resources(
+            ResourceKey { game_id: 3, entity_id: id },
+            100000000000000000000,
+            0,
+            30,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 30, ..crate::tests::context(deployment.games, 3) },
+            ),
+        );
     stop_cheat_caller_address(deployment.games);
     start_cheat_caller_address(deployment.games, deployment.games);
     let map = crate::map::IMapLogicDispatcher { contract_address: deployment.games };
@@ -642,7 +675,13 @@ fn discovery_guard_initialization_rejects_more_guards_than_the_structure_allows(
     start_cheat_caller_address(d.games, d.games);
     assert!(
         crate::guards::IGuardsSafeDispatcherTrait::initialize_structure_guards(
-            crate::guards::IGuardsSafeDispatcher { contract_address: d.games }, key, 99, 30,
+            crate::guards::IGuardsSafeDispatcher { contract_address: d.games },
+            key,
+            99,
+            30,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 30, ..crate::tests::context(d.games, (key).game_id) },
+            ),
         )
             .is_err(),
     );
@@ -748,19 +787,25 @@ fn weighted_draws_include_appended_players_and_later_updates_to_earlier_contribu
     let mut expected_second = 0_u128;
     let mut expected_mine = 0_u128;
     for phase in 4_u64..16 {
-        let context = ExecutionContext { timestamp: phase * 10, raw_root: phase.into() };
+        let context = ExecutionContext { timestamp: phase * 10, raw_root: phase.into(), ..super::context(d.games, 3) };
         start_cheat_block_timestamp_global(context.timestamp);
         start_cheat_caller_address(d.games, d.games);
         for (actor, source, amount) in array![
             (d.actor, first.entity_id, 10_u128), (other, second.entity_id, 30), (third, mine.entity_id, 20),
             (d.actor, first.entity_id, 20),
         ] {
-            calls.contribute_bitcoin_labor(3, actor, ContributeLabor { structure_id: source, amount }, context);
+            calls
+                .contribute_bitcoin_labor(
+                    3,
+                    actor,
+                    ContributeLabor { structure_id: source, amount },
+                    crate::commands::action_context(context),
+                );
         }
         let context = ExecutionContext { timestamp: (phase + 1) * 10, ..context };
         start_cheat_block_timestamp_global(context.timestamp);
-        calls.close_bitcoin_phase(3, d.actor, phase, context);
-        calls.bind_bitcoin_phase(3, d.actor, phase, context);
+        calls.close_bitcoin_phase(3, d.actor, phase, crate::commands::action_context(context));
+        calls.bind_bitcoin_phase(3, d.actor, phase, crate::commands::action_context(context));
         let roll: u256 = core::poseidon::poseidon_hash_span(
             array!['BITCOIN_DRAW', 1, 3, phase.into(), mine.entity_id.into(), phase.into(), 0].span(),
         )
@@ -776,7 +821,10 @@ fn weighted_draws_include_appended_players_and_later_updates_to_earlier_contribu
         expected_mine += 200;
         calls
             .claim_bitcoin_phase(
-                3, d.actor, crate::bitcoin::ClaimPhase { phase, mine_ids: array![mine.entity_id].span() }, context,
+                3,
+                d.actor,
+                crate::bitcoin::ClaimPhase { phase, mine_ids: array![mine.entity_id].span() },
+                crate::commands::action_context(context),
             );
         stop_cheat_caller_address(d.games);
         assert_eq!(sat(d, first), expected_first);
@@ -800,7 +848,7 @@ fn claim_execution_cost_does_not_grow_with_unrelated_settlements() {
     assert!(execute(d, contribute(home, 100), 40));
     close_and_bind(d, 4);
     let calls = IBitcoinCommandsDispatcher { contract_address: d.games };
-    let context = ExecutionContext { timestamp: 50, raw_root: 123 };
+    let context = ExecutionContext { timestamp: 50, raw_root: 123, ..super::context(d.games, 3) };
     start_cheat_caller_address(d.games, d.games);
     let initial_claim = crate::bitcoin::ClaimPhase { phase: 4, mine_ids: array![first.entity_id].span() };
     let initial_cost = measured_claim(calls, d.actor, initial_claim, context);
@@ -823,7 +871,15 @@ fn claim_execution_cost_does_not_grow_with_unrelated_settlements() {
             },
         );
         IResourceOperationsDispatcher { contract_address: d.games }
-            .initialize_resources(ResourceKey { game_id: 3, entity_id: id }, 1000000, 1, 50);
+            .initialize_resources(
+                ResourceKey { game_id: 3, entity_id: id },
+                1000000,
+                1,
+                50,
+                crate::commands::action_context(
+                    crate::commands::ExecutionContext { timestamp: 50, ..crate::tests::context(d.games, 3) },
+                ),
+            );
     }
     stop_cheat_caller_address(d.games);
     start_cheat_caller_address(d.games, d.games);
@@ -845,7 +901,7 @@ fn measured_claim(
     context: ExecutionContext,
 ) -> u128 {
     let before = core::testing::get_available_gas();
-    calls.claim_bitcoin_phase(3, actor, command, context);
+    calls.claim_bitcoin_phase(3, actor, command, crate::commands::action_context(context));
     before - core::testing::get_available_gas()
 }
 

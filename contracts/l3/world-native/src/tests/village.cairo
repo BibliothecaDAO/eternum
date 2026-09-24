@@ -83,7 +83,7 @@ fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::Slice
                     activate_economy: false,
                 },
             ),
-            context(),
+            crate::commands::action_context(context(deployment.games, 3)),
         );
     stop_cheat_caller_address(deployment.games);
     (deployment, realm)
@@ -93,16 +93,12 @@ fn run(deployment: Deployment, command: Command, timestamp: u64) -> bool {
     start_cheat_block_timestamp_global(timestamp);
     let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
     let action = recorded::FixtureAction {
-        command,
-        rules: IGameDispatcher { contract_address: deployment.games }.rules(3),
-        nonce: season.next_nonce(3, deployment.actor),
-        deadline: 10000,
-        ..intent(deployment, 3),
+        command, nonce: season.next_nonce(3, deployment.actor), deadline: 10000, ..intent(deployment, 3),
     };
     let signed = signature(deployment, action);
     let ticket = recorded::make_intent(deployment.games, action);
     let recorded_context = recorded::make_context(
-        deployment.games, action, ExecutionContext { timestamp, ..context() },
+        deployment.games, action, ExecutionContext { timestamp, ..context(deployment.games, 3) },
     );
     snforge_std::start_cheat_block_timestamp(deployment.games, timestamp);
     snforge_std::cheat_caller_address(deployment.games, super::submitter(), snforge_std::CheatSpan::TargetCalls(1));
@@ -144,10 +140,25 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_recorded_time() {
         assert!(tile.data / 0x20000000000 % 256 != 0, "realm neighbour biome missing");
     }
     let pools = ISettlementPoolDispatcher { contract_address: deployment.games };
-    let before = pools.village_pool(3);
+    let before = pools
+        .village_pool(
+            3,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 100, ..crate::tests::context(deployment.games, 3) },
+            ),
+        );
     assert!(!run(deployment, settle(0xffffffff, 7), 100));
     assert!(ledger.village_pass(pass).unwrap().unwrap().village_id == 0);
-    assert!(pools.village_pool(3) == before, "failed placement retained reservations");
+    assert!(
+        pools
+            .village_pool(
+                3,
+                crate::commands::action_context(
+                    crate::commands::ExecutionContext { timestamp: 100, ..crate::tests::context(deployment.games, 3) },
+                ),
+            ) == before,
+        "failed placement retained reservations",
+    );
     assert!(run(deployment, settle(realm, 7), 100));
     let village_id = ledger.village_pass(pass).unwrap().unwrap().village_id;
     let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
@@ -266,7 +277,26 @@ fn exhausted_geometry_records_rejection_and_keeps_the_pass() {
     let ledger = IVillagesDispatcher { contract_address: deployment.games };
     assert!(ledger.village_pass(pass).unwrap().village_id == 0);
     let pool = ISettlementPoolDispatcher { contract_address: deployment.games };
-    assert!(pool.village_pool(3).opened == 0 && pool.settlement_pool(3).opened == 0);
+    assert!(
+        pool
+            .village_pool(
+                3,
+                crate::commands::action_context(
+                    crate::commands::ExecutionContext { timestamp: 100, ..crate::tests::context(deployment.games, 3) },
+                ),
+            )
+            .opened == 0
+            && pool
+                .settlement_pool(
+                    3,
+                    crate::commands::action_context(
+                        crate::commands::ExecutionContext {
+                            timestamp: 100, ..crate::tests::context(deployment.games, 3),
+                        },
+                    ),
+                )
+                .opened == 0,
+    );
     let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
     let result = IRecordedExecutionViewsDispatcher { contract_address: deployment.games }
         .recorded_outcome(3, 1)

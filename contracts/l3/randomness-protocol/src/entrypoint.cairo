@@ -31,8 +31,8 @@ pub trait IRecordedExecutionFailure<T> {
 
 #[derive(Copy, Drop, Serde)]
 pub struct Admission {
-    pub rules: felt252,
-    pub execution_config: felt252,
+    pub release_id: u32,
+    pub preset_commitment: felt252,
     pub nonce: u64,
     pub order: u64,
     pub timestamp: u64,

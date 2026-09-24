@@ -66,7 +66,16 @@ fn create(d: super::Deployment, coord: Coord) -> ResourceKey {
     start_cheat_block_timestamp_global(30);
     start_cheat_caller_address(d.games, d.games);
     let id = IStructureOperationsDispatcher { contract_address: d.games }
-        .create_discovery(3, coord, Discovery::Camp, 101, 30);
+        .create_discovery(
+            3,
+            coord,
+            Discovery::Camp,
+            101,
+            30,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 30, ..crate::tests::context(d.games, 3) },
+            ),
+        );
     stop_cheat_caller_address(d.games);
     ResourceKey { game_id: 3, entity_id: id }
 }

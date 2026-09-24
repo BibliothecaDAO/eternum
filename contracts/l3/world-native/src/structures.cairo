@@ -134,7 +134,13 @@ pub struct StructureRecord {
 #[starknet::interface]
 pub trait IStructureOperations<T> {
     fn create_discovery(
-        ref self: T, game_id: u32, coord: Coord, discovery: crate::discovery::Discovery, seed: u256, timestamp: u64,
+        ref self: T,
+        game_id: u32,
+        coord: Coord,
+        discovery: crate::discovery::Discovery,
+        seed: u256,
+        timestamp: u64,
+        game_context: crate::commands::ActionContext,
     ) -> u32;
     #[cfg(test)]
     fn provision_realm(
@@ -148,6 +154,7 @@ pub trait IStructureOperations<T> {
         amount: u128,
         explorer_id: u32,
         timestamp: u64,
+        game_context: crate::commands::ActionContext,
     );
 }
 

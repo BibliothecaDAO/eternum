@@ -13,10 +13,10 @@ pub const SETTLE_BLITZ_ROSTER: u32 = 7;
 
 pub const COMMAND_ROUTES: [CommandRoute; 68] = [
     CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false },
-    CommandRoute { logic: 6, selector: selector!("explore"), items_offset: None, batch: false },
+    CommandRoute { logic: 16, selector: selector!("explore"), items_offset: None, batch: false },
     CommandRoute { logic: 12, selector: selector!("battle"), items_offset: Some(2), batch: false },
-    CommandRoute { logic: 6, selector: selector!("move_explorer"), items_offset: Some(1), batch: false },
-    CommandRoute { logic: 6, selector: selector!("toggle_alternate"), items_offset: None, batch: false },
+    CommandRoute { logic: 16, selector: selector!("move_explorer"), items_offset: Some(1), batch: false },
+    CommandRoute { logic: 16, selector: selector!("toggle_alternate"), items_offset: None, batch: false },
     CommandRoute { logic: 5, selector: selector!("transfer_structure_ownership"), items_offset: None, batch: false },
     CommandRoute { logic: 3, selector: selector!("level_up"), items_offset: None, batch: false },
     CommandRoute { logic: 7, selector: selector!("settle_blitz_roster"), items_offset: None, batch: true },
@@ -88,7 +88,7 @@ pub const COMMAND_ROUTES: [CommandRoute; 68] = [
     CommandRoute { logic: 14, selector: selector!("withdraw_resource"), items_offset: None, batch: false },
     CommandRoute { logic: 5, selector: selector!("provision_and_upgrade_realm"), items_offset: None, batch: false },
     CommandRoute { logic: 5, selector: selector!("set_entity_name"), items_offset: None, batch: false },
-    CommandRoute { logic: 6, selector: selector!("enter_depth"), items_offset: None, batch: false },
+    CommandRoute { logic: 16, selector: selector!("enter_depth"), items_offset: None, batch: false },
     CommandRoute { logic: 3, selector: selector!("buy_realm_upgrade"), items_offset: None, batch: false },
 ];
 
@@ -112,6 +112,7 @@ pub fn logic_class(
         13 => classes.raid.read(),
         14 => classes.bridge.read(),
         15 => classes.relics.read(),
+        16 => classes.movement.read(),
         _ => panic!("unknown command logic"),
     }
 }

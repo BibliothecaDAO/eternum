@@ -1,5 +1,4 @@
 use starknet::ContractAddress;
-use crate::commands::ExecutionContext;
 use crate::resources::ResourceAmount;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -37,9 +36,15 @@ pub struct BuyRealmUpgrade {
 #[starknet::interface]
 pub trait IStructureUpgrades<T> {
     fn buy_realm_upgrade(
-        ref self: T, game_id: u32, actor: ContractAddress, command: BuyRealmUpgrade, context: ExecutionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: BuyRealmUpgrade,
+        context: crate::commands::ActionContext,
     );
-    fn level_up(ref self: T, game_id: u32, actor: ContractAddress, structure_id: u32, context: ExecutionContext);
+    fn level_up(
+        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u32, context: crate::commands::ActionContext,
+    );
 }
 
 pub fn troop_limits(config: crate::rules::TroopLimitConfig, level: u8) -> (u16, u8) {

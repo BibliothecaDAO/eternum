@@ -70,7 +70,8 @@ fn authentication_revert(reason: &str) -> bool {
         "out of order",
         "only sequencing submitter",
         "invalid authority signature",
-        "execution config mismatch",
+        "envelope release mismatch",
+        "envelope preset mismatch",
         "future execution time",
         "backwards execution time",
         "malformed envelope",
@@ -306,6 +307,7 @@ mod tests {
     struct TestNode {
         tickets: Vec<RecordedTicket>,
         poison: Option<usize>,
+        poison_reason: &'static str,
         first: FirstSubmission,
         state: Mutex<State>,
     }
@@ -314,6 +316,7 @@ mod tests {
             Self {
                 tickets,
                 poison,
+                poison_reason: "Out of gas",
                 first,
                 state: Mutex::new(State {
                     prepared: vec![],
@@ -334,7 +337,7 @@ mod tests {
             };
             if reverted {
                 receipt.execution_status = ExecutionStatus::Reverted;
-                receipt.revert_reason = Some("Out of gas".into());
+                receipt.revert_reason = Some(self.poison_reason.into());
             } else {
                 for index in indexes {
                     let ticket = &self.tickets[*index];
@@ -434,7 +437,8 @@ mod tests {
                 actor: Felt::from(index + 100),
                 nonce: 0,
                 command: Felt::ONE,
-                rules: Felt::ONE,
+                release_id: 1,
+                preset_commitment: Felt::ONE,
                 valid_from: 0,
                 valid_until: 500,
                 last_order: 100,
@@ -452,7 +456,8 @@ mod tests {
                         action,
                         order,
                         timestamp: 10,
-                        execution_config: Felt::ONE,
+                        release_id: 1,
+                        preset_commitment: Felt::ONE,
                         epoch: 1,
                         root: [index as u8; 32],
                     },
@@ -532,6 +537,26 @@ mod tests {
             );
         }
         assert!(matches!(slots.reserve(Felt::TWO, Felt::from(101), Felt::from(999)), Ok(Slot::New(_))));
+    }
+    #[tokio::test]
+    async fn mismatched_release_envelopes_pause_without_consuming_the_ticket() {
+        for reason in ["envelope release mismatch", "envelope preset mismatch"] {
+            let (_, tickets, statuses) = pending(1);
+            let mut node = TestNode::new(
+                tickets.iter().map(|ticket| ticket.record.clone()).collect(),
+                Some(0),
+                FirstSubmission::Normal,
+            );
+            node.poison_reason = reason;
+            let node = Arc::new(node);
+            assert!(execute(node.clone(), tickets).await.unwrap_err().to_string().contains("submission paused"));
+            let state = node.state.lock().unwrap();
+            assert_eq!(state.prepared.len(), 1);
+            assert_eq!(state.prepared[0].entrypoint, "execute_batch");
+            assert_eq!(state.submitted, vec![Felt::ONE; ATTEMPTS]);
+            assert!(state.effects.is_empty() && state.heads.is_empty());
+            assert!(!matches!(*statuses[0].borrow(), ActionStatus::Recorded { .. }));
+        }
     }
     #[tokio::test]
     async fn lost_receipt_after_execution_adopts_outcome_without_duplicate_or_rejection() {

@@ -17,8 +17,7 @@ it("serves the shard's chain, release, endpoints and every contract a client cal
   const served = buildShardManifest(document, { rpcUrl: "https://rpc.test", admissionUrl: "https://admission.test" });
   expect(served).toMatchObject({
     chainId: "0x4c4142",
-    releaseId: String(manifest.native.releaseId),
-    schemaHash: manifest.native.activeSchema,
+    releaseSchemas: { [manifest.native.releaseId]: manifest.native.activeSchema },
     rpcUrl: "https://rpc.test",
     admissionUrl: "https://admission.test",
     accountClassHash: "0x456",
@@ -38,4 +37,14 @@ it("refuses a shard record without a guardian public key", () => {
 it("refuses a node whose chain differs from the shard it serves", () => {
   expect(() => assertShardChain(document, "0x4c4142")).not.toThrow();
   expect(() => assertShardChain(document, "0x999")).toThrow("declares 0x4c4142");
+});
+
+it("serves every published release schema, including games pinned behind the current release", () => {
+  const releases = { "1": manifest.native.activeSchema, "2": "new-decoder" };
+  const served = buildShardManifest(
+    { ...document, native: { ...document.native, releaseId: 2, releaseSchemas: releases } },
+    { rpcUrl: "https://rpc.test", admissionUrl: "https://admission.test" },
+  );
+  expect(served.releaseSchemas).toEqual(releases);
+  expect(served).not.toHaveProperty("schemaHash");
 });

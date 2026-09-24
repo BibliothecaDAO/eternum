@@ -1,14 +1,13 @@
-pub fn biome(key: TileKey) -> u8 {
-    let rules = crate::logic::game::rules(key.game_id);
-    let climate = if rules.epoch_seconds == 0 {
-        rules.biome_climate_config
+pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
+    let climate = if game_context.epoch_seconds == 0 {
+        game_context.climate
     } else {
         let spacing = crate::logic::settlement::rules(key.game_id).spacing;
         crate::expeditions::climate(
-            rules.biome_climate_config,
+            game_context.climate,
             crate::troops::Coord { alt: key.alt, x: key.col, y: key.row },
-            crate::logic::game::game(key.game_id).start_main_at,
-            rules.epoch_seconds,
+            game_context.start_main_at,
+            game_context.epoch_seconds,
             spacing,
         )
     };
@@ -184,13 +183,20 @@ pub mod MapLogic {
 
     #[abi(embed_v0)]
     impl Map of crate::map::IMapLogic<ContractState> {
-        fn biome(self: @ContractState, key: TileKey) -> u8 {
-            crate::logic::map::biome(key)
+        fn biome(self: @ContractState, key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
+            crate::logic::map::biome(key, game_context)
         }
         fn discovery(
-            self: @ContractState, key: TileKey, seed: u256, hyperstructures: u32, timestamp: u64,
+            self: @ContractState,
+            key: TileKey,
+            seed: u256,
+            hyperstructures: u32,
+            timestamp: u64,
+            game_context: crate::commands::ActionContext,
         ) -> crate::discovery::Discovery {
-            let rules = crate::logic::game::rules(key.game_id);
+            let game_context = crate::commands::load_context(key.game_id, game_context);
+
+            let rules = game_context.rules.unbox();
             let coord = Coord { alt: key.alt, x: key.col, y: key.row };
             if key.alt {
                 let mut adjacent = false;
@@ -213,49 +219,67 @@ pub mod MapLogic {
             }
         }
 
-        fn reveal_structure_surroundings(ref self: ContractState, game_id: u32, coord: Coord) {
+        fn reveal_structure_surroundings(
+            ref self: ContractState, game_id: u32, coord: Coord, game_context: crate::commands::BiomeContext,
+        ) {
             for direction in 0_u8..6 {
                 let key = tile_key(game_id, crate::geometry::neighbor(coord, direction));
                 let data = crate::logic::map::tile(key).map(|tile| tile.data).unwrap_or(0);
                 if data / BIOME_SCALE % BYTE_RANGE == 0 {
-                    crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key));
+                    crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key, game_context));
                 }
             }
         }
 
-        fn reveal_destination_tile(ref self: ContractState, key: TileKey) -> Option<TileOpt> {
+        fn reveal_destination_tile(
+            ref self: ContractState, key: TileKey, game_context: crate::commands::BiomeContext,
+        ) -> Option<TileOpt> {
             let stored = crate::logic::map::tile(key);
             if stored.map(|tile| tile.data / BIOME_SCALE % BYTE_RANGE != 0).unwrap_or(false) {
                 return stored;
             }
-            if crate::logic::game::rules(key.game_id).epoch_seconds == 0
+            if game_context.epoch_seconds == 0
                 || !crate::expeditions::is_home_ring(
                     Coord { alt: key.alt, x: key.col, y: key.row },
                     crate::logic::settlement::rules(key.game_id).spacing,
                 ) {
                 return stored;
             }
-            crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key));
+            crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key, game_context));
             crate::logic::map::tile(key)
         }
 
         fn expedition_home_ring(
             self: @ContractState, game_id: u32, realm_id: u16, timestamp: u64,
         ) -> Span<(Coord, u8)> {
-            let rules = crate::logic::game::rules(game_id);
+            let game_context = crate::commands::load_context(
+                game_id, crate::commands::ActionContext { raw_root: 0, timestamp: timestamp },
+            );
+
+            let rules = game_context.rules.unbox();
             assert!(rules.epoch_seconds != 0, "game has no expeditions");
             let site = crate::expeditions::site(
-                crate::logic::game::game(game_id).start_main_at,
+                game_context.game.unbox().start_main_at,
                 rules.epoch_seconds,
                 crate::logic::settlement::rules(game_id).spacing,
                 realm_id,
                 timestamp,
                 0,
             );
-            let mut ring = array![(site, crate::logic::map::biome(tile_key(game_id, site)))];
+            let mut ring = array![
+                (site, crate::logic::map::biome(tile_key(game_id, site), crate::commands::biome_context(game_context))),
+            ];
             for direction in 0_u8..6 {
                 let coord = crate::geometry::neighbor(site, direction);
-                ring.append((coord, crate::logic::map::biome(tile_key(game_id, coord))));
+                ring
+                    .append(
+                        (
+                            coord,
+                            crate::logic::map::biome(
+                                tile_key(game_id, coord), crate::commands::biome_context(game_context),
+                            ),
+                        ),
+                    );
             }
             ring.span()
         }
@@ -308,14 +332,16 @@ pub mod MapLogic {
             actor: ContractAddress,
             explorer_id: u32,
             revealed: Option<Coord>,
-            context: crate::commands::ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
+            let context = crate::commands::load_context(game_id, context);
+
             let classes = self.release.classes(game_id);
-            crate::commands::assert_context_time(context.timestamp);
-            let game = crate::logic::game::game(game_id);
+
+            let game = context.game.unbox();
             crate::game::assert_playing(game, context.timestamp);
             let explorer = crate::logic::troops::authorized_explorer(
-                crate::troops::ExplorerKey { game_id, explorer_id }, actor, context.timestamp,
+                crate::troops::ExplorerKey { game_id, explorer_id }, actor, context.timestamp, context,
             );
             assert!(!explorer.coord.alt, "extraction requires surface");
             assert!(explorer.troops.count != 0, "explorer is dead");
@@ -324,7 +350,7 @@ pub mod MapLogic {
                 (occupied.data / crate::map::OCCUPIER_SCALE) % crate::map::ENTITY_RANGE == explorer_id.into(),
                 "explorer does not occupy tile",
             );
-            let rules = crate::logic::game::rules(game_id);
+            let rules = context.rules.unbox();
             let coord = if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
                 match revealed {
                     Some(coord) => coord,
@@ -364,6 +390,7 @@ pub mod MapLogic {
                 reward.resource_type,
                 amount,
                 context.timestamp,
+                crate::commands::resource_context(context),
             );
             crate::logic::map::MapState::write_occupancy(key, tile.data + crate::map::REWARD_EXTRACTED_FLAG);
             if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES)
@@ -374,7 +401,7 @@ pub mod MapLogic {
                     game_id,
                     actor,
                     crate::relics::OpenChest { explorer_id, coord },
-                    context,
+                    crate::commands::action_context(context),
                 );
             }
             self
@@ -395,11 +422,19 @@ pub mod MapLogic {
             self.data.map_rules.last_relic_discovery.read(game_id)
         }
         fn discover_relic_chest(
-            ref self: ContractState, game_id: u32, coord: Coord, excluded: Coord, seed: u256, timestamp: u64,
+            ref self: ContractState,
+            game_id: u32,
+            coord: Coord,
+            excluded: Coord,
+            seed: u256,
+            timestamp: u64,
+            game_context: crate::commands::ActionContext,
         ) {
+            let game_context = crate::commands::load_context(game_id, game_context);
+
             let classes = self.release.classes(game_id);
-            crate::commands::assert_context_time(timestamp);
-            let rules = crate::logic::game::rules(game_id);
+
+            let rules = game_context.rules.unbox();
             if !crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CHESTS) || coord.alt {
                 return;
             }
@@ -425,7 +460,9 @@ pub mod MapLogic {
                     && data % BIOME_SCALE == 0
                     && !crate::state::read().settlement_pool.reserved.read((game_id, destination.x, destination.y)) {
                     if data / BIOME_SCALE % BYTE_RANGE == 0 {
-                        crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key));
+                        crate::logic::map::MapState::reveal(
+                            key, crate::logic::map::biome(key, crate::commands::biome_context(game_context)),
+                        );
                     }
                     crate::logic::map::MapState::occupy(key, crate::logic::game::allocate_entity(game_id), 34, false);
                     break;
@@ -450,7 +487,13 @@ pub mod MapLogic {
             let id = ((tile.data / crate::map::OCCUPIER_SCALE) % crate::map::ENTITY_RANGE).try_into().unwrap();
             crate::logic::map::MapState::vacate(key, id);
         }
-        fn reveal_relic_ring(ref self: ContractState, game_id: u32, coord: Coord, radius: u8) {
+        fn reveal_relic_ring(
+            ref self: ContractState,
+            game_id: u32,
+            coord: Coord,
+            radius: u8,
+            game_context: crate::commands::BiomeContext,
+        ) {
             assert!(radius == 1 || radius == 2, "invalid relic radius");
             for radius in 1_u32..Into::<u8, u32>::into(radius) + 1 {
                 let mut next = crate::geometry::neighbor_at_distance(coord, 4, radius);
@@ -459,7 +502,7 @@ pub mod MapLogic {
                         let key = tile_key(game_id, next);
                         let data = crate::logic::map::tile(key).map(|tile| tile.data).unwrap_or(0);
                         if data / BIOME_SCALE % BYTE_RANGE == 0 {
-                            crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key));
+                            crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key, game_context));
                         }
                         next = crate::geometry::neighbor(next, direction);
                     }

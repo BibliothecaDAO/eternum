@@ -312,5 +312,11 @@ pub(crate) fn discovery_guard(
 
 #[starknet::interface]
 pub trait IBattleResolution<T> {
-    fn finish_battle(ref self: T, key: ExplorerKey, explorer: ExplorerTroops, before: u128);
+    fn finish_battle(
+        ref self: T,
+        key: ExplorerKey,
+        explorer: ExplorerTroops,
+        before: u128,
+        game_context: crate::commands::ActionContext,
+    );
 }

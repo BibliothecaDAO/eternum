@@ -18,6 +18,7 @@ pub mod hyperstructures;
 pub mod map;
 pub mod market;
 pub mod mines;
+pub mod movement;
 pub mod placement;
 pub mod presets;
 pub mod prizes;

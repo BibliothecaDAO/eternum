@@ -2,7 +2,6 @@
 pub mod ProductionLogic {
     use starknet::ContractAddress;
     use starknet::storage::StorageMapWriteAccess;
-    use crate::commands::ExecutionContext;
     use crate::events::RowSet;
     use crate::game::assert_playing;
     use crate::logic::arrivals::ArrivalState;
@@ -84,10 +83,16 @@ pub mod ProductionLogic {
     #[abi(embed_v0)]
     impl RelicProduction of crate::relics::IRelicProduction<ContractState> {
         fn apply_production_relic(
-            ref self: ContractState, key: ResourceKey, relic_id: u8, rule: crate::relics::RelicRule, timestamp: u64,
+            ref self: ContractState,
+            key: ResourceKey,
+            relic_id: u8,
+            rule: crate::relics::RelicRule,
+            timestamp: u64,
+            game_context: crate::commands::ActionContext,
         ) {
-            crate::commands::assert_context_time(timestamp);
-            let rules = crate::logic::game::rules(key.game_id);
+            let game_context = crate::commands::load_context(key.game_id, game_context);
+
+            let rules = game_context.rules.unbox();
             let mut bonus = self.production.bonus(key);
             crate::relics::boost_production(
                 ref bonus, relic_id, rule, (timestamp / rules.tick_config.armies_tick_in_seconds).try_into().unwrap(),
@@ -129,29 +134,38 @@ pub mod ProductionLogic {
             game_id: u32,
             actor: ContractAddress,
             command: RefillProduction,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            let key = self.assert_production_command(game_id, actor, command, context.timestamp);
-            self.refill_from_recipes(key, command, false, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            let key = self.assert_production_command(game_id, actor, command, context.timestamp, context);
+            self.refill_from_recipes(key, command, false, context.timestamp, context);
         }
         fn burn_resource_for_resource_production(
             ref self: ContractState,
             game_id: u32,
             actor: ContractAddress,
             command: RefillProduction,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            let key = self.assert_production_command(game_id, actor, command, context.timestamp);
-            self.refill_from_recipes(key, command, true, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            let key = self.assert_production_command(game_id, actor, command, context.timestamp, context);
+            self.refill_from_recipes(key, command, true, context.timestamp, context);
         }
     }
 
     #[generate_trait]
     impl Internal of InternalTrait {
         fn assert_production_command(
-            self: @ContractState, game_id: u32, actor: ContractAddress, command: RefillProduction, timestamp: u64,
+            self: @ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: RefillProduction,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) -> ResourceKey {
-            assert_playing(crate::logic::game::game(game_id), timestamp);
+            assert_playing(game_context.game.unbox(), timestamp);
             let key = ResourceKey { game_id, entity_id: command.structure_id };
             let structure = crate::logic::structures::structure(key).expect('missing producer structure');
             assert!(structure.owner == actor, "actor does not own structure");
@@ -163,7 +177,12 @@ pub mod ProductionLogic {
             key
         }
         fn refill_from_recipes(
-            ref self: ContractState, key: ResourceKey, command: RefillProduction, complex: bool, timestamp: u64,
+            ref self: ContractState,
+            key: ResourceKey,
+            command: RefillProduction,
+            complex: bool,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) {
             for index in 0..command.resource_types.len() {
                 let resource_type = *command.resource_types.at(index);
@@ -180,12 +199,20 @@ pub mod ProductionLogic {
                 for input in inputs {
                     assert!(*input.amount != 0, "zero production input cost");
                     let amount = *input.amount * cycles;
-                    self.resources.spend(key, *input.resource_type, amount, timestamp);
+                    self
+                        .resources
+                        .spend(
+                            key,
+                            *input.resource_type,
+                            amount,
+                            timestamp,
+                            crate::commands::resource_context(game_context),
+                        );
                     costs.append(crate::resources::ResourceAmount { resource_type: *input.resource_type, amount });
                 }
                 let output = Into::<u64, u128>::into(per_cycle) * cycles;
                 assert!(output != 0, "zero production output");
-                self.refill_output(key, resource_type, output, costs.span(), timestamp);
+                self.refill_output(key, resource_type, output, costs.span(), timestamp, game_context);
             }
         }
         fn refill_output(
@@ -195,8 +222,9 @@ pub mod ProductionLogic {
             output: u128,
             costs: Span<crate::resources::ResourceAmount>,
             timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) {
-            let tick: u32 = (timestamp / crate::logic::game::rules(key.game_id).tick_config.armies_tick_in_seconds)
+            let tick: u32 = (timestamp / game_context.rules.unbox().tick_config.armies_tick_in_seconds)
                 .try_into()
                 .unwrap();
             let output = crate::production::bonus_output(self.production.bonus(key), resource_type, output, tick);
@@ -208,7 +236,7 @@ pub mod ProductionLogic {
                     output,
                     crate::logic::resources::rule(key.game_id, resource_type).unit_weight,
                     timestamp.try_into().unwrap(),
-                    crate::logic::resources::production_start(key.game_id),
+                    crate::logic::resources::production_start(key.game_id, game_context),
                 );
             crate::logic::stories::emit_entity_story(
                 key,

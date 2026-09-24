@@ -130,7 +130,17 @@ fn chest(deployment: super::Deployment, origin: Coord, seed: u256, time: u64) ->
     let coord = crate::relics::chest_destination(origin, seed, time, 12);
     start_cheat_block_timestamp_global(time);
     start_cheat_caller_address(deployment.games, deployment.games);
-    map_relics(deployment).discover_relic_chest(3, origin, origin, seed, time);
+    map_relics(deployment)
+        .discover_relic_chest(
+            3,
+            origin,
+            origin,
+            seed,
+            time,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: time, ..crate::tests::context(deployment.games, 3) },
+            ),
+        );
     stop_cheat_caller_address(deployment.games);
     coord
 }
@@ -314,12 +324,42 @@ fn chest_discovery_is_surface_only_timed_and_skips_reserved_or_occupied_tiles() 
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 40);
     start_cheat_caller_address(deployment.games, deployment.games);
     start_cheat_block_timestamp_global(49);
-    map_relics(deployment).discover_relic_chest(3, origin, origin, 322, 49);
+    map_relics(deployment)
+        .discover_relic_chest(
+            3,
+            origin,
+            origin,
+            322,
+            49,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 49, ..crate::tests::context(deployment.games, 3) },
+            ),
+        );
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 40);
     start_cheat_block_timestamp_global(50);
-    map_relics(deployment).discover_relic_chest(3, Coord { alt: true, ..origin }, origin, 322, 50);
+    map_relics(deployment)
+        .discover_relic_chest(
+            3,
+            Coord { alt: true, ..origin },
+            origin,
+            322,
+            50,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 50, ..crate::tests::context(deployment.games, 3) },
+            ),
+        );
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 40);
-    map_relics(deployment).discover_relic_chest(3, origin, origin, 322, 50);
+    map_relics(deployment)
+        .discover_relic_chest(
+            3,
+            origin,
+            origin,
+            322,
+            50,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 50, ..crate::tests::context(deployment.games, 3) },
+            ),
+        );
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 50);
 }
 #[test]
@@ -328,7 +368,7 @@ fn opening_a_chest_draws_with_replacement_once_and_replay_cannot_reopen_it() {
     let coord = chest(deployment, Coord { alt: false, x: 2000200, y: 2000200 }, 321, 40);
     move_fixture(deployment, explorer, crate::geometry::neighbor(coord, 0));
     let command = Command::OpenRelicChest(OpenChest { explorer_id: explorer.entity_id, coord });
-    let mut root = super::context().raw_root;
+    let mut root = super::context(deployment.games, 3).raw_root;
     let games = crate::game::IGameDispatcher { contract_address: deployment.games };
     let seed = crate::random::game_root(ref root, 3, crate::game::IGameDispatcherTrait::game(games, 3).seed);
     let expected = crate::relics::draw_relics(rules(), seed, 50, 3);
@@ -367,16 +407,25 @@ fn relic_configuration_requires_authority_and_application_requires_owner() {
     let (deployment, _, explorer) = setup(false);
     let safe = IRelicsSafeDispatcher { contract_address: deployment.games };
     assert!(safe.configure_relics(1, rules(), None).is_err());
+    // Recorded time is authenticated once at Games, before any relic logic runs.
+    let action = super::recorded::FixtureAction {
+        nonce: 1, command: apply(explorer, 39, Recipient::Explorer), ..super::intent(deployment, 3),
+    };
+    let relics_before = balance(deployment, explorer, 39);
+    let order_before = super::recorded::head(deployment.games, 3).order;
+    start_cheat_caller_address(deployment.games, super::submitter());
     assert!(
-        safe
-            .apply_relic(
-                3,
-                deployment.actor,
-                ApplyRelic { entity_id: explorer.entity_id, relic_id: 39, recipient: Recipient::Explorer },
-                super::context(),
-            )
+        super::recorded::FixtureSafeSeasonTrait::execute(
+            crate::games::IGamesAuthenticationSafeDispatcher { contract_address: deployment.games },
+            action,
+            super::context(deployment.games, 3),
+            super::signature(deployment, action),
+        )
             .is_err(),
     );
+    stop_cheat_caller_address(deployment.games);
+    assert_eq!(balance(deployment, explorer, 39), relics_before);
+    assert_eq!(super::recorded::head(deployment.games, 3).order, order_before);
     start_cheat_caller_address(deployment.games, super::authority());
     assert!(safe.configure_relics(3, rules(), None).is_err());
     assert!(safe.configure_relics(1, array![].span(), None).is_err());
@@ -393,7 +442,9 @@ fn relic_configuration_requires_authority_and_application_requires_owner() {
                 3,
                 987.try_into().unwrap(),
                 ApplyRelic { entity_id: explorer.entity_id, relic_id: 39, recipient: Recipient::Explorer },
-                ExecutionContext { timestamp: 40, ..super::context() },
+                crate::commands::action_context(
+                    ExecutionContext { timestamp: 40, ..super::context(deployment.games, 3) },
+                ),
             )
             .is_err(),
     );
@@ -437,7 +488,11 @@ fn extract_reward(deployment: super::Deployment, explorer_id: u32, timestamp: u6
     start_cheat_caller_address(deployment.games, deployment.games);
     let result = IExtractionSafeDispatcher { contract_address: deployment.games }
         .extract_exploration_reward(
-            3, deployment.actor, explorer_id, None, ExecutionContext { timestamp, ..super::context() },
+            3,
+            deployment.actor,
+            explorer_id,
+            None,
+            crate::commands::action_context(ExecutionContext { timestamp, ..super::context(deployment.games, 3) }),
         );
     stop_cheat_caller_address(deployment.games);
     result.is_ok()
@@ -594,7 +649,17 @@ fn chest_search_skips_the_explorers_vacated_start_tile() {
     let vacated = Coord { alt: false, x: 2000211, y: 2000198 };
     start_cheat_block_timestamp_global(40);
     start_cheat_caller_address(deployment.games, deployment.games);
-    map_relics(deployment).discover_relic_chest(3, origin, vacated, 321, 40);
+    map_relics(deployment)
+        .discover_relic_chest(
+            3,
+            origin,
+            vacated,
+            321,
+            40,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 40, ..crate::tests::context(deployment.games, 3) },
+            ),
+        );
     let map = IMapLogicDispatcher { contract_address: deployment.games };
     assert!(map.tile(crate::geometry::tile_key(3, vacated)).is_none());
     let tile = map.tile(crate::geometry::tile_key(3, Coord { x: 2000212, ..vacated })).unwrap();

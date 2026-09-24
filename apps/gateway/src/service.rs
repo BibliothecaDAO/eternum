@@ -95,7 +95,9 @@ impl<N: GatewayNode> GameApi<N> {
         let digest = intent.identity()?;
         // get_admission refuses an actor that does not run the shard's account class.
         let fields = node.admission(intent.game, intent.actor).await?;
-        let [_, _, nonce, _, _] = fields.as_slice() else { anyhow::bail!("malformed admission view") };
+        let [release_id, preset_commitment, nonce, _, _] = fields.as_slice() else {
+            anyhow::bail!("malformed admission view")
+        };
         // A forged or revoked key never takes the actor's slot.
         ensure!(node.signed_by(intent.actor, digest, &action.signature).await?, "invalid player signature");
         if *nonce != Felt::from(intent.nonce) {
@@ -106,6 +108,7 @@ impl<N: GatewayNode> GameApi<N> {
             }
             anyhow::bail!("actor nonce is not current; no matching action in reconnect history");
         }
+        ensure_release_matches(&intent, *release_id, *preset_commitment)?;
         match self.0.slots.reserve(intent.game, intent.actor, digest).map_err(anyhow::Error::msg)? {
             Slot::Existing(receiver) => Ok(receiver),
             Slot::New(permit) => {
@@ -358,6 +361,12 @@ impl Assignments {
     }
 }
 
+fn ensure_release_matches(intent: &Intent, release_id: Felt, preset_commitment: Felt) -> anyhow::Result<()> {
+    ensure!(release_id == Felt::from(intent.release_id), "STALE_RELEASE");
+    ensure!(preset_commitment == intent.preset_commitment, "INVALID_PRESET");
+    Ok(())
+}
+
 async fn accept(
     node: &impl AssignmentNode,
     epoch: &EpochSecret,
@@ -366,14 +375,15 @@ async fn accept(
 ) -> anyhow::Result<RecordedTicket> {
     let intent = &request.intent;
     let fields = node.admission(intent.game, intent.actor).await?;
-    let [rules, config, nonce, recorded_next, observed_time] = fields.as_slice() else {
+    let [release_id, preset_commitment, nonce, recorded_next, observed_time] = fields.as_slice() else {
         anyhow::bail!("malformed admission view")
     };
     let order = match orders.get(&intent.game) {
         Some(order) => *order,
         None => (*recorded_next).try_into()?,
     };
-    ensure!(*rules == intent.rules && *nonce == Felt::from(intent.nonce), "admission state changed");
+    ensure_release_matches(intent, *release_id, *preset_commitment)?;
+    ensure!(*nonce == Felt::from(intent.nonce), "admission state changed");
     let timestamp = node.timestamp();
     let now: u64 = (*observed_time).try_into()?;
     ensure!(context_matches(intent, order, timestamp) && now <= intent.valid_until, "intent expired before acceptance");
@@ -383,7 +393,8 @@ async fn accept(
             action: intent.identity()?,
             order,
             timestamp,
-            execution_config: *config,
+            release_id: intent.release_id,
+            preset_commitment: intent.preset_commitment,
             epoch: epoch.epoch,
             root: epoch.root(intent.game, order),
         },
@@ -433,7 +444,7 @@ mod tests {
     use serde_json::Value;
     use std::collections::HashSet;
 
-    const RULES: Felt = Felt::from_hex_unchecked("0x7");
+    const PRESET: Felt = Felt::from_hex_unchecked("0x7");
     const GAME_A: Felt = Felt::ONE;
     const GAME_B: Felt = Felt::TWO;
     const DEPLOYMENT: Felt = Felt::TWO;
@@ -511,7 +522,7 @@ mod tests {
             let chain = self.0.lock().unwrap();
             let next = chain.heads.get(&game).copied().unwrap_or_default() + 1;
             let nonce = chain.nonces.get(&(game, actor)).copied().unwrap_or_default();
-            Ok(vec![RULES, Felt::ONE, nonce.into(), next.into(), Felt::from(100)])
+            Ok(vec![Felt::ONE, PRESET, nonce.into(), next.into(), Felt::from(100)])
         }
         fn timestamp(&self) -> u64 {
             100
@@ -612,7 +623,8 @@ mod tests {
             actor: Felt::from(actor),
             nonce,
             command: Felt::ONE,
-            rules: RULES,
+            release_id: 1,
+            preset_commitment: PRESET,
             valid_from: 0,
             valid_until: 1000,
             last_order: 1000,
@@ -673,6 +685,64 @@ mod tests {
 
     fn succeeded(status: &Option<ActionStatus>) -> bool {
         matches!(status, Some(ActionStatus::Recorded { succeeded: true, .. }))
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn release_and_preset_refusals_leave_the_actor_available_for_a_fresh_signature() {
+        let shard = Shard::open(TestChain::default()).await;
+        for (actor, reason) in [(91, "STALE_RELEASE"), (92, "INVALID_PRESET")] {
+            let fresh = intent(GAME_A, actor, 0);
+            let mut stale = fresh.clone();
+            if reason == "STALE_RELEASE" {
+                stale.release_id = 2;
+            } else {
+                stale.preset_commitment += Felt::ONE;
+            }
+            let error = shard.submit(signed(&stale, &VALID_SIGNATURE)).await.expect_err("stale pin refused");
+            assert!(error.to_string().contains(reason), "{error:#}");
+            assert_eq!(shard.chain.0.lock().unwrap().nonces.get(&(GAME_A, Felt::from(actor))), None);
+            assert!(succeeded(&outcome(shard.submit(signed(&fresh, &VALID_SIGNATURE)).await.unwrap()).await));
+        }
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn player_supplied_v6_envelopes_are_refused_and_the_next_intent_executes() {
+        let shard = Shard::open(TestChain::default()).await;
+        let rpc = shard.api.rpc(IpAddr::from([127, 0, 0, 1])).unwrap();
+        let fresh = intent(GAME_A, 93, 0).encode().unwrap();
+        let malformed = serde_json::json!(["0x455445524e554d5f454e54524f5059", "0x6"]);
+        let injected = serde_json::json!({"intent": fresh, "signature": VALID_SIGNATURE, "envelope": malformed});
+        let disguised = serde_json::json!({"intent": malformed, "signature": VALID_SIGNATURE});
+        for (action, code) in [(injected, -32602), (disguised, -32001)] {
+            let request =
+                serde_json::json!({"jsonrpc": "2.0", "id": 1, "method": "game_subscribeAction", "params": [action]});
+            let (response, _) = rpc.raw_json_request(&request.to_string(), 8).await.unwrap();
+            let response: Value = serde_json::from_str(&response).unwrap();
+            assert_eq!(response["error"]["code"], code, "{response}");
+            let chain = shard.chain.0.lock().unwrap();
+            assert!(chain.prepared.is_empty() && chain.heads.is_empty() && chain.nonces.is_empty());
+            assert_eq!(shard.api.0.slots.held(), 0);
+        }
+        let request = serde_json::json!({
+            "jsonrpc": "2.0", "id": 2, "method": "game_subscribeAction",
+            "params": [{"intent": fresh, "signature": VALID_SIGNATURE}],
+        });
+        let (response, mut updates) = rpc.raw_json_request(&request.to_string(), 8).await.unwrap();
+        assert!(serde_json::from_str::<Value>(&response).unwrap().get("result").is_some(), "{response}");
+        loop {
+            let update = updates.recv().await.expect("valid intent keeps its subscription");
+            let update: Value = serde_json::from_str(&update).unwrap();
+            let status = &update["params"]["result"];
+            if status["status"] == "recorded" {
+                assert_eq!(status["succeeded"], true);
+                break;
+            }
+        }
+        let chain = shard.chain.0.lock().unwrap();
+        assert_eq!(chain.heads[&GAME_A], 1);
+        assert_eq!(chain.nonces[&(GAME_A, Felt::from(93))], 1);
+        assert_eq!(chain.epoch, 1, "player input must not restart admission");
+        assert!(chain.rejected.is_empty());
     }
 
     #[tokio::test(start_paused = true)]
@@ -773,7 +843,8 @@ mod tests {
             actor: Felt::from(actor),
             nonce: 0,
             command: Felt::ONE,
-            rules: RULES,
+            release_id: 1,
+            preset_commitment: PRESET,
             valid_from: 0,
             valid_until: 1000,
             last_order: 1000,

@@ -53,6 +53,7 @@ export interface NativeRelease {
   schemas: Record<string, NativeSchema>;
   gamesClassHash: string;
   releaseId: number;
+  releaseSchemas: Record<string, string>;
   logic: Record<string, string>;
 }
 export interface NativeManifest {

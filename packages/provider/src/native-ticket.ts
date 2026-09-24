@@ -41,6 +41,17 @@ export class StaleActionNonceError extends Error {
   }
 }
 
+/** The game changed releases before admission or execution; its nonce remains available. */
+export class StaleGameReleaseError extends Error {
+  constructor() {
+    super("STALE_RELEASE: reload the game's release before signing again");
+    this.name = "StaleGameReleaseError";
+  }
+}
+
+const staleRelease = (reason: string): boolean => /\bSTALE_RELEASE\b/.test(reason);
+const STALE_RELEASE = `0x${Array.from("STALE_RELEASE", (c) => c.charCodeAt(0).toString(16)).join("")}`;
+
 /** How long one submission of a signed intent waits for its outcome before the one resubmission, then the failure. */
 const OUTCOME_WINDOW_MS = 60_000;
 const BUSY_BACKOFF_MS = [500, 1_000, 2_000, 4_000, 8_000];
@@ -103,13 +114,23 @@ export function createNativeTicketSubmission(baseUrl: string) {
       const status = message.params.result;
       if (typeof status.action !== "string" || BigInt(status.action) !== BigInt(pending.action))
         throw new Error("Ticket status identity mismatch");
-      if (status.status === "refused") throw new Error(`Action refused: ${status.reason}`);
+      if (status.status === "refused") {
+        if (staleRelease(String(status.reason))) throw new StaleGameReleaseError();
+        throw new Error(`Action refused: ${status.reason}`);
+      }
       if (["queued", "accepted", "submitted"].includes(status.status)) return;
       if (status.status !== "recorded") throw new Error("Unknown ticket status");
       if (typeof status.transaction_hash !== "string" || !/^0x[0-9a-f]+$/i.test(status.transaction_hash))
         throw new Error("Invalid ticket transaction hash");
       if (typeof status.order !== "number" || !Number.isSafeInteger(status.order) || status.order <= 0)
         throw new Error("Invalid ticket order");
+      if (
+        status.succeeded === false &&
+        status.nonce_consumed === false &&
+        status.status_class &&
+        BigInt(status.status_class) === BigInt(STALE_RELEASE)
+      )
+        throw new StaleGameReleaseError();
       finish(pending, { transaction_hash: status.transaction_hash, order: BigInt(status.order) });
     } catch (error) {
       finish(pending, error instanceof Error ? error : new Error(String(error)));
@@ -121,7 +142,8 @@ export function createNativeTicketSubmission(baseUrl: string) {
       const delay = BUSY_BACKOFF_MS[Math.min(pending.busyRetries, BUSY_BACKOFF_MS.length - 1)];
       pending.busyRetries += 1;
       setTimeout(() => actions.get(pending.action) === pending && subscribe(pending), delay);
-    } else if (isStaleNonce(reason)) finish(pending, new StaleActionNonceError(pending.action));
+    } else if (staleRelease(reason)) finish(pending, new StaleGameReleaseError());
+    else if (isStaleNonce(reason)) finish(pending, new StaleActionNonceError(pending.action));
     else finish(pending, new Error(`Action admission rejected: ${reason}`));
   };
 

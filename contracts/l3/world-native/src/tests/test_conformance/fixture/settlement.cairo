@@ -121,7 +121,8 @@ fn accepted(season: ContractAddress, command: Command, timestamp: u64) -> (Inten
         actor: 456,
         nonce: admission.nonce,
         command: command_commitment(command),
-        rules: admission.rules,
+        release_id: admission.release_id,
+        preset_commitment: admission.preset_commitment,
         valid_from: timestamp,
         valid_until: timestamp + 10,
         last_order: 100,
@@ -131,7 +132,8 @@ fn accepted(season: ContractAddress, command: Command, timestamp: u64) -> (Inten
         action: action_identity(@action),
         order: admission.order,
         timestamp,
-        execution_config: admission.execution_config,
+        release_id: admission.release_id,
+        preset_commitment: admission.preset_commitment,
         epoch: 1,
         root: 987654321,
     };
@@ -179,7 +181,11 @@ fn unprovisioned_realm(season: ContractAddress, grant_troops: bool) {
                     activate_economy: false,
                 },
             ),
-            world_native::commands::ExecutionContext { raw_root: 987654321, timestamp: 1005 },
+            crate::commands::action_context(
+                world_native::commands::ExecutionContext {
+                    raw_root: 987654321, timestamp: 1005, ..crate::tests::context(season, 8),
+                },
+            ),
         );
     stop_cheat_caller_address(season);
 }

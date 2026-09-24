@@ -1,5 +1,4 @@
 use starknet::ContractAddress;
-use crate::commands::ExecutionContext;
 use crate::troops::Coord;
 
 pub const CANONICAL_REALM_COUNT: u32 = 8000;
@@ -33,13 +32,19 @@ pub trait ISeasonRealms<T> {
     #[cfg(test)]
     fn available_realm(self: @T, game_id: u32, index: u32) -> u32;
     fn settle_season(
-        ref self: T, game_id: u32, actor: ContractAddress, command: SettleSeason, context: ExecutionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: SettleSeason,
+        context: crate::commands::ActionContext,
     );
 }
 
 #[starknet::interface]
 pub trait ISeasonPlacement<T> {
-    fn claim_season_settlement(ref self: T, game_id: u32, settled_count: u16, seed: u256) -> Coord;
+    fn claim_season_settlement(
+        ref self: T, game_id: u32, settled_count: u16, seed: u256, game_context: crate::commands::ActionContext,
+    ) -> Coord;
 }
 
 pub fn decode_traits(packed: u32) -> RealmTraits {

@@ -19,13 +19,14 @@ pub struct LogicClasses {
     pub raid: ClassHash,
     pub bridge: ClassHash,
     pub relics: ClassHash,
+    pub movement: ClassHash,
 }
 
 pub fn validate(classes: LogicClasses) {
     for class_hash in array![
         classes.season, classes.map, classes.placement, classes.construction, classes.production, classes.structures,
         classes.troops, classes.settlement, classes.resources, classes.economy, classes.prizes, classes.registry,
-        classes.combat, classes.raid, classes.bridge, classes.relics,
+        classes.combat, classes.raid, classes.bridge, classes.relics, classes.movement,
     ] {
         assert!(class_hash.is_non_zero(), "missing logic class");
     }

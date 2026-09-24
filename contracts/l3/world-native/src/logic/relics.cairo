@@ -111,16 +111,17 @@ pub mod RelicState {
             game_id: u32,
             actor: ContractAddress,
             command: OpenChest,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            crate::commands::assert_context_time(context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
             let Some(rules) = self.chest_rules(game_id) else {
                 return;
             };
-            let game = crate::logic::game::game(game_id);
+            let game = context.game.unbox();
             assert_playing(game, context.timestamp);
             crate::logic::troops::authorized_explorer(
-                ExplorerKey { game_id, explorer_id: command.explorer_id }, actor, context.timestamp,
+                ExplorerKey { game_id, explorer_id: command.explorer_id }, actor, context.timestamp, context,
             );
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, game_id, game.seed);
@@ -144,12 +145,14 @@ pub mod RelicState {
             game_id: u32,
             actor: ContractAddress,
             command: OpenChest,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            self.assert_command(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.assert_command(game_id, context.timestamp, context);
             let classes = self.logic_classes(game_id);
             let explorer = crate::logic::troops::authorized_explorer(
-                ExplorerKey { game_id, explorer_id: command.explorer_id }, actor, context.timestamp,
+                ExplorerKey { game_id, explorer_id: command.explorer_id }, actor, context.timestamp, context,
             );
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
             IRelicMapLibraryDispatcher { class_hash: classes.map.read() }.consume_relic_chest(game_id, command.coord);
@@ -160,12 +163,13 @@ pub mod RelicState {
             game_id: u32,
             actor: ContractAddress,
             command: OpenChest,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            crate::commands::assert_context_time(context.timestamp);
-            assert_playing(crate::logic::game::game(game_id), context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            assert_playing(context.game.unbox(), context.timestamp);
             crate::logic::troops::authorized_explorer(
-                ExplorerKey { game_id, explorer_id: command.explorer_id }, actor, context.timestamp,
+                ExplorerKey { game_id, explorer_id: command.explorer_id }, actor, context.timestamp, context,
             );
             self.pay_chest(game_id, actor, command, context);
         }
@@ -174,16 +178,18 @@ pub mod RelicState {
             game_id: u32,
             actor: ContractAddress,
             command: ApplyRelic,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            self.assert_command(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.assert_command(game_id, context.timestamp, context);
             assert!(
                 command.relic_id >= crate::relics::FIRST_RELIC && command.relic_id <= crate::relics::LAST_RELIC,
                 "invalid relic resource",
             );
             assert!(self.data.relics.relic_configured.read(game_id), "missing relic rules");
             let rule = self.data.relics.relic_rules.read((game_id, command.relic_id));
-            let payer = self.apply_effect(game_id, actor, command, rule, context.timestamp);
+            let payer = self.apply_effect(game_id, actor, command, rule, context.timestamp, context);
             self
                 .resources(game_id)
                 .spend_resource(
@@ -191,6 +197,7 @@ pub mod RelicState {
                     command.relic_id,
                     crate::rules::RESOURCE_PRECISION,
                     context.timestamp,
+                    crate::commands::resource_context(context),
                 );
             self
                 .resources(game_id)
@@ -199,6 +206,7 @@ pub mod RelicState {
                     38,
                     rule.essence_cost * crate::rules::RESOURCE_PRECISION,
                     context.timestamp,
+                    crate::commands::resource_context(context),
                 );
         }
     }
@@ -232,9 +240,11 @@ pub mod RelicState {
             game_id: u32,
             actor: ContractAddress,
             structure_id: u32,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            self.assert_command(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.assert_command(game_id, context.timestamp, context);
             let key = ResourceKey { game_id, entity_id: structure_id };
             let structure = crate::logic::structures::structure(key).expect('missing structure');
             assert!(
@@ -243,11 +253,25 @@ pub mod RelicState {
             assert!(structure.owner == actor, "actor does not own structure");
             self
                 .resources(game_id)
-                .spend_resource(key, crate::artificer::RESEARCH, self.artificer_cost(game_id), context.timestamp);
+                .spend_resource(
+                    key,
+                    crate::artificer::RESEARCH,
+                    self.artificer_cost(game_id),
+                    context.timestamp,
+                    crate::commands::resource_context(context),
+                );
             let mut root = context.raw_root;
-            let seed = crate::random::game_root(ref root, game_id, crate::logic::game::game(game_id).seed);
+            let seed = crate::random::game_root(ref root, game_id, context.game.unbox().seed);
             let relic = *crate::relics::draw_relics(self.relic_rules(game_id), seed, context.timestamp, 1).at(0);
-            self.resources(game_id).grant_resource(key, relic, crate::rules::RESOURCE_PRECISION, context.timestamp);
+            self
+                .resources(game_id)
+                .grant_resource(
+                    key,
+                    relic,
+                    crate::rules::RESOURCE_PRECISION,
+                    context.timestamp,
+                    crate::commands::resource_context(context),
+                );
             self.record_crafted_relic(game_id, actor, structure_id, relic, context.timestamp);
         }
     }
@@ -270,18 +294,26 @@ pub mod RelicState {
                 return;
             }
             let mut root = context.raw_root;
-            let seed = crate::random::game_root(ref root, game_id, crate::logic::game::game(game_id).seed);
-            let config = crate::logic::game::rules(game_id);
+            let seed = crate::random::game_root(ref root, game_id, context.game.unbox().seed);
+            let config = context.rules.unbox();
             let relics = crate::relics::draw_relics(
                 self.relic_rules(game_id), seed, context.timestamp, config.map_config.relic_chest_relics_per_chest,
             );
             let key = ResourceKey { game_id, entity_id: command.explorer_id };
             for id in relics {
-                self.resources(game_id).grant_resource(key, *id, crate::rules::RESOURCE_PRECISION, context.timestamp);
+                self
+                    .resources(game_id)
+                    .grant_resource(
+                        key,
+                        *id,
+                        crate::rules::RESOURCE_PRECISION,
+                        context.timestamp,
+                        crate::commands::resource_context(context),
+                    );
             }
             let points = config.victory_points_grant_config.relic_open_points.into();
             IPointsLibraryDispatcher { class_hash: get_dep_component!(@self, Life).classes(game_id).season.read() }
-                .register_relic_points(game_id, actor);
+                .register_relic_points(game_id, actor, crate::commands::action_context(context));
             self.record_chest_opened(game_id, actor, command, relics, points, context.timestamp);
         }
 
@@ -293,8 +325,8 @@ pub mod RelicState {
             context: ExecutionContext,
             rules: crate::relics::ChestRules,
         ) {
-            let game = crate::logic::game::game(game_id);
-            let game_rules = crate::logic::game::rules(game_id);
+            let game = context.game.unbox();
+            let game_rules = context.rules.unbox();
             let spacing = crate::logic::settlement::rules(game_id).spacing;
             let depth: u8 = (command.coord.y / spacing % 4).try_into().unwrap();
             let epoch = context.timestamp / game_rules.epoch_seconds.into();
@@ -304,7 +336,8 @@ pub mod RelicState {
             let seed = crate::random::game_root(ref root, game_id, game.seed);
             let ground = crate::logic::expeditions::depth_rules(game_id, depth).chest;
             let roll = crate::relics::roll_chest(rules, ground, old_pity, tokens, seed, context.timestamp);
-            let relic_id = self.grant_rolled_relic(game_id, command.explorer_id, roll, seed, context.timestamp);
+            let relic_id = self
+                .grant_rolled_relic(game_id, command.explorer_id, roll, seed, context.timestamp, context);
             self.write_chest_counters(game_id, actor, depth, epoch, roll, old_pity, tokens);
             let reward = crate::relics::ChestReward {
                 player: actor,
@@ -325,6 +358,7 @@ pub mod RelicState {
             roll: crate::relics::ChestRoll,
             seed: u256,
             timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) -> u8 {
             if roll.kind == crate::relics::ChestKind::Relic {
                 let drawn = *crate::relics::draw_relics(self.relic_rules(game_id), seed, timestamp + 41, 1).at(0);
@@ -341,6 +375,7 @@ pub mod RelicState {
                         id,
                         crate::rules::RESOURCE_PRECISION,
                         timestamp,
+                        crate::commands::resource_context(game_context),
                     );
                 id
             } else {
@@ -474,9 +509,13 @@ pub mod RelicState {
         fn resources(self: @ComponentState<TContractState>, game_id: u32) -> IResourceOperationsLibraryDispatcher {
             IResourceOperationsLibraryDispatcher { class_hash: self.logic_classes(game_id).resources.read() }
         }
-        fn assert_command(self: @ComponentState<TContractState>, game_id: u32, timestamp: u64) {
-            crate::commands::assert_context_time(timestamp);
-            assert_playing(crate::logic::game::game(game_id), timestamp);
+        fn assert_command(
+            self: @ComponentState<TContractState>,
+            game_id: u32,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) {
+            assert_playing(game_context.game.unbox(), timestamp);
         }
         fn apply_effect(
             self: @ComponentState<TContractState>,
@@ -485,24 +524,31 @@ pub mod RelicState {
             command: ApplyRelic,
             rule: RelicRule,
             timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) -> u32 {
             let classes = self.logic_classes(game_id);
             if command.recipient == Recipient::Explorer {
                 let explorer = crate::logic::troops::authorized_explorer(
-                    ExplorerKey { game_id, explorer_id: command.entity_id }, actor, timestamp,
+                    ExplorerKey { game_id, explorer_id: command.entity_id }, actor, timestamp, game_context,
                 );
                 IRelicTroopsLibraryDispatcher { class_hash: classes.troops.read() }
-                    .apply_troop_relic(game_id, actor, command, rule, timestamp);
+                    .apply_troop_relic(
+                        game_id, actor, command, rule, timestamp, crate::commands::action_context(game_context),
+                    );
                 explorer.owner
             } else {
                 let key = ResourceKey { game_id, entity_id: command.entity_id };
                 assert!(crate::logic::structures::owner(key) == actor, "actor does not own structure");
                 if command.recipient == Recipient::StructureProduction {
                     IRelicProductionLibraryDispatcher { class_hash: classes.production.read() }
-                        .apply_production_relic(key, command.relic_id, rule, timestamp);
+                        .apply_production_relic(
+                            key, command.relic_id, rule, timestamp, crate::commands::action_context(game_context),
+                        );
                 } else {
                     IRelicTroopsLibraryDispatcher { class_hash: classes.troops.read() }
-                        .apply_troop_relic(game_id, actor, command, rule, timestamp);
+                        .apply_troop_relic(
+                            game_id, actor, command, rule, timestamp, crate::commands::action_context(game_context),
+                        );
                 }
                 command.entity_id
             }

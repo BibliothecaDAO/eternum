@@ -176,7 +176,17 @@ fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
         let coord = Coord { alt: false, x: 2000100 + index * 10, y: 2000100 };
         let seed: u256 = index.into();
         let (kind, config, cap) = mine_rules.mine_draw(MinePoolKey { game_id: 3 }, seed);
-        let id = structures.create_discovery(3, coord, crate::discovery::Discovery::Mine, seed, 30);
+        let id = structures
+            .create_discovery(
+                3,
+                coord,
+                crate::discovery::Discovery::Mine,
+                seed,
+                30,
+                crate::commands::action_context(
+                    crate::commands::ExecutionContext { timestamp: 30, ..crate::tests::context(deployment.games, 3) },
+                ),
+            );
         let structure = structures.structure(ResourceKey { game_id: 3, entity_id: id }).unwrap();
         assert_eq!(structure.metadata.mine_kind, kind);
         assert_eq!(structure.base.category, 4);
@@ -245,7 +255,13 @@ fn ethereal_discovery_never_draws_from_the_ordinary_mine_pool() {
         assert_eq!(
             map
                 .discovery(
-                    crate::map::TileKey { game_id: 3, alt: true, col: 2000100, row: 2000100 }, root.into(), 0, 30,
+                    crate::map::TileKey { game_id: 3, alt: true, col: 2000100, row: 2000100 },
+                    root.into(),
+                    0,
+                    30,
+                    crate::commands::action_context(
+                        crate::commands::ExecutionContext { timestamp: 30, ..crate::tests::context(d.games, 3) },
+                    ),
                 ),
             crate::discovery::Discovery::None,
         );

@@ -105,7 +105,11 @@ fn season_configuration_is_authorized_immutable_and_game_scoped() {
     let (deployment, _, _) = setup_with_rules(super::recorded::rules());
     let season = ISeasonLifecycleSafeDispatcher { contract_address: deployment.games };
     assert!(season.configure_season_win(3, 1).is_err());
-    assert!(season.close_season(3, deployment.actor, super::context()).is_err());
+    assert!(
+        season
+            .close_season(3, deployment.actor, crate::commands::action_context(super::context(deployment.games, 3)))
+            .is_err(),
+    );
     start_cheat_caller_address(deployment.games, super::authority());
     assert!(season.configure_season_win(3, 1).is_ok());
     assert!(season.configure_season_win(3, 2).is_err());
@@ -129,6 +133,9 @@ fn closing_includes_every_completed_hyperstructure_and_skips_foundations() {
             crate::discovery::Discovery::Hyperstructure,
             101,
             50,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 50, ..crate::tests::context(deployment.games, 3) },
+            ),
         );
         stop_cheat_caller_address(deployment.games);
         if offset == 200 {
@@ -162,14 +169,44 @@ fn point_history_keeps_each_awards_activity_and_amount_without_a_second_balance(
     let (deployment, _, _) = setup_with_rules(super::recorded::rules());
     let mut spy = snforge_std::spy_events();
     start_cheat_caller_address(deployment.games, deployment.games);
-    points(deployment).register_exploration(3, deployment.actor);
+    points(deployment)
+        .register_exploration(
+            3,
+            deployment.actor,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 100, ..crate::tests::context(deployment.games, 3) },
+            ),
+        );
     start_cheat_caller_address(deployment.games, deployment.games);
-    points(deployment).register_relic_points(3, deployment.actor);
+    points(deployment)
+        .register_relic_points(
+            3,
+            deployment.actor,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 100, ..crate::tests::context(deployment.games, 3) },
+            ),
+        );
     start_cheat_caller_address(deployment.games, deployment.games);
     points(deployment).register_hyperstructure_points(3, deployment.actor, 123);
     start_cheat_caller_address(deployment.games, deployment.games);
-    points(deployment).register_capture(3, deployment.actor, 2);
-    points(deployment).register_capture(3, deployment.actor, 5);
+    points(deployment)
+        .register_capture(
+            3,
+            deployment.actor,
+            2,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 100, ..crate::tests::context(deployment.games, 3) },
+            ),
+        );
+    points(deployment)
+        .register_capture(
+            3,
+            deployment.actor,
+            5,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 100, ..crate::tests::context(deployment.games, 3) },
+            ),
+        );
     stop_cheat_caller_address(deployment.games);
     let mut awarded = 0;
     let mut activities = 0_u8;
@@ -209,6 +246,9 @@ fn nine_completed_hyperstructures() -> (super::Deployment, Array<crate::resource
             crate::discovery::Discovery::Hyperstructure,
             101,
             50,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 50, ..crate::tests::context(d.games, 3) },
+            ),
         );
         stop_cheat_caller_address(d.games);
         let key = crate::resources::ResourceKey { game_id: 3, entity_id: id };
@@ -347,7 +387,9 @@ fn final_checkpoint(d: super::Deployment) -> u32 {
         crate::registrar::IGameSettlementDispatcher { contract_address: d.games },
         3,
         super::authority(),
-        crate::commands::ExecutionContext { timestamp: 1000, ..super::context() },
+        crate::commands::action_context(
+            crate::commands::ExecutionContext { timestamp: 1000, ..super::context(d.games, 3) },
+        ),
     )
         .try_into()
         .unwrap()

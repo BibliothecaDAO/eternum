@@ -3,7 +3,6 @@ pub mod BlitzResultState {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_tx_info};
     use crate::blitz_results::{BlitzResult, PlayerResult, RecordBlitzResults};
-    use crate::commands::ExecutionContext;
     use crate::events::RowSet;
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternal;
@@ -49,9 +48,11 @@ pub mod BlitzResultState {
             game_id: u32,
             actor: ContractAddress,
             command: RecordBlitzResults,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) -> u64 {
-            self.authorize(game_id, actor, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.authorize(game_id, actor, context.timestamp, context);
             let roster = self.roster(game_id);
             let count = self.data.blitz_results.count.read(game_id);
             let end = Into::<u8, u32>::into(command.start) + command.players.len();
@@ -87,15 +88,21 @@ pub mod BlitzResultState {
         fn roster(self: @ComponentState<TContractState>, game_id: u32) -> Span<RosterPlayer> {
             crate::logic::registrar::blitz_roster(game_id)
         }
-        fn authorize(self: @ComponentState<TContractState>, game_id: u32, actor: ContractAddress, timestamp: u64) {
+        fn authorize(
+            self: @ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) {
             let release = get_dep_component!(self, Life);
             assert!(actor == release.authority(), "only domain authority");
-            crate::commands::assert_context_time(timestamp);
+
             assert!(
-                !crate::rules::rule_enabled(crate::logic::game::rules(game_id), crate::rules::SEASON_CLOSE),
+                !crate::rules::rule_enabled(game_context.rules.unbox(), crate::rules::SEASON_CLOSE),
                 "result finalisation is disabled",
             );
-            let game = crate::logic::game::game(game_id);
+            let game = game_context.game.unbox();
             assert!(game.ready && game.end_at != 0 && timestamp >= game.end_at, "game has not ended");
             assert!(game.settled, "final point settlement incomplete");
         }

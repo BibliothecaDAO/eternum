@@ -6,7 +6,7 @@ pub trait IGameplay<T> {
         actor: starknet::ContractAddress,
         arguments: Span<felt252>,
         nonce: u64,
-        context: crate::commands::ExecutionContext,
+        context: crate::commands::ActionContext,
     ) -> Result<Span<felt252>, eternum_randomness_protocol::recording::Rejection>;
 }
 
@@ -58,13 +58,17 @@ pub mod SeasonLogic {
         fn season_win_threshold(self: @ContractState, game_id: u32) -> u128 {
             self.data.season.win_thresholds.read(game_id).expect('missing season win threshold')
         }
-        fn close_season(ref self: ContractState, game_id: u32, actor: ContractAddress, context: DomainContext) -> u64 {
+        fn close_season(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
+        ) -> u64 {
+            let context = crate::commands::load_context(game_id, context);
+
             let classes = self.release.classes(game_id);
-            crate::commands::assert_context_time(context.timestamp);
-            let mut game = crate::logic::game::game(game_id);
+
+            let mut game = context.game.unbox();
             crate::game::assert_playing(game, context.timestamp);
             assert!(
-                crate::rules::rule_enabled(crate::logic::game::rules(game_id), crate::rules::SEASON_CLOSE),
+                crate::rules::rule_enabled(context.rules.unbox(), crate::rules::SEASON_CLOSE),
                 "season closure is disabled",
             );
             let threshold = self.season_win_threshold(game_id);
@@ -80,6 +84,7 @@ pub mod SeasonLogic {
                 crate::hyperstructures::IHyperstructuresLibraryDispatcher { class_hash: classes.economy.read() },
                 game_id,
                 context.timestamp,
+                crate::commands::action_context(context),
             );
             if remaining != 0 {
                 return remaining.into();
@@ -97,11 +102,13 @@ pub mod SeasonLogic {
     #[abi(embed_v0)]
     impl GameSettlement of crate::registrar::IGameSettlement<ContractState> {
         fn mark_game_settled(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, context: DomainContext,
+            ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
         ) -> u64 {
+            let context = crate::commands::load_context(game_id, context);
+
             assert!(actor == self.release.authority(), "only domain authority");
-            crate::commands::assert_context_time(context.timestamp);
-            let mut game = crate::logic::game::game(game_id);
+
+            let mut game = context.game.unbox();
             if game.settled {
                 return 0;
             }
@@ -112,7 +119,7 @@ pub mod SeasonLogic {
                 game.end_grace_seconds == 0 || context.timestamp > game.end_at + game.end_grace_seconds.into(),
                 "game settlement grace period is active",
             );
-            let remaining = self.settle_final_points(game_id, context.timestamp);
+            let remaining = self.settle_final_points(game_id, context.timestamp, context);
             if remaining != 0 {
                 return remaining.into();
             }
@@ -123,12 +130,15 @@ pub mod SeasonLogic {
     }
     #[abi(embed_v0)]
     impl Points of crate::game::IPoints<ContractState> {
-        fn register_relic_points(ref self: ContractState, game_id: u32, actor: ContractAddress) {
-            let points = crate::logic::game::rules(game_id).victory_points_grant_config.relic_open_points;
+        fn register_relic_points(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, game_context: crate::commands::ActionContext,
+        ) {
+            let game_context = crate::commands::load_context(game_id, game_context);
+
+            let points = game_context.rules.unbox().victory_points_grant_config.relic_open_points;
             self.register_points(game_id, actor, points.into(), crate::game::PointActivity::RelicChest);
         }
         fn register_hyperstructure_points(ref self: ContractState, game_id: u32, actor: ContractAddress, amount: u128) {
-            crate::logic::game::game(game_id);
             self.register_points(game_id, actor, amount, crate::game::PointActivity::Hyperstructure);
         }
         fn player_points(self: @ContractState, game_id: u32, actor: ContractAddress) -> u128 {
@@ -137,8 +147,16 @@ pub mod SeasonLogic {
         fn season_points(self: @ContractState, game_id: u32) -> u128 {
             self.data.season.season_points.read(game_id)
         }
-        fn register_capture(ref self: ContractState, game_id: u32, actor: ContractAddress, category: u8) -> u128 {
-            let rules = crate::logic::game::rules(game_id).victory_points_grant_config;
+        fn register_capture(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            category: u8,
+            game_context: crate::commands::ActionContext,
+        ) -> u128 {
+            let game_context = crate::commands::load_context(game_id, game_context);
+
+            let rules = game_context.rules.unbox().victory_points_grant_config;
             let amount = if category == 2 {
                 rules.claim_hyperstructure_points
             } else {
@@ -157,20 +175,27 @@ pub mod SeasonLogic {
                 );
             amount.into()
         }
-        fn register_exploration(ref self: ContractState, game_id: u32, actor: ContractAddress) {
-            let amount = crate::logic::game::rules(game_id).victory_points_grant_config.explore_tiles_points;
+        fn register_exploration(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, game_context: crate::commands::ActionContext,
+        ) {
+            let game_context = crate::commands::load_context(game_id, game_context);
+
+            let amount = game_context.rules.unbox().victory_points_grant_config.explore_tiles_points;
             self.register_points(game_id, actor, amount.into(), crate::game::PointActivity::Exploration);
         }
     }
     #[generate_trait]
     impl Internal of InternalTrait {
-        fn settle_final_points(ref self: ContractState, game_id: u32, timestamp: u64) -> u32 {
+        fn settle_final_points(
+            ref self: ContractState, game_id: u32, timestamp: u64, game_context: crate::commands::ExecutionContext,
+        ) -> u32 {
             crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_final_hyperstructures(
                 crate::hyperstructures::IHyperstructuresLibraryDispatcher {
                     class_hash: self.release.classes(game_id).economy.read(),
                 },
                 game_id,
                 timestamp,
+                crate::commands::action_context(game_context),
             )
         }
         fn record_season_end(ref self: ContractState, game_id: u32, winner: ContractAddress, timestamp: u64) {
@@ -234,7 +259,7 @@ pub mod SeasonLogic {
     ) -> Result<Span<felt252>, Array<felt252>> {
         let mut calldata = array![game_id.into(), actor.into()];
         calldata.append_span(arguments);
-        context.serialize(ref calldata);
+        crate::commands::action_context(context).serialize(ref calldata);
         starknet::syscalls::library_call_syscall(
             crate::command_routes::logic_class(classes, route.logic), route.selector, calldata.span(),
         )
@@ -265,14 +290,16 @@ pub mod SeasonLogic {
             actor: ContractAddress,
             arguments: Span<felt252>,
             nonce: u64,
-            context: DomainContext,
+            context: crate::commands::ActionContext,
         ) -> Result<Span<felt252>, eternum_randomness_protocol::recording::Rejection> {
+            let context = crate::commands::load_context(game_id, context);
+
             let (index, route, payload) = crate::commands::route_command(arguments).map_err(|code| rejection(code))?;
-            let rules = crate::logic::game::rules(game_id);
+            let rules = context.rules.unbox();
             if !crate::rules::command_enabled(rules.command_mask, index.into()) {
                 return Err(rejection('COMMAND_DISABLED'));
             }
-            if !crate::logic::game::game(game_id).ready && index != crate::command_routes::SETTLE_BLITZ_ROSTER {
+            if !context.game.unbox().ready && index != crate::command_routes::SETTLE_BLITZ_ROSTER {
                 return Err(rejection('ROSTER_NOT_READY'));
             }
             let result = dispatch(self.release.classes(game_id), route, game_id, actor, payload, context)

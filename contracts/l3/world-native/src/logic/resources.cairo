@@ -45,9 +45,9 @@ pub fn rule(game_id: u32, resource_type: u8) -> crate::resources::ResourceRule {
     }
 }
 
-pub fn production_start(game_id: u32) -> u32 {
-    if crate::rules::rule_enabled(crate::logic::game::rules(game_id), crate::rules::PRODUCTION_START) {
-        crate::logic::game::game(game_id).start_main_at.try_into().unwrap()
+pub fn production_start(game_id: u32, game_context: crate::commands::ExecutionContext) -> u32 {
+    if crate::rules::rule_enabled(game_context.rules.unbox(), crate::rules::PRODUCTION_START) {
+        game_context.game.unbox().start_main_at.try_into().unwrap()
     } else {
         0
     }
@@ -149,7 +149,12 @@ pub mod ResourceState {
             resource.balance
         }
         fn spend(
-            ref self: ComponentState<TContractState>, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64,
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            resource_type: u8,
+            amount: u128,
+            timestamp: u64,
+            game_context: crate::commands::ResourceContext,
         ) {
             let rule = super::rule(key.game_id, resource_type);
             self
@@ -159,7 +164,7 @@ pub mod ResourceState {
                     amount,
                     rule.unit_weight,
                     timestamp.try_into().unwrap(),
-                    super::production_start(key.game_id),
+                    game_context.production_start,
                 );
         }
         fn spend_resource(

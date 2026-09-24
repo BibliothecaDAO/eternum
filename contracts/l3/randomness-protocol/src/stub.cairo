@@ -115,7 +115,10 @@ pub mod RecordedExecutionStub {
             authenticate_submission(self.submitter.read());
             let action = action_identity(intent);
             assert!(*envelope.action == action, "altered action");
-            assert!(*envelope.execution_config == 987, "execution config mismatch");
+            assert!(
+                envelope.release_id == intent.release_id && envelope.preset_commitment == intent.preset_commitment,
+                "execution release mismatch",
+            );
             self.recording.require_next(intent, envelope, epoch);
         }
         fn consume_nonce(ref self: ContractState, intent: @Intent) -> bool {
@@ -147,6 +150,12 @@ pub mod RecordedExecutionStub {
             if !valid {
                 return Err('INVALID_SIGNATURE');
             }
+            if *intent.release_id != 1 {
+                return Err('STALE_RELEASE');
+            }
+            if *intent.preset_commitment != 789 {
+                return Err('INVALID_PRESET');
+            }
             Ok(())
         }
         fn validate_action(self: @ContractState, intent: @Intent, envelope: @crate::Envelope) -> Result<(), felt252> {
@@ -158,9 +167,6 @@ pub mod RecordedExecutionStub {
             }
             if *intent.nonce == 0xffffffffffffffff {
                 return Err('NONCE_EXHAUSTED');
-            }
-            if *intent.rules != 789 {
-                return Err('INVALID_RULES');
             }
             if !accepted_context_matches(intent, envelope) {
                 return Err('INVALID_ACCEPTANCE');
@@ -178,8 +184,8 @@ pub mod RecordedExecutionStub {
             assert!(fixture_game(game) && actor == self.actor.read(), "unknown fixture actor or game");
             let head = self.recording.data.heads.read(game);
             Admission {
-                rules: 789,
-                execution_config: 987,
+                release_id: 1,
+                preset_commitment: 789,
                 nonce: self.nonces.read(game),
                 order: head.order + 1,
                 timestamp: get_block_timestamp(),

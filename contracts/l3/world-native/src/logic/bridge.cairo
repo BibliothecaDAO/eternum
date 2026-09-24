@@ -3,7 +3,6 @@ pub mod BridgeState {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_contract_address};
     use crate::bridge::{Deposit, DepositRules, IDepositTokenDispatcher, IDepositTokenDispatcherTrait, Withdraw};
-    use crate::commands::ExecutionContext;
     use crate::events::RowSet;
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternalTrait;
@@ -64,9 +63,11 @@ pub mod BridgeState {
             game_id: u32,
             actor: ContractAddress,
             command: Deposit,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            let target = self.authorize(game_id, actor, command.structure_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            let target = self.authorize(game_id, actor, command.structure_id, context.timestamp, context);
             let rules = self.deposit_rules(game_id);
             assert!(!rules.paused, "resource bridge deposit is paused");
             let withdrawals = self.withdrawals();
@@ -102,6 +103,7 @@ pub mod BridgeState {
                     rules.realm_fee_bps,
                     false,
                     context.timestamp,
+                    context,
                 );
             let credited = resource_amount(token, amount - fees) - realm_fee;
             self
@@ -113,6 +115,7 @@ pub mod BridgeState {
                     0,
                     true,
                     context.timestamp,
+                    context,
                 );
         }
         fn withdraw_resource(
@@ -120,9 +123,11 @@ pub mod BridgeState {
             game_id: u32,
             actor: ContractAddress,
             command: Withdraw,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            let source = self.authorize(game_id, actor, command.structure_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            let source = self.authorize(game_id, actor, command.structure_id, context.timestamp, context);
             let withdrawals = self.withdrawals();
             let rules = withdrawals.rules(game_id);
             assert!(!rules.paused, "resource bridge withdrawal is paused");
@@ -134,6 +139,7 @@ pub mod BridgeState {
                     command.resource_type,
                     command.amount,
                     context.timestamp,
+                    crate::commands::resource_context(context),
                 );
             let amount = withdrawals
                 .retained_amount(game_id, command.resource_type, command.amount, self.completed(game_id));
@@ -147,6 +153,7 @@ pub mod BridgeState {
                     rules.bank_fee_bps,
                     true,
                     context.timestamp,
+                    context,
                 );
             self.pay_withdrawal(game_id, command.recipient, token, amount, realm_fee, command.client_fee_recipient);
         }
@@ -167,9 +174,11 @@ pub mod BridgeState {
             resource_type: u8,
             amount: u128,
             timestamp: u64,
+            game_context: crate::commands::ActionContext,
         ) {
-            crate::commands::assert_context_time(timestamp);
-            self.withdraw_liquidity_token(game_id, actor, bank_id, resource_type, amount, timestamp);
+            let game_context = crate::commands::load_context(game_id, game_context);
+
+            self.withdraw_liquidity_token(game_id, actor, bank_id, resource_type, amount, timestamp, game_context);
         }
     }
     #[generate_trait]
@@ -198,10 +207,14 @@ pub mod BridgeState {
             crate::logic::hyperstructures::completed_hyperstructure_count(game_id)
         }
         fn authorize(
-            self: @ComponentState<TContractState>, game_id: u32, actor: ContractAddress, entity_id: u32, timestamp: u64,
+            self: @ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            entity_id: u32,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) -> Structure {
-            crate::commands::assert_context_time(timestamp);
-            crate::game::assert_main_with_grace(crate::logic::game::game(game_id), timestamp);
+            crate::game::assert_main_with_grace(game_context.game.unbox(), timestamp);
             let structure = self.structure(game_id, entity_id);
             assert!(structure.owner == actor, "actor does not own structure");
             assert!(
@@ -268,6 +281,7 @@ pub mod BridgeState {
             resource_type: u8,
             amount: u128,
             timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) {
             let withdrawals = self.withdrawals();
             let rules = withdrawals.rules(game_id);
@@ -277,7 +291,17 @@ pub mod BridgeState {
             let fee = amount * rules.bank_fee_bps.into() / 10000;
             if rules.bank_fee_bps != 0 {
                 assert!(fee != 0, "amount too small to pay bank fees");
-                self.deliver(game_id, 0, bank_id, ResourceAmount { resource_type, amount: fee }, 0, true, timestamp);
+                self
+                    .deliver(
+                        game_id,
+                        0,
+                        bank_id,
+                        ResourceAmount { resource_type, amount: fee },
+                        0,
+                        true,
+                        timestamp,
+                        game_context,
+                    );
             }
             self.pay_withdrawal(game_id, actor, token, amount, fee, 0.try_into().unwrap());
         }
@@ -291,6 +315,7 @@ pub mod BridgeState {
             rate: u16,
             withdrawal: bool,
             timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) -> u128 {
             if village.base.category != 5 || rate == 0 {
                 return 0;
@@ -303,7 +328,7 @@ pub mod BridgeState {
             let resource = ResourceAmount { resource_type, amount: fee };
             let mut travel_time = 0;
             if withdrawal {
-                let rules = crate::logic::game::rules(game_id);
+                let rules = game_context.rules.unbox();
                 assert!(
                     !crate::rules::rule_enabled(rules, crate::rules::SAME_OWNER_TRANSFER)
                         || village.owner == realm.owner,
@@ -322,7 +347,11 @@ pub mod BridgeState {
                 self
                     .resources(game_id)
                     .spend_resource(
-                        ResourceKey { game_id, entity_id: village_id }, crate::transport::DONKEY, donkeys, timestamp,
+                        ResourceKey { game_id, entity_id: village_id },
+                        crate::transport::DONKEY,
+                        donkeys,
+                        timestamp,
+                        crate::commands::resource_context(game_context),
                     );
             }
             self
@@ -338,6 +367,7 @@ pub mod BridgeState {
                     travel_time,
                     !withdrawal,
                     timestamp,
+                    game_context,
                 );
             fee
         }
@@ -350,9 +380,16 @@ pub mod BridgeState {
             travel_time: u64,
             is_mint: bool,
             timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) {
             IEconomyDeliveryLibraryDispatcher { class_hash: self.logic_classes(game_id).resources.read() }
-                .queue_economy_delivery(ResourceKey { game_id, entity_id: to_id }, resource, travel_time, timestamp);
+                .queue_economy_delivery(
+                    ResourceKey { game_id, entity_id: to_id },
+                    resource,
+                    travel_time,
+                    timestamp,
+                    crate::commands::resource_context(game_context),
+                );
             let recipient = self.structure(game_id, to_id).owner;
             let sender = if from_id == 0 {
                 0.try_into().unwrap()

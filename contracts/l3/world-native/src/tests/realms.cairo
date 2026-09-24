@@ -128,11 +128,22 @@ fn forged_season_commands_cannot_allocate_or_place_realms() {
             1,
             deployment.actor,
             crate::realms::SettleSeason { name: 'forged', selected_realm: Option::None },
-            super::context(),
+            crate::commands::action_context(super::context(deployment.games, 3)),
         )
             .is_err(),
     );
     let map = crate::realms::ISeasonPlacementSafeDispatcher { contract_address: deployment.games };
     snforge_std::start_cheat_caller_address(deployment.games, deployment.actor);
-    assert!(crate::realms::ISeasonPlacementSafeDispatcherTrait::claim_season_settlement(map, 1, 0, 123).is_err());
+    assert!(
+        crate::realms::ISeasonPlacementSafeDispatcherTrait::claim_season_settlement(
+            map,
+            1,
+            0,
+            123,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 100, ..crate::tests::context(deployment.games, 1) },
+            ),
+        )
+            .is_err(),
+    );
 }

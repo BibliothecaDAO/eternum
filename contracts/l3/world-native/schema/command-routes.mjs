@@ -1,10 +1,10 @@
 // Ordered routes replace the Command discriminants and dispatch match. Payload types come from production ABIs.
 export const commandRoutes = [
   { name: "CreateExplorer", logic: "troops", entrypoint: "create_explorer" },
-  { name: "Explore", logic: "troops", entrypoint: "explore" },
+  { name: "Explore", logic: "movement", entrypoint: "explore" },
   { name: "Battle", logic: "combat", entrypoint: "battle", items: "steal_resources" },
-  { name: "Move", logic: "troops", entrypoint: "move_explorer", items: "directions" },
-  { name: "ToggleAlternate", logic: "troops", entrypoint: "toggle_alternate" },
+  { name: "Move", logic: "movement", entrypoint: "move_explorer", items: "directions" },
+  { name: "ToggleAlternate", logic: "movement", entrypoint: "toggle_alternate" },
   { name: "TransferStructureOwnership", logic: "structures", entrypoint: "transfer_structure_ownership" },
   { name: "LevelUp", logic: "construction", entrypoint: "level_up" },
   { name: "SettleBlitzRoster", logic: "settlement", entrypoint: "settle_blitz_roster", batch: true },
@@ -90,6 +90,6 @@ export const commandRoutes = [
   { name: "WithdrawResource", logic: "bridge", entrypoint: "withdraw_resource" },
   { name: "ProvisionAndUpgradeRealm", logic: "structures", entrypoint: "provision_and_upgrade_realm" },
   { name: "SetEntityName", logic: "structures", entrypoint: "set_entity_name" },
-  { name: "EnterDepth", logic: "troops", entrypoint: "enter_depth" },
+  { name: "EnterDepth", logic: "movement", entrypoint: "enter_depth" },
   { name: "BuyRealmUpgrade", logic: "construction", entrypoint: "buy_realm_upgrade" },
 ];

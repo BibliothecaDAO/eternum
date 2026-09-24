@@ -75,15 +75,40 @@ pub fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, Resourc
                                 activate_economy: false,
                             },
                         ),
-                        ExecutionContext { timestamp: 30, ..context() },
+                        crate::commands::action_context(
+                            ExecutionContext { timestamp: 30, ..context(deployment.games, 3) },
+                        ),
                     ),
             );
     }
     stop_cheat_caller_address(deployment.games);
     let source = ResourceKey { game_id: 3, entity_id: *ids.at(0) };
     start_cheat_caller_address(deployment.games, deployment.games);
-    resources.grant_resource(source, 1, 100, 30);
-    resources.start_production(source, 1, 2, 100, 30);
+    resources
+        .grant_resource(
+            source,
+            1,
+            100,
+            30,
+            crate::commands::resource_context(
+                crate::commands::ExecutionContext {
+                    timestamp: 30, ..crate::tests::context(deployment.games, (source).game_id),
+                },
+            ),
+        );
+    resources
+        .start_production(
+            source,
+            1,
+            2,
+            100,
+            30,
+            crate::commands::resource_context(
+                crate::commands::ExecutionContext {
+                    timestamp: 30, ..crate::tests::context(deployment.games, (source).game_id),
+                },
+            ),
+        );
     stop_cheat_caller_address(deployment.games);
     (deployment, source, ResourceKey { game_id: 3, entity_id: *ids.at(1) })
 }
@@ -101,17 +126,13 @@ pub fn execute_in_game(
 ) -> bool {
     let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
     let action = recorded::FixtureAction {
-        command,
-        rules: IGameDispatcher { contract_address: deployment.games }.rules(game_id),
-        nonce: season.next_nonce(game_id, deployment.actor),
-        deadline: 10000,
-        ..intent(deployment, game_id),
+        command, nonce: season.next_nonce(game_id, deployment.actor), deadline: 10000, ..intent(deployment, game_id),
     };
     let signed = signature(deployment, action);
     start_cheat_block_timestamp_global(executed_at);
     let ticket = recorded::make_intent(deployment.games, action);
     let recorded_context = recorded::make_context(
-        deployment.games, action, ExecutionContext { timestamp, ..context() },
+        deployment.games, action, ExecutionContext { timestamp, ..context(deployment.games, game_id) },
     );
     snforge_std::cheat_caller_address(deployment.games, super::submitter(), snforge_std::CheatSpan::TargetCalls(1));
     IRecordedExecutionDispatcher { contract_address: deployment.games }.execute(ticket, recorded_context, signed);
@@ -167,14 +188,36 @@ fn explorer_fixture(deployment: Deployment, id: u32, owner: u32, coord: Coord, c
     );
     let key = ResourceKey { game_id: 3, entity_id: id };
     start_cheat_caller_address(deployment.games, deployment.games);
-    IResourceOperationsDispatcher { contract_address: deployment.games }.initialize_resources(key, capacity, 0, 30);
+    IResourceOperationsDispatcher { contract_address: deployment.games }
+        .initialize_resources(
+            key,
+            capacity,
+            0,
+            30,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext {
+                    timestamp: 30, ..crate::tests::context(deployment.games, (key).game_id),
+                },
+            ),
+        );
     stop_cheat_caller_address(deployment.games);
     key
 }
 
 pub fn grant(deployment: Deployment, key: ResourceKey, resource_type: u8, amount: u128) {
     start_cheat_caller_address(deployment.games, deployment.games);
-    IResourceOperationsDispatcher { contract_address: deployment.games }.grant_resource(key, resource_type, amount, 30);
+    IResourceOperationsDispatcher { contract_address: deployment.games }
+        .grant_resource(
+            key,
+            resource_type,
+            amount,
+            30,
+            crate::commands::resource_context(
+                crate::commands::ExecutionContext {
+                    timestamp: 30, ..crate::tests::context(deployment.games, (key).game_id),
+                },
+            ),
+        );
     stop_cheat_caller_address(deployment.games);
 }
 
