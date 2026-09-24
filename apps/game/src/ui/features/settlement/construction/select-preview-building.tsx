@@ -42,6 +42,7 @@ import {
   getRealmInfo,
   ResourceManager,
   ResourceIdToMiningType,
+  resolveUseSimpleCost,
 } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useGame } from "@/hooks/context/game-context";
@@ -162,7 +163,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const setUseSimpleCost = useUIStore((state) => state.setUseSimpleCost);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const mode = useGameModeConfig();
-  const useSimpleCost = mode.id !== "blitz" && requestedSimpleCost;
+  const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
   const { isMapView } = useQuery();
 
   const structure = useNativeRow("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
@@ -1066,7 +1067,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       <div className="flex flex-wrap justify-between items-center px-3 py-2 gap-3 border-b border-gold/20">
         <h6>Building Costs</h6>
         <div className="flex items-center gap-2">
-          {mode.id !== "blitz" && (
+          {configManager.buildingCostMode === "choice" && (
             <label className="inline-flex min-h-11 items-center cursor-pointer">
               <span className={`mr-2 text-xs ${useSimpleCost ? "text-gold/50" : ""}`}>Resource</span>
               <div className="relative">

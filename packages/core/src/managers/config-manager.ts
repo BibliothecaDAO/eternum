@@ -13,6 +13,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
+import { buildingCostModeOf, type BuildingCostMode } from "../utils/building-cost-mode";
 import { troopStaminaLimits } from "./troop-stamina";
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
 import { getBlockTimestamp } from "../utils/timestamp";
@@ -126,6 +127,10 @@ export class ClientConfigManager {
         displayAmounts(row.complex_cost),
       ]),
     );
+  }
+  /** Which building costs this game's rules carry; see buildingCostModeOf. */
+  get buildingCostMode(): BuildingCostMode {
+    return buildingCostModeOf(this.facts().inGame("BuildingRule", this.gameId));
   }
   get simpleBuildingCosts() {
     return Object.fromEntries(

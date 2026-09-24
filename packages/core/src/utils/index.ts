@@ -4,6 +4,7 @@ export * from "./army";
 export * from "./banks";
 export * from "./biome";
 export * from "./buildings";
+export * from "./building-cost-mode";
 export * from "./canonical-realm";
 export * from "./combat-simulator";
 export * from "./constants";
