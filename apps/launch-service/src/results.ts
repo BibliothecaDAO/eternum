@@ -1,9 +1,10 @@
 import { CallData, RpcProvider, type Abi } from "starknet";
+import { worldView } from "@bibliothecadao/eternum/shard";
 import {
   completeNativeAdminCommand,
   executeNativeAdminCommand,
 } from "../../../config/deployer/clean/world/native/command";
-import { nativeGamesAbi } from "../../../config/deployer/clean/world/native/manifest";
+import { nativeGamesAbi, nativeWorldSchema } from "../../../config/deployer/clean/world/native/manifest";
 import type { RegistrarWorld } from "../../../config/deployer/clean/world/native/types";
 import type { NativeCommand } from "../../../packages/provider/src/native-command";
 import type { FinalizedGameSummary } from "./model";
@@ -69,7 +70,8 @@ function rankPlayers(players: readonly { player: bigint; points: bigint }[]): Pl
   });
 }
 
-function view<T>(target: ResultTarget, entrypoint: string, calldata: (number | string | bigint)[]): Promise<T> {
+function view<T>(target: ResultTarget, name: string, calldata: (number | string | bigint)[]): Promise<T> {
+  const entrypoint = worldView(nativeWorldSchema(target.manifest), name);
   const abi: Abi = nativeGamesAbi(target.manifest);
   return target.provider
     .callContract(

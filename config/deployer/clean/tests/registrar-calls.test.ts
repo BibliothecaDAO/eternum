@@ -27,7 +27,9 @@ describe("native registrar", () => {
     });
   });
   test("rejects a non-native manifest before any transaction", () => {
-    expect(() => assertRegistrarAvailable({ world: { address: "0x123" } } as RegistrarManifest)).toThrow("Games ABI");
+    expect(() => assertRegistrarAvailable({ world: { address: "0x123" } } as RegistrarManifest)).toThrow(
+      "no active native schema",
+    );
     const legacy = structuredClone(manifest);
     legacy.native.schemas[schema.identity].domains.season.contract = "SeasonDomain";
     expect(() => assertRegistrarAvailable(legacy)).toThrow("Games ABI");

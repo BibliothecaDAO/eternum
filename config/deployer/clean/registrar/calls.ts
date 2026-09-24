@@ -1,10 +1,10 @@
 import { presetRegistrationCall } from "./native-preset";
 import { confirmedTransactionReceipt } from "../shared/transaction";
 import { completeNativeAdminCommand } from "../world/native/command";
-import { nativeGamesAbi } from "../world/native/manifest";
+import { nativeGamesAbi, nativeWorldSchema } from "../world/native/manifest";
 import type { RegistrarWorld } from "../world/native/types";
 import type { buildNativePreset } from "../config/native-preset";
-import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
+import { resolveGameTransactionResourceBounds, worldView } from "@bibliothecadao/eternum";
 import { Account, CallData, shortString, type Call, type RawArgs, RpcProvider } from "starknet";
 import { loadRepoJsonFile } from "../shared/repo";
 import type { DeploymentEnvironmentId } from "../types";
@@ -175,7 +175,7 @@ export async function findRegistrarGame(
   const { manifest } = resolveRegistrarContext(target);
   const [id] = await provider.callContract({
     contractAddress: manifest.world.address,
-    entrypoint: "game_id_by_name",
+    entrypoint: worldView(nativeWorldSchema(manifest), "game_id_by_name"),
     calldata: [shortString.encodeShortString(name)],
   });
   if (id === undefined) throw new Error("Registrar returned no game identity");
@@ -227,7 +227,7 @@ export async function createRegistrarGame(
   const [commitment] = await account.callContract(
     {
       contractAddress: registration.address,
-      entrypoint: "preset_commitment",
+      entrypoint: registration.commitmentView,
       calldata: [presetId],
     },
     "latest",

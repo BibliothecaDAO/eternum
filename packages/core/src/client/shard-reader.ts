@@ -4,3 +4,4 @@
  */
 export * from "./shard";
 export * from "./herald-http";
+export * from "./world-view";

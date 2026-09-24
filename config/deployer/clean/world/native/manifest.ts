@@ -4,9 +4,16 @@ import type { NativePlan } from "./types";
 import type { ShardRecord } from "../../../../../apps/herald/src/shard-manifest";
 import type { NativeSchema } from "../../../../../apps/herald/src/native/schema";
 
-export function nativeGamesAbi(manifest: RegistrarWorld): Abi {
+/** The shard's active schema: what its deployed Games contract exposes and how its rows are encoded. */
+export function nativeWorldSchema(manifest: RegistrarWorld): NativeSchema {
   const schema = manifest.native?.schemas[manifest.native.activeSchema];
-  const games = schema?.domains.season;
+  if (!schema) throw new Error("Manifest has no active native schema");
+  return schema;
+}
+
+export function nativeGamesAbi(manifest: RegistrarWorld): Abi {
+  const schema = nativeWorldSchema(manifest);
+  const games = schema.domains.season;
   if (games?.contract !== "Games") throw new Error("Manifest has no Games ABI");
   return [...Object.values(schema.types), ...games.entrypoints] as Abi;
 }

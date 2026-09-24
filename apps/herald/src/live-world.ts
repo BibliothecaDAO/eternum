@@ -1,3 +1,4 @@
+import { worldView } from "@bibliothecadao/eternum";
 import { GameSubscription } from "./game-subscription";
 import { decodeHomeRing, HomeRing, revealedTileData, type HomeRingTile, type HomeRingView } from "./home-ring";
 import { NativeReceiptRejected, type NativeIngestion, type PreconfirmedDecode } from "./native/ingestion";
@@ -211,9 +212,10 @@ export class LiveWorld {
 
   /** The chain's own home-ring rule, read at the confirmed block so its biomes are the chain's. */
   private async readHomeRing(gameId: string, realmId: number, timestamp: number): Promise<HomeRingTile[]> {
+    const { native } = this.native.decoder.manifest;
     const felts = await this.input.rpc.call(
       this.input.registry.worldAddress,
-      "expedition_home_ring",
+      worldView(native.schemas[native.activeSchema]!, "expedition_home_ring"),
       [gameId, String(realmId), String(timestamp)],
       this.confirmedBlockValue,
     );

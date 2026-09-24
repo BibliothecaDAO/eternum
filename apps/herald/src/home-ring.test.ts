@@ -23,7 +23,7 @@ const RING: HomeRingTile[] = [
 ].map(([col, row]) => ({ col: col!, row: row!, biome: 5 }));
 
 /** A Frontier game (days of 86,400 s, regions of 100) with realm 1 owned by 0xa and realm 2 by 0xb, and no armies. */
-const frontierWorld = (homeRingView: HomeRingView) => {
+const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) => {
   const { native, decoder, fold } = setup();
   const rules = decoder.decode(raw(rulesEvent()));
   if (rules.kind !== "set") throw new Error("Expected rules row");
@@ -78,6 +78,7 @@ const frontierWorld = (homeRingView: HomeRingView) => {
     rpc: {
       getPreconfirmedHeader: async () => ({ ...confirmed, block_number: 11 }),
       getBlockWithReceipts: async () => confirmed,
+      call,
     } as unknown as MadaraRpc,
   });
   return { live, native, decoder };
@@ -127,6 +128,26 @@ describe("home ring", () => {
     }
     await settle();
     expect(view).toHaveBeenCalledTimes(1);
+  });
+
+  it("reads the ring through a view the deployed Games contract exposes", async () => {
+    const felts = [
+      String(RING.length),
+      ...RING.flatMap(({ col, row, biome }) => ["0", String(col), String(row), String(biome)]),
+    ];
+    const call = vi.fn<MadaraRpc["call"]>(async () => felts);
+    const { live, decoder } = frontierWorld(undefined, call);
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: MID_DAY });
+    const messages = connect(live, "0xa");
+    await settle();
+    // The shard's own schema names the entrypoint, so a view only a logic class has would be refused before the call.
+    expect(call).toHaveBeenCalledWith(
+      decoder.registry.worldAddress,
+      "expedition_home_ring",
+      ["1", "1", String(MID_DAY)],
+      10,
+    );
+    expect(tilesIn(messages)).toHaveLength(RING.length);
   });
 
   it("never reads the ring of a realm nobody is watching", async () => {

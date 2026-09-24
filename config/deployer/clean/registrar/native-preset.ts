@@ -10,11 +10,12 @@ import type { DeploymentEnvironmentId } from "../types";
 import { readFileSync } from "node:fs";
 import { CallData, CairoOption, CairoOptionVariant, hash, shortString, type Account } from "starknet";
 import type { Config } from "@bibliothecadao/types";
+import { worldView } from "@bibliothecadao/eternum";
 import { buildCreateGameParams, type CreateGamePayloadInput } from "./preset";
 import { buildNativePreset } from "../config/native-preset";
 import { waitForSuccess } from "../shared/declare";
 import type { NativeWorldManifest, RegistrarWorld } from "../world/native/types";
-import { nativeGamesAbi } from "../world/native/manifest";
+import { nativeGamesAbi, nativeWorldSchema } from "../world/native/manifest";
 
 export function buildNativePresetRegistration(
   definition: ReturnType<typeof buildNativePreset>,
@@ -43,7 +44,7 @@ export function presetRegistrationCall(
     1,
     ...calldata.slice(1),
   ]);
-  return { address, calldata, commitment };
+  return { address, calldata, commitment, commitmentView: worldView(nativeWorldSchema(world), "preset_commitment") };
 }
 
 export async function registerNativePreset(
@@ -58,7 +59,7 @@ export async function registerNativePreset(
   const [existing] = await account.callContract(
     {
       contractAddress: registration.address,
-      entrypoint: "preset_commitment",
+      entrypoint: registration.commitmentView,
       calldata: [presetId],
     },
     block,
