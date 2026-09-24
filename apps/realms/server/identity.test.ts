@@ -522,6 +522,27 @@ describe("identity Worker", () => {
     for (const query of ["?limit=0", "?limit=101", "?cursor=bogus", "?player=nobody"]) {
       expect((await createBrowser().request(`/api/directory/history${query}`)).status).toBe(400);
     }
+
+    // A live shard's URL cannot take a new chain; once retired, it is listed again under the chain its manifest names.
+    heralds.set("https://shard-e.test/manifest", { chainId: "0xee" });
+    heralds.set("https://shard-e.test/games", { chain: "0xee", games: [live] });
+    const admitE = () =>
+      operator.request("/api/directory/shards", { body: { url: "https://shard-e.test" }, token: OPERATOR_TOKEN });
+    expect(await (await admitE()).json()).toEqual({ error: "shard_listed" });
+    const retired = await operator.request("/api/directory/shards/status", {
+      body: { url: "https://shard-e.test", status: "retired" },
+      token: OPERATOR_TOKEN,
+    });
+    expect(retired.status).toBe(200);
+    const relisted = await admitE();
+    expect(relisted.status).toBe(201);
+    expect(await relisted.json()).toEqual({ url: "https://shard-e.test", chainId: "0xee" });
+    expect((await list()).at(-1)).toEqual({
+      url: "https://shard-e.test",
+      chainId: "0xee",
+      status: "active",
+      games: [live],
+    });
   });
 
   it("refuses to link a wallet that already belongs to another Realms account", async () => {

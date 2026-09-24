@@ -136,10 +136,11 @@ const listShard = async (
 };
 
 const readCachedShardGames = async (shard: ListedShard, cache: Cache, fetchShard: typeof fetch) => {
-  const key = new Request(`${shard.url}/games`);
+  // Keyed by chain as well as URL: a URL relisted under a new chain never answers from the old chain's listing.
+  const key = new Request(`${shard.url}/games?chain=${shard.chainId}`);
   const cached = await cache.match(key);
   if (cached) return ((await cached.json()) as HeraldGameDirectory).games;
-  const games = await fetchShardGames(shard, key.url, fetchShard);
+  const games = await fetchShardGames(shard, `${shard.url}/games`, fetchShard);
   await cache.put(key, Response.json({ games }, { headers: { "cache-control": `max-age=${GAMES_CACHE_SECONDS}` } }));
   return games;
 };
@@ -157,7 +158,8 @@ const fetchShardGames = async (shard: ListedShard, url: string, fetchShard: type
 
 /**
  * POST /api/directory/shards {url} — lists a shard by its Herald URL under the chain id its manifest declares. A chain id
- * already listed under another URL is refused; the unique index is the race-proof guarantee.
+ * already listed under another URL is refused; the unique index is the race-proof guarantee. A retired shard's URL is
+ * listed again under its new chain.
  */
 export const handleAdmitShard = async (request: Request, db: D1Database, fetchShard: typeof fetch) => {
   const url = shardUrlOf(await readJsonField(request, "url"));
@@ -170,6 +172,14 @@ export const handleAdmitShard = async (request: Request, db: D1Database, fetchSh
     .first<{ url: string }>();
   if (listed)
     return listed.url === url ? json({ url, chainId }) : json({ error: "chain_id_listed", url: listed.url }, 409);
+  // A retired shard's host can serve a new chain: its URL is listed again, under the chain its manifest now names.
+  const relisted = await db
+    .prepare(
+      `UPDATE "shards" SET "chainId" = ?, "status" = 'active', "addedAt" = ? WHERE "url" = ? AND "status" = 'retired' RETURNING "url"`,
+    )
+    .bind(chainId, Date.now(), url)
+    .first();
+  if (relisted) return json({ url, chainId }, 201);
   try {
     await db
       .prepare(`INSERT INTO "shards" ("url", "chainId", "status", "addedAt") VALUES (?, ?, 'active', ?)`)
