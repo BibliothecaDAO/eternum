@@ -28,7 +28,8 @@ held RSS at about 4.6–4.7 GB over 90 simulated minutes after stream cleanup
 `24g`: staging exhausted its previous 12 GiB node limit on September 24. Nodes restart on failure using their
 persistent chain volumes; this gives more headroom while the memory growth is investigated. Leave additional memory
 for Postgres, the gateway and the host; size larger or Frontier workloads from their own measurements. These are RAM limits with swap disabled. Our box
-runner explicitly passes `HERALD_MEMORY=24g` and sets the node limit per deployment.
+runner keeps these defaults and refuses a shard whose limits do not fit its resource slice beside the shards already
+running there.
 
 Community shards use the production guardian at `https://play.realms.party/api/guardian`.
 `https://staging.realms.party/api/guardian` belongs to our staging tests.
