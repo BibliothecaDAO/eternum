@@ -44,6 +44,14 @@ pub fn is_home_ring(coord: Coord, spacing: u32) -> bool {
     ring
 }
 
+// The day's spire, which attunement lights: one of the home ring's six tiles, turning one step each day so the first
+// march from home differs daily. It is a rule, not a stored structure.
+pub fn spire(start: u64, seconds: u32, spacing: u32, realm_id: u16, timestamp: u64) -> Coord {
+    let site = site(start, seconds, spacing, realm_id, timestamp, 0);
+    let epoch = timestamp / seconds.into() - start / seconds.into();
+    crate::geometry::neighbor(site, (epoch % 6).try_into().unwrap())
+}
+
 pub fn is_current(coord: Coord, start: u64, seconds: u32, spacing: u32, timestamp: u64) -> bool {
     if coord.alt || timestamp < start {
         return false;

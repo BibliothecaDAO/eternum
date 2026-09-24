@@ -1362,6 +1362,11 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
     let buy = Command::BuyRealmUpgrade(
         crate::upgrades::BuyRealmUpgrade { structure_id: 1, lane: crate::upgrades::RealmUpgradeLane::Attunement },
     );
+    let map = IMapLogicDispatcher { contract_address: d.games };
+    // Today's spire stands on the home ring's direction (day % 6); each army musters on it or beside it.
+    let start = IGameDispatcher { contract_address: d.games }.game(game_id).start_main_at;
+    let spire_direction: u8 = ((351 / 100 - start / 100) % 6).try_into().unwrap();
+    let beside_spire = array![spire_direction, (spire_direction + 1) % 6, (spire_direction + 5) % 6];
     for depth in 1_u8..4 {
         assert!(
             execute_in_game(
@@ -1369,7 +1374,11 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
                 game_id,
                 Command::CreateExplorer(
                     CreateExplorer {
-                        structure_id: 1, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: depth - 1,
+                        structure_id: 1,
+                        category: 0,
+                        tier: 0,
+                        amount: RESOURCE_PRECISION,
+                        direction: *beside_spire.at((depth - 1).into()),
                     },
                 ),
                 351,
@@ -1389,6 +1398,10 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
         assert_eq!(balance - after_purchase, Into::<u8, u128>::into(depth) * 100 * RESOURCE_PRECISION);
         assert!(execute_in_game(d, game_id, enter, 351, 351));
         let inside = troops.explorer(key).unwrap();
+        // The army lands on revealed ground in the depth below, with no discovery on its landing tile.
+        let landing = map.tile(crate::geometry::tile_key(game_id, inside.coord)).unwrap().data;
+        assert_ne!(landing / 0x20000000000 % 256, 0);
+        assert_eq!(landing % 2, 0);
         assert_eq!(inside.coord.x, before.coord.x);
         assert_eq!(inside.coord.y, before.coord.y + Into::<u8, u32>::into(depth) * preset.settlement.spacing);
         assert_eq!(inside.troops.stamina.amount, 150 - (20 + Into::<u8, u64>::into(depth) * 10));
@@ -1399,6 +1412,50 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
     let balance = resources.resource_balance(essence);
     assert!(!execute_in_game(d, game_id, buy, 351, 351));
     assert_eq!(resources.resource_balance(essence), balance);
+}
+
+#[test]
+fn an_army_enters_a_depth_only_from_its_realms_spire_which_turns_each_day() {
+    let d = setup();
+    let (game_id, preset, category) = expedition_home(d);
+    let structures = IStructureOperationsDispatcher { contract_address: d.games };
+    let home = ResourceKey { game_id, entity_id: 1 };
+    let record = structures.structure(home).unwrap();
+    super::resource_commands::set_fixture(
+        d.games,
+        selector!("structures"),
+        selector!("structures"),
+        array![game_id.into(), 1].span(),
+        crate::structures::StructureRecord {
+            owner: record.owner,
+            base: record.base,
+            // The realm's produced resources play no part in depth entry.
+            resources_packed: 0,
+            metadata: crate::structures::StructureMetadata { attunement: 1, ..record.metadata },
+        },
+    );
+    let start = IGameDispatcher { contract_address: d.games }.game(game_id).start_main_at;
+    let spacing = preset.settlement.spacing;
+    let spire = crate::expeditions::spire(start, 100, spacing, 1, 351);
+    let site = crate::expeditions::site(start, 100, spacing, 1, 351, 0);
+    let day: u8 = ((351 / 100 - start / 100) % 6).try_into().unwrap();
+    assert_eq!(spire, crate::geometry::neighbor(site, day));
+    // The next day's spire stands one step further round that day's ring.
+    assert_eq!(
+        crate::expeditions::spire(start, 100, spacing, 1, 451),
+        crate::geometry::neighbor(crate::expeditions::site(start, 100, spacing, 1, 451, 0), (day + 1) % 6),
+    );
+    // An army beside the realm's site but two tiles from its spire cannot enter a depth.
+    assert!(execute_in_game(d, game_id, muster_command(category, (day + 3) % 6), 351, 351));
+    let away = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let troops = GameState { contract_address: d.games };
+    let before = troops.explorer(ExplorerKey { game_id, explorer_id: away }).unwrap();
+    assert!(
+        !execute_in_game(
+            d, game_id, Command::EnterDepth(crate::commands::EnterDepth { explorer_id: away, depth: 1 }), 352, 352,
+        ),
+    );
+    assert_eq!(troops.explorer(ExplorerKey { game_id, explorer_id: away }).unwrap(), before);
 }
 
 #[test]

@@ -766,15 +766,17 @@ pub mod TroopsLogic {
             let home = crate::logic::troops::owned_structure(game_id, explorer.owner, actor);
             assert!(command.depth != 0 && command.depth <= home.metadata.attunement, "depth is not unlocked");
             let spacing = self.expedition_spacing(game_id);
-            let site = crate::expeditions::site(
+            let spire = crate::expeditions::spire(
                 crate::logic::game::game(game_id).start_main_at,
                 rules.epoch_seconds,
                 spacing,
                 home.metadata.realm_id,
                 context.timestamp,
-                0,
             );
-            assert!(crate::geometry::adjacent(explorer.coord, site), "army must be beside its realm site");
+            assert!(
+                explorer.coord == spire || crate::geometry::adjacent(explorer.coord, spire),
+                "army must be at its realm's spire",
+            );
             let depth = crate::logic::expeditions::depth_rules(game_id, command.depth);
             explorer
                 .troops
