@@ -415,7 +415,6 @@ function buildHarnessManifest(
   createdAt: string,
 ) {
   return {
-    schemaVersion: 10,
     runId,
     createdAt,
     passed: analysis.passed,
