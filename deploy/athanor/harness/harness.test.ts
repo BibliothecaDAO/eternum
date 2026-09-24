@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { statusSubscription } from "./test-observations";
@@ -44,7 +44,14 @@ import { createHarnessProvider, parseHarnessArgs, playersOf } from "./run";
 import { BlockTag } from "starknet";
 import { EventEmitter } from "node:events";
 import type { Worker } from "node:worker_threads";
-import { waitForGameWorkers } from "./run";
+import { GameWorkersFailed, waitForGameWorkers } from "./run";
+
+/** Fake workers named as the roster names them: game 1, one bot each. */
+const labelled = (workers: EventEmitter[]) =>
+  workers.map((worker, index) => ({
+    label: `1-${index}`,
+    worker: Object.assign(worker, { postMessage: () => {}, terminate: async () => 0 }) as unknown as Worker,
+  }));
 import { holdsForSite } from "./frontier";
 
 const TEST_ENDPOINTS = { RPC_URL: "http://127.0.0.1:28310/rpc/v0_10_2", HERALD_URL: "http://127.0.0.1:28311" };
@@ -58,9 +65,15 @@ afterAll(() => {
 });
 
 describe("Madara harness workload", () => {
-  it("refuses missing host credentials before contacting a shard", async () => {
+  it("refuses missing host credentials before contacting a shard, and records why in its output", async () => {
     for (const missing of ["DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY"]) {
-      const environment: NodeJS.ProcessEnv = { ...process.env, DEPLOYER_ACCOUNT_ADDRESS: "0x123", DEPLOYER_PRIVATE_KEY: "0x456" };
+      const output = await mkdtemp(join(tmpdir(), "harness-failure-"));
+      const environment: NodeJS.ProcessEnv = {
+        ...process.env,
+        DEPLOYER_ACCOUNT_ADDRESS: "0x123",
+        DEPLOYER_PRIVATE_KEY: "0x456",
+        HARNESS_OUTPUT_DIRECTORY: output,
+      };
       delete environment[missing];
       const child = Bun.spawn([process.execPath, new URL("./run.ts", import.meta.url).pathname], {
         env: environment,
@@ -71,6 +84,10 @@ describe("Madara harness workload", () => {
       expect(await child.exited).toBe(1);
       expect(stderr).toContain(missing);
       expect(stderr).toContain("native harness");
+      const failure = JSON.parse(await readFile(join(output, "failure.json"), "utf8"));
+      expect(failure.error).toContain(missing);
+      expect(failure.stack).toContain("run.ts");
+      await rm(output, { recursive: true, force: true });
     }
   });
 
@@ -78,7 +95,7 @@ describe("Madara harness workload", () => {
     const workers = [new EventEmitter(), new EventEmitter()];
     const reports: Parameters<typeof waitForGameWorkers>[1] = [];
     let complete = false;
-    const waiting = waitForGameWorkers(workers as Worker[], reports).then(() => {
+    const waiting = waitForGameWorkers(labelled(workers), reports).then(() => {
       complete = true;
     });
     workers[0].emit("message", { type: "result", passed: false, path: "failed.json", pid: 1, threadId: 1 });
@@ -93,17 +110,40 @@ describe("Madara harness workload", () => {
 
   it("fails if a worker exits without writing its report", async () => {
     const worker = new EventEmitter();
-    const waiting = waitForGameWorkers([worker as Worker], []);
+    const waiting = waitForGameWorkers(labelled([worker]), []);
+    worker.emit("message", { type: "ready" });
     worker.emit("exit", 0);
-    await expect(waiting).rejects.toThrow("without a matching result");
+    await expect(waiting).rejects.toThrow("worker 1-0: exited 0 without a matching result");
   });
 
   it("preserves a worker's setup failure in the roster result", async () => {
     const worker = new EventEmitter();
-    const waiting = waitForGameWorkers([worker as Worker], []);
+    const waiting = waitForGameWorkers(labelled([worker]), []);
     worker.emit("message", { type: "failure", error: "Game 1 has ended" });
     worker.emit("exit", 1);
-    await expect(waiting).rejects.toThrow("Game 1 has ended");
+    await expect(waiting).rejects.toThrow("worker 1-0: Game 1 has ended");
+  });
+
+  it("names every worker's outcome, with the stack of each failure", async () => {
+    const workers = [new EventEmitter(), new EventEmitter(), new EventEmitter(), new EventEmitter()];
+    const waiting = waitForGameWorkers(labelled(workers), []);
+    for (const worker of workers) worker.emit("message", { type: "ready" });
+    workers[0].emit("message", { type: "result", passed: true, path: "passed.json", pid: 1, threadId: 1 });
+    workers[0].emit("exit", 0);
+    workers[1].emit("message", { type: "failure", error: "JSON Parse error: Expected '}'", stack: "at collectRunGas" });
+    workers[1].emit("exit", 1);
+    const thrown = new SyntaxError("Unexpected end of JSON input");
+    workers[2].emit("error", thrown);
+    workers[2].emit("exit", 1);
+    workers[3].emit("exit", 0);
+    const failed = (await waiting.catch((error: unknown) => error)) as GameWorkersFailed;
+    expect(failed).toBeInstanceOf(GameWorkersFailed);
+    expect(failed.outcomes).toEqual([
+      { worker: "1-0", outcome: "result", passed: true, exitCode: 0 },
+      { worker: "1-1", outcome: "failure", error: "JSON Parse error: Expected '}'", stack: "at collectRunGas" },
+      { worker: "1-2", outcome: "error", error: "Unexpected end of JSON input", stack: thrown.stack },
+      { worker: "1-3", outcome: "exit", exitCode: 0, error: "exited 0 without a matching result" },
+    ]);
   });
 
   it.each([false, true])("creates only missing explorers when preparing the roster (resumed=%s)", async (resumed) => {
