@@ -53,6 +53,7 @@ import {
   resolveArmyCreationBlockedReason,
   resolveArmyTroopAvailability,
   resolveInitialTroop,
+  resolveSpawnDirection,
   resolveTroopAvailabilityReason,
   type TroopSupply,
 } from "./army-creation-policy";
@@ -329,9 +330,8 @@ export const useArmyCreation = ({
   }, [activeStructureId, troopOptions, mode]);
 
   useEffect(() => {
-    if (freeDirections.length > 0 && selectedDirection === null && direction === undefined) {
-      setSelectedDirection(freeDirections[0]);
-    }
+    const next = resolveSpawnDirection(selectedDirection, freeDirections, direction);
+    if (next !== selectedDirection) setSelectedDirection(next);
   }, [freeDirections, selectedDirection, direction]);
 
   useEffect(() => {
