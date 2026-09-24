@@ -28,7 +28,7 @@ it("selects the Eternum preset and rejects cross-mode presets", () => {
   const request: CreateGameRequest = { environment: "madara.eternum", gameName: "eternum-test", devModeOn: false };
   expect(applyDurableLaunchDefaults("game", request).version).toBe("3");
   expect(() => applyDurableLaunchDefaults("game", { ...request, version: "2" })).toThrow();
-  expect(() => applyDurableLaunchDefaults("game", { ...gameRequest(), version: "1" })).toThrow();
+  expect(() => applyDurableLaunchDefaults("game", { ...gameRequest(), version: "5" })).toThrow();
 });
 
 it("never launches the accelerated Frontier fixture preset", () => {

@@ -9,10 +9,10 @@ const buildingIds = Array.from({ length: 40 }, (_, index) => index + 1);
 const laborCosts: Record<number, number> = { 1: 300, 2: 1000, 25: 1000, 28: 1200, 37: 100 };
 const rates: Record<number, number> = {
   23: 100 / 3600,
-  26: 250 / 3600,
+  26: 100 / 3600,
   27: 250 / 3600,
   28: 250 / 3600,
-  35: 600 / 3600,
+  35: 200 / 3600,
 };
 const buildingCosts = Object.fromEntries(
   buildingIds.map((id) => [id, laborCosts[id] === undefined ? [] : [{ resource: 23, amount: laborCosts[id] }]]),
@@ -37,11 +37,11 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
     startSettlingAfterSeconds: 0,
     startMainAfterSeconds: 0,
   },
-  tick: { armiesTickIntervalInSeconds: 120 },
+  tick: { armiesTickIntervalInSeconds: 3600 },
   battle: { regularImmunityTicks: 0, villageImmunityTicks: 0, delaySeconds: 0 },
   startingResources: [
-    { resource: 26, amount: 2000 },
-    { resource: 35, amount: 5000 },
+    { resource: 26, amount: 1500 },
+    { resource: 35, amount: 1000 },
     { resource: 23, amount: 2000 },
   ],
   villageStartingResources: [],
@@ -79,8 +79,8 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
   troop: {
     stamina: {
       damageStaminaRefund: false,
-      captureStaminaRefund: 25,
-      staminaGainPerTick: 1,
+      captureStaminaRefund: 0,
+      staminaGainPerTick: 30,
       staminaInitial: 150,
       staminaBonusValue: 0,
       staminaKnightMax: 150,

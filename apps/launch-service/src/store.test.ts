@@ -109,7 +109,7 @@ test("one Frontier season is created once by every tick and continued like any f
   expect(queued.name).toBe("frontier-1798761600");
   expect(await scheduleFrontierSeason(store, season(seasonStart))).toMatchObject({ id: queued.id, status: "queued" });
   const run = (await store.startNext(Date.now()))!;
-  expect(run.request).toMatchObject({ version: "1", gameStartTime: seasonStart, durationSeconds: 17 * 7 * 86_400 });
+  expect(run.request).toMatchObject({ version: "5", gameStartTime: seasonStart, durationSeconds: 17 * 7 * 86_400 });
   await store.retry(run.id, "rpc down", 60_000);
   // A tick while the season waits to retry must not reset its attempts or its delay.
   expect(await scheduleFrontierSeason(store, season(seasonStart))).toMatchObject({
