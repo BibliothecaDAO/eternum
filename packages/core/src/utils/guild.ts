@@ -3,7 +3,7 @@ import { shortString } from "starknet";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers/config-manager";
-import { displayPlayerName, getAddressName } from "./entities";
+import { displayPlayerName, type PlayerNameResolver } from "./entities";
 
 export const formatGuilds = (
   guilds: Iterable<NativeRows["Guild"]>,
@@ -35,19 +35,23 @@ export const getGuild = (
 export const formatGuildMembers = (
   members: Iterable<NativeRows["GuildMember"]>,
   playerAddress: ContractAddress,
-  store: NativeFactStore,
+  playerName: PlayerNameResolver,
 ): GuildMemberInfo[] =>
   [...members].map((member) => ({
     address: member.actor,
     guildEntityId: member.guild_id,
-    name: displayPlayerName(member.actor, getAddressName(member.actor, store)),
+    name: displayPlayerName(member.actor, playerName(member.actor)),
     isUser: member.actor === playerAddress,
     isGuildMaster: member.actor === member.guild_id,
   }));
 
-export const getGuildMember = (playerAddress: ContractAddress, store: NativeFactStore): GuildMemberInfo | undefined => {
+export const getGuildMember = (
+  playerAddress: ContractAddress,
+  store: NativeFactStore,
+  playerName: PlayerNameResolver,
+): GuildMemberInfo | undefined => {
   const member = store.get("GuildMember", { game_id: configManager.getActiveGameId(), actor: playerAddress });
-  return member ? formatGuildMembers([member], playerAddress, store)[0] : undefined;
+  return member ? formatGuildMembers([member], playerAddress, playerName)[0] : undefined;
 };
 
 export const getGuildFromPlayerAddress = (
@@ -61,6 +65,7 @@ export const getGuildFromPlayerAddress = (
 export const getGuildMembersFromPlayerAddress = (
   playerAddress: ContractAddress,
   store: NativeFactStore,
+  playerName: PlayerNameResolver,
 ): GuildMemberInfo[] => {
   const game = configManager.getActiveGameId();
   const member = store.get("GuildMember", { game_id: game, actor: playerAddress });
@@ -68,7 +73,7 @@ export const getGuildMembersFromPlayerAddress = (
     ? formatGuildMembers(
         [...store.inGame("GuildMember", game)].filter((row) => row.guild_id === member.guild_id),
         playerAddress,
-        store,
+        playerName,
       )
     : [];
 };

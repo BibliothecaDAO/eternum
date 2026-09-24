@@ -149,21 +149,12 @@ export const isFallbackPlayerName = (name: string): boolean => /^Player-[0-9a-fA
 export const displayPlayerName = (address: ContractAddress | string, name: string | null | undefined): string =>
   name || buildFallbackPlayerName(typeof address === "string" ? address : `0x${address.toString(16)}`);
 
-export const getAddressName = (address: ContractAddress, store: NativeFactStore) => {
-  const internalName = getInternalAddressName(address.toString());
-  if (internalName) return internalName;
-
-  const addressBigInt = BigInt(address);
-  const addressName = store.get("AddressName", { address: addressBigInt });
-  if (!addressName) return undefined;
-  const name = shortString.decodeShortString(addressName.name.toString());
-  return isFallbackPlayerName(name) ? undefined : name;
-};
-
-export const getAddressNameFromEntity = (entityId: ID, store: NativeFactStore): string | undefined => {
-  const address = getAddressFromStructureEntity(entityId, store);
-  return address ? getAddressName(address, store) : undefined;
-};
+/**
+ * A player's name, from the one place names live: the player's Realms profile, looked up by the client that owns the
+ * store (a headless client may name no one). Null when the player has not chosen a name; `displayPlayerName` then
+ * shows the fallback.
+ */
+export type PlayerNameResolver = (address: ContractAddress | string) => string | null;
 
 export const getAddressFromStructureEntity = (entityId: ID, store: NativeFactStore): ContractAddress | undefined => {
   return store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.owner;

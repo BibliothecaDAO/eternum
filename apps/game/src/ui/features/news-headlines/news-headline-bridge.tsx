@@ -11,7 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — module resolution handled by bundler at runtime
-import { Position, displayPlayerName, getAddressName, structureMapPosition } from "@bibliothecadao/eternum";
+import { Position, structureMapPosition } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 // @ts-ignore
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
@@ -27,6 +27,7 @@ import { AudioManager } from "@/audio/core/AudioManager";
 import { type Headline, HEADLINE_DISPLAY_MS } from "./headline-types";
 import { NewsHeadlineBanner } from "./news-headline-banner";
 import { createWorldEventEntityReader } from "../story-events/world-event-entity-reader";
+import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 
 const NEWSWORTHY_CAPTURES = new Set<StructureType>([StructureType.Realm, StructureType.Hyperstructure]);
 
@@ -42,7 +43,7 @@ export function NewsHeadlineBridge() {
   const { isMapView } = useQuery();
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const winner = useSeasonWinner();
-  const endRevision = useNativeRevision(["GameRegistry", "BlitzResult", "AddressName"]);
+  const endRevision = useNativeRevision(["GameRegistry", "BlitzResult"]);
   const goToStructure = useGoToStructure(setup);
   const navigateToMapView = useNavigateToMapView();
   const entityReader = useMemo(() => {
@@ -169,9 +170,7 @@ export function NewsHeadlineBridge() {
 
   // --- Game end detection ---
   useEffect(() => {
-    const headline = resolveGameEndHeadline(setup.store, getScopedGameId(), nowSeconds, winner, (address) =>
-      displayPlayerName(address, getAddressName(address, setup.store)),
-    );
+    const headline = resolveGameEndHeadline(setup.store, getScopedGameId(), nowSeconds, winner, getPlayerDisplayName);
     if (headline) enqueue(headline);
   }, [setup.store, nowSeconds, winner, endRevision, enqueue]);
 

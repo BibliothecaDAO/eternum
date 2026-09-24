@@ -79,7 +79,7 @@ const createHarness = (signer: AccountInterface | null) => {
   } as unknown as SystemCalls;
   // createGameClient wires these the same way; the harness skips the network boot.
   const client = { setup: { store, systemCalls }, signer } as GameClient;
-  Object.assign(client, { actions: createGameActions(client), views: createGameViews(client, 0n) });
+  Object.assign(client, { actions: createGameActions(client), views: createGameViews(client, 0n, () => null) });
   return { store, systemCalls, client };
 };
 

@@ -64,6 +64,7 @@ import clsx from "clsx";
 import { Info as InfoIcon, Hammer, Pause, Play, Trash } from "@/ui/design-system/atoms/game-icons";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 type ArmyTypeLabel = (typeof MILITARY_BUILDING_GROUP_ORDER)[number];
 type ArmyGroup = {
@@ -170,7 +171,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     entity_id: entityId,
   });
   const resourceData = useResourceManager(entityId);
-  const realm = getRealmInfo(entityId, game.setup.store);
+  const realm = getRealmInfo(entityId, game.setup.store, getPlayerName);
   const currentTime = useNowMs();
   const currentTimeRef = useRef(currentTime);
   currentTimeRef.current = currentTime;

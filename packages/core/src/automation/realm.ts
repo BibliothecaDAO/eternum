@@ -173,7 +173,8 @@ export function readBlitzRealmSuggestions(input: {
     knightT1: count(BuildingType.ResourceKnightT1),
     paladinT1: count(BuildingType.ResourcePaladinT1),
   };
-  const realm = getRealmInfo(realmId, store);
+  // Suggestions weigh the realm itself; they never show its owner, so no player is named.
+  const realm = getRealmInfo(realmId, store, () => null);
   const militaryTarget = resolveRecommendedMilitaryTarget(realm, buildingCounts);
   const hasAvailableBuildingTile = generateBuildablePositions(Math.max(1, structure.base.level + 1)).some(
     (spot) => (spot.col !== BUILDINGS_CENTER[0] || spot.row !== BUILDINGS_CENTER[1]) && !tiles.isHexOccupied(spot),

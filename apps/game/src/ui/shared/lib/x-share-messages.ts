@@ -1,7 +1,6 @@
 import type { GameReviewData } from "@/services/review/game-review-service";
 import { AssetRarity } from "@/ui/features/cosmetics/chest-opening/utils/cosmetics";
-import { identityProfiles } from "@/services/identity/player-profiles";
-import { displayPlayerName } from "@bibliothecadao/eternum";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 type TemplateVariables = {
   // player name and tribe
@@ -131,7 +130,6 @@ const formatDuration = (seconds: number): string => {
 };
 
 /** A player's identity name as the review cards already requested it, else the stock fallback. */
-const playerName = (address: string): string => displayPlayerName(address, identityProfiles.get(address)?.name);
 
 export const buildGameReviewStepShareMessage = ({
   step,
@@ -152,7 +150,7 @@ export const buildGameReviewStepShareMessage = ({
       if (!metric) return "None";
       const normalized = normalizeAddress(metric.playerAddress);
       if (!normalized) return "None";
-      return `${playerName(normalized)} (${formatter(metric.value)})`;
+      return `${getPlayerDisplayName(normalized)} (${formatter(metric.value)})`;
     };
 
     const includeOnlyTimeMetrics = isTimeFocusedAwardsShareStep(step);
@@ -176,7 +174,7 @@ export const buildGameReviewStepShareMessage = ({
 
   if (step === "leaderboard") {
     const podiumLines = data.topPlayers.map((entry) => {
-      return `#${entry.rank} ${playerName(entry.address)} - ${formatReviewValue(entry.points)} pts`;
+      return `#${entry.rank} ${getPlayerDisplayName(entry.address)} - ${formatReviewValue(entry.points)} pts`;
     });
     return [
       `Final standings for ${worldLabel} on Realms Blitz`,

@@ -23,6 +23,7 @@ import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { getConstructionBuildingGroups, resolveBuildingRequirements } from "./construction-groups";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 export interface PlotConstructionTarget {
   entityId: number;
@@ -51,7 +52,7 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
     "ProductionBonus",
     "Building",
   ]);
-  const realm = getRealmInfo(target.entityId, store);
+  const realm = getRealmInfo(target.entityId, store, getPlayerName);
   const boardRules = store.get("BoardRules", { game_id: configManager.getActiveGameId() });
   const neighbourCategories = getNeighborHexes(target.spot.col, target.spot.row).map(
     (hex) =>

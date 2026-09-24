@@ -10,6 +10,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { BuildingType, ContractAddress, StructureType } from "@bibliothecadao/types";
 import { resolveRealmBootstrapErrorMessage } from "./realm-bootstrap-error";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 type LiveRealmInfo = NonNullable<ReturnType<typeof getRealmInfo>>;
 type RealmProvisionActionStatus = "idle" | "submitting";
@@ -89,7 +90,7 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
   const revision = useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight"]);
   const structureInfo = useMemo(() => {
     if (structureEntityId === null || !liveStructure) return null;
-    return getRealmInfo(structureEntityId, setup.store);
+    return getRealmInfo(structureEntityId, setup.store, getPlayerName);
   }, [revision, liveStructure, liveStructureBuildings, setup.store, structureEntityId]);
 
   const realmBuildings = useBuildings(Number(structureInfo?.position.x ?? 0), Number(structureInfo?.position.y ?? 0));

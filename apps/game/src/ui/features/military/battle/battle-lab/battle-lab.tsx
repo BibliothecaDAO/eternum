@@ -12,7 +12,6 @@ import {
   CombatParameters,
   CombatSimulator,
   configManager,
-  getAddressName,
   getGuildFromPlayerAddress,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
@@ -299,7 +298,7 @@ export const BattleLab = ({
       attackerNameText: `${accountName || getPlayerDisplayName(account.address)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
       attackerTroopsText: `${Math.floor(state.attacker.troopCount)} ${state.attacker.tier} ${state.attacker.troopType}`,
       defenderTroopsText: `${Math.floor(state.defender.troopCount)} ${state.defender.tier} ${state.defender.troopType}`,
-      defenderNameText: `${target.addressOwner ? getAddressName(target.addressOwner, store) : "Bandits"} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
+      defenderNameText: `${target.addressOwner ? getPlayerDisplayName(target.addressOwner) : "Bandits"} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
       url: env.VITE_SOCIAL_LINK,
     });
   }, [

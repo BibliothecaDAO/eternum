@@ -44,7 +44,7 @@ describe("game views", () => {
       { entityId: 101, stamina: 40n, isHome: true, isMine: true },
       { entityId: 102, stamina: 5n, isHome: false, isMine: true },
     ]);
-    expect(createGameViews(fakeClient(store), RIVAL).explorers(12)[0]?.isMine).toBe(false);
+    expect(createGameViews(fakeClient(store), RIVAL, () => null).explorers(12)[0]?.isMine).toBe(false);
     expect(views.explorers(99).map((explorer) => explorer.entityId)).toEqual([103]);
     expect(views.explorers(1)).toEqual([]);
   });
@@ -63,7 +63,7 @@ describe("game views", () => {
 const createHarness = (): { store: NativeFactStore; views: GameViews } => {
   ClientConfigManager.instance().setActiveGame(GAME_ID, 1);
   const store = new NativeFactStore();
-  return { store, views: createGameViews(fakeClient(store), PLAYER) };
+  return { store, views: createGameViews(fakeClient(store), PLAYER, () => null) };
 };
 
 const fakeClient = (store: NativeFactStore): GameClient => ({ setup: { store } }) as GameClient;

@@ -1,10 +1,9 @@
-import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { getActiveGameStore } from "@/sync/active-game-client";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import type { PlayerRelicsData } from "@/types";
 import { readBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settlement-players";
-import { identityProfiles } from "@/services/identity/player-profiles";
+import { getPlayerName, readPlayerProfile } from "@/services/identity/player-profiles";
 import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/features/world/utils/season-timing";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import {
@@ -13,14 +12,12 @@ import {
   formatArmies,
   formatArrivals,
   formatGuilds,
-  getAddressName,
   readStructures,
   ResourceManager,
   summarizeIncomingTroopArrivals,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeModelName, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { ContractAddress, EntityType, type Player, ResourcesIds, type Structure } from "@bibliothecadao/types";
-import { type IdentityProfile, profileOfIdentityUser } from "@realms-world/identity";
 
 /**
  * What the client shows of the native store, derived on read and never copied into another store. Each view names
@@ -85,11 +82,11 @@ const activeGameId = () => configManager.getActiveGameId();
 const readPlayerStructures = (store: NativeFactStore, account: string): Structure[] => {
   if (account === NO_ACCOUNT || isExplicitSpectateSession()) return [];
   const owner = ContractAddress(account);
-  return readStructures(store, owner, owner);
+  return readStructures(store, owner, owner, getPlayerName);
 };
 
 const readSelectableArmies = (store: NativeFactStore, account: string) =>
-  formatArmies(store.inGame("ExplorerTroops", activeGameId()), ContractAddress(account), store)
+  formatArmies(store.inGame("ExplorerTroops", activeGameId()), ContractAddress(account), store, getPlayerName)
     .filter((army) => army.isMine)
     .map((army) => ({ entityId: army.entityId }));
 
@@ -137,7 +134,7 @@ const readSeasonClock = () => {
   };
 };
 
-const PLAYER_STRUCTURE_FACTS = ["Structure", "StructureBuildings", "AddressName"] as const;
+const PLAYER_STRUCTURE_FACTS = ["Structure", "StructureBuildings"] as const;
 export const RESOURCE_FACTS = ["ResourceBalance", "ResourceProduction", "ResourceWeight", "ProductionBonus"] as const;
 
 export const playerStructuresView: FactView<Structure[]> = {
@@ -162,7 +159,7 @@ export const playerRelicsView: FactView<PlayerRelicsData | null> = {
 };
 
 export const guildsView: FactView<ReturnType<typeof formatGuilds>> = {
-  models: ["Guild", "GuildMember", "AddressName"],
+  models: ["Guild", "GuildMember"],
   read: (store, account) =>
     formatGuilds(store.inGame("Guild", activeGameId()), ContractAddress(account), store).filter(
       (guild) => guild.memberCount > 0,
@@ -212,14 +209,12 @@ export const faithFactsView: FactView<{
   structures: NativeRows["Structure"][];
   wonderFaith: NativeRows["WonderFaith"][];
   faithfulStructures: NativeRows["FaithfulStructure"][];
-  addressNames: NativeRows["AddressName"][];
 }> = {
-  models: ["Structure", "WonderFaith", "FaithfulStructure", "AddressName"],
+  models: ["Structure", "WonderFaith", "FaithfulStructure"],
   read: (store) => ({
     structures: inActiveGame("Structure")(store),
     wonderFaith: inActiveGame("WonderFaith")(store),
     faithfulStructures: inActiveGame("FaithfulStructure")(store),
-    addressNames: [...store.rows("AddressName")],
   }),
 };
 
@@ -229,28 +224,8 @@ export const seasonClockView: FactView<ReturnType<typeof readSeasonClock>> = {
   read: readSeasonClock,
 };
 
-/** Identity's profile (username and portrait) over the chain name, which reads as no name when it is the fallback. */
-export const readPlayerProfile = (
-  store: NativeFactStore,
-  address: ContractAddress,
-): Pick<Player, "name" | "portrait"> => {
-  identityProfiles.request([address]);
-  const self = readSelfProfile();
-  const profile = identityProfiles.get(address) ?? (self?.address === address ? self.profile : undefined);
-  return { name: profile?.name ?? getAddressName(address, store) ?? null, portrait: profile?.portrait ?? null };
-};
-
-/** One row per registered address. The signed-in user's own session stands in for their profile until identity answers. */
+/** The game's registered players, one row per registration, each named by the one player resolver. */
 export const readPlayers = (store: NativeFactStore): Player[] =>
-  [...store.entries("AddressName")].map(([entity, { address }]) => ({
-    address,
-    entity,
-    ...readPlayerProfile(store, address),
-  }));
-
-const readSelfProfile = (): { address: ContractAddress; profile: IdentityProfile } | null => {
-  const address = useAccountStore.getState().account?.address;
-  const user = useIdentitySessionStore.getState().session?.user;
-  if (!address || !user) return null;
-  return { address: ContractAddress(address), profile: profileOfIdentityUser(user) };
-};
+  [...store.entries("PlayerEntry")]
+    .filter(([, row]) => row.game_id === activeGameId())
+    .map(([entity, { owner }]) => ({ address: owner, entity, ...readPlayerProfile(owner) }));

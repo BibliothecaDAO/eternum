@@ -1,11 +1,4 @@
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import {
-  divideByPrecision,
-  getAddressName,
-  getBlockTimestamp,
-  LeaderboardManager,
-  type GameClient,
-} from "@bibliothecadao/eternum";
+import { divideByPrecision, getBlockTimestamp, LeaderboardManager, type GameClient } from "@bibliothecadao/eternum";
 import {
   type ArmyInfo,
   type BuildingType,
@@ -209,7 +202,7 @@ const describeOwner = (game: RunnerGame, structureId: ID): string => {
   const owner = store.get("Structure", { game_id: game.client.gameId, entity_id: structureId })?.owner;
   if (owner === undefined) return "(unknown owner)";
   if (owner === game.viewer()) return "(mine)";
-  return `(${getAddressName(owner, store) ?? "unnamed"})`;
+  return `(${playerName(owner)})`;
 };
 
 // Market
@@ -245,14 +238,14 @@ const renderLeaderboard = (game: RunnerGame): string => {
     .slice(0, 10)
     .map(
       ([address, points], index) =>
-        `${index + 1}. ${playerName(store, address)} ${points} pts${address === viewer ? " (me)" : ""}`,
+        `${index + 1}. ${playerName(address)} ${points} pts${address === viewer ? " (me)" : ""}`,
     );
   const myLine = mine >= 0 ? `My rank: ${mine + 1} of ${ranked.length}` : "I am not ranked yet.";
   return [myLine, ...rows].join("\n");
 };
 
-const playerName = (store: NativeFactStore, address: ContractAddress): string =>
-  getAddressName(address, store) ?? `0x${address.toString(16).slice(0, 8)}…`;
+// The runner reads no Realms profiles, so another player is their address.
+const playerName = (address: ContractAddress): string => `0x${address.toString(16).slice(0, 8)}…`;
 
 // Events
 

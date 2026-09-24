@@ -3,7 +3,7 @@ import type { NativeRows } from "../../../../contracts/l3/world-native/schema/cl
 import type { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "../managers/config-manager";
 import { ResourceManager } from "../managers/resource-manager";
-import { getAddressName, getStructureName } from "./entities";
+import { getStructureName, type PlayerNameResolver } from "./entities";
 
 export type TradeResourcesFromViewpoint = { resourcesGet: Resource[]; resourcesGive: Resource[] };
 export type TradeResources = { takerGets: Resource[]; makerGets: Resource[] };
@@ -36,6 +36,7 @@ export const computeTrades = (
   currentBlockTimestamp: number,
   store: NativeFactStore,
   isBlitz: boolean,
+  playerName: PlayerNameResolver,
 ): MarketInterface[] =>
   [...orders]
     .filter((order) => order.remaining_lots > 0n && order.expires_at > currentBlockTimestamp)
@@ -43,7 +44,7 @@ export const computeTrades = (
       const { takerGets, makerGets } = getTradeResources(order.trade_id, store);
       const maker = store.require("Structure", { game_id: order.game_id, entity_id: order.maker_id });
       return {
-        makerName: getAddressName(maker.owner, store) ?? "",
+        makerName: maker.owner === 0n ? "" : (playerName(maker.owner) ?? ""),
         originName: getStructureName(maker, isBlitz).name,
         tradeId: order.trade_id,
         makerId: order.maker_id,

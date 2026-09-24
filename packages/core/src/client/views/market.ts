@@ -3,6 +3,7 @@ import type { NativeFactStore } from "../native-fact-store";
 import { configManager } from "../../managers/config-manager";
 import { getIsBlitz } from "../../utils/utils";
 import { computeTrades } from "../../utils/trades";
+import type { PlayerNameResolver } from "../../utils/entities";
 
 export interface MarketView {
   /** Open trades made by one of the player's realms or villages. */
@@ -13,12 +14,17 @@ export interface MarketView {
   askOffers: MarketInterface[];
 }
 
-export const readOpenTrades = (store: NativeFactStore, currentBlockTimestamp: number): MarketInterface[] =>
+export const readOpenTrades = (
+  store: NativeFactStore,
+  currentBlockTimestamp: number,
+  playerName: PlayerNameResolver,
+): MarketInterface[] =>
   computeTrades(
     store.inGame("TradeOrder", configManager.getActiveGameId()),
     currentBlockTimestamp,
     store,
     getIsBlitz(),
+    playerName,
   );
 
 export const readMarket = (trades: MarketInterface[], playerStructureIds: ID[]): MarketView => ({

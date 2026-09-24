@@ -5,6 +5,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, getLevelName } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 interface RawUpgradeCost {
   resource: number;
@@ -69,7 +70,8 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
       : undefined,
   );
   const structureInfo = useMemo(
-    () => (liveStructure && structureEntityId ? (getRealmInfo(structureEntityId, setup.store) ?? null) : null),
+    () =>
+      liveStructure && structureEntityId ? (getRealmInfo(structureEntityId, setup.store, getPlayerName) ?? null) : null,
     [liveStructure, setup.store, structureEntityId, revision],
   );
 

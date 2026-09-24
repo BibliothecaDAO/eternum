@@ -26,6 +26,7 @@ import { WorldSpatialProjection } from "../sync/world-spatial-projection";
 import { createGameActions, type GameActions } from "./actions";
 import { setGameScope } from "./game-scope";
 import { createHeraldGameSyncSession, type GameClientObserver } from "./herald-session";
+import type { PlayerNameResolver } from "../utils/entities";
 import { createGameViews, type GameViews } from "./views";
 import { waitForTransactionOutcome } from "./transaction-outcome";
 import type { Shard } from "./shard";
@@ -46,6 +47,8 @@ export interface CreateGameClientInput {
   scheduler: GameSyncScheduler;
   socketFactory?: (url: string) => HeraldSocket;
   observer?: GameClientObserver;
+  /** Names players for this client's views: the app's Realms profiles, or a headless client's choice to name no one. */
+  playerNames: PlayerNameResolver;
 }
 
 export interface GameClient {
@@ -214,7 +217,7 @@ const buildGameClient = (
       return signer;
     },
     get views() {
-      return (views ??= createGameViews(client, viewerOf(signer)));
+      return (views ??= createGameViews(client, viewerOf(signer), input.playerNames));
     },
     get actions() {
       return (actions ??= createGameActions(client));

@@ -3,9 +3,10 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getRelativeTimeString } from "@/ui/utils/time-utils";
 import { currencyIntlFormat, formatNumber } from "@/ui/utils/utils";
-import { divideByPrecision, getAddressName } from "@bibliothecadao/eternum";
+import { divideByPrecision } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress, Resource, ResourcesIds } from "@bibliothecadao/types";
+import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 
 export interface TradeEvent {
   id: string;
@@ -47,7 +48,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
   const price = getLordsPricePerResource(resourceGiven, resourceTaken);
   const tradedResourceId =
     resourceTaken.resourceId === ResourcesIds.Lords ? resourceGiven.resourceId : resourceTaken.resourceId;
-  const taker = getAddressName(ContractAddress(trade.event.takerAddress), store);
+  const taker = usePlayerDisplayName(trade.event.takerAddress);
   const fullDateTime = `${trade.event.eventTime.toLocaleDateString()} ${trade.event.eventTime.toLocaleTimeString()}`;
 
   return (

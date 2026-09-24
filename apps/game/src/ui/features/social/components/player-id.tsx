@@ -2,20 +2,14 @@ import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { ArrowLeft, MapPin } from "@/ui/design-system/atoms/game-icons";
 import { Position as PositionType, structureMapPosition } from "@bibliothecadao/eternum";
-import { playerAvatarUrl } from "@/hooks/use-player-profile";
+import { playerAvatarUrl, usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { useFactView } from "@/hooks/use-fact-view";
 import { gameStructuresView } from "@/sync/fact-views";
 
 import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
 import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
-import {
-  configManager,
-  getAddressName,
-  getRealmNameById,
-  LeaderboardManager,
-  toHexString,
-} from "@bibliothecadao/eternum";
+import { configManager, getRealmNameById, LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
@@ -46,7 +40,7 @@ export const PlayerId = ({
   const mode = useGameModeConfig();
   // The world slices are the subscription: the bridge publishes them once per ingest slice.
   const structures = useFactView(gameStructuresView);
-  const revision = useNativeRevision(["HyperstructureShares", "PlayerPoints", "AddressName"]);
+  const revision = useNativeRevision(["HyperstructureShares", "PlayerPoints"]);
   const now = useCoarseNowSeconds(30);
 
   const playerStructures = useMemo(
@@ -69,12 +63,7 @@ export const PlayerId = ({
     [selectedPlayer, structures],
   );
 
-  const playerName = useMemo(() => {
-    if (!selectedPlayer) return;
-
-    const playerName = getAddressName(selectedPlayer, store);
-    return playerName;
-  }, [selectedPlayer, store, revision]);
+  const playerName = usePlayerDisplayName(selectedPlayer);
 
   // getHyperstructureConfig
   // Count structure types

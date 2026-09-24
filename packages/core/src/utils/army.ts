@@ -12,7 +12,8 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { configManager, divideByPrecision, getAddressName, getArmyName, gramToKg, nanogramToKg, getTileAt } from "..";
+import { configManager, divideByPrecision, getArmyName, gramToKg, nanogramToKg, getTileAt } from "..";
+import type { PlayerNameResolver } from "./entities";
 
 export const getExplorerOwner = (store: NativeFactStore, explorer: NativeRows["ExplorerTroops"]): bigint =>
   explorer.owner === 0
@@ -23,6 +24,7 @@ export const formatArmies = (
   armies: Iterable<NativeRows["ExplorerTroops"]>,
   playerAddress: ContractAddress,
   store: NativeFactStore,
+  playerName: PlayerNameResolver,
 ): ArmyInfo[] =>
   [...armies].map((explorer) => {
     const keys = { game_id: explorer.game_id, entity_id: explorer.explorer_id };
@@ -39,7 +41,7 @@ export const formatArmies = (
       entity_owner_id: explorer.owner,
       stamina: explorer.troops.stamina.amount,
       owner,
-      ownerName: getAddressName(owner, store) ?? "",
+      ownerName: owner === 0n ? "" : (playerName(owner) ?? ""),
       structure,
       explorer,
       isMine: owner === playerAddress,
@@ -54,9 +56,10 @@ export const getArmy = (
   armyEntityId: ID,
   playerAddress: ContractAddress,
   store: NativeFactStore,
+  playerName: PlayerNameResolver,
 ): ArmyInfo | undefined => {
   const explorer = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: armyEntityId });
-  return explorer ? formatArmies([explorer], playerAddress, store)[0] : undefined;
+  return explorer ? formatArmies([explorer], playerAddress, store, playerName)[0] : undefined;
 };
 
 export const armyHasTroops = (entityArmies: (ArmyInfo | undefined)[]) => {

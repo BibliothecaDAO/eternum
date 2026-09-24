@@ -16,6 +16,7 @@ import { configManager } from "../../managers/config-manager";
 import { TileManager } from "../../managers/tile-manager";
 import { getRealmInfo } from "../../utils/realm";
 import { getStructure } from "../../utils/structure";
+import type { PlayerNameResolver } from "../../utils/entities";
 
 export type StructureRow = NativeRows["Structure"];
 export type HyperstructureRow = NativeRows["Hyperstructure"];
@@ -36,15 +37,25 @@ export const readBuildingTiles = (
   structureEntityId: ID,
 ): BuildingTiles => TileManager.forStructure(store, systemCalls, structureEntityId);
 
-export const readStructures = (store: NativeFactStore, owner: ContractAddress, viewer: ContractAddress): Structure[] =>
+export const readStructures = (
+  store: NativeFactStore,
+  owner: ContractAddress,
+  viewer: ContractAddress,
+  playerName: PlayerNameResolver,
+): Structure[] =>
   [...store.structuresOwnedBy(configManager.getActiveGameId(), owner)]
-    .map((row) => getStructure(row.entity_id, viewer, store)!)
+    .map((row) => getStructure(row.entity_id, viewer, store, playerName)!)
     .toSorted((a, b) => a.category - b.category || a.entityId - b.entityId);
 
-export const readRealmInfos = (store: NativeFactStore, owner: ContractAddress, category: StructureType): RealmInfo[] =>
+export const readRealmInfos = (
+  store: NativeFactStore,
+  owner: ContractAddress,
+  category: StructureType,
+  playerName: PlayerNameResolver,
+): RealmInfo[] =>
   [...store.structuresOwnedBy(configManager.getActiveGameId(), owner)]
     .filter((row) => row.base.category === category)
-    .map((row) => getRealmInfo(row.entity_id, store)!);
+    .map((row) => getRealmInfo(row.entity_id, store, playerName)!);
 
 export const readStructureRows = (store: NativeFactStore, category: StructureType): StructureRow[] =>
   [...store.inGame("Structure", configManager.getActiveGameId())].filter((row) => row.base.category === category);

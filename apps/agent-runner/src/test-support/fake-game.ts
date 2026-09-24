@@ -84,7 +84,7 @@ export const createFakeGame = (signer: AccountInterface | null = PLAYER_SIGNER):
     runtime,
     actions,
   } as unknown as GameClient;
-  Object.assign(client, { views: createGameViews(client, ContractAddress(signer?.address ?? 0n)) });
+  Object.assign(client, { views: createGameViews(client, ContractAddress(signer?.address ?? 0n), () => null) });
   const events: RecentStoryEvent[] = [];
   return {
     client,

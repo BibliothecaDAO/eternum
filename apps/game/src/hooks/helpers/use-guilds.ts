@@ -3,16 +3,19 @@ import type { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "./use-native-facts";
+import { getPlayerName } from "@/services/identity/player-profiles";
+import { usePlayerNamesRevision } from "@/hooks/use-player-profile";
 
 export const useGuildMembers = (guildId: ContractAddress) => {
   const {
     setup: { store },
     account: { account },
   } = useGame();
-  const revision = useNativeRevision(["GuildMember", "AddressName"]);
+  const revision = useNativeRevision(["GuildMember"]);
+  const names = usePlayerNamesRevision();
   return useMemo(
-    () => readGuildMembers(store, guildId, BigInt(account.address)),
-    [store, guildId, account.address, revision],
+    () => readGuildMembers(store, guildId, BigInt(account.address), getPlayerName),
+    [store, guildId, account.address, revision, ...names],
   );
 };
 export const useGuildWhitelist = (guildId: ContractAddress) => {
@@ -20,10 +23,11 @@ export const useGuildWhitelist = (guildId: ContractAddress) => {
     setup: { store },
     account: { account },
   } = useGame();
-  const revision = useNativeRevision(["GuildWhitelist", "AddressName"]);
+  const revision = useNativeRevision(["GuildWhitelist"]);
+  const names = usePlayerNamesRevision();
   return useMemo(
-    () => readGuildWhitelist(store, BigInt(account.address), { guildId }),
-    [store, guildId, account.address, revision],
+    () => readGuildWhitelist(store, BigInt(account.address), { guildId }, getPlayerName),
+    [store, guildId, account.address, revision, ...names],
   );
 };
 export const usePlayerWhitelist = (player: ContractAddress) => {
@@ -31,9 +35,10 @@ export const usePlayerWhitelist = (player: ContractAddress) => {
     setup: { store },
     account: { account },
   } = useGame();
-  const revision = useNativeRevision(["GuildWhitelist", "AddressName"]);
+  const revision = useNativeRevision(["GuildWhitelist"]);
+  const names = usePlayerNamesRevision();
   return useMemo(
-    () => readGuildWhitelist(store, BigInt(account.address), { player }),
-    [store, player, account.address, revision],
+    () => readGuildWhitelist(store, BigInt(account.address), { player }, getPlayerName),
+    [store, player, account.address, revision, ...names],
   );
 };

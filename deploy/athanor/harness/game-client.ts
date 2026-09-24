@@ -48,6 +48,8 @@ export async function connectHarnessGameClient(options: ConnectHarnessGameClient
     shard: options.shard,
     gameId: options.gameId,
     presetId,
+    // Harness bots read no Realms profiles, so they name no player.
+    playerNames: () => null,
     native: {
       bindings: bindings as unknown as NativeWorldBindings,
       chainId: options.shard.chainId,

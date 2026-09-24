@@ -1,24 +1,26 @@
 import type { ContractAddress, GuildMemberInfo } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../native-fact-store";
 import { configManager } from "../../managers/config-manager";
-import { displayPlayerName, getAddressName } from "../../utils/entities";
+import { displayPlayerName, type PlayerNameResolver } from "../../utils/entities";
 import { formatGuildMembers } from "../../utils/guild";
 
 export const readGuildMembers = (
   store: NativeFactStore,
   guildId: ContractAddress,
   viewer: ContractAddress,
+  playerName: PlayerNameResolver,
 ): GuildMemberInfo[] =>
   formatGuildMembers(
     [...store.inGame("GuildMember", configManager.getActiveGameId())].filter((row) => row.guild_id === guildId),
     viewer,
-    store,
+    playerName,
   );
 
 export const readGuildWhitelist = (
   store: NativeFactStore,
   viewer: ContractAddress,
   filter: { guildId: ContractAddress } | { player: ContractAddress },
+  playerName: PlayerNameResolver,
 ): GuildMemberInfo[] =>
   [...store.inGame("GuildWhitelist", configManager.getActiveGameId())]
     .filter(
@@ -27,7 +29,7 @@ export const readGuildWhitelist = (
     .map((row) => ({
       address: row.player,
       guildEntityId: row.guild_id,
-      name: displayPlayerName(row.player, getAddressName(row.player, store)),
+      name: displayPlayerName(row.player, playerName(row.player)),
       isUser: row.player === viewer,
       isGuildMaster: row.player === row.guild_id,
     }));

@@ -2,8 +2,8 @@ import { env } from "@/../env";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
-import { getAddressName, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
-import { usePlayerDisplayName } from "@/hooks/use-player-profile";
+import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
+import { getPlayerDisplayName, usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress, ID, RESOURCE_PRECISION, resources } from "@bibliothecadao/types";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -39,7 +39,7 @@ const getFormattedRaidTweet = ({
 
   return formatSocialText(twitterTemplates.raid, {
     attackerNameText: `${accountName || accountAddress.slice(0, 6) + "..." + accountAddress.slice(-4)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
-    defenderNameText: `${targetAddress ? getAddressName(targetAddress, store) : "Bandits"} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
+    defenderNameText: `${targetAddress ? getPlayerDisplayName(targetAddress) : "Bandits"} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
     raidResources: resourcesText,
     url: env.VITE_SOCIAL_LINK,
   });

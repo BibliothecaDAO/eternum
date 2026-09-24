@@ -12,7 +12,7 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { shortString } from "starknet";
+import { displayPlayerName, type PlayerNameResolver } from "./entities";
 import { getTileAt } from "./tile";
 import { configManager } from "../managers";
 import { currentTickCount } from "./utils";
@@ -21,19 +21,20 @@ export const getStructureAtPosition = (
   { x, y, alt }: Position,
   playerAddress: ContractAddress,
   store: NativeFactStore,
+  playerName: PlayerNameResolver,
 ): Structure | undefined => {
   const tile = getTileAt(store, alt, x, y);
-  return tile?.occupier_is_structure ? getStructure(tile.occupier_id, playerAddress, store) : undefined;
+  return tile?.occupier_is_structure ? getStructure(tile.occupier_id, playerAddress, store, playerName) : undefined;
 };
 
 export const getStructure = (
   entityId: ID,
   playerAddress: ContractAddress,
   store: NativeFactStore,
+  playerName: PlayerNameResolver,
 ): Structure | undefined => {
   const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
   if (!structure) return undefined;
-  const addressName = store.get("AddressName", { address: structure.owner });
   return {
     entityId,
     structure,
@@ -41,7 +42,7 @@ export const getStructure = (
     position: structureMapPosition(store, structure),
     isMine: structure.owner === playerAddress,
     isMercenary: structure.owner === 0n,
-    ownerName: addressName ? shortString.decodeShortString(addressName.name.toString()) : BANDITS_NAME,
+    ownerName: structure.owner === 0n ? BANDITS_NAME : displayPlayerName(structure.owner, playerName(structure.owner)),
     category: structure.base.category,
   };
 };
