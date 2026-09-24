@@ -2,17 +2,19 @@ use snforge_std::{EventSpyTrait, EventsFilterTrait, start_cheat_caller_address, 
 use crate::commands::Command;
 use crate::game::{
     GameStatus, IGameDispatcher, IGameDispatcherTrait, IPointsDispatcher, IPointsDispatcherTrait,
-    ISeasonLifecycleDispatcher, ISeasonLifecycleDispatcherTrait, ISeasonLifecycleSafeDispatcher,
-    ISeasonLifecycleSafeDispatcherTrait,
+    ISeasonLifecycleSafeDispatcher, ISeasonLifecycleSafeDispatcherTrait,
 };
 use crate::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait};
+use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::tests::StoryResultTestTrait;
 use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, setup_with_rules};
 
-fn configure(deployment: super::Deployment, points: u128) {
-    start_cheat_caller_address(deployment.games, super::authority());
-    ISeasonLifecycleDispatcher { contract_address: deployment.games }.configure_season_win(3, points);
-    stop_cheat_caller_address(deployment.games);
+fn setup_with_threshold(
+    rules: crate::rules::SliceRules, points: u128,
+) -> (super::Deployment, crate::resources::ResourceKey, crate::resources::ResourceKey) {
+    let mut preset = super::resource_commands::fixture_preset(rules);
+    preset.season_win_points = points;
+    super::resource_commands::setup_with_preset(preset)
 }
 fn games(deployment: super::Deployment) -> IGameDispatcher {
     IGameDispatcher { contract_address: deployment.games }
@@ -23,10 +25,10 @@ fn hypers(deployment: super::Deployment) -> IHyperstructuresDispatcher {
 
 #[test]
 fn close_settles_all_completed_shares_before_testing_the_victory_threshold() {
-    let (deployment, hyper, home, _) = super::hyperstructures::setup();
+    let (deployment, hyper, home, _) = super::hyperstructures::setup_with_threshold(53000);
     super::hyperstructures::complete(deployment, hyper, home);
     let before = points(deployment).player_points(3, deployment.actor);
-    configure(deployment, before + 50000);
+    assert_eq!(before, 3000);
     assert!(execute(deployment, Command::CloseSeason, 100));
     let game = games(deployment).game(3);
     assert_eq!(game.end_at, 100);
@@ -40,9 +42,8 @@ fn close_settles_all_completed_shares_before_testing_the_victory_threshold() {
 
 #[test]
 fn nested_economy_checkpoint_and_season_end_share_one_story_cursor() {
-    let (deployment, hyper, home, _) = super::hyperstructures::setup();
+    let (deployment, hyper, home, _) = super::hyperstructures::setup_with_threshold(1);
     super::hyperstructures::complete(deployment, hyper, home);
-    configure(deployment, 1);
     let order = super::recorded::head(deployment.games, 3).order + 1;
     let mut spy = snforge_std::spy_events();
     assert!(execute(deployment, Command::CloseSeason, 100));
@@ -74,10 +75,10 @@ fn nested_economy_checkpoint_and_season_end_share_one_story_cursor() {
 
 #[test]
 fn an_insufficient_score_keeps_checkpoints_and_a_later_attempt_can_close() {
-    let (deployment, hyper, home, _) = super::hyperstructures::setup();
+    let (deployment, hyper, home, _) = super::hyperstructures::setup_with_threshold(53000);
     super::hyperstructures::complete(deployment, hyper, home);
     let before = points(deployment).player_points(3, deployment.actor);
-    configure(deployment, before + 50000);
+    assert_eq!(before, 3000);
     assert!(execute(deployment, Command::CloseSeason, 99));
     assert_eq!(points(deployment).player_points(3, deployment.actor), before + 49000);
     assert_eq!(hypers(deployment).hyperstructure_shares(hyper).start_at, 99);
@@ -87,13 +88,11 @@ fn an_insufficient_score_keeps_checkpoints_and_a_later_attempt_can_close() {
 
 #[test]
 fn outage_recovery_closes_at_recorded_time_with_the_same_points_as_immediate_execution() {
-    let (immediate, first, home, _) = super::hyperstructures::setup();
+    let (immediate, first, home, _) = super::hyperstructures::setup_with_threshold(1);
     super::hyperstructures::complete(immediate, first, home);
-    configure(immediate, 1);
     assert!(execute(immediate, Command::CloseSeason, 100));
-    let (delayed, second, home, _) = super::hyperstructures::setup();
+    let (delayed, second, home, _) = super::hyperstructures::setup_with_threshold(1);
     super::hyperstructures::complete(delayed, second, home);
-    configure(delayed, 1);
     assert!(execute_recorded_at(delayed, Command::CloseSeason, 100, 10000));
     assert_eq!(games(delayed).game(3).end_at, games(immediate).game(3).end_at);
     assert_eq!(
@@ -109,15 +108,13 @@ fn outage_recovery_closes_at_recorded_time_with_the_same_points_as_immediate_exe
 fn zero_or_missing_threshold_never_ends_the_season() {
     let (deployment, _, _) = setup_with_rules(super::recorded::rules());
     assert_terminal_rejection(deployment, Command::CloseSeason, 40);
-    configure(deployment, 0);
     assert_terminal_rejection(deployment, Command::CloseSeason, 40);
     assert_eq!(games(deployment).game(3).end_at, 200);
 }
 
 #[test]
 fn season_close_requires_started_eternum_and_timed_games_stop_at_their_clock() {
-    let (eternum, _, _) = setup_with_rules(super::recorded::rules());
-    configure(eternum, 1);
+    let (eternum, _, _) = setup_with_threshold(super::recorded::rules(), 1);
     assert_terminal_rejection(eternum, Command::CloseSeason, 19);
     assert_terminal_rejection(eternum, Command::CloseSeason, 200);
     let rules = crate::rules::SliceRules {
@@ -126,8 +123,7 @@ fn season_close_requires_started_eternum_and_timed_games_stop_at_their_clock() {
         command_mask: super::recorded::BLITZ_COMMAND_MASK,
         ..super::recorded::rules(),
     };
-    let (blitz, home, _) = setup_with_rules(rules);
-    configure(blitz, 1);
+    let (blitz, home, _) = setup_with_threshold(rules, 1);
     assert_terminal_rejection(blitz, Command::CloseSeason, 100);
     let name = Command::SetEntityName(crate::names::SetEntityName { entity_id: home.entity_id, name: 'Last turn' });
     assert!(execute(blitz, name, 199));
@@ -136,31 +132,35 @@ fn season_close_requires_started_eternum_and_timed_games_stop_at_their_clock() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn season_configuration_is_authorized_immutable_and_game_scoped() {
-    let (deployment, _, _) = setup_with_rules(super::recorded::rules());
+fn season_presets_are_authorized_immutable_and_game_scoped() {
+    let (deployment, _, _) = setup_with_threshold(super::recorded::rules(), 1);
     let season = ISeasonLifecycleSafeDispatcher { contract_address: deployment.games };
-    assert!(season.configure_season_win(3, 1).is_err());
-    assert!(
-        season
-            .close_season(
-                3,
-                deployment.actor,
-                crate::commands::action_context(super::context(deployment.games, 3)),
-                crate::tests::story_cursor(),
-            )
-            .is_err(),
-    );
+    let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
+    let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
+    preset.season_win_points = 2;
+    start_cheat_caller_address(deployment.games, deployment.actor);
+    assert!(registrar.register_preset(20000, preset).is_err());
+    let before = games(deployment).game(3);
+    let (remaining, _) = season
+        .close_season(
+            3,
+            deployment.actor,
+            crate::commands::action_context(super::context(deployment.games, 3)),
+            crate::tests::story_cursor(),
+        )
+        .unwrap();
+    assert_eq!(remaining, 0);
+    assert_eq!(games(deployment).game(3), before);
     start_cheat_caller_address(deployment.games, super::authority());
-    assert!(season.configure_season_win(3, 1).is_ok());
-    assert!(season.configure_season_win(3, 2).is_err());
-    assert!(season.configure_season_win(999, 1).is_err());
+    assert!(registrar.register_preset(games(deployment).game(3).preset_id, preset).is_err());
     assert_eq!(season.season_win_threshold(3).unwrap(), 1);
-    assert!(season.season_win_threshold(2).is_err());
+    assert_eq!(season.season_win_threshold(2).unwrap(), 0);
+    assert!(season.season_win_threshold(999).is_err());
 }
 
 #[test]
 fn closing_includes_every_completed_hyperstructure_and_skips_foundations() {
-    let (deployment, first, home, _) = super::hyperstructures::setup();
+    let (deployment, first, home, _) = super::hyperstructures::setup_with_threshold(106000);
     super::hyperstructures::complete(deployment, first, home);
     snforge_std::start_cheat_block_timestamp_global(50);
     let mut second = first;
@@ -197,7 +197,7 @@ fn closing_includes_every_completed_hyperstructure_and_skips_foundations() {
         }
     }
     let before = points(deployment).player_points(3, deployment.actor);
-    configure(deployment, before + 100000);
+    assert_eq!(before, 6000);
     assert!(execute(deployment, Command::CloseSeason, 100));
     assert_eq!(points(deployment).player_points(3, deployment.actor), before + 100000);
     assert_eq!(hypers(deployment).hyperstructure_shares(first).start_at, 100);
@@ -273,8 +273,8 @@ fn point_history_keeps_each_awards_activity_and_amount_without_a_second_balance(
     assert_eq!(awarded, points(deployment).season_points(3));
 }
 
-fn nine_completed_hyperstructures() -> (super::Deployment, Array<crate::resources::ResourceKey>) {
-    let (d, hyper, home, _) = super::hyperstructures::setup();
+fn nine_completed_hyperstructures(threshold: u128) -> (super::Deployment, Array<crate::resources::ResourceKey>) {
+    let (d, hyper, home, _) = super::hyperstructures::setup_with_threshold(threshold);
     super::hyperstructures::complete(d, hyper, home);
     let mut keys = array![hyper];
     for offset in 1_u32..9 {
@@ -348,17 +348,16 @@ pub fn execute_batch_in_game(d: super::Deployment, game_id: u32, command: Comman
 
 #[test]
 fn empty_checkpoint_work_reports_zero_without_claiming_a_win() {
-    let (d, _, _) = setup_with_rules(super::recorded::rules());
-    configure(d, 1);
+    let (d, _, _) = setup_with_threshold(super::recorded::rules(), 1);
     execute_batch(d, Command::CloseSeason, 100, 0);
     assert_eq!(games(d).game(3).end_at, 200);
 }
 
 #[test]
 fn close_batches_keep_one_cutoff_and_check_the_threshold_after_the_last_batch() {
-    let (d, keys) = nine_completed_hyperstructures();
+    let (d, keys) = nine_completed_hyperstructures(453000);
     let before = points(d).player_points(3, d.actor);
-    configure(d, before + 450000);
+    assert_eq!(before, 3000);
     execute_batch(d, Command::CloseSeason, 100, 1);
     assert_eq!(games(d).game(3).end_at, 200);
     assert_eq!(points(d).player_points(3, d.actor), before + 400000);
@@ -371,9 +370,9 @@ fn close_batches_keep_one_cutoff_and_check_the_threshold_after_the_last_batch() 
 
 #[test]
 fn a_share_change_past_the_attempt_cutoff_is_not_checkpointed_backwards() {
-    let (d, keys) = nine_completed_hyperstructures();
+    let (d, keys) = nine_completed_hyperstructures(463000);
     let before = points(d).player_points(3, d.actor);
-    configure(d, before + 460000);
+    assert_eq!(before, 3000);
     assert!(execute(d, Command::CloseSeason, 100));
     assert!(
         execute(
@@ -397,9 +396,8 @@ fn a_share_change_past_the_attempt_cutoff_is_not_checkpointed_backwards() {
 
 #[test]
 fn another_player_can_finish_an_attempt_without_changing_its_initiator() {
-    let (d, _) = nine_completed_hyperstructures();
+    let (d, _) = nine_completed_hyperstructures(1);
     let other = super::bind_authority(d);
-    configure(d, 1);
     assert!(execute(d, Command::CloseSeason, 100));
     assert!(execute(other, Command::CloseSeason, 110));
     assert_eq!(games(d).game(3).end_at, 110);
@@ -408,7 +406,7 @@ fn another_player_can_finish_an_attempt_without_changing_its_initiator() {
 
 #[test]
 fn ended_game_checkpoints_are_bounded_and_stop_at_the_game_end() {
-    let (d, keys) = nine_completed_hyperstructures();
+    let (d, keys) = nine_completed_hyperstructures(0);
     let before = points(d).player_points(3, d.actor);
     snforge_std::start_cheat_block_timestamp_global(1000);
     assert_eq!(final_checkpoint(d), 1);
@@ -439,7 +437,7 @@ fn final_checkpoint(d: super::Deployment) -> u32 {
 
 #[test]
 fn game_finalization_waits_for_the_last_hyperstructure_checkpoint_batch() {
-    let (deployment, keys) = nine_completed_hyperstructures();
+    let (deployment, keys) = nine_completed_hyperstructures(0);
     let deployment = super::bind_authority(deployment);
     let game = games(deployment).game(3);
     let timestamp = game.end_at + game.end_grace_seconds.into() + 1;
@@ -454,9 +452,8 @@ fn game_finalization_waits_for_the_last_hyperstructure_checkpoint_batch() {
 
 #[test]
 fn checkpoint_member_event_uses_the_declared_short_string_identity() {
-    let (deployment, hyper, home, _) = super::hyperstructures::setup();
+    let (deployment, hyper, home, _) = super::hyperstructures::setup_with_threshold(1);
     super::hyperstructures::complete(deployment, hyper, home);
-    configure(deployment, 1);
     let mut events = snforge_std::spy_events();
     assert!(execute(deployment, Command::CloseSeason, 100));
     let mut found = false;
@@ -474,9 +471,8 @@ fn checkpoint_member_event_uses_the_declared_short_string_identity() {
 
 #[test]
 fn a_winning_final_submitter_cannot_replace_an_ineligible_close_initiator() {
-    let (d, _) = nine_completed_hyperstructures();
+    let (d, _) = nine_completed_hyperstructures(1);
     let other = super::bind_authority(d);
-    configure(d, 1);
     assert!(execute(other, Command::CloseSeason, 100));
     assert!(execute(d, Command::CloseSeason, 110));
     assert_eq!(games(d).game(3).end_at, 200);

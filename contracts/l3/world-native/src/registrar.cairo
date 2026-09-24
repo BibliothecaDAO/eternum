@@ -28,7 +28,7 @@ pub trait IRegistrar<T> {
     fn next_game_id(self: @T) -> u32;
     fn game_id_by_name(self: @T, name: felt252) -> u32;
     fn blitz_roster(self: @T, game_id: u32) -> Span<RosterPlayer>;
-    fn create_game(ref self: T, params: CreateGameParams, definition: PresetDefinition) -> u32;
+    fn create_game(ref self: T, params: CreateGameParams) -> u32;
 }
 #[starknet::interface]
 pub trait IGameSettlement<T> {
@@ -41,30 +41,36 @@ pub trait IGameSettlement<T> {
     ) -> (u64, crate::ownership::StoryCursor);
 }
 
-pub fn validate_params(
-    params: CreateGameParams, rules: crate::rules::SliceRules, settlement: crate::presets::SettlementPreset,
-) {
+#[derive(Copy, Drop)]
+pub struct LaunchRules {
+    pub mode_rules: u32,
+    pub epoch_seconds: u32,
+    pub entry_rule: u8,
+    pub settlement_mode: crate::settlement::SettlementMode,
+    pub spacing: u32,
+}
+
+pub fn validate_params(params: CreateGameParams, rules: LaunchRules) {
     assert!(params.name != 0, "game name is empty");
     assert!(params.seed != 0, "game seed is zero");
     assert!(params.duration_seconds != 0, "game duration is zero");
-    crate::expeditions::validate_game(rules.epoch_seconds, settlement.spacing, params.duration_seconds);
+    crate::expeditions::validate_game(rules.epoch_seconds, rules.spacing, params.duration_seconds);
     assert!(params.start_settling_at <= params.start_main_at, "invalid game schedule");
     assert!(
         Into::<u32, u64>::into(params.registration_start) < params.start_settling_at,
         "registration must open before settling",
     );
-    if !crate::rules::rule_enabled(rules, crate::rules::SEASON_CLOSE) {
+    if rules.mode_rules & crate::rules::SEASON_CLOSE == 0 {
         assert!(params.end_grace_seconds == 0, "result finalisation has no grace period");
     }
     if rules.entry_rule == crate::rules::ENTRY_ROSTER {
         assert!(params.roster.len() > 0 && params.roster.len() <= 24, "invalid Blitz roster size");
-        if settlement.mode == crate::settlement::SettlementMode::Duel {
+        if rules.settlement_mode == crate::settlement::SettlementMode::Duel {
             assert!(params.roster.len() == 2, "Duel requires two players");
         }
         assert!(!params.dev_mode_on, "free Blitz does not use development mode");
     } else {
         assert!(params.roster.is_empty(), "Eternum does not use a fixed roster");
-        assert!(settlement.mode != crate::settlement::SettlementMode::Duel, "Eternum does not use Duel settlement");
     }
 }
 pub fn map_center_offset(game_id: u32, seed: felt252) -> u32 {
@@ -89,13 +95,11 @@ pub(crate) fn build_game(params: CreateGameParams, creator: ContractAddress) -> 
         seed: params.seed,
     }
 }
-pub(crate) fn game_rules(
-    game_id: u32, params: CreateGameParams, preset: crate::rules::SliceRules,
-) -> crate::rules::SliceRules {
-    crate::rules::SliceRules {
-        biome_climate_config: params.biome_climate,
-        map_config: params.map_override.unwrap_or(preset.map_config),
+pub(crate) fn game_overrides(game_id: u32, params: CreateGameParams) -> crate::game::GameOverrides {
+    crate::game::GameOverrides {
+        registration_start: params.registration_start,
+        biome_climate: params.biome_climate,
+        map: params.map_override,
         map_center_offset: map_center_offset(game_id, params.seed),
-        ..preset,
     }
 }

@@ -185,7 +185,6 @@ pub trait IResourceOperations<T> {
         timestamp: u64,
         game_context: crate::commands::ResourceContext,
     );
-    fn configure_resources(ref self: T, game_id: u32, rules: Span<ResourceRule>);
     fn initialize_resources(
         ref self: T,
         key: ResourceKey,

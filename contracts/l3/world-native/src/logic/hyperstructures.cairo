@@ -55,51 +55,6 @@ pub mod HyperstructureState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::hyperstructures::IHyperstructures<ComponentState<TContractState>> {
-        fn configure_hyperstructures(
-            ref self: ComponentState<TContractState>, game_id: u32, rules: HyperstructureRules,
-        ) {
-            crate::logic::release::assert_authority();
-            crate::logic::game::game(game_id);
-            assert!(
-                self.data.hyperstructures.hyper_rule_count.read(game_id) == 0,
-                "hyperstructure rules already configured",
-            );
-            assert!(
-                !rules.resources.is_empty()
-                    || !crate::rules::rule_enabled(
-                        crate::logic::game::rules(game_id), crate::rules::DISCOVER_HYPERSTRUCTURES,
-                    ),
-                "empty construction requirements",
-            );
-            for index in 0..rules.resources.len() {
-                let cost = *rules.resources.at(index);
-                assert!(
-                    (cost.resource_type >= 1 && cost.resource_type <= 22) || cost.resource_type == 23,
-                    "invalid construction resource",
-                );
-                assert!(cost.minimum != 0 && cost.minimum <= cost.maximum, "invalid construction range");
-                for previous in 0..index {
-                    assert!(
-                        *rules.resources.at(previous).resource_type != cost.resource_type,
-                        "duplicate construction resource",
-                    );
-                }
-                self.data.hyperstructures.hyper_costs.write((game_id, index), cost);
-            }
-            self.data.hyperstructures.hyper_rule_count.write(game_id, rules.resources.len() + 1);
-            self.data.hyperstructures.hyper_shards.write(game_id, rules.initialize_shards);
-            let mut values = array![];
-            rules.serialize(ref values);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'HyperstructureRules',
-                        keys: array![game_id.into()].span(),
-                        values: values.span(),
-                    },
-                );
-        }
         fn hyperstructure_rules(self: @ComponentState<TContractState>, game_id: u32) -> HyperstructureRules {
             self.rules(game_id)
         }
@@ -345,15 +300,13 @@ pub mod HyperstructureState {
             get_dep_component!(self, Life).classes(game_id)
         }
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> HyperstructureRules {
-            let count = self.data.hyperstructures.hyper_rule_count.read(game_id);
-            assert!(count != 0, "hyperstructure rules missing");
+            let preset = crate::logic::preset_record::for_game(game_id);
+            let count = preset.hyper_cost_count.read();
             let mut resources = array![];
-            for index in 0..count - 1 {
-                resources.append(self.data.hyperstructures.hyper_costs.read((game_id, index)));
+            for index in 0..count {
+                resources.append(preset.hyper_costs.read(index));
             }
-            HyperstructureRules {
-                initialize_shards: self.data.hyperstructures.hyper_shards.read(game_id), resources: resources.span(),
-            }
+            HyperstructureRules { initialize_shards: preset.hyper_shards.read(), resources: resources.span() }
         }
         fn cost(self: @ComponentState<TContractState>, game_id: u32, resource_type: u8) -> ConstructionResource {
             for cost in self.rules(game_id).resources {

@@ -51,6 +51,19 @@ pub struct PresetDefinition {
 }
 
 pub fn validate(preset: PresetDefinition) {
+    let rules = preset.rules;
+    assert!(rules.tick_config.armies_tick_in_seconds != 0, "zero army tick");
+    if rules.bitcoin_mine_config.enabled {
+        assert!(rules.tick_config.bitcoin_phase_in_seconds != 0, "zero Bitcoin phase duration");
+        assert!(rules.bitcoin_mine_config.prize_per_phase != 0, "zero Bitcoin prize");
+    }
+    assert!(rules.bitcoin_mine_config.owner_cut_bps <= 10000, "invalid Bitcoin owner cut");
+
+    assert!(
+        rules.entry_rule == crate::rules::ENTRY_ROSTER
+            || preset.settlement.mode != crate::settlement::SettlementMode::Duel,
+        "Eternum does not use Duel settlement",
+    );
     let map = preset.rules.map_config;
     assert!(
         map.shards_mines_win_probability == 0 || !preset.resources.surface_mines.is_empty(), "empty enabled mine pool",

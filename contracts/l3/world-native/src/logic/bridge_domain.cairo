@@ -33,16 +33,6 @@ pub mod BridgeLogic {
     }
     #[abi(embed_v0)]
     impl Withdrawals of crate::withdrawals::IWithdrawals<ContractState> {
-        fn configure_withdrawals(
-            ref self: ContractState,
-            game_id: u32,
-            rules: crate::withdrawals::WithdrawalRules,
-            tokens: Span<crate::withdrawals::ResourceToken>,
-        ) {
-            crate::logic::release::assert_authority();
-            crate::logic::game::game(game_id);
-            self.withdrawals.configure(game_id, rules, tokens);
-        }
         #[cfg(test)]
         fn withdrawal_rules(self: @ContractState, game_id: u32) -> crate::withdrawals::WithdrawalRules {
             self.withdrawals.rules(game_id)

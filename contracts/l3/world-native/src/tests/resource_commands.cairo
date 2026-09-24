@@ -18,31 +18,17 @@ use crate::tests::StoryResultTestTrait;
 use crate::tests::state::{GameState, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait};
 use crate::troops::{Coord, ExplorerKey};
 use super::recorded_receipts::RecordedReceiptsTrait;
-use super::{Deployment, authority, context, intent, recorded, signature};
+use super::{Deployment, context, intent, recorded, signature};
 
 pub fn setup() -> (Deployment, ResourceKey, ResourceKey) {
     setup_with_rules(recorded::rules())
 }
 
-pub fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, ResourceKey, ResourceKey) {
-    let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
-    let games = IGameDispatcher { contract_address: deployment.games };
-    super::recorded::seed_game(
-        deployment.games,
-        3,
-        crate::game::GameRegistry {
-            dev_mode_on: false,
-            start_settling_at: 10,
-            start_main_at: 20,
-            end_at: 200,
-            end_grace_seconds: 10,
-            ..games.game(1),
-        },
-        rules,
-    );
-    let mut rules = array![];
+pub fn fixture_preset(rules: crate::rules::SliceRules) -> crate::presets::PresetDefinition {
+    let mut preset = recorded::fixture_preset(rules);
+    let mut resources = array![];
     for resource_type in 1_u8..59 {
-        rules
+        resources
             .append(
                 ResourceRule {
                     resource_type, unit_weight: if resource_type == 58 {
@@ -53,10 +39,37 @@ pub fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, Resourc
                 },
             );
     }
+    preset.resources.resources = resources.span();
+    preset
+}
+
+pub fn setup_with_rules(rules: crate::rules::SliceRules) -> (Deployment, ResourceKey, ResourceKey) {
+    setup_with_preset(fixture_preset(rules))
+}
+
+pub fn setup_with_preset(preset: crate::presets::PresetDefinition) -> (Deployment, ResourceKey, ResourceKey) {
+    let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
+    setup_in_deployment(deployment, preset)
+}
+
+pub fn setup_in_deployment(
+    deployment: Deployment, preset: crate::presets::PresetDefinition,
+) -> (Deployment, ResourceKey, ResourceKey) {
+    let games = IGameDispatcher { contract_address: deployment.games };
+    recorded::seed_game_with_preset(
+        deployment.games,
+        3,
+        crate::game::GameRegistry {
+            dev_mode_on: false,
+            start_settling_at: 10,
+            start_main_at: 20,
+            end_at: 200,
+            end_grace_seconds: 10,
+            ..games.game(1),
+        },
+        preset,
+    );
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-    start_cheat_caller_address(deployment.games, authority());
-    resources.configure_resources(3, rules.span());
-    stop_cheat_caller_address(deployment.games);
     start_cheat_caller_address(deployment.games, deployment.games);
     let creation = ISettlementCreationDispatcher { contract_address: deployment.games };
     let mut ids = array![];

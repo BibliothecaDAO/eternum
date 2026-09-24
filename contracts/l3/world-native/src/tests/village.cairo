@@ -4,17 +4,15 @@ use snforge_std::{
     EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_block_timestamp_global, start_cheat_caller_address,
     stop_cheat_caller_address,
 };
+use starknet::storage::StorageMapWriteAccess;
 use crate::commands::{Command, ExecutionContext};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait, IPointsDispatcherTrait};
 use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
 use crate::map::IMapLogicDispatcher;
-use crate::resources::{
-    IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceRule, ResourceSlot,
-};
+use crate::resources::{IResourceOperationsDispatcher, ResourceKey, ResourceSlot};
 use crate::settlement::{
-    ISettlementConfigurationDispatcher, ISettlementConfigurationDispatcherTrait, ISettlementCreationDispatcher,
-    ISettlementCreationDispatcherTrait, ISettlementPoolDispatcher, ISettlementPoolDispatcherTrait, RealmGrants,
-    SettlementMode, SettlementRules,
+    ISettlementCreationDispatcher, ISettlementCreationDispatcherTrait, ISettlementPoolDispatcher,
+    ISettlementPoolDispatcherTrait, SettlementMode,
 };
 use crate::structures::IStructureOperationsDispatcher;
 use crate::tests::StoryResultTestTrait;
@@ -38,38 +36,37 @@ pub fn village_rules() -> VillageRules {
 fn setup(dev: bool) -> (Deployment, u32) {
     setup_config(dev, SettlementMode::Single, recorded::rules())
 }
-fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::SliceRules) -> (Deployment, u32) {
-    let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
-    super::entry::set_operator(deployment, authority());
-    let games = IGameDispatcher { contract_address: deployment.games };
-    super::recorded::seed_game(
-        deployment.games, 3, crate::game::GameRegistry { dev_mode_on: dev, ..games.game(1) }, game_rules,
-    );
-    recorded::configure_submitter(deployment.games, super::submitter());
-    let data = read_txt(@FileTrait::new("tests/fixtures/settlement.txt"));
-    let mut fields = data.span();
-    let grants: RealmGrants = Serde::deserialize(ref fields).unwrap();
-    start_cheat_caller_address(deployment.games, authority());
-    ISettlementConfigurationDispatcher { contract_address: deployment.games }
-        .configure_settlement(
-            3, SettlementRules { registration_start: 0, registration_limit: 2, mode, spacing: 6 }, grants,
-        );
-    IVillagesDispatcher { contract_address: deployment.games }
-        .configure_villages(3, VillageRules { troop_delay_ticks: 2, ..village_rules() });
-    stop_cheat_caller_address(deployment.games);
+fn village_preset(mode: SettlementMode, game_rules: crate::rules::SliceRules) -> crate::presets::PresetDefinition {
+    let mut preset = recorded::fixture_preset(game_rules);
+    preset.settlement.mode = mode;
+    preset.settlement.spacing = 6;
+    preset.settlement.realms = super::settlement::grants();
+    preset.settlement.villages = VillageRules { troop_delay_ticks: 2, ..village_rules() };
     let data = read_txt(@FileTrait::new("tests/fixtures/preset-3.txt"));
     let mut fields = data.span();
     let _: crate::rules::SliceRules = Serde::deserialize(ref fields).unwrap();
-    let resources: Span<ResourceRule> = Serde::deserialize(ref fields).unwrap();
-    let buildings: Span<crate::buildings::BuildingRuleConfig> = Serde::deserialize(ref fields).unwrap();
-    start_cheat_caller_address(deployment.games, authority());
-    start_cheat_caller_address(deployment.games, authority());
-    IResourceOperationsDispatcher { contract_address: deployment.games }.configure_resources(3, resources);
-    crate::buildings::IBuildingRulesDispatcherTrait::configure_buildings(
-        crate::buildings::IBuildingRulesDispatcher { contract_address: deployment.games }, 3, buildings, None,
+    preset.resources.resources = Serde::deserialize(ref fields).unwrap();
+    preset.structures.buildings = Serde::deserialize(ref fields).unwrap();
+    preset.structures.board = None;
+    preset
+}
+fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::SliceRules) -> (Deployment, u32) {
+    setup_preset(dev, village_preset(mode, game_rules))
+}
+fn setup_preset(dev: bool, preset: crate::presets::PresetDefinition) -> (Deployment, u32) {
+    let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
+    super::entry::set_operator(deployment, authority());
+    let games = IGameDispatcher { contract_address: deployment.games };
+    recorded::seed_game_with_preset(
+        deployment.games, 3, crate::game::GameRegistry { dev_mode_on: dev, ..games.game(1) }, preset,
     );
-
-    stop_cheat_caller_address(deployment.games);
+    snforge_std::interact_with_state(
+        deployment.games, || {
+            crate::state::write().registrar.roster_sizes.write(3, 2);
+        },
+    );
+    recorded::configure_submitter(deployment.games, super::submitter());
+    let grants = preset.settlement.realms;
     start_cheat_caller_address(deployment.games, deployment.games);
     let realm = ISettlementCreationDispatcher { contract_address: deployment.games }
         .create_settlement(
@@ -348,24 +345,22 @@ fn settle_season_realm(deployment: Deployment) -> u32 {
 
 #[test]
 fn a_founded_realm_castle_uses_no_population_even_where_labor_buildings_cost_it() {
-    let (deployment, _) = setup(true);
-    // Labor costs 2 population in this game; its rules are immutable once created, so the fixture sets them directly.
-    let labor = crate::buildings::IBuildingRulesDispatcherTrait::building_rule(
-        crate::buildings::IBuildingRulesDispatcher { contract_address: deployment.games },
-        crate::buildings::BuildingRuleKey { game_id: 3, category: 25 },
-    );
-    super::resource_commands::set_fixture(
-        deployment.games,
-        selector!("buildings"),
-        selector!("terms"),
-        array![3, 25].span(),
-        crate::buildings::BuildingTerms {
-            population_cost: 2,
-            capacity_grant: labor.capacity_grant,
-            simple_count: labor.simple_cost.len().try_into().unwrap(),
-            complex_count: labor.complex_cost.len().try_into().unwrap(),
-        },
-    );
+    let mut preset = village_preset(SettlementMode::Single, recorded::rules());
+    let mut buildings = array![];
+    for building in preset.structures.buildings {
+        buildings
+            .append(
+                if *building.category == 25 {
+                    crate::buildings::BuildingRuleConfig {
+                        rule: crate::buildings::BuildingRule { population_cost: 2, ..*building.rule }, ..*building,
+                    }
+                } else {
+                    *building
+                },
+            );
+    }
+    preset.structures.buildings = buildings.span();
+    let (deployment, _) = setup_preset(true, preset);
 
     let realm = ResourceKey { game_id: 3, entity_id: settle_season_realm(deployment) };
     let structures = IStructureOperationsDispatcher { contract_address: deployment.games };

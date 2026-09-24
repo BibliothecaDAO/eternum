@@ -1,9 +1,11 @@
-use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::start_cheat_caller_address;
 use crate::commands::Command;
 use crate::faith::{
-    ClaimPlayer, FaithRules, IFaithDispatcher, IFaithDispatcherTrait, IFaithOwnershipViewsDispatcher,
-    IFaithOwnershipViewsDispatcherTrait, IFaithSafeDispatcher, IFaithSafeDispatcherTrait, PlayerFaithKey, Pledge,
+    ClaimPlayer, FaithRules, IFaithOwnershipViewsDispatcher, IFaithOwnershipViewsDispatcherTrait, IFaithSafeDispatcher,
+    IFaithSafeDispatcherTrait, PlayerFaithKey, Pledge,
 };
+use crate::game::IGameDispatcherTrait;
+use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::ResourceKey;
 use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
 use crate::tests::state::StructureObservationTrait;
@@ -15,12 +17,11 @@ pub fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
     rules.mode_rules = super::recorded::ETERNUM_RULES;
     rules.command_mask = super::recorded::ETERNUM_COMMAND_MASK;
     rules.entry_rule = crate::rules::ENTRY_ENTITLEMENT;
-    let (deployment, wonder, realm) = setup_with_rules(rules);
+    let mut preset = super::resource_commands::fixture_preset(rules);
+    preset.structures.faith = config();
+    let (deployment, wonder, realm) = super::resource_commands::setup_with_preset(preset);
     set_wonder(deployment, wonder, true);
     set_wonder(deployment, realm, false);
-    start_cheat_caller_address(deployment.games, super::authority());
-    IFaithDispatcher { contract_address: deployment.games }.configure_faith(3, config());
-    stop_cheat_caller_address(deployment.games);
     (deployment, wonder, realm)
 }
 fn config() -> FaithRules {
@@ -146,13 +147,21 @@ fn subservient_wonders_cannot_receive_pledges_and_submission_requires_no_followe
 #[feature("safe_dispatcher")]
 fn faith_configuration_requires_authority_and_isolates_games() {
     let (deployment, _, _) = setup();
-    let safe = IFaithSafeDispatcher { contract_address: deployment.games };
-    assert!(safe.configure_faith(2, config()).is_err());
+    let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
+    let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
+    assert!(registry.register_preset(20000, preset).is_err());
     start_cheat_caller_address(deployment.games, super::authority());
-    assert!(safe.configure_faith(3, config()).is_err());
-    assert!(safe.configure_faith(2, FaithRules { owner_share_bps: 10001, ..config() }).is_err());
-    assert!(safe.configure_faith(999, config()).is_err());
-    assert!(safe.faith_rules(2).is_err());
+    assert!(registry.register_preset(10003, preset).is_err());
+    preset.structures.faith = FaithRules { owner_share_bps: 10001, ..config() };
+    assert!(registry.register_preset(20000, preset).is_err());
+    preset.structures.faith = FaithRules { realm_rate: 101, ..config() };
+    super::recorded::seed_game_with_preset(
+        deployment.games, 4, crate::game::IGameDispatcher { contract_address: deployment.games }.game(3), preset,
+    );
+    let safe = IFaithSafeDispatcher { contract_address: deployment.games };
+    assert_eq!(safe.faith_rules(3).unwrap(), config());
+    assert_eq!(safe.faith_rules(4).unwrap().realm_rate, 101);
+    assert!(safe.faith_rules(999).is_err());
 }
 
 #[test]

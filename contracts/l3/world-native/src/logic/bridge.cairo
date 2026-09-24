@@ -1,6 +1,6 @@
 #[starknet::component]
 pub mod BridgeState {
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+    use starknet::storage::StoragePointerReadAccess;
     use starknet::{ContractAddress, get_contract_address};
     use crate::bridge::{Deposit, DepositRules, IDepositTokenDispatcher, IDepositTokenDispatcherTrait, Withdraw};
     use crate::events::RowSet;
@@ -36,27 +36,8 @@ pub mod BridgeState {
         impl Withdrawals: WithdrawalState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::bridge::IBridge<ComponentState<TContractState>> {
-        fn configure_deposits(ref self: ComponentState<TContractState>, game_id: u32, rules: DepositRules) {
-            crate::logic::release::assert_authority();
-            crate::logic::game::game(game_id);
-            assert!(self.data.bridge.deposits.read(game_id).is_none(), "deposit rules already configured");
-            let total: u32 = rules.realm_fee_bps.into()
-                + rules.velords_fee_bps.into()
-                + rules.season_fee_bps.into()
-                + rules.client_fee_bps.into();
-            assert!(total <= 10000, "deposit fees exceed amount");
-            self.data.bridge.deposits.write(game_id, Some(rules));
-            let mut values = array![];
-            rules.serialize(ref values);
-            self
-                .emit(
-                    RowSet {
-                        version: 1, model: 'DepositRules', keys: array![game_id.into()].span(), values: values.span(),
-                    },
-                );
-        }
         fn deposit_rules(self: @ComponentState<TContractState>, game_id: u32) -> DepositRules {
-            self.data.bridge.deposits.read(game_id).expect('missing deposit rules')
+            crate::logic::preset_record::for_game(game_id).deposit_rules.read().expect('missing deposit rules')
         }
         fn deposit_resource(
             ref self: ComponentState<TContractState>,

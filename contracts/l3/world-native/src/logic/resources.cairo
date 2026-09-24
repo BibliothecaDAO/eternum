@@ -33,10 +33,9 @@ pub fn weight(key: ResourceKey) -> Weight {
 }
 
 pub fn rule(game_id: u32, resource_type: u8) -> crate::resources::ResourceRule {
-    let state = crate::state::read();
-    assert!(state.resources.resources_configured.read(game_id), "missing resource rules");
+    let preset = crate::logic::preset_record::for_game(game_id);
     assert_resource(resource_type);
-    let (unit_weight, rates) = state.resources.resource_rules.read((game_id, resource_type));
+    let (unit_weight, rates) = preset.resource_rules.read(resource_type);
     crate::resources::ResourceRule {
         resource_type,
         unit_weight,

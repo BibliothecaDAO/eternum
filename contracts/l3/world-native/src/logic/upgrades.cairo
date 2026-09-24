@@ -1,22 +1,22 @@
-use starknet::storage::StorageMapReadAccess;
+use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use crate::upgrades::*;
 
 pub fn limits(game_id: u32) -> UpgradeLimits {
-    crate::state::read().upgrades.limits.read(game_id).expect('missing upgrade rules')
+    crate::logic::preset_record::for_game(game_id).upgrade_limits.read()
 }
 
 pub fn recipe(game_id: u32, level: u8) -> UpgradeRecipe {
-    let limits = limits(game_id);
+    let preset = crate::logic::preset_record::for_game(game_id);
+    let limits = preset.upgrade_limits.read();
     assert!(level > 0 && (level <= limits.realm_max || level <= limits.village_max), "invalid upgrade level");
     let mut costs = array![];
-    for index in 0..crate::state::read().upgrades.cost_counts.read((game_id, level)) {
-        costs.append(crate::state::read().upgrades.upgrade_costs.read((game_id, level, index)));
+    for index in 0..preset.upgrade_cost_counts.read(level) {
+        costs.append(preset.upgrade_costs.read((level, index)));
     }
     UpgradeRecipe { costs: costs.span() }
 }
 #[starknet::component]
 pub mod UpgradeState {
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
     use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
 
@@ -41,48 +41,6 @@ pub mod UpgradeState {
 
         fn recipe(self: @ComponentState<TContractState>, game_id: u32, level: u8) -> UpgradeRecipe {
             crate::logic::upgrades::recipe(game_id, level)
-        }
-
-        fn configure(
-            ref self: ComponentState<TContractState>, game_id: u32, limits: UpgradeLimits, recipes: Span<UpgradeRecipe>,
-        ) {
-            assert!(self.data.upgrades.limits.read(game_id).is_none(), "immutable upgrade rules");
-            assert!(limits.realm_max <= 3 && limits.village_max <= 3, "unsupported troop limit level");
-            assert!(
-                recipes.len() == core::cmp::max(limits.realm_max, limits.village_max).into(),
-                "incomplete upgrade recipes",
-            );
-            self.data.upgrades.limits.write(game_id, Some(limits));
-            let mut values = array![];
-            limits.serialize(ref values);
-            self
-                .emit(
-                    RowSet {
-                        version: 1, model: 'UpgradeLimits', keys: array![game_id.into()].span(), values: values.span(),
-                    },
-                );
-            let mut level = 1_u8;
-            for recipe in recipes {
-                self.data.upgrades.cost_counts.write((game_id, level), recipe.costs.len());
-                let mut index = 0;
-                for cost in recipe.costs {
-                    assert!(*cost.resource_type > 0 && *cost.resource_type <= 58, "invalid resource type");
-                    self.data.upgrades.upgrade_costs.write((game_id, level, index), *cost);
-                    index += 1;
-                }
-                let mut values = array![];
-                recipe.serialize(ref values);
-                self
-                    .emit(
-                        RowSet {
-                            version: 1,
-                            model: 'UpgradeRecipe',
-                            keys: array![game_id.into(), level.into()].span(),
-                            values: values.span(),
-                        },
-                    );
-                level += 1;
-            }
         }
     }
 }

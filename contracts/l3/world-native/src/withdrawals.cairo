@@ -34,7 +34,6 @@ pub struct ResourceToken {
 }
 #[starknet::interface]
 pub trait IWithdrawals<T> {
-    fn configure_withdrawals(ref self: T, game_id: u32, rules: WithdrawalRules, tokens: Span<ResourceToken>);
     #[cfg(test)]
     fn withdrawal_rules(self: @T, game_id: u32) -> WithdrawalRules;
     #[cfg(test)]

@@ -40,16 +40,6 @@ pub mod ConstructionLogic {
     }
     #[abi(embed_v0)]
     impl BuildingRules of crate::buildings::IBuildingRules<ContractState> {
-        fn configure_buildings(
-            ref self: ContractState,
-            game_id: u32,
-            rules: Span<crate::buildings::BuildingRuleConfig>,
-            board: Option<crate::buildings::BoardRules>,
-        ) {
-            crate::logic::release::assert_authority();
-            let _ = crate::logic::game::game(game_id);
-            self.buildings.configure(game_id, rules, board);
-        }
         #[cfg(test)]
         fn building_rule(
             self: @ContractState, key: crate::buildings::BuildingRuleKey,

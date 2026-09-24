@@ -74,7 +74,6 @@ pub struct TradeFill {
 
 #[starknet::interface]
 pub trait ITrade<T> {
-    fn configure_trade(ref self: T, game_id: u32, rules: TradeRules);
     #[cfg(test)]
     fn trade_rules(self: @T, game_id: u32) -> TradeRules;
     #[cfg(test)]

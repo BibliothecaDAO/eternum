@@ -10,14 +10,13 @@ use crate::hyperstructures::{
     IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait, IHyperstructuresSafeDispatcher,
     IHyperstructuresSafeDispatcherTrait, SetConstructionAccess, Share, Stage,
 };
+use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
 use crate::structures::{IStructureOperationsDispatcher, IStructureOperationsDispatcherTrait, StructureRecord};
 use crate::tests::StoryResultTestTrait;
 use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
-use super::resource_commands::{
-    assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture, setup_with_rules,
-};
+use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture};
 
 pub fn rules() -> HyperstructureRules {
     HyperstructureRules {
@@ -32,7 +31,15 @@ pub fn rules() -> HyperstructureRules {
 pub fn setup() -> (super::Deployment, ResourceKey, ResourceKey, ResourceKey) {
     setup_mode(false)
 }
+pub fn setup_with_threshold(points: u128) -> (super::Deployment, ResourceKey, ResourceKey, ResourceKey) {
+    setup_mode_with_threshold(false, points, None)
+}
 pub fn setup_mode(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, ResourceKey) {
+    setup_mode_with_threshold(blitz, 0, None)
+}
+fn setup_mode_with_threshold(
+    blitz: bool, points: u128, mode: Option<crate::settlement::SettlementMode>,
+) -> (super::Deployment, ResourceKey, ResourceKey, ResourceKey) {
     let mut ruleset = super::recorded::rules();
     ruleset.mode_rules = if blitz {
         super::recorded::BLITZ_RULES
@@ -51,10 +58,15 @@ pub fn setup_mode(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, 
         crate::rules::ENTRY_ENTITLEMENT
     };
     ruleset.victory_points_grant_config.hyp_points_per_second = 1000;
-    let (deployment, first, second) = setup_with_rules(ruleset);
-    start_cheat_caller_address(deployment.games, super::authority());
-    view(deployment).configure_hyperstructures(3, rules());
-    stop_cheat_caller_address(deployment.games);
+    let mut preset = super::resource_commands::fixture_preset(ruleset);
+    preset.economy.hyperstructures = rules();
+    preset.season_win_points = points;
+    if let Some(mode) = mode {
+        preset.settlement.mode = mode;
+        preset.settlement.spacing = 6;
+        preset.settlement.realms = super::settlement::grants();
+    }
+    let (deployment, first, second) = super::resource_commands::setup_with_preset(preset);
     start_cheat_caller_address(deployment.games, deployment.games);
     start_cheat_block_timestamp_global(30);
     let id = IStructureOperationsDispatcher { contract_address: deployment.games }
@@ -378,12 +390,20 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
 #[feature("safe_dispatcher")]
 fn hyperstructure_configuration_requires_authority_and_initialization_requires_owner() {
     let (deployment, hyper, from, _) = setup();
-    let safe = IHyperstructuresSafeDispatcher { contract_address: deployment.games };
-    assert!(safe.configure_hyperstructures(1, rules()).is_err());
+    let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
+    let mut preset = super::recorded::fixture_preset(super::recorded::rules());
+    preset.economy.hyperstructures = rules();
+    assert!(registry.register_preset(20000, preset).is_err());
     start_cheat_caller_address(deployment.games, super::authority());
-    assert!(safe.configure_hyperstructures(3, rules()).is_err());
-    assert!(safe.configure_hyperstructures(1, HyperstructureRules { resources: array![].span(), ..rules() }).is_err());
-    assert!(safe.configure_hyperstructures(1, rules()).is_ok());
+    assert!(registry.register_preset(10003, preset).is_err());
+    let invalid = crate::presets::PresetDefinition {
+        economy: crate::presets::EconomyPreset {
+            hyperstructures: HyperstructureRules { resources: array![].span(), ..rules() }, ..preset.economy,
+        },
+        ..preset,
+    };
+    assert!(registry.register_preset(20000, invalid).is_err());
+    assert!(registry.register_preset(20000, preset).is_ok());
     stop_cheat_caller_address(deployment.games);
     assert_terminal_rejection(deployment, Command::InitializeHyperstructure(from.entity_id), 40);
     owner(deployment, hyper, 987.try_into().unwrap());
@@ -404,23 +424,11 @@ fn construction_requirements_preserve_per_resource_seed_division_and_exclusive_m
     );
 }
 
-pub fn settlement(deployment: super::Deployment, mode: crate::settlement::SettlementMode, spacing: u32) {
-    let fields = snforge_std::fs::read_txt(@snforge_std::fs::FileTrait::new("tests/fixtures/settlement.txt"));
-    let mut fields = fields.span();
-    let grants: crate::settlement::RealmGrants = Serde::deserialize(ref fields).unwrap();
-    start_cheat_caller_address(deployment.games, super::authority());
-    crate::settlement::ISettlementConfigurationDispatcherTrait::configure_settlement(
-        crate::settlement::ISettlementConfigurationDispatcher { contract_address: deployment.games },
-        3,
-        crate::settlement::SettlementRules { registration_start: 10, registration_limit: 96, mode, spacing },
-        grants,
-    );
-    stop_cheat_caller_address(deployment.games);
-}
 #[test]
 fn blitz_duel_multiplier_and_owner_only_shares_match_entry_rules() {
-    let (deployment, hyper, from, _) = setup_mode(true);
-    settlement(deployment, crate::settlement::SettlementMode::Duel, 6);
+    let (deployment, hyper, from, _) = setup_mode_with_threshold(
+        true, 0, Some(crate::settlement::SettlementMode::Duel),
+    );
     complete(deployment, hyper, from);
     assert_eq!(view(deployment).hyperstructure_shares(hyper).multiplier, 2);
     let before = points(deployment, deployment.actor);
@@ -440,8 +448,9 @@ fn blitz_duel_multiplier_and_owner_only_shares_match_entry_rules() {
 }
 #[test]
 fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_rate() {
-    let (deployment, hyper, from, _) = setup_mode(true);
-    settlement(deployment, crate::settlement::SettlementMode::Single, 6);
+    let (deployment, hyper, from, _) = setup_mode_with_threshold(
+        true, 0, Some(crate::settlement::SettlementMode::Single),
+    );
     complete(deployment, hyper, from);
     assert_eq!(view(deployment).hyperstructure_shares(hyper).multiplier, 0);
     let coord = crate::geometry::checked_neighbor_at_distance(

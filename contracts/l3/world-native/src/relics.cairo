@@ -118,7 +118,6 @@ pub fn roll_chest(
 
 #[starknet::interface]
 pub trait IRelics<T> {
-    fn configure_relics(ref self: T, game_id: u32, rules: Span<RelicRule>, chests: Option<ChestRules>);
     fn chest_rules(self: @T, game_id: u32) -> Option<ChestRules>;
     fn chest_pity(self: @T, game_id: u32, player: ContractAddress, depth: u8) -> u16;
     fn chest_tokens(self: @T, game_id: u32, player: ContractAddress, epoch: u64) -> u16;

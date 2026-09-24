@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "2a6cb6fc1f6d602a69788c418c60a656ee0c7a5350685c48c4c52f2e9bde3e52",
+  "schemaIdentity": "82ac32d805cce9e68b64e8cc5d9cd79ab5c14d74778e99c77dae3c3b1d2c9084",
   "commandAbi": [
     {
       "type": "interface",
@@ -1727,6 +1727,10 @@
     },
     {
       "name": "GameRegistry",
+      "scope": "game"
+    },
+    {
+      "name": "GameOverrides",
       "scope": "game"
     },
     {

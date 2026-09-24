@@ -11,7 +11,7 @@ pub mod ProductionLogic {
     use crate::ownership::{Story, StoryEvent};
     #[cfg(test)]
     use crate::production::{ProductionBonus, ProductionRecipe};
-    use crate::production::{RecipeConfig, RecipeKey, RefillProduction};
+    use crate::production::{RecipeKey, RefillProduction};
     use crate::resources::ResourceKey;
 
     component!(path: crate::logic::mines::MineState, storage: mines, event: MineEvent);
@@ -53,16 +53,6 @@ pub mod ProductionLogic {
 
     #[abi(embed_v0)]
     impl MineRules of crate::mines::IMineRules<ContractState> {
-        fn configure_mines(
-            ref self: ContractState,
-            game_id: u32,
-            kinds: Span<crate::mines::MineKindEntry>,
-            surface: Span<crate::mines::MineWeight>,
-        ) {
-            crate::logic::release::assert_authority();
-            let _ = crate::logic::game::game(game_id);
-            self.mines.configure(game_id, kinds, surface);
-        }
         #[cfg(test)]
         fn mine_kind(self: @ContractState, key: crate::mines::MineKindKey) -> crate::mines::MineKindConfig {
             self.mines.kind(key)
@@ -113,11 +103,6 @@ pub mod ProductionLogic {
     }
     #[abi(embed_v0)]
     impl ProductionRules of crate::production::IProductionRules<ContractState> {
-        fn configure_production(ref self: ContractState, game_id: u32, recipes: Span<RecipeConfig>) {
-            crate::logic::release::assert_authority();
-            let _ = crate::logic::game::game(game_id);
-            self.production.configure(game_id, recipes);
-        }
         #[cfg(test)]
         fn production_recipe(self: @ContractState, key: RecipeKey) -> ProductionRecipe {
             self.production.recipe(key)

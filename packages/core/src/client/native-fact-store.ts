@@ -273,6 +273,10 @@ function compileDecoder(type: WireType, path: string): Decoder {
       return Object.freeze(value.map(item));
     };
   }
+  if ("option" in type) {
+    const item = compileDecoder(type.option as WireType, path);
+    return (value) => (value === null ? null : item(value));
+  }
   if ("enum" in type)
     return (value) => {
       if (typeof value !== "string" || !(type.enum as readonly string[]).includes(value))

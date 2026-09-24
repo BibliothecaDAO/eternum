@@ -13,14 +13,15 @@ pub fn blitz_roster(game_id: u32) -> Span<RosterPlayer> {
 #[starknet::component]
 pub mod RegistrarState {
     use starknet::storage::{
-        StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
     };
     use starknet::{get_caller_address, get_contract_address};
     use crate::events::RowSet;
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternal;
     use crate::presets::PresetDefinition;
-    use crate::registrar::{CreateGameParams, RosterPlayer, build_game, game_rules};
+    use crate::registrar::{CreateGameParams, RosterPlayer, build_game, game_overrides};
 
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
@@ -53,8 +54,8 @@ pub mod RegistrarState {
             }
             let commitment = crate::presets::commitment(definition);
             assert!(commitment != 0, "empty preset commitment");
+            crate::logic::preset_record::store(commitment, definition);
             self.data.registrar.presets.write(preset_id, commitment);
-            // Registration calldata retains the definition; launches supply its checked preimage.
             let values = array![commitment];
             self
                 .emit(
@@ -75,15 +76,22 @@ pub mod RegistrarState {
         fn blitz_roster(self: @ComponentState<TContractState>, game_id: u32) -> Span<RosterPlayer> {
             crate::logic::registrar::blitz_roster(game_id)
         }
-        fn create_game(
-            ref self: ComponentState<TContractState>, params: CreateGameParams, definition: PresetDefinition,
-        ) -> u32 {
+        fn create_game(ref self: ComponentState<TContractState>, params: CreateGameParams) -> u32 {
             get_dep_component!(@self, Life).assert_authority();
             let classes = get_dep_component!(@self, Life).current_classes();
-            crate::registrar::validate_params(params, definition.rules, definition.settlement);
+            let preset_commitment = self.data.registrar.presets.read(params.preset_id);
+            assert!(preset_commitment != 0, "preset is not registered");
+            let preset = self.data.presets.entry(preset_commitment);
+            let rules = crate::registrar::LaunchRules {
+                mode_rules: preset.rules.mode_rules.read(),
+                epoch_seconds: preset.rules.epoch_seconds.read(),
+                entry_rule: preset.rules.entry_rule.read(),
+                settlement_mode: preset.settlement_mode.read(),
+                spacing: preset.settlement_spacing.read(),
+            };
+            crate::registrar::validate_params(params, rules);
             let mut encoded = array![];
             params.serialize(ref encoded);
-            definition.serialize(ref encoded);
             let commitment = core::poseidon::poseidon_hash_span(encoded.span());
             let previous = self.data.registrar.launch_ids.read(params.name);
             if previous != 0 {
@@ -92,27 +100,16 @@ pub mod RegistrarState {
                 );
                 return previous;
             }
-            self.validate_preset(params.preset_id, crate::presets::commitment(definition));
             let game_id = self.data.registrar.next_game.read();
             assert!(game_id != 0 && game_id < 0xffffffff, "game identity space exhausted");
             let release_id = self.data.current_release.read();
             self.data.game_releases.write(game_id, release_id);
             self.register_roster(game_id, params.roster);
             let game = build_game(params, get_caller_address());
-            let rules = game_rules(game_id, params, definition.rules);
-            crate::logic::game::create(game_id, game, rules);
+            let overrides = game_overrides(game_id, params);
+            crate::logic::game::create(game_id, game, overrides);
             crate::logic::game::emit_release(game_id, release_id, self.data.registrar.presets.read(params.preset_id));
-            let settlement_rules = crate::settlement::SettlementRules {
-                registration_start: params.registration_start,
-                registration_limit: params.roster.len().try_into().unwrap(),
-                mode: if definition.rules.entry_rule == crate::rules::ENTRY_ROSTER {
-                    definition.settlement.mode
-                } else {
-                    crate::settlement::SettlementMode::Single
-                },
-                spacing: definition.settlement.spacing,
-            };
-            crate::logic::presets::initialize_game(classes, game_id, definition, settlement_rules);
+            crate::logic::presets::initialize_gameplay(classes, game_id, rules.mode_rules);
             self.data.registrar.launch_ids.write(params.name, game_id);
             self.data.registrar.launch_commitments.write(params.name, commitment);
             self.write_next_game(game_id + 1);
@@ -129,11 +126,6 @@ pub mod RegistrarState {
         fn initialize(ref self: ComponentState<TContractState>) {
             assert!(self.data.registrar.next_game.read() == 0, "registrar already initialized");
             self.write_next_game(1);
-        }
-        fn validate_preset(self: @ComponentState<TContractState>, preset_id: u32, definition_commitment: felt252) {
-            let commitment = self.data.registrar.presets.read(preset_id);
-            assert!(commitment != 0, "preset is not registered");
-            assert!(commitment == definition_commitment, "preset definition mismatch");
         }
         fn register_roster(ref self: ComponentState<TContractState>, game_id: u32, players: Span<RosterPlayer>) {
             if players.is_empty() {

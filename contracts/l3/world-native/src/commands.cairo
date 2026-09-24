@@ -1,7 +1,6 @@
 #[cfg(test)]
 use core::poseidon::poseidon_hash_span;
 use starknet::ContractAddress;
-use starknet::storage::StorageMapReadAccess;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct CreateExplorer {
@@ -96,7 +95,7 @@ pub fn load_context(game_id: u32, context: ActionContext) -> ExecutionContext {
         raw_root: context.raw_root,
         timestamp: context.timestamp,
         game: BoxTrait::new(crate::logic::game::game(game_id)),
-        rules: BoxTrait::new(crate::state::read().games.rules.read(game_id)),
+        rules: BoxTrait::new(crate::logic::game::rules(game_id)),
     }
 }
 

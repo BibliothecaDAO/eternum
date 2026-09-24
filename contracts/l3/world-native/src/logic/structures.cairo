@@ -254,38 +254,12 @@ pub mod StructuresLogic {
     }
     #[abi(embed_v0)]
     impl Camps of crate::camps::ICampRules<ContractState> {
-        fn configure_camps(ref self: ContractState, game_id: u32, resources: Span<crate::resources::ResourceAmount>) {
-            crate::logic::release::assert_authority();
-            let _ = crate::logic::game::game(game_id);
-            assert!(
-                self.data.structure_rules.camp_resource_count.read(game_id).is_none(),
-                "camp resources already configured",
-            );
-            for index in 0..resources.len() {
-                let resource = *resources.at(index);
-                let _ = crate::logic::resources::rule(game_id, resource.resource_type);
-                self.data.structure_rules.camp_grants.write((game_id, index), resource);
-            }
-            self.data.structure_rules.camp_resource_count.write(game_id, Some(resources.len()));
-            let mut values = array![];
-            resources.serialize(ref values);
-            self
-                .emit(
-                    RowSet {
-                        version: 1, model: 'CampResources', keys: array![game_id.into()].span(), values: values.span(),
-                    },
-                );
-        }
         fn camp_resources(self: @ContractState, game_id: u32) -> Span<crate::resources::ResourceAmount> {
-            let count = self
-                .data
-                .structure_rules
-                .camp_resource_count
-                .read(game_id)
-                .expect('camp resources not configured');
+            let preset = crate::logic::preset_record::for_game(game_id);
+            let count = preset.camp_resource_count.read();
             let mut resources = array![];
             for index in 0..count {
-                resources.append(self.data.structure_rules.camp_grants.read((game_id, index)));
+                resources.append(preset.camp_grants.read(index));
             }
             resources.span()
         }

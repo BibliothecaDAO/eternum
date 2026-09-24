@@ -1,18 +1,16 @@
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
-use crate::buildings::{
-    BuildingKey, BuildingRule, BuildingRuleConfig, ChangeBuilding, CreateBuilding, IBuildingRulesDispatcher,
-    IBuildingRulesDispatcherTrait, IBuildingRulesSafeDispatcher, IBuildingRulesSafeDispatcherTrait,
-};
+use crate::buildings::{BuildingKey, BuildingRule, BuildingRuleConfig, ChangeBuilding, CreateBuilding};
 use crate::commands::Command;
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
-use crate::production::{IProductionRulesDispatcher, IProductionRulesDispatcherTrait, ProductionRecipe, RecipeConfig};
+use crate::production::{ProductionRecipe, RecipeConfig};
+use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::{
     IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceAmount, ResourceKey, ResourceSlot,
 };
 use crate::structures::IStructureOperationsDispatcher;
 use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 use crate::troops::Coord;
-use crate::upgrades::{IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait, UpgradeLimits, UpgradeRecipe};
+use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
 use super::resource_commands::{
     assert_terminal_rejection, execute, execute_recorded_at, resource_facts, set_fixture, setup,
 };
@@ -43,9 +41,8 @@ pub fn rules() -> Span<BuildingRuleConfig> {
     }
     values.span()
 }
-fn building_world(board: Option<crate::buildings::BoardRules>) -> (super::Deployment, ResourceKey) {
-    let (deployment, home, _) = setup();
-    start_cheat_caller_address(deployment.games, super::authority());
+fn building_preset(board: Option<crate::buildings::BoardRules>) -> crate::presets::PresetDefinition {
+    let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
     let mut configured = array![];
     for rule in rules() {
         configured
@@ -68,15 +65,21 @@ fn building_world(board: Option<crate::buildings::BoardRules>) -> (super::Deploy
                 },
             );
     }
-    IBuildingRulesDispatcher { contract_address: deployment.games }.configure_buildings(3, configured.span(), board);
-    stop_cheat_caller_address(deployment.games);
-    start_cheat_caller_address(deployment.games, super::authority());
+    preset.structures.buildings = configured.span();
+    preset.structures.board = board;
     let recipe = UpgradeRecipe { costs: array![].span() };
-    IUpgradeRulesDispatcher { contract_address: deployment.games }
-        .configure_upgrades(3, UpgradeLimits { realm_max: 3, village_max: 2 }, array![recipe, recipe, recipe].span());
-    stop_cheat_caller_address(deployment.games);
+    preset.structures.upgrade_limits = UpgradeLimits { realm_max: 3, village_max: 2 };
+    preset.structures.upgrades = array![recipe, recipe, recipe].span();
+    preset
+}
+fn building_world_with_preset(preset: crate::presets::PresetDefinition) -> (super::Deployment, ResourceKey) {
+    let (deployment, home, _) = super::resource_commands::setup_with_preset(preset);
     (deployment, home)
 }
+fn building_world(board: Option<crate::buildings::BoardRules>) -> (super::Deployment, ResourceKey) {
+    building_world_with_preset(building_preset(board))
+}
+
 fn create(home: ResourceKey, category: u8) -> Command {
     Command::CreateBuilding(
         CreateBuilding { structure_id: home.entity_id, directions: array![0_u8].span(), category, use_simple: true },
@@ -152,22 +155,24 @@ fn delayed_building_actions_use_recorded_time_after_the_game_ends() {
 #[feature("safe_dispatcher")]
 fn building_configuration_is_authorized_complete_and_immutable() {
     let (deployment, _, _) = setup();
-    let dispatcher = IBuildingRulesSafeDispatcher { contract_address: deployment.games };
-    assert!(dispatcher.configure_buildings(3, rules(), None).is_err());
+    let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
+    let preset = building_preset(None);
+    assert!(registry.register_preset(20000, preset).is_err());
     start_cheat_caller_address(deployment.games, super::authority());
-    assert!(dispatcher.configure_buildings(3, rules().slice(0, 39), None).is_err());
-    assert!(dispatcher.configure_buildings(3, rules(), None).is_ok());
-    assert!(dispatcher.configure_buildings(3, rules(), None).is_err());
+    let incomplete = crate::presets::PresetDefinition {
+        structures: crate::presets::StructurePreset { buildings: rules().slice(0, 39), ..preset.structures }, ..preset,
+    };
+    assert!(registry.register_preset(20000, incomplete).is_err());
+    assert!(registry.register_preset(20000, preset).is_ok());
+    assert!(registry.register_preset(20000, preset).is_err());
     stop_cheat_caller_address(deployment.games);
 }
 
 #[test]
 fn storehouse_capacity_is_retained_while_paused_and_cannot_be_removed_while_needed() {
-    let (deployment, home) = building_world(None);
-    let game = IGameDispatcher { contract_address: deployment.games };
-    let mut rules = game.rules(3);
-    rules.capacity_config.storehouse_boost_capacity = 1;
-    set_fixture(deployment.games, selector!("games"), selector!("rules"), array![3].span(), rules);
+    let mut preset = building_preset(None);
+    preset.rules.capacity_config.storehouse_boost_capacity = 1;
+    let (deployment, home) = building_world_with_preset(preset);
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     set_fixture(
         deployment.games,
@@ -332,24 +337,26 @@ fn labor_buildings_cannot_be_destroyed_and_population_blocks_overbuilding() {
 
 #[test]
 fn a_labor_building_a_player_builds_costs_its_rule_population() {
-    let (deployment, home) = building_world(None);
-    // Labor costs 2 population in this game; its rules are immutable once created, so the fixture sets them directly.
-    let labor = crate::buildings::IBuildingRulesDispatcherTrait::building_rule(
-        IBuildingRulesDispatcher { contract_address: deployment.games },
-        crate::buildings::BuildingRuleKey { game_id: 3, category: 25 },
-    );
-    set_fixture(
-        deployment.games,
-        selector!("buildings"),
-        selector!("terms"),
-        array![3, 25].span(),
-        crate::buildings::BuildingTerms {
-            population_cost: 2,
-            capacity_grant: labor.capacity_grant,
-            simple_count: labor.simple_cost.len().try_into().unwrap(),
-            complex_count: labor.complex_cost.len().try_into().unwrap(),
-        },
-    );
+    let mut preset = building_preset(None);
+    let mut buildings = array![];
+    for configured in preset.structures.buildings {
+        buildings
+            .append(
+                BuildingRuleConfig {
+                    rule: BuildingRule {
+                        population_cost: if *configured.category == 25 {
+                            2
+                        } else {
+                            *configured.rule.population_cost
+                        },
+                        ..*configured.rule,
+                    },
+                    ..*configured,
+                },
+            );
+    }
+    preset.structures.buildings = buildings.span();
+    let (deployment, home) = building_world_with_preset(preset);
     let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
     let structure = structures.structure(home).unwrap();
     set_fixture(
@@ -377,7 +384,7 @@ fn board_neighbors_change_production_capacity_and_population_and_demolition_refu
         neighbors.append(NeighborBonus { building: 2, neighbor, production_bps: 0, capacity_bps: 1000, population: 0 });
     }
     neighbors.append(NeighborBonus { building: 1, neighbor: 0, production_bps: 0, capacity_bps: 0, population: 2 });
-    let (deployment, home) = building_world(
+    let mut preset = building_preset(
         Some(
             BoardRules {
                 demolition_refund_bps: 5000,
@@ -388,14 +395,24 @@ fn board_neighbors_change_production_capacity_and_population_and_demolition_refu
             },
         ),
     );
+    preset.rules.building_config.base_population = 6;
+    preset.rules.building_config.base_cost_percent_increase = 1500;
+    preset.rules.capacity_config.storehouse_boost_capacity = 10;
+    let mut resources = array![];
+    for rule in preset.resources.resources {
+        resources
+            .append(
+                if *rule.resource_type == 23 || *rule.resource_type == 26 || *rule.resource_type == 35 {
+                    crate::resources::ResourceRule { unit_weight: 0, realm_rate: 10, village_rate: 0, ..*rule }
+                } else {
+                    *rule
+                },
+            );
+    }
+    preset.resources.resources = resources.span();
+    let (deployment, home) = building_world_with_preset(preset);
     let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-    let game = IGameDispatcher { contract_address: deployment.games };
-    let mut rules = game.rules(3);
-    rules.building_config.base_population = 6;
-    rules.building_config.base_cost_percent_increase = 1500;
-    rules.capacity_config.storehouse_boost_capacity = 10;
-    set_fixture(deployment.games, selector!("games"), selector!("rules"), array![3].span(), rules);
     let mut realm = structures.structure(home).unwrap();
     realm.base.level = 1;
     set_fixture(
@@ -421,15 +438,6 @@ fn board_neighbors_change_production_capacity_and_population_and_demolition_refu
         array![3, home.entity_id.into()].span(),
         StructureBuildings { packed_counts_2: 0x10000000000000000, ..Default::default() },
     );
-    for resource in array![23_u8, 26, 35] {
-        set_fixture(
-            deployment.games,
-            selector!("resources"),
-            selector!("resource_rules"),
-            array![3, resource.into()].span(),
-            (0_u128, 10_u128),
-        );
-    }
     super::resource_commands::grant(deployment, home, 23, 10000);
     start_cheat_caller_address(deployment.games, deployment.games);
     resources
@@ -540,7 +548,7 @@ fn board_neighbors_change_production_capacity_and_population_and_demolition_refu
 fn barracks_lane_charges_each_essence_cost_and_changes_existing_barracks_to_the_bought_tier() {
     use crate::buildings::BoardRules;
     use crate::upgrades::{BuyRealmUpgrade, RealmUpgradeLane};
-    let (deployment, home) = building_world(
+    let mut preset = building_preset(
         Some(
             BoardRules {
                 demolition_refund_bps: 5000,
@@ -551,12 +559,10 @@ fn barracks_lane_charges_each_essence_cost_and_changes_existing_barracks_to_the_
             },
         ),
     );
+    preset.rules.command_mask = 0xffffffffffffffffffffffffffffffff;
+    let (deployment, home) = building_world_with_preset(preset);
     let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-    let games = IGameDispatcher { contract_address: deployment.games };
-    let mut rules = games.rules(3);
-    rules.command_mask = 0xffffffffffffffffffffffffffffffff;
-    set_fixture(deployment.games, selector!("games"), selector!("rules"), array![3].span(), rules);
     super::resource_commands::grant(deployment, home, 23, 100);
     super::resource_commands::grant(deployment, home, 38, 79);
     assert!(execute(deployment, create(home, 28), 40));
@@ -587,7 +593,7 @@ fn barracks_lane_charges_each_essence_cost_and_changes_existing_barracks_to_the_
 #[test]
 fn unlimited_training_consumes_its_simple_recipe_and_waits_for_farm_wheat_without_refills() {
     use crate::buildings::BoardRules;
-    let (deployment, home) = building_world(
+    let mut preset = building_preset(
         Some(
             BoardRules {
                 demolition_refund_bps: 5000,
@@ -612,9 +618,8 @@ fn unlimited_training_consumes_its_simple_recipe_and_waits_for_farm_wheat_withou
                 },
             );
     }
-    start_cheat_caller_address(deployment.games, super::authority());
-    IProductionRulesDispatcher { contract_address: deployment.games }.configure_production(3, recipes.span());
-    stop_cheat_caller_address(deployment.games);
+    preset.resources.production = recipes.span();
+    let (deployment, home) = building_world_with_preset(preset);
     super::resource_commands::grant(deployment, home, 23, 1000);
     super::resource_commands::grant(deployment, home, 35, 4);
     assert!(execute(deployment, create(home, 28), 40));

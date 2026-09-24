@@ -1,15 +1,16 @@
-use starknet::storage::StorageMapReadAccess;
+use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use crate::village::*;
 
 pub fn rules(game_id: u32) -> VillageRules {
-    let troop_delay_ticks = crate::state::read().village.village_delay.read(game_id).expect('missing village rules');
+    let preset = crate::logic::preset_record::for_game(game_id);
+    let troop_delay_ticks = preset.village_delay.read();
     let mut resources = array![];
-    for index in 0..crate::state::read().village.village_grant_count.read(game_id) {
-        resources.append(crate::state::read().village.village_grants.read((game_id, index)));
+    for index in 0..preset.village_grant_count.read() {
+        resources.append(preset.village_grants.read(index));
     }
     let mut resource_pool = array![];
     for index in 0..22_u8 {
-        resource_pool.append(crate::state::read().village.village_pool.read((game_id, index)));
+        resource_pool.append(preset.village_pool.read(index));
     }
     VillageRules { troop_delay_ticks, resources: resources.span(), resource_pool: resource_pool.span() }
 }
@@ -33,41 +34,6 @@ pub mod VillageState {
     }
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
-        fn configure(ref self: ComponentState<TContractState>, game_id: u32, rules: VillageRules) {
-            assert!(self.data.village.village_delay.read(game_id).is_none(), "immutable village rules");
-            assert!(rules.resource_pool.len() == 22, "incomplete village resource pool");
-            let mut total = 0_u128;
-            let mut seen = 0_u32;
-            for index in 0..22_u8 {
-                let choice = *rules.resource_pool.at(index.into());
-                assert!(
-                    choice.weight > 0 && choice.resource_type > 0 && choice.resource_type <= 22,
-                    "invalid village resource outcome",
-                );
-                let mut bit = 1_u32;
-                for _ in 0..choice.resource_type {
-                    bit *= 2;
-                }
-                assert!((seen & bit) == 0, "duplicate village resource outcome");
-                seen = seen | bit;
-                total += choice.weight;
-                self.data.village.village_pool.write((game_id, index), choice);
-            }
-            assert!(total > 0, "empty village resource pool");
-            self.data.village.village_delay.write(game_id, Some(rules.troop_delay_ticks));
-            self.data.village.village_grant_count.write(game_id, rules.resources.len());
-            for index in 0..rules.resources.len() {
-                self.data.village.village_grants.write((game_id, index), *rules.resources.at(index));
-            }
-            let mut values = array![];
-            rules.serialize(ref values);
-            self
-                .emit(
-                    RowSet {
-                        version: 1, model: 'VillageRules', keys: array![game_id.into()].span(), values: values.span(),
-                    },
-                );
-        }
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> VillageRules {
             crate::logic::village::rules(game_id)
         }

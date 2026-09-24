@@ -25,7 +25,6 @@ pub struct Withdraw {
 }
 #[starknet::interface]
 pub trait IBridge<T> {
-    fn configure_deposits(ref self: T, game_id: u32, rules: DepositRules);
     fn deposit_rules(self: @T, game_id: u32) -> DepositRules;
     fn deposit_resource(
         ref self: T,

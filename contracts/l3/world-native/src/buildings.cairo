@@ -163,7 +163,6 @@ pub struct BuildingEffect {
 
 #[starknet::interface]
 pub trait IBuildingRules<T> {
-    fn configure_buildings(ref self: T, game_id: u32, rules: Span<BuildingRuleConfig>, board: Option<BoardRules>);
     #[cfg(test)]
     fn building_rule(self: @T, key: BuildingRuleKey) -> BuildingRule;
 }

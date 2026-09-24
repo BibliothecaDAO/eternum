@@ -119,7 +119,9 @@ fn only_deployment_authority_can_append_canonical_traits() {
 #[test]
 #[feature("safe_dispatcher")]
 fn forged_season_commands_cannot_allocate_or_place_realms() {
-    let deployment = super::setup(true);
+    // Authorization belongs to the production Games surface, not the library-call fixture host.
+    let deployment = super::setup_with_host(true, "StructuresLogic", "TroopsLogic", "Games");
+    let before = super::recorded::gameplay_snapshot(deployment.games);
     let season = crate::realms::ISeasonRealmsSafeDispatcher { contract_address: deployment.games };
     snforge_std::start_cheat_caller_address(deployment.games, deployment.actor);
     assert!(
@@ -128,7 +130,7 @@ fn forged_season_commands_cannot_allocate_or_place_realms() {
             1,
             deployment.actor,
             crate::realms::SettleSeason { name: 'forged', selected_realm: Option::None },
-            crate::commands::action_context(super::context(deployment.games, 3)),
+            crate::commands::action_context(super::context(deployment.games, 1)),
             crate::tests::story_cursor(),
         )
             .is_err(),
@@ -147,4 +149,5 @@ fn forged_season_commands_cannot_allocate_or_place_realms() {
         )
             .is_err(),
     );
+    assert_eq!(super::recorded::gameplay_snapshot(deployment.games), before);
 }

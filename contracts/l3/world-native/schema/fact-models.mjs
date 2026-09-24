@@ -6,6 +6,38 @@ export const executionRecordedVersion = 2;
 export const factWireTypes = [
   {
     type: "struct",
+    name: "world_native::settlement::SettlementRules",
+    members: [
+      {
+        name: "registration_start",
+        type: "core::integer::u32",
+      },
+      {
+        name: "registration_limit",
+        type: "core::integer::u16",
+      },
+      {
+        name: "mode",
+        type: "world_native::settlement::SettlementMode",
+      },
+      {
+        name: "spacing",
+        type: "core::integer::u32",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::game::GameOverrides",
+    members: [
+      { name: "registration_start", type: "core::integer::u32" },
+      { name: "biome_climate", type: "world_native::rules::BiomeClimateConfig" },
+      { name: "map", type: "core::option::Option::<world_native::rules::MapConfig>" },
+      { name: "map_center_offset", type: "core::integer::u32" },
+    ],
+  },
+  {
+    type: "struct",
     name: "world_native::faith::WonderFaith",
     members: [
       { name: "last_recorded_owner", type: "core::starknet::contract_address::ContractAddress" },
@@ -1023,6 +1055,7 @@ export function defineFactModels({ struct, model: declare }) {
       ],
     ),
     model("GameRegistry", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("game::GameRegistry")),
+    model("GameOverrides", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("game::GameOverrides")),
     model("SliceRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("rules::SliceRules")),
     model(
       "EntitySequence",
@@ -1311,6 +1344,7 @@ export const syncScopes = {
       "DepthRules",
       "GameRegistry",
       "GameRelease",
+      "GameOverrides",
       "SliceRules",
       "EntitySequence",
       "PointsTotal",

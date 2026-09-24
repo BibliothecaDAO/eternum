@@ -2,6 +2,7 @@ use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 use crate::geometry::{neighbor, spire_neighbor, tile_key};
 use crate::map::IMapLogicDispatcher;
+use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::spires::{
     ISpiresDispatcher, ISpiresDispatcherTrait, ISpiresSafeDispatcher, ISpiresSafeDispatcherTrait, SpireLayout, location,
 };
@@ -27,9 +28,15 @@ fn center(d: Deployment, game_id: u32) -> Coord {
     let rules = IGameDispatcher { contract_address: d.games }.rules(game_id);
     Coord { alt: false, x: 2147483646 - rules.map_center_offset, y: 2147483646 - rules.map_center_offset }
 }
-fn initialize(d: Deployment, game_id: u32, config: SpireLayout) {
+fn seed_layout(d: Deployment, game_id: u32, config: SpireLayout) {
+    let games = IGameDispatcher { contract_address: d.games };
+    let mut preset = super::recorded::fixture_preset(games.rules(game_id));
+    preset.settlement.spires = Some(config);
+    super::recorded::seed_game_with_preset(d.games, game_id, games.game(game_id), preset);
+}
+fn initialize(d: Deployment, game_id: u32) {
     start_cheat_caller_address(d.games, authority());
-    spires(d).initialize_spires(game_id, config);
+    spires(d).initialize_spires(game_id);
     stop_cheat_caller_address(d.games);
 }
 
@@ -60,9 +67,11 @@ fn production_initialization_places_the_same_spire_identity_on_both_layers_witho
     super::recorded::seed_game(
         d.games, 3, crate::game::GameRegistry { dev_mode_on: false, ..games.game(1) }, games.rules(1),
     );
-    initialize(d, 3, layout(7));
+    seed_layout(d, 3, layout(7));
+    let first_layout = spires(d).spire_layout(1);
+    initialize(d, 3);
     assert_eq!(spires(d).spire_layout(3), Some(layout(7)));
-    assert!(spires(d).spire_layout(1).is_none());
+    assert_eq!(spires(d).spire_layout(1), first_layout);
     for index in 0_u32..7 {
         let coord = location(center(d, 3), layout(7), index);
         for alt in array![false, true] {
@@ -91,17 +100,25 @@ fn production_initialization_places_the_same_spire_identity_on_both_layers_witho
 #[feature("safe_dispatcher")]
 fn initialization_rejects_invalid_layouts_foreign_callers_blitz_and_repeats() {
     let d = deployment();
+    seed_layout(d, 1, layout(1));
     let safe = ISpiresSafeDispatcher { contract_address: d.games };
-    assert!(safe.initialize_spires(1, layout(1)).is_err());
+    assert!(safe.initialize_spires(1).is_err());
     start_cheat_caller_address(d.games, authority());
-    assert!(safe.initialize_spires(999, layout(1)).is_err());
+    assert!(safe.initialize_spires(999).is_err());
     for invalid in array![
         layout(0), layout(20), SpireLayout { base_distance: 0, ..layout(7) },
         SpireLayout { layer_distance: 0, ..layout(7) }, SpireLayout { base_distance: 1, ..layout(7) },
         SpireLayout { max_layer: 1, ..layout(7) },
     ] {
-        assert!(safe.initialize_spires(1, invalid).is_err());
-        assert!(spires(d).spire_layout(1).is_none());
+        let games = IGameDispatcher { contract_address: d.games };
+        let mut preset = super::recorded::fixture_preset(games.rules(1));
+        preset.settlement.spires = Some(invalid);
+        assert!(
+            crate::registrar::IRegistrarSafeDispatcher { contract_address: d.games }
+                .register_preset(20000, preset)
+                .is_err(),
+        );
+        assert_eq!(spires(d).spire_layout(1), Some(layout(1)));
         assert!(map(d).tile(tile_key(1, center(d, 1))).is_none());
     }
     let games = IGameDispatcher { contract_address: d.games };
@@ -116,20 +133,22 @@ fn initialization_rejects_invalid_layouts_foreign_callers_blitz_and_repeats() {
             ..games.rules(1),
         },
     );
-    assert!(safe.initialize_spires(3, layout(1)).is_err());
-    safe.initialize_spires(1, layout(1)).unwrap();
-    assert!(safe.initialize_spires(1, layout(7)).is_err());
+    start_cheat_caller_address(d.games, authority());
+    assert!(safe.initialize_spires(3).is_err());
+    safe.initialize_spires(1).unwrap();
+    assert!(safe.initialize_spires(1).is_err());
     assert_eq!(spires(d).spire_layout(1), Some(layout(1)));
 }
 
 #[test]
 fn center_only_layout_needs_no_lattice_spacing_and_preserves_revealed_access() {
     let d = deployment();
+    seed_layout(d, 1, SpireLayout { count: 1, base_distance: 0, layer_distance: 0, max_layer: 0 });
     let coord = center(d, 1);
     let access = tile_key(1, spire_neighbor(Coord { alt: true, ..coord }, 0));
     start_cheat_caller_address(d.games, d.games);
     map(d).reveal(access, 17);
-    initialize(d, 1, SpireLayout { count: 1, base_distance: 0, layer_distance: 0, max_layer: 0 });
+    initialize(d, 1);
     assert_eq!(map(d).tile(access).unwrap().data / 0x20000000000 % 256, 17);
     assert!(map(d).tile(tile_key(1, neighbor(Coord { alt: true, ..coord }, 0))).is_none());
 }
@@ -138,13 +157,14 @@ fn center_only_layout_needs_no_lattice_spacing_and_preserves_revealed_access() {
 #[feature("safe_dispatcher")]
 fn an_occupied_alternate_center_rejects_before_revealing_the_surface() {
     let d = deployment();
+    seed_layout(d, 1, layout(1));
     let coord = center(d, 1);
     start_cheat_caller_address(d.games, d.games);
     map(d).occupy(tile_key(1, Coord { alt: true, ..coord }), 99, 15, false);
     start_cheat_caller_address(d.games, authority());
-    assert!(ISpiresSafeDispatcher { contract_address: d.games }.initialize_spires(1, layout(1)).is_err());
+    assert!(ISpiresSafeDispatcher { contract_address: d.games }.initialize_spires(1).is_err());
     assert!(map(d).tile(tile_key(1, coord)).is_none());
-    assert!(spires(d).spire_layout(1).is_none());
+    assert_eq!(spires(d).spire_layout(1), Some(layout(1)));
     let occupied = map(d).tile(tile_key(1, Coord { alt: true, ..coord })).unwrap();
     assert_eq!((occupied.data / 512) % 0x100000000, 99);
 }

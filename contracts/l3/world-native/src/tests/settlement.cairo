@@ -1,14 +1,15 @@
 use snforge_std::fs::{FileTrait, read_txt};
-use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::start_cheat_caller_address;
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 use crate::map::IMapLogicDispatcher;
 use crate::realms::{ISeasonPlacementDispatcher, ISeasonPlacementDispatcherTrait, ISeasonPlacementSafeDispatcher};
+use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::settlement::{
-    IBlitzReservationsSafeDispatcher, IBlitzReservationsSafeDispatcherTrait, ISettlementConfigurationDispatcher,
-    ISettlementConfigurationDispatcherTrait, ISettlementConfigurationSafeDispatcher,
-    ISettlementConfigurationSafeDispatcherTrait, ISettlementEntrySafeDispatcherTrait, ISettlementPoolDispatcher,
-    ISettlementPoolDispatcherTrait, ISettlementPoolSafeDispatcher, ISettlementViewsDispatcher,
-    ISettlementViewsDispatcherTrait, SettlementMode, SettlementRules,
+    IBlitzReservationsSafeDispatcher, IBlitzReservationsSafeDispatcherTrait, ISettlementEntrySafeDispatcherTrait,
+    ISettlementPoolDispatcher, ISettlementPoolDispatcherTrait, ISettlementPoolSafeDispatcher,
+    ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, ISettlementViewsSafeDispatcherTrait, SettlementMode,
+    SettlementRules,
 };
 use crate::tests::StoryResultTestTrait;
 use crate::tests::state::MapObservationTrait;
@@ -26,38 +27,63 @@ fn rules() -> SettlementRules {
     SettlementRules { registration_start: 10, registration_limit: 96, mode: SettlementMode::Single, spacing: 6 }
 }
 
-fn configure(deployment: Deployment, game_id: u32, rules: SettlementRules) {
-    start_cheat_caller_address(deployment.games, authority());
-    ISettlementConfigurationDispatcher { contract_address: deployment.games }
-        .configure_settlement(game_id, rules, grants());
-    stop_cheat_caller_address(deployment.games);
+fn seed_settlement(deployment: Deployment, game_id: u32, rules: SettlementRules) {
+    let games = IGameDispatcher { contract_address: deployment.games };
+    let mut preset = recorded::fixture_preset(games.rules(game_id));
+    if rules.mode != SettlementMode::Single {
+        preset.rules.entry_rule = crate::rules::ENTRY_ROSTER;
+    }
+    preset.settlement.mode = rules.mode;
+    preset.settlement.spacing = rules.spacing;
+    preset.settlement.realms = grants();
+    recorded::seed_game_with_preset(deployment.games, game_id, games.game(game_id), preset);
+    snforge_std::interact_with_state(
+        deployment.games,
+        || {
+            let state = crate::state::write();
+            let previous = state.games.overrides.read(game_id);
+            state
+                .games
+                .overrides
+                .write(
+                    game_id, crate::game::GameOverrides { registration_start: rules.registration_start, ..previous },
+                );
+            state.registrar.roster_sizes.write(game_id, rules.registration_limit.into());
+        },
+    );
 }
 
 #[test]
 #[feature("safe_dispatcher")]
 fn settlement_configuration_is_immutable_and_game_scoped() {
     let deployment = setup(true);
-    let safe = ISettlementConfigurationSafeDispatcher { contract_address: deployment.games };
+    let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
+    let preset = recorded::fixture_preset(recorded::rules());
     start_cheat_caller_address(deployment.games, deployment.actor);
-    assert!(safe.configure_settlement(1, rules(), grants()).is_err());
-    configure(deployment, 1, rules());
-    configure(deployment, 2, SettlementRules { mode: SettlementMode::Triple, ..rules() });
+    assert!(registry.register_preset(20000, preset).is_err());
+    seed_settlement(deployment, 1, rules());
+    seed_settlement(deployment, 2, SettlementRules { mode: SettlementMode::Triple, ..rules() });
     let views = ISettlementViewsDispatcher { contract_address: deployment.games };
     assert!(views.settlement_rules(1).mode == SettlementMode::Single);
     assert_eq!(views.realm_grants(1), grants());
     assert_eq!(views.realm_grants(2), grants());
     assert!(views.settlement_rules(2).mode == SettlementMode::Triple);
     start_cheat_caller_address(deployment.games, authority());
-    assert!(safe.configure_settlement(1, SettlementRules { registration_limit: 2, ..rules() }, grants()).is_err());
-    assert!(safe.configure_settlement(3, rules(), grants()).is_err());
+    let game = IGameDispatcher { contract_address: deployment.games }.game(1);
+    assert!(registry.register_preset(game.preset_id, preset).is_err());
+    assert!(
+        crate::settlement::ISettlementViewsSafeDispatcher { contract_address: deployment.games }
+            .settlement_rules(999)
+            .is_err(),
+    );
 }
 
 #[test]
 #[feature("safe_dispatcher")]
 fn settlement_pool_claims_are_distinct_and_game_scoped() {
     let deployment = setup(true);
-    configure(deployment, 1, rules());
-    configure(deployment, 2, rules());
+    seed_settlement(deployment, 1, rules());
+    seed_settlement(deployment, 2, rules());
     let map = deployment.games;
     let _ = ISeasonPlacementSafeDispatcher { contract_address: map };
     start_cheat_caller_address(map, deployment.actor);
@@ -134,7 +160,7 @@ fn reservation_initialization_is_idempotent_and_game_scoped() {
     game_rules.entry_rule = crate::rules::ENTRY_ROSTER;
     start_cheat_caller_address(deployment.games, authority());
     super::recorded::seed_game(deployment.games, 3, games.game(1), game_rules);
-    configure(deployment, 3, SettlementRules { mode: SettlementMode::Triple, registration_limit: 2, ..rules() });
+    seed_settlement(deployment, 3, SettlementRules { mode: SettlementMode::Triple, registration_limit: 2, ..rules() });
     let map = deployment.games;
     let safe = IBlitzReservationsSafeDispatcher { contract_address: map };
     start_cheat_caller_address(map, deployment.actor);
@@ -158,12 +184,16 @@ fn reservation_initialization_is_idempotent_and_game_scoped() {
 #[feature("safe_dispatcher")]
 fn starting_troop_table_must_be_complete_before_configuration_commits() {
     let deployment = setup(true);
-    let safe = ISettlementConfigurationSafeDispatcher { contract_address: deployment.games };
+    let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
+    let mut preset = recorded::fixture_preset(recorded::rules());
     let mut incomplete = grants();
     incomplete.starting_troops = incomplete.starting_troops.slice(0, 16);
     start_cheat_caller_address(deployment.games, authority());
-    assert!(safe.configure_settlement(1, rules(), incomplete).is_err());
-    safe.configure_settlement(1, rules(), grants()).unwrap();
+    preset.settlement.realms = incomplete;
+    assert!(registry.register_preset(20000, preset).is_err());
+    preset.settlement.realms = grants();
+    registry.register_preset(20000, preset).unwrap();
+    seed_settlement(deployment, 1, rules());
     let views = ISettlementViewsDispatcher { contract_address: deployment.games };
     assert_eq!(views.realm_grants(1), grants());
 }
@@ -172,19 +202,24 @@ fn starting_troop_table_must_be_complete_before_configuration_commits() {
 #[feature("safe_dispatcher")]
 fn realm_resource_table_rejects_invalid_ids_and_packing_overflow() {
     let deployment = setup(true);
-    let safe = ISettlementConfigurationSafeDispatcher { contract_address: deployment.games };
+    let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
+    let mut preset = recorded::fixture_preset(recorded::rules());
     start_cheat_caller_address(deployment.games, authority());
     for resource in array![0_u8, 59, 255].span() {
         let invalid = crate::settlement::RealmGrants { realm_resources: array![*resource].span(), ..grants() };
-        assert!(safe.configure_settlement(1, rules(), invalid).is_err());
+        preset.settlement.realms = invalid;
+        assert!(registry.register_preset(20000, preset).is_err());
     }
     let mut too_many = array![];
     for _ in 0_u32..17 {
         too_many.append(3_u8);
     }
     let invalid = crate::settlement::RealmGrants { realm_resources: too_many.span(), ..grants() };
-    assert!(safe.configure_settlement(1, rules(), invalid).is_err());
-    safe.configure_settlement(1, rules(), grants()).unwrap();
+    preset.settlement.realms = invalid;
+    assert!(registry.register_preset(20000, preset).is_err());
+    preset.settlement.realms = grants();
+    registry.register_preset(20000, preset).unwrap();
+    seed_settlement(deployment, 1, rules());
     let views = ISettlementViewsDispatcher { contract_address: deployment.games };
     assert_eq!(views.realm_grants(1), grants());
 }
@@ -194,7 +229,7 @@ fn realm_resource_table_rejects_invalid_ids_and_packing_overflow() {
 fn entry_entitlements_require_operator_and_compare_every_registration_field() {
     let deployment = setup(true);
     let operator = 0x444.try_into().unwrap();
-    configure(deployment, 1, rules());
+    seed_settlement(deployment, 1, rules());
     super::entry::set_operator(deployment, operator);
     let entry = crate::settlement::EntryEntitlement {
         realm_id: 1, metadata_1: 2, metadata_2: 3, metadata_3: 4, pass_kind: 0,
@@ -230,8 +265,8 @@ fn village_placement_shares_reservations_with_fixed_blitz_and_eternum_entries() 
             ..recorded::rules(),
         },
     );
-    configure(deployment, 1, SettlementRules { registration_limit: 2, ..rules() });
-    configure(deployment, 3, SettlementRules { mode: SettlementMode::Triple, registration_limit: 2, ..rules() });
+    seed_settlement(deployment, 1, SettlementRules { registration_limit: 2, ..rules() });
+    seed_settlement(deployment, 3, SettlementRules { mode: SettlementMode::Triple, registration_limit: 2, ..rules() });
     let map = deployment.games;
     let pool = ISettlementPoolDispatcher { contract_address: map };
     let _ = ISettlementPoolSafeDispatcher { contract_address: map };
@@ -359,7 +394,7 @@ fn a_missing_ledger_operator_never_bypasses_eternum_entitlements() {
     super::recorded::seed_game(
         d.games, 3, crate::game::GameRegistry { dev_mode_on: false, ..games.game(1) }, game_rules,
     );
-    configure(d, 3, rules());
+    seed_settlement(d, 3, rules());
     start_cheat_caller_address(d.games, d.games);
     crate::realms::ISeasonRealmsDispatcherTrait::settle_season(
         crate::realms::ISeasonRealmsDispatcher { contract_address: d.games },

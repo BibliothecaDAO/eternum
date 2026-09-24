@@ -1,5 +1,4 @@
 use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
-use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::commands::Command;
 use crate::discovery::{Discovery, ethereal, surface};
 use crate::map::IMapLogicDispatcher;
@@ -7,7 +6,7 @@ use crate::ownership::TransferOwnership;
 use crate::resources::{ResourceAmount, ResourceKey};
 use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
 use crate::tests::state::{MapObservationTrait, StructureObservationTrait};
-use crate::upgrades::{IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait, UpgradeLimits, UpgradeRecipe};
+use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
 use super::recorded_receipts::RecordedReceiptsTrait;
 use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture, setup, setup_with_rules};
 
@@ -24,21 +23,16 @@ fn save(d: super::Deployment, key: ResourceKey, row: StructureRecord) {
         row,
     );
 }
-fn upgrade_rules(d: super::Deployment) {
-    start_cheat_caller_address(d.games, super::authority());
-    IUpgradeRulesDispatcher { contract_address: d.games }
-        .configure_upgrades(
-            3,
-            UpgradeLimits { realm_max: 1, village_max: 1 },
-            array![UpgradeRecipe { costs: array![ResourceAmount { resource_type: 23, amount: 17 }].span() }].span(),
-        );
-    stop_cheat_caller_address(d.games);
-}
 
 #[test]
 fn level_up_rejects_unowned_missing_wrong_category_unfunded_and_maximum_structures() {
-    let (d, home, _) = setup();
-    upgrade_rules(d);
+    let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
+    preset.structures.upgrade_limits = UpgradeLimits { realm_max: 1, village_max: 1 };
+    preset
+        .structures
+        .upgrades = array![UpgradeRecipe { costs: array![ResourceAmount { resource_type: 23, amount: 17 }].span() }]
+        .span();
+    let (d, home, _) = super::resource_commands::setup_with_preset(preset);
     let original = record(d, home);
     assert_terminal_rejection(d, Command::LevelUp(999), 80);
     assert_terminal_rejection(d, Command::LevelUp(home.entity_id), 80);

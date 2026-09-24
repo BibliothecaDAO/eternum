@@ -84,7 +84,6 @@ pub fn bonus_output(bonus: ProductionBonus, resource_type: u8, amount: u128, tic
 
 #[starknet::interface]
 pub trait IProductionRules<T> {
-    fn configure_production(ref self: T, game_id: u32, recipes: Span<RecipeConfig>);
     #[cfg(test)]
     fn production_recipe(self: @T, key: RecipeKey) -> ProductionRecipe;
     #[cfg(test)]

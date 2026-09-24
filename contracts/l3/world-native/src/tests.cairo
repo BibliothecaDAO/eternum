@@ -49,6 +49,7 @@ use starknet::{ClassHash, ContractAddress};
 use crate::commands::{
     Command, CreateExplorer, ExecutionContext, ICreateExplorerSafeDispatcher, ICreateExplorerSafeDispatcherTrait,
 };
+use crate::game::IGameDispatcherTrait;
 use crate::games::{
     IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait, IGamesAuthenticationSafeDispatcher,
     IGamesAuthenticationSafeDispatcherTrait,
@@ -186,7 +187,7 @@ fn context(games: ContractAddress, game_id: u32) -> ExecutionContext {
                 raw_root: 987654321,
                 timestamp: 100,
                 game: BoxTrait::new(state.games.games.read(game_id)),
-                rules: BoxTrait::new(state.games.rules.read(game_id)),
+                rules: BoxTrait::new(crate::logic::game::rules(game_id)),
             }
         },
     )
@@ -553,20 +554,32 @@ fn upgrade_rules_are_immutable_complete_and_game_scoped() {
         UpgradeRecipe { costs: array![crate::resources::ResourceAmount { resource_type: 23, amount: 17 }].span() },
     ]
         .span();
-    assert!(safe.upgrade_limits(1).is_err());
-    assert!(safe.configure_upgrades(1, limits, recipes).is_err());
+    let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: settlement };
+    let mut preset = recorded::fixture_preset(recorded::rules());
+    preset.structures.upgrade_limits = limits;
+    preset.structures.upgrades = recipes;
+    start_cheat_caller_address(settlement, deployment.actor);
+    assert!(crate::registrar::IRegistrarSafeDispatcherTrait::register_preset(registrar, 20000, preset).is_err());
     start_cheat_caller_address(settlement, authority());
-    assert!(safe.configure_upgrades(1, limits, array![].span()).is_err());
-    assert!(safe.upgrade_limits(1).is_err());
-    rules.configure_upgrades(1, limits, recipes);
+    let mut invalid = preset;
+    invalid.structures.upgrades = array![].span();
+    assert!(crate::registrar::IRegistrarSafeDispatcherTrait::register_preset(registrar, 20000, invalid).is_err());
+    let games = crate::game::IGameDispatcher { contract_address: settlement };
+    recorded::seed_game_with_preset(settlement, 1, games.game(1), preset);
     assert_eq!(rules.upgrade_limits(1), limits);
     assert_eq!(rules.upgrade_recipe(1, 1), *recipes.at(0));
-    assert!(safe.configure_upgrades(1, limits, recipes).is_err());
-    assert!(safe.upgrade_limits(2).is_err());
+    start_cheat_caller_address(settlement, authority());
+    assert!(
+        crate::registrar::IRegistrarSafeDispatcherTrait::register_preset(registrar, games.game(1).preset_id, preset)
+            .is_err(),
+    );
     assert!(safe.upgrade_recipe(1, 2).is_err());
-    rules.configure_upgrades(2, UpgradeLimits { realm_max: 0, village_max: 0 }, array![].span());
+    preset.structures.upgrade_limits = UpgradeLimits { realm_max: 0, village_max: 0 };
+    preset.structures.upgrades = array![].span();
+    recorded::seed_game_with_preset(settlement, 2, games.game(2), preset);
     assert_eq!(rules.upgrade_limits(1), limits);
     assert_eq!(rules.upgrade_limits(2).realm_max, 0);
+    assert!(safe.upgrade_limits(999).is_err());
 }
 
 

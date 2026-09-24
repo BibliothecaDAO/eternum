@@ -331,6 +331,11 @@ function factType(type) {
     const item = factType(span[1]);
     return { ts: `readonly (${item.ts})[]`, wire: [item.wire] };
   }
+  const option = /^core::option::Option::<(.+)>$/.exec(type);
+  if (option) {
+    const item = factType(option[1]);
+    return { ts: `(${item.ts}) | null`, wire: { option: item.wire } };
+  }
   const definition = types.get(type);
   if (definition?.type === "enum" && definition.variants.every((variant) => variant.type === "()")) {
     const variants = definition.variants.map((variant) => variant.name);

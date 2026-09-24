@@ -8,5 +8,5 @@ pub fn depth_rules_at(game_id: u32, coord: Coord) -> DepthRules {
 }
 
 pub fn depth_rules(game_id: u32, depth: u8) -> DepthRules {
-    crate::state::read().depths.depth_rules.read((game_id, depth)).expect('missing depth rules')
+    crate::logic::preset_record::for_game(game_id).depth_rules.read(depth).expect('missing depth rules')
 }

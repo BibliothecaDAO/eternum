@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod SettlementLogic {
     use core::num::traits::Zero;
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_caller_address};
     use crate::commands::ExecutionContext as DomainContext;
     use crate::logic::entry::EntryAdministration;
@@ -13,15 +13,16 @@ pub mod SettlementLogic {
     use crate::realms::{ISeasonPlacementDispatcherTrait, ISeasonPlacementLibraryDispatcher};
     use crate::settlement::{
         EntryKey, ISettlementCreationDispatcherTrait, ISettlementCreationLibraryDispatcher,
-        ISettlementPoolDispatcherTrait, ISettlementPoolLibraryDispatcher, RealmCreation, RealmGrants,
-        SettlementCreation, SettlementRules, VillageCreation,
+        ISettlementPoolDispatcherTrait, ISettlementPoolLibraryDispatcher, RealmCreation, SettlementCreation,
+        VillageCreation,
     };
     #[cfg(test)]
-    use crate::settlement::{PlayerEntry, SettlementProgress};
-    use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
+    use crate::settlement::{PlayerEntry, RealmGrants, SettlementProgress, SettlementRules};
     #[cfg(test)]
-    use crate::village::VillagePass;
-    use crate::village::{SettleVillage, VillagePassKey, VillageRules};
+    use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
+    use crate::village::{SettleVillage, VillagePassKey};
+    #[cfg(test)]
+    use crate::village::{VillagePass, VillageRules};
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
     component!(path: crate::logic::realms::RealmState, storage: realms, event: RealmEvent);
@@ -66,13 +67,6 @@ pub mod SettlementLogic {
     }
     #[abi(embed_v0)]
     impl UpgradeRules of crate::upgrades::IUpgradeRules<ContractState> {
-        fn configure_upgrades(
-            ref self: ContractState, game_id: u32, limits: UpgradeLimits, recipes: Span<UpgradeRecipe>,
-        ) {
-            crate::logic::release::assert_authority();
-            crate::logic::game::game(game_id);
-            self.upgrades.configure(game_id, limits, recipes);
-        }
         #[cfg(test)]
         fn upgrade_limits(self: @ContractState, game_id: u32) -> UpgradeLimits {
             self.upgrades.limits(game_id)
@@ -85,48 +79,6 @@ pub mod SettlementLogic {
 
     #[abi(embed_v0)]
     impl ExpeditionRules of crate::expeditions::IExpeditionRules<ContractState> {
-        fn configure_depths(ref self: ContractState, game_id: u32, depths: Span<crate::expeditions::DepthRules>) {
-            crate::logic::release::assert_authority();
-            assert!(!self.data.depths.depth_configuration.read(game_id), "immutable depth rules");
-            let rules = crate::logic::game::rules(game_id);
-            let enabled = crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS);
-            assert!(depths.len() == if enabled {
-                4
-            } else {
-                0
-            }, "incomplete depth rules");
-            assert!(!enabled || rules.epoch_seconds != 0, "depths require expedition regions");
-            for index in 0..depths.len() {
-                let value = *depths.at(index);
-                let ground = value.chest;
-                assert!(
-                    Into::<u16, u32>::into(ground.common) + ground.uncommon.into() + ground.rare.into() <= 10000,
-                    "invalid chest quality probabilities",
-                );
-                assert!(ground.pity != 0, "zero relic pity threshold");
-                assert!(
-                    index != 0 || (value.entry_stamina == 0 && value.attunement_cost == 0),
-                    "surface needs no attunement",
-                );
-                assert!(value.supply_multiplier != 0, "zero supply multiplier");
-                assert!(value.guard_lower < value.guard_upper, "invalid depth guards");
-                assert!(value.mine_cap_min != 0 && value.mine_cap_min <= value.mine_cap_max, "invalid depth mine cap");
-                assert!(value.mine_rate != 0, "zero depth mine rate");
-                self.data.depths.depth_rules.write((game_id, index.try_into().unwrap()), Some(value));
-                let mut values = array![];
-                value.serialize(ref values);
-                self
-                    .emit(
-                        crate::events::RowSet {
-                            version: 1,
-                            model: 'DepthRules',
-                            keys: array![game_id.into(), index.into()].span(),
-                            values: values.span(),
-                        },
-                    );
-            }
-            self.data.depths.depth_configuration.write(game_id, true);
-        }
         #[cfg(test)]
         fn depth_rules(self: @ContractState, game_id: u32, depth: u8) -> crate::expeditions::DepthRules {
             crate::logic::expeditions::depth_rules(game_id, depth)
@@ -216,11 +168,6 @@ pub mod SettlementLogic {
 
     #[abi(embed_v0)]
     impl Villages of crate::village::IVillages<ContractState> {
-        fn configure_villages(ref self: ContractState, game_id: u32, rules: VillageRules) {
-            crate::logic::release::assert_authority();
-            let _ = crate::logic::game::game(game_id);
-            self.villages.configure(game_id, rules);
-        }
         #[cfg(test)]
         fn village_rules(self: @ContractState, game_id: u32) -> VillageRules {
             self.villages.rules(game_id)
@@ -279,14 +226,6 @@ pub mod SettlementLogic {
                 self.villages.consume(pass, owner, village_id);
             }
             ((), story_cursor)
-        }
-    }
-    #[abi(embed_v0)]
-    impl SettlementConfiguration of crate::settlement::ISettlementConfiguration<ContractState> {
-        fn configure_settlement(ref self: ContractState, game_id: u32, rules: SettlementRules, grants: RealmGrants) {
-            crate::logic::release::assert_authority();
-            let _ = crate::logic::game::game(game_id);
-            self.settlements.configure(game_id, rules, grants);
         }
     }
     #[abi(embed_v0)]

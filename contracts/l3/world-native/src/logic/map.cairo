@@ -287,43 +287,14 @@ pub mod MapLogic {
     }
     #[abi(embed_v0)]
     impl Extraction of crate::exploration_rewards::IExtraction<ContractState> {
-        fn configure_extraction(
-            ref self: ContractState, game_id: u32, rewards: Span<crate::exploration_rewards::ExplorationReward>,
-        ) {
-            crate::logic::release::assert_authority();
-            crate::logic::game::game(game_id);
-            assert!(self.data.map_rules.exploration_reward_count.read(game_id) == 0, "immutable extraction rewards");
-            assert!(!rewards.is_empty(), "empty exploration pool");
-            let mut total: u128 = 0;
-            for index in 0..rewards.len() {
-                let reward = *rewards.at(index);
-                assert!(reward.resource_type > 0 && reward.resource_type <= 58, "invalid reward resource");
-                assert!(reward.amount <= reward.amount_max, "invalid exploration reward range");
-                total += reward.weight;
-                self.data.map_rules.exploration_rewards.write((game_id, index), reward);
-            }
-            assert!(total != 0, "empty exploration pool");
-            self.data.map_rules.exploration_reward_count.write(game_id, rewards.len());
-            let mut values = array![];
-            rewards.serialize(ref values);
-            self
-                .emit(
-                    crate::events::RowSet {
-                        version: 1,
-                        model: 'ExtractionRewards',
-                        keys: array![game_id.into()].span(),
-                        values: values.span(),
-                    },
-                );
-        }
         fn extraction_rewards(
             self: @ContractState, game_id: u32,
         ) -> Span<crate::exploration_rewards::ExplorationReward> {
-            let count = self.data.map_rules.exploration_reward_count.read(game_id);
-            assert!(count != 0, "missing extraction rewards");
+            let preset = crate::logic::preset_record::for_game(game_id);
+            let count = preset.exploration_reward_count.read();
             let mut rewards = array![];
             for index in 0..count {
-                rewards.append(self.data.map_rules.exploration_rewards.read((game_id, index)));
+                rewards.append(preset.exploration_rewards.read(index));
             }
             rewards.span()
         }

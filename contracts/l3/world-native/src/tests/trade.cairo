@@ -3,6 +3,8 @@ use snforge_std::{
     stop_cheat_caller_address,
 };
 use crate::commands::Command;
+use crate::game::IGameDispatcherTrait;
+use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
 use crate::tests::state::ResourceObservationTrait;
@@ -21,11 +23,9 @@ fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
     rules.speed_config.donkey_sec_per_km_troops = 2;
     rules.tick_config.delivery_tick_in_seconds = 1;
     rules.capacity_config.donkey_capacity = 10;
-    let (deployment, maker, taker) = setup_with_rules(rules);
-    let trades = ITradeDispatcher { contract_address: deployment.games };
-    start_cheat_caller_address(deployment.games, super::authority());
-    trades.configure_trade(3, TradeRules { max_count: 2 });
-    stop_cheat_caller_address(deployment.games);
+    let mut preset = super::resource_commands::fixture_preset(rules);
+    preset.economy.trade = TradeRules { max_count: 2 };
+    let (deployment, maker, taker) = super::resource_commands::setup_with_preset(preset);
     for key in array![maker, taker] {
         grant(deployment, key, 2, 1000);
         grant(deployment, key, 3, 1000);
@@ -183,13 +183,18 @@ fn trade_rules_are_authorized_immutable_and_game_scoped() {
     let safe = ITradeSafeDispatcher { contract_address: economy };
     start_cheat_block_timestamp_global(40);
     start_cheat_caller_address(economy, deployment.actor);
-    assert!(safe.configure_trade(1, TradeRules { max_count: 1 }).is_err());
+    let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: economy };
+    let mut preset = super::recorded::fixture_preset(super::recorded::rules());
+    preset.economy.trade = TradeRules { max_count: 1 };
+    assert!(registry.register_preset(20000, preset).is_err());
     start_cheat_caller_address(economy, super::authority());
-    assert!(safe.configure_trade(3, TradeRules { max_count: 1 }).is_err());
-    safe.configure_trade(1, TradeRules { max_count: 1 }).unwrap();
-    assert_eq!(safe.trade_rules(1).unwrap().max_count, 1);
+    assert!(registry.register_preset(10003, preset).is_err());
+    super::recorded::seed_game_with_preset(
+        economy, 4, crate::game::IGameDispatcher { contract_address: economy }.game(3), preset,
+    );
+    assert_eq!(safe.trade_rules(4).unwrap().max_count, 1);
     assert_eq!(safe.trade_rules(3).unwrap().max_count, 2);
-    assert!(safe.trade_rules(2).is_err());
+    assert!(safe.trade_rules(999).is_err());
     stop_cheat_caller_address(economy);
     let key = create(deployment, offer(maker));
     assert!(safe.trade_order(TradeKey { game_id: 1, trade_id: key.trade_id }).unwrap().is_none());

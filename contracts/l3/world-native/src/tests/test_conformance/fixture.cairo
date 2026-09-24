@@ -2,7 +2,7 @@ use eternum_randomness_protocol::epochs::{
     IRandomnessEpochsDispatcher, IRandomnessEpochsDispatcherTrait, epoch_commitment,
 };
 use world_native::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait};
-use world_native::resources::{IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceRule};
+use world_native::resources::{IResourceOperationsDispatcher, ResourceRule};
 use crate::tests::state::{
     GameState, MapObservationTrait, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait,
 };
@@ -202,62 +202,57 @@ fn provision_game(season: ContractAddress, actor: ContractAddress, administrator
         end_grace_seconds: 0,
         seed: 1,
     };
-    seed_game(season, 7, game, rules);
+    let mut preset = crate::tests::recorded::fixture_preset(rules);
+    preset.resources.resources = resources;
+    preset.structures.buildings = buildings;
+    preset.structures.board = None;
+    preset
+        .exploration =
+            array![
+                world_native::exploration_rewards::ExplorationReward {
+                    resource_type: 35, amount: 10, amount_max: 10, weight: 1,
+                },
+            ]
+        .span();
+    preset
+        .resources
+        .mine_kinds =
+            array![
+                world_native::mines::MineKindEntry {
+                    kind: 1,
+                    config: world_native::mines::MineKindConfig {
+                        resource_type: 38,
+                        building_category: 39,
+                        production_rate: 2500000000,
+                        cap_min: 36000000000000,
+                        cap_steps: 1,
+                    },
+                },
+                world_native::mines::MineKindEntry {
+                    kind: 2,
+                    config: world_native::mines::MineKindConfig {
+                        resource_type: 24,
+                        building_category: 26,
+                        production_rate: 1500000000,
+                        cap_min: 300000000000000,
+                        cap_steps: 10,
+                    },
+                },
+            ]
+        .span();
+    preset
+        .resources
+        .surface_mines =
+            array![
+                world_native::mines::MineWeight { kind: 1, weight: 1 },
+                world_native::mines::MineWeight { kind: 2, weight: 1 },
+            ]
+        .span();
+    crate::tests::recorded::seed_game_with_preset(season, 7, game, preset);
     // A second game on the same shard proves each game keeps its own recorded chain.
-    seed_game(season, 9, game, rules);
+    crate::tests::recorded::seed_game_with_preset(season, 9, game, preset);
     start_cheat_caller_address(season, administrator);
     let structures = IStructureOperationsDispatcher { contract_address: season };
-    let resource_store = IResourceOperationsDispatcher { contract_address: season };
-    start_cheat_caller_address(season, administrator);
-    resource_store.configure_resources(7, resources);
-    start_cheat_caller_address(season, administrator);
-    world_native::exploration_rewards::IExtractionDispatcherTrait::configure_extraction(
-        world_native::exploration_rewards::IExtractionDispatcher { contract_address: season },
-        7,
-        array![
-            world_native::exploration_rewards::ExplorationReward {
-                resource_type: 35, amount: 10, amount_max: 10, weight: 1,
-            },
-        ]
-            .span(),
-    );
-
-    world_native::mines::IMineRulesDispatcherTrait::configure_mines(
-        world_native::mines::IMineRulesDispatcher { contract_address: season },
-        7,
-        array![
-            world_native::mines::MineKindEntry {
-                kind: 1,
-                config: world_native::mines::MineKindConfig {
-                    resource_type: 38,
-                    building_category: 39,
-                    production_rate: 2500000000,
-                    cap_min: 36000000000000,
-                    cap_steps: 1,
-                },
-            },
-            world_native::mines::MineKindEntry {
-                kind: 2,
-                config: world_native::mines::MineKindConfig {
-                    resource_type: 24,
-                    building_category: 26,
-                    production_rate: 1500000000,
-                    cap_min: 300000000000000,
-                    cap_steps: 10,
-                },
-            },
-        ]
-            .span(),
-        array![
-            world_native::mines::MineWeight { kind: 1, weight: 1 },
-            world_native::mines::MineWeight { kind: 2, weight: 1 },
-        ]
-            .span(),
-    );
-    world_native::buildings::IBuildingRulesDispatcherTrait::configure_buildings(
-        world_native::buildings::IBuildingRulesDispatcher { contract_address: season }, 7, buildings, None,
-    );
-
     let realm = structures
         .provision_realm(
             7,
@@ -491,8 +486,4 @@ pub fn reject_execution(
     address: ContractAddress, intent: Intent, context: ExecutionContext, r: felt252, s: felt252,
 ) -> Result<(), Array<felt252>> {
     submit(address, selector!("reject_execution"), intent, context, signed(r, s))
-}
-
-fn seed_game(registry: ContractAddress, game_id: u32, game: GameRegistry, rules: world_native::rules::SliceRules) {
-    crate::tests::recorded::seed_game(registry, game_id, game, rules);
 }

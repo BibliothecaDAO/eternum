@@ -1,18 +1,15 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::ContractAddress;
-use crate::bridge::{
-    Deposit, DepositRules, IBridgeDispatcher, IBridgeDispatcherTrait, IBridgeSafeDispatcher, IBridgeSafeDispatcherTrait,
-    Withdraw,
-};
+use crate::bridge::{Deposit, DepositRules, IBridgeSafeDispatcher, IBridgeSafeDispatcherTrait, Withdraw};
 use crate::commands::Command;
+use crate::game::IGameDispatcherTrait;
+use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
 use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
 use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 use super::fixtures::{ITokenFixtureDispatcher, ITokenFixtureDispatcherTrait};
-use super::resource_commands::{
-    assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture, setup_with_rules,
-};
+use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture};
 
 const TOKENS: u256 = 1000000000000000000000;
 const STOCK: u128 = 1000 * RESOURCE_PRECISION;
@@ -28,11 +25,12 @@ fn setup(village: bool, paused: bool) -> (super::Deployment, ResourceKey, Resour
     rules.speed_config.donkey_sec_per_km = 1;
     rules.tick_config.delivery_tick_in_seconds = 1;
     rules.capacity_config.donkey_capacity = 100;
-    let (d, realm, target) = setup_with_rules(rules);
-    let (token, _) = super::market::configure_wallet(d, paused);
-    start_cheat_caller_address(d.games, super::authority());
-    IBridgeDispatcher { contract_address: d.games }.configure_deposits(3, deposit_rules(paused));
-    stop_cheat_caller_address(d.games);
+    let d = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
+    let (mut withdrawals, token, _) = super::market::wallet_preset(d, paused);
+    withdrawals.deposits = deposit_rules(paused);
+    let mut preset = super::resource_commands::fixture_preset(rules);
+    preset.economy.withdrawals = Some(withdrawals);
+    let (d, realm, target) = super::resource_commands::setup_in_deployment(d, preset);
     if village {
         let structure = IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap();
         set_fixture(
@@ -211,12 +209,19 @@ fn rejected_bridge_actions_preserve_tokens_resources_and_arrivals() {
 fn bridge_configuration_requires_authority_and_is_immutable() {
     let (d, _, _, _) = setup(false, false);
     let bridge = IBridgeSafeDispatcher { contract_address: d.games };
+    let (mut withdrawals, _, _) = super::market::wallet_preset(d, true);
+    withdrawals.deposits = deposit_rules(true);
+    let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
+    preset.economy.withdrawals = Some(withdrawals);
+    let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: d.games };
     start_cheat_caller_address(d.games, d.actor);
-    assert!(bridge.configure_deposits(2, deposit_rules(false)).is_err());
+    assert!(registrar.register_preset(20000, preset).is_err());
     start_cheat_caller_address(d.games, super::authority());
-    assert!(bridge.configure_deposits(3, deposit_rules(false)).is_err());
-    bridge.configure_deposits(2, deposit_rules(true)).unwrap();
-    assert!(bridge.deposit_rules(2).unwrap().paused);
+    let games = crate::game::IGameDispatcher { contract_address: d.games };
+    assert!(registrar.register_preset(games.game(3).preset_id, preset).is_err());
+    stop_cheat_caller_address(d.games);
+    super::recorded::seed_game_with_preset(d.games, 4, games.game(3), preset);
+    assert!(bridge.deposit_rules(4).unwrap().paused);
     assert!(!bridge.deposit_rules(3).unwrap().paused);
 }
 

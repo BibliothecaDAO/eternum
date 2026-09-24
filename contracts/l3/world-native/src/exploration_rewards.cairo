@@ -18,7 +18,6 @@ pub struct ExtractedReward {
 }
 #[starknet::interface]
 pub trait IExtraction<T> {
-    fn configure_extraction(ref self: T, game_id: u32, rewards: Span<ExplorationReward>);
     fn extraction_rewards(self: @T, game_id: u32) -> Span<ExplorationReward>;
     fn extract_exploration_reward(
         ref self: T,

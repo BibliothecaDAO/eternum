@@ -3,14 +3,13 @@ use crate::artificer::{
     IArtificerDispatcher, IArtificerDispatcherTrait, IArtificerSafeDispatcher, IArtificerSafeDispatcherTrait, RESEARCH,
 };
 use crate::commands::Command;
-use crate::relics::{IRelicsDispatcher, IRelicsDispatcherTrait};
+use crate::game::IGameDispatcherTrait;
+use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::{IResourceOperationsDispatcher, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
 use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
 use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
-use super::resource_commands::{
-    assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture, setup_with_rules,
-};
+use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture};
 fn view(d: super::Deployment) -> IArtificerDispatcher {
     IArtificerDispatcher { contract_address: d.games }
 }
@@ -32,11 +31,11 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
     } else {
         crate::rules::ENTRY_ENTITLEMENT
     };
-    let (d, home, _) = setup_with_rules(rules);
-    start_cheat_caller_address(d.games, super::authority());
-    view(d).configure_artificer(3, 10 * RESOURCE_PRECISION);
-    IRelicsDispatcher { contract_address: d.games }.configure_relics(3, super::relics::rules(), None);
-    stop_cheat_caller_address(d.games);
+    let mut preset = super::resource_commands::fixture_preset(rules);
+    preset.economy.research_cost = 10 * RESOURCE_PRECISION;
+    preset.economy.relics = super::relics::rules();
+    preset.economy.chests = None;
+    let (d, home, _) = super::resource_commands::setup_with_preset(preset);
     grant(d, home, RESEARCH, 20 * RESOURCE_PRECISION);
     (d, home)
 }
@@ -110,11 +109,17 @@ fn rejected_crafting_preserves_balances_and_consumes_the_ticket() {
 #[feature("safe_dispatcher")]
 fn crafting_configuration_is_authorized_immutable_and_game_scoped() {
     let (d, _) = setup(false);
-    let safe = IArtificerSafeDispatcher { contract_address: d.games };
-    assert!(safe.configure_artificer(2, 1).is_err());
+    let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: d.games };
+    let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
+    preset.economy.research_cost = 5;
+    start_cheat_caller_address(d.games, d.actor);
+    assert!(registrar.register_preset(20000, preset).is_err());
     start_cheat_caller_address(d.games, super::authority());
-    assert!(safe.configure_artificer(3, 1).is_err());
-    view(d).configure_artificer(2, 5);
-    assert_eq!(view(d).artificer_cost(2), 5);
+    let games = crate::game::IGameDispatcher { contract_address: d.games };
+    assert!(registrar.register_preset(games.game(3).preset_id, preset).is_err());
+    stop_cheat_caller_address(d.games);
+    super::recorded::seed_game_with_preset(d.games, 4, games.game(3), preset);
+    assert_eq!(view(d).artificer_cost(4), 5);
     assert_eq!(view(d).artificer_cost(3), 10 * RESOURCE_PRECISION);
+    assert!(IArtificerSafeDispatcher { contract_address: d.games }.artificer_cost(999).is_err());
 }

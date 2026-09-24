@@ -236,7 +236,6 @@ export async function createRegistrarGame(
     throw new Error("Current preset differs from the launch configuration; reload its balance before creating a game");
   const calldata = new CallData(nativeGamesAbi(context.manifest)).compile("create_game", {
     params: params as RawArgs,
-    definition: nativeDefinition,
   });
   const result = await executeRegistrarCall(account, buildRegistrarCall("create_game", calldata, target), target);
   return { ...result, gameId: resolveCreatedGameId(result.receipt, target) };

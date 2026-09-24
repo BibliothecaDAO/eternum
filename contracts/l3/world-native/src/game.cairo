@@ -24,6 +24,14 @@ pub struct GameRegistry {
     pub seed: felt252,
 }
 
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct GameOverrides {
+    pub registration_start: u32,
+    pub biome_climate: crate::rules::BiomeClimateConfig,
+    pub map: Option<crate::rules::MapConfig>,
+    pub map_center_offset: u32,
+}
+
 #[derive(Copy, Drop, Serde)]
 pub enum PointActivity {
     Exploration,
@@ -71,7 +79,6 @@ pub trait IPoints<T> {
 
 #[starknet::interface]
 pub trait ISeasonLifecycle<T> {
-    fn configure_season_win(ref self: T, game_id: u32, points: u128);
     fn season_win_threshold(self: @T, game_id: u32) -> u128;
     fn close_season(
         ref self: T,

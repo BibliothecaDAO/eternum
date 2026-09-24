@@ -1,6 +1,9 @@
 #[starknet::component]
 pub mod TradeState {
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
+    use starknet::storage::{
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
+    };
     use crate::events::{RowDeleted, RowMemberSet, RowSet};
     use crate::trade::{TradeKey, TradeOrder, TradeRules};
 
@@ -19,23 +22,8 @@ pub mod TradeState {
     }
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
-        fn configure(ref self: ComponentState<TContractState>, game_id: u32, rules: TradeRules) {
-            assert!(!self.data.trade.configured.read(game_id), "trade rules already configured");
-            self.data.trade.configured.write(game_id, true);
-            self.data.trade.rules.write(game_id, rules);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'TradeRules',
-                        keys: array![game_id.into()].span(),
-                        values: array![rules.max_count.into()].span(),
-                    },
-                );
-        }
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> TradeRules {
-            assert!(self.data.trade.configured.read(game_id), "missing trade rules");
-            self.data.trade.rules.read(game_id)
+            crate::logic::preset_record::for_game(game_id).trade_rules.read()
         }
         fn order(self: @ComponentState<TContractState>, key: TradeKey) -> Option<TradeOrder> {
             let order = self.data.trade.orders.read((key.game_id, key.trade_id));

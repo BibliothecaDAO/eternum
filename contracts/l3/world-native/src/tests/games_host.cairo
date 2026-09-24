@@ -102,8 +102,6 @@ pub mod GamesTest {
     #[abi(embed_v0)]
     impl VillagesFixture = GamesFixture::VillagesFixture<ContractState>;
     #[abi(embed_v0)]
-    impl SettlementConfigurationFixture = GamesFixture::SettlementConfigurationFixture<ContractState>;
-    #[abi(embed_v0)]
     impl SettlementViewsFixture = GamesFixture::SettlementViewsFixture<ContractState>;
     #[abi(embed_v0)]
     impl SettlementEntryFixture = GamesFixture::SettlementEntryFixture<ContractState>;

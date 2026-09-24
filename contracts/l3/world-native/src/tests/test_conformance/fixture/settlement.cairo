@@ -7,40 +7,37 @@ use snforge_std::signature::SignerTrait;
 use snforge_std::signature::stark_curve::StarkCurveSignerImpl;
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::ContractAddress;
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use world_native::commands::{Command, command_commitment};
 use world_native::entry::{ILedgerOperatorDispatcher, ILedgerOperatorDispatcherTrait};
 use world_native::game::{IGameDispatcher, IGameDispatcherTrait};
 use world_native::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
 use world_native::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
 use world_native::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait};
-use world_native::resources::{
-    IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceAmount, ResourceKey, ResourceRule,
-    ResourceSlot,
-};
+use world_native::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceRule, ResourceSlot};
 use world_native::rules::RESOURCE_PRECISION;
 use world_native::settlement::{
     EntryEntitlement, EntryKey, IBlitzReservationsSafeDispatcher, IBlitzReservationsSafeDispatcherTrait,
-    ISettlementConfigurationDispatcher, ISettlementConfigurationDispatcherTrait, ISettlementCreationDispatcher,
-    ISettlementCreationDispatcherTrait, ISettlementEntryDispatcher, ISettlementEntryDispatcherTrait,
-    ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, RealmCreation, RealmGrants, SettlementCreation,
-    SettlementMode, SettlementRules,
+    ISettlementCreationDispatcher, ISettlementCreationDispatcherTrait, ISettlementEntryDispatcher,
+    ISettlementEntryDispatcherTrait, ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, RealmCreation,
+    RealmGrants, SettlementCreation, SettlementMode,
 };
 use world_native::structures::IStructureOperationsDispatcher;
-use world_native::upgrades::{IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait, UpgradeLimits, UpgradeRecipe};
+use world_native::upgrades::{UpgradeLimits, UpgradeRecipe};
 use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 use super::super::receipts::RecordedReceiptsTrait;
 use super::{IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait, context, pair, setup};
 
 fn prepare() -> ContractAddress {
-    prepare_without_entitlement(None, true)
+    prepare_without_entitlement(None, true, None)
 }
 fn prepare_with_resources(grants: Option<Span<ResourceAmount>>) -> ContractAddress {
-    prepare_without_entitlement(grants, true)
+    prepare_without_entitlement(grants, true, None)
 }
 
 #[feature("safe_dispatcher")]
 fn prepare_without_entitlement(
-    grant_override: Option<Span<world_native::resources::ResourceAmount>>, blitz: bool,
+    grant_override: Option<Span<world_native::resources::ResourceAmount>>, blitz: bool, upgrade_cost: Option<u128>,
 ) -> ContractAddress {
     let season = setup();
     let input = read_txt(@FileTrait::new("tests/fixtures/preset-3.txt"));
@@ -65,40 +62,45 @@ fn prepare_without_entitlement(
     let game = world_native::game::GameRegistry {
         dev_mode_on: false, start_main_at: 1200, end_at: 1300, ..games.game(7),
     };
-    super::seed_game(season, 8, game, rules);
     let input = read_txt(@FileTrait::new("tests/fixtures/settlement.txt"));
     let mut fields = input.span();
     let mut grants: RealmGrants = Serde::deserialize(ref fields).unwrap();
     if let Some(resources) = grant_override {
         grants.resources = resources;
     }
-    start_cheat_caller_address(season, 222.try_into().unwrap());
-    ISettlementConfigurationDispatcher { contract_address: season }
-        .configure_settlement(
-            8,
-            SettlementRules {
-                registration_start: 900,
-                registration_limit: 3,
-                mode: if blitz {
-                    SettlementMode::Triple
-                } else {
-                    SettlementMode::Single
-                },
-                spacing: 6,
-            },
-            grants,
-        );
-    stop_cheat_caller_address(season);
-    stop_cheat_caller_address(season);
-    start_cheat_caller_address(season, 222.try_into().unwrap());
-    start_cheat_caller_address(season, 222.try_into().unwrap());
-    IResourceOperationsDispatcher { contract_address: season }.configure_resources(8, resources);
-    world_native::buildings::IBuildingRulesDispatcherTrait::configure_buildings(
-        world_native::buildings::IBuildingRulesDispatcher { contract_address: season }, 8, buildings, None,
+    let mut preset = crate::tests::recorded::fixture_preset(rules);
+    preset.resources.resources = resources;
+    preset.structures.buildings = buildings;
+    preset.structures.board = None;
+    preset.settlement.mode = if blitz {
+        SettlementMode::Triple
+    } else {
+        SettlementMode::Single
+    };
+    preset.settlement.spacing = 6;
+    preset.settlement.realms = grants;
+    if let Some(cost) = upgrade_cost {
+        preset.structures.upgrade_limits = UpgradeLimits { realm_max: 1, village_max: 1 };
+        preset
+            .structures
+            .upgrades =
+                array![
+                    UpgradeRecipe {
+                        costs: array![ResourceAmount { resource_type: 1, amount: cost * RESOURCE_PRECISION }].span(),
+                    },
+                ]
+            .span();
+    }
+    crate::tests::recorded::seed_game_with_preset(season, 8, game, preset);
+    snforge_std::interact_with_state(
+        season,
+        || {
+            let state = crate::state::write();
+            let previous = state.games.overrides.read(8);
+            state.games.overrides.write(8, crate::game::GameOverrides { registration_start: 900, ..previous });
+            state.registrar.roster_sizes.write(8, 3);
+        },
     );
-
-    stop_cheat_caller_address(season);
-    stop_cheat_caller_address(season);
     if blitz {
         start_cheat_caller_address(season, season);
         IBlitzReservationsSafeDispatcher { contract_address: season }.initialize_reservations(8).unwrap();
@@ -205,7 +207,7 @@ fn settled_facts(season: ContractAddress) -> Array<felt252> {
 fn accepted_eternum_settlement_keeps_recorded_time_after_game_end() {
     let mut immediate = array![].span();
     for clock in array![1100_u64, 100000] {
-        let season = prepare_without_entitlement(None, false);
+        let season = prepare_without_entitlement(None, false, None);
         grant_entry(season, super::actor().try_into().unwrap());
         let (action, envelope) = accepted(season, command(), 1005);
         start_cheat_block_timestamp_global(clock);
@@ -224,7 +226,7 @@ fn accepted_eternum_settlement_keeps_recorded_time_after_game_end() {
 
 #[test]
 fn settlement_uses_the_players_account_and_cannot_spend_another_owners_entitlement() {
-    let season = prepare_without_entitlement(None, false);
+    let season = prepare_without_entitlement(None, false, None);
     grant_entry(season, 789.try_into().unwrap());
     let views = ISettlementViewsDispatcher { contract_address: season };
     let results = IRecordedExecutionViewsDispatcher { contract_address: season };
@@ -247,7 +249,7 @@ fn settlement_uses_the_players_account_and_cannot_spend_another_owners_entitleme
 
 #[test]
 fn rejected_settlement_rolls_back_entry_and_leaves_later_ticket_executable() {
-    let season = prepare_without_entitlement(None, false);
+    let season = prepare_without_entitlement(None, false, None);
     grant_entry(season, super::actor().try_into().unwrap());
     execute(season, Command::SettleSeason(world_native::realms::SettleSeason { name: 0, selected_realm: None }), 1005);
     let results = IRecordedExecutionViewsDispatcher { contract_address: season };
@@ -369,23 +371,11 @@ fn reserved_hyperstructure_uses_recorded_time_after_an_outage() {
 #[test]
 fn provision_and_upgrade_is_one_atomic_recorded_action() {
     for cost in array![100_u128, 101].span() {
-        let season = prepare_with_resources(
+        let season = prepare_without_entitlement(
             Some(array![ResourceAmount { resource_type: 1, amount: 100 * RESOURCE_PRECISION }].span()),
+            true,
+            Some(*cost),
         );
-        let upgrade_rules = season;
-        start_cheat_caller_address(upgrade_rules, 222.try_into().unwrap());
-        IUpgradeRulesDispatcher { contract_address: upgrade_rules }
-            .configure_upgrades(
-                8,
-                UpgradeLimits { realm_max: 1, village_max: 1 },
-                array![
-                    UpgradeRecipe {
-                        costs: array![ResourceAmount { resource_type: 1, amount: *cost * RESOURCE_PRECISION }].span(),
-                    },
-                ]
-                    .span(),
-            );
-        stop_cheat_caller_address(upgrade_rules);
         unprovisioned_realm(season, false);
         let structures = IStructureOperationsDispatcher { contract_address: season };
         let resources = IResourceOperationsDispatcher { contract_address: season };

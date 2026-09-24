@@ -3,15 +3,17 @@ use snforge_std::{
     stop_cheat_caller_address,
 };
 use crate::commands::{Command, ExecutionContext};
+use crate::game::IGameDispatcherTrait;
 use crate::market::{
     AddLiquidity, BankPlacement, BankRules, IBankDispatcher, IBankDispatcherTrait, IBankSafeDispatcher,
     IBankSafeDispatcherTrait, LiquidityKey, Market, MarketKey, RemoveLiquidity, Swap,
 };
+use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
 use crate::tests::state::ResourceObservationTrait;
 use crate::troops::Coord;
-use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, setup_with_rules};
+use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant};
 
 const BANK: u32 = 0xfffffffe;
 const STOCK: u128 = 100000 * RESOURCE_PRECISION;
@@ -22,7 +24,7 @@ fn banks() -> Span<BankPlacement> {
     }
     banks.span()
 }
-fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
+fn market_preset() -> crate::presets::PresetDefinition {
     let mut rules = super::recorded::rules();
     rules.mode_rules = super::recorded::ETERNUM_RULES;
     rules.command_mask = super::recorded::ETERNUM_COMMAND_MASK;
@@ -31,10 +33,30 @@ fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
     rules.speed_config.donkey_sec_per_km_troops = 2;
     rules.tick_config.delivery_tick_in_seconds = 1;
     rules.capacity_config.donkey_capacity = 100;
-    let (deployment, source, other) = setup_with_rules(rules);
+    let mut preset = super::resource_commands::fixture_preset(rules);
+    preset.economy.banks = BankRules { lp_fee_num: 3, lp_fee_denom: 1000, owner_fee_num: 1, owner_fee_denom: 100 };
+    preset.economy.trade = crate::trade::TradeRules { max_count: 7 };
+    preset
+}
+fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
+    let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
+    setup_market(deployment, market_preset())
+}
+fn setup_with_wallet(
+    paused: bool,
+) -> (super::Deployment, ResourceKey, ResourceKey, starknet::ContractAddress, starknet::ContractAddress) {
+    let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
+    let (withdrawals, resource, lords) = wallet_preset(deployment, paused);
+    let mut preset = market_preset();
+    preset.economy.withdrawals = Some(withdrawals);
+    let (deployment, source, other) = setup_market(deployment, preset);
+    (deployment, source, other, resource, lords)
+}
+fn setup_market(
+    deployment: super::Deployment, preset: crate::presets::PresetDefinition,
+) -> (super::Deployment, ResourceKey, ResourceKey) {
+    let (deployment, source, other) = super::resource_commands::setup_in_deployment(deployment, preset);
     let bank = IBankDispatcher { contract_address: deployment.games };
-    start_cheat_caller_address(deployment.games, super::authority());
-    bank.configure_banks(3, BankRules { lp_fee_num: 3, lp_fee_denom: 1000, owner_fee_num: 1, owner_fee_denom: 100 });
     start_cheat_block_timestamp_global(30);
     start_cheat_caller_address(deployment.games, deployment.games);
     bank
@@ -202,20 +224,20 @@ fn rejected_market_actions_preserve_reserves_shares_and_balances() {
     assert_terminal_rejection(deployment, remove(source.entity_id, 1), 211);
 }
 
-pub fn configure_wallet(
+pub fn wallet_preset(
     deployment: super::Deployment, paused: bool,
-) -> (starknet::ContractAddress, starknet::ContractAddress) {
+) -> (crate::presets::WithdrawalPreset, starknet::ContractAddress, starknet::ContractAddress) {
     let (resource, _) = super::deploy("BankTokenFixture", @array![deployment.games.into()]);
     let (lords, _) = super::deploy("BankTokenFixture", @array![deployment.games.into()]);
     let mut retention = array![];
     for (troop_percent, resource_percent) in array![(0, 25), (25, 50), (50, 70), (70, 85), (85, 95), (95, 95)] {
         retention.append(crate::withdrawals::Retention { troop_percent, resource_percent });
     }
-    start_cheat_caller_address(deployment.games, super::authority());
-    crate::withdrawals::IWithdrawalsDispatcherTrait::configure_withdrawals(
-        crate::withdrawals::IWithdrawalsDispatcher { contract_address: deployment.games },
-        3,
-        crate::withdrawals::WithdrawalRules {
+    let preset = crate::presets::WithdrawalPreset {
+        deposits: crate::bridge::DepositRules {
+            paused, realm_fee_bps: 0, velords_fee_bps: 0, season_fee_bps: 0, client_fee_bps: 0,
+        },
+        rules: crate::withdrawals::WithdrawalRules {
             paused,
             bank_fee_bps: 500,
             velords_fee_bps: 100,
@@ -225,15 +247,15 @@ pub fn configure_wallet(
             season_recipient: 0x888.try_into().unwrap(),
             retention: retention.span(),
         },
-        array![
+        tokens: array![
             crate::withdrawals::ResourceToken { resource_type: 2, token: resource },
             crate::withdrawals::ResourceToken { resource_type: 37, token: lords },
         ]
             .span(),
-    );
-    stop_cheat_caller_address(deployment.games);
-    (resource, lords)
+    };
+    (preset, resource, lords)
 }
+
 fn token_balance(token: starknet::ContractAddress, owner: starknet::ContractAddress) -> u256 {
     crate::withdrawals::IResourceTokenDispatcherTrait::balance_of(
         crate::withdrawals::IResourceTokenDispatcher { contract_address: token }, owner,
@@ -248,8 +270,7 @@ fn wallet_liquidity_withdrawal_preserves_retention_fees_and_transfers_when_funde
     assert_wallet_liquidity_withdrawal(true);
 }
 fn assert_wallet_liquidity_withdrawal(funded: bool) {
-    let (deployment, source, _) = setup();
-    let (resource, lords) = configure_wallet(deployment, false);
+    let (deployment, source, _, resource, lords) = setup_with_wallet(false);
     if funded {
         for token in array![resource, lords] {
             super::fixtures::ITokenFixtureDispatcherTrait::seed(
@@ -280,8 +301,7 @@ fn assert_wallet_liquidity_withdrawal(funded: bool) {
 }
 #[test]
 fn wallet_token_failure_rolls_back_prior_token_payments_fees_and_shares() {
-    let (deployment, source, _) = setup();
-    let (resource, lords) = configure_wallet(deployment, false);
+    let (deployment, source, _, resource, lords) = setup_with_wallet(false);
     assert!(execute(deployment, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
     super::fixtures::ITokenFixtureDispatcherTrait::set_failure(
         super::fixtures::ITokenFixtureDispatcher { contract_address: lords }, true,
@@ -295,8 +315,7 @@ fn wallet_token_failure_rolls_back_prior_token_payments_fees_and_shares() {
 }
 #[test]
 fn paused_wallet_withdrawal_preserves_the_liquidity_position() {
-    let (deployment, source, _) = setup();
-    configure_wallet(deployment, true);
+    let (deployment, source, _, _, _) = setup_with_wallet(true);
     assert!(execute(deployment, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
     assert_terminal_rejection(deployment, remove(0, 1000 * RESOURCE_PRECISION), 50);
     assert_eq!(lp(deployment), 1000 * RESOURCE_PRECISION);
@@ -316,11 +335,10 @@ fn bank_creation_and_configuration_reject_players_repeats_and_partial_batches() 
             )
             .is_err(),
     );
-    assert!(
-        safe
-            .configure_banks(2, BankRules { lp_fee_num: 0, lp_fee_denom: 1, owner_fee_num: 0, owner_fee_denom: 1 })
-            .is_err(),
-    );
+    let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
+    let mut preset = market_preset();
+    preset.economy.banks = BankRules { lp_fee_num: 0, lp_fee_denom: 1, owner_fee_num: 0, owner_fee_denom: 1 };
+    assert!(registrar.register_preset(20000, preset).is_err());
     start_cheat_caller_address(deployment.games, deployment.games);
     assert!(
         safe
@@ -348,22 +366,16 @@ fn bank_creation_and_configuration_reject_players_repeats_and_partial_batches() 
             .is_err(),
     );
     start_cheat_caller_address(deployment.games, super::authority());
-    assert!(
-        safe
-            .configure_banks(3, BankRules { lp_fee_num: 0, lp_fee_denom: 1, owner_fee_num: 0, owner_fee_denom: 1 })
-            .is_err(),
-    );
-    assert!(
-        safe
-            .configure_banks(2, BankRules { lp_fee_num: 1, lp_fee_denom: 1, owner_fee_num: 0, owner_fee_denom: 1 })
-            .is_err(),
-    );
-    safe
-        .configure_banks(2, BankRules { lp_fee_num: 0, lp_fee_denom: 1, owner_fee_num: 0, owner_fee_denom: 1 })
-        .unwrap();
-    assert_eq!(safe.bank_rules(2).unwrap().lp_fee_num, 0);
+    let games = crate::game::IGameDispatcher { contract_address: deployment.games };
+    assert!(registrar.register_preset(games.game(3).preset_id, preset).is_err());
+    let mut invalid = preset;
+    invalid.economy.banks.lp_fee_num = 1;
+    assert!(registrar.register_preset(20000, invalid).is_err());
+    assert!(registrar.register_preset(20000, preset).is_ok());
+    stop_cheat_caller_address(deployment.games);
+    super::recorded::seed_game_with_preset(deployment.games, 4, games.game(3), preset);
+    assert_eq!(safe.bank_rules(4).unwrap().lp_fee_num, 0);
     assert_eq!(safe.bank_rules(3).unwrap().lp_fee_num, 3);
-    start_cheat_caller_address(deployment.games, deployment.actor);
 }
 
 #[test]
@@ -417,21 +429,18 @@ fn villages_can_trade_regular_liquidity_but_cannot_add_or_remove_troop_liquidity
 #[test]
 #[feature("safe_dispatcher")]
 fn bank_trade_and_withdrawal_configuration_are_independent_and_immutable() {
-    let (deployment, source, _) = setup();
-    configure_wallet(deployment, false);
-    start_cheat_caller_address(deployment.games, super::authority());
+    let (deployment, source, _, _, _) = setup_with_wallet(false);
     let trade = crate::trade::ITradeDispatcher { contract_address: deployment.games };
-    crate::trade::ITradeDispatcherTrait::configure_trade(trade, 3, crate::trade::TradeRules { max_count: 7 });
     assert_eq!(crate::trade::ITradeDispatcherTrait::trade_rules(trade, 3).max_count, 7);
     assert_eq!(view(deployment).bank_rules(3).lp_fee_num, 3);
     let withdrawals = crate::withdrawals::IWithdrawalsSafeDispatcher { contract_address: deployment.games };
     let rules = crate::withdrawals::IWithdrawalsSafeDispatcherTrait::withdrawal_rules(withdrawals, 3).unwrap();
     assert_eq!(rules.bank_fee_bps, 500);
     start_cheat_caller_address(deployment.games, super::authority());
+    let games = crate::game::IGameDispatcher { contract_address: deployment.games };
     assert!(
-        crate::withdrawals::IWithdrawalsSafeDispatcherTrait::configure_withdrawals(
-            withdrawals, 3, rules, array![].span(),
-        )
+        crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games }
+            .register_preset(games.game(3).preset_id, market_preset())
             .is_err(),
     );
     assert!(

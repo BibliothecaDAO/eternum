@@ -20,6 +20,7 @@ pub mod market;
 pub mod mines;
 pub mod movement;
 pub mod placement;
+pub mod preset_record;
 pub mod presets;
 pub mod prizes;
 pub mod production;

@@ -76,7 +76,6 @@ pub struct LiquidityStory {
 }
 #[starknet::interface]
 pub trait IBank<T> {
-    fn configure_banks(ref self: T, game_id: u32, rules: BankRules);
     #[cfg(test)]
     fn bank_rules(self: @T, game_id: u32) -> BankRules;
     #[cfg(test)]

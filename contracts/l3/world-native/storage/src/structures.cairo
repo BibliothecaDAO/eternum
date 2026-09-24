@@ -7,8 +7,6 @@ pub struct StructureStateStorage<TStructureRecord> {
 }
 
 #[starknet::storage_node]
-pub struct StructuresDomainStorage<TResourceAmount> {
-    pub camp_resource_count: Map<u32, Option<u32>>,
-    pub camp_grants: Map<(u32, u32), TResourceAmount>,
+pub struct StructuresDomainStorage {
     pub entity_names: Map<(u32, u32), felt252>,
 }

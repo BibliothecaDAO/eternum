@@ -30,6 +30,7 @@ use crate::games::{
     IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait, IGamesAuthenticationSafeDispatcher,
 };
 use crate::recording::ExecutionHead;
+use crate::registrar::{IRegistrarDispatcher, IRegistrarDispatcherTrait};
 use super::fixtures::{IFixtureDispatcher, IFixtureDispatcherTrait};
 use super::recorded_receipts::RecordedReceiptsTrait;
 
@@ -409,25 +410,66 @@ fn assert_oversized_loot_terminal(raid: bool) {
     assert_eq!(view.recorded_outcome(1, 2).unwrap().status, 1);
 }
 
+pub fn fixture_preset(rules: crate::rules::SliceRules) -> crate::presets::PresetDefinition {
+    let mut preset = super::registrar::definition(rules.entry_rule == crate::rules::ENTRY_ROSTER);
+    preset.rules = rules;
+    preset.season_win_points = 0;
+    preset.economy.withdrawals = None;
+    preset
+        .settlement
+        .spires =
+            if crate::rules::rule_enabled(rules, crate::rules::SPIRES) {
+                Some(crate::spires::SpireLayout { count: 1, base_distance: 0, layer_distance: 0, max_layer: 0 })
+            } else {
+                None
+            };
+    preset
+}
+
 pub fn seed_game(registry: ContractAddress, game_id: u32, game: GameRegistry, rules: crate::rules::SliceRules) {
+    seed_game_with_preset(registry, game_id, game, fixture_preset(rules));
+}
+
+pub fn seed_game_with_preset(
+    registry: ContractAddress, game_id: u32, game: GameRegistry, definition: crate::presets::PresetDefinition,
+) {
+    let registrar = IRegistrarDispatcher { contract_address: registry };
+    let commitment = crate::presets::commitment(definition);
+    let mut preset_id = 10000 + game_id;
+    loop {
+        let existing = registrar.preset_commitment(preset_id);
+        if existing == 0 || existing == commitment {
+            break;
+        }
+        preset_id += 1;
+    }
+    if registrar.preset_commitment(preset_id) == 0 {
+        let authority = snforge_std::interact_with_state(registry, || crate::state::read().authority.read());
+        snforge_std::cheat_caller_address(registry, authority, snforge_std::CheatSpan::TargetCalls(1));
+        registrar.register_preset(preset_id, definition);
+    }
+    let rules = definition.rules;
+    let preset_id = preset_id;
     snforge_std::interact_with_state(
         registry,
         || {
             let state = crate::state::write();
             state.game_releases.write(game_id, state.current_release.read());
-            if state.registrar.presets.read(game.preset_id) == 0 {
-                state.registrar.presets.write(game.preset_id, 789);
-            }
+            state.games.games.write(game_id, GameRegistry { preset_id, ..game });
+            state
+                .games
+                .overrides
+                .write(
+                    game_id,
+                    crate::game::GameOverrides {
+                        registration_start: 0,
+                        biome_climate: rules.biome_climate_config,
+                        map: None,
+                        map_center_offset: rules.map_center_offset,
+                    },
+                );
+            state.games.next_entity.write(game_id, 1);
         },
-    );
-    super::resource_commands::set_fixture(
-        registry, selector!("games"), selector!("games"), array![game_id.into()].span(), game,
-    );
-    super::resource_commands::set_fixture(
-        registry, selector!("games"), selector!("rules"), array![game_id.into()].span(), rules,
-    );
-    super::resource_commands::set_fixture(
-        registry, selector!("games"), selector!("next_entity"), array![game_id.into()].span(), 1_u32,
     );
 }
 
@@ -490,7 +532,7 @@ pub(crate) fn gameplay_snapshot(games: ContractAddress) -> Array<felt252> {
             let state = crate::state::read();
             let mut values = array![];
             state.games.games.read(1).serialize(ref values);
-            state.games.rules.read(1).serialize(ref values);
+            crate::logic::game::rules(1).serialize(ref values);
             state.games.next_entity.read(1).serialize(ref values);
             crate::logic::troops::explorer(crate::troops::ExplorerKey { game_id: 1, explorer_id: 7 })
                 .serialize(ref values);

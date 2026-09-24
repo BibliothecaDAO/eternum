@@ -372,11 +372,9 @@ pub mod GamesEntry {
             self.registrar().register_preset(preset_id, definition);
         }
 
-        fn create_game(
-            ref self: ComponentState<TContractState>, params: CreateGameParams, definition: PresetDefinition,
-        ) -> u32 {
+        fn create_game(ref self: ComponentState<TContractState>, params: CreateGameParams) -> u32 {
             self.assert_authority();
-            self.registrar().create_game(params, definition)
+            self.registrar().create_game(params)
         }
 
         fn preset_commitment(self: @ComponentState<TContractState>, preset_id: u32) -> felt252 {

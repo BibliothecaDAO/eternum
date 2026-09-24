@@ -70,7 +70,6 @@ pub struct ClaimPlayer {
 }
 #[starknet::interface]
 pub trait IFaith<T> {
-    fn configure_faith(ref self: T, game_id: u32, rules: FaithRules);
     fn faith_rules(self: @T, game_id: u32) -> FaithRules;
     fn pledge_faith(
         ref self: T,

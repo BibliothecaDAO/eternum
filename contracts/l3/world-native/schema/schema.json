@@ -2232,10 +2232,6 @@
           {
             "name": "params",
             "type": "world_native::registrar::CreateGameParams"
-          },
-          {
-            "name": "definition",
-            "type": "world_native::presets::PresetDefinition"
           }
         ],
         "outputs": [
@@ -5769,6 +5765,46 @@
       "valueLength": 11
     },
     {
+      "name": "GameOverrides",
+      "identity": "0x47616d654f7665727269646573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "registration_start",
+          "type": "core::integer::u32",
+          "id": "0x726567697374726174696f6e5f7374617274",
+          "feltLength": 1
+        },
+        {
+          "name": "biome_climate",
+          "type": "world_native::rules::BiomeClimateConfig",
+          "id": "0x62696f6d655f636c696d617465",
+          "feltLength": 6
+        },
+        {
+          "name": "map",
+          "type": "core::option::Option::<world_native::rules::MapConfig>",
+          "id": "0x6d6170",
+          "feltLength": null
+        },
+        {
+          "name": "map_center_offset",
+          "type": "core::integer::u32",
+          "id": "0x6d61705f63656e7465725f6f6666736574",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null
+    },
+    {
       "name": "SliceRules",
       "identity": "0x536c69636552756c6573",
       "scope": "game",
@@ -8522,6 +8558,28 @@
         },
         {
           "name": "num_structures_pledged",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::game::GameOverrides": {
+      "type": "struct",
+      "name": "world_native::game::GameOverrides",
+      "members": [
+        {
+          "name": "registration_start",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "biome_climate",
+          "type": "world_native::rules::BiomeClimateConfig"
+        },
+        {
+          "name": "map",
+          "type": "core::option::Option::<world_native::rules::MapConfig>"
+        },
+        {
+          "name": "map_center_offset",
           "type": "core::integer::u32"
         }
       ]
@@ -11979,5 +12037,5 @@
       ]
     }
   },
-  "identity": "2a6cb6fc1f6d602a69788c418c60a656ee0c7a5350685c48c4c52f2e9bde3e52"
+  "identity": "82ac32d805cce9e68b64e8cc5d9cd79ab5c14d74778e99c77dae3c3b1d2c9084"
 }

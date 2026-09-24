@@ -3,7 +3,7 @@ use starknet::storage::{
     StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
 };
 use crate::events::RowSet;
-use crate::game::GameRegistry;
+use crate::game::{GameOverrides, GameRegistry};
 use crate::rules::SliceRules;
 
 #[derive(Drop, starknet::Event)]
@@ -18,28 +18,27 @@ pub fn game(game_id: u32) -> GameRegistry {
     game
 }
 pub fn rules(game_id: u32) -> SliceRules {
-    let state = crate::state::read();
-    let _ = game(game_id);
-    state.games.rules.read(game_id)
+    let preset = crate::logic::preset_record::for_game(game_id).rules.read();
+    let overrides = crate::state::read().games.overrides.read(game_id);
+    SliceRules {
+        biome_climate_config: overrides.biome_climate,
+        map_config: overrides.map.unwrap_or(preset.map_config),
+        map_center_offset: overrides.map_center_offset,
+        ..preset,
+    }
 }
-pub fn create(game_id: u32, game: GameRegistry, rules: SliceRules) {
+pub fn create(game_id: u32, game: GameRegistry, overrides: GameOverrides) {
     let state = crate::state::write();
     assert!(game_id != 0 && !game_exists(game_id), "game already exists or reserved");
     assert!(game.creator != 0.try_into().unwrap() && game.preset_id != 0, "invalid game identity");
     assert!(game.start_main_at >= game.start_settling_at && game.end_at > game.start_main_at, "invalid game times");
-    assert!(rules.tick_config.armies_tick_in_seconds != 0, "zero army tick");
-    if rules.bitcoin_mine_config.enabled {
-        assert!(rules.tick_config.bitcoin_phase_in_seconds != 0, "zero Bitcoin phase duration");
-        assert!(rules.bitcoin_mine_config.prize_per_phase != 0, "zero Bitcoin prize");
-    }
-    assert!(rules.bitcoin_mine_config.owner_cut_bps <= 10000, "invalid Bitcoin owner cut");
-    state.games.rules.write(game_id, rules);
+    state.games.overrides.write(game_id, overrides);
     state.games.next_entity.write(game_id, 1);
     write_game(game_id, game);
     let mut values = array![];
-    rules.serialize(ref values);
+    overrides.serialize(ref values);
     emit_game_fact(
-        RowSet { version: 1, model: 'SliceRules', keys: array![game_id.into()].span(), values: values.span() },
+        RowSet { version: 1, model: 'GameOverrides', keys: array![game_id.into()].span(), values: values.span() },
     );
     emit_counter(game_id, 1);
 }

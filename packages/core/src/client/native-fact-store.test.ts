@@ -43,6 +43,55 @@ const structure = (owner: string, game = 1) => ({
 });
 
 describe("native fact store", () => {
+  it("preserves absent map overrides and validates present overrides atomically", () => {
+    const store = new NativeFactStore();
+    const overrides: NativeRows["GameOverrides"] = {
+      game_id: 1,
+      registration_start: 100,
+      biome_climate: {
+        elevation_scale_bps: 10000,
+        moisture_scale_bps: 10000,
+        elevation_bias_bps: 0,
+        moisture_bias_bps: 0,
+        elevation_seed: 1,
+        moisture_seed: 2,
+      },
+      map: null,
+      map_center_offset: 42,
+    };
+    store.applyFacts([set("0x1", "GameOverrides", overrides)]);
+    expect(store.require("GameOverrides", { game_id: 1 }).map).toBeNull();
+    const map: NonNullable<NativeRows["GameOverrides"]["map"]> = {
+      reward_resource_amount: 10,
+      shards_mines_win_probability: 0,
+      shards_mines_fail_probability: 1,
+      camp_win_probability: 1,
+      camp_fail_probability: 0,
+      holysite_win_probability: 0,
+      holysite_fail_probability: 1,
+      bitcoin_mine_win_probability: 0,
+      bitcoin_mine_fail_probability: 1,
+      hyps_win_prob: 0,
+      hyps_fail_prob: 1,
+      hyps_fail_prob_increase_p_hex: 0,
+      hyps_fail_prob_increase_p_fnd: 0,
+      relic_discovery_interval_sec: 60000,
+      relic_hex_dist_from_center: 10,
+      relic_chest_relics_per_chest: 1,
+    };
+    store.applyFacts([set("0x1", "GameOverrides", { ...overrides, map })]);
+    const stored = store.require("GameOverrides", { game_id: 1 });
+    expect(stored.map).toEqual(map);
+    expect(Object.isFrozen(stored.map)).toBe(true);
+    expect(() => store.applyFacts([set("0x1", "GameOverrides", { ...overrides, map: {} })])).toThrow(
+      "Unexpected fields in GameOverrides.map",
+    );
+    expect(store.require("GameOverrides", { game_id: 1 })).toBe(stored);
+    expect(() => store.applyFacts([set("0x1", "GameOverrides", { ...overrides, map: undefined })])).toThrow(
+      "Invalid row in GameOverrides.map",
+    );
+  });
+
   it("indexes native keys by game and rejects reserved games", () => {
     const store = new NativeFactStore();
     store.applyFacts([set("0x1", "VillageRaid", { game_id: 2, entity_id: 4, last_tick: "300" })]);

@@ -1,14 +1,12 @@
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
-use crate::buildings::{IBuildingRulesDispatcher, IBuildingRulesDispatcherTrait};
-use crate::camps::{
-    ICampRulesDispatcher, ICampRulesDispatcherTrait, ICampRulesSafeDispatcher, ICampRulesSafeDispatcherTrait,
-};
+use crate::camps::{ICampRulesSafeDispatcher, ICampRulesSafeDispatcherTrait};
 use crate::commands::{Command, CreateExplorer, Explore};
 use crate::discovery::{Discovery, surface};
-use crate::game::IPointsDispatcherTrait;
+use crate::game::{IGameDispatcherTrait, IPointsDispatcherTrait};
 use crate::geometry::{neighbor, tile_key};
 use crate::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
 use crate::map::IMapLogicDispatcher;
+use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
 use crate::structures::{IStructureOperationsDispatcher, IStructureOperationsDispatcherTrait};
@@ -46,17 +44,23 @@ pub fn rules(blitz: bool) -> crate::rules::SliceRules {
     rules
 }
 fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
-    let (d, home, _) = setup_with_rules(rules(blitz));
-    start_cheat_caller_address(d.games, super::authority());
-    IBuildingRulesDispatcher { contract_address: d.games }
-        .configure_buildings(3, super::building_commands::rules(), None);
-    ICampRulesDispatcher { contract_address: d.games }
-        .configure_camps(
-            3,
+    let mut preset = super::resource_commands::fixture_preset(rules(blitz));
+    preset.structures.buildings = super::building_commands::rules();
+    preset.structures.board = None;
+    preset
+        .structures
+        .camps =
             array![ResourceAmount { resource_type: 1, amount: 100 }, ResourceAmount { resource_type: 2, amount: 20 }]
-                .span(),
-        );
-    stop_cheat_caller_address(d.games);
+        .span();
+    preset
+        .exploration =
+            array![
+                crate::exploration_rewards::ExplorationReward {
+                    resource_type: 2, amount: 10, amount_max: 10, weight: 1,
+                },
+            ]
+        .span();
+    let (d, home, _) = super::resource_commands::setup_with_preset(preset);
     (d, home)
 }
 fn coord() -> Coord {
@@ -164,20 +168,27 @@ fn camp_reveals_six_biomes_without_neighbor_lotteries_or_points() {
 fn camp_configuration_is_immutable_scoped_and_requires_authority() {
     let (d, _, _) = setup_with_rules(rules(true));
     let safe = ICampRulesSafeDispatcher { contract_address: d.games };
-    assert!(safe.configure_camps(3, array![].span()).is_err());
+    let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: d.games };
+    let mut preset = super::resource_commands::fixture_preset(rules(true));
+    preset.structures.camps = array![].span();
+    start_cheat_caller_address(d.games, d.actor);
+    assert!(registrar.register_preset(20000, preset).is_err());
     start_cheat_caller_address(d.games, super::authority());
-    assert!(safe.configure_camps(999, array![].span()).is_err());
-    assert!(safe.configure_camps(3, array![ResourceAmount { resource_type: 99, amount: 1 }].span()).is_err());
-    assert!(safe.configure_camps(3, array![].span()).is_ok());
-    assert!(safe.configure_camps(3, array![].span()).is_err());
-    assert!(safe.camp_resources(3).unwrap().is_empty());
-    assert!(safe.camp_resources(2).is_err());
+    let mut invalid = preset;
+    invalid.structures.camps = array![ResourceAmount { resource_type: 99, amount: 1 }].span();
+    assert!(registrar.register_preset(20000, invalid).is_err());
+    assert!(registrar.register_preset(20000, preset).is_ok());
+    assert!(registrar.register_preset(20000, preset).is_err());
+    stop_cheat_caller_address(d.games);
+    let games = crate::game::IGameDispatcher { contract_address: d.games };
+    super::recorded::seed_game_with_preset(d.games, 4, games.game(3), preset);
+    assert!(safe.camp_resources(4).unwrap().is_empty());
+    assert!(safe.camp_resources(999).is_err());
 }
 
 #[test]
 fn recorded_exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
     let (d, home) = setup(true);
-    super::relics::configure_extraction(d, 2, 10);
     for resource in array![26_u8, 35, 36] {
         grant(d, home, resource, 100 * RESOURCE_PRECISION);
     }
@@ -213,7 +224,6 @@ fn recorded_exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
 #[test]
 fn recorded_eternum_exploration_does_not_create_a_camp() {
     let (d, home) = setup(false);
-    super::relics::configure_extraction(d, 2, 10);
     for resource in array![26_u8, 35, 36] {
         grant(d, home, resource, 100 * RESOURCE_PRECISION);
     }

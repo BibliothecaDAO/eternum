@@ -42,23 +42,8 @@ pub mod SeasonLogic {
     }
     #[abi(embed_v0)]
     impl SeasonLifecycle of crate::game::ISeasonLifecycle<ContractState> {
-        fn configure_season_win(ref self: ContractState, game_id: u32, points: u128) {
-            crate::logic::release::assert_authority();
-            crate::logic::game::game(game_id);
-            assert!(self.data.season.win_thresholds.read(game_id).is_none(), "season win threshold already configured");
-            self.data.season.win_thresholds.write(game_id, Some(points));
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'SeasonWinThreshold',
-                        keys: array![game_id.into()].span(),
-                        values: array![points.into()].span(),
-                    },
-                );
-        }
         fn season_win_threshold(self: @ContractState, game_id: u32) -> u128 {
-            self.data.season.win_thresholds.read(game_id).expect('missing season win threshold')
+            crate::logic::preset_record::for_game(game_id).season_win_points.read()
         }
         fn close_season(
             ref self: ContractState,

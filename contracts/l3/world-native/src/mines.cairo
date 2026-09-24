@@ -32,7 +32,6 @@ pub struct MineWeight {
 
 #[starknet::interface]
 pub trait IMineRules<T> {
-    fn configure_mines(ref self: T, game_id: u32, kinds: Span<MineKindEntry>, surface: Span<MineWeight>);
     #[cfg(test)]
     fn mine_kind(self: @T, key: MineKindKey) -> MineKindConfig;
     #[cfg(test)]

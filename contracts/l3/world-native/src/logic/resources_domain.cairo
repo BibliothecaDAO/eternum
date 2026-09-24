@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod ResourcesLogic {
     use starknet::ContractAddress;
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+    use starknet::storage::StoragePointerReadAccess;
     use crate::arrivals::{ArrivalKey, OffloadArrival, has_arrived};
     use crate::events::RowSet;
     use crate::logic::arrivals::ArrivalState;
@@ -9,7 +9,7 @@ pub mod ResourcesLogic {
     use crate::logic::release::ReleaseState;
     use crate::logic::resources::ResourceState;
     use crate::ownership::{Story, StoryEvent};
-    use crate::resources::{ResourceKey, ResourceRule};
+    use crate::resources::ResourceKey;
     use crate::troops::ExplorerKey;
 
     component!(path: crate::logic::mines::MineState, storage: mines, event: MineEvent);
@@ -73,52 +73,6 @@ pub mod ResourcesLogic {
                 );
         }
 
-        fn configure_resources(ref self: ContractState, game_id: u32, rules: Span<ResourceRule>) {
-            crate::logic::release::assert_authority();
-            let _ = crate::logic::game::game(game_id);
-            assert!(
-                !self.resources.data.resources.resources_configured.read(game_id), "resource rules already configured",
-            );
-            assert!(rules.len() == 58, "incomplete resource rules");
-            for index in 0_u32..58 {
-                let rule = *rules.at(index);
-                assert!(rule.resource_type.into() == index + 1, "resource rules must be ordered");
-                self
-                    .resources
-                    .data
-                    .resources
-                    .resource_rules
-                    .write(
-                        (game_id, rule.resource_type),
-                        (
-                            rule.unit_weight,
-                            Into::<u64, u128>::into(rule.realm_rate)
-                                + Into::<u64, u128>::into(rule.village_rate) * crate::resources::RESOURCE_RATE_SCALE,
-                        ),
-                    );
-                let mut values = array![];
-                rule.serialize(ref values);
-                self
-                    .emit(
-                        RowSet {
-                            version: 1,
-                            model: 'ResourceRule',
-                            keys: array![game_id.into(), rule.resource_type.into()].span(),
-                            values: values.span().slice(1, values.len() - 1),
-                        },
-                    );
-            }
-            self.resources.data.resources.resources_configured.write(game_id, true);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'ResourceRulesReady',
-                        keys: array![game_id.into()].span(),
-                        values: array![1].span(),
-                    },
-                );
-        }
         fn initialize_explorer_resources(
             ref self: ContractState, key: ResourceKey, amount: u128, game_context: crate::commands::ResourceContext,
         ) {

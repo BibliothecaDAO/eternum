@@ -1,7 +1,7 @@
 #[starknet::component]
 pub mod FaithState {
     use starknet::ContractAddress;
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use crate::events::{RowDeleted, RowSet};
     use crate::faith::{FaithfulStructure, WonderFaith, WonderFaithWinners};
     use crate::logic::release::ReleaseState;
@@ -28,23 +28,8 @@ pub mod FaithState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::faith::IFaith<ComponentState<TContractState>> {
-        fn configure_faith(ref self: ComponentState<TContractState>, game_id: u32, rules: crate::faith::FaithRules) {
-            crate::logic::release::assert_authority();
-            crate::logic::game::game(game_id);
-            assert!(self.data.faith.faith_rules.read(game_id).is_none(), "faith rules already configured");
-            assert!(rules.owner_share_bps <= 10000, "invalid faith owner share");
-            self.data.faith.faith_rules.write(game_id, Some(rules));
-            let mut values = array![];
-            rules.serialize(ref values);
-            self
-                .emit(
-                    RowSet {
-                        version: 1, model: 'FaithRules', keys: array![game_id.into()].span(), values: values.span(),
-                    },
-                );
-        }
         fn faith_rules(self: @ComponentState<TContractState>, game_id: u32) -> crate::faith::FaithRules {
-            self.data.faith.faith_rules.read(game_id).expect('missing faith rules')
+            crate::logic::preset_record::for_game(game_id).faith_rules.read()
         }
         fn pledge_faith(
             ref self: ComponentState<TContractState>,
@@ -282,7 +267,7 @@ pub mod FaithState {
             structure: StructureRecord,
             timestamp: u64,
         ) -> FaithfulStructure {
-            let rules = self.data.faith.faith_rules.read(game_id).expect('missing faith rules');
+            let rules = crate::logic::preset_record::for_game(game_id).faith_rules.read();
             let rate = if structure.metadata.has_wonder {
                 rules.wonder_rate
             } else if structure.base.category == 1 {

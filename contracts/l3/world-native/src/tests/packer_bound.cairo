@@ -6,8 +6,6 @@ use eternum_randomness_protocol::entrypoint::{
 };
 use eternum_randomness_protocol::{decode_envelope, encode_envelope};
 use snforge_std::{CheatSpan, cheat_caller_address, start_cheat_block_timestamp_global, start_cheat_caller_address};
-use crate::buildings::{IBuildingRulesDispatcher, IBuildingRulesDispatcherTrait};
-use crate::camps::{ICampRulesDispatcher, ICampRulesDispatcherTrait};
 use crate::commands::{Command, CreateExplorer, ExecutionContext, Explore};
 use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
 use crate::geometry::{neighbor, tile_key};
@@ -19,7 +17,7 @@ use crate::tests::state::{GameState, MapObservationTrait, StructureObservationTr
 use crate::troops::ExplorerKey;
 use super::recorded::{FixtureAction, make_context, make_intent};
 use super::recorded_receipts::RecordedReceiptsTrait;
-use super::resource_commands::{execute, grant, setup_with_rules};
+use super::resource_commands::{execute, grant, setup_with_preset};
 use super::{Deployment, signature, submitter};
 
 /// The gateway's `MAX_BATCH`; change both together.
@@ -53,17 +51,24 @@ fn a_full_batch_of_camp_discovering_explores_fits_one_transaction() {
 fn setup_realm_with_explorers(count: u8) -> (Deployment, ResourceKey) {
     let mut rules = super::camps::rules(true);
     rules.troop_limit_config.settlement_armies = count.into();
-    let (d, home, _) = setup_with_rules(rules);
-    start_cheat_caller_address(d.games, super::authority());
-    IBuildingRulesDispatcher { contract_address: d.games }
-        .configure_buildings(3, super::building_commands::rules(), None);
-    ICampRulesDispatcher { contract_address: d.games }
-        .configure_camps(
-            3,
+    let mut preset = super::resource_commands::fixture_preset(rules);
+    preset.structures.buildings = super::building_commands::rules();
+    preset.structures.board = None;
+    preset
+        .structures
+        .camps =
             array![ResourceAmount { resource_type: 1, amount: 100 }, ResourceAmount { resource_type: 2, amount: 20 }]
-                .span(),
-        );
-    super::relics::configure_extraction(d, 2, 10);
+        .span();
+    preset
+        .exploration =
+            array![
+                crate::exploration_rewards::ExplorationReward {
+                    resource_type: 2, amount: 10, amount_max: 10, weight: 1,
+                },
+            ]
+        .span();
+    let (d, home, _) = setup_with_preset(preset);
+    start_cheat_caller_address(d.games, super::authority());
     for resource in array![26_u8, 35, 36] {
         grant(d, home, resource, 100 * RESOURCE_PRECISION);
     }

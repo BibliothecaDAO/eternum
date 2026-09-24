@@ -1,6 +1,6 @@
 #[starknet::component]
 pub mod MarketState {
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use crate::events::{RowDeleted, RowSet};
     use crate::market::{BankRules, LiquidityKey, Market, MarketKey};
 
@@ -18,28 +18,8 @@ pub mod MarketState {
     }
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
-        fn configure(ref self: ComponentState<TContractState>, game_id: u32, rules: BankRules) {
-            assert!(!self.data.market.bank_rules_configured.read(game_id), "bank rules already configured");
-            assert!(
-                rules.lp_fee_num < rules.lp_fee_denom
-                    && rules.owner_fee_num <= rules.owner_fee_denom
-                    && rules.owner_fee_denom != 0,
-                "invalid bank fee ratio",
-            );
-            self.data.market.bank_rules_configured.write(game_id, true);
-            self.data.market.bank_rules.write(game_id, rules);
-            let mut values = array![];
-            rules.serialize(ref values);
-            self
-                .emit(
-                    RowSet {
-                        version: 1, model: 'BankRules', keys: array![game_id.into()].span(), values: values.span(),
-                    },
-                );
-        }
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> BankRules {
-            assert!(self.data.market.bank_rules_configured.read(game_id), "missing bank rules");
-            self.data.market.bank_rules.read(game_id)
+            crate::logic::preset_record::for_game(game_id).bank_rules.read()
         }
         fn market(self: @ComponentState<TContractState>, key: MarketKey) -> Market {
             self.data.market.markets.read((key.game_id, key.resource_type))

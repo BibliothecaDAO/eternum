@@ -1,14 +1,10 @@
 use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::commands::Command;
-use crate::production::{
-    IProductionRulesDispatcher, IProductionRulesDispatcherTrait, IProductionRulesSafeDispatcher,
-    IProductionRulesSafeDispatcherTrait, ProductionBonus, ProductionRecipe, RecipeConfig, RefillProduction,
-    bonus_output,
-};
-use crate::resources::{
-    IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceAmount, ResourceRule, ResourceSlot,
-};
+use crate::game::{IGameDispatcher, IGameDispatcherTrait};
+use crate::production::{ProductionBonus, ProductionRecipe, RecipeConfig, RefillProduction, bonus_output};
+use crate::registrar::{IRegistrarSafeDispatcher, IRegistrarSafeDispatcherTrait};
+use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceRule, ResourceSlot};
 use crate::tests::state::ResourceObservationTrait;
 use super::recorded_receipts::RecordedReceiptsTrait;
 use super::resource_commands::{
@@ -84,18 +80,12 @@ pub fn recipes() -> Span<RecipeConfig> {
     recipes.span()
 }
 
-fn configure(deployment: super::Deployment) {
-    start_cheat_caller_address(deployment.games, super::authority());
-    IProductionRulesDispatcher { contract_address: deployment.games }.configure_production(3, recipes());
-    stop_cheat_caller_address(deployment.games);
-}
 
 #[test]
 fn an_arena_game_refuses_labor_paid_production() {
     let mut rules = super::recorded::rules();
     rules.command_mask = super::recorded::BLITZ_COMMAND_MASK;
     let (deployment, key, _) = setup_with_rules(rules);
-    configure(deployment);
     let refill = RefillProduction {
         structure_id: key.entity_id, resource_types: array![26].span(), amounts: array![1].span(),
     };
@@ -111,7 +101,6 @@ fn an_arena_game_refuses_labor_paid_production() {
 #[test]
 fn late_refills_use_recorded_troop_bonus_expiry_without_retroactive_production() {
     let (deployment, key, _) = setup();
-    configure(deployment);
     grant(deployment, key, 2, 100);
     set_fixture(
         deployment.games,
@@ -138,7 +127,6 @@ fn late_refills_use_recorded_troop_bonus_expiry_without_retroactive_production()
 #[test]
 fn late_production_payment_failure_rolls_back_prior_debits_and_consumes_ticket() {
     let (deployment, key, _) = setup();
-    configure(deployment);
     grant(deployment, key, 2, 100);
     let before = resource_facts(deployment, key);
     let command = Command::BurnResourceForResourceProduction(
@@ -152,15 +140,15 @@ fn late_production_payment_failure_rolls_back_prior_debits_and_consumes_ticket()
 #[feature("safe_dispatcher")]
 fn production_recipes_require_authority_and_cannot_be_reconfigured() {
     let (deployment, _, _) = setup();
-    let rules = IProductionRulesSafeDispatcher { contract_address: deployment.games };
+    let registry = IRegistrarSafeDispatcher { contract_address: deployment.games };
+    let preset = super::resource_commands::fixture_preset(super::recorded::rules());
     start_cheat_caller_address(deployment.games, deployment.actor);
-    assert!(rules.configure_production(3, recipes()).is_err());
-    stop_cheat_caller_address(deployment.games);
-    configure(deployment);
+    assert!(registry.register_preset(10004, preset).is_err());
     start_cheat_caller_address(deployment.games, super::authority());
-    assert!(rules.configure_production(3, recipes()).is_err());
+    assert!(registry.register_preset(10003, preset).is_err());
     stop_cheat_caller_address(deployment.games);
 }
+
 
 #[test]
 fn resource_configuration_keeps_full_width_rates_without_storing_its_key_twice() {
@@ -178,28 +166,22 @@ fn resource_configuration_keeps_full_width_rates_without_storing_its_key_twice()
                 },
             );
     }
-    start_cheat_caller_address(deployment.games, super::authority());
-    store.configure_resources(2, rules.span());
-    stop_cheat_caller_address(deployment.games);
+    let mut preset = super::recorded::fixture_preset(super::recorded::rules());
+    preset.resources.resources = rules.span();
+    super::recorded::seed_game_with_preset(
+        deployment.games, 3, IGameDispatcher { contract_address: deployment.games }.game(1), preset,
+    );
     for expected in rules {
-        assert_eq!(store.resource_rule(2, expected.resource_type), expected);
+        assert_eq!(store.resource_rule(3, expected.resource_type), expected);
     }
 }
 
 #[test]
 fn all_refill_strategies_pay_their_inputs_and_queue_output_without_an_active_building() {
     let (deployment, home, _) = setup();
-    configure(deployment);
     let precision = crate::rules::RESOURCE_PRECISION;
     grant(deployment, home, 2, 2 * precision + 100);
     grant(deployment, home, 3, 100);
-    set_fixture(
-        deployment.games,
-        selector!("resources"),
-        selector!("resource_rules"),
-        array![3, 2].span(),
-        (1_u128, 0x10000000000000002_u128, 7_u64),
-    );
     let refill = RefillProduction {
         structure_id: home.entity_id, resource_types: array![2].span(), amounts: array![2 * precision].span(),
     };
@@ -218,7 +200,6 @@ fn all_refill_strategies_pay_their_inputs_and_queue_output_without_an_active_bui
 #[test]
 fn malformed_refills_and_out_of_game_actions_reject_without_spending() {
     let (deployment, home, _) = setup();
-    configure(deployment);
     grant(deployment, home, 2, 100);
     grant(deployment, home, 3, 100);
     let valid = RefillProduction {
@@ -258,7 +239,6 @@ fn blitz_rejects_labor_recipes_but_accepts_resource_production() {
             ..super::recorded::rules(),
         },
     );
-    configure(deployment);
     grant(deployment, key, 2, 100);
     grant(deployment, key, 3, 100);
     let refill = RefillProduction {

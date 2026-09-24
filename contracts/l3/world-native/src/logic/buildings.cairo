@@ -24,10 +24,7 @@ pub fn building_key(game_id: u32, base: StructureBase, coord: Coord) -> Building
 #[starknet::component]
 pub mod BuildingState {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
-    use crate::buildings::{
-        Building, BuildingKey, BuildingRule, BuildingRuleConfig, BuildingRuleKey, BuildingTerms, StructureBuildings,
-        change_count,
-    };
+    use crate::buildings::{Building, BuildingKey, BuildingRule, BuildingRuleKey, StructureBuildings, change_count};
     use crate::events::{RowDeleted, RowSet};
     use crate::resources::{
         IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceAmount, ResourceKey,
@@ -182,102 +179,14 @@ pub mod BuildingState {
                 self.write_counts(key.game_id, key.entity_id, counts);
             }
         }
-        fn configure(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            rules: Span<BuildingRuleConfig>,
-            board: Option<crate::buildings::BoardRules>,
-        ) {
-            assert!(!self.data.buildings.configured.read(game_id), "immutable building rules");
-            assert!(rules.len() == 40, "incomplete building rules");
-            let mut expected = 1_u8;
-            for config in rules {
-                assert!(*config.category == expected, "building rules must be ordered");
-                let rule = *config.rule;
-                self
-                    .data
-                    .buildings
-                    .terms
-                    .write(
-                        (game_id, expected),
-                        BuildingTerms {
-                            population_cost: rule.population_cost,
-                            capacity_grant: rule.capacity_grant,
-                            simple_count: rule.simple_cost.len().try_into().unwrap(),
-                            complex_count: rule.complex_cost.len().try_into().unwrap(),
-                        },
-                    );
-                self.write_costs(game_id, expected, false, rule.simple_cost);
-                self.write_costs(game_id, expected, true, rule.complex_cost);
-                let mut values = array![];
-                rule.serialize(ref values);
-                self
-                    .emit(
-                        RowSet {
-                            version: 1,
-                            model: 'BuildingRule',
-                            keys: array![game_id.into(), expected.into()].span(),
-                            values: values.span(),
-                        },
-                    );
-                expected += 1;
-            }
-            if let Some(board) = board {
-                assert!(board.demolition_refund_bps <= 10000, "invalid demolition refund");
-                assert!(board.workshop_rate != 0, "zero workshop rate");
-                assert!(board.barracks_ii_cost != 0 && board.barracks_iii_cost != 0, "zero barracks cost");
-                let count: u8 = board.neighbors.len().try_into().unwrap();
-                for index in 0..count {
-                    let bonus = *board.neighbors.at(index.into());
-                    assert!(
-                        bonus.building > 0 && bonus.building <= 40 && bonus.neighbor <= 40, "invalid neighbor category",
-                    );
-                    self.data.buildings.board_neighbors.write((game_id, index), bonus);
-                }
-                self
-                    .data
-                    .buildings
-                    .board_terms
-                    .write(
-                        game_id,
-                        Some(
-                            crate::buildings::BoardTerms {
-                                demolition_refund_bps: board.demolition_refund_bps,
-                                workshop_rate: board.workshop_rate,
-                                barracks_ii_cost: board.barracks_ii_cost,
-                                barracks_iii_cost: board.barracks_iii_cost,
-                                neighbor_count: count,
-                            },
-                        ),
-                    );
-                let mut values = array![];
-                board.serialize(ref values);
-                self
-                    .emit(
-                        RowSet {
-                            version: 1, model: 'BoardRules', keys: array![game_id.into()].span(), values: values.span(),
-                        },
-                    );
-            }
-            self.data.buildings.configured.write(game_id, true);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'BuildingRulesReady',
-                        keys: array![game_id.into()].span(),
-                        values: array![1].span(),
-                    },
-                );
-        }
         fn board(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::buildings::BoardRules> {
-            assert!(self.data.buildings.configured.read(game_id), "missing building rules");
-            let Some(terms) = self.data.buildings.board_terms.read(game_id) else {
+            let preset = crate::logic::preset_record::for_game(game_id);
+            let Some(terms) = preset.board_terms.read() else {
                 return None;
             };
             let mut neighbors = array![];
             for index in 0..terms.neighbor_count {
-                neighbors.append(self.data.buildings.board_neighbors.read((game_id, index)));
+                neighbors.append(preset.board_neighbors.read(index));
             }
             Some(
                 crate::buildings::BoardRules {
@@ -290,9 +199,9 @@ pub mod BuildingState {
             )
         }
         fn rule(self: @ComponentState<TContractState>, key: BuildingRuleKey) -> BuildingRule {
-            assert!(self.data.buildings.configured.read(key.game_id), "missing building rules");
+            let preset = crate::logic::preset_record::for_game(key.game_id);
             assert!(key.category > 0 && key.category <= 40, "invalid building category");
-            let terms = self.data.buildings.terms.read((key.game_id, key.category));
+            let terms = preset.building_terms.read(key.category);
             BuildingRule {
                 population_cost: terms.population_cost,
                 capacity_grant: terms.capacity_grant,
@@ -300,25 +209,13 @@ pub mod BuildingState {
                 complex_cost: self.read_costs(key, true, terms.complex_count),
             }
         }
-        fn write_costs(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            category: u8,
-            complex: bool,
-            costs: Span<ResourceAmount>,
-        ) {
-            for index in 0..costs.len() {
-                let cost = *costs.at(index);
-                assert!(cost.resource_type > 0 && cost.resource_type <= 58, "invalid building cost resource");
-                self.data.buildings.costs.write((game_id, category, complex, index.try_into().unwrap()), cost);
-            }
-        }
         fn read_costs(
             self: @ComponentState<TContractState>, key: BuildingRuleKey, complex: bool, count: u8,
         ) -> Span<ResourceAmount> {
+            let preset = crate::logic::preset_record::for_game(key.game_id);
             let mut costs = array![];
             for index in 0..count {
-                costs.append(self.data.buildings.costs.read((key.game_id, key.category, complex, index)));
+                costs.append(preset.building_costs.read((key.category, complex, index)));
             }
             costs.span()
         }

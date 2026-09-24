@@ -80,7 +80,7 @@ fn fresh_shard_uses_the_published_release_without_running_its_upgrade_migration(
     let preset = super::registrar::definition(true);
     start_cheat_caller_address(games, authority());
     registrar.register_preset(1, preset);
-    let game_id = registrar.create_game(super::registrar::params(true), preset);
+    let game_id = registrar.create_game(super::registrar::params(true));
     assert_eq!(releases.game_release(game_id), 7);
     releases.register_release(7, release);
     releases.apply_release(game_id, 7);
@@ -98,7 +98,7 @@ fn release_registration_is_authorized_immutable_and_pins_only_new_games() {
     let params = super::registrar::params(true);
     start_cheat_caller_address(d.games, authority());
     registrar.register_preset(1, preset);
-    let first = registrar.create_game(params, preset);
+    let first = registrar.create_game(params);
     let original = releases.release(1);
     let next = Release {
         classes: games_storage::release::LogicClasses { movement: declare_logic("TroopFixture"), ..original.classes },
@@ -115,8 +115,8 @@ fn release_registration_is_authorized_immutable_and_pins_only_new_games() {
     releases.register_release(2, next);
     assert_eq!(releases.current_release(), 2);
     assert_eq!(releases.game_release(first), 1);
-    assert_eq!(registrar.create_game(params, preset), first);
-    let second = registrar.create_game(CreateGameParams { name: 'new-release', ..params }, preset);
+    assert_eq!(registrar.create_game(params), first);
+    let second = registrar.create_game(CreateGameParams { name: 'new-release', ..params });
     assert_eq!(releases.game_release(second), 2);
     let mut events = spy_events();
     releases.register_release(2, next);
@@ -374,7 +374,7 @@ fn gameplay_facts(address: starknet::ContractAddress) -> Array<felt252> {
             let state = crate::state::read();
             let mut facts = array![];
             state.games.games.read(1).serialize(ref facts);
-            state.games.rules.read(1).serialize(ref facts);
+            crate::logic::game::rules(1).serialize(ref facts);
             state.games.next_entity.read(1).serialize(ref facts);
             for explorer_id in array![7, 8] {
                 crate::logic::troops::explorer(ExplorerKey { game_id: 1, explorer_id }).serialize(ref facts);

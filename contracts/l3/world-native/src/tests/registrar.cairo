@@ -3,6 +3,7 @@ use snforge_std::{
     EventSpyTrait, EventsFilterTrait, start_cheat_block_timestamp_global, start_cheat_caller_address,
     stop_cheat_caller_address,
 };
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::combat::TroopsTrait;
 use crate::commands::{Command, CreateExplorer, Explore};
 use crate::game::{GameStatus, IGameDispatcher, IGameDispatcherTrait, status_at};
@@ -48,7 +49,7 @@ fn safe(d: super::Deployment, caller: starknet::ContractAddress) -> IRegistrarSa
     snforge_std::cheat_caller_address(d.games, caller, snforge_std::CheatSpan::TargetCalls(1));
     IRegistrarSafeDispatcher { contract_address: d.games }
 }
-pub fn definition(blitz: bool) -> PresetDefinition {
+pub(crate) fn definition(blitz: bool) -> PresetDefinition {
     let mut resources = array![];
     for resource_type in 1_u8..59 {
         resources.append(ResourceRule { resource_type, unit_weight: 1, realm_rate: 10, village_rate: 5 });
@@ -186,22 +187,15 @@ pub fn params(blitz: bool) -> CreateGameParams {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn launch_rejects_unregistered_or_stale_presets_before_allocating() {
+fn launch_rejects_unregistered_presets_before_allocating() {
     let d = setup();
     let preset = definition(true);
-    assert!(safe(d, super::authority()).create_game(params(true), preset).is_err());
+    assert!(safe(d, super::authority()).create_game(params(true)).is_err());
     assert!(safe(d, super::authority()).register_preset(0, preset).is_err());
     assert!(safe(d, d.actor).register_preset(1, preset).is_err());
     registry(d).register_preset(1, preset);
     assert_eq!(registry(d).preset_commitment(1), crate::presets::commitment(preset));
-    assert!(
-        safe(d, super::authority())
-            .create_game(
-                params(true),
-                PresetDefinition { rules: crate::rules::SliceRules { mode_rules: 0, ..preset.rules }, ..preset },
-            )
-            .is_err(),
-    );
+    assert!(safe(d, super::authority()).create_game(CreateGameParams { preset_id: 99, ..params(true) }).is_err());
     assert_eq!(registry(d).next_game_id(), 1);
 }
 
@@ -211,7 +205,7 @@ fn registered_presets_are_immutable_and_changed_rules_require_a_new_id() {
     let d = setup();
     let original = definition(true);
     registry(d).register_preset(1, original);
-    let old_id = registry(d).create_game(params(true), original);
+    let old_id = registry(d).create_game(params(true));
     let mut changed = original;
     changed.rules.troop_stamina_config.stamina_explore_stamina_cost += 1;
     assert!(safe(d, d.actor).register_preset(1, changed).is_err());
@@ -219,14 +213,14 @@ fn registered_presets_are_immutable_and_changed_rules_require_a_new_id() {
     assert!(safe(d, super::authority()).register_preset(1, original).is_err());
     assert!(safe(d, super::authority()).register_preset(1, changed).is_err());
     assert_eq!(registry(d).preset_commitment(1), crate::presets::commitment(original));
-    assert_eq!(registry(d).create_game(params(true), original), old_id);
+    assert_eq!(registry(d).create_game(params(true)), old_id);
     let next_params = CreateGameParams { name: 'next', ..params(true) };
-    assert!(safe(d, super::authority()).create_game(next_params, changed).is_err());
-    let next_original_id = registry(d).create_game(next_params, original);
+    assert!(safe(d, super::authority()).create_game(CreateGameParams { preset_id: 101, ..next_params }).is_err());
+    let next_original_id = registry(d).create_game(next_params);
     assert!(safe(d, d.actor).register_preset(101, changed).is_err());
     registry(d).register_preset(101, changed);
     assert_eq!(registry(d).preset_commitment(101), crate::presets::commitment(changed));
-    let new_id = registry(d).create_game(CreateGameParams { name: 'changed', preset_id: 101, ..params(true) }, changed);
+    let new_id = registry(d).create_game(CreateGameParams { name: 'changed', preset_id: 101, ..params(true) });
     let games = IGameDispatcher { contract_address: d.games };
     assert_eq!(
         games.rules(old_id).troop_stamina_config.stamina_explore_stamina_cost,
@@ -243,15 +237,41 @@ fn registered_presets_are_immutable_and_changed_rules_require_a_new_id() {
 }
 
 #[test]
+fn identical_content_under_a_second_id_reuses_the_record_without_rewriting_withdrawals() {
+    let d = setup();
+    let mut preset = definition(false);
+    let token = crate::withdrawals::ResourceToken { resource_type: 1, token: 0xfee.try_into().unwrap() };
+    preset
+        .economy
+        .withdrawals = Some(WithdrawalPreset { tokens: array![token].span(), ..preset.economy.withdrawals.unwrap() });
+    let commitment = crate::presets::commitment(preset);
+    registry(d).register_preset(1, preset);
+    let stored_token = snforge_std::interact_with_state(
+        d.games, || {
+            crate::state::read().presets.entry(commitment).withdrawal_tokens.read(1)
+        },
+    );
+    assert_eq!(stored_token, token.token);
+    // Re-entering the withdrawal writer would reject the already populated resource token.
+    registry(d).register_preset(2, preset);
+    assert_eq!(registry(d).preset_commitment(1), commitment);
+    assert_eq!(registry(d).preset_commitment(2), commitment);
+    let reused_token = snforge_std::interact_with_state(
+        d.games, || {
+            crate::state::read().presets.entry(commitment).withdrawal_tokens.read(1)
+        },
+    );
+    assert_eq!(reused_token, stored_token);
+}
+
+#[test]
 fn blitz_launch_initializes_domains_once_and_allocates_isolated_games() {
     let d = setup();
     let preset = definition(true);
     registry(d).register_preset(1, preset);
     let games = IGameDispatcher { contract_address: d.games };
     for expected in 1_u32..3 {
-        assert_eq!(
-            registry(d).create_game(CreateGameParams { name: expected.into(), ..params(true) }, preset), expected,
-        );
+        assert_eq!(registry(d).create_game(CreateGameParams { name: expected.into(), ..params(true) }), expected);
         let game = games.game(expected);
         assert_eq!(game.preset_id, 1);
         assert_eq!(game.end_at, 400);
@@ -274,21 +294,14 @@ fn blitz_launch_accepts_empty_construction_requirements_without_allowing_reconfi
     let d = setup();
     let preset = definition(true);
     registry(d).register_preset(1, preset);
-    let game_id = registry(d).create_game(params(true), preset);
+    let game_id = registry(d).create_game(params(true));
     let economy = crate::hyperstructures::IHyperstructuresDispatcher { contract_address: d.games };
     assert_eq!(
         crate::hyperstructures::IHyperstructuresDispatcherTrait::hyperstructure_rules(economy, game_id),
         preset.economy.hyperstructures,
     );
     start_cheat_caller_address(d.games, super::authority());
-    assert!(
-        crate::hyperstructures::IHyperstructuresSafeDispatcherTrait::configure_hyperstructures(
-            crate::hyperstructures::IHyperstructuresSafeDispatcher { contract_address: d.games },
-            game_id,
-            preset.economy.hyperstructures,
-        )
-            .is_err(),
-    );
+    assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(1, preset).is_err());
 }
 
 #[test]
@@ -296,7 +309,7 @@ fn eternum_launch_initializes_spires_and_never_uses_entry_capacity() {
     let d = setup();
     let preset = definition(false);
     registry(d).register_preset(1, preset);
-    assert_eq!(registry(d).create_game(params(false), preset), 1);
+    assert_eq!(registry(d).create_game(params(false)), 1);
     let spires = crate::spires::ISpiresDispatcher { contract_address: d.games };
     assert_eq!(crate::spires::ISpiresDispatcherTrait::spire_layout(spires, 1), preset.settlement.spires);
     let settlement = ISettlementViewsDispatcher { contract_address: d.games };
@@ -319,29 +332,40 @@ fn invalid_schedules_modes_and_registration_limits_never_allocate() {
         CreateGameParams { roster: roster(25), ..params(true) },
         CreateGameParams { roster: array![].span(), ..params(true) },
     ] {
-        assert!(safe(d, super::authority()).create_game(input, preset).is_err());
+        assert!(safe(d, super::authority()).create_game(input).is_err());
     }
     assert_eq!(registry(d).next_game_id(), 1);
 }
 
 #[test]
 #[feature("safe_dispatcher")]
-fn a_late_configuration_failure_rolls_back_all_domains_and_game_allocation() {
+fn a_late_preset_validation_failure_rolls_back_the_record_and_allows_retry() {
     let d = setup();
     let mut preset = definition(true);
     preset.economy.banks.lp_fee_denom = 0;
-    registry(d).register_preset(1, preset);
+    let commitment = crate::presets::commitment(preset);
+    start_cheat_caller_address(d.games, super::authority());
     let (caller, _) = super::deploy("RollbackFixture", @array![]);
     assert!(
-        !super::fixtures::IRollbackFixtureDispatcherTrait::attempt_game(
-            super::fixtures::IRollbackFixtureDispatcher { contract_address: caller }, d.games, params(true), preset,
+        !super::fixtures::IRollbackFixtureDispatcherTrait::attempt_preset(
+            super::fixtures::IRollbackFixtureDispatcher { contract_address: caller }, d.games, 1, preset,
         ),
     );
     assert_eq!(registry(d).next_game_id(), 1);
+    assert_eq!(registry(d).preset_commitment(1), 0);
+    let written_mode = snforge_std::interact_with_state(
+        d.games, || {
+            crate::state::read().presets.entry(commitment).rules.mode_rules.read()
+        },
+    );
+    assert!(preset.rules.mode_rules != 0);
+    assert_eq!(written_mode, 0);
     assert!(
         crate::game::IGameSafeDispatcherTrait::game(crate::game::IGameSafeDispatcher { contract_address: d.games }, 1)
             .is_err(),
     );
+    registry(d).register_preset(1, definition(true));
+    assert_eq!(registry(d).create_game(params(true)), 1);
 }
 
 #[test]
@@ -418,22 +442,13 @@ fn fixed_blitz_rosters_require_unique_accounts_and_regular_mode() {
     for players in array![
         array![player, player].span(), array![RosterPlayer { account: 0.try_into().unwrap() }].span(),
     ] {
-        assert!(
-            safe(d, super::authority())
-                .create_game(CreateGameParams { roster: players, ..params(true) }, preset)
-                .is_err(),
-        );
+        assert!(safe(d, super::authority()).create_game(CreateGameParams { roster: players, ..params(true) }).is_err());
         assert_eq!(registry(d).next_game_id(), 1);
     }
-    assert!(
-        safe(d, super::authority())
-            .create_game(CreateGameParams { dev_mode_on: true, ..params(true) }, preset)
-            .is_err(),
-    );
+    assert!(safe(d, super::authority()).create_game(CreateGameParams { dev_mode_on: true, ..params(true) }).is_err());
     for size in array![1_u32, 13, 17, 24] {
         let players = roster(size);
-        let id = registry(d)
-            .create_game(CreateGameParams { name: size.into(), roster: players, ..params(true) }, preset);
+        let id = registry(d).create_game(CreateGameParams { name: size.into(), roster: players, ..params(true) });
         assert_eq!(registry(d).blitz_roster(id), players);
         let settlement = ISettlementViewsDispatcher { contract_address: d.games };
         assert_eq!(settlement.settlement_rules(id).registration_limit, size.try_into().unwrap());
@@ -447,18 +462,14 @@ fn launch_retries_return_the_same_game_and_conflicting_rosters_reject() {
     let preset = definition(true);
     registry(d).register_preset(1, preset);
     let request = params(true);
-    assert!(safe(d, d.actor).create_game(request, preset).is_err());
+    assert!(safe(d, d.actor).create_game(request).is_err());
     assert_eq!(registry(d).game_id_by_name(request.name), 0);
-    let first = registry(d).create_game(request, preset);
-    assert_eq!(registry(d).create_game(request, preset), first);
+    let first = registry(d).create_game(request);
+    assert_eq!(registry(d).create_game(request), first);
     assert_eq!(registry(d).next_game_id(), first + 1);
     assert_eq!(registry(d).game_id_by_name(request.name), first);
-    assert!(
-        safe(d, super::authority()).create_game(CreateGameParams { roster: roster(1), ..request }, preset).is_err(),
-    );
-    assert!(
-        safe(d, super::authority()).create_game(CreateGameParams { duration_seconds: 101, ..request }, preset).is_err(),
-    );
+    assert!(safe(d, super::authority()).create_game(CreateGameParams { roster: roster(1), ..request }).is_err());
+    assert!(safe(d, super::authority()).create_game(CreateGameParams { duration_seconds: 101, ..request }).is_err());
     assert_eq!(registry(d).blitz_roster(first), request.roster);
     assert_eq!(registry(d).next_game_id(), first + 1);
 }
@@ -494,7 +505,7 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
     let d = setup();
     let preset = definition(true);
     registry(d).register_preset(1, preset);
-    let game_id = registry(d).create_game(CreateGameParams { roster: roster(2), ..params(true) }, preset);
+    let game_id = registry(d).create_game(CreateGameParams { roster: roster(2), ..params(true) });
     let games = IGameDispatcher { contract_address: d.games };
     let commands = ISettlementCommandsDispatcher { contract_address: d.games };
     let safe = ISettlementCommandsSafeDispatcher { contract_address: d.games };
@@ -624,7 +635,7 @@ fn recorded_roster_batches_block_early_play_and_report_ticket_progress() {
     let d = setup();
     let preset = definition(true);
     registry(d).register_preset(1, preset);
-    let game_id = registry(d).create_game(CreateGameParams { roster: roster(2), ..params(true) }, preset);
+    let game_id = registry(d).create_game(CreateGameParams { roster: roster(2), ..params(true) });
     let d = super::bind_authority(d);
     let command = crate::commands::Command::SettleBlitzRoster;
     assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::CloseSeason, 205, 205));
@@ -669,7 +680,7 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
     preset.rules.map_config.camp_fail_probability = 0;
     preset.rules.map_config.relic_discovery_interval_sec = 60000;
     registry(d).register_preset(1, preset);
-    let game_id = registry(d).create_game(CreateGameParams { end_grace_seconds: 0, ..params(false) }, preset);
+    let game_id = registry(d).create_game(CreateGameParams { end_grace_seconds: 0, ..params(false) });
 
     let center = 2147483646 - IGameDispatcher { contract_address: d.games }.rules(game_id).map_center_offset;
     start_cheat_block_timestamp_global(300);
@@ -748,7 +759,6 @@ pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
     let game_id = registry(d)
         .create_game(
             CreateGameParams { dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 500, ..params(false) },
-            preset,
         );
     // The catalogue is already loaded by deployment; this fixture pins its first realm.
     super::resource_commands::set_fixture(
@@ -1203,7 +1213,6 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     let game_id = registry(d)
         .create_game(
             CreateGameParams { dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 500, ..params(false) },
-            preset,
         );
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
@@ -1377,7 +1386,6 @@ fn assert_expedition_capture(depth: u8) {
     let game_id = registry(d)
         .create_game(
             CreateGameParams { dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 500, ..params(false) },
-            preset,
         );
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
@@ -1625,7 +1633,6 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
     let game_id = registry(d)
         .create_game(
             CreateGameParams { dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 500, ..params(false) },
-            preset,
         );
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
@@ -1827,7 +1834,6 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
     let game_id = registry(d)
         .create_game(
             CreateGameParams { dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 500, ..params(false) },
-            preset,
         );
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
@@ -1948,19 +1954,39 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
 }
 
 #[test]
-fn creation_emits_the_game_release_pin_and_preset_commitment() {
+fn creation_emits_release_and_overrides_without_per_game_configuration_rows() {
     let d = setup();
     let preset = definition(true);
     registry(d).register_preset(1, preset);
     let mut spy = snforge_std::spy_events();
-    let game_id = registry(d).create_game(params(true), preset);
+    let game_id = registry(d).create_game(params(true));
     let events = spy.get_events().emitted_by(d.games);
     let mut count = 0;
+    let mut overrides_count = 0;
     for (_, event) in events.events {
         if event.keys.span() == array![selector!("GameEvent"), selector!("RowSet"), 1, 'GameRelease'].span() {
             assert_eq!(event.data.span(), array![1, game_id.into(), 2, 1, crate::presets::commitment(preset)].span());
             count += 1;
         }
+        if event.keys.span() == array![selector!("GameEvent"), selector!("RowSet"), 1, 'GameOverrides'].span() {
+            assert_eq!(*event.data.at(0), 1);
+            assert_eq!(*event.data.at(1), game_id.into());
+            let mut values = event.data.span().slice(3, event.data.len() - 3);
+            assert_eq!(*event.data.at(2), values.len().into());
+            let overrides: crate::game::GameOverrides = Serde::deserialize(ref values).unwrap();
+            assert!(values.is_empty());
+            assert_eq!(overrides.registration_start, params(true).registration_start);
+            assert_eq!(overrides.biome_climate, params(true).biome_climate);
+            assert_eq!(overrides.map, params(true).map_override);
+            assert_eq!(overrides.map_center_offset, crate::registrar::map_center_offset(game_id, params(true).seed));
+            overrides_count += 1;
+        }
+        for model in array!['SliceRules', 'ResourceRule', 'ProductionRecipe', 'BuildingRule', 'UpgradeRecipe'] {
+            for key in event.keys.span() {
+                assert!(*key != model, "per-game configuration row emitted");
+            }
+        }
     }
     assert_eq!(count, 1);
+    assert_eq!(overrides_count, 1);
 }

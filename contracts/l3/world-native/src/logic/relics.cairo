@@ -34,64 +34,8 @@ pub mod RelicState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::relics::IRelics<ComponentState<TContractState>> {
-        fn configure_relics(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            rules: Span<RelicRule>,
-            chests: Option<crate::relics::ChestRules>,
-        ) {
-            crate::logic::release::assert_authority();
-            let game_rules = crate::logic::game::rules(game_id);
-            if let Some(value) = chests {
-                assert!(
-                    game_rules.epoch_seconds != 0
-                        && crate::rules::rule_enabled(game_rules, crate::rules::DEPTH_CONTENTS),
-                    "chest tables require depth rules",
-                );
-                assert!(value.loose_one_in != 0, "empty loose chest lottery");
-                assert!(
-                    Into::<u16, u32>::into(value.relic_probability) + value.cosmetic_probability.into() <= 10000,
-                    "invalid chest type probabilities",
-                );
-            }
-            assert!(!self.data.relics.relic_configured.read(game_id), "relic rules already configured");
-            assert!(rules.len() == 18, "all eighteen relic rules required");
-            let mut total: u128 = 0;
-            for index in 0..18_u32 {
-                let rule = *rules.at(index);
-                total += rule.draw_weight;
-                self
-                    .data
-                    .relics
-                    .relic_rules
-                    .write((game_id, crate::relics::FIRST_RELIC + index.try_into().unwrap()), rule);
-            }
-            assert!(total != 0, "empty relic discovery pool");
-            assert!(*rules.at(6).uses == 1 && *rules.at(7).uses == 2, "invalid reveal radii");
-            self.data.relics.relic_configured.write(game_id, true);
-            self.data.relics.chest_rules.write(game_id, chests);
-            if let Some(chest_rules) = chests {
-                let mut values = array![];
-                chest_rules.serialize(ref values);
-                self
-                    .emit(
-                        crate::events::RowSet {
-                            version: 1, model: 'ChestRules', keys: array![game_id.into()].span(), values: values.span(),
-                        },
-                    );
-            }
-            let mut values = array![];
-            rules.serialize(ref values);
-            self
-                .emit(
-                    crate::events::RowSet {
-                        version: 1, model: 'RelicRules', keys: array![game_id.into()].span(), values: values.span(),
-                    },
-                );
-        }
         fn chest_rules(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::relics::ChestRules> {
-            assert!(self.data.relics.relic_configured.read(game_id), "missing chest rules");
-            self.data.relics.chest_rules.read(game_id)
+            crate::logic::preset_record::for_game(game_id).chest_rules.read()
         }
         fn chest_pity(self: @ComponentState<TContractState>, game_id: u32, player: ContractAddress, depth: u8) -> u16 {
             self.data.relics.chest_pity.read((game_id, player, depth))
@@ -135,10 +79,10 @@ pub mod RelicState {
         }
 
         fn relic_rules(self: @ComponentState<TContractState>, game_id: u32) -> Span<RelicRule> {
-            assert!(self.data.relics.relic_configured.read(game_id), "missing relic rules");
+            let preset = crate::logic::preset_record::for_game(game_id);
             let mut rules = array![];
             for id in crate::relics::FIRST_RELIC..crate::relics::LAST_RELIC + 1 {
-                rules.append(self.data.relics.relic_rules.read((game_id, id)));
+                rules.append(preset.relic_rules.read(id));
             }
             rules.span()
         }
@@ -194,8 +138,8 @@ pub mod RelicState {
                 command.relic_id >= crate::relics::FIRST_RELIC && command.relic_id <= crate::relics::LAST_RELIC,
                 "invalid relic resource",
             );
-            assert!(self.data.relics.relic_configured.read(game_id), "missing relic rules");
-            let rule = self.data.relics.relic_rules.read((game_id, command.relic_id));
+            let preset = crate::logic::preset_record::for_game(game_id);
+            let rule = preset.relic_rules.read(command.relic_id);
             let payer = self.apply_effect(game_id, actor, command, rule, context.timestamp, context);
             self
                 .resources(game_id)
@@ -224,23 +168,8 @@ pub mod RelicState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::artificer::IArtificer<ComponentState<TContractState>> {
-        fn configure_artificer(ref self: ComponentState<TContractState>, game_id: u32, research_cost: u128) {
-            crate::logic::release::assert_authority();
-            crate::logic::game::game(game_id);
-            assert!(self.data.relics.artificer_costs.read(game_id).is_none(), "artificer already configured");
-            self.data.relics.artificer_costs.write(game_id, Some(research_cost));
-            self
-                .emit(
-                    crate::events::RowSet {
-                        version: 1,
-                        model: 'ArtificerCost',
-                        keys: array![game_id.into()].span(),
-                        values: array![research_cost.into()].span(),
-                    },
-                );
-        }
         fn artificer_cost(self: @ComponentState<TContractState>, game_id: u32) -> u128 {
-            self.data.relics.artificer_costs.read(game_id).expect('missing artificer cost')
+            crate::logic::preset_record::for_game(game_id).artificer_cost.read()
         }
         fn craft_relic(
             ref self: ComponentState<TContractState>,

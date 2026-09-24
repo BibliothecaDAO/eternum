@@ -1,25 +1,30 @@
-use starknet::storage::StorageMapReadAccess;
+use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use crate::settlement::{EntryKey, PlayerEntry, RealmGrants, SettlementRules};
 
 pub fn rules(game_id: u32) -> SettlementRules {
     let state = crate::state::read();
-    state.settlements.settlement_rules.read(game_id).expect('missing settlement rules')
+    let preset = crate::logic::preset_record::for_game(game_id);
+    SettlementRules {
+        registration_start: state.games.overrides.read(game_id).registration_start,
+        registration_limit: state.registrar.roster_sizes.read(game_id).try_into().unwrap(),
+        mode: preset.settlement_mode.read(),
+        spacing: preset.settlement_spacing.read(),
+    }
 }
 
 pub fn grants(game_id: u32) -> RealmGrants {
-    let state = crate::state::read();
-    let _ = rules(game_id);
+    let preset = crate::logic::preset_record::for_game(game_id);
     let mut resources = array![];
-    for index in 0..state.settlements.grant_counts.read(game_id) {
-        resources.append(state.settlements.realm_grants.read((game_id, index)));
+    for index in 0..preset.realm_grant_count.read() {
+        resources.append(preset.realm_grants.read(index));
     }
     let mut starting_troops = array![];
     for biome in 1_u8..18 {
-        starting_troops.append(state.settlements.starting_troops.read((game_id, biome)));
+        starting_troops.append(preset.starting_troops.read(biome));
     }
     let mut realm_resources = array![];
-    for index in 0..state.settlements.realm_resource_counts.read(game_id) {
-        realm_resources.append(state.settlements.realm_resources.read((game_id, index)));
+    for index in 0..preset.realm_resource_count.read() {
+        realm_resources.append(preset.realm_resources.read(index));
     }
     RealmGrants {
         resources: resources.span(), starting_troops: starting_troops.span(), realm_resources: realm_resources.span(),
@@ -236,7 +241,7 @@ pub mod SettlementState {
     use core::num::traits::Zero;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
-    use crate::settlement::{EntryEntitlement, EntryKey, PlayerEntry, RealmGrants, SettlementProgress, SettlementRules};
+    use crate::settlement::{EntryEntitlement, EntryKey, PlayerEntry, SettlementProgress};
 
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
@@ -251,58 +256,6 @@ pub mod SettlementState {
     }
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
-        fn configure(
-            ref self: ComponentState<TContractState>, game_id: u32, rules: SettlementRules, grants: RealmGrants,
-        ) {
-            assert!(self.data.settlements.settlement_rules.read(game_id).is_none(), "immutable settlement rules");
-            assert!(rules.registration_limit <= 96, "registration capacity exceeds limit");
-            assert!(grants.starting_troops.len() == 17, "incomplete biome starting troops");
-            for index in 0_u32..17 {
-                self
-                    .data
-                    .settlements
-                    .starting_troops
-                    .write((game_id, (index + 1).try_into().unwrap()), *grants.starting_troops.at(index));
-            }
-            assert!(grants.realm_resources.len() <= 16, "realm resources exceed packed capacity");
-            self
-                .data
-                .settlements
-                .realm_resource_counts
-                .write(game_id, grants.realm_resources.len().try_into().unwrap());
-            for index in 0..grants.realm_resources.len() {
-                let resource = *grants.realm_resources.at(index);
-                assert!(resource >= 1 && resource <= 58, "invalid realm resource");
-                self.data.settlements.realm_resources.write((game_id, index.try_into().unwrap()), resource);
-            }
-            self.data.settlements.grant_counts.write(game_id, grants.resources.len());
-            let mut index = 0;
-            for grant in grants.resources {
-                self.data.settlements.realm_grants.write((game_id, index), *grant);
-                index += 1;
-            }
-            let mut values = array![];
-            grants.serialize(ref values);
-            self
-                .emit(
-                    RowSet {
-                        version: 1, model: 'RealmGrants', keys: array![game_id.into()].span(), values: values.span(),
-                    },
-                );
-            self.data.settlements.settlement_rules.write(game_id, Some(rules));
-            let mut values = array![];
-            rules.serialize(ref values);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'SettlementRules',
-                        keys: array![game_id.into()].span(),
-                        values: values.span(),
-                    },
-                );
-        }
-
         fn register_entitlement(
             ref self: ComponentState<TContractState>, key: EntryKey, entitlement: EntryEntitlement,
         ) {

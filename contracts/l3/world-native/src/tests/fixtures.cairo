@@ -153,11 +153,8 @@ pub mod AccountFixture {
 
 #[starknet::interface]
 pub trait IRollbackFixture<T> {
-    fn attempt_game(
-        ref self: T,
-        registry: ContractAddress,
-        params: crate::registrar::CreateGameParams,
-        definition: crate::presets::PresetDefinition,
+    fn attempt_preset(
+        ref self: T, registry: ContractAddress, preset_id: u32, definition: crate::presets::PresetDefinition,
     ) -> bool;
     fn attempt(
         ref self: T,
@@ -179,14 +176,14 @@ pub mod RollbackFixture {
     #[abi(embed_v0)]
     impl Rollback of super::IRollbackFixture<ContractState> {
         #[feature("safe_dispatcher")]
-        fn attempt_game(
+        fn attempt_preset(
             ref self: ContractState,
             registry: ContractAddress,
-            params: crate::registrar::CreateGameParams,
+            preset_id: u32,
             definition: crate::presets::PresetDefinition,
         ) -> bool {
-            crate::registrar::IRegistrarSafeDispatcherTrait::create_game(
-                crate::registrar::IRegistrarSafeDispatcher { contract_address: registry }, params, definition,
+            crate::registrar::IRegistrarSafeDispatcherTrait::register_preset(
+                crate::registrar::IRegistrarSafeDispatcher { contract_address: registry }, preset_id, definition,
             )
                 .is_ok()
         }

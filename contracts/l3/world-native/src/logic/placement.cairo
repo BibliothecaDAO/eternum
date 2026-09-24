@@ -1,6 +1,6 @@
 #[starknet::contract]
 pub mod PlacementLogic {
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use crate::geometry::{spire_neighbor, tile_key};
     use crate::logic::map::MapState;
     use crate::logic::release::ReleaseState;
@@ -34,7 +34,7 @@ pub mod PlacementLogic {
     }
     #[abi(embed_v0)]
     impl Spires of crate::spires::ISpires<ContractState> {
-        fn initialize_spires(ref self: ContractState, game_id: u32, layout: crate::spires::SpireLayout) {
+        fn initialize_spires(ref self: ContractState, game_id: u32) {
             let game_context = crate::commands::load_context(
                 game_id, crate::commands::ActionContext { raw_root: 0, timestamp: starknet::get_block_timestamp() },
             );
@@ -43,25 +43,15 @@ pub mod PlacementLogic {
             assert!(
                 crate::rules::rule_enabled(game_context.rules.unbox(), crate::rules::SPIRES), "spires are disabled",
             );
-            assert!(self.data.map_rules.spire_layouts.read(game_id).is_none(), "spires already initialized");
-            crate::spires::validate(layout);
+            let layout = crate::logic::preset_record::for_game(game_id).spires.read().expect('missing season spires');
             let center = self.map_center(game_id, game_context);
             for ordinal in 0_u32..layout.count.into() {
                 self.create_spire(game_id, crate::spires::location(center, layout, ordinal), game_context);
             }
-            self.data.map_rules.spire_layouts.write(game_id, Some(layout));
-            let mut values = array![];
-            layout.serialize(ref values);
-            self
-                .emit(
-                    crate::events::RowSet {
-                        version: 1, model: 'SpireLayout', keys: array![game_id.into()].span(), values: values.span(),
-                    },
-                );
         }
         #[cfg(test)]
         fn spire_layout(self: @ContractState, game_id: u32) -> Option<crate::spires::SpireLayout> {
-            self.data.map_rules.spire_layouts.read(game_id)
+            crate::logic::preset_record::for_game(game_id).spires.read()
         }
     }
     #[abi(embed_v0)]

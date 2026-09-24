@@ -1,11 +1,11 @@
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
-use crate::buildings::{IBuildingRulesDispatcher, IBuildingRulesDispatcherTrait};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 use crate::map::{IMapLogicDispatcher, IMapLogicDispatcherTrait};
 use crate::mines::{
     IMineRulesDispatcher, IMineRulesDispatcherTrait, IMineRulesSafeDispatcher, IMineRulesSafeDispatcherTrait,
     MineKindConfig, MineKindEntry, MineKindKey, MinePoolKey, MineWeight, cap, select_kind,
 };
+use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::{IResourceOperationsDispatcher, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
 use crate::structures::{IStructureOperationsDispatcher, IStructureOperationsDispatcherTrait, structure_coord};
@@ -47,24 +47,26 @@ fn the_surface_pool_selects_only_its_configured_kinds_and_keeps_game_configurati
     let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
     let rules = IMineRulesDispatcher { contract_address: deployment.games };
     let rift = array![MineWeight { kind: 1, weight: 1 }].span();
-    start_cheat_caller_address(deployment.games, super::authority());
-    rules.configure_mines(1, kinds(), surface());
-    rules.configure_mines(2, kinds(), rift);
-    stop_cheat_caller_address(deployment.games);
+    let game = IGameDispatcher { contract_address: deployment.games }.game(1);
+    for (game_id, pool) in array![(3_u32, surface()), (4, rift)] {
+        let mut preset = super::recorded::fixture_preset(super::recorded::rules());
+        preset.resources.surface_mines = pool;
+        super::recorded::seed_game_with_preset(deployment.games, game_id, game, preset);
+    }
     let mut seen_rift = false;
     let mut seen_fragment = false;
     for root in 0_u64..32 {
         let seed = root.into();
-        let (kind, config, amount) = rules.mine_draw(MinePoolKey { game_id: 1 }, seed);
+        let (kind, config, amount) = rules.mine_draw(MinePoolKey { game_id: 3 }, seed);
         seen_rift = seen_rift || kind == 1;
         seen_fragment = seen_fragment || kind == 2;
-        assert_eq!(config, rules.mine_kind(MineKindKey { game_id: 1, kind }));
+        assert_eq!(config, rules.mine_kind(MineKindKey { game_id: 3, kind }));
         assert_eq!(amount, cap(config, seed));
-        let (kind, _, _) = rules.mine_draw(MinePoolKey { game_id: 2 }, seed);
+        let (kind, _, _) = rules.mine_draw(MinePoolKey { game_id: 4 }, seed);
         assert_eq!(kind, 1);
     }
     assert!(seen_rift && seen_fragment);
-    assert_eq!(rules.mine_pool(MinePoolKey { game_id: 2 }), rift);
+    assert_eq!(rules.mine_pool(MinePoolKey { game_id: 4 }), rift);
 }
 
 #[test]
@@ -114,19 +116,24 @@ fn pool_weights_use_one_draw_across_the_complete_distribution() {
 fn mine_configuration_is_authorized_immutable_and_rejects_unknown_or_duplicate_weights() {
     let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
     let rules = IMineRulesSafeDispatcher { contract_address: deployment.games };
-    assert!(rules.configure_mines(1, kinds(), surface()).is_err());
+    let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
+    let mut preset = super::recorded::fixture_preset(super::recorded::rules());
+    preset.resources.surface_mines = surface();
+    assert!(registry.register_preset(20000, preset).is_err());
     start_cheat_caller_address(deployment.games, super::authority());
     for weights in array![
         array![MineWeight { kind: 9, weight: 1 }].span(), array![MineWeight { kind: 1, weight: 0 }].span(),
         array![MineWeight { kind: 1, weight: 1 }, MineWeight { kind: 1, weight: 1 }].span(),
     ] {
-        assert!(rules.configure_mines(1, kinds(), weights).is_err());
+        preset.resources.surface_mines = weights;
+        assert!(registry.register_preset(20000, preset).is_err());
     }
-    assert!(rules.configure_mines(1, kinds(), surface()).is_ok());
-    assert!(rules.configure_mines(1, kinds(), surface()).is_err());
+    preset.resources.surface_mines = surface();
+    assert!(registry.register_preset(20000, preset).is_ok());
+    assert!(registry.register_preset(20000, preset).is_err());
     assert!(rules.mine_kind(MineKindKey { game_id: 1, kind: 9 }).is_err());
-    assert!(rules.mine_pool(MinePoolKey { game_id: 2 }).is_err());
-    assert!(rules.mine_draw(MinePoolKey { game_id: 2 }, 1).is_err());
+    assert!(rules.mine_pool(MinePoolKey { game_id: 999 }).is_err());
+    assert!(rules.mine_draw(MinePoolKey { game_id: 999 }, 1).is_err());
     stop_cheat_caller_address(deployment.games);
 }
 
@@ -134,7 +141,8 @@ fn mine_configuration_is_authorized_immutable_and_rejects_unknown_or_duplicate_w
 #[feature("safe_dispatcher")]
 fn invalid_rate_cap_ladder_and_building_resource_pairs_cannot_initialize_a_game() {
     let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
-    let rules = IMineRulesSafeDispatcher { contract_address: deployment.games };
+    let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
+    let mut preset = super::recorded::fixture_preset(super::recorded::rules());
     let valid = (*kinds().at(0)).config;
     start_cheat_caller_address(deployment.games, super::authority());
     for config in array![
@@ -143,30 +151,22 @@ fn invalid_rate_cap_ladder_and_building_resource_pairs_cannot_initialize_a_game(
         MineKindConfig { cap_min: 0xffffffffffffffffffffffffffffffff, cap_steps: 2, ..valid },
         MineKindConfig { resource_type: 24, ..valid },
     ] {
-        assert!(
-            rules
-                .configure_mines(
-                    1,
-                    array![MineKindEntry { kind: 1, config }].span(),
-                    array![MineWeight { kind: 1, weight: 1 }].span(),
-                )
-                .is_err(),
-        );
+        preset.resources.mine_kinds = array![MineKindEntry { kind: 1, config }].span();
+        preset.resources.surface_mines = array![MineWeight { kind: 1, weight: 1 }].span();
+        assert!(registry.register_preset(20000, preset).is_err());
     }
-    assert!(rules.configure_mines(1, kinds(), surface()).is_ok());
+    preset.resources.mine_kinds = kinds();
+    preset.resources.surface_mines = surface();
+    assert!(registry.register_preset(20000, preset).is_ok());
     stop_cheat_caller_address(deployment.games);
 }
 
 #[test]
 fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
-    let (deployment, _, _) = super::resource_commands::setup();
-    start_cheat_caller_address(deployment.games, super::authority());
+    let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
+    preset.resources.surface_mines = surface();
+    let (deployment, _, _) = super::resource_commands::setup_with_preset(preset);
     let mine_rules = IMineRulesDispatcher { contract_address: deployment.games };
-    mine_rules.configure_mines(3, kinds(), surface());
-    stop_cheat_caller_address(deployment.games);
-    start_cheat_caller_address(deployment.games, super::authority());
-    IBuildingRulesDispatcher { contract_address: deployment.games }
-        .configure_buildings(3, super::building_commands::rules(), None);
     start_cheat_caller_address(deployment.games, deployment.games);
     let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
@@ -246,10 +246,9 @@ fn ethereal_discovery_never_draws_from_the_ordinary_mine_pool() {
     rules.bitcoin_mine_config.enabled = false;
     rules.map_config.shards_mines_win_probability = 1;
     rules.map_config.shards_mines_fail_probability = 0;
-    super::recorded::seed_game(d.games, 3, game.game(1), rules);
-    start_cheat_caller_address(d.games, super::authority());
-    IMineRulesDispatcher { contract_address: d.games }.configure_mines(3, kinds(), surface());
-    stop_cheat_caller_address(d.games);
+    let mut preset = super::recorded::fixture_preset(rules);
+    preset.resources.surface_mines = surface();
+    super::recorded::seed_game_with_preset(d.games, 3, game.game(1), preset);
     let map = IMapLogicDispatcher { contract_address: d.games };
     for root in 0_u64..8 {
         assert_eq!(

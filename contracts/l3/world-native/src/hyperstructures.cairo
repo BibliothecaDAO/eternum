@@ -63,7 +63,6 @@ pub struct SetConstructionAccess {
 
 #[starknet::interface]
 pub trait IHyperstructures<T> {
-    fn configure_hyperstructures(ref self: T, game_id: u32, rules: HyperstructureRules);
     fn hyperstructure_rules(self: @T, game_id: u32) -> HyperstructureRules;
     fn hyperstructure(self: @T, key: ResourceKey) -> Option<Hyperstructure>;
     fn hyperstructure_progress(self: @T, key: ResourceSlot) -> u128;

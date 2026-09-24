@@ -100,11 +100,6 @@ pub trait ISettlementPool<T> {
 }
 
 #[starknet::interface]
-pub trait ISettlementConfiguration<T> {
-    fn configure_settlement(ref self: T, game_id: u32, rules: SettlementRules, grants: RealmGrants);
-}
-
-#[starknet::interface]
 pub trait IBlitzReservations<T> {
     fn initialize_reservations(ref self: T, game_id: u32);
     fn release_hyperstructure(ref self: T, game_id: u32, coord: Coord);

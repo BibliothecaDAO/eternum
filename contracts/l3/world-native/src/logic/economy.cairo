@@ -9,18 +9,22 @@ pub mod EconomyLogic {
     use crate::logic::market::MarketState;
     use crate::logic::release::ReleaseState;
     use crate::logic::trade::TradeState;
+    #[cfg(test)]
+    use crate::market::BankRules;
     use crate::market::{
-        AddLiquidity, BankPlacement, BankRules, IBankCreationDispatcherTrait, IBankCreationLibraryDispatcher,
-        LiquidityKey, Market, MarketKey, RemoveLiquidity, Swap,
+        AddLiquidity, BankPlacement, IBankCreationDispatcherTrait, IBankCreationLibraryDispatcher, LiquidityKey, Market,
+        MarketKey, RemoveLiquidity, Swap,
     };
     use crate::ownership::{Story, StoryEvent, StoryResultTrait};
     use crate::resources::{
         IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceAmount, ResourceKey,
     };
     use crate::structures::{Structure, structure_coord};
+    #[cfg(test)]
+    use crate::trade::TradeRules;
     use crate::trade::{
         AcceptOrder, CreateOrder, IEconomyDeliveryDispatcherTrait, IEconomyDeliveryLibraryDispatcher, TradeFill,
-        TradeKey, TradeOrder, TradeRules,
+        TradeKey, TradeOrder,
     };
     component!(path: HyperstructureState, storage: hyperstructures, event: HyperstructureEvent);
     #[abi(embed_v0)]
@@ -54,11 +58,6 @@ pub mod EconomyLogic {
     }
     #[abi(embed_v0)]
     impl Trade of crate::trade::ITrade<ContractState> {
-        fn configure_trade(ref self: ContractState, game_id: u32, rules: TradeRules) {
-            crate::logic::release::assert_authority();
-            let _ = crate::logic::game::game(game_id);
-            self.trades.configure(game_id, rules);
-        }
         #[cfg(test)]
         fn trade_rules(self: @ContractState, game_id: u32) -> TradeRules {
             self.trades.rules(game_id)
@@ -154,11 +153,6 @@ pub mod EconomyLogic {
     }
     #[abi(embed_v0)]
     impl Bank of crate::market::IBank<ContractState> {
-        fn configure_banks(ref self: ContractState, game_id: u32, rules: BankRules) {
-            crate::logic::release::assert_authority();
-            let _ = crate::logic::game::game(game_id);
-            self.markets.configure(game_id, rules);
-        }
         #[cfg(test)]
         fn bank_rules(self: @ContractState, game_id: u32) -> BankRules {
             self.markets.rules(game_id)
