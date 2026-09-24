@@ -140,6 +140,9 @@ jobs:
     needs: scope
     if: needs.scope.outputs.native == 'true'
     uses: ./.github/workflows/native-world.yml
+    # Only the called workflow's publish-snforge job uses write, and it runs on push events alone.
+    permissions:
+      contents: write
     with:
       world: ${{ needs.scope.outputs.native_world == 'true' }}
 

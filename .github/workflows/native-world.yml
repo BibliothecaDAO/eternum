@@ -8,10 +8,17 @@ on:
         type: boolean
         default: true
 
+# Every job here reads only. The one exception, publish-snforge, runs on push events alone, so no pull request run,
+# from a fork or not, ever holds a token that can write to the repository.
+permissions:
+  contents: read
+
 jobs:
   native-world:
     if: inputs.world
     runs-on: ubuntu-latest
+    outputs:
+      built-snforge: ${{ steps.snforge.outputs.built }}
     # 1.5x the slowest green run (33 min): a cold snforge rebuild (13-18 min, when its cache is not readable on the
     # ref) plus the full suite (13-23 min) overran the former 35.
     timeout-minutes: 50
@@ -21,26 +28,40 @@ jobs:
         with:
           tool-versions: contracts/l3/world-native/.tool-versions
           scarb-lock: contracts/l3/world-native/Scarb.lock
-      - name: Restore corrected snforge binary
-        id: snforge-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: ${{ runner.temp }}/native-snforge/bin
-          key:
-            ${{ runner.os }}-${{ runner.arch }}-snforge-${{ hashFiles('contracts/l3/world-native/.tool-versions',
+      # The corrected snforge takes 13-18 minutes to build, and an Actions cache saved on one branch is not readable
+      # on another, so every branch rebuilt it cold. It is published once per patch hash as an asset of the
+      # ci-toolchain release, which every ref can download.
+      - name: Install corrected snforge
+        id: snforge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ASSET:
+            snforge-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('contracts/l3/world-native/.tool-versions',
             'contracts/l3/world-native/build-snforge.sh',
             'contracts/l3/world-native/toolchain/library-call-rollback.patch') }}
-      - name: Build snforge with library rollback correction
-        if: steps.snforge-cache.outputs.cache-hit != 'true'
-        run: bash contracts/l3/world-native/build-snforge.sh "$RUNNER_TEMP/native-snforge/bin"
-      - name: Cache corrected snforge before running gates
-        if: steps.snforge-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        run: |
+          bin="$RUNNER_TEMP/native-snforge/bin"
+          mkdir -p "$bin"
+          if gh release download ci-toolchain --repo "$GITHUB_REPOSITORY" --pattern "$ASSET.gz" --dir "$RUNNER_TEMP"; then
+            gunzip -c "$RUNNER_TEMP/$ASSET.gz" > "$bin/snforge"
+            chmod 755 "$bin/snforge"
+            echo "Restored $ASSET from the ci-toolchain release"
+          else
+            echo "::notice::$ASSET is not published yet; building it"
+            bash contracts/l3/world-native/build-snforge.sh "$bin"
+            gzip -c "$bin/snforge" > "$RUNNER_TEMP/$ASSET.gz"
+            echo "built=$ASSET" >> "$GITHUB_OUTPUT"
+          fi
+          "$bin/snforge" --version
+          echo "$bin" >> "$GITHUB_PATH"
+      - name: Keep the freshly built snforge for the publish job
+        if: steps.snforge.outputs.built != ''
+        uses: actions/upload-artifact@v4
         with:
-          path: ${{ runner.temp }}/native-snforge/bin
-          key: ${{ steps.snforge-cache.outputs.cache-primary-key }}
-      - name: Use corrected snforge
-        run: echo "$RUNNER_TEMP/native-snforge/bin" >> "$GITHUB_PATH"
+          name: corrected-snforge
+          path: ${{ runner.temp }}/${{ steps.snforge.outputs.built }}.gz
+          if-no-files-found: error
+          retention-days: 1
       - uses: software-mansion/setup-universal-sierra-compiler@v1
         with:
           tool-versions: contracts/l3/world-native/.tool-versions
@@ -99,6 +120,28 @@ jobs:
           name: native-regeneration
           path: ${{ runner.temp }}/native-regeneration.patch
           if-no-files-found: error
+
+  publish-snforge:
+    needs: native-world
+    if: github.event_name == 'push' && needs.native-world.outputs.built-snforge != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: corrected-snforge
+      - name: Publish the corrected snforge to the ci-toolchain release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ASSET: ${{ needs.native-world.outputs.built-snforge }}
+        run: |
+          # Another run may create the release first; either way it exists before the upload.
+          gh release view ci-toolchain --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1 ||
+            gh release create ci-toolchain --repo "$GITHUB_REPOSITORY" --prerelease --title "CI toolchain" \
+              --notes "Tool binaries the validation workflow builds once per input hash and every branch downloads." ||
+            gh release view ci-toolchain --repo "$GITHUB_REPOSITORY" > /dev/null
+          gh release upload ci-toolchain "$ASSET.gz" --repo "$GITHUB_REPOSITORY" --clobber
 
   randomness-protocol:
     runs-on: ubuntu-latest
