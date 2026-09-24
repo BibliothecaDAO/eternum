@@ -152,10 +152,6 @@ export const useLeaderboard = (game: GameRef | null) =>
     retry: 1,
   });
 
-/** Blitz membership is the roster fact; open-entry modes count anyone registered. */
-export const isMember = (game: DirectoryGame): boolean =>
-  game.mode === "blitz" ? game.player_state?.roster_member === true : game.player_state?.registered === true;
-
 const OPEN_STATUSES = new Set(["Created", "Registration"]);
 
 /** The soonest game still taking players. */
@@ -163,8 +159,6 @@ export const nextOpenGame = (games: readonly DirectoryGame[]): DirectoryGame | u
   games
     .filter((game) => OPEN_STATUSES.has(game.status))
     .toSorted((a, b) => a.clock.start_main_at - b.clock.start_main_at)[0];
-
-export const isGameOver = (game: DirectoryGame): boolean => game.status === "Ended" || game.status === "Settled";
 
 /** A settled game has its recorded result and belongs to the history, not the game list. */
 const isSettled = (game: DirectoryGame): boolean => game.status === "Settled";

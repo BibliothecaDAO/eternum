@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 
 import { buildEntryHref } from "@/play/navigation/play-route";
+import { isGameOver } from "@/runtime/world/directory";
 
-import { type DirectoryGame, isGameOver } from "./herald";
+import type { DirectoryGame } from "./herald";
 import { formatCountdown, formatLocalTime } from "./format";
 import { Pill, type PillTone } from "./kit";
 

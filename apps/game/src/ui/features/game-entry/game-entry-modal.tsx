@@ -35,7 +35,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import { resolvePlayerNameFelt } from "@/services/identity/player-name";
 import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/use-village-pass-inventory";
-import { useWorldsAvailability } from "@/hooks/use-world-availability";
+import { useGameEntry } from "@/hooks/use-game-entry";
 
 import { submitSettlement } from "@/services/settlement";
 import {
@@ -44,6 +44,7 @@ import {
   type PlayerStructure,
   type SettlementSnapshot,
 } from "@/runtime/world/herald-pre-session-reader";
+import { isGameOver, isMember } from "@/runtime/world/directory";
 import { gameKey } from "@/runtime/world/store";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -51,6 +52,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { AccountStatePrompt } from "@/shell/account-state";
+import { BlitzPreparing } from "@/shell/blitz-preparing";
 
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { getShard, type GameRef } from "@bibliothecadao/eternum/game-client";
@@ -476,35 +478,6 @@ const SettlementWaitingPhase = ({ secondsUntilUnlock }: { secondsUntilUnlock: nu
   );
 };
 
-const BlitzPreparingPhase = ({ settledPlayers, rosterSize }: { settledPlayers: number; rosterSize: number }) => {
-  const progress = rosterSize > 0 ? Math.min(100, (settledPlayers / rosterSize) * 100) : 0;
-  return (
-    <div className="flex flex-col">
-      <div className="text-center mb-4">
-        <img src="/images/logos/eternum-loader.png" className="mx-auto w-20 mb-3" alt="Preparing realms" />
-        <h2 className="text-lg font-semibold text-gold">Your realms are being prepared</h2>
-        <p className="text-xs text-gold/60 mt-1">Play opens once every player on the roster has their realms.</p>
-      </div>
-      <div className="space-y-2">
-        <div className="h-2 bg-brown/50 rounded-full overflow-hidden">
-          <motion.div
-            className="h-full bg-gradient-to-r from-gold/80 to-gold rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-          />
-        </div>
-        <div className="flex justify-between text-xs text-gold/70">
-          <span>
-            {Math.min(settledPlayers, rosterSize)} / {rosterSize} players settled
-          </span>
-          <span>{Math.round(progress)}%</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 /** The entry holds here until the player's account has joined this game's shard; watching needs no account. */
 const AccountPhase = ({ onSpectate }: { onSpectate: () => void }) => (
   <div className="flex flex-col gap-3 py-4 text-center">
@@ -914,16 +887,14 @@ export const GameEntryModal = ({
     }
   }, [account?.address]);
 
-  const worldAvailabilityInputs = useMemo(() => [game], [game]);
-  // The directory read model is the one source for entry: it is polled while the modal waits on readiness.
-  const { results: worldAvailabilityResults, isAnyLoading: isCheckingWorldAvailability } = useWorldsAvailability(
-    worldAvailabilityInputs,
-    isOpen,
-    playerFeltAddress,
-    ENTRY_DIRECTORY_REFETCH_MS,
-  );
-  const worldAvailability = worldAvailabilityResults.get(gameKey(game));
-  const worldMeta = worldAvailability?.meta ?? null;
+  // The game's directory row is the one source for entry: it is polled while the modal waits on readiness.
+  const gameEntry = useGameEntry(game, {
+    enabled: isOpen,
+    player: playerFeltAddress,
+    refetchIntervalMs: ENTRY_DIRECTORY_REFETCH_MS,
+  });
+  const isCheckingWorldAvailability = gameEntry.data === undefined && gameEntry.error == null;
+  const worldMeta = gameEntry.data ?? null;
   const worldName = worldMeta?.name ?? `Game ${game.gameId}`;
   const worldMode = worldMeta?.mode ?? "unknown";
   const isBlitzMode = worldMode === "blitz";
@@ -931,7 +902,7 @@ export const GameEntryModal = ({
   const isFrontierMode = worldMode === "frontier";
   // Eternum and Frontier both settle one realm from here; Blitz realms are settled by the launch service.
   const isSeasonMode = isEternumMode || isFrontierMode;
-  const isDevMode = worldMeta?.devModeOn === true;
+  const isDevMode = worldMeta?.dev_mode_on === true;
   const isEternumDevMode = isEternumMode && isDevMode;
   const [devRealmNumber, setDevRealmNumber] = useState("1");
   const [devSettlementTarget, setDevSettlementTarget] = useState<number | null>(null);
@@ -974,7 +945,8 @@ export const GameEntryModal = ({
   const navigationEntryContext = entryContext;
   // The availability query opens the game's shard, so it is open once the game's meta is known.
   const selectedWorldRpcUrl = worldMeta ? (getShard(game.chainId)?.rpcUrl ?? null) : null;
-  const villagePassAddress = worldMeta?.villagePassAddress || null;
+  // No directory names a village pass contract, so village settlement needs dev mode until one is wired.
+  const villagePassAddress = null;
   const {
     villagePassBalance,
     villagePasses,
@@ -994,7 +966,7 @@ export const GameEntryModal = ({
     refetch: refetchOwnedStructures,
   } = useQuery({
     queryKey: ["eternumOwnedStructures", game.chainId, game.gameId, account?.address],
-    enabled: isOpen && Boolean(worldMeta?.gameId) && Boolean(account?.address),
+    enabled: isOpen && worldMeta != null && Boolean(account?.address),
     queryFn: async () => {
       if (!account?.address) return [];
       return await fetchPlayerStructures(game, account.address);
@@ -1136,15 +1108,16 @@ export const GameEntryModal = ({
   }, [isOpen]);
 
   const nowSeconds = nowSec;
-  const seasonStartAt = worldMeta?.startSettlingAt ?? worldMeta?.startMainAt ?? null;
+  const seasonStartAt = worldMeta?.clock.start_settling_at ?? null;
   const seasonHasStarted = seasonStartAt != null && seasonStartAt <= nowSeconds;
-  const seasonNotEnded = worldMeta?.endAt == null || worldMeta.endAt === 0 || nowSeconds <= worldMeta.endAt;
+  const endAt = worldMeta?.clock.end_at;
+  const seasonNotEnded = endAt == null || endAt === 0 || nowSeconds <= endAt;
   const seasonTimingValid = isDevMode || (seasonHasStarted && seasonNotEnded);
   const secondsUntilSeasonStart = seasonStartAt == null ? null : Math.max(0, seasonStartAt - nowSeconds);
   const blitzEntry = useMemo(() => {
-    if (!isBlitzMode || !worldMeta || worldMeta.isRosterMember === null) return null;
-    return resolveBlitzEntry({ isMember: worldMeta.isRosterMember, ready: worldMeta.ready, ended: !seasonNotEnded });
-  }, [isBlitzMode, seasonNotEnded, worldMeta]);
+    if (!isBlitzMode || !worldMeta?.player_state) return null;
+    return resolveBlitzEntry({ isMember: isMember(worldMeta), ready: worldMeta.ready, ended: isGameOver(worldMeta) });
+  }, [isBlitzMode, worldMeta]);
   const hasVillagePass = villagePassBalance > 0n || villagePasses.length > 0;
   const isLoadingVillagePrereqs =
     isCheckingWorldAvailability || isLoadingVillagePassInventory || isLoadingOwnedStructures || !worldMeta;
@@ -1181,26 +1154,18 @@ export const GameEntryModal = ({
     return Math.round((completed / tasks.length) * 100);
   }, [tasks]);
 
-  const worldAvailabilityErrorMessage =
-    worldAvailability?.error instanceof Error ? worldAvailability.error.message : null;
+  const worldAvailabilityErrorMessage = gameEntry.error instanceof Error ? gameEntry.error.message : null;
   const phaseError = useMemo(
     () =>
       preflightError ??
       resolveGameEntryBlockingError({
         worldAvailabilityErrorMessage,
         isCheckingWorldAvailability,
-        isWorldAvailable: worldAvailability?.isAvailable ?? null,
+        isWorldAvailable: gameEntry.data === undefined ? null : gameEntry.data !== null,
         hasWorldMeta: worldMeta != null,
         worldMode,
       }),
-    [
-      preflightError,
-      worldAvailabilityErrorMessage,
-      isCheckingWorldAvailability,
-      worldAvailability?.isAvailable,
-      worldMeta,
-      worldMode,
-    ],
+    [preflightError, worldAvailabilityErrorMessage, isCheckingWorldAvailability, gameEntry.data, worldMeta, worldMode],
   );
 
   // Determine current phase
@@ -1260,9 +1225,9 @@ export const GameEntryModal = ({
   ]);
 
   const readSettlementSnapshot = useCallback(async (): Promise<SettlementSnapshot | null> => {
-    if (!account?.address || !worldMeta?.gameId) return null;
+    if (!account?.address || !worldMeta) return null;
     return fetchSettlementSnapshot(game, account.address);
-  }, [account?.address, game, worldMeta?.gameId]);
+  }, [account?.address, game, worldMeta]);
 
   const syncSettlementStateFromSnapshot = useCallback(
     (snapshot: SettlementSnapshot) => {
@@ -1589,12 +1554,6 @@ export const GameEntryModal = ({
         }
       }
 
-      // Settle targets the CHOSEN game explicitly — its id is the call's
-      // first argument on the appchain worlds.
-      if (!worldMeta.gameId) {
-        throw new Error(`Game id for "${worldName}" is not resolved yet. Please retry in a moment.`);
-      }
-
       const settlementTarget = isEternumDevMode ? (initialSnapshot?.settledCount ?? 0) + 1 : expectedSettlementCount;
       if (isEternumDevMode) setDevSettlementTarget(settlementTarget);
       setSettleStage("settling");
@@ -1812,10 +1771,7 @@ export const GameEntryModal = ({
             )}
             {phase === "settlement" && isBlitzMode && (
               <motion.div key="preparing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <BlitzPreparingPhase
-                  settledPlayers={worldMeta?.settledPlayersCount ?? 0}
-                  rosterSize={worldMeta?.rosterCount ?? 0}
-                />
+                {worldMeta ? <BlitzPreparing game={worldMeta} member /> : null}
               </motion.div>
             )}
             {phase === "spectate" && (

@@ -4,7 +4,9 @@ import { useIdentitySession } from "@/hooks/context/identity-session";
 
 import { formatCountdown } from "./format";
 import { EnterLink, GameClock, GameRow, SpectateLink, modeLabel } from "./game-links";
-import { type DirectoryGame, isMember, nextOpenGame, useDirectory, useRealmsPlayer, useRecentResults } from "./herald";
+import { isMember } from "@/runtime/world/directory";
+
+import { type DirectoryGame, nextOpenGame, useDirectory, useRealmsPlayer, useRecentResults } from "./herald";
 import { ErrorPanel, Loading, Panel, PanelTitle, Pill } from "./kit";
 import { useNowSeconds } from "./use-now";
 import { Standings } from "./standings";

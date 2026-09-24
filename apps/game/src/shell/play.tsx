@@ -1,18 +1,13 @@
 import { useSearchParams } from "react-router-dom";
 
+import { isGameOver, isMember } from "@/runtime/world/directory";
+
 import { BlitzSlots } from "./blitz-slots";
 import { ShardUrlForm } from "./shard-url-form";
 import { formatCountdown, formatLocalTime } from "./format";
 import { EnterLink, GameRow, SpectateLink, modeLabel, statusPill } from "./game-links";
-import {
-  type DirectoryGame,
-  isGameOver,
-  isMember,
-  nextOpenGame,
-  sameGame,
-  useDirectory,
-  useRealmsPlayer,
-} from "./herald";
+import { BlitzPreparing } from "./blitz-preparing";
+import { type DirectoryGame, nextOpenGame, sameGame, useDirectory, useRealmsPlayer } from "./herald";
 import { ErrorPanel, Loading, Panel, PanelTitle, Pill, StatBlock } from "./kit";
 import { Standings } from "./standings";
 import { useNowSeconds } from "./use-now";
@@ -34,18 +29,6 @@ const FrontierSeason = ({ games }: { games: DirectoryGame[] }) => {
     </Panel>
   );
 };
-
-/** The free Blitz flow settles the roster's realms; play opens once every member has theirs. */
-const BlitzPreparing = ({ game, member }: { game: DirectoryGame; member: boolean }) => (
-  <>
-    {member ? "Your realms are being prepared." : "The roster's realms are being prepared."} Play opens once every
-    player on the roster has their realms
-    {game.roster_count > 0
-      ? ` · ${Math.min(game.player_count, game.roster_count)} / ${game.roster_count} players settled`
-      : ""}
-    .
-  </>
-);
 
 const GameDetail = ({ game, now, player }: { game: DirectoryGame; now: number; player: string | null }) => {
   const pill = statusPill(game);
@@ -72,9 +55,15 @@ const GameDetail = ({ game, now, player }: { game: DirectoryGame; now: number; p
         />
       </div>
       {!ended && !game.ready ? (
-        <p role="status" className="mb-4 text-sm text-gold/80">
-          {game.mode === "blitz" ? <BlitzPreparing game={game} member={member} /> : "The season is being prepared."}
-        </p>
+        <div className="mb-4">
+          {game.mode === "blitz" ? (
+            <BlitzPreparing game={game} member={member} />
+          ) : (
+            <p role="status" className="text-sm text-gold/80">
+              The season is being prepared.
+            </p>
+          )}
+        </div>
       ) : null}
       {game.mode === "blitz" && ended && game.status !== "Settled" ? (
         <p role="status" className="mb-4 text-sm text-gold/80">
