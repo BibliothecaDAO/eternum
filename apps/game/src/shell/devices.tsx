@@ -3,8 +3,13 @@ import { useCallback, useEffect, useState } from "react";
 import { identityClient } from "@/hooks/context/identity-session";
 import { listOpenShards, openKnownShards } from "@/runtime/world/shards";
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
-import { connectRealmsAccount, getOrCreateDeviceKey, listDevices, revokeDevice } from "@bibliothecadao/eternum";
-import type { Shard } from "@bibliothecadao/eternum/shard";
+import {
+  getOrCreateDeviceKey,
+  readAccountDevices,
+  revokeDeviceEverywhere,
+  type DeviceShard,
+  type DeviceShardFailure,
+} from "@bibliothecadao/eternum";
 
 import { shortAddress } from "./format";
 import { useRealmsPlayer } from "./herald";
@@ -13,67 +18,73 @@ import { GhostButton, PanelTitle } from "./kit";
 /** One device key and the shards where it signs for the player's account. */
 interface Device {
   key: string;
-  shards: Shard[];
+  shards: DeviceShard[];
 }
 
-/** The account's devices across every shard this client knows, read from each shard's device events. */
-async function readDevices(address: string): Promise<Device[]> {
-  await openKnownShards();
-  const devices = new Map<string, Device>();
-  for (const shard of listOpenShards()) {
-    for (const key of await listDevices(getCachedRpcProvider(shard.rpcUrl), address)) {
-      const device = devices.get(key) ?? { key, shards: [] };
-      device.shards.push(shard);
-      devices.set(key, device);
-    }
-  }
-  return [...devices.values()];
+interface DeviceList {
+  devices: Device[];
+  /** Shards that could not be opened or read: the list is partial, and says where. */
+  failures: DeviceShardFailure[];
 }
 
-/** Revokes a device on every shard where it signs, each with that shard's own guardian approval and counter. */
-async function revokeEverywhere(realmsId: string, device: Device): Promise<void> {
-  const signer = getOrCreateDeviceKey(localStorage);
-  for (const shard of device.shards) {
-    await revokeDevice({
-      account: connectRealmsAccount(getCachedRpcProvider(shard.rpcUrl), shard, realmsId, signer),
-      shard,
-      deviceKey: device.key,
-      approve: identityClient.approveDeviceChange,
-    });
-  }
+/**
+ * The account's devices across every shard this client knows, read from each shard's device events at the player's one
+ * address: the directory lists only shards whose accounts share our guardian and class.
+ */
+async function readDevices(address: string): Promise<DeviceList> {
+  const unopened = await openKnownShards();
+  const shards = listOpenShards().map((shard) => ({ ...shard, provider: getCachedRpcProvider(shard.rpcUrl) }));
+  const { devices, failures } = await readAccountDevices(address, shards);
+  return {
+    devices: [...devices].map(([key, signsOn]) => ({ key, shards: signsOn })),
+    failures: [...unopened.map(({ url, error }) => ({ shard: url, error })), ...failures],
+  };
 }
+
+const describeFailures = (verb: string, failures: DeviceShardFailure[]) =>
+  failures.map(({ shard, error }) => `${verb} on ${shard}: ${error.message}`);
 
 export const DevicesPanel = ({ realmsId }: { realmsId: string }) => {
   const thisDevice = getOrCreateDeviceKey(localStorage).publicKey;
   const address = useRealmsPlayer();
   const [devices, setDevices] = useState<Device[] | null>(null);
   const [pending, setPending] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const load = useCallback(() => {
-    if (!address) return;
-    readDevices(address).then(setDevices, (cause: unknown) =>
-      setError(cause instanceof Error ? cause.message : "Devices could not be read."),
-    );
-  }, [address]);
+  const [errors, setErrors] = useState<string[]>([]);
+  const load = useCallback(
+    (removalErrors: string[] = []) => {
+      if (!address) return;
+      readDevices(address).then(
+        ({ devices, failures }) => {
+          setDevices(devices);
+          setErrors([...removalErrors, ...describeFailures("Not read", failures)]);
+        },
+        (cause: unknown) => setErrors([cause instanceof Error ? cause.message : "Devices could not be read."]),
+      );
+    },
+    [address],
+  );
   useEffect(load, [load]);
 
   const revoke = async (device: Device) => {
     setPending(device.key);
-    setError(null);
-    try {
-      await revokeEverywhere(realmsId, device);
-      load();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The device was not removed.");
-    } finally {
-      setPending(null);
-    }
+    setErrors([]);
+    const failures = await revokeDeviceEverywhere({
+      shards: device.shards,
+      realmsId,
+      device: getOrCreateDeviceKey(localStorage),
+      deviceKey: device.key,
+      approve: identityClient.approveDeviceChange,
+    });
+    setPending(null);
+    load(describeFailures("Not removed", failures));
   };
 
   return (
     <div>
       <PanelTitle>Devices</PanelTitle>
-      {devices === null && !error ? <div className="text-[13px] text-gold/60">Reading devices…</div> : null}
+      {devices === null && errors.length === 0 ? (
+        <div className="text-[13px] text-gold/60">Reading devices…</div>
+      ) : null}
       <div className="space-y-2">
         {devices?.map((device) => (
           <div
@@ -94,7 +105,11 @@ export const DevicesPanel = ({ realmsId }: { realmsId: string }) => {
           </div>
         ))}
       </div>
-      {error ? <div className="mt-2 text-[12.5px] text-danger">{error}</div> : null}
+      {errors.map((message) => (
+        <div key={message} className="mt-2 text-[12.5px] text-danger">
+          {message}
+        </div>
+      ))}
     </div>
   );
 };

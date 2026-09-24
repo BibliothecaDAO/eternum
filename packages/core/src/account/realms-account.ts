@@ -126,17 +126,8 @@ async function joinOnce(
     const joined = await joining.execute(isDeviceCall(address, device.publicKey), NO_TIP);
     await provider.waitForTransaction(joined.transaction_hash, { retryInterval: RECEIPT_POLL_MS });
   }
-  return connectRealmsAccount(provider, shard, realmsId, device);
+  return realmsAccount(provider, address, device);
 }
-
-/** This device's handle on the player's account on one shard, without joining it. */
-export const connectRealmsAccount = (
-  provider: ProviderInterface,
-  shard: RealmsAccountShard,
-  realmsId: string,
-  device: DeviceKey,
-): Account =>
-  realmsAccount(provider, realmsAccountAddress(realmsId, shard.accountClassHash, shard.guardianPublicKey), device);
 
 export class DeviceRemovedError extends Error {
   constructor(readonly account: string) {
@@ -148,7 +139,7 @@ const DEVICE_ADDED = num.toHex(hash.starknetKeccak("DeviceAdded"));
 const DEVICE_REVOKED = num.toHex(hash.starknetKeccak("DeviceRevoked"));
 
 /** The account's devices on one shard, from its DeviceAdded and DeviceRevoked events in order. */
-export async function listDevices(provider: ProviderInterface, address: string): Promise<string[]> {
+async function listDevices(provider: ProviderInterface, address: string): Promise<string[]> {
   const devices = new Set<string>();
   for (const { kind, deviceKey } of await deviceChanges(provider, address)) {
     if (kind === DEVICE_ADDED) devices.add(deviceKey);
@@ -184,18 +175,18 @@ async function deviceChanges(provider: ProviderInterface, address: string) {
 }
 
 /** Removes a device on one shard; any device of the account may submit the guardian's approval. */
-export async function revokeDevice({
+async function revokeDevice({
   account,
   shard,
   deviceKey,
   approve,
 }: {
   account: Account;
-  shard: RealmsAccountShard;
+  shard: DeviceShard;
   deviceKey: string;
   approve: GuardianApproval;
 }): Promise<string> {
-  const counter = (await deviceChangeCounter(account, account.address)) + 1;
+  const counter = (await deviceChangeCounter(shard.provider, account.address)) + 1;
   const [r, s] = await approve({
     chainId: shard.chainId,
     account: account.address,
@@ -213,6 +204,77 @@ export async function revokeDevice({
   );
   await account.waitForTransaction(result.transaction_hash, { retryInterval: RECEIPT_POLL_MS });
   return result.transaction_hash;
+}
+
+/** One shard's part of an account-wide device operation: where the account lives there and how to reach it. */
+export interface DeviceShard extends RealmsAccountShard {
+  url: string;
+  provider: ProviderInterface;
+}
+
+/** A shard whose part of an account-wide device operation failed, named with its reason, never hidden. */
+export interface DeviceShardFailure {
+  shard: string;
+  error: Error;
+}
+
+/** Each device key of the account and the shards where it signs, plus every shard that could not be read. */
+export interface AccountDevices {
+  devices: Map<string, DeviceShard[]>;
+  failures: DeviceShardFailure[];
+}
+
+/** The devices of the account at this address across these shards, each read from that shard's own device events. */
+export async function readAccountDevices(address: string, shards: readonly DeviceShard[]): Promise<AccountDevices> {
+  const devices = new Map<string, DeviceShard[]>();
+  const failures = await forEachShard(shards, async (shard) => {
+    for (const key of await listDevices(shard.provider, address)) {
+      devices.set(key, [...(devices.get(key) ?? []), shard]);
+    }
+  });
+  return { devices, failures };
+}
+
+/**
+ * Removes a device from the account on every one of these shards, each with that shard's own guardian approval and
+ * counter; returns the shards where it failed. A shard only accepts a revocation the account sends itself, signed by one
+ * of its devices, so this device first joins the account where it never has.
+ */
+export async function revokeDeviceEverywhere({
+  shards,
+  realmsId,
+  device,
+  deviceKey,
+  approve,
+}: {
+  shards: readonly DeviceShard[];
+  realmsId: string;
+  device: DeviceKey;
+  deviceKey: string;
+  approve: GuardianApproval;
+}): Promise<DeviceShardFailure[]> {
+  return forEachShard(shards, async (shard) => {
+    const account = await joinRealmsAccount({ provider: shard.provider, shard, realmsId, device, approve });
+    await revokeDevice({ account, shard, deviceKey, approve });
+  });
+}
+
+/** Runs the operation on every shard at once; one shard failing never stops or hides the others. */
+async function forEachShard(
+  shards: readonly DeviceShard[],
+  operation: (shard: DeviceShard) => Promise<void>,
+): Promise<DeviceShardFailure[]> {
+  const results = await Promise.allSettled(shards.map(operation));
+  return results.flatMap((result, index) =>
+    result.status === "rejected"
+      ? [
+          {
+            shard: shards[index]!.url,
+            error: result.reason instanceof Error ? result.reason : new Error(String(result.reason)),
+          },
+        ]
+      : [],
+  );
 }
 
 /** Signs as the account's device; with an approval, the signature also carries the guardian's `[r, s]` to join. */
