@@ -31,6 +31,7 @@ import { formatIncomingEta, useStructureUpgrade } from "@/ui/modules/entity-deta
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { ChevronsUp, Crown as CrownIcon } from "@/ui/design-system/atoms/game-icons";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 // One chip style for every requirement / produces row — matches the
 // building-tile inspector so the castle reads with the same vocabulary.
@@ -53,7 +54,8 @@ const RealmVillageDetails = () => {
   const revision = useNativeRevision(["Structure", "Guard", "GuildMember"]);
 
   const structure = useMemo(
-    () => getStructure(structureEntityId, ContractAddress(game.account.account.address), game.setup.store),
+    () =>
+      getStructure(structureEntityId, ContractAddress(game.account.account.address), game.setup.store, getPlayerName),
     [structureEntityId, game.account.account.address, game.setup.store, revision],
   );
 

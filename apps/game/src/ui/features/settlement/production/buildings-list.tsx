@@ -10,6 +10,7 @@ import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { Building, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 export const BuildingsList = ({
   realm,
@@ -32,7 +33,7 @@ export const BuildingsList = ({
   const structureBuildings = useNativeRow("StructureBuildings", keys);
   const productionBoostBonus = useNativeRow("ProductionBonus", keys);
   const realmInfo = useMemo(
-    () => getRealmInfo(realm.entityId, setup.store),
+    () => getRealmInfo(realm.entityId, setup.store, getPlayerName),
     [realm.entityId, setup.store, structureBuildings, resourceManager],
   );
 

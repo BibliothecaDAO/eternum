@@ -6,6 +6,7 @@ import {
   getOrCreateDeviceKey,
   signGameplayIntent,
 } from "@bibliothecadao/eternum";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 type BrowserGameInput = Pick<
   Parameters<typeof createGameClient>[0],
@@ -19,6 +20,7 @@ export async function createBrowserGameClient(input: BrowserGameInput) {
   const { nativeBindings } = await import("@/runtime/world/native-bindings");
   return createGameClient({
     ...input,
+    playerNames: getPlayerName,
     native: {
       bindings: nativeBindings,
       chainId,

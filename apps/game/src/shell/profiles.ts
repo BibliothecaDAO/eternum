@@ -1,11 +1,12 @@
-import { useSyncExternalStore } from "react";
+import { usePlayerNamesRevision } from "@/hooks/use-player-profile";
+import { identityProfiles, readPlayerProfile } from "@/services/identity/player-profiles";
 
-import { identityProfiles } from "@/services/identity/player-profiles";
-import type { IdentityProfile } from "@realms-world/identity";
-
-/** Public names and portraits for gameplay accounts, from identity, asked for once per address. */
-export const useProfiles = (accounts: readonly string[]): ((account: string) => IdentityProfile | undefined) => {
+/**
+ * Names and portraits for gameplay accounts, from the one player resolver, re-rendering when identity answers or the
+ * session changes. The accounts are asked for together before the first read.
+ */
+export const useProfiles = (accounts: readonly string[]): typeof readPlayerProfile => {
   identityProfiles.request(accounts);
-  useSyncExternalStore(identityProfiles.subscribe, identityProfiles.getVersion);
-  return identityProfiles.get;
+  usePlayerNamesRevision();
+  return readPlayerProfile;
 };

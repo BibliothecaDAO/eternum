@@ -50,6 +50,8 @@ export async function connectRunnerGame(config: RunnerConfig): Promise<RunnerGam
     shard,
     gameId: listing.game_id,
     presetId: listing.preset_id,
+    // The runner reads Realms profiles from nowhere, so it names no player; its prompts speak in addresses.
+    playerNames: () => null,
     native: {
       bindings: bindings as unknown as NativeWorldBindings,
       chainId: shard.chainId,

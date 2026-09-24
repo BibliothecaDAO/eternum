@@ -6,10 +6,11 @@ import { RealmInfo } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 const buildOwnedStructureInfos = (playerStructures: ReturnType<typeof usePlayerStructures>, store: NativeFactStore) =>
   playerStructures
-    .map((structure) => getRealmInfo(structure.entityId, store))
+    .map((structure) => getRealmInfo(structure.entityId, store, getPlayerName))
     .filter((structureInfo): structureInfo is RealmInfo => Boolean(structureInfo));
 
 const useOwnedStructureInfos = () => {

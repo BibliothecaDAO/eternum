@@ -1,7 +1,8 @@
 import { structureMapPosition } from "./expeditions";
 import { ID, RealmInfo } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { configManager, getAddressNameFromEntity, ResourceManager } from "..";
+import { configManager, ResourceManager } from "..";
+import type { PlayerNameResolver } from "./entities";
 import realmsJson from "../data/realms.json";
 import { unpackValue } from "./packed-data";
 
@@ -11,7 +12,11 @@ export const getRealmNameById = (realmId: ID): string => {
   return features["name"];
 };
 
-export function getRealmInfo(entity: ID, store: NativeFactStore): RealmInfo | undefined {
+export function getRealmInfo(
+  entity: ID,
+  store: NativeFactStore,
+  playerName: PlayerNameResolver,
+): RealmInfo | undefined {
   const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entity });
   const structureBuildings = store.get("StructureBuildings", {
     game_id: configManager.getActiveGameId(),
@@ -45,7 +50,7 @@ export function getRealmInfo(entity: ID, store: NativeFactStore): RealmInfo | un
         structureBuildings.population.max + configManager.getBasePopulationCapacity() >
           structureBuildings.population.current,
       owner: structure?.owner,
-      ownerName: getAddressNameFromEntity(entity_id, store) || "",
+      ownerName: structure.owner === 0n ? "" : (playerName(structure.owner) ?? ""),
       hasWonder: structure.metadata.has_wonder,
       structure,
     };

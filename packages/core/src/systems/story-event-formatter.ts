@@ -1,13 +1,6 @@
-import {
-  BuildingType,
-  BuildingTypeToString,
-  ContractAddress,
-  GuardSlot,
-  RESOURCE_PRECISION,
-  resources,
-} from "@bibliothecadao/types";
+import { BuildingType, BuildingTypeToString, GuardSlot, RESOURCE_PRECISION, resources } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { getAddressName, getStructureName } from "../utils/entities";
+import { getStructureName, type PlayerNameResolver } from "../utils/entities";
 import { Position } from "./position";
 import { getIsBlitz } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
@@ -31,9 +24,6 @@ export interface StoryEventPresentation {
   icon: StoryEventIcon;
   owner?: string | null;
 }
-
-/** The client's player resolver (identity profile over chain name); null when the address has no name. */
-export type PlayerNameResolver = (address: string) => string | null;
 
 type StoryFormatter = (
   event: StoryEventSystemUpdate,
@@ -917,8 +907,7 @@ function nameOwner(
   if (owner === undefined || owner === null) return undefined;
   if (typeof owner === "string" && owner.startsWith("0x")) {
     if (isZeroAddress(owner)) return "Neutral";
-    const chainName = components ? safeChainName(owner, components) : undefined;
-    return resolvePlayerName?.(owner) ?? chainName ?? shortenAddress(owner) ?? owner;
+    return resolvePlayerName?.(owner) ?? shortenAddress(owner) ?? owner;
   }
   return components ? (describeStructureName(owner, components) ?? undefined) : undefined;
 }
@@ -928,13 +917,5 @@ const isZeroAddress = (address: string): boolean => {
     return BigInt(address) === 0n;
   } catch {
     return false;
-  }
-};
-
-const safeChainName = (address: string, components: NativeFactStore): string | undefined => {
-  try {
-    return getAddressName(address as unknown as ContractAddress, components);
-  } catch {
-    return undefined;
   }
 };

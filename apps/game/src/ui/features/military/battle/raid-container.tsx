@@ -41,6 +41,7 @@ import { ActiveRelicEffects } from "../../world/components/entities/active-relic
 import { AttackTarget, TargetType } from "./types";
 import { formatTypeAndBonuses } from "./combat-utils";
 import { RaidResult } from "./raid-result";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 enum RaidOutcome {
   Success = "Success",
@@ -92,7 +93,7 @@ export const RaidContainer = ({
 
   // Get the current army states for display
   const attackerArmyData = useMemo(() => {
-    const army = getArmy(attackerEntityId, ContractAddress(account.address), store);
+    const army = getArmy(attackerEntityId, ContractAddress(account.address), store, getPlayerName);
     const projectedStamina = army
       ? StaminaManager.getStamina(army.troops, currentArmiesTick)
       : { amount: 0n, updated_tick: 0n };

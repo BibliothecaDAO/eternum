@@ -26,6 +26,7 @@ import {
   RelicRecipientType,
   ResourcesIds,
 } from "@bibliothecadao/types";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 type ProductionItem = StructureProductionSummary["items"][number];
 
@@ -72,7 +73,7 @@ export const MergedResourcePanel = memo(
 
     const entityId = Number(structureEntityId);
     const realm = useMemo(
-      () => (Number.isFinite(entityId) && entityId > 0 ? getRealmInfo(entityId, store) : undefined),
+      () => (Number.isFinite(entityId) && entityId > 0 ? getRealmInfo(entityId, store, getPlayerName) : undefined),
       [entityId, store],
     );
 

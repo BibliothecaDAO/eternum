@@ -12,6 +12,7 @@ import { StructureType } from "@bibliothecadao/types";
 import type { ResourceManager } from "../../managers/resource-manager";
 import type { StaminaManager } from "../../managers/stamina-manager";
 import type { GameClient } from "../game-client";
+import type { PlayerNameResolver } from "../../utils/entities";
 import { readExplorers, readStaminaManager } from "./armies";
 import { readGuildMembers, readGuildWhitelist } from "./guilds";
 import { type MarketView, readMarket, readOpenTrades } from "./market";
@@ -55,14 +56,18 @@ export interface GameViews {
   market(owner: ContractAddress, currentBlockTimestamp: number): MarketView;
 }
 
-export const createGameViews = (client: GameClient, viewer: ContractAddress): GameViews => {
+export const createGameViews = (
+  client: GameClient,
+  viewer: ContractAddress,
+  playerName: PlayerNameResolver,
+): GameViews => {
   const { store, systemCalls } = client.setup;
   return {
-    explorers: (id) => readExplorers(store, id, viewer),
+    explorers: (id) => readExplorers(store, id, viewer, playerName),
     stamina: (id) => readStaminaManager(store, id),
-    structures: (owner) => readStructures(store, owner, viewer),
-    realms: (owner) => readRealmInfos(store, owner, StructureType.Realm),
-    villages: (owner) => readRealmInfos(store, owner, StructureType.Village),
+    structures: (owner) => readStructures(store, owner, viewer, playerName),
+    realms: (owner) => readRealmInfos(store, owner, StructureType.Realm, playerName),
+    villages: (owner) => readRealmInfos(store, owner, StructureType.Village, playerName),
     allRealms: () => readStructureRows(store, StructureType.Realm),
     hyperstructureIds: (owner) => readStructureIds(store, owner, StructureType.Hyperstructure),
     hyperstructureUpdates: (id) => readHyperstructureUpdates(store, id),
@@ -70,11 +75,11 @@ export const createGameViews = (client: GameClient, viewer: ContractAddress): Ga
     buildingTiles: (id) => readBuildingTiles(store, systemCalls, id),
     resources: (id) => readResourceManager(store, id),
     resourceArrivals: (id) => readResourceArrivals(store, id),
-    guildMembers: (id) => readGuildMembers(store, id, viewer),
-    guildWhitelist: (id) => readGuildWhitelist(store, viewer, { guildId: id }),
-    playerWhitelist: (player) => readGuildWhitelist(store, viewer, { player }),
+    guildMembers: (id) => readGuildMembers(store, id, viewer, playerName),
+    guildWhitelist: (id) => readGuildWhitelist(store, viewer, { guildId: id }, playerName),
+    playerWhitelist: (player) => readGuildWhitelist(store, viewer, { player }, playerName),
     market: (owner, timestamp) =>
-      readMarket(readOpenTrades(store, timestamp), [
+      readMarket(readOpenTrades(store, timestamp, playerName), [
         ...readStructureIds(store, owner, StructureType.Realm),
         ...readStructureIds(store, owner, StructureType.Village),
       ]),

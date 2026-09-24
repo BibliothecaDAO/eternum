@@ -368,7 +368,7 @@ export class ArmyManager {
       this.recheckOwnership();
     });
     // Identity names arrive after the armies spawned: every label re-reads its owner through the one resolver.
-    this.unsubscribePlayers = this.store && watchPlayerNames(this.store, () => this.refreshOwnerNames());
+    this.unsubscribePlayers = this.store && watchPlayerNames(() => this.refreshOwnerNames());
 
     // Initialize the last known armies tick to current tick
     this.lastKnownArmiesTick = getBlockTimestamp().currentArmiesTick;

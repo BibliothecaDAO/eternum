@@ -13,6 +13,7 @@ import {
   findResourceById,
   getBuildingFromResource,
 } from "@bibliothecadao/types";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 type Store = SetupResult["store"];
 
@@ -102,7 +103,7 @@ export const createConstructionMenu = ({
   const mode = getGameModeConfig();
   const simpleCostEnabled = mode.id !== "blitz" && requestedSimpleCost;
 
-  const realmInfo = getRealmInfo(structureEntityId, store);
+  const realmInfo = getRealmInfo(structureEntityId, store, getPlayerName);
 
   const makeBuildingAction = ({
     suffix,

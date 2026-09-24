@@ -384,7 +384,7 @@ export class StructureManager {
     // Owner names are folded into every cached record; a profile landing after the label re-resolves them.
     this.unsubscribePlayers =
       this.store &&
-      watchPlayerNames(this.store, () => {
+      watchPlayerNames(() => {
         this.structureInfoCache.clear();
         this.requestVisibleStructuresRefresh({ refreshExisting: true });
       });
@@ -473,10 +473,6 @@ export class StructureManager {
         const touched = new Set<number>();
         let refreshAll = false;
         for (const change of changes) {
-          if (change.model === "AddressName") {
-            refreshAll = true;
-            continue;
-          }
           if (change.model === "GuildMember") {
             if ((change.current ?? change.previous)?.game_id === configManager.getActiveGameId()) refreshAll = true;
             continue;

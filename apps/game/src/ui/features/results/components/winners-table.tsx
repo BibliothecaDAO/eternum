@@ -1,8 +1,9 @@
-import { configManager, displayPlayerName, getAddressName } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
+import { getPlayerDisplayName, usePlayerNamesRevision } from "@/hooks/use-player-profile";
 
 type WinnerRow = {
   player: bigint;
@@ -24,7 +25,8 @@ export const WinnersTable = () => {
   const {
     setup: { store },
   } = useGame();
-  const leaderboardRevision = useNativeRevision(["BlitzResult", "AddressName"]);
+  const leaderboardRevision = useNativeRevision(["BlitzResult"]);
+  usePlayerNamesRevision();
 
   const rows = useMemo<WinnerRow[]>(() => {
     void leaderboardRevision;
@@ -33,8 +35,7 @@ export const WinnersTable = () => {
     return result.players.toSorted((left, right) => left.rank - right.rank || (left.player < right.player ? -1 : 1));
   }, [store, leaderboardRevision]);
 
-  const playerName = (address: bigint): string =>
-    displayPlayerName(ContractAddress(address), getAddressName(ContractAddress(address), store));
+  const playerName = (address: bigint): string => getPlayerDisplayName(address);
 
   if (rows.length === 0) return <div className="text-gray-400 text-sm">No ranked players yet.</div>;
 

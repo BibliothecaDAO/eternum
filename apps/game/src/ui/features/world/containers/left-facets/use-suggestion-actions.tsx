@@ -15,6 +15,7 @@ import { useQuery } from "@/hooks/helpers/use-query";
 import { type BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useRef, useState } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 /** Build orders submit against their realm without changing the current selection. */
 export const useSuggestionActions = () => {
@@ -60,7 +61,7 @@ export const useSuggestionActions = () => {
       const entityId = Number(suggestion.realmId);
       if (!Number.isFinite(entityId)) return;
 
-      const realm = getRealmInfo(entityId, setup.store);
+      const realm = getRealmInfo(entityId, setup.store, getPlayerName);
       await buildRealmBuilding({
         entityId,
         realmPosition: realm?.position,
