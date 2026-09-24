@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { resolveArmyCreationBlockedReason, resolveArmyTroopAvailability } from "./army-creation-policy";
+import {
+  describeTroopTraining,
+  resolveArmyCreationBlockedReason,
+  resolveArmyTroopAvailability,
+  resolveInitialTroop,
+  resolveTroopAvailabilityReason,
+} from "./army-creation-policy";
+import { TroopTier, TroopType } from "@bibliothecadao/types";
+
+const noBarracks = { name: "Knight T1", perHour: 0, secondsToFullArmy: null };
+const training = { name: "Knight T1", perHour: 250, secondsToFullArmy: 7_800 };
 
 const ready = {
   hasStructure: true,
@@ -12,6 +22,7 @@ const ready = {
   available: 5000,
   troopCount: 1000,
   isLoading: false,
+  supply: noBarracks,
 };
 
 describe("army troop availability", () => {
@@ -40,7 +51,7 @@ describe("army deployment blocked states", () => {
     [{ capacityRemaining: null }, "Army capacity is still loading."],
     [{ capacityRemaining: 0 }, "Troop cap reached."],
     [{ troopCount: 3001 }, "Troop cap reached."],
-    [{ available: 0 }, "Not enough of this troop."],
+    [{ available: 0 }, "No Knight T1 troops. A Knight T1 barracks on the realm board trains them."],
     [{ available: 999 }, "Not enough of this troop."],
     [{ troopCount: 0 }, "Choose a troop count."],
     [{ isLoading: true }, "Deploying army."],
@@ -56,5 +67,51 @@ describe("army deployment blocked states", () => {
         hasFreeDirection: false,
       }),
     ).toBeNull();
+  });
+});
+
+describe("troop supply", () => {
+  it("names the barracks that trains a troop the realm has none of", () => {
+    expect(resolveTroopAvailabilityReason({ capacityRemaining: 3000, available: 0, supply: noBarracks })).toBe(
+      "No Knight T1 troops. A Knight T1 barracks on the realm board trains them.",
+    );
+  });
+  it("shows the training rate and when a full army is ready while a barracks trains", () => {
+    expect(resolveTroopAvailabilityReason({ capacityRemaining: 3000, available: 0, supply: training })).toBe(
+      "Training 250 Knight T1 per hour; a full army in 2h 10m.",
+    );
+    expect(describeTroopTraining({ ...training, secondsToFullArmy: 0 })).toBe(
+      "Training 250 Knight T1 per hour; a full army is ready.",
+    );
+    expect(describeTroopTraining(noBarracks)).toBeNull();
+  });
+  it("has no availability reason while a troop can be chosen", () => {
+    expect(resolveTroopAvailabilityReason({ capacityRemaining: 3000, available: 1, supply: noBarracks })).toBeNull();
+    expect(resolveTroopAvailabilityReason({ capacityRemaining: 0, available: 5000, supply: training })).toBe(
+      "Troop cap reached.",
+    );
+  });
+});
+
+describe("initial troop", () => {
+  const options = (knights: number, crossbows: number) => [
+    {
+      type: TroopType.Crossbowman,
+      label: "CROSSBOW",
+      tiers: [{ tier: TroopTier.T1, available: crossbows, resourceTrait: "" }],
+    },
+    { type: TroopType.Knight, label: "KNIGHT", tiers: [{ tier: TroopTier.T1, available: knights, resourceTrait: "" }] },
+  ];
+  const knightsOnly = (troop: { type: TroopType }) => troop.type === TroopType.Knight;
+
+  it("opens on a troop the realm holds", () => {
+    expect(resolveInitialTroop(options(0, 40), knightsOnly)).toEqual({
+      type: TroopType.Crossbowman,
+      tier: TroopTier.T1,
+    });
+  });
+  it("with none on hand, opens on a troop the mode lets the realm train", () => {
+    expect(resolveInitialTroop(options(0, 0), knightsOnly)).toEqual({ type: TroopType.Knight, tier: TroopTier.T1 });
+    expect(resolveInitialTroop(options(0, 0), () => false)).toBeNull();
   });
 });
