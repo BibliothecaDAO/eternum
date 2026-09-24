@@ -55,10 +55,6 @@ describe("game entry phase resolution", () => {
       isCheckingWorldAvailability: false,
       hasWorldMeta: true,
       isSeasonMode: false,
-      isLoadingVillagePrereqs: false,
-      hasVillageRevealResult: false,
-      settlementMode: "realm",
-      hasVillagePass: false,
       checksComplete: true,
       needsSettlement: false,
       canPlay: false,
@@ -78,10 +74,6 @@ describe("game entry phase resolution", () => {
     isCheckingWorldAvailability: false,
     hasWorldMeta: true,
     isSeasonMode: false,
-    isLoadingVillagePrereqs: false,
-    hasVillageRevealResult: false,
-    settlementMode: "realm" as const,
-    hasVillagePass: false,
     checksComplete: true,
     needsSettlement: false,
     canPlay: false,
@@ -116,10 +108,6 @@ describe("game entry phase resolution", () => {
       isCheckingWorldAvailability: false,
       hasWorldMeta: true,
       isSeasonMode: true,
-      isLoadingVillagePrereqs: false,
-      hasVillageRevealResult: false,
-      settlementMode: "realm",
-      hasVillagePass: false,
       checksComplete: true,
       needsSettlement: false,
       canPlay: false,
@@ -142,10 +130,6 @@ describe("Eternum dev settlement", () => {
     isCheckingWorldAvailability: false,
     hasWorldMeta: true,
     isSeasonMode: true,
-    isLoadingVillagePrereqs: false,
-    hasVillageRevealResult: false,
-    settlementMode: "realm" as const,
-    hasVillagePass: false,
     checksComplete: true,
     needsSettlement: false,
     canPlay: true,
@@ -158,14 +142,6 @@ describe("Eternum dev settlement", () => {
     );
     expect(resolveGameEntryModalPhase({ ...input, isEternumDevMode: false, isSettlingAdditionalRealm: true })).toBe(
       "ready",
-    );
-  });
-  it("allows village placement without a pass only for dev games", () => {
-    expect(resolveGameEntryModalPhase({ ...input, settlementMode: "village", isDevMode: true })).toBe(
-      "village-placement",
-    );
-    expect(resolveGameEntryModalPhase({ ...input, settlementMode: "village", isDevMode: false })).toBe(
-      "village-pass-required",
     );
   });
   it("keeps settled Blitz players in the ready phase", () => {
@@ -183,35 +159,6 @@ describe("Eternum dev settlement", () => {
   });
 });
 
-describe("village placement across modes", () => {
-  it.each(["blitz", "eternum"])("requires a pass outside dev mode in %s", (worldMode) => {
-    const input = {
-      bootstrapStatus: "ready" as const,
-      hasPhaseError: false,
-      isBlitzMode: worldMode === "blitz",
-      blitzEntry: null,
-      isSeasonMode: worldMode === "eternum",
-      isSpectateMode: false,
-      worldMode,
-      isCheckingWorldAvailability: false,
-      hasWorldMeta: true,
-      isLoadingVillagePrereqs: false,
-      hasVillageRevealResult: false,
-      settlementMode: "village" as const,
-      hasVillagePass: false,
-      checksComplete: true,
-      needsSettlement: false,
-      canPlay: true,
-      isSettlementUnlocked: true,
-      hasAccount: true,
-    };
-    expect(resolveGameEntryModalPhase(input)).toBe("village-pass-required");
-    expect(resolveGameEntryModalPhase({ ...input, hasVillagePass: true })).toBe("village-placement");
-    expect(resolveGameEntryModalPhase({ ...input, isDevMode: true })).toBe("village-placement");
-    expect(resolveGameEntryModalPhase({ ...input, hasVillageRevealResult: true })).toBe("village-reveal");
-  });
-});
-
 describe("the player's account at game entry", () => {
   const frontier = {
     bootstrapStatus: "ready" as const,
@@ -224,10 +171,6 @@ describe("the player's account at game entry", () => {
     hasWorldMeta: true,
     hasAccount: false,
     isSeasonMode: true,
-    isLoadingVillagePrereqs: false,
-    hasVillageRevealResult: false,
-    settlementMode: "realm" as const,
-    hasVillagePass: false,
     checksComplete: false,
     needsSettlement: false,
     canPlay: false,
@@ -236,9 +179,6 @@ describe("the player's account at game entry", () => {
 
   it("offers no way to play before the account exists", () => {
     expect(resolveGameEntryModalPhase(frontier)).toBe("account");
-    expect(resolveGameEntryModalPhase({ ...frontier, settlementMode: "village", hasVillagePass: true })).toBe(
-      "account",
-    );
     expect(
       resolveGameEntryModalPhase({ ...frontier, worldMode: "blitz", isSeasonMode: false, isBlitzMode: true }),
     ).toBe("account");

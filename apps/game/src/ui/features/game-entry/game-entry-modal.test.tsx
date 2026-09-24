@@ -23,17 +23,7 @@ vi.mock("@/hooks/use-game-entry", () => ({
     return { data: entry, error: null };
   },
 }));
-vi.mock("@/hooks/use-village-pass-inventory", () => ({
-  useVillagePassInventory: () => ({
-    villagePassBalance: 0n,
-    villagePasses: [],
-    isLoading: false,
-    error: null,
-    refetch: async () => undefined,
-  }),
-}));
 vi.mock("@/runtime/world/herald-pre-session-reader", () => ({
-  fetchPlayerStructures: async () => [],
   fetchSettlementSnapshot: async () => null,
 }));
 

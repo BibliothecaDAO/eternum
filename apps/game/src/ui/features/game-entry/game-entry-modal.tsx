@@ -7,14 +7,11 @@
  * 3. Auto-transitions to game when ready
  */
 
-import { useQuery } from "@tanstack/react-query";
-
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
   Castle,
   Check,
-  ExternalLink,
   Eye,
   Loader2,
   Play,
@@ -34,28 +31,20 @@ import { identityUsername, useIdentitySessionStore, useSignInAndReturn } from "@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import { resolvePlayerNameFelt } from "@/services/identity/player-name";
-import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/use-village-pass-inventory";
 import { useGameEntry } from "@/hooks/use-game-entry";
 
 import { submitSettlement } from "@/services/settlement";
-import {
-  fetchPlayerStructures,
-  fetchSettlementSnapshot,
-  type PlayerStructure,
-  type SettlementSnapshot,
-} from "@/runtime/world/herald-pre-session-reader";
+import { fetchSettlementSnapshot, type SettlementSnapshot } from "@/runtime/world/herald-pre-session-reader";
 import { isGameOver, isMember } from "@/runtime/world/directory";
 import { gameKey } from "@/runtime/world/store";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { AccountStatePrompt } from "@/shell/account-state";
 import { BlitzPreparing } from "@/shell/blitz-preparing";
 
-import { ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { getShard, type GameRef } from "@bibliothecadao/eternum/game-client";
+import type { GameRef } from "@bibliothecadao/eternum/game-client";
 import { Account } from "starknet";
 import {
   isGameEntryPreflightComplete,
@@ -70,7 +59,6 @@ import { isSelectedWorldEntityWaitAborted, waitForSelectedWorldEntityState } fro
 
 const DEBUG_MODAL = false;
 const SETTLEMENT_SYNC_TIMEOUT_MS = 90000;
-const VILLAGE_REVEAL_SLOW_MS = 45_000;
 // An Eternum settlement creates one realm; Blitz realms are settled by the launch service.
 const SEASON_SETTLEMENT_COUNT = 1;
 const ENTRY_DIRECTORY_REFETCH_MS = 10_000;
@@ -121,128 +109,7 @@ const formatUnlockCountdown = (secondsLeft: number): string => {
   return `${hours}:${minutes}:${seconds}`;
 };
 
-const resolveResourceLabel = (resourceId: number): string | null => {
-  const label = ResourcesIds[resourceId as ResourcesIds];
-  return typeof label === "string" ? label : null;
-};
-
-const VILLAGE_REVEAL_RESOURCE_IDS: readonly number[] = [
-  ResourcesIds.Wood,
-  ResourcesIds.Stone,
-  ResourcesIds.Coal,
-  ResourcesIds.Copper,
-  ResourcesIds.Obsidian,
-  ResourcesIds.Silver,
-  ResourcesIds.Ironwood,
-  ResourcesIds.ColdIron,
-  ResourcesIds.Gold,
-  ResourcesIds.Hartwood,
-  ResourcesIds.Diamonds,
-  ResourcesIds.Sapphire,
-  ResourcesIds.Ruby,
-  ResourcesIds.DeepCrystal,
-  ResourcesIds.Ignium,
-  ResourcesIds.EtherealSilica,
-  ResourcesIds.TrueIce,
-  ResourcesIds.TwilightQuartz,
-  ResourcesIds.AlchemicalSilver,
-  ResourcesIds.Adamantine,
-  ResourcesIds.Mithral,
-  ResourcesIds.Dragonhide,
-];
-
-const unpackPackedResourceIds = (packedValue: string | number | bigint | null | undefined): number[] => {
-  if (packedValue == null) return [];
-
-  let value: bigint;
-  try {
-    value = typeof packedValue === "bigint" ? packedValue : BigInt(packedValue);
-  } catch {
-    return [];
-  }
-
-  if (value <= 0n) return [];
-
-  const resourceIds: number[] = [];
-  let current = value;
-  while (current > 0n) {
-    const id = Number(current & 0xffn);
-    resourceIds.unshift(id);
-    current >>= 8n;
-  }
-  return resourceIds;
-};
-
-const resolvePrimaryVillageResource = (packedValue: string | number | bigint | null | undefined): number | null => {
-  const resourceIds = unpackPackedResourceIds(packedValue);
-  for (const resourceId of resourceIds) {
-    if (resolveResourceLabel(resourceId)) {
-      return resourceId;
-    }
-  }
-  return null;
-};
-
-const mapVillageSettleError = (error: unknown): string => {
-  const raw = error instanceof Error ? error.message : String(error ?? "");
-  const message = raw.toLowerCase();
-
-  if (message.includes("unable to resolve player name")) {
-    return "Still loading your player name. Retry settlement in a moment.";
-  }
-
-  if (message.includes("name contract not found")) {
-    return "Name system contract not found for this world.";
-  }
-
-  if (message.includes("village contract not found")) {
-    return "Village system contract not found for this world.";
-  }
-
-  if (message.includes("connected entity is not a realm")) {
-    return "Choose a settled realm.";
-  }
-
-  if (message.includes("evp: village token can not be transferred")) {
-    return "Village pass transfer blocked by world config. The village contract likely needs distributor access.";
-  }
-
-  if (message.includes("season is over") || message.includes("settling") || message.includes("timing")) {
-    return "Season timing invalid. Village settlement is currently unavailable.";
-  }
-
-  if (
-    message.includes("village pass") ||
-    message.includes("erc721") ||
-    message.includes("owner") ||
-    message.includes("approved") ||
-    message.includes("transfer")
-  ) {
-    return "Village pass unavailable in this wallet or already consumed.";
-  }
-
-  if (message.includes("exhausted")) return "No village placement remains in this game. The pass was not consumed.";
-  return "Village settlement failed. Please try again.";
-};
-
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
-
-// Types
-type SettlementMode = "realm" | "village";
-
-type OwnedRealmOption = {
-  entityId: number;
-  realmId: number | null;
-  coordX: number;
-  coordY: number;
-  label: string;
-};
-
-type VillageRevealResult = {
-  villageEntityId: number;
-  resourceId: number;
-  resourceLabel: string;
-};
 
 interface GameEntryModalProps {
   isOpen: boolean;
@@ -541,311 +408,6 @@ const BlitzSpectatePhase = ({ ended, onSpectate }: { ended: boolean; onSpectate:
   </div>
 );
 
-const VillagePassRequiredPhase = ({
-  onGetVillagePass,
-  onSwitchToRealmMode,
-  showRealmShortcut,
-}: {
-  onGetVillagePass: () => void;
-  onSwitchToRealmMode?: () => void;
-  showRealmShortcut?: boolean;
-}) => {
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="text-center">
-        <div className="mx-auto w-16 h-16 mb-3 rounded-full bg-red-500/20 flex items-center justify-center">
-          <AlertCircle className="w-8 h-8 text-red-300" />
-        </div>
-        <h2 className="text-lg font-semibold text-gold mb-2">Village Pass Required</h2>
-        <p className="text-xs text-gold/60">You need at least one Village Pass to settle a village in this game.</p>
-      </div>
-
-      <Button
-        onClick={onGetVillagePass}
-        className="w-full h-10 !text-brown !bg-gold/80 rounded-md"
-        forceUppercase={false}
-      >
-        <div className="flex items-center justify-center gap-2">
-          <ExternalLink className="w-4 h-4" />
-          <span>Open Marketplace</span>
-        </div>
-      </Button>
-
-      {showRealmShortcut && onSwitchToRealmMode && (
-        <Button onClick={onSwitchToRealmMode} variant="outline" className="w-full h-9" forceUppercase={false}>
-          Settle a Realm Instead
-        </Button>
-      )}
-    </div>
-  );
-};
-
-const VillagePlacementPhase = ({
-  devMode = false,
-  villagePassBalance,
-  villagePasses,
-  selectedVillagePassTokenId,
-  onSelectVillagePass,
-  settleableRealms,
-  selectedRealmEntityId,
-  onSelectRealmEntityId,
-  onConfirmSettlement,
-  isSubmittingSettlement,
-  settlementError,
-  villagePassInventoryError,
-}: {
-  devMode?: boolean;
-  villagePassBalance: bigint;
-  villagePasses: VillagePassInventoryItem[];
-  selectedVillagePassTokenId: bigint | null;
-  onSelectVillagePass: (tokenId: bigint) => void;
-  settleableRealms: OwnedRealmOption[];
-  selectedRealmEntityId: number | null;
-  onSelectRealmEntityId: (realmEntityId: number | null) => void;
-  onConfirmSettlement: () => void;
-  isSubmittingSettlement: boolean;
-  settlementError: string | null;
-  villagePassInventoryError: string | null;
-}) => {
-  const selectedRealm = settleableRealms.find((realm) => realm.entityId === selectedRealmEntityId) ?? null;
-  const canSubmit =
-    (devMode || selectedVillagePassTokenId != null) && selectedRealmEntityId != null && !isSubmittingSettlement;
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <img src="/images/logos/eternum-loader.png" className="w-12" alt="Village settlement" />
-        <div>
-          <h2 className="text-lg font-semibold text-gold">Settle Village</h2>
-          <p className="text-xs text-gold/65">
-            Choose a realm for the army grant and bridge fee. The settlement planner chooses the village tile.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(300px,1fr)_minmax(0,1.5fr)]">
-        {devMode ? (
-          <p className="text-sm text-gold/70">Dev mode: no Village Pass required.</p>
-        ) : (
-          <section className="rounded-xl border border-gold/25 bg-gradient-to-b from-black/45 to-black/25 p-3 md:p-4">
-            <div>
-              <p className="text-sm font-semibold text-gold">Village Pass Selection</p>
-              <p className="text-[11px] text-gold/60">Select the token ID to consume for settlement.</p>
-            </div>
-
-            <div className="mt-3 space-y-2 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-              {villagePasses.map((pass) => {
-                const isSelected = selectedVillagePassTokenId === pass.tokenId;
-                return (
-                  <div
-                    key={pass.tokenId.toString()}
-                    className={cn(
-                      "rounded-lg border p-2 transition-colors",
-                      isSelected ? "border-gold/55 bg-gold/15" : "border-gold/20 bg-black/25 hover:border-gold/35",
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm text-gold">Village Pass #{pass.tokenId.toString()}</p>
-                      <Button
-                        onClick={() => onSelectVillagePass(pass.tokenId)}
-                        variant={isSelected ? "default" : "outline"}
-                        size="xs"
-                        forceUppercase={false}
-                        className={cn(isSelected ? "!bg-gold !text-brown" : "")}
-                      >
-                        {isSelected ? "Selected" : "Use"}
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {villagePasses.length === 0 && villagePassBalance > 0n && (
-              <p className="mt-3 text-[11px] text-amber-200/80">
-                Village pass detected, but token enumeration is unavailable for this contract.
-              </p>
-            )}
-            {villagePassInventoryError && (
-              <p className="mt-2 text-[11px] text-amber-200/80">{villagePassInventoryError}</p>
-            )}
-          </section>
-        )}
-
-        <section className="rounded-xl border border-gold/25 bg-gradient-to-b from-[#1a140b]/95 via-[#100d08]/95 to-[#0b0906]/95 p-3 md:p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-gold">Connected Realm</p>
-              <p className="text-[11px] text-gold/60">Village placement is independent of your realm’s location.</p>
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-[11px] text-gold/85">
-              <span className="font-semibold">Step 3 / 3</span>
-              <span className="text-gold/60">Village Placement</span>
-            </div>
-          </div>
-
-          <label className="mt-3 block text-xs text-gold/70">
-            Settled Realm
-            <select
-              value={selectedRealmEntityId ?? ""}
-              onChange={(event) => {
-                const value = event.target.value;
-                if (!value) {
-                  onSelectRealmEntityId(null);
-                  return;
-                }
-                onSelectRealmEntityId(Number(value));
-              }}
-              className="mt-1 w-full rounded-md border border-gold/20 bg-black/30 px-2 py-1.5 text-sm text-gold"
-            >
-              <option value="">Select a realm</option>
-              {settleableRealms.map((realm) => (
-                <option key={realm.entityId} value={realm.entityId}>
-                  {realm.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {settleableRealms.length === 0 && (
-            <p className="mt-2 text-[11px] text-amber-200/85">Settle a realm before creating a village.</p>
-          )}
-        </section>
-      </div>
-
-      {settlementError && <p className="text-[11px] text-red-200">{settlementError}</p>}
-
-      <div className="sticky bottom-0 z-10 rounded-xl border border-gold/30 bg-gradient-to-r from-[#1a1309]/95 via-[#20170c]/95 to-[#120d07]/95 px-3 py-3 shadow-[0_-10px_25px_rgba(0,0,0,0.35)] backdrop-blur-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-gold/75">
-            <span className="rounded border border-gold/25 bg-black/25 px-2 py-1">
-              Pass:{" "}
-              {devMode
-                ? "Not required"
-                : selectedVillagePassTokenId != null
-                  ? `#${selectedVillagePassTokenId.toString()}`
-                  : "None"}
-            </span>
-            <span className="rounded border border-gold/25 bg-black/25 px-2 py-1">
-              Realm: {selectedRealm ? `#${selectedRealm.realmId ?? "?"}` : "None"}
-            </span>
-          </div>
-          <Button
-            disabled={!canSubmit}
-            onClick={onConfirmSettlement}
-            className="h-11 w-full min-w-[190px] !rounded-md !bg-gold !text-brown md:w-auto"
-            forceUppercase={false}
-          >
-            <div className="flex items-center justify-center gap-2">
-              {isSubmittingSettlement ? <Loader2 className="h-4 w-4 animate-spin" /> : <Castle className="h-4 w-4" />}
-              <span>{isSubmittingSettlement ? "Settling Village..." : "Settle Village"}</span>
-            </div>
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const VillageRevealPhase = ({
-  result,
-  onEnterGame,
-  onSettleAnotherVillage,
-}: {
-  result: VillageRevealResult;
-  onEnterGame: () => void;
-  onSettleAnotherVillage: () => void;
-}) => {
-  const reelLabels = useMemo(
-    () =>
-      VILLAGE_REVEAL_RESOURCE_IDS.map((resourceId) => resolveResourceLabel(resourceId)).filter(
-        (resourceLabel): resourceLabel is string => Boolean(resourceLabel),
-      ),
-    [],
-  );
-  const initialRevealLabel = reelLabels[0] ?? result.resourceLabel;
-  const [displayedResourceLabel, setDisplayedResourceLabel] = useState(initialRevealLabel);
-  const [spinning, setSpinning] = useState(true);
-
-  useEffect(() => {
-    const spinSequence = [...reelLabels.filter((label) => label !== result.resourceLabel), result.resourceLabel];
-    let tick = 0;
-    const intervalId = window.setInterval(() => {
-      setDisplayedResourceLabel(spinSequence[tick % spinSequence.length] ?? result.resourceLabel);
-      tick += 1;
-    }, 110);
-
-    const stopTimerId = window.setTimeout(() => {
-      window.clearInterval(intervalId);
-      setDisplayedResourceLabel(result.resourceLabel);
-      setSpinning(false);
-    }, 2600);
-
-    return () => {
-      window.clearInterval(intervalId);
-      window.clearTimeout(stopTimerId);
-    };
-  }, [result.resourceLabel, result.villageEntityId, reelLabels]);
-
-  return (
-    <div className="flex flex-col items-center text-center">
-      <div className="mx-auto w-16 h-16 mb-3 rounded-full bg-gold/20 flex items-center justify-center">
-        <TreasureChest className="w-8 h-8  text-gold" />
-      </div>
-      <h2 className="text-lg font-semibold text-gold mb-1">
-        {spinning ? "Revealing Village Resource..." : "Village Resource Revealed"}
-      </h2>
-      <p className="text-xs text-gold/60 mb-4">
-        {spinning ? "Resolving on-chain assignment from Herald..." : `Your village produces ${displayedResourceLabel}.`}
-      </p>
-
-      <motion.div
-        className="w-36 rounded-xl border border-gold/35 bg-gradient-to-b from-black/45 to-black/25 px-4 py-5"
-        animate={spinning ? { rotateY: [0, 90, 180, 270, 360] } : { rotateY: 0 }}
-        transition={{
-          duration: spinning ? 0.45 : 0.2,
-          repeat: spinning ? Infinity : 0,
-          ease: "linear",
-        }}
-      >
-        <div className="flex flex-col items-center gap-2">
-          <ResourceIcon resource={displayedResourceLabel} size="xl" withTooltip={false} />
-          <p className="text-sm font-semibold text-gold">{displayedResourceLabel}</p>
-        </div>
-      </motion.div>
-
-      {!spinning && (
-        <>
-          <div className="mt-4 w-full rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-left">
-            <p className="text-xs text-emerald-100">
-              Your village produces <span className="font-semibold">{result.resourceLabel}</span>.
-            </p>
-            <p className="text-[11px] text-emerald-200/80 mt-1">Village entity #{result.villageEntityId}</p>
-          </div>
-          <Button
-            onClick={onEnterGame}
-            className="mt-4 w-full h-11 !text-brown !bg-gold rounded-md"
-            forceUppercase={false}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <Play className="w-4 h-4" />
-              <span>Play</span>
-            </div>
-          </Button>
-          <Button
-            onClick={onSettleAnotherVillage}
-            variant="outline"
-            className="mt-2 w-full h-10"
-            forceUppercase={false}
-          >
-            Settle Another Village
-          </Button>
-        </>
-      )}
-    </div>
-  );
-};
-
 /**
  * Main GameEntryModal component
  */
@@ -931,130 +493,14 @@ export const GameEntryModal = ({
   const [needsSettlement, setNeedsSettlement] = useState(false);
   const [canPlay, setCanPlay] = useState(false);
 
-  const [settlementMode, setSettlementMode] = useState<SettlementMode>("realm");
-  const [selectedVillagePassTokenId, setSelectedVillagePassTokenId] = useState<bigint | null>(null);
-  const [selectedVillageRealmEntityId, setSelectedVillageRealmEntityId] = useState<number | null>(null);
-  const [isSubmittingVillageSettlement, setIsSubmittingVillageSettlement] = useState(false);
-  const [villageSettlementError, setVillageSettlementError] = useState<string | null>(null);
-  const [villageRevealResult, setVillageRevealResult] = useState<VillageRevealResult | null>(null);
-
   const expectedSettlementCount = SEASON_SETTLEMENT_COUNT;
   const hasEnteredGameRef = useRef(false);
   const entityWaitAbortControllerRef = useRef<AbortController | null>(null);
 
   const navigationEntryContext = entryContext;
-  // The availability query opens the game's shard, so it is open once the game's meta is known.
-  const selectedWorldRpcUrl = worldMeta ? (getShard(game.chainId)?.rpcUrl ?? null) : null;
-  // No directory names a village pass contract, so village settlement needs dev mode until one is wired.
-  const villagePassAddress = null;
-  const {
-    villagePassBalance,
-    villagePasses,
-    isLoading: isLoadingVillagePassInventory,
-    error: villagePassInventoryError,
-    refetch: refetchVillagePassInventory,
-  } = useVillagePassInventory({
-    ownerAddress: account?.address,
-    villagePassAddress,
-    rpcUrl: selectedWorldRpcUrl,
-    enabled: isOpen && !isDevMode && settlementMode === "village",
-  });
-  const {
-    data: ownedStructures = [],
-    isLoading: isLoadingOwnedStructures,
-    error: ownedStructuresErrorRaw,
-    refetch: refetchOwnedStructures,
-  } = useQuery({
-    queryKey: ["eternumOwnedStructures", game.chainId, game.gameId, account?.address],
-    enabled: isOpen && worldMeta != null && Boolean(account?.address),
-    queryFn: async () => {
-      if (!account?.address) return [];
-      return await fetchPlayerStructures(game, account.address);
-    },
-  });
-  const ownedStructuresError = ownedStructuresErrorRaw instanceof Error ? ownedStructuresErrorRaw.message : null;
-  const villagePassInventoryWarning = useMemo(() => {
-    if (!villagePassInventoryError) return null;
-    const normalized = villagePassInventoryError.toLowerCase();
-    if (normalized.includes("does not expose token enumeration")) {
-      return null;
-    }
-    return villagePassInventoryError;
-  }, [villagePassInventoryError]);
-  const ownedRealms = useMemo<OwnedRealmOption[]>(() => {
-    return (ownedStructures as PlayerStructure[])
-      .filter((structure) => structure.category === StructureType.Realm)
-      .map((structure) => {
-        const realmId = structure.realm_id ?? null;
-        return {
-          entityId: structure.entity_id,
-          realmId,
-          coordX: structure.coord_x,
-          coordY: structure.coord_y,
-          label:
-            realmId != null
-              ? `Realm #${realmId} · Entity ${structure.entity_id}`
-              : `Entity ${structure.entity_id} · (${structure.coord_x}, ${structure.coord_y})`,
-        };
-      })
-      .toSorted((left, right) => {
-        if (left.realmId != null && right.realmId != null && left.realmId !== right.realmId) {
-          return left.realmId - right.realmId;
-        }
-        return left.entityId - right.entityId;
-      });
-  }, [ownedStructures]);
-  const ownedVillageIdSet = useMemo(
-    () =>
-      new Set(
-        (ownedStructures as PlayerStructure[])
-          .filter((structure) => structure.category === StructureType.Village)
-          .map((structure) => structure.entity_id),
-      ),
-    [ownedStructures],
-  );
-  const settleableVillageRealms = ownedRealms;
-
   useEffect(() => {
-    if (!isOpen) {
-      hasEnteredGameRef.current = false;
-      setSettlementMode("realm");
-      setSelectedVillagePassTokenId(null);
-      setSelectedVillageRealmEntityId(null);
-      setIsSubmittingVillageSettlement(false);
-      setVillageSettlementError(null);
-      setVillageRevealResult(null);
-    }
+    if (!isOpen) hasEnteredGameRef.current = false;
   }, [isOpen]);
-
-  useEffect(() => {
-    if (villagePasses.length === 0) return;
-
-    setSelectedVillagePassTokenId((current) => {
-      if (current != null && villagePasses.some((pass) => pass.tokenId === current)) {
-        return current;
-      }
-      return villagePasses[0]?.tokenId ?? null;
-    });
-  }, [villagePasses]);
-
-  useEffect(() => {
-    if (settleableVillageRealms.length === 0) {
-      setSelectedVillageRealmEntityId(null);
-      return;
-    }
-
-    setSelectedVillageRealmEntityId((current) => {
-      if (current != null && settleableVillageRealms.some((realm) => realm.entityId === current)) {
-        return current;
-      }
-      return settleableVillageRealms[0]?.entityId ?? null;
-    });
-  }, [settleableVillageRealms]);
-
-  useEffect(() => {
-    setVillageSettlementError(null);
-  }, [selectedVillagePassTokenId, selectedVillageRealmEntityId]);
 
   const resetBootstrapDependentState = useCallback(() => {
     setPreflightError(null);
@@ -1066,12 +512,6 @@ export const GameEntryModal = ({
     setSettledRealmCount(0);
     setDevSettlementTarget(null);
     setDevRealmNumber("1");
-    setSettlementMode("realm");
-    setSelectedVillagePassTokenId(null);
-    setSelectedVillageRealmEntityId(null);
-    setIsSubmittingVillageSettlement(false);
-    setVillageSettlementError(null);
-    setVillageRevealResult(null);
   }, []);
 
   const beginEntityWait = useCallback((): AbortSignal => {
@@ -1118,9 +558,6 @@ export const GameEntryModal = ({
     if (!isBlitzMode || !worldMeta?.player_state) return null;
     return resolveBlitzEntry({ isMember: isMember(worldMeta), ready: worldMeta.ready, ended: isGameOver(worldMeta) });
   }, [isBlitzMode, worldMeta]);
-  const hasVillagePass = villagePassBalance > 0n || villagePasses.length > 0;
-  const isLoadingVillagePrereqs =
-    isCheckingWorldAvailability || isLoadingVillagePassInventory || isLoadingOwnedStructures || !worldMeta;
   // Blitz entry is decided by the roster fact; Eternum entry by the player's own settlement.
   const checksComplete = isBlitzMode ? blitzEntry != null : settlementCheckComplete;
   const entryPreflightComplete = isGameEntryPreflightComplete({
@@ -1181,15 +618,10 @@ export const GameEntryModal = ({
       hasWorldMeta: worldMeta != null,
       hasAccount: account != null,
       isSeasonMode,
-      isLoadingVillagePrereqs,
-      hasVillageRevealResult: villageRevealResult != null,
-      settlementMode,
-      hasVillagePass,
       checksComplete,
       needsSettlement,
       canPlay,
       isEternumDevMode,
-      isDevMode,
       isSettlingAdditionalRealm: devSettlementTarget !== null,
       isSettlementUnlocked: seasonTimingValid,
     });
@@ -1198,7 +630,6 @@ export const GameEntryModal = ({
   }, [
     account,
     bootstrapStatus,
-    isDevMode,
     isEternumDevMode,
     devSettlementTarget,
     phaseError,
@@ -1210,18 +641,9 @@ export const GameEntryModal = ({
     canPlay,
     seasonTimingValid,
     isSeasonMode,
-    isLoadingVillagePrereqs,
     isCheckingWorldAvailability,
-    hasVillagePass,
     worldMode,
     worldMeta,
-    villagePasses,
-    selectedVillagePassTokenId,
-    selectedVillageRealmEntityId,
-    villageRevealResult,
-    settlementMode,
-    entryIntent,
-    worldName,
   ]);
 
   const readSettlementSnapshot = useCallback(async (): Promise<SettlementSnapshot | null> => {
@@ -1249,7 +671,6 @@ export const GameEntryModal = ({
         ...game,
         description: "settlement indexing",
         isTarget: ({ status }) => status != null && status.settledCount >= Math.max(1, targetSettleCount),
-        onSlow: (elapsedMs) => {},
         read: async () => {
           const snapshot = await readSettlementSnapshot();
           return {
@@ -1267,51 +688,6 @@ export const GameEntryModal = ({
       return observation.snapshot;
     },
     [beginEntityWait, game, readSettlementSnapshot, syncSettlementStateFromSnapshot],
-  );
-
-  const waitForVillageResourceReveal = useCallback(
-    async ({
-      ownerAddress,
-      existingVillageIds,
-    }: {
-      ownerAddress: string;
-      existingVillageIds: Set<number>;
-    }): Promise<VillageRevealResult> => {
-      const result = await waitForSelectedWorldEntityState<VillageRevealResult | null>({
-        ...game,
-        description: "village resource indexing",
-        isTarget: (reveal) => reveal != null,
-        onSlow: (elapsedMs) => {},
-        read: async () => {
-          const structures = await fetchPlayerStructures(game, ownerAddress);
-          const newVillage = structures
-            .filter(
-              (structure) =>
-                structure.category === StructureType.Village && !existingVillageIds.has(structure.entity_id),
-            )
-            .toSorted((left, right) => right.entity_id - left.entity_id)[0];
-          if (!newVillage) return null;
-
-          const resourceId = resolvePrimaryVillageResource(newVillage.resources_packed);
-          const resourceLabel = resourceId != null ? resolveResourceLabel(resourceId) : null;
-          if (resourceId == null || !resourceLabel) return null;
-
-          return {
-            villageEntityId: newVillage.entity_id,
-            resourceId,
-            resourceLabel,
-          };
-        },
-        signal: beginEntityWait(),
-        slowAfterMs: VILLAGE_REVEAL_SLOW_MS,
-      });
-
-      if (!result) {
-        throw new Error("Village subscription matched without an indexed resource assignment.");
-      }
-      return result;
-    },
-    [beginEntityWait, game],
   );
 
   // Check settlement status after bootstrap completes
@@ -1381,14 +757,7 @@ export const GameEntryModal = ({
     resetBootstrapDependentState();
     setPreflightError(null);
     setPreflightRetryNonce((current) => current + 1);
-    if (isEternumMode) {
-      void refetchOwnedStructures();
-    }
-  }, [isEternumMode, refetchOwnedStructures, resetBootstrapDependentState]);
-
-  const handleGetVillagePass = useCallback(() => {
-    window.open("https://empire.realms.world/trade", "_blank", "noopener,noreferrer");
-  }, []);
+  }, [resetBootstrapDependentState]);
 
   const enterGame = useCallback(
     (spectate: boolean) => {
@@ -1416,85 +785,6 @@ export const GameEntryModal = ({
     [enterGame, navigationEntryContext?.intent],
   );
   const handleSpectate = useCallback(() => enterGame(true), [enterGame]);
-
-  const handleVillageSettle = useCallback(async () => {
-    const activeVillageRealmEntityId = selectedVillageRealmEntityId;
-
-    if (!account?.address) {
-      setVillageSettlementError("Connect your wallet first.");
-      return;
-    }
-    if (!seasonTimingValid) {
-      setVillageSettlementError("Season timing invalid. Village settlement is currently unavailable.");
-      return;
-    }
-    if (!isDevMode && !villagePassAddress) {
-      setVillageSettlementError("Village pass contract not configured for this world.");
-      return;
-    }
-    if (!isDevMode && !selectedVillagePassTokenId) {
-      setVillageSettlementError("Select a village pass token before settling.");
-      return;
-    }
-    if (activeVillageRealmEntityId == null) {
-      setVillageSettlementError("Select a settled realm.");
-      return;
-    }
-    setIsSubmittingVillageSettlement(true);
-    setVillageSettlementError(null);
-
-    try {
-      const signer = account as unknown as Account;
-      const existingVillageIds = new Set(ownedVillageIdSet);
-      if (!worldMeta) throw new Error("The selected game is not ready for settlement");
-      await submitSettlement(navigationEntryContext, (client) =>
-        client.setup.systemCalls.settle_village({
-          signer,
-          passId: isDevMode ? 0n : selectedVillagePassTokenId!,
-          connectedRealmEntityId: activeVillageRealmEntityId,
-        }),
-      );
-
-      const revealResult = await waitForVillageResourceReveal({
-        ownerAddress: account.address,
-        existingVillageIds,
-      });
-
-      setVillageRevealResult(revealResult);
-      setVillageSettlementError(null);
-      setSettlementMode("village");
-
-      refetchVillagePassInventory();
-      void refetchOwnedStructures();
-    } catch (error) {
-      if (isSelectedWorldEntityWaitAborted(error)) return;
-      debugLog(worldName, "Village settlement failed:", error);
-      setVillageSettlementError(mapVillageSettleError(error));
-    } finally {
-      setIsSubmittingVillageSettlement(false);
-    }
-  }, [
-    account,
-    seasonTimingValid,
-    villagePassAddress,
-    selectedVillagePassTokenId,
-    selectedVillageRealmEntityId,
-    ownedVillageIdSet,
-    isDevMode,
-    waitForVillageResourceReveal,
-    refetchVillagePassInventory,
-    refetchOwnedStructures,
-    worldName,
-    navigationEntryContext,
-  ]);
-
-  const handleSettleAnotherVillage = useCallback(() => {
-    setVillageRevealResult(null);
-    setVillageSettlementError(null);
-    setSettlementMode("village");
-    void refetchOwnedStructures();
-    refetchVillagePassInventory();
-  }, [refetchOwnedStructures, refetchVillagePassInventory]);
 
   const finalizeSuccessfulSettlement = useCallback(() => {
     debugLog(worldName, "Settlement complete!");
@@ -1574,9 +864,6 @@ export const GameEntryModal = ({
       }
 
       setDevSettlementTarget(null);
-      if (isEternumMode) {
-        void refetchOwnedStructures();
-      }
       finalizeSuccessfulSettlement();
     } catch (error) {
       if (isSelectedWorldEntityWaitAborted(error)) return;
@@ -1591,11 +878,9 @@ export const GameEntryModal = ({
     expectedSettlementCount,
     finalizeFailedSettlement,
     finalizeSuccessfulSettlement,
-    isEternumMode,
     isSeasonMode,
     isEternumDevMode,
     devRealmNumber,
-    refetchOwnedStructures,
     markSettling,
     syncSettlementStateFromSnapshot,
     usernameFelt,
@@ -1656,14 +941,7 @@ export const GameEntryModal = ({
     }
   };
 
-  const showSettlementModeToggle =
-    isEternumMode && ["settlement", "village-pass-required", "village-placement", "ready"].includes(phase);
-  const usesDesktopCenteredSettlementLayout = [
-    "village-pass-required",
-    "village-placement",
-    "village-reveal",
-    "ready",
-  ].includes(phase);
+  const usesDesktopCenteredSettlementLayout = phase === "ready";
 
   return (
     <div
@@ -1682,11 +960,7 @@ export const GameEntryModal = ({
         exit={{ opacity: 0, scale: 0.95 }}
         className={cn(
           "relative mx-4 flex w-full flex-col overflow-hidden rounded-xl border border-gold/40 bg-brown/95 shadow-2xl backdrop-blur-sm lg:mx-0",
-          phase === "village-placement"
-            ? "max-h-[88vh] max-w-6xl"
-            : phase === "village-reveal"
-              ? "max-w-lg"
-              : "max-w-md",
+          "max-w-md",
           usesDesktopCenteredSettlementLayout && "lg:max-h-[min(54rem,calc(100vh-4rem))]",
         )}
         onClick={(e) => e.stopPropagation()}
@@ -1712,42 +986,10 @@ export const GameEntryModal = ({
         <div
           className={cn(
             "px-6 pb-6",
-            phase === "village-placement" &&
-              "max-h-[calc(88vh-86px)] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent",
             usesDesktopCenteredSettlementLayout &&
               "lg:min-h-0 lg:flex-1 lg:max-h-none lg:overflow-y-auto lg:pr-4 lg:scrollbar-thin lg:scrollbar-thumb-gold/20 lg:scrollbar-track-transparent",
           )}
         >
-          {showSettlementModeToggle && (
-            <div className="mb-3 flex items-center justify-center">
-              <div className="inline-flex rounded-lg border border-gold/25 bg-black/30 p-1">
-                <button
-                  type="button"
-                  onClick={() => setSettlementMode("realm")}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 text-xs transition-colors",
-                    settlementMode === "realm"
-                      ? "bg-gold text-brown font-semibold"
-                      : "text-gold/75 hover:text-gold hover:bg-gold/10",
-                  )}
-                >
-                  Realm
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSettlementMode("village")}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 text-xs transition-colors",
-                    settlementMode === "village"
-                      ? "bg-gold text-brown font-semibold"
-                      : "text-gold/75 hover:text-gold hover:bg-gold/10",
-                  )}
-                >
-                  Village Pass
-                </button>
-              </div>
-            </div>
-          )}
           <AnimatePresence mode="wait">
             {(phase === "loading" || phase === "error") && (
               <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -1800,53 +1042,6 @@ export const GameEntryModal = ({
               </motion.div>
             )}
 
-            {phase === "village-pass-required" && (
-              <motion.div
-                key="village-pass-required"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <VillagePassRequiredPhase
-                  onGetVillagePass={handleGetVillagePass}
-                  onSwitchToRealmMode={() => setSettlementMode("realm")}
-                  showRealmShortcut={true}
-                />
-              </motion.div>
-            )}
-            {phase === "village-placement" && (
-              <motion.div
-                key="village-placement"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <VillagePlacementPhase
-                  devMode={isDevMode}
-                  villagePassBalance={villagePassBalance}
-                  villagePasses={villagePasses}
-                  selectedVillagePassTokenId={selectedVillagePassTokenId}
-                  onSelectVillagePass={setSelectedVillagePassTokenId}
-                  settleableRealms={settleableVillageRealms}
-                  selectedRealmEntityId={selectedVillageRealmEntityId}
-                  onSelectRealmEntityId={setSelectedVillageRealmEntityId}
-                  onConfirmSettlement={handleVillageSettle}
-                  isSubmittingSettlement={isSubmittingVillageSettlement}
-                  settlementError={villageSettlementError ?? ownedStructuresError}
-                  villagePassInventoryError={villagePassInventoryWarning}
-                />
-              </motion.div>
-            )}
-            {phase === "village-reveal" && villageRevealResult && (
-              <motion.div key="village-reveal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <VillageRevealPhase
-                  key={villageRevealResult.villageEntityId}
-                  result={villageRevealResult}
-                  onEnterGame={handleEnterGame}
-                  onSettleAnotherVillage={handleSettleAnotherVillage}
-                />
-              </motion.div>
-            )}
             {phase === "ready" && (
               <motion.div
                 key="ready"
@@ -1883,16 +1078,6 @@ export const GameEntryModal = ({
                     forceUppercase={false}
                   >
                     Settle Another Realm
-                  </Button>
-                )}
-                {!isSpectateMode && isEternumMode && (
-                  <Button
-                    onClick={() => setSettlementMode("village")}
-                    variant="outline"
-                    className="w-full h-10 mt-2"
-                    forceUppercase={false}
-                  >
-                    Settle Village
                   </Button>
                 )}
               </motion.div>

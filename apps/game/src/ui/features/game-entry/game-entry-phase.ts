@@ -6,9 +6,6 @@ export type GameEntryModalPhase =
   | "settlement-waiting"
   | "settlement"
   | "spectate"
-  | "village-pass-required"
-  | "village-placement"
-  | "village-reveal"
   | "ready"
   | "error";
 
@@ -35,12 +32,7 @@ interface ResolveGameEntryModalPhaseInput {
   /** The player's gameplay account has joined this game's shard; only a spectator enters without one. */
   hasAccount: boolean;
   isSeasonMode: boolean;
-  isLoadingVillagePrereqs: boolean;
-  hasVillageRevealResult: boolean;
-  settlementMode: "realm" | "village";
-  hasVillagePass: boolean;
   isEternumDevMode?: boolean;
-  isDevMode?: boolean;
   isSettlingAdditionalRealm?: boolean;
   checksComplete: boolean;
   needsSettlement: boolean;
@@ -133,12 +125,7 @@ export const resolveGameEntryModalPhase = ({
   hasWorldMeta,
   hasAccount,
   isSeasonMode,
-  isLoadingVillagePrereqs,
-  hasVillageRevealResult,
-  settlementMode,
-  hasVillagePass,
   isEternumDevMode = false,
-  isDevMode = false,
   isSettlingAdditionalRealm = false,
   checksComplete,
   needsSettlement,
@@ -165,12 +152,6 @@ export const resolveGameEntryModalPhase = ({
   // and a removed device all wait here instead of reaching a button that cannot sign.
   if (!hasAccount) {
     return "account";
-  }
-
-  if (settlementMode === "village") {
-    if (isLoadingVillagePrereqs) return "loading";
-    if (hasVillageRevealResult) return "village-reveal";
-    return hasVillagePass || isDevMode ? "village-placement" : "village-pass-required";
   }
 
   if (isSeasonMode) {
