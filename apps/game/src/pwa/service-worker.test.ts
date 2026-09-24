@@ -16,6 +16,7 @@ beforeEach(async () => {
   vi.stubGlobal("self", {
     location: { origin: "https://game.test" },
     __WB_MANIFEST: [],
+    REALMS_RELEASE: "release-a",
     skipWaiting,
     addEventListener: (type: string, listener: (event: any) => void) => listeners.set(type, listener),
   });
@@ -78,4 +79,10 @@ it("activates early only for the explicit update message", () => {
   listeners.get("message")!({ data: { type: "SKIP_WAITING" }, waitUntil });
   expect(skipWaiting).toHaveBeenCalledOnce();
   expect(waitUntil).toHaveBeenCalledOnce();
+});
+
+it("tells a page which release it serves", () => {
+  const port = { postMessage: vi.fn() };
+  listeners.get("message")!({ data: { type: "RELEASE" }, ports: [port] });
+  expect(port.postMessage).toHaveBeenCalledWith("release-a");
 });

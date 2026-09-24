@@ -4,6 +4,8 @@ import { installNotificationWorker } from "./pwa/notification-worker";
 
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<{ url: string; revision: string | null }>;
+  /** Stamped at build time by the release plugin. */
+  REALMS_RELEASE?: string;
 };
 
 cleanupOutdatedCaches();
@@ -12,6 +14,7 @@ installNotificationWorker(self);
 
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") event.waitUntil(self.skipWaiting());
+  if (event.data?.type === "RELEASE") event.ports[0]?.postMessage(self.REALMS_RELEASE ?? null);
 });
 
 self.addEventListener("fetch", (event) => {
