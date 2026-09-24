@@ -1,15 +1,4 @@
-import { env } from "@/../env";
+import { DOCS_CHAIN } from "@/../env";
 import { getSeasonAddresses } from "../../../../contracts/utils/utils";
 
-export const getResourceAddresses = () => {
-  const addresses = getSeasonAddresses(env.VITE_PUBLIC_CHAIN).resources;
-  return addresses;
-};
-
-export const getSeasonPassAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN).seasonPass;
-};
-
-export const getLordsAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN).lords;
-};
+export const getResourceAddresses = () => getSeasonAddresses(DOCS_CHAIN).resources;

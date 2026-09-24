@@ -19,21 +19,9 @@ const envSchema = z.object({
   VITE_USE_DYNAMIC_OG: z.enum(["true", "false"]).optional(),
 });
 
-const isCiBuild = import.meta.env.CI === true || import.meta.env.CI === "true";
-const envInput = isCiBuild
-  ? {
-      ...import.meta.env,
-      VITE_PUBLIC_CHAIN: import.meta.env.VITE_PUBLIC_CHAIN ?? "mainnet",
-      VITE_PUBLIC_SLOT: import.meta.env.VITE_PUBLIC_SLOT ?? "ci",
-      VITE_BASE_URL: import.meta.env.VITE_BASE_URL ?? "https://realms.test",
-      VITE_PUBLIC_IDENTITY_RPC_URL: import.meta.env.VITE_PUBLIC_IDENTITY_RPC_URL ?? "https://identity-rpc.realms.test",
-      VITE_ALCHEMY_API_KEY: import.meta.env.VITE_ALCHEMY_API_KEY ?? "ci",
-    }
-  : import.meta.env;
-
 let env: z.infer<typeof envSchema>;
 try {
-  env = envSchema.parse(envInput);
+  env = envSchema.parse(import.meta.env);
 } catch (error) {
   if (error instanceof z.ZodError) {
     console.error("❌ Invalid environment variables:", JSON.stringify(error.issues, null, 2));

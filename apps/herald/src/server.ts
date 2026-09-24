@@ -31,8 +31,9 @@ const requireEnvironment = (name: string): string => {
   return value;
 };
 
+/** The shard's runtime files name the port (3003 in the package); a Herald started without one refuses to start. */
 const readPort = (): number => {
-  const port = Number(process.env.PORT ?? 3_003);
+  const port = Number(requireEnvironment("PORT"));
   if (!Number.isSafeInteger(port) || port < 1 || port > 65_535) throw new Error(`Invalid PORT ${process.env.PORT}`);
   return port;
 };

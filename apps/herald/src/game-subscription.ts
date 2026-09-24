@@ -103,7 +103,7 @@ export class GameSubscription {
   private forgetMovedScopes(body: PublishedBody): void {
     if (body.type !== "diff") return;
     for (const [preconfirmed, { scope, inputs }] of this.scopes) {
-      const spacing = scope.expedition?.spacing ?? 0;
+      const spacing = scope.expedition?.spacing;
       const moved =
         body.set.some((row) => movesSubscriptionScope(inputs, row, spacing)) ||
         body.del.some((row) => SCOPE_INPUT_MODELS.has(row.model) && this.visible.has(identity(row)));

@@ -310,19 +310,9 @@ export class WorldFold {
     if (actor !== undefined && (BigInt(actor) <= 0n || BigInt(actor) >= (1n << 251n) - 256n))
       throw new Error("Invalid gameplay account");
     const scope: GameSyncScope = { actor };
-    const rules = this.gameRows("SliceRules", gameId)[0]?.value;
-    const game = this.gameRows("GameRegistry", gameId)[0]?.value;
-    if (!rules && game) throw new Error("Game subscription requires its rules");
-    if (!rules || Number(rules.epoch_seconds) === 0) return scope;
-    const settlement = this.gameRows("SettlementRules", gameId)[0]?.value;
-    if (!game || !settlement || Number(settlement.spacing) <= 0)
-      throw new Error("Expedition scope requires game and settlement rules");
-    const spacing = Number(settlement.spacing);
-    const expedition = {
-      epochSeconds: Number(rules.epoch_seconds),
-      spacing,
-      startMainAt: Number(game.start_main_at),
-    };
+    const expedition = this.expeditionRules(gameId);
+    if (!expedition) return scope;
+    const { spacing } = expedition;
     const epoch = expeditionEpoch(expedition, timestamp);
     const owners = new Set<string>(actor === undefined ? [] : [syncScalar(actor)]);
     if (actor !== undefined)
@@ -370,11 +360,30 @@ export class WorldFold {
     return scope;
   }
 
+  /**
+   * The game's expedition clock and grid, read once for scopes, their expiry and routing: null for a game without
+   * expeditions or not yet created. A game with expedition rules but no game or settlement rules is refused.
+   */
+  private expeditionRules(gameId: string): { epochSeconds: number; spacing: number; startMainAt: number } | null {
+    const rules = this.gameRows("SliceRules", gameId)[0]?.value;
+    const game = this.gameRows("GameRegistry", gameId)[0]?.value;
+    if (!rules && game) throw new Error("Game subscription requires its rules");
+    if (!rules || Number(rules.epoch_seconds) === 0) return null;
+    const settlement = this.gameRows("SettlementRules", gameId)[0]?.value;
+    if (!game || !settlement || Number(settlement.spacing) <= 0)
+      throw new Error("Expedition scope requires game and settlement rules");
+    return {
+      epochSeconds: Number(rules.epoch_seconds),
+      spacing: Number(settlement.spacing),
+      startMainAt: Number(game.start_main_at),
+    };
+  }
+
   /** The first timestamp at which the scope must be taken again: the game's start, or the expedition's rollover. */
   public scopeValidUntil(gameId: string, timestamp: number): number {
-    const epochSeconds = Number(this.gameRows("SliceRules", gameId)[0]?.value.epoch_seconds ?? 0);
-    if (epochSeconds === 0) return Number.POSITIVE_INFINITY;
-    const startMainAt = Number(this.gameRows("GameRegistry", gameId)[0]?.value.start_main_at ?? 0);
+    const expedition = this.expeditionRules(gameId);
+    if (!expedition) return Number.POSITIVE_INFINITY;
+    const { epochSeconds, startMainAt } = expedition;
     const rollover = (Math.floor(timestamp / epochSeconds) + 1) * epochSeconds;
     return timestamp < startMainAt ? Math.min(startMainAt, rollover) : rollover;
   }
@@ -417,9 +426,9 @@ export class WorldFold {
     };
   }
 
-  /** How this game's changed rows reach subscriptions: rowStreamKeys at the game's spacing. */
+  /** How this game's changed rows reach subscriptions: rowStreamKeys on the expedition grid, if the game has one. */
   public streamKeys(gameId: string): (row: FoldSet) => readonly string[] | "everyone" {
-    const spacing = Number(this.gameRows("SettlementRules", gameId)[0]?.value.spacing ?? 0);
+    const spacing = this.expeditionRules(gameId)?.spacing;
     return (row) => rowStreamKeys(row.model, row.value, spacing);
   }
 

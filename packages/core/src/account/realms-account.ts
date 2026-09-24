@@ -343,7 +343,8 @@ const isDeviceCall = (address: string, deviceKey: string) => ({
 
 async function isDevice(provider: ProviderInterface, address: string, deviceKey: string): Promise<boolean> {
   const [result] = await provider.callContract(isDeviceCall(address, deviceKey), ACCOUNT_STATE);
-  return BigInt(result ?? 0) === 1n;
+  if (result === undefined) throw new Error(`Realms account ${address} returned no device answer`);
+  return BigInt(result) === 1n;
 }
 
 async function deviceChangeCounter(provider: ProviderInterface, address: string): Promise<number> {

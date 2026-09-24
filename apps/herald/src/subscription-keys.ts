@@ -34,14 +34,15 @@ export const scopeLookup = {
   receiver: (entity: unknown) => `ProductionReceiver.entity:${syncScalar(entity)}`,
 };
 
-/** The lookups that can find this row; a region key needs the game's spacing. */
-export function scopeInputKeys(model: string, row: DecodedRecord, spacing: number): string[] {
+/** The lookups that can find this row; a region key needs the expedition spacing, and without one there is none. */
+export function scopeInputKeys(model: string, row: DecodedRecord, spacing: number | undefined): string[] {
   if (model === "PlayerEntry") return [scopeLookup.entryOf(row.player)];
   if (model === "ExplorerTroops") return [scopeLookup.armiesOf(row.owner), scopeLookup.army(row.explorer_id)];
   if (model === "ProductionReceiver") return [scopeLookup.receiversOf(row.home), scopeLookup.receiver(row.entity_id)];
   if (model !== "Structure") return [];
   const base = row.base as DecodedRecord;
-  const region = gameSyncRegion({ alt: base.alt, x: base.coord_x, y: base.coord_y }, spacing);
+  const region =
+    spacing === undefined ? undefined : gameSyncRegion({ alt: base.alt, x: base.coord_x, y: base.coord_y }, spacing);
   return [
     scopeLookup.structuresOf(row.owner),
     scopeLookup.structure(row.entity_id),
@@ -67,7 +68,7 @@ export function scopeInputInterest(scope: GameSyncScope): Set<string> {
 export function movesSubscriptionScope(
   inputs: ReadonlySet<string>,
   row: { model: string; value: DecodedRecord },
-  spacing: number,
+  spacing: number | undefined,
 ) {
   if (SCOPE_RULE_MODELS.has(row.model)) return true;
   return inputs.size > 0 && scopeInputKeys(row.model, row.value, spacing).some((key) => inputs.has(key));
@@ -79,7 +80,11 @@ export function scopeStreamKeys(scope: GameSyncScope): Set<string> {
 }
 
 /** The keys a changed row reaches subscriptions by, or "everyone" for a shared row or a rule every scope reads. */
-export function rowStreamKeys(model: string, row: DecodedRecord, spacing: number): readonly string[] | "everyone" {
+export function rowStreamKeys(
+  model: string,
+  row: DecodedRecord,
+  spacing: number | undefined,
+): readonly string[] | "everyone" {
   if (SCOPE_RULE_MODELS.has(model)) return "everyone";
   const held = gameSyncRowKeys(model, row, spacing);
   return held === "shared" ? "everyone" : [...held, ...scopeInputKeys(model, row, spacing)];
