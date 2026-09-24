@@ -2,9 +2,15 @@ name: native-world
 
 on:
   workflow_call:
+    inputs:
+      world:
+        description: Run the native-world contract suite; the caller sets it when the suite's own inputs changed.
+        type: boolean
+        default: true
 
 jobs:
   native-world:
+    if: inputs.world
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
