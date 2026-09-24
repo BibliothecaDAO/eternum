@@ -1,5 +1,4 @@
 use starknet::ContractAddress;
-use crate::commands::ExecutionContext;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct TradeKey {
@@ -81,12 +80,22 @@ pub trait ITrade<T> {
     #[cfg(test)]
     fn trade_order(self: @T, key: TradeKey) -> Option<TradeOrder>;
     fn create_trade_order(
-        ref self: T, game_id: u32, actor: ContractAddress, command: CreateOrder, context: ExecutionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: CreateOrder,
+        context: crate::commands::ActionContext,
     );
     fn accept_trade_order(
-        ref self: T, game_id: u32, actor: ContractAddress, command: AcceptOrder, context: ExecutionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: AcceptOrder,
+        context: crate::commands::ActionContext,
     );
-    fn cancel_trade_order(ref self: T, game_id: u32, actor: ContractAddress, trade_id: u32, context: ExecutionContext);
+    fn cancel_trade_order(
+        ref self: T, game_id: u32, actor: ContractAddress, trade_id: u32, context: crate::commands::ActionContext,
+    );
 }
 
 // Only the economy domain can release escrow or queue purchased resources.
@@ -98,5 +107,6 @@ pub trait IEconomyDelivery<T> {
         resource: crate::resources::ResourceAmount,
         travel_time: u64,
         timestamp: u64,
+        game_context: crate::commands::ResourceContext,
     );
 }

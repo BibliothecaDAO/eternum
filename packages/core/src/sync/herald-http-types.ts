@@ -70,8 +70,7 @@ export interface HeraldGameDirectoryEntry {
 export interface ShardManifest {
   version: 1;
   chainId: string;
-  releaseId: string;
-  schemaHash: string;
+  releaseSchemas: Record<string, string>;
   rpcUrl: string;
   admissionUrl: string;
   accountClassHash: string;

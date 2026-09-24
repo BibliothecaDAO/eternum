@@ -28,14 +28,10 @@ pub trait IBridge<T> {
     fn configure_deposits(ref self: T, game_id: u32, rules: DepositRules);
     fn deposit_rules(self: @T, game_id: u32) -> DepositRules;
     fn deposit_resource(
-        ref self: T, game_id: u32, actor: ContractAddress, command: Deposit, context: crate::commands::ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: Deposit, context: crate::commands::ActionContext,
     );
     fn withdraw_resource(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: Withdraw,
-        context: crate::commands::ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: Withdraw, context: crate::commands::ActionContext,
     );
 }
 #[starknet::interface]
@@ -48,6 +44,7 @@ pub trait IBankWithdrawal<T> {
         resource_type: u8,
         amount: u128,
         timestamp: u64,
+        game_context: crate::commands::ActionContext,
     );
 }
 #[starknet::interface]

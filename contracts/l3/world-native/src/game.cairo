@@ -56,9 +56,15 @@ pub trait IGame<T> {
 
 #[starknet::interface]
 pub trait IPoints<T> {
-    fn register_exploration(ref self: T, game_id: u32, actor: ContractAddress);
-    fn register_capture(ref self: T, game_id: u32, actor: ContractAddress, category: u8) -> u128;
-    fn register_relic_points(ref self: T, game_id: u32, actor: ContractAddress);
+    fn register_exploration(
+        ref self: T, game_id: u32, actor: ContractAddress, game_context: crate::commands::ActionContext,
+    );
+    fn register_capture(
+        ref self: T, game_id: u32, actor: ContractAddress, category: u8, game_context: crate::commands::ActionContext,
+    ) -> u128;
+    fn register_relic_points(
+        ref self: T, game_id: u32, actor: ContractAddress, game_context: crate::commands::ActionContext,
+    );
     fn register_hyperstructure_points(ref self: T, game_id: u32, actor: ContractAddress, amount: u128);
     fn player_points(self: @T, game_id: u32, actor: ContractAddress) -> u128;
     fn season_points(self: @T, game_id: u32) -> u128;
@@ -68,9 +74,7 @@ pub trait IPoints<T> {
 pub trait ISeasonLifecycle<T> {
     fn configure_season_win(ref self: T, game_id: u32, points: u128);
     fn season_win_threshold(self: @T, game_id: u32) -> u128;
-    fn close_season(
-        ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ExecutionContext,
-    ) -> u64;
+    fn close_season(ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext) -> u64;
 }
 
 pub fn status_at(game: GameRegistry, timestamp: u64) -> GameStatus {

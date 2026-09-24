@@ -11,6 +11,7 @@ import type { HeraldSocket } from "../sync/herald-game-sync-transport";
 import { createManualGameSyncScheduler } from "../sync/scheduler";
 import { createGameClient, type CreateGameClientInput } from "./game-client";
 import { ActionOutcomeUnreportedError } from "./transaction-outcome";
+import * as shardMetadata from "./shard";
 
 class FakeSocket implements HeraldSocket {
   public onclose: (() => void) | null = null;
@@ -47,6 +48,18 @@ const rulesSnapshot = {
   model: "SliceRules",
   rows: [{ key: hash.computePoseidonHashOnElements([54]), value: { ...preset.rules, game_id: 54 } }],
 };
+const releaseSnapshot = {
+  type: "snapshot",
+  epoch: "epoch-a",
+  seq: 0,
+  model: "GameRelease",
+  rows: [
+    {
+      key: hash.computePoseidonHashOnElements([54]),
+      value: { game_id: 54, release_id: 1, preset_commitment: "0x789" },
+    },
+  ],
+};
 const snapshotEnd = { epoch: "epoch-a", seq: 0, type: "snapshot_end" };
 
 const flushMicrotasks = async (count = 8): Promise<void> => {
@@ -60,10 +73,11 @@ const createHarness = (overrides: Partial<CreateGameClientInput> = {}) => {
     shard: {
       url: "http://herald.test",
       chainId: "0x1",
-      releaseId: bindings.schemaIdentity,
+      releaseSchemas: { "1": bindings.schemaIdentity },
       rpcUrl: "http://127.0.0.1:1",
       admissionUrl: "http://admission.test",
       accountClassHash: "0x2",
+      guardianPublicKey: "0x3",
       contracts: { games: "0x1" },
       worldAddress: "0x1",
     },
@@ -84,6 +98,14 @@ const createHarness = (overrides: Partial<CreateGameClientInput> = {}) => {
     ...overrides,
   };
 
+  const manifest = {
+    version: 1,
+    ...input.shard,
+    releaseSchemas: { "1": bindings.schemaIdentity, "2": bindings.schemaIdentity },
+  };
+  const fetchManifest = vi.fn(async () => new Response(JSON.stringify(manifest)));
+  vi.stubGlobal("fetch", fetchManifest);
+
   const settle = async <T>(promise: Promise<T>): Promise<T> => {
     let settled = false;
     const tracked = promise.finally(() => {
@@ -96,12 +118,13 @@ const createHarness = (overrides: Partial<CreateGameClientInput> = {}) => {
     return tracked;
   };
 
-  return { input, sockets, settle };
+  return { input, sockets, settle, fetchManifest, manifest };
 };
 
 afterEach(() => {
   disposeActiveGameSyncRuntime();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   vi.useRealTimers();
 });
 
@@ -124,6 +147,7 @@ const bootClient = async (harness: ReturnType<typeof createHarness>) => {
   harness.sockets[0]!.receive(hello);
   await flushMicrotasks();
   harness.sockets[0]!.receive(rulesSnapshot);
+  harness.sockets[0]!.receive(releaseSnapshot);
   harness.sockets[0]!.receive(snapshotEnd);
   return harness.settle(creation);
 };
@@ -143,6 +167,168 @@ describe("createGameClient", () => {
     secondClient.dispose();
   });
 
+  it("opens and submits a release-1 game when the shard's current release is 2", async () => {
+    const harness = createHarness();
+    harness.fetchManifest.mockResolvedValue(new Response(JSON.stringify({ ...harness.manifest, releaseId: "2" })));
+    harness.input.shard = await shardMetadata.openShard("http://herald.test", bindings.schemaIdentity);
+    const creation = createGameClient(harness.input);
+    await vi.waitFor(() => expect(harness.sockets).toHaveLength(1));
+    const socket = harness.sockets[0]!;
+    socket.receive(hello);
+    await flushMicrotasks();
+    for (const message of [rulesSnapshot, releaseSnapshot, actionNonce("epoch-a", 0), snapshotEnd])
+      socket.receive(message);
+    const client = await harness.settle(creation);
+    vi.mocked(harness.input.native.signIntent).mockResolvedValue(["0x1", "0x2"]);
+    vi.mocked(harness.input.native.submitIntent).mockResolvedValue({ transaction_hash: "0xabc", order: 1n });
+    void client.setup.network.provider
+      .submitCommand({ address: "0x111" } as AccountInterface, {
+        kind: "Explore",
+        value: { explorer_id: 9, direction: 2 },
+      })
+      .catch(() => undefined);
+    await vi.waitFor(() => expect(harness.input.native.submitIntent).toHaveBeenCalledOnce());
+    const action = vi.mocked(harness.input.native.submitIntent).mock.calls[0]![0];
+    expect(BigInt(action.intent[8]!)).toBe(1n);
+    expect(harness.fetchManifest).toHaveBeenCalledOnce();
+    expect(harness.fetchManifest.mock.calls[0]).toEqual(["http://herald.test/manifest", expect.any(Object)]);
+    expect(socket.closed).toBe(false);
+    client.dispose();
+  });
+
+  it.each(["503", "timeout"])("retries a transient manifest %s without tearing down the live game", async (failure) => {
+    vi.useFakeTimers();
+    const onLiveApplyFailed = vi.fn();
+    const harness = createHarness({ observer: { onLiveApplyFailed } });
+    const creation = createGameClient(harness.input);
+    await vi.waitFor(() => expect(harness.sockets).toHaveLength(1));
+    const socket = harness.sockets[0]!;
+    socket.receive(hello);
+    await flushMicrotasks();
+    for (const message of [rulesSnapshot, releaseSnapshot, actionNonce("epoch-a", 0), snapshotEnd])
+      socket.receive(message);
+    const client = await harness.settle(creation);
+    if (failure === "503") harness.fetchManifest.mockResolvedValueOnce(new Response("temporary", { status: 503 }));
+    else harness.fetchManifest.mockRejectedValueOnce(new DOMException("timed out", "TimeoutError"));
+    client.setup.store.applyFacts([
+      {
+        model: "GameRelease",
+        key: releaseSnapshot.rows[0]!.key,
+        value: { game_id: 54, release_id: 2, preset_commitment: "0x789" },
+      },
+    ]);
+    await flushMicrotasks(30);
+    vi.mocked(harness.input.native.signIntent).mockResolvedValue(["0x1", "0x2"]);
+    vi.mocked(harness.input.native.submitIntent).mockResolvedValue({ transaction_hash: "0xabc", order: 1n });
+    void client.setup.network.provider
+      .submitCommand({ address: "0x111" } as AccountInterface, {
+        kind: "Explore",
+        value: { explorer_id: 9, direction: 2 },
+      })
+      .catch(() => undefined);
+    await flushMicrotasks();
+    expect(harness.input.native.signIntent).not.toHaveBeenCalled();
+    expect(socket.closed).toBe(false);
+    expect(onLiveApplyFailed).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.waitFor(() => expect(harness.input.native.submitIntent).toHaveBeenCalledOnce());
+    expect(harness.fetchManifest).toHaveBeenCalledTimes(2);
+    expect(socket.closed).toBe(false);
+    expect(onLiveApplyFailed).not.toHaveBeenCalled();
+    client.dispose();
+  });
+  it("holds new signatures until the changed game release has a known decoder", async () => {
+    const harness = createHarness();
+    const creation = createGameClient(harness.input);
+    await vi.waitFor(() => expect(harness.sockets).toHaveLength(1));
+    const socket = harness.sockets[0]!;
+    socket.receive(hello);
+    await flushMicrotasks();
+    for (const message of [rulesSnapshot, releaseSnapshot, actionNonce("epoch-a", 0), snapshotEnd])
+      socket.receive(message);
+    const client = await harness.settle(creation);
+    let finishRefresh!: () => void;
+    harness.fetchManifest.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishRefresh = () => resolve(new Response(JSON.stringify(harness.manifest)));
+        }),
+    );
+    socket.receive({
+      type: "diff",
+      epoch: "epoch-a",
+      seq: 1,
+      block: 13,
+      preconfirmed: false,
+      del: [],
+      set: [
+        {
+          model: "GameRelease",
+          key: releaseSnapshot.rows[0]!.key,
+          value: { game_id: 54, release_id: 2, preset_commitment: "0x789" },
+        },
+      ],
+    });
+    await harness.settle(Promise.resolve());
+    await vi.waitFor(() => expect(harness.fetchManifest).toHaveBeenCalledOnce());
+    const stopped = new Error("signature reached");
+    vi.mocked(harness.input.native.signIntent).mockRejectedValueOnce(stopped);
+    const failure = new Promise<{ error: unknown }>((resolve) =>
+      client.setup.network.provider.once("transactionFailed", resolve),
+    );
+    void client.setup.network.provider
+      .submitCommand({ address: "0x111" } as AccountInterface, {
+        kind: "Explore",
+        value: { explorer_id: 9, direction: 2 },
+      })
+      .catch(() => undefined);
+    await flushMicrotasks();
+    expect(harness.input.native.signIntent).not.toHaveBeenCalled();
+    finishRefresh();
+    await vi.waitFor(() => expect(harness.input.native.signIntent).toHaveBeenCalledOnce());
+    expect((await failure).error).toBe(stopped);
+    client.dispose();
+  });
+
+  it("tears down the subscription when a changed release has no decoder", async () => {
+    const onLiveApplyFailed = vi.fn();
+    const harness = createHarness({ observer: { onLiveApplyFailed } });
+    const creation = createGameClient(harness.input);
+    await vi.waitFor(() => expect(harness.sockets).toHaveLength(1));
+    const socket = harness.sockets[0]!;
+    socket.receive(hello);
+    await flushMicrotasks();
+    for (const message of [rulesSnapshot, releaseSnapshot, snapshotEnd]) socket.receive(message);
+    const client = await harness.settle(creation);
+    harness.fetchManifest.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ ...harness.manifest, releaseSchemas: { "1": bindings.schemaIdentity, "2": "unknown" } }),
+      ),
+    );
+    socket.receive({
+      type: "diff",
+      epoch: "epoch-a",
+      seq: 1,
+      block: 13,
+      preconfirmed: false,
+      del: [],
+      set: [
+        {
+          model: "GameRelease",
+          key: releaseSnapshot.rows[0]!.key,
+          value: { game_id: 54, release_id: 2, preset_commitment: "0x789" },
+        },
+      ],
+    });
+    await harness.settle(Promise.resolve());
+    await vi.waitFor(() =>
+      expect(onLiveApplyFailed).toHaveBeenCalledWith(expect.any(shardMetadata.ShardReleaseMismatchError)),
+    );
+    expect(socket.closed).toBe(true);
+    expect(harness.input.native.signIntent).not.toHaveBeenCalled();
+    client.dispose();
+  });
+
   it("dispose() clears a pending reconnect so no timer outlives the client", async () => {
     vi.useFakeTimers();
     const harness = createHarness();
@@ -151,6 +337,7 @@ describe("createGameClient", () => {
     harness.sockets[0]!.receive(hello);
     await flushMicrotasks();
     harness.sockets[0]!.receive(rulesSnapshot);
+    harness.sockets[0]!.receive(releaseSnapshot);
     harness.sockets[0]!.receive(snapshotEnd);
     const client = await harness.settle(creation);
 
@@ -174,6 +361,7 @@ describe("createGameClient", () => {
     harness.sockets[0]!.receive({ ...hello, confirmed_timestamp: null });
     await flushMicrotasks();
     harness.sockets[0]!.receive(rulesSnapshot);
+    harness.sockets[0]!.receive(releaseSnapshot);
     harness.sockets[0]!.receive(snapshotEnd);
     for (let round = 0; round < 20; round += 1) {
       harness.input.scheduler!.flushNext();
@@ -212,7 +400,8 @@ describe("createGameClient", () => {
     await vi.waitFor(() => expect(harness.sockets).toHaveLength(1));
     harness.sockets[0]!.receive(hello);
     await flushMicrotasks();
-    for (const message of [rulesSnapshot, actionNonce("epoch-a", 0), snapshotEnd]) harness.sockets[0]!.receive(message);
+    for (const message of [rulesSnapshot, releaseSnapshot, actionNonce("epoch-a", 0), snapshotEnd])
+      harness.sockets[0]!.receive(message);
     const client = await harness.settle(creation);
     const provider = client.setup.network.provider;
     const signer = { address: "0x111" } as AccountInterface;
@@ -231,6 +420,7 @@ describe("createGameClient", () => {
     await flushMicrotasks();
     for (const message of [
       { ...rulesSnapshot, epoch: "epoch-b" },
+      { ...releaseSnapshot, epoch: "epoch-b" },
       actionNonce("epoch-b", 1),
       { ...snapshotEnd, epoch: "epoch-b" },
     ])

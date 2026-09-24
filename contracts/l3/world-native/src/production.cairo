@@ -98,14 +98,14 @@ pub trait IProductionCommands<T> {
         game_id: u32,
         actor: starknet::ContractAddress,
         command: RefillProduction,
-        context: crate::commands::ExecutionContext,
+        context: crate::commands::ActionContext,
     );
     fn burn_resource_for_resource_production(
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
         command: RefillProduction,
-        context: crate::commands::ExecutionContext,
+        context: crate::commands::ActionContext,
     );
 }
 

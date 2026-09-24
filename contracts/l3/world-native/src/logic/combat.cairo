@@ -17,7 +17,7 @@ use crate::troops::{
 pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, context: ExecutionContext) {
     let rules = authorize(game_id, context);
     let key = ExplorerKey { game_id, explorer_id: command.attacker_id };
-    let mut attacker = crate::logic::troops::authorized_explorer(key, actor, context.timestamp);
+    let mut attacker = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
     let target_key = ResourceKey { game_id, entity_id: command.defender_id };
     let target = crate::logic::structures::structure(target_key).expect('missing guarded structure');
     if crate::rules::rule_enabled(rules, crate::rules::UNOWNED_TARGETS) {
@@ -25,8 +25,8 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
     }
     assert!(target.owner != actor, "actor owns defender");
     assert!(attacker.troops.count != 0, "aggressor has no troops");
-    assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp);
-    assert_battle_immunity(game_id, command.defender_id, rules, context.timestamp);
+    assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp, context);
+    assert_battle_immunity(game_id, command.defender_id, rules, context.timestamp, context);
     let destination = crate::structures::structure_coord(target.base);
     let stride: u128 = if destination.alt {
         15
@@ -55,10 +55,10 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
             defender_is_structure_guard: true, ..combat_context(game_id, attacker, defender, context),
         };
         rolls = (combat.attacker_roll, combat.defender_roll);
-        let (attacker_after, guard_after) = resolve_battle(game_id, attacker.troops, guard, combat);
+        let (attacker_after, guard_after) = resolve_battle(game_id, attacker.troops, guard, combat, context);
         attacker.troops = attacker_after;
         guard = guard_after;
-        combat_troops(game_id).finish_battle(key, attacker, before);
+        combat_troops(game_id).finish_battle(key, attacker, before, crate::commands::action_context(context));
         let mut row = crate::logic::guards::guard(slot);
         if guard.count == 0 {
             guard.stamina.reset();
@@ -120,25 +120,35 @@ pub fn battle(
     crate::resources::assert_unique_resources(command.steal_resources);
     let attacker_key = ExplorerKey { game_id, explorer_id: command.attacker_id };
     let defender_key = ExplorerKey { game_id, explorer_id: command.defender_id };
-    let mut attacker = crate::logic::troops::authorized_explorer(attacker_key, actor, context.timestamp);
-    let mut defender = crate::logic::troops::active_explorer(defender_key, context.timestamp);
+    let mut attacker = crate::logic::troops::authorized_explorer(attacker_key, actor, context.timestamp, context);
+    let mut defender = crate::logic::troops::active_explorer(defender_key, context.timestamp, context);
     let defender_owner = explorer_owner(defender_key, defender);
     assert!(defender_owner != actor, "actor owns defender");
-    assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp);
-    assert_battle_immunity(game_id, defender.owner, rules, context.timestamp);
+    assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp, context);
+    assert_battle_immunity(game_id, defender.owner, rules, context.timestamp, context);
     assert!(attacker.troops.count > 0 && defender.troops.count > 0, "dead combatant");
     assert_battle_range(game_id, attacker, defender);
     let attacker_before = attacker.troops.count;
     let defender_before = defender.troops.count;
     let combat = combat_context(game_id, attacker, defender, context);
-    let (attacker_after, defender_after) = resolve_battle(game_id, attacker.troops, defender.troops, combat);
+    let (attacker_after, defender_after) = resolve_battle(game_id, attacker.troops, defender.troops, combat, context);
     attacker.troops = attacker_after;
     defender.troops = defender_after;
-    combat_troops(game_id).finish_battle(attacker_key, attacker, attacker_before);
+    combat_troops(game_id)
+        .finish_battle(attacker_key, attacker, attacker_before, crate::commands::action_context(context));
     if defender.troops.count == 0 && attacker.troops.count != 0 {
-        take_loot(game_id, command.defender_id, command.attacker_id, command.steal_resources, false, context.timestamp);
+        take_loot(
+            game_id,
+            command.defender_id,
+            command.attacker_id,
+            command.steal_resources,
+            false,
+            context.timestamp,
+            context,
+        );
     }
-    combat_troops(game_id).finish_battle(defender_key, defender, defender_before);
+    combat_troops(game_id)
+        .finish_battle(defender_key, defender, defender_before, crate::commands::action_context(context));
     emit(
         crate::troops::BattleEvent {
             version: 1,
@@ -174,21 +184,21 @@ pub fn guard_attack(
     };
     let mut guard = crate::logic::guards::guard(guard_key);
     let defender_key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-    let mut defender = crate::logic::troops::active_explorer(defender_key, context.timestamp);
+    let mut defender = crate::logic::troops::active_explorer(defender_key, context.timestamp, context);
     let defender_owner = explorer_owner(defender_key, defender);
     assert!(guard.troops.count != 0 && defender.troops.count != 0, "dead combatant");
     let coord = crate::structures::structure_coord(home.base);
     assert_structure_range(coord, defender.coord, guard.troops.attack_range());
-    assert_battle_immunity(game_id, command.guard.structure_id, rules, context.timestamp);
-    assert_battle_immunity(game_id, defender.owner, rules, context.timestamp);
+    assert_battle_immunity(game_id, command.guard.structure_id, rules, context.timestamp, context);
+    assert_battle_immunity(game_id, defender.owner, rules, context.timestamp, context);
     let attacker = ExplorerTroops { owner: command.guard.structure_id, coord, troops: guard.troops };
     let combat = CombatContext {
         attacker_is_structure_guard: true, ..combat_context(game_id, attacker, defender, context),
     };
-    let (attacker_after, defender_after) = resolve_battle(game_id, guard.troops, defender.troops, combat);
+    let (attacker_after, defender_after) = resolve_battle(game_id, guard.troops, defender.troops, combat, context);
     let before = defender.troops.count;
     defender.troops = defender_after;
-    combat_troops(game_id).finish_battle(defender_key, defender, before);
+    combat_troops(game_id).finish_battle(defender_key, defender, before, crate::commands::action_context(context));
     guard.troops = attacker_after;
     if guard.troops.count == 0 {
         guard.troops.stamina.reset();
@@ -222,21 +232,21 @@ pub fn raid(game_id: u32, actor: ContractAddress, command: crate::combat_actions
     let rules = authorize(game_id, context);
     crate::resources::assert_unique_resources(command.steal_resources);
     let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-    let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp);
+    let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
     let target_key = ResourceKey { game_id, entity_id: command.structure_id };
     let target = crate::logic::structures::structure(target_key).expect('missing raid target');
     assert!(target.owner != actor, "actor owns defender");
     assert!(explorer.troops.count != 0, "aggressor has no troops");
     let destination = crate::structures::structure_coord(target.base);
     assert!(crate::geometry::adjacent(explorer.coord, destination), "raid requires adjacency");
-    assert_battle_immunity(game_id, explorer.owner, rules, context.timestamp);
-    assert_battle_immunity(game_id, command.structure_id, rules, context.timestamp);
+    assert_battle_immunity(game_id, explorer.owner, rules, context.timestamp, context);
+    assert_battle_immunity(game_id, command.structure_id, rules, context.timestamp, context);
     let result = resolve_raid(game_id, explorer, target_key, target.base.troop_max_guard_count, destination, context);
     let troops_before = explorer.troops.count;
-    apply_raid_losses(key, explorer, target_key, result);
+    apply_raid_losses(key, explorer, target_key, result, context);
     let success = raid_success(game_id, result, context);
     if success && result.explorer.count != 0 {
-        collect_raid_loot(game_id, command, target, rules, context.timestamp);
+        collect_raid_loot(game_id, command, target, rules, context.timestamp, context);
     }
     emit(
         crate::combat_actions::RaidEvent {
@@ -256,13 +266,22 @@ pub fn raid(game_id: u32, actor: ContractAddress, command: crate::combat_actions
 }
 
 pub fn apply_raid_losses(
-    key: ExplorerKey, explorer: ExplorerTroops, target: ResourceKey, result: crate::raid::RaidResolution,
+    key: ExplorerKey,
+    explorer: ExplorerTroops,
+    target: ResourceKey,
+    result: crate::raid::RaidResolution,
+    game_context: crate::commands::ExecutionContext,
 ) {
     if !result.guarded {
         return;
     }
     combat_troops(key.game_id)
-        .finish_battle(key, ExplorerTroops { troops: result.explorer, ..explorer }, explorer.troops.count);
+        .finish_battle(
+            key,
+            ExplorerTroops { troops: result.explorer, ..explorer },
+            explorer.troops.count,
+            crate::commands::action_context(game_context),
+        );
     for index in 0..result.guards.len() {
         crate::logic::guards::GuardState::save(
             crate::guards::GuardKey {
@@ -298,18 +317,25 @@ pub fn resolve_raid(
                 crate::logic::guards::guard(crate::guards::GuardKey { game_id, structure_id: target.entity_id, slot }),
             );
     }
-    let biome = map_dispatcher(game_id).biome(tile_key(game_id, destination)).into();
-    calculate_raid(game_id, explorer.troops, guards.span(), biome, context.timestamp)
+    let biome = map_dispatcher(game_id)
+        .biome(tile_key(game_id, destination), crate::commands::biome_context(context))
+        .into();
+    calculate_raid(game_id, explorer.troops, guards.span(), biome, context.timestamp, context)
 }
 
 pub fn raid_success(game_id: u32, result: crate::raid::RaidResolution, context: ExecutionContext) -> bool {
     let mut raw_root = context.raw_root;
-    let seed = crate::random::game_root(ref raw_root, game_id, crate::logic::game::game(game_id).seed);
+    let seed = crate::random::game_root(ref raw_root, game_id, context.game.unbox().seed);
     crate::raid::success(result, seed, context.timestamp)
 }
 
 pub fn collect_raid_loot(
-    game_id: u32, command: crate::combat_actions::Raid, target: Structure, rules: SliceRules, timestamp: u64,
+    game_id: u32,
+    command: crate::combat_actions::Raid,
+    target: Structure,
+    rules: SliceRules,
+    timestamp: u64,
+    game_context: crate::commands::ExecutionContext,
 ) {
     let village = target.base.category == 5;
     let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
@@ -321,7 +347,9 @@ pub fn collect_raid_loot(
             }
         }
     }
-    take_loot(game_id, command.structure_id, command.explorer_id, command.steal_resources, true, timestamp);
+    take_loot(
+        game_id, command.structure_id, command.explorer_id, command.steal_resources, true, timestamp, game_context,
+    );
     if village {
         crate::state::write().combat_domain.village_raids.write((game_id, command.structure_id), tick);
         emit(
@@ -342,6 +370,7 @@ pub fn take_loot(
     resources: Span<crate::resources::ResourceAmount>,
     storable_only: bool,
     timestamp: u64,
+    game_context: crate::commands::ExecutionContext,
 ) {
     let dispatcher = resources_dispatcher(game_id);
     let from = ResourceKey { game_id, entity_id: from };
@@ -357,8 +386,14 @@ pub fn take_loot(
             }
         }
         if amount != 0 {
-            dispatcher.spend_resource(from, *resource.resource_type, amount, timestamp);
-            dispatcher.grant_resource(to, *resource.resource_type, amount, timestamp);
+            dispatcher
+                .spend_resource(
+                    from, *resource.resource_type, amount, timestamp, crate::commands::resource_context(game_context),
+                );
+            dispatcher
+                .grant_resource(
+                    to, *resource.resource_type, amount, timestamp, crate::commands::resource_context(game_context),
+                );
         }
     }
 }
@@ -386,6 +421,7 @@ pub fn try_capture(
         key,
         explorer.owner,
         context.timestamp,
+        crate::commands::action_context(context),
     );
     if target.owner == 0.try_into().unwrap() {
         grant_capture_rewards(explorer_key, explorer, key, target, rules, context);
@@ -434,7 +470,13 @@ pub fn grant_capture_rewards(
             crate::camps::ICampRulesLibraryDispatcher { class_hash: classes.structures.read() }, key.game_id,
         ) {
             resources_dispatcher(key.game_id)
-                .grant_resource(home, *reward.resource_type, *reward.amount, context.timestamp);
+                .grant_resource(
+                    home,
+                    *reward.resource_type,
+                    *reward.amount,
+                    context.timestamp,
+                    crate::commands::resource_context(context),
+                );
         }
     }
     let mine_chest = target.base.category == 4 && depth.map(|value| value.mine_chest).unwrap_or(false);
@@ -445,7 +487,7 @@ pub fn grant_capture_rewards(
             key.game_id,
             actor,
             crate::relics::OpenChest { explorer_id: explorer_key.explorer_id, coord },
-            context,
+            crate::commands::action_context(context),
         );
     }
 }
@@ -474,9 +516,8 @@ pub fn battle_winner(attacker: ExplorerTroops, defender: ExplorerTroops) -> u32 
 }
 
 pub fn authorize(game_id: u32, context: ExecutionContext) -> SliceRules {
-    crate::commands::assert_context_time(context.timestamp);
-    assert_playing(crate::logic::game::game(game_id), context.timestamp);
-    crate::logic::game::rules(game_id)
+    assert_playing(context.game.unbox(), context.timestamp);
+    context.rules.unbox()
 }
 
 pub fn resources_dispatcher(game_id: u32) -> IResourceOperationsLibraryDispatcher {
@@ -493,8 +534,10 @@ pub fn owned_structure(game_id: u32, entity_id: u32, actor: ContractAddress) -> 
     home
 }
 
-pub fn assert_battle_immunity(game_id: u32, home_id: u32, rules: SliceRules, timestamp: u64) {
-    let game = crate::logic::game::game(game_id);
+pub fn assert_battle_immunity(
+    game_id: u32, home_id: u32, rules: SliceRules, timestamp: u64, game_context: crate::commands::ExecutionContext,
+) {
+    let game = game_context.game.unbox();
     let home = crate::logic::structures::structure(ResourceKey { game_id, entity_id: home_id }).unwrap();
     let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
     assert!(
@@ -541,11 +584,13 @@ pub fn assert_battle_range(game_id: u32, mut attacker: ExplorerTroops, defender:
 pub fn combat_context(
     game_id: u32, attacker: ExplorerTroops, defender: ExplorerTroops, context: ExecutionContext,
 ) -> CombatContext {
-    let biome: crate::biome::Biome = map_dispatcher(game_id).biome(tile_key(game_id, defender.coord)).into();
+    let biome: crate::biome::Biome = map_dispatcher(game_id)
+        .biome(tile_key(game_id, defender.coord), crate::commands::biome_context(context))
+        .into();
     let (attacker_roll, defender_roll) = if defender.coord.alt
-        || crate::rules::rule_enabled(crate::logic::game::rules(game_id), crate::rules::COMBAT_DICE) {
+        || crate::rules::rule_enabled(context.rules.unbox(), crate::rules::COMBAT_DICE) {
         let mut raw_root = context.raw_root;
-        let seed = crate::random::game_root(ref raw_root, game_id, crate::logic::game::game(game_id).seed);
+        let seed = crate::random::game_root(ref raw_root, game_id, context.game.unbox().seed);
         (
             1_u8 + crate::random::range(seed, 1, 20).try_into().unwrap(),
             1_u8 + crate::random::range(seed, 2, 20).try_into().unwrap(),
@@ -576,16 +621,25 @@ pub fn combat_context(
 }
 
 pub fn calculate_raid(
-    game_id: u32, explorer: Troops, guards: Span<crate::guards::Guard>, biome: crate::biome::Biome, timestamp: u64,
+    game_id: u32,
+    explorer: Troops,
+    guards: Span<crate::guards::Guard>,
+    biome: crate::biome::Biome,
+    timestamp: u64,
+    game_context: crate::commands::ExecutionContext,
 ) -> crate::raid::RaidResolution {
-    let rules = crate::logic::game::rules(game_id);
+    let rules = game_context.rules.unbox();
     crate::raid::resolve(explorer, guards, biome, rules, timestamp)
 }
 
 pub fn resolve_battle(
-    game_id: u32, mut attacker: Troops, mut defender: Troops, context: CombatContext,
+    game_id: u32,
+    mut attacker: Troops,
+    mut defender: Troops,
+    context: CombatContext,
+    game_context: crate::commands::ExecutionContext,
 ) -> (Troops, Troops) {
-    let rules = crate::logic::game::rules(game_id);
+    let rules = game_context.rules.unbox();
     attacker
         .attack_with_context(
             ref defender,

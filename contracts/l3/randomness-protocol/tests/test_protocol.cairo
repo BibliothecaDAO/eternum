@@ -35,7 +35,7 @@ struct EpochVector {
 
 #[test]
 fn canonical_cross_language_vectors() {
-    let input = read_txt(@FileTrait::new("tests/fixtures/v5.txt"));
+    let input = read_txt(@FileTrait::new("tests/fixtures/v6.txt"));
     let mut fields = input.span();
     let vectors: Array<Vector> = Serde::deserialize(ref fields).unwrap();
     let epochs: Array<EpochVector> = Serde::deserialize(ref fields).unwrap();
@@ -86,14 +86,14 @@ fn rejects_noncanonical_bytes() {
 
 #[test]
 fn rejects_malformed_envelopes() {
-    let input = read_txt(@FileTrait::new("tests/fixtures/v5.txt"));
+    let input = read_txt(@FileTrait::new("tests/fixtures/v6.txt"));
     let mut fields = input.span();
     let vectors: Array<Vector> = Serde::deserialize(ref fields).unwrap();
     for vector in vectors {
         for length in 0..vector.envelope.len() {
             assert!(decode_envelope(vector.envelope.span().slice(0, length)).is_none(), "truncated envelope");
         }
-        for bad_index in array![0, 1, 3, 4, 6, 7, 8] {
+        for bad_index in array![0, 1, 3, 4, 5, 7, 8, 9] {
             let malformed = replace(vector.envelope.span(), bad_index, -1);
             assert!(decode_envelope(malformed.span()).is_none(), "invalid field");
         }
@@ -109,14 +109,14 @@ fn rejects_malformed_envelopes() {
 
 #[test]
 fn rejects_malformed_intents() {
-    let input = read_txt(@FileTrait::new("tests/fixtures/v5.txt"));
+    let input = read_txt(@FileTrait::new("tests/fixtures/v6.txt"));
     let mut fields = input.span();
     let vectors: Array<Vector> = Serde::deserialize(ref fields).unwrap();
     for vector in vectors {
         for length in 0..vector.intent.len() {
             assert!(decode_intent(vector.intent.span().slice(0, length)).is_none(), "truncated intent");
         }
-        for bad_index in array![0, 1, 6, 9, 10, 11, 12] {
+        for bad_index in array![0, 1, 6, 8, 10, 11, 12, 13] {
             let malformed = replace(vector.intent.span(), bad_index, -1);
             assert!(decode_intent(malformed.span()).is_none(), "invalid intent field");
         }

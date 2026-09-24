@@ -13,6 +13,7 @@ export const manifest: NativeManifest = {
     version: 2,
     deploymentBlock: 10,
     activeSchema: schema.identity,
+    releaseSchemas: { "1": schema.identity },
     schemas: { [schema.identity]: schema },
     gamesClassHash: "0x123",
     releaseId: 1,

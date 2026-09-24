@@ -1,5 +1,7 @@
 use starknet::Event as EventTrait;
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{
+    StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+};
 use crate::events::RowSet;
 use crate::game::GameRegistry;
 use crate::rules::SliceRules;
@@ -44,6 +46,9 @@ pub fn create(game_id: u32, game: GameRegistry, rules: SliceRules) {
 pub fn write_game(game_id: u32, game: GameRegistry) {
     let state = crate::state::write();
     state.games.games.write(game_id, game);
+    emit_game(game_id, game);
+}
+fn emit_game(game_id: u32, game: GameRegistry) {
     let mut values = array![];
     game.serialize(ref values);
     emit_game_fact(
@@ -52,8 +57,8 @@ pub fn write_game(game_id: u32, game: GameRegistry) {
 }
 pub fn allocate_entity(game_id: u32) -> u32 {
     let state = crate::state::write();
-    let _ = game(game_id);
     let id = state.games.next_entity.read(game_id);
+    assert!(id != 0, "game does not exist");
     state.games.next_entity.write(game_id, id + 1);
     emit_counter(game_id, id + 1);
     id
@@ -81,19 +86,35 @@ pub fn game_exists(game_id: u32) -> bool {
     crate::state::read().games.games.entry(game_id).creator.read() != 0.try_into().unwrap()
 }
 
-pub fn start_blitz(game_id: u32, timestamp: u64) {
-    assert!(rules(game_id).entry_rule == crate::rules::ENTRY_ROSTER, "fixed roster required");
+pub fn start_blitz(game_id: u32, context: crate::commands::ExecutionContext) {
+    assert!(context.rules.unbox().entry_rule == crate::rules::ENTRY_ROSTER, "fixed roster required");
     let mut game = game(game_id);
     assert!(!game.ready, "roster already ready");
     let duration = game.end_at - game.start_main_at;
-    game.start_main_at = core::cmp::max(game.start_main_at, timestamp);
+    game.start_main_at = core::cmp::max(game.start_main_at, context.timestamp);
     game.end_at = game.start_main_at + duration;
     game.ready = true;
-    write_game(game_id, game);
+    let stored = crate::state::write().games.games.entry(game_id);
+    stored.start_main_at.write(game.start_main_at);
+    stored.end_at.write(game.end_at);
+    stored.ready.write(game.ready);
+    emit_game(game_id, game);
 }
 
-pub fn rules_commitment(rules: crate::rules::SliceRules) -> felt252 {
-    let mut values = array!['ETERNUM_RULES', 1];
-    rules.serialize(ref values);
-    core::poseidon::poseidon_hash_span(values.span())
+/// The preset id is immutable; every game keeps the definition it launched with.
+pub fn preset_commitment(game_id: u32) -> felt252 {
+    let commitment = crate::state::read().registrar.presets.read(game(game_id).preset_id);
+    assert!(commitment != 0, "game has no preset");
+    commitment
+}
+
+pub fn emit_release(game_id: u32, release_id: u32, preset_commitment: felt252) {
+    emit_game_fact(
+        RowSet {
+            version: 1,
+            model: 'GameRelease',
+            keys: array![game_id.into()].span(),
+            values: array![release_id.into(), preset_commitment].span(),
+        },
+    );
 }

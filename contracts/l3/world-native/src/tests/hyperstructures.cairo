@@ -59,6 +59,9 @@ pub fn setup_mode(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, 
             crate::discovery::Discovery::Hyperstructure,
             101,
             30,
+            crate::commands::action_context(
+                crate::commands::ExecutionContext { timestamp: 30, ..crate::tests::context(deployment.games, 3) },
+            ),
         );
     stop_cheat_caller_address(deployment.games);
     let hyper = ResourceKey { game_id: 3, entity_id: id };
@@ -240,7 +243,14 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
     start_cheat_caller_address(deployment.games, deployment.games);
     assert!(
         safe
-            .contribute_hyperstructure(3, friend, command, ExecutionContext { timestamp: 45, ..super::context() })
+            .contribute_hyperstructure(
+                3,
+                friend,
+                command,
+                crate::commands::action_context(
+                    ExecutionContext { timestamp: 45, ..super::context(deployment.games, 3) },
+                ),
+            )
             .is_err(),
     );
     stop_cheat_caller_address(deployment.games);
@@ -256,7 +266,14 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
     start_cheat_caller_address(deployment.games, deployment.games);
     assert!(
         safe
-            .contribute_hyperstructure(3, friend, command, ExecutionContext { timestamp: 45, ..super::context() })
+            .contribute_hyperstructure(
+                3,
+                friend,
+                command,
+                crate::commands::action_context(
+                    ExecutionContext { timestamp: 45, ..super::context(deployment.games, 3) },
+                ),
+            )
             .is_err(),
     );
     set_fixture(
@@ -264,7 +281,14 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
     );
     assert!(
         safe
-            .contribute_hyperstructure(3, friend, command, ExecutionContext { timestamp: 45, ..super::context() })
+            .contribute_hyperstructure(
+                3,
+                friend,
+                command,
+                crate::commands::action_context(
+                    ExecutionContext { timestamp: 45, ..super::context(deployment.games, 3) },
+                ),
+            )
             .is_ok(),
     );
     stop_cheat_caller_address(deployment.games);
@@ -276,7 +300,14 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
     start_cheat_block_timestamp_global(46);
     assert!(
         safe
-            .contribute_hyperstructure(3, friend, command, ExecutionContext { timestamp: 46, ..super::context() })
+            .contribute_hyperstructure(
+                3,
+                friend,
+                command,
+                crate::commands::action_context(
+                    ExecutionContext { timestamp: 46, ..super::context(deployment.games, 3) },
+                ),
+            )
             .is_ok(),
     );
     assert!(
@@ -285,7 +316,9 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
                 3,
                 friend,
                 Contribution { from_structure_id: from.entity_id, ..command },
-                ExecutionContext { timestamp: 46, ..super::context() },
+                crate::commands::action_context(
+                    ExecutionContext { timestamp: 46, ..super::context(deployment.games, 3) },
+                ),
             )
             .is_err(),
     );
@@ -381,7 +414,7 @@ fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_r
                 activate_economy: false,
             },
         ),
-        ExecutionContext { timestamp: 55, ..super::context() },
+        crate::commands::action_context(ExecutionContext { timestamp: 55, ..super::context(deployment.games, 3) }),
     );
     stop_cheat_caller_address(deployment.games);
     let before = points(deployment, deployment.actor);
@@ -451,6 +484,18 @@ fn insufficient_shards_or_a_later_resource_leave_construction_unchanged() {
 pub fn checkpoint(deployment: super::Deployment, timestamp: u64) {
     snforge_std::start_cheat_block_timestamp(deployment.games, timestamp);
     start_cheat_caller_address(deployment.games, deployment.games);
-    assert_eq!(view(deployment).settle_completed_hyperstructures(3, timestamp), 0);
+    assert_eq!(
+        view(deployment)
+            .settle_completed_hyperstructures(
+                3,
+                timestamp,
+                crate::commands::action_context(
+                    crate::commands::ExecutionContext {
+                        timestamp: timestamp, ..crate::tests::context(deployment.games, 3),
+                    },
+                ),
+            ),
+        0,
+    );
     stop_cheat_caller_address(deployment.games);
 }

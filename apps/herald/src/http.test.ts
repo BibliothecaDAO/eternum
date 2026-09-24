@@ -24,6 +24,7 @@ const snapshot: GameSnapshot = {
 const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
   chain: "madara",
   manifest: shardManifest,
+  schemas: {},
   worldAddress: "0x123",
   confirmedBlock: () => 12,
   chainTimestamp: () => 100,
@@ -97,6 +98,17 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
 const handler = createHeraldRequestHandler(httpState);
 
 describe("herald HTTP", () => {
+  it("serves the published schema and names unavailable decoder identities", async () => {
+    const schema = { identity: "schema-7", version: 2 };
+    const schemas = createHeraldRequestHandler({ ...httpState, schemas: { "schema-7": schema } });
+    await expect((await schemas(new Request("http://herald/schemas/schema-7"))).json()).resolves.toEqual(schema);
+    for (const identity of ["unpublished", "__proto__"]) {
+      const response = await schemas(new Request(`http://herald/schemas/${identity}`));
+      expect(response.status).toBe(404);
+      await expect(response.json()).resolves.toEqual({ error: "UNKNOWN_RELEASE_SCHEMA" });
+    }
+  });
+
   it("serves health and model-filtered game snapshots", async () => {
     const health = await (await handler(new Request("http://herald/health"))).json();
     expect(health).toMatchObject({
@@ -161,6 +173,7 @@ it("passes a battle-only history filter to the store before pagination", async (
   const battleHandler = createHeraldRequestHandler({
     chain: "madara",
     manifest: shardManifest,
+    schemas: {},
     worldAddress: "0x123",
     confirmedBlock: () => 12,
     chainTimestamp: () => 100,

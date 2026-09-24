@@ -19,7 +19,6 @@ pub mod HyperstructureState {
     use games_storage::release::LogicClasses;
     use starknet::ContractAddress;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
-    use crate::commands::ExecutionContext;
     use crate::events::{RowMemberSet, RowSet};
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
     use crate::geometry::tile_key;
@@ -157,16 +156,20 @@ pub mod HyperstructureState {
             game_id: u32,
             actor: ContractAddress,
             id: u32,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            self.assert_command(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.assert_command(game_id, context.timestamp, context);
             let key = ResourceKey { game_id, entity_id: id };
             self.assert_owner(key, actor);
             let mut state = self.state(key);
             assert!(state.stage == Stage::Foundation, "hyperstructure already initialized");
             let rules = self.rules(game_id);
             IResourceOperationsLibraryDispatcher { class_hash: self.logic_classes(game_id).resources.read() }
-                .spend_resource(key, 24, rules.initialize_shards, context.timestamp);
+                .spend_resource(
+                    key, 24, rules.initialize_shards, context.timestamp, crate::commands::resource_context(context),
+                );
             state.stage = Stage::Construction;
             self.write_state(key, state);
         }
@@ -175,9 +178,11 @@ pub mod HyperstructureState {
             game_id: u32,
             actor: ContractAddress,
             contribution: Contribution,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            self.assert_command(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.assert_command(game_id, context.timestamp, context);
             crate::resources::assert_unique_resources(contribution.resources);
             let key = ResourceKey { game_id, entity_id: contribution.hyperstructure_id };
             let from = ResourceKey { game_id, entity_id: contribution.from_structure_id };
@@ -189,7 +194,8 @@ pub mod HyperstructureState {
             let mut points = 0;
             for resource in contribution.resources {
                 let slot = ResourceSlot { game_id, entity_id: key.entity_id, resource_type: *resource.resource_type };
-                points += self.contribute_resource(from, slot, *resource.amount, state.seed, context.timestamp);
+                points += self
+                    .contribute_resource(from, slot, *resource.amount, state.seed, context.timestamp, context);
             }
             IPointsLibraryDispatcher { class_hash: self.logic_classes(game_id).season.read() }
                 .register_hyperstructure_points(game_id, actor, points);
@@ -201,7 +207,7 @@ pub mod HyperstructureState {
                         key,
                         ShareAllocation {
                             start_at: context.timestamp,
-                            multiplier: self.multiplier(key),
+                            multiplier: self.multiplier(key, context),
                             shareholders: array![Share { player: self.structure(key).owner, bps: 10000 }].span(),
                         },
                     );
@@ -212,24 +218,26 @@ pub mod HyperstructureState {
             game_id: u32,
             actor: ContractAddress,
             command: AllocateShares,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            self.assert_command(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.assert_command(game_id, context.timestamp, context);
             let key = ResourceKey { game_id, entity_id: command.hyperstructure_id };
             self.assert_owner(key, actor);
             assert!(self.state(key).stage == Stage::Complete, "hyperstructure not complete");
             validate_shares(
                 command.shareholders,
-                crate::rules::rule_enabled(crate::logic::game::rules(game_id), crate::rules::OWNER_ONLY_SHARES),
+                crate::rules::rule_enabled(context.rules.unbox(), crate::rules::OWNER_ONLY_SHARES),
                 actor,
             );
-            self.checkpoint(key, context.timestamp);
+            self.checkpoint(key, context.timestamp, context);
             self
                 .write_shares(
                     key,
                     ShareAllocation {
                         start_at: context.timestamp,
-                        multiplier: self.multiplier(key),
+                        multiplier: self.multiplier(key, context),
                         shareholders: command.shareholders,
                     },
                 );
@@ -239,9 +247,11 @@ pub mod HyperstructureState {
             game_id: u32,
             actor: ContractAddress,
             command: SetConstructionAccess,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
-            self.assert_command(game_id, context.timestamp);
+            let context = crate::commands::load_context(game_id, context);
+
+            self.assert_command(game_id, context.timestamp, context);
             let key = ResourceKey { game_id, entity_id: command.hyperstructure_id };
             self.assert_owner(key, actor);
             let mut state = self.state(key);
@@ -255,17 +265,20 @@ pub mod HyperstructureState {
             self.write_state(key, state);
         }
         fn settle_completed_hyperstructures(
-            ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64,
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            timestamp: u64,
+            game_context: crate::commands::ActionContext,
         ) -> u32 {
-            crate::commands::assert_context_time(timestamp);
-            crate::logic::game::game(game_id);
+            let game_context = crate::commands::load_context(game_id, game_context);
+
             let (cutoff, start, count) = self
                 .data
                 .hyperstructures
                 .close_attempt
                 .read(game_id)
                 .unwrap_or((timestamp, 0, self.data.hyperstructures.hyper_counts.read(game_id)));
-            let end = self.checkpoint_batch(game_id, cutoff, start, count);
+            let end = self.checkpoint_batch(game_id, cutoff, start, count, game_context);
             self
                 .data
                 .hyperstructures
@@ -277,13 +290,19 @@ pub mod HyperstructureState {
                 });
             count - end
         }
-        fn settle_final_hyperstructures(ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64) -> u32 {
-            crate::commands::assert_context_time(timestamp);
-            let game = crate::logic::game::game(game_id);
+        fn settle_final_hyperstructures(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            timestamp: u64,
+            game_context: crate::commands::ActionContext,
+        ) -> u32 {
+            let game_context = crate::commands::load_context(game_id, game_context);
+
+            let game = game_context.game.unbox();
             assert!(game.end_at != 0 && timestamp >= game.end_at, "game not ended");
             let count = self.data.hyperstructures.hyper_counts.read(game_id);
             let start = self.data.hyperstructures.final_checkpoint_cursor.read(game_id);
-            let end = self.checkpoint_batch(game_id, game.end_at, start, count);
+            let end = self.checkpoint_batch(game_id, game.end_at, start, count, game_context);
             self.data.hyperstructures.final_checkpoint_cursor.write(game_id, end);
             count - end
         }
@@ -296,13 +315,18 @@ pub mod HyperstructureState {
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
         fn checkpoint_batch(
-            ref self: ComponentState<TContractState>, game_id: u32, cutoff: u64, start: u32, count: u32,
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            cutoff: u64,
+            start: u32,
+            count: u32,
+            game_context: crate::commands::ExecutionContext,
         ) -> u32 {
             let end = start + core::cmp::min(8, count - start);
             for index in start..end {
                 let id = self.data.hyperstructures.hyper_ids.read((game_id, index));
                 if self.data.hyperstructures.hyper_states.read((game_id, id)).stage == Stage::Complete {
-                    self.checkpoint(ResourceKey { game_id, entity_id: id }, cutoff);
+                    self.checkpoint(ResourceKey { game_id, entity_id: id }, cutoff, game_context);
                 }
             }
             end
@@ -344,9 +368,13 @@ pub mod HyperstructureState {
         fn assert_owner(self: @ComponentState<TContractState>, key: ResourceKey, actor: ContractAddress) {
             assert!(self.structure(key).owner == actor, "actor does not own structure");
         }
-        fn assert_command(self: @ComponentState<TContractState>, game_id: u32, timestamp: u64) {
-            crate::commands::assert_context_time(timestamp);
-            assert_playing(crate::logic::game::game(game_id), timestamp);
+        fn assert_command(
+            self: @ComponentState<TContractState>,
+            game_id: u32,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) {
+            assert_playing(game_context.game.unbox(), timestamp);
         }
         fn assert_access(
             self: @ComponentState<TContractState>, key: ResourceKey, access: ConstructionAccess, actor: ContractAddress,
@@ -383,6 +411,7 @@ pub mod HyperstructureState {
             amount: u128,
             seed: felt252,
             timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) -> u128 {
             assert!(amount != 0, "contribution must be positive");
             let cost = self.cost(slot.game_id, slot.resource_type);
@@ -396,7 +425,9 @@ pub mod HyperstructureState {
             let amount = core::cmp::min(amount, needed - current);
             assert!(amount % crate::rules::RESOURCE_PRECISION == 0, "fractional contribution");
             IResourceOperationsLibraryDispatcher { class_hash: self.logic_classes(slot.game_id).resources.read() }
-                .spend_resource(from, slot.resource_type, amount, timestamp);
+                .spend_resource(
+                    from, slot.resource_type, amount, timestamp, crate::commands::resource_context(game_context),
+                );
             self
                 .data
                 .hyperstructures
@@ -464,9 +495,14 @@ pub mod HyperstructureState {
                     },
                 );
         }
-        fn checkpoint(ref self: ComponentState<TContractState>, key: ResourceKey, timestamp: u64) {
+        fn checkpoint(
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) {
             assert!(self.state(key).stage == Stage::Complete, "hyperstructure not complete");
-            let game = crate::logic::game::game(key.game_id);
+            let game = game_context.game.unbox();
             let cutoff = if !game.dev_mode_on && timestamp > game.end_at {
                 game.end_at
             } else {
@@ -476,7 +512,7 @@ pub mod HyperstructureState {
             if cutoff <= shares.start_at {
                 return;
             }
-            let rate = crate::logic::game::rules(key.game_id).victory_points_grant_config.hyp_points_per_second;
+            let rate = game_context.rules.unbox().victory_points_grant_config.hyp_points_per_second;
             for share in shares.shareholders {
                 let points: u256 = Into::<u64, u256>::into(cutoff - shares.start_at)
                     * rate.into()
@@ -484,7 +520,7 @@ pub mod HyperstructureState {
                     * (*share.bps).into()
                     / 10000;
                 let points: u128 = points.try_into().unwrap();
-                self.register_share_points(key, *share.player, points, timestamp);
+                self.register_share_points(key, *share.player, points, timestamp, game_context);
             }
             self.data.hyperstructures.hyper_share_start.write((key.game_id, key.entity_id), cutoff);
             self
@@ -504,6 +540,7 @@ pub mod HyperstructureState {
             player: ContractAddress,
             points: u128,
             timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) {
             if points == 0 {
                 return;
@@ -526,10 +563,10 @@ pub mod HyperstructureState {
                     },
                 );
         }
-        fn multiplier(self: @ComponentState<TContractState>, key: ResourceKey) -> u8 {
-            if !crate::rules::rule_enabled(
-                crate::logic::game::rules(key.game_id), crate::rules::HYPERSTRUCTURE_MULTIPLIERS,
-            ) {
+        fn multiplier(
+            self: @ComponentState<TContractState>, key: ResourceKey, game_context: crate::commands::ExecutionContext,
+        ) -> u8 {
+            if !crate::rules::rule_enabled(game_context.rules.unbox(), crate::rules::HYPERSTRUCTURE_MULTIPLIERS) {
                 return 1;
             }
             let rules = crate::logic::settlement::rules(key.game_id);

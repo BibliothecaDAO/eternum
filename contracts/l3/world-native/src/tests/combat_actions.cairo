@@ -399,7 +399,7 @@ fn ethereal_battle_uses_both_recorded_d20_rolls_in_damage_and_history() {
     let before_defender = troop(d, defender).unwrap();
     let game = crate::game::IGameDispatcher { contract_address: d.games };
     let rules = crate::game::IGameDispatcherTrait::rules(game, 3);
-    let mut root = super::context().raw_root;
+    let mut root = super::context(d.games, 3).raw_root;
     let seed = crate::random::game_root(ref root, 3, crate::game::IGameDispatcherTrait::game(game, 3).seed);
     let attacker_roll: u8 = 1 + crate::random::range(seed, 1, 20).try_into().unwrap();
     let defender_roll: u8 = 1 + crate::random::range(seed, 2, 20).try_into().unwrap();
@@ -468,13 +468,23 @@ fn a_dice_game_rolls_both_recorded_d20s_on_the_surface_too() {
     move_to(d, attacker, origin);
     move_to(d, defender, crate::geometry::neighbor(origin, 0));
     let surface: crate::biome::Biome = IMapLogicDispatcher { contract_address: d.games }
-        .biome(crate::geometry::tile_key(3, crate::geometry::neighbor(origin, 0)))
+        .biome(
+            crate::geometry::tile_key(3, crate::geometry::neighbor(origin, 0)),
+            crate::commands::biome_context(
+                crate::commands::ExecutionContext {
+                    timestamp: 100,
+                    ..crate::tests::context(
+                        d.games, (crate::geometry::tile_key(3, crate::geometry::neighbor(origin, 0))).game_id,
+                    ),
+                },
+            ),
+        )
         .into();
     let before_attacker = troop(d, attacker).unwrap();
     let before_defender = troop(d, defender).unwrap();
     let game = crate::game::IGameDispatcher { contract_address: d.games };
     let rules = crate::game::IGameDispatcherTrait::rules(game, 3);
-    let mut root = super::context().raw_root;
+    let mut root = super::context(d.games, 3).raw_root;
     let seed = crate::random::game_root(ref root, 3, crate::game::IGameDispatcherTrait::game(game, 3).seed);
     let attacker_roll: u8 = 1 + crate::random::range(seed, 1, 20).try_into().unwrap();
     let defender_roll: u8 = 1 + crate::random::range(seed, 2, 20).try_into().unwrap();

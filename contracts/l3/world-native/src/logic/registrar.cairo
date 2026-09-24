@@ -95,11 +95,13 @@ pub mod RegistrarState {
             self.validate_preset(params.preset_id, crate::presets::commitment(definition));
             let game_id = self.data.registrar.next_game.read();
             assert!(game_id != 0 && game_id < 0xffffffff, "game identity space exhausted");
-            self.data.game_releases.write(game_id, self.data.current_release.read());
+            let release_id = self.data.current_release.read();
+            self.data.game_releases.write(game_id, release_id);
             self.register_roster(game_id, params.roster);
             let game = build_game(params, get_caller_address());
             let rules = game_rules(game_id, params, definition.rules);
             crate::logic::game::create(game_id, game, rules);
+            crate::logic::game::emit_release(game_id, release_id, self.data.registrar.presets.read(params.preset_id));
             let settlement_rules = crate::settlement::SettlementRules {
                 registration_start: params.registration_start,
                 registration_limit: params.roster.len().try_into().unwrap(),

@@ -27,7 +27,8 @@ import { createHeraldGameSyncSession, type GameClientObserver } from "./herald-s
 import type { PlayerNameResolver } from "../utils/entities";
 import { createGameViews, type GameViews } from "./views";
 import { waitForTransactionOutcome } from "./transaction-outcome";
-import type { Shard } from "./shard";
+import { type Shard } from "./shard";
+import { followGameRelease } from "./game-release";
 
 export interface GameClientSetup {
   store: NativeFactStore;
@@ -118,6 +119,14 @@ const startSync = async (
   setupResult: GameClientSetup,
   input: CreateGameClientInput,
 ): Promise<{ projection: WorldSpatialProjection; transport: HeraldGameSyncTransport }> => {
+  const release = followGameRelease(
+    setupResult.store,
+    { gameId: input.gameId, shard: input.shard, schemaIdentity: input.native.bindings.schemaIdentity },
+    (error) => {
+      input.observer?.onLiveApplyFailed?.(error);
+      disposeRuntime(runtime);
+    },
+  );
   const session = createHeraldGameSyncSession({
     actor: input.actor,
     baseUrl: input.shard.url,
@@ -132,14 +141,20 @@ const startSync = async (
     store: setupResult.store,
     socketFactory: input.socketFactory,
   });
-  session.onDispose = input.native.submitIntent.dispose;
+  session.onDispose = () => {
+    release.dispose();
+    input.native.submitIntent.dispose?.();
+  };
   await runtime.startSession(session);
-  // Chain time must be known before anything reads it: a Frontier realm's site in the first projection build does.
-  // Herald's hello names the confirmed head before any row; a Herald yet to see one sends it on the stream. The wait
-  // ends on that fact or on the session ending, never on a clock: the ticket barrier is the native path's one timer.
+  await release.ready();
+  // Chain time must be known before the first spatial projection reads it.
   await runtime.waitForConfirmedHead();
-  setupResult.network.provider.setNativeSubmission(
-    nativeSubmission(input.native, setupResult.store, input.gameId, input.shard.worldAddress, async (actor) => {
+  const submit = nativeSubmission(
+    { ...input.native, release },
+    setupResult.store,
+    input.gameId,
+    input.shard.worldAddress,
+    async (actor) => {
       session.transport.selectActor(actor);
       // Herald's actor scope always carries the nonce row, so this waits on the stream, with no deadline of its own.
       await waitForWorldState(
@@ -148,16 +163,15 @@ const startSync = async (
         undefined,
         () => "Gameplay nonce from Herald",
       );
-    }),
-    input.native.bindings.commandAbi,
-    (actor) => {
-      let owned: number | undefined;
-      for (const row of setupResult.store.structuresOwnedBy(input.gameId, BigInt(actor)))
-        if (owned === undefined || row.entity_id < owned) owned = row.entity_id;
-      if (owned === undefined) throw new Error("Action requires an owned structure in the current game");
-      return owned;
     },
   );
+  setupResult.network.provider.setNativeSubmission(submit, input.native.bindings.commandAbi, (actor) => {
+    let owned: number | undefined;
+    for (const row of setupResult.store.structuresOwnedBy(input.gameId, BigInt(actor)))
+      if (owned === undefined || row.entity_id < owned) owned = row.entity_id;
+    if (owned === undefined) throw new Error("Action requires an owned structure in the current game");
+    return owned;
+  });
   routeTransactionWaitsThroughStream(setupResult, runtime);
   return { projection: installWorldSpatialProjection(runtime, setupResult), transport: session.transport };
 };

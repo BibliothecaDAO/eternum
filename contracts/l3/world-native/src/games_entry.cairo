@@ -14,7 +14,7 @@ pub mod GamesEntry {
         StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use starknet::{ContractAddress, get_caller_address, get_contract_address, get_tx_info};
-    use crate::commands::ExecutionContext as DomainContext;
+    use crate::commands::ActionContext as DomainContext;
     use crate::events::RowSet;
     use crate::games::Authentication;
     use crate::logic::release::ReleaseState;
@@ -135,8 +135,8 @@ pub mod GamesEntry {
             self.approved_account(actor).expect('unregistered actor');
             let head = get_dep_component!(self, Recording).data.heads.read(game);
             Admission {
-                rules: self.rules_identity(game_id),
-                execution_config: self.execution_config(),
+                release_id: self.data.game_releases.read(game_id),
+                preset_commitment: crate::logic::game::preset_commitment(game_id),
                 nonce: self.authentication_state.nonces.read((game_id, actor)),
                 order: head.order + 1,
                 timestamp: starknet::get_block_timestamp(),
@@ -165,7 +165,10 @@ pub mod GamesEntry {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
             self.authenticate_ticket(@intent, @envelope, epoch);
             let consumed = match self.authenticate_action(@intent, @envelope, signature) {
-                Ok(()) => self.consume_action_nonce(@intent),
+                Ok(()) => match self.validate_game_pin(@intent) {
+                    Ok(()) => self.consume_action_nonce(@intent),
+                    Err(reason) => Err(reason),
+                },
                 Err(reason) => Err(reason),
             };
             let outcome = match consumed {
@@ -206,17 +209,6 @@ pub mod GamesEntry {
                 );
         }
 
-        fn rules_identity(self: @ComponentState<TContractState>, game_id: u32) -> felt252 {
-            crate::logic::game::rules_commitment(crate::logic::game::rules(game_id))
-        }
-        #[inline(never)]
-        fn execution_config(self: @ComponentState<TContractState>) -> felt252 {
-            let mut values = array!['ETERNUM_EXECUTION', 1];
-            get_dep_component!(self, Release).current_classes().serialize(ref values);
-            poseidon_hash_span(values.span())
-        }
-
-
         fn approved_account(self: @ComponentState<TContractState>, actor: ContractAddress) -> Result<(), felt252> {
             let class = starknet::syscalls::get_class_hash_at_syscall(actor).map_err(|_error| 'INVALID_ACTOR')?;
             if class != self.authentication_state.authentication.read().account_class {
@@ -250,7 +242,8 @@ pub mod GamesEntry {
         ) {
             authenticate_submission(self.authentication_state.authentication.read().submitter);
             assert!(*envelope.action == action_identity(intent), "altered action");
-            assert!(*envelope.execution_config == self.execution_config(), "execution config mismatch");
+            assert!(*envelope.release_id == *intent.release_id, "envelope release mismatch");
+            assert!(*envelope.preset_commitment == *intent.preset_commitment, "envelope preset mismatch");
             get_dep_component!(self, Recording).require_next(intent, envelope, epoch);
         }
         fn execute_action(
@@ -260,7 +253,9 @@ pub mod GamesEntry {
             game_id: u32,
             actor: ContractAddress,
         ) -> Result<Span<felt252>, Rejection> {
-            self.validate_action(intent, envelope, game_id).map_err(|code| rejection(code))?;
+            if !accepted_context_matches(intent, envelope) {
+                return Err(rejection('INVALID_ACCEPTANCE'));
+            }
             if intent.arguments.len() > 256 {
                 return Err(rejection('INVALID_COMMAND'));
             }
@@ -319,17 +314,17 @@ pub mod GamesEntry {
             self.approved_account(actor)?;
             self.signed_by_actor(actor, *envelope.action, signature)
         }
-        fn validate_action(
-            self: @ComponentState<TContractState>, intent: @Intent, envelope: @Envelope, game_id: u32,
-        ) -> Result<(), felt252> {
-            if !crate::logic::game::game_exists(game_id) {
+        fn validate_game_pin(self: @ComponentState<TContractState>, intent: @Intent) -> Result<(), felt252> {
+            let game_id: u32 = (*intent.game_id).try_into().ok_or('INVALID_GAME')?;
+            let game = self.data.games.games.read(game_id);
+            if game_id == 0 || game.creator.is_zero() {
                 return Err('INVALID_GAME');
             }
-            if *intent.rules != self.rules_identity(game_id) {
-                return Err('INVALID_RULES');
+            if *intent.release_id != self.data.game_releases.read(game_id) {
+                return Err('STALE_RELEASE');
             }
-            if !accepted_context_matches(intent, envelope) {
-                return Err('INVALID_ACCEPTANCE');
+            if *intent.preset_commitment != self.data.registrar.presets.read(game.preset_id) {
+                return Err('INVALID_PRESET');
             }
             Ok(())
         }

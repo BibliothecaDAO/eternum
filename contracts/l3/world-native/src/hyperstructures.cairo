@@ -1,5 +1,4 @@
 use starknet::ContractAddress;
-use crate::commands::ExecutionContext;
 use crate::resources::{ResourceAmount, ResourceKey, ResourceSlot};
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -72,18 +71,36 @@ pub trait IHyperstructures<T> {
     fn hyperstructure_shares(self: @T, key: ResourceKey) -> ShareAllocation;
     fn hyperstructure_count(self: @T, game_id: u32) -> u32;
     fn completed_hyperstructure_count(self: @T, game_id: u32) -> u32;
-    fn settle_completed_hyperstructures(ref self: T, game_id: u32, timestamp: u64) -> u32;
-    fn settle_final_hyperstructures(ref self: T, game_id: u32, timestamp: u64) -> u32;
+    fn settle_completed_hyperstructures(
+        ref self: T, game_id: u32, timestamp: u64, game_context: crate::commands::ActionContext,
+    ) -> u32;
+    fn settle_final_hyperstructures(
+        ref self: T, game_id: u32, timestamp: u64, game_context: crate::commands::ActionContext,
+    ) -> u32;
     fn record_hyperstructure(ref self: T, key: ResourceKey, seed: felt252, completed: bool);
-    fn initialize_hyperstructure(ref self: T, game_id: u32, actor: ContractAddress, id: u32, context: ExecutionContext);
+    fn initialize_hyperstructure(
+        ref self: T, game_id: u32, actor: ContractAddress, id: u32, context: crate::commands::ActionContext,
+    );
     fn contribute_hyperstructure(
-        ref self: T, game_id: u32, actor: ContractAddress, contribution: Contribution, context: ExecutionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        contribution: Contribution,
+        context: crate::commands::ActionContext,
     );
     fn allocate_hyperstructure_shares(
-        ref self: T, game_id: u32, actor: ContractAddress, command: AllocateShares, context: ExecutionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: AllocateShares,
+        context: crate::commands::ActionContext,
     );
     fn set_construction_access(
-        ref self: T, game_id: u32, actor: ContractAddress, command: SetConstructionAccess, context: ExecutionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: SetConstructionAccess,
+        context: crate::commands::ActionContext,
     );
 }
 

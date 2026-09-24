@@ -30,12 +30,10 @@ export function readShardDocument(json: string): ShardDocument {
 
 export function buildShardManifest(document: ShardDocument, endpoints: ShardEndpoints): ShardManifest {
   const { shard } = document;
-  const release = document.native.activeSchema;
   return {
     version: 1,
     chainId: shard.chainId,
-    releaseId: String(document.native.releaseId),
-    schemaHash: release,
+    releaseSchemas: document.native.releaseSchemas,
     rpcUrl: endpoints.rpcUrl,
     admissionUrl: endpoints.admissionUrl,
     accountClassHash: shard.accountClassHash,

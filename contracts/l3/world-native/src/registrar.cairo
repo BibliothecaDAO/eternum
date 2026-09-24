@@ -33,7 +33,7 @@ pub trait IRegistrar<T> {
 #[starknet::interface]
 pub trait IGameSettlement<T> {
     fn mark_game_settled(
-        ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
     ) -> u64;
 }
 

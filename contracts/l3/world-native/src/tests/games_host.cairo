@@ -73,6 +73,8 @@ pub mod GamesTest {
     #[abi(embed_v0)]
     impl TroopCommandsFixture = GamesFixture::TroopCommandsFixture<ContractState>;
     #[abi(embed_v0)]
+    impl ExploreFixture = GamesFixture::ExploreFixture<ContractState>;
+    #[abi(embed_v0)]
     impl CampRulesFixture = GamesFixture::CampRulesFixture<ContractState>;
     #[abi(embed_v0)]
     impl BankCreationFixture = GamesFixture::BankCreationFixture<ContractState>;

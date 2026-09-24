@@ -58,11 +58,12 @@ pub mod BuildingState {
             coord: Coord,
             board: crate::buildings::BoardRules,
             tier: u8,
+            game_context: crate::commands::ExecutionContext,
         ) -> crate::buildings::BuildingEffect {
             let Some(building) = self.building(building_key(key.game_id, base, coord)) else {
                 return Default::default();
             };
-            let rules = crate::logic::game::rules(key.game_id);
+            let rules = game_context.rules.unbox();
             let mut resource_type = crate::buildings::produced_resource(building.category);
             if resource_type == 26 || resource_type == 29 || resource_type == 32 {
                 resource_type += tier;
@@ -123,6 +124,7 @@ pub mod BuildingState {
             before: Span<crate::buildings::BuildingEffect>,
             after: Span<crate::buildings::BuildingEffect>,
             timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
         ) {
             let classes = self.data.releases.entry(self.data.game_releases.read(key.game_id));
             let resources = IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() };
@@ -139,12 +141,24 @@ pub mod BuildingState {
                 new_population += new.population;
                 if old.resource_type != new.resource_type || old.rate != new.rate {
                     if old.rate != 0 {
-                        resources.stop_production(key, old.resource_type, old.rate, timestamp);
+                        resources
+                            .stop_production(
+                                key,
+                                old.resource_type,
+                                old.rate,
+                                timestamp,
+                                crate::commands::resource_context(game_context),
+                            );
                     }
                     if new.rate != 0 {
                         resources
                             .start_production(
-                                key, new.resource_type, new.rate, crate::resources::UNLIMITED_OUTPUT, timestamp,
+                                key,
+                                new.resource_type,
+                                new.rate,
+                                crate::resources::UNLIMITED_OUTPUT,
+                                timestamp,
+                                crate::commands::resource_context(game_context),
                             );
                     }
                 }
@@ -162,7 +176,7 @@ pub mod BuildingState {
                 counts.population.max = counts.population.max + new_population - old_population;
                 assert!(
                     counts.population.current <= counts.population.max
-                        + crate::logic::game::rules(key.game_id).building_config.base_population,
+                        + game_context.rules.unbox().building_config.base_population,
                     "population exceeds capacity",
                 );
                 self.write_counts(key.game_id, key.entity_id, counts);

@@ -6,8 +6,8 @@ use starknet_types_core::{
 const ACTION_TAG: Felt = Felt::from_hex_unchecked("0x455445524e554d5f414354494f4e");
 const ENVELOPE_TAG: Felt = Felt::from_hex_unchecked("0x455445524e554d5f454e54524f5059");
 const EPOCH_TAG: Felt = Felt::from_hex_unchecked("0x455445524e554d5f45504f4348");
-const VERSION: Felt = Felt::ONE;
-pub const ENVELOPE_VERSION: u64 = 5;
+const VERSION: Felt = Felt::TWO;
+pub const ENVELOPE_VERSION: u64 = 6;
 pub(crate) const MAX_ARGUMENTS: usize = 256;
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -29,7 +29,8 @@ pub struct Intent {
     pub actor: Felt,
     pub nonce: u64,
     pub command: Felt,
-    pub rules: Felt,
+    pub release_id: u32,
+    pub preset_commitment: Felt,
     pub valid_from: u64,
     pub valid_until: u64,
     pub last_order: u64,
@@ -50,7 +51,8 @@ impl Intent {
             self.actor,
             self.nonce.into(),
             self.command,
-            self.rules,
+            self.release_id.into(),
+            self.preset_commitment,
             self.valid_from.into(),
             self.valid_until.into(),
             self.last_order.into(),
@@ -61,11 +63,11 @@ impl Intent {
     }
 
     pub fn decode(fields: &[Felt]) -> Result<Self, ProtocolError> {
-        if fields.len() < 13 || fields[0] != ACTION_TAG || fields[1] != VERSION {
+        if fields.len() < 14 || fields[0] != ACTION_TAG || fields[1] != VERSION {
             return Err(ProtocolError::Action);
         }
-        let count = u64::try_from(fields[12]).map_err(|_| ProtocolError::Action)?;
-        if count > MAX_ARGUMENTS as u64 || fields.len() != 13 + count as usize {
+        let count = u64::try_from(fields[13]).map_err(|_| ProtocolError::Action)?;
+        if count > MAX_ARGUMENTS as u64 || fields.len() != 14 + count as usize {
             return Err(ProtocolError::Action);
         }
         let intent = Self {
@@ -75,11 +77,12 @@ impl Intent {
             actor: fields[5],
             nonce: fields[6].try_into().map_err(|_| ProtocolError::Action)?,
             command: fields[7],
-            rules: fields[8],
-            valid_from: fields[9].try_into().map_err(|_| ProtocolError::Action)?,
-            valid_until: fields[10].try_into().map_err(|_| ProtocolError::Action)?,
-            last_order: fields[11].try_into().map_err(|_| ProtocolError::Action)?,
-            arguments: fields[13..].to_vec(),
+            release_id: fields[8].try_into().map_err(|_| ProtocolError::Action)?,
+            preset_commitment: fields[9],
+            valid_from: fields[10].try_into().map_err(|_| ProtocolError::Action)?,
+            valid_until: fields[11].try_into().map_err(|_| ProtocolError::Action)?,
+            last_order: fields[12].try_into().map_err(|_| ProtocolError::Action)?,
+            arguments: fields[14..].to_vec(),
         };
         intent.encode()?;
         Ok(intent)
@@ -103,7 +106,8 @@ pub struct Envelope {
     /// Position in the action's own game, starting at one.
     pub order: u64,
     pub timestamp: u64,
-    pub execution_config: Felt,
+    pub release_id: u32,
+    pub preset_commitment: Felt,
     /// The sequencing account's randomness epoch whose secret derived the root.
     pub epoch: u64,
     pub root: [u8; 32],
@@ -121,7 +125,8 @@ impl Envelope {
             self.action,
             self.order.into(),
             self.timestamp.into(),
-            self.execution_config,
+            self.release_id.into(),
+            self.preset_commitment,
             self.epoch.into(),
             low.into(),
             high.into(),
@@ -129,11 +134,11 @@ impl Envelope {
     }
 
     pub fn decode(fields: &[Felt]) -> Result<Self, ProtocolError> {
-        if fields.len() != 9 || fields[0] != ENVELOPE_TAG || fields[1] != Felt::from(ENVELOPE_VERSION) {
+        if fields.len() != 10 || fields[0] != ENVELOPE_TAG || fields[1] != Felt::from(ENVELOPE_VERSION) {
             return Err(ProtocolError::Envelope);
         }
-        let low: u128 = fields[7].try_into().map_err(|_| ProtocolError::Envelope)?;
-        let high: u128 = fields[8].try_into().map_err(|_| ProtocolError::Envelope)?;
+        let low: u128 = fields[8].try_into().map_err(|_| ProtocolError::Envelope)?;
+        let high: u128 = fields[9].try_into().map_err(|_| ProtocolError::Envelope)?;
         let mut root = [0; 32];
         root[..16].copy_from_slice(&high.to_be_bytes());
         root[16..].copy_from_slice(&low.to_be_bytes());
@@ -141,8 +146,9 @@ impl Envelope {
             action: fields[2],
             order: fields[3].try_into().map_err(|_| ProtocolError::Envelope)?,
             timestamp: fields[4].try_into().map_err(|_| ProtocolError::Envelope)?,
-            execution_config: fields[5],
-            epoch: fields[6].try_into().map_err(|_| ProtocolError::Envelope)?,
+            release_id: fields[5].try_into().map_err(|_| ProtocolError::Envelope)?,
+            preset_commitment: fields[6],
+            epoch: fields[7].try_into().map_err(|_| ProtocolError::Envelope)?,
             root,
         };
         envelope.encode()?;

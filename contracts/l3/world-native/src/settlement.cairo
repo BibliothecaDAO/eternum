@@ -57,7 +57,7 @@ pub struct EntryEntitlement {
 #[starknet::interface]
 pub trait ISettlementCommands<T> {
     fn settle_blitz_roster(
-        ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
     ) -> u64;
 }
 
@@ -86,9 +86,11 @@ pub trait ISettlementViews<T> {
 #[starknet::interface]
 pub trait ISettlementPool<T> {
     #[cfg(test)]
-    fn settlement_pool(self: @T, game_id: u32) -> SettlementPool;
-    fn village_pool(self: @T, game_id: u32) -> SettlementPool;
-    fn claim_village(ref self: T, game_id: u32, registered: u16, seed: u256) -> Coord;
+    fn settlement_pool(self: @T, game_id: u32, game_context: crate::commands::ActionContext) -> SettlementPool;
+    fn village_pool(self: @T, game_id: u32, game_context: crate::commands::ActionContext) -> SettlementPool;
+    fn claim_village(
+        ref self: T, game_id: u32, registered: u16, seed: u256, game_context: crate::commands::ActionContext,
+    ) -> Coord;
     #[cfg(test)]
     fn reserved_hyperstructures(self: @T, game_id: u32) -> u32;
 }
@@ -114,30 +116,22 @@ pub struct RealmGrants {
 #[starknet::interface]
 pub trait IRealmCreation<T> {
     fn provision_and_upgrade_realm(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        structure_id: u32,
-        context: crate::commands::ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u32, context: crate::commands::ActionContext,
     );
     fn activate_realm_economy(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        structure_id: u32,
-        context: crate::commands::ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u32, context: crate::commands::ActionContext,
     );
 }
 
 #[starknet::interface]
 pub trait ISettlementDisplacement<T> {
-    fn displace_explorer(ref self: T, game_id: u32, explorer_id: u32);
+    fn displace_explorer(ref self: T, game_id: u32, explorer_id: u32, game_context: crate::commands::ActionContext);
 }
 
 #[starknet::interface]
 pub trait IBlitzHyperstructures<T> {
     fn create_reserved_hyperstructure(
-        ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, context: crate::commands::ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, context: crate::commands::ActionContext,
     );
 }
 
@@ -166,7 +160,7 @@ pub trait ISettlementCreation<T> {
         actor: ContractAddress,
         coord: Coord,
         creation: SettlementCreation,
-        context: crate::commands::ExecutionContext,
+        context: crate::commands::ActionContext,
     ) -> u32;
 }
 

@@ -69,6 +69,7 @@ export function buildNativeManifest(local: NativeWorld, before: NativePlan, shar
       schemas: { ...local.previous?.native.schemas, [local.schema.identity]: local.schema },
       gamesClassHash: games.classHash,
       releaseId: NATIVE_RELEASE_ID,
+      releaseSchemas: { ...local.previous?.native.releaseSchemas, [NATIVE_RELEASE_ID]: local.schema.identity },
       logic: Object.fromEntries(local.logic.map(({ name, classHash }) => [name, classHash])),
     },
   };

@@ -1,5 +1,4 @@
 use starknet::ContractAddress;
-use crate::commands::ExecutionContext;
 use crate::resources::ResourceAmount;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -42,14 +41,18 @@ pub trait IVillages<T> {
     #[cfg(test)]
     fn village_pass(self: @T, key: VillagePassKey) -> Option<VillagePass>;
     fn settle_village(
-        ref self: T, game_id: u32, actor: ContractAddress, command: SettleVillage, context: ExecutionContext,
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: SettleVillage,
+        context: crate::commands::ActionContext,
     );
 }
 
 #[starknet::interface]
 pub trait IVillageArmy<T> {
     fn receive_village_army(
-        ref self: T, game_id: u32, actor: ContractAddress, village_id: u32, context: ExecutionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, village_id: u32, context: crate::commands::ActionContext,
     );
 }
 

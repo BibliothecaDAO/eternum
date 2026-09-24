@@ -14,7 +14,7 @@ pub trait IFixture<T> {
 pub mod TroopFixture {
     use starknet::ContractAddress;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-    use crate::commands::{CreateExplorer, ExecutionContext, Explore};
+    use crate::commands::{CreateExplorer, Explore};
     use crate::logic::troops::TroopState;
     use crate::troops::{Coord, ExplorerKey, ExplorerTroops, Stamina, TroopTier, TroopType, Troops};
 
@@ -48,14 +48,16 @@ pub mod TroopFixture {
         }
     }
     #[abi(embed_v0)]
-    impl Commands of crate::commands::ITroopCommands<ContractState> {
+    impl Commands of crate::commands::ICreateExplorer<ContractState> {
         fn create_explorer(
             ref self: ContractState,
             game_id: u32,
             actor: ContractAddress,
             command: CreateExplorer,
-            context: ExecutionContext,
+            context: crate::commands::ActionContext,
         ) {
+            let context = crate::commands::load_context(game_id, context);
+
             self.actor.write(actor);
             self.root.write(context.raw_root);
             self.timestamp.write(context.timestamp);
@@ -76,8 +78,15 @@ pub mod TroopFixture {
             );
             assert!(context.raw_root != 0, "fixture late rejection");
         }
+    }
+    #[abi(embed_v0)]
+    impl Exploration of crate::commands::IExplore<ContractState> {
         fn explore(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, command: Explore, context: ExecutionContext,
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: Explore,
+            context: crate::commands::ActionContext,
         ) {
             panic!("fixture unsupported command");
         }

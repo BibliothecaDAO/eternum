@@ -150,8 +150,19 @@ pub impl TroopObservation of TroopObservationTrait {
         self: GameState, key: crate::troops::ExplorerKey, actor: starknet::ContractAddress, timestamp: u64,
     ) -> crate::troops::ExplorerTroops {
         interact_with_state(
-            self.contract_address, || {
-                crate::logic::troops::authorized_explorer(key, actor, timestamp)
+            self.contract_address,
+            || {
+                crate::logic::troops::authorized_explorer(
+                    key,
+                    actor,
+                    timestamp,
+                    crate::commands::ExecutionContext {
+                        raw_root: 0,
+                        timestamp: timestamp,
+                        game: BoxTrait::new(crate::logic::game::game((key).game_id)),
+                        rules: BoxTrait::new(crate::logic::game::rules((key).game_id)),
+                    },
+                )
             },
         )
     }

@@ -8,10 +8,11 @@ export {
   createNativeTicketSubmission,
   signGameplayIntent,
   StaleActionNonceError,
+  StaleGameReleaseError,
 } from "./native-ticket";
 import { ActionOutcomeUnknownError } from "./native-ticket";
 export type { SignedNativeIntent } from "./native-ticket";
-export { encodeNativeCommand, frameNativeIntent, nativeTaggedHash } from "./native-command";
+export { encodeNativeCommand, frameNativeIntent } from "./native-command";
 export type { NativeCommand, NativeCommandPayloads } from "./native-command";
 /**
  * Provider class for interacting with the Eternum game contracts

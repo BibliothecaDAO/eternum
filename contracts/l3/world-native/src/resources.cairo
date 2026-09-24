@@ -177,18 +177,71 @@ pub struct ResourceRule {
 #[starknet::interface]
 pub trait IResourceOperations<T> {
     fn redirect_production(
-        ref self: T, key: ResourceKey, resource_type: u8, receiver: ProductionReceiver, rate: u64, timestamp: u64,
+        ref self: T,
+        key: ResourceKey,
+        resource_type: u8,
+        receiver: ProductionReceiver,
+        rate: u64,
+        timestamp: u64,
+        game_context: crate::commands::ResourceContext,
     );
     fn configure_resources(ref self: T, game_id: u32, rules: Span<ResourceRule>);
-    fn initialize_resources(ref self: T, key: ResourceKey, capacity: u128, category: u8, timestamp: u64);
-    fn initialize_explorer_resources(ref self: T, key: ResourceKey, amount: u128);
+    fn initialize_resources(
+        ref self: T,
+        key: ResourceKey,
+        capacity: u128,
+        category: u8,
+        timestamp: u64,
+        game_context: crate::commands::ActionContext,
+    );
+    fn initialize_explorer_resources(
+        ref self: T, key: ResourceKey, amount: u128, game_context: crate::commands::ResourceContext,
+    );
     fn destroy_resources(ref self: T, key: ResourceKey);
-    fn change_explorer_capacity(ref self: T, key: ResourceKey, amount: u128, increase: bool);
-    fn grant_resource(ref self: T, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64) -> u128;
-    fn spend_resource(ref self: T, key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64);
-    fn start_production(ref self: T, key: ResourceKey, resource_type: u8, rate: u64, output: u128, timestamp: u64);
-    fn stop_production(ref self: T, key: ResourceKey, resource_type: u8, rate: u64, timestamp: u64);
+    fn change_explorer_capacity(
+        ref self: T, key: ResourceKey, amount: u128, increase: bool, game_context: crate::commands::ResourceContext,
+    );
+    fn grant_resource(
+        ref self: T,
+        key: ResourceKey,
+        resource_type: u8,
+        amount: u128,
+        timestamp: u64,
+        game_context: crate::commands::ResourceContext,
+    ) -> u128;
+    fn spend_resource(
+        ref self: T,
+        key: ResourceKey,
+        resource_type: u8,
+        amount: u128,
+        timestamp: u64,
+        game_context: crate::commands::ResourceContext,
+    );
+    fn start_production(
+        ref self: T,
+        key: ResourceKey,
+        resource_type: u8,
+        rate: u64,
+        output: u128,
+        timestamp: u64,
+        game_context: crate::commands::ResourceContext,
+    );
+    fn stop_production(
+        ref self: T,
+        key: ResourceKey,
+        resource_type: u8,
+        rate: u64,
+        timestamp: u64,
+        game_context: crate::commands::ResourceContext,
+    );
     fn change_structure_capacity(ref self: T, key: ResourceKey, amount: u128, adding: bool);
-    fn spend_food(ref self: T, key: ResourceKey, wheat: u128, fish: u128, timestamp: u64);
-    fn spend_spire_fee(ref self: T, key: ResourceKey, timestamp: u64);
+    fn spend_food(
+        ref self: T,
+        key: ResourceKey,
+        wheat: u128,
+        fish: u128,
+        timestamp: u64,
+        game_context: crate::commands::ResourceContext,
+    );
+    fn spend_spire_fee(ref self: T, key: ResourceKey, timestamp: u64, game_context: crate::commands::ResourceContext);
 }

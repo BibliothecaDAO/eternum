@@ -96,6 +96,8 @@ describe("native administrative command", () => {
     const { input, provider, requests } = setup();
     expect(await executeNativeAdminCommand(input)).toEqual({ transactionHash: "0x55", remaining: "0" });
     expect(requests).toHaveLength(1);
+    const signed = requests[0] as { intent: string[] };
+    expect(signed.intent.slice(8, 10).map(BigInt)).toEqual([2n, 4n]);
     expect(provider.getTransactionReceipt).toHaveBeenCalledWith("0x55");
   });
   it("waits for the node's accepted status over HTTP, reading the receipt once and never resubmitting", async () => {

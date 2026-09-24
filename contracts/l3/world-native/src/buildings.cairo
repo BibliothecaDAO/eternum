@@ -187,28 +187,28 @@ pub trait IBuildingCommands<T> {
         game_id: u32,
         actor: starknet::ContractAddress,
         command: CreateBuilding,
-        context: crate::commands::ExecutionContext,
+        context: crate::commands::ActionContext,
     );
     fn destroy_building(
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
         command: ChangeBuilding,
-        context: crate::commands::ExecutionContext,
+        context: crate::commands::ActionContext,
     );
     fn pause_building_production(
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
         command: ChangeBuilding,
-        context: crate::commands::ExecutionContext,
+        context: crate::commands::ActionContext,
     );
     fn resume_building_production(
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
         command: ChangeBuilding,
-        context: crate::commands::ExecutionContext,
+        context: crate::commands::ActionContext,
     );
 }
 

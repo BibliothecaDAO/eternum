@@ -11,7 +11,7 @@ export interface Shard {
   /** Herald's origin: games directory, snapshots, history and the game streams live under it. */
   url: string;
   chainId: string;
-  releaseId: string;
+  releaseSchemas: Readonly<Record<string, string>>;
   rpcUrl: string;
   admissionUrl: string;
   accountClassHash: string;
@@ -33,7 +33,7 @@ export class ShardReleaseMismatchError extends Error {
     readonly shardUrl: string,
     readonly releaseId: string,
   ) {
-    super(`Shard ${shardUrl} runs release ${releaseId}, which this client cannot read`);
+    super(`UNKNOWN_RELEASE_SCHEMA: shard ${shardUrl} release ${releaseId} has no decoder in this client`);
     this.name = "ShardReleaseMismatchError";
   }
 }
@@ -45,14 +45,26 @@ const shards = new Map<string, Shard>();
 /** Chain ids arrive as felts in any hex spelling; one spelling keys URLs, storage and lookups. */
 const normalizeChainId = (chainId: string | bigint): string => `0x${BigInt(chainId).toString(16)}`;
 
-/** Read a shard's manifest, refuse a release this client cannot read, and make the shard addressable by chain id. */
+/** Read the manifest once; individual games resolve their own pins against its release catalogue. */
 export async function openShard(url: string, schemaHash: string): Promise<Shard> {
+  const shard = await readShard(url);
+  if (!Object.values(shard.releaseSchemas).includes(schemaHash))
+    throw new ShardReleaseMismatchError(shard.url, Object.keys(shard.releaseSchemas).join(", "));
+  return registerShard(shard);
+}
+
+/** Re-read the release catalogue without replacing the shared shard registry or fetching decoder bytes. */
+export async function refreshShardRelease(url: string, releaseId: string, schemaHash: string): Promise<Shard> {
+  const shard = await readShard(url);
+  if (shard.releaseSchemas[releaseId] !== schemaHash) throw new ShardReleaseMismatchError(shard.url, releaseId);
+  return shard;
+}
+
+async function readShard(url: string): Promise<Shard> {
   const shardUrl = resolveEndpoint(url, { name: "Shard URL" });
   const response = await fetch(`${shardUrl}/manifest`, { signal: AbortSignal.timeout(10_000) });
   if (!response.ok) throw new Error(`Shard ${shardUrl} manifest failed: ${response.status} ${response.statusText}`);
-  const manifest = (await response.json()) as ShardManifest;
-  if (manifest.schemaHash !== schemaHash) throw new ShardReleaseMismatchError(shardUrl, manifest.releaseId);
-  return registerShard(buildShard(shardUrl, manifest));
+  return buildShard(shardUrl, (await response.json()) as ShardManifest);
 }
 
 export const getShards = (): Shard[] => [...shards.values()];
@@ -74,7 +86,7 @@ const buildShard = (url: string, manifest: ShardManifest): Shard => {
   return {
     url,
     chainId: normalizeChainId(manifest.chainId),
-    releaseId: manifest.releaseId,
+    releaseSchemas: manifest.releaseSchemas,
     rpcUrl: resolveEndpoint(manifest.rpcUrl, { name: `RPC URL of shard ${url}` }),
     admissionUrl: resolveEndpoint(manifest.admissionUrl, { name: `Admission URL of shard ${url}` }),
     accountClassHash: manifest.accountClassHash,

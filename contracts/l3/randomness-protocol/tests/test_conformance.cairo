@@ -190,7 +190,7 @@ fn invalid_transport_is_non_consuming_and_invalid_acceptance_is_terminal() {
             0 => { recorded.action = 0; },
             1 => { recorded.order = 2; },
             2 => { recorded.epoch = 2; },
-            3 => { recorded.execution_config = 1; },
+            3 => { recorded.release_id += 1; },
             4 => { recorded.timestamp = 999; },
             5 => { recorded.timestamp = 1011; },
             6 => { start_cheat_block_timestamp(address, 1004); },
@@ -224,7 +224,7 @@ fn rejects_changed_signed_fields_and_foreign_identities() {
             1 => { action.deployment = 1; },
             2 => { action.game_id = 8; },
             3 => { action.actor = 999; },
-            4 => { action.rules = 1; },
+            4 => { action.preset_commitment = 1; },
             5 => { action.arguments = array![2, 1]; },
             _ => { action.nonce = 1; },
         }
@@ -496,9 +496,13 @@ fn invalid_action_keys_and_nonces_cannot_block_a_valid_successor(case: u32) {
             rejected.nonce = 1;
             'STALE_NONCE'
         },
+        5 => {
+            rejected.preset_commitment = 1;
+            'INVALID_PRESET'
+        },
         _ => {
-            rejected.rules = 1;
-            'INVALID_RULES'
+            rejected.release_id = 2;
+            'STALE_RELEASE'
         },
     };
     let game = rejected.game_id;
@@ -516,11 +520,7 @@ fn invalid_action_keys_and_nonces_cannot_block_a_valid_successor(case: u32) {
     } else {
         1
     }, "rejection blocked stream");
-    assert!(next.nonce == if case == 5 {
-        1
-    } else {
-        0
-    }, "rejection changed unrelated nonce");
+    assert!(next.nonce == 0, "rejection changed unrelated nonce");
     let mut successor = intent(address);
     successor.nonce = next.nonce;
     let mut following = envelope(@successor);
@@ -557,7 +557,7 @@ fn future_actor_nonce_cannot_block_a_valid_successor() {
 }
 
 #[test]
-fn invalid_rules_cannot_block_a_valid_successor() {
+fn invalid_preset_cannot_block_a_valid_successor() {
     invalid_action_keys_and_nonces_cannot_block_a_valid_successor(5);
 }
 
@@ -950,4 +950,9 @@ fn a_restart_rerolls_only_lost_tickets_and_a_revealed_secret_reproduces_both_gam
     execute_actions(address, array![rerolled, continued]);
     assert!(views.get_head(7).order == 3 && views.get_head(9).order == 3, "chains did not continue");
     assert!(epochs.get_randomness_epoch(1).revealed_secret == Some(secret), "historical reveal lost");
+}
+
+#[test]
+fn stale_release_cannot_block_a_valid_successor() {
+    invalid_action_keys_and_nonces_cannot_block_a_valid_successor(6);
 }

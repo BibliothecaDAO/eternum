@@ -9,7 +9,6 @@ use snforge_std::{CheatSpan, cheat_caller_address, start_cheat_block_timestamp_g
 use crate::buildings::{IBuildingRulesDispatcher, IBuildingRulesDispatcherTrait};
 use crate::camps::{ICampRulesDispatcher, ICampRulesDispatcherTrait};
 use crate::commands::{Command, CreateExplorer, ExecutionContext, Explore};
-use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
 use crate::geometry::{neighbor, tile_key};
 use crate::map::IMapLogicDispatcher;
@@ -82,12 +81,10 @@ fn setup_realm_with_explorers(count: u8) -> (Deployment, ResourceKey) {
 fn explore_outward_batch(d: Deployment, explorers: Span<u32>) -> Array<RecordedAction> {
     let first_nonce = IGamesAuthenticationDispatcher { contract_address: d.games }.next_nonce(3, d.actor);
     let first_order = super::recorded::head(d.games, 3).order + 1;
-    let rules = IGameDispatcher { contract_address: d.games }.rules(3);
     let mut batch = array![];
     for index in 0..explorers.len() {
         let action = FixtureAction {
             game_id: 3,
-            rules,
             actor: d.actor,
             nonce: first_nonce + index.into(),
             deadline: 10000,
@@ -112,7 +109,13 @@ fn explore_outward_batch(d: Deployment, explorers: Span<u32>) -> Array<RecordedA
 fn at_order(
     d: Deployment, action: FixtureAction, order: u64,
 ) -> eternum_randomness_protocol::entrypoint::ExecutionContext {
-    let next = make_context(d.games, action, ExecutionContext { raw_root: 987654321, timestamp: TICKET_TIMESTAMP });
+    let next = make_context(
+        d.games,
+        action,
+        ExecutionContext {
+            raw_root: 987654321, timestamp: TICKET_TIMESTAMP, ..super::context(d.games, action.game_id),
+        },
+    );
     let mut envelope = decode_envelope(next.envelope.span()).unwrap();
     envelope.order = order;
     eternum_randomness_protocol::entrypoint::ExecutionContext { envelope: encode_envelope(@envelope) }

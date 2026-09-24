@@ -28,6 +28,7 @@ interface HeraldHttpState {
   ingestionFailure?: () => { block: number | null; transactionHash: string; error: string } | undefined;
   chain: string;
   manifest: ShardManifest;
+  schemas: Record<string, unknown>;
   worldAddress: string;
   confirmedBlock: () => number;
   chainTimestamp: () => number;
@@ -113,6 +114,11 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
       return streamDirectoryUpdates(request, state, readModels.directory);
     }
     if (request.method === "GET" && url.pathname === "/manifest") return jsonResponse(state.manifest);
+    if (request.method === "GET" && url.pathname.startsWith("/schemas/")) {
+      const identity = url.pathname.slice("/schemas/".length);
+      const schema = Object.hasOwn(state.schemas, identity) ? state.schemas[identity] : undefined;
+      return schema ? jsonResponse(schema) : jsonResponse({ error: "UNKNOWN_RELEASE_SCHEMA" }, 404);
+    }
     if (request.method === "GET" && url.pathname === "/health") {
       const failure = state.ingestionFailure?.();
       return jsonResponse(

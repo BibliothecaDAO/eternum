@@ -35,16 +35,19 @@ pub mod PlacementLogic {
     #[abi(embed_v0)]
     impl Spires of crate::spires::ISpires<ContractState> {
         fn initialize_spires(ref self: ContractState, game_id: u32, layout: crate::spires::SpireLayout) {
+            let game_context = crate::commands::load_context(
+                game_id, crate::commands::ActionContext { raw_root: 0, timestamp: starknet::get_block_timestamp() },
+            );
+
             crate::logic::release::assert_authority();
             assert!(
-                crate::rules::rule_enabled(crate::logic::game::rules(game_id), crate::rules::SPIRES),
-                "spires are disabled",
+                crate::rules::rule_enabled(game_context.rules.unbox(), crate::rules::SPIRES), "spires are disabled",
             );
             assert!(self.data.map_rules.spire_layouts.read(game_id).is_none(), "spires already initialized");
             crate::spires::validate(layout);
-            let center = self.map_center(game_id);
+            let center = self.map_center(game_id, game_context);
             for ordinal in 0_u32..layout.count.into() {
-                self.create_spire(game_id, crate::spires::location(center, layout, ordinal));
+                self.create_spire(game_id, crate::spires::location(center, layout, ordinal), game_context);
             }
             self.data.map_rules.spire_layouts.write(game_id, Some(layout));
             let mut values = array![];
@@ -63,11 +66,19 @@ pub mod PlacementLogic {
     }
     #[abi(embed_v0)]
     impl SeasonPlacement of crate::realms::ISeasonPlacement<ContractState> {
-        fn claim_season_settlement(ref self: ContractState, game_id: u32, settled_count: u16, seed: u256) -> Coord {
+        fn claim_season_settlement(
+            ref self: ContractState,
+            game_id: u32,
+            settled_count: u16,
+            seed: u256,
+            game_context: crate::commands::ActionContext,
+        ) -> Coord {
+            let game_context = crate::commands::load_context(game_id, game_context);
+
             let mut rules = crate::logic::settlement::rules(game_id);
             assert!(rules.mode == crate::settlement::SettlementMode::Single, "season settlement requires one realm");
             rules.registration_limit = 0xffff;
-            let center = self.map_center(game_id);
+            let center = self.map_center(game_id, game_context);
             for _ in 0..64_u32 {
                 let coords = self.settlements.claim(game_id, center, rules, settled_count, seed);
                 let coord = *coords.at(0);
@@ -88,29 +99,49 @@ pub mod PlacementLogic {
             self.settlements.data.settlement_pool.reserved_hyperstructures.read(game_id)
         }
         #[cfg(test)]
-        fn settlement_pool(self: @ContractState, game_id: u32) -> SettlementPool {
+        fn settlement_pool(
+            self: @ContractState, game_id: u32, game_context: crate::commands::ActionContext,
+        ) -> SettlementPool {
+            let game_context = crate::commands::load_context(game_id, game_context);
+
             let rules = crate::logic::settlement::rules(game_id);
-            let center = self.map_center(game_id);
+            let center = self.map_center(game_id, game_context);
             self.settlements.pool(game_id, center, rules)
         }
-        fn village_pool(self: @ContractState, game_id: u32) -> SettlementPool {
+        fn village_pool(
+            self: @ContractState, game_id: u32, game_context: crate::commands::ActionContext,
+        ) -> SettlementPool {
+            let game_context = crate::commands::load_context(game_id, game_context);
+
             let rules = crate::logic::settlement::rules(game_id);
-            self.settlements.village_pool(game_id, self.map_center(game_id), rules)
+            self.settlements.village_pool(game_id, self.map_center(game_id, game_context), rules)
         }
-        fn claim_village(ref self: ContractState, game_id: u32, registered: u16, seed: u256) -> Coord {
+        fn claim_village(
+            ref self: ContractState,
+            game_id: u32,
+            registered: u16,
+            seed: u256,
+            game_context: crate::commands::ActionContext,
+        ) -> Coord {
+            let game_context = crate::commands::load_context(game_id, game_context);
+
             let rules = crate::logic::settlement::rules(game_id);
-            self.settlements.claim_village(game_id, self.map_center(game_id), rules, registered, seed)
+            self.settlements.claim_village(game_id, self.map_center(game_id, game_context), rules, registered, seed)
         }
     }
     #[abi(embed_v0)]
     impl Reservations of crate::settlement::IBlitzReservations<ContractState> {
         fn initialize_reservations(ref self: ContractState, game_id: u32) {
+            let game_context = crate::commands::load_context(
+                game_id, crate::commands::ActionContext { raw_root: 0, timestamp: starknet::get_block_timestamp() },
+            );
+
             if self.settlements.data.settlement_pool.reserved_hyperstructures.read(game_id) != 0 {
                 return;
             }
             let rules = crate::logic::settlement::rules(game_id);
-            self.settlements.reserve_blitz_locations(game_id, self.map_center(game_id), rules);
-            self.reserve_sites(game_id, 255, starknet::get_block_timestamp());
+            self.settlements.reserve_blitz_locations(game_id, self.map_center(game_id, game_context), rules);
+            self.reserve_sites(game_id, 255, starknet::get_block_timestamp(), game_context);
         }
 
         fn release_hyperstructure(ref self: ContractState, game_id: u32, coord: Coord) {
@@ -120,9 +151,15 @@ pub mod PlacementLogic {
 
     #[generate_trait]
     impl Internal of InternalTrait {
-        fn reserve_sites(ref self: ContractState, game_id: u32, count: u8, timestamp: u64) {
-            let game = crate::logic::game::game(game_id);
-            let game_rules = crate::logic::game::rules(game_id);
+        fn reserve_sites(
+            ref self: ContractState,
+            game_id: u32,
+            count: u8,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) {
+            let game = game_context.game.unbox();
+            let game_rules = game_context.rules.unbox();
             assert!(
                 crate::rules::rule_enabled(game_rules, crate::rules::RESERVED_HYPERSTRUCTURES),
                 "reserved hyperstructures disabled",
@@ -130,7 +167,7 @@ pub mod PlacementLogic {
             assert!(game.end_at == 0 || timestamp < game.end_at, "game ended");
             let rules = crate::logic::settlement::rules(game_id);
             let required = crate::settlement_grid::reservation_count(rules.registration_limit, rules.mode);
-            let center = self.map_center(game_id);
+            let center = self.map_center(game_id, game_context);
             let mut placed = self.settlements.data.settlement_pool.reserved_hyperstructures.read(game_id);
             let last = core::cmp::min(required, placed + count.into());
             while placed < last {
@@ -139,7 +176,9 @@ pub mod PlacementLogic {
                 let previous = crate::logic::map::tile(key).map(|tile| tile.data).unwrap_or(0);
                 assert!(previous % BIOME_SCALE == 0, "occupied reservation tile");
                 if previous / BIOME_SCALE % BYTE_RANGE == 0 {
-                    crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key));
+                    crate::logic::map::MapState::reveal(
+                        key, crate::logic::map::biome(key, crate::commands::biome_context(game_context)),
+                    );
                 }
                 crate::logic::map::MapState::reserve_hyperstructure(key);
                 placed += 1;
@@ -158,7 +197,9 @@ pub mod PlacementLogic {
             }
         }
 
-        fn create_spire(ref self: ContractState, game_id: u32, coord: Coord) -> u32 {
+        fn create_spire(
+            ref self: ContractState, game_id: u32, coord: Coord, game_context: crate::commands::ExecutionContext,
+        ) -> u32 {
             for alt in array![false, true] {
                 let tile = crate::logic::map::tile(tile_key(game_id, Coord { alt, ..coord }));
                 assert!(tile.map(|value| (value.data / 2) % BYTE_RANGE == 0).unwrap_or(true), "spire tile occupied");
@@ -166,24 +207,28 @@ pub mod PlacementLogic {
             let id = crate::logic::game::allocate_entity(game_id);
             for alt in array![false, true] {
                 let center = Coord { alt, ..coord };
-                self.reveal_spire_access(game_id, center);
+                self.reveal_spire_access(game_id, center, game_context);
                 crate::logic::map::MapState::occupy(tile_key(game_id, center), id, 35, true);
                 for direction in 0_u8..6 {
-                    self.reveal_spire_access(game_id, spire_neighbor(center, direction));
+                    self.reveal_spire_access(game_id, spire_neighbor(center, direction), game_context);
                 }
             }
             id
         }
-        fn reveal_spire_access(ref self: ContractState, game_id: u32, coord: Coord) {
+        fn reveal_spire_access(
+            ref self: ContractState, game_id: u32, coord: Coord, game_context: crate::commands::ExecutionContext,
+        ) {
             let key = tile_key(game_id, coord);
             let data = crate::logic::map::tile(key).map(|tile| tile.data).unwrap_or(0);
             if data / BIOME_SCALE % BYTE_RANGE == 0 {
-                crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key));
+                crate::logic::map::MapState::reveal(
+                    key, crate::logic::map::biome(key, crate::commands::biome_context(game_context)),
+                );
             }
         }
 
-        fn map_center(self: @ContractState, game_id: u32) -> Coord {
-            let rules = crate::logic::game::rules(game_id);
+        fn map_center(self: @ContractState, game_id: u32, game_context: crate::commands::ExecutionContext) -> Coord {
+            let rules = game_context.rules.unbox();
             let center = 2147483646 - rules.map_center_offset;
             Coord { alt: false, x: center, y: center }
         }
