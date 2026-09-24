@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 
 import { manifest } from "./native/fixtures";
-import { assertShardChain, buildShardManifest } from "./shard-manifest";
+import { assertShardChain, buildShardManifest, readShardDocument } from "./shard-manifest";
 
 const document = {
   ...manifest,
@@ -27,12 +27,12 @@ it("serves the shard's chain, release, endpoints and every contract a client cal
   expect(served.contracts).toMatchObject({ games: manifest.world.address, bridge: "0x789" });
 });
 
-it("refuses a shard record without a guardian public key", () => {
-  const endpoints = { rpcUrl: "https://rpc.test", admissionUrl: "https://admission.test" };
+it("reads a deployment document only with a shard record that has a guardian public key", () => {
+  expect(readShardDocument(JSON.stringify(document))).toEqual(document);
   const { guardianPublicKey: _, ...unguarded } = document.shard;
-  expect(() => buildShardManifest({ ...document, shard: unguarded as typeof document.shard }, endpoints)).toThrow(
-    "no guardian public key",
-  );
+  expect(() => readShardDocument(JSON.stringify({ ...document, shard: unguarded }))).toThrow("no guardian public key");
+  const { shard: __, ...unsharded } = document;
+  expect(() => readShardDocument(JSON.stringify(unsharded))).toThrow("no shard record");
 });
 
 it("refuses a node whose chain differs from the shard it serves", () => {

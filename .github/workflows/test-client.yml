@@ -38,6 +38,10 @@ jobs:
       - name: Typecheck game client
         run: pnpm --dir ./apps/game typecheck
 
+      - name: Check the scroll posts are rendered from their content
+        working-directory: apps/game
+        run: node scripts/generate-scroll-posts.mjs && git diff --exit-code src/shell/generated/scroll-posts.ts
+
       - name: Run game client tests
         run: pnpm --dir ./apps/game test
 

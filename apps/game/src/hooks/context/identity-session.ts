@@ -9,9 +9,7 @@ import { create } from "zustand";
  * had a non-zero address (the shell, the sign-in prompts, the HUD banner) reads this store instead; the
  * gameplay account is derived from the session by `GameplayAccountSync` and may lag it while it deploys.
  */
-/** The identity Worker answers under this app's own /api, so its origin is the page's and no request crosses origins. */
-export const identityOrigin = (): string => window.location.origin;
-
+/** The identity Worker answers under this app's own /api, so no request crosses origins. */
 export const identityClient = createIdentityClient({ apiUrl: "/api" });
 
 /** The identity chip's popover id: sign-in requests open it wherever the chip is mounted. */
@@ -68,7 +66,7 @@ export const useIdentitySessionStore = create<IdentitySessionStore>()((set) => (
   clearSignInRequest: () => set({ signInRequest: null }),
 }));
 
-/** Ends the identity session; no wallet stays connected to detach, since wallets only link or recover. */
+/** Ends the identity session; no wallet stays connected to detach, since a wallet only links from the account page. */
 export async function signOutIdentitySession(): Promise<void> {
   await identityClient.signOut();
   useIdentitySessionStore.getState().applySession(null);

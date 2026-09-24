@@ -6,7 +6,6 @@
     "node": ">=20.19.0"
   },
   "scripts": {
-    "prebuild": "node scripts/generate-scroll-posts.mjs",
     "build": "NODE_OPTIONS=\"--max-old-space-size=8192\" tsc && NODE_OPTIONS=\"--max-old-space-size=8192\" vite build",
     "build:webgpu": "VITE_PUBLIC_RENDERER_BUILD_MODE=webgpu-auto NODE_OPTIONS=\"--max-old-space-size=8192\" tsc && VITE_PUBLIC_RENDERER_BUILD_MODE=webgpu-auto NODE_OPTIONS=\"--max-old-space-size=8192\" vite build",
     "benchmark:renderer-load": "node ./scripts/run-renderer-load-benchmark.mjs",

@@ -11,7 +11,6 @@ import {
 } from "@bibliothecadao/types";
 import type { AccountInterface } from "starknet";
 
-import { resolveGameTransactionResourceBounds } from "../account/transaction-resource-bounds";
 import { configManager } from "../managers/config-manager";
 import {
   disposeActiveGameSyncRuntime,
@@ -101,10 +100,7 @@ const selectGame = ({ gameId, presetId }: CreateGameClientInput): void => {
 
 const bootstrapWorld = async ({ shard, gameId, authHandler }: CreateGameClientInput): Promise<GameClientSetup> => {
   const contracts = { world: shard.worldAddress, bridge: shard.contracts.bridge };
-  const provider = new EternumProvider(contracts, shard.rpcUrl, undefined, {
-    executionResourceBounds: resolveGameTransactionResourceBounds(),
-    gameId,
-  });
+  const provider = new EternumProvider(contracts, shard.rpcUrl, { gameId });
   return {
     store: new NativeFactStore(),
     network: { provider },

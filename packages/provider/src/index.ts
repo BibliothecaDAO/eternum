@@ -31,17 +31,13 @@ import {
   Call,
   CallData,
   GetTransactionReceiptResponse,
-  ResourceBoundsBN,
   RpcProvider,
   uint256,
   shortString,
-  UniversalDetails,
 } from "starknet";
-import { classifyTransactionError, extractErrorMessage, formatErrorForConsole } from "./classify-transaction-error";
+import { extractErrorMessage } from "./classify-transaction-error";
 import { PromiseQueue } from "./promise-queue";
 import { ExecutionOptions } from "./transaction-executor";
-import { withRetry } from "./retry";
-import type { RetryConfig } from "./retry";
 import {
   BatchedTransactionDetail,
   TransactionFailedPayload,
@@ -74,8 +70,6 @@ export type { ClassifiedTransactionError } from "./classify-transaction-error";
 export { PromiseQueue } from "./promise-queue";
 export type { QueueableTransaction } from "./promise-queue";
 export type { TransactionExecutor, ExecutionOptions } from "./transaction-executor";
-export { withRetry, isRetryableError, calculateBackoffDelay, DEFAULT_RETRY_CONFIG } from "./retry";
-export type { RetryConfig } from "./retry";
 export { TransactionType } from "./types";
 export type {
   BatchedTransactionDetail,
@@ -89,17 +83,6 @@ export type {
   TransactionSubmitGuardContext,
   TransactionStreamWaiter,
 } from "./types";
-
-// Mainnet currently rejects V3 invokes above this l2_gas max_amount ceiling.
-const MAX_V3_L2_GAS_MAX_AMOUNT = 1_200_000_000n;
-const V3_L2_GAS_OVERHEAD_PERCENT = 50n;
-const HUNDRED_PERCENT = 100n;
-const DEFAULT_FEE_ESTIMATE_TIMEOUT_MS = 5_000;
-// A failed fee estimate carries the full Cairo trace before any gas is spent;
-// keep it briefly so the eventual submit/confirmation failure can surface it.
-const ESTIMATE_ERROR_TTL_MS = 60_000;
-const formatTimeoutDuration = (timeoutMs: number): string =>
-  timeoutMs >= 1_000 ? `${Math.round(timeoutMs / 1_000)}s` : `${timeoutMs}ms`;
 
 const matchesDestroyedConnectionError = (error: unknown): boolean => {
   const message = extractErrorMessage(error, "").toLowerCase();
@@ -137,29 +120,6 @@ const classifySubmitFailure = (
     providerState: "unknown",
     hasTxHash: false,
     retrySafety: "unknown",
-  };
-};
-
-const withL2GasHeadroom = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN | undefined => {
-  if (!resourceBounds?.l2_gas || typeof resourceBounds.l2_gas.max_amount !== "bigint") {
-    return resourceBounds;
-  }
-
-  const currentMaxAmount = resourceBounds.l2_gas.max_amount;
-  const paddedMaxAmount =
-    (currentMaxAmount * (HUNDRED_PERCENT + V3_L2_GAS_OVERHEAD_PERCENT) + (HUNDRED_PERCENT - 1n)) / HUNDRED_PERCENT;
-  const nextMaxAmount = paddedMaxAmount > MAX_V3_L2_GAS_MAX_AMOUNT ? MAX_V3_L2_GAS_MAX_AMOUNT : paddedMaxAmount;
-
-  if (nextMaxAmount === currentMaxAmount) {
-    return resourceBounds;
-  }
-
-  return {
-    ...resourceBounds,
-    l2_gas: {
-      ...resourceBounds.l2_gas,
-      max_amount: nextMaxAmount,
-    },
   };
 };
 
@@ -218,10 +178,7 @@ export class EternumProvider extends EventEmitter {
   readonly contracts: ProviderContracts;
   readonly provider: RpcProvider;
   promiseQueue: PromiseQueue;
-  private readonly FEE_ESTIMATE_TIMEOUT_MS = DEFAULT_FEE_ESTIMATE_TIMEOUT_MS;
   private pendingActorExecutionLocks = new Map<string, ActorExecutionLock>();
-  private lastEstimateError?: { error: unknown; atMs: number };
-  private readonly retryConfig?: RetryConfig;
   private nativeSubmission?: NativeSubmission;
   private commandAbi?: Abi;
   private resolveOwnedStructure?: (actor: string) => number;
@@ -230,32 +187,26 @@ export class EternumProvider extends EventEmitter {
   private transactionStreamSubmitObserver?: (transactionHash: string) => void;
   /** Active game within the persistent world. */
   private readonly gameId: number;
-  /** Fixed bounds for a fee-free chain; undefined keeps the normal estimation path. */
-  private readonly executionResourceBounds?: ResourceBoundsBN;
 
   /**
    * Create a new EternumProvider instance
    *
    * @param contracts - The shard's command entrypoint and bridge addresses
    * @param url - Optional RPC URL
-   * @param scope - Game scope and optional fixed execution bounds
+   * @param scope - Game scope
    */
   constructor(
     contracts: ProviderContracts,
     url?: string,
-    retryConfig?: RetryConfig,
     scope?: {
       gameId?: number;
-      executionResourceBounds?: ResourceBoundsBN;
       transactionStreamWaiter?: TransactionStreamWaiter;
     },
   ) {
     super();
     this.contracts = contracts;
     this.provider = new RpcProvider({ nodeUrl: url });
-    this.retryConfig = retryConfig;
     this.gameId = scope?.gameId ?? 0;
-    this.executionResourceBounds = scope?.executionResourceBounds;
     this.transactionStreamWaiter = scope?.transactionStreamWaiter;
 
     // No timed batching: appchain txs land in <1s, so waiting to merge actions only adds
@@ -265,10 +216,6 @@ export class EternumProvider extends EventEmitter {
       { executeAndCheckTransaction: (...args) => this.executeAndCheckTransaction(...args) },
       { batchDelayMs: 0, batchCalls: false },
     );
-  }
-
-  public execute(signer: AccountInterface, calls: AllowArray<Call>, details?: UniversalDetails) {
-    return signer.execute(calls, details);
   }
 
   public setNativeSubmission(submit: NativeSubmission, abi: Abi, ownedStructure: (actor: string) => number): void {
@@ -333,17 +280,8 @@ export class EternumProvider extends EventEmitter {
     return Array.isArray(call?.calldata) ? this.normalizeAddress(String(call.calldata[2])) : undefined;
   }
 
-  private getTransactionSerializationKey(
-    txType: TransactionType | undefined,
-    signer: Account | AccountInterface,
-    transactionDetails: AllowArray<Call>,
-  ): string | undefined {
-    return this.nativeSubmission ? `native:${this.gameId}:${this.normalizeAddress(signer.address)}` : undefined;
-  }
-
-  private shouldRefreshExecutionDetailsAfterSubmitError(error: unknown): boolean {
-    const message = extractErrorMessage(error, "").toLowerCase();
-    return message.includes("nonce") || classifyTransactionError(error).kind === "resource_bounds";
+  private getTransactionSerializationKey(signer: Account | AccountInterface): string {
+    return `native:${this.gameId}:${this.normalizeAddress(signer.address)}`;
   }
 
   private createActorExecutionLock(): ActorExecutionLock {
@@ -381,107 +319,13 @@ export class EternumProvider extends EventEmitter {
     }
   }
 
-  private async getV3ExecutionDetails(
-    signer: Account | AccountInterface,
-    transactionDetails: AllowArray<Call>,
-  ): Promise<UniversalDetails> {
-    const details: UniversalDetails = { version: 3, tip: 0 };
-    if (this.nativeSubmission) return details;
-    if (this.executionResourceBounds) {
-      return { ...details, resourceBounds: this.executionResourceBounds };
-    }
-
-    const estimateInvokeFee = (signer as any)?.estimateInvokeFee;
-    if (typeof estimateInvokeFee !== "function") {
-      return details;
-    }
-
-    try {
-      const estimate = (await this.withTimeout(
-        estimateInvokeFee.call(signer, transactionDetails, {
-          version: 3,
-          tip: 0,
-        }),
-        this.FEE_ESTIMATE_TIMEOUT_MS,
-        () =>
-          new Error(
-            `Transaction fee estimation timed out after ${formatTimeoutDuration(this.FEE_ESTIMATE_TIMEOUT_MS)}`,
-          ),
-      )) as { resourceBounds?: ResourceBoundsBN };
-      const resourceBounds = withL2GasHeadroom(estimate?.resourceBounds);
-      if (!resourceBounds) {
-        return details;
-      }
-
-      return {
-        ...details,
-        resourceBounds,
-      };
-    } catch (error) {
-      if (this.shouldAbortSubmitAfterEstimateRevert(error, transactionDetails)) {
-        throw error;
-      }
-      // Submission proceeds with default v3 details, but the estimate error is
-      // the richest failure signal we get — stash it for the failure payload.
-      this.lastEstimateError = { error, atMs: Date.now() };
-      console.warn(
-        `[provider] Failed to estimate invoke fee, using default v3 tx details: ${formatErrorForConsole(error)}`,
-      );
-      return details;
-    }
-  }
-
-  /**
-   * A fee estimate that failed with an execution revert has already run the
-   * calls and proven they fail deterministically — submitting anyway only
-   * lands a doomed transaction and reports the same revert a second time.
-   */
-  private shouldAbortSubmitAfterEstimateRevert(error: unknown, transactionDetails: AllowArray<Call>): boolean {
-    if (classifyTransactionError(error).kind !== "reverted") return false;
-    return true;
-  }
-
-  private takeRecentEstimateError(): unknown {
-    const stashed = this.lastEstimateError;
-    this.lastEstimateError = undefined;
-    if (!stashed || Date.now() - stashed.atMs > ESTIMATE_ERROR_TTL_MS) {
-      return undefined;
-    }
-    return stashed.error;
-  }
-
-  /**
-   * The submit error the payload should carry: usually the submit error
-   * itself, but when it decoded to nothing actionable and a recent fee
-   * estimate failed with a real trace, prefer that.
-   */
-  private resolveSubmitFailureError(error: unknown, extractedMessage: string): unknown {
-    const estimateError = this.takeRecentEstimateError();
-    if (estimateError === undefined) return error;
-    return extractedMessage === "Unknown error" ? estimateError : error;
-  }
-
+  /** Every command is a signed intent through the shard's admission; there is no other way to submit. */
   private async submitTransaction(
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
-    executionDetails: UniversalDetails,
   ): Promise<SubmittedTransaction> {
-    if (this.nativeSubmission) return this.nativeSubmission(signer, transactionDetails);
-    if (this.retryConfig && this.retryConfig.maxRetries > 0) {
-      let currentExecutionDetails = executionDetails;
-      return await withRetry(
-        () => this.execute(signer as any, transactionDetails, currentExecutionDetails),
-        this.retryConfig,
-        async (error, attempt) => {
-          if (this.shouldRefreshExecutionDetailsAfterSubmitError(error)) {
-            currentExecutionDetails = await this.getV3ExecutionDetails(signer, transactionDetails);
-          }
-          console.warn(`[provider] Retry attempt ${attempt} for transaction: ${extractErrorMessage(error)}`);
-        },
-      );
-    }
-
-    return await this.execute(signer as any, transactionDetails, executionDetails);
+    if (!this.nativeSubmission) throw new Error("Native submission is not configured");
+    return this.nativeSubmission(signer, transactionDetails);
   }
 
   private getSignerAddress(signer: Account | AccountInterface): string | undefined {
@@ -506,25 +350,6 @@ export class EternumProvider extends EventEmitter {
     };
 
     await guard(context);
-  }
-
-  private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, buildError: () => Error): Promise<T> {
-    if (timeoutMs <= 0) {
-      return await promise;
-    }
-
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
-    const timeout = new Promise<never>((_, reject) => {
-      timeoutId = setTimeout(() => reject(buildError()), timeoutMs);
-    });
-
-    try {
-      return await Promise.race([promise, timeout]);
-    } finally {
-      if (timeoutId !== undefined) {
-        clearTimeout(timeoutId);
-      }
-    }
   }
 
   private getTransactionEntrypoints(transactionDetails: AllowArray<Call>): string[] {
@@ -615,13 +440,6 @@ export class EternumProvider extends EventEmitter {
       ...(isMultipleTransactions ? { transactionCount: transactionDetails.length } : {}),
       ...(batchDetails && batchDetails.length > 0 ? { batchDetails } : {}),
     });
-    const executionDetailsPromise =
-      txType === TransactionType.EXPLORE ? this.getV3ExecutionDetails(signer, transactionDetails) : undefined;
-    // The prefetch can reject (preflight abort) before the guard/lock awaits
-    // below reach it; park a handler so the window never surfaces as an
-    // unhandled rejection. The await inside the try still observes the error.
-    executionDetailsPromise?.catch(() => {});
-
     await this.runTransactionSubmitGuard(signer, transactionMeta);
     if (txType === TransactionType.EXPLORE) {
       this.emit("transactionProgress", {
@@ -632,37 +450,22 @@ export class EternumProvider extends EventEmitter {
       });
     }
 
-    const actorSerializationKey = this.getTransactionSerializationKey(txType, signer, transactionDetails);
-    let releaseActorExecutionLock: (() => void) | undefined;
-    if (actorSerializationKey) {
-      // Native actions share the player's recorded nonce; the next command signs only after Herald applies it.
-      // Legacy explores still serialize by explorer or randomness source.
-      releaseActorExecutionLock = await this.acquireActorExecutionLock(actorSerializationKey);
-      if (txType === TransactionType.EXPLORE) {
-        this.emit("transactionProgress", {
-          stage: "explore_provider_lock_acquired",
-          type: txType,
-          explorerId: this.getExploreTransactionExplorerId(transactionDetails),
-          signerAddress: transactionMeta.signerAddress,
-        });
-      }
+    // Native actions share the player's recorded nonce; the next command signs only after Herald applies it.
+    let releaseActorExecutionLock: (() => void) | undefined = await this.acquireActorExecutionLock(
+      this.getTransactionSerializationKey(signer),
+    );
+    if (txType === TransactionType.EXPLORE) {
+      this.emit("transactionProgress", {
+        stage: "explore_provider_lock_acquired",
+        type: txType,
+        explorerId: this.getExploreTransactionExplorerId(transactionDetails),
+        signerAddress: transactionMeta.signerAddress,
+      });
     }
 
     let tx: SubmittedTransaction;
     try {
-      // Resolved inside the try so a preflight abort (the estimate proved a
-      // deterministic revert) rides the same failure emission and actor-lock
-      // release as a submit failure.
-      const executionDetails = executionDetailsPromise
-        ? await executionDetailsPromise
-        : await this.getV3ExecutionDetails(signer, transactionDetails);
       if (txType === TransactionType.EXPLORE) {
-        this.emit("transactionProgress", {
-          stage: "explore_execution_details_ready",
-          type: txType,
-          explorerId: this.getExploreTransactionExplorerId(transactionDetails),
-          signerAddress: transactionMeta.signerAddress,
-        });
         this.emit("transactionProgress", {
           stage: "explore_sign_send_started",
           type: txType,
@@ -670,24 +473,20 @@ export class EternumProvider extends EventEmitter {
           signerAddress: transactionMeta.signerAddress,
         });
       }
-      tx = await this.submitTransaction(signer, transactionDetails, executionDetails);
+      tx = await this.submitTransaction(signer, transactionDetails);
     } catch (error) {
       const message = extractErrorMessage(error);
       const submitFailure = classifySubmitFailure(error);
       releaseActorExecutionLock?.();
       releaseActorExecutionLock = undefined;
-      // Throw the resolved error too: when the submit error decoded to
-      // nothing actionable, callers (automation's revert classifier, toasts)
-      // need the stashed estimate trace as much as the diagnostics do.
-      const resolvedError = this.resolveSubmitFailureError(error, message);
       this.emitTransactionFailure({
         ...transactionMeta,
         message: `Transaction failed to submit: ${message}`,
         stage: "submit",
         ...submitFailure,
-        ...buildFailureDiagnostics(resolvedError),
+        ...buildFailureDiagnostics(error),
       });
-      throw resolvedError;
+      throw error;
     }
 
     // Emit immediately so UI can show pending state

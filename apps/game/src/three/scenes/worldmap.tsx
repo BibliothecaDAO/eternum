@@ -607,7 +607,6 @@ function resolveExploreClientLatencyPhase(stage: string | undefined): ClientActi
   if (stage === "explore_calls_built") return "calls_built";
   if (stage === "explore_submit_guard_released") return "submit_guard_released";
   if (stage === "explore_provider_lock_acquired") return "provider_lock_acquired";
-  if (stage === "explore_execution_details_ready") return "execution_details_ready";
   if (stage === "explore_sign_send_started") return "sign_send_started";
   return undefined;
 }

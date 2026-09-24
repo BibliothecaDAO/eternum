@@ -1,4 +1,4 @@
-import { identityClient, identityOrigin, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { StarknetProvider } from "@/hooks/context/starknet-provider";
 import Button from "@/ui/design-system/atoms/button";
 import type { SignInOptions } from "@realms-world/identity";
@@ -40,7 +40,7 @@ const WalletConnectors = () => {
         address: addAddressPadding(account.address),
         chainId: "SN_MAIN",
         domain: window.location.host,
-        uri: identityOrigin(),
+        uri: window.location.origin,
         signTypedData: async (message) =>
           stark.formatSignature(await account.signMessage(message as Parameters<typeof account.signMessage>[0])),
       };

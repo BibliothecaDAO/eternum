@@ -33,7 +33,6 @@ jobs:
     timeout-minutes: 30
     env:
       VITE_PUBLIC_IDENTITY_RPC_URL: ${{ secrets.CLIENT_IDENTITY_RPC_URL }}
-      VITE_PUBLIC_CONTROLLER_RPC_URL: ${{ secrets.CLIENT_IDENTITY_RPC_URL }}
     steps:
       - name: Validate identity RPC configuration
         run: |

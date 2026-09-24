@@ -24,7 +24,6 @@ export const CreateGameRequestSchema = Schema.Struct({
   gameName: NonEmptyString,
   rosterAccounts: Schema.optional(Schema.Array(Schema.String.pipe(Schema.check(Schema.isPattern(/^0x[0-9a-fA-F]+$/))))),
   gameStartTime: Schema.optional(NonEmptyString),
-  workflowRef: Schema.optional(NonEmptyString),
 });
 
 interface SharedLaunchOptions {
@@ -42,7 +41,6 @@ export interface CreateGameRequest extends SharedLaunchOptions {
   rosterAccounts?: readonly string[];
   gameName: string;
   gameStartTime?: string;
-  workflowRef?: string;
 }
 export interface FinalizeGameRequest {
   environment: "madara.blitz";

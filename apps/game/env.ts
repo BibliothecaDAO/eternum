@@ -7,19 +7,7 @@ const optionalUrlOrEmpty = z.union([z.string().url(), z.literal("")]).optional()
 
 const envSchema = z.object({
   VITE_PUBLIC_IDENTITY_RPC_URL: z.string().url(),
-  // Optional public mainnet RPC handed to the cross-origin Controller keychain, which cannot fetch
-  // a loopback host (Private Network Access); the lab therefore points it at a public node.
-  VITE_PUBLIC_CONTROLLER_RPC_URL: z.string().url().optional(),
   VITE_PUBLIC_EXPLORER_URL: optionalUrlOrEmpty.default(""),
-  VITE_PUBLIC_ENABLE_SQL_CACHE: z
-    .string()
-    .transform((v) => v === "true")
-    .optional()
-    .default("true"),
-
-  // Marketplace API endpoint (added)
-  VITE_PUBLIC_MARKETPLACE_URL: optionalUrlOrEmpty.default(""),
-
   VITE_PUBLIC_GRAPHICS_DEV: z
     .string()
     .transform((v) => v === "true")
@@ -36,18 +24,6 @@ const envSchema = z.object({
 
   // Social
   VITE_SOCIAL_LINK: optionalUrlOrEmpty.default(""),
-
-  VITE_PUBLIC_SEASON_START_TIME: z
-    .string()
-    .optional()
-    .default("0")
-    .transform((v) => Number(v)),
-
-  VITE_PUBLIC_CHEST_OPENING_ENABLED: z
-    .string()
-    .transform((v) => v === "true")
-    .optional()
-    .default("false"),
 
   // Sentry — empty means "off"; CI passes "" when the secret is unset and
   // that must never white-screen the build.
@@ -98,16 +74,6 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
-  VITE_PUBLIC_SENTRY_NETWORK_HEALTH_MIN_OUTAGE_MS: z
-    .string()
-    .optional()
-    .default("10000")
-    .transform((v) => Number(v)),
-  VITE_PUBLIC_SENTRY_NETWORK_HEALTH_MAX_PER_SESSION: z
-    .string()
-    .optional()
-    .default("50")
-    .transform((v) => Number(v)),
 
   // Debug monitoring must be opt-in.
   VITE_PUBLIC_ENABLE_MEMORY_MONITORING: z

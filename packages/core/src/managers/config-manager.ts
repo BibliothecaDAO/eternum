@@ -20,7 +20,6 @@ import { hasEnabledProductionPath } from "../utils/production-path";
 import { troopStaminaLimits } from "./troop-stamina";
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
 import { getBlockTimestamp } from "../utils/timestamp";
-import { nativeGameModeOf } from "../utils/native-preset-mode";
 import type { BiomeClimateConfig } from "../utils/biome";
 
 const MAP_CENTER = 2147483646;
@@ -356,17 +355,6 @@ export class ClientConfigManager {
   }
   getSeasonMainGameStartAt() {
     return Number(this.game().start_main_at);
-  }
-  getExploreReward() {
-    const rules = this.rules();
-    const reward_resource =
-      nativeGameModeOf(this.game().preset_id) === "eternum" ? ResourcesIds.AncientFragment : ResourcesIds.Essence;
-    const resource_amount = rules.map_config.reward_resource_amount;
-    return {
-      reward_resource,
-      resource_amount,
-      resource_weight: (resource_amount * this.getResourceWeightKg(reward_resource)) / RESOURCE_PRECISION,
-    };
   }
   getTroopConfig() {
     const rules = this.rules();

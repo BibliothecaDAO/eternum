@@ -36,7 +36,6 @@ import { useGameEntry } from "@/hooks/use-game-entry";
 import { submitSettlement } from "@/services/settlement";
 import { fetchSettlementSnapshot, type SettlementSnapshot } from "@/runtime/world/herald-pre-session-reader";
 import { isGameOver, isMember } from "@/runtime/world/directory";
-import { gameKey } from "@/runtime/world/store";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
@@ -57,17 +56,10 @@ import {
 import { resolveGameEntryTarget } from "./game-entry-navigation";
 import { isSelectedWorldEntityWaitAborted, waitForSelectedWorldEntityState } from "./selected-world-entity-wait";
 
-const DEBUG_MODAL = false;
 const SETTLEMENT_SYNC_TIMEOUT_MS = 90000;
 // An Eternum settlement creates one realm; Blitz realms are settled by the launch service.
 const SEASON_SETTLEMENT_COUNT = 1;
 const ENTRY_DIRECTORY_REFETCH_MS = 10_000;
-
-const debugLog = (_worldName: string | null, ..._args: unknown[]) => {
-  if (DEBUG_MODAL) {
-    console.log("[GameEntryModal]", ..._args);
-  }
-};
 
 type SettlementStatus = {
   settledCount: number;
@@ -697,7 +689,6 @@ export const GameEntryModal = ({
     }
 
     if (!isSeasonMode) {
-      debugLog(worldName, "Skipping settlement check - Blitz realms are settled by the launch service");
       return;
     }
 
@@ -747,7 +738,6 @@ export const GameEntryModal = ({
       return;
     }
 
-    debugLog(worldName, "Resetting modal state for", gameKey(game));
     resetBootstrapDependentState();
     // The display name arrives with the directory; only another game resets the modal.
   }, [game, isOpen, resetBootstrapDependentState]);
@@ -787,7 +777,6 @@ export const GameEntryModal = ({
   const handleSpectate = useCallback(() => enterGame(true), [enterGame]);
 
   const finalizeSuccessfulSettlement = useCallback(() => {
-    debugLog(worldName, "Settlement complete!");
     setSettleStage("done");
     setNeedsSettlement(false);
     if (autoSettleEnabled && autoSettleEntryKey) {
@@ -797,7 +786,7 @@ export const GameEntryModal = ({
     setTimeout(() => {
       handleEnterGame();
     }, 1000);
-  }, [autoSettleEnabled, autoSettleEntryKey, handleEnterGame, markCompleted, worldName]);
+  }, [autoSettleEnabled, autoSettleEntryKey, handleEnterGame, markCompleted]);
 
   const finalizeFailedSettlement = useCallback(
     (error: Error) => {
@@ -814,7 +803,6 @@ export const GameEntryModal = ({
   // Settlement is an authenticated, recorded action.
   const handleSettle = useCallback(async () => {
     if (!isSeasonMode) {
-      debugLog(worldName, "Settlement requires a resolved game mode");
       return;
     }
     if (!account) return;
@@ -886,7 +874,6 @@ export const GameEntryModal = ({
     usernameFelt,
     waitForSettlementTarget,
     worldMeta,
-    worldName,
     readSettlementSnapshot,
     navigationEntryContext,
   ]);
@@ -914,20 +901,15 @@ export const GameEntryModal = ({
   }, [isEternumMode, autoSettleEnabled, handleSettle, isSettling, phase]);
   // Auto-enter game when ready (spectate mode or already settled players)
   useEffect(() => {
-    debugLog(worldName, "Auto-enter check - phase:", phase, "isSpectateMode:", isSpectateMode);
     const shouldAutoEnter = phase === "ready" && entryIntent === "play";
     if (shouldAutoEnter) {
-      debugLog(worldName, "Auto-entering game...");
       handleEnterGame();
     }
-  }, [phase, handleEnterGame, worldName, isSpectateMode, isEternumMode, entryIntent]);
-
-  debugLog(worldName, "Render - isOpen:", isOpen, "phase:", phase, "bootstrapStatus:", bootstrapStatus);
+  }, [phase, handleEnterGame, entryIntent]);
 
   if (!isOpen) return null;
 
   const handleClose = () => {
-    debugLog(worldName, "Close button clicked");
     if (autoSettleEnabled && autoSettleEntryKey) {
       setAutoSettleEnabled(autoSettleEntryKey, false);
     }
@@ -936,7 +918,6 @@ export const GameEntryModal = ({
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
-      debugLog(worldName, "Backdrop clicked");
       handleClose();
     }
   };

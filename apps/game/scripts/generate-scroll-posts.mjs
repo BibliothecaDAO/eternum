@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// The scroll: markdown posts under content/scroll, rendered to safe HTML once at build so the shell serves them
-// as plain data. Run from apps/game (pnpm build does, as prebuild).
+// The scroll: markdown posts under content/scroll, rendered to safe HTML and committed as
+// src/shell/generated/scroll-posts.ts, so the shell serves them as plain data. Run it from apps/game after editing a
+// post; CI refuses a committed copy its content no longer renders to.
 
 import { promises as fs } from "node:fs";
 import path from "node:path";

@@ -1,13 +1,12 @@
-import { identityOrigin } from "@/hooks/context/identity-session";
 import type { PlaytestSlot } from "../../../../../../../apps/launch-service/src/slots";
 import type { toFactoryRunRecord } from "../../../../../../../apps/launch-service/src/model";
 import type { SeasonPhase, SeasonPhaseName } from "../../../../../../../apps/launch-service/src/calendar";
 export type { PlaytestSlot, SeasonPhase, SeasonPhaseName };
 type FactoryRun = ReturnType<typeof toFactoryRunRecord>;
 
-/** The launch routes are served beside identity, on its origin, so the session cookie reaches them. */
+/** The launch routes are served under the app's own /api beside identity, so the session cookie reaches them. */
 async function request<T>(path: string, body?: unknown, method = body === undefined ? "GET" : "POST"): Promise<T> {
-  const response = await fetch(`${identityOrigin()}${path}`, {
+  const response = await fetch(path, {
     method,
     credentials: "include",
     ...(body === undefined ? {} : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),

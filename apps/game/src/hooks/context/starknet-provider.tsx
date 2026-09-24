@@ -12,7 +12,7 @@ const identityRpcUrl = resolveEndpoint(env.VITE_PUBLIC_IDENTITY_RPC_URL, {
   name: "VITE_PUBLIC_IDENTITY_RPC_URL",
   browserFacing: true,
 });
-// Controller is a wallet a player links to their Realms account (or recovers a migrated account with, once): it signs
+// Controller is a wallet a player links to their Realms account from the account page: it signs
 // the one SIWS message on mainnet. No session policies, no paymaster, no game-transaction signing.
 // The connector package keeps the first instance and ignores later options — own exactly one.
 // `lazyload`: the keychain iframe (Cartridge's hosted keychain, an authed gRPC client of its own) is created on the first
@@ -22,9 +22,7 @@ const controller = new ControllerConnector({
   webauthnPopup: true,
   lazyload: true,
   // Identity is always mainnet. Pass that fact through so Controller does not synchronously probe an RPC at boot.
-  chains: [
-    { rpcUrl: env.VITE_PUBLIC_CONTROLLER_RPC_URL || identityRpcUrl, chainId: constants.StarknetChainId.SN_MAIN },
-  ],
+  chains: [{ rpcUrl: identityRpcUrl, chainId: constants.StarknetChainId.SN_MAIN }],
   defaultChainId: constants.StarknetChainId.SN_MAIN,
 });
 const identityConnectors = [controller, ready(), braavos()];

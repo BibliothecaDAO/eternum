@@ -1,17 +1,11 @@
-import type { Abi, AccountInterface, Call, ResourceBoundsBN } from "starknet";
+import type { Abi, AccountInterface, Call } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { ActionOutcomeUnknownError, EternumProvider } from "./index";
 import type { TransactionStreamWaiter } from "./types";
 
-const makeResourceBounds = (l2GasMaxAmount: bigint): ResourceBoundsBN => ({
-  l1_gas: { max_amount: 1n, max_price_per_unit: 1n },
-  l1_data_gas: { max_amount: 1n, max_price_per_unit: 1n },
-  l2_gas: { max_amount: l2GasMaxAmount, max_price_per_unit: 1n },
-});
-
 const makeProvider = (scope: NonNullable<ConstructorParameters<typeof EternumProvider>[3]> = {}) =>
-  new EternumProvider({ world: "0x77" }, "http://127.0.0.1:1", undefined, { gameId: 7, ...scope });
+  new EternumProvider({ world: "0x77" }, "http://127.0.0.1:1", { gameId: 7, ...scope });
 
 afterEach(() => {
   vi.useRealTimers();
@@ -19,36 +13,13 @@ afterEach(() => {
 });
 
 describe("provider submission boundary", () => {
-  it("sends bounded zero-tip fees, respects fixed bounds and refuses a proven revert", async () => {
-    const provider = makeProvider();
-    const estimateInvokeFee = vi.fn().mockResolvedValue({ resourceBounds: makeResourceBounds(1_000_000_000n) });
-    const execute = vi.fn().mockResolvedValue({ transaction_hash: "0xabc" });
-    const signer = { address: "0x111", estimateInvokeFee, execute } as unknown as AccountInterface;
+  it("refuses a command before the shard's signed-intent submission is configured", async () => {
+    const execute = vi.fn();
+    const signer = { address: "0x111", execute } as unknown as AccountInterface;
     const calls: Call = { contractAddress: "0x77", entrypoint: "settle", calldata: [] };
-    expect(await provider.promiseQueue.enqueue({ signer, calls })).toMatchObject({
-      transaction_hash: "0xabc",
-      statusReceipt: "PENDING",
-    });
-    expect(estimateInvokeFee).toHaveBeenCalledWith(calls, { version: 3, tip: 0 });
-    expect(execute).toHaveBeenLastCalledWith(calls, {
-      version: 3,
-      tip: 0,
-      resourceBounds: makeResourceBounds(1_200_000_000n),
-    });
-
-    estimateInvokeFee.mockClear();
-    const resourceBounds = makeResourceBounds(123n);
-    await makeProvider({ executionResourceBounds: resourceBounds }).promiseQueue.enqueue({ signer, calls });
-    expect(estimateInvokeFee).not.toHaveBeenCalled();
-    expect(execute).toHaveBeenLastCalledWith(calls, { version: 3, tip: 0, resourceBounds });
-
-    execute.mockClear();
-    const revert = {
-      message: "Transaction execution error",
-      data: { execution_error: "Execution failed. Failure reason: ('Population exceeds capacity')." },
-    };
-    estimateInvokeFee.mockRejectedValue(revert);
-    await expect(provider.promiseQueue.enqueue({ signer, calls })).rejects.toBe(revert);
+    await expect(makeProvider().promiseQueue.enqueue({ signer, calls })).rejects.toThrow(
+      "Native submission is not configured",
+    );
     expect(execute).not.toHaveBeenCalled();
   });
 

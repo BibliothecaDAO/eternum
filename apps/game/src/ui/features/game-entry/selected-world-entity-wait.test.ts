@@ -10,16 +10,14 @@ describe("waitForEntitySubscriptionState", () => {
 
   it("uses the deadline as an alarm and resolves only after a pushed change matches", async () => {
     vi.useFakeTimers();
-    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     let onChange = () => {};
     let value = 0;
     const unsubscribe = vi.fn();
-    const onSlow = vi.fn();
 
     const result = waitForEntitySubscriptionState({
       description: "test state",
       isTarget: (current) => current >= 2,
-      onSlow,
       read: async () => value,
       slowAfterMs: 100,
       subscribe: async (listener) => {
@@ -29,7 +27,7 @@ describe("waitForEntitySubscriptionState", () => {
     });
 
     await vi.advanceTimersByTimeAsync(100);
-    expect(onSlow).toHaveBeenCalledWith(100);
+    expect(warn).toHaveBeenCalledWith("[GameEntry] test state is still waiting after 100ms");
     expect(unsubscribe).not.toHaveBeenCalled();
 
     value = 2;

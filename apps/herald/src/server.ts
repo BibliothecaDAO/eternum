@@ -9,7 +9,7 @@ import { MadaraRpc } from "./madara-rpc";
 import { MadaraSubscriptions } from "./madara-subscriptions";
 import { answerSafely, createStreamSocketHandlers, type HeraldSocketData } from "./request-guards";
 import { HistoryStore } from "./history-store";
-import { assertShardChain, buildShardManifest, type ShardDocument } from "./shard-manifest";
+import { assertShardChain, buildShardManifest, readShardDocument } from "./shard-manifest";
 
 const CHECKPOINT_EVERY_BLOCKS = 100;
 /** How often Herald reads the sequencer clock off the pre-confirmed block. */
@@ -61,7 +61,7 @@ const streamGameId = (pathname: string): string | undefined => /^\/games\/([0-9]
 
 const main = async (): Promise<void> => {
   const config = readConfig();
-  const manifest = JSON.parse(await readFile(config.manifestPath, "utf8")) as ShardDocument;
+  const manifest = readShardDocument(await readFile(config.manifestPath, "utf8"));
   const shardManifest = buildShardManifest(manifest, {
     rpcUrl: config.publicRpcUrl,
     admissionUrl: config.publicAdmissionUrl,

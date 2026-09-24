@@ -4,7 +4,6 @@ import { subscribeHeraldDirectory, type GameRef } from "@bibliothecadao/eternum/
 interface WaitForEntitySubscriptionStateInput<T> {
   description: string;
   isTarget: (value: T) => boolean;
-  onSlow?: (elapsedMs: number) => void;
   read: () => Promise<T>;
   signal?: AbortSignal;
   slowAfterMs: number;
@@ -27,7 +26,6 @@ export const waitForEntitySubscriptionState = async <T>(input: WaitForEntitySubs
 
   const slowTimer = setTimeout(() => {
     console.warn(`[GameEntry] ${input.description} is still waiting after ${input.slowAfterMs}ms`);
-    input.onSlow?.(input.slowAfterMs);
   }, input.slowAfterMs);
   let pendingChange = false;
   let notifyChange = () => {

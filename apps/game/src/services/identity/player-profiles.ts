@@ -1,4 +1,4 @@
-import { identityOrigin, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { displayPlayerName, getInternalAddressName, type PlayerNameResolver } from "@bibliothecadao/eternum";
 import {
@@ -69,7 +69,7 @@ const createIdentityProfiles = (deps: IdentityProfilesDeps) => {
 const normalize = (account: string | bigint): string => `0x${BigInt(account).toString(16)}`;
 
 export const identityProfiles = createIdentityProfiles({
-  fetchProfiles: (accounts) => fetchIdentityProfiles(identityOrigin(), accounts),
+  fetchProfiles: (accounts) => fetchIdentityProfiles(window.location.origin, accounts),
 });
 
 /**

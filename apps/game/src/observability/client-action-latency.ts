@@ -5,7 +5,6 @@ export type ClientActionLatencyPhase =
   | "calls_built"
   | "submit_guard_released"
   | "provider_lock_acquired"
-  | "execution_details_ready"
   | "sign_send_started"
   | "submitted"
   | "pre_confirmed"
