@@ -576,7 +576,7 @@ pub mod GamesFixture {
     }
     #[starknet::embeddable]
     pub impl NamesFixture<TContractState, +Drop<TContractState>> of crate::names::INames<TContractState> {
-        fn entity_name(self: @TContractState, key: crate::resources::ResourceKey) -> crate::names::AddressName {
+        fn entity_name(self: @TContractState, key: crate::resources::ResourceKey) -> crate::names::EntityName {
             let classes = fixture_classes(key.game_id);
             crate::names::INamesDispatcherTrait::entity_name(
                 crate::names::INamesLibraryDispatcher { class_hash: classes.structures.read() }, key,
@@ -591,29 +591,6 @@ pub mod GamesFixture {
         ) {
             let classes = fixture_classes(game_id);
             crate::names::INamesDispatcherTrait::set_entity_name(
-                crate::names::INamesLibraryDispatcher { class_hash: classes.structures.read() },
-                game_id,
-                actor,
-                command,
-                context,
-            )
-        }
-        fn address_name(self: @TContractState, address: starknet::ContractAddress) -> crate::names::AddressName {
-            let state = crate::state::read();
-            let classes = state.releases.entry(state.current_release.read());
-            crate::names::INamesDispatcherTrait::address_name(
-                crate::names::INamesLibraryDispatcher { class_hash: classes.structures.read() }, address,
-            )
-        }
-        fn set_address_name(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::names::SetAddressName,
-            context: crate::commands::ExecutionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::names::INamesDispatcherTrait::set_address_name(
                 crate::names::INamesLibraryDispatcher { class_hash: classes.structures.read() },
                 game_id,
                 actor,
@@ -1655,12 +1632,6 @@ pub mod GamesFixture {
     }
     #[starknet::embeddable]
     pub impl GameFixture<TContractState, +Drop<TContractState>> of crate::game::IGame<TContractState> {
-        fn ownership_rules_ready(self: @TContractState, game_id: u32) -> bool {
-            let classes = fixture_classes(game_id);
-            crate::game::IGameDispatcherTrait::ownership_rules_ready(
-                crate::game::IGameLibraryDispatcher { class_hash: classes.registry.read() }, game_id,
-            )
-        }
         fn game(self: @TContractState, game_id: u32) -> crate::game::GameRegistry {
             let classes = fixture_classes(game_id);
             crate::game::IGameDispatcherTrait::game(
@@ -1979,7 +1950,7 @@ pub mod GamesFixture {
         ) -> starknet::ContractAddress {
             let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::guild_member(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.registry.read() }, game_id, actor,
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.structures.read() }, game_id, actor,
             )
         }
         fn guild(
@@ -1987,13 +1958,13 @@ pub mod GamesFixture {
         ) -> Option<crate::guilds::Guild> {
             let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::guild(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.registry.read() }, game_id, guild_id,
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.structures.read() }, game_id, guild_id,
             )
         }
         fn guild_whitelisted(self: @TContractState, key: crate::guilds::WhitelistKey) -> bool {
             let classes = fixture_classes(key.game_id);
             crate::guilds::IGuildsDispatcherTrait::guild_whitelisted(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.registry.read() }, key,
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.structures.read() }, key,
             )
         }
         fn create_guild(
@@ -2005,7 +1976,7 @@ pub mod GamesFixture {
         ) {
             let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::create_guild(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.registry.read() },
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.structures.read() },
                 game_id,
                 actor,
                 command,
@@ -2021,7 +1992,7 @@ pub mod GamesFixture {
         ) {
             let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::join_guild(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.registry.read() },
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.structures.read() },
                 game_id,
                 actor,
                 command,
@@ -2036,7 +2007,7 @@ pub mod GamesFixture {
         ) {
             let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::leave_guild(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.registry.read() },
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.structures.read() },
                 game_id,
                 actor,
                 context,
@@ -2051,7 +2022,7 @@ pub mod GamesFixture {
         ) {
             let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::set_guild_whitelist(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.registry.read() },
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.structures.read() },
                 game_id,
                 actor,
                 command,
@@ -2067,7 +2038,7 @@ pub mod GamesFixture {
         ) {
             let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::remove_guild_member(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.registry.read() },
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.structures.read() },
                 game_id,
                 actor,
                 member,

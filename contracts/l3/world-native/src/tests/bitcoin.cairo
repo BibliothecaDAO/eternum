@@ -465,9 +465,6 @@ fn attacking_explorer(deployment: super::Deployment, home: ResourceKey, x: u32) 
     super::resource_commands::set_fixture(
         deployment.games, selector!("troops"), selector!("explorers"), array![3, id.into()].span(), explorer,
     );
-    super::resource_commands::set_fixture(
-        deployment.games, selector!("troops"), selector!("exists"), array![3, id.into()].span(), true,
-    );
     start_cheat_caller_address(deployment.games, deployment.games);
     IResourceOperationsDispatcher { contract_address: deployment.games }
         .initialize_resources(ResourceKey { game_id: 3, entity_id: id }, 100000000000000000000, 0, 30);

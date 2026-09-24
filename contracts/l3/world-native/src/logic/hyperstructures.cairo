@@ -23,7 +23,6 @@ pub mod HyperstructureState {
     use crate::events::{RowMemberSet, RowSet};
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
     use crate::geometry::tile_key;
-    use crate::guilds::IGuildsLibraryDispatcher;
     use crate::hyperstructures::{
         AllocateShares, ConstructionAccess, ConstructionResource, Contribution, Hyperstructure, HyperstructureRules,
         SetConstructionAccess, Share, ShareAllocation, Stage,
@@ -312,9 +311,6 @@ pub mod HyperstructureState {
             self: @ComponentState<TContractState>, game_id: u32,
         ) -> starknet::storage::StoragePath<LogicClasses> {
             get_dep_component!(self, Life).classes(game_id)
-        }
-        fn guilds(self: @ComponentState<TContractState>, game_id: u32) -> IGuildsLibraryDispatcher {
-            IGuildsLibraryDispatcher { class_hash: self.logic_classes(game_id).registry.read() }
         }
         fn rules(self: @ComponentState<TContractState>, game_id: u32) -> HyperstructureRules {
             let count = self.data.hyperstructures.hyper_rule_count.read(game_id);

@@ -92,7 +92,6 @@ function frontierRows(game: number): RpcEvent[] {
     const column = player * SPACING;
     events.push(
       row("PlayerEntry", [game, address], { player: address }),
-      row("AddressName", [address]),
       row("PlayerPoints", [game, address]),
       row("Structure", [game, structure], {
         owner: address,
@@ -137,7 +136,6 @@ function gameRows(game: number): RpcEvent[] {
     const structure = realm(game, player);
     events.push(
       row("PlayerEntry", [game, owner(game, player)]),
-      row("AddressName", [owner(game, player)]),
       row("PlayerPoints", [game, owner(game, player)]),
       row("EntityName", [game, structure]),
       row("Structure", [game, structure]),

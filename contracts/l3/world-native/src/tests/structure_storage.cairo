@@ -18,7 +18,7 @@ fn structure_base_storage_has_one_slot_and_preserves_boundaries() {
         starting_troops_granted: true,
         alt: true,
     };
-    let packed = 0xffffffffffffffff00000003ffffffffffffffffffffff00;
+    let packed = 0xffffffffffffffff0000000003ffffffffffffffffffffff;
     assert!(StructureBasePacking::pack(maximum) == packed);
     assert!(StructureBasePacking::unpack(packed) == maximum);
 }

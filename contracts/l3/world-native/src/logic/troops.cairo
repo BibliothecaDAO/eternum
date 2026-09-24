@@ -31,12 +31,12 @@ pub fn authorized_explorer(key: ExplorerKey, actor: ContractAddress, timestamp: 
     owned_structure(key.game_id, explorer.owner, actor);
     explorer
 }
-use starknet::storage::StorageMapReadAccess;
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::troops::{ExplorerKey, ExplorerTroops};
 
 pub fn explorer(key: ExplorerKey) -> Option<ExplorerTroops> {
     let state = crate::state::read();
-    if state.troops.exists.read((key.game_id, key.explorer_id)) {
+    if state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.read() != 0 {
         Some(state.troops.explorers.read((key.game_id, key.explorer_id)))
     } else {
         None
@@ -45,7 +45,7 @@ pub fn explorer(key: ExplorerKey) -> Option<ExplorerTroops> {
 
 pub mod TroopState {
     use starknet::Event as EventTrait;
-    use starknet::storage::StorageMapWriteAccess;
+    use starknet::storage::{StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
     use crate::events::{RowDeleted, RowMemberSet, RowSet};
     use crate::troops::{ExplorerKey, ExplorerTroops, Troops};
 
@@ -60,8 +60,8 @@ pub mod TroopState {
         let state = crate::state::write();
         assert!(key.game_id != 0 && key.explorer_id != 0, "reserved explorer key");
         assert!(crate::logic::troops::explorer(key).is_none(), "explorer already exists");
+        assert!(explorer.owner != 0, "missing explorer owner");
         state.troops.explorers.write((key.game_id, key.explorer_id), explorer);
-        state.troops.exists.write((key.game_id, key.explorer_id), true);
 
         let mut keys = array![];
         key.serialize(ref keys);
@@ -100,8 +100,8 @@ pub mod TroopState {
         let state = crate::state::write();
         crate::logic::troops::explorer(key).expect('missing explorer');
 
-        // The existence bit is authoritative; recreation overwrites the complete value.
-        state.troops.exists.write((key.game_id, key.explorer_id), false);
+        // Owner zero marks absence; recreation overwrites the complete explorer.
+        state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.write(0);
         let mut keys = array![];
         key.serialize(ref keys);
         emit(Event::RowDeleted(RowDeleted { version: 1, model: 'ExplorerTroops', keys: keys.span() }));

@@ -129,7 +129,6 @@ describe("native directory and leaderboard", () => {
       receipt([
         rowEvent("PlayerPoints", ["1", "0x111"], [String(huge)]),
         rowEvent("PlayerPoints", ["1", "0x222"], [String(huge + 1n)]),
-        rowEvent("AddressName", ["0x111"], ["0x416c696365"]),
       ]),
       11,
       0,

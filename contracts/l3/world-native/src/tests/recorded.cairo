@@ -393,9 +393,6 @@ pub fn seed_game(registry: ContractAddress, game_id: u32, game: GameRegistry, ru
         registry, selector!("games"), selector!("rules"), array![game_id.into()].span(), rules,
     );
     super::resource_commands::set_fixture(
-        registry, selector!("games"), selector!("ownership_rules_ready"), array![game_id.into()].span(), true,
-    );
-    super::resource_commands::set_fixture(
         registry, selector!("games"), selector!("next_entity"), array![game_id.into()].span(), 1_u32,
     );
 }

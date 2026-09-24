@@ -259,11 +259,11 @@ pub mod SeasonLogic {
             },
             Command::CreateGuild(value) => {
                 value.serialize(ref calldata);
-                (classes.registry.read(), selector!("create_guild"))
+                (classes.structures.read(), selector!("create_guild"))
             },
             Command::JoinGuild(value) => {
                 value.serialize(ref calldata);
-                (classes.registry.read(), selector!("join_guild"))
+                (classes.structures.read(), selector!("join_guild"))
             },
             Command::ManageTroops(value) => {
                 value.serialize(ref calldata);
@@ -278,14 +278,14 @@ pub mod SeasonLogic {
                 (classes.raid.read(), selector!("raid"))
             },
             Command::MarkGameSettled => (classes.season.read(), selector!("mark_game_settled")),
-            Command::LeaveGuild => (classes.registry.read(), selector!("leave_guild")),
+            Command::LeaveGuild => (classes.structures.read(), selector!("leave_guild")),
             Command::SetGuildWhitelist(value) => {
                 value.serialize(ref calldata);
-                (classes.registry.read(), selector!("set_guild_whitelist"))
+                (classes.structures.read(), selector!("set_guild_whitelist"))
             },
             Command::RemoveGuildMember(value) => {
                 value.serialize(ref calldata);
-                (classes.registry.read(), selector!("remove_guild_member"))
+                (classes.structures.read(), selector!("remove_guild_member"))
             },
             Command::CraftRelic(value) => {
                 value.serialize(ref calldata);

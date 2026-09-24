@@ -24,7 +24,7 @@ pub struct FactWire {
     pub tile_opt: crate::map::TileOpt,
     pub liquidity_key: crate::market::LiquidityKey,
     pub mine_kind_key: crate::mines::MineKindKey,
-    pub address_name: crate::names::AddressName,
+    pub entity_name: crate::names::EntityName,
     pub production_bonus: crate::production::ProductionBonus,
     pub recipe_key: crate::production::RecipeKey,
     pub realm_catalogue: crate::realms::RealmCatalogue,

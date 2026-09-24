@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "bb977755dcd54663e9ee7402c289d44851f00d885515892cc7f5827017672794",
+  "schemaIdentity": "054d1c31718e43345ab0bcb583a240df29527a190ad7814269a667d75125be53",
   "commandAbi": [
     {
       "type": "interface",
@@ -2246,10 +2246,6 @@
       "scope": "game"
     },
     {
-      "name": "AddressName",
-      "scope": "deployment"
-    },
-    {
       "name": "EntityName",
       "scope": "game"
     },
@@ -2308,10 +2304,6 @@
     {
       "name": "Authentication",
       "scope": "deployment"
-    },
-    {
-      "name": "OwnershipRulesReady",
-      "scope": "game"
     },
     {
       "name": "ActionNonce",

@@ -22,18 +22,17 @@ pub fn structure_coord(base: StructureBase) -> Coord {
     Coord { alt: base.alt, x: base.coord_x, y: base.coord_y }
 }
 
-const EXPLORER_COUNT_SCALE: u128 = 0x10000;
-const EXPLORER_LIMIT_SCALE: u128 = 0x100000000;
-const CREATED_AT_SCALE: u128 = 0x1000000000000;
-const LEVEL_SCALE: u128 = 0x100000000000000000000;
-const CATEGORY_SCALE: u128 = 0x10000000000000000000000;
-const TROOPS_GRANTED_SCALE: u128 = 0x1000000000000000000000000;
-const LAYER_SCALE: u128 = 0x2000000000000000000000000;
+const EXPLORER_COUNT_SCALE: u128 = 0x100;
+const EXPLORER_LIMIT_SCALE: u128 = 0x1000000;
+const CREATED_AT_SCALE: u128 = 0x10000000000;
+const LEVEL_SCALE: u128 = 0x1000000000000000000;
+const CATEGORY_SCALE: u128 = 0x100000000000000000000;
+const TROOPS_GRANTED_SCALE: u128 = 0x10000000000000000000000;
+const LAYER_SCALE: u128 = 0x20000000000000000000000;
 const COORDINATE_SCALE: u128 = 0x100000000;
 
 // The low limb holds counts, limits, time and flags; the high limb holds the two coordinates.
-// All 154 field bits are retained; the former guard-count byte is unused. The unused gap keeps decoding within u128
-// arithmetic.
+// Separate limbs keep both packing and decoding within u128 arithmetic.
 pub impl StructureBasePacking of starknet::storage_access::StorePacking<StructureBase, felt252> {
     fn pack(value: StructureBase) -> felt252 {
         let granted = if value.starting_troops_granted {
@@ -41,7 +40,7 @@ pub impl StructureBasePacking of starknet::storage_access::StorePacking<Structur
         } else {
             0
         };
-        let low = value.troop_max_guard_count.into() * 256
+        let low: u128 = value.troop_max_guard_count.into()
             + value.troop_explorer_count.into() * EXPLORER_COUNT_SCALE
             + value.troop_max_explorer_count.into() * EXPLORER_LIMIT_SCALE
             + value.created_at.into() * CREATED_AT_SCALE
@@ -59,7 +58,7 @@ pub impl StructureBasePacking of starknet::storage_access::StorePacking<Structur
     fn unpack(value: felt252) -> StructureBase {
         let value: u256 = value.into();
         StructureBase {
-            troop_max_guard_count: (value.low / 256 % 256).try_into().unwrap(),
+            troop_max_guard_count: (value.low % 256).try_into().unwrap(),
             troop_explorer_count: (value.low / EXPLORER_COUNT_SCALE % 0x10000).try_into().unwrap(),
             troop_max_explorer_count: (value.low / EXPLORER_LIMIT_SCALE % 0x10000).try_into().unwrap(),
             created_at: (value.low / CREATED_AT_SCALE % COORDINATE_SCALE).try_into().unwrap(),
@@ -137,6 +136,7 @@ pub trait IStructureOperations<T> {
     fn create_discovery(
         ref self: T, game_id: u32, coord: Coord, discovery: crate::discovery::Discovery, seed: u256, timestamp: u64,
     ) -> u32;
+    #[cfg(test)]
     fn provision_realm(
         ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
     ) -> u32;

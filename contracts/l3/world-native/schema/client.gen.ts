@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "bb977755dcd54663e9ee7402c289d44851f00d885515892cc7f5827017672794";
+export const nativeFactSchemaIdentity = "054d1c31718e43345ab0bcb583a240df29527a190ad7814269a667d75125be53";
 export const nativeRuleConstants = {
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
@@ -96,7 +96,6 @@ export interface NativeRows {
   HyperstructureProgress: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number; readonly contributed: bigint };
   HyperstructureShares: { readonly game_id: number; readonly entity_id: number; readonly start_at: bigint; readonly multiplier: number; readonly shareholders: readonly ({ readonly player: bigint; readonly bps: number })[] };
   HyperstructureRules: { readonly game_id: number; readonly initialize_shards: bigint; readonly resources: readonly ({ readonly resource_type: number; readonly minimum: number; readonly maximum: number; readonly points: bigint })[] };
-  AddressName: { readonly address: bigint; readonly name: bigint };
   EntityName: { readonly game_id: number; readonly entity_id: number; readonly name: bigint };
   WonderFaith: { readonly game_id: number; readonly wonder_id: number; readonly last_recorded_owner: bigint; readonly claimed_points: bigint; readonly claim_per_sec: number; readonly claim_last_at: bigint; readonly owner_claim_per_sec: number; readonly num_structures_pledged: number };
   FaithfulStructure: { readonly game_id: number; readonly structure_id: number; readonly wonder_id: number; readonly faithful_since: bigint; readonly fp_to_wonder_owner_per_sec: number; readonly fp_to_struct_owner_per_sec: number; readonly last_recorded_owner: bigint };
@@ -112,7 +111,6 @@ export interface NativeRows {
   PlayerPoints: { readonly game_id: number; readonly address: bigint; readonly points: bigint };
   PointsTotal: { readonly game_id: number; readonly total: bigint };
   Authentication: { readonly address: bigint; readonly submitter: bigint; readonly account_class: bigint };
-  OwnershipRulesReady: { readonly game_id: number; readonly ready: boolean };
   ActionNonce: { readonly game_id: number; readonly actor: bigint; readonly next_nonce: bigint };
 }
 export interface NativeKeys {
@@ -186,7 +184,6 @@ export interface NativeKeys {
   HyperstructureProgress: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number };
   HyperstructureShares: { readonly game_id: number; readonly entity_id: number };
   HyperstructureRules: { readonly game_id: number };
-  AddressName: { readonly address: bigint };
   EntityName: { readonly game_id: number; readonly entity_id: number };
   WonderFaith: { readonly game_id: number; readonly wonder_id: number };
   FaithfulStructure: { readonly game_id: number; readonly structure_id: number };
@@ -202,7 +199,6 @@ export interface NativeKeys {
   PlayerPoints: { readonly game_id: number; readonly address: bigint };
   PointsTotal: { readonly game_id: number };
   Authentication: { readonly address: bigint };
-  OwnershipRulesReady: { readonly game_id: number };
   ActionNonce: { readonly game_id: number; readonly actor: bigint };
 }
 export type NativeModelName = keyof NativeRows;
@@ -1381,16 +1377,6 @@ export const nativeFactModels = {
       ]
     }
   },
-  "AddressName": {
-    "keys": [
-      "address"
-    ],
-    "scope": "deployment",
-    "fields": {
-      "address": "felt",
-      "name": "felt"
-    }
-  },
   "EntityName": {
     "keys": [
       "game_id",
@@ -1733,16 +1719,6 @@ export const nativeFactModels = {
       "account_class": "felt"
     }
   },
-  "OwnershipRulesReady": {
-    "keys": [
-      "game_id"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "ready": "boolean"
-    }
-  },
   "ActionNonce": {
     "keys": [
       "game_id",
@@ -1808,12 +1784,6 @@ export const nativeSyncScopes = {
   "EntitySequence": "shared",
   "PointsTotal": "shared",
   "Authentication": "shared",
-  "OwnershipRulesReady": "shared",
-  "AddressName": {
-    "owners": [
-      "address"
-    ]
-  },
   "PlayerPoints": {
     "owners": [
       "address"

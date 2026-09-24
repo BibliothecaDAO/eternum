@@ -9,7 +9,6 @@ pub mod SettlementLogic {
     use crate::logic::settlement::SettlementState;
     use crate::logic::upgrades::UpgradeState;
     use crate::logic::village::VillageState;
-    use crate::names::{INamesDispatcherTrait, INamesLibraryDispatcher, SetAddressName};
     use crate::realms::{ISeasonPlacementDispatcherTrait, ISeasonPlacementLibraryDispatcher};
     use crate::settlement::{
         EntryKey, ISettlementCreationDispatcherTrait, ISettlementCreationLibraryDispatcher,
@@ -188,7 +187,7 @@ pub mod SettlementLogic {
             } else {
                 crate::troops::Coord { alt: false, x: 0xffffffff - realm_id, y: 0xffffffff }
             };
-            let structure_id = ISettlementCreationLibraryDispatcher { class_hash: classes.structures.read() }
+            ISettlementCreationLibraryDispatcher { class_hash: classes.structures.read() }
                 .create_settlement(
                     game_id,
                     actor,
@@ -202,10 +201,6 @@ pub mod SettlementLogic {
                 );
             progress.realm_count += 1;
             self.settlements.write_progress(game_id, progress);
-            INamesLibraryDispatcher { class_hash: classes.structures.read() }
-                .set_address_name(
-                    game_id, actor, SetAddressName { name: command.name, owned_structure_id: structure_id }, context,
-                );
         }
     }
 

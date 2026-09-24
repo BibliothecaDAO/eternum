@@ -1718,6 +1718,59 @@
           ]
         },
         {
+          "name": "RowSet",
+          "prefix": [
+            "0x32b9e31144a312bfd38977e758d7e4ec46050185e704daab9d6ee1fa2ff49df",
+            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            },
+            {
+              "name": "values",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "name": "RowDeleted",
+          "prefix": [
+            "0x32b9e31144a312bfd38977e758d7e4ec46050185e704daab9d6ee1fa2ff49df",
+            "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
+          ],
+          "members": [
+            {
+              "name": "version",
+              "type": "core::integer::u8",
+              "kind": "key"
+            },
+            {
+              "name": "model",
+              "type": "core::felt252",
+              "kind": "key"
+            },
+            {
+              "name": "keys",
+              "type": "core::array::Span::<core::felt252>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
           "name": "StoryEvent",
           "prefix": [
             "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
@@ -1842,98 +1895,6 @@
             {
               "name": "coord",
               "type": "world_native::troops::Coord"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "create_discovery",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "coord",
-              "type": "world_native::troops::Coord"
-            },
-            {
-              "name": "discovery",
-              "type": "world_native::discovery::Discovery"
-            },
-            {
-              "name": "seed",
-              "type": "core::integer::u256"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u32"
-            }
-          ],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "provision_realm",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "coord",
-              "type": "world_native::troops::Coord"
-            },
-            {
-              "name": "grants",
-              "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u32"
-            }
-          ],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "pay_for_explorer",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::resources::ResourceKey"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "resource_type",
-              "type": "core::integer::u8"
-            },
-            {
-              "name": "amount",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "explorer_id",
-              "type": "core::integer::u32"
             },
             {
               "name": "timestamp",
@@ -2117,6 +2078,70 @@
         },
         {
           "type": "function",
+          "name": "create_discovery",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "coord",
+              "type": "world_native::troops::Coord"
+            },
+            {
+              "name": "discovery",
+              "type": "world_native::discovery::Discovery"
+            },
+            {
+              "name": "seed",
+              "type": "core::integer::u256"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "pay_for_explorer",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::resources::ResourceKey"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "resource_type",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "amount",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "explorer_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
           "name": "set_entity_name",
           "inputs": [
             {
@@ -2141,7 +2166,63 @@
         },
         {
           "type": "function",
-          "name": "set_address_name",
+          "name": "guild_member",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "guild",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "guild_id",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::option::Option::<world_native::guilds::Guild>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "guild_whitelisted",
+          "inputs": [
+            {
+              "name": "key",
+              "type": "world_native::guilds::WhitelistKey"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::bool"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "create_guild",
           "inputs": [
             {
               "name": "game_id",
@@ -2153,7 +2234,99 @@
             },
             {
               "name": "command",
-              "type": "world_native::names::SetAddressName"
+              "type": "world_native::guilds::CreateGuild"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "join_guild",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::guilds::JoinGuild"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "leave_guild",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "set_guild_whitelist",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "command",
+              "type": "world_native::guilds::SetWhitelist"
+            },
+            {
+              "name": "context",
+              "type": "world_native::commands::ExecutionContext"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "remove_guild_member",
+          "inputs": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "actor",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "member",
+              "type": "core::starknet::contract_address::ContractAddress"
             },
             {
               "name": "context",
@@ -5186,59 +5359,6 @@
         {
           "name": "RowSet",
           "prefix": [
-            "0x32b9e31144a312bfd38977e758d7e4ec46050185e704daab9d6ee1fa2ff49df",
-            "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "name": "RowDeleted",
-          "prefix": [
-            "0x32b9e31144a312bfd38977e758d7e4ec46050185e704daab9d6ee1fa2ff49df",
-            "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
-          ],
-          "members": [
-            {
-              "name": "version",
-              "type": "core::integer::u8",
-              "kind": "key"
-            },
-            {
-              "name": "model",
-              "type": "core::felt252",
-              "kind": "key"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "name": "RowSet",
-          "prefix": [
             "0x1d49ec0dbefa7d265631af343d40c174377daf255950534c56e7ea482e0b434",
             "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
           ],
@@ -5360,178 +5480,6 @@
               "type": "core::integer::u32"
             }
           ],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "guild_member",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "guild",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "guild_id",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::option::Option::<world_native::guilds::Guild>"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "guild_whitelisted",
-          "inputs": [
-            {
-              "name": "key",
-              "type": "world_native::guilds::WhitelistKey"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::bool"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "create_guild",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::guilds::CreateGuild"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "join_guild",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::guilds::JoinGuild"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "leave_guild",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "set_guild_whitelist",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "command",
-              "type": "world_native::guilds::SetWhitelist"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "remove_guild_member",
-          "inputs": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "actor",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "member",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "context",
-              "type": "world_native::commands::ExecutionContext"
-            }
-          ],
-          "outputs": [],
           "state_mutability": "external"
         }
       ]
@@ -6175,7 +6123,7 @@
       "name": "Guild",
       "identity": "0x4775696c64",
       "owners": [
-        "registry"
+        "structures"
       ],
       "scope": "game",
       "keys": [
@@ -6215,7 +6163,7 @@
       "name": "GuildMember",
       "identity": "0x4775696c644d656d626572",
       "owners": [
-        "registry"
+        "structures"
       ],
       "scope": "game",
       "keys": [
@@ -6249,7 +6197,7 @@
       "name": "GuildWhitelist",
       "identity": "0x4775696c6457686974656c697374",
       "owners": [
-        "registry"
+        "structures"
       ],
       "scope": "game",
       "keys": [
@@ -9062,37 +9010,6 @@
       "valueLength": null
     },
     {
-      "name": "AddressName",
-      "identity": "0x416464726573734e616d65",
-      "owners": [
-        "structures"
-      ],
-      "scope": "deployment",
-      "keys": [
-        {
-          "name": "address",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "name",
-          "type": "core::felt252",
-          "id": "0x6e616d65",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1,
-      "observation": {
-        "domain": "name",
-        "fields": {
-          "name": "name"
-        }
-      }
-    },
-    {
       "name": "EntityName",
       "identity": "0x456e746974794e616d65",
       "owners": [
@@ -9914,31 +9831,6 @@
       "valueLength": 2
     },
     {
-      "name": "OwnershipRulesReady",
-      "identity": "0x4f776e65727368697052756c65735265616479",
-      "owners": [
-        "registry"
-      ],
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "ready",
-          "type": "core::bool",
-          "id": "0x7265616479",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1
-    },
-    {
       "name": "ActionNonce",
       "identity": "0x416374696f6e4e6f6e6365",
       "owners": [
@@ -10310,16 +10202,6 @@
     }
   ],
   "types": {
-    "core::array::Span::<(core::integer::u8, core::integer::u128)>": {
-      "type": "struct",
-      "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
-        }
-      ]
-    },
     "core::array::Span::<(world_native::troops::Coord, core::integer::u8)>": {
       "type": "struct",
       "name": "core::array::Span::<(world_native::troops::Coord, core::integer::u8)>",
@@ -13170,24 +13052,10 @@
         }
       ]
     },
-    "world_native::names::AddressName": {
+    "world_native::names::EntityName": {
       "type": "struct",
-      "name": "world_native::names::AddressName",
+      "name": "world_native::names::EntityName",
       "members": [
-        {
-          "name": "name",
-          "type": "core::felt252"
-        }
-      ]
-    },
-    "world_native::names::SetAddressName": {
-      "type": "struct",
-      "name": "world_native::names::SetAddressName",
-      "members": [
-        {
-          "name": "owned_structure_id",
-          "type": "core::integer::u32"
-        },
         {
           "name": "name",
           "type": "core::felt252"
@@ -15847,5 +15715,5 @@
       ]
     }
   },
-  "identity": "bb977755dcd54663e9ee7402c289d44851f00d885515892cc7f5827017672794"
+  "identity": "054d1c31718e43345ab0bcb583a240df29527a190ad7814269a667d75125be53"
 }

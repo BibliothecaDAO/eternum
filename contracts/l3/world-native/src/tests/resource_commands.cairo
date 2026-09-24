@@ -165,7 +165,6 @@ fn explorer_fixture(deployment: Deployment, id: u32, owner: u32, coord: Coord, c
         array![3, id.into()].span(),
         crate::troops::ExplorerTroops { owner, coord, ..Default::default() },
     );
-    set_fixture(deployment.games, selector!("troops"), selector!("exists"), array![3, id.into()].span(), true);
     let key = ResourceKey { game_id: 3, entity_id: id };
     start_cheat_caller_address(deployment.games, deployment.games);
     IResourceOperationsDispatcher { contract_address: deployment.games }.initialize_resources(key, capacity, 0, 30);

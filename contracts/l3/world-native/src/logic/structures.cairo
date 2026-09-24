@@ -202,8 +202,10 @@ pub mod StructureState {
 
 #[starknet::contract]
 pub mod StructuresLogic {
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
-    use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
+    #[cfg(test)]
+    use starknet::get_block_timestamp;
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+    use starknet::{ContractAddress, get_caller_address};
     use crate::buildings::{Building, BuildingKey};
     use crate::commands::ExecutionContext;
     use crate::discovery::Discovery;
@@ -211,6 +213,7 @@ pub mod StructuresLogic {
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
     use crate::geometry::tile_key;
     use crate::logic::buildings::BuildingState;
+    use crate::logic::guilds::GuildState;
     use crate::logic::release::ReleaseState;
     use crate::logic::structures::StructureState;
     use crate::map::{IMapLogicDispatcherTrait, IMapLogicLibraryDispatcher};
@@ -225,6 +228,9 @@ pub mod StructuresLogic {
     impl BuildingInternal = BuildingState::InternalImpl<ContractState>;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
+    component!(path: GuildState, storage: guilds, event: GuildEvent);
+    #[abi(embed_v0)]
+    impl Guilds = GuildState::GuildsImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
@@ -234,6 +240,8 @@ pub mod StructuresLogic {
         release: ReleaseState::Storage,
         #[substorage(v0)]
         buildings: BuildingState::Storage,
+        #[substorage(v0)]
+        guilds: GuildState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -241,10 +249,10 @@ pub mod StructuresLogic {
         ReleaseEvent: ReleaseState::Event,
         StructureEvent: StructureState::Event,
         BuildingEvent: BuildingState::Event,
+        GuildEvent: GuildState::Event,
         StoryEvent: StoryEvent,
         RowSet: RowSet,
     }
-    #[abi(embed_v0)]
     #[abi(embed_v0)]
     impl Camps of crate::camps::ICampRules<ContractState> {
         fn configure_camps(ref self: ContractState, game_id: u32, resources: Span<crate::resources::ResourceAmount>) {
@@ -338,6 +346,7 @@ pub mod StructuresLogic {
             self.place_discovery(game_id, coord, discovery, seed, timestamp, false)
         }
 
+        #[cfg(test)]
         fn provision_realm(
             ref self: ContractState, game_id: u32, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
         ) -> u32 {
@@ -517,10 +526,8 @@ pub mod StructuresLogic {
     #[abi(embed_v0)]
     impl Names of crate::names::INames<ContractState> {
         #[cfg(test)]
-        fn entity_name(self: @ContractState, key: ResourceKey) -> crate::names::AddressName {
-            crate::names::AddressName {
-                name: self.data.structure_rules.entity_names.read((key.game_id, key.entity_id)),
-            }
+        fn entity_name(self: @ContractState, key: ResourceKey) -> crate::names::EntityName {
+            crate::names::EntityName { name: self.data.structure_rules.entity_names.read((key.game_id, key.entity_id)) }
         }
         fn set_entity_name(
             ref self: ContractState,
@@ -549,35 +556,6 @@ pub mod StructuresLogic {
                         version: 1,
                         model: 'EntityName',
                         keys: array![game_id.into(), command.entity_id.into()].span(),
-                        values: array![command.name].span(),
-                    },
-                );
-        }
-        #[cfg(test)]
-        fn address_name(self: @ContractState, address: ContractAddress) -> crate::names::AddressName {
-            crate::names::AddressName { name: self.data.structure_rules.address_names.read(address) }
-        }
-        fn set_address_name(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::names::SetAddressName,
-            context: ExecutionContext,
-        ) {
-            crate::commands::assert_context_time(context.timestamp);
-            let key = (game_id, command.owned_structure_id);
-            assert!(
-                crate::logic::structures::exists(ResourceKey { game_id, entity_id: command.owned_structure_id }),
-                "actor does not own structure",
-            );
-            assert!(self.data.structures.structures.entry(key).owner.read() == actor, "actor does not own structure");
-            self.data.structure_rules.address_names.write(actor, command.name);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'AddressName',
-                        keys: array![actor.into()].span(),
                         values: array![command.name].span(),
                     },
                 );

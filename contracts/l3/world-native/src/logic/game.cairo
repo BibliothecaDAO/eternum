@@ -1,5 +1,5 @@
 use starknet::Event as EventTrait;
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::events::RowSet;
 use crate::game::GameRegistry;
 use crate::rules::SliceRules;
@@ -11,8 +11,9 @@ pub enum Event {
 
 pub fn game(game_id: u32) -> GameRegistry {
     let state = crate::state::read();
-    assert!(state.games.ownership_rules_ready.read(game_id), "game does not exist");
-    state.games.games.read(game_id)
+    let game = state.games.games.read(game_id);
+    assert!(game.creator != 0.try_into().unwrap(), "game does not exist");
+    game
 }
 pub fn rules(game_id: u32) -> SliceRules {
     let state = crate::state::read();
@@ -21,7 +22,7 @@ pub fn rules(game_id: u32) -> SliceRules {
 }
 pub fn create(game_id: u32, game: GameRegistry, rules: SliceRules) {
     let state = crate::state::write();
-    assert!(game_id != 0 && !state.games.ownership_rules_ready.read(game_id), "game already exists or reserved");
+    assert!(game_id != 0 && !game_exists(game_id), "game already exists or reserved");
     assert!(game.creator != 0.try_into().unwrap() && game.preset_id != 0, "invalid game identity");
     assert!(game.start_main_at >= game.start_settling_at && game.end_at > game.start_main_at, "invalid game times");
     assert!(rules.tick_config.armies_tick_in_seconds != 0, "zero army tick");
@@ -31,12 +32,6 @@ pub fn create(game_id: u32, game: GameRegistry, rules: SliceRules) {
     }
     assert!(rules.bitcoin_mine_config.owner_cut_bps <= 10000, "invalid Bitcoin owner cut");
     state.games.rules.write(game_id, rules);
-    state.games.ownership_rules_ready.write(game_id, true);
-    emit_game_fact(
-        RowSet {
-            version: 1, model: 'OwnershipRulesReady', keys: array![game_id.into()].span(), values: array![1].span(),
-        },
-    );
     state.games.next_entity.write(game_id, 1);
     write_game(game_id, game);
     let mut values = array![];
@@ -83,7 +78,7 @@ fn emit_game_fact(row: RowSet) {
 }
 
 pub fn game_exists(game_id: u32) -> bool {
-    crate::state::read().games.ownership_rules_ready.read(game_id)
+    crate::state::read().games.games.entry(game_id).creator.read() != 0.try_into().unwrap()
 }
 
 pub fn start_blitz(game_id: u32, timestamp: u64) {

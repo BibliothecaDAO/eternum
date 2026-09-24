@@ -421,7 +421,7 @@ export const factWireTypes = [
   },
   {
     type: "struct",
-    name: "world_native::names::AddressName",
+    name: "world_native::names::EntityName",
     members: [
       {
         name: "name",
@@ -790,7 +790,7 @@ export function defineFactModels({ struct, model: declare }) {
     ),
     model(
       "Guild",
-      ["registry"],
+      ["structures"],
       "game",
       [
         { name: "game_id", type: "core::integer::u32" },
@@ -800,7 +800,7 @@ export function defineFactModels({ struct, model: declare }) {
     ),
     model(
       "GuildMember",
-      ["registry"],
+      ["structures"],
       "game",
       [
         { name: "game_id", type: "core::integer::u32" },
@@ -808,7 +808,7 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       [{ name: "guild_id", type: "core::starknet::contract_address::ContractAddress" }],
     ),
-    model("GuildWhitelist", ["registry"], "game", struct("guilds::WhitelistKey"), [
+    model("GuildWhitelist", ["structures"], "game", struct("guilds::WhitelistKey"), [
       { name: "allowed", type: "core::bool" },
     ]),
     model(
@@ -1124,14 +1124,7 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "game_id", type: "core::integer::u32" }],
       struct("hyperstructures::HyperstructureRules"),
     ),
-    model(
-      "AddressName",
-      ["structures"],
-      "deployment",
-      [{ name: "address", type: "core::starknet::contract_address::ContractAddress" }],
-      struct("names::AddressName"),
-    ),
-    model("EntityName", ["structures"], "game", struct("resources::ResourceKey"), struct("names::AddressName")),
+    model("EntityName", ["structures"], "game", struct("resources::ResourceKey"), struct("names::EntityName")),
     ...["WonderFaith", "FaithfulStructure"].map((name) =>
       model(
         name,
@@ -1229,13 +1222,6 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "total", type: "core::integer::u128" }],
     ),
     model("Authentication", ["season"], "deployment", domainKey, struct("games::Authentication"), "address"),
-    model(
-      "OwnershipRulesReady",
-      ["registry"],
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "ready", type: "core::bool" }],
-    ),
     model(
       "ActionNonce",
       ["season"],
@@ -1355,7 +1341,6 @@ const behaviouralFacts = {
   PlayerEntry: { domain: "realm/blitz", fields: { player: "player" } },
   UpgradeLimits: { domain: "structure", fields: { realmMaximum: "realm_max", villageMaximum: "village_max" } },
   UpgradeRecipe: { domain: "structure", fields: { costs: "costs" } },
-  AddressName: { domain: "name", fields: { name: "name" } },
   ExplorerTroops: {
     domain: "troops",
     fields: { home: "owner", position: "coord", troops: "troops" },
@@ -1503,10 +1488,8 @@ export const syncScopes = {
       "EntitySequence",
       "PointsTotal",
       "Authentication",
-      "OwnershipRulesReady",
     ].map((name) => [name, shared]),
   ),
-  AddressName: { owners: ["address"] },
   PlayerPoints: { owners: ["address"] },
   RealmTraits: { realmTraits: ["realm_id"] },
   EntryEntitlement: byOwner,

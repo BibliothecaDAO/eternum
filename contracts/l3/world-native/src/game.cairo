@@ -47,7 +47,6 @@ pub struct PointsAwarded {
 
 #[starknet::interface]
 pub trait IGame<T> {
-    fn ownership_rules_ready(self: @T, game_id: u32) -> bool;
     fn game(self: @T, game_id: u32) -> GameRegistry;
     fn rules(self: @T, game_id: u32) -> SliceRules;
     fn write_game(ref self: T, game_id: u32, game: GameRegistry);

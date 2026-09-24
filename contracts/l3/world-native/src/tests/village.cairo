@@ -364,13 +364,6 @@ fn season_settlement_random_draw_reserves_realm_and_provisions_its_economy() {
             .production_rate > 0,
     );
     assert_eq!(
-        crate::names::INamesDispatcherTrait::address_name(
-            crate::names::INamesDispatcher { contract_address: deployment.games }, deployment.actor,
-        )
-            .name,
-        'Season player',
-    );
-    assert_eq!(
         crate::realms::ISeasonRealmsDispatcherTrait::available_realm(
             crate::realms::ISeasonRealmsDispatcher { contract_address: deployment.games }, 3, 2238,
         ),
