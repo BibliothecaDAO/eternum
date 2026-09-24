@@ -87,8 +87,9 @@ export const createIdentityAuth = (
     baseURL: env.BASE_URL,
     basePath: "/api/auth",
     database: env.DB,
-    // A month, renewed by a day's use, so a phone stays signed in.
-    session: { expiresIn: 30 * DAY_SECONDS, updateAge: DAY_SECONDS, cookieCache: { enabled: true, maxAge: 60 * 60 } },
+    // A month, renewed by a day's use, so a phone stays signed in. Every session read comes from the database: a cached
+    // copy of the account went stale for an hour after a wallet link or a name change made on another device.
+    session: { expiresIn: 30 * DAY_SECONDS, updateAge: DAY_SECONDS },
     socialProviders: {
       discord: { clientId: env.DISCORD_CLIENT_ID, clientSecret: env.DISCORD_CLIENT_SECRET },
     },

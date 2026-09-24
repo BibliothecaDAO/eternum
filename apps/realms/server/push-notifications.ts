@@ -80,7 +80,7 @@ function servePushRequest(request: Request, auth: IdentityAuth, env: IdentityEnv
 function authenticatedOwner(request: Request, auth: IdentityAuth, expected: unknown) {
   return Effect.gen(function* () {
     const session = yield* Effect.tryPromise({
-      try: () => auth.api.getSession({ headers: request.headers, query: { disableCookieCache: true } }),
+      try: () => auth.api.getSession({ headers: request.headers }),
       catch: () => new PushRequestError({ code: "authentication_unavailable", status: 503 }),
     });
     if (!session?.user.realmsId) return yield* new PushRequestError({ code: "unauthorized", status: 401 });

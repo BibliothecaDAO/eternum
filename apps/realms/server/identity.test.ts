@@ -134,7 +134,7 @@ const createBrowser = (parentDomainCookies: string[] = []) => {
   };
   const session = async () =>
     (await (await request("/api/auth/get-session")).json()) as {
-      user: { id: string; realmsId: string; address?: string | null; suggestedName?: string | null };
+      user: { id: string; name: string; realmsId: string; address?: string | null; suggestedName?: string | null };
     } | null;
   return { request, session };
 };
@@ -477,6 +477,25 @@ describe("identity Worker", () => {
     expect(refused.status).toBe(409);
     expect(((await refused.json()) as { message: string }).message).toBe("WALLET_LINKED_ELSEWHERE");
     expect((await other.session())?.user.address ?? null).toBeNull();
+  });
+
+  it("reads the account from the database on every session, whichever device changed it", async () => {
+    const firstDevice = createBrowser();
+    await signInWithCode(firstDevice, "two-devices@realms.test");
+    const secondDevice = createBrowser();
+    await signInWithCode(secondDevice, "two-devices@realms.test");
+    expect((await secondDevice.session())?.user.address ?? null).toBeNull();
+
+    const wallet = createWallet();
+    expect((await proveWallet(firstDevice, wallet, "link")).status).toBe(200);
+    // The second device signed in before the link; linking the same wallet there is the account's own wallet.
+    expect((await proveWallet(secondDevice, wallet, "link")).status).toBe(200);
+    for (const device of [firstDevice, secondDevice]) {
+      expect(BigInt((await device.session())?.user.address ?? 0)).toBe(BigInt(wallet));
+    }
+
+    expect((await firstDevice.request("/api/auth/update-user", { body: { name: "Two Devices" } })).status).toBe(200);
+    expect((await secondDevice.session())?.user.name).toBe("Two Devices");
   });
 
   it("keeps one wallet per account: unlinking frees it, and a new link replaces the account's wallet", async () => {
