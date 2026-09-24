@@ -39,10 +39,10 @@ const bindRowEvidenceSink = () => {
  */
 export const bindChainTime = (): void => {
   setBlockTimestampSource(() => useChainTimeStore.getState().getNowSeconds());
-  // Heartbeats are chain-written timestamps (closed heads and row evidence), the floor a transaction executes at.
+  // Production is projected at the execution floor: confirmed heads and row evidence, never a pre-confirmed head.
   setChainProvenTimestampSource(() => {
-    const heartbeat = useChainTimeStore.getState().lastHeartbeat;
-    return heartbeat ? Math.floor(heartbeat.timestamp / 1000) : null;
+    const floorMs = useChainTimeStore.getState().executionFloorMs;
+    return floorMs === null ? null : Math.floor(floorMs / 1000);
   });
   bindRowEvidenceSink();
   logChainTimeDebug("source_bound", {
