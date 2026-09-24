@@ -128,10 +128,19 @@ temporary device on the host operator through the public endpoint. The temporary
 The harness requires explicit `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_KEY`, including for resumed runs.
 
 For ordered trials, use `scripts/shard.py --matrix MATRIX_JSON RUN_DIRECTORY`. The matrix contains `configurations` (an
-ordered list of shard configurations) and `workload` (`games`, `accounts_per_game`, `minutes`, `interval_seconds`,
-`setup_concurrency`, `workload`). Each trial stores its configuration, deployment, workload reports and start/end host
-snapshots under the run directory. A failed workload aborts the matrix. Each completed or failed candidate is stopped
-with its volumes retained; the next configuration starts fresh.
+ordered list of shard configurations), optional `defaults` merged under each, and `workload` (`games`,
+`accounts_per_game`, `minutes`, `interval_seconds`, `setup_concurrency`, `workload`), which a configuration's own
+`workload` overrides key by key. A configuration may name a `package` (a `shard-v*` release, whose image digests it runs)
+and a `gateway_revision` (a commit whose `apps/gateway` the runner builds and runs instead of the package's gateway, for a
+lever trial). Each trial stores its configuration with the resolved digests, deployment, workload reports, start/end
+host snapshots and `matrix-result.json`: pass/fail, the node's anonymous memory and kept RocksDB snapshots every 15 s,
+and admission-to-visible latency split into its gateway part and the rest, overall, in bursts and in calm. A failed
+workload aborts the matrix. Each completed or failed candidate is stopped with its volumes retained; the next
+configuration starts fresh.
+
+Campaign plans live in `plans/`. `plans/latency-window.json` is the latency pair and snapshot A/B window: base, the two
+gateway levers (branch `native-gateway-levers`, each the base package's gateway plus the lever; lever3 includes
+lever2), and 30-minute runs without and with `--db-max-kept-snapshots=0` for the memory curve.
 
 The runner starts the gateway after deployment with the new world's sequencing account and address. The gateway
 persists its epoch secret in its own volume. Pending assignments are volatile across restart; recorded nonces prevent

@@ -1,0 +1,74 @@
+{
+  "defaults": {
+    "package": "shard-v0.2.0",
+    "cpuset": "0-23",
+    "player_capacity": 96,
+    "presets": [
+      2
+    ],
+    "chain_config": "deploy/athanor/chain-config.yaml",
+    "guardian_url": "https://staging.realms.party/api/guardian",
+    "node_flags": [
+      "--enable-native-execution=true",
+      "--native-compilation-mode=async"
+    ]
+  },
+  "workload": {
+    "games": 2,
+    "accounts_per_game": 24,
+    "minutes": 10,
+    "interval_seconds": 15,
+    "setup_concurrency": 24,
+    "workload": "build-order"
+  },
+  "configurations": [
+    {
+      "shard": "lat-base",
+      "chain_id": "LAT_BASE",
+      "port_base": 28400,
+      "public_rpc_url": "http://127.0.0.1:28400/rpc/v0_10_2",
+      "public_admission_url": "http://127.0.0.1:28403"
+    },
+    {
+      "shard": "lat-lever2",
+      "chain_id": "LAT_LEVER2",
+      "port_base": 28410,
+      "public_rpc_url": "http://127.0.0.1:28410/rpc/v0_10_2",
+      "public_admission_url": "http://127.0.0.1:28413",
+      "gateway_revision": "44f58854929"
+    },
+    {
+      "shard": "lat-lever3",
+      "chain_id": "LAT_LEVER3",
+      "port_base": 28420,
+      "public_rpc_url": "http://127.0.0.1:28420/rpc/v0_10_2",
+      "public_admission_url": "http://127.0.0.1:28423",
+      "gateway_revision": "3ff8e2cd05f"
+    },
+    {
+      "shard": "lat-snap-base",
+      "chain_id": "LAT_SNAP_BASE",
+      "port_base": 28430,
+      "public_rpc_url": "http://127.0.0.1:28430/rpc/v0_10_2",
+      "public_admission_url": "http://127.0.0.1:28433",
+      "workload": {
+        "minutes": 30
+      }
+    },
+    {
+      "shard": "lat-snap0",
+      "chain_id": "LAT_SNAP0",
+      "port_base": 28440,
+      "public_rpc_url": "http://127.0.0.1:28440/rpc/v0_10_2",
+      "public_admission_url": "http://127.0.0.1:28443",
+      "node_flags": [
+        "--enable-native-execution=true",
+        "--native-compilation-mode=async",
+        "--db-max-kept-snapshots=0"
+      ],
+      "workload": {
+        "minutes": 30
+      }
+    }
+  ]
+}
