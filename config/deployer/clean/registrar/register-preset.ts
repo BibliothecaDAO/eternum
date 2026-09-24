@@ -1,3 +1,4 @@
+import { writeFileSync } from "node:fs";
 import { nativePresetForId } from "../../../source/native";
 import { buildNativePreset } from "../config/native-preset";
 import { RpcProvider } from "starknet";
@@ -22,6 +23,7 @@ interface RegisterPresetOptions {
   sponsored: boolean;
   dryRun: boolean;
   nativeManifest: string;
+  record?: string;
 }
 
 function readArgument(name: string): string | undefined {
@@ -31,12 +33,13 @@ function readArgument(name: string): string | undefined {
 
 function parseOptions(): RegisterPresetOptions {
   const presetId = Number(readArgument("--preset-id"));
-  const environmentId = readArgument("--environment") ?? "madara.blitz";
   if (!Number.isInteger(presetId) || presetId <= 0) {
     throw new Error(
-      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> [--ledger <address> --ledger-rpc-url <mainnet RPC>] [--environment madara.blitz] [--native-manifest path] [--sponsored] [--dry-run]",
+      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> [--ledger <address> --ledger-rpc-url <mainnet RPC>] [--environment madara.<mode>] [--native-manifest path] [--record path] [--sponsored] [--dry-run]",
     );
   }
+  // The preset's own mode names its configuration unless an environment is given.
+  const environmentId = readArgument("--environment") ?? `madara.${nativePresetForId(presetId).gameType}`;
   if (!isDeploymentEnvironmentId(environmentId)) {
     throw new Error(`--environment must be one of: ${Object.keys(DEPLOYMENT_ENVIRONMENTS).join(", ")}`);
   }
@@ -49,6 +52,7 @@ function parseOptions(): RegisterPresetOptions {
     sponsored: process.argv.includes("--sponsored"),
     dryRun: process.argv.includes("--dry-run"),
     nativeManifest: requiredManifest(),
+    record: readArgument("--record"),
   };
 }
 
@@ -108,6 +112,7 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
       ? `Registered native preset ${options.presetId}: ${transaction}`
       : `Native preset ${options.presetId} is unchanged.`,
   );
+  if (options.record) await recordChainCommitment(account, options.presetId, registration.native, options.record);
 
   if (!ledgerTarget) {
     console.log(`No ledger configured; skipping ledger preset ${options.presetId} (L2 deferred).`);
@@ -120,6 +125,21 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
       ? `Registered ledger preset ${options.presetId}: ${ledgerResult.transactionHash}`
       : `Ledger preset ${options.presetId} is already registered; skipping.`,
   );
+}
+
+/** Record the commitment the chain now holds for the preset, read back rather than assumed. */
+async function recordChainCommitment(
+  account: ReturnType<typeof createOperatorAccount>,
+  presetId: number,
+  registration: ReturnType<typeof buildNativePresetRegistration>,
+  path: string,
+) {
+  const [commitment] = await account.callContract({
+    contractAddress: registration.address,
+    entrypoint: registration.commitmentView,
+    calldata: [presetId],
+  });
+  writeFileSync(path, JSON.stringify({ presetId, commitment }) + "\n");
 }
 
 function buildRegistration(config: ReturnType<typeof loadNativePresetConfiguration>, options: RegisterPresetOptions) {

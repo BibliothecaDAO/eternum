@@ -14,6 +14,8 @@ sys.path.insert(0, str(ROOT / "deploy/athanor/scripts"))
 import shard
 
 DATA = Path("/data")
+# The release this image deploys, baked at build by deploy/release/facts.ts.
+RELEASE_FACTS = Path("/release/release-facts.json")
 
 
 def configuration():
@@ -27,6 +29,18 @@ def configuration():
     }
     shard.validate_shard_identity(config)
     return config
+
+
+def requested_presets(environ, facts):
+    """The presets this shard registers, from PRESETS; an id outside the release's catalogue is refused before
+    anything deploys."""
+    ids = [int(value) for value in environ.get("PRESETS", "").split(",") if value.strip()]
+    if not ids:
+        raise ValueError("PRESETS must name the preset ids this shard registers, e.g. PRESETS=2,5")
+    unknown = [preset for preset in ids if str(preset) not in facts["presets"]]
+    if unknown:
+        raise ValueError(f"Presets {unknown} are not in this release's catalogue {sorted(facts['presets'], key=int)}")
+    return ids
 
 
 def default_gateway(route_table):
@@ -94,19 +108,24 @@ def publish(name, destination):
     target.chmod(0o644)
 
 
-def deploy(config):
+def deploy(config, presets):
     env = environment(config)
     shard.wait_for_endpoint(env["RPC_URL"], rpc=True)
     complete = DATA / "initialized.json"
     if complete.exists():
         shard.run(["bun", "deploy/athanor/scripts/inspect-shard-roles.ts", str(DATA), env["RPC_URL"]], DATA, "shard-roles", env)
         publish("gameplay-contracts.json", "/public")
-        return
+        record = json.loads(complete.read_text())
+    else:
+        record = deploy_world_once(config, env)
+    record["presets"] = register_presets(env, presets)
+    shard.write_json(complete, record)
+    print(complete.read_text())
+
+
+def deploy_world_once(config, env):
     shard.run(["bun", "deploy/athanor/scripts/host-accounts.ts", "deploy", str(DATA)], DATA, "host-account-deploy", env)
     authority = shard.deploy_world(config, DATA, env)
-    for preset, mode in [(3, "eternum"), (4, "blitz")]:
-        shard.run(["bun", "config/deployer/clean/registrar/register-preset.ts", "--environment", f"madara.{mode}",
-                   "--preset-id", str(preset)], DATA, f"preset-{preset}", env)
     shard.run(["bun", "deploy/athanor/scripts/inspect-shard-roles.ts", str(DATA), env["RPC_URL"]], DATA, "shard-roles", env)
     manifest = json.loads((DATA / "native-world.json").read_text())
     shard.write_gateway_environment(config, DATA, env, authority, manifest["world"]["address"])
@@ -114,19 +133,32 @@ def deploy(config):
     publish("native-world.json", "/public")
     publish("gameplay-contracts.json", "/public")
     shard.save_harness_environment(DATA, env)
-    shard.write_json(complete, {"chainId": manifest["shard"]["chainId"], "world": manifest["world"]["address"], "presets": [1, 2, 3, 4]})
-    print(complete.read_text())
+    return {"chainId": manifest["shard"]["chainId"], "world": manifest["world"]["address"]}
+
+
+# Registration is idempotent, so every start registers the listed presets: one added later registers without
+# touching the shard's identity. The record holds the commitment each preset has on chain.
+def register_presets(env, presets):
+    env = {**env, "DEPLOYER_ACCOUNT_ADDRESS": json.loads((DATA / "gameplay-contracts.json").read_text())["operatorAccountAddress"]}
+    commitments = {}
+    for preset in presets:
+        record = DATA / f"preset-{preset}.json"
+        shard.run(["bun", "config/deployer/clean/registrar/register-preset.ts", "--preset-id", str(preset),
+                   "--record", str(record)], DATA, f"preset-{preset}", env)
+        commitments[str(preset)] = json.loads(record.read_text())["commitment"]
+    return commitments
 
 
 if __name__ == "__main__":
     os.umask(0o077)
     action = sys.argv[1]
     config = configuration()
+    presets = requested_presets(os.environ, json.loads(RELEASE_FACTS.read_text()))
     try:
         if action == "prepare":
             prepare(config)
         elif action == "deploy":
-            deploy(config)
+            deploy(config, presets)
         else:
             raise ValueError("Expected prepare or deploy")
     finally:

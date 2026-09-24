@@ -83,7 +83,7 @@ This requires fresh chain state; existing candidate chains are not rewritten or 
 
 The runner creates private volumes, deploys the Realms account class (refusing one that differs from the class the identity service approves devices
 for) and the operator's own Realms account, deploys the native world under it, registers
-presets 1–4 and starts Herald. Each shard exports upstream node metrics through its own
+the configuration's `presets` and starts Herald. Each shard exports upstream node metrics through its own
 pinned OTLP collector into its private run directory; `harness.env` points the existing block reporter at that output.
 The collector also scrapes `gateway:9950/metrics` every 5 seconds. Its cgroup sampler replaces the Docker stats
 receiver: it reads each container's `cpu.stat` through a read-only `/sys/fs/cgroup` mount, with no Docker socket.

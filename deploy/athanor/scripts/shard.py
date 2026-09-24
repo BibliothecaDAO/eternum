@@ -54,6 +54,9 @@ def validate_configuration(config, allowed_cpus):
     if not re.fullmatch(r"[a-z][a-z0-9-]{0,39}", config["shard"]):
         raise ValueError("shard must be a lowercase identifier")
     validate_shard_identity(config)
+    presets = config.get("presets")
+    if not presets or not all(isinstance(preset, int) and preset > 0 for preset in presets):
+        raise ValueError("presets must list the preset ids the shard registers")
     if "madara_image" in config:
         raise ValueError("the node image is the package's pin in deploy/shard/compose.yml")
     for key in ("herald_image", "gateway_image", "init_image"):
@@ -130,6 +133,7 @@ def compose_configuration(config, directory):
         "RPC_PORT": str(config["port_base"] + 5), "HERALD_PORT": str(config["port_base"] + 1),
         "ADMISSION_PORT": str(config["port_base"] + 3),
         "NODE_MEMORY": f"{config.get('node_memory_mib', DEFAULT_NODE_MEMORY_MIB)}m",
+        "PRESETS": ",".join(str(preset) for preset in config["presets"]),
     }
     compose = json.loads(subprocess.check_output([
         "docker", "compose", "-f", str(ROOT / "deploy/shard/compose.yml"), "config", "--format", "json",
@@ -239,10 +243,6 @@ def deploy_world(config, directory, environment):
     bun(prepare, seed, environment["NATIVE_WORLD_MANIFEST"], name="authority-bind")
     bun("config/deployer/clean/cli/deploy-world.ts", *command, "--inspect", name="world-inspect")
     environment["DEPLOYER_ACCOUNT_ADDRESS"] = identity["operatorAccountAddress"]
-    bun("config/deployer/clean/registrar/register-preset.ts", "--environment", "madara.blitz",
-        "--preset-id", "2", name="blitz-preset")
-    bun("config/deployer/clean/registrar/register-preset.ts", "--environment", "madara.frontier",
-        "--preset-id", "1", name="frontier-preset")
     return authority
 
 

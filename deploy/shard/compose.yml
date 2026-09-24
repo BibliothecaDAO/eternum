@@ -13,6 +13,7 @@ x-init: &init
     PUBLIC_RPC_URL: ${PUBLIC_RPC_URL:?Set the read RPC URL}
     PUBLIC_ADMISSION_URL: ${PUBLIC_ADMISSION_URL:?Set the admission URL}
     PLAYER_CAPACITY: ${PLAYER_CAPACITY:-96}
+    PRESETS: ${PRESETS:?Name the preset ids this shard registers}
     TRUSTED_PROXY: ${TRUSTED_PROXY:-}
     BIND_ADDRESS: ${BIND_ADDRESS:-127.0.0.1}
     HOST_UID: ${HOST_UID:-0}

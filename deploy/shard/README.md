@@ -4,8 +4,9 @@ A shard hosts games on a node, admission gateway and Herald. This package replac
 definitions. It needs Docker with Compose, Linux amd64, and memory for the node, Herald and the remaining services.
 Identity, the directory and launches belong to the central Workers; the client is the shared app.
 
-Download `shard.tar.gz` from a `shard-v*` release and extract it. The archive includes this Compose file and
-`images.env` with the CI-built init, Herald and gateway image digests. No checkout, compiler or JavaScript runtime is
+Download `shard.tar.gz` from a `shard-v*` release and extract it. The archive includes this Compose file,
+`images.env` with the CI-built init, Herald and gateway image digests, and `release.json`, the release's facts: its
+commit, images, node, every contract class and every preset commitment it can register. No checkout, compiler or JavaScript runtime is
 needed on the host. Supply a unique chain id and the public endpoints in `.env`:
 
 ```sh
@@ -16,6 +17,7 @@ CHAIN_ID=MY_SHARD_20260923
 GUARDIAN_URL=https://play.realms.party/api/guardian
 PUBLIC_RPC_URL=https://rpc.example.org/rpc/v0_10_2
 PUBLIC_ADMISSION_URL=https://admission.example.org
+PRESETS=2,5
 HERALD_MEMORY=6g
 NODE_MEMORY=24g
 CONFIG
@@ -36,8 +38,10 @@ Community shards use the production guardian at `https://play.realms.party/api/g
 `https://staging.realms.party/api/guardian` belongs to our staging tests.
 
 Initialization generates the host's deployer and sequencing keys locally in `data/`, reads the guardian's real public
-key and account class, starts a genesis with no seeded accounts, deploys the contracts and operator, registers presets
-1–4 and writes `data/native-world.json`. Private keys remain in `data/` (mode 0700); back it up with the chain, gateway
+key and account class, starts a genesis with no seeded accounts, deploys the contracts and operator, registers the
+presets `PRESETS` names (2 is Blitz, 5 is Frontier; an id outside `release.json` is refused before anything deploys)
+and writes `data/native-world.json` and `data/initialized.json`, which records each preset's commitment on chain.
+Every start registers any listed preset not yet on chain. Private keys remain in `data/` (mode 0700); back it up with the chain, gateway
 and PostgreSQL volumes. Never publish it. Initialization refuses a changed identity on existing data. Inspect a failed
 init in `data/*.log` before retrying; do not delete chain state to repair a deployment.
 

@@ -23,6 +23,7 @@ def configuration():
         "public_rpc_url": "https://rpc.test/rpc/v0_10_2",
         "public_admission_url": "https://rpc.test/rpc/v0_10_2",
         "node_flags": ["--enable-native-execution=true", "--native-compilation-mode=async"],
+        "presets": [2],
     }
 
 
@@ -38,7 +39,7 @@ class ShardTest(unittest.TestCase):
             ("chain_id", ""), ("chain_id", "a" * 32), ("chain_id", "a\nb"),
             ("port_base", 5050), ("cpuset", "0-23"), ("node_memory_mib", 65536), ("player_capacity", 0),
             ("madara_image", NODE_IMAGE), ("gateway_image", "gateway:latest"), ("shard", "../live"),
-            ("trusted_proxy", "cloudflared"),
+            ("trusted_proxy", "cloudflared"), ("presets", []), ("presets", ["2"]),
             ("node_flags", ["--base-path=/live"]),
             ("node_flags", [*config["node_flags"], "--db-fsync=false"]),
             ("node_flags", ["--enable-native-execution=true"]),
@@ -68,6 +69,17 @@ class ShardTest(unittest.TestCase):
             saved = dict(line.split("=", 1) for line in (directory / "harness.env").read_text().splitlines())
             self.assertEqual(saved["MADARA_IMAGE"], NODE_IMAGE)
             self.assertEqual(saved["MADARA_CONTAINER"], "community-madara-1")
+
+    def test_package_init_refuses_a_preset_outside_the_release_catalogue(self):
+        spec = importlib.util.spec_from_file_location("shard_init", shard.ROOT / "deploy/shard/init.py")
+        package = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(package)
+        facts = {"presets": {"2": "0x2", "3": "0x3", "5": "0x5", "101": "0x65"}}
+        self.assertEqual(package.requested_presets({"PRESETS": "2,5"}, facts), [2, 5])
+        with self.assertRaisesRegex(ValueError, r"Presets \[1\] are not in this release's catalogue"):
+            package.requested_presets({"PRESETS": "2,1"}, facts)
+        with self.assertRaisesRegex(ValueError, "PRESETS must name"):
+            package.requested_presets({"PRESETS": ""}, facts)
 
     def test_package_init_derives_the_trusted_proxy_only_behind_loopback_bindings(self):
         spec = importlib.util.spec_from_file_location("shard_init", shard.ROOT / "deploy/shard/init.py")
