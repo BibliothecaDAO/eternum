@@ -1,7 +1,7 @@
 import "colors";
 import { hash } from "starknet";
 import { getContractAddressFromCommonFolder } from "./libs/commands.js";
-import { getAccount } from "./libs/network.js";
+import { getAccount } from "../../../../../scripts-runtime/js/starknet.js";
 import { confirmMainnetDeployment, exitIfDeclined } from "./utils.js";
 
 const UPDATER_ROLE = hash.getSelectorFromName("UPDATER_ROLE");
@@ -17,7 +17,7 @@ export const grantUpdaterRole = async (updaterAddress) => {
     throw new Error("MMR Token address not found. Deploy it first.");
   }
 
-  const account = getAccount();
+  const account = await getAccount();
   const transaction = await account.execute({
     contractAddress: mmrTokenAddress,
     entrypoint: "grant_role",

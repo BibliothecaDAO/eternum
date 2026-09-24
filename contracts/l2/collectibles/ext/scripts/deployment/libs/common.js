@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { json } from "starknet";
 import { promisify } from "util";
-import { getAccount, getNetwork } from "./network.js";
+import { getAccount, getNetworkConfig } from "../../../../../../scripts-runtime/js/starknet.js";
 
 colors.america;
 export const getContracts = (TARGET_PATH) => {
@@ -40,16 +40,16 @@ export const declare = async (filepath, contract_name) => {
   const compiledFile = json.parse(fs.readFileSync(filepath).toString("ascii"));
   const compiledSierraCasmFile = json.parse(fs.readFileSync(compiledSierraCasm).toString("ascii"));
 
-  const account = getAccount();
+  const account = await getAccount();
   const contract = await account.declareIfNot({
     contract: compiledFile,
     casm: compiledSierraCasmFile,
   });
 
-  const network = getNetwork(process.env.STARKNET_NETWORK);
+  const network = getNetworkConfig();
   console.log(`- Class Hash: `.magenta, `${contract.class_hash}`);
   if (contract.transaction_hash) {
-    console.log("- Tx Hash: ".magenta, `${network.explorer_url}/tx/${contract.transaction_hash})`);
+    console.log("- Tx Hash: ".magenta, `${network.explorerUrl}/tx/${contract.transaction_hash})`);
     await account.waitForTransaction(contract.transaction_hash);
   } else {
     console.log("- Tx Hash: ".magenta, "Already declared");
@@ -60,7 +60,7 @@ export const declare = async (filepath, contract_name) => {
 
 export const deploy = async (name, class_hash, constructorCalldata) => {
   // Deploy contract
-  const account = getAccount();
+  const account = await getAccount();
 
   // Use the UDC version available on the configured deployment chain
   const UDC = {
@@ -78,8 +78,8 @@ export const deploy = async (name, class_hash, constructorCalldata) => {
   let contract = await account.deployContract(deployOptions);
 
   // Wait for transaction
-  let network = getNetwork(process.env.STARKNET_NETWORK);
-  console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
+  let network = getNetworkConfig();
+  console.log("Tx hash: ".green, `${network.explorerUrl}/tx/${contract.transaction_hash})`);
   let a = await account.waitForTransaction(contract.transaction_hash);
   console.log("Contract Address: ".green, contract.address, "\n\n");
 

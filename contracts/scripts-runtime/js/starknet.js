@@ -78,12 +78,11 @@ export async function getProvider() {
   return provider;
 }
 
+/** The deploying account; a missing address or key is refused before any RPC is contacted. */
 export async function getAccount({ accountAddress, privateKey } = {}) {
-  return new Account({
-    address: resolveAccountAddress(accountAddress),
-    provider: await getProvider(),
-    signer: privateKey ?? requireEnv("STARKNET_ACCOUNT_PRIVATE_KEY"),
-  });
+  const address = resolveAccountAddress(accountAddress);
+  const signer = privateKey ?? requireEnv("STARKNET_ACCOUNT_PRIVATE_KEY");
+  return new Account({ address, provider: await getProvider(), signer });
 }
 
 export async function assertSelectedProviderChain(provider) {

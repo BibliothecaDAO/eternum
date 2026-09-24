@@ -5,7 +5,7 @@ import { byteArray } from "starknet";
 import { fileURLToPath } from "url";
 import { promisify } from "util";
 import { declare, deploy, getCasualName, getContractPath } from "./common.js";
-import { getAccount, getNetwork } from "./network.js";
+import { getAccount, getNetworkConfig } from "../../../../../../scripts-runtime/js/starknet.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -118,7 +118,7 @@ export const setDefaultIPFSCID = async (collectibleAddress, calldata) => {
   // Set Default IPFS CID in Collectible Contract
   ///////////////////////////////////////////
 
-  const account = getAccount();
+  const account = await getAccount();
   console.log(`\n Setting Default IPFS CID in Collectible Contract ... \n\n`.green);
 
   const contract = await account.execute([
@@ -130,8 +130,8 @@ export const setDefaultIPFSCID = async (collectibleAddress, calldata) => {
   ]);
 
   // Wait for transaction
-  let network = getNetwork(process.env.STARKNET_NETWORK);
-  console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
+  let network = getNetworkConfig();
+  console.log("Tx hash: ".green, `${network.explorerUrl}/tx/${contract.transaction_hash})`);
   await account.waitForTransaction(contract.transaction_hash);
 
   console.log(`Successfully set default IPFS CID in collectible contract ${collectibleAddress}`.green, "\n\n");
@@ -142,7 +142,7 @@ export const setAttrsRawToIPFSCID = async (collectibleAddress, calldataArray) =>
   // Set Attrs Raw to IPFS CID in Collectible Contract
   ///////////////////////////////////////////
 
-  const account = getAccount();
+  const account = await getAccount();
   console.log(`\n Setting Attrs Raw to IPFS CID in Collectible Contract ... \n\n`.green);
 
   const calldatas = calldataArray.map((calldata) => ({
@@ -154,8 +154,8 @@ export const setAttrsRawToIPFSCID = async (collectibleAddress, calldataArray) =>
   const contract = await account.execute(calldatas);
 
   // Wait for transaction
-  let network = getNetwork(process.env.STARKNET_NETWORK);
-  console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
+  let network = getNetworkConfig();
+  console.log("Tx hash: ".green, `${network.explorerUrl}/tx/${contract.transaction_hash})`);
   await account.waitForTransaction(contract.transaction_hash);
 
   console.log(`Successfully set attrs raw in collectible contract ${collectibleAddress}`.green, "\n\n");
@@ -166,7 +166,7 @@ export const setTraitTypeName = async (collectibleAddress, calldataArray) => {
   // Set Trait Type Name in Collectible Contract
   ///////////////////////////////////////////
 
-  const account = getAccount();
+  const account = await getAccount();
   console.log(`\n Setting Trait Type Name in Collectible Contract ... \n\n`.green);
 
   const calldatas = calldataArray.map((calldata) => ({
@@ -178,8 +178,8 @@ export const setTraitTypeName = async (collectibleAddress, calldataArray) => {
   const contract = await account.execute(calldatas);
 
   // Wait for transaction
-  let network = getNetwork(process.env.STARKNET_NETWORK);
-  console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
+  let network = getNetworkConfig();
+  console.log("Tx hash: ".green, `${network.explorerUrl}/tx/${contract.transaction_hash})`);
   await account.waitForTransaction(contract.transaction_hash);
 
   console.log(`Successfully set trait type name in collectible contract ${collectibleAddress}`.green, "\n\n");
@@ -190,7 +190,7 @@ export const setMintCollectible = async (collectibleAddress, calldataArray) => {
   // Mint Collectible in Collectible Contract
   ///////////////////////////////////////////
 
-  const account = getAccount();
+  const account = await getAccount();
   console.log(`\n Minting Collectible in Collectible Contract ... \n\n`.green);
   calldataArray.forEach((calldata) => console.log(calldata));
 
@@ -203,8 +203,8 @@ export const setMintCollectible = async (collectibleAddress, calldataArray) => {
   const contract = await account.execute(calldatas);
 
   // Wait for transaction
-  let network = getNetwork(process.env.STARKNET_NETWORK);
-  console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
+  let network = getNetworkConfig();
+  console.log("Tx hash: ".green, `${network.explorerUrl}/tx/${contract.transaction_hash})`);
   await account.waitForTransaction(contract.transaction_hash);
 
   console.log(`Successfully minted collectible in collectible contract ${collectibleAddress}`.green, "\n\n");
@@ -215,7 +215,7 @@ export const setTraitValueName = async (collectibleAddress, calldataArray) => {
   // Set Trait Value Name in Collectible Contract
   ///////////////////////////////////////////
 
-  const account = getAccount();
+  const account = await getAccount();
   console.log(`\n Setting Trait Value Name in Collectible Contract ... \n\n`.green);
 
   const calldatas = calldataArray.map((calldata) => ({
@@ -227,8 +227,8 @@ export const setTraitValueName = async (collectibleAddress, calldataArray) => {
   const contract = await account.execute(calldatas);
 
   // Wait for transaction
-  let network = getNetwork(process.env.STARKNET_NETWORK);
-  console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
+  let network = getNetworkConfig();
+  console.log("Tx hash: ".green, `${network.explorerUrl}/tx/${contract.transaction_hash})`);
   await account.waitForTransaction(contract.transaction_hash);
 
   console.log(`Successfully set trait value name in collectible contract ${collectibleAddress}`.green, "\n\n");
@@ -239,7 +239,7 @@ export const createOrUpdateLockState = async (collectibleAddress, lockId, unlock
   // Create Lock in Collectible Contract
   ///////////////////////////////////////////
 
-  const account = getAccount();
+  const account = await getAccount();
   console.log(
     `\n Creating Lock ID ${lockId} to be unlocked at ${new Date(unlockAtTimestamp * 1000).toLocaleString()} in Collectible Contract ... \n\n`
       .green,
@@ -254,8 +254,8 @@ export const createOrUpdateLockState = async (collectibleAddress, lockId, unlock
   ]);
 
   // Wait for transaction
-  let network = getNetwork(process.env.STARKNET_NETWORK);
-  console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
+  let network = getNetworkConfig();
+  console.log("Tx hash: ".green, `${network.explorerUrl}/tx/${contract.transaction_hash})`);
   await account.waitForTransaction(contract.transaction_hash);
 
   console.log(`Successfully created lock in collectible contract ${collectibleAddress}`.green, "\n\n");
