@@ -6,14 +6,7 @@ import {
   getStructureTypeName,
   nativeGameModeOf,
 } from "@bibliothecadao/eternum";
-import {
-  BuildingType,
-  type ContractAddress,
-  type ID,
-  ResourcesIds,
-  StructureType,
-  getResourceTiers,
-} from "@bibliothecadao/types";
+import { BuildingType, type ContractAddress, type ID, StructureType, getResourceTiers } from "@bibliothecadao/types";
 import { BUILDINGS_GROUPS, buildingModelPaths, getStructureModelPaths } from "@/three/constants/scene-constants";
 
 export type GameModeId = "frontier" | "blitz" | "eternum" | "duel";
@@ -51,8 +44,6 @@ export interface GameModeConfig {
   };
   resources: {
     getTiers: () => ReturnType<typeof getResourceTiers>;
-    canManageResource: (resourceId: ResourcesIds) => boolean;
-    canShowProductionShortcut: (resourceId: ResourcesIds) => boolean;
   };
   rules: {
     isBuildingTypeAllowed: (key: string) => boolean;
@@ -90,8 +81,6 @@ const BASE_BUILDING_EXCLUSIONS = new Set<string>([
 ]);
 
 const BLITZ_BUILDING_EXCLUSIONS = new Set<keyof typeof BuildingType>(["ResourceFish", "ResourceResearch"]);
-
-const BLITZ_UNMANAGEABLE_RESOURCES = new Set<ResourcesIds>([ResourcesIds.Labor, ResourcesIds.Wheat]);
 
 function resolveBuildingModelPaths(isBlitz: boolean) {
   const paths = buildingModelPaths(isBlitz);
@@ -145,8 +134,6 @@ const blitzConfig: GameModeConfig = {
   },
   resources: {
     getTiers: () => getResourceTiers(true),
-    canManageResource: (resourceId) => !BLITZ_UNMANAGEABLE_RESOURCES.has(resourceId),
-    canShowProductionShortcut: (resourceId) => !BLITZ_UNMANAGEABLE_RESOURCES.has(resourceId),
   },
   rules: {
     isBuildingTypeAllowed: buildBuildingRule(BLITZ_BUILDING_EXCLUSIONS),
@@ -188,8 +175,6 @@ const eternumConfig: GameModeConfig = {
   },
   resources: {
     getTiers: () => getResourceTiers(false),
-    canManageResource: () => true,
-    canShowProductionShortcut: () => true,
   },
   rules: {
     isBuildingTypeAllowed: buildBuildingRule(new Set()),
@@ -221,8 +206,6 @@ const frontierConfig: GameModeConfig = {
   },
   resources: {
     getTiers: blitzConfig.resources.getTiers,
-    canManageResource: () => false,
-    canShowProductionShortcut: () => false,
   },
   rules: {
     isBuildingTypeAllowed: (key) =>

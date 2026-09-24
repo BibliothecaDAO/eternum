@@ -14,6 +14,7 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { buildingCostModeOf, type BuildingCostMode } from "../utils/building-cost-mode";
+import { hasEnabledProductionPath } from "../utils/production-path";
 import { troopStaminaLimits } from "./troop-stamina";
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
 import { getBlockTimestamp } from "../utils/timestamp";
@@ -462,6 +463,16 @@ export class ClientConfigManager {
   }
   isCommandEnabled(command: keyof typeof nativeCommandBits): boolean {
     return (this.rules().command_mask & BigInt(nativeCommandBits[command])) !== 0n;
+  }
+  /** Whether a player can refill this resource's production in this game; see hasEnabledProductionPath. */
+  canRefillProduction(resourceId: number): boolean {
+    return hasEnabledProductionPath(
+      this.facts().get("ProductionRecipe", { game_id: this.gameId, resource_type: resourceId }),
+      {
+        labor: this.isCommandEnabled("BurnLaborForResourceProduction"),
+        resource: this.isCommandEnabled("BurnResourceForResourceProduction"),
+      },
+    );
   }
   getSettlementConfig() {
     return this.facts().require("SettlementRules", { game_id: this.gameId });

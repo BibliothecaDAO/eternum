@@ -18,7 +18,6 @@ import {
   relicsArmiesTicksLeft,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import {
   ID,
@@ -112,13 +111,11 @@ export const ResourceChip = ({
 
   const handleMouseLeave = useCallback(() => setTooltip(null), [setTooltip]);
 
-  const mode = useGameModeConfig();
-
   const canShowProductionShortcut = useMemo(() => {
     if (!canOpenProduction) return false;
     if (!resourceId && resourceId !== 0) return false;
-    return mode.resources.canShowProductionShortcut(resourceId as ResourcesIds);
-  }, [canOpenProduction, mode.resources, resourceId]);
+    return configManager.canRefillProduction(resourceId);
+  }, [canOpenProduction, resourceId]);
 
   const canOpenCraftRelic = useMemo(() => {
     if (resourceEnumId !== ResourcesIds.Research || balance <= 0) {
