@@ -120,10 +120,17 @@ pub mod AccountFixture {
     #[storage]
     struct Storage {
         key: felt252,
+        realms_id: felt252,
     }
     #[constructor]
-    fn constructor(ref self: ContractState, key: felt252) {
-        self.key.write(key);
+    fn constructor(ref self: ContractState, realms_id: felt252, guardian_public_key: felt252) {
+        assert!(guardian_public_key != 0, "zero guardian");
+        self.realms_id.write(realms_id);
+        self.key.write(0x399ab58e2d17603eeccae95933c81d504ce475eb1bd0080d2316b84232e133c);
+    }
+    #[external(v0)]
+    fn realms_id(self: @ContractState) -> felt252 {
+        self.realms_id.read()
     }
     #[abi(embed_v0)]
     impl Signature of super::IDeviceSignature<ContractState> {

@@ -132,13 +132,14 @@ fn shared_authentication_nonces_and_heads_keep_the_original_layout() {
     let games = *declare("Games").unwrap().contract_class().class_hash;
     let actor = 9.try_into().unwrap();
     let authentication = crate::games::Authentication {
-        submitter: 11.try_into().unwrap(), account_class: 13.try_into().unwrap(),
+        submitter: 11.try_into().unwrap(), account_class: 13.try_into().unwrap(), guardian_public_key: 17,
     };
     let head = crate::recording::ExecutionHead { order: 17, timestamp: 0x100000001, state: 19 };
     original.seed(7, actor, authentication, 23, head);
     let (actual, nonce, recorded) = original.read_with_class(games, 7, actor);
     assert_eq!(actual.submitter, authentication.submitter);
     assert_eq!(actual.account_class, authentication.account_class);
+    assert_eq!(actual.guardian_public_key, authentication.guardian_public_key);
     assert_eq!(nonce, 23);
     assert_eq!(recorded.order, head.order);
     assert_eq!(recorded.timestamp, head.timestamp);

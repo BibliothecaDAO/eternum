@@ -16,8 +16,8 @@ mod fixture;
 use eternum_randomness_protocol::{action_identity, encode_envelope};
 use fixture::{
     IFixtureDispatcher, IFixtureDispatcherTrait, IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait,
-    IRecordedExecutionSafeDispatcher, IRecordedExecutionSafeDispatcherTrait, context, envelope, intent, outcome, pair,
-    reject_execution, setup, signed, terminal_arguments,
+    IRecordedExecutionSafeDispatcher, IRecordedExecutionSafeDispatcherTrait, actor, context, envelope, intent, outcome,
+    pair, reject_execution, setup, signed, terminal_arguments,
 };
 use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairImpl, StarkCurveSignerImpl};
@@ -40,7 +40,7 @@ fn definitive_failure_is_recorded_and_the_next_ticket_executes() {
     assert!(
         failed.status == 2 && failed.status_class == 'EXECUTION_FAILED' && failed.nonce_consumed, "missing failure",
     );
-    assert!(views.get_admission(7, 456).nonce == 1, "failure did not consume current nonce");
+    assert!(views.get_admission(7, actor()).nonce == 1, "failure did not consume current nonce");
 
     let mut next = intent(address);
     next.nonce = 1;
@@ -48,21 +48,24 @@ fn definitive_failure_is_recorded_and_the_next_ticket_executes() {
     next_context.order = 2;
     let (r, s) = pair().sign(action_identity(@next)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(next, context(@next_context), signed(r, s));
-    assert!(views.get_head(7).order == 2 && views.get_admission(7, 456).nonce == 2, "successor blocked");
+    assert!(views.get_head(7).order == 2 && views.get_admission(7, actor()).nonce == 2, "successor blocked");
     assert!(views.recorded_outcome(7, 2).unwrap().status == 1, "successor rejected");
 }
 
 #[test]
 #[feature("safe_dispatcher")]
-fn failure_recording_rejects_forgery_and_preserves_a_stale_nonce() {
+fn failure_recording_records_forgery_and_preserves_a_stale_nonce() {
     let address = setup();
     let action = intent(address);
     let recorded = envelope(@action);
     let (_, s) = pair().sign(action_identity(@action)).unwrap();
-    assert!(reject_execution(address, action, context(@recorded), 1, s).is_err(), "forged failure consumed a ticket");
+    reject_execution(address, action, context(@recorded), 1, s).unwrap();
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-    assert!(views.get_head(7).order == 0 && views.get_admission(7, 456).nonce == 0, "forgery changed progress");
-    for order in 1_u64..3 {
+    let rejected = views.recorded_outcome(7, 1).unwrap();
+    assert!(rejected.status == 2 && rejected.status_class == 'INVALID_SIGNATURE', "missing forgery refusal");
+    assert!(!rejected.nonce_consumed && views.get_admission(7, actor()).nonce == 0, "forgery consumed nonce");
+    assert!(views.get_head(7).order == 1, "forgery stranded accepted order");
+    for order in 2_u64..4 {
         let action = intent(address);
         let mut recorded = envelope(@action);
         recorded.order = order;
@@ -70,8 +73,8 @@ fn failure_recording_rejects_forgery_and_preserves_a_stale_nonce() {
         reject_execution(address, action, context(@recorded), r, s).unwrap();
         let failed = views.recorded_outcome(7, order).unwrap();
         assert!(failed.status == 2 && failed.status_class == 'EXECUTION_FAILED', "missing terminal outcome");
-        assert!(failed.nonce_consumed == (order == 1), "stale nonce consumed twice");
-        assert!(views.get_admission(7, 456).nonce == 1, "failure moved stale nonce");
+        assert!(failed.nonce_consumed == (order == 2), "stale nonce consumed twice");
+        assert!(views.get_admission(7, actor()).nonce == 1, "failure moved stale nonce");
     }
 }
 
@@ -138,7 +141,7 @@ fn malformed_transport_consumes_nothing_and_invalid_action_signature_is_terminal
             let rejected = views.recorded_outcome(7, 1).unwrap();
             assert!(rejected.status == 2 && rejected.status_class == 'INVALID_SIGNATURE', "missing signature reason");
             assert!(
-                views.get_admission(7, 456).nonce == 0 && !rejected.nonce_consumed, "forgery consumed player nonce",
+                views.get_admission(7, actor()).nonce == 0 && !rejected.nonce_consumed, "forgery consumed player nonce",
             );
         } else {
             assert!(result.is_err() && views.get_head(7).order == 0, "malformed witness consumed order");
@@ -375,7 +378,7 @@ fn losses_and_terminal_rejections_consume_the_original_nonce() {
                 .state == following_state(0, @recorded, @result),
             "terminal binding",
         );
-        let next = IRecordedExecutionViewsDispatcher { contract_address: address }.get_admission(7, 456);
+        let next = IRecordedExecutionViewsDispatcher { contract_address: address }.get_admission(7, actor());
         assert!(next.nonce == 1 && next.order == 2, "terminal consumption");
         let mut replay = intent(address);
         if terminal {
@@ -437,7 +440,7 @@ fn outage_recovery_consumes_the_accepted_prefix_before_fresh_work() {
     IRecordedExecutionDispatcher { contract_address: address }.execute(action, context(@recorded), signed(r, s));
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
     assert!(views.recorded_outcome(7, 1).unwrap().status == 2, "original rejection retained");
-    let next = views.get_admission(7, 456);
+    let next = views.get_admission(7, actor());
     assert!(next.order == 2 && next.nonce == 1, "delayed ticket blocked successor");
     assert!(next.timestamp == recorded.timestamp + 86400, "fresh admission must observe recovery time");
     let mut successor = intent(address);
@@ -469,7 +472,7 @@ fn outage_recovery_consumes_the_accepted_prefix_before_fresh_work() {
         "fresh context not retained",
     );
     assert!(views.recorded_outcome(7, 1).unwrap().status == 2, "recovery rewrote old outcome");
-    assert!(views.get_admission(7, 456).nonce == 2, "fresh ticket did not consume its nonce");
+    assert!(views.get_admission(7, actor()).nonce == 2, "fresh ticket did not consume its nonce");
 }
 
 fn invalid_action_keys_and_nonces_cannot_block_a_valid_successor(case: u32) {
@@ -514,7 +517,7 @@ fn invalid_action_keys_and_nonces_cannot_block_a_valid_successor(case: u32) {
     assert!(result.status == 2 && result.status_class == reason, "terminal reason mismatch");
     assert!(views.get_head(game).state == following_state(0, @recorded, @result), "terminal ticket changed");
     // An action naming another game is recorded on that game's chain and leaves game 7 at its first order.
-    let next = views.get_admission(7, 456);
+    let next = views.get_admission(7, actor());
     assert!(next.order == if game == 7 {
         2
     } else {
@@ -528,7 +531,7 @@ fn invalid_action_keys_and_nonces_cannot_block_a_valid_successor(case: u32) {
     let (r, s) = pair().sign(action_identity(@successor)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(successor, context(@following), signed(r, s));
     assert!(views.recorded_outcome(7, next.order).unwrap().status == 1, "valid successor failed");
-    assert!(views.get_admission(7, 456).nonce == next.nonce + 1, "successor nonce not consumed");
+    assert!(views.get_admission(7, actor()).nonce == next.nonce + 1, "successor nonce not consumed");
 }
 
 #[test]
@@ -570,14 +573,14 @@ fn stale_nonce_after_consumption_does_not_invalidate_the_next_action() {
     let (r, s) = pair().sign(action_identity(@first)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(first, context(@recorded), signed(r, s));
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-    let next = views.get_admission(7, 456);
+    let next = views.get_admission(7, actor());
     let stale = intent(address);
     let mut recorded = envelope(@stale);
     recorded.order = next.order;
     let (r, s) = pair().sign(action_identity(@stale)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(stale, context(@recorded), signed(r, s));
     assert!(views.recorded_outcome(7, 2).unwrap().status_class == 'STALE_NONCE', "stale nonce reason missing");
-    let next = views.get_admission(7, 456);
+    let next = views.get_admission(7, actor());
     assert!(next.order == 3 && next.nonce == 1, "stale ticket consumed a future nonce");
     let mut successor = intent(address);
     successor.nonce = 1;
@@ -603,7 +606,7 @@ fn submitter_cannot_substitute_a_gameplay_key() {
         rejected.status == 2 && rejected.status_class == 'INVALID_SIGNATURE', "substituted key authorized gameplay",
     );
     assert!(
-        views.get_admission(7, 456).nonce == 0 && !rejected.nonce_consumed, "substituted key consumed player nonce",
+        views.get_admission(7, actor()).nonce == 0 && !rejected.nonce_consumed, "substituted key consumed player nonce",
     );
 }
 
@@ -616,7 +619,7 @@ fn recorded_time_never_moves_backwards_and_equal_time_is_valid() {
     let (r, s) = pair().sign(action_identity(@first)).unwrap();
     IRecordedExecutionDispatcher { contract_address: address }.execute(first, context(@recorded), signed(r, s));
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-    let next = views.get_admission(7, 456);
+    let next = views.get_admission(7, actor());
     let mut action = intent(address);
     action.nonce = next.nonce;
     terminal_arguments(ref action);
@@ -630,7 +633,7 @@ fn recorded_time_never_moves_backwards_and_equal_time_is_valid() {
             .is_err(),
         "backwards time accepted",
     );
-    let unchanged = views.get_admission(7, 456);
+    let unchanged = views.get_admission(7, actor());
     assert!(unchanged.order == next.order && unchanged.nonce == next.nonce, "invalid context consumed ticket");
     let mut retry = intent(address);
     retry.nonce = next.nonce;
@@ -640,7 +643,7 @@ fn recorded_time_never_moves_backwards_and_equal_time_is_valid() {
     assert!(
         views.recorded_outcome(7, 2).unwrap().status == 2, "equal recorded timestamp did not execute terminal action",
     );
-    assert!(views.get_admission(7, 456).nonce == 2, "equal recorded timestamp did not consume nonce");
+    assert!(views.get_admission(7, actor()).nonce == 2, "equal recorded timestamp did not consume nonce");
 }
 
 fn unauthenticated_action_leaves_nonce_for_successor(case: u32) {
@@ -677,7 +680,7 @@ fn unauthenticated_action_leaves_nonce_for_successor(case: u32) {
     assert!(
         rejected.status == 2 && rejected.status_class == reason && !rejected.nonce_consumed, "authentication outcome",
     );
-    let next = views.get_admission(7, 456);
+    let next = views.get_admission(7, actor());
     assert!(next.nonce == 0 && next.order == 2, "authentication changed player nonce or blocked order");
     let successor = intent(address);
     let mut following = envelope(@successor);
@@ -686,7 +689,7 @@ fn unauthenticated_action_leaves_nonce_for_successor(case: u32) {
     IRecordedExecutionDispatcher { contract_address: address }.execute(successor, context(@following), signed(r, s));
     let succeeded = views.recorded_outcome(7, 2).unwrap();
     assert!(succeeded.status == 1 && succeeded.nonce_consumed, "valid successor did not execute");
-    assert!(views.get_admission(7, 456).nonce == 1, "valid successor did not consume its nonce");
+    assert!(views.get_admission(7, actor()).nonce == 1, "valid successor did not consume its nonce");
 }
 
 #[test]
@@ -796,7 +799,7 @@ fn batch_records_each_outcome_and_only_authenticated_current_nonces() {
     }
     let head = views.get_head(7);
     assert!(head.order == 4 && head.state == state, "batch omitted intermediate heads");
-    assert!(views.get_admission(7, 456).nonce == 2, "batch consumed wrong player nonce");
+    assert!(views.get_admission(7, actor()).nonce == 2, "batch consumed wrong player nonce");
 }
 
 #[test]
@@ -821,7 +824,9 @@ fn out_of_order_batch_rolls_back_every_ticket() {
     actions.serialize(ref calldata);
     assert!(sequencing_call(address, selector!("execute_batch"), calldata).is_err(), "out of order batch accepted");
     let views = IRecordedExecutionViewsDispatcher { contract_address: address };
-    assert!(views.get_head(7).order == 0 && views.get_admission(7, 456).nonce == 0, "partial batch effects escaped");
+    assert!(
+        views.get_head(7).order == 0 && views.get_admission(7, actor()).nonce == 0, "partial batch effects escaped",
+    );
 }
 
 fn game_action(address: starknet::ContractAddress, game: felt252, order: u64, root: u256) -> RecordedAction {
@@ -871,7 +876,7 @@ fn one_mixed_batch_extends_each_game_on_its_own_chain() {
     assert!(views.get_head(7).order == 2 && views.get_head(7).state == seven, "game 7 chain");
     assert!(views.get_head(9).order == 3 && views.get_head(9).state == eight, "game 9 chain");
     assert!(seven != eight, "games share a state hash");
-    assert!(views.get_admission(7, 456).order == 3 && views.get_admission(9, 456).order == 4, "next orders");
+    assert!(views.get_admission(7, actor()).order == 3 && views.get_admission(9, actor()).order == 4, "next orders");
 }
 
 #[test]

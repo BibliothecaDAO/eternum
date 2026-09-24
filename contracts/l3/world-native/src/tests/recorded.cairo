@@ -93,7 +93,7 @@ pub fn deploy_submitter(address: ContractAddress) {
         declare("SequencingAccount")
             .unwrap()
             .contract_class()
-            .deploy_at(@array![0x111, signer.public_key], address)
+            .deploy_at(@array![super::authority().into(), signer.public_key], address)
             .unwrap();
     }
 }
@@ -250,6 +250,38 @@ fn failure_recording_rejects_unauthenticated_and_already_executed_tickets() {
     assert_eq!(
         IRecordedExecutionViewsDispatcher { contract_address: d.games }.recorded_outcome(1, 1).unwrap().status, 1,
     );
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn transport_failure_after_account_upgrade_records_refusal_and_advances_without_nonce_consumption() {
+    let d = super::setup(true);
+    let views = IRecordedExecutionViewsDispatcher { contract_address: d.games };
+    let admitted = views.get_admission(1, d.actor.into());
+    let action = super::intent(d, 1);
+    let signed = super::signature(d, action);
+    let retained_intent = make_intent(d.games, action);
+    let retained_context = make_context(d.games, action, super::context(d.games, 1));
+    let before = gameplay_snapshot(d.games);
+    let upgraded = declare("AccountUpgradeFixture").unwrap().contract_class();
+    super::fixtures::IAccountUpgradeDispatcherTrait::upgrade(
+        super::fixtures::IAccountUpgradeDispatcher { contract_address: d.actor }, *upgraded.class_hash,
+    );
+    IRecordedExecutionFailureSafeDispatcher { contract_address: d.games }
+        .reject_execution(retained_intent, retained_context, signed)
+        .unwrap();
+    let outcome = views.recorded_outcome(1, admitted.order).unwrap();
+    assert_eq!(outcome.status, 2);
+    assert_eq!(outcome.status_class, 'INVALID_ACTOR');
+    assert!(!outcome.nonce_consumed);
+    assert_eq!(views.get_head(1).order, admitted.order);
+    assert_eq!(IGamesAuthenticationDispatcher { contract_address: d.games }.next_nonce(1, d.actor), admitted.nonce);
+    assert_eq!(gameplay_snapshot(d.games), before);
+    let (next_actor, _) = super::deploy_player(3, super::GUARDIAN);
+    let next = super::Deployment { actor: next_actor, ..d };
+    super::execute(next, super::intent(next, 1));
+    assert_eq!(views.get_head(1).order, admitted.order + 1);
+    assert_eq!(views.recorded_outcome(1, admitted.order + 1).unwrap().status, 1);
 }
 
 #[test]
@@ -451,7 +483,7 @@ fn release_admission_uses_the_game_pin_and_refusals_preserve_nonce_and_gameplay(
     assert_eq!(view.get_admission(1, d.actor.into()).nonce, admission.nonce + 1);
 }
 
-fn gameplay_snapshot(games: ContractAddress) -> Array<felt252> {
+pub(crate) fn gameplay_snapshot(games: ContractAddress) -> Array<felt252> {
     snforge_std::interact_with_state(
         games,
         || {

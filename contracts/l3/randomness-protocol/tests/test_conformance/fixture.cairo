@@ -22,6 +22,10 @@ use snforge_std::{
 use starknet::{ContractAddress, ResourcesBounds};
 use super::receipts::RecordedReceiptsTrait;
 
+pub fn actor() -> felt252 {
+    456
+}
+
 pub fn pair() -> StarkCurveKeyPair {
     KeyPairTrait::from_secret_key(12345)
 }

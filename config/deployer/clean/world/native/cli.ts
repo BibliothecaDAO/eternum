@@ -35,6 +35,7 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
     authentication: {
       submitter: required(args, "submitter"),
       account_class: manifest.shard.accountClassHash,
+      guardian_public_key: manifest.shard.guardianPublicKey,
     },
   });
   if (args.inspect === "true") {

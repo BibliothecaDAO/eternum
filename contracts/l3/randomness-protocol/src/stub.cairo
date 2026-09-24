@@ -98,10 +98,12 @@ pub mod RecordedExecutionStub {
         ) {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
             self.authenticate_ticket(@intent, @envelope, self.randomness_epoch());
-            self.authenticate_action(@intent, @envelope, signature).expect('unauthenticated action');
             assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
-            let consumed = self.consume_nonce(@intent);
-            self.recording.record(@intent, @envelope, consumed, Err(rejection('EXECUTION_FAILED')));
+            let (consumed, reason) = match self.authenticate_action(@intent, @envelope, signature) {
+                Ok(()) => (self.consume_nonce(@intent), 'EXECUTION_FAILED'),
+                Err(reason) => (false, reason),
+            };
+            self.recording.record(@intent, @envelope, consumed, Err(rejection(reason)));
         }
     }
 

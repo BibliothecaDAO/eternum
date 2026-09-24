@@ -54,7 +54,9 @@ pub mod GamesEntry {
             approved_account_class: starknet::ClassHash,
         ) {
             assert!(get_caller_address() == get_dep_component!(@self, Release).authority(), "only domain authority");
-            self.write_authentication(Authentication { submitter, account_class: approved_account_class });
+            let previous = self.authentication_state.authentication.read();
+            assert!(approved_account_class == previous.account_class, "immutable account class");
+            self.write_authentication(Authentication { submitter, ..previous });
         }
 
         fn authentication(self: @ComponentState<TContractState>) -> Authentication {
@@ -111,12 +113,13 @@ pub mod GamesEntry {
         ) {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
             self.authenticate_ticket(@intent, @envelope, self.randomness_epoch());
-            // A transport failure cannot authorize consumption of an unauthenticated action.
-            self.authenticate_action(@intent, @envelope, signature).expect('unauthenticated action');
             assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
-            let consumed = self.consume_action_nonce(@intent).is_ok();
-            let mut recording = get_dep_component_mut!(ref self, Recording);
-            recording.record(@intent, @envelope, consumed, Err(rejection('EXECUTION_FAILED')));
+            // Account changes after admission must not strand the accepted order or consume an unauthenticated nonce.
+            let (consumed, reason) = match self.authenticate_action(@intent, @envelope, signature) {
+                Ok(()) => (self.consume_action_nonce(@intent).is_ok(), 'EXECUTION_FAILED'),
+                Err(reason) => (false, reason),
+            };
+            get_dep_component_mut!(ref self, Recording).record(@intent, @envelope, consumed, Err(rejection(reason)));
         }
     }
 
@@ -131,7 +134,9 @@ pub mod GamesEntry {
         fn get_admission(self: @ComponentState<TContractState>, game: felt252, actor: felt252) -> Admission {
             let game_id: u32 = game.try_into().expect('invalid game id');
             let actor: ContractAddress = actor.try_into().expect('invalid actor');
-            self.approved_account(actor).expect('unregistered actor');
+            if let Err(reason) = self.approved_account(actor) {
+                core::panic_with_felt252(reason);
+            }
             let head = get_dep_component!(self, Recording).data.heads.read(game);
             Admission {
                 release_id: self.data.game_releases.read(game_id),
@@ -196,6 +201,7 @@ pub mod GamesEntry {
         fn write_authentication(ref self: ComponentState<TContractState>, authentication: Authentication) {
             assert!(authentication.submitter.is_non_zero(), "zero authentication");
             assert!(authentication.account_class.is_non_zero(), "zero account class");
+            assert!(authentication.guardian_public_key.is_non_zero(), "zero guardian");
             self.authentication_state.authentication.write(authentication);
             let mut values = array![];
             authentication.serialize(ref values);
@@ -212,8 +218,17 @@ pub mod GamesEntry {
 
         fn approved_account(self: @ComponentState<TContractState>, actor: ContractAddress) -> Result<(), felt252> {
             let class = starknet::syscalls::get_class_hash_at_syscall(actor).map_err(|_error| 'INVALID_ACTOR')?;
-            if class != self.authentication_state.authentication.read().account_class {
+            let authentication = self.authentication_state.authentication.read();
+            if class != authentication.account_class {
                 return Err('INVALID_ACTOR');
+            }
+            let identity = starknet::syscalls::call_contract_syscall(actor, selector!("realms_id"), array![].span())
+                .map_err(|_error| 'INVALID_ACTOR')?;
+            if identity.len() != 1 {
+                return Err('INVALID_ACTOR');
+            }
+            if actor != crate::games::player_account_address(*identity[0], class, authentication.guardian_public_key) {
+                return Err('FOREIGN_GUARDIAN');
             }
             Ok(())
         }

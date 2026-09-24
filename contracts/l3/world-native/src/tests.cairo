@@ -1,5 +1,6 @@
 use recorded_receipts::RecordedReceiptsTrait;
 use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait};
 use crate::tests::state::{GameState, TroopObservationTrait};
 mod bitcoin;
 mod bridge;
@@ -68,8 +69,25 @@ struct Deployment {
 fn keypair(secret: felt252) -> StarkCurveKeyPair {
     KeyPairTrait::from_secret_key(secret)
 }
+const GUARDIAN: felt252 = 98765;
+
+fn player_address(realms_id: felt252) -> ContractAddress {
+    crate::games::player_account_address(realms_id, declare_logic("AccountFixture"), GUARDIAN)
+}
+fn deploy_player(realms_id: felt252, guardian: felt252) -> (ContractAddress, ClassHash) {
+    let class = declare_logic("AccountFixture");
+    let address = crate::games::player_account_address(realms_id, class, guardian);
+    if starknet::syscalls::get_class_hash_at_syscall(address).unwrap() == 0.try_into().unwrap() {
+        let (deployed, _) = starknet::syscalls::deploy_syscall(
+            class, realms_id, array![realms_id, guardian].span(), true,
+        )
+            .unwrap();
+        assert_eq!(deployed, address);
+    }
+    (address, class)
+}
 fn authority() -> ContractAddress {
-    0x111.try_into().unwrap()
+    player_address(2)
 }
 fn submitter() -> ContractAddress {
     0x222.try_into().unwrap()
@@ -86,11 +104,7 @@ fn setup_with_structures(seed_games: bool, structures_class: ByteArray) -> Deplo
     setup_with_domains(seed_games, structures_class, "TroopFixture")
 }
 pub fn bind_authority(d: Deployment) -> Deployment {
-    declare("AccountFixture")
-        .unwrap()
-        .contract_class()
-        .deploy_at(@array![keypair(12345).public_key], authority())
-        .unwrap();
+    deploy_player(2, GUARDIAN);
     Deployment { actor: authority(), ..d }
 }
 
@@ -104,9 +118,8 @@ fn setup_with_domains(seed_games: bool, structures_class: ByteArray, troops_clas
 fn setup_with_host(
     seed_games: bool, structures_class: ByteArray, troops_class: ByteArray, host: ByteArray,
 ) -> Deployment {
-    let pair = keypair(12345);
     recorded::deploy_submitter(submitter());
-    let (actor, account_class) = deploy("AccountFixture", @array![pair.public_key]);
+    let (actor, account_class) = deploy_player(1, GUARDIAN);
     let movement = if troops_class == "TroopFixture" {
         declare_logic("TroopFixture")
     } else {
@@ -131,7 +144,9 @@ fn setup_with_host(
         relics: declare_logic("RelicsLogic"),
         movement,
     };
-    let authentication = crate::games::Authentication { submitter: submitter(), account_class };
+    let authentication = crate::games::Authentication {
+        submitter: submitter(), account_class, guardian_public_key: GUARDIAN,
+    };
     let mut calldata = array![authority().into()];
     authentication.serialize(ref calldata);
     calldata.append(1);
@@ -184,6 +199,30 @@ fn execute(deployment: Deployment, action: Intent) {
     let signed = signature(deployment, action);
     IGamesAuthenticationDispatcher { contract_address: deployment.games }
         .execute(action, context(deployment.games, action.game_id), signed);
+}
+
+#[test]
+fn player_address_matches_the_shared_identity_encoder() {
+    // starknet.js calculateContractAddressFromHash(456, 123, [456, 789], 0).
+    let expected: ContractAddress = 0x407fc15527567765913410f7bd285549b7fc2cd7cd2ad7016d8a7f40ffd37e2
+        .try_into()
+        .unwrap();
+    assert_eq!(crate::games::player_account_address(456, 123.try_into().unwrap(), 789), expected);
+}
+
+#[test]
+fn initializer_refuses_a_zero_guardian() {
+    let deployment = setup(true);
+    let authentication = crate::games::Authentication {
+        guardian_public_key: 0,
+        ..IGamesAuthenticationDispatcher { contract_address: deployment.games }.authentication(),
+    };
+    let release = IReleasesDispatcher { contract_address: deployment.games }.release(1);
+    let mut calldata = array![authority().into()];
+    authentication.serialize(ref calldata);
+    calldata.append(1);
+    release.serialize(ref calldata);
+    assert!(declare("Games").unwrap().contract_class().deploy(@calldata).is_err());
 }
 
 #[test]
@@ -354,13 +393,11 @@ fn registered_account_with_unapproved_class_is_rejected_before_key_read() {
     let actor = d.actor;
     let season = d.games;
     let wrong_class = declare("BankTokenFixture").unwrap().contract_class();
-    let auth = IGamesAuthenticationDispatcher { contract_address: season }.authentication();
-    start_cheat_caller_address(season, authority());
-    IGamesAuthenticationDispatcher { contract_address: season }
-        .set_authentication(auth.submitter, *wrong_class.class_hash);
-    start_cheat_caller_address(season, submitter());
+    fixtures::IAccountUpgradeDispatcherTrait::upgrade(
+        fixtures::IAccountUpgradeDispatcher { contract_address: actor }, *wrong_class.class_hash,
+    );
     let error = recorded::admission(season, actor).unwrap_err();
-    assert_eq!(error.span(), array!['unregistered actor', 'ENTRYPOINT_FAILED'].span());
+    assert_eq!(error.span(), array!['INVALID_ACTOR', 'ENTRYPOINT_FAILED'].span());
     assert_eq!(IGamesAuthenticationDispatcher { contract_address: season }.next_nonce(1, actor), 0);
 }
 
@@ -398,6 +435,7 @@ fn authority_rotates_authentication_without_replacing_the_domain() {
     let current = gateway.authentication();
     assert_eq!(current.submitter, replacement.submitter);
     assert_eq!(current.account_class, previous.account_class);
+    assert_eq!(current.guardian_public_key, previous.guardian_public_key);
     recorded::deploy_submitter(replacement.submitter);
     let action = intent(deployment, 1);
     let signed = signature(deployment, action);
@@ -411,24 +449,64 @@ fn authority_rotates_authentication_without_replacing_the_domain() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn approved_account_class_can_follow_a_player_account_upgrade() {
+fn in_place_player_account_upgrade_is_refused_without_execution_or_nonce_consumption() {
     let deployment = setup(true);
     let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
+    let action = intent(deployment, 1);
+    let signed = signature(deployment, action);
+    let before = recorded::gameplay_snapshot(deployment.games);
     let class = declare("AccountUpgradeFixture").unwrap().contract_class();
     fixtures::IAccountUpgradeDispatcherTrait::upgrade(
         fixtures::IAccountUpgradeDispatcher { contract_address: deployment.actor }, *class.class_hash,
     );
-    let action = intent(deployment, 1);
-    let signed = signature(deployment, action);
-    assert!(recorded::admission(deployment.games, deployment.actor).is_err());
-    let authentication = crate::games::Authentication { account_class: *class.class_hash, ..season.authentication() };
-    start_cheat_caller_address(deployment.games, authority());
-    season.set_authentication(authentication.submitter, authentication.account_class);
-    start_cheat_caller_address(deployment.games, submitter());
-    assert!(recorded::admission(deployment.games, deployment.actor).is_ok());
+    assert_eq!(
+        recorded::admission(deployment.games, deployment.actor).unwrap_err().span(),
+        array!['INVALID_ACTOR', 'ENTRYPOINT_FAILED'].span(),
+    );
     season.execute(action, context(deployment.games, action.game_id), signed);
+    assert_eq!(
+        IRecordedExecutionViewsDispatcher { contract_address: deployment.games }
+            .recorded_outcome(1, 1)
+            .unwrap()
+            .status_class,
+        'INVALID_ACTOR',
+    );
+    assert_eq!(season.next_nonce(1, deployment.actor), 0);
+    assert_eq!(recorded::gameplay_snapshot(deployment.games), before);
+    start_cheat_caller_address(deployment.games, authority());
+    let safe = IGamesAuthenticationSafeDispatcher { contract_address: deployment.games };
+    assert!(safe.set_authentication(submitter(), *class.class_hash).is_err());
+    assert_eq!(season.authentication().account_class, deployment.account_class);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn foreign_guardian_is_refused_before_signature_without_gameplay_or_nonce_consumption() {
+    let deployment = setup(true);
+    let (foreign, _) = deploy_player(1, GUARDIAN + 1);
+    let foreign_deployment = Deployment { actor: foreign, ..deployment };
+    let action = intent(foreign_deployment, 1);
+    let before = recorded::gameplay_snapshot(deployment.games);
+    assert_eq!(
+        recorded::admission(deployment.games, foreign).unwrap_err().span(),
+        array!['FOREIGN_GUARDIAN', 'ENTRYPOINT_FAILED'].span(),
+    );
+    // An invalid signature cannot hide the earlier guardian refusal.
+    let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
+    season.execute(action, context(deployment.games, 1), array![].span());
+    assert_eq!(
+        IRecordedExecutionViewsDispatcher { contract_address: deployment.games }
+            .recorded_outcome(1, 1)
+            .unwrap()
+            .status_class,
+        'FOREIGN_GUARDIAN',
+    );
+    assert_eq!(season.next_nonce(1, foreign), 0);
+    assert_eq!(recorded::gameplay_snapshot(deployment.games), before);
+    execute(deployment, intent(deployment, 1));
     assert_eq!(season.next_nonce(1, deployment.actor), 1);
 }
+
 
 #[test]
 #[feature("safe_dispatcher")]
@@ -446,7 +524,10 @@ fn admission_rejects_a_non_account_and_authentication_row_keeps_its_shape() {
     assert_eq!(event.keys.span(), array![selector!("RowSet"), 1, 'Authentication'].span());
     assert_eq!(
         event.data.span(),
-        array![1, deployment.games.into(), 2, authentication.submitter.into(), authentication.account_class.into()]
+        array![
+            1, deployment.games.into(), 3, authentication.submitter.into(), authentication.account_class.into(),
+            authentication.guardian_public_key,
+        ]
             .span(),
     );
 }

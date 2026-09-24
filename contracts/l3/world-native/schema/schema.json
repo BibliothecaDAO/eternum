@@ -5956,10 +5956,16 @@
           "type": "core::starknet::class_hash::ClassHash",
           "id": "0x6163636f756e745f636c617373",
           "feltLength": 1
+        },
+        {
+          "name": "guardian_public_key",
+          "type": "core::felt252",
+          "id": "0x677561726469616e5f7075626c69635f6b6579",
+          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 2
+      "valueLength": 3
     },
     {
       "name": "ActionNonce",
@@ -8527,6 +8533,10 @@
         {
           "name": "account_class",
           "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "guardian_public_key",
+          "type": "core::felt252"
         }
       ]
     },
@@ -11875,5 +11885,5 @@
       ]
     }
   },
-  "identity": "8473128f00e3b38599cf362a204fcbe1fc0e03b2f4fa1a77cb198142bdfc671e"
+  "identity": "aa893f88601705ba308de462910f5d9666dce1c3c78e647aa5f25b220d8b92e4"
 }
