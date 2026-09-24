@@ -6,6 +6,7 @@ import {
   getOrCreateDeviceKey,
   signGameplayIntent,
 } from "@bibliothecadao/eternum";
+import { installFreshGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { getPlayerName } from "@/services/identity/player-profiles";
 
 type BrowserGameInput = Pick<
@@ -33,5 +34,7 @@ export async function createBrowserGameClient(input: BrowserGameInput) {
       submitIntent: createNativeTicketSubmission(input.shard.admissionUrl),
     },
     scheduler: createBrowserScheduler(),
+    // The scenes and hooks read the game's sync runtime as the active one.
+    createRuntime: installFreshGameSyncRuntime,
   });
 }
