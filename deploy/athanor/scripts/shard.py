@@ -27,6 +27,7 @@ DOCKER = ["sudo", "-n", "docker"]
 # 48th player), plus a fixed allowance for the sequencing authority, Herald and tooling.
 CONNECTIONS_PER_PLAYER = 2
 TOOLING_CONNECTIONS = 32
+DEFAULT_NODE_MEMORY_MIB = 24576
 
 
 def cpu_numbers(value):
@@ -58,7 +59,8 @@ def validate_configuration(config, allowed_cpus):
         raise ValueError("reserve isolated ports base through base+3 and base+5 above 27999")
     if not cpu_numbers(config["cpuset"]) <= allowed_cpus:
         raise ValueError("cpuset exceeds the native slice allocation")
-    if not isinstance(config["node_memory_mib"], int) or not 1024 <= config["node_memory_mib"] <= 28672:
+    memory = config.get("node_memory_mib", DEFAULT_NODE_MEMORY_MIB)
+    if not isinstance(memory, int) or not 1024 <= memory <= 28672:
         raise ValueError("node memory must fit the native slice budget")
     # These options belong to the shard lifecycle, never to a performance lever.
     owned = ("--base-path", "--chain-config", "--rpc", "--name", "--db", "--devnet", "--l1", "--no-charge", "--otel")
@@ -118,7 +120,8 @@ def compose_configuration(config, directory):
         "TRUSTED_PROXY": config.get("trusted_proxy", ""),
         "HOST_UID": str(os.getuid()), "HOST_GID": str(os.getgid()), "BIND_ADDRESS": "127.0.0.1",
         "RPC_PORT": str(config["port_base"] + 5), "HERALD_PORT": str(config["port_base"] + 1),
-        "ADMISSION_PORT": str(config["port_base"] + 3), "NODE_MEMORY": f"{config['node_memory_mib']}m",
+        "ADMISSION_PORT": str(config["port_base"] + 3),
+        "NODE_MEMORY": f"{config.get('node_memory_mib', DEFAULT_NODE_MEMORY_MIB)}m",
         "HERALD_MEMORY": "24g",
     }
     compose = json.loads(subprocess.check_output([
@@ -347,6 +350,7 @@ def initialize_shard_identity(config, directory, deployer_address):
 
 
 def start_shard(config, directory):
+    config = {"node_memory_mib": DEFAULT_NODE_MEMORY_MIB, **config}
     allowed = cpu_numbers(Path("/sys/fs/cgroup/athanor.slice/cpuset.cpus.effective").read_text().strip())
     validate_configuration(config, allowed)
     ensure_fresh_project(config)

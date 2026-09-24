@@ -40,8 +40,8 @@ services:
       - --enable-native-execution=true
       - --native-compilation-mode=async
     volumes: ["chain:/data", "public-config:/config:ro"]
-    mem_limit: ${NODE_MEMORY:-12g}
-    memswap_limit: ${NODE_MEMORY:-12g}
+    mem_limit: ${NODE_MEMORY:-24g}
+    memswap_limit: ${NODE_MEMORY:-24g}
     restart: on-failure
     stop_grace_period: 60s
     depends_on:

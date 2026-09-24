@@ -70,6 +70,8 @@ before deployment and renders the node configuration with the same identity. The
 template; the package init renders it before starting a node. Deployment, preset and harness commands check their
 RPC against the manifest before submitting. Every image must be pinned by digest. Flags explicitly select native
 execution and compilation mode. The runner refuses existing project state and CPUs outside `athanor.slice`.
+`node_memory_mib` is optional and defaults to 24576 (24 GiB); explicit host limits override it. The shared Compose
+node restarts on failure with its existing chain volume. The old 12 GiB staging limit caused a memcg OOM on September 24.
 
 The runner generates the host's deployer and sequencing keys into private `host-keys.json`; inherited deployer
 credentials are not used. It starts the pinned upstream node with `--devnet --devnet-contracts=0`: genesis contains

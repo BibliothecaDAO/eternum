@@ -28,6 +28,7 @@ class ShardTest(unittest.TestCase):
         config = configuration()
         allowed = set(range(8, 12)) | set(range(20, 24))
         shard.validate_configuration(config, allowed)
+        shard.validate_configuration({key: value for key, value in config.items() if key != "node_memory_mib"}, allowed)
         for key, value in (
             ("chain_id", ""), ("chain_id", "a" * 32), ("chain_id", "a\nb"),
             ("port_base", 5050), ("cpuset", "0-23"), ("node_memory_mib", 65536), ("player_capacity", 0),
