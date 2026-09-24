@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { buildSiwsMessage } from "@realms-world/identity";
+import { buildSiwsMessage, enrolOperator } from "@realms-world/identity";
 import { botRealmsId, deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
 import { createGuardian } from "@realms-world/guardian";
 import { byteArray, CallData, ec, hash, typedData, type TypedData } from "starknet";
@@ -434,6 +434,50 @@ describe("identity Worker", () => {
     expect(refused.status).toBe(403);
     expect(await refused.json()).toEqual({ error: "not_a_bot_account" });
     expect((await ask({ ...request, action: "REVOKE", account: playerAccount }, OPERATOR_TOKEN)).status).toBe(403);
+  });
+
+  it("enrols a community shard's operator through their own Realms account, then signs that session out", async () => {
+    const email = "community-operator@realms.test";
+    const deviceKey = "0x0be7a702";
+    const guardianPublicKey = ec.starkCurve.getStarkKey(GUARDIAN_KEY);
+    const inProcess = (url: string, init?: RequestInit) =>
+      routeIdentityRequest(new Request(url, init), env, auth, {
+        cache: proxy.caches.default as unknown as Cache,
+        fetchShard,
+      });
+
+    const enrolment = await enrolOperator({
+      identityUrl: `${ORIGIN}/api`,
+      shard: { chainId: CHAIN_ID, accountClassHash: ACCOUNT_CLASS_HASH, guardianPublicKey },
+      deviceKey,
+      email,
+      readCode: async () => sentCodes.get(email)!,
+      fetch: inProcess,
+    });
+
+    const user = (await proxy.env.DB.prepare('SELECT "id", "realmsId" FROM "user" WHERE "email" = ?')
+      .bind(email)
+      .first()) as { id: string; realmsId: string };
+    expect(enrolment.realmsId).toBe(user.realmsId);
+    const [r, s] = enrolment.signature;
+    const approved = {
+      chainId: CHAIN_ID,
+      account: realmsAccountAddress(user.realmsId, ACCOUNT_CLASS_HASH, guardianPublicKey),
+      action: "ADD" as const,
+      deviceKey,
+      counter: 1,
+    };
+    expect(
+      ec.starkCurve.verify(
+        new ec.starkCurve.Signature(BigInt(r!), BigInt(s!)),
+        deviceChangeHash(approved),
+        ec.starkCurve.getPublicKey(GUARDIAN_KEY),
+      ),
+    ).toBe(true);
+    const sessions = await proxy.env.DB.prepare('SELECT count(*) AS n FROM "session" WHERE "userId" = ?')
+      .bind(user.id)
+      .first<{ n: number }>();
+    expect(sessions?.n).toBe(0);
   });
 
   it("names an account only through our guardian's approval, never through the Realms id it claims", async () => {

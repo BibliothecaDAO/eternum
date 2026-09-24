@@ -1,9 +1,16 @@
 #!/usr/bin/env bun
-import { mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Account, addAddressPadding, RpcProvider } from "starknet";
-import { deviceKeyOf, joinBotAccount, type RealmsAccountShard } from "@bibliothecadao/eternum";
+import {
+  deviceKeyOf,
+  joinBotAccount,
+  joinRealmsAccount,
+  type DeviceKey,
+  type RealmsAccountShard,
+} from "@bibliothecadao/eternum";
+import type { OperatorEnrolment } from "../../../packages/identity/src/operator-enrolment";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import type { ShardRecord } from "../../../apps/herald/src/shard-manifest";
@@ -32,8 +39,8 @@ const PLAYER_ACCOUNT_ARTIFACT = "realms_player_account_RealmsAccount.contract_cl
 
 interface GameplayDeploymentResult {
   operatorAccountAddress: string;
-  /** The bot label that names the operator's Realms account; its device changes are approved under it. */
-  operatorLabel: string;
+  /** The bot label that names our shards' operator; null when a community operator enrolled their own Realms account. */
+  operatorLabel: string | null;
   playerAccountClassHash: string;
   rpcUrl: string;
 }
@@ -66,14 +73,14 @@ async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
   await assertProviderChain(provider, manifest, "RPC_URL");
   const account = createMadaraAccount(provider, DEPLOYER_ADDRESS, DEPLOYER_PRIVATE_KEY);
   const playerAccountClassHash = await declareAccountClass(account, manifest.shard.accountClassHash);
-  const operatorAccountAddress = await prepareOperator(provider, {
+  const operator = await prepareOperator(provider, {
     chainId: await provider.getChainId(),
     accountClassHash: playerAccountClassHash,
     guardianPublicKey: manifest.shard.guardianPublicKey,
   });
   const result = {
-    operatorAccountAddress,
-    operatorLabel: DEPLOYER_ADDRESS,
+    operatorAccountAddress: addAddressPadding(operator.address),
+    operatorLabel: operator.label,
     playerAccountClassHash,
     rpcUrl: RPC_URL,
   } satisfies GameplayDeploymentResult;
@@ -82,18 +89,57 @@ async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
 }
 
 /**
- * The operator is a bot named by its deployer address: a Realms account under the shard's guardian, its one device the
- * deployer key, approved through the identity Worker's operator route like every bot.
+ * The operator's Realms account, under the shard's guardian, with the deployer key as its one device. A community
+ * operator enrolled their own Realms account before initialization (enrol-operator.ts); our own shards' operator is the
+ * bot named by the deployer address, approved through the identity Worker's operator route.
  */
-async function prepareOperator(provider: RpcProvider, shard: RealmsAccountShard): Promise<string> {
-  const operator = await joinBotAccount({
-    provider,
-    shard,
-    label: DEPLOYER_ADDRESS,
-    device: deviceKeyOf(DEPLOYER_PRIVATE_KEY),
-    identity: { url: requiredEnvironment("IDENTITY_URL"), operatorToken: requiredEnvironment("OPERATOR_TOKEN") },
-  });
-  return addAddressPadding(operator.address);
+async function prepareOperator(
+  provider: RpcProvider,
+  shard: RealmsAccountShard,
+): Promise<{ address: string; label: string | null }> {
+  const device = deviceKeyOf(DEPLOYER_PRIVATE_KEY);
+  const enrolment = readOperatorEnrolment();
+  if (enrolment) {
+    const operator = await joinRealmsAccount({
+      provider,
+      shard,
+      realmsId: enrolment.realmsId,
+      device,
+      approve: enrolledApproval(enrolment, device),
+    });
+    return { address: operator.address, label: null };
+  }
+  const operator = await joinBotAccount({ provider, shard, label: DEPLOYER_ADDRESS, device, identity: operatorIdentity() });
+  return { address: operator.address, label: DEPLOYER_ADDRESS };
+}
+
+function readOperatorEnrolment(): OperatorEnrolment | null {
+  const path = requiredEnvironment("OPERATOR_ENROLMENT_PATH");
+  return existsSync(path) ? (JSON.parse(readFileSync(path, "utf8")) as OperatorEnrolment) : null;
+}
+
+/** The enrolment approves exactly one change: this deployer key as the account's first device. */
+const enrolledApproval =
+  (enrolment: OperatorEnrolment, device: DeviceKey) =>
+  async (change: { action: string; deviceKey: string; counter: number }): Promise<string[]> => {
+    if (change.action !== "ADD" || change.counter !== 1 || BigInt(change.deviceKey) !== BigInt(device.publicKey)) {
+      throw new Error("The operator enrolment approves only the deployer key as the first device of a new account");
+    }
+    if (BigInt(enrolment.deviceKey) !== BigInt(device.publicKey)) {
+      throw new Error("The operator enrolment was made for another deployer key; enrol this shard's operator again");
+    }
+    return enrolment.signature;
+  };
+
+function operatorIdentity() {
+  const operatorToken = process.env.OPERATOR_TOKEN?.trim();
+  if (!operatorToken) {
+    throw new Error(
+      "The operator enrols through the shard's guardian: run deploy/athanor/scripts/enrol-operator.ts before " +
+        "initialization, or set OPERATOR_TOKEN in our own environments",
+    );
+  }
+  return { url: requiredEnvironment("IDENTITY_URL"), operatorToken };
 }
 
 deployGameplayContracts()

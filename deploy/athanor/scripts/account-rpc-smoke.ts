@@ -23,7 +23,12 @@ const device = deviceKeyOf(`0x${Buffer.from(ec.starkCurve.utils.randomPrivateKey
 const smoke = mkdtempSync(`${directory}/rpc-smoke-`);
 writeFileSync(`${smoke}/device.json`, JSON.stringify(device), { mode: 0o600, flag: "wx" });
 const operatorToken = process.env.OPERATOR_TOKEN;
-if (!operatorToken) throw new Error("OPERATOR_TOKEN is required: the operator's device changes pass the shard's guardian");
+if (!operatorToken || !operatorLabel) {
+  throw new Error(
+    "The smoke's device changes on the operator are approved through the operator route: it needs OPERATOR_TOKEN and " +
+      "an operator enrolled as a bot. A community shard checks its boundary with inspect-shard-roles --public-rpc.",
+  );
+}
 const approve = approveBotDevice({ url: env.IDENTITY_URL, operatorToken }, operatorLabel);
 async function approval(action: "ADD" | "REVOKE") {
   const [counter] = await provider.callContract(

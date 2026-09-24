@@ -272,6 +272,7 @@ def deployment_environment(config, directory):
         "NATIVE_AUTHORITY_FILE": str(directory / "authority.json"),
         "NATIVE_WORLD_MANIFEST": str(directory / "native-world.json"),
         "GAMEPLAY_CONTRACTS_PATH": str(directory / "gameplay-contracts.json"),
+        "OPERATOR_ENROLMENT_PATH": str(directory / "operator-enrolment.json"),
         "MADARA_METRICS_FILE": str(directory / "metrics" / "metrics.jsonl"),
         # The node image and container as this shard runs them: a measured harness run records both as evidence.
         "MADARA_IMAGE": config["madara_image"],

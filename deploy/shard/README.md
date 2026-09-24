@@ -22,8 +22,17 @@ HERALD_MEMORY=6g
 NODE_MEMORY=24g
 CONFIG
 printf 'HOST_UID=%s\nHOST_GID=%s\n' "$(id -u)" "$(id -g)" >> .env
+docker compose run --rm prepare
+docker compose run --rm -it --no-deps --entrypoint bun init deploy/athanor/scripts/enrol-operator.ts /data
 docker compose up -d
 ```
+
+The shard's operator, which creates games and signs the shard's administrative actions, is your own Realms account on
+this chain, under the same guardian as every player. `prepare` generates the host keys; `enrol-operator.ts` then asks for
+your Realms account's email and the sign-in code it receives, gets the guardian's approval for the host deployer key
+as that account's first device on your chain, signs the session out and writes `data/operator-enrolment.json`.
+Initialization deploys the operator with it. That device is the operator's key: keep it when you review your account's
+devices.
 
 `HERALD_MEMORY` defaults to `6g`: stream D's `measure:load` workload of four 24-player Blitz games (96 subscribers)
 held RSS at about 4.6–4.7 GB over 90 simulated minutes after stream cleanup
@@ -67,15 +76,10 @@ curl --fail https://herald.example.org/manifest
 ```
 
 Repeat the RPC check from outside the host. Unshaped submissions must return method-not-found, including in mixed batches; invalid-params means the node's write
-handler is exposed. Exercise the account exceptions and refusals through the same public endpoint:
+handler is exposed.
 
-```sh
-docker compose run --rm --no-deps --entrypoint bun init \
-  deploy/athanor/scripts/account-rpc-smoke.ts /data https://rpc.example.org/rpc/v0_10_2
-```
-
-The smoke rejects foreign classes, guardian keys and non-operator calls to other targets, selectors or multi-calls;
-it joins and revokes a temporary device and confirms a harmless operator invoke. Keys remain private in `data/`.
+The account smoke (`deploy/athanor/scripts/account-rpc-smoke.ts`), which also joins and revokes a temporary operator
+device, needs guardian approvals through our operator route, so it runs on our own shards only.
 
 Create an unranked Frontier game with the host operator (choose a future start time):
 

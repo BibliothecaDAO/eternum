@@ -30,10 +30,13 @@ export class IdentityRequestError extends Error {
   }
 }
 
+/** The one fetch call the identity client makes; a browser's fetch, or a tool's that keeps the session cookie. */
+export type IdentityFetch = (url: string, init?: RequestInit) => Promise<Response>;
+
 export interface IdentityClientOptions {
   /** The identity API root: `/api` when it is served under the page's own origin, or an absolute URL. */
   apiUrl: string;
-  fetch?: typeof globalThis.fetch;
+  fetch?: IdentityFetch;
 }
 
 export interface SignInOptions {
