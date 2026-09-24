@@ -310,12 +310,17 @@ function parseTransactionGas(receipt: unknown): TransactionGas {
   if (!resources || typeof resources.l2_gas !== "number") {
     throw new Error(`Receipt ${record.transaction_hash ?? "?"} reports no l2_gas; the node is older than RPC v0.8`);
   }
+  // A fee-free shard reports a zero fee; a receipt without one, or without its L1 gas, is malformed, never zero.
+  const fee = record.actual_fee?.amount;
+  if (fee === undefined || typeof resources.l1_gas !== "number" || typeof resources.l1_data_gas !== "number") {
+    throw new Error(`Receipt ${record.transaction_hash ?? "?"} lacks its fee or L1 gas`);
+  }
   return {
     blockNumber: Number.isSafeInteger(record.block_number) ? record.block_number! : null,
     executionStatus: record.execution_status === "REVERTED" ? "REVERTED" : "SUCCEEDED",
-    feeWei: BigInt(record.actual_fee?.amount ?? "0x0"),
-    l1DataGas: resources.l1_data_gas ?? 0,
-    l1Gas: resources.l1_gas ?? 0,
+    feeWei: BigInt(fee),
+    l1DataGas: resources.l1_data_gas,
+    l1Gas: resources.l1_gas,
     l2Gas: resources.l2_gas,
     ...parseComputation(resources),
   };
