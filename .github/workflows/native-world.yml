@@ -12,7 +12,9 @@ jobs:
   native-world:
     if: inputs.world
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    # 1.5x the slowest green run (33 min): a cold snforge rebuild (13-18 min, when its cache is not readable on the
+    # ref) plus the full suite (13-23 min) overran the former 35.
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
       - uses: software-mansion/setup-scarb@v1
