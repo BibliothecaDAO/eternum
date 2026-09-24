@@ -21,7 +21,11 @@ import { EntityType, ID, RelicRecipientType } from "@bibliothecadao/types";
 import { ActiveRelicEffects } from "../active-relic-effects";
 import { useArmyMovementReadiness } from "../../armies/army-movement-readiness";
 import { ArmyWarning } from "../../armies/army-warning";
-import { formatTravelBlockedSummary, getArmyFoodRequirementLabel } from "../../armies/army-warning-copy";
+import {
+  formatFoodBlock,
+  formatTravelBlockedSummary,
+  getArmyFoodRequirementLabel,
+} from "../../armies/army-warning-copy";
 import { buildDisplayItems, CompactEntityInventory, countDisplayItems } from "../compact-entity-inventory";
 import { useArmyEntityDetail } from "../hooks/use-army-entity-detail";
 import { EntityDetailLayoutVariant } from "../layout";
@@ -184,6 +188,11 @@ const ArmyBannerEntityDetailContent = memo(
               travelBlockedTitle={travelBlockedTitle}
               rightAccessory={hasWarnings && movementReadiness ? <ArmyWarning readiness={movementReadiness} /> : null}
             />
+          ) : null}
+          {movementReadiness?.foodBlock ? (
+            <p className="text-[11px] leading-snug text-amber-300" role="status">
+              {formatFoodBlock(movementReadiness.foodBlock, (amount) => formatNumber(amount, 0))}
+            </p>
           ) : null}
           {nextStaminaGain && derivedData.staminaDisplay ? (
             <p className="text-[10px] text-gold/60">

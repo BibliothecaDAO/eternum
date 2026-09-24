@@ -165,16 +165,25 @@ export class ResourceManager {
     };
   }
 
-  private projectTraining(currentTick: number, resourceId: ResourcesIds) {
-    if (resourceId !== 35 && (resourceId < 26 || resourceId > 34)) return;
-    const trainers = Array.from({ length: 9 }, (_, index) => (26 + index) as ResourcesIds)
+  /** Whether barracks here train troops from wheat, which they take before anything else can spend it. */
+  public trainsFromWheat(): boolean {
+    return this.trainers().length > 0;
+  }
+
+  /** The troop productions that train from wheat without end: a barracks with no output cap. */
+  private trainers() {
+    // An entity without a resource store has no barracks to train from.
+    if (!this.hasResources()) return [];
+    return Array.from({ length: 9 }, (_, index) => (26 + index) as ResourcesIds)
       .map((id) => ({ id, state: this.current(id)! }))
       .filter(
-        ({ state }) =>
-          state.production.building_count > 0 &&
-          state.production.output_amount_left === UNLIMITED_U128 &&
-          state.production.last_updated_at < currentTick,
+        ({ state }) => state.production.building_count > 0 && state.production.output_amount_left === UNLIMITED_U128,
       );
+  }
+
+  private projectTraining(currentTick: number, resourceId: ResourcesIds) {
+    if (resourceId !== 35 && (resourceId < 26 || resourceId > 34)) return;
+    const trainers = this.trainers().filter(({ state }) => state.production.last_updated_at < currentTick);
     if (!trainers.length) return;
     const wheat = this.current(ResourcesIds.Wheat)!;
     const farmOutput = ResourceManager._amountProducedStatic(wheat.production, currentTick, ResourcesIds.Wheat);
