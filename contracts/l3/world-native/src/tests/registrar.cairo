@@ -781,6 +781,18 @@ fn a_home_ring_tile_reads_as_explored_and_an_explore_onto_it_moves_without_a_rol
 
     // An explore onto another ring tile moves at move cost: no discovery, no supplies.
     let (step, target) = unstored_ring_neighbor(map, game_id, ring_tile, site, spacing);
+    // The fixture's armies start with one move of stamina and regain it per 60 s tick, and the move above spent it in
+    // this tick; rest the army by one dearest move so the explore is judged on the ring rule, not on fatigue.
+    let stamina = preset.rules.troop_stamina_config;
+    let mut rested = troops.explorer(key).unwrap();
+    rested.troops.stamina.amount += (stamina.stamina_travel_stamina_cost + stamina.stamina_bonus_value).into();
+    super::resource_commands::set_fixture(
+        d.games,
+        selector!("troops"),
+        selector!("explorers"),
+        array![game_id.into(), key.explorer_id.into()].span(),
+        rested,
+    );
     let before = troops.explorer(key).unwrap();
     let mut balances = array![];
     for resource in array![23_u8, 26, 38].span() {
