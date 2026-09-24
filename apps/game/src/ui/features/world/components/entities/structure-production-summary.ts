@@ -93,13 +93,11 @@ const buildStructureProductionSummary = ({
         totalBuildings: stats.totalBuildings,
         activeBuildings,
         isProducing,
-        timeRemainingSeconds: Number.isFinite(productionData.timeRemainingSeconds)
-          ? productionData.timeRemainingSeconds
-          : null,
+        timeRemainingSeconds: productionData.timeRemainingSeconds,
         productionPerSecond: Number.isFinite(productionData.productionPerSecond)
           ? productionData.productionPerSecond
           : null,
-        outputRemaining: Number.isFinite(productionData.outputRemaining) ? productionData.outputRemaining : null,
+        outputRemaining: productionData.outputRemaining,
         calculatedAt,
       },
     ];

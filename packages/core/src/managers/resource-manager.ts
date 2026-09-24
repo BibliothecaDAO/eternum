@@ -22,6 +22,12 @@ export interface ResourceProductionData {
 }
 
 // A scheduled production start is not a chain-clock observation.
+/**
+ * u128::MAX, the value the world writes for a budget that never runs out: a producer's output (FR8's unfunded board
+ * buildings) or a store's capacity. It is a sentinel, not an amount, and is never formatted as a number or duration.
+ */
+const UNLIMITED_U128 = (1n << 128n) - 1n;
+
 const elapsedProductionTicks = (lastUpdatedAt: number, currentTick: number): number => {
   if (!Number.isFinite(lastUpdatedAt) || !Number.isFinite(currentTick)) throw new Error("Invalid production clock");
   return Math.max(0, Math.floor(currentTick - lastUpdatedAt));
@@ -121,6 +127,13 @@ export class ResourceManager {
     return ResourceManager.hasActiveProduction(this.current(resourceId)?.production, resourceId);
   }
 
+  /** Production that never runs out: continuous food, or a producer written with the unlimited output sentinel. */
+  private static neverRunsOut(production: Production, resourceId: ResourcesIds): boolean {
+    return (
+      ResourceManager.isContinuousProductionResource(resourceId) || production.output_amount_left === UNLIMITED_U128
+    );
+  }
+
   private static hasActiveProduction(production: Production | undefined, resourceId: ResourcesIds) {
     if (!production) return false;
 
@@ -154,13 +167,12 @@ export class ResourceManager {
 
   private projectTraining(currentTick: number, resourceId: ResourcesIds) {
     if (resourceId !== 35 && (resourceId < 26 || resourceId > 34)) return;
-    const unlimited = (1n << 128n) - 1n;
     const trainers = Array.from({ length: 9 }, (_, index) => (26 + index) as ResourcesIds)
       .map((id) => ({ id, state: this.current(id)! }))
       .filter(
         ({ state }) =>
           state.production.building_count > 0 &&
-          state.production.output_amount_left === unlimited &&
+          state.production.output_amount_left === UNLIMITED_U128 &&
           state.production.last_updated_at < currentTick,
       );
     if (!trainers.length) return;
@@ -188,9 +200,9 @@ export class ResourceManager {
     let used = weight.weight - wheat.balance * wheatWeight;
     const storeOutput = (amount: bigint, unitWeight: bigint) => {
       const remaining =
-        weight.capacity === unlimited ? unlimited : weight.capacity > used ? weight.capacity - used : 0n;
+        weight.capacity === UNLIMITED_U128 ? UNLIMITED_U128 : weight.capacity > used ? weight.capacity - used : 0n;
       const stored = amount * unitWeight > remaining ? remaining / unitWeight : amount;
-      if (weight.capacity !== unlimited) used += stored * unitWeight;
+      if (weight.capacity !== UNLIMITED_U128) used += stored * unitWeight;
       return stored;
     };
     const storedWheat = storeOutput(available, wheatWeight);
@@ -224,10 +236,9 @@ export class ResourceManager {
     const lastUpdatedTick = production.last_updated_at;
     const productionRate = production.production_rate;
     const outputAmountLeft = production.output_amount_left;
-    const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
 
     if (productionRate === 0n) return 0;
-    if (isContinuousProductionResource) return Number.MAX_SAFE_INTEGER;
+    if (ResourceManager.neverRunsOut(production, resourceId)) return Number.MAX_SAFE_INTEGER;
     if (outputAmountLeft === 0n) return 0;
 
     // Calculate ticks since last update
@@ -246,11 +257,8 @@ export class ResourceManager {
     const { production } = resource;
     if (!production || production.building_count === 0) return 0;
 
-    const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
     if (production.production_rate === 0n) return production.last_updated_at;
-    if (isContinuousProductionResource) {
-      return Number.MAX_SAFE_INTEGER;
-    }
+    if (ResourceManager.neverRunsOut(production, resourceId)) return Number.MAX_SAFE_INTEGER;
     if (production.output_amount_left === 0n) return production.last_updated_at;
 
     // Calculate when production will end based on remaining output and rate
@@ -361,31 +369,28 @@ export class ResourceManager {
   ): ResourceProductionData {
     const productionPerSecond = divideByPrecision(Number(productionInfo.production.production_rate || 0), false);
 
-    const ticksSinceLastUpdate = elapsedProductionTicks(productionInfo.production.last_updated_at, currentTick);
-    const totalAmountProduced = BigInt(ticksSinceLastUpdate) * productionInfo.production.production_rate;
-    const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
-    const remainingOutput = isContinuousProductionResource
-      ? productionInfo.production.output_amount_left
-      : productionInfo.production.output_amount_left > totalAmountProduced
-        ? productionInfo.production.output_amount_left - totalAmountProduced
-        : 0n;
+    const { production } = productionInfo;
+    const isProducing = production.building_count > 0 && production.production_rate !== 0n;
+    // Production that never runs out has no remaining output or time: both are infinite, never the sentinel's value.
+    if (ResourceManager.neverRunsOut(production, resourceId)) {
+      return {
+        productionPerSecond,
+        isProducing,
+        outputRemaining: Number.POSITIVE_INFINITY,
+        timeRemainingSeconds: Number.POSITIVE_INFINITY,
+      };
+    }
 
-    const isProducing =
-      productionInfo.production.building_count > 0 &&
-      productionInfo.production.production_rate !== 0n &&
-      (isContinuousProductionResource || remainingOutput > 0n);
-
+    const ticksSinceLastUpdate = elapsedProductionTicks(production.last_updated_at, currentTick);
+    const totalAmountProduced = BigInt(ticksSinceLastUpdate) * production.production_rate;
+    const remainingOutput =
+      production.output_amount_left > totalAmountProduced ? production.output_amount_left - totalAmountProduced : 0n;
     const outputRemainingNumber = Number(remainingOutput) / RESOURCE_PRECISION;
-    // Continuous production never runs out, so it has no time remaining; a finite value here is one tick of noise.
-    const timeRemainingSeconds = isContinuousProductionResource
-      ? Number.POSITIVE_INFINITY
-      : productionPerSecond > 0
-        ? outputRemainingNumber / productionPerSecond
-        : 0;
+    const timeRemainingSeconds = productionPerSecond > 0 ? outputRemainingNumber / productionPerSecond : 0;
 
     return {
       productionPerSecond,
-      isProducing,
+      isProducing: isProducing && remainingOutput > 0n,
       outputRemaining: outputRemainingNumber,
       timeRemainingSeconds,
     };
