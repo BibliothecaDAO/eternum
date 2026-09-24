@@ -867,7 +867,7 @@ describe("Madara harness CLI and concurrency", () => {
     ).toMatchObject({ bots: 4, minutes: 0.5, intervalSeconds: 5, gameId: 9, gameName: "game-9" });
   });
 
-  it("runs the Frontier booth burst inside a ten-minute window unless the campaign names another", () => {
+  it("runs Frontier bursts inside the campaign's windows unless a run names another", () => {
     expect(parseHarnessArgs(["--game-type", "frontier", "--bots", "250", "--frontier-burst", "booth"])).toMatchObject({
       frontierBurst: { shape: "booth", windowSeconds: 600 },
     });
@@ -883,8 +883,12 @@ describe("Madara harness CLI and concurrency", () => {
     ).toEqual({ shape: "booth", windowSeconds: 120 });
     expect(parseHarnessArgs(["--game-type", "frontier"]).frontierBurst).toBeUndefined();
     expect(() => parseHarnessArgs(["--frontier-burst", "booth"])).toThrow("--frontier-burst requires --game-type frontier");
+    expect(parseHarnessArgs(["--game-type", "frontier", "--frontier-burst", "rollover"]).frontierBurst).toEqual({
+      shape: "rollover",
+      windowSeconds: 120,
+    });
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--frontier-burst", "stampede"])).toThrow(
-      "--frontier-burst must be booth",
+      "--frontier-burst must be booth or rollover",
     );
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--burst-window-seconds", "60"])).toThrow(
       "--burst-window-seconds requires --frontier-burst",

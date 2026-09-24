@@ -141,9 +141,12 @@ interface Player {
   siteExchanges: Map<number, number>;
   nextActionAt: number;
 }
-/** A campaign burst on the Frontier shape: the booth, where every bot founds its realm inside the window. */
+/**
+ * A campaign burst on the Frontier shape: the booth, where every bot founds its realm inside the window, or the
+ * rollover, where every bot musters and explores inside a new day's first window.
+ */
 export interface FrontierBurst {
-  shape: "booth";
+  shape: "booth" | "rollover";
   windowSeconds: number;
 }
 export interface FrontierEvidence {
@@ -174,7 +177,7 @@ interface RunFrontierOptions {
 
 /** Decisions use the same synchronized native facts and command submission as a player. */
 export async function runFrontierWorkload(options: RunFrontierOptions): Promise<WorkloadResult> {
-  const { client, game, accounts, provider } = options;
+  const { client, game, accounts } = options;
   const epochSeconds = epochSecondsOf(client);
   // A burst measures one moment of load, which is the same on any day length; the plain shape plays its own days.
   if (!options.burst && options.accelerated !== (epochSeconds === acceleratedEpochSeconds()))
@@ -182,6 +185,7 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
   await game.waitUntilPlaying();
   if (options.burst?.shape === "booth") return runBoothBurst(options, epochSeconds);
   const players = await settleFrontierPlayers(options, accounts);
+  if (options.burst?.shape === "rollover") return runRolloverBurst(options, players, epochSeconds);
   for (const player of players) observeDay(client, game, player);
   await options.onReady?.();
   const startedAt = new Date().toISOString();
@@ -196,25 +200,13 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
         if (now() < player.nextActionAt || !inSession(client, player)) return;
         const action = chooseAction(client, game, player);
         if (!action) return;
-        const result = await trackTransaction({
-          botId: player.identity.botId,
-          gameId: game.gameId,
-          kind: action.kind,
-          provider,
-          stage: "workload",
-          tick: currentDay(player).epoch,
-          send: () => game.submit(player.identity.account, action.run),
-        });
+        const result = await playAction(options, player, action);
         actions.push(result);
         player.nextActionAt = now() + 1;
         if (result.outcome !== "completed") {
           console.error(JSON.stringify({ frontierFailure: result }));
           failed = true;
-          return;
         }
-        currentDay(player).actions++;
-        action.after?.();
-        observeProgress(client, game, player);
       }),
     );
     if (++ticks % 30 === 0)
@@ -258,6 +250,76 @@ async function runBoothBurst(options: RunFrontierOptions, epochSeconds: number):
     ticks: 0,
     epochSeconds,
   });
+}
+
+/**
+ * The rollover burst: once every bot is settled, the next day's boundary releases them evenly across the window, each
+ * mustering a fresh army and sending it on its first move; the musters and moves are the measured workload.
+ */
+async function runRolloverBurst(
+  options: RunFrontierOptions,
+  players: Player[],
+  epochSeconds: number,
+): Promise<WorkloadResult> {
+  const { client, game } = options;
+  const settledEpoch = currentEpoch(client);
+  console.log(JSON.stringify({ frontierRolloverWaitSeconds: epochSeconds - (now() % epochSeconds) }));
+  while (currentEpoch(client) === settledEpoch) await sleep(1000);
+  for (const player of players) observeDay(client, game, player);
+  await options.onReady?.();
+  const startedAt = new Date().toISOString();
+  const releaseAtMs = Date.now();
+  const spacingMs = (options.burst!.windowSeconds * 1000) / players.length;
+  const actions = await Promise.all(
+    players.map(async (player, index) => {
+      const scheduledAtMs = releaseAtMs + index * spacingMs;
+      await sleep(Math.max(0, scheduledAtMs - Date.now()));
+      return playRollover(options, player, scheduledAtMs);
+    }),
+  );
+  return frontierResult(options, { players, actions: actions.flat(), startedAt, ticks: 0, epochSeconds });
+}
+
+/** One bot's rollover: a fresh army, then, once the army is in view, its first move of the day. */
+async function playRollover(
+  options: RunFrontierOptions,
+  player: Player,
+  scheduledAtMs: number,
+): Promise<TrackedTransaction[]> {
+  const { client, game } = options;
+  const muster = planMuster(client, player);
+  if (!muster) return [];
+  const mustered = await playAction(options, player, muster, scheduledAtMs);
+  if (mustered.outcome !== "completed") return [mustered];
+  const move = await game.waitFor(
+    () => planExpedition(client, game, player),
+    30_000,
+    () => `bot ${player.identity.botId} has no move for its fresh army`,
+  );
+  return [mustered, await playAction(options, player, move, scheduledAtMs)];
+}
+
+async function playAction(
+  { client, game, provider }: RunFrontierOptions,
+  player: Player,
+  action: Action,
+  scheduledAtMs?: number,
+): Promise<TrackedTransaction> {
+  const result = await trackTransaction({
+    botId: player.identity.botId,
+    gameId: game.gameId,
+    kind: action.kind,
+    provider,
+    stage: "workload",
+    tick: currentDay(player).epoch,
+    scheduledAtMs,
+    send: () => game.submit(player.identity.account, action.run),
+  });
+  if (result.outcome !== "completed") return result;
+  currentDay(player).actions++;
+  action.after?.();
+  observeProgress(client, game, player);
+  return result;
 }
 
 async function frontierResult(

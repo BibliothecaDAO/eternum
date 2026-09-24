@@ -335,15 +335,19 @@ async function resolveHarnessGame(options: HarnessCliOptions, rosterAccounts: st
   return { gameId: summary.gameId, gameName, startAt, settlementTransactions: summary.settlementTransactions ?? 0 };
 }
 
-/** The booth burst founds every bot's realm inside a window: ten minutes unless the campaign names another. */
+/** The campaign's windows: the booth founds every realm within ten minutes, the rollover musters in a day's first two. */
+const FRONTIER_BURST_WINDOW_SECONDS = { booth: 600, rollover: 120 } as const;
+
 function resolveFrontierBurst(values: Record<string, string>, gameType: HarnessGameType): FrontierBurst | undefined {
-  if (values["frontier-burst"] === undefined) {
+  const shape = values["frontier-burst"];
+  if (shape === undefined) {
     if (values["burst-window-seconds"] !== undefined) throw new Error("--burst-window-seconds requires --frontier-burst");
     return undefined;
   }
   if (gameType !== "frontier") throw new Error("--frontier-burst requires --game-type frontier");
-  if (values["frontier-burst"] !== "booth") throw new Error("--frontier-burst must be booth");
-  return { shape: "booth", windowSeconds: positiveNumber(values["burst-window-seconds"] ?? "600", "burst-window-seconds") };
+  if (shape !== "booth" && shape !== "rollover") throw new Error("--frontier-burst must be booth or rollover");
+  const window = values["burst-window-seconds"] ?? String(FRONTIER_BURST_WINDOW_SECONDS[shape]);
+  return { shape, windowSeconds: positiveNumber(window, "burst-window-seconds") };
 }
 
 function resolveSlotOptions(
@@ -707,9 +711,10 @@ Usage: bun deploy/athanor/harness/run.ts [options]
                                  creating games; needs OPERATOR_TOKEN and --launch-url or LAUNCH_URL
   --launch-url <origin>          the app origin the launch API is served under, e.g. https://staging.realms.party
   --slot-closes-in-seconds <s>   with --slot; default: 120; the cron freezes the slot within a minute of closing
-  --frontier-burst <booth>       Frontier campaign burst: booth founds every bot's realm inside the window,
-                                 measured as the workload
-  --burst-window-seconds <s>     with --frontier-burst; default: 600
+  --frontier-burst <booth|rollover>  Frontier campaign burst, measured as the workload: booth founds every bot's
+                                 realm inside the window; rollover waits for the next day and has every bot muster
+                                 and move inside the window (use the 720 s day of --preset 101 on perf shards)
+  --burst-window-seconds <s>     with --frontier-burst; default: 600 for booth, 120 for rollover
   --functional                  omit capacity collection and latency gates; for Frontier, the accelerated design run
   --prepared-game <path>         resume a prepared roster using its private account file
   --game-id <id>                 use an existing Eternum game
