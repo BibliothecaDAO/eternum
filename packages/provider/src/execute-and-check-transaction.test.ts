@@ -97,7 +97,9 @@ describe("provider submission boundary", () => {
         : { hash, block: 6, status: "PRE_CONFIRMED" },
     );
     const failed = vi.fn();
+    const completed = vi.fn();
     provider.on("transactionFailed", failed);
+    provider.on("transactionComplete", completed);
     const signer = { address: "0x111" } as AccountInterface;
     const slow = provider.claim_wonder_points({ signer, value: 1 });
     const next = provider.claim_wonder_points({ signer, value: 2 });
@@ -114,6 +116,8 @@ describe("provider submission boundary", () => {
     await Promise.all([slow, next]);
     expect(submit).toHaveBeenCalledTimes(2);
     expect(failed).not.toHaveBeenCalled();
+    // Admission to visible runs from sending the ticket to the stream reporting its outcome.
+    expect(completed.mock.calls[0][0].admissionToVisibleMs).toBe(70_000);
   });
 
   it("reports an intent with no outcome as unknown, never as a failed submit to retry", async () => {

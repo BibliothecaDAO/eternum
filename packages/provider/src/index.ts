@@ -464,6 +464,8 @@ export class EternumProvider extends EventEmitter {
     }
 
     let tx: SubmittedTransaction;
+    // Admission to visible: from sending the ticket to the stream reporting its outcome with its facts applied.
+    let submitStartedAt = 0;
     try {
       if (txType === TransactionType.EXPLORE) {
         this.emit("transactionProgress", {
@@ -473,6 +475,7 @@ export class EternumProvider extends EventEmitter {
           signerAddress: transactionMeta.signerAddress,
         });
       }
+      submitStartedAt = Date.now();
       tx = await this.submitTransaction(signer, transactionDetails);
     } catch (error) {
       const message = extractErrorMessage(error);
@@ -525,6 +528,7 @@ export class EternumProvider extends EventEmitter {
         .then((receipt) => {
           this.emit("transactionComplete", {
             details: receipt,
+            admissionToVisibleMs: Date.now() - submitStartedAt,
             ...transactionMeta,
           });
         })
@@ -559,6 +563,7 @@ export class EternumProvider extends EventEmitter {
 
     this.emit("transactionComplete", {
       details: receipt,
+      admissionToVisibleMs: Date.now() - submitStartedAt,
       ...transactionMeta,
     });
 

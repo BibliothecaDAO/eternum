@@ -8,6 +8,7 @@ import {
   recordClientActionPhase,
   recordClientActionStoreApplied,
   recordClientActionRendered,
+  recordAdmissionToVisible,
   recordClientActionSubmitted,
   snapshotClientActionLatency,
   summarizeClientActionLatency,
@@ -58,5 +59,13 @@ describe("client action latency", () => {
       p50PreConfirmedToRenderedMs: 20,
       p95PreConfirmedToRenderedMs: 20,
     });
+  });
+
+  it("publishes every action's admission-to-visible sample for the gates to read", () => {
+    recordAdmissionToVisible(120);
+    recordAdmissionToVisible(148);
+    expect((globalThis as { __admissionToVisibleMs?: number[] }).__admissionToVisibleMs).toEqual([120, 148]);
+    clearClientActionLatency();
+    expect((globalThis as { __admissionToVisibleMs?: number[] }).__admissionToVisibleMs).toEqual([]);
   });
 });

@@ -36,11 +36,13 @@ export interface ClientActionLatencySummary {
 interface ClientActionLatencyTarget {
   __clientActionLatencyMeasurements?: ClientActionLatencyMeasurement[];
   __clientActionLatencySummary?: ClientActionLatencySummary;
+  __admissionToVisibleMs?: number[];
 }
 
 const MAX_MEASUREMENTS = 400;
 let nextActionSequence = 0;
 let measurements: ClientActionLatencyMeasurement[] = [];
+let admissionToVisibleMs: number[] = [];
 
 const now = (): number => (typeof performance === "undefined" ? Date.now() : performance.now());
 
@@ -57,7 +59,17 @@ const publish = (): void => {
   const target = globalThis as ClientActionLatencyTarget;
   target.__clientActionLatencyMeasurements = snapshotClientActionLatency();
   target.__clientActionLatencySummary = summarizeClientActionLatency("explore_reveal");
+  target.__admissionToVisibleMs = [...admissionToVisibleMs];
 };
+
+/**
+ * Every action's admission to visible, as the provider measures it: from sending the ticket to the stream reporting
+ * its outcome with its facts applied. The harness reports the same figure for its bots.
+ */
+export function recordAdmissionToVisible(milliseconds: number): void {
+  admissionToVisibleMs = [...admissionToVisibleMs, milliseconds].slice(-MAX_MEASUREMENTS);
+  publish();
+}
 
 const updateMeasurement = (
   actionId: string,
@@ -192,5 +204,6 @@ export function summarizeClientActionLatency(operation?: string): ClientActionLa
 
 export function clearClientActionLatency(): void {
   measurements = [];
+  admissionToVisibleMs = [];
   publish();
 }

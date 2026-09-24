@@ -129,15 +129,18 @@ const startSync = async (
   });
   session.onDispose = input.native.submitIntent.dispose;
   await runtime.startSession(session);
-  // Herald's hello names the confirmed head before any row; a Herald yet to see one sends it on the stream.
-  await confirmedChainTime(runtime);
+  // Chain time must be known before anything reads it: a Frontier realm's site in the first projection build does.
+  // Herald's hello names the confirmed head before any row; a Herald yet to see one sends it on the stream. The wait
+  // ends on that fact or on the session ending, never on a clock: the ticket barrier is the native path's one timer.
+  await runtime.waitForConfirmedHead();
   setupResult.network.provider.setNativeSubmission(
     nativeSubmission(input.native, setupResult.store, input.gameId, input.shard.worldAddress, async (actor) => {
       session.transport.selectActor(actor);
+      // Herald's actor scope always carries the nonce row, so this waits on the stream, with no deadline of its own.
       await waitForWorldState(
         { runtime },
         () => setupResult.store.get("ActionNonce", { game_id: input.gameId, actor: BigInt(actor) }),
-        10_000,
+        undefined,
         () => "Gameplay nonce from Herald",
       );
     }),
@@ -152,20 +155,6 @@ const startSync = async (
   );
   routeTransactionWaitsThroughStream(setupResult, runtime);
   return { projection: installWorldSpatialProjection(runtime, setupResult), transport: session.transport };
-};
-
-const CONFIRMED_HEAD_TIMEOUT_MS = 30_000;
-
-/** Chain time must be known before anything reads it: a Frontier realm's site in the first projection build does. */
-const confirmedChainTime = (runtime: GameSyncRuntime): Promise<void> => {
-  let timer: ReturnType<typeof setTimeout>;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(
-      () => reject(new Error(`Herald named no confirmed head within ${CONFIRMED_HEAD_TIMEOUT_MS / 1_000} seconds`)),
-      CONFIRMED_HEAD_TIMEOUT_MS,
-    );
-  });
-  return Promise.race([runtime.waitForConfirmedHead(), timeout]).finally(() => clearTimeout(timer));
 };
 
 /** Herald's stream carries transaction status, so submits wait on the stream instead of polling the RPC. */
