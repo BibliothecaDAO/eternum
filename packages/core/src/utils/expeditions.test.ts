@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { StructureType } from "@bibliothecadao/types";
 import * as timestamp from "./timestamp";
-import { structureMapPosition } from "./expeditions";
+import { liveHomeArmies, structureMapPosition } from "./expeditions";
 
 const structure = (overrides: {
   coord_x: number;
@@ -70,5 +70,34 @@ describe("structureMapPosition", () => {
     expect(() => structureMapPosition(store, structure({ coord_x: 1, coord_y: 0xffffffff }))).toThrow(
       "parked at the expedition sentinel",
     );
+  });
+});
+
+describe("liveHomeArmies", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const army = (explorer_id: number, y: number, count = 1_000n, owner = 42) =>
+    ({ explorer_id, owner, coord: { x: 25, y, alt: false }, troops: { count } }) as never;
+  const armiesStore = (rules: Record<string, unknown>, armies: unknown[]) => ({
+    ...storeWith(rules),
+    inGame: (model: string) => (model === "ExplorerTroops" ? armies : [])[Symbol.iterator](),
+  });
+  const atFloor = (seconds: number) =>
+    vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentDefaultTick: seconds } as never);
+
+  it("counts today's armies, and none from an earlier day once the day rolls over", () => {
+    // Day one's region rows are 0..39 (spacing 10, four rows of regions a day); day two's are 40..79.
+    const store = armiesStore(expeditionRules, [army(1, 5), army(2, 6), army(3, 7, 0n), army(4, 5, 1_000n, 99)]);
+    atFloor(86400 + 60);
+    expect(liveHomeArmies(store as never, 42, 7).map(({ explorer_id }) => explorer_id)).toEqual([1, 2]);
+
+    atFloor(86400 * 2 + 1);
+    expect(liveHomeArmies(store as never, 42, 7)).toEqual([]);
+  });
+
+  it("counts every army with troops in a game without expeditions", () => {
+    const store = armiesStore({ SliceRules: { epoch_seconds: 0 } }, [army(1, 5), army(2, 900), army(3, 7, 0n)]);
+    atFloor(86400 * 9);
+    expect(liveHomeArmies(store as never, 42, 7).map(({ explorer_id }) => explorer_id)).toEqual([1, 2]);
   });
 });

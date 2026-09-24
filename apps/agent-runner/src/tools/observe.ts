@@ -1,4 +1,10 @@
-import { divideByPrecision, getBlockTimestamp, LeaderboardManager, type GameClient } from "@bibliothecadao/eternum";
+import {
+  divideByPrecision,
+  getBlockTimestamp,
+  LeaderboardManager,
+  liveHomeArmies,
+  type GameClient,
+} from "@bibliothecadao/eternum";
 import {
   type ArmyInfo,
   type BuildingType,
@@ -105,7 +111,7 @@ const renderEmpire = (game: RunnerGame): string => {
 const renderStructure = (game: RunnerGame, structure: Structure, realm: RealmInfo | undefined): string => {
   const base = structure.structure.base;
   const head = `#${structure.entityId} ${StructureType[structure.category]} L${base.level} at (${base.coord_x},${base.coord_y})`;
-  const troops = `guards ${[...game.client.setup.store.inGame("Guard", game.client.gameId)].filter((row) => row.structure_id === structure.entityId && row.troops.count > 0n).length}/${base.troop_max_guard_count}, explorers ${base.troop_explorer_count}/${base.troop_max_explorer_count}`;
+  const troops = `guards ${[...game.client.setup.store.inGame("Guard", game.client.gameId)].filter((row) => row.structure_id === structure.entityId && row.troops.count > 0n).length}/${base.troop_max_guard_count}, explorers ${liveHomeArmies(game.client.setup.store, structure.entityId, game.client.gameId).length}/${base.troop_max_explorer_count}`;
   if (!realm) return `${head}: ${troops}`;
   const produced = realm.resources.map((resource) => resourceName(resource)).join(", ") || "none";
   const balances = renderBalances(game.client, structure.entityId, [...STAPLE_RESOURCES, ...realm.resources]);

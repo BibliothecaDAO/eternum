@@ -10,6 +10,7 @@ import {
   type TileManager,
 } from "../index";
 import type { NativeFactStore } from "../client/index";
+import { liveHomeArmies } from "../utils/expeditions";
 import {
   type BiomeType,
   BuildingType,
@@ -197,7 +198,7 @@ export function readBlitzRealmSuggestions(input: {
     populationCapacity: buildings.population.max + configManager.getBasePopulationCapacity(),
     occupiedGuards: getGuardsByStructure(structure, store).filter((guard) => guard.troops.count > 0n).length,
     maxGuards: structure.base.troop_max_guard_count,
-    occupiedExplorers: structure.base.troop_explorer_count,
+    occupiedExplorers: liveHomeArmies(store, realmId, game_id).length,
     maxExplorers: structure.base.troop_max_explorer_count,
     militaryTarget,
     buildability: resolveBlitzBuildability(

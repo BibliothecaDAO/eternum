@@ -8,7 +8,7 @@ import {
   resolveAvailableBuildingTiles,
 } from "@/ui/features/world/containers/structure-status";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
-import { configManager, getBuildingCount, getGuardsByStructure } from "@bibliothecadao/eternum";
+import { configManager, getBuildingCount, getGuardsByStructure, liveHomeArmies } from "@bibliothecadao/eternum";
 import {
   BuildingType,
   ContractAddress,
@@ -21,6 +21,7 @@ import { useMemo } from "react";
 import type { StructureWithMetadata } from "./chip";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 
 const readPackedCount = (value: bigint | number | string | undefined): bigint => {
   if (value === undefined || value === null) return 0n;
@@ -48,7 +49,9 @@ export const useStructuresWithMetadata = ({
   nameUpdateVersion = 0,
 }: UseStructuresWithMetadataArgs): StructureWithMetadata[] => {
   const mode = useGameModeConfig();
-  const revision = useNativeRevision(["StructureBuildings", "Guard"]);
+  const revision = useNativeRevision(["StructureBuildings", "Guard", "ExplorerTroops"]);
+  // A day's rollover ends yesterday's armies with no row changing, so the live-army count also follows the clock.
+  const armiesClock = useCoarseCurrentDefaultTick(10);
   const { favorites } = useFavoriteStructures();
   const { structureGroups } = useStructureGroups();
 
@@ -131,6 +134,7 @@ export const useStructuresWithMetadata = ({
         realmLevelLabel,
         population,
         guardCount: getGuardsByStructure(structure.structure, store).filter((guard) => guard.troops.count > 0n).length,
+        explorerCount: liveHomeArmies(store, Number(structure.entityId), configManager.getActiveGameId()).length,
         populationCapacity,
         buildingTilesOccupied: buildingTileSummary?.occupied ?? null,
         buildingTilesTotal: buildingTileSummary?.total ?? null,
@@ -149,5 +153,6 @@ export const useStructuresWithMetadata = ({
     favoritesSet,
     mode,
     buildingTileCountsByStructure,
+    armiesClock,
   ]);
 };
