@@ -37,6 +37,20 @@ export interface CombatSimulationContext {
   defenderAlt?: boolean;
   attackerIsStructureGuard?: boolean;
   defenderIsStructureGuard?: boolean;
+  /** Each side's d20 where the battle rolls dice: it adds that many percent to the side's damage; 0 without dice. */
+  attackerRoll?: number;
+  defenderRoll?: number;
+}
+
+/** The faces of the die each side rolls in a dice battle. */
+export const COMBAT_DIE_FACES = 20;
+
+type BattleSimulation = ReturnType<CombatSimulator["simulateBattle"]>;
+
+/** A battle at both ends of the dice: the attacker's worst roll against the defender's best, and the reverse. */
+export interface BattleRange {
+  worst: BattleSimulation;
+  best: BattleSimulation;
 }
 
 export interface CombatParameters {
@@ -52,7 +66,6 @@ export interface CombatParameters {
 }
 
 export class CombatSimulator {
-  public static readonly ETHEREAL_PREVIEW_BONUS_PERCENT = 10;
   private readonly t1DamageValue: number;
   private readonly t2DamageMultiplier: number;
   private readonly t3DamageMultiplier: number;
@@ -359,17 +372,14 @@ export class CombatSimulator {
           this.calculateIncomingDamageMultiplier(attacker, context.attackerIsStructureGuard)) /
         Math.pow(totalTroops, betaEff);
 
-    // Apply relic modifiers
-    // Ethereal forecasts use the requested +10% assumption; execution rolls 1–20 independently.
-    const etherealPreviewMultiplier =
-      context.defenderAlt === true ? 1 + CombatSimulator.ETHEREAL_PREVIEW_BONUS_PERCENT / 100 : 1;
+    // Apply the dice and relic modifiers
     const attackerDamage =
-      etherealPreviewMultiplier *
+      (1 + (context.attackerRoll ?? 0) / 100) *
       baseAttackerDamage *
       attackerDamageMultiplierRelics *
       defenderReductionMultiplierRelics;
     const defenderDamage =
-      etherealPreviewMultiplier *
+      (1 + (context.defenderRoll ?? 0) / 100) *
       baseDefenderDamage *
       defenderDamageMultiplierRelics *
       attackerReductionMultiplierRelics;
@@ -419,5 +429,29 @@ export class CombatSimulator {
     defenderRefundMultiplier: number;
   } {
     return this.simulateBattle(now, attacker, defender, biome, attackerRelics, defenderRelics, context);
+  }
+
+  /** A battle's outcome at both ends of the dice; without dice both ends are its one outcome. */
+  public simulateBattleRange(
+    now: number,
+    attacker: Army,
+    defender: Army,
+    biome: BiomeType,
+    attackerRelics: ResourcesIds[],
+    defenderRelics: ResourcesIds[],
+    context: CombatSimulationContext,
+    dice: boolean,
+  ): BattleRange {
+    const at = (attackerRoll: number, defenderRoll: number) =>
+      this.simulateBattle(now, attacker, defender, biome, attackerRelics, defenderRelics, {
+        ...context,
+        attackerRoll,
+        defenderRoll,
+      });
+    if (!dice) {
+      const outcome = at(0, 0);
+      return { worst: outcome, best: outcome };
+    }
+    return { worst: at(1, COMBAT_DIE_FACES), best: at(COMBAT_DIE_FACES, 1) };
   }
 }

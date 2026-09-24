@@ -14,6 +14,7 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { buildingCostModeOf, type BuildingCostMode } from "../utils/building-cost-mode";
+import { isModeRuleEnabled } from "../utils/mode-rules";
 import { hasEnabledProductionPath } from "../utils/production-path";
 import { troopStaminaLimits } from "./troop-stamina";
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
@@ -233,6 +234,10 @@ export class ClientConfigManager {
         modifier = 1;
     }
     return config.stamina_travel_stamina_cost + modifier * config.stamina_bonus_value;
+  }
+  /** Whether a battle rolls a d20 per side: always on the ethereal layer, and everywhere in a game with combat dice. */
+  rollsCombatDice(defenderAlt: boolean): boolean {
+    return defenderAlt || isModeRuleEnabled(this.rules(), "COMBAT_DICE");
   }
   /** Whether terrain changes combat in this game at all; where it does not, no surface shows biome bonuses. */
   hasBiomeCombatEffects(): boolean {

@@ -1,4 +1,4 @@
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { isModeRuleEnabled } from "../utils/mode-rules";
 import { BuildingType, ID, ResourcesIds, RESOURCE_PRECISION, type Resource } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -88,7 +88,7 @@ export class ResourceManager {
   private productionForGameClock(production: Production | undefined): Production | undefined {
     if (!production || production.building_count === 0) return production;
     const rules = this.store.require("SliceRules", { game_id: this.gameId });
-    if ((rules.mode_rules & nativeRuleConstants.PRODUCTION_START) === 0) return production;
+    if (!isModeRuleEnabled(rules, "PRODUCTION_START")) return production;
     const game = this.store.require("GameRegistry", { game_id: this.gameId });
     return {
       ...production,

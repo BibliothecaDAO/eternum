@@ -27,6 +27,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { X } from "@/ui/design-system/atoms/game-icons";
 import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from "./attack-stamina-state";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/defense-slot-utils";
+import { attackerSideRange, defenderSideRange, formatAcross, survivalOf, type SideRange } from "./battle-range";
 import { CombatModal } from "./combat-modal";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
@@ -137,6 +138,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     [ethereal, target.hex.x, target.hex.y],
   );
   const combatSimulator = useMemo(() => new CombatSimulator(combatConfig), [combatConfig]);
+  const rollsDice = useMemo(() => configManager.rollsCombatDice(ethereal), [ethereal]);
 
   const attackerRelicResourceIds = useMemo(() => toRelicResourceIds(attackerRelicEffects), [attackerRelicEffects]);
   const targetRelicResourceIds = useMemo(() => toRelicResourceIds(targetRelicEffects), [targetRelicEffects]);
@@ -262,7 +264,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     [target.alt, targetDistance, attackerType, isStructureTarget],
   );
 
-  const battleSimulation = useMemo(() => {
+  const battleRange = useMemo(() => {
     if (!attackerArmyData) return null;
     if (!targetArmyData) return null;
 
@@ -286,7 +288,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
     const now = Math.floor(Date.now() / 1000);
 
-    return combatSimulator.simulateBattleWithParams(
+    return combatSimulator.simulateBattleRange(
       now,
       attackerArmy,
       defenderArmy,
@@ -294,6 +296,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       attackerRelicResourceIds,
       targetRelicResourceIds,
       combatSimulationContext,
+      rollsDice,
     );
   }, [
     attacker,
@@ -306,6 +309,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     targetRelicResourceIds,
     attackerStamina,
     combatSimulationContext,
+    rollsDice,
   ]);
 
   const attackerTroopsTotal = useMemo(() => {
@@ -318,11 +322,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return Number(targetArmyData.troops.count) / RESOURCE_PRECISION;
   }, [targetArmyData]);
 
-  const attackerLosses = battleSimulation ? Math.min(battleSimulation.defenderDamage, attackerTroopsTotal) : 0;
-  const defenderLosses = battleSimulation ? Math.min(battleSimulation.attackerDamage, defenderTroopsTotal) : 0;
+  const attackerSide = battleRange ? attackerSideRange(attackerTroopsTotal, battleRange) : null;
+  const defenderSide = battleRange ? defenderSideRange(defenderTroopsTotal, battleRange) : null;
 
-  const attackerRemaining = Math.max(attackerTroopsTotal - attackerLosses, 0);
-  const defenderRemaining = Math.max(defenderTroopsTotal - defenderLosses, 0);
+  // Capture and garrison are judged on the attacker's worst roll, so the atomic claim never counts on luck.
+  const attackerRemaining = attackerSide ? attackerSide.worst.remaining : attackerTroopsTotal;
+  const defenderRemaining = defenderSide ? defenderSide.worst.remaining : defenderTroopsTotal;
 
   // Per-slot defender view: the active guard (slot 0) shows its projected
   // post-fight remainder, queued guards show their untouched troop counts.
@@ -416,17 +421,16 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   })();
 
   const outcomeLabel = (() => {
-    if (!battleSimulation) {
+    if (!battleRange) {
       if (targetArmyData) return "Simulating...";
       if (isStructureTarget && hasQueuedGuards) return `${totalGuardCount} guards defending`;
       return "No defenders";
     }
 
-    let baseLabel: string;
-
-    if (battleSimulation.attackerDamage > battleSimulation.defenderDamage) baseLabel = "Victory";
-    else if (battleSimulation.attackerDamage === battleSimulation.defenderDamage) baseLabel = "Draw";
-    else baseLabel = "Defeat";
+    const outcomeOf = ({ attackerDamage, defenderDamage }: typeof battleRange.worst) =>
+      attackerDamage > defenderDamage ? "Victory" : attackerDamage === defenderDamage ? "Draw" : "Defeat";
+    const [worstOutcome, bestOutcome] = [outcomeOf(battleRange.worst), outcomeOf(battleRange.best)];
+    const baseLabel = worstOutcome === bestOutcome ? worstOutcome : `${worstOutcome} to ${bestOutcome}`;
 
     if (!isStructureTarget || !hasQueuedGuards) {
       return baseLabel;
@@ -547,26 +551,40 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     </Button>
   );
 
-  const casualtyLine = (label: string, losses: number, remaining: number, isEliminated: boolean) => (
-    <div className="rounded-md border border-gold/20 bg-black/25 px-3 py-2">
-      <div className="flex items-center justify-between">
-        <span className={HUD_LABEL}>{label}</span>
-        <span className={cn(HUD_CUE, isEliminated ? "text-red-300" : "text-emerald-300")}>
-          {isEliminated ? "Eliminated" : "Survives"}
-        </span>
+  const casualtyLine = (label: string, side: SideRange) => {
+    const survival = survivalOf(side);
+    return (
+      <div className="rounded-md border border-gold/20 bg-black/25 px-3 py-2">
+        <div className="flex items-center justify-between">
+          <span className={HUD_LABEL}>{label}</span>
+          <span
+            className={cn(
+              HUD_CUE,
+              survival === "Eliminated"
+                ? "text-red-300"
+                : survival === "Survives"
+                  ? "text-emerald-300"
+                  : "text-amber-300",
+            )}
+          >
+            {survival}
+          </span>
+        </div>
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <span className="flex items-center gap-1">
+            <span className={HUD_CUE}>Losses</span>
+            <span className={HUD_VALUE}>{formatAcross(side.worst.losses, side.best.losses, formatTroopValue)}</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className={HUD_CUE}>Remaining</span>
+            <span className={HUD_VALUE}>
+              {formatAcross(side.worst.remaining, side.best.remaining, formatTroopValue)}
+            </span>
+          </span>
+        </div>
       </div>
-      <div className="mt-1 flex items-center justify-between gap-3">
-        <span className="flex items-center gap-1">
-          <span className={HUD_CUE}>Losses</span>
-          <span className={HUD_VALUE}>{formatTroopValue(losses)}</span>
-        </span>
-        <span className="flex items-center gap-1">
-          <span className={HUD_CUE}>Remaining</span>
-          <span className={HUD_VALUE}>{formatTroopValue(remaining)}</span>
-        </span>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="w-[280px] max-w-[85vw] px-3 py-2.5 text-gold">
@@ -591,22 +609,19 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         <div className="py-6 text-center text-sm text-gold/70">No target detected.</div>
       ) : (
         <div className="space-y-1.5">
-          {ethereal && (
+          {rollsDice && (
             <p className="text-xs text-gold/70">
-              Preview assumes +{CombatSimulator.ETHEREAL_PREVIEW_BONUS_PERCENT}% damage for each side. Each side rolls a
-              d20 for +1% to +20% in the fight.
+              Each side rolls a d20 for +1% to +20% damage; ranges run from your worst roll to your best.
             </p>
           )}
           {targetArmyData ? (
-            <>
-              {casualtyLine("Your forces", attackerLosses, attackerRemaining, attackerRemaining <= 0)}
-              {casualtyLine(
-                isStructureTarget ? "Active guard" : "Enemy army",
-                defenderLosses,
-                defenderRemaining,
-                defenderRemaining <= 0,
-              )}
-            </>
+            attackerSide &&
+            defenderSide && (
+              <>
+                {casualtyLine("Your forces", attackerSide)}
+                {casualtyLine(isStructureTarget ? "Active guard" : "Enemy army", defenderSide)}
+              </>
+            )
           ) : (
             <div className="rounded-md border border-emerald-500/40 bg-emerald-900/20 px-3 py-2 text-sm text-emerald-200">
               {rangedClaimBlocked

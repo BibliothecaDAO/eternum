@@ -4,6 +4,7 @@ import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
 import { ClientConfigManager } from "./config-manager";
 import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 function fixture(gameId = 54) {
   const store = new NativeFactStore();
@@ -62,6 +63,18 @@ describe("native immutable configuration", () => {
     expect(() => manager.getTick(TickIds.Armies)).toThrow("not synchronized");
     write("SliceRules", [54], { ...preset.rules, game_id: 54 });
     expect(manager.getTick(TickIds.Armies)).toBe(Number(preset.rules.tick_config.armies_tick_in_seconds));
+  });
+
+  it("rolls combat dice on the ethereal layer always, and on the surface only in a dice game", () => {
+    const { manager, write } = fixture();
+    expect([manager.rollsCombatDice(true), manager.rollsCombatDice(false)]).toEqual([true, false]);
+
+    write("SliceRules", [54], {
+      ...preset.rules,
+      game_id: 54,
+      mode_rules: preset.rules.mode_rules | nativeRuleConstants.COMBAT_DICE,
+    });
+    expect([manager.rollsCombatDice(true), manager.rollsCombatDice(false)]).toEqual([true, true]);
   });
 
   it("reads whether terrain changes combat from the game's damage rule", () => {

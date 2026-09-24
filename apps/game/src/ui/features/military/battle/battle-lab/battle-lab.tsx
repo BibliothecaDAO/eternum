@@ -24,6 +24,7 @@ import {
   buildAttackStaminaWarning,
   resolveAttackStaminaState,
 } from "../attack-stamina-state";
+import { attackerSideRange, defenderSideRange } from "../battle-range";
 import { RaidContainer } from "../raid-container";
 import { TargetType } from "../types";
 import { ActionFooter } from "./action-footer";
@@ -163,7 +164,7 @@ export const BattleLab = ({
   const prediction = useMemo(() => {
     if (!state.hasDefender) return null;
     const now = Math.floor(Date.now() / 1000);
-    const result = combatSimulator.simulateBattleWithParams(
+    const range = combatSimulator.simulateBattleRange(
       now,
       toArmy(state.attacker),
       toArmy(state.defender),
@@ -171,30 +172,37 @@ export const BattleLab = ({
       state.attacker.relics,
       state.defender.relics,
       combatContext,
+      configManager.rollsCombatDice(state.defenderAlt),
     );
-    const attackerLosses = Math.min(state.attacker.troopCount, result.defenderDamage);
-    const defenderLosses = Math.min(state.defender.troopCount, result.attackerDamage);
-    const attackerRemaining = Math.max(0, state.attacker.troopCount - attackerLosses);
-    const defenderRemaining = Math.max(0, state.defender.troopCount - defenderLosses);
-    const outcome: BattleOutcome = attackerRemaining <= 0 ? "Defeat" : defenderRemaining <= 0 ? "Victory" : "Draw";
+    const attacker = attackerSideRange(state.attacker.troopCount, range);
+    const defender = defenderSideRange(state.defender.troopCount, range);
+    const outcomeAt = (roll: "worst" | "best"): BattleOutcome =>
+      attacker[roll].remaining <= 0 ? "Defeat" : defender[roll].remaining <= 0 ? "Victory" : "Draw";
     return {
-      attackerLosses,
-      defenderLosses,
-      attackerRemaining,
-      defenderRemaining,
+      attacker,
+      defender,
+      // Stamina after the fight follows the attacker's worst roll, like every other planning figure.
       newAttackerStamina: combatSimulator.calculateNewStaminaAttacker(
         state.attacker.stamina,
-        result.attackerRefundMultiplier,
+        range.worst.attackerRefundMultiplier,
         combatContext,
       ),
       newDefenderStamina: combatSimulator.calculateNewStaminaDefender(
         state.defender.stamina,
-        result.defenderRefundMultiplier,
+        range.worst.defenderRefundMultiplier,
         combatContext,
       ),
-      outcome,
+      outcomes: { worst: outcomeAt("worst"), best: outcomeAt("best") },
     };
-  }, [combatSimulator, state.attacker, state.defender, state.biome, state.hasDefender, combatContext]);
+  }, [
+    combatSimulator,
+    state.attacker,
+    state.defender,
+    state.biome,
+    state.hasDefender,
+    state.defenderAlt,
+    combatContext,
+  ]);
 
   // ----- Live action gating -----
   const hasAttacker =
@@ -335,10 +343,9 @@ export const BattleLab = ({
         />
       ) : (
         <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
-          {state.defenderAlt && (
+          {configManager.rollsCombatDice(state.defenderAlt) && (
             <p className="text-sm text-gold/70">
-              Preview assumes +{CombatSimulator.ETHEREAL_PREVIEW_BONUS_PERCENT}% damage for each side. Each side rolls a
-              d20 for +1% to +20% in the fight.
+              Each side rolls a d20 for +1% to +20% damage; ranges run from the attacker's worst roll to its best.
             </p>
           )}
           <label className="flex items-center gap-2 text-sm text-gold/70">
@@ -369,11 +376,7 @@ export const BattleLab = ({
               footer={
                 prediction && (
                   <OutcomeStrip
-                    losses={prediction.attackerLosses}
-                    lossesPercent={
-                      state.attacker.troopCount > 0 ? (prediction.attackerLosses / state.attacker.troopCount) * 100 : 0
-                    }
-                    remaining={prediction.attackerRemaining}
+                    side={prediction.attacker}
                     total={state.attacker.troopCount}
                     staminaBefore={state.attacker.stamina}
                     staminaAfter={prediction.newAttackerStamina}
@@ -391,11 +394,7 @@ export const BattleLab = ({
               footer={
                 state.hasDefender && prediction ? (
                   <OutcomeStrip
-                    losses={prediction.defenderLosses}
-                    lossesPercent={
-                      state.defender.troopCount > 0 ? (prediction.defenderLosses / state.defender.troopCount) * 100 : 0
-                    }
-                    remaining={prediction.defenderRemaining}
+                    side={prediction.defender}
                     total={state.defender.troopCount}
                     staminaBefore={state.defender.stamina}
                     staminaAfter={prediction.newDefenderStamina}
@@ -418,7 +417,7 @@ export const BattleLab = ({
                 : "No defending troops — this target can be claimed without a battle."}
             </div>
           ) : (
-            prediction && <OutcomeBanner outcome={prediction.outcome} />
+            prediction && <OutcomeBanner outcomes={prediction.outcomes} />
           )}
 
           <ActionFooter

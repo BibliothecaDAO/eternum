@@ -1,4 +1,5 @@
 import {
+  battleRollsOf,
   extractRoleLabel,
   findSegmentValue,
   formatWinnerName,
@@ -68,6 +69,7 @@ function BattleDetails({ description }: { description?: string }) {
   const forces = (role: string) =>
     normalizePresentationTroops(findSegmentValue(segments, (label) => label === `${role} forces`));
   const winner = formatWinnerName(findSegmentValue(segments, (label) => label === "Winner"));
+  const rolls = battleRollsOf(description);
   return (
     <>
       <span className="flex gap-1 font-normal">
@@ -79,6 +81,11 @@ function BattleDetails({ description }: { description?: string }) {
       <span className="mt-1 block text-gold/70">
         {forces("Attacker")} vs {forces("Defender")}
       </span>
+      {rolls && (
+        <span className="block text-gold/60">
+          d20 {rolls.attacker} <span className="text-gold/40">vs</span> {rolls.defender}
+        </span>
+      )}
       {winner && <span className="block text-emerald-300">Winner: {winner}</span>}
     </>
   );
