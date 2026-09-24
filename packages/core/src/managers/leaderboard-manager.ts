@@ -1,7 +1,7 @@
 import { type ContractAddress, type ID } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { getBlockTimestamp } from "../utils/timestamp";
-import { sharePointCutoff, unclaimedSharePoints } from "../sync/shareholder-points";
+import { hyperstructurePointsPerSecond, sharePointCutoff, unclaimedSharePoints } from "../sync/shareholder-points";
 import { configManager } from "./config-manager";
 
 /** Standings are derived from current facts and the game clock at each read. */
@@ -57,7 +57,7 @@ export class LeaderboardManager {
           basisPoints: BigInt(share.bps),
           hyperstructureId: row.entity_id,
           elapsed: Number(cutoff - row.start_at),
-          rate: Number(rate * BigInt(row.multiplier) * BigInt(share.bps)) / 10_000_000_000,
+          rate: Number(hyperstructurePointsPerSecond(rate, row.multiplier) * BigInt(share.bps)) / 10_000 / 1_000_000,
           points: Number(points) / 1_000_000,
         };
       }),

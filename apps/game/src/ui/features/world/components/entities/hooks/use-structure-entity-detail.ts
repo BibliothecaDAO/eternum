@@ -14,6 +14,7 @@ import {
   getStructureRelicEffects,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
+import { hyperstructurePointsPerSecond as sharedPointsPerSecond } from "@bibliothecadao/eternum/game-sync";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -81,13 +82,16 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     structure?.base.category === StructureType.Hyperstructure
       ? getRealmCountPerHyperstructure(store).get(structureEntityId)
       : undefined;
-  // The chain grants hyp_points_per_second × points_multiplier per second; the realm count only feeds the
-  // multiplier at claim time, so the panel reads the multiplier the chain holds.
+  // The realm count only feeds the multiplier at claim time, so the panel reads the multiplier the chain holds. A
+  // hyperstructure with no share allocation yet grants nothing and shows no rate.
   const hyperstructurePointsPerSecond =
-    structure?.base.category === StructureType.Hyperstructure
-      ? (store.require("SliceRules", { game_id: keys.game_id }).victory_points_grant_config.hyp_points_per_second *
-          (shares?.multiplier ?? 0)) /
-        1_000_000
+    structure?.base.category === StructureType.Hyperstructure && shares
+      ? Number(
+          sharedPointsPerSecond(
+            store.require("SliceRules", { game_id: keys.game_id }).victory_points_grant_config.hyp_points_per_second,
+            shares.multiplier,
+          ),
+        ) / 1_000_000
       : undefined;
 
   const ownerDisplayName = structure?.owner ? displayPlayerName(structure.owner, ownerProfile.name) : BANDITS_NAME;

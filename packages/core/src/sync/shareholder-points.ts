@@ -12,6 +12,15 @@ export const sharePointCutoff = (
 ): bigint => (!game.dev_mode_on && now > BigInt(game.end_at) ? BigInt(game.end_at) : now);
 
 /**
+ * A hyperstructure's points per second, shared among its shareholders, at contract precision (points × 1e6): the
+ * game's grant rate times the multiplier the allocation holds.
+ */
+export const hyperstructurePointsPerSecond = (
+  pointsPerSecond: bigint | number | string,
+  multiplier: bigint | number | string,
+): bigint => BigInt(pointsPerSecond) * BigInt(multiplier);
+
+/**
  * Points each shareholder has earned since the allocation's last checkpoint, at contract precision (points × 1e6).
  * This is the contract's hyperstructure checkpoint: every share rounds on its own, so the leaderboard, Herald and
  * the chain agree to the unit.
@@ -23,7 +32,7 @@ export function unclaimedSharePoints(
 ): { player: bigint; points: bigint }[] {
   const elapsed = cutoff - BigInt(allocation.start_at);
   if (elapsed <= 0n) return [];
-  const rate = BigInt(pointsPerSecond) * BigInt(allocation.multiplier);
+  const rate = hyperstructurePointsPerSecond(pointsPerSecond, allocation.multiplier);
   return allocation.shareholders.map((share) => ({
     player: BigInt(share.player),
     points: (elapsed * rate * BigInt(share.bps)) / 10_000n,
