@@ -7,7 +7,9 @@ name: Deploy Workers
 # shard its environment's LAUNCH_SHARD_URL names (the shard's Herald, whose /manifest says the rest), with
 # LAUNCH_DEPLOYER_ACCOUNT_ADDRESS and LAUNCHER_ALLOWLIST, and signs with its
 # LAUNCH_DEPLOYER_PRIVATE_KEY secret. Both Workers accept the environment's one OPERATOR_TOKEN secret from operator
-# automation.
+# automation. Until an environment names its launch variables, its launch job deploys nothing and says which are
+# missing, so identity can reach production before the shard it needs exists. Production is dispatched with
+# --ref at the branch it releases.
 on:
   push:
     branches: [native-staging]
@@ -57,6 +59,9 @@ jobs:
       TARGET: ${{ inputs.environment || 'staging' }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      LAUNCH_SHARD_URL: ${{ vars.LAUNCH_SHARD_URL }}
+      LAUNCH_DEPLOYER_ACCOUNT_ADDRESS: ${{ vars.LAUNCH_DEPLOYER_ACCOUNT_ADDRESS }}
+      LAUNCHER_ALLOWLIST: ${{ vars.LAUNCHER_ALLOWLIST }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -75,9 +80,26 @@ jobs:
       - name: Build workspace dependencies
         run: pnpm --filter "${{ matrix.package }}^..." run build
 
+      # The launch Worker writes to its environment's shard, which exists only once that shard is up. Without its
+      # variables the launch job touches nothing on Cloudflare and names what is missing.
+      - name: Check the launch variables
+        id: launch-vars
+        if: matrix.worker == 'apps/launch-service'
+        run: |
+          set -euo pipefail
+          missing=()
+          for name in LAUNCH_SHARD_URL LAUNCH_DEPLOYER_ACCOUNT_ADDRESS LAUNCHER_ALLOWLIST; do
+            [ -n "${!name}" ] || missing+=("$name")
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::notice title=Launch Worker not deployed::the $TARGET environment has no ${missing[*]}"
+            echo "The launch Worker was not deployed: the $TARGET environment has no ${missing[*]}." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "missing=${missing[*]}" >> "$GITHUB_OUTPUT"
+
       # Migrations run before the code that needs them; the database is created on its environment's first deploy.
       - name: Prepare the database
-        if: matrix.database
+        if: matrix.database && steps.launch-vars.outputs.missing == ''
         working-directory: ${{ matrix.worker }}
         run: |
           set -euo pipefail
@@ -111,7 +133,7 @@ jobs:
             pnpm exec wrangler secret bulk --env "$TARGET"
 
       - name: Set launch secrets
-        if: matrix.worker == 'apps/launch-service'
+        if: matrix.worker == 'apps/launch-service' && steps.launch-vars.outputs.missing == ''
         working-directory: ${{ matrix.worker }}
         env:
           DEPLOYER_PRIVATE_KEY: ${{ secrets.LAUNCH_DEPLOYER_PRIVATE_KEY }}
@@ -132,25 +154,20 @@ jobs:
 
       # The shard a launch writes to is the environment's decision, set beside the shard, not code.
       - name: Deploy the launch Worker at its shard
-        if: matrix.worker == 'apps/launch-service'
+        if: matrix.worker == 'apps/launch-service' && steps.launch-vars.outputs.missing == ''
         working-directory: ${{ matrix.worker }}
         env:
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
-          SHARD_URL: ${{ vars.LAUNCH_SHARD_URL }}
-          DEPLOYER_ACCOUNT_ADDRESS: ${{ vars.LAUNCH_DEPLOYER_ACCOUNT_ADDRESS }}
-          LAUNCHER_ALLOWLIST: ${{ vars.LAUNCHER_ALLOWLIST }}
         run: |
-          set -euo pipefail
-          args=()
-          for name in SHARD_URL DEPLOYER_ACCOUNT_ADDRESS LAUNCHER_ALLOWLIST; do
-            [ -n "${!name}" ] || { echo "::error::the $TARGET environment has no variable for $name"; exit 1; }
-            args+=(--var "$name:${!name}")
-          done
-          pnpm exec wrangler deploy --env "$TARGET" "${args[@]}"
+          pnpm exec wrangler deploy --env "$TARGET" \
+            --var "SHARD_URL:$LAUNCH_SHARD_URL" \
+            --var "DEPLOYER_ACCOUNT_ADDRESS:$LAUNCH_DEPLOYER_ACCOUNT_ADDRESS" \
+            --var "LAUNCHER_ALLOWLIST:$LAUNCHER_ALLOWLIST"
 
       # The deploy record names the Worker's route pattern and the version it deployed; the route must answer its health
       # path from that version, not from the one it replaced.
       - name: Verify the deployed version answers
+        if: steps.launch-vars.outputs.missing == ''
         env:
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
         run: |
