@@ -1,9 +1,33 @@
 import { describe, expect, it } from "vitest";
 import { nativeSyncScopes } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { gameSyncRowKeys, gameSyncScopeKeys, rowInGameSyncScope, type GameSyncScope } from "./model-manifest";
+import { gameSyncRegion, rowInGameSyncScope, syncScalar, type GameSyncScope } from "./model-manifest";
 
 const SPACING = 21;
 const SETS = ["owners", "entities", "realms", "realmTraits", "productionSources"] as const;
+
+type Rule = Partial<Record<(typeof SETS)[number], readonly string[]>> & {
+  regions?: readonly { alt: string; x: string; y: string }[];
+  epoch?: string;
+};
+
+/**
+ * The membership rule as the schema declares it, written out: an actor row belongs to its actor, a shared row to
+ * everyone, and a scoped row to a scope with no expedition or to the expedition naming one of its sets or regions on
+ * its day. The key encoding must admit exactly these.
+ */
+const declaredMembership = (model: string, row: Record<string, unknown>, scope: GameSyncScope): boolean => {
+  const rule = nativeSyncScopes[model as keyof typeof nativeSyncScopes] as "shared" | "actor" | Rule;
+  if (rule === "actor") return scope.actor !== undefined && syncScalar(row.actor) === syncScalar(scope.actor);
+  const expedition = scope.expedition;
+  if (!expedition || rule === "shared") return true;
+  if (rule.epoch !== undefined && Number(row[rule.epoch]) !== expedition.epoch) return false;
+  const named = SETS.some((set) => (rule[set] ?? []).some((field) => expedition[set].has(syncScalar(row[field]))));
+  const inRegion = (rule.regions ?? []).some((region) => {
+    const key = gameSyncRegion({ alt: row[region.alt], x: row[region.x], y: row[region.y] }, expedition.spacing);
+    return key !== undefined && expedition.regions.has(key);
+  });
+  return named || inRegion;
+};
 
 /** A small deterministic generator, so a failure names a reproducible trial. */
 const random = (seed: number) => () => {
@@ -11,8 +35,8 @@ const random = (seed: number) => () => {
   return seed / 2 ** 31;
 };
 
-describe("gameSyncRowKeys", () => {
-  it("names exactly the scopes rowInGameSyncScope admits, for every model in the schema", () => {
+describe("rowInGameSyncScope", () => {
+  it("admits exactly the rows the declared rule gives a scope, for every model in the schema", () => {
     const next = random(7);
     const pick = <T>(values: readonly T[]): T => values[Math.floor(next() * values.length)]!;
     // Identities arrive as decimal, hex and bigint forms; the scope holds normalized decimals.
@@ -56,10 +80,9 @@ describe("gameSyncRowKeys", () => {
     for (const model of Object.keys(nativeSyncScopes)) {
       for (let trial = 0; trial < 300; trial++) {
         const [facts, held] = [row(model), scope()];
-        const keys = gameSyncRowKeys(model, facts, SPACING);
-        const scopeKeys = gameSyncScopeKeys(held);
-        const reached = keys === "shared" || keys.some((key) => scopeKeys.has(key));
-        expect(reached, `${model} trial ${trial}`).toBe(rowInGameSyncScope(model, facts, held));
+        expect(rowInGameSyncScope(model, facts, held), `${model} trial ${trial}`).toBe(
+          declaredMembership(model, facts, held),
+        );
       }
     }
   });

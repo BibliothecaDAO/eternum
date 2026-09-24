@@ -49,7 +49,7 @@ export const ExpeditionRollover = () => {
       if (!realm) return;
       // The rollover fires on chain time, which runs ahead of the last block's timestamp, so the announced site is
       // computed for the day that is beginning rather than read through structureMapPosition's block clock.
-      const site = expeditionRealmSite(rules, realm, now);
+      const site = expeditionRealmSite(rules, realm.metadata.realm_id, now);
       toast.info("A new expedition has begun", {
         description: describeNewExpedition(readTroopsOnHand(setup.store, realm.entity_id)),
         location: { x: site.col, y: site.row },

@@ -1,4 +1,9 @@
-import { expeditionEpoch, isCurrentExpeditionArmy } from "@bibliothecadao/eternum/expeditions";
+import {
+  expeditionEpoch,
+  expeditionRealmSite,
+  isCurrentExpeditionArmy,
+  isRealmCategory,
+} from "@bibliothecadao/eternum/expeditions";
 import {
   gameSyncRegion,
   gameSyncRowKeys,
@@ -12,7 +17,7 @@ import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/c
 import { toJsonValue, type ModelRegistry } from "./model-registry";
 import { FINALIZED_GAME_MODELS } from "./native/read-models";
 import { nativeEntityId } from "./native/entity-id";
-import { rowStreamKeys, scopeInputKeys } from "./subscription-keys";
+import { rowStreamKeys, scopeInputKeys, scopeLookup } from "./subscription-keys";
 import type {
   DecodedRecord,
   DecodedWorldEvent,
@@ -321,54 +326,45 @@ export class WorldFold {
     const epoch = expeditionEpoch(expedition, timestamp);
     const owners = new Set<string>(actor === undefined ? [] : [syncScalar(actor)]);
     if (actor !== undefined)
-      for (const { value } of this.scopeRows("PlayerEntry", gameId, spacing, [
-        `PlayerEntry.player:${syncScalar(actor)}`,
-      ]))
+      for (const { value } of this.scopeRows("PlayerEntry", gameId, spacing, [scopeLookup.entryOf(actor)]))
         owners.add(syncScalar(value.owner));
-    const homes = this.scopeRows(
-      "Structure",
-      gameId,
-      spacing,
-      [...owners].map((owner) => `Structure.owner:${owner}`),
-    ).filter(({ value }) => Number((value.base as DecodedRecord).category) === 1);
+    const homes = this.scopeRows("Structure", gameId, spacing, [...owners].map(scopeLookup.structuresOf)).filter(
+      ({ value }) => isRealmCategory(Number((value.base as DecodedRecord).category)),
+    );
     const realms = new Set(homes.map(({ value }) => syncScalar(value.entity_id)));
     const realmTraits = new Set(homes.map(({ value }) => syncScalar((value.metadata as DecodedRecord).realm_id)));
     const regions = new Set<string>();
-    const armies = this.scopeRows(
-      "ExplorerTroops",
-      gameId,
-      spacing,
-      [...realms].map((realm) => `ExplorerTroops.owner:${realm}`),
-    ).filter(({ value }) => {
-      const coord = value.coord as DecodedRecord;
-      return (
-        BigInt((value.troops as DecodedRecord).count as string) > 0n &&
-        isCurrentExpeditionArmy(
-          expedition,
-          { x: Number(coord.x), y: Number(coord.y), alt: coord.alt === true },
-          timestamp,
-        )
-      );
-    });
-    // With no current army, morning muster starts on the surface.
+    const armies = this.scopeRows("ExplorerTroops", gameId, spacing, [...realms].map(scopeLookup.armiesOf)).filter(
+      ({ value }) => {
+        const coord = value.coord as DecodedRecord;
+        return (
+          BigInt((value.troops as DecodedRecord).count as string) > 0n &&
+          isCurrentExpeditionArmy(
+            expedition,
+            { x: Number(coord.x), y: Number(coord.y), alt: coord.alt === true },
+            timestamp,
+          )
+        );
+      },
+    );
+    // With no current army, morning muster starts on the surface, at the site the contract raises the realm on today.
     if (epoch >= 0 && armies.length === 0)
-      for (const realm of realmTraits) regions.add(`${Number(realm) - 1}:${epoch * 4}`);
+      for (const realm of realmTraits) {
+        const site = expeditionRealmSite(expedition, Number(realm), timestamp);
+        regions.add(gameSyncRegion({ alt: false, x: site.col, y: site.row }, spacing)!);
+      }
     for (const { value } of armies) {
       const region = gameSyncRegion(value.coord as DecodedRecord, spacing);
       if (region !== undefined) regions.add(region);
     }
     const entities = new Set([...realms, ...armies.map(({ value }) => syncScalar(value.explorer_id))]);
-    const regionKeys = [...regions].map((region) => `Structure.region:${region}`);
-    for (const { value } of this.scopeRows("Structure", gameId, spacing, regionKeys)) {
-      if (Number((value.base as DecodedRecord).category) !== 1) entities.add(syncScalar(value.entity_id));
+    for (const { value } of this.scopeRows("Structure", gameId, spacing, [...regions].map(scopeLookup.structuresIn))) {
+      if (!isRealmCategory(Number((value.base as DecodedRecord).category))) entities.add(syncScalar(value.entity_id));
     }
     const productionSources = new Set(
-      this.scopeRows(
-        "ProductionReceiver",
-        gameId,
-        spacing,
-        [...realms].map((realm) => `ProductionReceiver.home:${realm}`),
-      ).map(({ value }) => syncScalar(value.entity_id)),
+      this.scopeRows("ProductionReceiver", gameId, spacing, [...realms].map(scopeLookup.receiversOf)).map(({ value }) =>
+        syncScalar(value.entity_id),
+      ),
     );
     scope.expedition = { epoch, spacing, owners, realms, realmTraits, regions, entities, productionSources };
     return scope;

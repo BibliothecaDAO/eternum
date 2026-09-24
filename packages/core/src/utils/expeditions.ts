@@ -58,6 +58,9 @@ export const liveHomeArmies = (
   return armies.filter((army) => isCurrentExpeditionArmy(rules, army.coord, floorSeconds));
 };
 
+/** A player's expedition home is a realm: its armies muster each day, and other structures are only met on the way. */
+export const isRealmCategory = (category: number): boolean => category === StructureType.Realm;
+
 /** A Frontier realm keeps no map coordinate of its own: the contract parks it at a sentinel and raises it daily. */
 export const isExpeditionRealm = (structure: NativeRows["Structure"]): boolean =>
   !structure.base.alt && structure.base.coord_y === EXPEDITION_SENTINEL_ROW;
@@ -73,8 +76,8 @@ export const structureMapPosition = (
   structure: NativeRows["Structure"],
 ): { x: number; y: number; alt: boolean } => {
   const rules = readExpeditionRules(store, structure.game_id);
-  if (rules && structure.base.category === StructureType.Realm && !structure.base.alt) {
-    const site = expeditionRealmSite(rules, structure, getBlockTimestamp().currentBlockTimestamp);
+  if (rules && isRealmCategory(structure.base.category) && !structure.base.alt) {
+    const site = expeditionRealmSite(rules, structure.metadata.realm_id, getBlockTimestamp().currentBlockTimestamp);
     return { x: site.col, y: site.row, alt: false };
   }
   if (isExpeditionRealm(structure)) {
@@ -85,16 +88,16 @@ export const structureMapPosition = (
   return { x: structure.base.coord_x, y: structure.base.coord_y, alt: structure.base.alt };
 };
 
-/** Where the realm stands on today's surface region: the site the contract computes for (realm, day, depth 0). */
+/** Where a realm stands on today's surface region: the site the contract computes for (realm id, day, depth 0). */
 export const expeditionRealmSite = (
   rules: ExpeditionRules,
-  structure: NativeRows["Structure"],
+  realmId: number,
   nowSeconds: number,
 ): { col: number; row: number } => {
   const half = Math.floor(rules.spacing / 2);
   const epoch = expeditionEpoch(rules, nowSeconds);
   return {
-    col: (structure.metadata.realm_id - 1) * rules.spacing + half,
+    col: (realmId - 1) * rules.spacing + half,
     row: epoch * 4 * rules.spacing + half,
   };
 };
@@ -108,7 +111,7 @@ export const expeditionSpireTile = (
   structure: NativeRows["Structure"],
   nowSeconds: number,
 ): { col: number; row: number } => {
-  const site = expeditionRealmSite(rules, structure, nowSeconds);
+  const site = expeditionRealmSite(rules, structure.metadata.realm_id, nowSeconds);
   const direction = expeditionEpoch(rules, nowSeconds) % 6;
   const spire = getNeighborHexes(site.col, site.row).find((hex) => hex.direction === direction);
   if (!spire) throw new Error(`No hex in direction ${direction} around the expedition site`);

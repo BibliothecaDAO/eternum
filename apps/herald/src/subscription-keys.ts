@@ -22,23 +22,30 @@ export const SCOPE_INPUT_MODELS = new Set([
   "ProductionReceiver",
 ]);
 
-/** The lookups subscriptionScope makes that can find this row; a region key needs the game's spacing. */
+/** The lookups subscriptionScope makes, spelled once: rows are indexed under them and a scope is taken through them. */
+export const scopeLookup = {
+  entryOf: (player: unknown) => `PlayerEntry.player:${syncScalar(player)}`,
+  structuresOf: (owner: unknown) => `Structure.owner:${syncScalar(owner)}`,
+  structure: (entity: unknown) => `Structure.entity:${syncScalar(entity)}`,
+  structuresIn: (region: string) => `Structure.region:${region}`,
+  armiesOf: (home: unknown) => `ExplorerTroops.owner:${syncScalar(home)}`,
+  army: (entity: unknown) => `ExplorerTroops.entity:${syncScalar(entity)}`,
+  receiversOf: (home: unknown) => `ProductionReceiver.home:${syncScalar(home)}`,
+  receiver: (entity: unknown) => `ProductionReceiver.entity:${syncScalar(entity)}`,
+};
+
+/** The lookups that can find this row; a region key needs the game's spacing. */
 export function scopeInputKeys(model: string, row: DecodedRecord, spacing: number): string[] {
-  if (model === "PlayerEntry") return [`PlayerEntry.player:${syncScalar(row.player)}`];
-  if (model === "ExplorerTroops")
-    return [`ExplorerTroops.owner:${syncScalar(row.owner)}`, `ExplorerTroops.entity:${syncScalar(row.explorer_id)}`];
-  if (model === "ProductionReceiver")
-    return [
-      `ProductionReceiver.home:${syncScalar(row.home)}`,
-      `ProductionReceiver.entity:${syncScalar(row.entity_id)}`,
-    ];
+  if (model === "PlayerEntry") return [scopeLookup.entryOf(row.player)];
+  if (model === "ExplorerTroops") return [scopeLookup.armiesOf(row.owner), scopeLookup.army(row.explorer_id)];
+  if (model === "ProductionReceiver") return [scopeLookup.receiversOf(row.home), scopeLookup.receiver(row.entity_id)];
   if (model !== "Structure") return [];
   const base = row.base as DecodedRecord;
   const region = gameSyncRegion({ alt: base.alt, x: base.coord_x, y: base.coord_y }, spacing);
   return [
-    `Structure.owner:${syncScalar(row.owner)}`,
-    `Structure.entity:${syncScalar(row.entity_id)}`,
-    ...(region === undefined ? [] : [`Structure.region:${region}`]),
+    scopeLookup.structuresOf(row.owner),
+    scopeLookup.structure(row.entity_id),
+    ...(region === undefined ? [] : [scopeLookup.structuresIn(region)]),
   ];
 }
 
@@ -47,12 +54,12 @@ export function scopeInputInterest(scope: GameSyncScope): Set<string> {
   const expedition = scope.expedition;
   if (!expedition) return new Set();
   return new Set([
-    ...(scope.actor === undefined ? [] : [`PlayerEntry.player:${syncScalar(scope.actor)}`]),
-    ...[...expedition.owners].map((owner) => `Structure.owner:${owner}`),
-    ...[...expedition.realms].flatMap((realm) => [`ExplorerTroops.owner:${realm}`, `ProductionReceiver.home:${realm}`]),
-    ...[...expedition.regions].map((region) => `Structure.region:${region}`),
-    ...[...expedition.entities].flatMap((entity) => [`Structure.entity:${entity}`, `ExplorerTroops.entity:${entity}`]),
-    ...[...expedition.productionSources].map((source) => `ProductionReceiver.entity:${source}`),
+    ...(scope.actor === undefined ? [] : [scopeLookup.entryOf(scope.actor)]),
+    ...[...expedition.owners].map(scopeLookup.structuresOf),
+    ...[...expedition.realms].flatMap((realm) => [scopeLookup.armiesOf(realm), scopeLookup.receiversOf(realm)]),
+    ...[...expedition.regions].map(scopeLookup.structuresIn),
+    ...[...expedition.entities].flatMap((entity) => [scopeLookup.structure(entity), scopeLookup.army(entity)]),
+    ...[...expedition.productionSources].map(scopeLookup.receiver),
   ]);
 }
 

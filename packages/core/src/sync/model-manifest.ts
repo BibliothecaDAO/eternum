@@ -59,11 +59,15 @@ export function gameSyncRegion(coord: Record<string, unknown>, spacing: number):
 const SYNC_SETS = ["owners", "entities", "realms", "realmTraits", "productionSources"] as const;
 
 /**
- * The keys a row reaches subscriptions by, the inverse of rowInGameSyncScope: a scope holds the row exactly when the row
- * is shared or its keys meet gameSyncScopeKeys(scope). An epoch-bound row's keys carry its epoch, so only that day's
- * scope meets them; `*` is met by every scope without an expedition.
+ * The keys a row reaches subscriptions by: a scope holds the row exactly when the row is shared or its keys meet
+ * gameSyncScopeKeys(scope). An epoch-bound row's keys carry its epoch, so only that day's scope meets them; `*` is met
+ * by every scope without an expedition. Region keys need the expedition spacing; with none, a row has no region key.
  */
-export function gameSyncRowKeys(model: string, row: Record<string, unknown>, spacing: number): "shared" | string[] {
+export function gameSyncRowKeys(
+  model: string,
+  row: Record<string, unknown>,
+  spacing: number | undefined,
+): "shared" | string[] {
   const rule = syncRule(model);
   if (rule === "shared") return "shared";
   if (rule === "actor") return [`actor:${syncScalar(row.actor)}`];
@@ -71,6 +75,7 @@ export function gameSyncRowKeys(model: string, row: Record<string, unknown>, spa
   const keys = ["*"];
   for (const set of SYNC_SETS)
     for (const field of rule[set] ?? []) keys.push(`${set}:${syncScalar(row[field])}${epoch}`);
+  if (spacing === undefined) return keys;
   for (const region of rule.regions ?? []) {
     const key = gameSyncRegion({ alt: row[region.alt], x: row[region.x], y: row[region.y] }, spacing);
     if (key !== undefined) keys.push(`regions:${key}${epoch}`);
@@ -78,27 +83,34 @@ export function gameSyncRowKeys(model: string, row: Record<string, unknown>, spa
   return keys;
 }
 
-/** The keys a scope holds rows by; see gameSyncRowKeys. */
-export function gameSyncScopeKeys(scope: GameSyncScope): Set<string> {
+/** The `*` rule: a scope without an expedition holds every row that is not an actor's own. */
+const holdsEveryScopedRow = (scope: GameSyncScope): boolean => scope.expedition === undefined;
+
+const scopeKeysByScope = new WeakMap<GameSyncScope, Set<string>>();
+
+/** The keys a scope holds rows by; see gameSyncRowKeys. A scope is immutable, so its keys are built once. */
+export function gameSyncScopeKeys(scope: GameSyncScope): ReadonlySet<string> {
+  const known = scopeKeysByScope.get(scope);
+  if (known) return known;
   const keys = new Set<string>();
   if (scope.actor !== undefined) keys.add(`actor:${syncScalar(scope.actor)}`);
   const expedition = scope.expedition;
-  if (!expedition) return keys.add("*");
-  for (const set of [...SYNC_SETS, "regions"] as const)
-    for (const value of expedition[set]) keys.add(`${set}:${value}`).add(`${set}:${value}@${expedition.epoch}`);
+  if (holdsEveryScopedRow(scope)) keys.add("*");
+  else if (expedition)
+    for (const set of [...SYNC_SETS, "regions"] as const)
+      for (const value of expedition[set]) keys.add(`${set}:${value}`).add(`${set}:${value}@${expedition.epoch}`);
+  scopeKeysByScope.set(scope, keys);
   return keys;
 }
 
+/**
+ * One membership rule, read from both ends: the row's keys against the scope's. The `*` rule answers first, since it
+ * is how every Blitz subscription holds each row a diff routes to it.
+ */
 export function rowInGameSyncScope(model: string, row: Record<string, unknown>, scope: GameSyncScope): boolean {
-  const rule = syncRule(model);
-  if (rule === "actor") return scope.actor !== undefined && syncScalar(row.actor) === syncScalar(scope.actor);
-  const expedition = scope.expedition;
-  if (!expedition || rule === "shared") return true;
-  if (rule.epoch !== undefined && Number(row[rule.epoch]) !== expedition.epoch) return false;
-  const named = (set: SyncSet) => (rule[set] ?? []).some((field) => expedition[set].has(syncScalar(row[field])));
-  const inRegion = (rule.regions ?? []).some((region) => {
-    const key = gameSyncRegion({ alt: row[region.alt], x: row[region.x], y: row[region.y] }, expedition.spacing);
-    return key !== undefined && expedition.regions.has(key);
-  });
-  return inRegion || SYNC_SETS.some(named);
+  if (syncRule(model) !== "actor" && holdsEveryScopedRow(scope)) return true;
+  const keys = gameSyncRowKeys(model, row, scope.expedition?.spacing);
+  if (keys === "shared") return true;
+  const held = gameSyncScopeKeys(scope);
+  return keys.some((key) => held.has(key));
 }
