@@ -29,6 +29,7 @@ jobs:
       collectibles: ${{ steps.paths.outputs.collectibles }}
       mmr: ${{ steps.paths.outputs.mmr }}
       season_pass: ${{ steps.paths.outputs.season_pass }}
+      contract_scripts: ${{ steps.paths.outputs.contract_scripts }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -113,6 +114,9 @@ jobs:
               ],
               "season_pass": [
                   "contracts/l2/season_pass/**"
+              ],
+              "contract_scripts": [
+                  "contracts/scripts-runtime/**"
               ]
           }
           selected = {area: any(fnmatch.fnmatch(path, pattern) for path in files for pattern in shared + patterns) for area, patterns in areas.items()}
@@ -180,10 +184,30 @@ jobs:
     if: needs.scope.outputs.season_pass == 'true'
     uses: ./.github/workflows/test-season-pass.yml
 
+  contract_scripts:
+    needs: scope
+    if: needs.scope.outputs.contract_scripts == 'true'
+    uses: ./.github/workflows/test-contract-scripts.yml
+
   validation:
     name: validation
     if: always()
-    needs: [scope, static, client, herald, services, native, runtime, terrain, amm, collectibles, mmr, season_pass]
+    needs:
+      [
+        scope,
+        static,
+        client,
+        herald,
+        services,
+        native,
+        runtime,
+        terrain,
+        amm,
+        collectibles,
+        mmr,
+        season_pass,
+        contract_scripts,
+      ]
     runs-on: ubuntu-latest
     steps:
       - name: Require every selected area
