@@ -87,6 +87,24 @@ function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>
   };
 }
 
+/**
+ * A resource's labor-paid recipe. A mode whose sheet gives none (the arena modes) has no such path, and the chain refuses
+ * a refill without inputs; where a recipe exists its output is required.
+ */
+function buildLaborPath(balances: Config["resources"], resource_type: number, precision: number) {
+  const recipe = (balances.productionBySimpleRecipe as Record<number, Array<{ resource: number; amount: number }>>)[
+    resource_type
+  ];
+  if (!recipe?.length) return { simple_output: 0n, simple_inputs: [] };
+  return {
+    simple_output: scaled(
+      required(balances.productionBySimpleRecipeOutputs, resource_type, "simple output"),
+      precision,
+    ),
+    simple_inputs: amounts(recipe, precision),
+  };
+}
+
 function buildResources(config: Config) {
   const balances = config.resources;
   if (!config.mines) throw new Error("Mine balance config is required");
@@ -110,16 +128,9 @@ function buildResources(config: Config) {
     recipe: hasNoProduction(resource_type)
       ? { simple_output: 0n, complex_output: 0n, simple_inputs: [], complex_inputs: [] }
       : {
-          simple_output: scaled(
-            required(balances.productionBySimpleRecipeOutputs, resource_type, "simple output"),
-            precision,
-          ),
+          ...buildLaborPath(balances, resource_type, precision),
           complex_output: scaled(
             required(balances.productionByComplexRecipeOutputs, resource_type, "complex output"),
-            precision,
-          ),
-          simple_inputs: amounts(
-            required(balances.productionBySimpleRecipe, resource_type, "simple recipe"),
             precision,
           ),
           complex_inputs: amounts(

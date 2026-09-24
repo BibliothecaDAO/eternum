@@ -2,19 +2,11 @@ import { ResourcesIds } from "../../../../packages/types/src/constants";
 import type { ResourceCost, ResourceInputs, ResourceOutputs } from "../../../../packages/types/src/types/common";
 import {
   RESOURCE_PRODUCTION_INPUT_RESOURCES,
-  RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM,
   RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
   STARTING_RESOURCES,
 } from "./resources";
 
 const REALM_DEPLOYED_START_TROOP_COUNT = 1_500;
-
-function buildSimpleResourceRecipe(wheatAmount: number, laborAmount: number) {
-  return [
-    { resource: ResourcesIds.Wheat, amount: wheatAmount },
-    { resource: ResourcesIds.Labor, amount: laborAmount },
-  ];
-}
 
 function buildT1TroopRecipe(copperAmount: number) {
   return [
@@ -100,24 +92,6 @@ export function buildOfficialArenaResourceOutputs(multiplier: number): ResourceO
     [ResourcesIds.Paladin]: 5 * multiplier,
     [ResourcesIds.PaladinT2]: 5 * multiplier,
     [ResourcesIds.PaladinT3]: 5 * multiplier,
-  };
-}
-
-export function buildOfficialArenaSimpleRecipes(multiplier: number): ResourceInputs {
-  return {
-    ...RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM,
-    [ResourcesIds.Wood]: buildSimpleResourceRecipe(1, 0.5 * multiplier),
-    [ResourcesIds.Coal]: buildSimpleResourceRecipe(1, 1 * multiplier),
-    [ResourcesIds.Copper]: buildSimpleResourceRecipe(1, 1 * multiplier),
-    [ResourcesIds.Ironwood]: buildSimpleResourceRecipe(2, 2.5 * multiplier),
-    [ResourcesIds.ColdIron]: buildSimpleResourceRecipe(2, 2.5 * multiplier),
-    [ResourcesIds.Gold]: buildSimpleResourceRecipe(2, 2.5 * multiplier),
-    [ResourcesIds.Adamantine]: buildSimpleResourceRecipe(4, 10 * multiplier),
-    [ResourcesIds.Mithral]: buildSimpleResourceRecipe(4, 10 * multiplier),
-    [ResourcesIds.Dragonhide]: buildSimpleResourceRecipe(4, 10 * multiplier),
-    [ResourcesIds.Knight]: buildSimpleResourceRecipe(2, 0.5 * multiplier),
-    [ResourcesIds.Crossbowman]: buildSimpleResourceRecipe(2, 0.5 * multiplier),
-    [ResourcesIds.Paladin]: buildSimpleResourceRecipe(2, 0.5 * multiplier),
   };
 }
 

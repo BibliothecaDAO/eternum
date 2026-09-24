@@ -244,93 +244,14 @@ const CAMP_STARTING_RESOURCES: ResourceMinMax[] = [
   { resource: ResourcesIds.Donkey, min_amount: 200, max_amount: 200 },
 ];
 
-const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS_SIMPLE_SYSTEM: ResourceOutputsById = RESOURCE_PRODUCTION_OUTPUT_AMOUNTS;
-
-export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputsById = {
-  [ResourcesIds.Wood]: [
-    { resource: ResourcesIds.Wheat, amount: 1 },
-    { resource: ResourcesIds.Labor, amount: 0.5 },
-  ],
-  [ResourcesIds.Stone]: [],
-  [ResourcesIds.Coal]: [
-    { resource: ResourcesIds.Wheat, amount: 1 },
-    { resource: ResourcesIds.Labor, amount: 1 },
-  ],
-  [ResourcesIds.Copper]: [
-    { resource: ResourcesIds.Wheat, amount: 1 },
-    { resource: ResourcesIds.Labor, amount: 1 },
-  ],
-  [ResourcesIds.Obsidian]: [],
-  [ResourcesIds.Silver]: [],
-  [ResourcesIds.Ironwood]: [
-    { resource: ResourcesIds.Wheat, amount: 2 },
-    { resource: ResourcesIds.Labor, amount: 2.5 },
-  ],
-  [ResourcesIds.ColdIron]: [
-    { resource: ResourcesIds.Wheat, amount: 2 },
-    { resource: ResourcesIds.Labor, amount: 2.5 },
-  ],
-  [ResourcesIds.Gold]: [
-    { resource: ResourcesIds.Wheat, amount: 2 },
-    { resource: ResourcesIds.Labor, amount: 2.5 },
-  ],
-  [ResourcesIds.Hartwood]: [],
-  [ResourcesIds.Diamonds]: [],
-  [ResourcesIds.Sapphire]: [],
-  [ResourcesIds.Ruby]: [],
-  [ResourcesIds.DeepCrystal]: [],
-  [ResourcesIds.Ignium]: [],
-  [ResourcesIds.EtherealSilica]: [],
-  [ResourcesIds.TrueIce]: [],
-  [ResourcesIds.TwilightQuartz]: [],
-  [ResourcesIds.AlchemicalSilver]: [],
-  [ResourcesIds.Adamantine]: [
-    { resource: ResourcesIds.Wheat, amount: 4 },
-    { resource: ResourcesIds.Labor, amount: 10 },
-  ],
-  [ResourcesIds.Mithral]: [
-    { resource: ResourcesIds.Wheat, amount: 4 },
-    { resource: ResourcesIds.Labor, amount: 10 },
-  ],
-  [ResourcesIds.Dragonhide]: [
-    { resource: ResourcesIds.Wheat, amount: 4 },
-    { resource: ResourcesIds.Labor, amount: 10 },
-  ],
-  [ResourcesIds.Donkey]: [],
-  [ResourcesIds.Knight]: [
-    { resource: ResourcesIds.Wheat, amount: 2 },
-    { resource: ResourcesIds.Labor, amount: 0.5 },
-  ],
-  [ResourcesIds.KnightT2]: [],
-  [ResourcesIds.KnightT3]: [],
-  [ResourcesIds.Crossbowman]: [
-    { resource: ResourcesIds.Wheat, amount: 2 },
-    { resource: ResourcesIds.Labor, amount: 0.5 },
-  ],
-  [ResourcesIds.CrossbowmanT2]: [],
-  [ResourcesIds.CrossbowmanT3]: [],
-  [ResourcesIds.Paladin]: [
-    { resource: ResourcesIds.Wheat, amount: 2 },
-    { resource: ResourcesIds.Labor, amount: 0.5 },
-  ],
-  [ResourcesIds.PaladinT2]: [],
-  [ResourcesIds.PaladinT3]: [],
-  [ResourcesIds.Wheat]: [],
-  [ResourcesIds.Fish]: [],
-  [ResourcesIds.Lords]: [],
-  [ResourcesIds.AncientFragment]: [],
-  [ResourcesIds.Essence]: [],
-  [ResourcesIds.Labor]: [],
-  [ResourcesIds.Research]: [], // No simple recipe
-};
-
 export const arenaResourceConfig: ConfigPatch = {
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
     productionByComplexRecipe: RESOURCE_PRODUCTION_INPUT_RESOURCES,
     productionByComplexRecipeOutputs: RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
-    productionBySimpleRecipe: RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM,
-    productionBySimpleRecipeOutputs: RESOURCE_PRODUCTION_OUTPUT_AMOUNTS_SIMPLE_SYSTEM,
+    // Arena games pay for production in resources only; labor-paid recipes are the modes' own.
+    productionBySimpleRecipe: {},
+    productionBySimpleRecipeOutputs: {},
     resourceWeightsGrams: RESOURCES_WEIGHTS_NANOGRAM,
     resourceRarity: RESOURCE_RARITY,
   },

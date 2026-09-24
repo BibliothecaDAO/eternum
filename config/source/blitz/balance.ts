@@ -8,7 +8,6 @@ import {
   buildEliteBuildingCost,
   buildOfficialArenaComplexRecipes,
   buildOfficialArenaResourceOutputs,
-  buildOfficialArenaSimpleRecipes,
 } from "../common/arena/shared";
 
 export const BLITZ_DURATION_MINUTES = 60;
@@ -131,8 +130,6 @@ export const blitzBalance: ConfigPatch = {
   resources: {
     productionByComplexRecipe: buildOfficialArenaComplexRecipes(2),
     productionByComplexRecipeOutputs: buildBlitzResourceOutputs(),
-    productionBySimpleRecipe: buildOfficialArenaSimpleRecipes(2),
-    productionBySimpleRecipeOutputs: buildBlitzResourceOutputs(),
   },
   troop: {
     stamina: blitzStaminaConfig,

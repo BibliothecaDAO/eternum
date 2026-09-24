@@ -135,6 +135,18 @@ describe("native presets", () => {
     ]);
   });
 
+  test("Blitz and Duel carry no labor-paid production, while Frontier trains troops and Eternum keeps its labor path", () => {
+    const laborPaid = (environment: Parameters<typeof loadNativePresetConfiguration>[0], presetId: number) =>
+      buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId)
+        .resources.production.filter(({ recipe }) => recipe.simple_inputs.length > 0)
+        .map(({ resource_type }) => resource_type);
+
+    expect(laborPaid("madara.blitz", 2)).toEqual([]);
+    expect(laborPaid("madara.blitz", 4)).toEqual([]);
+    expect(laborPaid("madara.frontier", FRONTIER_PRESET_ID)).toEqual([26, 27, 28, 29, 30, 31, 32, 33, 34]);
+    expect(laborPaid("madara.eternum", 3).length).toBeGreaterThan(0);
+  });
+
   test("Frontier combat is biome-neutral while Blitz keeps its terrain bonus", () => {
     const frontier = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),

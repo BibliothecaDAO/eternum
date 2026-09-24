@@ -6,7 +6,6 @@ import {
   buildArenaStartingResources,
   buildOfficialArenaComplexRecipes,
   buildOfficialArenaResourceOutputs,
-  buildOfficialArenaSimpleRecipes,
 } from "../common/arena/shared";
 
 export const DUEL_DURATION_MINUTES = 90;
@@ -49,8 +48,6 @@ export const duelBalance: ConfigPatch = {
   resources: {
     productionByComplexRecipe: buildOfficialArenaComplexRecipes(1),
     productionByComplexRecipeOutputs: buildOfficialArenaResourceOutputs(1),
-    productionBySimpleRecipe: buildOfficialArenaSimpleRecipes(1),
-    productionBySimpleRecipeOutputs: buildOfficialArenaResourceOutputs(1),
   },
   buildings: {
     complexBuildingCosts: COMPLEX_BUILDING_COSTS,

@@ -1,3 +1,4 @@
+use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::commands::Command;
 use crate::production::{
@@ -9,8 +10,9 @@ use crate::resources::{
     IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceAmount, ResourceRule, ResourceSlot,
 };
 use crate::tests::state::ResourceObservationTrait;
+use super::recorded_receipts::RecordedReceiptsTrait;
 use super::resource_commands::{
-    assert_terminal_rejection, execute_recorded_at, grant, resource_facts, set_fixture, setup,
+    assert_terminal_rejection, execute_recorded_at, grant, resource_facts, set_fixture, setup, setup_with_rules,
 };
 
 #[test]
@@ -86,6 +88,22 @@ fn configure(deployment: super::Deployment) {
     start_cheat_caller_address(deployment.games, super::authority());
     IProductionRulesDispatcher { contract_address: deployment.games }.configure_production(3, recipes());
     stop_cheat_caller_address(deployment.games);
+}
+
+#[test]
+fn an_arena_game_refuses_labor_paid_production() {
+    let mut rules = super::recorded::rules();
+    rules.command_mask = super::recorded::BLITZ_COMMAND_MASK;
+    let (deployment, key, _) = setup_with_rules(rules);
+    configure(deployment);
+    let refill = RefillProduction {
+        structure_id: key.entity_id, resource_types: array![26].span(), amounts: array![1].span(),
+    };
+    assert_terminal_rejection(deployment, Command::BurnLaborForResourceProduction(refill), 60);
+    let result = IRecordedExecutionViewsDispatcher { contract_address: deployment.games }
+        .recorded_outcome(3, super::recorded::head(deployment.games, 3).order)
+        .unwrap();
+    assert_eq!(result.status_class, 'COMMAND_DISABLED');
 }
 
 #[test]
