@@ -21,8 +21,9 @@ for the complete isolated stack setup. Do not put deployment private keys in the
 
 ## Read current facts
 
-`useGame` from `@bibliothecadao/react` exposes the active `setup.store` and account. `useNativeRevision` subscribes a
-component to the models it renders. Read rows by their native keys; game-scoped keys begin with `game_id`.
+`useGame` (`apps/game/src/hooks/context/game-context.tsx`) exposes the active `setup.store` and account.
+`useNativeRevision` subscribes a component to the models it renders. Read rows by their native keys; game-scoped keys
+begin with `game_id`.
 
 The generated `NativeFactStore` holds typed rows with bigints and enums. It provides maps per model, game and owner
 indexes, and a change feed. Missing required rows are synchronization errors, not zero-valued game facts.

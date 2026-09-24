@@ -1045,18 +1045,20 @@ Build the workspace packages, then point the client at an isolated native deploy
 ```sh
 pnpm install --frozen-lockfile
 pnpm run build:packages
-VITE_PUBLIC_SHARD_URL=https://herald.example pnpm --dir apps/game dev
+pnpm --dir apps/game dev
 ```
 
-The shard URL is its Herald. The client reads the chain id, node and admission endpoints, contracts and release from the
-shard's `/manifest`, and refuses a shard whose schema differs from the client's generated bindings. Players can open
-further shards by URL from the games list. See `deploy/athanor/README.md` for the complete isolated stack setup. Do not
-put deployment private keys in the browser environment.
+The app reads our directory at `/api/directory` (proxied to staging in development) and opens every shard it lists; a
+shard's URL is its Herald. The client reads the chain id, node and admission endpoints, contracts and release from the
+shard's `/manifest`, and refuses a shard whose schema differs from the client's generated bindings. Players open a shard
+the directory does not list, such as a local one, by pasting its URL into the games list. See `deploy/athanor/README.md`
+for the complete isolated stack setup. Do not put deployment private keys in the browser environment.
 
 ## Read current facts
 
-`useGame` (`apps/game/src/hooks/context/game-context.tsx`) exposes the active `setup.store` and account. `useNativeRevision` subscribes a
-component to the models it renders. Read rows by their native keys; game-scoped keys begin with `game_id`.
+`useGame` (`apps/game/src/hooks/context/game-context.tsx`) exposes the active `setup.store` and account.
+`useNativeRevision` subscribes a component to the models it renders. Read rows by their native keys; game-scoped keys
+begin with `game_id`.
 
 The generated `NativeFactStore` holds typed rows with bigints and enums. It provides maps per model, game and owner
 indexes, and a change feed. Missing required rows are synchronization errors, not zero-valued game facts.
@@ -1211,7 +1213,7 @@ Run `scarb fmt`, `scarb build` and `scarb test` from `contracts/l3/world-native`
 * `apps/game`: React and three.js client.
 * `apps/launch-service`: native game launch orchestration.
 * `packages/core`: shared client, fact store, sync runtime and gameplay managers.
-* `packages/provider`, `packages/types`, `packages/react`: command encoding, shared types and React hooks.
+* `packages/provider`, `packages/types`: command encoding and shared types. React hooks live in `apps/game`.
 * `config`: balance configuration and native deployment tools.
 
 Build documentation locally with `pnpm build:docs` or run `pnpm dev:docs` while editing.
@@ -1895,8 +1897,8 @@ A chest opens the moment you earn it, where the army stands. There is nothing to
 
 ## Two rolls
 
-**What it is.** The same everywhere: nine chests in ten hold a relic, about one in eleven a cosmetic, and one in a
-hundred a token claim. Deeper is better, not different.
+**What it is.** The same everywhere: 90% of chests hold a relic, 9% a cosmetic and 1% a token claim, with at most one
+token claim a day; past that, the roll gives a relic. Deeper is better, not different.
 
 **How good it is.** Set by the ground you were standing on.
 
@@ -1907,10 +1909,14 @@ hundred a token claim. Deeper is better, not different.
 | Ethereal II  | 42%    | 38%      | 15%  | 5%   |
 | Ethereal III | 25%    | 43%      | 23%  | 9%   |
 
+Relic chests keep a pity count per depth: the 400th relic chest on the surface without an epic is epic, and the 100th,
+40th and 20th at Ethereal I, II and III.
+
 ## What each kind does
 
-* **Relics** stay on the army that found them and cost nothing to activate.
-* **Cosmetics** go to your account, drawn from the ones you do not own yet.
+* **Relics** boost stamina, damage, damage reduction or exploration rewards. A common or uncommon relic is level I, a
+  rare or epic one level II. It stays on the army that found it, costs nothing to activate, and ends with the army.
+* **Cosmetics** are recorded on your account.
 * **Token claims** are recorded on your account for payout later; the payout itself is not part of this season.
 
 No chest is ever a blank. Every one gives a relic, a cosmetic or a token claim.
@@ -1929,33 +1935,42 @@ meta: {
 
 ## Today's map
 
-Every expedition starts on fresh fog. Your realm stands at the edge of its own region, and armies can move only inside
-that region. Nobody arrives too late and no map is farmed dry.
+Every expedition starts on fresh fog. Your armies start the day on your home ring, the seven tiles at the heart of your
+own region, and they can move only inside that region. The ring counts as explored from the first second, so crossing it
+costs travel stamina and finds nothing. Nobody arrives too late and no map is farmed dry.
 
 ## What a tile can hold
 
-| Tile        | Where       | Chance     | What it gives                                                   |
-| ----------- | ----------- | ---------- | --------------------------------------------------------------- |
-| Supplies    | Every layer | Most tiles | Essence, labor or troops, sent straight home. No tile is empty. |
-| Rift        | Surface     | Rare       | Guarded Essence, most of a day's haul; produces into the realm. |
-| Camp        | Every layer | Rare       | A guarded outpost. Clear it for its chest and 25 stamina back.  |
-| Trove       | Ethereal    | Rare       | Rifts give way to troves below: heavily guarded, with a chest.  |
-| Loose chest | Every layer | Rare       | A lucky find in the fog, on top of the ones you fight for.      |
+| Tile        | Where       | Chance    | What it gives                                                                  |
+| ----------- | ----------- | --------- | ------------------------------------------------------------------------------ |
+| Supplies    | Every layer | New tiles | 50–300 Essence, 60–450 labor or 30–250 troops, sent straight home.             |
+| Rift        | Surface     | 4%        | Guarded. Captured, it produces Essence into the realm until the day ends.      |
+| Camp        | Every layer | About 6%  | A guarded outpost. Clearing it pays its chest and nothing else.                |
+| Trove       | Ethereal    | 4%        | Rifts give way to troves below: heavily guarded, producing more, with a chest. |
+| Loose chest | Every layer | About 1%  | A lucky find on an empty tile, on top of the chests you fight for.             |
 
-Everything found on the map goes home the moment it is picked up. An army never grows in the field and never carries
-anything worth losing. Troops found today join tomorrow's muster.
+Supplies come with every tile an army reveals, including the ones where a camp or rift appears, and deeper ground
+multiplies them. Walking over known ground pays nothing. Everything found goes home the moment it is picked up, and an
+army never carries anything worth losing.
+
+## Merging armies
+
+An army can grow in the field only by absorbing another of your armies from the same realm. They must stand side by side
+and have the same troop type and tier. The merged army keeps the lower of the two staminas, so a merge never refills a
+tired army, and it can hold no more troops than your castle allows per army.
 
 ## Fighting a camp
 
-A camp shows its strength before you attack. Guards run 800 to 1,600 on the surface and far more below, so what counts
-as a safe fight moves as the realm grows. Winning refunds 25 stamina and opens the site's chest where the army stands.
-Losing refunds nothing.
+A camp shows its exact guard before you attack. Guards run from 1,000 to 1,599 on the surface, 3,000 to 4,999 at
+Ethereal I, 8,000 to 11,999 at Ethereal II and 20,000 to 29,999 at Ethereal III, so what counts as a safe fight moves as
+the realm grows. Winning opens the site's chest where the army stands. No fight refunds stamina, won or lost.
 
 ## The spire and its depths
 
-Once your realm is attuned, a spire stands on its ring. Bring an army beside your realm, tap the spire, and pick a depth
-you have unlocked. Entering costs stamina, more for deeper ground, and the trip is one way for the day. Deeper ground
-pays roughly four times the surface at Ethereal I, and double again each step down, with guards to match.
+Today's spire stands on one tile of your home ring and moves one step around the ring each day. Once your realm is
+attuned, bring an army onto or beside the spire, tap it, and pick a depth you have unlocked. Entering costs 30 stamina
+for Ethereal I, 40 for II and 50 for III, and the trip is one way for the day. Supplies below are four times the surface
+at Ethereal I and double again each step down, with guards to match.
 
 ## The rollover
 
@@ -1987,11 +2002,12 @@ An expedition runs for one day, from 00:00 UTC to the next. You commit troops in
 a committed army is spent whether it dies or not. What comes back is Essence, and Essence is what makes your realm
 stronger for tomorrow.
 
-1. **Muster.** Troops leave the garrison as armies of 150 stamina, paying wheat on every step.
+1. **Muster.** Troops leave the garrison as armies of 150 stamina on your home ring, paying wheat on every step. A new
+   realm fields three armies at once; its castle raises that to four, five and six.
 2. **Explore.** The map is hidden until you walk it. What sits on a tile is decided the moment an army reveals it, so
    nobody can scout ahead.
-3. **Clear.** Camps, rifts and troves are guarded. A camp shows its strength before you attack. Win and you get 25
-   stamina back; lose and the 50 is gone with the troops.
+3. **Clear.** Camps, rifts and troves are guarded. A site shows its exact guard before you attack, an attack costs 50
+   stamina, and winning refunds none of it.
 4. **Bring it home.** Everything found goes straight to the realm. Chests open the moment you earn them.
 
 At the end of the day the map and every army on it are gone. Your realm is raised again on the next map with everything
@@ -2008,13 +2024,18 @@ you built.
 ## Stamina sets the pace
 
 An army holds 150 stamina and recovers 30 an hour, so a full bar takes five hours. Revealing a tile costs 30, moving
-over known ground 10, and an attack 50. Clearing a camp refunds 25, so a fight you win is the cheapest thing you can do.
-The army panel shows how long until an army is rested.
+over known ground 10, and an attack 50. The army panel shows how long until an army is rested.
+
+## Fights roll dice
+
+Each side of a fight rolls a d20 and hits 1% to 20% harder, so the attack preview shows a range from your worst roll to
+your best. The ground does not matter: no biome helps or hurts either side.
 
 ## Your realm is never attacked
 
 No player can raid, besiege or take it, and no player can fight your armies. The realm has no guard slots because it
-needs none, and armies cannot be sent home, stationed or rescued: deployed is deployed.
+needs none. Armies cannot be sent home, stationed or topped up from the garrison: deployed is deployed. Two of your
+armies standing side by side can merge, and an army you disband loses its troops.
 
 ## Nothing is handed out
 
@@ -2039,7 +2060,7 @@ Open the Frontier season and found a realm. It keeps its catalogue name, your pl
 profile, and from then on it is raised again on every new map, in its own stretch of wilderness. Entry is free and open
 for the whole season, so a player who arrives in week five starts the same way as one who arrived on day one.
 
-A new realm starts with 2,000 troops, 5,000 wheat, 2,000 labor, no Essence and six plots around the castle.
+A new realm starts with 1,500 troops, 1,000 wheat, 2,000 labor, no Essence and six plots around the castle.
 
 ## The board
 
@@ -2054,6 +2075,9 @@ Upgrades are buildings you place on the realm's own small board. Six buildings, 
 | Storehouse   | Storage capacity | Absence costs less                  | Farm, Workshop       |
 | Workers' hut | Population       | How many buildings you can have     | Castle               |
 
+Every building but the workers' hut takes population: a farm 1, a workshop or storehouse 2, barracks 3. A realm starts
+with room for 6; each workers' hut adds 6, and 2 more beside the castle.
+
 Every bonus is a gain, never a loss. A hex has six sides, you have six plots at first, and every building wants a
 neighbour that some other building also wants, so a plot spent on one pair denies another. When you choose a plot, the
 build menu lists each building's wanted neighbours and marks the ones that plot already has.
@@ -2066,13 +2090,19 @@ The board is paid in labor, never in Essence.
 
 ## The three ladders
 
-Essence found on the map is the only upgrade currency. Each rung costs roughly double the last, so the next one always
-sits about a week away.
+Essence found on the map is the only upgrade currency.
 
-* **Castle.** How many armies you can field, and the plot rings around it.
-* **Barracks.** How hard your troops hit: tiers I, II and III.
-* **Attunement.** Opens the Ethereal layer below the surface, one depth at a time. Once attuned, a spire stands on your
-  realm's ring.
+| Ladder     | Rung 1  | Rung 2  | Rung 3  |
+| ---------- | ------- | ------- | ------- |
+| Castle     | 3,000   | 20,000  | 90,000  |
+| Barracks   | 8,000   | 45,000  | —       |
+| Attunement | 150,000 | 330,000 | 850,000 |
+
+* **Castle.** Armies in the field at once (3, then 4, 5 and 6), troops per army (3,000 tier I troops, then 9,000, 25,000
+  and 60,000), and the plot rings around it (6 plots, then 18, 36 and 60).
+* **Barracks.** Which troops the barracks train: tier I, then tier II, then tier III. Troops already trained keep their
+  tier.
+* **Attunement.** Opens the Ethereal layer below the surface, one depth at a time, through today's spire.
 
 The realm panel shows each ladder's next rung and its Essence price.
 

@@ -33,7 +33,7 @@ src/ui/
 │   │   ├── construction/# Building preview
 │   │   └── production/  # Production controls, labor, resources
 │   ├── social/
-│   │   ├── chat/        # Real-time chat system with Socket.io
+│   │   ├── realtime-chat/ # Chat over the identity Worker's WebSocket (Durable Objects)
 │   │   ├── guilds/      # Guild management system
 │   │   └── player/      # Player lists and panels
 │   ├── progression/
