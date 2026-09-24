@@ -103,6 +103,19 @@ describe("native presets", () => {
     expect(playtest.settlement.realms).toEqual(design.settlement.realms);
   });
 
+  test("a Frontier camp pays its chest, never resources: no camp resources and no Essence at any depth", () => {
+    const design = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
+      FRONTIER_PRESET_ID,
+    );
+
+    expect(design.structures.camps).toEqual([]);
+    expect(design.settlement.depths.length).toBeGreaterThan(0);
+    for (const depth of design.settlement.depths) {
+      expect([depth.camp_reward_min, depth.camp_reward_max]).toEqual([0n, 0n]);
+    }
+  });
+
   test("Frontier's design preset carries the owner's balance: hourly stamina, a lean grant, slower barracks and farms", () => {
     const design = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
