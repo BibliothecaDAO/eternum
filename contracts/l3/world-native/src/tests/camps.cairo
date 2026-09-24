@@ -18,7 +18,7 @@ use crate::tests::state::{
 use crate::troops::{Coord, ExplorerKey, TroopTier, TroopType};
 use super::resource_commands::{execute, execute_recorded_at, grant, setup_with_rules};
 
-fn rules(blitz: bool) -> crate::rules::SliceRules {
+pub fn rules(blitz: bool) -> crate::rules::SliceRules {
     let mut rules = super::recorded::rules();
     rules.mode_rules = if blitz {
         super::recorded::BLITZ_RULES

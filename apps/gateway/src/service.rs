@@ -23,6 +23,8 @@ use tokio::sync::{mpsc, watch};
 /// Player tickets per batch. One transaction may execute 1.1e9 Sierra gas (versioned constants
 /// 0.14.2); the costliest player action in single-ticket receipts, an explore, took 171.5M L2 gas
 /// with the batch wrapper, so six fit where sixteen reverted out of gas in the 96-player run.
+/// world-native's tests/packer_bound.cairo holds the same number and fails if that many of the
+/// costliest explores outgrow the cap; change both together.
 const MAX_BATCH: usize = 6;
 const PACK_DELAY: Duration = Duration::from_millis(10);
 const EPOCH_TICKETS: u64 = 100_000;
