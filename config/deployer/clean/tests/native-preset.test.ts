@@ -137,6 +137,17 @@ describe("native presets", () => {
     ]);
   });
 
+  test("Frontier combat is biome-neutral while Blitz keeps its terrain bonus", () => {
+    const frontier = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
+      FRONTIER_PRESET_ID,
+    );
+    const blitz = buildNativePreset(loadNativePresetConfiguration("madara.blitz", 2), 2);
+
+    expect(frontier.rules.troop_damage_config.damage_biome_bonus_num).toBe(0);
+    expect(blitz.rules.troop_damage_config.damage_biome_bonus_num).toBe(3000);
+  });
+
   test("Frontier's design preset carries the owner's balance: hourly stamina, a lean grant, slower barracks and farms", () => {
     const design = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),

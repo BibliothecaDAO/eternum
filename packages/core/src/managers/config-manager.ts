@@ -233,6 +233,10 @@ export class ClientConfigManager {
     }
     return config.stamina_travel_stamina_cost + modifier * config.stamina_bonus_value;
   }
+  /** Whether terrain changes combat in this game at all; where it does not, no surface shows biome bonuses. */
+  hasBiomeCombatEffects(): boolean {
+    return this.rules().troop_damage_config.damage_biome_bonus_num > 0;
+  }
   public getBiomeCombatBonus(troopType: TroopType, biome: BiomeType): number {
     const biomeBonusNum = this.rules().troop_damage_config.damage_biome_bonus_num;
     const biomeBonus = biomeBonusNum / 10_000;
