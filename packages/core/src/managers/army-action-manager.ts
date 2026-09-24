@@ -257,6 +257,8 @@ export class ArmyActionManager {
       if (isSpire) {
         actionType = ActionType.SpireTravel;
       } else if (isMine) {
+        // Help is a transfer between the player's own entities; where the game allows none, the hex offers nothing.
+        if (configManager.helpTransfers(!isArmyMine).length === 0) continue;
         actionType = ActionType.Help;
       } else if (canAttack) {
         actionType = ActionType.Attack;

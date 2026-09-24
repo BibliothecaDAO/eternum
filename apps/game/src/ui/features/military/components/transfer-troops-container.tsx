@@ -1,5 +1,4 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import Button from "@/ui/design-system/atoms/button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { formatNumber } from "@/ui/utils/utils";
@@ -70,7 +69,6 @@ export const TransferTroopsContainer = ({
   onToggleDirection,
   canToggleDirection = false,
 }: TransferTroopsContainerProps) => {
-  const mode = useGameModeConfig();
   const {
     account: { account },
     setup: {

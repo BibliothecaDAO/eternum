@@ -1,7 +1,8 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { configManager } from "@bibliothecadao/eternum";
 import { ActorType, ID } from "@bibliothecadao/types";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TransferResourcesContainer } from "./transfer-resources-container";
 import { TransferDirection, getActorTypes } from "./transfer-troops/transfer-direction";
 import { TransferTroopsContainer } from "./transfer-troops-container";
@@ -28,7 +29,12 @@ export const HelpContainer = ({
   };
   allowBothDirections?: boolean;
 }) => {
-  const [transferType, setTransferType] = useState<TransferType>(TransferType.Troops);
+  // Only the transfers the game allows between these two entities get a tab.
+  const withStructure = selected.type === ActorType.Structure || target.type === ActorType.Structure;
+  const transfers = useMemo(() => configManager.helpTransfers(withStructure), [withStructure]);
+  const [transferType, setTransferType] = useState<TransferType>(
+    transfers.includes("troops") ? TransferType.Troops : TransferType.Relics,
+  );
   const [swapped, setSwapped] = useState<boolean>(false);
 
   useEffect(() => {
@@ -88,28 +94,32 @@ export const HelpContainer = ({
     <div className="space-y-4">
       <div className="rounded-xl border border-gold/25 bg-dark-brown/60 shadow-lg overflow-hidden">
         <div className="flex border-b border-gold/20 bg-dark-brown/70">
-          <button
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold uppercase tracking-wide border-b-2 transition-all duration-200 ${
-              transferType === TransferType.Troops
-                ? "text-gold border-gold bg-gold/10"
-                : "text-gold/60 border-transparent hover:text-gold/90 hover:bg-gold/5"
-            }`}
-            onClick={() => setTransferType(TransferType.Troops)}
-          >
-            <span>⚔️</span>
-            <span>Transfer Troops</span>
-          </button>
-          <button
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold uppercase tracking-wide border-b-2 transition-all duration-200 ${
-              transferType === TransferType.Relics
-                ? "text-gold border-gold bg-gold/10"
-                : "text-gold/60 border-transparent hover:text-gold/90 hover:bg-gold/5"
-            }`}
-            onClick={() => setTransferType(TransferType.Relics)}
-          >
-            <span>💰</span>
-            <span>Transfer Relics</span>
-          </button>
+          {transfers.includes("troops") && (
+            <button
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold uppercase tracking-wide border-b-2 transition-all duration-200 ${
+                transferType === TransferType.Troops
+                  ? "text-gold border-gold bg-gold/10"
+                  : "text-gold/60 border-transparent hover:text-gold/90 hover:bg-gold/5"
+              }`}
+              onClick={() => setTransferType(TransferType.Troops)}
+            >
+              <span>⚔️</span>
+              <span>Transfer Troops</span>
+            </button>
+          )}
+          {transfers.includes("relics") && (
+            <button
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold uppercase tracking-wide border-b-2 transition-all duration-200 ${
+                transferType === TransferType.Relics
+                  ? "text-gold border-gold bg-gold/10"
+                  : "text-gold/60 border-transparent hover:text-gold/90 hover:bg-gold/5"
+              }`}
+              onClick={() => setTransferType(TransferType.Relics)}
+            >
+              <span>💰</span>
+              <span>Transfer Relics</span>
+            </button>
+          )}
         </div>
 
         <div className="bg-dark-brown/40 p-4">

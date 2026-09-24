@@ -14,6 +14,7 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { buildingCostModeOf, type BuildingCostMode } from "../utils/building-cost-mode";
+import { enabledHelpTransfers, type HelpTransfer } from "../utils/army-help";
 import { isModeRuleEnabled } from "../utils/mode-rules";
 import { hasEnabledProductionPath } from "../utils/production-path";
 import { troopStaminaLimits } from "./troop-stamina";
@@ -234,6 +235,20 @@ export class ClientConfigManager {
         modifier = 1;
     }
     return config.stamina_travel_stamina_cost + modifier * config.stamina_bonus_value;
+  }
+  /** Whether any structure of this game can hold guards, at any level. */
+  hasGuardSlots(): boolean {
+    const limits = this.rules().troop_limit_config;
+    return [
+      limits.settlement_guard_slots,
+      limits.city_guard_slots,
+      limits.kingdom_guard_slots,
+      limits.empire_guard_slots,
+    ].some((slots) => Number(slots) > 0);
+  }
+  /** The Help transfers this game allows between a player's own entities; see enabledHelpTransfers. */
+  helpTransfers(withStructure: boolean): HelpTransfer[] {
+    return enabledHelpTransfers((command) => this.isCommandEnabled(command), withStructure, this.hasGuardSlots());
   }
   /** Whether a battle rolls a d20 per side: always on the ethereal layer, and everywhere in a game with combat dice. */
   rollsCombatDice(defenderAlt: boolean): boolean {

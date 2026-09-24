@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { CallData, type Account, type RpcProvider } from "starknet";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import { buildNativePreset } from "../config/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
@@ -145,6 +146,22 @@ describe("native presets", () => {
     expect(laborPaid("madara.blitz", 4)).toEqual([]);
     expect(laborPaid("madara.frontier", FRONTIER_PRESET_ID)).toEqual([26, 27, 28, 29, 30, 31, 32, 33, 34]);
     expect(laborPaid("madara.eternum", 3).length).toBeGreaterThan(0);
+  });
+
+  test("Frontier armies merge but never recruit guards: troop management on, every guard slot closed", () => {
+    const design = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
+      FRONTIER_PRESET_ID,
+    );
+    const limits = design.rules.troop_limit_config;
+
+    expect(design.rules.command_mask & BigInt(nativeCommandBits.ManageTroops)).not.toBe(0n);
+    expect([
+      limits.settlement_guard_slots,
+      limits.city_guard_slots,
+      limits.kingdom_guard_slots,
+      limits.empire_guard_slots,
+    ]).toEqual([0, 0, 0, 0]);
   });
 
   test("only Frontier rolls a d20 per side in every battle", () => {

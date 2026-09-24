@@ -50,6 +50,7 @@ export const frontierPreset: NativePreset = {
     [
       "SettleSeason",
       "CreateExplorer",
+      "ManageTroops",
       "Explore",
       "Move",
       "BattleGuard",

@@ -734,6 +734,136 @@ fn muster_command(category: u8, direction: u8) -> Command {
     )
 }
 
+// Two armies of the expedition home, three troops each, mustered side by side around the day's site.
+fn expedition_armies(d: super::Deployment, game_id: u32, category: u8) -> (ExplorerKey, ExplorerKey) {
+    let home = ResourceKey { game_id, entity_id: 1 };
+    start_cheat_caller_address(d.games, d.games);
+    for troop in array![26_u8, 29, 32] {
+        IResourceOperationsDispatcher { contract_address: d.games }
+            .grant_resource(home, troop, 1000 * RESOURCE_PRECISION, 351);
+    }
+    stop_cheat_caller_address(d.games);
+    for direction in array![0_u8, 1] {
+        let muster = Command::CreateExplorer(
+            CreateExplorer { structure_id: 1, category, tier: 0, amount: 3 * RESOURCE_PRECISION, direction },
+        );
+        assert!(execute_in_game(d, game_id, muster, 351, 351));
+    }
+    let explorers = IStructureOperationsDispatcher { contract_address: d.games }
+        .structure(home)
+        .unwrap()
+        .troop_explorers;
+    (ExplorerKey { game_id, explorer_id: *explorers.at(0) }, ExplorerKey { game_id, explorer_id: *explorers.at(1) })
+}
+
+fn transfer(source: ExplorerKey, target: ExplorerKey, troops: u128) -> Command {
+    Command::ManageTroops(
+        crate::troop_management::ManageTroops::Transfer(
+            crate::troop_management::TransferTroops {
+                source: crate::troop_management::Army::Explorer(source.explorer_id),
+                target: crate::troop_management::Army::Explorer(target.explorer_id),
+                amount: troops * RESOURCE_PRECISION,
+            },
+        ),
+    )
+}
+
+#[test]
+fn expedition_armies_merge_into_the_lower_stamina_and_never_past_the_size_limit() {
+    let d = setup();
+    let (game_id, _, category) = expedition_home(d);
+    let (source, target) = expedition_armies(d, game_id, category);
+    let troops = GameState { contract_address: d.games };
+    assert!(crate::geometry::adjacent(troops.explorer(source).unwrap().coord, troops.explorer(target).unwrap().coord));
+
+    // A tired army merging into a rested one leaves the merged army tired: merging never refills.
+    let mut tired = troops.explorer(source).unwrap();
+    tired.troops.stamina.amount = 5;
+    super::resource_commands::set_fixture(
+        d.games,
+        selector!("troops"),
+        selector!("explorers"),
+        array![game_id.into(), source.explorer_id.into()].span(),
+        tired,
+    );
+    assert!(troops.explorer(target).unwrap().troops.stamina.amount > 5);
+    assert!(execute_in_game(d, game_id, transfer(source, target, 1), 352, 352));
+    let merged = troops.explorer(target).unwrap();
+    assert_eq!(merged.troops.count, 4 * RESOURCE_PRECISION);
+    assert_eq!(merged.troops.stamina.amount, 5);
+    assert_eq!(troops.explorer(source).unwrap().troops.count, 2 * RESOURCE_PRECISION);
+
+    // An army at its size limit takes no more troops.
+    let rules = IGameDispatcher { contract_address: d.games }.rules(game_id);
+    let level = IStructureOperationsDispatcher { contract_address: d.games }
+        .structure(ResourceKey { game_id, entity_id: 1 })
+        .unwrap()
+        .base
+        .level;
+    let limit: u128 = crate::troops::max_army_size(rules.troop_limit_config, level, merged.troops.tier).into()
+        * RESOURCE_PRECISION;
+    let mut full = merged;
+    full.troops.count = limit;
+    super::resource_commands::set_fixture(
+        d.games,
+        selector!("troops"),
+        selector!("explorers"),
+        array![game_id.into(), target.explorer_id.into()].span(),
+        full,
+    );
+    assert!(!execute_in_game(d, game_id, transfer(source, target, 1), 353, 353));
+    assert_eq!(troops.explorer(target).unwrap().troops.count, limit);
+    assert_eq!(troops.explorer(source).unwrap().troops.count, 2 * RESOURCE_PRECISION);
+}
+
+#[test]
+fn an_expedition_army_cannot_recruit_because_its_home_stands_off_the_map() {
+    let d = setup();
+    let (game_id, _, category) = expedition_home(d);
+    let (army, _) = expedition_armies(d, game_id, category);
+    let recruit = Command::ManageTroops(
+        crate::troop_management::ManageTroops::RecruitExplorer(
+            crate::troop_management::RecruitExplorer { explorer_id: army.explorer_id, amount: RESOURCE_PRECISION },
+        ),
+    );
+    assert!(!execute_in_game(d, game_id, recruit, 352, 352));
+    assert_eq!(GameState { contract_address: d.games }.explorer(army).unwrap().troops.count, 3 * RESOURCE_PRECISION);
+}
+
+#[test]
+fn guard_management_is_refused_past_the_home_guard_slots() {
+    let d = setup();
+    let (game_id, _, _) = expedition_home(d);
+    let home = ResourceKey { game_id, entity_id: 1 };
+    // Paying for the knights succeeds, so only the slot rule can refuse the recruit.
+    start_cheat_caller_address(d.games, d.games);
+    IResourceOperationsDispatcher { contract_address: d.games }
+        .grant_resource(home, 26, 1000 * RESOURCE_PRECISION, 351);
+    stop_cheat_caller_address(d.games);
+    let slots = IStructureOperationsDispatcher { contract_address: d.games }
+        .structure(home)
+        .unwrap()
+        .base
+        .troop_max_guard_count;
+    let slot = crate::troop_management::GuardSlot { structure_id: 1, slot: slots };
+    let recruit = crate::troop_management::RecruitGuard {
+        guard: slot,
+        category: crate::troops::TroopType::Knight,
+        tier: crate::troops::TroopTier::T1,
+        amount: RESOURCE_PRECISION,
+    };
+    assert!(
+        !execute_in_game(
+            d, game_id, Command::ManageTroops(crate::troop_management::ManageTroops::RecruitGuard(recruit)), 352, 352,
+        ),
+    );
+    assert!(
+        !execute_in_game(
+            d, game_id, Command::ManageTroops(crate::troop_management::ManageTroops::RemoveGuard(slot)), 353, 353,
+        ),
+    );
+}
+
 #[test]
 fn yesterdays_armies_leave_todays_army_cap_free() {
     let d = setup();

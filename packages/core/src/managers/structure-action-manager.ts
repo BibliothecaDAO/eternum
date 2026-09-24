@@ -8,6 +8,7 @@ import {
 } from "@bibliothecadao/types";
 import { FELT_CENTER } from "../utils";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
+import { configManager } from "./config-manager";
 
 export class StructureActionManager {
   private readonly FELT_CENTER: number;
@@ -66,6 +67,7 @@ export class StructureActionManager {
         const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
 
         if (!isArmyMine) continue;
+        if (configManager.helpTransfers(true).length === 0) continue;
 
         const path: ActionPath[] = [
           { hex: { col: position.col, row: position.row }, actionType: ActionType.Move },
