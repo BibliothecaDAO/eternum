@@ -115,6 +115,27 @@ describe("native presets", () => {
     }
   });
 
+  test("Frontier's exploration finds a rift 4%, a camp 6% and a loose chest 1% of reveals, against surface guards of 1,000", () => {
+    const design = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
+      FRONTIER_PRESET_ID,
+    );
+    const map = design.rules.map_config;
+    const odds = (win: number, fail: number) => win / (win + fail);
+    // The chain draws a rift first, a camp only where no rift was found, and a loose chest only on an empty reveal.
+    const rift = odds(Number(map.shards_mines_win_probability), Number(map.shards_mines_fail_probability));
+    const camp = (1 - rift) * odds(Number(map.camp_win_probability), Number(map.camp_fail_probability));
+    const chests = design.economy.chests.unwrap() as { loose_one_in: number };
+    const chest = (1 - rift - camp) / chests.loose_one_in;
+
+    expect([rift, camp, chest].map((chance) => Math.round(chance * 10_000) / 100)).toEqual([4, 6, 1]);
+    expect([design.settlement.depths[0].guard_lower, design.settlement.depths[0].guard_upper]).toEqual([1000, 1600]);
+    const limits = design.rules.troop_limit_config;
+    expect([limits.settlement_armies, limits.city_armies, limits.kingdom_armies, limits.empire_armies]).toEqual([
+      3, 4, 5, 6,
+    ]);
+  });
+
   test("Frontier's design preset carries the owner's balance: hourly stamina, a lean grant, slower barracks and farms", () => {
     const design = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
@@ -141,10 +162,10 @@ describe("native presets", () => {
 
   test("every preset id names the mode it plays, and an unknown id fails by name", () => {
     expect(
-      [1, 2, 3, 4, FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_PLAYTEST_PRESET_ID].map(
+      [1, 2, 3, 4, FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, 102, FRONTIER_PLAYTEST_PRESET_ID].map(
         nativeGameModeOf,
       ),
-    ).toEqual(["frontier", "blitz", "eternum", "duel", "frontier", "frontier", "frontier"]);
+    ).toEqual(["frontier", "blitz", "eternum", "duel", "frontier", "frontier", "frontier", "frontier"]);
     expect(() => nativeGameModeOf(9)).toThrow("Unknown native preset 9");
   });
 

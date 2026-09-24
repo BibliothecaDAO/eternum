@@ -3,7 +3,7 @@ import type { GameType } from "./types";
 /** The fixture preset for accelerated Frontier: fixtures and harness design runs create from it, the launcher never does. */
 export const FRONTIER_ACCELERATED_PRESET_ID = 101;
 /** The fixture preset for the owner's playtests: Frontier's design with one-hour days; the launcher never creates from it. */
-export const FRONTIER_PLAYTEST_PRESET_ID = 102;
+export const FRONTIER_PLAYTEST_PRESET_ID = 103;
 /** Frontier's own preset: the design the launcher's seasons create from. */
 export const FRONTIER_PRESET_ID = 5;
 
@@ -16,6 +16,8 @@ const NATIVE_PRESET_MODES: Readonly<Record<number, GameType>> = {
   4: "duel",
   [FRONTIER_PRESET_ID]: "frontier",
   [FRONTIER_ACCELERATED_PRESET_ID]: "frontier",
+  // The first playtest's preset; registered on shard A and still played by the game created from it.
+  102: "frontier",
   [FRONTIER_PLAYTEST_PRESET_ID]: "frontier",
 };
 
