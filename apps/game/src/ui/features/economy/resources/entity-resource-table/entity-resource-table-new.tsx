@@ -909,7 +909,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                                 store,
                               );
                               const hasProductionBuilding = Boolean(
-                                actualBuildingCount > 0 && mode.resources.canManageResource(resourceId),
+                                actualBuildingCount > 0 && configManager.canRefillProduction(resourceId),
                               );
                               const canCraftRelic =
                                 resourceId === ResourcesIds.Research &&
