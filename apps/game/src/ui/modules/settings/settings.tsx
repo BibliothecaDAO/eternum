@@ -36,15 +36,17 @@ import { PwaInstallControl } from "@/pwa/pwa-install-control";
 export const SETTINGS_POPOVER_ID = "settings";
 const effectsCategories = Object.values(AudioCategory).filter((category) => category !== AudioCategory.MUSIC);
 
+/** Player settings first; installing the app and the renderer choice, rarely touched, come last before the session. */
 export const SettingsPanel = () => (
   <div className="flex flex-col gap-4 p-1">
     <ProfileHeader />
-    <VideoSettings />
     <GuideSettings />
     <AudioSettings />
-    <PwaInstallControl />
+    <VideoSettings />
     <NotificationSettings />
     <ShortcutsSection />
+    <PwaInstallControl />
+    <RendererSettings />
     <SessionActions />
   </div>
 );
@@ -257,7 +259,6 @@ function VideoSettings() {
           Haptics
         </SelectedOption>
       </div>
-      <RendererDebugControl diagnostics={false} className="border-0 bg-transparent px-0 py-0 backdrop-blur-none" />
     </SettingsSection>
   );
 }
@@ -279,6 +280,14 @@ function VolumeSlider({ label, value, onChange }: { label: string; value: number
     </label>
   );
 }
+function RendererSettings() {
+  return (
+    <SettingsSection title="Renderer">
+      <RendererDebugControl diagnostics={false} className="border-0 bg-transparent px-0 py-0 backdrop-blur-none" />
+    </SettingsSection>
+  );
+}
+
 function AudioSettings() {
   const { setCategoryVolume, setMasterVolume, setMuted, audioState } = useAudio();
   return (
