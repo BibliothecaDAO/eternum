@@ -54,3 +54,22 @@ The placement verifier decodes the compressed GLBs, checks the actual pointy-hex
 ruin triangles using a 0.005 scale sweep and bisection. Courtyard ground paint is a support surface, not an obstacle.
 These limits assume the shared origin and +Z facing; remeasure after either mesh or placement changes. The frontend owns
 one depth-to-scale table. Do not bake a second enlarged copy or scale the ruin along with the beast.
+
+## Wyvern
+
+Asset ID: `beast-wyvern`. Runtime path: `/models/frontier/beast-wyvern.glb`.
+
+```sh
+blender --background --threads 2 --python-exit-code 1 --python apps/game/scripts/frontier/build-beast-wyvern.py
+node apps/game/scripts/optimize-structure-models.mjs frontier/beast-wyvern.glb
+node apps/game/scripts/optimize-structure-models.mjs --verify frontier/beast-wyvern.glb
+node apps/game/scripts/frontier/verify-beast-placement.mjs beast-wyvern
+```
+
+Two clawed legs, upright folded wings, a horned head and a tucked tail distinguish the Wyvern from the Troll. Skin uses
+the shared grain bake; wing membranes, eyes and horns retain separate materials. The pose is static and shares the
+ruin's origin and +Z facing.
+
+At scale 1, decoded bounds are approximately X [-0.36498, 0.36499], Y [0.00154, 1.33574], Z [-0.27777, 0.28080]. The
+footprint is 0.72997 by 0.55856. First ruin contact is at uniform scale 1.39012; the recommended maximum is **1.38**.
+The tile-only limit is 2.37275. These are measured with the same verifier and placement assumptions as the Troll.
