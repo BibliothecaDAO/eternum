@@ -72,7 +72,12 @@ fn failure_recording_records_forgery_and_preserves_a_stale_nonce() {
         let (r, s) = pair().sign(action_identity(@action)).unwrap();
         reject_execution(address, action, context(@recorded), r, s).unwrap();
         let failed = views.recorded_outcome(7, order).unwrap();
-        assert!(failed.status == 2 && failed.status_class == 'EXECUTION_FAILED', "missing terminal outcome");
+        let reason = if order == 2 {
+            'EXECUTION_FAILED'
+        } else {
+            'STALE_NONCE'
+        };
+        assert!(failed.status == 2 && failed.status_class == reason, "missing terminal outcome");
         assert!(failed.nonce_consumed == (order == 2), "stale nonce consumed twice");
         assert!(views.get_admission(7, actor()).nonce == 1, "failure moved stale nonce");
     }

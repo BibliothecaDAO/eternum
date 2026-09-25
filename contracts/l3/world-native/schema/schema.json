@@ -5675,7 +5675,7 @@
           "name": "map_config",
           "type": "world_native::rules::MapConfig",
           "id": "0x6d61705f636f6e666967",
-          "feltLength": 16
+          "feltLength": 15
         },
         {
           "name": "biome_climate_config",
@@ -5787,7 +5787,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 103,
+      "valueLength": 102,
       "derivedFrom": "preset"
     },
     {
@@ -10413,10 +10413,6 @@
       "name": "world_native::rules::MapConfig",
       "members": [
         {
-          "name": "reward_resource_amount",
-          "type": "core::integer::u16"
-        },
-        {
           "name": "shards_mines_win_probability",
           "type": "core::integer::u16"
         },
@@ -11847,5 +11843,5 @@
       ]
     }
   },
-  "identity": "45bfda290ef120e4ff40e5eb295d6d1ac388b5e47ace200a6bf365dff3495cde"
+  "identity": "ca4f36bd8251100d60cd1bc3ccc1f5273a9a030585ba3bc042a5f45af23e472a"
 }

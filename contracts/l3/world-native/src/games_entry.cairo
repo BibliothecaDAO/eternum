@@ -116,7 +116,10 @@ pub mod GamesEntry {
             assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
             // Account changes after admission must not strand the accepted order or consume an unauthenticated nonce.
             let (consumed, reason) = match self.authenticate_action(@intent, @envelope, signature) {
-                Ok(()) => (self.consume_action_nonce(@intent).is_ok(), 'EXECUTION_FAILED'),
+                Ok(()) => match self.consume_action_nonce(@intent) {
+                    Ok(_) => (true, 'EXECUTION_FAILED'),
+                    Err(reason) => (false, reason),
+                },
                 Err(reason) => (false, reason),
             };
             get_dep_component_mut!(ref self, Recording).record(@intent, @envelope, consumed, Err(rejection(reason)));
@@ -329,7 +332,7 @@ pub mod GamesEntry {
             if *intent.release_id != self.data.game_releases.read(game_id) {
                 return Err('STALE_RELEASE');
             }
-            if *intent.preset_commitment != self.data.registrar.presets.read(game.preset_id) {
+            if *intent.preset_commitment != crate::logic::game::preset_commitment(game_id) {
                 return Err('INVALID_PRESET');
             }
             Ok(())

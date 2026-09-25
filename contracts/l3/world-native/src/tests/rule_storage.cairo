@@ -90,7 +90,6 @@ fn trooplimitconfig_packing_preserves_every_field(
 #[test]
 #[fuzzer(runs: 256)]
 fn mapconfig_packing_preserves_every_field(
-    reward_resource_amount: u16,
     shards_mines_win_probability: u16,
     shards_mines_fail_probability: u16,
     camp_win_probability: u16,
@@ -108,7 +107,6 @@ fn mapconfig_packing_preserves_every_field(
     relic_chest_relics_per_chest: u8,
 ) {
     let value = MapConfig {
-        reward_resource_amount,
         shards_mines_win_probability,
         shards_mines_fail_probability,
         camp_win_probability,

@@ -15,7 +15,6 @@ const baseArenaExplorationRewards = [
 
 export const arenaExplorationConfig: ConfigPatch = {
   exploration: {
-    reward: 750,
     shardsMinesFailProbability: 49_000,
     shardsMinesWinProbability: 1_000,
     campFindProbability: 1_500,

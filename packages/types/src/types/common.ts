@@ -375,7 +375,6 @@ export interface Config {
     basePopulation: number;
   };
   exploration: {
-    reward: number;
     shardsMinesFailProbability: number;
     shardsMinesWinProbability: number;
     campFindProbability: number;

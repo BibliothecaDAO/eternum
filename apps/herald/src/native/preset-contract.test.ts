@@ -1,10 +1,8 @@
-import { withoutRetiredMetadata } from "./recorded-fact-adapter.test-support";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { hash, shortString } from "starknet";
 import { WorldFold } from "../world-fold";
 import type { DecodedWorldEvent, RpcReceipt, RpcTransaction } from "../types";
-import type { NativeSchema } from "./schema";
 import { NativeDecoder } from "./decoder";
 import { NativeIngestion } from "./ingestion";
 import { manifest, receipt, rowEvent } from "./fixtures";
@@ -67,30 +65,21 @@ describe("recorded launch configuration matches Cairo readers", () => {
     for (const model of ["SpireLayout", "DepositRules", "WithdrawalRules", "ResourceToken"])
       expect(expected.some((row) => row.model === model)).toBe(true);
     expect(
-      BigInt((fold.gameRows("SliceRules", "1")[0]!.value.map_config as Record<string, string>).reward_resource_amount),
+      BigInt(
+        (fold.gameRows("SliceRules", "1")[0]!.value.map_config as Record<string, string>).shards_mines_win_probability,
+      ),
     ).toBe(987n);
   });
   it("replays every model and key for the recorded Blitz and Frontier launches", async () => {
     const first = json<RpcTransaction>("blitz-register-preset-transaction.json");
-    // These immutable node receipts predate the spatial schema; decode them with their published layout.
-    const recordedSchema = json<NativeSchema>("recorded-schema.json");
-    const decoder = new NativeDecoder({
-      ...manifest,
-      world: { address: first.calldata![1]! },
-      native: {
-        ...manifest.native,
-        activeSchema: recordedSchema.identity,
-        releaseSchemas: { "1": recordedSchema.identity },
-        schemas: { [recordedSchema.identity]: recordedSchema },
-      },
-    });
+    const decoder = new NativeDecoder({ ...manifest, world: { address: first.calldata![1]! } });
     const ingestion = new NativeIngestion(decoder);
     const confirmed = new WorldFold(decoder.registry);
     const recorded: { receipt: RpcReceipt; transaction: RpcTransaction }[] = [];
     for (const name of ["blitz", "frontier"]) {
       const registration = json<RpcTransaction>(`${name}-register-preset-transaction.json`);
       const registered = json<RpcReceipt>(`${name}-register-preset-receipt.json`);
-      const created = withoutRetiredMetadata(json<RpcReceipt>(`${name}-create-game-receipt.json`));
+      const created = json<RpcReceipt>(`${name}-create-game-receipt.json`);
       const launch = json<RpcTransaction>(`${name}-create-game-transaction.json`);
       recorded.push({ receipt: registered, transaction: registration }, { receipt: created, transaction: launch });
       expect(registration.calldata!.slice(4).map(BigInt)).toEqual(felts(`${name}-register.txt`).map(BigInt));

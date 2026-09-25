@@ -102,7 +102,6 @@ describe("native fact store", () => {
     store.applyFacts([set("0x1", "GameOverrides", overrides)]);
     expect(store.require("GameOverrides", { game_id: 1 }).map).toBeNull();
     const map: NonNullable<NativeRows["GameOverrides"]["map"]> = {
-      reward_resource_amount: 10,
       shards_mines_win_probability: 0,
       shards_mines_fail_probability: 1,
       camp_win_probability: 1,

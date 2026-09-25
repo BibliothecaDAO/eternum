@@ -39,7 +39,7 @@ function launch(preset: ReturnType<typeof registration>, gameId = 1, rosterSize 
     biome_climate: preset.definition.rules.biome_climate_config,
     map: new CairoOption(overrideMap ? CairoOptionVariant.Some : CairoOptionVariant.None, {
       ...preset.definition.rules.map_config,
-      reward_resource_amount: 987,
+      shards_mines_win_probability: 987,
     }),
     map_center_offset: 4321,
   };
@@ -80,7 +80,7 @@ describe("verified preset configuration facts", () => {
       expect(schema.models.map(({ name }) => name)).not.toContain(name);
     const rules = world.fold.gameRows("SliceRules", "1")[0]!.value;
     expect(BigInt(rules.map_center_offset as string)).toBe(4321n);
-    expect(BigInt((rules.map_config as Record<string, string>).reward_resource_amount)).toBe(987n);
+    expect(BigInt((rules.map_config as Record<string, string>).shards_mines_win_probability)).toBe(987n);
     const settlement = world.fold.gameRows("SettlementRules", "1")[0]!.value;
     expect(BigInt(settlement.registration_start as string)).toBe(1234n);
     expect(BigInt(settlement.registration_limit as string)).toBe(0n);
@@ -222,8 +222,8 @@ describe("verified preset configuration facts", () => {
     applyRegistration(world, preset);
     world.native.applyReceipt(world.fold, receipt(launch(preset, 1, 0, false)), 11, 0);
     const rules = world.fold.gameRows("SliceRules", "1")[0]!.value;
-    expect(BigInt((rules.map_config as Record<string, string>).reward_resource_amount)).toBe(
-      BigInt(preset.definition.rules.map_config.reward_resource_amount),
+    expect(BigInt((rules.map_config as Record<string, string>).shards_mines_win_probability)).toBe(
+      BigInt(preset.definition.rules.map_config.shards_mines_win_probability),
     );
   });
 

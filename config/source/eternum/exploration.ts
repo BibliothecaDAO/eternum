@@ -2,7 +2,6 @@ import type { ConfigPatch } from "../common/merge-config";
 
 export const eternumExplorationConfig: ConfigPatch = {
   exploration: {
-    reward: 750,
     shardsMinesFailProbability: 49_000,
     shardsMinesWinProbability: 1_000,
     campFindProbability: 1_500,

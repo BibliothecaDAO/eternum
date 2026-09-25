@@ -22,7 +22,6 @@ function scaleAmount(amount: number, precision: number): number {
 
 export function buildMapConfig(config: Config) {
   return {
-    reward_resource_amount: config.exploration.reward,
     shards_mines_win_probability: config.exploration.shardsMinesWinProbability,
     shards_mines_fail_probability: config.exploration.shardsMinesFailProbability,
     camp_win_probability: config.exploration.campFindProbability,

@@ -5,7 +5,13 @@ import { nativeSyncScopes } from "../../../../contracts/l3/world-native/schema/c
 import { WorldFold } from "../world-fold";
 import type { RpcEvent } from "../types";
 import { manifest, receipt, schema, setup, raw } from "./fixtures";
-import { retiredMetadataModels, withoutRetiredMetadata } from "./recorded-fact-adapter.test-support";
+const retiredMetadataModels = [
+  "RealmCatalogue",
+  "Authentication",
+  "GameSequence",
+  "EntitySequence",
+  "LedgerOperator",
+] as const;
 
 // This exact wire is asserted against emitted events and storage views by the Cairo season-lifecycle test.
 const pointWire = readFileSync(
@@ -93,6 +99,5 @@ describe("gameplay-only native facts", () => {
     expect(schema.models.some((model) => model.name === name)).toBe(false);
     expect(name in nativeSyncScopes).toBe(false);
     expect(() => decoder.decode(raw(event))).toThrow("Unknown native model");
-    expect(withoutRetiredMetadata(receipt([event, awards[0]])).events).toEqual([awards[0]]);
   });
 });

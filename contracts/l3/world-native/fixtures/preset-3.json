@@ -7,7 +7,6 @@
       "village_raid_immunity_ticks": 24
     },
     "map_config": {
-      "reward_resource_amount": 750,
       "shards_mines_win_probability": 1000,
       "shards_mines_fail_probability": 49000,
       "camp_win_probability": 1500,

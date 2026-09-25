@@ -2,7 +2,6 @@ import type { NativePreset } from "../common/native-preset";
 import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/client.gen";
 import { startingTroopsByBiome, realmResourcePool, relicRules, eternumExplorationRewards } from "../common/native-data";
 import { commandMask } from "../common/native-commands";
-import { eternumExplorationConfig } from "./exploration";
 
 export const eternumPreset: NativePreset = {
   ledger: {
@@ -19,7 +18,7 @@ export const eternumPreset: NativePreset = {
   startingTroops: startingTroopsByBiome,
   realmResources: realmResourcePool,
   relics: relicRules,
-  supplies: eternumExplorationRewards(eternumExplorationConfig.exploration!.reward!).map((row) => ({
+  supplies: eternumExplorationRewards(750).map((row) => ({
     ...row,
     amount_max: row.amount,
   })),

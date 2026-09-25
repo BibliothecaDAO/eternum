@@ -123,7 +123,6 @@
     "address": "0"
   },
   "exploration": {
-    "reward": 0,
     "shardsMinesFailProbability": 96,
     "shardsMinesWinProbability": 4,
     "campFindProbability": 6,

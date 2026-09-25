@@ -84,7 +84,6 @@ pub struct BiomeClimateConfig {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct MapConfig {
-    pub reward_resource_amount: u16,
     pub shards_mines_win_probability: u16,
     pub shards_mines_fail_probability: u16,
     pub camp_win_probability: u16,
@@ -468,12 +467,11 @@ pub impl TroopLimitConfigPacking of starknet::storage_access::StorePacking<Troop
 pub impl MapConfigPacking of starknet::storage_access::StorePacking<MapConfig, PackedRuleWords> {
     fn pack(value: MapConfig) -> PackedRuleWords {
         PackedRuleWords {
-            first: value.reward_resource_amount.into()
-                + value.shards_mines_win_probability.into() * 0x10000
-                + value.shards_mines_fail_probability.into() * 0x100000000
-                + value.camp_win_probability.into() * 0x100000000000000000000
-                + value.camp_fail_probability.into() * 0x1000000000000000000000000
-                + value.holysite_win_probability.into() * 0x10000000000000000000000000000,
+            first: value.shards_mines_win_probability.into()
+                + value.shards_mines_fail_probability.into() * 0x10000
+                + value.camp_win_probability.into() * 0x100000000
+                + value.camp_fail_probability.into() * 0x1000000000000
+                + value.holysite_win_probability.into() * 0x10000000000000000,
             second: value.holysite_fail_probability.into()
                 + value.bitcoin_mine_win_probability.into() * 0x10000
                 + value.bitcoin_mine_fail_probability.into() * 0x100000000
@@ -488,12 +486,11 @@ pub impl MapConfigPacking of starknet::storage_access::StorePacking<MapConfig, P
     }
     fn unpack(value: PackedRuleWords) -> MapConfig {
         MapConfig {
-            reward_resource_amount: (value.first % 0x10000).try_into().unwrap(),
-            shards_mines_win_probability: (value.first / 0x10000 % 0x10000).try_into().unwrap(),
-            shards_mines_fail_probability: (value.first / 0x100000000 % 0x10000).try_into().unwrap(),
-            camp_win_probability: (value.first / 0x100000000000000000000 % 0x10000).try_into().unwrap(),
-            camp_fail_probability: (value.first / 0x1000000000000000000000000 % 0x10000).try_into().unwrap(),
-            holysite_win_probability: (value.first / 0x10000000000000000000000000000).try_into().unwrap(),
+            shards_mines_win_probability: (value.first % 0x10000).try_into().unwrap(),
+            shards_mines_fail_probability: (value.first / 0x10000 % 0x10000).try_into().unwrap(),
+            camp_win_probability: (value.first / 0x100000000 % 0x10000).try_into().unwrap(),
+            camp_fail_probability: (value.first / 0x1000000000000 % 0x10000).try_into().unwrap(),
+            holysite_win_probability: (value.first / 0x10000000000000000).try_into().unwrap(),
             holysite_fail_probability: (value.second % 0x10000).try_into().unwrap(),
             bitcoin_mine_win_probability: (value.second / 0x10000 % 0x10000).try_into().unwrap(),
             bitcoin_mine_fail_probability: (value.second / 0x100000000 % 0x10000).try_into().unwrap(),

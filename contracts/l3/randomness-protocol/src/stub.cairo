@@ -79,7 +79,7 @@ pub mod RecordedExecutionStub {
                 Ok(()) => self.validate_action(@intent, @envelope).err(),
                 Err(reason) => Some(reason),
             };
-            let consumed = authentication.is_ok() && self.consume_nonce(@intent);
+            let consumed = authentication.is_ok() && self.consume_nonce(@intent).is_ok();
             let outcome = match reason {
                 Some(code) => Err(rejection(code)),
                 None => {
@@ -100,7 +100,10 @@ pub mod RecordedExecutionStub {
             self.authenticate_ticket(@intent, @envelope, self.randomness_epoch());
             assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
             let (consumed, reason) = match self.authenticate_action(@intent, @envelope, signature) {
-                Ok(()) => (self.consume_nonce(@intent), 'EXECUTION_FAILED'),
+                Ok(()) => match self.consume_nonce(@intent) {
+                    Ok(()) => (true, 'EXECUTION_FAILED'),
+                    Err(reason) => (false, reason),
+                },
                 Err(reason) => (false, reason),
             };
             self.recording.record(@intent, @envelope, consumed, Err(rejection(reason)));
@@ -123,15 +126,21 @@ pub mod RecordedExecutionStub {
             );
             self.recording.require_next(intent, envelope, epoch);
         }
-        fn consume_nonce(ref self: ContractState, intent: @Intent) -> bool {
-            let consumed = fixture_game(*intent.game_id)
-                && *intent.actor == self.actor.read()
-                && *intent.nonce == self.nonces.read(*intent.game_id)
-                && *intent.nonce < 0xffffffffffffffff;
-            if consumed {
-                self.nonces.write(*intent.game_id, *intent.nonce + 1);
+        fn consume_nonce(ref self: ContractState, intent: @Intent) -> Result<(), felt252> {
+            if !fixture_game(*intent.game_id) {
+                return Err('INVALID_GAME');
             }
-            consumed
+            if *intent.actor != self.actor.read() {
+                return Err('INVALID_ACTOR');
+            }
+            if *intent.nonce != self.nonces.read(*intent.game_id) {
+                return Err('STALE_NONCE');
+            }
+            if *intent.nonce == 0xffffffffffffffff {
+                return Err('NONCE_EXHAUSTED');
+            }
+            self.nonces.write(*intent.game_id, *intent.nonce + 1);
+            Ok(())
         }
         fn authenticate_action(
             self: @ContractState, intent: @Intent, envelope: @crate::Envelope, signature: Span<felt252>,

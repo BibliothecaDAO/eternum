@@ -603,6 +603,60 @@ fn transport_failure_records_a_bad_pin_and_allows_the_next_ticket() {
     assert_eq!(views.get_admission(1, d.actor.into()).nonce, 3);
 }
 
+#[test]
+#[feature("safe_dispatcher")]
+fn transport_failure_records_the_nonce_refusal_without_consuming_state() {
+    let d = super::setup(true);
+    let call = IRecordedExecutionFailureSafeDispatcher { contract_address: d.games };
+    let views = IRecordedExecutionViewsDispatcher { contract_address: d.games };
+    let before = gameplay_snapshot(d.games);
+    let mut spy = spy_events();
+    for (nonce, stored, reason) in array![
+        (0_u64, 1_u64, 'STALE_NONCE'), (0xffffffffffffffff, 0xffffffffffffffff, 'NONCE_EXHAUSTED'),
+    ] {
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                let authentication: starknet::storage::FlattenedStorage<
+                    starknet::storage::Mutable<
+                        games_storage::authentication::AuthenticationStorage<crate::games::Authentication>,
+                    >,
+                > =
+                    starknet::storage::FlattenedStorage {};
+                authentication.nonces.write((1, d.actor), stored);
+            },
+        );
+        let intent = Intent { nonce, ..make_intent(d.games, super::intent(d, 1)) };
+        let envelope = Envelope {
+            action: action_identity(@intent),
+            order: head(d.games, 1).order + 1,
+            timestamp: 100,
+            release_id: intent.release_id,
+            preset_commitment: intent.preset_commitment,
+            epoch: 0,
+            root: 987654321,
+        };
+        let device = super::keypair(12345);
+        let (r, s) = device.sign(envelope.action).unwrap();
+        assert!(
+            call
+                .reject_execution(
+                    intent,
+                    ExecutionContext { envelope: encode_envelope(@envelope) },
+                    array![device.public_key, r, s].span(),
+                )
+                .is_ok(),
+        );
+        let outcome = views.recorded_outcome(1, envelope.order).unwrap();
+        assert_eq!(outcome.status_class, reason);
+        assert!(!outcome.nonce_consumed);
+        assert_eq!(views.get_admission(1, d.actor.into()).nonce, stored);
+        assert_eq!(head(d.games, 1).order, envelope.order);
+        assert_eq!(gameplay_snapshot(d.games), before);
+    }
+    assert_nonce_facts(ref spy, d.games, 1, d.actor, array![].span());
+}
+
 fn assert_nonce_facts(
     ref spy: snforge_std::EventSpy,
     games: ContractAddress,
