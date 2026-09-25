@@ -12,10 +12,8 @@ const io = new NodeIO()
   .registerExtensions(ALL_EXTENSIONS)
   .registerDependencies({ "meshopt.encoder": MeshoptEncoder, "meshopt.decoder": MeshoptDecoder });
 const reports = [];
-for (const [source, target] of [
-  ["chest-c2", "chest"],
-  ["rift-r2", "rift"],
-]) {
+// The chest ships through its own C2 pipeline (optimize-chest-c2.mjs); this one delivers the rift.
+for (const [source, target] of [["rift-r2", "rift"]]) {
   const input = fileURLToPath(new URL(`${source}.glb`, directory));
   const output = fileURLToPath(new URL(`${target}.glb`, directory));
   const document = await io.read(input);

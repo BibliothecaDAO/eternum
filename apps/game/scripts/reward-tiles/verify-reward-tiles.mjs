@@ -29,10 +29,8 @@ for (const id of studies) {
   reports.push({ id, passed: true, animationChannels: channels.length, duration: 8, bounds });
 }
 
-for (const [id, authoringId] of [
-  ["chest", "chest-c2"],
-  ["rift", "rift-r2"],
-]) {
+// The chest's delivery is verified by its own pipeline (optimize-structure-models.mjs --verify); this checks the rift.
+for (const [id, authoringId] of [["rift", "rift-r2"]]) {
   const path = fileURLToPath(new URL(`${id}.glb`, models));
   const document = await io.read(path);
   const root = document.getRoot();
@@ -44,13 +42,8 @@ for (const [id, authoringId] of [
   await document.transform(dequantize());
   for (const channel of root.listAnimations()[0].listChannels()) verifyLoop(id, channel);
   const bounds = verifyGeometry(authoringId, root);
-  if (id === "chest") {
-    verifyChestMotion(id, root.listAnimations()[0].listChannels());
-    verifyArcaneRings(root);
-  } else {
-    verifyDepletedState(id, root);
-    verifyGeyserDroplets(root);
-  }
+  verifyDepletedState(id, root);
+  verifyGeyserDroplets(root);
   reports.push({ id, passed: true, bytes, extensions, bounds });
 }
 

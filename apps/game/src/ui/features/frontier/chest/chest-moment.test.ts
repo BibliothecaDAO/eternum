@@ -25,6 +25,7 @@ import {
   cancelChestOpening,
   chestTimeline,
   closeChestMoment,
+  isOffCentre,
   resolveChestOpening,
   skipChestMoment,
 } from "./chest-moment";
@@ -73,9 +74,19 @@ describe("skipping", () => {
   });
 });
 
+describe("the camera rule", () => {
+  it("flies only to a chest more than 20% of the view off-centre", () => {
+    const view = { width: 1000, height: 800 };
+    expect(isOffCentre({ x: 500, y: 400 }, view)).toBe(false);
+    expect(isOffCentre({ x: 690, y: 550 }, view)).toBe(false);
+    expect(isOffCentre({ x: 710, y: 400 }, view)).toBe(true);
+    expect(isOffCentre({ x: 500, y: 170 }, view)).toBe(true);
+  });
+});
+
 describe("an opening", () => {
   it("taps and charges, stops the charge at the tell, and a skip lands every flight", async () => {
-    beginChestOpening({ x: 10, y: 20 }, 0);
+    beginChestOpening({ x: 10, y: 20 }, { now: 0 });
     expect(plays).toEqual(["chest.tap", "chest.charge"]);
     skipChestMoment(100);
     expect(finished.count).toBe(0);
@@ -88,7 +99,7 @@ describe("an opening", () => {
   });
 
   it("ends where it is when the opening fails", async () => {
-    beginChestOpening({ x: 10, y: 20 }, 0);
+    beginChestOpening({ x: 10, y: 20 }, { now: 0 });
     cancelChestOpening();
     await Promise.resolve();
     expect(stops).toHaveLength(1);

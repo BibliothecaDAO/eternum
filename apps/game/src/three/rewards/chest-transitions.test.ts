@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { BufferGeometry, Float32BufferAttribute, Group, Matrix4, Mesh, MeshStandardMaterial, Scene } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
+import type { ChestBeat } from "./chest-opening-beats";
 import { ChestTransitions } from "./chest-transitions";
 
 function createPool() {
@@ -55,6 +56,34 @@ describe("precompiled chest transitions", () => {
     expect(pool.has("1,0")).toBe(false);
     expect(pool.hasRelicReveals()).toBe(false);
     expect(label.parent).toBeNull();
+    pool.dispose();
+  });
+  it("holds a Frontier chest shut through its fact's removal until the moment's burst, then opens it", () => {
+    const pool = createPool();
+    let beat: ChestBeat | null = { phase: "anticipation", intensity: null, openedAt: performance.now(), tellAt: null };
+    expect(pool.hold("1,0", new Matrix4(), 4, () => beat)).toBe(true);
+    const lid = pool.group.getObjectByName("ChestLid")!;
+    // The chest's fact goes as the result lands: the moment, not the removal, opens it.
+    expect(pool.start("1,0", "open", new Matrix4(), 4)).toBe(true);
+    pool.update(0.3, 4.3);
+    expect(lid.rotation.x).toBeGreaterThan(-0.1);
+    beat = { ...beat, phase: "burst", intensity: 2 };
+    pool.update(0.3, 4.6);
+    pool.update(0.3, 4.9);
+    expect(lid.rotation.x).toBeLessThan(-0.5);
+    pool.update(3, 7.9);
+    expect(pool.has("1,0")).toBe(false);
+    pool.dispose();
+  });
+  it("lets a held chest go back to its tile when the moment ends before its burst", () => {
+    const pool = createPool();
+    let beat: ChestBeat | null = { phase: "anticipation", intensity: null, openedAt: performance.now(), tellAt: null };
+    pool.hold("1,0", new Matrix4(), 4, () => beat);
+    pool.update(0.1, 4.1);
+    expect(pool.has("1,0")).toBe(true);
+    beat = null;
+    pool.update(0.1, 4.2);
+    expect(pool.has("1,0")).toBe(false);
     pool.dispose();
   });
   it("precompiles actual hidden objects and restores visibility even after failure", async () => {

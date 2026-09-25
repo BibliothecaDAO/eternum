@@ -32,11 +32,38 @@ function createTile() {
     tile.add(ring);
     return ring;
   });
+  const crystal = new MeshStandardMaterial({ emissive: 0x0f3652 });
+  crystal.name = "Cyan crystal";
+  const gems = new Group();
+  gems.name = "OrbitGems";
+  gems.add(new Mesh(new BufferGeometry(), crystal));
+  tile.add(gems);
   const summoning = new RewardSummoning(tile, world);
-  return { world, tile, body, lid, rings, summoning };
+  return { world, tile, body, lid, rings, gems, crystal, summoning };
 }
 
 describe("arcane reward tile lifecycle", () => {
+  it("tints a held chest's seam, runes and own crystals, and gives back the authored colours when the glow clears", () => {
+    const { world, lid, gems, crystal, summoning } = createTile();
+    const own = (gems.children[0] as Mesh).material as MeshStandardMaterial;
+    expect(own).not.toBe(crystal);
+    summoning.seek(1);
+    const light = world.children.find((child): child is PointLight => child instanceof PointLight)!;
+    const authored = light.color.getHex();
+    summoning.setGlow({ seam: 0.9, tint: "#f2c14e", runes: 1 });
+    expect(light.color.getHexString()).toBe("f2c14e");
+    expect(own.emissive.getHexString()).toBe("f2c14e");
+    // The model's shared crystal, which every other chest on the map draws with, is never touched.
+    expect(crystal.emissive.getHex()).toBe(0x0f3652);
+    expect(light.intensity).toBeGreaterThan(0);
+    expect(lid.rotation.x).toBeLessThan(-0.1);
+    summoning.clearGlow();
+    expect(light.color.getHex()).toBe(authored);
+    expect(own.emissive.getHex()).toBe(0x0f3652);
+    expect(light.intensity).toBe(0);
+    expect(lid.rotation.x).toBeCloseTo(0);
+  });
+
   it("raises the entire tile before revealing the chest inside flames attached to its turning rings", () => {
     const { tile, body, rings, summoning } = createTile();
     expect(tile.position.y).toBeLessThan(0.4);

@@ -1,6 +1,7 @@
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
 import { resolveChestTransition } from "../rewards/chest-transition-policy";
+import type { ChestBeat } from "../rewards/chest-opening-beats";
 import { ChestModelPath } from "@/three/constants";
 import { RewardTileModel } from "../rewards/reward-tile-model";
 import { ChestTransitions } from "../rewards/chest-transitions";
@@ -316,6 +317,25 @@ export class ChestManager {
     if (instance !== undefined) this.chestModel.removeInstance(instance);
     this.updateChestMarkers();
     return true;
+  }
+
+  /**
+   * Holds the chest on a hex for its Frontier chest moment (design §3.11 §1): the moment's beats play on it, read each
+   * frame from `readBeat`, until it opens on the burst. Its instance hides while it is held and returns if the moment
+   * ends before the burst.
+   */
+  public holdChest(hex: { col: number; row: number }, readBeat: () => ChestBeat | null): boolean {
+    if (!this.chestModel || !this.chestTransitions) return false;
+    const tile = { hexCoords: { ...hex, alt: activeMapLayer() } };
+    const held = this.chestTransitions.hold(
+      this.transitionKey(tile),
+      this.chestPlacement(tile),
+      this.chestModel.time,
+      readBeat,
+    );
+    if (held) for (const chest of this.visibleChests) this.updateChestInstance(chest);
+    this.updateChestMarkers();
+    return held;
   }
 
   private transitionKey(chest: Pick<ChestSpatialRenderable, "hexCoords">): string {
