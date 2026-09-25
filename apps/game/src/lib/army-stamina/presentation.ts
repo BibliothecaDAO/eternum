@@ -43,12 +43,15 @@ export const buildStaminaDisplayModel = (input: {
   }
 
   const tickDuration = Number(configManager.getTick(TickIds.Armies));
-  const safeTickDuration = Number.isFinite(tickDuration) && tickDuration > 0 ? tickDuration : 0;
   const nextTickCurrent = Number(StaminaManager.getStamina(input.troops, input.currentArmiesTick + 1).amount);
   const nextTickGain = Math.max(0, Math.min(committedMax - committedCurrent, nextTickCurrent - committedCurrent));
   const secondsUntilNextGain = nextTickGain > 0 ? Math.max(0, input.armiesTickTimeRemaining) : 0;
-  const ticksUntilFull = nextTickGain > 0 ? Math.ceil((committedMax - committedCurrent) / nextTickGain) : 0;
-  const secondsUntilFull = ticksUntilFull > 0 ? secondsUntilNextGain + (ticksUntilFull - 1) * safeTickDuration : 0;
+  // Full on the first tick the contract's refill reaches the maximum: the rest of this tick, then whole ticks.
+  const fullTick = StaminaManager.getFullAtTick(input.troops, input.currentArmiesTick);
+  const secondsUntilFull =
+    fullTick === null || fullTick <= input.currentArmiesTick
+      ? 0
+      : secondsUntilNextGain + (fullTick - input.currentArmiesTick - 1) * tickDuration;
 
   return {
     committedCurrent,

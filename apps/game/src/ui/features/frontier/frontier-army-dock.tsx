@@ -1,9 +1,11 @@
 import { useGame } from "@/hooks/context/game-context";
-import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
+import { useBlockTimestamp, useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
+import type { ArmyStaminaPresentation } from "@/lib/army-stamina/types";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
 import { LeftView } from "@/types";
@@ -18,9 +20,9 @@ import {
   liveHomeArmies,
   Position,
 } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useMemo } from "react";
-import { formatAmount } from "./frontier-format";
+import { formatAmount, formatClock } from "./frontier-format";
 
 const ARMY_MODELS = ["ExplorerTroops", "TileOccupancy", "EntityName"] as const;
 
@@ -43,8 +45,8 @@ export const FrontierArmyDock = ({ realm }: { realm: NativeRows["Structure"] }) 
       aria-label="Armies"
       className="pointer-events-auto flex gap-2 overflow-x-auto overscroll-contain landscape:flex-col landscape:overflow-y-auto landscape:overflow-x-hidden"
     >
-      {armies.map((army) => (
-        <ArmyCard key={army.explorer_id} army={army} />
+      {armies.map((army, index) => (
+        <ArmyCard key={army.explorer_id} army={army} position={index + 1} />
       ))}
       {Array.from({ length: openSlots }, (_, index) => (
         <MusterCard key={`open-${index}`} />
@@ -55,18 +57,27 @@ export const FrontierArmyDock = ({ realm }: { realm: NativeRows["Structure"] }) 
 
 const CARD = "flex w-40 shrink-0 flex-col gap-1 rounded-xl px-3 py-2 text-left font-sans landscape:w-44";
 
-const ArmyCard = ({ army }: { army: NativeRows["ExplorerTroops"] }) => {
+const ArmyCard = ({ army, position }: { army: NativeRows["ExplorerTroops"]; position: number }) => {
   const { setup } = useGame();
   const { isMapView } = useQuery();
   const navigateToMapView = useNavigateToMapView();
   const selected = useUIStore((state) => state.entityActions.selectedEntityId === army.explorer_id);
-  const currentArmiesTick = useCurrentArmiesTick();
+  const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
   const damage = configManager.getTroopConfig().troop_damage_config;
-  const stamina = getExplorerStaminaSnapshot({
+  const snapshot = getExplorerStaminaSnapshot({
     entityId: army.explorer_id,
     currentArmiesTick,
     liveTroops: army.troops,
   });
+  const stamina = snapshot
+    ? buildStaminaDisplayModel({
+        committedCurrent: snapshot.current,
+        committedMax: snapshot.max,
+        armiesTickTimeRemaining,
+        currentArmiesTick,
+        troops: snapshot.troops,
+      })
+    : null;
 
   // The world map selects the army in place; from the realm board the first tap goes out to it.
   const pick = () => {
@@ -86,29 +97,43 @@ const ArmyCard = ({ army }: { army: NativeRows["ExplorerTroops"] }) => {
       className={cn(OVERLAY_SURFACE_BASE, CARD, selected && OVERLAY_SURFACE_ACTIVE)}
     >
       <span className={cn(HUD_LABEL_BRIGHT, "truncate normal-case tracking-normal")}>
-        {getArmyName(army.explorer_id, setup.store)}
+        {dockArmyName(setup.store, army.explorer_id, position)}
       </span>
       <span className="flex items-baseline gap-1">
         <span className={cn(HUD_VALUE, "tabular-nums")}>{formatAmount(armyStrength(army.troops, damage))}</span>
         <span className={HUD_LABEL}>strength</span>
       </span>
-      <StaminaBar current={stamina?.current} max={stamina?.max} />
+      <StaminaBar stamina={stamina} />
     </button>
   );
 };
 
-/** Stamina as the chain grants it at this tick; unknown shows as "—" and an empty bar. */
-const StaminaBar = ({ current, max }: { current: number | undefined; max: number | undefined }) => {
-  const known = current !== undefined && max !== undefined && max > 0;
-  const ratio = known ? Math.min(1, current / max) : 0;
-  return (
-    <span className="flex flex-col gap-0.5" aria-label="Stamina">
-      <span className="h-1.5 overflow-hidden rounded-full bg-black/50">
-        <span className="block h-full rounded-full bg-emerald-400/80" style={{ width: `${ratio * 100}%` }} />
-      </span>
-      <span className={cn(HUD_LABEL, "tabular-nums tracking-normal")}>{known ? `${current}/${max}` : "—"}</span>
+/**
+ * Stamina as the chain grants it at this tick, and when the bar is full, counting down every second on chain time;
+ * unknown shows as "—" and an empty bar.
+ */
+const StaminaBar = ({ stamina }: { stamina: ArmyStaminaPresentation | null }) => (
+  <span className="flex flex-col gap-0.5" aria-label="Stamina">
+    <span className="h-1.5 overflow-hidden rounded-full bg-black/50">
+      <span
+        className="block h-full rounded-full bg-emerald-400/80"
+        style={{ width: `${(stamina?.committedRatio ?? 0) * 100}%` }}
+      />
     </span>
-  );
+    <span className={cn(HUD_LABEL, "flex justify-between gap-2 tabular-nums tracking-normal")}>
+      <span>{stamina ? `${stamina.committedCurrent}/${stamina.committedMax}` : "—"}</span>
+      {stamina && <span>{describeFull(stamina)}</span>}
+    </span>
+  </span>
+);
+
+const describeFull = (stamina: ArmyStaminaPresentation): string =>
+  stamina.secondsUntilFull > 0 ? `full in ${formatClock(stamina.secondsUntilFull)}` : "rested";
+
+/** The army's own name when it has one; otherwise its place in the dock, never its entity id. */
+const dockArmyName = (store: NativeFactStore, explorerId: number, position: number): string => {
+  const named = store.get("EntityName", { game_id: configManager.getActiveGameId(), entity_id: explorerId });
+  return named && named.name !== 0n ? getArmyName(explorerId, store) : `Army ${position}`;
 };
 
 const MusterCard = () => {

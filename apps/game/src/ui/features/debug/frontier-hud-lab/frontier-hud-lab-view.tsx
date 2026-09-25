@@ -34,7 +34,19 @@ export const FrontierHudLabView = () => {
       <BlockTimestampPoller />
       <SurfaceHost />
       <FrontierHud rules={readExpeditionRules(lab.setup.store, LAB_GAME_ID)!} />
+      <LabPacing store={lab.setup.store} />
     </GameProvider>
+  );
+};
+
+/** The recording's own clock, stated so nobody reads an accelerated launch as Frontier's real pacing. */
+const LabPacing = ({ store }: { store: NativeFactStore }) => {
+  const rules = store.require("SliceRules", { game_id: LAB_GAME_ID });
+  return (
+    <p className="pointer-events-none fixed bottom-32 left-1/2 z-40 -translate-x-1/2 rounded bg-black/70 px-2 py-1 font-sans text-[10px] text-gold/80">
+      Lab · recorded launch pacing: {rules.epoch_seconds} s days, {String(rules.tick_config.armies_tick_in_seconds)} s
+      ticks, +{rules.troop_stamina_config.stamina_gain_per_tick} stamina a tick
+    </p>
   );
 };
 

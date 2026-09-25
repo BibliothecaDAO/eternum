@@ -72,7 +72,7 @@ const playerRows = (clock: LabClock): WireRow[] => [
   { model: "ResourceBalance", value: balance(23, 1_250) },
   { model: "ResourceBalance", value: balance(35, 640) },
   { model: "ResourceBalance", value: balance(26, 420) },
-  { model: "ExplorerTroops", value: army(clock, 201, 1_498, 90, 1) },
+  { model: "ExplorerTroops", value: army(clock, 201, 1_498, 30, 0) },
   { model: "ExplorerTroops", value: army(clock, 202, 1, 150, 0) },
   { model: "TileOccupancy", value: armyTile(clock, 201, 2, 1) },
   { model: "TileOccupancy", value: armyTile(clock, 202, -3, 2) },

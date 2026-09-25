@@ -15,6 +15,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
   },
   StaminaManager: {
     getStamina: getNextTickStaminaMock,
+    getFullAtTick: () => 7,
   },
 }));
 
@@ -70,6 +71,7 @@ describe("stamina visuals", () => {
     expect(display).toMatchObject({ committedCurrent: 80, committedRatio: 80 / 120, isRecharging: true });
     expect(display).not.toHaveProperty("displayCurrent");
     expect(display.nextTickGain).toBe(20);
+    expect(display.secondsUntilFull).toBe(72 + 10);
     expect(describeNextStaminaGain(display)).toBe("+20 in 1:12");
   });
 

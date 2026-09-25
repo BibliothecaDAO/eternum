@@ -1,7 +1,7 @@
 import { ID, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "./config-manager";
-import { staminaAt, troopStaminaLimits } from "./troop-stamina";
+import { fullAtTick, staminaAt, troopStaminaLimits } from "./troop-stamina";
 
 export class StaminaManager {
   constructor(
@@ -22,6 +22,11 @@ export class StaminaManager {
   /** The active game's stamina, for the client that has one active game. */
   public static getStamina(troops: Troops, currentArmiesTick: number) {
     return staminaAt(troops, currentArmiesTick, configManager.getTroopStaminaRules());
+  }
+
+  /** The first tick at which the troops are full under the active game's rules; null when stamina never refills. */
+  public static getFullAtTick(troops: Troops, currentArmiesTick: number): number | null {
+    return fullAtTick(troops, currentArmiesTick, configManager.getTroopStaminaRules());
   }
 
   public static getMaxStamina = (troopCategory: TroopType, troopTier: TroopTier): number =>
