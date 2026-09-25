@@ -113,6 +113,7 @@ import {
   Structure,
   StructureType,
   findResourceById,
+  getHexDistance,
   getProducedResource,
 } from "@bibliothecadao/types";
 import gsap from "gsap";
@@ -140,6 +141,8 @@ import { getPlayerName } from "@/services/identity/player-profiles";
 
 const loader = gltfLoader;
 const BUILDING_RENDER_SIGNATURE = "eternumBuildingRenderSignature";
+/** How long a castle upgrade's new ring stays lit before the board rests. */
+const NEW_RING_LIT_MS = 2_400;
 
 interface HexceptionBuilding {
   category: BUILDINGS_CATEGORIES_TYPES;
@@ -197,6 +200,9 @@ export default class HexceptionScene extends HexagonScene {
   private buildingPreview: BuildingPreview | null = null;
   /** The plot a build sheet chose: its ghost stands there instead of following the pointer, and a tap selects. */
   private pinnedPlot: HexPosition | null = null;
+  /** The radius of the ring a castle upgrade just opened, until the grid lights it. */
+  private newRingRadius: number | null = null;
+  private newRingTimer: number | undefined;
   /** The entered structure's building slots; setup() binds it before the scene is entered. */
   private tileManager!: BuildingTiles;
   private labels: {
@@ -387,6 +393,8 @@ export default class HexceptionScene extends HexagonScene {
             this.structureUpdateSubscription = this.worldUpdateListener.StructureEntityListener.onLevelUpdate(
               structureEntityId,
               (update) => {
+                // A raised castle opens a ring; its plots light up once the grid has them.
+                if (update.level > this.structureStage) this.newRingRadius = buildableRadius(update.level);
                 this.structureStage = update.level as RealmLevels;
                 this.removeCastleFromScene();
                 this.updateHexceptionGrid(this.hexceptionRadius);
@@ -525,6 +533,31 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   /** Outside building placement only the marked plots stay lit. */
+  /** The resting highlights, or first, for a castle just raised, its new ring's open plots for a moment. */
+  private renderRestingOrNewRing(): void {
+    const radius = this.newRingRadius;
+    this.newRingRadius = null;
+    if (radius === null) return this.renderRestingHighlights();
+    const center = { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] };
+    this.highlightHexManager.highlightHexes([
+      ...this.highlights
+        .filter((hex) => getHexDistance(center, hex) === radius)
+        .map((hex) => ({
+          hex: { col: hex.col, row: hex.row },
+          actionType: ActionType.Build,
+          kind: "destination" as const,
+          isEndpoint: true,
+          isSharedRoute: false,
+          pathDepth: 1,
+        })),
+      ...this.markedPlotHighlights(),
+    ]);
+    window.clearTimeout(this.newRingTimer);
+    this.newRingTimer = window.setTimeout(() => {
+      if (!this.buildingPreview?.getPreviewBuilding()) this.renderRestingHighlights();
+    }, NEW_RING_LIT_MS);
+  }
+
   private renderRestingHighlights(): void {
     this.highlightHexManager.highlightHexes(this.markedPlotHighlights());
   }
@@ -727,6 +760,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   destroy() {
+    window.clearTimeout(this.newRingTimer);
     usePopoverStore.getState().close("plot-construction");
     this.advanceRealmGeneration();
     this.clearHoverLabel();
@@ -1347,7 +1381,7 @@ export default class HexceptionScene extends HexagonScene {
           this.presentProceduralTerrain(terrainMatricesByBiome);
           this.reconcileAllBuildingInstances(mainStructureType);
           this.interactiveHexManager.renderAllHexes();
-          if (!this.buildingPreview?.getPreviewBuilding()) this.renderRestingHighlights();
+          if (!this.buildingPreview?.getPreviewBuilding()) this.renderRestingOrNewRing();
 
           // CRITICAL: Release all matrices back to the pool to prevent memory leaks
           const matrixPool = MatrixPool.getInstance();
