@@ -1,3 +1,4 @@
+import { getGameModeConfig } from "@/config/game-modes";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { playResourceSound } from "@/three/sound/utils";
 import { isAddressEqualToAccount } from "@/three/utils";
@@ -66,12 +67,17 @@ export const openStructureContextMenu = ({ event, structure, hexCoords, store }:
     }
   };
 
-  const constructionAction = createConstructionMenu({
-    structure,
-    store,
-    simpleCostEnabled: uiStore.useSimpleCost,
-    selectConstructionBuilding,
-  });
+  // A mode without build menus builds only from a tapped plot's sheet.
+  const constructionActions = getGameModeConfig().ui.showBuildMenus
+    ? [
+        createConstructionMenu({
+          structure,
+          store,
+          simpleCostEnabled: uiStore.useSimpleCost,
+          selectConstructionBuilding,
+        }),
+      ]
+    : [];
 
   uiStore.openContextMenu({
     id: `structure-${idString}`,
@@ -106,7 +112,7 @@ export const openStructureContextMenu = ({ event, structure, hexCoords, store }:
             },
           ]
         : []),
-      constructionAction,
+      ...constructionActions,
     ],
   });
 };

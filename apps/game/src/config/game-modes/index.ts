@@ -39,8 +39,11 @@ export interface GameModeConfig {
     villageIconKey: VillageIconKey;
     showGuildsTab: boolean;
     showAutomation: boolean;
-    /** The scene's popover picker on an empty plot; Frontier's HUD opens its build sheet from the selection instead. */
-    showPlotPicker: boolean;
+    /**
+     * The build pickers beside a plot's own sheet: the scene's popover on an empty plot and the realm menu's
+     * Construction entry. Frontier builds only from its build sheet on a tapped plot.
+     */
+    showBuildMenus: boolean;
     /** Shown on the army muster when the mode spends committed troops for good. */
     musterNotice: string | null;
   };
@@ -126,7 +129,7 @@ const blitzConfig: GameModeConfig = {
     villageIconKey: "tent",
     showGuildsTab: false,
     showAutomation: true,
-    showPlotPicker: true,
+    showBuildMenus: true,
     musterNotice: null,
   },
   resources: {
@@ -167,7 +170,7 @@ const eternumConfig: GameModeConfig = {
     villageIconKey: "castle",
     showGuildsTab: true,
     showAutomation: true,
-    showPlotPicker: true,
+    showBuildMenus: true,
     musterNotice: null,
   },
   resources: {
@@ -198,7 +201,7 @@ const frontierConfig: GameModeConfig = {
   ui: {
     ...blitzConfig.ui,
     showAutomation: false,
-    showPlotPicker: false,
+    showBuildMenus: false,
     musterNotice: "Committed troops do not return. What you send today is spent today, win or lose.",
   },
   resources: {

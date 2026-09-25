@@ -918,7 +918,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private openPlotConstruction(spot: HexPosition): boolean {
-    if (!this.isEntered || !canIssueOrders() || !this.mode.ui.showPlotPicker) return false;
+    if (!this.isEntered || !canIssueOrders() || !this.mode.ui.showBuildMenus) return false;
     const entityId = useUIStore.getState().structureEntityId;
     const account = useAccountStore.getState().account;
     const realm = getRealmInfo(entityId, this.game.store, getPlayerName);
