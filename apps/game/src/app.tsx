@@ -19,6 +19,11 @@ import { PlayPage } from "./shell/play";
 import { PlayerPage } from "./shell/player";
 import { ResultsPage } from "./shell/results";
 
+const FrontierHudLabView = lazy(() =>
+  import("./ui/features/debug/frontier-hud-lab/frontier-hud-lab-view").then((module) => ({
+    default: module.FrontierHudLabView,
+  })),
+);
 const DebugThreeChunkView = lazy(() =>
   import("./ui/features/debug/three-chunk-debug-view").then((module) => ({ default: module.ThreeChunkDebugView })),
 );
@@ -125,6 +130,16 @@ function App() {
               </SceneRoute>
             }
           />
+          {import.meta.env.DEV && (
+            <Route
+              path="/lab/frontier-hud/*"
+              element={
+                <LazyRoute>
+                  <FrontierHudLabView />
+                </LazyRoute>
+              }
+            />
+          )}
           <Route
             path="/lab/*"
             element={
