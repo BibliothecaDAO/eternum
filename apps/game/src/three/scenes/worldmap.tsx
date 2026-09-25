@@ -2156,20 +2156,25 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * A reveal that paid one of this player's armies shows its yield leaving the revealed tile for the banked counter
-   * (design §3.11 §4). The event only starts the flourish; the counter rolls to the balance fact.
+   * A paid reveal shows its yield on the revealed tile (design §3.11 §4): the player's own flies home to its banked
+   * counter, anyone else's pops and rises with its amount. The event only starts the flourish; counters roll to the
+   * balance fact.
    */
   private handleExplorerRewardEvent(update: ExplorerRewardSystemUpdate): void {
     if (this.isRewardDebugEnabled()) {
       console.debug("[ExplorerRewardEvent] update", update);
     }
 
-    const { explorerId, resourceId, coord } = update;
+    const { explorerId, resourceId, amount, coord } = update;
     if (!resourceId) return;
     const ownerAddress = this.getEntityOwnerAddress(explorerId);
-    if (ownerAddress === undefined || !isAddressEqualToAccount(ownerAddress)) return;
     const tile = Position.fromContract(coord).getNormalized();
-    playRevealYield({ resourceId, from: projectHexToScreen({ col: tile.x, row: tile.y }, this.camera) });
+    playRevealYield({
+      resourceId,
+      amount,
+      from: projectHexToScreen({ col: tile.x, row: tile.y }, this.camera),
+      own: ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress),
+    });
   }
 
   private isRewardDebugEnabled(): boolean {
