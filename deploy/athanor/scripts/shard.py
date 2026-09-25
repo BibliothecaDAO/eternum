@@ -32,6 +32,7 @@ TOOLING_CONNECTIONS = 32
 MAX_PLAYER_CAPACITY = 2000
 DEFAULT_NODE_MEMORY_MIB = 24576
 SLICE = Path("/sys/fs/cgroup/athanor.slice")
+LOCK = Path("/opt/athanor/isolated-stack.lock")
 # The services that hold memory for the shard's lifetime; prepare and init exit once the shard is deployed.
 LONG_RUNNING = ("madara", "postgres", "herald", "gateway", "rpc", "metrics")
 
@@ -394,6 +395,28 @@ def initialize_shard_identity(config, directory, deployer_address):
     )
 
 
+class isolated_stack_lock:
+    """The shared box lock, taken in one atomic step: the holder and time are written to a private file beside the lock
+    and hard-linked into place, so the lock never exists empty. A held lock is refused naming its holder, never waited
+    on, and the lock is removed when the holder's work ends."""
+
+    def __init__(self, holder, path=LOCK):
+        self.holder, self.path = holder, path
+
+    def __enter__(self):
+        draft = self.path.with_name(f".{self.path.name}.{os.getpid()}")
+        draft.write_text(f"{self.holder} {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}\n")
+        try:
+            os.link(draft, self.path)
+        except FileExistsError:
+            raise RuntimeError(f"{self.path} is held: {self.path.read_text().strip()}") from None
+        finally:
+            draft.unlink()
+
+    def __exit__(self, *_):
+        self.path.unlink()
+
+
 def start_shard(config, directory):
     config = {"node_memory_mib": DEFAULT_NODE_MEMORY_MIB, **config}
     allowed = cpu_numbers(Path("/sys/fs/cgroup/athanor.slice/cpuset.cpus.effective").read_text().strip())
@@ -526,4 +549,5 @@ if __name__ == "__main__":
     parser.add_argument("--matrix", action="store_true", help="run an ordered configuration matrix and workload")
     args = parser.parse_args()
     action = run_matrix if args.matrix else start_shard
-    print(json.dumps(action(json.loads(args.configuration.read_text()), args.directory.resolve())))
+    with isolated_stack_lock(f"runner {args.directory.name}"):
+        print(json.dumps(action(json.loads(args.configuration.read_text()), args.directory.resolve())))

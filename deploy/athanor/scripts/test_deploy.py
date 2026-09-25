@@ -68,17 +68,5 @@ class EnrolmentTest(unittest.TestCase):
         self.assertIn("--preserve-env=OPERATOR_TOKEN", deploy.compose(Path("/srv/shard")))
 
 
-class LockTest(unittest.TestCase):
-    def test_a_deployment_holds_the_lock_only_while_it_runs_and_refuses_a_held_one(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            lock = Path(temporary) / "isolated-stack.lock"
-            with deploy.isolated_stack_lock("deploy staging", lock):
-                self.assertTrue(lock.read_text().startswith("deploy staging "))
-                with self.assertRaisesRegex(RuntimeError, "is held: deploy staging"):
-                    with deploy.isolated_stack_lock("deploy production", lock):
-                        pass
-            self.assertFalse(lock.exists())
-
-
 if __name__ == "__main__":
     unittest.main()

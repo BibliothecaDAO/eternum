@@ -18,21 +18,19 @@ from pathlib import Path
 import subprocess
 import sys
 import tarfile
-import time
 from urllib.request import urlopen
 
 import shard
 
 RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 ENVIRONMENTS = shard.ROOT / "deploy/release"
-LOCK = Path("/opt/athanor/isolated-stack.lock")
 INPUTS = ("package", "shard_name", "chain_id", "guardian_url", "public_rpc_url", "public_admission_url",
           "player_capacity", "presets", "node_memory", "herald_memory")
 
 
 def main(environment, directory):
     inputs = load_inputs(environment)
-    with isolated_stack_lock(f"deploy {environment}"):
+    with shard.isolated_stack_lock(f"deploy {environment}"):
         directory.mkdir(mode=0o700, parents=True, exist_ok=True)
         release = fetch_package(inputs["package"], directory)
         (directory / ".env").write_text(render_environment(inputs, (directory / "images.env").read_text()))
@@ -52,23 +50,6 @@ def load_inputs(environment):
     if missing:
         raise ValueError(f"{environment}.json lacks {', '.join(missing)}")
     return inputs
-
-
-class isolated_stack_lock:
-    """The shared box lock: created exclusively with its holder and time, removed when the deployment ends."""
-
-    def __init__(self, holder, path=LOCK):
-        self.holder, self.path = holder, path
-
-    def __enter__(self):
-        try:
-            with open(self.path, "x") as lock:
-                lock.write(f"{self.holder} {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}\n")
-        except FileExistsError:
-            raise RuntimeError(f"{self.path} is held: {self.path.read_text().strip()}") from None
-
-    def __exit__(self, *_):
-        self.path.unlink()
 
 
 def fetch_package(tag, directory):
