@@ -24,6 +24,8 @@ vi.mock("../motion-layer", () => ({
 }));
 vi.mock("@/three/sound/utils", () => ({ getResourceSoundId: (id: number) => `collect.${id}` }));
 
+import { bankedCounterTarget } from "./banked-flight";
+
 const LABOR = 23;
 const ESSENCE = 38;
 const TILE = { x: 100, y: 200 };
@@ -61,7 +63,7 @@ describe("the reveal yield", () => {
   });
 
   it("merges flights to one counter within a second, but not flights to another counter", async () => {
-    const { playRevealYield, bankedCounterTarget } = await load();
+    const { playRevealYield } = await load();
     mountCounter(bankedCounterTarget(LABOR));
     mountCounter(bankedCounterTarget(ESSENCE));
     playRevealYield({ own: true, amount: 150, resourceId: LABOR, from: TILE, now: 0 });
@@ -73,7 +75,7 @@ describe("the reveal yield", () => {
   });
 
   it("keeps at most six sprites in the air", async () => {
-    const { playRevealYield, bankedCounterTarget } = await load();
+    const { playRevealYield } = await load();
     for (const id of [100, 101, 102, 103, 104, 105, 106, 107, 200])
       mountCounter(bankedCounterTarget(id as ResourcesIds));
     for (let reveal = 0; reveal < 8; reveal += 1) {
@@ -86,7 +88,7 @@ describe("the reveal yield", () => {
   });
 
   it("flies to the banked counter and keeps its old number until the icon lands", async () => {
-    const { playRevealYield, bankedCounterTarget } = await load();
+    const { playRevealYield } = await load();
     const { useLandedValue } = await import("../landing-hold");
     const target = bankedCounterTarget(LABOR);
     const Counter = ({ value }: { value: number }) => (
@@ -109,7 +111,7 @@ describe("the reveal yield", () => {
   });
 
   it("sends another player's reveal up from its tile with its amount, silently, even with a counter on screen", async () => {
-    const { playRevealYield, bankedCounterTarget } = await load();
+    const { playRevealYield } = await load();
     mountCounter(bankedCounterTarget(LABOR));
     playRevealYield({ own: false, amount: 150, resourceId: LABOR, from: TILE, now: 0 });
     expect(flights).toHaveLength(0);

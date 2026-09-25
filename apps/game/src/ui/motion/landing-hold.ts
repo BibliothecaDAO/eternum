@@ -25,3 +25,14 @@ export const useLandedValue = <T>(target: string, value: T): T => {
   if (!held) shown.current = value;
   return shown.current;
 };
+
+/**
+ * What a landing brought, for the counter's "+N" label: announced by a flight that says so (a site's payout), never by
+ * the balance rising on its own, so production ticks never pop a label.
+ */
+const useDeltas = create<Record<string, { amount: number; at: number }>>(() => ({}));
+
+export const announceLanding = (target: string, amount: number): void =>
+  useDeltas.setState({ [target]: { amount, at: performance.now() } });
+
+export const useLandingDelta = (target: string) => useDeltas((deltas) => deltas[target] ?? null);

@@ -1,8 +1,8 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { getResourceSoundId } from "@/three/sound/utils";
 import type { ResourcesIds } from "@bibliothecadao/types";
-import { holdUntilLanding } from "../landing-hold";
-import { flySprites, riseSprite } from "../motion-layer";
+import { riseSprite } from "../motion-layer";
+import { bankedCounterTarget, findBankedCounter, flyToBankedCounter, resourceIcon } from "./banked-flight";
 
 /**
  * Design §3.11 §4, the reveal yield, one rule in every mode. The player's own reveal with its banked counter on screen
@@ -16,15 +16,10 @@ const MERGE_MS = 1_000;
 const MAX_IN_AIR = 6;
 const CHAIN_IDLE_MS = 3_000;
 const MAX_CHAIN_SEMITONES = 7;
-/** A landing always releases its counter, even if the flight never reports one. */
-const RELEASE_AFTER_MS = 1_500;
 
 let inAir = 0;
 const lastFlightAt = new Map<string, number>();
 let chain = { semitones: 0, at: Number.NEGATIVE_INFINITY };
-
-/** The `data-fly-target` a resource's banked counter carries. */
-export const bankedCounterTarget = (resourceId: ResourcesIds): string => `resource-${resourceId}`;
 
 const gain = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 
@@ -45,12 +40,10 @@ export const playRevealYield = ({
   now?: number;
 }): void => {
   if (own) playChainedCollect(resourceId, now);
-  const counter = own ? document.querySelector(`[data-fly-target="${bankedCounterTarget(resourceId)}"]`) : null;
-  if (counter) flyToBankedCounter(resourceId, counter, from, now);
+  const counter = own ? findBankedCounter(resourceId) : null;
+  if (counter) flyHome(resourceId, counter, from, now);
   else riseSprite({ at: from, icon: resourceIcon(resourceId), label: `+${gain.format(amount)}` });
 };
-
-const resourceIcon = (resourceId: ResourcesIds) => `/images/resources/${resourceId}.png`;
 
 const playChainedCollect = (resourceId: ResourcesIds, now: number) => {
   const semitones = now - chain.at > CHAIN_IDLE_MS ? 0 : Math.min(MAX_CHAIN_SEMITONES, chain.semitones + 1);
@@ -58,31 +51,11 @@ const playChainedCollect = (resourceId: ResourcesIds, now: number) => {
   void AudioManager.getInstance().play(getResourceSoundId(resourceId), { detuneCents: semitones * 100 });
 };
 
-const flyToBankedCounter = (
-  resourceId: ResourcesIds,
-  counter: Element,
-  from: { x: number; y: number },
-  now: number,
-) => {
+/** One reveal's icon home, unless a flight to that counter left within the last second or six are in the air. */
+const flyHome = (resourceId: ResourcesIds, counter: Element, from: { x: number; y: number }, now: number) => {
   const target = bankedCounterTarget(resourceId);
   if (inAir >= MAX_IN_AIR || now - (lastFlightAt.get(target) ?? Number.NEGATIVE_INFINITY) < MERGE_MS) return;
   lastFlightAt.set(target, now);
-  const release = holdUntilLanding(target);
-  let landed = false;
-  const land = () => {
-    if (landed) return;
-    landed = true;
-    inAir -= 1;
-    release();
-  };
   inAir += 1;
-  flySprites({
-    from,
-    to: counter,
-    icon: resourceIcon(resourceId),
-    count: 1,
-    popMs: POP_MS,
-    onArrive: land,
-  });
-  setTimeout(land, RELEASE_AFTER_MS);
+  flyToBankedCounter({ resourceId, counter, from, count: 1, popMs: POP_MS, onLanded: () => (inAir -= 1) });
 };

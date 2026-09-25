@@ -13,6 +13,7 @@ import { LandingCounter } from "@/ui/motion/landing-counter";
 import { TickNumber } from "@/ui/motion/tick-number";
 import { type ReactNode, useRef, useState } from "react";
 import { PickLab } from "./pick-lab";
+import { SiteLab } from "./site-lab";
 
 const LORDS_BY_INTENSITY = [100, 400, 1_500, 6_000] as const;
 const COIN_ICON = "/images/resources/37.png";
@@ -80,6 +81,11 @@ export const MotionLabView = () => {
         <section className="sm:col-span-2 lg:col-span-3">
           <Panel title="pick · tap a card, then Choose">
             <PickLab />
+          </Panel>
+        </section>
+        <section className="sm:col-span-2 lg:col-span-3">
+          <Panel title="site cleared · tap the card to dismiss">
+            <SiteLab />
           </Panel>
         </section>
       </div>

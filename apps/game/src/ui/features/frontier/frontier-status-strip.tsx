@@ -11,8 +11,11 @@ import { expeditionDayEndsAt, seasonDay, getBalance } from "@bibliothecadao/eter
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
-import { useLandedValue } from "@/ui/motion/landing-hold";
-import { bankedCounterTarget } from "@/ui/motion/moments/reveal-yield";
+import { useLandedValue, useLandingDelta } from "@/ui/motion/landing-hold";
+import { EASE } from "@/ui/motion/motion-scale";
+import { useReducedMotion } from "@/ui/motion/motion-settings";
+import { AnimatePresence, motion } from "framer-motion";
+import { bankedCounterTarget } from "@/ui/motion/moments/banked-flight";
 import { TickNumber } from "@/ui/motion/tick-number";
 import { formatAmount, formatClock } from "./frontier-format";
 import { CastleGlyph, MapGlyph } from "./glyphs";
@@ -132,17 +135,44 @@ const Holding = ({ label, icon, value }: { label: string; icon: ReactNode; value
 /**
  * A banked resource: its icon is where earned resources land, and the amount rolls to the balance fact when they do.
  */
-const BankedHolding = ({ resourceId, amount }: { resourceId: ResourcesIds; amount: number | undefined }) => {
+export const BankedHolding = ({ resourceId, amount }: { resourceId: ResourcesIds; amount: number | undefined }) => {
   const target = bankedCounterTarget(resourceId);
   const shown = useLandedValue(target, amount);
   return (
-    <div className="flex items-center gap-0.5" title={ResourcesIds[resourceId]}>
+    <div className="relative flex items-center gap-0.5" title={ResourcesIds[resourceId]}>
+      <LandingDelta target={target} />
       <dt className="sr-only">{ResourcesIds[resourceId]}</dt>
       <span data-fly-target={target} className="inline-flex">
         <ResourceIcon resource={ResourcesIds[resourceId]} size="md" className={STRIP_ICON} withTooltip={false} />
       </span>
       <dd className={STRIP_NUMBER}>{shown === undefined ? "—" : <TickNumber value={shown} format={formatAmount} />}</dd>
     </div>
+  );
+};
+
+const delta = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
+/** A landing's "+N" shows this long, and never again when the counter remounts. */
+const DELTA_MS = 1_400;
+
+/** The counter's "+N" as a payout lands: its toast, popping above the number and fading as it rises. */
+const LandingDelta = ({ target }: { target: string }) => {
+  const landing = useLandingDelta(target);
+  const reduced = useReducedMotion();
+  return (
+    <AnimatePresence>
+      {landing && performance.now() - landing.at < DELTA_MS && (
+        <motion.span
+          key={landing.at}
+          aria-live="polite"
+          className="pointer-events-none absolute -top-5 right-0 whitespace-nowrap text-sm font-semibold text-gold tabular-nums"
+          initial={{ opacity: 0, y: 0, scale: reduced ? 1 : 0.8 }}
+          animate={{ opacity: [0, 1, 1, 0], y: reduced ? 0 : -14, scale: 1 }}
+          transition={{ duration: DELTA_MS / 1000, times: [0, 0.1, 0.7, 1], ease: EASE.outQuart }}
+        >
+          +{delta.format(landing.amount)}
+        </motion.span>
+      )}
+    </AnimatePresence>
   );
 };
 

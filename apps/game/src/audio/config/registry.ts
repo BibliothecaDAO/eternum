@@ -539,6 +539,17 @@ const AUDIO_REGISTRY: Record<string, AudioAsset> = {
     loop: false,
     volume: 0.8,
   },
+  // Frontier's site cleared (design §3.11 §3): the owner-picked finished mix.
+  "site.clear": {
+    id: "site.clear",
+    url: "/sound/frontier/site.clear.mp3",
+    category: AudioCategory.UI,
+    priority: 4,
+    poolSize: 2,
+    spatial: false,
+    loop: false,
+    volume: 0.8,
+  },
   "resource.collect.essence": {
     id: "resource.collect.essence",
     url: "/sound/frontier/resource.collect.essence.mp3",
