@@ -34,6 +34,7 @@ it("covers every native story and tests every cumulative level", () => {
       "RelicChestOpened",
       "ChestReward",
       "AttributeChosen",
+      "SitePayout",
       "ExplorationReward",
       "SeasonEnded",
       "FaithPledged",

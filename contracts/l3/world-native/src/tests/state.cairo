@@ -81,19 +81,6 @@ pub impl ResourceObservation of ResourceObservationTrait {
             },
         )
     }
-    fn production_receiver(
-        self: crate::resources::IResourceOperationsDispatcher, key: crate::resources::ResourceSlot,
-    ) -> Option<crate::resources::ProductionReceiver> {
-        interact_with_state(
-            self.contract_address,
-            || {
-                crate::state::read()
-                    .resources
-                    .production_receivers
-                    .read((key.game_id, key.entity_id, key.resource_type))
-            },
-        )
-    }
     fn resource_weight(
         self: crate::resources::IResourceOperationsDispatcher, key: crate::resources::ResourceKey,
     ) -> crate::resources::Weight {

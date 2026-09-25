@@ -20,7 +20,6 @@ export const SCOPE_INPUT_MODELS = new Set([
   "Structure",
   "ExplorerTroops",
   "TileOccupancy",
-  "ProductionReceiver",
 ]);
 
 /** The scope-input keys whose rows this scope was taken from, or would be taken from. */
@@ -30,14 +29,13 @@ export function scopeInputInterest(scope: GameSyncScope): Set<string> {
   return new Set([
     ...(scope.actor === undefined ? [] : [scopeLookup.entryOf(scope.actor)]),
     ...[...expedition.owners].map(scopeLookup.structuresOf),
-    ...[...expedition.realms].flatMap((realm) => [scopeLookup.armiesOf(realm), scopeLookup.receiversOf(realm)]),
+    ...[...expedition.realms].map(scopeLookup.armiesOf),
     ...[...expedition.regions].map(scopeLookup.occupancyIn),
     ...[...expedition.entities].flatMap((entity) => [
       scopeLookup.structure(entity),
       scopeLookup.army(entity),
       scopeLookup.occupancyOf(entity),
     ]),
-    ...[...expedition.productionSources].map(scopeLookup.receiver),
   ]);
 }
 

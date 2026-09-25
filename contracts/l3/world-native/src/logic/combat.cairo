@@ -460,7 +460,6 @@ pub fn try_capture(
             crate::relics::ICaptureRewardsLibraryDispatcher { class_hash: classes(key.game_id).relics.read() },
             key,
             explorer_key.explorer_id,
-            target.base.category,
             crate::commands::action_context(context),
             story_cursor,
         )

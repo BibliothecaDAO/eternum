@@ -233,10 +233,6 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
       reveal_percent: depth.revealPercent,
       guard_lower: depth.guardLower,
       guard_upper: depth.guardUpper,
-      mine_cap_min: scaled(depth.mineCapMin),
-      mine_cap_max: scaled(depth.mineCapMax),
-      mine_rate: scaled(depth.mineRate),
-      mine_chest: depth.mineChest,
       reveal_site_neighbors: depth.revealSiteNeighbors,
       entry_stamina: depth.entryStamina,
       attunement_cost: scaled(depth.attunementCost),
@@ -376,7 +372,6 @@ function scaleSeasonClocks(definition: ReturnType<typeof buildNativePreset>, sca
   if (!board || typeof board !== "object" || !("workshop_rate" in board) || typeof board.workshop_rate !== "bigint")
     throw new Error("A scaled season requires a workshop rate");
   board.workshop_rate *= BigInt(scale);
-  for (const depth of definition.settlement.depths) depth.mine_rate *= BigInt(scale);
   for (const mine of definition.resources.mine_kinds) mine.config.production_rate *= BigInt(scale);
 }
 

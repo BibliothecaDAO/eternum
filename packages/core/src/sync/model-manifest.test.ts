@@ -3,7 +3,7 @@ import { nativeSyncScopes } from "../../../../contracts/l3/world-native/schema/c
 import { gameSyncRegion, rowInGameSyncScope, syncScalar, type GameSyncScope } from "./model-manifest";
 
 const SPACING = 21;
-const SETS = ["owners", "entities", "realms", "realmTraits", "productionSources"] as const;
+const SETS = ["owners", "entities", "realms", "realmTraits"] as const;
 
 type Rule = Partial<Record<(typeof SETS)[number], readonly string[]>> & {
   regions?: readonly { alt: string; x: string; y: string }[];
@@ -54,7 +54,6 @@ describe("rowInGameSyncScope", () => {
           owners: subset(),
           realms: subset(),
           entities: subset(),
-          productionSources: subset(),
           realmTraits: subset(),
           regions: new Set(["0:0", "1:0", "0:1", "2:2"].filter(() => next() < 0.4)),
         },

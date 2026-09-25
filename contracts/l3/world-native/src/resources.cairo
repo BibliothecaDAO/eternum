@@ -49,11 +49,6 @@ pub struct Production {
     pub last_updated_at: u32,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct ProductionReceiver {
-    pub home: u32,
-    pub end_at: u32,
-}
 
 const PRODUCTION_TIME_SCALE: u128 = 0x10000000000000000;
 const PRODUCTION_COUNT_SCALE: u128 = 0x1000000000000000000000000;
@@ -178,15 +173,6 @@ pub struct ResourceRule {
 
 #[starknet::interface]
 pub trait IResourceOperations<T> {
-    fn redirect_production(
-        ref self: T,
-        key: ResourceKey,
-        resource_type: u8,
-        receiver: ProductionReceiver,
-        rate: u64,
-        timestamp: u64,
-        game_context: crate::commands::ResourceContext,
-    );
     fn initialize_resources(
         ref self: T,
         key: ResourceKey,

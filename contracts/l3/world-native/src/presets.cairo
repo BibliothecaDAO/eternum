@@ -88,7 +88,7 @@ pub fn validate(preset: PresetDefinition) {
     assert!(troops.mercenaries_troop_lower_bound < troops.mercenaries_troop_upper_bound, "invalid mercenary bounds");
     if crate::rules::rule_enabled(preset.rules, crate::rules::DISCOVER_CAMPS)
         && map.camp_win_probability != 0
-        && !crate::rules::rule_enabled(preset.rules, crate::rules::HOME_CAMP_REWARDS) {
+        && preset.rules.epoch_seconds == 0 {
         let mut labor_rate = None;
         for rule in preset.resources.resources {
             if *rule.resource_type == 23 {

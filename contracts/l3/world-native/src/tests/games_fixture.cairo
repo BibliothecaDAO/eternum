@@ -310,6 +310,7 @@ pub mod GamesFixture {
             ref self: TContractState,
             key: crate::resources::ResourceKey,
             seed: u256,
+            site_kind: Option<crate::expeditions::SiteKind>,
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
@@ -318,6 +319,7 @@ pub mod GamesFixture {
                 crate::guards::IGuardsLibraryDispatcher { class_hash: classes.troops.read() },
                 key,
                 seed,
+                site_kind,
                 timestamp,
                 game_context,
             )
@@ -880,26 +882,6 @@ pub mod GamesFixture {
     pub impl ResourcesFixture<
         TContractState, +Drop<TContractState>,
     > of crate::resources::IResourceOperations<TContractState> {
-        fn redirect_production(
-            ref self: TContractState,
-            key: crate::resources::ResourceKey,
-            resource_type: u8,
-            receiver: crate::resources::ProductionReceiver,
-            rate: u64,
-            timestamp: u64,
-            game_context: crate::commands::ResourceContext,
-        ) {
-            let classes = fixture_classes(key.game_id);
-            crate::resources::IResourceOperationsDispatcherTrait::redirect_production(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
-                key,
-                resource_type,
-                receiver,
-                rate,
-                timestamp,
-                game_context,
-            )
-        }
         fn initialize_resources(
             ref self: TContractState,
             key: crate::resources::ResourceKey,
@@ -2452,24 +2434,6 @@ pub mod GamesFixture {
         ) -> ((), crate::ownership::StoryCursor) {
             let classes = fixture_classes(game_id);
             crate::relics::IRelicsDispatcherTrait::open_relic_chest(
-                crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() },
-                game_id,
-                actor,
-                command,
-                context,
-                story_cursor,
-            )
-        }
-        fn grant_site_chest(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::relics::OpenChest,
-            context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
-            let classes = fixture_classes(game_id);
-            crate::relics::IRelicsDispatcherTrait::grant_site_chest(
                 crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() },
                 game_id,
                 actor,

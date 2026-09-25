@@ -1,6 +1,44 @@
 use crate::rules::BiomeClimateConfig;
 use crate::troops::Coord;
 
+#[allow(starknet::store_no_default_variant)]
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub enum SiteKind {
+    Camp,
+    Rift,
+    FallenRealm,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct ExpeditionSite {
+    pub kind: SiteKind,
+    pub initial_guard_count: u128,
+    pub cleared: bool,
+}
+
+#[starknet::interface]
+pub trait IExpeditionSite<T> {
+    fn expedition_site(self: @T, key: crate::resources::ResourceKey) -> Option<ExpeditionSite>;
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct SitePayout {
+    pub structure_id: u32,
+    pub explorer_id: u32,
+    pub site_id: u32,
+    pub kind: SiteKind,
+    pub reward: Option<crate::resources::ResourceAmount>,
+}
+
+pub fn site_reward(site: ExpeditionSite) -> Option<crate::resources::ResourceAmount> {
+    use crate::resources::{ESSENCE, LABOR, ResourceAmount};
+    match site.kind {
+        SiteKind::Camp => Some(ResourceAmount { resource_type: LABOR, amount: site.initial_guard_count / 2 }),
+        SiteKind::Rift => Some(ResourceAmount { resource_type: ESSENCE, amount: site.initial_guard_count * 3 }),
+        SiteKind::FallenRealm => None,
+    }
+}
+
 pub fn absolute_epoch(seconds: u32, timestamp: u64) -> u64 {
     assert!(seconds != 0, "game has no expeditions");
     timestamp / seconds.into()
@@ -95,10 +133,6 @@ pub struct DepthRules {
     pub reveal_percent: u16,
     pub guard_lower: u16,
     pub guard_upper: u16,
-    pub mine_cap_min: u128,
-    pub mine_cap_max: u128,
-    pub mine_rate: u64,
-    pub mine_chest: bool,
     pub reveal_site_neighbors: bool,
     pub entry_stamina: u16,
     pub attunement_cost: u128,

@@ -67,6 +67,7 @@ pub enum Story {
     TroopsTransferred: crate::troop_management::TransferTroops,
     ChestReward: crate::relics::ChestReward,
     AttributeChosen: crate::progression::AttributeChosen,
+    SitePayout: crate::expeditions::SitePayout,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

@@ -15,9 +15,6 @@
     "UNOWNED_TARGETS": 32,
     "CAPTURE_VILLAGES": 64,
     "DEPTH_CONTENTS": 128,
-    "CAPTURE_CHESTS": 512,
-    "HOME_MINE_PRODUCTION": 4096,
-    "HOME_CAMP_REWARDS": 65536,
     "REVEAL_SUPPLIES": 262144,
     "COMBAT_DICE": 524288,
     "COMBAT_DICE_ETHEREAL": 1048576,
@@ -4419,6 +4416,45 @@
       }
     },
     {
+      "name": "ExpeditionSite",
+      "identity": "0x45787065646974696f6e53697465",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "kind",
+          "type": "world_native::expeditions::SiteKind",
+          "id": "0x6b696e64",
+          "feltLength": 1
+        },
+        {
+          "name": "initial_guard_count",
+          "type": "core::integer::u128",
+          "id": "0x696e697469616c5f67756172645f636f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "cleared",
+          "type": "core::bool",
+          "id": "0x636c6561726564",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 3
+    },
+    {
       "name": "Structure",
       "identity": "0x537472756374757265",
       "scope": "game",
@@ -4595,51 +4631,6 @@
           "rate": "production_rate",
           "outputRemaining": "output_amount_left",
           "updatedAt": "last_updated_at"
-        }
-      }
-    },
-    {
-      "name": "ProductionReceiver",
-      "identity": "0x50726f64756374696f6e5265636569766572",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "entity_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "home",
-          "type": "core::integer::u32",
-          "id": "0x686f6d65",
-          "feltLength": 1
-        },
-        {
-          "name": "end_at",
-          "type": "core::integer::u32",
-          "id": "0x656e645f6174",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 3,
-      "valueLength": 2,
-      "observation": {
-        "domain": "mines",
-        "fields": {
-          "home": "home",
-          "ends": "end_at"
         }
       }
     },
@@ -5577,30 +5568,6 @@
           "feltLength": 1
         },
         {
-          "name": "mine_cap_min",
-          "type": "core::integer::u128",
-          "id": "0x6d696e655f6361705f6d696e",
-          "feltLength": 1
-        },
-        {
-          "name": "mine_cap_max",
-          "type": "core::integer::u128",
-          "id": "0x6d696e655f6361705f6d6178",
-          "feltLength": 1
-        },
-        {
-          "name": "mine_rate",
-          "type": "core::integer::u64",
-          "id": "0x6d696e655f72617465",
-          "feltLength": 1
-        },
-        {
-          "name": "mine_chest",
-          "type": "core::bool",
-          "id": "0x6d696e655f6368657374",
-          "feltLength": 1
-        },
-        {
           "name": "reveal_site_neighbors",
           "type": "core::bool",
           "id": "0x72657665616c5f736974655f6e65696768626f7273",
@@ -5626,7 +5593,7 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 14,
+      "valueLength": 10,
       "observation": {
         "domain": "expedition",
         "fields": {
@@ -6760,6 +6727,34 @@
         }
       ]
     },
+    "core::option::Option::<world_native::expeditions::ExpeditionSite>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::expeditions::ExpeditionSite>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::expeditions::ExpeditionSite"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::expeditions::SiteKind>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::expeditions::SiteKind>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::expeditions::SiteKind"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::guilds::Guild>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::guilds::Guild>",
@@ -6879,6 +6874,20 @@
         {
           "name": "Some",
           "type": "world_native::relics::ChestRules"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::resources::ResourceAmount>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::resources::ResourceAmount>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::resources::ResourceAmount"
         },
         {
           "name": "None",
@@ -8323,22 +8332,6 @@
           "type": "core::integer::u16"
         },
         {
-          "name": "mine_cap_min",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "mine_cap_max",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "mine_rate",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "mine_chest",
-          "type": "core::bool"
-        },
-        {
           "name": "reveal_site_neighbors",
           "type": "core::bool"
         },
@@ -8353,6 +8346,68 @@
         {
           "name": "chest",
           "type": "world_native::relics::ChestGround"
+        }
+      ]
+    },
+    "world_native::expeditions::ExpeditionSite": {
+      "type": "struct",
+      "name": "world_native::expeditions::ExpeditionSite",
+      "members": [
+        {
+          "name": "kind",
+          "type": "world_native::expeditions::SiteKind"
+        },
+        {
+          "name": "initial_guard_count",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "cleared",
+          "type": "core::bool"
+        }
+      ]
+    },
+    "world_native::expeditions::SiteKind": {
+      "type": "enum",
+      "name": "world_native::expeditions::SiteKind",
+      "variants": [
+        {
+          "name": "Camp",
+          "type": "()"
+        },
+        {
+          "name": "Rift",
+          "type": "()"
+        },
+        {
+          "name": "FallenRealm",
+          "type": "()"
+        }
+      ]
+    },
+    "world_native::expeditions::SitePayout": {
+      "type": "struct",
+      "name": "world_native::expeditions::SitePayout",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "site_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "kind",
+          "type": "world_native::expeditions::SiteKind"
+        },
+        {
+          "name": "reward",
+          "type": "core::option::Option::<world_native::resources::ResourceAmount>"
         }
       ]
     },
@@ -9721,6 +9776,10 @@
         {
           "name": "AttributeChosen",
           "type": "world_native::progression::AttributeChosen"
+        },
+        {
+          "name": "SitePayout",
+          "type": "world_native::expeditions::SitePayout"
         }
       ]
     },
@@ -10566,20 +10625,6 @@
         },
         {
           "name": "last_updated_at",
-          "type": "core::integer::u32"
-        }
-      ]
-    },
-    "world_native::resources::ProductionReceiver": {
-      "type": "struct",
-      "name": "world_native::resources::ProductionReceiver",
-      "members": [
-        {
-          "name": "home",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "end_at",
           "type": "core::integer::u32"
         }
       ]
@@ -12369,5 +12414,5 @@
       ]
     }
   },
-  "identity": "cc7a688af93e4aea9a150b859f3978cc5c9457dc6e456b10898939ee239956ca"
+  "identity": "e179f6e69ee0259add3761ea84dfe4d353806c0180b66b51537f38a10be23fed"
 }

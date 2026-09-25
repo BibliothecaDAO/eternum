@@ -256,6 +256,7 @@ pub mod TroopsLogic {
             ref self: ContractState,
             key: ResourceKey,
             seed: u256,
+            site_kind: Option<crate::expeditions::SiteKind>,
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
@@ -288,6 +289,10 @@ pub mod TroopsLogic {
                 let guard_key = crate::guards::GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot };
                 assert!(crate::logic::guards::guard(guard_key) == Default::default(), "guards already initialized");
                 crate::logic::guards::GuardState::save(guard_key, crate::guards::Guard { troops, destroyed_tick: 0 });
+            }
+            if let Some(kind) = site_kind {
+                assert!(rules.epoch_seconds != 0, "site outside expedition");
+                crate::logic::expeditions::create_site(key, kind, guards);
             }
         }
         fn add_starting_guard(

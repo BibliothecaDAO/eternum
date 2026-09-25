@@ -142,7 +142,10 @@ pub fn execute_in_game(
 ) -> bool {
     let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
     let action = recorded::FixtureAction {
-        command, nonce: season.next_nonce(game_id, deployment.actor), deadline: 10000, ..intent(deployment, game_id),
+        command,
+        nonce: season.next_nonce(game_id, deployment.actor),
+        deadline: executed_at + 10000,
+        ..intent(deployment, game_id),
     };
     let signed = signature(deployment, action);
     start_cheat_block_timestamp_global(executed_at);

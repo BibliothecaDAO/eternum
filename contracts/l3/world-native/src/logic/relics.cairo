@@ -7,7 +7,6 @@ pub mod RelicState {
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternalTrait;
-    use crate::ownership::StoryResultTrait;
     use crate::relics::{
         ApplyRelic, IRelicMapDispatcherTrait, IRelicMapLibraryDispatcher, IRelicProductionDispatcherTrait,
         IRelicProductionLibraryDispatcher, IRelicTroopsDispatcherTrait, IRelicTroopsLibraryDispatcher, OpenChest,
@@ -108,23 +107,6 @@ pub mod RelicState {
             );
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
             IRelicMapLibraryDispatcher { class_hash: classes.map.read() }.consume_relic_chest(game_id, command.coord);
-            self.pay_chest(game_id, actor, command, context, ref story_cursor);
-            ((), story_cursor)
-        }
-        fn grant_site_chest(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            command: OpenChest,
-            context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
-            let context = crate::commands::load_context(game_id, context);
-
-            assert_playing(context.game.unbox(), context.timestamp);
-            crate::logic::troops::authorized_explorer(
-                ExplorerKey { game_id, explorer_id: command.explorer_id }, actor, context.timestamp, context,
-            );
             self.pay_chest(game_id, actor, command, context, ref story_cursor);
             ((), story_cursor)
         }
@@ -285,7 +267,6 @@ pub mod RelicState {
             ref self: ComponentState<TContractState>,
             site: ResourceKey,
             explorer_id: u32,
-            category: u8,
             context: crate::commands::ActionContext,
             mut story_cursor: crate::ownership::StoryCursor,
         ) -> ((), crate::ownership::StoryCursor) {
@@ -293,7 +274,9 @@ pub mod RelicState {
             let explorer_key = ExplorerKey { game_id: site.game_id, explorer_id };
             let explorer = crate::logic::troops::active_explorer(explorer_key, context.timestamp, context);
             self.refund_capture_stamina(explorer_key, explorer, context);
-            self.pay_capture_rewards(site, explorer_key, explorer.owner, category, context, ref story_cursor);
+            if context.rules.unbox().epoch_seconds != 0 {
+                self.pay_expedition_site(site, explorer_key, explorer.owner, context, ref story_cursor);
+            }
             ((), story_cursor)
         }
     }
@@ -381,67 +364,45 @@ pub mod RelicState {
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
         }
 
-        fn pay_capture_rewards(
-            ref self: ComponentState<TContractState>,
-            site: ResourceKey,
-            explorer_key: ExplorerKey,
+        fn pay_expedition_site(
+            self: @ComponentState<TContractState>,
+            key: ResourceKey,
+            explorer: ExplorerKey,
             home_id: u32,
-            category: u8,
             context: ExecutionContext,
             ref story_cursor: crate::ownership::StoryCursor,
         ) {
-            let rules = context.rules.unbox();
-            let camp = category == crate::camps::CAMP_CATEGORY;
-            if rules.epoch_seconds != 0 && (camp || category == 4) {
-                crate::logic::progression::award_xp(explorer_key, crate::progression::XpAward::Clear, context);
-            }
-            let home_rewards = camp && crate::rules::rule_enabled(rules, crate::rules::HOME_CAMP_REWARDS);
-            let chests = crate::rules::rule_enabled(rules, crate::rules::CAPTURE_CHESTS);
-            if !home_rewards && !chests {
-                return;
-            }
-            let coord = crate::structures::structure_coord(site);
-            let depth = if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
-                Some(crate::logic::expeditions::depth_rules_at(site.game_id, coord))
-            } else {
-                None
-            };
-            let home = ResourceKey { game_id: site.game_id, entity_id: home_id };
-            if home_rewards {
-                self.pay_camp_resources(home, context);
-            }
-            let mine_chest = category == 4 && depth.map(|value| value.mine_chest).unwrap_or(false);
-            if chests && (camp || mine_chest) {
-                let actor = crate::logic::structures::structure(home).expect('missing home structure').owner;
+            let site = crate::logic::expeditions::clear_site(key);
+            let reward = crate::expeditions::site_reward(site);
+            let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
+            if let Some(reward) = reward {
                 self
-                    .grant_site_chest(
-                        site.game_id,
-                        actor,
-                        OpenChest { explorer_id: explorer_key.explorer_id, coord },
-                        crate::commands::action_context(context),
-                        story_cursor,
-                    )
-                    .resume_story(ref story_cursor);
-            }
-        }
-
-        fn pay_camp_resources(self: @ComponentState<TContractState>, home: ResourceKey, context: ExecutionContext) {
-            for reward in crate::camps::ICampRulesDispatcherTrait::camp_resources(
-                crate::camps::ICampRulesLibraryDispatcher {
-                    class_hash: self.logic_classes(home.game_id).structures.read(),
-                },
-                home.game_id,
-            ) {
-                self
-                    .resources(home.game_id)
+                    .resources(key.game_id)
                     .grant_resource(
                         home,
-                        *reward.resource_type,
-                        *reward.amount,
+                        reward.resource_type,
+                        reward.amount,
                         context.timestamp,
                         crate::commands::resource_context(context),
                     );
             }
+            crate::logic::progression::award_xp(explorer, crate::progression::XpAward::Clear, context);
+            let actor = crate::logic::structures::structure(home).expect('missing home structure').owner;
+            crate::logic::stories::emit_entity_story(
+                key,
+                actor,
+                crate::ownership::Story::SitePayout(
+                    crate::expeditions::SitePayout {
+                        structure_id: home_id,
+                        explorer_id: explorer.explorer_id,
+                        site_id: key.entity_id,
+                        kind: site.kind,
+                        reward,
+                    },
+                ),
+                context.timestamp,
+                ref story_cursor,
+            );
         }
 
         fn pay_chest(

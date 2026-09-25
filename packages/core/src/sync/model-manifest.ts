@@ -15,13 +15,12 @@ export interface GameSyncScope {
     owners: ReadonlySet<string>;
     realms: ReadonlySet<string>;
     entities: ReadonlySet<string>;
-    productionSources: ReadonlySet<string>;
     realmTraits: ReadonlySet<string>;
     regions: ReadonlySet<string>;
   };
 }
 
-type SyncSet = "owners" | "entities" | "realms" | "realmTraits" | "productionSources";
+type SyncSet = "owners" | "entities" | "realms" | "realmTraits";
 type SyncRule =
   | "shared"
   | "actor"
@@ -66,7 +65,7 @@ export function gameSyncRegion(coord: Record<string, unknown>, spacing: number):
   return `${Math.floor(Number(coord.x) / spacing)}:${Math.floor(Number(coord.y) / spacing)}`;
 }
 
-const SYNC_SETS = ["owners", "entities", "realms", "realmTraits", "productionSources"] as const;
+const SYNC_SETS = ["owners", "entities", "realms", "realmTraits"] as const;
 
 /**
  * The keys a row reaches subscriptions by: a scope holds the row exactly when the row is shared or its keys meet

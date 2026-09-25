@@ -196,9 +196,6 @@ pub const SPIRES: u32 = 16;
 pub const UNOWNED_TARGETS: u32 = 32;
 pub const CAPTURE_VILLAGES: u32 = 64;
 pub const DEPTH_CONTENTS: u32 = 128;
-pub const CAPTURE_CHESTS: u32 = 512;
-pub const HOME_MINE_PRODUCTION: u32 = 4096;
-pub const HOME_CAMP_REWARDS: u32 = 65536;
 pub const REVEAL_SUPPLIES: u32 = 262144;
 // Every battle rolls a d20 per side.
 pub const COMBAT_DICE: u32 = 524288;

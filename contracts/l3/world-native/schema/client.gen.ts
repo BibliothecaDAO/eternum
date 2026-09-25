@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "cc7a688af93e4aea9a150b859f3978cc5c9457dc6e456b10898939ee239956ca";
+export const nativeFactSchemaIdentity = "e179f6e69ee0259add3761ea84dfe4d353806c0180b66b51537f38a10be23fed";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "ATTRIBUTE_DAMAGE_PERCENT": 10,
@@ -16,9 +16,6 @@ export const nativeRuleConstants = {
   "UNOWNED_TARGETS": 32,
   "CAPTURE_VILLAGES": 64,
   "DEPTH_CONTENTS": 128,
-  "CAPTURE_CHESTS": 512,
-  "HOME_MINE_PRODUCTION": 4096,
-  "HOME_CAMP_REWARDS": 65536,
   "REVEAL_SUPPLIES": 262144,
   "COMBAT_DICE": 524288,
   "COMBAT_DICE_ETHEREAL": 1048576,
@@ -93,10 +90,10 @@ export interface NativeRows {
   ArmyProgress: { readonly game_id: number; readonly explorer_id: number; readonly level: number; readonly xp: number; readonly battle: number; readonly logistics: number; readonly scouting: number; readonly support: number; readonly pending: ({ readonly id: number; readonly source: "Level" | "Relic" | "Shrine"; readonly amount: number; readonly choices: readonly ("Battle" | "Logistics" | "Scouting" | "Support")[] }) | null };
   ArmySlot: { readonly game_id: number; readonly structure_id: number; readonly epoch: bigint; readonly slot: number; readonly explorer_id: number; readonly stamina: { readonly amount: bigint; readonly updated_tick: bigint } };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: number; readonly owner: number; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly updated_tick: bigint } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_tick: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_tick: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_tick_count: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_tick: number }; readonly battle_cooldown_end: number } };
+  ExpeditionSite: { readonly game_id: number; readonly entity_id: number; readonly kind: "Camp" | "Rift" | "FallenRealm"; readonly initial_guard_count: bigint; readonly cleared: boolean };
   Structure: { readonly game_id: number; readonly entity_id: number; readonly owner: bigint; readonly base: { readonly troop_max_guard_count: number; readonly troop_max_explorer_count: number; readonly created_at: number; readonly category: number; readonly level: number; readonly starting_troops_granted: boolean }; readonly resources_packed: bigint; readonly metadata: { readonly realm_id: number; readonly order: number; readonly has_wonder: boolean; readonly village_realm: number; readonly mine_kind: number; readonly attunement: number; readonly barracks_tier: number } };
   ResourceBalance: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number; readonly balance: bigint };
   ResourceProduction: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number; readonly building_count: number; readonly production_rate: bigint; readonly output_amount_left: bigint; readonly last_updated_at: number };
-  ProductionReceiver: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number; readonly home: number; readonly end_at: number };
   ProductionBonus: { readonly game_id: number; readonly entity_id: number; readonly incr_resource_rate_percent_num: number; readonly incr_labor_rate_percent_num: number; readonly incr_troop_rate_percent_num: number; readonly incr_resource_rate_end_tick: number; readonly incr_labor_rate_end_tick: number; readonly incr_troop_rate_end_tick: number };
   ProductionRecipe: { readonly game_id: number; readonly resource_type: number; readonly simple_output: bigint; readonly complex_output: bigint; readonly simple_inputs: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly complex_inputs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   ResourceWeight: { readonly game_id: number; readonly entity_id: number; readonly capacity: bigint; readonly weight: bigint };
@@ -116,7 +113,7 @@ export interface NativeRows {
   ResourceRule: { readonly game_id: number; readonly resource_type: number; readonly unit_weight: bigint; readonly realm_rate: bigint; readonly village_rate: bigint };
   UpgradeLimits: { readonly game_id: number; readonly realm_max: number; readonly village_max: number };
   UpgradeRecipe: { readonly game_id: number; readonly level: number; readonly costs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
-  DepthRules: { readonly game_id: number; readonly depth: number; readonly reveal_percent: number; readonly guard_lower: number; readonly guard_upper: number; readonly mine_cap_min: bigint; readonly mine_cap_max: bigint; readonly mine_rate: bigint; readonly mine_chest: boolean; readonly reveal_site_neighbors: boolean; readonly entry_stamina: number; readonly attunement_cost: bigint; readonly chest: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly pity: number } };
+  DepthRules: { readonly game_id: number; readonly depth: number; readonly reveal_percent: number; readonly guard_lower: number; readonly guard_upper: number; readonly reveal_site_neighbors: boolean; readonly entry_stamina: number; readonly attunement_cost: bigint; readonly chest: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly pity: number } };
   GameRelease: { readonly game_id: number; readonly release_id: number; readonly preset_commitment: bigint };
   GameRegistry: { readonly game_id: number; readonly name: bigint; readonly preset_id: number; readonly creator: bigint; readonly settled: boolean; readonly ready: boolean; readonly dev_mode_on: boolean; readonly start_settling_at: bigint; readonly start_main_at: bigint; readonly end_at: bigint; readonly end_grace_seconds: number; readonly seed: bigint };
   GameOverrides: { readonly game_id: number; readonly registration_start: number; readonly biome_climate: { readonly elevation_scale_bps: number; readonly moisture_scale_bps: number; readonly elevation_bias_bps: number; readonly moisture_bias_bps: number; readonly elevation_seed: number; readonly moisture_seed: number }; readonly map: ({ readonly shards_mines_win_probability: number; readonly shards_mines_fail_probability: number; readonly camp_win_probability: number; readonly camp_fail_probability: number; readonly holysite_win_probability: number; readonly holysite_fail_probability: number; readonly bitcoin_mine_win_probability: number; readonly bitcoin_mine_fail_probability: number; readonly hyps_win_prob: number; readonly hyps_fail_prob: number; readonly hyps_fail_prob_increase_p_hex: number; readonly hyps_fail_prob_increase_p_fnd: number; readonly relic_discovery_interval_sec: number; readonly relic_hex_dist_from_center: number; readonly relic_chest_relics_per_chest: number }) | null; readonly map_center_offset: number };
@@ -179,10 +176,10 @@ export interface NativeKeys {
   ArmyProgress: { readonly game_id: number; readonly explorer_id: number };
   ArmySlot: { readonly game_id: number; readonly structure_id: number; readonly epoch: bigint; readonly slot: number };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: number };
+  ExpeditionSite: { readonly game_id: number; readonly entity_id: number };
   Structure: { readonly game_id: number; readonly entity_id: number };
   ResourceBalance: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number };
   ResourceProduction: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number };
-  ProductionReceiver: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number };
   ProductionBonus: { readonly game_id: number; readonly entity_id: number };
   ProductionRecipe: { readonly game_id: number; readonly resource_type: number };
   ResourceWeight: { readonly game_id: number; readonly entity_id: number };
@@ -1151,6 +1148,26 @@ export const nativeFactModels = {
       }
     }
   },
+  "ExpeditionSite": {
+    "keys": [
+      "game_id",
+      "entity_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "entity_id": "u32",
+      "kind": {
+        "enum": [
+          "Camp",
+          "Rift",
+          "FallenRealm"
+        ]
+      },
+      "initial_guard_count": "u128",
+      "cleared": "boolean"
+    }
+  },
   "Structure": {
     "keys": [
       "game_id",
@@ -1228,21 +1245,6 @@ export const nativeFactModels = {
         "game_id": "game_id",
         "entity_id": "entity_id"
       }
-    }
-  },
-  "ProductionReceiver": {
-    "keys": [
-      "game_id",
-      "entity_id",
-      "resource_type"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "entity_id": "u32",
-      "resource_type": "u8",
-      "home": "u32",
-      "end_at": "u32"
     }
   },
   "ProductionBonus": {
@@ -1615,10 +1617,6 @@ export const nativeFactModels = {
       "reveal_percent": "u16",
       "guard_lower": "u16",
       "guard_upper": "u16",
-      "mine_cap_min": "u128",
-      "mine_cap_max": "u128",
-      "mine_rate": "u64",
-      "mine_chest": "boolean",
       "reveal_site_neighbors": "boolean",
       "entry_stamina": "u16",
       "attunement_cost": "u128",
@@ -2046,9 +2044,9 @@ export const nativeSyncScopes = {
       "structure_id"
     ]
   },
-  "ProductionReceiver": {
-    "realms": [
-      "home"
+  "ExpeditionSite": {
+    "entities": [
+      "entity_id"
     ]
   },
   "ArmyProgress": {
@@ -2096,9 +2094,6 @@ export const nativeSyncScopes = {
   },
   "ResourceProduction": {
     "entities": [
-      "entity_id"
-    ],
-    "productionSources": [
       "entity_id"
     ]
   },

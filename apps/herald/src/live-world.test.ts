@@ -201,9 +201,7 @@ describe("native live publication", () => {
             rowEvent("ResourceWeight", ["1", String(entityId)], ["1000", "100"]),
             rowEvent("EntityName", ["1", String(entityId)], [String(entityId)]),
           ]),
-          rowEvent("ProductionReceiver", ["1", "100", "29"], ["2", "240"]),
           rowEvent("ResourceProduction", ["1", "100", "29"], ["1", "10", "100", "120"]),
-          rowEvent("ProductionReceiver", ["1", "99", "29"], ["1", "240"]),
           rowEvent("ResourceProduction", ["1", "99", "29"], ["1", "10", "100", "120"]),
           rowEvent("TileOpt", ["1", "0", "50", "50"], ["1"]),
           rowEvent("TileOpt", ["1", "0", "150", "50"], ["1"]),
@@ -352,13 +350,10 @@ describe("native live publication", () => {
     expect(today.models.find((model) => model.model === "ExplorerTroops")?.rows).toEqual([]);
     expect(today.models.find((model) => model.model === "Structure")?.rows).toHaveLength(1);
     expect(
-      today.models.find((model) => model.model === "ProductionReceiver")?.rows.map((row) => Number(row.value.home)),
-    ).toEqual([1]);
-    expect(
       today.models
         .find((model) => model.model === "ResourceProduction")
         ?.rows.map((row) => Number(row.value.entity_id)),
-    ).toEqual([99]);
+    ).toEqual([]);
 
     reconnected.length = 0;
     live.selectActor(resumed, "0xb");

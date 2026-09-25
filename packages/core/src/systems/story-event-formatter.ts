@@ -43,6 +43,19 @@ const CHEST_KIND_LABELS: Record<string, string> = { Relic: "relic", Cosmetic: "c
 const EXPEDITION_GROUND_LABELS = ["the surface", "Ethereal I", "Ethereal II", "Ethereal III"];
 
 const formatters: Record<string, StoryFormatter> = {
+  SitePayout: (_event, payload, components) => {
+    const kind = formatEnum(payload.kind);
+    const label =
+      kind === "Camp" ? "Camp" : kind === "Rift" ? "Rift" : kind === "FallenRealm" ? "Fallen realm" : undefined;
+    if (!label || payload.reward === undefined) throw new Error("Incomplete site payout story");
+    const reward = payload.reward === null ? "Closed chest on the tile" : formatResourceList([payload.reward]);
+    if (!reward) throw new Error("Incomplete site resource reward");
+    return {
+      title: `${label} cleared`,
+      description: joinPieces([describeExplorer(payload.explorer_id, components), reward]),
+      icon: "prize",
+    };
+  },
   AttributeChosen: (event, payload, components) => {
     const attribute = formatEnum(payload.attribute);
     const applied = toNumber(payload.applied);

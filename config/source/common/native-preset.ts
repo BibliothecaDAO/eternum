@@ -55,10 +55,6 @@ export interface NativePreset {
     revealPercent: number;
     guardLower: number;
     guardUpper: number;
-    mineCapMin: number;
-    mineCapMax: number;
-    mineRate: number;
-    mineChest: boolean;
     revealSiteNeighbors: boolean;
     entryStamina: number;
     attunementCost: number;

@@ -40,6 +40,7 @@ pub trait IGuards<T> {
         ref self: T,
         key: crate::resources::ResourceKey,
         seed: u256,
+        site_kind: Option<crate::expeditions::SiteKind>,
         timestamp: u64,
         game_context: crate::commands::ActionContext,
     );

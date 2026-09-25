@@ -60,8 +60,7 @@ pub mod ResourceState {
     use crate::logic::production::ProductionState::InternalTrait as RecipeInternal;
     use crate::production::RecipeKey;
     use crate::resources::{
-        Production, ProductionReceiver, ResourceKey, SettledResource, Weight, add, assert_production, has_production,
-        settle, spend,
+        Production, ResourceKey, SettledResource, Weight, add, assert_production, has_production, settle, spend,
     };
 
     #[storage]
@@ -281,17 +280,6 @@ pub mod ResourceState {
             if resource_type == 35 || crate::resources::is_troop_resource(resource_type) {
                 self.settle_training(key, now, start_at);
             }
-            let receiver = self.data.resources.production_receivers.read((key.game_id, key.entity_id, resource_type));
-            if let Some(receiver) = receiver {
-                self
-                    .settle_resource(
-                        ResourceKey { game_id: key.game_id, entity_id: receiver.home },
-                        resource_type,
-                        unit_weight,
-                        now,
-                        start_at,
-                    );
-            }
             let mut resource = SettledResource {
                 balance: crate::logic::resources::balance(key, resource_type),
                 production: crate::logic::resources::production(key, resource_type),
@@ -300,12 +288,11 @@ pub mod ResourceState {
             resource
                 .production
                 .last_updated_at = core::cmp::max(resource.production.last_updated_at, core::cmp::min(now, start_at));
-            if receiver.is_none() && resource.production.last_updated_at != now {
+            if resource.production.last_updated_at != now {
                 settle(
                     resource_type, ref resource.balance, ref resource.production, ref resource.weight, unit_weight, now,
                 );
             }
-            self.settle_incoming_production(key, resource_type, ref resource, unit_weight, now);
             resource
         }
 
@@ -368,137 +355,6 @@ pub mod ResourceState {
                 self.write_production(key, resource_type, production);
             }
             self.write_weight(key, weight);
-        }
-
-        fn redirect_production(
-            ref self: ComponentState<TContractState>,
-            key: ResourceKey,
-            resource_type: u8,
-            receiver: ProductionReceiver,
-            rate: u64,
-            unit_weight: u128,
-            now: u32,
-            start_at: u32,
-        ) {
-            crate::logic::resources::assert_exists(key);
-            let home = ResourceKey { game_id: key.game_id, entity_id: receiver.home };
-            crate::logic::resources::assert_exists(home);
-            assert!(home.entity_id != key.entity_id, "production cannot receive itself");
-            assert!(resource_type != 35 && resource_type != 36 && has_production(resource_type), "uncapped production");
-            assert!(rate != 0 && receiver.end_at > now, "invalid production interval");
-            let previous = self.data.resources.production_receivers.read((key.game_id, key.entity_id, resource_type));
-            if let Some(previous) = previous {
-                self
-                    .settle_resource(
-                        ResourceKey { game_id: key.game_id, entity_id: previous.home },
-                        resource_type,
-                        unit_weight,
-                        now,
-                        start_at,
-                    );
-                if previous.home == receiver.home {
-                    return;
-                }
-            }
-            let mut production = crate::logic::resources::production(key, resource_type);
-            assert!(crate::logic::resources::balance(key, resource_type) == 0, "redirected producer holds a balance");
-            assert!(production.production_rate == 0 || previous.is_some(), "producer was not awaiting capture");
-            if production.output_amount_left == 0 {
-                return;
-            }
-            production.production_rate = rate;
-            production.building_count = 1;
-            production.last_updated_at = now;
-            self.write_production(key, resource_type, production);
-            let index = self.data.resources.incoming_count.read((key.game_id, receiver.home, resource_type));
-            self
-                .data
-                .resources
-                .incoming_sources
-                .write((key.game_id, receiver.home, resource_type, index), key.entity_id);
-            self.data.resources.incoming_count.write((key.game_id, receiver.home, resource_type), index + 1);
-            self.write_production_receiver(key, resource_type, Some(receiver));
-        }
-
-        fn settle_incoming_production(
-            ref self: ComponentState<TContractState>,
-            key: ResourceKey,
-            resource_type: u8,
-            ref resource: SettledResource,
-            unit_weight: u128,
-            now: u32,
-        ) {
-            let initial_count = self.data.resources.incoming_count.read((key.game_id, key.entity_id, resource_type));
-            let mut count = initial_count;
-            let mut index = 0;
-            while index < count {
-                let source_id = self
-                    .data
-                    .resources
-                    .incoming_sources
-                    .read((key.game_id, key.entity_id, resource_type, index));
-                let source = ResourceKey { game_id: key.game_id, entity_id: source_id };
-                let receiver = self.data.resources.production_receivers.read((key.game_id, source_id, resource_type));
-                let mut finished = true;
-                if let Some(receiver) = receiver {
-                    if receiver.home == key.entity_id {
-                        let mut production = crate::logic::resources::production(source, resource_type);
-                        let until = core::cmp::min(now, receiver.end_at);
-                        if until > production.last_updated_at {
-                            settle(
-                                resource_type,
-                                ref resource.balance,
-                                ref production,
-                                ref resource.weight,
-                                unit_weight,
-                                until,
-                            );
-                        }
-                        finished = production.output_amount_left == 0 || until >= receiver.end_at;
-                        if finished {
-                            production = Default::default();
-                            self.write_production_receiver(source, resource_type, None);
-                        }
-                        self.write_production(source, resource_type, production);
-                    }
-                }
-                if finished {
-                    count -= 1;
-                    let last = self
-                        .data
-                        .resources
-                        .incoming_sources
-                        .read((key.game_id, key.entity_id, resource_type, count));
-                    self
-                        .data
-                        .resources
-                        .incoming_sources
-                        .write((key.game_id, key.entity_id, resource_type, index), last);
-                } else {
-                    index += 1;
-                }
-            }
-            if count != initial_count {
-                self.data.resources.incoming_count.write((key.game_id, key.entity_id, resource_type), count);
-            }
-        }
-
-        fn write_production_receiver(
-            ref self: ComponentState<TContractState>,
-            key: ResourceKey,
-            resource_type: u8,
-            receiver: Option<ProductionReceiver>,
-        ) {
-            self.data.resources.production_receivers.write((key.game_id, key.entity_id, resource_type), receiver);
-            let keys = array![key.game_id.into(), key.entity_id.into(), resource_type.into()].span();
-            match receiver {
-                Some(value) => {
-                    let mut values = array![];
-                    value.serialize(ref values);
-                    self.emit(RowSet { version: 1, model: 'ProductionReceiver', keys, values: values.span() });
-                },
-                None => self.emit(RowDeleted { version: 1, model: 'ProductionReceiver', keys }),
-            };
         }
 
         fn commit_resource(

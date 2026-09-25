@@ -14,7 +14,6 @@ const expeditionScope = (): GameSyncScope => ({
     realmTraits: new Set(["1"]),
     regions: new Set(["0:0"]),
     entities: new Set(["7", "70"]),
-    productionSources: new Set(),
   },
 });
 

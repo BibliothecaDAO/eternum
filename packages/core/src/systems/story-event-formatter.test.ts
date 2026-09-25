@@ -171,3 +171,28 @@ it("shows applied attribute levels and lost excess from history without reconstr
     ),
   ).toMatchObject({ title: "Logistics +1", description: "Army · 3 levels lost at the cap" });
 });
+
+it("renders the site's recorded kind and payout without a current structure", () => {
+  const result = buildStoryEventPresentation(
+    story("SitePayout", {
+      structure_id: 3,
+      explorer_id: 7,
+      site_id: 9,
+      kind: "Camp",
+      reward: { resource_type: 23, amount: "500000000000" },
+    }),
+  );
+  expect(result.title).toBe("Camp cleared");
+  expect(result.description).toContain("500");
+  expect(
+    buildStoryEventPresentation(
+      story("SitePayout", {
+        structure_id: 3,
+        explorer_id: 7,
+        site_id: 9,
+        kind: "FallenRealm",
+        reward: null,
+      }),
+    ),
+  ).toMatchObject({ title: "Fallen realm cleared", description: "Army · Closed chest on the tile" });
+});

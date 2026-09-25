@@ -213,10 +213,7 @@ function gameRows(game: number): RpcEvent[] {
     for (let resource = 1; resource <= RESOURCES_PER_REALM; resource++)
       events.push(row("ResourceBalance", [game, structure, resource]));
     for (let resource = 1; resource <= PRODUCTIONS_PER_REALM; resource++)
-      events.push(
-        row("ResourceProduction", [game, structure, resource]),
-        row("ProductionReceiver", [game, structure, resource]),
-      );
+      events.push(row("ResourceProduction", [game, structure, resource]));
     for (let army = 0; army < ARMIES_PER_PLAYER; army++)
       events.push(
         row("ExplorerTroops", [game, structure * 10 + army], { owner: String(structure) }),

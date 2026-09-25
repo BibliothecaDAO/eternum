@@ -30,9 +30,6 @@ export const frontierPreset: NativePreset = {
     rule.DISCOVER_CHESTS |
     rule.UNOWNED_TARGETS |
     rule.DEPTH_CONTENTS |
-    rule.CAPTURE_CHESTS |
-    rule.HOME_MINE_PRODUCTION |
-    rule.HOME_CAMP_REWARDS |
     rule.REVEAL_SUPPLIES |
     rule.SEASON_CLOSE,
   entryRule: rule.ENTRY_OPEN,
@@ -70,10 +67,6 @@ export const frontierPreset: NativePreset = {
       revealPercent: 10,
       guardLower: 1000,
       guardUpper: 1600,
-      mineCapMin: 3000,
-      mineCapMax: 5000,
-      mineRate: 5000 / 86400,
-      mineChest: false,
       revealSiteNeighbors: false,
       entryStamina: 0,
       attunementCost: 0,
@@ -83,10 +76,6 @@ export const frontierPreset: NativePreset = {
       revealPercent: 15,
       guardLower: 3000,
       guardUpper: 5000,
-      mineCapMin: 10000,
-      mineCapMax: 16000,
-      mineRate: 16000 / 86400,
-      mineChest: true,
       revealSiteNeighbors: false,
       entryStamina: 30,
       attunementCost: 150000,
@@ -96,10 +85,6 @@ export const frontierPreset: NativePreset = {
       revealPercent: 20,
       guardLower: 8000,
       guardUpper: 12000,
-      mineCapMin: 20000,
-      mineCapMax: 32000,
-      mineRate: 32000 / 86400,
-      mineChest: true,
       revealSiteNeighbors: false,
       entryStamina: 40,
       attunementCost: 330000,
@@ -109,10 +94,6 @@ export const frontierPreset: NativePreset = {
       revealPercent: 25,
       guardLower: 20000,
       guardUpper: 30000,
-      mineCapMin: 40000,
-      mineCapMax: 64000,
-      mineRate: 64000 / 86400,
-      mineChest: true,
       revealSiteNeighbors: false,
       entryStamina: 50,
       attunementCost: 850000,

@@ -50,29 +50,6 @@ pub mod ResourcesLogic {
     }
     #[abi(embed_v0)]
     impl Resources of crate::resources::IResourceOperations<ContractState> {
-        fn redirect_production(
-            ref self: ContractState,
-            key: ResourceKey,
-            resource_type: u8,
-            receiver: crate::resources::ProductionReceiver,
-            rate: u64,
-            timestamp: u64,
-            game_context: crate::commands::ResourceContext,
-        ) {
-            let rule = crate::logic::resources::rule(key.game_id, resource_type);
-            self
-                .resources
-                .redirect_production(
-                    key,
-                    resource_type,
-                    receiver,
-                    rate,
-                    rule.unit_weight,
-                    timestamp.try_into().unwrap(),
-                    game_context.production_start,
-                );
-        }
-
         fn initialize_explorer_resources(
             ref self: ContractState, key: ResourceKey, amount: u128, game_context: crate::commands::ResourceContext,
         ) {

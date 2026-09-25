@@ -2,7 +2,7 @@ import { absoluteEpoch, expeditionRealmSite, isCurrentExpeditionArmy, isRealmCat
 import { hasSingleTilePosition } from "../client/native-occupancy";
 import { gameSyncRegion, syncScalar, type GameSyncScope } from "./model-manifest";
 
-type ScopeInputModel = "PlayerEntry" | "Structure" | "ExplorerTroops" | "TileOccupancy" | "ProductionReceiver";
+type ScopeInputModel = "PlayerEntry" | "Structure" | "ExplorerTroops" | "TileOccupancy";
 export type ScopeRowReader = (
   model: ScopeInputModel,
   spacing: number,
@@ -68,11 +68,6 @@ export function deriveGameSyncScope(
     )
       entities.add(syncScalar(value.entity_id));
   }
-  const productionSources = new Set(
-    read("ProductionReceiver", spacing, [...realms].map(scopeLookup.receiversOf)).map(({ value }) =>
-      syncScalar(value.entity_id),
-    ),
-  );
   scope.expedition = {
     absoluteEpoch: currentAbsoluteEpoch,
     spacing,
@@ -81,7 +76,6 @@ export function deriveGameSyncScope(
     realmTraits,
     regions,
     entities,
-    productionSources,
   };
   return scope;
 }
@@ -95,15 +89,12 @@ export const scopeLookup = {
   occupancyOf: (entity: unknown) => `TileOccupancy.entity:${syncScalar(entity)}`,
   armiesOf: (home: unknown) => `ExplorerTroops.owner:${syncScalar(home)}`,
   army: (entity: unknown) => `ExplorerTroops.entity:${syncScalar(entity)}`,
-  receiversOf: (home: unknown) => `ProductionReceiver.home:${syncScalar(home)}`,
-  receiver: (entity: unknown) => `ProductionReceiver.entity:${syncScalar(entity)}`,
 };
 
 /** The lookups that can find this row; a region key needs the expedition spacing, and without one there is none. */
 export function scopeInputKeys(model: string, row: Record<string, unknown>, spacing: number | undefined): string[] {
   if (model === "PlayerEntry") return [scopeLookup.entryOf(row.player)];
   if (model === "ExplorerTroops") return [scopeLookup.armiesOf(row.owner), scopeLookup.army(row.explorer_id)];
-  if (model === "ProductionReceiver") return [scopeLookup.receiversOf(row.home), scopeLookup.receiver(row.entity_id)];
   if (model === "Structure") return [scopeLookup.structuresOf(row.owner), scopeLookup.structure(row.entity_id)];
   if (model !== "TileOccupancy") return [];
   const region = spacing === undefined ? undefined : gameSyncRegion({ alt: row.alt, x: row.col, y: row.row }, spacing);

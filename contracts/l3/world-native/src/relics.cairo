@@ -121,7 +121,6 @@ pub trait ICaptureRewards<T> {
         ref self: T,
         site: ResourceKey,
         explorer_id: u32,
-        category: u8,
         context: crate::commands::ActionContext,
         story_cursor: crate::ownership::StoryCursor,
     ) -> ((), crate::ownership::StoryCursor);
@@ -143,14 +142,6 @@ pub trait IRelics<T> {
     ) -> ((), crate::ownership::StoryCursor);
     fn relic_rules(self: @T, game_id: u32) -> Span<RelicRule>;
     fn open_relic_chest(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: OpenChest,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
-    fn grant_site_chest(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,

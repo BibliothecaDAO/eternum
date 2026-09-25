@@ -139,9 +139,6 @@ describe("native presets", () => {
       })),
     );
     expect(board(playtest).workshop_rate).toBe(board(design).workshop_rate * 24n);
-    expect(playtest.settlement.depths.map(({ mine_rate }) => mine_rate)).toEqual(
-      design.settlement.depths.map(({ mine_rate }) => mine_rate * 24n),
-    );
     expect(playtest.resources.mine_kinds.map(({ config }) => config.production_rate)).toEqual(
       design.resources.mine_kinds.map(({ config }) => config.production_rate * 24n),
     );
@@ -161,14 +158,17 @@ describe("native presets", () => {
     for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).exploration.length).toBeGreaterThan(0);
   });
 
-  test("a Frontier camp pays its chest, never resources", () => {
+  test("Frontier sites carry no flat camp reward or rift-production table", () => {
     const design = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
       FRONTIER_PRESET_ID,
     );
 
     expect(design.structures.camps).toEqual([]);
-    expect(design.rules.mode_rules & nativeRuleConstants.CAPTURE_CHESTS).not.toBe(0);
+    for (const depth of design.settlement.depths) {
+      for (const retired of ["mine_cap_min", "mine_cap_max", "mine_rate", "mine_chest"])
+        expect(depth).not.toHaveProperty(retired);
+    }
   });
 
   test("Frontier's exploration finds a rift 4%, a camp 4% and a loose chest 2% of reveals, against surface guards of 1,000", () => {

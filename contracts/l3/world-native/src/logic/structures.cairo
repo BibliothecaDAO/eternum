@@ -239,6 +239,7 @@ pub mod StructuresLogic {
                 crate::guards::IGuardsLibraryDispatcher { class_hash: self.release.classes(key.game_id).troops.read() },
                 key,
                 seed,
+                None,
                 timestamp,
                 crate::commands::action_context(game_context),
             );
@@ -564,6 +565,13 @@ pub mod StructuresLogic {
         }
     }
     #[abi(embed_v0)]
+    impl ExpeditionSites of crate::expeditions::IExpeditionSite<ContractState> {
+        fn expedition_site(self: @ContractState, key: ResourceKey) -> Option<crate::expeditions::ExpeditionSite> {
+            crate::logic::expeditions::expedition_site(key)
+        }
+    }
+
+    #[abi(embed_v0)]
     impl Capture of crate::guards::IStructureCapture<ContractState> {
         fn capture_structure(
             ref self: ContractState,
@@ -592,7 +600,6 @@ pub mod StructuresLogic {
                 );
             }
             self.change_owner(key, owner, timestamp, game_context, ref story_cursor);
-            self.start_captured_mine(key, capturing_home, record, timestamp, game_context);
             let points = if record.owner == 0.try_into().unwrap() {
                 IPointsLibraryDispatcher { class_hash: self.release.classes(key.game_id).season.read() }
                     .register_capture(
@@ -681,35 +688,24 @@ pub mod StructuresLogic {
                 );
             match discovery {
                 Discovery::Mine => {
-                    let (kind, config, cap) = IMineRulesLibraryDispatcher {
-                        class_hash: self.release.classes(game_id).production.read(),
+                    if rules.epoch_seconds == 0 {
+                        let (kind, config, cap) = IMineRulesLibraryDispatcher {
+                            class_hash: self.release.classes(game_id).production.read(),
+                        }
+                            .mine_draw(MinePoolKey { game_id }, seed);
+                        record.metadata.mine_kind = kind;
+                        self
+                            .create_producer(
+                                key,
+                                cap,
+                                config.production_rate,
+                                config.resource_type,
+                                config.building_category,
+                                rules.building_config.base_population,
+                                timestamp,
+                                game_context,
+                            );
                     }
-                        .mine_draw(MinePoolKey { game_id }, seed);
-                    record.metadata.mine_kind = kind;
-                    let (cap, rate) = match depth {
-                        Some(value) => (
-                            value.mine_cap_min
-                                + crate::random::range(seed, 'RIFT_CAP', value.mine_cap_max - value.mine_cap_min + 1),
-                            value.mine_rate,
-                        ),
-                        None => (cap, config.production_rate),
-                    };
-                    let rate = if crate::rules::rule_enabled(rules, crate::rules::HOME_MINE_PRODUCTION) {
-                        0
-                    } else {
-                        rate
-                    };
-                    self
-                        .create_producer(
-                            key,
-                            cap,
-                            rate,
-                            config.resource_type,
-                            config.building_category,
-                            rules.building_config.base_population,
-                            timestamp,
-                            game_context,
-                        );
                 },
                 Discovery::Hyperstructure => self.create_hyperstructure(key, seed, completed),
                 Discovery::BitcoinMine => {},
@@ -717,7 +713,7 @@ pub mod StructuresLogic {
                     assert!(
                         crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CAMPS), "camp discovery is disabled",
                     );
-                    if !crate::rules::rule_enabled(rules, crate::rules::HOME_CAMP_REWARDS) {
+                    if rules.epoch_seconds == 0 {
                         for resource in self.camp_resources(game_id) {
                             self
                                 .resources_dispatcher(game_id)
@@ -748,10 +744,22 @@ pub mod StructuresLogic {
             }
             crate::logic::structures::StructureState::create(key, record);
             crate::logic::map::MapState::occupy(tile_key(game_id, coord), id, occupier, true);
+            let site_kind = if rules.epoch_seconds == 0 {
+                None
+            } else {
+                Some(
+                    match discovery {
+                        Discovery::Camp => crate::expeditions::SiteKind::Camp,
+                        Discovery::Mine => crate::expeditions::SiteKind::Rift,
+                        _ => panic!("invalid expedition site"),
+                    },
+                )
+            };
             crate::guards::IGuardsDispatcherTrait::initialize_structure_guards(
                 crate::guards::IGuardsLibraryDispatcher { class_hash: self.release.classes(game_id).troops.read() },
                 key,
                 seed,
+                site_kind,
                 timestamp,
                 crate::commands::action_context(game_context),
             );
@@ -951,50 +959,6 @@ pub mod StructuresLogic {
                         );
                     }
                 }
-            }
-        }
-
-        fn start_captured_mine(
-            ref self: ContractState,
-            key: ResourceKey,
-            capturing_home: u32,
-            record: StructureRecord,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) {
-            let rules = game_context.rules.unbox();
-            if record.base.category == 4 && crate::rules::rule_enabled(rules, crate::rules::HOME_MINE_PRODUCTION) {
-                let mine = crate::logic::mines::kind(
-                    crate::mines::MineKindKey { game_id: key.game_id, kind: record.metadata.mine_kind },
-                );
-                let rate = if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
-                    crate::logic::expeditions::depth_rules_at(key.game_id, crate::structures::structure_coord(key))
-                        .mine_rate
-                } else {
-                    mine.production_rate
-                };
-                let end_at = game_context.game.unbox().end_at;
-                let end_at = if rules.epoch_seconds == 0 {
-                    end_at
-                } else {
-                    core::cmp::min(
-                        end_at,
-                        (crate::expeditions::absolute_epoch(rules.epoch_seconds, timestamp) + 1)
-                            * rules.epoch_seconds.into(),
-                    )
-                };
-                self
-                    .resources_dispatcher(key.game_id)
-                    .redirect_production(
-                        key,
-                        mine.resource_type,
-                        crate::resources::ProductionReceiver {
-                            home: capturing_home, end_at: end_at.try_into().unwrap(),
-                        },
-                        rate,
-                        timestamp,
-                        crate::commands::resource_context(game_context),
-                    );
             }
         }
 

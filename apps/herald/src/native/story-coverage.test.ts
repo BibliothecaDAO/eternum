@@ -121,6 +121,16 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
   FaithRemoved: { fields: [3, 9], expected: { structure_id: 3n, wonder_id: 9n } },
   BlitzFinalized: { fields: [11], expected: 11n },
   RelicCrafted: { fields: [4], expected: 4n },
+  SitePayout: {
+    fields: [3, 7, 9, 0, 0, 23, 500],
+    expected: {
+      structure_id: 3n,
+      explorer_id: 7n,
+      site_id: 9n,
+      kind: "Camp",
+      reward: { resource_type: 23n, amount: 500n },
+    },
+  },
   AttributeChosen: {
     fields: [7, 9, 1, 1, 2, 1],
     expected: { explorer_id: 7n, offer_id: 9n, source: "Relic", attribute: "Logistics", applied: 2n, lost: 1n },

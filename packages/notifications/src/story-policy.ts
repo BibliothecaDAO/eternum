@@ -15,6 +15,7 @@ const STORY_RULES = {
   HyperstructurePoints: { level: "all", recipients: "owner" },
   RelicChestOpened: { level: "all", recipients: "owner" },
   ChestReward: { level: "all", recipients: "owner" },
+  SitePayout: { level: "all", recipients: "owner" },
   AttributeChosen: { level: "all", recipients: "owner" },
   ExplorationReward: { level: "all", recipients: "owner" },
   SeasonEnded: { level: "all", recipients: "owner" },
