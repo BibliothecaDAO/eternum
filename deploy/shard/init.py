@@ -162,6 +162,6 @@ if __name__ == "__main__":
         else:
             raise ValueError("Expected prepare or deploy")
     finally:
-        uid, gid = int(os.environ.get("HOST_UID", "0")), int(os.environ.get("HOST_GID", "0"))
+        uid, gid = int(os.environ["HOST_UID"]), int(os.environ["HOST_GID"])
         for path in [DATA, *DATA.rglob("*")]:
             os.chown(path, uid, gid)

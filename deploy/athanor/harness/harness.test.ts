@@ -593,11 +593,11 @@ describe("Madara harness reporting", () => {
   });
 
   it("flags a latency with no samples as over target", () => {
-    expect(latencyAgainstTargets(40, null).overTarget).toEqual({
+    expect(latencyAgainstTargets(40, null, 0).overTarget).toEqual({
       admissionToVisibleP95: false,
       heraldConfirmedLagP95: true,
     });
-    expect(latencyAgainstTargets(null, 40).overTarget).toEqual({
+    expect(latencyAgainstTargets(null, 40, 0).overTarget).toEqual({
       admissionToVisibleP95: true,
       heraldConfirmedLagP95: false,
     });
@@ -623,6 +623,18 @@ describe("Madara harness reporting", () => {
         setupTransactions: [],
         workload: { actions, profile: "cadence", overheadRpc: createRpcMetrics() },
       } as never);
+
+    // A completed action without the provider's figure is counted and fails the run; a failed one never has it.
+    const unmeasured = run([completed(100), { ...completed(100), admissionToVisibleMs: undefined }]);
+    expect(unmeasured.latency?.missing).toEqual({ admissionToVisible: 1 });
+    expect(unmeasured.checks.admissionToVisibleMeasured).toBe(false);
+    expect(unmeasured.passed).toBe(false);
+    const rejected = run([
+      completed(100),
+      { ...completed(100), admissionToVisibleMs: undefined, outcome: "rejected", failureClass: "gameplay_rejection" },
+    ]);
+    expect(rejected.latency?.missing).toEqual({ admissionToVisible: 0 });
+    expect(rejected.checks.admissionToVisibleMeasured).toBe(true);
 
     const slow = run([completed(900)]);
     expect(slow.passed).toBe(true);
@@ -652,6 +664,7 @@ describe("Madara harness reporting", () => {
       thresholdEligibleActions,
       firstSubmitAt,
       admissionToVisibleMs,
+      admissionToVisibleMissing: 0,
       heraldConfirmedLagMs,
     });
     // One bot short of its own plan does not fail the run while the total clears the bar.
@@ -660,7 +673,7 @@ describe("Madara harness reporting", () => {
       workers: [worker(40, [120, 250]), worker(30, [90, 200], [300, 500], "2026-09-23T00:00:00.250Z")],
       minimumThresholdActions: 70,
     });
-    expect(passing.checks).toEqual({ thresholdEligibleActions: true });
+    expect(passing.checks).toEqual({ thresholdEligibleActions: true, admissionToVisibleMeasured: true });
     expect(passing.latency?.overTarget).toEqual({ admissionToVisibleP95: false, heraldConfirmedLagP95: false });
     expect(passing).toMatchObject({
       passed: true,
@@ -683,6 +696,14 @@ describe("Madara harness reporting", () => {
       assessRosterRun({ functional: false, workers: [worker(40, [200]), worker(29, [200])], minimumThresholdActions: 70 })
         .passed,
     ).toBe(false);
+    // A worker's completed action without the provider's figure fails the whole run.
+    const unmeasured = assessRosterRun({
+      functional: false,
+      workers: [worker(40, [200]), { ...worker(30, [200]), admissionToVisibleMissing: 2 }],
+      minimumThresholdActions: 70,
+    });
+    expect(unmeasured.latency?.missing).toEqual({ admissionToVisible: 2 });
+    expect(unmeasured).toMatchObject({ passed: false, checks: { admissionToVisibleMeasured: false } });
     // A run with no measured lag cannot show it met the Herald target.
     expect(
       assessRosterRun({ functional: false, workers: [worker(40, [1], [])], minimumThresholdActions: 40 }).latency

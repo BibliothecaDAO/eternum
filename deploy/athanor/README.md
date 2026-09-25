@@ -51,9 +51,9 @@ execution: declare and execute the generated classes on the selected node image 
 
 ## Isolated node and release
 
-A shard runs the upstream Madara image unmodified. The current pin is
-`ghcr.io/madara-alliance/madara@sha256:efaa800354602ad89fa2f22492e55188f50b0fc5675f66cba8184f0e261394f5`
-(`nightly-802086d`, the revision C3 measured). Admission runs beside it in the gateway, built from the same checkout:
+A shard runs the upstream Madara image unmodified, pinned by digest in one place: `x-madara-image` in
+`deploy/shard/compose.yml` (each release's `release.json` records it as `node`). Admission runs beside it in the
+gateway, built from the same checkout:
 
 ```bash
 docker build -t realms-gateway:REVISION apps/gateway
@@ -300,5 +300,4 @@ For a node with OTLP export, set `MADARA_METRICS_FILE` to the collector's JSON-l
 `scripts/block-stats.py` combines close-block data with upstream counter deltas, excluding process resets. Report
 latency separately from gas and execution resources. Admission-to-visible includes queue wait and the Herald barrier.
 
-The server deployment workflow fails closed without native target configuration. Do not use it to update the live stack
-during integration. Preserve the baseline image and chain data until final acceptance and the approved cutover.
+Preserve the baseline image and chain data until final acceptance and the approved cutover.
