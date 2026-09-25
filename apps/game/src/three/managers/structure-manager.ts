@@ -1,5 +1,11 @@
 import { MineKinds } from "@bibliothecadao/types";
 import { configManager, getRealmCountPerHyperstructure } from "@bibliothecadao/eternum";
+import {
+  FALLEN_REALM_RUIN_MODEL_INDEX,
+  type FallenRealmBeast,
+  fallenRealmBeastModelIndex,
+  readStandingFallenRealm,
+} from "../structures/fallen-realm";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
@@ -251,6 +257,7 @@ export class StructureManager {
   private hasWarnedStructureCapacityOverflow = false;
   private structureModelDrawCounts: Map<StructureModel, number> = new Map();
   private wonderEntityIdMaps: Map<number, ID> = new Map();
+  private fallenRealmBeastEntityIdMaps: Map<FallenRealmBeast, Map<number, ID>> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelPool = new LabelPool();
   private dummy: Object3D = new Object3D();
@@ -488,6 +495,7 @@ export class StructureManager {
             touched.add(guard.structure_id);
           } else if (
             change.model === "Structure" ||
+            change.model === "ExpeditionSite" ||
             change.model === "StructureBuildings" ||
             change.model === "Hyperstructure" ||
             change.model === "HyperstructureProgress" ||
@@ -601,6 +609,14 @@ export class StructureManager {
       structureType: renderInfo.type,
       mineKind: structureComponent?.metadata.mine_kind,
       hasWonder: renderInfo.hasWonder,
+      fallenRealm: this.store
+        ? readStandingFallenRealm(
+            this.store,
+            configManager.getActiveGameId(),
+            renderable.entityId,
+            renderable.hexCoords,
+          )
+        : undefined,
       realmOrder: renderInfo.type === StructureType.Realm ? structureComponent?.metadata.order : undefined,
       cosmeticId: cosmetic.skin.cosmeticId,
       cosmeticAssetPaths: cosmetic.skin.assetPaths,
@@ -895,6 +911,7 @@ export class StructureManager {
     this.entityIdMaps.clear();
     this.cosmeticEntityIdMaps.clear();
     this.wonderEntityIdMaps.clear();
+    this.fallenRealmBeastEntityIdMaps.clear();
     this.structureInstanceBindings.clear();
     this.structureInstanceSlots.clear();
     this.structureInstanceFreeSlots.clear();
@@ -1297,6 +1314,8 @@ export class StructureManager {
    * Check if a structure uses a non-default cosmetic skin.
    */
   private hasCosmeticSkin(structure: StructureInfo): boolean {
+    // A fallen realm is drawn as its ruin and beast, never as a skinned camp.
+    if (structure.fallenRealm) return false;
     if (!structure.cosmeticId || !structure.cosmeticAssetPaths?.length) {
       return false;
     }
@@ -1312,6 +1331,7 @@ export class StructureManager {
   }
 
   private getBaseStructureModelIndex(structure: StructureInfo): number {
+    if (structure.fallenRealm) return FALLEN_REALM_RUIN_MODEL_INDEX;
     if (structure.structureType === StructureType.Hyperstructure) return 0;
     if (structure.structureType === StructureType.Mine) {
       const index = Object.keys(MineKinds).map(Number).indexOf(structure.mineKind!);
@@ -1323,6 +1343,7 @@ export class StructureManager {
 
   private getStructureModelIndices(structure: StructureInfo): number[] {
     const base = this.getBaseStructureModelIndex(structure);
+    if (structure.fallenRealm) return [base, fallenRealmBeastModelIndex(structure.fallenRealm.beast)];
     return structure.structureType === StructureType.Realm && structure.hasWonder ? [base, WONDER_MODEL_INDEX] : [base];
   }
 
@@ -1618,6 +1639,9 @@ export class StructureManager {
 
     const entityIdsByInstance = this.getOrCreateStructureEntityIdMap(structure.structureType);
     const bindings = [this.bindStructureInstance(model, structure.entityId, entityIdsByInstance, dirtyModels)];
+    if (structure.fallenRealm) {
+      bindings.push(this.bindFallenRealmBeast(structure.fallenRealm, models, structure.entityId, dirtyModels));
+    }
     if (structure.structureType === StructureType.Realm && structure.hasWonder) {
       const wonderModel = models.get(WONDER_MODEL_INDEX);
       if (wonderModel) {
@@ -1628,6 +1652,26 @@ export class StructureManager {
     }
 
     return bindings.filter(isBoundStructureInstance);
+  }
+
+  /** The beast stands on its ruin's origin at its depth's scale; the ruin itself never scales with it. */
+  private bindFallenRealmBeast(
+    { beast, scale }: NonNullable<StructureInfo["fallenRealm"]>,
+    models: Map<number, StructureModel>,
+    entityId: ID,
+    dirtyModels: Set<StructureModel>,
+  ): StructureInstanceBinding | undefined {
+    const model = models.get(fallenRealmBeastModelIndex(beast));
+    if (!model) return undefined;
+    const ruinScale = this.dummy.scale.clone();
+    this.dummy.scale.multiplyScalar(scale);
+    this.dummy.updateMatrix();
+    try {
+      return this.bindStructureInstance(model, entityId, this.getOrCreateFallenRealmBeastIdMap(beast), dirtyModels);
+    } finally {
+      this.dummy.scale.copy(ruinScale);
+      this.dummy.updateMatrix();
+    }
   }
 
   private addVisibleCosmeticStructureInstances(
@@ -1740,6 +1784,14 @@ export class StructureManager {
         this.structureModelDrawCounts.delete(model);
       }
     });
+  }
+
+  private getOrCreateFallenRealmBeastIdMap(beast: FallenRealmBeast): Map<number, ID> {
+    const existing = this.fallenRealmBeastEntityIdMaps.get(beast);
+    if (existing) return existing;
+    const created = new Map<number, ID>();
+    this.fallenRealmBeastEntityIdMaps.set(beast, created);
+    return created;
   }
 
   private getOrCreateStructureEntityIdMap(structureType: StructureType): Map<number, ID> {

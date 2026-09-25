@@ -11,6 +11,7 @@ import {
 import { Color } from "three";
 import { HyperstructureTypesNames } from "../types";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
+import { FALLEN_REALM_CAMP_MODEL_PATHS } from "../structures/fallen-realm";
 
 export const HEX_SIZE = 1;
 
@@ -176,7 +177,7 @@ export function getStructureModelPaths(): Record<StructureType, string[]> {
     [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
     [StructureType.Mine]: Object.values(MineKinds).map((kind) => kind.model),
     [StructureType.Village]: [VILLAGE_MODEL_PATH],
-    [StructureType.Camp]: [VILLAGE_MODEL_PATH],
+    [StructureType.Camp]: [VILLAGE_MODEL_PATH, ...FALLEN_REALM_CAMP_MODEL_PATHS],
     [StructureType.BitcoinMine]: [BITCOIN_MINE_MODEL_PATH],
   };
 }

@@ -3,6 +3,7 @@ import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 
 import { BuildingType, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import type { CosmeticAttachmentTemplate } from "../cosmetics/types";
+import type { fallenRealmBeast } from "../structures/fallen-realm";
 
 export enum SceneName {
   WorldMap = "map",
@@ -28,6 +29,8 @@ export interface StructureInfo {
   structureType: StructureType;
   mineKind?: number;
   hasWonder: boolean;
+  /** A standing fallen realm's beast: the camp draws as its ruin and this beast instead of its village. */
+  fallenRealm?: ReturnType<typeof fallenRealmBeast>;
   realmOrder?: number;
   cosmeticId?: string;
   cosmeticAssetPaths?: string[];
