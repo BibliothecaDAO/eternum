@@ -3271,7 +3271,7 @@
           "name": "troops",
           "type": "world_native::troops::Troops",
           "id": "0x74726f6f7073",
-          "feltLength": 14
+          "feltLength": null
         },
         {
           "name": "destroyed_tick",
@@ -3281,7 +3281,7 @@
         }
       ],
       "keyLength": 3,
-      "valueLength": 15,
+      "valueLength": null,
       "absence": {
         "parent": "Structure",
         "parentKeys": {
@@ -4231,6 +4231,58 @@
       }
     },
     {
+      "name": "ArmySlot",
+      "identity": "0x41726d79536c6f74",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        },
+        {
+          "name": "slot",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32",
+          "id": "0x6578706c6f7265725f6964",
+          "feltLength": 1
+        },
+        {
+          "name": "stamina",
+          "type": "world_native::troops::Stamina",
+          "id": "0x7374616d696e61",
+          "feltLength": 2
+        }
+      ],
+      "keyLength": 4,
+      "valueLength": 3,
+      "absence": {
+        "parent": "Structure",
+        "parentKeys": {
+          "game_id": "game_id",
+          "entity_id": "structure_id"
+        },
+        "value": "unused",
+        "meaning": "This army slot has not been used in the current expedition epoch."
+      }
+    },
+    {
       "name": "ExplorerTroops",
       "identity": "0x4578706c6f72657254726f6f7073",
       "scope": "game",
@@ -4257,11 +4309,11 @@
           "name": "troops",
           "type": "world_native::troops::Troops",
           "id": "0x74726f6f7073",
-          "feltLength": 14
+          "feltLength": null
         }
       ],
       "keyLength": 2,
-      "valueLength": 15,
+      "valueLength": null,
       "observation": {
         "domain": "troops",
         "fields": {
@@ -5660,7 +5712,7 @@
           "name": "battle_config",
           "type": "world_native::rules::BattleConfig",
           "id": "0x626174746c655f636f6e666967",
-          "feltLength": 3
+          "feltLength": 4
         },
         {
           "name": "map_config",
@@ -5778,7 +5830,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 102,
+      "valueLength": 103,
       "derivedFrom": "preset"
     },
     {
@@ -10315,6 +10367,10 @@
         {
           "name": "village_raid_immunity_ticks",
           "type": "core::integer::u8"
+        },
+        {
+          "name": "cooldown_seconds",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -11462,6 +11518,86 @@
         }
       ]
     },
+    "world_native::troops::ArmySlot": {
+      "type": "struct",
+      "name": "world_native::troops::ArmySlot",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "stamina",
+          "type": "world_native::troops::Stamina"
+        }
+      ]
+    },
+    "world_native::troops::ArmySlotAction": {
+      "type": "enum",
+      "name": "world_native::troops::ArmySlotAction",
+      "variants": [
+        {
+          "name": "Resolve",
+          "type": "()"
+        },
+        {
+          "name": "Allocate",
+          "type": "world_native::troops::ArmySlotAllocation"
+        },
+        {
+          "name": "Persist",
+          "type": "world_native::troops::StaminaSource"
+        },
+        {
+          "name": "Release",
+          "type": "world_native::troops::StaminaSource"
+        }
+      ]
+    },
+    "world_native::troops::ArmySlotAllocation": {
+      "type": "struct",
+      "name": "world_native::troops::ArmySlotAllocation",
+      "members": [
+        {
+          "name": "home",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "allowance",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "initial",
+          "type": "world_native::troops::Stamina"
+        }
+      ]
+    },
+    "world_native::troops::ArmySlotKey": {
+      "type": "struct",
+      "name": "world_native::troops::ArmySlotKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "slot",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
     "world_native::troops::Coord": {
       "type": "struct",
       "name": "world_native::troops::Coord",
@@ -11540,6 +11676,20 @@
         }
       ]
     },
+    "world_native::troops::StaminaSource": {
+      "type": "enum",
+      "name": "world_native::troops::StaminaSource",
+      "variants": [
+        {
+          "name": "Inline",
+          "type": "world_native::troops::Stamina"
+        },
+        {
+          "name": "Slot",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
     "world_native::troops::TroopBoosts": {
       "type": "struct",
       "name": "world_native::troops::TroopBoosts",
@@ -11596,7 +11746,7 @@
         },
         {
           "name": "stamina",
-          "type": "world_native::troops::Stamina"
+          "type": "world_native::troops::StaminaSource"
         },
         {
           "name": "boosts",
@@ -11837,5 +11987,5 @@
       ]
     }
   },
-  "identity": "40bdb71c3580090632be9b14ab319640d44bf282b04c643496da9eedcd585ac0"
+  "identity": "a0b6e1dcb1cf1d8a633fa6ed996663d6df83dfdaba2430923c9b4b1de0423c04"
 }

@@ -37,12 +37,16 @@ function hasNoProduction(resource: number) {
 function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>) {
   const faith = config.faith;
   if (!faith) throw new Error("Native faith config is required");
+  const cooldownSeconds = config.battle.cooldownSeconds;
+  if (!Number.isSafeInteger(cooldownSeconds) || cooldownSeconds < 0 || cooldownSeconds > 0xffff_ffff)
+    throw new Error("Native battle cooldownSeconds must be an explicit u32");
   const bitcoinEnabled = preset.bitcoinEnabled;
   return {
     battle_config: {
       regular_immunity_ticks: config.battle.regularImmunityTicks,
       village_immunity_ticks: config.battle.villageImmunityTicks,
       village_raid_immunity_ticks: config.battle.villageRaidImmunityTicks,
+      cooldown_seconds: cooldownSeconds,
     },
     map_config: buildMapConfig(config),
     biome_climate_config: buildBiomeClimateConfig(config),

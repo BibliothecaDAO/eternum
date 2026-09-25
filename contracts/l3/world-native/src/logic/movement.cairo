@@ -10,7 +10,7 @@ pub mod MovementLogic {
     use crate::map::IMapLogicDispatcherTrait;
     use crate::ownership::StoryResultTrait;
     use crate::resources::{IResourceOperationsDispatcherTrait, ResourceKey};
-    use crate::stamina::StaminaTrait;
+    use crate::stamina::StaminaSourceTrait;
     use crate::structures::IStructureOperationsDispatcherTrait;
     use crate::troops::{Coord, ExplorerKey};
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);

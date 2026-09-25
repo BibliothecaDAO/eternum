@@ -2,7 +2,7 @@ use crate::biome::Biome;
 use crate::combat::{CombatContext, TroopsTrait};
 use crate::guards::Guard;
 use crate::rules::{RESOURCE_PRECISION, SliceRules};
-use crate::stamina::StaminaTrait;
+use crate::stamina::StaminaSourceTrait;
 use crate::troops::Troops;
 
 #[derive(Copy, Drop, Serde)]
@@ -59,7 +59,7 @@ pub fn resolve(
                     rules.troop_stamina_config,
                     rules.troop_damage_config,
                     tick,
-                    rules.tick_config.armies_tick_in_seconds,
+                    rules.battle_config.cooldown_seconds,
                 );
             stamina_loss = core::cmp::max(stamina_loss, loss);
             let damage = raid_damage(guard_damage, rules.troop_damage_config.damage_raid_percent_num);

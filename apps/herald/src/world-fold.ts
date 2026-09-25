@@ -1,3 +1,4 @@
+import { expeditionDayEndsAt } from "@bibliothecadao/eternum/expeditions";
 import { readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { hasSingleTilePosition } from "@bibliothecadao/eternum/game-client";
 import {
@@ -388,8 +389,8 @@ export class WorldFold {
   public scopeValidUntil(gameId: string, timestamp: number): number {
     const expedition = this.expeditionRules(gameId);
     if (!expedition) return Number.POSITIVE_INFINITY;
-    const { epochSeconds, startMainAt } = expedition;
-    const rollover = (Math.floor(timestamp / epochSeconds) + 1) * epochSeconds;
+    const { startMainAt } = expedition;
+    const rollover = expeditionDayEndsAt(expedition, timestamp);
     return timestamp < startMainAt ? Math.min(startMainAt, rollover) : rollover;
   }
 

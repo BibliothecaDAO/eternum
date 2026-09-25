@@ -27,7 +27,7 @@ describe("what a reveal sends home", () => {
 
   it("reads the percent from the depth's rules, and nothing for a depth the game lacks", () => {
     const store = {
-      get: (_model: string, keys: { depth: number }) => (keys.depth === 1 ? { supply_multiplier: 15 } : undefined),
+      get: (_model: string, keys: { depth: number }) => (keys.depth === 1 ? { reveal_percent: 15 } : undefined),
     };
     expect(readRevealPercent(store as never, 7, 1)).toBe(15);
     expect(readRevealPercent(store as never, 7, 3)).toBeUndefined();

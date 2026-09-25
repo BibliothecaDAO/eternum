@@ -1,5 +1,5 @@
 use crate::rules::{RESOURCE_PRECISION, SliceRules};
-use crate::stamina::StaminaTrait;
+use crate::stamina::StaminaSourceTrait;
 use crate::troops::{TroopTier, TroopType, Troops};
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -109,9 +109,9 @@ pub fn refill(ref troops: Troops, rules: SliceRules, timestamp: u64) {
 pub fn merge_timers(ref source: Troops, ref target: Troops, rules: SliceRules, timestamp: u64) {
     refill(ref source, rules, timestamp);
     refill(ref target, rules, timestamp);
-    if source.stamina.amount < target.stamina.amount {
-        target.stamina.amount = source.stamina.amount;
-        target.stamina.updated_tick = timestamp / rules.tick_config.armies_tick_in_seconds;
+    if source.stamina.inline().amount < target.stamina.inline().amount {
+        target.stamina.set_amount(source.stamina.inline().amount);
+        target.stamina.set_updated_tick(timestamp / rules.tick_config.armies_tick_in_seconds);
     }
     target.battle_cooldown_end = core::cmp::max(source.battle_cooldown_end, target.battle_cooldown_end);
 }

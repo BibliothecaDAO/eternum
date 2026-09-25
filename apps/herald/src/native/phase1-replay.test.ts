@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { GameSyncFact } from "@bibliothecadao/eternum/game-sync";
-import { isClientGameSyncModel } from "@bibliothecadao/eternum/game-sync-models";
 import { WorldFold } from "../world-fold";
 import type { FoldChange, GameSnapshot, RpcReceipt, RpcTransaction } from "../types";
 import { NativeDecoder } from "./decoder";
@@ -47,12 +46,12 @@ function recordingDecoder(provenance: NativeSchema = recordedSchema) {
   });
 }
 
+// Only the contract-read assertions use current client types; WorldFold replays every row under recorded provenance.
 function applyClientFacts(store: NativeFactStore, changes: { change?: FoldChange }[]) {
   store.applyFacts(
     changes.flatMap<GameSyncFact>(({ change }) => {
       const row = change?.set ?? change?.del;
-      if (!row || !isClientGameSyncModel(row.model)) return [];
-      if (recordedSchema.events.some((event) => event.name === row.model)) return [];
+      if (!row || !["ActionNonce", "PlayerPoints", "PointsTotal"].includes(row.model)) return [];
       if (change?.set) return [change.set];
       return change?.del ? [{ ...change.del, value: null }] : [];
     }),

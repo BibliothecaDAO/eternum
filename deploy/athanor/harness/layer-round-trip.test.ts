@@ -48,7 +48,7 @@ function fixture(
             game_id: 7,
             explorer_id: 9,
             owner: 5,
-            troops: { stamina: { amount: stamina, updated_tick: 1 } },
+            troops: { stamina: { Inline: { amount: stamina, updated_tick: 1 } } },
           },
         ];
       case "TileOpt":

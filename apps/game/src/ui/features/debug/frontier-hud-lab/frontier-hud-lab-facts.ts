@@ -1,3 +1,4 @@
+import { absoluteEpoch } from "@bibliothecadao/eternum/expeditions";
 /**
  * A Frontier day in facts: the current Frontier launch's rules, projected from today's preset by `pnpm lab:frontier`
  * through Herald's own projection, plus a hand-built player in the same shapes — one realm with its castle producing
@@ -100,8 +101,10 @@ const playerRows = (clock: LabClock): WireRow[] => [
       last_updated_at: clock.nowSeconds,
     },
   },
-  { model: "ExplorerTroops", value: army(clock, 201, 1_498, 30, 0) },
-  { model: "ExplorerTroops", value: army(clock, 202, 1, 150, 0) },
+  { model: "ArmySlot", value: armySlot(clock, 201, 0, 30) },
+  { model: "ArmySlot", value: armySlot(clock, 202, 1, 150) },
+  { model: "ExplorerTroops", value: army(clock, 201, 1_498, 0) },
+  { model: "ExplorerTroops", value: army(clock, 202, 1, 1) },
   { model: "TileOccupancy", value: armyTile(clock, 201, 2, 1) },
   { model: "TileOccupancy", value: armyTile(clock, 202, -3, 2) },
 ];
@@ -152,7 +155,7 @@ const balance = (clock: LabClock, resourceType: number, whole: number) => ({
   balance: amount(whole),
 });
 
-const army = (clock: LabClock, explorerId: number, count: number, stamina: number, ticksAgo: number) => ({
+const army = (clock: LabClock, explorerId: number, count: number, slot: number) => ({
   game_id: clock.gameId,
   explorer_id: explorerId,
   owner: LAB_REALM_ID,
@@ -160,7 +163,7 @@ const army = (clock: LabClock, explorerId: number, count: number, stamina: numbe
     category: "Knight",
     tier: "T1",
     count: amount(count),
-    stamina: { amount: String(stamina), updated_tick: String(clock.currentTick - ticksAgo) },
+    stamina: { Slot: slot },
     boosts: {
       incr_damage_dealt_percent_num: 0,
       incr_damage_dealt_end_tick: 0,
@@ -173,6 +176,15 @@ const army = (clock: LabClock, explorerId: number, count: number, stamina: numbe
     },
     battle_cooldown_end: 0,
   },
+});
+
+const armySlot = (clock: LabClock, explorerId: number, slot: number, stamina: number) => ({
+  game_id: clock.gameId,
+  structure_id: LAB_REALM_ID,
+  epoch: String(absoluteEpoch(clock, clock.nowSeconds)),
+  slot,
+  explorer_id: explorerId,
+  stamina: { amount: String(stamina), updated_tick: String(clock.currentTick) },
 });
 
 // Category 15 is a T1 knight explorer's occupancy.

@@ -1,3 +1,4 @@
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
@@ -70,7 +71,7 @@ export const useAttackTargetData = (
   } = useGame();
 
   const targetTile = useTileAt(targetHex.x, targetHex.y, targetAlt);
-  const guardsRevision = useNativeRevision(["Guard", "Structure"]);
+  const guardsRevision = useNativeRevision(["ArmySlot", "Guard", "Structure"]);
 
   const { currentArmiesTick, currentBlockTimestamp } = useBlockTimestamp();
   const attackerStructure = useNativeRow(
@@ -123,7 +124,8 @@ export const useAttackTargetData = (
     }
 
     if (attackerExplorer) {
-      return getArmyRelicEffects(attackerExplorer.troops, currentArmiesTick);
+      const troops = resolveExplorerTroops(store, attackerExplorer);
+      return troops ? getArmyRelicEffects(troops, currentArmiesTick) : [];
     }
 
     return [];
@@ -154,11 +156,13 @@ export const useAttackTargetData = (
     }
 
     if (!targetExplorer) return null;
+    const troops = resolveExplorerTroops(store, targetExplorer);
+    if (!troops) return null;
     return {
       info: [
         {
           ...targetExplorer.troops,
-          stamina: StaminaManager.getStamina(targetExplorer.troops, currentArmiesTick),
+          stamina: StaminaManager.getStamina(troops, currentArmiesTick),
         },
       ],
       id: targetEntityId,
@@ -182,7 +186,8 @@ export const useAttackTargetData = (
       return [...structureRelicEffects, ...getStructureRelicEffects(targetProductionBoost, currentArmiesTick)];
     }
 
-    return targetExplorer ? getArmyRelicEffects(targetExplorer.troops, currentArmiesTick) : [];
+    const troops = targetExplorer ? resolveExplorerTroops(store, targetExplorer) : undefined;
+    return troops ? getArmyRelicEffects(troops, currentArmiesTick) : [];
   }, [
     store,
     guardsRevision,
@@ -210,6 +215,7 @@ export const useAttackTargetData = (
   );
   const isLoading =
     guardsUnknown ||
+    Boolean(targetExplorer && !target) ||
     Boolean(targetEntityId && (targetTile?.occupier_is_structure ? !targetStructure : !targetExplorer));
 
   return {

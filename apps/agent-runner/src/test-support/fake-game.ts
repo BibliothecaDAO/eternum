@@ -11,7 +11,7 @@ import { WorldSpatialProjection, type HeraldGameDirectoryEntry } from "@biblioth
 import { ContractAddress, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { hash, type AccountInterface } from "starknet";
 import { vi } from "vitest";
-import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import explorer from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import type { RecentStoryEvent, RunnerGame } from "../game";
 
@@ -207,7 +207,7 @@ export const seedExplorer = (
         category: "Knight",
         tier: "T1",
         count: input.count ?? 10000000000n,
-        stamina: { amount: input.stamina ?? 20n, updated_tick: 0n },
+        stamina: { Inline: { amount: input.stamina ?? 20n, updated_tick: 0n } },
       },
     },
     positionFacts(

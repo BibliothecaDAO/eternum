@@ -37,12 +37,12 @@ export class HomeRing {
   /** The cached ring rows of the scope's realms for its day; a ring not cached yet is fetched and published later. */
   public rows(gameId: string, scope: GameSyncScope, timestamp: number): FoldSet[] {
     const expedition = scope.expedition;
-    if (!expedition || expedition.epoch < 0) return [];
+    if (!expedition || expedition.absoluteEpoch < 0) return [];
     return [...expedition.realmTraits].flatMap((realm) => {
-      const ring = ringKey(gameId, realm, expedition.epoch);
+      const ring = ringKey(gameId, realm, expedition.absoluteEpoch);
       const cached = this.rings.get(ring);
       if (cached) return cached;
-      this.fetch(ring, { gameId, realmId: Number(realm), epoch: expedition.epoch }, timestamp);
+      this.fetch(ring, { gameId, realmId: Number(realm), absoluteEpoch: expedition.absoluteEpoch }, timestamp);
       return [];
     });
   }
@@ -82,8 +82,9 @@ export class HomeRing {
   /** A realm's rings from before yesterday serve nobody: its armies can only act in today's region. */
   private forgetEarlierDays(day: RingDay): void {
     for (const [ring, rows] of this.rings) {
-      const [gameId, realm, epoch] = ring.split(":");
-      if (gameId !== day.gameId || Number(realm) !== day.realmId || Number(epoch) >= day.epoch - 1) continue;
+      const [gameId, realm, absoluteEpoch] = ring.split(":");
+      if (gameId !== day.gameId || Number(realm) !== day.realmId || Number(absoluteEpoch) >= day.absoluteEpoch - 1)
+        continue;
       this.rings.delete(ring);
       for (const row of rows) this.byKey.delete(row.key);
     }
@@ -93,10 +94,10 @@ export class HomeRing {
 interface RingDay {
   gameId: string;
   realmId: number;
-  epoch: number;
+  absoluteEpoch: number;
 }
 
-const ringKey = (gameId: string, realm: string, epoch: number) => `${gameId}:${realm}:${epoch}`;
+const ringKey = (gameId: string, realm: string, absoluteEpoch: number) => `${gameId}:${realm}:${absoluteEpoch}`;
 
 // MapState::reveal writes only terrain; the row key carries coordinates and occupancy is independent.
 const BIOME_SCALE = BigInt(nativeTilePackingConstants.BIOME_SCALE);

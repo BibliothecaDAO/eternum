@@ -58,6 +58,7 @@ pub type Storage =
         crate::structures::StructureRecord,
         crate::trade::TradeOrder,
         crate::troops::ExplorerRecord,
+        crate::troops::ArmySlotRecord,
         crate::village::VillagePass,
     >;
 

@@ -121,10 +121,24 @@ fn troop_storage_preserves_counts_stamina_and_combat(
         category,
         tier,
         count,
-        stamina: Stamina { amount: stamina, updated_tick },
+        stamina: Stamina { amount: stamina, updated_tick }.into(),
         boosts,
         battle_cooldown_end: cooldown,
     };
     assert!(Store::<Troops>::size() == 4);
     assert!(TroopsPacking::unpack(TroopsPacking::pack(value)) == value);
+}
+
+#[test]
+fn slot_stamina_packing_preserves_every_slot_and_the_full_inline_bar() {
+    for slot in 0_u16..256 {
+        let value = Troops {
+            stamina: crate::troops::StaminaSource::Slot(slot.try_into().unwrap()), ..Default::default(),
+        };
+        assert_eq!(TroopsPacking::unpack(TroopsPacking::pack(value)), value);
+    }
+    let value = Troops {
+        stamina: Stamina { amount: 0xffffffffffffffff, updated_tick: 0xffffffffffffffff }.into(), ..Default::default(),
+    };
+    assert_eq!(TroopsPacking::unpack(TroopsPacking::pack(value)), value);
 }

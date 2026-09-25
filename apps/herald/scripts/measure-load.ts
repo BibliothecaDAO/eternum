@@ -1,5 +1,5 @@
 import { getNeighborHexes } from "@bibliothecadao/types";
-import { expeditionRealmSite } from "@bibliothecadao/eternum/expeditions";
+import { expeditionRealmSite, expeditionDayEndsAt, absoluteEpoch } from "@bibliothecadao/eternum/expeditions";
 // Herald's side of the scale campaign: does its memory level off under a steady game load, and does it keep up with
 // real time? Folds a synthetic world, attaches one actor-scoped subscriber per player, then drives it through the
 // production path for a simulated run: build-order-shaped actions arrive pre-confirmed, a block confirms each second,
@@ -55,8 +55,11 @@ const next = () => BigInt(counter++) * 2_654_435_761n;
  * A row's values in its schema's layout, with non-trivial magnitudes so serialized sizes resemble a live game.
  * Overrides name a member by its path, such as `base.category`.
  */
-function values(type: string, overrides: Record<string, string> = {}, path = ""): string[] {
-  if (path in overrides) return [overrides[path]!];
+function values(type: string, overrides: Record<string, string | string[]> = {}, path = ""): string[] {
+  if (path in overrides) {
+    const value = overrides[path]!;
+    return Array.isArray(value) ? value : [value];
+  }
   const definition = schema.types[type];
   if (definition?.type === "struct")
     return definition.members.flatMap((member) =>
@@ -71,7 +74,7 @@ function values(type: string, overrides: Record<string, string> = {}, path = "")
   return [`0x${next().toString(16)}`];
 }
 
-const row = (model: string, keys: (string | number)[], overrides: Record<string, string> = {}): RpcEvent => {
+const row = (model: string, keys: (string | number)[], overrides: Record<string, string | string[]> = {}): RpcEvent => {
   const definition = schema.models.find(({ name }) => name === model)!;
   return rowEvent(
     model,
@@ -153,7 +156,24 @@ const frontierArmy = (game: number, player: number, army: number, x: number) => 
     row("ExplorerTroops", [game, entity], {
       owner: String(realm(game, player)),
       "troops.count": "1000",
+      "troops.stamina": ["1", String(army)],
     }),
+    row(
+      "ArmySlot",
+      [
+        game,
+        realm(game, player),
+        absoluteEpoch({ epochSeconds: Number(preset.definition.rules.epoch_seconds) }, Math.floor(now / 1000)),
+        army,
+      ],
+      {
+        explorer_id: String(entity),
+        "stamina.amount": String(preset.definition.rules.troop_stamina_config.stamina_initial),
+        "stamina.updated_tick": String(
+          Math.floor(now / 1000 / Number(preset.definition.rules.tick_config.armies_tick_in_seconds)),
+        ),
+      },
+    ),
     ...place(game, entity, player * SPACING + x, 5, 15, false),
   ];
 };
@@ -398,7 +418,8 @@ for (let second = 1; second <= SIMULATED_MINUTES * 60; second++) {
 
 if (FRONTIER) {
   // The day rolls over at 00:00 UTC: every subscriber's scope moves to the new expedition at once.
-  now = (Math.floor(now / 86_400_000) + 1) * 86_400_000;
+  now =
+    expeditionDayEndsAt({ epochSeconds: Number(preset.definition.rules.epoch_seconds) }, Math.floor(now / 1000)) * 1000;
   const [started, sentBefore] = [performance.now(), bytesSent];
   await live.publishChainClock();
   console.log(

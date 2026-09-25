@@ -67,6 +67,7 @@
     "donkey_for_troops": 27
   },
   "battle": {
+    "cooldownSeconds": 60,
     "regularImmunityTicks": 24,
     "villageImmunityTicks": 0,
     "delaySeconds": 0,

@@ -28,12 +28,13 @@ use crate::settlement::{
     ISettlementCommandsSafeDispatcherTrait, ISettlementCreationDispatcher, ISettlementCreationDispatcherTrait,
     ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, RealmCreation, SettlementCreation, SettlementMode,
 };
+use crate::stamina::StaminaSourceTrait;
 use crate::structures::{IStructureOperationsDispatcher, IStructureOperationsDispatcherTrait};
 use crate::tests::StoryResultTestTrait;
 use crate::tests::state::{
     GameState, MapObservationTrait, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait,
 };
-use crate::troops::ExplorerKey;
+use crate::troops::{ExplorerKey, IBattleResolutionDispatcherTrait, IBattleResolutionLibraryDispatcher};
 use super::recorded_receipts::RecordedReceiptsTrait;
 use super::resource_commands::execute_in_game;
 
@@ -717,7 +718,7 @@ fn roster_settlement_displaces_an_army_without_a_stale_position_or_home_entry() 
                 category: crate::troops::TroopType::Knight,
                 tier: crate::troops::TroopTier::T1,
                 count: RESOURCE_PRECISION,
-                stamina: crate::troops::Stamina { amount: 120, updated_tick: 0 },
+                stamina: crate::troops::Stamina { amount: 120, updated_tick: 0 }.into(),
                 boosts: Default::default(),
                 battle_cooldown_end: 0,
             },
@@ -725,7 +726,7 @@ fn roster_settlement_displaces_an_army_without_a_stale_position_or_home_entry() 
     );
     crate::tests::state::assert_spatial_indexes(d.games, game_id, array![10000, 10001].span(), array![origin].span());
     super::season_lifecycle::execute_batch_in_game(d, game_id, Command::SettleBlitzRoster, 205, 0);
-    let moved = GameState { contract_address: d.games }.explorer(army).unwrap();
+    let moved = GameState { contract_address: d.games }.resolved_explorer(army).unwrap();
     assert!(moved.coord != origin);
     assert_eq!(moved.owner, home.entity_id);
     crate::tests::state::assert_spatial_indexes(
@@ -797,7 +798,7 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
     let explorer_id = *structures.home_armies(home).at(0);
     let troops = GameState { contract_address: d.games };
     let explorer = ExplorerKey { game_id, explorer_id };
-    let origin = troops.explorer(explorer).unwrap().coord;
+    let origin = troops.resolved_explorer(explorer).unwrap().coord;
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let home_slot = ResourceSlot { game_id, entity_id: home.entity_id, resource_type: 1 };
     let before = resources.resource_balance(home_slot);
@@ -809,7 +810,7 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
         .tile(crate::geometry::tile_key(game_id, target))
         .unwrap();
     assert_eq!((tile.data / 2) % 256, crate::camps::CAMP_OCCUPIER.into());
-    assert_eq!(troops.explorer(explorer).unwrap().coord, origin);
+    assert_eq!(troops.resolved_explorer(explorer).unwrap().coord, origin);
     assert_eq!(resources.resource_balance(home_slot), before + 10 * RESOURCE_PRECISION);
     assert_eq!(resources.resource_balance(ResourceSlot { entity_id: explorer_id, ..home_slot }), 0);
 }
@@ -904,20 +905,24 @@ fn expedition_armies_merge_into_the_lower_stamina_and_never_past_the_size_limit(
     let (game_id, _, category) = expedition_home(d);
     let (source, target) = expedition_armies(d, game_id, category);
     let troops = GameState { contract_address: d.games };
-    assert!(crate::geometry::adjacent(troops.explorer(source).unwrap().coord, troops.explorer(target).unwrap().coord));
+    assert!(
+        crate::geometry::adjacent(
+            troops.resolved_explorer(source).unwrap().coord, troops.resolved_explorer(target).unwrap().coord,
+        ),
+    );
 
     // A tired army merging into a rested one leaves the merged army tired: merging never refills.
-    let mut tired = troops.explorer(source).unwrap();
-    tired.troops.stamina.amount = 5;
+    let mut tired = troops.resolved_explorer(source).unwrap();
+    tired.troops.stamina.set_amount(5);
     crate::tests::resource_commands::set_explorer_fixture(
         d.games, crate::troops::ExplorerKey { game_id: game_id.into(), explorer_id: source.explorer_id }, tired,
     );
-    assert!(troops.explorer(target).unwrap().troops.stamina.amount > 5);
+    assert!(troops.resolved_explorer(target).unwrap().troops.stamina.inline().amount > 5);
     assert!(execute_in_game(d, game_id, transfer(source, target, 1), 352, 352));
-    let merged = troops.explorer(target).unwrap();
+    let merged = troops.resolved_explorer(target).unwrap();
     assert_eq!(merged.troops.count, 4 * RESOURCE_PRECISION);
-    assert_eq!(merged.troops.stamina.amount, 5);
-    assert_eq!(troops.explorer(source).unwrap().troops.count, 2 * RESOURCE_PRECISION);
+    assert_eq!(merged.troops.stamina.inline().amount, 5);
+    assert_eq!(troops.resolved_explorer(source).unwrap().troops.count, 2 * RESOURCE_PRECISION);
 
     // An army at its size limit takes no more troops.
     let rules = IGameDispatcher { contract_address: d.games }.rules(game_id);
@@ -934,8 +939,8 @@ fn expedition_armies_merge_into_the_lower_stamina_and_never_past_the_size_limit(
         d.games, crate::troops::ExplorerKey { game_id: game_id.into(), explorer_id: target.explorer_id }, full,
     );
     assert!(!execute_in_game(d, game_id, transfer(source, target, 1), 353, 353));
-    assert_eq!(troops.explorer(target).unwrap().troops.count, limit);
-    assert_eq!(troops.explorer(source).unwrap().troops.count, 2 * RESOURCE_PRECISION);
+    assert_eq!(troops.resolved_explorer(target).unwrap().troops.count, limit);
+    assert_eq!(troops.resolved_explorer(source).unwrap().troops.count, 2 * RESOURCE_PRECISION);
 }
 
 #[test]
@@ -949,7 +954,9 @@ fn an_expedition_army_cannot_recruit_because_its_home_stands_off_the_map() {
         ),
     );
     assert!(!execute_in_game(d, game_id, recruit, 352, 352));
-    assert_eq!(GameState { contract_address: d.games }.explorer(army).unwrap().troops.count, 3 * RESOURCE_PRECISION);
+    assert_eq!(
+        GameState { contract_address: d.games }.resolved_explorer(army).unwrap().troops.count, 3 * RESOURCE_PRECISION,
+    );
 }
 
 #[test]
@@ -1009,7 +1016,7 @@ fn yesterdays_armies_leave_todays_army_cap_free() {
     assert!(execute_in_game(d, game_id, muster_command(category, 0), 401, 401));
     assert!(execute_in_game(d, game_id, muster_command(category, 1), 402, 402));
     for id in yesterday {
-        assert!(troops.explorer(ExplorerKey { game_id, explorer_id: *id }).is_none());
+        assert!(troops.resolved_explorer(ExplorerKey { game_id, explorer_id: *id }).is_none());
     }
     assert_eq!(structures.home_armies(home).len(), 2);
 }
@@ -1027,7 +1034,7 @@ fn a_home_ring_tile_reads_as_explored_and_an_explore_onto_it_moves_without_a_rol
     let key = ExplorerKey {
         game_id, explorer_id: *structures.home_armies(ResourceKey { game_id, entity_id: 1 }).at(0),
     };
-    let spawn = troops.explorer(key).unwrap().coord;
+    let spawn = troops.resolved_explorer(key).unwrap().coord;
     let site = crate::geometry::neighbor(spawn, 3);
 
     // A move onto a ring tile no command has touched: it reads as explored, and storage catches up.
@@ -1035,7 +1042,7 @@ fn a_home_ring_tile_reads_as_explored_and_an_explore_onto_it_moves_without_a_rol
     let move = Command::Move(crate::commands::Move { explorer_id: key.explorer_id, directions: array![step].span() });
     assert!(execute_in_game(d, game_id, move, 352, 352));
     let tile_key = crate::geometry::tile_key(game_id, ring_tile);
-    assert_eq!(troops.explorer(key).unwrap().coord, ring_tile);
+    assert_eq!(troops.resolved_explorer(key).unwrap().coord, ring_tile);
     assert_eq!(
         map.tile(tile_key).unwrap().data / 0x20000000000 % 256,
         map
@@ -1055,12 +1062,18 @@ fn a_home_ring_tile_reads_as_explored_and_an_explore_onto_it_moves_without_a_rol
     // The fixture's armies start with one move of stamina and regain it per 60 s tick, and the move above spent it in
     // this tick; rest the army by one dearest move so the explore is judged on the ring rule, not on fatigue.
     let stamina = preset.rules.troop_stamina_config;
-    let mut rested = troops.explorer(key).unwrap();
-    rested.troops.stamina.amount += (stamina.stamina_travel_stamina_cost + stamina.stamina_bonus_value).into();
+    let mut rested = troops.resolved_explorer(key).unwrap();
+    rested
+        .troops
+        .stamina
+        .set_amount(
+            rested.troops.stamina.inline().amount
+                + (stamina.stamina_travel_stamina_cost + stamina.stamina_bonus_value).into(),
+        );
     crate::tests::resource_commands::set_explorer_fixture(
         d.games, crate::troops::ExplorerKey { game_id: game_id.into(), explorer_id: key.explorer_id }, rested,
     );
-    let before = troops.explorer(key).unwrap();
+    let before = troops.resolved_explorer(key).unwrap();
     let mut balances = array![];
     for resource in array![23_u8, 26, 38].span() {
         balances.append(resources.resource_balance(ResourceSlot { game_id, entity_id: 1, resource_type: *resource }));
@@ -1092,9 +1105,9 @@ fn a_home_ring_tile_reads_as_explored_and_an_explore_onto_it_moves_without_a_rol
             d, game_id, Command::Explore(Explore { explorer_id: key.explorer_id, direction: step }), 353, 353,
         ),
     );
-    let after = troops.explorer(key).unwrap();
+    let after = troops.resolved_explorer(key).unwrap();
     assert_eq!(after.coord, target);
-    assert_eq!(before.troops.stamina.amount - after.troops.stamina.amount, move_cost);
+    assert_eq!(before.troops.stamina.inline().amount - after.troops.stamina.inline().amount, move_cost);
     assert_eq!(map.tile(target_key).unwrap().data % 2, 0);
     let mut index = 0;
     for resource in array![23_u8, 26, 38].span() {
@@ -1144,15 +1157,15 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     let old_id = *structures.home_armies(home).at(0);
     let troops = GameState { contract_address: d.games };
     let old = ExplorerKey { game_id, explorer_id: old_id };
-    let yesterday = troops.explorer(old).unwrap().coord;
+    let yesterday = troops.resolved_explorer(old).unwrap().coord;
     assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: old_id, direction: 0 }), 360, 360));
     let old_tile = map.tile(crate::geometry::tile_key(game_id, crate::geometry::neighbor(yesterday, 0)));
     assert!(!execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: old_id, direction: 1 }), 400, 400));
-    assert_eq!(troops.explorer(old).unwrap().coord, crate::geometry::neighbor(yesterday, 0));
+    assert_eq!(troops.resolved_explorer(old).unwrap().coord, crate::geometry::neighbor(yesterday, 0));
     assert!(execute_in_game(d, game_id, muster, 401, 401));
-    assert!(troops.explorer(old).is_none());
+    assert!(troops.resolved_explorer(old).is_none());
     let new_id = *structures.home_armies(home).at(0);
-    let today = troops.explorer(ExplorerKey { game_id, explorer_id: new_id }).unwrap().coord;
+    let today = troops.resolved_explorer(ExplorerKey { game_id, explorer_id: new_id }).unwrap().coord;
     super::state::assert_spatial_indexes(
         d.games,
         game_id,
@@ -1376,9 +1389,13 @@ fn deep_sites_scale_rewards_and_guards_and_trove_income_stops_at_rollover() {
 }
 
 #[test]
-fn frontier_reveal_pays_equal_strength_on_surface_and_ethereal_one() {
+fn frontier_reveal_pays_equal_strength_on_surface() {
     assert_capture_with_reveal(0, 1500 * RESOURCE_PRECISION, crate::troops::TroopTier::T1, 150 * RESOURCE_PRECISION);
     assert_capture_with_reveal(0, 500 * RESOURCE_PRECISION, crate::troops::TroopTier::T2, 150 * RESOURCE_PRECISION);
+}
+
+#[test]
+fn frontier_reveal_pays_equal_strength_on_ethereal_one() {
     assert_capture_with_reveal(1, 1500 * RESOURCE_PRECISION, crate::troops::TroopTier::T1, 225 * RESOURCE_PRECISION);
     assert_capture_with_reveal(1, 500 * RESOURCE_PRECISION, crate::troops::TroopTier::T2, 225 * RESOURCE_PRECISION);
 }
@@ -1511,7 +1528,7 @@ fn assert_capture_with_reveal(depth: u8, count: u128, tier: crate::troops::Troop
     let explorer_id = *structures.home_armies(home).at(0);
     let troops = GameState { contract_address: d.games };
     let army_key = ExplorerKey { game_id, explorer_id };
-    let mut army = troops.explorer(army_key).unwrap();
+    let mut army = troops.resolved_explorer(army_key).unwrap();
     let map = IMapLogicDispatcher { contract_address: d.games };
     army.troops.count = count;
     army.troops.tier = tier;
@@ -1554,7 +1571,7 @@ fn assert_capture_with_reveal(depth: u8, count: u128, tier: crate::troops::Troop
     let camp = ResourceKey { game_id, entity_id: camp_id };
     assert_eq!(structures.structure(camp).unwrap().base.category, crate::camps::CAMP_CATEGORY);
     assert_eq!(structures.structure(camp).unwrap().base.troop_max_explorer_count, 0);
-    assert_eq!(troops.explorer(army_key).unwrap().coord, army.coord);
+    assert_eq!(troops.resolved_explorer(army_key).unwrap().coord, army.coord);
     assert_eq!(
         resources.resource_balance(labor_supply) + resources.resource_balance(essence_supply) - before_supplies,
         reveal_amount,
@@ -1572,7 +1589,7 @@ fn assert_capture_with_reveal(depth: u8, count: u128, tier: crate::troops::Troop
     let attack = Command::BattleGuard(crate::commands::Battle { attacker_id: explorer_id, defender_id: camp_id });
     assert!(execute_in_game(d, game_id, attack, 361, 361));
     assert_eq!(structures.structure(camp).unwrap().owner, d.actor);
-    assert_eq!(troops.explorer(army_key).unwrap().troops.stamina.amount, 95);
+    assert_eq!(troops.resolved_explorer(army_key).unwrap().troops.stamina.inline().amount, 95);
     // A camp pays its chest to the army and nothing to the home.
     for resource_type in 1_u8..39 {
         assert_eq!(
@@ -1589,7 +1606,7 @@ fn assert_capture_with_reveal(depth: u8, count: u128, tier: crate::troops::Troop
         0,
     );
     assert!(!execute_in_game(d, game_id, attack, 361, 361));
-    assert_eq!(troops.explorer(army_key).unwrap().troops.stamina.amount, 95);
+    assert_eq!(troops.resolved_explorer(army_key).unwrap().troops.stamina.inline().amount, 95);
     let mut relics = 0;
     for id in 39_u8..57 {
         relics += resources.resource_balance(ResourceSlot { game_id, entity_id: explorer_id, resource_type: id });
@@ -1621,7 +1638,7 @@ fn assert_capture_with_reveal(depth: u8, count: u128, tier: crate::troops::Troop
             362,
         ),
     );
-    assert_eq!(troops.explorer(army_key).unwrap().troops.stamina.amount, 70);
+    assert_eq!(troops.resolved_explorer(army_key).unwrap().troops.stamina.inline().amount, 70);
     let mut total_relics = 0;
     for id in 39_u8..57 {
         total_relics += resources.resource_balance(ResourceSlot { game_id, entity_id: explorer_id, resource_type: id });
@@ -1785,27 +1802,27 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
         );
         let explorer_id = *structures.home_armies(home).at((depth - 1).into());
         let key = ExplorerKey { game_id, explorer_id };
-        let before = troops.explorer(key).unwrap();
+        let before = troops.resolved_explorer(key).unwrap();
         let enter = Command::EnterDepth(crate::commands::EnterDepth { explorer_id, depth });
         assert!(!execute_in_game(d, game_id, enter, 351, 351));
-        assert_eq!(troops.explorer(key).unwrap(), before);
+        assert_eq!(troops.resolved_explorer(key).unwrap(), before);
         let balance = resources.resource_balance(essence);
         assert!(execute_in_game(d, game_id, buy, 351, 351));
         assert_eq!(structures.structure(home).unwrap().metadata.attunement, depth);
         let after_purchase = resources.resource_balance(essence);
         assert_eq!(balance - after_purchase, Into::<u8, u128>::into(depth) * 100 * RESOURCE_PRECISION);
         assert!(execute_in_game(d, game_id, enter, 351, 351));
-        let inside = troops.explorer(key).unwrap();
+        let inside = troops.resolved_explorer(key).unwrap();
         // The army lands on revealed ground in the depth below, with no discovery on its landing tile.
         let landing = map.tile(crate::geometry::tile_key(game_id, inside.coord)).unwrap().data;
         assert_ne!(landing / 0x20000000000 % 256, 0);
         assert_eq!(landing % 2, 0);
         assert_eq!(inside.coord.x, before.coord.x);
         assert_eq!(inside.coord.y, before.coord.y + Into::<u8, u32>::into(depth) * preset.settlement.spacing);
-        assert_eq!(inside.troops.stamina.amount, 150 - (20 + Into::<u8, u64>::into(depth) * 10));
+        assert_eq!(inside.troops.stamina.inline().amount, 150 - (20 + Into::<u8, u64>::into(depth) * 10));
         assert_eq!(resources.resource_balance(essence), after_purchase);
         assert!(!execute_in_game(d, game_id, enter, 351, 351));
-        assert_eq!(troops.explorer(key).unwrap(), inside);
+        assert_eq!(troops.resolved_explorer(key).unwrap(), inside);
     }
     let balance = resources.resource_balance(essence);
     assert!(!execute_in_game(d, game_id, buy, 351, 351));
@@ -1847,13 +1864,13 @@ fn an_army_enters_a_depth_only_from_its_realms_spire_which_turns_each_day() {
     assert!(execute_in_game(d, game_id, muster_command(category, (day + 3) % 6), 351, 351));
     let away = *structures.home_armies(home).at(0);
     let troops = GameState { contract_address: d.games };
-    let before = troops.explorer(ExplorerKey { game_id, explorer_id: away }).unwrap();
+    let before = troops.resolved_explorer(ExplorerKey { game_id, explorer_id: away }).unwrap();
     assert!(
         !execute_in_game(
             d, game_id, Command::EnterDepth(crate::commands::EnterDepth { explorer_id: away, depth: 1 }), 352, 352,
         ),
     );
-    assert_eq!(troops.explorer(ExplorerKey { game_id, explorer_id: away }).unwrap(), before);
+    assert_eq!(troops.resolved_explorer(ExplorerKey { game_id, explorer_id: away }).unwrap(), before);
 }
 
 #[test]
@@ -2185,4 +2202,74 @@ fn frontier_refuses_off_map_economy_commands_before_reading_positions() {
             .unwrap();
         assert_eq!(result.status_class, 'COMMAND_DISABLED');
     }
+}
+
+#[test]
+fn expedition_slot_reuse_preserves_its_bar_and_midnight_allocates_a_fresh_bar() {
+    let d = setup();
+    let (game_id, preset, category) = expedition_home(d);
+    let (first, second) = expedition_armies(d, game_id, category);
+    let slot_key = crate::troops::ArmySlotKey { game_id, structure_id: 1, epoch: 3, slot: 0 };
+    let read_slot = |key| snforge_std::interact_with_state(d.games, || crate::logic::army_slot_storage::read(key));
+    let troops = GameState { contract_address: d.games };
+    assert_eq!(troops.explorer(first).unwrap().troops.stamina, crate::troops::StaminaSource::Slot(0));
+    assert_eq!(troops.explorer(second).unwrap().troops.stamina, crate::troops::StaminaSource::Slot(1));
+    assert_eq!(read_slot(slot_key).unwrap().explorer_id, first.explorer_id);
+    assert!(read_slot(crate::troops::ArmySlotKey { slot: 2, ..slot_key }).is_none());
+    let mut tired = troops.resolved_explorer(first).unwrap();
+    tired.troops.stamina.set_amount(7);
+    super::resource_commands::set_explorer_fixture(d.games, first, tired);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(first.explorer_id)),
+            351,
+            351,
+        ),
+    );
+    assert_eq!(read_slot(slot_key).unwrap().explorer_id, 0);
+    assert_eq!(read_slot(slot_key).unwrap().stamina.amount, 7);
+    assert!(execute_in_game(d, game_id, muster_command(category, 0), 351, 351));
+    let replacement = read_slot(slot_key).unwrap().explorer_id;
+    assert!(replacement != first.explorer_id && replacement != 0);
+    assert_eq!(read_slot(slot_key).unwrap().stamina.amount, 7);
+    assert_eq!(read_slot(crate::troops::ArmySlotKey { slot: 1, ..slot_key }).unwrap().explorer_id, second.explorer_id);
+    assert!(execute_in_game(d, game_id, muster_command(category, 0), 400, 400));
+    let next = read_slot(crate::troops::ArmySlotKey { epoch: 4, ..slot_key }).unwrap();
+    assert!(next.explorer_id != replacement && next.explorer_id != 0);
+    assert_eq!(next.stamina.amount, preset.rules.troop_stamina_config.stamina_initial.into());
+    assert_eq!(read_slot(slot_key).unwrap().stamina.amount, 7);
+    assert_eq!(read_slot(slot_key).unwrap().explorer_id, 0);
+    assert!(troops.explorer(ExplorerKey { game_id, explorer_id: replacement }).is_none());
+}
+
+#[test]
+fn expedition_death_releases_the_slot_with_the_final_battle_bar() {
+    let d = setup();
+    let (game_id, _, category) = expedition_home(d);
+    let (first, _) = expedition_armies(d, game_id, category);
+    let key = crate::troops::ArmySlotKey { game_id, structure_id: 1, epoch: 3, slot: 0 };
+    let troops = GameState { contract_address: d.games };
+    let mut defeated = troops.resolved_explorer(first).unwrap();
+    let before = defeated.troops.count;
+    defeated.troops.count = 0;
+    defeated.troops.stamina.set_amount(2);
+    let defeated = defeated;
+    let context = crate::commands::ActionContext { raw_root: 1, timestamp: 351 };
+    let class_hash = super::declare_logic("TroopsLogic");
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            IBattleResolutionLibraryDispatcher { class_hash }.finish_battle(first, defeated, before, context);
+        },
+    );
+    let vacant = snforge_std::interact_with_state(d.games, || crate::logic::army_slot_storage::read(key)).unwrap();
+    assert_eq!(vacant.explorer_id, 0);
+    assert_eq!(vacant.stamina.amount, 2);
+    assert!(troops.explorer(first).is_none());
+    assert!(execute_in_game(d, game_id, muster_command(category, 0), 352, 352));
+    let reused = snforge_std::interact_with_state(d.games, || crate::logic::army_slot_storage::read(key)).unwrap();
+    assert!(reused.explorer_id != first.explorer_id && reused.explorer_id != 0);
+    assert_eq!(reused.stamina, vacant.stamina);
 }

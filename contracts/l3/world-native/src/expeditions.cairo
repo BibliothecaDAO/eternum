@@ -1,27 +1,37 @@
 use crate::rules::BiomeClimateConfig;
 use crate::troops::Coord;
 
+pub fn absolute_epoch(seconds: u32, timestamp: u64) -> u64 {
+    assert!(seconds != 0, "game has no expeditions");
+    timestamp / seconds.into()
+}
+
+pub fn season_day(start: u64, seconds: u32, timestamp: u64) -> u64 {
+    assert!(timestamp >= start, "expedition has not started");
+    absolute_epoch(seconds, timestamp) - absolute_epoch(seconds, start)
+}
+
 pub fn validate_game(seconds: u32, spacing: u32, duration: u64) {
     if seconds == 0 {
         return;
     }
     assert!(spacing >= 16, "expedition regions are too small");
     let spacing: u128 = spacing.into();
-    let epochs: u128 = Into::<u64, u128>::into(duration) / Into::<u32, u128>::into(seconds) + 2;
+    let season_days: u128 = Into::<u64, u128>::into(duration) / Into::<u32, u128>::into(seconds) + 2;
     assert!(spacing * crate::realms::CANONICAL_REALM_COUNT.into() < 0x7fffffff, "expedition map exhausted");
-    assert!(epochs * 4 * spacing < 0x7fffffff, "expedition season exceeds map");
+    assert!(season_days * 4 * spacing < 0x7fffffff, "expedition season exceeds map");
 }
 
 pub fn site(start: u64, seconds: u32, spacing: u32, realm_id: u16, timestamp: u64, depth: u8) -> Coord {
     assert!(timestamp >= start, "expedition has not started");
     assert!(realm_id > 0 && realm_id.into() <= crate::realms::CANONICAL_REALM_COUNT, "invalid expedition realm");
     assert!(depth < 4, "invalid expedition depth");
-    let epoch = timestamp / seconds.into() - start / seconds.into();
+    let season_day = season_day(start, seconds, timestamp);
     let width: u64 = spacing.into();
     Coord {
         alt: false,
         x: ((Into::<u16, u64>::into(realm_id) - 1) * width + width / 2).try_into().expect('expedition map exhausted'),
-        y: ((epoch * 4 + Into::<u8, u64>::into(depth)) * width + width / 2)
+        y: ((season_day * 4 + Into::<u8, u64>::into(depth)) * width + width / 2)
             .try_into()
             .expect('expedition map exhausted'),
     }
@@ -48,16 +58,16 @@ pub fn is_home_ring(coord: Coord, spacing: u32) -> bool {
 // march from home differs daily. It is a rule, not a stored structure.
 pub fn spire(start: u64, seconds: u32, spacing: u32, realm_id: u16, timestamp: u64) -> Coord {
     let site = site(start, seconds, spacing, realm_id, timestamp, 0);
-    let epoch = timestamp / seconds.into() - start / seconds.into();
-    crate::geometry::neighbor(site, (epoch % 6).try_into().unwrap())
+    let season_day = season_day(start, seconds, timestamp);
+    crate::geometry::neighbor(site, (season_day % 6).try_into().unwrap())
 }
 
 pub fn is_current(coord: Coord, start: u64, seconds: u32, spacing: u32, timestamp: u64) -> bool {
     if coord.alt || timestamp < start {
         return false;
     }
-    let epoch = timestamp / seconds.into() - start / seconds.into();
-    Into::<u32, u64>::into(coord.y / spacing / 4) == epoch
+    let season_day = season_day(start, seconds, timestamp);
+    Into::<u32, u64>::into(coord.y / spacing / 4) == season_day
 }
 
 pub fn assert_same_region(origin: Coord, destination: Coord, spacing: u32) {
@@ -72,7 +82,7 @@ pub fn assert_same_region(origin: Coord, destination: Coord, spacing: u32) {
 }
 
 pub fn climate(config: BiomeClimateConfig, coord: Coord, start: u64, seconds: u32, spacing: u32) -> BiomeClimateConfig {
-    let epoch = (start / seconds.into() + Into::<u32, u64>::into(coord.y / spacing / 4)) % 0x100000000;
+    let epoch = (absolute_epoch(seconds, start) + Into::<u32, u64>::into(coord.y / spacing / 4)) % 0x100000000;
     BiomeClimateConfig {
         elevation_seed: ((Into::<u32, u64>::into(config.elevation_seed) + epoch) % 0x100000000).try_into().unwrap(),
         moisture_seed: ((Into::<u32, u64>::into(config.moisture_seed) + epoch) % 0x100000000).try_into().unwrap(),

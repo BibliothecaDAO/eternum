@@ -10,7 +10,7 @@ export interface GameSyncModelDefinition {
 export interface GameSyncScope {
   actor?: string;
   expedition?: {
-    epoch: number;
+    absoluteEpoch: number;
     spacing: number;
     owners: ReadonlySet<string>;
     realms: ReadonlySet<string>;
@@ -109,7 +109,8 @@ export function gameSyncScopeKeys(scope: GameSyncScope): ReadonlySet<string> {
   if (holdsEveryScopedRow(scope)) keys.add("*");
   else if (expedition)
     for (const set of [...SYNC_SETS, "regions"] as const)
-      for (const value of expedition[set]) keys.add(`${set}:${value}`).add(`${set}:${value}@${expedition.epoch}`);
+      for (const value of expedition[set])
+        keys.add(`${set}:${value}`).add(`${set}:${value}@${expedition.absoluteEpoch}`);
   scopeKeysByScope.set(scope, keys);
   return keys;
 }

@@ -2,7 +2,16 @@ import { describe, expect, it, vi } from "vitest";
 import { LiveWorld } from "./live-world";
 import type { HistoryStore } from "./history-store";
 import type { MadaraRpc } from "./madara-rpc";
-import { seedDerivedRows, receipt, rowEvent, rulesEvent, schema, setup } from "./native/fixtures";
+import {
+  structureValue,
+  explorerValue,
+  seedDerivedRows,
+  receipt,
+  rowEvent,
+  rulesEvent,
+  schema,
+  setup,
+} from "./native/fixtures";
 import type { HeraldStreamMessage } from "./stream-protocol";
 import type { RpcBlockWithReceipts } from "./types";
 
@@ -142,18 +151,21 @@ describe("native live publication", () => {
     const beforeMidnight = dayStart + 86_399;
     fold.apply(rules);
     const homes = [1, 2].map((id) =>
-      rowEvent(
-        "Structure",
-        ["1", String(id)],
-        [String(id + 9), "0", "2", "120", "1", "0", "1", "0", String(id), "0", "0", "0", "0", "1", "0"],
-      ),
+      rowEvent("Structure", ["1", String(id)], {
+        ...structureValue,
+        owner: id + 9,
+        base: {
+          ...structureValue.base,
+          troop_max_explorer_count: 2,
+          created_at: 120,
+          category: 1,
+          starting_troops_granted: true,
+        },
+        metadata: { ...structureValue.metadata, realm_id: id, attunement: 1 },
+      }),
     );
     const armies = [1, 2].map((id) =>
-      rowEvent(
-        "ExplorerTroops",
-        ["1", String(id * 10)],
-        [String(id), "0", "0", "1000", "120", "1", "0", "0", "0", "0", "0", "0", "0", "0", "0"],
-      ),
+      rowEvent("ExplorerTroops", ["1", String(id * 10)], explorerValue(String(id), 1000n, 120n, 1n)),
     );
     const positions = [1, 2].map((id) =>
       rowEvent("TileOccupancy", ["1", "0", String(id * 100 - 50), "50"], [String(id * 10), "15", "0"]),

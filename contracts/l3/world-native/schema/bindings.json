@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "40bdb71c3580090632be9b14ab319640d44bf282b04c643496da9eedcd585ac0",
+  "schemaIdentity": "a0b6e1dcb1cf1d8a633fa6ed996663d6df83dfdaba2430923c9b4b1de0423c04",
   "commandAbi": [
     {
       "type": "interface",
@@ -1599,6 +1599,10 @@
     },
     {
       "name": "TileOccupancy",
+      "scope": "game"
+    },
+    {
+      "name": "ArmySlot",
       "scope": "game"
     },
     {

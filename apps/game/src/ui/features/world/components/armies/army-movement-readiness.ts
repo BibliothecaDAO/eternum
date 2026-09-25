@@ -1,3 +1,5 @@
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useMemo } from "react";
 
 import { useGame } from "@/hooks/context/game-context";
@@ -101,7 +103,9 @@ export const readArmyMovementReadiness = ({
   store: NativeFactStore;
   currentArmiesTick: number;
   currentDefaultTick: number;
-}): ArmyMovementReadiness => {
+}): ArmyMovementReadiness | null => {
+  const troops = resolveExplorerTroops(store, army);
+  if (!troops) return null;
   const movementFoodCosts = army.owner
     ? { travel: computeTravelFoodCosts(army.troops), explore: computeExploreFoodCosts(army.troops) }
     : {
@@ -110,7 +114,7 @@ export const readArmyMovementReadiness = ({
       };
 
   return deriveArmyMovementReadiness({
-    currentStamina: Number(StaminaManager.getStamina(army.troops, currentArmiesTick).amount),
+    currentStamina: Number(StaminaManager.getStamina(troops, currentArmiesTick).amount),
     minTravelStamina: resolveCheapestNeighborTravelStamina(army, store),
     minExploreStamina: configManager.getExploreStaminaCost(),
     travelFoodCosts: movementFoodCosts.travel,
@@ -127,6 +131,7 @@ export const useArmyMovementReadiness = (
   const {
     setup: { store },
   } = useGame();
+  const slotRevision = useNativeRevision(["ArmySlot"]);
   const currentArmiesTick = useCurrentArmiesTick();
   const currentDefaultTick = useCurrentDefaultTick();
 
@@ -135,7 +140,7 @@ export const useArmyMovementReadiness = (
       army
         ? readArmyMovementReadiness({ army, structureResources, store, currentArmiesTick, currentDefaultTick })
         : null,
-    [army, structureResources, currentArmiesTick, currentDefaultTick, store],
+    [army, structureResources, currentArmiesTick, currentDefaultTick, store, slotRevision],
   );
 };
 

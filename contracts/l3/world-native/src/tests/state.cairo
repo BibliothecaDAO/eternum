@@ -152,6 +152,15 @@ pub impl StructureObservation of StructureObservationTrait {
 
 #[generate_trait]
 pub impl TroopObservation of TroopObservationTrait {
+    fn resolved_explorer(self: GameState, key: crate::troops::ExplorerKey) -> Option<crate::troops::ExplorerTroops> {
+        interact_with_state(
+            self.contract_address,
+            || {
+                crate::logic::troops::explorer(key).map(|explorer| crate::logic::army_slots::resolve(key, explorer))
+            },
+        )
+    }
+
     fn explorer(self: GameState, key: crate::troops::ExplorerKey) -> Option<crate::troops::ExplorerTroops> {
         interact_with_state(self.contract_address, || {
             crate::logic::troops::explorer(key)

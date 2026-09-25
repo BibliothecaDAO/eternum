@@ -1,3 +1,4 @@
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
 import { followArmyLayerChange } from "./worldmap-layer-follow";
 import { TileOccupier } from "@bibliothecadao/types";
@@ -3297,10 +3298,11 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private resolveLiveExplorerTroopsForMovementStamina(entityId: ID) {
-    return (
-      this.game.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId })
-        ?.troops ?? null
-    );
+    const explorer = this.game.store.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: entityId,
+    });
+    return explorer ? resolveExplorerTroops(this.game.store, explorer) : null;
   }
 
   private logBlockedMovementStamina(input: {

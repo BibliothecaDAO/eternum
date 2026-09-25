@@ -23,6 +23,11 @@ import {
 
 export type NativeFactResult<Row> = { known: Row; unknown?: never } | { known?: never; unknown: string };
 
+type UnusedArmySlot = { unused: true; known?: never; unknown?: never };
+type AbsenceResult<M extends NativeModelName> =
+  | NativeFactResult<NativeRows[M]>
+  | (M extends "ArmySlot" ? UnusedArmySlot : never);
+
 interface DeclaredAbsence {
   value: string;
   parent?: NativeModelName;
@@ -102,14 +107,19 @@ export class NativeFactStore implements GameSyncStore {
     return row;
   }
 
-  requireOrAbsent<M extends NativeModelName>(model: M, keys: NativeKeys[M]): NativeFactResult<NativeRows[M]> {
+  requireOrAbsent<M extends NativeModelName>(model: M, keys: NativeKeys[M]): AbsenceResult<M>;
+  requireOrAbsent<M extends NativeModelName>(
+    model: M,
+    keys: NativeKeys[M],
+  ): NativeFactResult<NativeRows[M]> | UnusedArmySlot {
     const present = this.get(model, keys);
     if (present) return { known: present };
     const definition = definitions[model];
     const absence = definition.absence;
-    if (absence?.value !== "zero") return { unknown: `UNDECLARED_ABSENCE: ${model}` };
+    if (absence?.value !== "zero" && absence?.value !== "unused") return { unknown: `UNDECLARED_ABSENCE: ${model}` };
     const unknown = this.absenceUnknown(model, keys, absence);
     if (unknown) return { unknown };
+    if (absence.value === "unused") return { unused: true };
     return {
       known: decoders.get(model)!({
         ...Object.fromEntries(Object.entries(definition.fields).map(([field, type]) => [field, zeroValue(type)])),
@@ -399,6 +409,10 @@ function zeroValue(type: WireType): unknown {
   if (Array.isArray(type)) return [];
   if ("option" in type) return null;
   if ("enum" in type) return (type.enum as readonly string[])[0];
+  if ("variants" in type) {
+    const [name, payload] = Object.entries(type.variants)[0];
+    return { [name]: zeroValue(payload as WireType) };
+  }
   return Object.fromEntries(Object.entries(type).map(([field, member]) => [field, zeroValue(member as WireType)]));
 }
 
@@ -461,6 +475,22 @@ function compileDecoder(type: WireType, path: string): Decoder {
         throw new Error(`Invalid enum in ${path}`);
       return value;
     };
+  if ("variants" in type) {
+    const variants = new Map(
+      Object.entries(type.variants).map(([name, payload]) => [
+        name,
+        compileDecoder(payload as WireType, `${path}.${name}`),
+      ]),
+    );
+    return (value) => {
+      if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length !== 1)
+        throw new Error(`Invalid enum in ${path}`);
+      const [name, payload] = Object.entries(value)[0];
+      const decode = variants.get(name);
+      if (!decode) throw new Error(`Invalid enum in ${path}`);
+      return Object.freeze({ [name]: decode(payload) });
+    };
+  }
   const fields = Object.entries(type).map(
     ([field, definition]) => [field, compileDecoder(definition as WireType, `${path}.${field}`)] as const,
   );

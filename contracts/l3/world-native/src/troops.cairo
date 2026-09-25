@@ -1,5 +1,5 @@
 use crate::combat::TroopsTrait;
-use crate::stamina::StaminaTrait;
+use crate::stamina::StaminaSourceTrait;
 
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
 pub struct Coord {
@@ -35,6 +35,35 @@ pub struct Stamina {
     pub amount: u64,
     pub updated_tick: u64,
 }
+#[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
+pub enum StaminaSource {
+    #[default]
+    Inline: Stamina,
+    Slot: u8,
+}
+impl StaminaIntoSource of Into<Stamina, StaminaSource> {
+    fn into(self: Stamina) -> StaminaSource {
+        StaminaSource::Inline(self)
+    }
+}
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ArmySlotKey {
+    pub game_id: u32,
+    pub structure_id: u32,
+    pub epoch: u64,
+    pub slot: u8,
+}
+#[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
+pub struct ArmySlot {
+    pub explorer_id: u32,
+    pub stamina: Stamina,
+}
+#[derive(Copy, Drop, Default, starknet::Store)]
+pub struct ArmySlotRecord {
+    pub initialized: bool,
+    pub value: ArmySlot,
+}
+
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
 pub struct TroopBoosts {
     pub incr_damage_dealt_percent_num: u16,
@@ -85,7 +114,7 @@ pub struct Troops {
     pub category: TroopType,
     pub tier: TroopTier,
     pub count: u128,
-    pub stamina: Stamina,
+    pub stamina: StaminaSource,
     pub boosts: TroopBoosts,
     pub battle_cooldown_end: u32,
 }
@@ -93,7 +122,7 @@ pub struct Troops {
 #[derive(Copy, Drop, starknet::Store)]
 pub struct PackedTroops {
     pub count: u128,
-    pub stamina: u128,
+    pub stamina: felt252,
     pub boosts: felt252,
     pub combat: u64,
 }
@@ -110,7 +139,12 @@ pub impl TroopsPacking of starknet::storage_access::StorePacking<Troops, PackedT
         };
         PackedTroops {
             count: value.count,
-            stamina: value.stamina.amount.into() + value.stamina.updated_tick.into() * STAMINA_TICK_SCALE,
+            stamina: match value.stamina {
+                StaminaSource::Inline(bar) => (Into::<u64, u128>::into(bar.amount)
+                    + Into::<u64, u128>::into(bar.updated_tick) * STAMINA_TICK_SCALE)
+                    .into(),
+                StaminaSource::Slot(slot) => u256 { low: slot.into(), high: 1 }.try_into().unwrap(),
+            },
             boosts: TroopBoostsPacking::pack(value.boosts),
             combat: category.into() + tier * TIER_SCALE + value.battle_cooldown_end.into() * COOLDOWN_SCALE,
         }
@@ -132,9 +166,18 @@ pub impl TroopsPacking of starknet::storage_access::StorePacking<Troops, PackedT
             category,
             tier,
             count: value.count,
-            stamina: Stamina {
-                amount: (value.stamina % STAMINA_TICK_SCALE).try_into().unwrap(),
-                updated_tick: (value.stamina / STAMINA_TICK_SCALE).try_into().unwrap(),
+            stamina: {
+                let packed: u256 = value.stamina.into();
+                match packed.high {
+                    0 => StaminaSource::Inline(
+                        Stamina {
+                            amount: (packed.low % STAMINA_TICK_SCALE).try_into().unwrap(),
+                            updated_tick: (packed.low / STAMINA_TICK_SCALE).try_into().unwrap(),
+                        },
+                    ),
+                    1 => StaminaSource::Slot(packed.low.try_into().expect('invalid stamina slot')),
+                    _ => panic!("invalid stamina source"),
+                }
             },
             boosts: TroopBoostsPacking::unpack(value.boosts),
             battle_cooldown_end: (value.combat / COOLDOWN_SCALE).try_into().unwrap(),
@@ -322,7 +365,8 @@ pub(crate) fn discovery_guard(
         count: (lower + crate::random::range(seed, 1, upper - lower)) * crate::rules::RESOURCE_PRECISION,
         stamina: crate::troops::Stamina {
             amount: 0, updated_tick: timestamp / rules.tick_config.armies_tick_in_seconds,
-        },
+        }
+            .into(),
         boosts: Default::default(),
         battle_cooldown_end: 0,
     }
@@ -337,4 +381,23 @@ pub trait IBattleResolution<T> {
         before: u128,
         game_context: crate::commands::ActionContext,
     );
+}
+
+#[derive(Copy, Drop, Serde)]
+pub struct ArmySlotAllocation {
+    pub home: u32,
+    pub epoch: u64,
+    pub allowance: u8,
+    pub initial: Stamina,
+}
+#[derive(Copy, Drop, Serde)]
+pub enum ArmySlotAction {
+    Resolve,
+    Allocate: ArmySlotAllocation,
+    Persist: StaminaSource,
+    Release: StaminaSource,
+}
+#[starknet::interface]
+pub trait IArmySlotStamina<T> {
+    fn army_slot_stamina(ref self: T, key: ExplorerKey, action: ArmySlotAction) -> StaminaSource;
 }

@@ -2,7 +2,7 @@
 
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
-import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { hash, type AccountInterface } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 

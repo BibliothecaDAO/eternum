@@ -146,7 +146,7 @@ const seedExplorer = (
         troops: {
           ...explorerFixture.expected.value.troops,
           count: 100n,
-          stamina: { amount: input.stamina, updated_tick: 1n },
+          stamina: { Inline: { amount: input.stamina, updated_tick: 1n } },
         },
       },
     },

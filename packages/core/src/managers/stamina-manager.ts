@@ -1,7 +1,7 @@
 import { ID, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "./config-manager";
-import { fullAtTick, staminaAt, troopStaminaLimits } from "./troop-stamina";
+import { fullAtTick, staminaAt, troopStaminaLimits, resolveExplorerTroops } from "./troop-stamina";
 
 export class StaminaManager {
   constructor(
@@ -10,13 +10,14 @@ export class StaminaManager {
   ) {}
 
   public getStamina(currentArmiesTick: number) {
-    const troops = this.store.get("ExplorerTroops", {
+    const explorer = this.store.get("ExplorerTroops", {
       game_id: configManager.getActiveGameId(),
       explorer_id: this.armyEntityId,
-    })?.troops;
-    if (!troops) return undefined;
+    });
+    if (!explorer) return undefined;
 
-    return StaminaManager.getStamina(troops, currentArmiesTick);
+    const troops = resolveExplorerTroops(this.store, explorer);
+    return troops ? StaminaManager.getStamina(troops, currentArmiesTick) : undefined;
   }
 
   /** The active game's stamina, for the client that has one active game. */

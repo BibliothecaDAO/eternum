@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { configManager } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { hash } from "starknet";
-import preset from "../../../../../contracts/l3/world-native/fixtures/preset-3.json";
+import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import explorerFixture from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 
 import { buildExplorationSnapshot } from "./map-cache";

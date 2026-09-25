@@ -1,3 +1,4 @@
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
   CombatSimulator,
   configManager,
@@ -170,8 +171,10 @@ const simulateBuildingCost = (
 const explorerCombatant = (client: GameClient, explorerId: ID): Combatant | undefined => {
   const row = client.setup.store.get("ExplorerTroops", { game_id: client.gameId, explorer_id: explorerId });
   if (!row) return undefined;
+  const troops = resolveExplorerTroops(client.setup.store, row);
+  if (!troops) return undefined;
   return {
-    army: troopsToArmy(row.troops),
+    army: troopsToArmy(troops),
     hex: entityMapPosition(client.setup.store, client.gameId, explorerId),
     isStructureGuard: false,
   };

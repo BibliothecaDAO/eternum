@@ -1,5 +1,5 @@
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
-import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import { ResourceManager } from "./resource-manager";

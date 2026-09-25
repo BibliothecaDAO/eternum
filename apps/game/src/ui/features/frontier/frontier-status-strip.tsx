@@ -9,7 +9,7 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { knownBalance } from "@/ui/utils/utils";
-import { expeditionDayEndsAt, expeditionEpoch, getBalance } from "@bibliothecadao/eternum";
+import { expeditionDayEndsAt, seasonDay, getBalance } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
@@ -56,7 +56,7 @@ export const FrontierStatusStrip = ({
 
 const ExpeditionClock = ({ rules }: { rules: ExpeditionRules }) => {
   const now = useNowSeconds();
-  const day = expeditionEpoch(rules, now) + 1;
+  const day = seasonDay(rules, now) + 1;
   return (
     <div className="flex items-baseline gap-2" aria-label="Expedition day">
       <span className={HUD_LABEL_BRIGHT}>Day {day}</span>

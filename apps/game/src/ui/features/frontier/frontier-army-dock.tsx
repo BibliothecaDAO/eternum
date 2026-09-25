@@ -1,3 +1,4 @@
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useGame } from "@/hooks/context/game-context";
 import { useBlockTimestamp, useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -29,7 +30,7 @@ import { useExpeditionRules } from "./frontier-home";
 import { formatRevealYield, useRevealYield } from "./frontier-reveal-yield";
 import { useMusterPointed } from "./guide/guide-pointer";
 
-const ARMY_MODELS = ["ExplorerTroops", "TileOccupancy", "EntityName"] as const;
+const ARMY_MODELS = ["ArmySlot", "ExplorerTroops", "TileOccupancy", "EntityName"] as const;
 
 /**
  * One card per army slot the castle grants: today's armies with their strength and stamina, then a Muster card for
@@ -72,7 +73,7 @@ const ArmyCard = ({ army, position }: { army: NativeRows["ExplorerTroops"]; posi
   const snapshot = getExplorerStaminaSnapshot({
     entityId: army.explorer_id,
     currentArmiesTick,
-    liveTroops: army.troops,
+    liveTroops: resolveExplorerTroops(setup.store, army),
   });
   const stamina = snapshot
     ? buildStaminaDisplayModel({

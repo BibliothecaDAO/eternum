@@ -1,3 +1,4 @@
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { requireNativeExecutionOutcome } from "@bibliothecadao/provider";
 import { setTimeout as sleep } from "node:timers/promises";
 import { actorKey, type HarnessGameClient, type HeraldConfirmations } from "./game-client";
@@ -180,10 +181,13 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
     explorer: (explorerId) => {
       const row = store.get("ExplorerTroops", { game_id, explorer_id: explorerId });
       if (!row) return undefined;
+      const troops = resolveExplorerTroops(store, row);
+      if (!troops) return undefined;
+      const { stamina } = troops;
       return {
         coord: entityMapPosition(store, game_id, explorerId),
-        staminaAmount: BigInt(row.troops.stamina.amount),
-        staminaUpdatedTick: BigInt(row.troops.stamina.updated_tick),
+        staminaAmount: stamina.amount,
+        staminaUpdatedTick: stamina.updated_tick,
       };
     },
     explorerStamina: (explorerId, armiesTick) => {

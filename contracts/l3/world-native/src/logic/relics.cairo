@@ -14,8 +14,8 @@ pub mod RelicState {
         Recipient, RelicRule,
     };
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
-    use crate::stamina::StaminaTrait;
-    use crate::troops::ExplorerKey;
+    use crate::stamina::StaminaSourceTrait;
+    use crate::troops::{ExplorerKey, ExplorerRecordTrait};
 
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
@@ -163,6 +163,36 @@ pub mod RelicState {
                 );
         }
     }
+    #[embeddable_as(ArmySlotStaminaImpl)]
+    pub impl ArmySlotStamina<
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+    > of crate::troops::IArmySlotStamina<ComponentState<TContractState>> {
+        fn army_slot_stamina(
+            ref self: ComponentState<TContractState>, key: ExplorerKey, action: crate::troops::ArmySlotAction,
+        ) -> crate::troops::StaminaSource {
+            use crate::troops::ArmySlotAction;
+            use crate::logic::army_slot_storage;
+            if let ArmySlotAction::Allocate(value) = action {
+                return army_slot_storage::allocate(key, value.home, value.epoch, value.allowance, value.initial);
+            }
+            let mut explorer = crate::logic::troops::explorer(key).expect('missing slot explorer');
+            match action {
+                ArmySlotAction::Resolve => army_slot_storage::resolve(key, explorer).troops.stamina,
+                ArmySlotAction::Persist(stamina) => {
+                    let previous = explorer.into_record();
+                    explorer.troops.stamina = stamina;
+                    army_slot_storage::persist(key, previous, explorer.troops).stamina
+                },
+                ArmySlotAction::Release(stamina) => {
+                    explorer.troops.stamina = stamina;
+                    army_slot_storage::release(key, explorer);
+                    stamina
+                },
+                ArmySlotAction::Allocate(_) => panic!("allocation already handled"),
+            }
+        }
+    }
+
     #[embeddable_as(CaptureRewardsImpl)]
     pub impl CaptureRewards<
         TContractState,
@@ -180,7 +210,7 @@ pub mod RelicState {
         ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(site.game_id, context);
             let explorer_key = ExplorerKey { game_id: site.game_id, explorer_id };
-            let explorer = crate::logic::troops::explorer(explorer_key).expect('missing capture explorer');
+            let explorer = crate::logic::troops::active_explorer(explorer_key, context.timestamp, context);
             self.refund_capture_stamina(explorer_key, explorer, context);
             self.pay_capture_rewards(site, explorer_key, explorer.owner, category, context, ref story_cursor);
             ((), story_cursor)
@@ -379,7 +409,7 @@ pub mod RelicState {
             let game_rules = context.rules.unbox();
             let spacing = crate::logic::settlement::rules(game_id).spacing;
             let depth: u8 = (command.coord.y / spacing % 4).try_into().unwrap();
-            let epoch = context.timestamp / game_rules.epoch_seconds.into();
+            let epoch = crate::expeditions::absolute_epoch(game_rules.epoch_seconds, context.timestamp);
             let old_pity = self.data.relics.chest_pity.read((game_id, actor, depth));
             let tokens = self.data.relics.chest_tokens.read((game_id, actor, epoch));
             let mut root = context.raw_root;

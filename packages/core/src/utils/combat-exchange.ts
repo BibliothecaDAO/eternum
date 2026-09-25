@@ -1,4 +1,4 @@
-import { BiomeType, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { BiomeType, RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers/config-manager";
 import { staminaAt } from "../managers/troop-stamina";
@@ -25,7 +25,7 @@ import {
  * attack_with_context), in the contract's own fixed-point arithmetic, and a fight forecast built from repeated
  * exchanges. Nothing here estimates: a forecast is the contract's result for the same inputs.
  */
-export type ExchangeTroops = NativeRows["ExplorerTroops"]["troops"];
+export type ExchangeTroops = Troops;
 export type TroopDamageConfig = NativeRows["SliceRules"]["troop_damage_config"];
 export type TroopStaminaConfig = NativeRows["SliceRules"]["troop_stamina_config"];
 

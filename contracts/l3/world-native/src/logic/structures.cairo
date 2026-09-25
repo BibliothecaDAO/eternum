@@ -977,7 +977,11 @@ pub mod StructuresLogic {
                 let end_at = if rules.epoch_seconds == 0 {
                     end_at
                 } else {
-                    core::cmp::min(end_at, (timestamp / rules.epoch_seconds.into() + 1) * rules.epoch_seconds.into())
+                    core::cmp::min(
+                        end_at,
+                        (crate::expeditions::absolute_epoch(rules.epoch_seconds, timestamp) + 1)
+                            * rules.epoch_seconds.into(),
+                    )
                 };
                 self
                     .resources_dispatcher(key.game_id)

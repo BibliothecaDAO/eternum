@@ -1,3 +1,4 @@
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
 import { arePlayersAllied } from "@/utils/entity-ownership";
@@ -387,13 +388,17 @@ export class ArmyManager {
   private subscribeToExplorerTroopsPresentation(): void {
     this.unsubscribeExplorerTroopsPresentation = this.store?.subscribe((changes) => {
       for (const change of changes) {
-        if (
-          change.model !== "ExplorerTroops" ||
-          change.current?.game_id !== configManager.getActiveGameId() ||
-          change.current.troops.count <= 0n
-        )
-          continue;
-        this.applyExplorerTroopsPresentationUpdate(change.current);
+        const explorer =
+          change.model === "ExplorerTroops"
+            ? change.current
+            : change.model === "ArmySlot" && change.current?.explorer_id
+              ? this.store?.get("ExplorerTroops", {
+                  game_id: change.current.game_id,
+                  explorer_id: change.current.explorer_id,
+                })
+              : undefined;
+        if (!explorer || explorer.game_id !== configManager.getActiveGameId() || explorer.troops.count <= 0n) continue;
+        this.applyExplorerTroopsPresentationUpdate(explorer);
       }
     });
   }
@@ -510,6 +515,7 @@ export class ArmyManager {
     });
     const category = renderable.troopCategory;
     const tier = renderable.troopTier;
+    const troops = resolveExplorerTroops(this.store!, explorerTroops);
 
     return {
       entityId: renderable.entityId,
@@ -519,7 +525,7 @@ export class ArmyManager {
       category,
       tier,
       troopCount: divideByPrecision(Number(explorerTroops.troops.count)),
-      currentStamina: Number(explorerTroops.troops.stamina.amount),
+      currentStamina: troops ? Number(troops.stamina.amount) : undefined,
       maxStamina: StaminaManager.getMaxStamina(category, tier),
       battleCooldownEnd: explorerTroops.troops.battle_cooldown_end,
     };
@@ -1749,7 +1755,7 @@ export class ArmyManager {
 
     // Variables to hold the final values
     let finalTroopCount = params.troopCount || 0;
-    let finalCurrentStamina = params.currentStamina || 0;
+    let finalCurrentStamina = params.currentStamina;
     const finalMaxStamina = params.maxStamina || 0;
     let finalOwnerAddress = params.owner.address;
     let finalOwnerName = params.owner.ownerName;
@@ -2754,14 +2760,14 @@ export class ArmyManager {
     const army = this.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId });
     if (!army?.owner) return false;
     const { currentArmiesTick, currentDefaultTick } = getBlockTimestamp();
-    return (
+    return Boolean(
       readArmyMovementReadiness({
         army,
         structureResources: new ResourceManager(this.store, army.owner),
         store: this.store,
         currentArmiesTick,
         currentDefaultTick,
-      }).foodBlock !== null
+      })?.foodBlock,
     );
   }
 
@@ -3093,10 +3099,11 @@ ${
       return null;
     }
 
-    return (
-      this.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId })?.troops ??
-      null
-    );
+    const explorer = this.store.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: entityId,
+    });
+    return explorer ? resolveExplorerTroops(this.store, explorer) : null;
   }
 
   private resolveArmyStaminaSnapshot(
@@ -3139,6 +3146,9 @@ ${
       const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId, currentArmiesTick);
       if (!staminaSnapshot) {
         this.staminaUnresolved.add(entityId);
+        army.currentStamina = undefined;
+        const label = this.entityIdLabels.get(entityId);
+        if (label) this.updateArmyLabelData(entityId, army, label);
         return;
       }
       this.staminaUnresolved.delete(entityId);
@@ -3194,7 +3204,7 @@ ${
 
   private updateArmyLabelStamina(labelElement: HTMLElement, army: ArmyData): void {
     const staminaBar = labelElement.querySelector('[data-component="stamina-bar"]');
-    if (!staminaBar) {
+    if (!staminaBar || army.currentStamina === undefined) {
       updateArmyLabel(labelElement, army, this.currentCameraView);
       return;
     }
@@ -3243,7 +3253,7 @@ ${
     army.troopCount = troopCount;
 
     const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId);
-    army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;
+    army.currentStamina = staminaSnapshot?.current;
     army.maxStamina = staminaSnapshot?.max ?? army.maxStamina;
 
     const ownerStructureId = explorerTroops.owner === 0 ? null : explorerTroops.owner;

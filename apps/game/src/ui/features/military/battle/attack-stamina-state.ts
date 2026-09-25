@@ -1,7 +1,7 @@
 type AttackActionLabel = "Attack" | "Claim";
 
 interface ResolveAttackStaminaStateInput {
-  attackerStamina: bigint | number;
+  attackerStamina: bigint | number | undefined;
   hasAttackerTroops: boolean;
   hasDefenders: boolean;
   requiredStamina: number;
@@ -9,7 +9,7 @@ interface ResolveAttackStaminaStateInput {
 
 export interface AttackStaminaState {
   actionLabel: AttackActionLabel;
-  currentStamina: number;
+  currentStamina: number | undefined;
   hasAttackerTroops: boolean;
   hasRequiredStamina: boolean;
   isBlocked: boolean;
@@ -17,9 +17,9 @@ export interface AttackStaminaState {
 }
 
 export function resolveAttackStaminaState(input: ResolveAttackStaminaStateInput): AttackStaminaState {
-  const currentStamina = Number(input.attackerStamina);
+  const currentStamina = input.attackerStamina === undefined ? undefined : Number(input.attackerStamina);
   const actionLabel: AttackActionLabel = input.hasDefenders ? "Attack" : "Claim";
-  const hasRequiredStamina = currentStamina >= input.requiredStamina;
+  const hasRequiredStamina = currentStamina !== undefined && currentStamina >= input.requiredStamina;
   const isBlocked = input.hasAttackerTroops && !hasRequiredStamina;
 
   return {
@@ -37,5 +37,7 @@ export function buildAttackStaminaRequirementLabel(state: AttackStaminaState): s
 }
 
 export function buildAttackStaminaWarning(state: AttackStaminaState): string {
+  if (state.currentStamina === undefined)
+    return `Stamina — / ${state.requiredStamina} required to ${state.actionLabel.toLowerCase()}`;
   return `Insufficient stamina: ${state.currentStamina} / ${state.requiredStamina} required to ${state.actionLabel.toLowerCase()}`;
 }

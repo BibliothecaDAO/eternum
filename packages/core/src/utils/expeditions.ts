@@ -32,9 +32,16 @@ export const readExpeditionRules = (
   };
 };
 
-/** Days since the season's first expedition, counted on UTC epoch boundaries as the contract does. */
-export const expeditionEpoch = (rules: ExpeditionRules, nowSeconds: number): number =>
-  Math.floor(nowSeconds / rules.epochSeconds) - Math.floor(rules.startMainAt / rules.epochSeconds);
+/** Absolute clock bucket used by expedition fact keys. */
+export const absoluteEpoch = (rules: Pick<ExpeditionRules, "epochSeconds">, timestamp: number): number => {
+  if (!Number.isSafeInteger(rules.epochSeconds) || rules.epochSeconds <= 0)
+    throw new Error("Expedition epoch duration must be positive");
+  return Math.floor(timestamp / rules.epochSeconds);
+};
+
+/** Zero-based season day; only this relative value selects a map region or allowance day. */
+export const seasonDay = (rules: Pick<ExpeditionRules, "epochSeconds" | "startMainAt">, timestamp: number): number =>
+  absoluteEpoch(rules, timestamp) - absoluteEpoch(rules, rules.startMainAt);
 
 /** The expedition map is laid out in bands of `spacing` rows, four per day: surface, then Ethereal I to III. */
 const expeditionBand = (rules: ExpeditionRules, coord: { y: number }): number => Math.floor(coord.y / rules.spacing);
@@ -44,8 +51,8 @@ export const expeditionDepth = (rules: ExpeditionRules, coord: { y: number }): n
   expeditionBand(rules, coord) % 4;
 
 /** When today's expedition ends: the next UTC epoch boundary, where the contract rolls every army and site over. */
-export const expeditionDayEndsAt = (rules: ExpeditionRules, nowSeconds: number): number =>
-  (Math.floor(nowSeconds / rules.epochSeconds) + 1) * rules.epochSeconds;
+export const expeditionDayEndsAt = (rules: Pick<ExpeditionRules, "epochSeconds">, nowSeconds: number): number =>
+  (absoluteEpoch(rules, nowSeconds) + 1) * rules.epochSeconds;
 
 /**
  * An army belongs to today's expedition only while it stands in today's region, as the contract's `is_current` decides;
@@ -58,7 +65,7 @@ export const isCurrentExpeditionArmy = (
 ): boolean =>
   !coord.alt &&
   nowSeconds >= rules.startMainAt &&
-  Math.floor(expeditionBand(rules, coord) / 4) === expeditionEpoch(rules, nowSeconds);
+  Math.floor(expeditionBand(rules, coord) / 4) === seasonDay(rules, nowSeconds);
 
 /**
  * A structure's living field armies: troops left and, in a game with expeditions, standing in today's region. An army
@@ -120,10 +127,10 @@ export const expeditionRealmSite = (
   nowSeconds: number,
 ): { col: number; row: number } => {
   const half = Math.floor(rules.spacing / 2);
-  const epoch = expeditionEpoch(rules, nowSeconds);
+  const day = seasonDay(rules, nowSeconds);
   return {
     col: (realmId - 1) * rules.spacing + half,
-    row: epoch * 4 * rules.spacing + half,
+    row: day * 4 * rules.spacing + half,
   };
 };
 
@@ -137,7 +144,7 @@ export const expeditionSpireTile = (
   nowSeconds: number,
 ): { col: number; row: number } => {
   const site = expeditionRealmSite(rules, structure.metadata.realm_id, nowSeconds);
-  const direction = expeditionEpoch(rules, nowSeconds) % 6;
+  const direction = seasonDay(rules, nowSeconds) % 6;
   const spire = getNeighborHexes(site.col, site.row).find((hex) => hex.direction === direction);
   if (!spire) throw new Error(`No hex in direction ${direction} around the expedition site`);
   return { col: spire.col, row: spire.row };

@@ -37,6 +37,11 @@ fn setup_with_mode(
 fn setup_with_rule_mask(
     blitz: bool, immunity: u8, mode_rules: u32,
 ) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
+    setup_with_cooldown(blitz, immunity, mode_rules, 5, (100, 1))
+}
+fn setup_with_cooldown(
+    blitz: bool, immunity: u8, mode_rules: u32, cooldown_seconds: u32, counts: (u128, u128),
+) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
     let mut rules = super::recorded::rules();
     rules.mode_rules = mode_rules;
     rules
@@ -54,10 +59,12 @@ fn setup_with_rule_mask(
     rules.battle_config.village_immunity_ticks = 0;
     rules.battle_config.village_raid_immunity_ticks = 3;
     rules.tick_config.armies_tick_in_seconds = 5;
+    rules.battle_config.cooldown_seconds = cooldown_seconds;
     rules.troop_stamina_config.stamina_initial = 120;
     let (d, home, target) = super::resource_commands::setup_with_rules(rules);
     let mut ids = array![];
-    for (key, amount) in array![(home, 100_u128), (target, 1)] {
+    let (attacker_count, defender_count) = counts;
+    for (key, amount) in array![(home, attacker_count), (target, defender_count)] {
         grant(d, key, 26, amount * RESOURCE_PRECISION);
         assert!(
             execute(
@@ -132,7 +139,7 @@ fn set_guard(d: super::Deployment, key: ResourceKey, slot: u8, count: u128) {
         Guard {
             troops: Troops {
                 count: count * RESOURCE_PRECISION,
-                stamina: Stamina { amount: 120, updated_tick: 16 },
+                stamina: Stamina { amount: 120, updated_tick: 16 }.into(),
                 ..Default::default(),
             },
             destroyed_tick: 0,
@@ -888,4 +895,41 @@ fn unowned_target_rule_rejects_owned_sites_and_allows_capture_of_an_unowned_site
     );
     assert!(execute(d, command, 80));
     assert_eq!(structures.structure(target).unwrap().owner, d.actor);
+}
+
+#[test]
+fn preset_cooldown_keeps_blitz_at_sixty_seconds_and_allows_frontier_back_to_back_attacks() {
+    let cases: Array<(ByteArray, u32, bool)> = array![("frontier", 0, false), ("blitz", 60, true)];
+    for (name, expected, blitz) in cases {
+        let mut input = snforge_std::fs::read_txt(
+            @snforge_std::fs::FileTrait::new(format!("tests/fixtures/current-presets/{}-register.txt", name)),
+        )
+            .span();
+        let _: u32 = Serde::deserialize(ref input).unwrap();
+        let preset: crate::presets::PresetDefinition = Serde::deserialize(ref input).unwrap();
+        assert_eq!(preset.rules.battle_config.cooldown_seconds, expected);
+        let (d, _, _, attacker, defender) = setup_with_cooldown(
+            blitz, 0, preset.rules.mode_rules & crate::rules::COMBAT_DICE_ETHEREAL, expected, (1000, 1000),
+        );
+        let attack = Command::Battle(
+            AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
+        );
+        let success = execute(d, attack, 80);
+        let outcome = IRecordedExecutionViewsDispatcher { contract_address: d.games }
+            .recorded_outcome(3, super::recorded::head(d.games, 3).order)
+            .unwrap();
+        assert!(success, "first attack: {}", outcome.reason);
+        assert!(troop(d, attacker).is_some() && troop(d, defender).is_some());
+        if blitz {
+            assert_eq!(troop(d, attacker).unwrap().troops.battle_cooldown_end, 140);
+            assert_terminal_rejection(d, attack, 80);
+        } else {
+            assert_eq!(troop(d, attacker).unwrap().troops.battle_cooldown_end, 80);
+            let success = execute(d, attack, 80);
+            let outcome = IRecordedExecutionViewsDispatcher { contract_address: d.games }
+                .recorded_outcome(3, super::recorded::head(d.games, 3).order)
+                .unwrap();
+            assert!(success, "second attack: {}", outcome.reason);
+        }
+    }
 }

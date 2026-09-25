@@ -153,7 +153,9 @@ export enum EntityType {
 
 export type RelicEffectWithEndTick = { id: ResourcesIds; endTick: number };
 
-export type Troops = NativeRows["ExplorerTroops"]["troops"];
+export type Troops = Omit<NativeRows["ExplorerTroops"]["troops"], "stamina"> & {
+  readonly stamina: { readonly amount: bigint; readonly updated_tick: bigint };
+};
 export type TroopTier = Troops["tier"];
 export const TroopTier = { T1: "T1", T2: "T2", T3: "T3" } as const;
 export type TroopType = Troops["category"];
@@ -321,6 +323,7 @@ export interface Config {
     villageImmunityTicks: number;
     delaySeconds: number;
     villageRaidImmunityTicks: number;
+    cooldownSeconds: number;
   };
   troop: {
     damage: {

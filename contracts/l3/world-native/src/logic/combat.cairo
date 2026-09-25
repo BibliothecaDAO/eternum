@@ -9,7 +9,7 @@ use crate::map::{IMapLogicDispatcherTrait, IMapLogicLibraryDispatcher};
 use crate::ownership::StoryResultTrait;
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 use crate::rules::SliceRules;
-use crate::stamina::StaminaTrait;
+use crate::stamina::StaminaSourceTrait;
 use crate::structures::Structure;
 use crate::troops::{
     Coord, ExplorerKey, ExplorerTroops, IBattleResolutionDispatcherTrait, IBattleResolutionLibraryDispatcher, Troops,
@@ -624,7 +624,7 @@ pub fn resolve_battle(
             rules.troop_stamina_config,
             rules.troop_damage_config,
             context.timestamp / rules.tick_config.armies_tick_in_seconds,
-            rules.tick_config.armies_tick_in_seconds,
+            rules.battle_config.cooldown_seconds,
         );
     (attacker, defender)
 }

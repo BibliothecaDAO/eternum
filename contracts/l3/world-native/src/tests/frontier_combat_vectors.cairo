@@ -1,6 +1,7 @@
 use snforge_std::fs::{FileTrait, read_txt};
 use crate::combat::{CombatContext, TroopsTrait};
 use crate::rules::{TroopDamageConfig, TroopStaminaConfig};
+use crate::stamina::StaminaSourceTrait;
 use crate::troops::{Stamina, TroopBoosts, TroopTier, TroopType, Troops};
 
 #[derive(Copy, Drop, Serde)]
@@ -106,13 +107,13 @@ fn resolve_exchange(
             stamina,
             damage,
             exchange.current_tick,
-            tick_interval,
+            tick_interval.try_into().unwrap(),
         );
     Outcome {
         attacker_loss: exchange.attacker.count - attacker.count,
         defender_loss: exchange.defender.count - defender.count,
-        attacker_stamina_after: attacker.stamina.amount,
-        defender_stamina_after: defender.stamina.amount,
+        attacker_stamina_after: attacker.stamina.inline().amount,
+        defender_stamina_after: defender.stamina.inline().amount,
     }
 }
 
@@ -122,7 +123,7 @@ fn troops(side: Side, tick: u64) -> Troops {
         category: side.category,
         tier: side.tier,
         count: side.count,
-        stamina: Stamina { amount: side.stamina, updated_tick: side.updated_tick },
+        stamina: Stamina { amount: side.stamina, updated_tick: side.updated_tick }.into(),
         boosts: TroopBoosts {
             incr_damage_dealt_percent_num: side.damage_bonus_percent * 100,
             incr_damage_dealt_end_tick: (tick + 1).try_into().unwrap(),

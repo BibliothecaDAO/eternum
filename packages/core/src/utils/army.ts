@@ -1,3 +1,4 @@
+import { inlineTroops, resolveExplorerTroops } from "../managers/troop-stamina";
 import { entityMapPosition } from "./tile";
 import { readExpeditionRules, structureMapPosition } from "./expeditions";
 import {
@@ -38,31 +39,35 @@ export const formatArmies = (
   store: NativeFactStore,
   playerName: PlayerNameResolver,
 ): ArmyInfo[] =>
-  [...armies].map((explorer) => {
+  [...armies].flatMap((explorer) => {
+    const troops = resolveExplorerTroops(store, explorer);
+    if (!troops) return [];
     const keys = { game_id: explorer.game_id, entity_id: explorer.explorer_id };
     const weight = store.get("ResourceWeight", keys);
     const structure = store.get("Structure", { ...keys, entity_id: explorer.owner });
     const home = structure && structureMapPosition(store, structure);
     const owner = getExplorerOwner(store, explorer);
     const position = entityMapPosition(store, explorer.game_id, explorer.explorer_id);
-    return {
-      entityId: explorer.explorer_id,
-      troops: explorer.troops,
-      totalCapacity: weight ? getArmyTotalCapacityInKg(weight) : 0,
-      weight: weight ? gramToKg(divideByPrecision(Number(weight.weight))) : 0,
-      position,
-      entity_owner_id: explorer.owner,
-      stamina: explorer.troops.stamina.amount,
-      owner,
-      ownerName: owner === 0n ? "" : (playerName(owner) ?? ""),
-      structure,
-      explorer,
-      isMine: isViewerOwner(owner, playerAddress),
-      isMercenary: owner === 0n,
-      isHome: home !== undefined && isArmyAdjacentToStructure(position, home.x, home.y, home.alt),
-      name: getArmyName(explorer.explorer_id, store),
-      hasAdjacentStructure: hasAdjacentOwnedStructure(position, playerAddress, store),
-    };
+    return [
+      {
+        entityId: explorer.explorer_id,
+        troops,
+        totalCapacity: weight ? getArmyTotalCapacityInKg(weight) : 0,
+        weight: weight ? gramToKg(divideByPrecision(Number(weight.weight))) : 0,
+        position,
+        entity_owner_id: explorer.owner,
+        stamina: troops.stamina.amount,
+        owner,
+        ownerName: owner === 0n ? "" : (playerName(owner) ?? ""),
+        structure,
+        explorer,
+        isMine: isViewerOwner(owner, playerAddress),
+        isMercenary: owner === 0n,
+        isHome: home !== undefined && isArmyAdjacentToStructure(position, home.x, home.y, home.alt),
+        name: getArmyName(explorer.explorer_id, store),
+        hasAdjacentStructure: hasAdjacentOwnedStructure(position, playerAddress, store),
+      },
+    ];
   });
 
 export const getArmy = (
@@ -157,7 +162,7 @@ export const getGuardsByStructure = (structure: NativeRows["Structure"], store: 
         ? [
             {
               slot: guard.slot,
-              troops: guard.troops,
+              troops: inlineTroops(guard.troops),
               destroyedTick: guard.destroyed_tick,
               cooldownEnd: guard.destroyed_tick === 0 ? 0 : guard.destroyed_tick * tickSeconds + delay,
             },

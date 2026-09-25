@@ -1,3 +1,4 @@
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { attachAcceptedBlocks } from "./gas-collector";
 import { ETHEREAL_STRIDE, type Tile } from "@bibliothecadao/types";
 import { setTimeout as sleep } from "node:timers/promises";
@@ -304,12 +305,15 @@ function readExplorer(
   client: GameClient,
   row: import("../../../contracts/l3/world-native/schema/client.gen").NativeRows["ExplorerTroops"],
 ): Explorer {
+  const troops = resolveExplorerTroops(client.setup.store, row);
+  if (!troops) throw new Error(`Explorer ${row.explorer_id} stamina is not synchronized`);
+  const { stamina } = troops;
   return {
     explorerId: String(row.explorer_id),
     owner: String(row.owner),
     ...entityMapPosition(client.setup.store, client.gameId, row.explorer_id),
-    stamina: Number(row.troops.stamina.amount),
-    staminaUpdatedTick: Number(row.troops.stamina.updated_tick),
+    stamina: Number(stamina.amount),
+    staminaUpdatedTick: Number(stamina.updated_tick),
   };
 }
 function requireRecord(value: unknown, name: string): Record<string, unknown> {

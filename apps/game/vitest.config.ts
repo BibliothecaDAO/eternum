@@ -53,6 +53,11 @@ export default defineConfig({
       "@bibliothecadao/eternum/game-client": path.resolve(__dirname, "../../packages/core/src/client/index.ts"),
       "@bibliothecadao/eternum/shard": path.resolve(__dirname, "../../packages/core/src/client/shard-reader.ts"),
       "@bibliothecadao/eternum/biome": path.resolve(__dirname, "../../packages/core/src/utils/biome/biome.ts"),
+      "@bibliothecadao/eternum/troop-stamina": path.resolve(
+        __dirname,
+        "../../packages/core/src/managers/troop-stamina.ts",
+      ),
+      "@bibliothecadao/eternum/expeditions": path.resolve(__dirname, "../../packages/core/src/utils/expeditions.ts"),
       "@bibliothecadao/eternum": path.resolve(__dirname, "../../packages/core/src/index.ts"),
       // Subpath alias must precede the package root: alias matching is
       // prefix-based, so the root entry would otherwise swallow it.

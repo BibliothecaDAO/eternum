@@ -351,6 +351,7 @@ pub struct BattleConfig {
     pub regular_immunity_ticks: u8,
     pub village_immunity_ticks: u8,
     pub village_raid_immunity_ticks: u8,
+    pub cooldown_seconds: u32,
 }
 
 // Each word holds consecutive fields without crossing a 128-bit boundary.

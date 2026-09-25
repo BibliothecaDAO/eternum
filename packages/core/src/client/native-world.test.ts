@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "./native-fact-store";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import { hash, type AccountInterface } from "starknet";
-import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import bindingsJson from "../../../../contracts/l3/world-native/schema/bindings.json";
 import { nativeSubmission } from "./native-submission";
 import type { SignedNativeIntent } from "@bibliothecadao/provider";

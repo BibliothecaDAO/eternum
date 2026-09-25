@@ -121,7 +121,7 @@ export const getStructureRelicEffects = (
 };
 
 export const getStructureArmyRelicEffects = (
-  guard: Pick<NativeRows["Guard"], "troops"> | undefined,
+  guard: { troops: Pick<Troops, "boosts"> } | undefined,
   currentTick: number,
 ): RelicEffectWithEndTick[] => {
   const troopBoosts = guard?.troops.boosts;

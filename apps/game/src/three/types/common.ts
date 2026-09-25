@@ -59,7 +59,7 @@ export interface ArmyData {
   attachments?: CosmeticAttachmentTemplate[];
   // Live presentation facts derived from native store
   troopCount: number;
-  currentStamina: number;
+  currentStamina: number | undefined;
   maxStamina: number;
   attackedFromDegrees?: number; // Degrees from which this army has been attacked
   attackedTowardDegrees?: number; // Degrees in which this army has attacked someone

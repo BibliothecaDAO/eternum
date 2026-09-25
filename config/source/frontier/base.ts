@@ -38,7 +38,7 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
     startMainAfterSeconds: 0,
   },
   tick: { armiesTickIntervalInSeconds: 3600 },
-  battle: { regularImmunityTicks: 0, villageImmunityTicks: 0, delaySeconds: 0 },
+  battle: { cooldownSeconds: 0, regularImmunityTicks: 0, villageImmunityTicks: 0, delaySeconds: 0 },
   startingResources: [
     { resource: 26, amount: 1500 },
     { resource: 35, amount: 1000 },

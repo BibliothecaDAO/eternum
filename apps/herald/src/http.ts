@@ -7,7 +7,7 @@ import {
   directoryStatus,
 } from "./native/read-models";
 import { type DirectoryInput, type GameDirectorySource } from "./game-directory";
-import { expeditionEpoch } from "@bibliothecadao/eternum/expeditions";
+import { seasonDay } from "@bibliothecadao/eternum/expeditions";
 import type { GameSnapshot, ReplayMetrics } from "./types";
 import type { HistoryQuery, HistoryStore } from "./history-store";
 import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
@@ -322,7 +322,7 @@ function directoryClock(state: Pick<HeraldHttpState, "chainTimestamp"> & { fold:
       const startMainAt = Number(game.start_main_at);
       return [
         directoryStatus(game, state.chainTimestamp()),
-        epochSeconds === 0 ? null : expeditionEpoch({ epochSeconds, startMainAt, spacing: 0 }, state.chainTimestamp()),
+        epochSeconds === 0 ? null : seasonDay({ epochSeconds, startMainAt }, state.chainTimestamp()),
       ];
     }),
   );

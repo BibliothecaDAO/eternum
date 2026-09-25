@@ -1,3 +1,4 @@
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
@@ -62,15 +63,16 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   );
   const structureResources = useResourceManager(explorer?.owner ?? 0);
   const ownershipRevision = useNativeRevision(["GuildMember", "Guild", "EntityName"]);
+  const slotRevision = useNativeRevision(["ArmySlot"]);
   const owner = explorer ? getExplorerOwner(store, explorer) : 0n;
 
   const staminaSnapshot = useMemo(() => {
     return getExplorerStaminaSnapshot({
       entityId: armyEntityId,
       currentArmiesTick,
-      liveTroops: explorer?.troops,
+      liveTroops: explorer ? resolveExplorerTroops(store, explorer) : undefined,
     });
-  }, [armyEntityId, currentArmiesTick, explorer?.troops]);
+  }, [armyEntityId, currentArmiesTick, explorer, store, slotRevision]);
 
   const currentTroops = staminaSnapshot?.troops ?? null;
   const relicEffects = useMemo(

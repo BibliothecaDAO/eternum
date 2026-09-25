@@ -1,7 +1,8 @@
+import { absoluteEpoch } from "@bibliothecadao/eternum/expeditions";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { beforeAll, expect, it } from "vitest";
 
-import preset from "../../../contracts/l3/world-native/fixtures/preset-3.json";
+import preset from "../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import explorerFixture from "../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import recordedPages from "./fixtures/staging-story-pages.json";
 import { realmsIdOf } from "./realms-id";
@@ -239,6 +240,13 @@ const snapshot = (army: ArmyState | null, neighbour: ArmyState | null, owner: st
         .map(({ home: _home, ...row }) => row),
     },
     {
+      model: "ArmySlot",
+      rows: [
+        ...(army ? [armySlotRow(ARMY, HOME, army)] : []),
+        ...(neighbour ? [armySlotRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME, neighbour)] : []),
+      ].filter(({ value }) => owner === null || BigInt(STRUCTURE_OWNERS.get(value.structure_id)!) === BigInt(owner)),
+    },
+    {
       model: "ExplorerTroops",
       rows: [
         ...(army ? [armyRow(ARMY, HOME, army)] : []),
@@ -258,8 +266,20 @@ const armyRow = (explorerId: number, home: number, army: ArmyState) => ({
     troops: {
       ...explorerFixture.expected.value.troops,
       count: "0x64",
-      stamina: { amount: army.amount, updated_tick: army.updatedTick },
+      stamina: { Slot: 0 },
     },
+  },
+});
+
+const armySlotRow = (explorerId: number, home: number, army: ArmyState) => ({
+  key: `0x${home.toString(16)}`,
+  value: {
+    game_id: GAME_ID,
+    structure_id: home,
+    epoch: absoluteEpoch({ epochSeconds: DAY_SECONDS }, SEASON_START) + army.day,
+    slot: 0,
+    explorer_id: explorerId,
+    stamina: { amount: army.amount, updated_tick: army.updatedTick },
   },
 });
 

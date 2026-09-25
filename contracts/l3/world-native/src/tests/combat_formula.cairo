@@ -2,6 +2,7 @@ use eternum_cubit::f128::types::fixed::FixedTrait;
 use crate::biome::Biome;
 use crate::combat::{CombatContext, TroopsTrait};
 use crate::rules::{RESOURCE_PRECISION, TroopDamageConfig, TroopStaminaConfig};
+use crate::stamina::StaminaSourceTrait;
 use crate::troops::{Stamina, TroopBoosts, TroopTier, TroopType, Troops};
 
 fn context(biome: Biome) -> CombatContext {
@@ -133,7 +134,7 @@ fn tests_troop_attack_simple_1() {
         category: TroopType::Knight,
         tier: TroopTier::T1,
         count: 1 * RESOURCE_PRECISION,
-        stamina: Stamina { amount: 100, updated_tick: 1 },
+        stamina: Stamina { amount: 100, updated_tick: 1 }.into(),
         boosts: troop_boosts(),
         battle_cooldown_end: 0,
     };
@@ -141,7 +142,7 @@ fn tests_troop_attack_simple_1() {
         category: TroopType::Paladin,
         tier: TroopTier::T1,
         count: 95_000 * RESOURCE_PRECISION,
-        stamina: Stamina { amount: 100, updated_tick: 1 },
+        stamina: Stamina { amount: 100, updated_tick: 1 }.into(),
         boosts: troop_boosts(),
         battle_cooldown_end: 0,
     };
@@ -158,7 +159,7 @@ fn tests_troop_attack_simple_2() {
         category: TroopType::Knight,
         tier: TroopTier::T2, // Tier 2
         count: 61_293 * RESOURCE_PRECISION,
-        stamina: Stamina { amount: 100, updated_tick: 1 },
+        stamina: Stamina { amount: 100, updated_tick: 1 }.into(),
         boosts: troop_boosts(),
         battle_cooldown_end: 0,
     };
@@ -166,7 +167,7 @@ fn tests_troop_attack_simple_2() {
         category: TroopType::Crossbowman,
         tier: TroopTier::T1, // Tier 1
         count: 159_303 * RESOURCE_PRECISION,
-        stamina: Stamina { amount: 100, updated_tick: 1 },
+        stamina: Stamina { amount: 100, updated_tick: 1 }.into(),
         boosts: troop_boosts(),
         battle_cooldown_end: 0,
     };
@@ -230,7 +231,7 @@ fn tests_crossbowman_ranged_field_attack_uses_reduced_damage() {
     );
     assert!(ranged_bravo.count > adjacent_bravo.count, "Ranged field attack should deal reduced damage");
     assert!(ranged_alpha.count == 1_000 * RESOURCE_PRECISION, "Ranged defender should not counter-damage attacker");
-    assert!(ranged_bravo.stamina.amount == 80, "Ranged defender should spend reduced defensive stamina");
+    assert!(ranged_bravo.stamina.inline().amount == 80, "Ranged defender should spend reduced defensive stamina");
 }
 
 #[test]
@@ -360,7 +361,7 @@ fn test_troops(category: TroopType, tier: TroopTier, troop_count: u128, stamina:
         category,
         tier,
         count: troop_count * RESOURCE_PRECISION,
-        stamina: Stamina { amount: stamina, updated_tick: 1 },
+        stamina: Stamina { amount: stamina, updated_tick: 1 }.into(),
         boosts: troop_boosts(),
         battle_cooldown_end: 0,
     }
@@ -376,6 +377,6 @@ fn an_exchange_without_a_capture_spends_the_full_attack_stamina() {
         };
         attacker.attack_with_context(ref defender, context(Biome::Underground), config, damage_config(), 1, 1);
         assert!(defender.count != 0);
-        assert_eq!(attacker.stamina.amount, 70);
+        assert_eq!(attacker.stamina.inline().amount, 70);
     }
 }

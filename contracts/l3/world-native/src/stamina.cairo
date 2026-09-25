@@ -1,7 +1,7 @@
 use core::num::traits::Zero;
 use crate::math::PercentageImpl;
 use crate::rules::TroopStaminaConfig;
-use crate::troops::{Stamina, TroopBoosts, TroopTier, TroopType};
+use crate::troops::{Stamina, StaminaSource, TroopBoosts, TroopTier, TroopType};
 #[generate_trait]
 pub impl StaminaImpl of StaminaTrait {
     fn reset(ref self: Stamina) {
@@ -115,5 +115,75 @@ pub impl StaminaImpl of StaminaTrait {
             TroopTier::T2 => initial_max + 20,
             TroopTier::T3 => initial_max + 40,
         }
+    }
+}
+
+#[generate_trait]
+pub impl StaminaSourceImpl of StaminaSourceTrait {
+    fn inline(self: StaminaSource) -> Stamina {
+        match self {
+            StaminaSource::Inline(bar) => bar,
+            StaminaSource::Slot(_) => panic!("resolve army slot before arithmetic"),
+        }
+    }
+    fn set_amount(ref self: StaminaSource, amount: u64) {
+        self = StaminaSource::Inline(Stamina { amount, ..self.inline() });
+    }
+    fn set_updated_tick(ref self: StaminaSource, updated_tick: u64) {
+        self = StaminaSource::Inline(Stamina { updated_tick, ..self.inline() });
+    }
+    fn reset(ref self: StaminaSource) {
+        let mut bar = self.inline();
+        bar.reset();
+        self = StaminaSource::Inline(bar);
+    }
+    fn grant_initial_amount(ref self: StaminaSource, troop_stamina_config: TroopStaminaConfig, current_tick: u64) {
+        let mut bar = self.inline();
+        bar.grant_initial_amount(troop_stamina_config, current_tick);
+        self = StaminaSource::Inline(bar);
+    }
+    fn revert_initial_amount(ref self: StaminaSource, troop_stamina_config: TroopStaminaConfig, current_tick: u64) {
+        let mut bar = self.inline();
+        bar.revert_initial_amount(troop_stamina_config, current_tick);
+        self = StaminaSource::Inline(bar);
+    }
+    fn refill(
+        ref self: StaminaSource,
+        ref troop_boosts: TroopBoosts,
+        troop_type: TroopType,
+        troop_tier: TroopTier,
+        troop_stamina_config: TroopStaminaConfig,
+        current_tick: u64,
+    ) {
+        let mut bar = self.inline();
+        bar.refill(ref troop_boosts, troop_type, troop_tier, troop_stamina_config, current_tick);
+        self = StaminaSource::Inline(bar);
+    }
+    fn spend(
+        ref self: StaminaSource,
+        ref troop_boosts: TroopBoosts,
+        troop_type: TroopType,
+        troop_tier: TroopTier,
+        troop_stamina_config: TroopStaminaConfig,
+        amount: u64,
+        current_tick: u64,
+        throw_error: bool,
+    ) {
+        let mut bar = self.inline();
+        bar.spend(ref troop_boosts, troop_type, troop_tier, troop_stamina_config, amount, current_tick, throw_error);
+        self = StaminaSource::Inline(bar);
+    }
+    fn add(
+        ref self: StaminaSource,
+        ref troop_boosts: TroopBoosts,
+        troop_type: TroopType,
+        troop_tier: TroopTier,
+        troop_stamina_config: TroopStaminaConfig,
+        amount: u64,
+        current_tick: u64,
+    ) {
+        let mut bar = self.inline();
+        bar.add(ref troop_boosts, troop_type, troop_tier, troop_stamina_config, amount, current_tick);
+        self = StaminaSource::Inline(bar);
     }
 }

@@ -7,7 +7,7 @@ type TroopLimitConfig = NativeRows["SliceRules"]["troop_limit_config"];
 /**
  * What one new reveal sends home in Frontier, Essence or labor at even odds, in scaled resource units exactly as the
  * contract pays it: the scaled troop count times the tier's strength times the depth's reveal percent
- * (DepthRules.supply_multiplier: 10 / 15 / 20 / 25), with one truncating division at the end. Attributes and relics
+ * (DepthRules.reveal_percent: 10 / 15 / 20 / 25), with one truncating division at the end. Attributes and relics
  * never change it.
  */
 export const revealYield = (
@@ -21,4 +21,4 @@ export const readRevealPercent = (
   store: Pick<NativeFactStore, "get">,
   gameId: number,
   depth: number,
-): number | undefined => store.get("DepthRules", { game_id: gameId, depth })?.supply_multiplier;
+): number | undefined => store.get("DepthRules", { game_id: gameId, depth })?.reveal_percent;

@@ -8,6 +8,7 @@ use crate::names::{INamesDispatcher, INamesDispatcherTrait, SetEntityName};
 use crate::ownership::{GuardAddStory, Story};
 use crate::resources::{IResourceOperationsDispatcher, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
+use crate::stamina::StaminaSourceTrait;
 use crate::structures::IStructureOperationsDispatcher;
 use crate::tests::state::{
     GameState, MapObservationTrait, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait,
@@ -94,7 +95,7 @@ fn recorded_spatial_commands_match_replay_views() {
     super::spatial_replay::compare("armies", frames);
 }
 fn troop(d: super::Deployment, id: u32) -> Option<ExplorerTroops> {
-    GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 3, explorer_id: id })
+    GameState { contract_address: d.games }.resolved_explorer(ExplorerKey { game_id: 3, explorer_id: id })
 }
 fn guard(d: super::Deployment, home: ResourceKey, slot: u8) -> crate::guards::Guard {
     IGuardsDispatcher { contract_address: d.games }.guard(GuardKey { game_id: 3, structure_id: home.entity_id, slot })
@@ -144,7 +145,7 @@ fn recruitment_spends_troop_resources_and_updates_capacity_with_recorded_stamina
     assert_eq!(count(d, home), before - 2 * RESOURCE_PRECISION);
     assert!(execute_recorded_at(d, recruit(home, 0, 3), 140, 10000));
     assert_eq!(guard(d, home, 0).troops.count, 3 * RESOURCE_PRECISION);
-    assert_eq!(guard(d, home, 0).troops.stamina.amount, 0);
+    assert_eq!(guard(d, home, 0).troops.stamina.inline().amount, 0);
     assert_eq!(count(d, home), before - 5 * RESOURCE_PRECISION);
     assert_terminal_rejection(d, recruit(home, 1, 1), 140);
     assert_eq!(guard(d, home, 1).troops.count, 0);
@@ -155,8 +156,8 @@ fn explorer_transfer_preserves_the_worse_stamina_and_cooldown_and_deletes_an_emp
     let (d, home, first, second) = setup();
     for (id, stamina, cooldown) in array![(first, 2_u64, 190_u32), (second, 9, 150)] {
         let mut row = troop(d, id).unwrap();
-        row.troops.stamina.amount = stamina;
-        row.troops.stamina.updated_tick = 2;
+        row.troops.stamina.set_amount(stamina);
+        row.troops.stamina.set_updated_tick(2);
         row.troops.battle_cooldown_end = cooldown;
         crate::tests::resource_commands::set_explorer_fixture(
             d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: id }, row,
@@ -168,7 +169,7 @@ fn explorer_transfer_preserves_the_worse_stamina_and_cooldown_and_deletes_an_emp
     assert!(!resource(d).has_resource(ResourceKey { game_id: 3, entity_id: first }));
     let target = troop(d, second).unwrap().troops;
     assert_eq!(target.count, 15 * RESOURCE_PRECISION);
-    assert_eq!(target.stamina.amount, 2);
+    assert_eq!(target.stamina.inline().amount, 2);
     assert_eq!(target.battle_cooldown_end, 190);
     assert_eq!(IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home), array![second].span());
     let tile = crate::tests::state::MapObservationTrait::tile(
@@ -193,7 +194,7 @@ fn transfers_to_guards_and_back_preserve_counts_and_reject_foreign_homes() {
     assert_eq!(troop(d, first).unwrap().troops.count, 7 * RESOURCE_PRECISION);
     assert!(execute(d, transfer(Army::Guard(slot), Army::Explorer(second), 3), 140));
     assert_eq!(guard(d, home, 0).troops.count, 0);
-    assert_eq!(guard(d, home, 0).troops.stamina.amount, 0);
+    assert_eq!(guard(d, home, 0).troops.stamina.inline().amount, 0);
     assert_eq!(troop(d, second).unwrap().troops.count, 8 * RESOURCE_PRECISION);
     let mut row = troop(d, second).unwrap();
     assert_eq!(
@@ -247,7 +248,7 @@ fn guard_deletion_does_not_erase_defeat_delay_and_explorer_deletion_clears_owned
     assert_terminal_rejection(d, recruit(home, 0, 1), 140);
     assert!(execute(d, recruit(home, 0, 1), 180));
     assert_eq!(guard(d, home, 0).troops.count, RESOURCE_PRECISION);
-    assert_eq!(guard(d, home, 0).troops.stamina.amount, 0);
+    assert_eq!(guard(d, home, 0).troops.stamina.inline().amount, 0);
     let remove = manage(ManageTroops::RemoveGuard(GuardSlot { structure_id: home.entity_id, slot: 0 }));
     assert!(execute(d, remove, 180));
     assert_eq!(guard(d, home, 0).troops.count, 0);
@@ -515,8 +516,8 @@ fn five_step_move_charges_five_times_one_step_food() {
     for offset in 1_u32..7 {
         map.reveal(crate::geometry::tile_key(3, crate::troops::Coord { x: start.x + offset, ..start }), 11);
     }
-    explorer.troops.stamina.amount = 120;
-    explorer.troops.stamina.updated_tick = 2;
+    explorer.troops.stamina.set_amount(120);
+    explorer.troops.stamina.set_updated_tick(2);
     super::resource_commands::set_explorer_fixture(d.games, ExplorerKey { game_id: 3, explorer_id: first }, explorer);
     let wheat = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 35 };
     let fish = ResourceSlot { resource_type: 36, ..wheat };
@@ -533,7 +534,7 @@ fn five_step_move_charges_five_times_one_step_food() {
     assert_eq!(fish_after_one - resource(d).resource_balance(fish), 5 * fish_per_step);
     let after = troop(d, first).unwrap();
     assert_eq!(after.coord.x, start.x + 6);
-    assert_eq!(after.troops.stamina.amount, 0);
+    assert_eq!(after.troops.stamina.inline().amount, 0);
 }
 
 #[test]
@@ -550,8 +551,8 @@ fn multi_tile_move_spends_each_steps_stamina_and_rejects_a_blocked_path_atomical
     }
     stop_cheat_caller_address(d.games);
     let mut before = troop(d, first).unwrap();
-    before.troops.stamina.amount = 120;
-    before.troops.stamina.updated_tick = 2;
+    before.troops.stamina.set_amount(120);
+    before.troops.stamina.set_updated_tick(2);
     crate::tests::resource_commands::set_explorer_fixture(
         d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: first }, before,
     );
@@ -559,7 +560,7 @@ fn multi_tile_move_spends_each_steps_stamina_and_rejects_a_blocked_path_atomical
     let after = troop(d, first).unwrap();
     assert_eq!(after.coord.x, start.x + 2);
     assert_eq!(after.coord.y, start.y);
-    assert_eq!(after.troops.stamina.amount, 80); // Pinned travel cost: 20 per neutral tile.
+    assert_eq!(after.troops.stamina.inline().amount, 80); // Pinned travel cost: 20 per neutral tile.
     crate::tests::state::assert_spatial_indexes(
         d.games, 3, array![home.entity_id, first].span(), array![start, after.coord].span(),
     );

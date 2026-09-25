@@ -1,3 +1,4 @@
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
@@ -28,7 +29,7 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
   } = useGame();
   const account = useAccountStore((state) => state.account);
   const [pending, setPending] = useState<number | null>(null);
-  useNativeRevision(["ExplorerTroops", "Structure", "TileOccupancy"]);
+  useNativeRevision(["ArmySlot", "ExplorerTroops", "Structure", "TileOccupancy"]);
   const gameId = configManager.getActiveGameId();
   const explorer = store.get("ExplorerTroops", { game_id: gameId, explorer_id: armyEntityId });
   const home = explorer ? store.get("Structure", { game_id: gameId, entity_id: explorer.owner }) : undefined;
@@ -38,7 +39,10 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
 
   const spire = expeditionSpireTile(rules, home, getBlockTimestamp().currentBlockTimestamp);
   const besideSpire = isAtExpeditionSpire(spire, entityMapPosition(store, gameId, armyEntityId));
-  const stamina = Number(StaminaManager.getStamina(explorer.troops, getBlockTimestamp().currentArmiesTick).amount);
+  const troops = resolveExplorerTroops(store, explorer);
+  const stamina = troops
+    ? Number(StaminaManager.getStamina(troops, getBlockTimestamp().currentArmiesTick).amount)
+    : undefined;
   const depths = Array.from({ length: home.metadata.attunement }, (_, index) => index + 1).map((depth) => ({
     depth,
     cost: store.require("DepthRules", { game_id: gameId, depth }).entry_stamina,
@@ -69,8 +73,8 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
             key={depth}
             type="button"
             className={HUD_PILL_BUTTON}
-            disabled={!besideSpire || stamina < cost || pending !== null}
-            title={stamina < cost ? `Needs ${cost} stamina` : `${cost} stamina`}
+            disabled={!besideSpire || stamina === undefined || stamina < cost || pending !== null}
+            title={stamina === undefined ? "Stamina —" : stamina < cost ? `Needs ${cost} stamina` : `${cost} stamina`}
             onClick={() => void enter(depth)}
           >
             {pending === depth ? "Entering…" : `${DEPTH_NAMES[depth]} · ${cost} stamina`}

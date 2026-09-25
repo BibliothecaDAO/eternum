@@ -1,3 +1,4 @@
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import {
   configManager,
@@ -50,7 +51,7 @@ export const useBattleLabLiveData = (
   const {
     setup: { store },
   } = useGame();
-  const revision = useNativeRevision(["Structure", "Guard", "ExplorerTroops", "TileOccupancy"]);
+  const revision = useNativeRevision(["ArmySlot", "Structure", "Guard", "ExplorerTroops", "TileOccupancy"]);
   const currentArmiesTick = useCurrentArmiesTick();
 
   const { attackerRelicEffects, targetRelicEffects, target, targetResources, isLoading } = useAttackTargetData(
@@ -100,8 +101,9 @@ export const useBattleLabLiveData = (
         game_id: configManager.getActiveGameId(),
         explorer_id: attackerEntityId,
       });
-      if (army) {
-        const stamina = StaminaManager.getStamina(army.troops, currentArmiesTick).amount;
+      const troops = army ? resolveExplorerTroops(store, army) : undefined;
+      if (army && troops) {
+        const stamina = StaminaManager.getStamina(troops, currentArmiesTick).amount;
         armyAttacker = {
           stamina: Number(stamina),
           troopCount: divideByPrecision(Number(army.troops.count)),

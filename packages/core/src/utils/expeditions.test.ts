@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { StructureType } from "@bibliothecadao/types";
 import * as timestamp from "./timestamp";
 import {
+  absoluteEpoch,
+  seasonDay,
   expeditionDayEndsAt,
   expeditionSpires,
   expeditionSpireTile,
@@ -157,4 +159,13 @@ describe("expeditionDayEndsAt", () => {
   it("starts a new day exactly on the boundary", () => {
     expect(expeditionDayEndsAt(rules, 86400 * 4)).toBe(86400 * 5);
   });
+});
+
+it("keys facts by absolute epoch and maps by season day with exactly the launch offset", () => {
+  const rules = { epochSeconds: 100, startMainAt: 2350 };
+  for (const timestamp of [2350, 2399, 2400, 9999]) {
+    expect(absoluteEpoch(rules, timestamp) - seasonDay(rules, timestamp)).toBe(23);
+  }
+  expect(absoluteEpoch(rules, 2400)).toBe(24);
+  expect(seasonDay(rules, 2400)).toBe(1);
 });

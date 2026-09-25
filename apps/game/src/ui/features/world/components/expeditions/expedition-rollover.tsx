@@ -4,7 +4,7 @@ import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
   configManager,
-  expeditionEpoch,
+  seasonDay,
   getBlockTimestamp,
   expeditionRealmSite,
   isExpeditionRealm,
@@ -24,7 +24,7 @@ export const ExpeditionRollover = () => {
   const { setup } = useGame();
   const address = useAccountStore((state) => state.account?.address ?? null);
   const navigateToMapView = useNavigateToMapView();
-  const epochRef = useRef<number | null>(null);
+  const seasonDayRef = useRef<number | null>(null);
 
   useEffect(() => {
     const gameId = configManager.getActiveGameId();
@@ -32,13 +32,13 @@ export const ExpeditionRollover = () => {
       const rules = readExpeditionRules(setup.store, gameId);
       if (!rules) return;
       const now = useChainTimeStore.getState().getNowSeconds();
-      const epoch = expeditionEpoch(rules, now);
-      if (epochRef.current === null) {
-        epochRef.current = epoch;
+      const day = seasonDay(rules, now);
+      if (seasonDayRef.current === null) {
+        seasonDayRef.current = day;
         return;
       }
-      if (epoch === epochRef.current) return;
-      epochRef.current = epoch;
+      if (day === seasonDayRef.current) return;
+      seasonDayRef.current = day;
       getActiveGameSyncRuntime()?.getWorldSpatialProjection()?.rebuild();
       const realm = address
         ? [...setup.store.structuresOwnedBy(gameId, BigInt(address))].find((structure) =>

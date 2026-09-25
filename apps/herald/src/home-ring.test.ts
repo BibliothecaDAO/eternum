@@ -1,12 +1,13 @@
+import { absoluteEpoch } from "@bibliothecadao/eternum/expeditions";
 import { GameSubscription } from "./game-subscription";
 import { describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { isClientGameSyncModel } from "@bibliothecadao/eternum/game-sync-models";
+import { rowInGameSyncScope, isClientGameSyncModel } from "@bibliothecadao/eternum/game-sync-models";
 
 import { decodeHomeRing, type HomeRingTile, type HomeRingView } from "./home-ring";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
-import { seedDerivedRows, raw, receipt, rowEvent, rulesEvent, setup } from "./native/fixtures";
+import { structureValue, seedDerivedRows, raw, receipt, rowEvent, rulesEvent, setup } from "./native/fixtures";
 import type { HeraldStreamMessage } from "./stream-protocol";
 import type { RpcBlockWithReceipts } from "./types";
 import { WorldFold } from "./world-fold";
@@ -34,11 +35,18 @@ const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) =>
   rules.value.epoch_seconds = 86_400;
   fold.apply(rules);
   const home = (id: number) =>
-    rowEvent(
-      "Structure",
-      ["1", String(id)],
-      [String(id + 9), ...["0", "2", "120", "1", "0", "1", "0"], String(id), ...["0", "0", "0", "0", "1", "0"]],
-    );
+    rowEvent("Structure", ["1", String(id)], {
+      ...structureValue,
+      owner: id + 9,
+      base: {
+        ...structureValue.base,
+        troop_max_explorer_count: 2,
+        created_at: 120,
+        category: 1,
+        starting_troops_granted: true,
+      },
+      metadata: { ...structureValue.metadata, realm_id: id, attunement: 1 },
+    });
   native.applyReceipt(
     fold,
     receipt(
@@ -102,6 +110,26 @@ const tilesIn = (messages: HeraldStreamMessage[]) =>
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe("home ring", () => {
+  it("scopes slot and chest rows by absolute epoch on a nonzero launch day", () => {
+    const { fold } = frontierWorld();
+    const absolute = absoluteEpoch({ epochSeconds: 86_400 }, MID_DAY);
+    const scope = fold.subscriptionScope("1", "0xa", MID_DAY);
+    expect(scope.expedition?.absoluteEpoch).toBe(absolute);
+    expect(scope.expedition?.regions).toEqual(new Set(["0:0"]));
+    for (const [model, key] of [
+      ["ArmySlot", { structure_id: "1", slot: "0" }],
+      ["ChestTokens", { player: "10" }],
+      ["ChestReward", { player: "10", explorer_id: "11", index: "0" }],
+    ] as const) {
+      expect(rowInGameSyncScope(model, { ...key, epoch: String(absolute) }, scope)).toBe(true);
+      expect(rowInGameSyncScope(model, { ...key, epoch: "0" }, scope)).toBe(false);
+      const next = fold.subscriptionScope("1", "0xa", MID_DAY + 86_400);
+      expect(rowInGameSyncScope(model, { ...key, epoch: String(absolute) }, next)).toBe(false);
+      expect(rowInGameSyncScope(model, { ...key, epoch: String(absolute + 1) }, next)).toBe(true);
+    }
+    expect(fold.subscriptionScope("1", "0xa", DAY_START).expedition?.absoluteEpoch).toBe(-1);
+  });
+
   it("refuses an empty or short view response instead of reading a ring of no tiles", () => {
     expect(decodeHomeRing(["0x1", "0x0", "0x5", "0x6", "0x2"])).toEqual([{ col: 5, row: 6, biome: 2 }]);
     expect(() => decodeHomeRing([])).toThrow("expedition_home_ring returned 0 felts");
@@ -281,10 +309,20 @@ describe("client and Herald subscription scope parity", () => {
     timestamp += 86_400;
     deliver(subscription!.project({ type: "head", block: 12, preconfirmed: true, timestamp }));
     expect(store.subscriptionScope().known).toEqual(overlay.subscriptionScope("1", actor, timestamp));
-    expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0xbn, epoch: 0n }).unknown).toContain(
-      "OUTSIDE_SNAPSHOT_SCOPE",
-    );
-    expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0xbn, epoch: 1n }).known?.count).toBe(0);
+    expect(
+      store.requireOrAbsent("ChestTokens", {
+        game_id: 1,
+        player: 0xbn,
+        epoch: BigInt(absoluteEpoch({ epochSeconds: 86_400 }, DAY_START)),
+      }).unknown,
+    ).toContain("OUTSIDE_SNAPSHOT_SCOPE");
+    expect(
+      store.requireOrAbsent("ChestTokens", {
+        game_id: 1,
+        player: 0xbn,
+        epoch: BigInt(absoluteEpoch({ epochSeconds: 86_400 }, timestamp)),
+      }).known?.count,
+    ).toBe(0);
     expect(guardReads.some((read) => (read as { unknown?: string }).unknown === "UNKNOWN_SCOPE_CLOCK")).toBe(true);
   });
 });

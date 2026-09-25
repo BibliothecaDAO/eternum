@@ -1,7 +1,17 @@
 import { WorldFold } from "../world-fold";
 import { describe, expect, it } from "vitest";
 import { buildNativeDirectory, buildNativeLeaderboard } from "./read-models";
-import { pointsAward, manifest, seedDerivedRows, receipt, rowEvent, rulesEvent, schema, setup } from "./fixtures";
+import {
+  structureValue,
+  pointsAward,
+  manifest,
+  seedDerivedRows,
+  receipt,
+  rowEvent,
+  rulesEvent,
+  schema,
+  setup,
+} from "./fixtures";
 
 function gameEvent(game = "1", settled = "0", dev = "0", preset = "2") {
   return rowEvent(
@@ -35,11 +45,7 @@ function world() {
   return state;
 }
 function structure(id: string, category: string, owner: string) {
-  return rowEvent(
-    "Structure",
-    ["1", id],
-    [owner, "0", "0", "0", category, "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"],
-  );
+  return rowEvent("Structure", ["1", id], { ...structureValue, owner, base: { ...structureValue.base, category } });
 }
 
 describe("native directory and leaderboard", () => {

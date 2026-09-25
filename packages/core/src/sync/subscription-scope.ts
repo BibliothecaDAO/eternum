@@ -1,4 +1,4 @@
-import { expeditionEpoch, expeditionRealmSite, isCurrentExpeditionArmy, isRealmCategory } from "../utils/expeditions";
+import { absoluteEpoch, expeditionRealmSite, isCurrentExpeditionArmy, isRealmCategory } from "../utils/expeditions";
 import { hasSingleTilePosition } from "../client/native-occupancy";
 import { gameSyncRegion, syncScalar, type GameSyncScope } from "./model-manifest";
 
@@ -28,7 +28,7 @@ export function deriveGameSyncScope(
   const scope: GameSyncScope = { actor };
   if (!expedition) return scope;
   const { spacing } = expedition;
-  const epoch = expeditionEpoch(expedition, timestamp);
+  const currentAbsoluteEpoch = timestamp < expedition.startMainAt ? -1 : absoluteEpoch(expedition, timestamp);
   const owners = new Set<string>(actor === undefined ? [] : [syncScalar(actor)]);
   if (actor !== undefined)
     for (const { value } of read("PlayerEntry", spacing, [scopeLookup.entryOf(actor)]))
@@ -51,7 +51,7 @@ export function deriveGameSyncScope(
     );
   });
   // With no current army, morning muster starts on the surface, at the site the contract raises the realm on today.
-  if (epoch >= 0 && armies.length === 0)
+  if (currentAbsoluteEpoch >= 0 && armies.length === 0)
     for (const realm of realmTraits) {
       const site = expeditionRealmSite(expedition, Number(realm), timestamp);
       regions.add(gameSyncRegion({ alt: false, x: site.col, y: site.row }, spacing)!);
@@ -73,7 +73,16 @@ export function deriveGameSyncScope(
       syncScalar(value.entity_id),
     ),
   );
-  scope.expedition = { epoch, spacing, owners, realms, realmTraits, regions, entities, productionSources };
+  scope.expedition = {
+    absoluteEpoch: currentAbsoluteEpoch,
+    spacing,
+    owners,
+    realms,
+    realmTraits,
+    regions,
+    entities,
+    productionSources,
+  };
   return scope;
 }
 

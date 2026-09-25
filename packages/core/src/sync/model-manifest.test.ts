@@ -21,7 +21,7 @@ const declaredMembership = (model: string, row: Record<string, unknown>, scope: 
   if (rule === "actor") return scope.actor !== undefined && syncScalar(row.actor) === syncScalar(scope.actor);
   const expedition = scope.expedition;
   if (!expedition || rule === "shared") return true;
-  if (rule.epoch !== undefined && Number(row[rule.epoch]) !== expedition.epoch) return false;
+  if (rule.epoch !== undefined && Number(row[rule.epoch]) !== expedition.absoluteEpoch) return false;
   const named = SETS.some((set) => (rule[set] ?? []).some((field) => expedition[set].has(syncScalar(row[field]))));
   const inRegion = (rule.regions ?? []).some((region) => {
     const key = gameSyncRegion({ alt: row[region.alt], x: row[region.x], y: row[region.y] }, expedition.spacing);
@@ -49,7 +49,7 @@ describe("rowInGameSyncScope", () => {
       return {
         actor,
         expedition: {
-          epoch: pick([0, 1, 2]),
+          absoluteEpoch: pick([0, 1, 2]),
           spacing: SPACING,
           owners: subset(),
           realms: subset(),

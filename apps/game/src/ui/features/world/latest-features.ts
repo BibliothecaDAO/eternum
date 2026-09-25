@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-25",
+    title: "Stamina while loading",
+    description: "Army stamina shows — while its daily slot is loading, and actions wait until the bar is known.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-25",
     title: "Ysolde's guide",
     description:
       "Ysolde of the Fox walks new Lords through their first Frontier day, one line at a time. Skip her any time, or replay her from settings.",

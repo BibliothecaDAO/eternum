@@ -2,7 +2,7 @@ import { ResourcesIds, TroopType, type Troops } from "@bibliothecadao/types";
 import { configManager } from "..";
 import { divideByPrecision } from "../../utils";
 
-export const computeTravelFoodCosts = (troops: Troops) => {
+export const computeTravelFoodCosts = (troops: Pick<Troops, "count" | "category">) => {
   let foodConsumption;
   const troopCount = divideByPrecision(Number(troops.count));
 
@@ -29,7 +29,7 @@ export const computeTravelFoodCosts = (troops: Troops) => {
   };
 };
 
-export const computeExploreFoodCosts = (troops: Troops) => {
+export const computeExploreFoodCosts = (troops: Pick<Troops, "count" | "category">) => {
   let foodConsumption;
   const troopCount = divideByPrecision(Number(troops.count));
 

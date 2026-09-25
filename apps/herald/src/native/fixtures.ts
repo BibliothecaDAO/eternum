@@ -1,7 +1,10 @@
 import schemaJson from "../../../../contracts/l3/world-native/schema/schema.json";
 import setFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { WorldFold } from "../world-fold";
-import type { RpcEvent, RpcReceipt } from "../types";
+import type { DecodedRecord, RpcEvent, RpcReceipt } from "../types";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { encodeMembers } from "./serde";
+import { CairoCustomEnum } from "starknet";
 import { NativeDecoder } from "./decoder";
 import { NativeIngestion } from "./ingestion";
 import type { NativeManifest, NativeSchema } from "./schema";
@@ -43,13 +46,60 @@ export const setup = () => {
   return { decoder, fold: new WorldFold(decoder.registry), native: new NativeIngestion(decoder) };
 };
 
-export function rowEvent(name: string, keys: string[], values: string[]): RpcEvent {
+export function rowEvent(name: string, keys: string[], values: string[] | DecodedRecord): RpcEvent {
   const model = schema.models.find((model) => model.name === name)!;
   const layout = schema.games.events.find((event) => event.name === "RowSet")!;
+  const felts = Array.isArray(values) ? values : encodeMembers(schema, model.members, values);
   return {
     from_address: manifest.world.address,
     keys: [...layout.prefix, "1", model.identity],
-    data: [String(keys.length), ...keys, String(values.length), ...values],
+    data: [String(keys.length), ...keys, String(felts.length), ...felts],
+  };
+}
+
+/** Named synthetic values: encoding always follows the current schema. */
+export const structureValue = {
+  owner: 0n,
+  base: {
+    troop_max_guard_count: 0,
+    troop_max_explorer_count: 0,
+    created_at: 0,
+    category: 0,
+    level: 0,
+    starting_troops_granted: false,
+  },
+  resources_packed: 0n,
+  metadata: {
+    realm_id: 0,
+    order: 0,
+    has_wonder: false,
+    village_realm: 0,
+    mine_kind: 0,
+    attunement: 0,
+    barracks_tier: 0,
+  },
+} satisfies Omit<NativeRows["Structure"], "game_id" | "entity_id">;
+
+export function explorerValue(owner: string, count = 0n, amount = 0n, updatedTick = 0n): DecodedRecord {
+  return {
+    owner,
+    troops: {
+      category: new CairoCustomEnum({ Knight: {} }),
+      tier: new CairoCustomEnum({ T1: {} }),
+      count,
+      stamina: new CairoCustomEnum({ Inline: { amount, updated_tick: updatedTick } }),
+      boosts: {
+        incr_damage_dealt_percent_num: 0,
+        incr_damage_dealt_end_tick: 0,
+        decr_damage_gotten_percent_num: 0,
+        decr_damage_gotten_end_tick: 0,
+        incr_stamina_regen_percent_num: 0,
+        incr_stamina_regen_tick_count: 0,
+        incr_explore_reward_percent_num: 0,
+        incr_explore_reward_end_tick: 0,
+      },
+      battle_cooldown_end: 0,
+    },
   };
 }
 

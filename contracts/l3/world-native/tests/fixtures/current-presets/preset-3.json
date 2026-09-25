@@ -1,0 +1,1543 @@
+{
+  "rules": {
+    "battle_config": {
+      "regular_immunity_ticks": 24,
+      "village_immunity_ticks": 0,
+      "village_raid_immunity_ticks": 24,
+      "cooldown_seconds": 60
+    },
+    "map_config": {
+      "shards_mines_win_probability": 1000,
+      "shards_mines_fail_probability": 49000,
+      "camp_win_probability": 1500,
+      "camp_fail_probability": 48500,
+      "holysite_win_probability": 0,
+      "holysite_fail_probability": 0,
+      "bitcoin_mine_win_probability": 200,
+      "bitcoin_mine_fail_probability": 9800,
+      "hyps_win_prob": 2000,
+      "hyps_fail_prob": 98000,
+      "hyps_fail_prob_increase_p_hex": 9820,
+      "hyps_fail_prob_increase_p_fnd": 1,
+      "relic_discovery_interval_sec": 0,
+      "relic_hex_dist_from_center": 0,
+      "relic_chest_relics_per_chest": 0
+    },
+    "biome_climate_config": {
+      "elevation_scale_bps": 10000,
+      "moisture_scale_bps": 10000,
+      "elevation_bias_bps": 10000,
+      "moisture_bias_bps": 10000,
+      "elevation_seed": 0,
+      "moisture_seed": 0
+    },
+    "tick_config": {
+      "armies_tick_in_seconds": 60,
+      "delivery_tick_in_seconds": 180,
+      "bitcoin_phase_in_seconds": 600
+    },
+    "troop_damage_config": {
+      "damage_raid_percent_num": 1000,
+      "damage_biome_bonus_num": 3000,
+      "damage_scaling_factor": "36893488147419103232",
+      "t1_damage_value": "1844674407370955161600",
+      "t2_damage_multiplier": "55340232221128654848",
+      "t3_damage_multiplier": "166020696663385964544"
+    },
+    "troop_stamina_config": {
+      "damage_stamina_refund": true,
+      "capture_stamina_refund": 0,
+      "stamina_gain_per_tick": 20,
+      "stamina_initial": 20,
+      "stamina_bonus_value": 10,
+      "stamina_knight_max": 120,
+      "stamina_paladin_max": 120,
+      "stamina_crossbowman_max": 120,
+      "stamina_attack_req": 50,
+      "stamina_defense_req": 40,
+      "stamina_explore_stamina_cost": 30,
+      "stamina_travel_stamina_cost": 20,
+      "stamina_explore_wheat_cost": 30000000,
+      "stamina_explore_fish_cost": 30000000,
+      "stamina_travel_wheat_cost": 30000000,
+      "stamina_travel_fish_cost": 30000000
+    },
+    "troop_limit_config": {
+      "guard_resurrection_delay": 600,
+      "settlement_armies": 1,
+      "city_armies": 3,
+      "kingdom_armies": 5,
+      "empire_armies": 8,
+      "settlement_guard_slots": 1,
+      "city_guard_slots": 2,
+      "kingdom_guard_slots": 3,
+      "empire_guard_slots": 4,
+      "starting_guard": 1500,
+      "camp_armies": 1,
+      "mercenaries_troop_lower_bound": 800,
+      "mercenaries_troop_upper_bound": 1500,
+      "settlement_deployment_cap": 3000,
+      "city_deployment_cap": 15000,
+      "kingdom_deployment_cap": 45000,
+      "empire_deployment_cap": 90000,
+      "t1_tier_strength": 1,
+      "t2_tier_strength": 3,
+      "t3_tier_strength": 9,
+      "t1_tier_modifier": 50,
+      "t2_tier_modifier": 100,
+      "t3_tier_modifier": 150
+    },
+    "capacity_config": {
+      "troop_capacity": 10000,
+      "donkey_capacity": 50000,
+      "storehouse_boost_capacity": 0
+    },
+    "structure_capacity_config": {
+      "realm_capacity": "18446744073709551615",
+      "village_capacity": "18446744073709551615",
+      "hyperstructure_capacity": "18446744073709551615",
+      "fragment_mine_capacity": "18446744073709551615",
+      "bank_structure_capacity": "18446744073709551615",
+      "camp_capacity": "18446744073709551615",
+      "bitcoin_mine_capacity": "18446744073709551615"
+    },
+    "building_config": {
+      "base_population": 6,
+      "base_cost_percent_increase": 1000
+    },
+    "bitcoin_mine_config": {
+      "enabled": true,
+      "prize_per_phase": "0x3b9aca00",
+      "min_labor_per_contribution": "0x174876e800",
+      "owner_cut_bps": 2000
+    },
+    "victory_points_grant_config": {
+      "hyp_points_per_second": "1000000",
+      "claim_hyperstructure_points": "3000000000",
+      "claim_otherstructure_points": "500000000",
+      "explore_tiles_points": "10000000",
+      "relic_open_points": "1000000000"
+    },
+    "map_center_offset": 20,
+    "spire_travel_essence_cost": "0x2540be400",
+    "command_mask": "0x3ffffffffffffffff",
+    "epoch_seconds": 0,
+    "mode_rules": 1057816,
+    "entry_rule": 0,
+    "faith_enabled": true,
+    "speed_config": {
+      "donkey_sec_per_km": 9,
+      "donkey_sec_per_km_troops": 27
+    }
+  },
+  "resources": [
+    {
+      "resource_type": 1,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 2,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 3,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 4,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 5,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 6,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 7,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 8,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 9,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 10,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 11,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 12,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 13,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 14,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 15,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 16,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 17,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 18,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 19,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 20,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 21,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 22,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 23,
+      "unit_weight": 1000,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 24,
+      "unit_weight": 100,
+      "realm_rate": "0xb2d05e00",
+      "village_rate": "0x59682f00"
+    },
+    {
+      "resource_type": 25,
+      "unit_weight": 0,
+      "realm_rate": "0xb2d05e00",
+      "village_rate": "0x59682f00"
+    },
+    {
+      "resource_type": 26,
+      "unit_weight": 5000,
+      "realm_rate": "0x12a05f200",
+      "village_rate": "0x9502f900"
+    },
+    {
+      "resource_type": 27,
+      "unit_weight": 5000,
+      "realm_rate": "0x12a05f200",
+      "village_rate": "0x9502f900"
+    },
+    {
+      "resource_type": 28,
+      "unit_weight": 5000,
+      "realm_rate": "0x12a05f200",
+      "village_rate": "0x9502f900"
+    },
+    {
+      "resource_type": 29,
+      "unit_weight": 5000,
+      "realm_rate": "0x12a05f200",
+      "village_rate": "0x9502f900"
+    },
+    {
+      "resource_type": 30,
+      "unit_weight": 5000,
+      "realm_rate": "0x12a05f200",
+      "village_rate": "0x9502f900"
+    },
+    {
+      "resource_type": 31,
+      "unit_weight": 5000,
+      "realm_rate": "0x12a05f200",
+      "village_rate": "0x9502f900"
+    },
+    {
+      "resource_type": 32,
+      "unit_weight": 5000,
+      "realm_rate": "0x12a05f200",
+      "village_rate": "0x9502f900"
+    },
+    {
+      "resource_type": 33,
+      "unit_weight": 5000,
+      "realm_rate": "0x12a05f200",
+      "village_rate": "0x9502f900"
+    },
+    {
+      "resource_type": 34,
+      "unit_weight": 5000,
+      "realm_rate": "0x12a05f200",
+      "village_rate": "0x9502f900"
+    },
+    {
+      "resource_type": 35,
+      "unit_weight": 100,
+      "realm_rate": "0x165a0bc00",
+      "village_rate": "0xb2d05e00"
+    },
+    {
+      "resource_type": 36,
+      "unit_weight": 100,
+      "realm_rate": "0x165a0bc00",
+      "village_rate": "0xb2d05e00"
+    },
+    {
+      "resource_type": 37,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 38,
+      "unit_weight": 100,
+      "realm_rate": "0x2540be400",
+      "village_rate": "0x12a05f200"
+    },
+    {
+      "resource_type": 39,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 40,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 41,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 42,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 43,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 44,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 45,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 46,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 47,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 48,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 49,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 50,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 51,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 52,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 53,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 54,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 55,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 56,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    },
+    {
+      "resource_type": 57,
+      "unit_weight": 0,
+      "realm_rate": "0x3b9aca00",
+      "village_rate": "0x1dcd6500"
+    },
+    {
+      "resource_type": 58,
+      "unit_weight": 0,
+      "realm_rate": "0x0",
+      "village_rate": "0x0"
+    }
+  ],
+  "buildings": [
+    {
+      "category": 1,
+      "rule": {
+        "population_cost": 0,
+        "capacity_grant": 6,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0xdf8475800"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x4a817c800"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x4a817c800"
+          }
+        ]
+      }
+    },
+    {
+      "category": 2,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [],
+        "complex_cost": []
+      }
+    },
+    {
+      "category": 3,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x6fc23ac00"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x6fc23ac00"
+          }
+        ]
+      }
+    },
+    {
+      "category": 4,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x14f46b0400"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x6fc23ac00"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x6fc23ac00"
+          }
+        ]
+      }
+    },
+    {
+      "category": 5,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x6fc23ac00"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x6fc23ac00"
+          }
+        ]
+      }
+    },
+    {
+      "category": 6,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x45d964b800"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0xdf8475800"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0xdf8475800"
+          },
+          {
+            "resource_type": 2,
+            "amount": "0x6fc23ac00"
+          }
+        ]
+      }
+    },
+    {
+      "category": 7,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0xa7a3582000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 2,
+            "amount": "0xdf8475800"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x6fc23ac00"
+          }
+        ]
+      }
+    },
+    {
+      "category": 8,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x14f46b0400"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x6fc23ac00"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x6fc23ac00"
+          }
+        ]
+      }
+    },
+    {
+      "category": 9,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0xa7a3582000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 2,
+            "amount": "0xdf8475800"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x6fc23ac00"
+          }
+        ]
+      }
+    },
+    {
+      "category": 10,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0xa7a3582000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 2,
+            "amount": "0xdf8475800"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x6fc23ac00"
+          }
+        ]
+      }
+    },
+    {
+      "category": 11,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x22ecb25c000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 11,
+            "amount": "0xdf8475800"
+          },
+          {
+            "resource_type": 38,
+            "amount": "0x8bb2c97000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 12,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1a3185c5000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 2,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x1bf08eb000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 13,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0xa7a3582000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 2,
+            "amount": "0xdf8475800"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x6fc23ac00"
+          }
+        ]
+      }
+    },
+    {
+      "category": 14,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1a3185c5000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 2,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x1bf08eb000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 15,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1176592e000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 2,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0xdf8475800"
+          }
+        ]
+      }
+    },
+    {
+      "category": 16,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1176592e000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 2,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0xdf8475800"
+          }
+        ]
+      }
+    },
+    {
+      "category": 17,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1176592e000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 2,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0xdf8475800"
+          }
+        ]
+      }
+    },
+    {
+      "category": 18,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1a3185c5000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 2,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x1bf08eb000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 19,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1a3185c5000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 2,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x1bf08eb000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 20,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1a3185c5000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 2,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x1bf08eb000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 21,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x22ecb25c000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 5,
+            "amount": "0xdf8475800"
+          },
+          {
+            "resource_type": 38,
+            "amount": "0x8bb2c97000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 22,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1176592e000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 2,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0xdf8475800"
+          }
+        ]
+      }
+    },
+    {
+      "category": 23,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1a3185c5000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 2,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x1bf08eb000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 24,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x22ecb25c000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 7,
+            "amount": "0xdf8475800"
+          },
+          {
+            "resource_type": 38,
+            "amount": "0x8bb2c97000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 25,
+      "rule": {
+        "population_cost": 0,
+        "capacity_grant": 0,
+        "simple_cost": [],
+        "complex_cost": []
+      }
+    },
+    {
+      "category": 26,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [],
+        "complex_cost": []
+      }
+    },
+    {
+      "category": 27,
+      "rule": {
+        "population_cost": 3,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x29e8d60800"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0xdf8475800"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0xdf8475800"
+          }
+        ]
+      }
+    },
+    {
+      "category": 28,
+      "rule": {
+        "population_cost": 3,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1176592e000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x1bf08eb000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 29,
+      "rule": {
+        "population_cost": 3,
+        "capacity_grant": 0,
+        "simple_cost": [],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x53d1ac1000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 11,
+            "amount": "0xdf8475800"
+          },
+          {
+            "resource_type": 38,
+            "amount": "0x8bb2c97000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 30,
+      "rule": {
+        "population_cost": 3,
+        "capacity_grant": 0,
+        "simple_cost": [],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x7dba821800"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x53d1ac1000"
+          },
+          {
+            "resource_type": 11,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 9,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 38,
+            "amount": "0x1176592e000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 31,
+      "rule": {
+        "population_cost": 3,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1176592e000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x1bf08eb000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 32,
+      "rule": {
+        "population_cost": 3,
+        "capacity_grant": 0,
+        "simple_cost": [],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x53d1ac1000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 5,
+            "amount": "0xdf8475800"
+          },
+          {
+            "resource_type": 38,
+            "amount": "0x8bb2c97000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 33,
+      "rule": {
+        "population_cost": 3,
+        "capacity_grant": 0,
+        "simple_cost": [],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x7dba821800"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x53d1ac1000"
+          },
+          {
+            "resource_type": 5,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 19,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 38,
+            "amount": "0x1176592e000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 34,
+      "rule": {
+        "population_cost": 3,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1176592e000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x1bf08eb000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 35,
+      "rule": {
+        "population_cost": 3,
+        "capacity_grant": 0,
+        "simple_cost": [],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x53d1ac1000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0x29e8d60800"
+          },
+          {
+            "resource_type": 7,
+            "amount": "0xdf8475800"
+          },
+          {
+            "resource_type": 38,
+            "amount": "0x8bb2c97000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 36,
+      "rule": {
+        "population_cost": 3,
+        "capacity_grant": 0,
+        "simple_cost": [],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x7dba821800"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x53d1ac1000"
+          },
+          {
+            "resource_type": 7,
+            "amount": "0x37e11d6000"
+          },
+          {
+            "resource_type": 22,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 38,
+            "amount": "0x1176592e000"
+          }
+        ]
+      }
+    },
+    {
+      "category": 37,
+      "rule": {
+        "population_cost": 1,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x2540be400"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x2540be400"
+          }
+        ]
+      }
+    },
+    {
+      "category": 38,
+      "rule": {
+        "population_cost": 1,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x2540be400"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x2540be400"
+          }
+        ]
+      }
+    },
+    {
+      "category": 39,
+      "rule": {
+        "population_cost": 0,
+        "capacity_grant": 0,
+        "simple_cost": [],
+        "complex_cost": []
+      }
+    },
+    {
+      "category": 40,
+      "rule": {
+        "population_cost": 2,
+        "capacity_grant": 0,
+        "simple_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x53d1ac1000"
+          }
+        ],
+        "complex_cost": [
+          {
+            "resource_type": 23,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 3,
+            "amount": "0x1bf08eb000"
+          },
+          {
+            "resource_type": 4,
+            "amount": "0xdf8475800"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,3 +1,5 @@
+pub mod army_slot_storage;
+pub mod army_slots;
 pub mod arrivals;
 pub mod bitcoin;
 pub mod blitz_results;

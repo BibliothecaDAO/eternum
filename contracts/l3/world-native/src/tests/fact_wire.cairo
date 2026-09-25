@@ -25,6 +25,8 @@ pub struct FactWire {
     pub game_overrides: crate::game::GameOverrides,
     pub tile_opt: crate::map::TileOpt,
     pub tile_occupancy: crate::map::TileOccupancy,
+    pub army_slot_key: crate::troops::ArmySlotKey,
+    pub army_slot: crate::troops::ArmySlot,
     pub explorer_record: crate::troops::ExplorerRecord,
     pub liquidity_key: crate::market::LiquidityKey,
     pub mine_kind_key: crate::mines::MineKindKey,

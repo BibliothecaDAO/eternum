@@ -1,3 +1,4 @@
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentArmiesTick, useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -24,6 +25,7 @@ type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 const GUIDE_MODELS = [
   "Structure",
   "StructureBuildings",
+  "ArmySlot",
   "ExplorerTroops",
   "TileOccupancy",
   "Guard",
@@ -54,10 +56,17 @@ const readGuideFacts = (
 ): GuideFacts => {
   if (!realm) return { ...NO_REALM, onMap: clock.onMap };
   const armies = liveHomeArmies(store, realm.entity_id, realm.game_id);
-  const stamina = armies.map((army) => ({
-    current: Number(StaminaManager.getStamina(army.troops, clock.armiesTick).amount),
-    max: StaminaManager.getMaxStamina(army.troops.category as TroopType, army.troops.tier as TroopTier),
-  }));
+  const stamina = armies.flatMap((army) => {
+    const troops = resolveExplorerTroops(store, army);
+    return troops
+      ? [
+          {
+            current: Number(StaminaManager.getStamina(troops, clock.armiesTick).amount),
+            max: StaminaManager.getMaxStamina(army.troops.category as TroopType, army.troops.tier as TroopTier),
+          },
+        ]
+      : [];
+  });
   const exploreCost = configManager.getExploreStaminaCost();
   return {
     realm: true,
@@ -68,7 +77,8 @@ const readGuideFacts = (
     camp: guardedCampToday(store, rules, realm, clock.now),
     castleAffordable: canAffordNextCastleLevel(store, realm, clock.tick),
     onMap: clock.onMap,
-    armiesTired: stamina.length > 0 && stamina.every((bar) => bar.current < exploreCost),
+    armiesTired:
+      stamina.length === armies.length && stamina.length > 0 && stamina.every((bar) => bar.current < exploreCost),
   };
 };
 

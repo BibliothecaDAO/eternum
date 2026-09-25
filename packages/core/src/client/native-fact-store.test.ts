@@ -1,12 +1,18 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { StaminaManager } from "../managers/stamina-manager";
+import { configManager } from "../managers/config-manager";
+import { resolveExplorerTroops } from "../managers/troop-stamina";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import rowFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import type { GameSyncFact } from "../sync/game-sync-types";
 import { NativeFactStore } from "./native-fact-store";
-import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { setBlockTimestampSource } from "../utils/timestamp";
 
-afterEach(() => setBlockTimestampSource(null));
+afterEach(() => {
+  setBlockTimestampSource(null);
+  vi.restoreAllMocks();
+});
 
 const explorer = { ...rowFixture.expected.key, ...rowFixture.expected.value };
 const set = (key: string, model: string, value: Record<string, unknown>): GameSyncFact => ({ model, key, value });
@@ -42,6 +48,24 @@ const structure = (owner: string, game = 1) => ({
 });
 
 describe("native fact store", () => {
+  it("decodes tagged stamina and refuses ambiguous or unknown sources", () => {
+    const store = new NativeFactStore();
+    for (const stamina of [{ Slot: 0 }, { Inline: { amount: "12", updated_tick: "4" } }]) {
+      store.applyFacts([set("0x7", "ExplorerTroops", { ...explorer, troops: { ...explorer.troops, stamina } })]);
+      const row = store.require("ExplorerTroops", { game_id: 1, explorer_id: 7 });
+      if ("Inline" in stamina) expect(resolveExplorerTroops(store, row)?.stamina.amount).toBe(12n);
+      else expect(row.troops.stamina).toEqual({ Slot: 0 });
+    }
+    for (const stamina of [
+      { Slot: 0, Inline: { amount: "1", updated_tick: "1" } },
+      { Unknown: 0 },
+      { Inline: { amount: "1" } },
+    ])
+      expect(() =>
+        store.applyFacts([set("0x7", "ExplorerTroops", { ...explorer, troops: { ...explorer.troops, stamina } })]),
+      ).toThrow();
+  });
+
   it("keeps home and position indexes atomic through movement, reassignment and death", () => {
     const store = new NativeFactStore();
     const tile = (col: number) => ({
@@ -424,12 +448,45 @@ describe("declared fact absence", () => {
       }),
     ]);
     setBlockTimestampSource(() => 350);
+    store.applyFacts([set("0x7", "Structure", structure("0x111"))]);
+    const slot = { game_id: 1, structure_id: 7, epoch: 3n, slot: 0 };
+    expect(store.requireOrAbsent("ArmySlot", slot)).toEqual({ unused: true });
+    const army = {
+      ...explorer,
+      game_id: 1,
+      explorer_id: 7,
+      owner: 7,
+      troops: { ...explorer.troops, stamina: { Slot: 0 } },
+    } as unknown as NativeRows["ExplorerTroops"];
+    expect(resolveExplorerTroops(new NativeFactStore(), army)).toBeUndefined();
+    expect(resolveExplorerTroops(store, { ...army, owner: 8 })).toBeUndefined();
+    expect(() => resolveExplorerTroops(store, army)).toThrow("unused");
+    const occupied = { ...slot, explorer_id: army.explorer_id, stamina: { amount: "7", updated_tick: "17" } };
+    store.applyFacts([set("0x70", "ArmySlot", occupied)]);
+    expect(resolveExplorerTroops(store, army)?.stamina).toEqual({ amount: 7n, updated_tick: 17n });
+    store.applyFacts([set("0x70", "ArmySlot", { ...occupied, explorer_id: army.explorer_id + 1 })]);
+    expect(() => resolveExplorerTroops(store, army)).toThrow("occupant mismatch");
+    store.applyFacts([remove("0x70", "ArmySlot")]);
+    store.applyFacts([set("0x71", "ChestTokens", { game_id: 1, player: "0x111", epoch: "3", count: 1 })]);
+    expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0x111n, epoch: 3n }).known?.count).toBe(1);
+
+    expect(store.requireOrAbsent("ArmySlot", { ...slot, epoch: 2n }).unknown).toContain("OUTSIDE_SNAPSHOT_SCOPE");
+    expect(store.requireOrAbsent("ArmySlot", { ...slot, structure_id: 8 }).unknown).toContain("OUTSIDE_SNAPSHOT_SCOPE");
+    store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
+    expect(store.requireOrAbsent("ArmySlot", slot).unknown).toContain("INCOMPLETE_SNAPSHOT");
+    expect(resolveExplorerTroops(store, army)).toBeUndefined();
+    store.applyFacts([set("0x72", "ExplorerTroops", army)]);
+    vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+    expect(new StaminaManager(store, army.explorer_id).getStamina(17)).toBeUndefined();
+    store.setSnapshot({ gameId: 1, complete: true, timestamp: 350 });
+    expect(resolveExplorerTroops(store, army)).toBeUndefined();
+    store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
     expect(store.requireOrAbsent("ChestPity", { game_id: 1, player: 0x111n, depth: 3 }).known?.count).toBe(0);
-    expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0x111n, epoch: 2n }).known?.count).toBe(0);
+    expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0x111n, epoch: 3n }).known?.count).toBe(1);
     expect(store.requireOrAbsent("ChestPity", { game_id: 1, player: 0x222n, depth: 3 }).unknown).toContain(
       "OUTSIDE_SNAPSHOT_SCOPE",
     );
-    for (const epoch of [1n, 3n])
+    for (const epoch of [1n, 2n])
       expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0x111n, epoch }).unknown).toContain(
         "OUTSIDE_SNAPSHOT_SCOPE",
       );

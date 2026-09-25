@@ -19,7 +19,7 @@ pub fn active_explorer(
             "EXPIRED_ARMY",
         );
     }
-    explorer
+    crate::logic::army_slots::resolve(key, explorer)
 }
 
 pub fn owned_structure(game_id: u32, entity_id: u32, actor: ContractAddress) -> Structure {
@@ -97,11 +97,16 @@ pub mod TroopState {
         explorer.serialize(ref values);
         emit(Event::RowSet(RowSet { version: 1, model: 'ExplorerTroops', keys: keys.span(), values: values.span() }));
     }
-    pub fn save(key: ExplorerKey, explorer: ExplorerRecord) {
+    pub fn save(key: ExplorerKey, mut explorer: ExplorerRecord) {
         let state = crate::state::write();
         let previous = state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.read();
         assert!(previous != 0, "missing explorer");
         assert!(explorer.owner != 0, "missing explorer owner");
+        let prior = state.troops.explorers.read((key.game_id, key.explorer_id));
+        if let crate::troops::StaminaSource::Slot(_) = prior.troops.stamina {
+            assert!(previous == explorer.owner, "slot army cannot change home");
+        }
+        explorer.troops = crate::logic::army_slots::persist(key, prior, explorer.troops);
         write_home_membership(key, previous, explorer.owner);
         state.troops.explorers.write((key.game_id, key.explorer_id), explorer);
         let mut keys = array![];
@@ -113,6 +118,9 @@ pub mod TroopState {
     pub fn update_troops(key: ExplorerKey, troops: Troops) {
         let state = crate::state::write();
         assert!(state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.read() != 0, "missing explorer");
+        let troops = crate::logic::army_slots::persist(
+            key, state.troops.explorers.read((key.game_id, key.explorer_id)), troops,
+        );
         state.troops.explorers.entry((key.game_id, key.explorer_id)).troops.write(troops);
         let mut keys = array![];
         key.serialize(ref keys);
@@ -163,7 +171,10 @@ pub mod TroopState {
                 crate::resources::ResourceKey { game_id: key.game_id, entity_id: owner },
             );
             let count = state.troops.home_counts.read((key.game_id, owner));
-            assert!(count < home.base.troop_max_explorer_count, "explorer limit reached");
+            assert!(
+                count < home.base.troop_max_explorer_count.try_into().expect('invalid slot allowance'),
+                "explorer limit reached",
+            );
             state.troops.home_armies.write((key.game_id, owner, count), key.explorer_id);
             state.troops.home_counts.write((key.game_id, owner), count + 1);
         }
@@ -187,7 +198,7 @@ pub mod TroopsLogic {
     use crate::logic::troops::TroopState;
     use crate::resources::{IResourceOperationsDispatcherTrait, ResourceKey};
     use crate::rules::{RESOURCE_PRECISION, SliceRules};
-    use crate::stamina::StaminaTrait;
+    use crate::stamina::StaminaSourceTrait;
     use crate::structures::{IStructureOperationsDispatcherTrait, Structure};
     use crate::troops::{Coord, ExplorerKey, ExplorerTroops, TroopTier, TroopType, Troops};
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
@@ -671,7 +682,7 @@ pub mod TroopsLogic {
             }
             crate::troop_management::refill(ref guard.troops, rules, timestamp);
             if empty {
-                guard.troops.stamina.amount = 0;
+                guard.troops.stamina.set_amount(0);
             }
             if reset_stamina {
                 guard.troops.stamina.revert_initial_amount(rules.troop_stamina_config, tick);
@@ -737,7 +748,18 @@ pub mod TroopsLogic {
                     * RESOURCE_PRECISION,
                 "army size limit",
             );
-            let troops = initial_troops(category, tier, command.amount, rules, context.timestamp);
+            let mut troops = initial_troops(category, tier, command.amount, rules, context.timestamp);
+            if rules.epoch_seconds != 0 {
+                troops
+                    .stamina =
+                        crate::logic::army_slots::allocate(
+                            ExplorerKey { game_id, explorer_id: id },
+                            command.structure_id,
+                            crate::expeditions::absolute_epoch(rules.epoch_seconds, context.timestamp),
+                            home.base.troop_max_explorer_count.try_into().expect('invalid slot allowance'),
+                            troops.stamina.inline(),
+                        );
+            }
             crate::logic::map::MapState::occupy(
                 tile_key(game_id, coord), id, crate::troops::troop_occupier(troops), false,
             );
@@ -841,7 +863,7 @@ pub mod troop_helpers {
     use crate::map::{IMapLogicDispatcherTrait, IMapLogicLibraryDispatcher};
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
     use crate::rules::{RESOURCE_PRECISION, SliceRules};
-    use crate::stamina::StaminaTrait;
+    use crate::stamina::StaminaSourceTrait;
     use crate::structures::IStructureOperationsLibraryDispatcher;
     use crate::troops::{Coord, ExplorerKey, ExplorerTroops};
     #[generate_trait]
@@ -1007,6 +1029,7 @@ pub mod troop_helpers {
         }
 
         fn destroy_explorer(ref self: TContractState, key: ExplorerKey, explorer: ExplorerTroops) {
+            crate::logic::army_slots::release(key, explorer);
             self
                 .resources_dispatcher(key.game_id)
                 .destroy_resources(ResourceKey { game_id: key.game_id, entity_id: key.explorer_id });

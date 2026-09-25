@@ -6,6 +6,24 @@ export const executionRecordedVersion = 2;
 export const factWireTypes = [
   {
     type: "struct",
+    name: "world_native::troops::ArmySlotKey",
+    members: [
+      { name: "game_id", type: "core::integer::u32" },
+      { name: "structure_id", type: "core::integer::u32" },
+      { name: "epoch", type: "core::integer::u64" },
+      { name: "slot", type: "core::integer::u8" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::troops::ArmySlot",
+    members: [
+      { name: "explorer_id", type: "core::integer::u32" },
+      { name: "stamina", type: "world_native::troops::Stamina" },
+    ],
+  },
+  {
+    type: "struct",
     name: "world_native::settlement::SettlementRules",
     members: [
       {
@@ -733,6 +751,13 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No resource contribution to this hyperstructure.",
       };
+    if (row.name === "ArmySlot")
+      row.absence = {
+        parent: "Structure",
+        parentKeys: { entity_id: "structure_id" },
+        value: "unused",
+        meaning: "This army slot has not been used in the current expedition epoch.",
+      };
     if (row.name === "Guard")
       row.absence = {
         parent: "Structure",
@@ -955,6 +980,7 @@ export function defineFactModels({ struct, model: declare }) {
     model("PlayerEntry", "game", struct("settlement::EntryKey"), struct("settlement::PlayerEntry")),
     model("TileOpt", "game", struct("map::TileKey"), struct("map::TileOpt")),
     model("TileOccupancy", "game", struct("map::TileKey"), struct("map::TileOccupancy")),
+    model("ArmySlot", "game", struct("troops::ArmySlotKey"), struct("troops::ArmySlot")),
     model("ExplorerTroops", "game", struct("troops::ExplorerKey"), struct("troops::ExplorerRecord")),
     model("Structure", "game", struct("resources::ResourceKey"), struct("structures::Structure")),
     model("ResourceBalance", "game", struct("resources::ResourceSlot"), [
@@ -1341,6 +1367,7 @@ export const syncScopes = {
   TileOccupancy: { regions: [{ alt: "alt", x: "col", y: "row" }], entities: ["entity_id"] },
   Building: { realms: ["structure_id"] },
   ProductionReceiver: { realms: ["home"] },
+  ArmySlot: { realms: ["structure_id"], epoch: "epoch" },
   ExplorerTroops: { entities: ["explorer_id"] },
   Guard: { entities: ["structure_id"] },
   FaithfulStructure: { entities: ["structure_id"] },

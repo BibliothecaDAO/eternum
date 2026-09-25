@@ -81,6 +81,7 @@ export function buildCommonBaseConfig(): ConfigPatch {
       donkey_for_troops: DONKEY_SPEED_FOR_TROOPS,
     },
     battle: {
+      cooldownSeconds: ONE_MINUTE_IN_SECONDS,
       regularImmunityTicks: BATTLE_GRACE_TICK_COUNT,
       villageImmunityTicks: 0,
       delaySeconds: 0,

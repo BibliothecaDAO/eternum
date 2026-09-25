@@ -3,7 +3,7 @@ import { BiomeType, BuildingType, CapacityConfig, TickIds, TroopType } from "@bi
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
 import { ClientConfigManager } from "./config-manager";
-import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 function fixture(gameId = 54) {

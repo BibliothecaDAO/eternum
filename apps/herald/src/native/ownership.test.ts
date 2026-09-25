@@ -2,7 +2,18 @@ import { toJsonValue } from "../model-registry";
 import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
 import { CallData, CairoCustomEnum } from "starknet";
 import { describe, expect, it } from "vitest";
-import { raw, seedDerivedRows, receipt, rowEvent, rulesEvent, schema, setup, manifest } from "./fixtures";
+import {
+  structureValue,
+  explorerValue,
+  raw,
+  seedDerivedRows,
+  receipt,
+  rowEvent,
+  rulesEvent,
+  schema,
+  setup,
+  manifest,
+} from "./fixtures";
 
 function faithStory() {
   const layout = schema.games.events.find((event) => event.name === "StoryEvent")!;
@@ -43,10 +54,8 @@ describe("native ownership projections", () => {
   });
   it("narrows a snapshot to one account's rows: its structures, their armies, and every model without an owner", () => {
     const { fold, native, decoder } = setup();
-    const structure = (id: string, owner: string) =>
-      rowEvent("Structure", ["1", id], [owner, ...Array.from({ length: 14 }, () => "0")]);
-    const army = (id: string, home: string) =>
-      rowEvent("ExplorerTroops", ["1", id], [home, ...Array.from({ length: 14 }, () => "0")]);
+    const structure = (id: string, owner: string) => rowEvent("Structure", ["1", id], { ...structureValue, owner });
+    const army = (id: string, home: string) => rowEvent("ExplorerTroops", ["1", id], explorerValue(home));
     native.applyReceipt(
       fold,
       receipt(

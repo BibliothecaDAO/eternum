@@ -26,7 +26,7 @@ export interface ArmyLabelData extends LabelData {
   };
   color: string;
   troopCount: number;
-  currentStamina: number;
+  currentStamina: number | undefined;
   maxStamina: number;
   attackedFromDegrees?: number;
   attackedTowardDegrees?: number;
@@ -106,7 +106,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
       if (data.currentStamina !== undefined && data.maxStamina !== undefined && data.maxStamina > 0) {
         const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
         textContainer.appendChild(staminaBar);
-      } else if (data.currentStamina !== undefined && cameraView !== CameraView.Medium) {
+      } else if (data.currentStamina === undefined || cameraView !== CameraView.Medium) {
         const staminaInfo = document.createElement("div");
         staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-1");
 
@@ -116,7 +116,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
         staminaInfo.appendChild(staminaIcon);
 
         const staminaText = document.createElement("span");
-        staminaText.textContent = `${data.currentStamina}`;
+        staminaText.textContent = `${data.currentStamina ?? "—"}`;
         staminaText.classList.add("font-mono");
         staminaText.style.color = "#f6f1e5";
         staminaInfo.appendChild(staminaText);
@@ -247,7 +247,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
         if (data.currentStamina !== undefined && data.maxStamina !== undefined && data.maxStamina > 0) {
           const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
           contentContainer.appendChild(staminaBar);
-        } else if (data.currentStamina !== undefined && cameraView !== CameraView.Medium) {
+        } else if (data.currentStamina === undefined || cameraView !== CameraView.Medium) {
           const staminaInfo = document.createElement("div");
           staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-1");
 
@@ -257,7 +257,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
           staminaInfo.appendChild(staminaIcon);
 
           const staminaText = document.createElement("span");
-          staminaText.textContent = `${data.currentStamina}`;
+          staminaText.textContent = `${data.currentStamina ?? "—"}`;
           staminaText.classList.add("font-mono");
           staminaText.style.color = "#f6f1e5";
           staminaInfo.appendChild(staminaText);

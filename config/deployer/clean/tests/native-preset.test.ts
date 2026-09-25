@@ -46,6 +46,24 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
+  test("every preset supplies its cooldown explicitly, independent of the stamina clock", () => {
+    for (const [network, id, expected] of [
+      ["madara.frontier", 5, 0],
+      ["madara.blitz", 2, 60],
+      ["madara.eternum", 3, 60],
+      ["madara.blitz", 4, 60],
+    ] as const) {
+      const config = loadNativePresetConfiguration(network, id);
+      expect(buildNativePreset(config, id).rules.battle_config.cooldown_seconds).toBe(expected);
+      expect(() =>
+        buildNativePreset(
+          { ...config, battle: { ...config.battle, cooldownSeconds: undefined } } as unknown as typeof config,
+          id,
+        ),
+      ).toThrow("cooldownSeconds must be an explicit u32");
+    }
+  });
+
   test("the contract Frontier command gate uses the published mask", () => {
     const preset = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),

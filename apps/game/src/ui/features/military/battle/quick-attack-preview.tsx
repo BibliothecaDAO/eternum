@@ -1,3 +1,4 @@
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
 
@@ -127,7 +128,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       store,
     },
   } = useGame();
-  const revision = useNativeRevision(["Structure", "Guard", "ExplorerTroops", "TileOccupancy"]);
+  const revision = useNativeRevision(["ArmySlot", "Structure", "Guard", "ExplorerTroops", "TileOccupancy"]);
 
   const accountName = usePlayerDisplayName(account?.address);
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -185,17 +186,18 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const attackerStamina = useMemo(() => {
     if (attackerType === AttackerType.Structure) {
-      if (!activeGuard || !activeGuard.troops.stamina) return 0n;
+      if (!activeGuard || !activeGuard.troops.stamina) return undefined;
       return StaminaManager.getStamina(activeGuard.troops, currentArmiesTick).amount;
     }
 
-    return new StaminaManager(store, attacker.id).getStamina(currentArmiesTick)?.amount ?? 0n;
-  }, [attackerType, activeGuard, store, attacker.id, currentArmiesTick]);
+    return new StaminaManager(store, attacker.id).getStamina(currentArmiesTick)?.amount;
+  }, [attackerType, activeGuard, store, attacker.id, currentArmiesTick, revision]);
 
-  const attackerStaminaValue = Number(attackerStamina);
+  const attackerStaminaValue = attackerStamina === undefined ? undefined : Number(attackerStamina);
   const requiredAttackStamina = Number(combatConfig.stamina_attack_req);
 
   const staminaWaitSeconds = useMemo(() => {
+    if (attackerStaminaValue === undefined) return null;
     if (attackerStaminaValue >= requiredAttackStamina) return 0;
 
     const deficit = requiredAttackStamina - attackerStaminaValue;
@@ -217,6 +219,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   }, [attackerStaminaValue, requiredAttackStamina, armiesTickTimeRemaining]);
 
   const attackerArmyData: { troops: Troops } | null = useMemo(() => {
+    if (attackerStamina === undefined) return null;
     if (attackerType === AttackerType.Structure) {
       const guard = activeGuard;
       if (!guard) return null;
@@ -229,9 +232,10 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     }
 
     const army = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: attacker.id });
-    return army
+    const troops = army ? resolveExplorerTroops(store, army) : undefined;
+    return troops
       ? {
-          troops: buildProjectedTroopSnapshot(army.troops, {
+          troops: buildProjectedTroopSnapshot(troops, {
             amount: attackerStamina,
             updated_tick: BigInt(currentArmiesTick),
           }),
@@ -661,7 +665,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
               {isLowStamina && (
                 <div className="mt-1 text-[11px] text-gold/70">
                   <div>
-                    Current: {attackerStaminaValue} / Required: {requiredAttackStamina}
+                    Current: {attackerStaminaValue ?? "—"} / Required: {requiredAttackStamina}
                   </div>
                   {staminaWaitSeconds !== null && <div>Ready in: {formatTime(staminaWaitSeconds)}</div>}
                 </div>

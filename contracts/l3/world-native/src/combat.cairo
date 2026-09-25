@@ -3,7 +3,7 @@ use eternum_cubit::f128::types::fixed::{Fixed, FixedTrait};
 use crate::biome::Biome;
 use crate::math::PercentageValueImpl;
 use crate::rules::{RESOURCE_PRECISION, TroopDamageConfig, TroopStaminaConfig};
-use crate::stamina::StaminaTrait;
+use crate::stamina::StaminaSourceTrait;
 use crate::troops::{TroopTier, TroopType, Troops};
 #[derive(Copy, Drop, Serde)]
 pub struct CombatContext {
@@ -202,7 +202,7 @@ pub impl TroopsImpl of TroopsTrait {
         troop_stamina_config: TroopStaminaConfig,
         troop_damage_config: TroopDamageConfig,
         current_tick: u64,
-        current_tick_interval: u64,
+        cooldown_seconds: u32,
     ) -> (u128, u128, u64, u64) {
         assert!(self.count.is_non_zero(), "you have no troops");
         assert!(bravo.count.is_non_zero(), "the defender has no troops");
@@ -228,9 +228,9 @@ pub impl TroopsImpl of TroopsTrait {
 
         // ensure alpha has enough stamina to launch attack
         assert!(
-            alpha.stamina.amount >= troop_stamina_config.stamina_attack_req.into(),
+            alpha.stamina.inline().amount >= troop_stamina_config.stamina_attack_req.into(),
             "you have {} stamina, but need {} to launch attack",
-            alpha.stamina.amount,
+            alpha.stamina.inline().amount,
             troop_stamina_config.stamina_attack_req,
         );
 
@@ -249,7 +249,9 @@ pub impl TroopsImpl of TroopsTrait {
         } else {
             troop_stamina_config.stamina_defense_req
         };
-        let mut BRAVO_STAMINA_LOSS: u128 = core::cmp::min(bravo.stamina.amount.into(), defender_stamina_req.into());
+        let mut BRAVO_STAMINA_LOSS: u128 = core::cmp::min(
+            bravo.stamina.inline().amount.into(), defender_stamina_req.into(),
+        );
         if !is_ranged_attack && BRAVO_STAMINA_LOSS < defender_stamina_req.into() {
             BRAVO_STAMINA_BONUS_DAMAGE_MULTIPLIER = FixedTrait::new(7, false) / FixedTrait::new(10, false); // 0.7
         }
@@ -336,7 +338,7 @@ pub impl TroopsImpl of TroopsTrait {
             / PercentageValueImpl::_100().into();
 
         if is_ranged_attack {
-            let half_battle_timer_length: u32 = (current_tick_interval / 2).try_into().unwrap();
+            let half_battle_timer_length: u32 = (cooldown_seconds / 2).try_into().unwrap();
             alpha.battle_cooldown_end += half_battle_timer_length;
             bravo.battle_cooldown_end += half_battle_timer_length;
             self = alpha;
@@ -370,13 +372,11 @@ pub impl TroopsImpl of TroopsTrait {
         ////////////////////////////////////
         /// BATTLE TIMER REFUND
         ////////////////////////////////////
-        let current_tick_interval_fixed: Fixed = current_tick_interval.into();
-        let alpha_additional_timer_length: Fixed = current_tick_interval_fixed
-            * (FixedTrait::ONE() - alpha_refund_ratio);
+        let cooldown_seconds_fixed: Fixed = cooldown_seconds.into();
+        let alpha_additional_timer_length: Fixed = cooldown_seconds_fixed * (FixedTrait::ONE() - alpha_refund_ratio);
         alpha.battle_cooldown_end += alpha_additional_timer_length.try_into().unwrap();
 
-        let bravo_additional_timer_length: Fixed = current_tick_interval_fixed
-            * (FixedTrait::ONE() - bravo_refund_ratio);
+        let bravo_additional_timer_length: Fixed = cooldown_seconds_fixed * (FixedTrait::ONE() - bravo_refund_ratio);
         bravo.battle_cooldown_end += bravo_additional_timer_length.try_into().unwrap();
 
         self = alpha;
@@ -397,11 +397,11 @@ pub impl TroopsImpl of TroopsTrait {
         troop_stamina_config: TroopStaminaConfig,
         troop_damage_config: TroopDamageConfig,
         current_tick: u64,
-        current_tick_interval: u64,
+        cooldown_seconds: u32,
     ) {
         let (alpha_damage_dealt, bravo_damage_dealt, alpha_stamina_loss, bravo_stamina_loss) = self
             .damage_with_context(
-                ref bravo, context, troop_stamina_config, troop_damage_config, current_tick, current_tick_interval,
+                ref bravo, context, troop_stamina_config, troop_damage_config, current_tick, cooldown_seconds,
             );
 
         let mut alpha = self;

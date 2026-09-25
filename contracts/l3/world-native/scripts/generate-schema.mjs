@@ -132,7 +132,7 @@ function model(name, scope, keys, members, emitterKey) {
 const models = defineFactModels({ struct, model });
 for (const model of models) {
   const absence = model.absence;
-  if (absence?.value !== "zero") continue;
+  if (!absence) continue;
   if (!absence.parent) continue;
   const parent = models.find(({ name }) => name === absence.parent);
   if (!parent) throw new Error(`Missing absence parent for ${model.name}`);
@@ -288,7 +288,7 @@ async function writeFixtures(schema) {
     return { from_address: emitter, keys, data: data.map((value) => `0x${BigInt(value).toString(16)}`) };
   }
   // These values match the raw events asserted by the Cairo event-shape test.
-  const zeroTroops = Array(14).fill(0);
+  const zeroTroops = Array(15).fill(0);
   const decoder = new CallData([
     ...Object.values(schema.types),
     { type: "function", name: "key", inputs: [], outputs: model.keys, state_mutability: "view" },
@@ -376,6 +376,13 @@ function factType(type) {
     const variants = definition.variants.map((variant) => variant.name);
     return { ts: variants.map(JSON.stringify).join(" | "), wire: { enum: variants } };
   }
+  if (definition?.type === "enum") {
+    const variants = definition.variants.map(({ name, type }) => [name, factType(type)]);
+    return {
+      ts: variants.map(([name, type]) => `{ readonly ${name}: ${type.ts} }`).join(" | "),
+      wire: { variants: Object.fromEntries(variants.map(([name, type]) => [name, type.wire])) },
+    };
+  }
   if (definition?.type === "struct") return factMembers(definition.members);
   throw new Error(`Unsupported native fact type ${type}`);
 }
@@ -431,7 +438,7 @@ const declarations = [
           keys: model.keys.map((member) => member.name),
           scope: model.scope,
           fields: factRows[index][1].wire,
-          ...(model.absence?.value === "zero" ? { absence: model.absence } : {}),
+          ...(model.absence ? { absence: model.absence } : {}),
         },
       ]),
     ),
