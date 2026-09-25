@@ -66,16 +66,18 @@ docker build -t realms-gateway:REVISION apps/gateway
 Use the init, gateway and Herald release digests with `scripts/shard.py CONFIGURATION RUN_DIRECTORY`; the node runs the
 package's pin in `deploy/shard/compose.yml`, and a configuration naming another node image is refused. The configuration
 names `shard`, `chain_id`, `port_base` (free loopback ports at base through base+3 and base+5 above 27999), `cpuset`,
-`node_memory_mib`, `player_capacity`, `init_image`, `gateway_image`, `herald_image`, `chain_config`, `node_flags`,
-`guardian_url`, `public_rpc_url` and `public_admission_url`. Behind a tunnel or reverse proxy, also set `trusted_proxy`
-to the address the gateway sees for it: the gateway then limits each client by the last `X-Forwarded-For` entry, the one
-that proxy appended, and ignores the header from any other peer. Choose a unique `chain_id` of 1–31 ASCII letters,
-digits, underscores or hyphens, beginning with a letter. The runner writes its hex encoding to `native-world.json` at
-`shard.chainId` before deployment and renders the node configuration with the same identity. The checked-in chain
-configuration is a template; the package init renders it before starting a node. Deployment, preset and harness commands
-check their RPC against the manifest before submitting. Every image must be pinned by digest. Flags explicitly select
-native execution and compilation mode. The runner refuses existing project state and CPUs outside `athanor.slice`.
-`node_memory_mib` is optional and defaults to 24576 (24 GiB); explicit host limits override it. The shared Compose node
+`node_memory_mib`, `player_capacity` (at most 2,000, campaign G's target, until a G measurement supports more),
+`init_image`, `gateway_image`, `herald_image`, `chain_config`, `node_flags`, `guardian_url`, `public_rpc_url` and
+`public_admission_url`. Behind a tunnel or reverse proxy, also set `trusted_proxy` to the address the gateway sees for
+it: the gateway then limits each client by the last `X-Forwarded-For` entry, the one that proxy appended, and ignores
+the header from any other peer. Choose a unique `chain_id` of 1–31 ASCII letters, digits, underscores or hyphens,
+beginning with a letter. The runner writes its hex encoding to `native-world.json` at `shard.chainId` before deployment
+and renders the node configuration with the same identity. The checked-in chain configuration is a template; the package
+init renders it before starting a node. Deployment, preset and harness commands check their RPC against the manifest
+before submitting. Every image must be pinned by digest. Flags explicitly select native execution and compilation mode.
+The runner refuses existing project state and CPUs outside `athanor.slice`. `node_memory_mib` is optional and defaults
+to 24576 (24 GiB); explicit host limits override it. Its only upper bound is the slice: the runner refuses a shard whose
+limits, beside the containers already in `athanor.slice`, exceed the slice's `memory.max`. The shared Compose node
 restarts on failure with its existing chain volume. The old 12 GiB staging limit caused a memcg OOM on September 24.
 
 The runner generates the host's deployer and sequencing keys into private `host-keys.json`; inherited deployer
@@ -142,11 +144,13 @@ derives that environment's identity API from `guardian_url` (which must end in `
 The harness requires explicit `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_KEY`, including for resumed runs.
 
 For ordered trials, use `scripts/shard.py --matrix MATRIX_JSON RUN_DIRECTORY`. The matrix contains `configurations` (an
-ordered list of shard configurations), `workload` (`games`, `accounts_per_game`, `minutes`, `interval_seconds`,
-`setup_concurrency`, `workload`) and `live` (`container`, `chain_config`). The live container and chain configuration
-are read only for host snapshots. Each trial stores its configuration, deployment, workload reports, live-health samples
-and start/end host snapshots under the run directory. A failed workload aborts the matrix; the live budget never does.
-Each completed or failed candidate is stopped with its volumes retained; the next configuration starts fresh.
+ordered list of shard configurations), `workload` (harness options, underscores for dashes and `true` for a bare flag:
+`{"game_type": "frontier", "bots": 2000, "frontier_burst": "booth", "preset": 101, "minutes": 30}` or Blitz `games` and
+`accounts_per_game`, or a launch `slot`; the harness refuses what it does not accept) and `live` (`container`,
+`chain_config`). The live container and chain configuration are read only for host snapshots. Each trial stores its
+configuration, deployment, workload reports, live-health samples and start/end host snapshots under the run directory. A
+failed workload aborts the matrix; the live budget never does. Each completed or failed candidate is stopped with its
+volumes retained; the next configuration starts fresh.
 
 The checked-in live budget replaces the box-only budget file. Its 2026-09-22 baseline used 130 confirmed-diff windows
 from 13:20–15:30 UTC while the candidate was frozen: window p95 ranged from 225 to 237 ms. The 300 ms confirmed budget

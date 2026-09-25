@@ -28,6 +28,8 @@ DOCKER = ["sudo", "-n", "--preserve-env=OPERATOR_TOKEN", "docker"]
 # package's: players never reach the node directly.
 CONNECTIONS_PER_PLAYER = 2
 TOOLING_CONNECTIONS = 32
+# Campaign G's target, not yet a measured ceiling: a larger shard waits for a G measurement that supports it.
+MAX_PLAYER_CAPACITY = 2000
 DEFAULT_NODE_MEMORY_MIB = 24576
 SLICE = Path("/sys/fs/cgroup/athanor.slice")
 # The services that hold memory for the shard's lifetime; prepare and init exit once the shard is deployed.
@@ -68,9 +70,10 @@ def validate_configuration(config, allowed_cpus):
         raise ValueError("reserve isolated ports base through base+3 and base+5 above 27999")
     if not cpu_numbers(config["cpuset"]) <= allowed_cpus:
         raise ValueError("cpuset exceeds the native slice allocation")
+    # The upper bound is the slice's: check_slice_memory refuses a shard whose limits exceed what the slice holds.
     memory = config.get("node_memory_mib", DEFAULT_NODE_MEMORY_MIB)
-    if not isinstance(memory, int) or not 1024 <= memory <= 28672:
-        raise ValueError("node memory must fit the native slice budget")
+    if not isinstance(memory, int) or memory < 1024:
+        raise ValueError("node memory must be at least 1024 MiB")
     # These options belong to the shard lifecycle, never to a performance lever, except the database levers named
     # after them.
     owned = ("--base-path", "--chain-config", "--rpc", "--name", "--db", "--devnet", "--l1", "--no-charge", "--otel")
@@ -94,8 +97,9 @@ def validate_shard_identity(config):
             raise ValueError(f"{key} must be an explicit HTTP endpoint without credentials")
     if not urlparse(config["guardian_url"]).path.endswith("/guardian"):
         raise ValueError("guardian_url must be an identity API's /guardian route")
-    if not isinstance(config["player_capacity"], int) or not 1 <= config["player_capacity"] <= 1024:
-        raise ValueError("player_capacity must be the shard's player count, 1 to 1024")
+    if not isinstance(config["player_capacity"], int) or not 1 <= config["player_capacity"] <= MAX_PLAYER_CAPACITY:
+        raise ValueError(f"player_capacity must be 1 to {MAX_PLAYER_CAPACITY}, campaign G's target; raising it takes "
+                         "a G measurement")
     if "trusted_proxy" in config:
         ipaddress.ip_address(config["trusted_proxy"])
 
@@ -424,13 +428,16 @@ def start_shard(config, directory):
     return result
 
 
+# Each workload key is a harness option (underscores for dashes, true for a bare flag), so a matrix can run every shape
+# the harness runs: Blitz games, a launch slot, a Frontier burst, a chosen preset. The harness refuses the rest.
 def workload_command(workload):
-    required = ("games", "accounts_per_game", "minutes", "interval_seconds", "setup_concurrency", "workload")
-    if set(workload) != set(required):
-        raise ValueError(f"workload requires exactly {', '.join(required)}")
-    return ["bun", "deploy/athanor/harness/run.ts", *[
-        value for key in required for value in (f"--{key.replace('_', '-')}", str(workload[key]))
-    ]]
+    if not workload:
+        raise ValueError("workload must name the harness run")
+    options = []
+    for key, value in workload.items():
+        flag = f"--{key.replace('_', '-')}"
+        options += [flag] if value is True else [flag, str(value)]
+    return ["bun", "deploy/athanor/harness/run.ts", *options]
 
 
 def record_live_health(budget, since, until):
