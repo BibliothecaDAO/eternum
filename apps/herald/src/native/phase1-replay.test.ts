@@ -89,6 +89,23 @@ async function replayRecording(ingestion: NativeIngestion, fold: WorldFold) {
   return last;
 }
 
+// The recording pins its model selection; current subscription rules describe today's client only.
+function expectRecordedSnapshot(fold: WorldFold, confirmedBlock: number) {
+  expect(confirmedBlock).toBe(recording.finalSnapshot.confirmed_block);
+  for (const { model, rows } of recording.finalSnapshot.models) {
+    const definition = recordedSchema.models.find(({ name }) => name === model);
+    if (!definition) throw new Error(`Recorded snapshot model has no provenance: ${model}`);
+    const actual = fold
+      .modelRows(model)
+      .filter(
+        ({ value }) =>
+          definition.scope === "deployment" ||
+          BigInt(value.game_id as string) === BigInt(recording.finalSnapshot.game_id),
+      );
+    expect(actual, model).toEqual(rows);
+  }
+}
+
 describe("phase-1 gameplay recording provenance", () => {
   it("rejects a changed recorded model layout", () => {
     const changed = structuredClone(recordedSchema);
@@ -132,8 +149,8 @@ describe("phase-1 gameplay recording provenance", () => {
     }
     const replay = new WorldFold(decoder.registry);
     const last = await replayRecording(ingestion, replay);
-    expect(replay.snapshot(1, last)).toEqual(recording.finalSnapshot);
+    expectRecordedSnapshot(replay, last);
     expect(replay.checkpoint()).toEqual(fold.checkpoint());
-    expect(WorldFold.restore(decoder.registry, fold.checkpoint()).snapshot(1, last)).toEqual(recording.finalSnapshot);
+    expectRecordedSnapshot(WorldFold.restore(decoder.registry, fold.checkpoint()), last);
   });
 });
