@@ -15,21 +15,6 @@ async function runWithoutTarget(script: string, environment: Record<string, stri
   return error;
 }
 
-/** The package's required inputs, so its compose file renders. */
-const packageEnvironment = {
-  SHARD_NAME: "test-shard",
-  CHAIN_ID: "TEST_SHARD",
-  GUARDIAN_URL: "https://identity.test/api/guardian",
-  PUBLIC_RPC_URL: "https://rpc.test/rpc/v0_10_2",
-  PUBLIC_ADMISSION_URL: "https://admission.test",
-  PRESETS: "2,5",
-  HOST_UID: "1000",
-  HOST_GID: "1000",
-  SHARD_INIT_IMAGE: "init@sha256:" + "1".repeat(64),
-  SHARD_HERALD_IMAGE: "herald@sha256:" + "2".repeat(64),
-  SHARD_GATEWAY_IMAGE: "gateway@sha256:" + "3".repeat(64),
-};
-
 describe("native deployment target is explicit", () => {
   const target = {
     GAMEPLAY_CONTRACTS_PATH: "/tmp/unused-gameplay-contracts.json",
@@ -57,22 +42,18 @@ describe("native deployment target is explicit", () => {
   });
 
   test("the shard package passes the operator token to initialization only from the shell that starts it", async () => {
-    const initEnvironment = async (extra: Record<string, string>) => {
-      const child = Bun.spawn(["docker", "compose", "-f", "deploy/shard/compose.yml", "config", "--format", "json"], {
-        cwd: root,
-        env: { ...process.env, ...packageEnvironment, ...extra },
-        stdout: "pipe",
-        stderr: "pipe",
-      });
-      const [status, output] = await Promise.all([child.exited, new Response(child.stdout).text()]);
-      expect(status).toBe(0);
-      const services = JSON.parse(output).services;
-      return [services.prepare.environment, services.init.environment];
+    // A key with no value is Compose's pass-through: the container gets the starting shell's value, or none when the
+    // shell has none. Read from the file itself, since what this proves is the package's wiring, not Compose.
+    const compose = Bun.YAML.parse(await Bun.file(resolve(root, "deploy/shard/compose.yml")).text()) as {
+      services: Record<string, { environment?: Record<string, unknown> }>;
     };
-    for (const environment of await initEnvironment({ OPERATOR_TOKEN: "operator-secret" }))
-      expect(environment.OPERATOR_TOKEN).toBe("operator-secret");
-    // Unset in the shell, the name stays without a value, so the container gets none.
-    for (const environment of await initEnvironment({})) expect(environment.OPERATOR_TOKEN ?? null).toBeNull();
+    for (const [name, service] of Object.entries(compose.services)) {
+      const environment = service.environment ?? {};
+      if (name === "prepare" || name === "init") {
+        expect(Object.hasOwn(environment, "OPERATOR_TOKEN")).toBe(true);
+        expect(environment.OPERATOR_TOKEN).toBeNull();
+      } else expect(Object.hasOwn(environment, "OPERATOR_TOKEN")).toBe(false);
+    }
   });
 
   test("sequencing authority preparation has no default RPC or credential", async () => {
