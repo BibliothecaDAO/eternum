@@ -1,3 +1,4 @@
+import { readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { hasSingleTilePosition } from "@bibliothecadao/eternum/game-client";
 import {
   NativePresetPreimageUnavailable,
@@ -5,26 +6,20 @@ import {
   type VerifiedPreset,
 } from "./native/preset-preimages";
 import {
-  expeditionEpoch,
-  expeditionRealmSite,
-  isCurrentExpeditionArmy,
-  isRealmCategory,
-} from "@bibliothecadao/eternum/expeditions";
-import {
-  gameSyncRegion,
+  deriveGameSyncScope,
+  scopeInputKeys,
   gameSyncRowKeys,
   gameSyncScopeKeys,
   isClientGameSyncModel,
   isScopedGameSyncModel,
   rowInGameSyncScope,
-  syncScalar,
   type GameSyncScope,
 } from "@bibliothecadao/eternum/game-sync-models";
 import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { toJsonValue, type ModelRegistry } from "./model-registry";
 import { directoryFact, FINALIZED_GAME_MODELS } from "./native/read-models";
 import { nativeEntityId } from "./native/entity-id";
-import { rowStreamKeys, scopeInputKeys, scopeLookup } from "./subscription-keys";
+import { rowStreamKeys } from "./subscription-keys";
 import type {
   DecodedRecord,
   DecodedWorldEvent,
@@ -376,71 +371,9 @@ export class WorldFold {
   }
 
   public subscriptionScope(gameId: string, actor: string | undefined, timestamp: number): GameSyncScope {
-    if (actor !== undefined && (BigInt(actor) <= 0n || BigInt(actor) >= (1n << 251n) - 256n))
-      throw new Error("Invalid gameplay account");
-    const scope: GameSyncScope = { actor };
-    const expedition = this.expeditionRules(gameId);
-    if (!expedition) return scope;
-    const { spacing } = expedition;
-    const epoch = expeditionEpoch(expedition, timestamp);
-    const owners = new Set<string>(actor === undefined ? [] : [syncScalar(actor)]);
-    if (actor !== undefined)
-      for (const { value } of this.scopeRows("PlayerEntry", gameId, spacing, [scopeLookup.entryOf(actor)]))
-        owners.add(syncScalar(value.owner));
-    const homes = this.scopeRows("Structure", gameId, spacing, [...owners].map(scopeLookup.structuresOf)).filter(
-      ({ value }) => isRealmCategory(Number((value.base as DecodedRecord).category)),
+    return deriveGameSyncScope(actor, timestamp, this.expeditionRules(gameId), (model, spacing, keys) =>
+      this.scopeRows(model, gameId, spacing, keys),
     );
-    const realms = new Set(homes.map(({ value }) => syncScalar(value.entity_id)));
-    const realmTraits = new Set(homes.map(({ value }) => syncScalar((value.metadata as DecodedRecord).realm_id)));
-    const regions = new Set<string>();
-    const armies = this.scopeRows("ExplorerTroops", gameId, spacing, [...realms].map(scopeLookup.armiesOf)).filter(
-      ({ value }) => {
-        if (BigInt((value.troops as DecodedRecord).count as string) <= 0n) return false;
-        const coord = this.entityPosition(gameId, spacing, value.explorer_id);
-        return isCurrentExpeditionArmy(
-          expedition,
-          { x: Number(coord.x), y: Number(coord.y), alt: coord.alt === true },
-          timestamp,
-        );
-      },
-    );
-    // With no current army, morning muster starts on the surface, at the site the contract raises the realm on today.
-    if (epoch >= 0 && armies.length === 0)
-      for (const realm of realmTraits) {
-        const site = expeditionRealmSite(expedition, Number(realm), timestamp);
-        regions.add(gameSyncRegion({ alt: false, x: site.col, y: site.row }, spacing)!);
-      }
-    for (const { value } of armies) {
-      const region = gameSyncRegion(this.entityPosition(gameId, spacing, value.explorer_id), spacing);
-      if (region !== undefined) regions.add(region);
-    }
-    const entities = new Set([...realms, ...armies.map(({ value }) => syncScalar(value.explorer_id))]);
-    for (const { value } of this.scopeRows(
-      "TileOccupancy",
-      gameId,
-      spacing,
-      [...regions].map(scopeLookup.occupancyIn),
-    )) {
-      if (
-        value.is_structure === true &&
-        hasSingleTilePosition({ entity_id: syncScalar(value.entity_id), category: syncScalar(value.category) })
-      )
-        entities.add(syncScalar(value.entity_id));
-    }
-    const productionSources = new Set(
-      this.scopeRows("ProductionReceiver", gameId, spacing, [...realms].map(scopeLookup.receiversOf)).map(({ value }) =>
-        syncScalar(value.entity_id),
-      ),
-    );
-    scope.expedition = { epoch, spacing, owners, realms, realmTraits, regions, entities, productionSources };
-    return scope;
-  }
-
-  private entityPosition(gameId: string, spacing: number, entityId: unknown): DecodedRecord {
-    const positions = this.scopeRows("TileOccupancy", gameId, spacing, [scopeLookup.occupancyOf(entityId)]);
-    if (positions.length !== 1) throw new Error(`Expected one position for entity ${gameId}:${syncScalar(entityId)}`);
-    const { value } = positions[0]!;
-    return { x: value.col, y: value.row, alt: value.alt };
   }
 
   /**
@@ -448,18 +381,7 @@ export class WorldFold {
    * expeditions or not yet created. A game with expedition rules but no game or settlement rules is refused.
    */
   private expeditionRules(gameId: string): { epochSeconds: number; spacing: number; startMainAt: number } | null {
-    const rules = this.gameRows("SliceRules", gameId)[0]?.value;
-    const game = this.gameRows("GameRegistry", gameId)[0]?.value;
-    if (!rules && game) throw new Error("Game subscription requires its rules");
-    if (!rules || Number(rules.epoch_seconds) === 0) return null;
-    const settlement = this.gameRows("SettlementRules", gameId)[0]?.value;
-    if (!game || !settlement || Number(settlement.spacing) <= 0)
-      throw new Error("Expedition scope requires game and settlement rules");
-    return {
-      epochSeconds: Number(rules.epoch_seconds),
-      spacing: Number(settlement.spacing),
-      startMainAt: Number(game.start_main_at),
-    };
+    return readExpeditionRules((model) => this.gameRows(model, gameId)[0]?.value, Number(gameId));
   }
 
   /** The first timestamp at which the scope must be taken again: the game's start, or the expedition's rollover. */

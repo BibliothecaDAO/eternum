@@ -10,7 +10,7 @@ interface ArmyTypeToggleProps {
   currentExplorersCount: number;
   /** Undefined while the structure is unknown. */
   maxExplorers: number | undefined;
-  currentGuardsCount: number;
+  currentGuardsCount: number | undefined;
   maxGuards: number;
   onSelect: (isAttack: boolean) => void;
 }
@@ -26,7 +26,7 @@ export const ArmyTypeToggle = ({
   maxGuards,
   onSelect,
 }: ArmyTypeToggleProps) => {
-  const hasDefenseArmies = currentGuardsCount > 0;
+  const hasDefenseArmies = currentGuardsCount !== undefined && currentGuardsCount > 0;
 
   const limitMessage = armyType
     ? maxExplorers === undefined
@@ -85,7 +85,7 @@ export const ArmyTypeToggle = ({
               !armyType ? "bg-gold/20 text-gold" : "bg-brown/30 text-gold/70",
             )}
           >
-            {currentGuardsCount}/{maxGuards}
+            {currentGuardsCount ?? "—"}/{maxGuards}
           </span>
         </button>
       </div>

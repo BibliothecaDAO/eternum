@@ -6,7 +6,7 @@ import { ResourceChip } from "@/ui/features/economy/resources";
 
 import { configManager, getRealmInfo, getStructureRelicEffects } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRow } from "@/hooks/helpers/use-native-facts";
+import { useNativeRowOrAbsent, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { Building, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
@@ -31,7 +31,7 @@ export const BuildingsList = ({
   const resourceManager = useResourceManager(realm.entityId);
   const keys = { game_id: configManager.getActiveGameId(), entity_id: realm.entityId };
   const structureBuildings = useNativeRow("StructureBuildings", keys);
-  const productionBoostBonus = useNativeRow("ProductionBonus", keys);
+  const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", keys);
   const realmInfo = useMemo(
     () => getRealmInfo(realm.entityId, setup.store, getPlayerName),
     [realm.entityId, setup.store, structureBuildings, resourceManager],
@@ -64,6 +64,8 @@ export const BuildingsList = ({
 
   const selectedProduction =
     selectedResource !== null ? productions.find((p) => p.resource === selectedResource) : null;
+
+  if (!productionBoostBonus) return <p>Loading production…</p>;
 
   if (selectedResource !== null) {
     if (!selectedProduction) {

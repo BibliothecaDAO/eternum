@@ -1,9 +1,16 @@
-import type { GameSyncEvent, GameSyncFact, GameSyncRetainedKeys, GameSyncStore } from "./game-sync-types";
+import type {
+  GameSyncEvent,
+  GameSyncFact,
+  GameSyncRetainedKeys,
+  GameSyncSnapshotState,
+  GameSyncStore,
+} from "./game-sync-types";
 import type { GameSyncScheduler } from "./scheduler";
 
 type FactStep = { type: "facts"; facts: readonly GameSyncFact[]; retain?: GameSyncRetainedKeys; operationId: number };
 type EventStep = { type: "event"; event: GameSyncEvent; operationId: number };
-type IngestStep = FactStep | EventStep;
+type SnapshotStep = { type: "snapshot"; state: GameSyncSnapshotState; operationId: number };
+type IngestStep = FactStep | EventStep | SnapshotStep;
 
 interface DrainWaiter {
   operationId: number;
@@ -83,6 +90,15 @@ export class FactIngestQueue {
     this.scheduleFlush();
   }
 
+  /** Gate writes follow the facts that justify them; queued diffs never close snapshot completion. */
+  public enqueueSnapshot(state: GameSyncSnapshotState): Promise<void> {
+    if (this.disposed) return Promise.resolve();
+    const operationId = this.nextOperationId++;
+    this.steps.push({ type: "snapshot", state, operationId });
+    this.scheduleFlush();
+    return this.waitForOperation(operationId);
+  }
+
   public drain(): Promise<void> {
     return this.waitForOperation(this.nextOperationId - 1);
   }
@@ -130,6 +146,8 @@ export class FactIngestQueue {
         if (write.type === "event") {
           await this.store.applyEvent(write.event);
           eventCount += 1;
+        } else if (write.type === "snapshot") {
+          this.store.setSnapshot?.(write.state);
         } else {
           await this.store.applyFacts(write.facts, write.retain);
           operationCount += write.facts.length;
@@ -156,13 +174,13 @@ export class FactIngestQueue {
   /** Whole steps only: consecutive plain fact steps share a write, a replacement or an event stands alone. */
   private takeNextWrite(): IngestStep {
     const first = this.steps.shift()!;
-    if (first.type === "event" || first.retain) return first;
+    if (first.type !== "facts" || first.retain) return first;
 
     const facts = [...first.facts];
     let operationId = first.operationId;
     while (this.steps.length > 0) {
       const next = this.steps[0];
-      if (next.type === "event" || next.retain || facts.length + next.facts.length > MAX_FACTS_PER_STORE_WRITE) break;
+      if (next.type !== "facts" || next.retain || facts.length + next.facts.length > MAX_FACTS_PER_STORE_WRITE) break;
       this.steps.shift();
       facts.push(...next.facts);
       operationId = next.operationId;

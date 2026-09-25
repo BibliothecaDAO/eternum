@@ -302,7 +302,7 @@ const PlayerRow = ({
 }) => {
   const setTooltip = useTooltipStore((state) => state.setTooltip);
 
-  const isUnranked = player.rank === Number.MAX_SAFE_INTEGER;
+  const isUnranked = player.points === null || player.rank === Number.MAX_SAFE_INTEGER;
   const tilesLabel = formatActivityValue(player.tilesExplored, player.tilesExploredPoints);
   const cratesLabel = formatActivityValue(player.cratesOpened, player.cratesOpenedPoints);
   const riftsLabel = formatActivityValue(player.riftsTaken, player.riftsTakenPoints);
@@ -352,7 +352,7 @@ const PlayerRow = ({
               isUnranked ? "text-red-400" : isSelected ? "text-lightest" : "text-gold/90",
             )}
           >
-            {isUnranked ? " - " : `#${player.rank}`}
+            {isUnranked ? "—" : `#${player.rank}`}
           </span>
         </div>
         <div className="flex min-w-0 items-center gap-2">
@@ -434,12 +434,12 @@ const PlayerRow = ({
         </div>
         <div
           className={clsx("flex items-center justify-center gap-2 text-sm font-semibold", {
-            "text-amber-200": player.points > 1000,
-            "text-lightest": isSelected && player.points <= 1000,
-            "text-gold/90": !isSelected && player.points <= 1000,
+            "text-amber-200": player.points !== null && player.points > 1000,
+            "text-lightest": isSelected && player.points !== null && player.points <= 1000,
+            "text-gold/90": !isSelected && player.points !== null && player.points <= 1000,
           })}
         >
-          <span>{currencyIntlFormat(player.points)}</span>
+          <span>{player.points === null ? "—" : currencyIntlFormat(player.points)}</span>
           {hasShareholderPoints && (
             <span
               className="text-order-brilliance text-xs"

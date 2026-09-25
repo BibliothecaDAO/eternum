@@ -11,13 +11,13 @@ interface GuildCustom extends GuildInfo {
   prize: {
     lords: number;
     strk: number;
-  };
+  } | null;
   realms: number;
   mines: number;
   hyperstructures: number;
   structureCount: number;
-  rank: number;
-  points: number;
+  rank: number | null;
+  points: number | null;
   isPublic?: boolean;
 }
 
@@ -105,7 +105,7 @@ export const GuildRow = ({ guild, onClick }: { guild: GuildCustom; onClick: () =
         className={clsx("grid w-full cursor-pointer items-center gap-x-4 px-4 py-2 text-xs", GUILD_GRID_TEMPLATE)}
         onClick={onClick}
       >
-        <p className="text-center font-medium italic text-gold/90">#{guild.rank}</p>
+        <p className="text-center font-medium italic text-gold/90">{guild.rank === null ? "—" : `#${guild.rank}`}</p>
         <div className="flex min-w-0 items-center gap-2">
           {guild.isPublic ? (
             <Globe className="h-4 w-4 shrink-0 text-emerald-300/90" />
@@ -123,13 +123,15 @@ export const GuildRow = ({ guild, onClick }: { guild: GuildCustom; onClick: () =
         <p className="text-center text-sm font-medium text-gold/90">
           {(guild.realms || 0) + (guild.mines || 0) + (guild.hyperstructures || 0)}
         </p>
-        <p className="text-center text-sm font-semibold text-amber-200/90">{currencyIntlFormat(guild.points)}</p>
+        <p className="text-center text-sm font-semibold text-amber-200/90">
+          {guild.points === null ? "—" : currencyIntlFormat(guild.points)}
+        </p>
         <div className="flex items-center justify-center gap-1 text-sm font-medium text-gold/90">
-          {currencyIntlFormat(guild.prize.lords)}
+          {guild.prize === null ? "—" : currencyIntlFormat(guild.prize.lords)}
           <ResourceIcon size="md" resource={ResourcesIds[ResourcesIds.Lords]} className="h-4 w-4" withTooltip={false} />
         </div>
         <div className="flex items-center justify-center gap-1 text-sm font-medium text-gold/90">
-          {currencyIntlFormat(guild.prize.strk)}
+          {guild.prize === null ? "—" : currencyIntlFormat(guild.prize.strk)}
           <ResourceIcon size="md" resource={"Strk"} className="h-4 w-4" withTooltip={false} />
         </div>
       </div>

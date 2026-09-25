@@ -273,10 +273,14 @@ export const TransferTroopsContainer = ({
     );
   }, [transferDirection]);
 
+  const guardFactsKnown = Boolean(
+    (!targetStructure || getGuardsByStructure(targetStructure, store)) &&
+    (!selectedStructure || getGuardsByStructure(selectedStructure, store)),
+  );
   // list of guards
   const targetGuards = useMemo(() => {
     if (!targetStructure) return [];
-    const guards = getGuardsByStructure(targetStructure, store).filter((guard) =>
+    const guards = (getGuardsByStructure(targetStructure, store) ?? []).filter((guard) =>
       targetGuardSlotSet.has(Number(guard.slot)),
     );
     return guards.map((guard) => {
@@ -302,7 +306,7 @@ export const TransferTroopsContainer = ({
   // list of guards
   const selectedGuards = useMemo(() => {
     if (!selectedStructure) return [];
-    const guards = getGuardsByStructure(selectedStructure, store).filter((guard) =>
+    const guards = (getGuardsByStructure(selectedStructure, store) ?? []).filter((guard) =>
       selectedGuardSlotSet.has(Number(guard.slot)),
     );
     return guards.map((guard) => {
@@ -1338,6 +1342,8 @@ export const TransferTroopsContainer = ({
                         <span className="text-xs text-gold/60">Quick set:</span>
                         {quickAmountOptions.map((option) => {
                           const isActive = troopAmount === option.value;
+                          if (!guardFactsKnown) return <LoadingAnimation />;
+
                           return (
                             <button
                               key={option.label}

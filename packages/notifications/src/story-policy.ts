@@ -1,11 +1,11 @@
 import { NOTIFICATION_LEVELS, type NotificationLevel } from "./preferences";
 
-type RecipientSource = "owner" | "transfer" | "nativeBattle" | "raid";
+type RecipientSource = "capture" | "owner" | "transfer" | "nativeBattle" | "raid";
 type StoryRule = { level: Exclude<NotificationLevel, "off">; recipients: RecipientSource } | { excluded: string };
 
 // Recipient fields are emitted with the action. Never resolve them from present-day structure ownership.
 const STORY_RULES = {
-  StructureCapturedStory: { level: "all", recipients: "owner" },
+  StructureCapturedStory: { level: "all", recipients: "capture" },
   BitcoinAwardStory: { level: "all", recipients: "owner" },
   TradeCreated: { level: "all", recipients: "owner" },
   TradeAccepted: { level: "all", recipients: "owner" },
@@ -59,6 +59,7 @@ export function storyRecipients(story: string, owner: unknown, payload: Record<s
   if ("excluded" in rule) return [];
   const sources = {
     owner: [owner],
+    capture: [owner, payload.previous_owner],
     nativeBattle: [
       (payload.attacker as Record<string, unknown> | undefined)?.player,
       (payload.defender as Record<string, unknown> | undefined)?.player,

@@ -567,7 +567,7 @@ export interface PlayerInfo {
   rank: number;
   address: bigint;
   name: string;
-  points: number;
+  points: number | null;
   realms: number;
   mines: number;
   hyperstructures: number;

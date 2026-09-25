@@ -13,11 +13,13 @@ export const ProductionControls = ({
   realm: RealmInfo;
   compact?: boolean;
 }) => {
-  const { laborBonus, productionBonus, troopsBonus } = useProductionBonuses(realm.entityId);
+  const bonuses = useProductionBonuses(realm.entityId);
   const [useRawResources, setUseRawResources] = useState(true);
   const [productionAmount, setProductionAmount] = useState(1);
   const [ticks, setTicks] = useState<number | undefined>();
 
+  if (!bonuses) return <p>Loading production…</p>;
+  const { laborBonus, productionBonus, troopsBonus } = bonuses;
   const resourceProductionBonus =
     selectedResource === ResourcesIds.Labor
       ? laborBonus

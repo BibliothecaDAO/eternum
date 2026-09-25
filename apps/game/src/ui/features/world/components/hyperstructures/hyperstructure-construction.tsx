@@ -61,9 +61,12 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
       ownerGuild !== 0n &&
       ownerGuild === actorGuild);
   const requirements = getHyperstructureTotalContributableAmounts(entityId, store).map(({ resource, amount }) => {
-    const contributed =
-      store.get("HyperstructureProgress", { game_id, entity_id: entityId, resource_type: resource })?.contributed ?? 0n;
-    const remaining = BigInt(amount) * precision - contributed;
+    const contributed = store.requireOrAbsent("HyperstructureProgress", {
+      game_id,
+      entity_id: entityId,
+      resource_type: resource,
+    }).known?.contributed;
+    const remaining = contributed === undefined ? undefined : BigInt(amount) * precision - contributed;
     const current = resources?.current(resource);
     const available =
       current && resources
@@ -78,7 +81,12 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
       value,
       valid:
         text === "" ||
-        (value !== undefined && value > 0n && available !== undefined && value <= available && value <= remaining),
+        (value !== undefined &&
+          value > 0n &&
+          available !== undefined &&
+          value <= available &&
+          remaining !== undefined &&
+          value <= remaining),
     };
   });
   const contributions = requirements.flatMap((row) =>
@@ -192,7 +200,7 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
           {requirements.map((row) => (
             <label key={row.resource} className="flex justify-between gap-2">
               <span>
-                {ResourcesIds[row.resource]}: {displayAmount(row.remaining)} needed
+                {ResourcesIds[row.resource]}: {row.remaining === undefined ? "—" : displayAmount(row.remaining)} needed
                 {canContribute && source && (
                   <small className="block">
                     {row.available === undefined
@@ -207,7 +215,9 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
                   inputMode="decimal"
                   className="w-20 bg-black/40 p-1"
                   value={amounts[row.resource] ?? ""}
-                  disabled={pending || row.remaining === 0n || row.available === undefined}
+                  disabled={
+                    pending || row.remaining === undefined || row.remaining === 0n || row.available === undefined
+                  }
                   onChange={(event) => setAmounts((previous) => ({ ...previous, [row.resource]: event.target.value }))}
                 />
               )}

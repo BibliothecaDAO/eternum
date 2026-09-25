@@ -35,7 +35,7 @@ interface PlayerSnapshot {
 interface RankedPlayerWithActivity {
   address: bigint;
   rank: number;
-  points: number;
+  points: number | null;
   tilesExploredPoints: number;
   cratesOpenedPoints: number;
   riftsTakenPoints: number;
@@ -92,6 +92,7 @@ export const useLeaderboardEffects = (
     // Build current snapshots
     const currentSnapshots = new Map<string, PlayerSnapshot>();
     for (const player of players) {
+      if (player.points === null || player.rank === Number.MAX_SAFE_INTEGER) continue;
       const address = normalizeAddress(player.address);
       currentSnapshots.set(address, {
         tilesExploredPoints: player.tilesExploredPoints,
@@ -115,6 +116,7 @@ export const useLeaderboardEffects = (
     const newEffects = new Map<string, PlayerEffect>();
 
     for (const player of players) {
+      if (player.points === null || player.rank === Number.MAX_SAFE_INTEGER) continue;
       const address = normalizeAddress(player.address);
       const currentSnapshot = currentSnapshots.get(address)!;
       const previousSnapshot = previousSnapshots.get(address);

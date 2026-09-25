@@ -11,7 +11,7 @@ import {
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeRowOrAbsent, useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { BuildingType, getBuildingFromResource, ID, ResourcesIds } from "@bibliothecadao/types";
 import { HUD_CUE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -47,7 +47,7 @@ export const EntityResourceTableOld = React.memo(
 
     const keys = entityId ? { game_id: configManager.getActiveGameId(), entity_id: entityId } : undefined;
     const structureBuildings = useNativeRow("StructureBuildings", keys);
-    const productionBoostBonus = useNativeRow("ProductionBonus", keys);
+    const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", keys);
     const guardRevision = useNativeRevision(["Guard"]);
     const { currentDefaultTick, currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
 
@@ -72,6 +72,7 @@ export const EntityResourceTableOld = React.memo(
     }, []);
 
     if (!entityId) return <div>No Entity Selected</div>;
+    if (!productionBoostBonus) return <div>Loading production…</div>;
 
     return (
       <div className="flex flex-col gap-3">

@@ -47,6 +47,7 @@ export class ResourceManager {
   public subscribe(onChange: () => void): () => void {
     return this.store.subscribe((changes) => {
       if (
+        changes.length === 0 ||
         changes.some((change) => {
           if (change.model === "GameRegistry") return (change.current ?? change.previous)?.game_id === this.gameId;
           if (
@@ -73,20 +74,14 @@ export class ResourceManager {
       throw new Error(`Invalid resource ${resourceId}`);
     if (!this.hasResources()) return undefined;
     const keys = { game_id: this.gameId, entity_id: this.entityId, resource_type: resourceId };
-    const production = this.productionForGameClock(this.store.get("ResourceProduction", keys));
-    return {
-      balance: this.store.get("ResourceBalance", keys)?.balance ?? 0n,
-      production: production ?? {
-        building_count: 0,
-        production_rate: 0n,
-        output_amount_left: 0n,
-        last_updated_at: 0,
-      },
-    };
+    const production = this.store.requireOrAbsent("ResourceProduction", keys);
+    const balance = this.store.requireOrAbsent("ResourceBalance", keys);
+    if (!production.known || !balance.known) return undefined;
+    return { balance: balance.known.balance, production: this.productionForGameClock(production.known) };
   }
 
-  private productionForGameClock(production: Production | undefined): Production | undefined {
-    if (!production || production.building_count === 0) return production;
+  private productionForGameClock(production: Production): Production {
+    if (production.building_count === 0) return production;
     const rules = this.store.require("SliceRules", { game_id: this.gameId });
     if (!isModeRuleEnabled(rules, "PRODUCTION_START")) return production;
     const game = this.store.require("GameRegistry", { game_id: this.gameId });
@@ -179,7 +174,10 @@ export class ResourceManager {
     // An entity without a resource store has no barracks to train from.
     if (!this.hasResources()) return [];
     return Array.from({ length: 9 }, (_, index) => (26 + index) as ResourcesIds)
-      .map((id) => ({ id, state: this.current(id)! }))
+      .flatMap((id) => {
+        const state = this.current(id);
+        return state ? [{ id, state }] : [];
+      })
       .filter(
         ({ state }) => state.production.building_count > 0 && state.production.output_amount_left === UNLIMITED_U128,
       );
@@ -189,7 +187,8 @@ export class ResourceManager {
     if (resourceId !== 35 && (resourceId < 26 || resourceId > 34)) return;
     const trainers = this.trainers().filter(({ state }) => state.production.last_updated_at < currentTick);
     if (!trainers.length) return;
-    const wheat = this.current(ResourcesIds.Wheat)!;
+    const wheat = this.current(ResourcesIds.Wheat);
+    if (!wheat) return;
     const farmOutput = ResourceManager._amountProducedStatic(wheat.production, currentTick, ResourcesIds.Wheat);
     let available = wheat.balance + farmOutput;
     const outputs = trainers.map(({ id, state }) => {
@@ -366,7 +365,7 @@ export class ResourceManager {
     return [...this.store.inGame("ResourceProduction", this.gameId)].flatMap((row) => {
       if (row.entity_id !== this.entityId) return [];
       const resourceId = row.resource_type as ResourcesIds;
-      const production = this.current(resourceId)!.production;
+      const production = this.productionForGameClock(row);
       if (!ResourceManager.hasActiveProduction(production, resourceId)) return [];
       return [
         {

@@ -60,7 +60,7 @@ export const Guilds = ({
     const guildStats = new Map<
       string,
       {
-        totalPoints: number;
+        totalPoints: number | null;
         totalRealms: number;
         totalMines: number;
         totalHypers: number;
@@ -80,13 +80,10 @@ export const Guilds = ({
         };
 
         // Calculate real-time total points including unregistered shareholder points
-        const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(player.address);
-        const unregisteredShareholderPoints = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
-          player.address,
-        );
-        const totalPlayerPoints = registeredPoints + unregisteredShareholderPoints;
+        const totalPlayerPoints = leaderboardManager.getPlayerPoints(player.address);
 
-        stats.totalPoints += totalPlayerPoints;
+        stats.totalPoints =
+          stats.totalPoints === null || totalPlayerPoints === null ? null : stats.totalPoints + totalPlayerPoints;
         stats.totalRealms += player.realms || 0;
         stats.totalMines += player.mines || 0;
         stats.totalHypers += player.hyperstructures || 0;
@@ -96,6 +93,7 @@ export const Guilds = ({
       }
     });
 
+    const scoresKnown = [...guildStats.values()].every((stats) => stats.totalPoints !== null);
     return guilds
       .map((guild) => {
         const stats = guildStats.get(guild.entityId.toString()) || {
@@ -115,13 +113,15 @@ export const Guilds = ({
           memberCount: stats.memberCount,
         };
       })
-      .toSorted((a, b) => b.points - a.points)
+      .toSorted((a, b) =>
+        a.points === null ? (b.points === null ? 0 : 1) : b.points === null ? -1 : b.points - a.points,
+      )
       .map((guild, index) => {
-        const rank = index + 1;
+        const rank = scoresKnown ? index + 1 : null;
         return {
           ...guild,
           rank,
-          prize: calculateGuildLordsPrize(rank, LORDS_PRIZE_POOL, STRK_PRIZE_POOL),
+          prize: rank === null ? null : calculateGuildLordsPrize(rank, LORDS_PRIZE_POOL, STRK_PRIZE_POOL),
         };
       });
   }, [guilds, players, store]);
@@ -168,34 +168,32 @@ export const Guilds = ({
         const owner = guildPlayers.find((player) => player.address === guild.entityId);
 
         // Calculate total tribe points for prize distribution
-        const totalTribePoints = guildPlayers.reduce((sum, player) => {
-          const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(player.address);
-          const unregisteredShareholderPoints = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
-            player.address,
-          );
-          return sum + registeredPoints + unregisteredShareholderPoints;
+        const totalTribePoints = guildPlayers.reduce<number | null>((sum, player) => {
+          const points = leaderboardManager.getPlayerPoints(player.address);
+          return sum === null || points === null ? null : sum + points;
         }, 0);
 
         // Get detailed member info with points and prize calculations
         const membersWithPoints = guildPlayers.map((player) => {
-          const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(player.address);
-          const unregisteredShareholderPoints = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
-            player.address,
-          );
-          const totalPoints = registeredPoints + unregisteredShareholderPoints;
+          const totalPoints = leaderboardManager.getPlayerPoints(player.address);
 
           // Calculate prize distribution
           const isOwner = player.address === guild.entityId;
-          const pointsShare = totalTribePoints > 0 ? totalPoints / totalTribePoints : 0;
+          const pointsShare =
+            totalTribePoints === null || totalPoints === null
+              ? null
+              : totalTribePoints > 0
+                ? totalPoints / totalTribePoints
+                : 0;
 
           // Owner gets 30% + their share of the remaining 70%
           // Non-owners get their share of the 70%
           const ownerBonus = isOwner ? 0.3 : 0;
-          const memberShare = pointsShare * 0.7;
-          const totalShare = ownerBonus + memberShare;
+          const memberShare = pointsShare === null ? null : pointsShare * 0.7;
+          const totalShare = memberShare === null ? null : ownerBonus + memberShare;
 
-          const lordsReward = guild.prize.lords * totalShare;
-          const strkReward = guild.prize.strk * totalShare;
+          const lordsReward = guild.prize === null || totalShare === null ? null : guild.prize.lords * totalShare;
+          const strkReward = guild.prize === null || totalShare === null ? null : guild.prize.strk * totalShare;
 
           return {
             address: toHexString(player.address),
@@ -213,10 +211,10 @@ export const Guilds = ({
             rewards: {
               lords: lordsReward,
               strk: strkReward,
-              ownerBonus: isOwner ? guild.prize.lords * 0.3 : 0,
-              ownerBonusStrk: isOwner ? guild.prize.strk * 0.3 : 0,
-              memberShare: guild.prize.lords * memberShare,
-              memberShareStrk: guild.prize.strk * memberShare,
+              ownerBonus: guild.prize === null ? null : isOwner ? guild.prize.lords * 0.3 : 0,
+              ownerBonusStrk: guild.prize === null ? null : isOwner ? guild.prize.strk * 0.3 : 0,
+              memberShare: guild.prize === null || memberShare === null ? null : guild.prize.lords * memberShare,
+              memberShareStrk: guild.prize === null || memberShare === null ? null : guild.prize.strk * memberShare,
             },
           };
         });
@@ -241,11 +239,7 @@ export const Guilds = ({
       }),
       players: players.map((player) => {
         const guild = getGuildFromPlayerAddress(player.address, store);
-        const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(player.address);
-        const unregisteredShareholderPoints = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
-          player.address,
-        );
-        const totalPoints = registeredPoints + unregisteredShareholderPoints;
+        const totalPoints = leaderboardManager.getPlayerPoints(player.address);
 
         return {
           address: toHexString(player.address),

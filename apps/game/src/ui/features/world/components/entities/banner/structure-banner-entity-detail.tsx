@@ -169,8 +169,13 @@ const StructureBannerEntityDetailContent = memo(
     const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
     const isHyperstructureOwned = structure.owner !== undefined && structure.owner !== null && structure.owner !== 0n;
     const showHyperstructureVP = isHyperstructure && hyperstructurePointsPerSecond !== undefined;
-    const occupiedGuardSlots = guards.filter((guard) => guard.troops.count > 0n).length;
-    const guardCue = guardSlotsMax !== undefined ? `${occupiedGuardSlots}/${guardSlotsMax}` : `${occupiedGuardSlots}`;
+    const occupiedGuardSlots = guards?.filter((guard) => guard.troops.count > 0n).length;
+    const guardCue =
+      occupiedGuardSlots === undefined
+        ? "—"
+        : guardSlotsMax !== undefined
+          ? `${occupiedGuardSlots}/${guardSlotsMax}`
+          : `${occupiedGuardSlots}`;
     const activeRelicIds = relicEffects.map((effect) => Number(effect.id));
 
     return (
@@ -263,7 +268,9 @@ const StructureBannerEntityDetailContent = memo(
 
         {/* Guards — always shown for structures that can hold defenders. */}
         <InfoBubble variant="section" title="Guards" icon={Shield} cue={guardCue}>
-          {guards.length > 0 ? (
+          {guards === undefined ? (
+            <p className={HUD_BODY_MUTED}>Loading guards…</p>
+          ) : guards.length > 0 ? (
             <CompactDefenseDisplay
               troops={guards}
               slotsUsed={guardSlotsUsed}

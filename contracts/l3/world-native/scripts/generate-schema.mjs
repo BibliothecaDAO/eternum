@@ -130,6 +130,21 @@ function model(name, scope, keys, members, emitterKey) {
 }
 
 const models = defineFactModels({ struct, model });
+for (const model of models) {
+  const absence = model.absence;
+  if (absence?.value !== "zero") continue;
+  if (!absence.parent) continue;
+  const parent = models.find(({ name }) => name === absence.parent);
+  if (!parent) throw new Error(`Missing absence parent for ${model.name}`);
+  absence.parentKeys = Object.fromEntries(
+    parent.keys.map(({ name, type }) => {
+      const childKey = absence.parentKeys?.[name] ?? name;
+      if (!model.keys.some((key) => key.name === childKey && key.type === type))
+        throw new Error(`Invalid absence parent key ${model.name}.${childKey}`);
+      return [name, childKey];
+    }),
+  );
+}
 
 const ruleSource = await readFile(new URL("src/rules.cairo", root), "utf8");
 const ruleConstants = Object.fromEntries(
@@ -416,6 +431,7 @@ const declarations = [
           keys: model.keys.map((member) => member.name),
           scope: model.scope,
           fields: factRows[index][1].wire,
+          ...(model.absence?.value === "zero" ? { absence: model.absence } : {}),
         },
       ]),
     ),

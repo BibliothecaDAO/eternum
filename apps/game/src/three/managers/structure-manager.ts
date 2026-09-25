@@ -471,7 +471,7 @@ export class StructureManager {
     this.storeUnsubscribes.push(
       this.store.subscribe((changes) => {
         const touched = new Set<number>();
-        let refreshAll = false;
+        let refreshAll = changes.length === 0;
         for (const change of changes) {
           if (change.model === "GuildMember") {
             if ((change.current ?? change.previous)?.game_id === configManager.getActiveGameId()) refreshAll = true;
@@ -572,6 +572,7 @@ export class StructureManager {
     });
     if (!structureComponent) return undefined;
     const guards = this.readGuards(renderable.entityId);
+    if (!guards) return undefined;
     const ownerAddress = structureComponent.owner;
     const ownerName = this.resolveLiveStructureOwnerName(ownerAddress, "");
     const cosmetic = this.resolveStructureCosmeticSelection({
@@ -642,15 +643,17 @@ export class StructureManager {
     );
   }
 
-  private readGuards(entityId: ID): NativeRows["Guard"][] {
-    if (!this.store) return [];
+  private readGuards(entityId: ID): NativeRows["Guard"][] | undefined {
+    if (!this.store) return undefined;
     const game = configManager.getActiveGameId();
     const structure = this.store.get("Structure", { game_id: game, entity_id: entityId });
     // A structure this client cannot see shows no guards.
-    if (!structure) return [];
-    return Array.from({ length: structure.base.troop_max_guard_count }, (_, slot) =>
-      this.store!.get("Guard", { game_id: game, structure_id: entityId, slot }),
-    ).filter((guard): guard is NativeRows["Guard"] => guard !== undefined);
+    if (!structure) return undefined;
+    const slots = Array.from({ length: structure.base.troop_max_guard_count }, (_, slot) =>
+      this.store!.requireOrAbsent("Guard", { game_id: game, structure_id: entityId, slot }),
+    );
+    if (slots.some((slot) => !slot.known)) return undefined;
+    return slots.map((slot) => slot.known!).filter((guard) => guard.troops.count !== 0n || guard.destroyed_tick !== 0);
   }
 
   private resolveGuardArmies(guards: readonly NativeRows["Guard"][]): GuardArmy[] {

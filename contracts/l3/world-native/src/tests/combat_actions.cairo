@@ -704,6 +704,47 @@ fn structure_capture_ignores_guards_outside_the_slot_limit() {
 }
 
 #[test]
+fn capturing_a_players_realm_records_both_owners_in_one_capture_story() {
+    let (d, _, target, attacker, _) = setup(false);
+    let before = IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap();
+    assert_eq!(before.base.category, 1);
+    assert_eq!(before.owner, 999.try_into().unwrap());
+    let order = super::recorded::head(d.games, 3).order + 1;
+    let mut spy = spy_events();
+    assert!(
+        execute(
+            d,
+            Command::BattleGuard(crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id }),
+            80,
+        ),
+    );
+    let mut captures = 0;
+    let mut stories = 0_u32;
+    for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
+        if *event.keys.at(0) != selector!("StoryEvent") {
+            continue;
+        }
+        let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
+        let mut data = event.data.span();
+        let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
+        assert_eq!(story.order, order);
+        assert_eq!(story.index, stories);
+        stories += 1;
+        if let crate::ownership::Story::StructureCapturedStory(capture) = story.story {
+            assert_eq!(capture.previous_owner, before.owner);
+            assert_eq!(capture.new_owner, d.actor);
+            assert_eq!(capture.points, 0);
+            assert_eq!(story.entity_id, Some(target.entity_id));
+            assert_eq!(story.owner, Some(d.actor));
+            assert_eq!(story.timestamp, 80);
+            captures += 1;
+        }
+    }
+    assert_eq!(captures, 1);
+    assert_eq!(IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap().owner, d.actor);
+}
+
+#[test]
 fn a_destroyed_raider_never_collects_loot_even_when_the_roll_wins() {
     let (d, _, target, attacker, _) = setup(false);
     let mut explorer = troop(d, attacker).unwrap();

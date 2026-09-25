@@ -136,20 +136,24 @@ export const getTroopResourceId = (troopType: TroopType, troopTier: TroopTier): 
 export const getGuardsByStructure = (structure: NativeRows["Structure"], store: NativeFactStore) => {
   const delay = configManager.getTroopConfig().troop_limit_config.guard_resurrection_delay;
   const tickSeconds = configManager.getTick(TickIds.Armies);
-  return Array.from({ length: structure.base.troop_max_guard_count }, (_, slot) =>
-    store.get("Guard", { game_id: structure.game_id, structure_id: structure.entity_id, slot }),
-  ).flatMap((guard) =>
-    guard
-      ? [
-          {
-            slot: guard.slot,
-            troops: guard.troops,
-            destroyedTick: guard.destroyed_tick,
-            cooldownEnd: guard.destroyed_tick === 0 ? 0 : guard.destroyed_tick * tickSeconds + delay,
-          },
-        ]
-      : [],
+  const slots = Array.from({ length: structure.base.troop_max_guard_count }, (_, slot) =>
+    store.requireOrAbsent("Guard", { game_id: structure.game_id, structure_id: structure.entity_id, slot }),
   );
+  if (slots.some((slot) => !slot.known)) return undefined;
+  return slots
+    .map((slot) => slot.known!)
+    .flatMap((guard) =>
+      guard.troops.count !== 0n || guard.destroyed_tick !== 0
+        ? [
+            {
+              slot: guard.slot,
+              troops: guard.troops,
+              destroyedTick: guard.destroyed_tick,
+              cooldownEnd: guard.destroyed_tick === 0 ? 0 : guard.destroyed_tick * tickSeconds + delay,
+            },
+          ]
+        : [],
+    );
 };
 
 /** Seconds before a wiped guard slot accepts troops again; 0 when it is open. The contract only enforces the

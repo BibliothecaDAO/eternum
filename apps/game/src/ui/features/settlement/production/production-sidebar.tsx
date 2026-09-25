@@ -3,7 +3,7 @@ import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { configManager, getStructureRelicEffects, ResourceManager } from "@bibliothecadao/eternum";
 import { useBuildings } from "@/hooks/helpers/use-buildings";
-import { useNativeRow } from "@/hooks/helpers/use-native-facts";
+import { useNativeRowOrAbsent } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { getProducedResource, ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
@@ -127,7 +127,7 @@ const SidebarRealm = ({
   );
   const hasProduction = resourceProductionSummary.length > 0;
 
-  const productionBoostBonus = useNativeRow("ProductionBonus", {
+  const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", {
     game_id: configManager.getActiveGameId(),
     entity_id: realm.entityId,
   });
@@ -136,6 +136,8 @@ const SidebarRealm = ({
     if (!productionBoostBonus) return [];
     return getStructureRelicEffects(productionBoostBonus, getBlockTimestamp().currentArmiesTick);
   }, [productionBoostBonus, currentDefaultTick]);
+
+  if (!productionBoostBonus) return <p>Loading production…</p>;
 
   return (
     <div

@@ -37,7 +37,7 @@ import { GuardStaminaBar } from "./guard-stamina-bar";
 import { SLOT_ICON_MAP } from "./slot-icon-map";
 import { GuardCooldownBadge } from "./guard-cooldown-badge";
 
-type DefenseTroop = ReturnType<typeof getGuardsByStructure>[number];
+type DefenseTroop = NonNullable<ReturnType<typeof getGuardsByStructure>>[number];
 
 interface CompactDefenseDisplayProps {
   troops: DefenseTroop[];

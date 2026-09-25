@@ -123,7 +123,9 @@ const simulateRaid = (client: GameClient, attackerId: ID, structureId: ID): stri
   if (!raider) return `Explorer ${attackerId} is not in the native store.`;
   const structure = client.setup.store.get("Structure", { game_id: client.gameId, entity_id: structureId });
   if (!structure) return `Structure ${structureId} is not in the native store.`;
-  const guards = getGuardsByStructure(structure, client.setup.store)
+  const knownGuards = getGuardsByStructure(structure, client.setup.store);
+  if (!knownGuards) return `Guards for structure ${structureId} are not synchronized.`;
+  const guards = knownGuards
     .filter((guard) => Number(guard.troops.count) > 0)
     .map((guard) => troopsToArmy(guard.troops));
   const biome = biomeAt(client, structureMapPosition(client.setup.store, structure));
@@ -180,7 +182,7 @@ const strongestGuard = (client: GameClient, structureId: ID): Combatant | undefi
   const structure = client.setup.store.get("Structure", { game_id: client.gameId, entity_id: structureId });
   if (!structure) return undefined;
   const guard = getGuardsByStructure(structure, client.setup.store)
-    .filter((candidate) => Number(candidate.troops.count) > 0)
+    ?.filter((candidate) => Number(candidate.troops.count) > 0)
     .sort((left, right) => Number(right.troops.count - left.troops.count))[0];
   if (!guard) return undefined;
   return {

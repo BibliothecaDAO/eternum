@@ -1,9 +1,8 @@
-import { hasSingleTilePosition } from "@bibliothecadao/eternum/game-client";
 import {
-  gameSyncRegion,
+  scopeLookup,
+  scopeInputKeys,
   gameSyncRowKeys,
   gameSyncScopeKeys,
-  syncScalar,
   type GameSyncScope,
 } from "@bibliothecadao/eternum/game-sync-models";
 import type { DecodedRecord } from "./types";
@@ -23,35 +22,6 @@ export const SCOPE_INPUT_MODELS = new Set([
   "TileOccupancy",
   "ProductionReceiver",
 ]);
-
-/** The lookups subscriptionScope makes, spelled once: rows are indexed under them and a scope is taken through them. */
-export const scopeLookup = {
-  entryOf: (player: unknown) => `PlayerEntry.player:${syncScalar(player)}`,
-  structuresOf: (owner: unknown) => `Structure.owner:${syncScalar(owner)}`,
-  structure: (entity: unknown) => `Structure.entity:${syncScalar(entity)}`,
-  occupancyIn: (region: string) => `TileOccupancy.region:${region}`,
-  occupancyOf: (entity: unknown) => `TileOccupancy.entity:${syncScalar(entity)}`,
-  armiesOf: (home: unknown) => `ExplorerTroops.owner:${syncScalar(home)}`,
-  army: (entity: unknown) => `ExplorerTroops.entity:${syncScalar(entity)}`,
-  receiversOf: (home: unknown) => `ProductionReceiver.home:${syncScalar(home)}`,
-  receiver: (entity: unknown) => `ProductionReceiver.entity:${syncScalar(entity)}`,
-};
-
-/** The lookups that can find this row; a region key needs the expedition spacing, and without one there is none. */
-export function scopeInputKeys(model: string, row: DecodedRecord, spacing: number | undefined): string[] {
-  if (model === "PlayerEntry") return [scopeLookup.entryOf(row.player)];
-  if (model === "ExplorerTroops") return [scopeLookup.armiesOf(row.owner), scopeLookup.army(row.explorer_id)];
-  if (model === "ProductionReceiver") return [scopeLookup.receiversOf(row.home), scopeLookup.receiver(row.entity_id)];
-  if (model === "Structure") return [scopeLookup.structuresOf(row.owner), scopeLookup.structure(row.entity_id)];
-  if (model !== "TileOccupancy") return [];
-  const region = spacing === undefined ? undefined : gameSyncRegion({ alt: row.alt, x: row.col, y: row.row }, spacing);
-  return [
-    ...(!hasSingleTilePosition({ entity_id: syncScalar(row.entity_id), category: syncScalar(row.category) })
-      ? []
-      : [scopeLookup.occupancyOf(row.entity_id)]),
-    ...(region === undefined ? [] : [scopeLookup.occupancyIn(region)]),
-  ];
-}
 
 /** The scope-input keys whose rows this scope was taken from, or would be taken from. */
 export function scopeInputInterest(scope: GameSyncScope): Set<string> {

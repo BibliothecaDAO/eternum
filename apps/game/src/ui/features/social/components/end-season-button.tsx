@@ -44,11 +44,14 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
     const leaderboardManager = LeaderboardManager.instance(setup.store);
     const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(ContractAddress(account.address));
 
-    return { registeredPoints, percentageOfPoints: Math.min((registeredPoints / pointsForWin) * 100, 100) };
+    return {
+      registeredPoints,
+      percentageOfPoints: registeredPoints === null ? null : Math.min((registeredPoints / pointsForWin) * 100, 100),
+    };
   }, [structureEntityId, currentBlockTimestamp, revision, setup.store, account.address, pointsForWin]);
 
   const hasReachedFinalPoints = useMemo(() => {
-    return percentageOfPoints >= 100;
+    return percentageOfPoints !== null && percentageOfPoints >= 100;
   }, [percentageOfPoints]);
 
   const endGame = useCallback(async () => {
@@ -82,7 +85,8 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
             content: (
               <span className="flex flex-col whitespace-nowrap pointer-events-none">
                 <span className="flex justify-center">
-                  {registeredPoints.toLocaleString()} / {pointsForWin.toLocaleString()}
+                  {registeredPoints === null ? "—" : registeredPoints.toLocaleString()} /{" "}
+                  {pointsForWin.toLocaleString()}
                 </span>
                 {!hasReachedFinalPoints && <span>Not enough registered points to end the season</span>}
                 {isSeasonOver && <span>Season is already over</span>}

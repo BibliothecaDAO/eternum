@@ -8,17 +8,27 @@ import { entityMapPosition } from "./tile";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 
-/** The clocks and grid a Frontier game lays its daily regions on; null for games without expeditions. */
+type ExpeditionRuleModel = "SliceRules" | "GameRegistry" | "SettlementRules";
+type ExpeditionRuleReader = (model: ExpeditionRuleModel) => Record<string, unknown> | undefined;
+
+/** One reader for the clocks and grid, from the native store or Herald's fold. */
 export const readExpeditionRules = (
-  store: Pick<NativeFactStore, "get" | "require">,
+  source: Pick<NativeFactStore, "get"> | ExpeditionRuleReader,
   gameId: number,
 ): { epochSeconds: number; spacing: number; startMainAt: number } | null => {
-  const rules = store.get("SliceRules", { game_id: gameId });
-  if (!rules || rules.epoch_seconds === 0) return null;
+  const read: ExpeditionRuleReader =
+    typeof source === "function" ? source : (model) => source.get(model, { game_id: gameId });
+  const rules = read("SliceRules");
+  const game = read("GameRegistry");
+  if (!rules && game) throw new Error("Game subscription requires its rules");
+  if (!rules || Number(rules.epoch_seconds) === 0) return null;
+  const settlement = read("SettlementRules");
+  if (!game || !settlement || Number(settlement.spacing) <= 0)
+    throw new Error("Expedition scope requires game and settlement rules");
   return {
-    epochSeconds: rules.epoch_seconds,
-    spacing: store.require("SettlementRules", { game_id: gameId }).spacing,
-    startMainAt: Number(store.require("GameRegistry", { game_id: gameId }).start_main_at),
+    epochSeconds: Number(rules.epoch_seconds),
+    spacing: Number(settlement.spacing),
+    startMainAt: Number(game.start_main_at),
   };
 };
 

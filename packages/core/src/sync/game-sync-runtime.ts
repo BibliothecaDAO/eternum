@@ -293,6 +293,12 @@ export class GameSyncRuntime {
     let snapshot: SnapshotAssembly | null = null;
     const current = () => this.isCurrentGeneration(generation);
     return {
+      onSnapshotState: (state) => {
+        if (!current()) return;
+        return this.ingestQueue
+          ?.enqueueSnapshot(state)
+          .catch((error) => this.stopAfterLiveBatchFailure(generation, error));
+      },
       onSnapshotStart: () => {
         if (!current()) return;
         // Before the session runs, pieces are applied as they arrive; afterwards the refreshed snapshot is held and
