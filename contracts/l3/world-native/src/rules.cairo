@@ -195,8 +195,9 @@ pub const CAPTURE_CHESTS: u32 = 512;
 pub const HOME_MINE_PRODUCTION: u32 = 4096;
 pub const HOME_CAMP_REWARDS: u32 = 65536;
 pub const REVEAL_SUPPLIES: u32 = 262144;
-// Every battle rolls a d20 per side, as the ethereal layer always does.
+// Every battle rolls a d20 per side.
 pub const COMBAT_DICE: u32 = 524288;
+pub const COMBAT_DICE_ETHEREAL: u32 = 1048576;
 pub const SAME_OWNER_TRANSFER: u32 = 256;
 pub const SEASON_CLOSE: u32 = 1024;
 pub const RESERVED_HYPERSTRUCTURES: u32 = 2048;

@@ -9,6 +9,7 @@ mod combat_formula;
 mod entry;
 mod fact_wire;
 mod fixtures;
+mod frontier_combat_vectors;
 pub(crate) mod games_fixture;
 mod games_host;
 mod hyperstructures;

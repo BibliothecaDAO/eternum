@@ -26,13 +26,19 @@ fn setup_with_immunity(blitz: bool, immunity: u8) -> (super::Deployment, Resourc
 fn setup_with_mode(
     blitz: bool, immunity: u8, extra_mode_rules: u32,
 ) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
-    let mut rules = super::recorded::rules();
-    rules.mode_rules = extra_mode_rules
+    let mode_rules = extra_mode_rules
         + if blitz {
             super::recorded::BLITZ_RULES
         } else {
             super::recorded::ETERNUM_RULES
         };
+    setup_with_rule_mask(blitz, immunity, mode_rules)
+}
+fn setup_with_rule_mask(
+    blitz: bool, immunity: u8, mode_rules: u32,
+) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
+    let mut rules = super::recorded::rules();
+    rules.mode_rules = mode_rules;
     rules
         .command_mask = if blitz {
             super::recorded::BLITZ_COMMAND_MASK
@@ -396,14 +402,16 @@ fn raiding_requires_at_least_one_whole_troop_per_occupied_guard() {
 }
 
 #[test]
-fn ethereal_battle_uses_both_recorded_d20_rolls_in_damage_and_history() {
-    let (d, _, _, attacker, defender) = setup(false);
+fn blitz_ethereal_battle_uses_both_recorded_d20_rolls_in_damage_and_history() {
+    let (d, _, _, attacker, defender) = setup(true);
     move_to(d, attacker, Coord { alt: true, x: 2000000, y: 2000000 });
     move_to(d, defender, Coord { alt: true, x: 2000015, y: 2000000 });
     let before_attacker = troop(d, attacker).unwrap();
     let before_defender = troop(d, defender).unwrap();
     let game = crate::game::IGameDispatcher { contract_address: d.games };
     let rules = crate::game::IGameDispatcherTrait::rules(game, 3);
+    assert!(!crate::rules::rule_enabled(rules, crate::rules::COMBAT_DICE));
+    assert!(crate::rules::rule_enabled(rules, crate::rules::COMBAT_DICE_ETHEREAL));
     let mut root = super::context(d.games, 3).raw_root;
     let seed = crate::random::game_root(ref root, 3, crate::game::IGameDispatcherTrait::game(game, 3).seed);
     let attacker_roll: u8 = 1 + crate::random::range(seed, 1, 20).try_into().unwrap();
@@ -463,6 +471,35 @@ fn ethereal_battle_uses_both_recorded_d20_rolls_in_damage_and_history() {
         }
     }
     assert!(found);
+}
+
+#[test]
+fn frontier_disabled_dice_ignore_random_roots_on_surface_and_ethereal() {
+    let (d, _, _, attacker, defender) = setup_with_rule_mask(false, 0, 0);
+    for alt in array![false, true] {
+        let stride = if alt {
+            15
+        } else {
+            1
+        };
+        move_to(d, attacker, Coord { alt, x: 2000500, y: 2000500 });
+        move_to(d, defender, Coord { alt, x: 2000500 + stride, y: 2000500 });
+        let attacker = troop(d, attacker).unwrap();
+        let defender = troop(d, defender).unwrap();
+        for raw_root in array![123_u256, 987654321_u256] {
+            let context = snforge_std::interact_with_state(
+                d.games,
+                || {
+                    let execution = crate::commands::load_context(
+                        3, crate::commands::ActionContext { raw_root, timestamp: 80 },
+                    );
+                    crate::logic::combat::combat_context(3, attacker, defender, execution)
+                },
+            );
+            assert_eq!(context.attacker_roll, 0);
+            assert_eq!(context.defender_roll, 0);
+        }
+    }
 }
 
 #[test]

@@ -221,18 +221,16 @@ describe("native presets", () => {
     ]).toEqual([0, 0, 0, 0]);
   });
 
-  test("only Frontier rolls a d20 per side in every battle", () => {
-    const rollsDice = (environment: Parameters<typeof loadNativePresetConfiguration>[0], presetId: number) =>
-      (buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId).rules.mode_rules &
-        nativeRuleConstants.COMBAT_DICE) !==
-      0;
+  test("Frontier disables both dice rules while Blitz, Eternum and Duel preserve Ethereal dice", () => {
+    const diceRules = (environment: Parameters<typeof loadNativePresetConfiguration>[0], presetId: number) => {
+      const mask = buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId).rules.mode_rules;
+      return [(mask & nativeRuleConstants.COMBAT_DICE) !== 0, (mask & nativeRuleConstants.COMBAT_DICE_ETHEREAL) !== 0];
+    };
 
-    expect(rollsDice("madara.frontier", FRONTIER_PRESET_ID)).toBe(true);
-    expect([rollsDice("madara.blitz", 2), rollsDice("madara.eternum", 3), rollsDice("madara.blitz", 4)]).toEqual([
-      false,
-      false,
-      false,
-    ]);
+    expect(diceRules("madara.frontier", FRONTIER_PRESET_ID)).toEqual([false, false]);
+    expect(diceRules("madara.blitz", 2)).toEqual([false, true]);
+    expect(diceRules("madara.eternum", 3)).toEqual([false, true]);
+    expect(diceRules("madara.blitz", 4)).toEqual([false, true]);
   });
 
   test("Frontier combat is biome-neutral while Blitz keeps its terrain bonus", () => {

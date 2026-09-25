@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "edd2e3ac0474c1732f3f3321d39daa299e6c2b610b3e1e6b88fb72e369858c24";
+export const nativeFactSchemaIdentity = "2724f221f7f8d598e0e316fd1316c87e43a03b9a3026f6764ff20941f007f988";
 export const nativeRuleConstants = {
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
@@ -17,6 +17,7 @@ export const nativeRuleConstants = {
   "HOME_CAMP_REWARDS": 65536,
   "REVEAL_SUPPLIES": 262144,
   "COMBAT_DICE": 524288,
+  "COMBAT_DICE_ETHEREAL": 1048576,
   "SAME_OWNER_TRANSFER": 256,
   "SEASON_CLOSE": 1024,
   "RESERVED_HYPERSTRUCTURES": 2048,

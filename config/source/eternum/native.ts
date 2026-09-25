@@ -31,7 +31,12 @@ export const eternumPreset: NativePreset = {
   gameType: "eternum",
   environmentGameType: "eternum",
   settlementMode: "Single",
-  modeRules: rule.DISCOVER_HYPERSTRUCTURES | rule.SPIRES | rule.SEASON_CLOSE | rule.DEV_VILLAGE_ENTRY,
+  modeRules:
+    rule.DISCOVER_HYPERSTRUCTURES |
+    rule.SPIRES |
+    rule.SEASON_CLOSE |
+    rule.DEV_VILLAGE_ENTRY |
+    rule.COMBAT_DICE_ETHEREAL,
   entryRule: rule.ENTRY_ENTITLEMENT,
   commandMask: commandMask(["EnterDepth", "BuyRealmUpgrade"]),
   spacing: 6,

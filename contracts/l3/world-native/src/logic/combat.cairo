@@ -622,8 +622,9 @@ pub fn combat_context(
     let biome: crate::biome::Biome = map_dispatcher(game_id)
         .biome(tile_key(game_id, defender.coord), crate::commands::biome_context(context))
         .into();
-    let (attacker_roll, defender_roll) = if defender.coord.alt
-        || crate::rules::rule_enabled(context.rules.unbox(), crate::rules::COMBAT_DICE) {
+    let mode_rules = context.rules.unbox().mode_rules;
+    let ethereal_dice = defender.coord.alt && mode_rules & crate::rules::COMBAT_DICE_ETHEREAL != 0;
+    let (attacker_roll, defender_roll) = if ethereal_dice || mode_rules & crate::rules::COMBAT_DICE != 0 {
         let mut raw_root = context.raw_root;
         let seed = crate::random::game_root(ref raw_root, game_id, context.game.unbox().seed);
         (

@@ -56,12 +56,14 @@ pub const BLITZ_RULES: u32 = crate::rules::HOME_REWARDS
     + crate::rules::RESERVED_HYPERSTRUCTURES
     + crate::rules::OWNER_ONLY_SHARES
     + crate::rules::HYPERSTRUCTURE_MULTIPLIERS
-    + crate::rules::PRODUCTION_START;
+    + crate::rules::PRODUCTION_START
+    + crate::rules::COMBAT_DICE_ETHEREAL;
 
 pub const ETERNUM_RULES: u32 = crate::rules::DISCOVER_HYPERSTRUCTURES
     + crate::rules::SPIRES
     + crate::rules::SEASON_CLOSE
-    + crate::rules::DEV_VILLAGE_ENTRY;
+    + crate::rules::DEV_VILLAGE_ENTRY
+    + crate::rules::COMBAT_DICE_ETHEREAL;
 
 pub fn rules() -> crate::rules::SliceRules {
     let data = read_txt(@FileTrait::new("tests/fixtures/preset-3.txt"));
