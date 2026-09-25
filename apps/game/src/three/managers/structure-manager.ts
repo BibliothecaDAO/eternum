@@ -2,7 +2,6 @@ import { MineKinds } from "@bibliothecadao/types";
 import { configManager, getRealmCountPerHyperstructure } from "@bibliothecadao/eternum";
 import {
   FALLEN_REALM_RUIN_MODEL_INDEX,
-  type FallenRealmBeast,
   fallenRealmBeastModelIndex,
   readStandingFallenRealm,
 } from "../structures/fallen-realm";
@@ -177,7 +176,6 @@ interface VisibleStructurePassSnapshot {
 }
 
 interface StructureInstanceBinding {
-  entityIdsByInstance: Map<number, ID>;
   instanceIndex: number;
   model: StructureModel;
   terrainHeight: number;
@@ -248,16 +246,12 @@ export class StructureManager {
   private cosmeticStructureModelPromises: Map<string, Promise<StructureModel[]>> = new Map();
   private isUpdatingVisibleStructures = false;
   private readonly runVisibleStructuresUpdate: () => Promise<void>;
-  private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
   // Cosmetic entity ID maps keyed by cosmeticId
-  private cosmeticEntityIdMaps: Map<string, Map<number, ID>> = new Map();
   private structureInstanceBindings: Map<ID, StructureInstanceBinding[]> = new Map();
   private structureInstanceSlots: Map<StructureModel, Array<ID | undefined>> = new Map();
   private structureInstanceFreeSlots: Map<StructureModel, number> = new Map();
   private hasWarnedStructureCapacityOverflow = false;
   private structureModelDrawCounts: Map<StructureModel, number> = new Map();
-  private wonderEntityIdMaps: Map<number, ID> = new Map();
-  private fallenRealmBeastEntityIdMaps: Map<FallenRealmBeast, Map<number, ID>> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelPool = new LabelPool();
   private dummy: Object3D = new Object3D();
@@ -908,10 +902,6 @@ export class StructureManager {
     this.cosmeticStructureModels.clear();
 
     // Clear all maps
-    this.entityIdMaps.clear();
-    this.cosmeticEntityIdMaps.clear();
-    this.wonderEntityIdMaps.clear();
-    this.fallenRealmBeastEntityIdMaps.clear();
     this.structureInstanceBindings.clear();
     this.structureInstanceSlots.clear();
     this.structureInstanceFreeSlots.clear();
@@ -1637,17 +1627,14 @@ export class StructureManager {
       return [];
     }
 
-    const entityIdsByInstance = this.getOrCreateStructureEntityIdMap(structure.structureType);
-    const bindings = [this.bindStructureInstance(model, structure.entityId, entityIdsByInstance, dirtyModels)];
+    const bindings = [this.bindStructureInstance(model, structure.entityId, dirtyModels)];
     if (structure.fallenRealm) {
       bindings.push(this.bindFallenRealmBeast(structure.fallenRealm, models, structure.entityId, dirtyModels));
     }
     if (structure.structureType === StructureType.Realm && structure.hasWonder) {
       const wonderModel = models.get(WONDER_MODEL_INDEX);
       if (wonderModel) {
-        bindings.push(
-          this.bindStructureInstance(wonderModel, structure.entityId, this.wonderEntityIdMaps, dirtyModels),
-        );
+        bindings.push(this.bindStructureInstance(wonderModel, structure.entityId, dirtyModels));
       }
     }
 
@@ -1667,7 +1654,7 @@ export class StructureManager {
     this.dummy.scale.multiplyScalar(scale);
     this.dummy.updateMatrix();
     try {
-      return this.bindStructureInstance(model, entityId, this.getOrCreateFallenRealmBeastIdMap(beast), dirtyModels);
+      return this.bindStructureInstance(model, entityId, dirtyModels);
     } finally {
       this.dummy.scale.copy(ruinScale);
       this.dummy.updateMatrix();
@@ -1684,16 +1671,12 @@ export class StructureManager {
       return [];
     }
 
-    const entityIdsByInstance = this.getOrCreateCosmeticEntityIdMap(cosmeticId);
-    return [this.bindStructureInstance(model, structure.entityId, entityIdsByInstance, dirtyModels)].filter(
-      isBoundStructureInstance,
-    );
+    return [this.bindStructureInstance(model, structure.entityId, dirtyModels)].filter(isBoundStructureInstance);
   }
 
   private bindStructureInstance(
     model: StructureModel,
     entityId: ID,
-    entityIdsByInstance: Map<number, ID>,
     dirtyModels: Set<StructureModel>,
   ): StructureInstanceBinding | undefined {
     const slots = this.structureInstanceSlots.get(model) ?? [];
@@ -1705,13 +1688,12 @@ export class StructureManager {
 
     slots[instanceIndex] = entityId;
     this.structureInstanceSlots.set(model, slots);
-    entityIdsByInstance.set(instanceIndex, entityId);
     model.setMatrixAt(instanceIndex, this.dummy.matrix);
     dirtyModels.add(model);
 
     const { x: worldX, z: worldZ } = this.dummy.position;
     const terrainHeight = this.resolveTerrainSurface().sampleSurface(worldX, worldZ).height;
-    return { entityIdsByInstance, instanceIndex, model, terrainHeight, worldX, worldZ };
+    return { instanceIndex, model, terrainHeight, worldX, worldZ };
   }
 
   // An overflow is a sizing bug, not a runtime condition: count it, warn once, and keep the pass alive.
@@ -1746,7 +1728,7 @@ export class StructureManager {
       return;
     }
 
-    bindings.forEach(({ entityIdsByInstance, instanceIndex, model }) => {
+    bindings.forEach(({ instanceIndex, model }) => {
       model.removeInstance(instanceIndex);
       const slots = this.structureInstanceSlots.get(model);
       if (slots) {
@@ -1755,9 +1737,6 @@ export class StructureManager {
         if (firstFreeSlot === undefined || instanceIndex < firstFreeSlot) {
           this.structureInstanceFreeSlots.set(model, instanceIndex);
         }
-      }
-      if (entityIdsByInstance.get(instanceIndex) === entityId) {
-        entityIdsByInstance.delete(instanceIndex);
       }
       dirtyModels.add(model);
     });
@@ -1784,36 +1763,6 @@ export class StructureManager {
         this.structureModelDrawCounts.delete(model);
       }
     });
-  }
-
-  private getOrCreateFallenRealmBeastIdMap(beast: FallenRealmBeast): Map<number, ID> {
-    const existing = this.fallenRealmBeastEntityIdMaps.get(beast);
-    if (existing) return existing;
-    const created = new Map<number, ID>();
-    this.fallenRealmBeastEntityIdMaps.set(beast, created);
-    return created;
-  }
-
-  private getOrCreateStructureEntityIdMap(structureType: StructureType): Map<number, ID> {
-    const existing = this.entityIdMaps.get(structureType);
-    if (existing) {
-      return existing;
-    }
-
-    const created = new Map<number, ID>();
-    this.entityIdMaps.set(structureType, created);
-    return created;
-  }
-
-  private getOrCreateCosmeticEntityIdMap(cosmeticId: string): Map<number, ID> {
-    const existing = this.cosmeticEntityIdMaps.get(cosmeticId);
-    if (existing) {
-      return existing;
-    }
-
-    const created = new Map<number, ID>();
-    this.cosmeticEntityIdMaps.set(cosmeticId, created);
-    return created;
   }
 
   private finalizeVisibleStructurePass(visibleStructureIds: Set<ID>, attachmentRetain: Set<number>): void {
@@ -1919,41 +1868,6 @@ export class StructureManager {
       .map((template) => `${template.id}:${template.slot ?? ""}`)
       .toSorted((a, b) => (a > b ? 1 : a < b ? -1 : 0))
       .join("|");
-  }
-
-  public getEntityIdFromInstance(structureType: StructureType, instanceId: number): ID | undefined {
-    // Check if this is a wonder model instance
-    if (structureType === StructureType.Realm && this.wonderEntityIdMaps.has(instanceId)) {
-      return this.wonderEntityIdMaps.get(instanceId);
-    }
-
-    const map = this.entityIdMaps.get(structureType);
-    return map ? map.get(instanceId) : undefined;
-  }
-
-  public getInstanceIdFromEntityId(structureType: StructureType, entityId: ID): number | undefined {
-    const normalizedEntityId = normalizeEntityId(entityId);
-    if (normalizedEntityId === undefined) {
-      return undefined;
-    }
-
-    // First check the wonder map
-    if (structureType === StructureType.Realm) {
-      for (const [instanceId, id] of this.wonderEntityIdMaps.entries()) {
-        if (id === normalizedEntityId) {
-          return instanceId;
-        }
-      }
-    }
-
-    const map = this.entityIdMaps.get(structureType);
-    if (!map) return undefined;
-    for (const [instanceId, id] of map.entries()) {
-      if (id === normalizedEntityId) {
-        return instanceId;
-      }
-    }
-    return undefined;
   }
 
   public setChunkBounds(bounds?: { box: Box3; sphere: Sphere }) {

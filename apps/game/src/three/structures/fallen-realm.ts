@@ -8,7 +8,7 @@ import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-c
  */
 export const FALLEN_REALM_RUIN_PATH = "/models/frontier/fallen-realm-ruin.glb";
 
-export type FallenRealmBeast = "troll" | "wyvern" | "hydra";
+type FallenRealmBeast = "troll" | "wyvern" | "hydra";
 
 export const FALLEN_REALM_BEASTS: Record<
   FallenRealmBeast,
