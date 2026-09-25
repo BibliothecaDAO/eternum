@@ -36,6 +36,42 @@ export const nativeTilePackingConstants = {
   "BYTE_RANGE": "0x100",
   "REWARD_EXTRACTED_FLAG": "0x20000000000000000000000000000"
 } as const;
+export const nativeStoryVariants = [
+  "FaithPointsClaimedStory",
+  "StructureLevelUpStory",
+  "RealmCreatedStory",
+  "GuardAddStory",
+  "ResourceBurnStory",
+  "ResourceTransferStory",
+  "ResourceReceiveArrivalStory",
+  "ProductionStory",
+  "BuildingPlacementStory",
+  "BuildingPaymentStory",
+  "BitcoinAwardStory",
+  "StructureCapturedStory",
+  "TradeCreated",
+  "TradeAccepted",
+  "TradeCancelled",
+  "BankSwap",
+  "BankLiquidity",
+  "HyperstructurePoints",
+  "RelicChestOpened",
+  "ExplorationReward",
+  "SeasonEnded",
+  "FaithPledged",
+  "FaithRemoved",
+  "BlitzFinalized",
+  "RelicCrafted",
+  "ExplorerCreateStory",
+  "ExplorerAddStory",
+  "ExplorerDeleteStory",
+  "GuardDeleteStory",
+  "TroopsTransferred",
+  "ChestReward",
+  "AttributeChosen",
+  "SitePayout"
+] as const;
+export type NativeStoryVariant = (typeof nativeStoryVariants)[number];
 export interface NativeRows {
   Preset: { readonly preset_id: number; readonly commitment: bigint };
   SpireLayout: { readonly game_id: number; readonly count: number; readonly base_distance: number; readonly layer_distance: number; readonly max_layer: number };

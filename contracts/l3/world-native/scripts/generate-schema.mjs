@@ -422,12 +422,20 @@ function validatedSyncScopes() {
   }
   return syncScopes;
 }
+/** The Story enum's variants, so a client that presents stories can be checked against every one of them. */
+function storyVariants() {
+  const story = schema.types["world_native::ownership::Story"];
+  if (!story?.variants) throw new Error("No Story enum in the contract ABIs");
+  return story.variants.map(({ name }) => name);
+}
 const declarations = [
   "// Generated from native fact models and contract ABIs. Run the native schema generator to update.",
   `export const nativeFactSchemaIdentity = ${JSON.stringify(schema.identity)};`,
   `export const nativeRuleConstants = ${JSON.stringify(ruleConstants, null, 2)} as const;`,
   `export const nativeTileOccupierConstants = ${JSON.stringify(tileOccupierConstants, null, 2)} as const;`,
   `export const nativeTilePackingConstants = ${JSON.stringify(tilePackingConstants, null, 2)} as const;`,
+  `export const nativeStoryVariants = ${JSON.stringify(storyVariants(), null, 2)} as const;`,
+  "export type NativeStoryVariant = (typeof nativeStoryVariants)[number];",
   "export interface NativeRows {",
   ...factRows.map(([name, row]) => `  ${name}: ${row.ts};`),
   "}",

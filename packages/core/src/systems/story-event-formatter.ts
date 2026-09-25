@@ -6,6 +6,7 @@ import { Position } from "./position";
 import { getIsBlitz } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
 import { configManager } from "../managers/config-manager";
+import type { NativeStoryVariant } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 type StoryEventIcon =
   | "realm"
@@ -42,7 +43,102 @@ const CHEST_QUALITY_LABELS = ["Common", "Uncommon", "Rare", "Epic"];
 const CHEST_KIND_LABELS: Record<string, string> = { Relic: "relic", Token: "token claim" };
 const EXPEDITION_GROUND_LABELS = ["the surface", "Ethereal I", "Ethereal II", "Ethereal III"];
 
-const formatters: Record<string, StoryFormatter> = {
+/** What a story model other than StoryEvent's own variants reaches the feed as. */
+type StoryEventModel = "BattleEvent" | "RaidEvent";
+
+/**
+ * One presentation for every story the chain can tell: each generated Story variant and each story model. A new
+ * variant is a type error here until it has its line, so no story ever reaches the feed as raw fields.
+ */
+const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> = {
+  ExplorationReward: (_event, payload, components) => ({
+    title: `+${formatResourceAmount(payload.amount) ?? "—"} ${getResourceName(Number(payload.resource_type))}`,
+    description: joinPieces([describeExplorer(payload.explorer_id, components), "Reveal"]),
+    icon: "resource",
+  }),
+  RelicChestOpened: (_event, payload, components) => ({
+    title: "Relic crate opened",
+    description: joinPieces([
+      describeExplorer(payload.explorer_id, components),
+      Array.isArray(payload.relics)
+        ? payload.relics.map((relic) => getResourceName(Number(relic))).join(", ")
+        : undefined,
+    ]),
+    icon: "prize",
+  }),
+  RelicCrafted: (_event, payload) => ({
+    title: "Relic crafted",
+    description: getResourceName(Number(payload.value)),
+    icon: "prize",
+  }),
+  StructureCapturedStory: (event, payload, components, resolvePlayerName) => ({
+    title: "Structure captured",
+    description: joinPieces([
+      describeEntity(event.entityId, components),
+      `${nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "—"} → ${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "—"}`,
+    ]),
+    icon: "battle",
+  }),
+  TradeCreated: (_event, payload) => {
+    const order = payload.order as Record<string, unknown>;
+    return {
+      title: "Trade listed",
+      description: `${getResourceName(Number(order.offered_resource))} for ${getResourceName(Number(order.requested_resource))}`,
+      icon: "resource",
+    };
+  },
+  TradeAccepted: (_event, payload) => ({
+    title: "Trade filled",
+    description: `${formatResourceAmount(payload.offered_amount) ?? "—"} ${getResourceName(Number(payload.offered_resource))} for ${formatResourceAmount(payload.requested_amount) ?? "—"} ${getResourceName(Number(payload.requested_resource))}`,
+    icon: "resource",
+  }),
+  TradeCancelled: (_event, payload) => ({
+    title: "Trade cancelled",
+    description: `Trade ${formatNumber(payload.value) ?? "—"}`,
+    icon: "resource",
+  }),
+  BankSwap: (_event, payload) => ({
+    title: payload.buy ? "Bought at the bank" : "Sold at the bank",
+    description: `${formatResourceAmount(payload.resource_amount) ?? "—"} ${getResourceName(Number(payload.resource_type))} for ${formatResourceAmount(payload.lords_amount) ?? "—"} Lords`,
+    icon: "resource",
+  }),
+  HyperstructurePoints: (_event, payload, components, resolvePlayerName) => ({
+    title: "Hyperstructure points",
+    description: `${nameOwner(payload.player, components, resolvePlayerName) ?? "—"} +${formatNumber(payload.points) ?? "—"}`,
+    icon: "prize",
+  }),
+  BitcoinAwardStory: (_event, payload, components, resolvePlayerName) => ({
+    title: "Bitcoin mine paid",
+    description: joinPieces([
+      `${nameOwner(payload.winner, components, resolvePlayerName) ?? "—"} +${formatResourceAmount(payload.winner_paid) ?? "—"}`,
+      `${nameOwner(payload.owner, components, resolvePlayerName) ?? "—"} +${formatResourceAmount(payload.owner_paid) ?? "—"}`,
+    ]),
+    icon: "prize",
+  }),
+  FaithPointsClaimedStory: (_event, payload, components) => ({
+    title: "Faith points claimed",
+    description: joinPieces([
+      describeStructureName(payload.wonder_id, components),
+      `+${formatNumber(payload.new_points) ?? "—"} (${formatNumber(payload.total_points) ?? "—"} in all)`,
+    ]),
+    icon: "prize",
+  }),
+  FaithPledged: (_event, payload, components) => ({
+    title: "Faith pledged",
+    description: `${describeStructureName(payload.structure_id, components) ?? "—"} → ${describeStructureName(payload.wonder_id, components) ?? "—"}`,
+    icon: "realm",
+  }),
+  FaithRemoved: (_event, payload, components) => ({
+    title: "Faith withdrawn",
+    description: `${describeStructureName(payload.structure_id, components) ?? "—"} from ${describeStructureName(payload.wonder_id, components) ?? "—"}`,
+    icon: "realm",
+  }),
+  SeasonEnded: (_event, payload, components, resolvePlayerName) => ({
+    title: "Season ended",
+    description: nameOwner(payload.value, components, resolvePlayerName),
+    icon: "scroll",
+  }),
+  BlitzFinalized: () => ({ title: "Blitz finalized", icon: "scroll" }),
   SitePayout: (_event, payload, components) => {
     const kind = formatEnum(payload.kind);
     const label =
@@ -324,35 +420,21 @@ const formatters: Record<string, StoryFormatter> = {
   }),
 };
 
+/** Whether a story has its line; one that does not (a variant retired from the enum) is never presented raw. */
+export const hasStoryPresentation = (storyType: string): boolean => Object.hasOwn(formatters, storyType);
+
 export function buildStoryEventPresentation(
   event: StoryEventSystemUpdate,
   components?: NativeFactStore,
   resolvePlayerName?: PlayerNameResolver,
 ): StoryEventPresentation {
-  const payload = event.storyPayload ?? {};
-  const formatter = payload && formatters[event.storyType];
-  const base = formatter
-    ? formatter(event, payload, components, resolvePlayerName)
-    : fallbackPresentation(event, components, resolvePlayerName);
+  if (!hasStoryPresentation(event.storyType)) throw new Error(`No presentation for story ${event.storyType}`);
+  const formatter = formatters[event.storyType as keyof typeof formatters];
+  const base = formatter(event, event.storyPayload ?? {}, components, resolvePlayerName);
 
   return {
     ...base,
     owner: nameOwner(event.ownerAddress, components, resolvePlayerName) ?? null,
-  };
-}
-
-function fallbackPresentation(
-  event: StoryEventSystemUpdate,
-  components?: NativeFactStore,
-  resolvePlayerName?: PlayerNameResolver,
-): StoryEventPresentation {
-  const type = event.storyType || "Unknown";
-  const owner = nameOwner(event.ownerAddress, components, resolvePlayerName);
-  const subject = describeEntity(event.entityId, components);
-  return {
-    title: `${type} event`,
-    description: joinPieces([owner ? `Owner: ${owner}` : undefined, subject]),
-    icon: "scroll",
   };
 }
 

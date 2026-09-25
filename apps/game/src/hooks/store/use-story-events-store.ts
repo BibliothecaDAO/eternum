@@ -1,7 +1,8 @@
 import { getPlayerName } from "@/hooks/use-player-profile";
 import { fetchHeraldGameHistory, requireShard } from "@bibliothecadao/eternum/game-client";
 import { getActiveGame } from "@/runtime/world";
-import { buildStoryEventPresentation, configManager } from "@bibliothecadao/eternum";
+import { buildStoryEventPresentation, configManager, hasStoryPresentation } from "@bibliothecadao/eternum";
+import * as Sentry from "@sentry/react";
 import type { GameSyncEvent, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import {
   eventConfirmationRank,
@@ -142,6 +143,20 @@ export const acceptGameSyncStoryEvent = (
 
 export const resetGameSyncStoryEvents = (): void => useStoryEventsStore.getState().reset();
 
+/**
+ * A story the current enum has no line for, such as a variant retired since an older pinned schema wrote it into
+ * history, never renders raw. Outside production it is an error; in production that one row is dropped and reported,
+ * so immutable history cannot take the log down.
+ */
+export const isPresentableStory = (event: Pick<StoryEventData, "story">): boolean => {
+  if (hasStoryPresentation(event.story)) return true;
+  const error = new Error(`No presentation for story ${event.story}`);
+  if (!import.meta.env.PROD) throw error;
+  console.error(`[story events] dropped a ${event.story} row: it has no presentation`);
+  Sentry.captureException(error, { tags: { story: event.story } });
+  return false;
+};
+
 const processStoryEvent = (
   event: StoryEventData | StreamStoryEvent,
   store: Parameters<typeof buildStoryEventPresentation>[1],
@@ -212,6 +227,7 @@ export const useStoryEvents = (limit: number = 100, story?: string, owner?: stri
     return [...events.values()]
       .sort((left, right) => Number(BigInt(right.timestamp) - BigInt(left.timestamp)))
       .slice(0, limit)
+      .filter(isPresentableStory)
       .map((event) => processStoryEvent(event, store));
   }, [store, limit, query.data, streamed, story, scopeKey, owner]);
 
