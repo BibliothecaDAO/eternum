@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-25",
+    title: "Exact fight forecasts",
+    description:
+      'The attack preview now computes each exchange with the game\'s own arithmetic, so it shows exactly what a fight costs: "Wins in 2 exchanges · loses 420 · 60 stamina". Where a game rolls dice, it shows the worst and best rolls.',
+    type: "improvement",
+  },
+  {
+    date: "2026-09-25",
     title: "Frontier's own screen",
     description:
       "Frontier now has a HUD built for it, phone first: today's day and time left, your Essence, labor, wheat and troops at home, one card per army slot with strength and stamina, and one switch between the expedition map and your realm.",

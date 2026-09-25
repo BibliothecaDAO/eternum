@@ -10,6 +10,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { configManager } from "../managers";
+import { COMBAT_DIE_FACES } from "./combat-exchange";
 import { divideWithPrecision } from "./utils";
 
 export interface Army {
@@ -31,9 +32,6 @@ export interface CombatSimulationContext {
   attackerRoll?: number;
   defenderRoll?: number;
 }
-
-/** The faces of the die each side rolls in a dice battle. */
-const COMBAT_DIE_FACES = 20;
 
 type BattleSimulation = ReturnType<CombatSimulator["simulateBattle"]>;
 

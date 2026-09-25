@@ -14,8 +14,11 @@ import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import {
-  CombatSimulator,
+  activeCombatRules,
+  COMBAT_DIE_FACES,
   configManager,
+  forecastFight,
+  resolveExchange,
   formatTime,
   getGuardsByStructure,
   getTroopResourceId,
@@ -27,8 +30,9 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { X } from "@/ui/design-system/atoms/game-icons";
 import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from "./attack-stamina-state";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/defense-slot-utils";
-import { attackerSideRange, defenderSideRange, formatAcross, survivalOf, type SideRange } from "./battle-range";
+import { formatAcross, survivalOf, type SideRange } from "./battle-range";
 import { CombatModal } from "./combat-modal";
+import { describeFight, wholeTroops } from "./fight-forecast";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
 
@@ -42,8 +46,6 @@ import {
   TickIds,
   type ActorType,
   type ID,
-  type RelicEffectWithEndTick,
-  type ResourcesIds,
   type Troops,
   type TroopTier,
   type TroopType,
@@ -93,8 +95,24 @@ const buildProjectedTroopSnapshot = (
   stamina,
 });
 
-const toRelicResourceIds = (effects: RelicEffectWithEndTick[]): ResourcesIds[] =>
-  effects.map((effect) => Number(effect.id)) as ResourcesIds[];
+/** Each side's losses at both ends of the dice, from this attack's exact exchanges; null when the attack is refused. */
+const exchangeSides = (
+  worst: ReturnType<typeof resolveExchange>,
+  best: ReturnType<typeof resolveExchange>,
+): { attacker: SideRange; defender: SideRange } | null => {
+  if (!worst.ok || !best.ok) return null;
+  const side = (loss: bigint, remaining: bigint) => ({ losses: wholeTroops(loss), remaining: wholeTroops(remaining) });
+  return {
+    attacker: {
+      worst: side(worst.attackerLoss, worst.attacker.count),
+      best: side(best.attackerLoss, best.attacker.count),
+    },
+    defender: {
+      worst: side(worst.defenderLoss, worst.defender.count),
+      best: side(best.defenderLoss, best.defender.count),
+    },
+  };
+};
 
 export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps) => {
   const {
@@ -124,23 +142,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const currentTime = useNowSeconds();
   const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
 
-  const {
-    attackerRelicEffects,
-    targetRelicEffects,
-    target: targetData,
-    targetResources,
-    isLoading,
-  } = useAttackTargetData(attacker.id, target.hex, target.alt);
+  const { target: targetData, targetResources, isLoading } = useAttackTargetData(attacker.id, target.hex, target.alt);
 
   const combatConfig = useMemo(() => configManager.getCombatConfig(), []);
   const ethereal = target.alt;
   const surfaceBiome = useStoredBiome(target.hex.x, target.hex.y) ?? BiomeType.None;
   const biome = ethereal ? BiomeType.Underground : surfaceBiome;
-  const combatSimulator = useMemo(() => new CombatSimulator(combatConfig), [combatConfig]);
   const rollsDice = useMemo(() => configManager.rollsCombatDice(ethereal), [ethereal]);
-
-  const attackerRelicResourceIds = useMemo(() => toRelicResourceIds(attackerRelicEffects), [attackerRelicEffects]);
-  const targetRelicResourceIds = useMemo(() => toRelicResourceIds(targetRelicEffects), [targetRelicEffects]);
 
   const attackerType = useMemo(() => {
     const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: attacker.id });
@@ -251,63 +259,43 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const totalGuardCount = isStructureTarget ? targetTroopSnapshots.length : 0;
   const hasQueuedGuards = totalGuardCount > 1;
 
-  // Combat v3 context so the preview reflects ranged reductions, no counter-damage, and the
-  // ranged stamina/cooldown model rather than always simulating an adjacent melee.
-  const combatSimulationContext = useMemo(
-    () => ({
-      defenderAlt: target.alt,
-      attackDistance: targetDistance,
-      attackerIsStructureGuard: attackerType === AttackerType.Structure,
-      defenderIsStructureGuard: isStructureTarget,
-    }),
-    [target.alt, targetDistance, attackerType, isStructureTarget],
-  );
-
-  const battleRange = useMemo(() => {
-    if (!attackerArmyData) return null;
-    if (!targetArmyData) return null;
-
-    const attackerArmy = {
-      entity_id: attacker.id,
-      stamina: Number(attackerStamina),
-      troopCount: Number(attackerArmyData.troops.count) / RESOURCE_PRECISION,
-      troopType: attackerArmyData.troops.category as TroopType,
-      tier: attackerArmyData.troops.tier as TroopTier,
-      battle_cooldown_end: attackerArmyData.troops.battle_cooldown_end,
+  // Every exchange is the contract's own arithmetic on both sides' troops, stamina and boosts at chain time: this
+  // attack and the whole fight as successive attacks now. Where the game rolls dice, both at the attacker's worst roll
+  // against the defender's best and the reverse; without dice the two ends are one exact result.
+  const fight = useMemo(() => {
+    if (!attackerArmyData || !targetArmyData) return null;
+    const rules = activeCombatRules();
+    const at = (attackerRoll: number, defenderRoll: number) => {
+      const context = {
+        timestamp: currentTime,
+        currentTick: currentArmiesTick,
+        attackDistance: targetDistance,
+        attackerBiome: biome,
+        defenderBiome: biome,
+        attackerIsStructureGuard: attackerType === AttackerType.Structure,
+        defenderIsStructureGuard: isStructureTarget,
+        attackerRoll,
+        defenderRoll,
+      };
+      return {
+        exchange: resolveExchange(attackerArmyData.troops, targetArmyData.troops, context, rules),
+        forecast: forecastFight(attackerArmyData.troops, targetArmyData.troops, context, rules),
+      };
     };
-
-    const defenderArmy = {
-      entity_id: targetData?.id || 0,
-      stamina: Number(targetArmyData.troops.stamina.amount),
-      troopCount: Number(targetArmyData.troops.count) / RESOURCE_PRECISION,
-      troopType: targetArmyData.troops.category as TroopType,
-      tier: targetArmyData.troops.tier as TroopTier,
-      battle_cooldown_end: targetArmyData.troops.battle_cooldown_end,
-    };
-
-    const now = Math.floor(Date.now() / 1000);
-
-    return combatSimulator.simulateBattleRange(
-      now,
-      attackerArmy,
-      defenderArmy,
-      biome,
-      attackerRelicResourceIds,
-      targetRelicResourceIds,
-      combatSimulationContext,
-      rollsDice,
-    );
+    if (!rollsDice) {
+      const exact = at(0, 0);
+      return { worst: exact, best: exact };
+    }
+    return { worst: at(1, COMBAT_DIE_FACES), best: at(COMBAT_DIE_FACES, 1) };
   }, [
-    attacker,
     attackerArmyData,
-    targetData,
     targetArmyData,
+    currentTime,
+    currentArmiesTick,
+    targetDistance,
     biome,
-    combatSimulator,
-    attackerRelicResourceIds,
-    targetRelicResourceIds,
-    attackerStamina,
-    combatSimulationContext,
+    attackerType,
+    isStructureTarget,
     rollsDice,
   ]);
 
@@ -321,8 +309,9 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return Number(targetArmyData.troops.count) / RESOURCE_PRECISION;
   }, [targetArmyData]);
 
-  const attackerSide = battleRange ? attackerSideRange(attackerTroopsTotal, battleRange) : null;
-  const defenderSide = battleRange ? defenderSideRange(defenderTroopsTotal, battleRange) : null;
+  const sides = fight ? exchangeSides(fight.worst.exchange, fight.best.exchange) : null;
+  const attackerSide = sides?.attacker ?? null;
+  const defenderSide = sides?.defender ?? null;
 
   // Capture and garrison are judged on the attacker's worst roll, so the atomic claim never counts on luck.
   const attackerRemaining = attackerSide ? attackerSide.worst.remaining : attackerTroopsTotal;
@@ -419,16 +408,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   })();
 
   const outcomeLabel = (() => {
-    if (!battleRange) {
-      if (targetArmyData) return "Simulating...";
+    if (!fight) {
       if (isStructureTarget && hasQueuedGuards) return `${totalGuardCount} guards defending`;
       return "No defenders";
     }
 
-    const outcomeOf = ({ attackerDamage, defenderDamage }: typeof battleRange.worst) =>
-      attackerDamage > defenderDamage ? "Victory" : attackerDamage === defenderDamage ? "Draw" : "Defeat";
-    const [worstOutcome, bestOutcome] = [outcomeOf(battleRange.worst), outcomeOf(battleRange.best)];
-    const baseLabel = worstOutcome === bestOutcome ? worstOutcome : `${worstOutcome} to ${bestOutcome}`;
+    const [worst, best] = [describeFight(fight.worst.forecast), describeFight(fight.best.forecast)];
+    const baseLabel = worst === best ? (worst ?? "—") : `Worst roll: ${worst ?? "—"} · best: ${best ?? "—"}`;
 
     if (!isStructureTarget || !hasQueuedGuards) {
       return baseLabel;

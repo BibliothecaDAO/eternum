@@ -237,9 +237,11 @@ export class ClientConfigManager {
   helpTransfers(withStructure: boolean): HelpTransfer[] {
     return enabledHelpTransfers((command) => this.isCommandEnabled(command), withStructure, this.hasGuardSlots());
   }
-  /** Whether a battle rolls a d20 per side: always on the ethereal layer, and everywhere in a game with combat dice. */
+  /** Whether a battle rolls a d20 per side: everywhere in a game with combat dice, on the ethereal layer in one with
+   *  ethereal dice, and never otherwise. */
   rollsCombatDice(defenderAlt: boolean): boolean {
-    return defenderAlt || isModeRuleEnabled(this.rules(), "COMBAT_DICE");
+    const rules = this.rules();
+    return (defenderAlt && isModeRuleEnabled(rules, "COMBAT_DICE_ETHEREAL")) || isModeRuleEnabled(rules, "COMBAT_DICE");
   }
   /** Whether terrain changes combat in this game at all; where it does not, no surface shows biome bonuses. */
   hasBiomeCombatEffects(): boolean {

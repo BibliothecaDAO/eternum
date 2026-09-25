@@ -7,6 +7,7 @@ export * from "./biome";
 export * from "./buildings";
 export * from "./building-cost-mode";
 export * from "./canonical-realm";
+export * from "./combat-exchange";
 export * from "./combat-simulator";
 export * from "./constants";
 export * from "./entities";

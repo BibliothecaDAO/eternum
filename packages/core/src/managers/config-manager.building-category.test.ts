@@ -126,16 +126,17 @@ describe("native immutable configuration", () => {
     expect(manager.getTick(TickIds.Armies)).toBe(Number(preset.rules.tick_config.armies_tick_in_seconds));
   });
 
-  it("rolls combat dice on the ethereal layer always, and on the surface only in a dice game", () => {
+  it("rolls combat dice everywhere in a dice game, on the ethereal layer in an ethereal-dice game, else never", () => {
     const { manager, write } = fixture();
-    expect([manager.rollsCombatDice(true), manager.rollsCombatDice(false)]).toEqual([true, false]);
-
-    write("SliceRules", [54], {
-      ...preset.rules,
-      game_id: 54,
-      mode_rules: preset.rules.mode_rules | nativeRuleConstants.COMBAT_DICE,
-    });
-    expect([manager.rollsCombatDice(true), manager.rollsCombatDice(false)]).toEqual([true, true]);
+    const withRules = (mode_rules: number) => {
+      write("SliceRules", [54], { ...preset.rules, game_id: 54, mode_rules });
+      return [manager.rollsCombatDice(true), manager.rollsCombatDice(false)];
+    };
+    const base =
+      preset.rules.mode_rules & ~(nativeRuleConstants.COMBAT_DICE | nativeRuleConstants.COMBAT_DICE_ETHEREAL);
+    expect(withRules(base)).toEqual([false, false]);
+    expect(withRules(base | nativeRuleConstants.COMBAT_DICE_ETHEREAL)).toEqual([true, false]);
+    expect(withRules(base | nativeRuleConstants.COMBAT_DICE)).toEqual([true, true]);
   });
 
   it("reads whether terrain changes combat from the game's damage rule", () => {
