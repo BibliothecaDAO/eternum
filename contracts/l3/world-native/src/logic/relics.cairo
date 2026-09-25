@@ -7,12 +7,14 @@ pub mod RelicState {
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternalTrait;
+    use crate::ownership::StoryResultTrait;
     use crate::relics::{
         ApplyRelic, IRelicMapDispatcherTrait, IRelicMapLibraryDispatcher, IRelicProductionDispatcherTrait,
         IRelicProductionLibraryDispatcher, IRelicTroopsDispatcherTrait, IRelicTroopsLibraryDispatcher, OpenChest,
         Recipient, RelicRule,
     };
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
+    use crate::stamina::StaminaTrait;
     use crate::troops::ExplorerKey;
 
     #[storage]
@@ -161,6 +163,29 @@ pub mod RelicState {
                 );
         }
     }
+    #[embeddable_as(CaptureRewardsImpl)]
+    pub impl CaptureRewards<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl Life: ReleaseState::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of crate::relics::ICaptureRewards<ComponentState<TContractState>> {
+        fn grant_capture_rewards(
+            ref self: ComponentState<TContractState>,
+            site: ResourceKey,
+            explorer_id: u32,
+            category: u8,
+            context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
+            let context = crate::commands::load_context(site.game_id, context);
+            let explorer_key = ExplorerKey { game_id: site.game_id, explorer_id };
+            let explorer = crate::logic::troops::explorer(explorer_key).expect('missing capture explorer');
+            self.refund_capture_stamina(explorer_key, explorer, context);
+            self.pay_capture_rewards(site, explorer_key, explorer.owner, category, context, ref story_cursor);
+            ((), story_cursor)
+        }
+    }
     #[embeddable_as(ArtificerImpl)]
     pub impl Artificer<
         TContractState,
@@ -220,6 +245,91 @@ pub mod RelicState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
+        fn refund_capture_stamina(
+            self: @ComponentState<TContractState>,
+            key: ExplorerKey,
+            mut explorer: crate::troops::ExplorerTroops,
+            context: ExecutionContext,
+        ) {
+            let rules = context.rules.unbox();
+            let refund = rules.troop_stamina_config.capture_stamina_refund;
+            if refund == 0 {
+                return;
+            }
+            explorer
+                .troops
+                .stamina
+                .add(
+                    ref explorer.troops.boosts,
+                    explorer.troops.category,
+                    explorer.troops.tier,
+                    rules.troop_stamina_config,
+                    refund.into(),
+                    context.timestamp / rules.tick_config.armies_tick_in_seconds,
+                );
+            crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
+        }
+
+        fn pay_capture_rewards(
+            ref self: ComponentState<TContractState>,
+            site: ResourceKey,
+            explorer_key: ExplorerKey,
+            home_id: u32,
+            category: u8,
+            context: ExecutionContext,
+            ref story_cursor: crate::ownership::StoryCursor,
+        ) {
+            let rules = context.rules.unbox();
+            let camp = category == crate::camps::CAMP_CATEGORY;
+            let home_rewards = camp && crate::rules::rule_enabled(rules, crate::rules::HOME_CAMP_REWARDS);
+            let chests = crate::rules::rule_enabled(rules, crate::rules::CAPTURE_CHESTS);
+            if !home_rewards && !chests {
+                return;
+            }
+            let coord = crate::structures::structure_coord(site);
+            let depth = if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
+                Some(crate::logic::expeditions::depth_rules_at(site.game_id, coord))
+            } else {
+                None
+            };
+            let home = ResourceKey { game_id: site.game_id, entity_id: home_id };
+            if home_rewards {
+                self.pay_camp_resources(home, context);
+            }
+            let mine_chest = category == 4 && depth.map(|value| value.mine_chest).unwrap_or(false);
+            if chests && (camp || mine_chest) {
+                let actor = crate::logic::structures::structure(home).expect('missing home structure').owner;
+                self
+                    .grant_site_chest(
+                        site.game_id,
+                        actor,
+                        OpenChest { explorer_id: explorer_key.explorer_id, coord },
+                        crate::commands::action_context(context),
+                        story_cursor,
+                    )
+                    .resume_story(ref story_cursor);
+            }
+        }
+
+        fn pay_camp_resources(self: @ComponentState<TContractState>, home: ResourceKey, context: ExecutionContext) {
+            for reward in crate::camps::ICampRulesDispatcherTrait::camp_resources(
+                crate::camps::ICampRulesLibraryDispatcher {
+                    class_hash: self.logic_classes(home.game_id).structures.read(),
+                },
+                home.game_id,
+            ) {
+                self
+                    .resources(home.game_id)
+                    .grant_resource(
+                        home,
+                        *reward.resource_type,
+                        *reward.amount,
+                        context.timestamp,
+                        crate::commands::resource_context(context),
+                    );
+            }
+        }
+
         fn pay_chest(
             ref self: ComponentState<TContractState>,
             game_id: u32,

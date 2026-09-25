@@ -117,6 +117,18 @@ pub fn roll_chest(
 }
 
 #[starknet::interface]
+pub trait ICaptureRewards<T> {
+    fn grant_capture_rewards(
+        ref self: T,
+        site: ResourceKey,
+        explorer_id: u32,
+        category: u8,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
+}
+
+#[starknet::interface]
 pub trait IRelics<T> {
     fn chest_rules(self: @T, game_id: u32) -> Option<ChestRules>;
     fn chest_pity(self: @T, game_id: u32, player: ContractAddress, depth: u8) -> u16;
