@@ -103,6 +103,8 @@ const playerRows = (clock: LabClock): WireRow[] => [
   },
   { model: "ArmySlot", value: armySlot(clock, 201, 0, 30) },
   { model: "ArmySlot", value: armySlot(clock, 202, 1, 150) },
+  // The day's third army fell this morning: its slot keeps the tired bar for the next muster.
+  { model: "ArmySlot", value: armySlot(clock, 0, 2, 40) },
   { model: "ExplorerTroops", value: army(clock, 201, 1_498, 0) },
   { model: "ExplorerTroops", value: army(clock, 202, 1, 1) },
   { model: "TileOccupancy", value: armyTile(clock, 201, 2, 1) },

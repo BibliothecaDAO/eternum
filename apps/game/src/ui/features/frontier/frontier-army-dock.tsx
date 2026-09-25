@@ -1,4 +1,4 @@
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { type OpenArmySlot, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useGame } from "@/hooks/context/game-context";
 import { useBlockTimestamp, useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -27,6 +27,7 @@ import { useMemo } from "react";
 import { Sweep } from "@/ui/motion/sweep";
 import { formatAmount, formatClock } from "./frontier-format";
 import { useExpeditionRules } from "./frontier-home";
+import { describeSlotBar, useOpenArmySlots } from "./frontier-muster-stamina";
 import { formatRevealYield, useRevealYield } from "./frontier-reveal-yield";
 import { useMusterPointed } from "./guide/guide-pointer";
 
@@ -34,7 +35,7 @@ const ARMY_MODELS = ["ArmySlot", "ExplorerTroops", "TileOccupancy", "EntityName"
 
 /**
  * One card per army slot the castle grants: today's armies with their strength and stamina, then a Muster card for
- * every open slot. A row along the foot of a phone held upright; a column down the left edge otherwise.
+ * every open slot, saying whether its next army starts fresh or on the bar a lost army left. A row along the foot of a phone held upright; a column down the left edge otherwise.
  */
 export const FrontierArmyDock = ({ realm }: { realm: NativeRows["Structure"] }) => {
   const { setup } = useGame();
@@ -44,7 +45,11 @@ export const FrontierArmyDock = ({ realm }: { realm: NativeRows["Structure"] }) 
     () => liveHomeArmies(setup.store, realm.entity_id, configManager.getActiveGameId()),
     [realm.entity_id, revision, setup.store, tick],
   );
-  const openSlots = Math.max(0, realm.base.troop_max_explorer_count - armies.length);
+  const openSlots = useOpenArmySlots(realm);
+  // Until every slot is known, the castle's allowance still says how many cards are open; their bars read "—".
+  const openCards =
+    openSlots ??
+    Array.from({ length: Math.max(0, realm.base.troop_max_explorer_count - armies.length) }, () => undefined);
 
   return (
     <nav
@@ -54,8 +59,8 @@ export const FrontierArmyDock = ({ realm }: { realm: NativeRows["Structure"] }) 
       {armies.map((army, index) => (
         <ArmyCard key={army.explorer_id} army={army} position={index + 1} />
       ))}
-      {Array.from({ length: openSlots }, (_, index) => (
-        <MusterCard key={`open-${index}`} />
+      {openCards.map((slot, index) => (
+        <MusterCard key={slot?.slot ?? `open-${index}`} slot={slot} />
       ))}
     </nav>
   );
@@ -153,7 +158,7 @@ const dockArmyName = (store: NativeFactStore, explorerId: number, position: numb
   return named && named.name !== 0n ? getArmyName(explorerId, store) : `Army ${position}`;
 };
 
-const MusterCard = () => {
+const MusterCard = ({ slot }: { slot: OpenArmySlot | undefined }) => {
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const pointed = useMusterPointed();
   return (
@@ -164,7 +169,7 @@ const MusterCard = () => {
         className={cn(OVERLAY_SURFACE_BASE, CARD, "h-full items-center justify-center border-dashed")}
       >
         <span className={HUD_LABEL_BRIGHT}>Muster</span>
-        <span className={HUD_LABEL}>Open slot</span>
+        <span className={HUD_LABEL}>Open slot · {describeSlotBar(slot)}</span>
       </button>
     </Sweep>
   );

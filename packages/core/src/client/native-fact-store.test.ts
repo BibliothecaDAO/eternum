@@ -1,6 +1,6 @@
 import { StaminaManager } from "../managers/stamina-manager";
 import { configManager } from "../managers/config-manager";
-import { resolveExplorerTroops } from "../managers/troop-stamina";
+import { musterStamina, openArmySlots, resolveExplorerTroops, troopStaminaLimits } from "../managers/troop-stamina";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import rowFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -490,6 +490,70 @@ describe("declared fact absence", () => {
       expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0x111n, epoch }).unknown).toContain(
         "OUTSIDE_SNAPSHOT_SCOPE",
       );
+  });
+  it("musters into the lowest vacant slot, on a fresh bar or the one its last army left", () => {
+    const store = new NativeFactStore();
+    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 100 })]);
+    store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
+    store.applyFacts([
+      set("0x2", "SettlementRules", {
+        game_id: 1,
+        registration_start: 1,
+        registration_limit: 2,
+        spacing: 10,
+        mode: "Single",
+      }),
+      set("0x3", "GameRegistry", {
+        game_id: 1,
+        preset_id: 3,
+        name: "1",
+        creator: "1",
+        start_settling_at: "1",
+        start_main_at: "100",
+        end_at: "1000",
+        settled: false,
+        ready: true,
+        dev_mode_on: false,
+        end_grace_seconds: 0,
+        seed: "1",
+      }),
+      set("0x7", "Structure", structure("0x111")),
+    ]);
+    setBlockTimestampSource(() => 350);
+    const home = { game_id: 1, entity_id: 7, allowedSlots: 3 };
+    const slot = (index: number, explorerId: number, amount: string) =>
+      set(`0x8${index}`, "ArmySlot", {
+        game_id: 1,
+        structure_id: 7,
+        epoch: "3",
+        slot: index,
+        explorer_id: explorerId,
+        stamina: { amount, updated_tick: "10" },
+      });
+
+    expect(openArmySlots(store, home)?.map((open) => open.inherited)).toEqual([null, null, null]);
+    // Slot 0 holds an army; slot 1's army died today and left its bar behind.
+    store.applyFacts([slot(0, 70, "30"), slot(1, 0, "4")]);
+    const open = openArmySlots(store, home)!;
+    expect(open).toEqual([
+      { slot: 1, inherited: { amount: 4n, updated_tick: 10n } },
+      { slot: 2, inherited: null },
+    ]);
+
+    const rules = store.get("SliceRules", { game_id: 1 })!.troop_stamina_config;
+    const knight = { category: "Knight", tier: "T1" } as const;
+    const { staminaInitial, staminaMax } = troopStaminaLimits(rules, knight.category, knight.tier);
+    expect(musterStamina(open[0], knight, 12, rules)).toEqual({
+      amount: Math.min(4 + 2 * Number(rules.stamina_gain_per_tick), staminaMax),
+      max: staminaMax,
+    });
+    expect(musterStamina(open[1], knight, 12, rules)).toEqual({
+      amount: Math.min(staminaInitial, staminaMax),
+      max: staminaMax,
+    });
+
+    store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
+    expect(openArmySlots(store, home)).toBeUndefined();
   });
   it("keeps incomplete scope invariants out of synchronous listeners", () => {
     const store = new NativeFactStore();

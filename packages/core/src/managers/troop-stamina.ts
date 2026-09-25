@@ -82,12 +82,12 @@ export function resolveExplorerTroops(
 ): Troops | undefined {
   const source = explorer.troops.stamina;
   if ("Inline" in source) return inlineTroops(explorer.troops);
-  const scope = store.subscriptionScope();
-  if (!scope.known?.expedition || scope.known.expedition.absoluteEpoch < 0) return undefined;
+  const epoch = slotEpoch(store);
+  if (epoch === undefined) return undefined;
   const result = store.requireOrAbsent("ArmySlot", {
     game_id: explorer.game_id,
     structure_id: explorer.owner,
-    epoch: BigInt(scope.known.expedition.absoluteEpoch),
+    epoch,
     slot: source.Slot,
   });
   if (result.unknown) return undefined;
@@ -95,3 +95,68 @@ export function resolveExplorerTroops(
   if (result.known.explorer_id !== explorer.explorer_id) throw new Error("Army slot occupant mismatch");
   return { ...explorer.troops, stamina: result.known.stamina };
 }
+
+/** A slot a home can muster into today, with the bar the army starts on: fresh, or the bar its last army left. */
+export interface OpenArmySlot {
+  slot: number;
+  inherited: Troops["stamina"] | null;
+}
+
+/**
+ * A home's vacant army slots today, lowest first, as the contract fills them: a slot never used today starts a fresh
+ * bar, and a slot whose army died or was removed hands its bar on, so replacing a tired army mints no stamina.
+ * Undefined until every one of the home's slots is known.
+ */
+export function openArmySlots(
+  store: NativeFactStore,
+  home: { game_id: number; entity_id: number; allowedSlots: number },
+): OpenArmySlot[] | undefined {
+  const epoch = slotEpoch(store);
+  if (epoch === undefined) return undefined;
+  const open: OpenArmySlot[] = [];
+  for (let slot = 0; slot < home.allowedSlots; slot += 1) {
+    const result = store.requireOrAbsent("ArmySlot", {
+      game_id: home.game_id,
+      structure_id: home.entity_id,
+      epoch,
+      slot,
+    });
+    if (result.unknown) return undefined;
+    if (!result.known) open.push({ slot, inherited: null });
+    else if (result.known.explorer_id === 0) open.push({ slot, inherited: result.known.stamina });
+  }
+  return open;
+}
+
+/** The bar a new army of this troop starts on in the slot, at the tick, under the game's rules. */
+export function musterStamina(
+  slot: OpenArmySlot,
+  troop: { category: TroopType; tier: TroopTier },
+  currentArmiesTick: number,
+  rules: TroopStaminaRules,
+): { amount: number; max: number } {
+  const { staminaInitial, staminaMax } = troopStaminaLimits(rules, troop.category, troop.tier);
+  if (!slot.inherited) return { amount: Math.min(staminaInitial, staminaMax), max: staminaMax };
+  const newArmy: Troops = { ...troop, count: 0n, stamina: slot.inherited, boosts: NO_BOOSTS, battle_cooldown_end: 0 };
+  const bar = staminaAt(newArmy, currentArmiesTick, rules);
+  return { amount: Number(bar.amount), max: staminaMax };
+}
+
+/** A newly mustered army carries no relic boosts yet. */
+const NO_BOOSTS: Troops["boosts"] = {
+  incr_damage_dealt_percent_num: 0,
+  incr_damage_dealt_end_tick: 0,
+  decr_damage_gotten_percent_num: 0,
+  decr_damage_gotten_end_tick: 0,
+  incr_stamina_regen_percent_num: 0,
+  incr_stamina_regen_tick_count: 0,
+  incr_explore_reward_percent_num: 0,
+  incr_explore_reward_end_tick: 0,
+};
+
+/** Slots are keyed by the absolute epoch, known once the expedition scope and its clock are. */
+const slotEpoch = (store: NativeFactStore): bigint | undefined => {
+  const scope = store.subscriptionScope();
+  if (!scope.known?.expedition || scope.known.expedition.absoluteEpoch < 0) return undefined;
+  return BigInt(scope.known.expedition.absoluteEpoch);
+};
