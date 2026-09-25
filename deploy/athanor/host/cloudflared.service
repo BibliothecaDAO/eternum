@@ -1,0 +1,14 @@
+[Unit]
+Description=Tunnel from the shard hostnames to this box's loopback ports
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# The token stays in a root-only file; it never appears in a unit file or a process listing.
+ExecStart=/usr/bin/cloudflared tunnel --no-autoupdate run --token-file /etc/cloudflared/tunnel-token
+Restart=on-failure
+RestartSec=5
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target
