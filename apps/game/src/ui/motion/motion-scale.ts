@@ -6,12 +6,19 @@ export type Intensity = 0 | 1 | 2 | 3;
 
 export const INTENSITY_LABEL: Record<Intensity, string> = { 0: "Common", 1: "Uncommon", 2: "Rare", 3: "Epic" };
 
-/** World particles per burst, the extra anticipation before a tell, and the Android haptic pattern. */
+/**
+ * World particles per burst, the extra anticipation before a tell, the Android haptic pattern, and the rarity's look:
+ * its colour and pips (never colour alone), and whether it earns the light beam and the one flash.
+ */
 export const INTENSITY = {
   particles: [12, 24, 48, 96],
   extraHoldMs: [0, 150, 350, 700],
   haptic: [[10], [20], [30, 40, 30], [40, 60, 40, 60, 80]],
   holdAmplitudeDeg: [4, 5, 6, 8],
+  colour: ["#b8b2a7", "#5fd08a", "#5aa7ff", "#f2a900"],
+  pips: [1, 2, 3, 4],
+  beam: [false, false, true, true],
+  flash: [false, false, false, true],
 } as const satisfies Record<string, readonly unknown[]>;
 
 /** A world burst's particles: the intensity's count, halved when the moment is repeating. */

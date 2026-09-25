@@ -44,6 +44,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         onDoubleClick={(e) => e.stopPropagation()}
         onMouseMove={(e) => e.stopPropagation()}
         id="world"
+        data-screen-shake
         className="world-selector fixed antialiased top-0 left-0 z-0 w-screen h-dvh overflow-hidden ornate-borders pointer-events-none"
       >
         {/* Game systems */}

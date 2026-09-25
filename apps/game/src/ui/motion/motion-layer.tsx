@@ -4,10 +4,11 @@ import { EASE } from "./motion-scale";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 
 /**
- * The one full-screen layer the big moments fly sprites on: a fixed pool of 32 images, never re-rendered by React,
- * moved by transform and opacity only. Mounted once by the HUD; `flySprites` is the only way in.
+ * The one full-screen layer the big moments play on: a fixed pool of 96 sprites, never re-rendered by React and moved by
+ * transform and opacity only, and the epic flash. Mounted once beside the HUD; the functions below are the only way in.
  */
-const POOL_SIZE = 32;
+// An epic chest's 64-coin fountain plus its 24 coins flying home, with room to spare.
+const POOL_SIZE = 96;
 const SPRITE_PX = 22;
 const FLIGHT_MS = 500;
 const STAGGER_MS = 18;
@@ -28,6 +29,9 @@ interface Flight {
 /** A pooled sprite: an icon, and a label beside it that only a rise shows. */
 let pool: HTMLElement[] = [];
 const busy = new Set<HTMLElement>();
+let flash: HTMLElement | null = null;
+/** Flights in the air, so a skipped moment can land them all at once. */
+const inFlight = new Set<{ complete: () => void }>();
 
 const dress = (sprite: HTMLElement, icon: string, label: string) => {
   sprite.querySelector("img")!.src = icon;
@@ -60,16 +64,77 @@ export const flySprites = ({ from, to, icon, count, speed = 1, popMs = 0, onArri
     const start = { x: from.x - SPRITE_PX / 2 + jitter, y: from.y - SPRITE_PX / 2 };
     const finish = { x: end.x - SPRITE_PX / 2, y: end.y - SPRITE_PX / 2 };
     const { keyframes, times, ease } = flightPath(start, finish, lift, popMs / (popMs + FLIGHT_MS));
-    void animate(sprite, keyframes, {
+    const flight = animate(sprite, keyframes, {
       duration: ((popMs + FLIGHT_MS) * speed) / 1000,
       delay: (index * STAGGER_MS * speed) / 1000,
       times,
       ease,
-    }).then(async () => {
+    });
+    inFlight.add(flight);
+    void flight.then(async () => {
+      inFlight.delete(flight);
       onArrive?.(index);
       await animate(sprite, { opacity: 0 }, { duration: 0.08 });
       busy.delete(sprite);
     });
+  });
+};
+
+/** Lands every sprite in the air now: a skipped moment jumps to its end, landings and all. */
+export const finishFlights = (): void => {
+  for (const flight of [...inFlight]) flight.complete();
+};
+
+const FLASH_OPACITY = 0.4;
+const FLASH_MS = 240;
+const SHAKE_PX = 4;
+const SHAKE_MS = 300;
+
+/**
+ * The epic's one flash: warm light over the whole screen at no more than 40% opacity, once, far under the three-flash
+ * rule. Reduced motion shows none.
+ */
+export const flashScreen = (): void => {
+  if (useWorldAppearanceStore.getState().reducedMotion || !flash) return;
+  void animate(flash, { opacity: [0, FLASH_OPACITY, 0] }, { duration: FLASH_MS / 1000, times: [0, 0.25, 1] });
+};
+
+/**
+ * A 4 px screen shake over 300 ms, easing out. It moves everything marked `data-screen-shake`: the world layer and the
+ * map canvas, both full-screen, so nothing reflows. Reduced motion shows none.
+ */
+export const shakeScreen = (): void => {
+  if (useWorldAppearanceStore.getState().reducedMotion) return;
+  const offsets = [0, SHAKE_PX, -SHAKE_PX, SHAKE_PX * 0.6, -SHAKE_PX * 0.3, 0];
+  for (const element of document.querySelectorAll<HTMLElement>("[data-screen-shake]")) {
+    void animate(element, { x: offsets, y: offsets.map((offset) => -offset / 2) }, { duration: SHAKE_MS / 1000 });
+  }
+};
+
+const FOUNTAIN_MS = 800;
+const FOUNTAIN_HEIGHT_PX = 120;
+
+/**
+ * Sprites erupt from a point in a fan and fall back past it as they fade, a fountain of coins from an opened chest.
+ * Reduced motion, or no free sprites, shows none.
+ */
+export const fountainSprites = ({ at, icon, count }: { at: Point; icon: string; count: number }): void => {
+  if (useWorldAppearanceStore.getState().reducedMotion) return;
+  const free = pool.filter((sprite) => !busy.has(sprite)).slice(0, count);
+  free.forEach((sprite, index) => {
+    busy.add(sprite);
+    dress(sprite, icon, "");
+    // Spread evenly across a 120° fan, each a little higher or lower than its neighbour.
+    const angle = (-60 + (120 * (index + 0.5)) / free.length) * (Math.PI / 180);
+    const reach = FOUNTAIN_HEIGHT_PX * (0.7 + ((index * 37) % 10) / 20);
+    const start = { x: at.x - SPRITE_PX / 2, y: at.y - SPRITE_PX / 2 };
+    const peak = { x: start.x + Math.sin(angle) * reach * 0.6, y: start.y - Math.cos(angle) * reach };
+    const land = { x: start.x + Math.sin(angle) * reach, y: start.y + reach * 0.35 };
+    void animate(
+      sprite,
+      { x: [start.x, peak.x, land.x], y: [start.y, peak.y, land.y], opacity: [0, 1, 0], scale: [0.5, 1, 0.8] },
+      { duration: FOUNTAIN_MS / 1000, times: [0, 0.4, 1], ease: [EASE.outQuart, EASE.inCubic], delay: index * 0.008 },
+    ).then(() => busy.delete(sprite));
   });
 };
 
@@ -134,13 +199,17 @@ export const MotionLayer = () => {
   const layer = useRef<HTMLDivElement>(null);
   useEffect(() => {
     pool = Array.from(layer.current?.querySelectorAll<HTMLElement>("[data-sprite]") ?? []);
+    flash = layer.current?.querySelector<HTMLElement>("[data-flash]") ?? null;
     return () => {
       pool = [];
       busy.clear();
+      inFlight.clear();
+      flash = null;
     };
   }, []);
   return (
     <div ref={layer} aria-hidden className="pointer-events-none fixed inset-0 z-[60] overflow-hidden">
+      <div data-flash className="absolute inset-0 bg-[#fff1cf] opacity-0" />
       {Array.from({ length: POOL_SIZE }, (_, index) => (
         <div
           key={index}
