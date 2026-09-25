@@ -152,6 +152,12 @@ snapshots every 15 s, and admission-to-visible latency split into its gateway pa
 in calm. A failed workload aborts the matrix. Each completed or failed candidate is stopped with its volumes retained;
 the next configuration starts fresh.
 
+Recovery drills run against a shard the runner started: `scripts/drill.py RUN_DIRECTORY`. Four drills run in turn, each
+under its own burst of four Blitz games of 24: SIGTERM and SIGKILL of the node, then of the gateway, sent once the burst
+has recorded executions and followed by a restart. `drills.json` records each drill's recovery height and time, the
+tickets in flight at the signal and how many of them were recorded after the restart, chain failures, and every
+duplicate or gap among the chain's recorded executions. Any duplicate, gap or chain failure fails the drill run.
+
 Campaign plans live in `plans/`. `plans/latency-window.json` is the latency pair and snapshot A/B window: base, the two
 gateway levers (branch `native-gateway-levers`, each the base package's gateway plus the lever; lever3 includes lever2),
 and 30-minute runs without and with `--db-max-kept-snapshots=0` for the memory curve.
