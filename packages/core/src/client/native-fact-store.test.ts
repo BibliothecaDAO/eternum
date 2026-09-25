@@ -555,6 +555,62 @@ describe("declared fact absence", () => {
     store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
     expect(openArmySlots(store, home)).toBeUndefined();
   });
+  // Pinned to the contract's gate expedition_slot_reuse_preserves_its_bar_and_midnight_allocates_a_fresh_bar
+  // (world-native registrar tests): a slot released at 7 hands exactly 7 to an army mustered in the same tick, and
+  // the next epoch's first muster in that slot starts on stamina_initial.
+  it("promises the bar the contract's allocate hands on", () => {
+    const store = new NativeFactStore();
+    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 100 })]);
+    const day = (timestamp: number) => {
+      store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp });
+      setBlockTimestampSource(() => timestamp);
+    };
+    day(351);
+    store.applyFacts([
+      set("0x2", "SettlementRules", {
+        game_id: 1,
+        registration_start: 1,
+        registration_limit: 2,
+        spacing: 10,
+        mode: "Single",
+      }),
+      set("0x3", "GameRegistry", {
+        game_id: 1,
+        preset_id: 3,
+        name: "1",
+        creator: "1",
+        start_settling_at: "1",
+        start_main_at: "100",
+        end_at: "1000",
+        settled: false,
+        ready: true,
+        dev_mode_on: false,
+        end_grace_seconds: 0,
+        seed: "1",
+      }),
+      set("0x7", "Structure", structure("0x111")),
+      set("0x80", "ArmySlot", {
+        game_id: 1,
+        structure_id: 7,
+        epoch: "3",
+        slot: 0,
+        explorer_id: 0,
+        stamina: { amount: "7", updated_tick: "35" },
+      }),
+    ]);
+    const home = { game_id: 1, entity_id: 7, allowedSlots: 2 };
+    const rules = store.get("SliceRules", { game_id: 1 })!.troop_stamina_config;
+    const knight = { category: "Knight", tier: "T1" } as const;
+
+    const released = openArmySlots(store, home)![0];
+    expect(released.slot).toBe(0);
+    expect(musterStamina(released, knight, 35, rules).amount).toBe(7);
+
+    day(400);
+    const nextDay = openArmySlots(store, home)![0];
+    expect(nextDay).toEqual({ slot: 0, inherited: null });
+    expect(musterStamina(nextDay, knight, 40, rules).amount).toBe(Number(rules.stamina_initial));
+  });
   it("keeps incomplete scope invariants out of synchronous listeners", () => {
     const store = new NativeFactStore();
     const seen: (string | undefined)[] = [];
