@@ -2,7 +2,7 @@ import { tileFactsToTile } from "@bibliothecadao/eternum";
 import {
   NativeFactStore,
   fetchHeraldGameHistory,
-  fetchHeraldGameLeaderboard,
+  fetchHeraldLeaderboard,
   fetchHeraldGameReviewSnapshot,
   fetchHeraldTransactionCount,
   type GameRef,
@@ -287,7 +287,9 @@ export const fetchGameReviewData = async (input: {
 }): Promise<GameReviewData> => {
   const source = await loadReviewSource(input.game);
   const finalization = buildFinalization(source);
-  const activity = await fetchHeraldGameLeaderboard(source.world, source.gameId);
+  const activity = await fetchHeraldLeaderboard(source.world, source.gameId);
+  // The results page offers a review for Blitz games only; a Frontier season shows its board in its standings.
+  if (activity.mode === "frontier") throw new Error(`Game ${source.gameId} ranks a Frontier season, not points`);
   const leaderboard = buildLandingLeaderboard(activity.entries);
   const playerAddress = parseAddress(input.playerAddress);
   const personalScore = playerAddress ? (leaderboard.find((entry) => entry.address === playerAddress) ?? null) : null;

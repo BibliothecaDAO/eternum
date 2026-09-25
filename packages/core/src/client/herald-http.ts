@@ -1,8 +1,8 @@
 import type {
   HeraldGameDirectory,
+  HeraldGameLeaderboard,
   HeraldGameSnapshot,
   HeraldHistoryPage,
-  HeraldLeaderboard,
   HeraldTransactionCount,
 } from "../sync/herald-http-types";
 
@@ -116,7 +116,8 @@ export const feltEquals = (left: unknown, right: unknown): boolean => {
   }
 };
 
-export const fetchHeraldGameLeaderboard = async (shard: Shard, gameId: number): Promise<HeraldLeaderboard> => {
+/** A game's leaderboard in its mode's shape: Frontier's season board, or the points board of every other mode. */
+export const fetchHeraldLeaderboard = async (shard: Shard, gameId: number): Promise<HeraldGameLeaderboard> => {
   if (!Number.isSafeInteger(gameId) || gameId <= 0)
     throw new Error(`Herald leaderboard requires a positive game id; received ${gameId}`);
   return fetchHeraldJson(

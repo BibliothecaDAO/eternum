@@ -1,4 +1,4 @@
-import { fetchHeraldGameLeaderboard, type GameRef } from "@bibliothecadao/eternum/shard";
+import { fetchHeraldLeaderboard, type GameRef } from "@bibliothecadao/eternum/shard";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
@@ -141,12 +141,15 @@ export const useRecentResults = (limit: number, player: string | null = null) =>
     retry: 1,
   });
 
-/** Live points while a game runs; the recorded final standings once its result is complete. */
+/**
+ * A game's standings in its mode's shape: Frontier's season board, or live points while a game runs and the recorded
+ * final standings once its result is complete.
+ */
 export const useLeaderboard = (game: GameRef | null) =>
   useQuery({
     queryKey: ["shell", "leaderboard", game?.chainId, game?.gameId],
     queryFn: async () =>
-      fetchHeraldGameLeaderboard(await requireOpenShard((game as GameRef).chainId), (game as GameRef).gameId),
+      fetchHeraldLeaderboard(await requireOpenShard((game as GameRef).chainId), (game as GameRef).gameId),
     enabled: game !== null,
     refetchInterval: 30_000,
     retry: 1,

@@ -1,8 +1,4 @@
-import type { Shard } from "@bibliothecadao/eternum/game-client";
-import { fetchHeraldGameLeaderboard } from "@bibliothecadao/eternum/game-client";
 import type { HeraldLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
-
-const DEFAULT_LIMIT = 20;
 
 export interface LandingLeaderboardEntry {
   rank: number;
@@ -61,6 +57,3 @@ export const buildLandingLeaderboard = (
       hyperstructuresHeldPoints: activity.hyperstructureShare.points,
     };
   });
-
-const fetchLeaderboardSource = async (world: Shard, gameId: number) =>
-  buildLandingLeaderboard((await fetchHeraldGameLeaderboard(world, gameId)).entries);

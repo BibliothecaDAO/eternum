@@ -4,6 +4,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { Fragment, useState } from "react";
 import { FRONTIER_BUILDING_NAMES } from "../build/building-names";
+import { DEPTH_ART } from "../depth-art";
 import { Chip, TierBanner } from "../frontier-chips";
 import { formatAmount } from "../frontier-format";
 import { useWorkspaceTakesScreen } from "../use-workspace-takes-screen";
@@ -19,12 +20,6 @@ import {
 
 const ESSENCE_ICON = `/images/resources/${ResourcesIds.Essence}.png`;
 const SITE_ART = { Shrine: "/images/frontier/sites/shrine.svg", Well: "/images/frontier/sites/well.svg" } as const;
-const DEPTH_ART = [
-  "",
-  "/images/frontier/depths/ethereal-1.svg",
-  "/images/frontier/depths/ethereal-2.svg",
-  "/images/frontier/depths/ethereal-3.svg",
-];
 const NUMERALS = ["", "I", "II", "III"] as const;
 
 /**

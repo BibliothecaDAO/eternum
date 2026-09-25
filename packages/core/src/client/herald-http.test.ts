@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Shard } from "./shard";
 import {
   fetchHeraldGameHistory,
+  fetchHeraldLeaderboard,
   fetchHeraldGameDirectory,
   fetchHeraldGameSnapshot,
   snapshotModelRows,
@@ -92,4 +93,33 @@ it("shares a directory stream, notifies each consumer, and closes after the last
   stopSecond();
   expect(sources[0].close).toHaveBeenCalledOnce();
   vi.unstubAllGlobals();
+});
+
+describe("Herald leaderboards", () => {
+  it("names each leaderboard by its mode, Frontier's season board or the points board", async () => {
+    vi.stubGlobal("fetch", mockFetch);
+    const frontier = {
+      game_id: "3",
+      mode: "frontier",
+      entries: [
+        {
+          address: "0x111",
+          structure_id: "42",
+          rank: 1,
+          sites_cleared: { total: 5, camps: 3, rifts: 1, fallen_realms: 1 },
+          chests_earned: 4,
+          rewards: { lords: "400", essence: "9000000000000", labor: "1500000000000" },
+          deepest_depth: 2,
+        },
+      ],
+    };
+    const points = { game_id: "4", mode: "points", entries: [] };
+    mockFetch.mockImplementation(
+      async (input) =>
+        new Response(JSON.stringify(String(input).includes("/games/3/") ? frontier : points), { status: 200 }),
+    );
+
+    await expect(fetchHeraldLeaderboard(world, 3)).resolves.toEqual(frontier);
+    await expect(fetchHeraldLeaderboard(world, 4)).resolves.toEqual(points);
+  });
 });

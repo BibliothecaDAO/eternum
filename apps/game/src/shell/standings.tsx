@@ -7,12 +7,20 @@ import { useLeaderboard } from "./herald";
 import { ErrorPanel, Loading } from "./kit";
 import { useProfiles } from "./profiles";
 import { portraitUrl } from "./identity-chip";
+import { SeasonTable } from "@/ui/features/frontier/board/season-table";
+import { boardRows } from "@/ui/features/frontier/board/standings";
 
-/** A game's standings from Herald: live points while it runs, the recorded result once it is settled. */
+/**
+ * A game's standings from Herald: Frontier's season board, or live points while a game runs and the recorded result
+ * once it is settled.
+ */
 export const Standings = ({ game, highlight, limit }: { game: GameRef; highlight?: string | null; limit?: number }) => {
   const leaderboard = useLeaderboard(game);
-  const entries = (leaderboard.data?.entries ?? []).slice(0, limit);
-  const profileOf = useProfiles(entries.map((entry) => entry.address));
+  const board = leaderboard.data;
+  const seasonRows =
+    board?.mode === "frontier" ? boardRows(board.entries, highlight ?? null, limit ?? board.entries.length) : null;
+  const entries = board?.mode === "points" ? board.entries.slice(0, limit) : [];
+  const profileOf = useProfiles((seasonRows?.map(({ entry }) => entry) ?? entries).map((entry) => entry.address));
 
   if (leaderboard.isError)
     return (
@@ -23,6 +31,12 @@ export const Standings = ({ game, highlight, limit }: { game: GameRef; highlight
       />
     );
   if (leaderboard.isPending) return <Loading />;
+  if (seasonRows)
+    return seasonRows.length === 0 ? (
+      <p className="py-2 text-[13px] text-gold/60">No realm has settled yet.</p>
+    ) : (
+      <SeasonTable rows={seasonRows} useName={(address) => displayPlayerName(address, profileOf(address)?.name)} />
+    );
   if (entries.length === 0) return <p className="py-2 text-[13px] text-gold/60">No points recorded yet.</p>;
   return (
     <ol>
