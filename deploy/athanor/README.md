@@ -156,6 +156,13 @@ snapshots every 15 s, and admission-to-visible latency split into its gateway pa
 in calm. A failed workload aborts the matrix. Each completed or failed candidate is stopped with its volumes retained;
 the next configuration starts fresh.
 
+Recovery drills run against a shard the runner started: `scripts/drill.py RUN_DIRECTORY`. Four drills run in turn, each
+under its own burst of four Blitz games of 24: SIGTERM and SIGKILL of the node, then of the gateway, sent once the burst
+has recorded executions and followed by a restart. `drills.json` records each drill's recovery height and time, the
+tickets in flight at the signal and how many of them were recorded after the restart, chain failures, and every
+duplicate or gap among the chain's recorded executions. Any duplicate, gap, chain failure or failed workload fails the
+drill run. The command takes the isolated-stack lock itself before starting any workload or restart.
+
 Campaign plans live in `plans/`. `plans/latency-window.json` is the latency pair and snapshot A/B window: base, the two
 gateway levers (branch `native-gateway-levers-2`, each the current next gateway plus the lever; lever3 includes lever2),
 and 30-minute runs without and with `--db-max-kept-snapshots=0` for the memory curve.
@@ -199,11 +206,11 @@ service and every public manifest before handing staging to the other streams.
 ### Isolated-stack lock
 
 Anything that deploys to or loads the box holds `/opt/athanor/isolated-stack.lock` while it runs. `deploy.py`,
-`shard.py` and `backup.py` take it themselves through one helper (`deploy/shard/stack_lock.py`), so never hold it around
-them. The lock is taken in one atomic step: the holder and UTC time are written to a private file beside it and
-hard-linked into place, which fails when the lock exists, so it is never seen empty and a held lock is refused, never
-waited on or overwritten. It is removed when the work ends. To hold it by hand, for a check between commands, use the
-same step and remove it yourself afterwards:
+`shard.py`, `drill.py` and `backup.py` take it themselves through one helper (`deploy/shard/stack_lock.py`), so never
+hold it around them. The lock is taken in one atomic step: the holder and UTC time are written to a private file beside
+it and hard-linked into place, which fails when the lock exists, so it is never seen empty and a held lock is refused,
+never waited on or overwritten. It is removed when the work ends. To hold it by hand, for a check between commands, use
+the same step and remove it yourself afterwards:
 
 ```sh
 printf '%s %s\n' "<holder>" "$(date -u +%FT%TZ)" > /opt/athanor/.lock.$$ &&
