@@ -157,7 +157,10 @@ function summarizeGas(
     total: emptyTotals(),
     failed: emptyTotals(),
     retried: emptyTotals(),
-    byStage: Object.fromEntries(STAGES.map((stage) => [stage, emptyTotals()])) as Record<TransactionStage, MutableTotals>,
+    byStage: Object.fromEntries(STAGES.map((stage) => [stage, emptyTotals()])) as Record<
+      TransactionStage,
+      MutableTotals
+    >,
   };
   const blocks: number[] = [];
   let receiptsFetched = 0;
@@ -247,7 +250,8 @@ function summarizeResources(
     const kind = (byKind[record.kind] ??= { transactions: 0, steps: 0, builtins: {} });
     kind.transactions += 1;
     kind.steps += gas.steps!;
-    for (const [builtin, count] of Object.entries(gas.builtins!)) kind.builtins[builtin] = (kind.builtins[builtin] ?? 0) + count;
+    for (const [builtin, count] of Object.entries(gas.builtins!))
+      kind.builtins[builtin] = (kind.builtins[builtin] ?? 0) + count;
   }
   return { available: true, byKind };
 }

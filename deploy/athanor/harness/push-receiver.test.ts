@@ -45,10 +45,17 @@ test("keeps its subscription across a dropped connection, receiving what was sen
           hellos.push({ uaid: message.uaid, channelIDs: message.channelIDs });
           socket.send(JSON.stringify({ messageType: "hello", uaid: "uaid-1", status: 200 }));
           if (hellos.length === 2)
-            socket.send(JSON.stringify({ messageType: "notification", channelID: message.channelIDs[0], version: "v1" }));
+            socket.send(
+              JSON.stringify({ messageType: "notification", channelID: message.channelIDs[0], version: "v1" }),
+            );
         } else if (message.messageType === "register") {
           socket.send(
-            JSON.stringify({ messageType: "register", channelID: message.channelID, status: 200, pushEndpoint: "https://push.test/1" }),
+            JSON.stringify({
+              messageType: "register",
+              channelID: message.channelID,
+              status: 200,
+              pushEndpoint: "https://push.test/1",
+            }),
           );
           socket.close();
         }
@@ -56,7 +63,11 @@ test("keeps its subscription across a dropped connection, receiving what was sen
     },
   });
   const pushes: unknown[] = [];
-  const receiver = await receivePushes("BApplicationServerKey", (push) => pushes.push(push.payload), `ws://127.0.0.1:${server.port}`);
+  const receiver = await receivePushes(
+    "BApplicationServerKey",
+    (push) => pushes.push(push.payload),
+    `ws://127.0.0.1:${server.port}`,
+  );
   try {
     expect(receiver.subscription.endpoint).toBe("https://push.test/1");
     const deadline = Date.now() + 5_000;

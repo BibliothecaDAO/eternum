@@ -294,7 +294,8 @@ function readTiles(client: GameClient) {
   const { store } = client.setup;
   const keys = new Map(
     [...store.inGame("TileOpt", client.gameId), ...store.inGame("TileOccupancy", client.gameId)].map((tile) => [
-      `${tile.alt}:${tile.col}:${tile.row}`, tile,
+      `${tile.alt}:${tile.col}:${tile.row}`,
+      tile,
     ]),
   );
   return [...keys.values()].map((tile) => getTileAt(store, tile.alt, tile.col, tile.row, client.gameId)!);

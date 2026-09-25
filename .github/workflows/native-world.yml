@@ -244,13 +244,13 @@ jobs:
         run: python3 scripts/generate-realm-metadata.py --check
       - name: Check generated configs match the config source
         run: pnpm run config:generate --check
-      - name: Type-check the shard tooling and harness
-        run: pnpm exec tsc -p deploy/athanor/tsconfig.json
-      - name: Test native deployment and registrar
+      - name: Type-check the shard tooling, harness and config
         run: |
-          for file in config/deployer/clean/world/native/*.test.ts config/deployer/clean/tests/*.test.ts; do
-            bun test "$file"
-          done
+          pnpm exec tsc -p deploy/athanor/tsconfig.json
+          pnpm exec tsc -p config/tsconfig.json --noEmit
+      # The directory form: a bare "config" would match every test path containing the word.
+      - name: Test native deployment, the registrar and the config source
+        run: bun test ./config
       - name: Check the public RPC boundary
         run: bun test deploy/athanor/scripts/read-rpc.test.ts
       - name: Check that deployment targets are explicit

@@ -141,7 +141,10 @@ describe("gas collector", () => {
     ];
 
     const native = await collectGas({ transactions, reader: listing, node: null, nativeExecution: true });
-    expect(native.resources).toEqual({ available: false, reason: "native execution reports no Cairo steps or builtins" });
+    expect(native.resources).toEqual({
+      available: false,
+      reason: "native execution reports no Cairo steps or builtins",
+    });
 
     const zeroSteps: TransactionReceiptReader = { getTransactionReceipt: async () => withSteps(300, 0, 0) };
     const nativeReceipts = await collectGas({ transactions, reader: zeroSteps, node: null, nativeExecution: null });

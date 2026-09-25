@@ -449,7 +449,9 @@ function buildHarnessManifest(
       heraldUrl: input.heraldUrl,
       madaraImage: input.gates?.evidence.madaraImage ?? null,
     },
-    source: input.gates ? { gitRevision: input.gates.evidence.gitRevision, gitDirty: input.gates.evidence.gitDirty } : null,
+    source: input.gates
+      ? { gitRevision: input.gates.evidence.gitRevision, gitDirty: input.gates.evidence.gitDirty }
+      : null,
     game: {
       count: input.games.length,
       executionModel: "single_process",
@@ -496,8 +498,7 @@ function buildHarnessManifest(
       measuredRpc: input.functional
         ? null
         : {
-            scope:
-              "estimateInvokeFee, getBlock and getTransactionStatus calls made by the harness driver",
+            scope: "estimateInvokeFee, getBlock and getTransactionStatus calls made by the harness driver",
             ...analysis.rpc,
             transport: input.transportRequests
               ? summarizeTransportRequests(input.transportRequests, input.workload.actions.length)
@@ -703,10 +704,7 @@ function summarizePercentiles(actions: TrackedTransaction[]): PercentileSummary 
   };
 }
 
-function latencyPercentiles(
-  actions: TrackedTransaction[],
-  field: keyof PercentileSummary,
-): LatencyPercentiles {
+function latencyPercentiles(actions: TrackedTransaction[], field: keyof PercentileSummary): LatencyPercentiles {
   const values = actions.flatMap((action) => (action[field] === undefined ? [] : [action[field]]));
   return { p50: percentile(values, 50), p95: percentile(values, 95), p99: percentile(values, 99) };
 }
@@ -720,7 +718,8 @@ function withinTarget(value: number | null, target: number): boolean {
 async function captureBlockStats(since: string, until: string): Promise<BlockStats> {
   const output = await runCommand([BLOCK_STATS_SCRIPT, "--since", since, "--until", until, "--json"]);
   const summary = JSON.parse(output) as Omit<BlockStats, "window">;
-  if (summary.blocks.count === 0) throw new Error(`Block stats: no closed blocks in the Madara log window ${since}..${until}`);
+  if (summary.blocks.count === 0)
+    throw new Error(`Block stats: no closed blocks in the Madara log window ${since}..${until}`);
   return { ...summary, window: { since, until } };
 }
 

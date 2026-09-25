@@ -48,8 +48,12 @@ interface FactoryRunRecord {
 const MAX_ACCOUNTS_PER_REGISTRATION = 96;
 const SLOT_NAME_PATTERN = /^[a-z0-9][a-z0-9-]{0,23}$/;
 
-export async function registerBotsThroughSlot(api: SlotLaunchApi, options: SlotRegistrationOptions): Promise<SlotGame[]> {
-  if (!SLOT_NAME_PATTERN.test(options.slotName)) throw new Error(`Slot name ${options.slotName} is not [a-z0-9][a-z0-9-]{0,23}`);
+export async function registerBotsThroughSlot(
+  api: SlotLaunchApi,
+  options: SlotRegistrationOptions,
+): Promise<SlotGame[]> {
+  if (!SLOT_NAME_PATTERN.test(options.slotName))
+    throw new Error(`Slot name ${options.slotName} is not [a-z0-9][a-z0-9-]{0,23}`);
   const closesAt = new Date(Date.now() + options.closesInSeconds * 1_000).toISOString();
   await createSlot(api, options.slotName, closesAt);
   for (const batch of batches(options.accounts, MAX_ACCOUNTS_PER_REGISTRATION)) {
@@ -146,7 +150,12 @@ async function pollUntil<T>(
   }
 }
 
-async function launchRequest(api: SlotLaunchApi, method: "GET" | "POST", path: string, body?: unknown): Promise<unknown> {
+async function launchRequest(
+  api: SlotLaunchApi,
+  method: "GET" | "POST",
+  path: string,
+  body?: unknown,
+): Promise<unknown> {
   const response = await (api.fetch ?? fetch)(`${api.origin}${path}`, {
     method,
     headers: {
@@ -164,7 +173,9 @@ async function launchRequest(api: SlotLaunchApi, method: "GET" | "POST", path: s
 }
 
 function batches<T>(items: readonly T[], size: number): T[][] {
-  return Array.from({ length: Math.ceil(items.length / size) }, (_, index) => items.slice(index * size, (index + 1) * size));
+  return Array.from({ length: Math.ceil(items.length / size) }, (_, index) =>
+    items.slice(index * size, (index + 1) * size),
+  );
 }
 
 const normalizeAddress = (address: string) => `0x${BigInt(address).toString(16)}`;

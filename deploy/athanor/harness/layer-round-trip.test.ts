@@ -53,13 +53,24 @@ function fixture(
         ];
       case "TileOpt":
         return [...tiles.values()].map(({ coord, biome }) => ({
-          game_id: 7, alt: coord.alt, col: coord.x, row: coord.y, data: BigInt(biome) << 41n,
+          game_id: 7,
+          alt: coord.alt,
+          col: coord.x,
+          row: coord.y,
+          data: BigInt(biome) << 41n,
         }));
       case "TileOccupancy":
-        return [...tiles.values()].filter((tile) => tile.occupier !== 0).map(({ coord, occupier, type }) => ({
-          game_id: 7, alt: coord.alt, col: coord.x, row: coord.y,
-          entity_id: occupier, category: type, is_structure: type >= 35,
-        }));
+        return [...tiles.values()]
+          .filter((tile) => tile.occupier !== 0)
+          .map(({ coord, occupier, type }) => ({
+            game_id: 7,
+            alt: coord.alt,
+            col: coord.x,
+            row: coord.y,
+            entity_id: occupier,
+            category: type,
+            is_structure: type >= 35,
+          }));
       default:
         throw new Error(`Unexpected model ${model}`);
     }
@@ -133,9 +144,10 @@ function fixture(
           gameId: 7,
           setup: {
             store: {
-              get: (model: string, keys: Record<string, unknown>) => rows(model).find((row) =>
-                Object.entries(keys).every(([key, value]) => row[key] === value)),
-              entityOccupancy: (_gameId: number, entityId: number) => rows("TileOccupancy").find((row) => row.entity_id === entityId),
+              get: (model: string, keys: Record<string, unknown>) =>
+                rows(model).find((row) => Object.entries(keys).every(([key, value]) => row[key] === value)),
+              entityOccupancy: (_gameId: number, entityId: number) =>
+                rows("TileOccupancy").find((row) => row.entity_id === entityId),
               inGame: (model: string) => rows(model),
             },
             systemCalls: {

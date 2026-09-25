@@ -48,7 +48,12 @@ const precision = BigInt(RESOURCE_PRECISION);
  * Creates a Frontier season from a registered preset. The design run creates from the accelerated fixture preset, which
  * it registers on first use; presets are immutable, so no run ever edits a mode's own preset to change its clocks.
  */
-export async function launchFrontierSeason(provider: HarnessProvider, gameName: string, minutes: number, presetId: number) {
+export async function launchFrontierSeason(
+  provider: HarnessProvider,
+  gameName: string,
+  minutes: number,
+  presetId: number,
+) {
   const manifest = process.env.NATIVE_WORLD_MANIFEST;
   const address = process.env.DEPLOYER_ACCOUNT_ADDRESS;
   const privateKey = process.env.DEPLOYER_PRIVATE_KEY;
@@ -189,7 +194,9 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
   const epochSeconds = epochSecondsOf(client);
   // A burst measures one moment of load, which is the same on any day length; the plain shape plays its own days.
   if (!options.burst && options.accelerated !== (epochSeconds === acceleratedEpochSeconds()))
-    throw new Error(`Frontier ${options.accelerated ? "design run" : "capacity shape"} does not match the season's day length (${epochSeconds} s)`);
+    throw new Error(
+      `Frontier ${options.accelerated ? "design run" : "capacity shape"} does not match the season's day length (${epochSeconds} s)`,
+    );
   await game.waitUntilPlaying();
   if (options.burst?.shape === "booth") return runBoothBurst(options, epochSeconds);
   const players = await settleFrontierPlayers(options, accounts);
@@ -437,20 +444,23 @@ async function settleFrontierPlayer(
   if (transaction.outcome !== "completed") return { transaction };
   const realmId = own.settlementStructureIds(identity.address)?.[0];
   if (realmId === undefined) throw new Error("Settlement did not publish the home realm");
-  return { transaction, player: {
-    identity,
-    client,
-    game: own,
-    realmId,
-    profile: identity.botId % 2 === 0 ? "check-in" : "daily",
-    settledAt: now(),
-    days: [],
-    rungs: [],
-    rollovers: [],
-    captures: [],
-    siteExchanges: new Map(),
-    nextActionAt: 0,
-  } };
+  return {
+    transaction,
+    player: {
+      identity,
+      client,
+      game: own,
+      realmId,
+      profile: identity.botId % 2 === 0 ? "check-in" : "daily",
+      settledAt: now(),
+      days: [],
+      rungs: [],
+      rollovers: [],
+      captures: [],
+      siteExchanges: new Map(),
+      nextActionAt: 0,
+    },
+  };
 }
 
 const now = () => getBlockTimestamp().currentBlockTimestamp;
