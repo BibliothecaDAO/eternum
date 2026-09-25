@@ -90,6 +90,30 @@ class ShardTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Preset 2 commits to 0x3 on chain; this release's facts say 0x2"):
             package.chain_commitment(2, "0x3", "0x2")
 
+    def test_package_backup_restores_the_node_without_its_collector_and_names_missing_tables(self):
+        spec = importlib.util.spec_from_file_location("shard_backup", shard.ROOT / "deploy/shard/backup.py")
+        backup = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(backup)
+        args = ["--base-path=/data", "--otel-collector-endpoint=http://metrics:4317", "--otel-export-metrics=true",
+                "--db-fsync"]
+        self.assertEqual(backup.restored_node_args(args), ["--base-path=/data", "--db-fsync"])
+        live = backup.parse_counts("public.games|4\npublic.heads|1\n")
+        self.assertEqual(live, {"public.games": 4, "public.heads": 1})
+        self.assertEqual(backup.missing_tables(live, {"public.games": 5}), ["public.heads"])
+
+    def test_package_backup_refuses_a_file_that_changed_after_capture(self):
+        spec = importlib.util.spec_from_file_location("shard_backup", shard.ROOT / "deploy/shard/backup.py")
+        backup = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(backup)
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / "herald.dump").write_bytes(b"dump")
+            backup.write_checksums(directory)
+            backup.verify_checksums(directory)
+            (directory / "herald.dump").write_bytes(b"changed")
+            with self.assertRaisesRegex(RuntimeError, "herald.dump does not match its checksum"):
+                backup.verify_checksums(directory)
+
     def test_package_init_derives_the_trusted_proxy_only_behind_loopback_bindings(self):
         spec = importlib.util.spec_from_file_location("shard_init", shard.ROOT / "deploy/shard/init.py")
         package = importlib.util.module_from_spec(spec)

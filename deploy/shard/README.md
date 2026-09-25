@@ -51,8 +51,9 @@ key and account class, starts a genesis with no seeded accounts, deploys the con
 presets `PRESETS` names (2 is Blitz, 5 is Frontier; an id outside `release.json` is refused before anything deploys) and
 writes `data/native-world.json` and `data/initialized.json`, which records each preset's commitment on chain. Every
 start registers any listed preset not yet on chain. Private keys remain in `data/` (mode 0700); back it up with the
-chain, gateway and PostgreSQL volumes. Never publish it. Initialization refuses a changed identity on existing data.
-Inspect a failed init in `data/*.log` before retrying; do not delete chain state to repair a deployment.
+chain, gateway and PostgreSQL volumes (see "Operations: back up and restore"). Never publish it. Initialization refuses
+a changed identity on existing data. Inspect a failed init in `data/*.log` before retrying; do not delete chain state to
+repair a deployment.
 
 Forward your HTTPS hostnames to loopback ports 8080 (RPC), 8081 (Herald) and 8082 (admission). `RPC_PORT`, `HERALD_PORT`
 and `ADMISSION_PORT` can select disjoint ports for a second shard. Never expose the node itself. Gameplay writes enter
@@ -124,6 +125,37 @@ authority; any other difference stops it before a transaction.
 `docker compose stop` retains state. Starting the same package again audits the existing deployment. Changing the
 release is a separate operator action; never recreate genesis for an existing shard. CI publishes immutable images and
 this archive from `shard-v*` tags; it does not deploy a box or change a live hostname.
+
+## Operations: back up and restore
+
+`backup.py` ships beside this file. Run it as root on the host, naming the package's compose project and data directory:
+
+```sh
+sudo python3 backup.py capture "$COMPOSE_PROJECT_NAME" ./data /backup/<shard>-<utc time>
+sudo python3 backup.py restore-test "$COMPOSE_PROJECT_NAME" /backup/<shard>-<utc time>
+```
+
+Capture copies Herald's PostgreSQL hot (a base backup and a dump), then stops the node for a cold copy of its chain
+volume and starts it again; `capture.json` records the stop as `chain.downtime_seconds`. Capture also copies the
+gateway's epoch secret and `data/`, records the image every service runs and writes `SHA256SUMS`. A backup holds the
+shard's private keys: keep it where only the operator reads it, and copy it off the host.
+
+While the node is stopped nothing is sequenced. A new action is refused with "game admission is unavailable" and the
+player acts again; an action already in flight is resent once with the same signed intent and never executes twice, or
+ends as outcome unknown. Herald keeps serving the last confirmed state, sends no diffs until the node is back and then
+resumes. Capture in a quiet period. The stop grows with the chain (about 12 seconds for a 12.7 GB chain), so read
+`chain.downtime_seconds` at every capture and raise it once it passes 60 seconds: that is the point to take backups from
+a replica node, which this script does not yet do.
+
+Restore-test checks the checksums, restores the chain into a scratch node without a network and compares its block at
+the captured head with the running node's, verifies and starts the base backup, and restores the dump; every table live
+Herald had must exist in both. It writes `restore-test/result.json` and exits non-zero on any mismatch. A backup counts
+only once its restore test passes.
+
+A restored chain resumes at the captured head, and blocks sealed after the capture are lost, so recovery from a backup
+is the last resort after the node's own restart. To recover, stop the package, extract `chain.tar.zst` and
+`gateway.tar.zst` into its `chain` and `gateway` volumes and `data.tar.zst` into `data/`, extract `base.tar` into its
+`postgres` volume owned by the image's `postgres` user, and start the package with the images `capture.json` names.
 
 ## Operations: register a preset
 
