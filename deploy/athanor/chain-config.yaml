@@ -1,6 +1,7 @@
-# Madara chain config for the Realms lab. Derived from the upstream `devnet` preset for v0.11.0-alpha.9
-# (configs/presets/devnet.yaml); every changed key is documented in the lab README. Keep this file complete — Madara
-# refuses partial configs, and a silent default here is a silent default in every measurement.
+# Madara chain config template for every shard, run by the node image deploy/shard/compose.yml pins. It started from
+# the upstream `devnet` preset (configs/presets/devnet.yaml); changed keys are documented in deploy/athanor/README.md.
+# Keep this file complete — Madara refuses partial configs, and a silent default here is a silent default in every
+# measurement.
 config_version: 2
 chain_name: "Realms Madara Lab"
 # shard.py supplies chain_id from the initialized shard manifest.

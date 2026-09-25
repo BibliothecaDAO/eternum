@@ -127,6 +127,8 @@ export interface WorkerWorkloadSummary {
   /** When this worker's first action left, so the driver can show how tight the release was. */
   firstSubmitAt: string | null;
   admissionToVisibleMs: number[];
+  /** Completed actions the provider reported no admission-to-visible figure for. */
+  admissionToVisibleMissing: number;
   heraldConfirmedLagMs: number[];
 }
 
@@ -236,6 +238,7 @@ function summarizeWorkerWorkload(
     thresholdEligibleActions: analysis.thresholdEligibleActions,
     firstSubmitAt: analysis.actions[0]?.submitStartedAt ?? null,
     admissionToVisibleMs: latencies("admissionToVisibleMs"),
+    admissionToVisibleMissing: unmeasuredAdmissions(analysis.completedActions),
     heraldConfirmedLagMs: latencies("heraldConfirmedLagMs"),
   };
 }
@@ -250,17 +253,25 @@ export function assessRosterRun(input: {
   const thresholdEligibleActions = input.workers.reduce((sum, worker) => sum + worker.thresholdEligibleActions, 0);
   const admissionToVisibleMs = input.workers.flatMap((worker) => worker.admissionToVisibleMs);
   const heraldConfirmedLagMs = input.workers.flatMap((worker) => worker.heraldConfirmedLagMs);
+  const admissionToVisibleMissing = input.workers.reduce((sum, worker) => sum + worker.admissionToVisibleMissing, 0);
   const percentiles = {
     admissionToVisibleMs: { p50: percentile(admissionToVisibleMs, 50), p95: percentile(admissionToVisibleMs, 95) },
     heraldConfirmedLagMs: { p50: percentile(heraldConfirmedLagMs, 50), p95: percentile(heraldConfirmedLagMs, 95) },
   };
-  const checks = { thresholdEligibleActions: thresholdEligibleActions >= input.minimumThresholdActions };
+  const checks = {
+    thresholdEligibleActions: thresholdEligibleActions >= input.minimumThresholdActions,
+    ...(input.functional ? {} : { admissionToVisibleMeasured: admissionToVisibleMissing === 0 }),
+  };
   return {
     checks,
     limits: { minimumThresholdActions: input.minimumThresholdActions },
     latency: input.functional
       ? null
-      : latencyAgainstTargets(percentiles.admissionToVisibleMs.p95, percentiles.heraldConfirmedLagMs.p95),
+      : latencyAgainstTargets(
+          percentiles.admissionToVisibleMs.p95,
+          percentiles.heraldConfirmedLagMs.p95,
+          admissionToVisibleMissing,
+        ),
     passed: Object.values(checks).every(Boolean),
     percentiles: input.functional ? null : percentiles,
     plannedActions,
@@ -277,10 +288,17 @@ function releaseSpread(workers: WorkerWorkloadSummary[]): number | null {
 
 /**
  * Where each latency p95 stands against its target. Over target is flagged for the report, never a failed run; a
- * latency with no samples is flagged too, since a run cannot show it met a target it never measured.
+ * latency with no samples is flagged too, since a run cannot show it met a target it never measured. `missing`
+ * counts completed actions with no admission-to-visible figure: they are outside the p95, so the run's
+ * admissionToVisibleMeasured check fails on any.
  */
-export function latencyAgainstTargets(admissionToVisibleP95: number | null, heraldConfirmedLagP95: number | null) {
+export function latencyAgainstTargets(
+  admissionToVisibleP95: number | null,
+  heraldConfirmedLagP95: number | null,
+  admissionToVisibleMissing: number,
+) {
   return {
+    missing: { admissionToVisible: admissionToVisibleMissing },
     targets: {
       admissionToVisibleP95Ms: ADMISSION_TO_VISIBLE_P95_TARGET_MS,
       heraldConfirmedLagP95Ms: HERALD_CONFIRMED_LAG_P95_TARGET_MS,
@@ -335,6 +353,9 @@ export function analyzeHarnessResult(input: HarnessReportInput) {
   const thresholdEligibleActions = completedActions.length + tileContentionReverts.length;
   const setupFailures = input.setupTransactions.filter((transaction) => transaction.outcome !== "completed");
   const percentiles = summarizePercentiles(completedActions);
+  // Failed actions have no figure by construction; a completed one without it would silently shrink the sample.
+  const admissionToVisibleMissing = unmeasuredAdmissions(completedActions);
+  const measuredRun = input.gates !== null && !input.functional;
   const requestedMix = summarizeRequestedMix(actions);
   const actualMix = summarizeCompletedMix(actions);
   const failureClasses = summarizeFailureClasses(failedActions);
@@ -347,6 +368,7 @@ export function analyzeHarnessResult(input: HarnessReportInput) {
       : {
           thresholdEligibleActions: thresholdEligibleActions >= input.gates.minimumThresholdActions,
         }),
+    ...(measuredRun ? { admissionToVisibleMeasured: admissionToVisibleMissing === 0 } : {}),
     setup: setupFailures.length === 0,
     ...(input.workload.frontier && input.functional ? frontierDesignChecks(input.workload.frontier) : {}),
     playerProgress:
@@ -370,10 +392,13 @@ export function analyzeHarnessResult(input: HarnessReportInput) {
     completedActions,
     failedActions,
     failureClasses,
-    latency:
-      input.gates === null || input.functional
-        ? null
-        : latencyAgainstTargets(percentiles.admissionToVisibleMs.p95, percentiles.heraldConfirmedLagMs.p95),
+    latency: measuredRun
+      ? latencyAgainstTargets(
+          percentiles.admissionToVisibleMs.p95,
+          percentiles.heraldConfirmedLagMs.p95,
+          admissionToVisibleMissing,
+        )
+      : null,
     passed: Object.values(checks).every(Boolean),
     percentiles,
     requestedMix,
@@ -661,6 +686,10 @@ export function summarizePlayerProgress(botIds: number[], actions: readonly Trac
       lastCompletedAt,
     };
   });
+}
+
+function unmeasuredAdmissions(completed: readonly TrackedTransaction[]): number {
+  return completed.filter((action) => action.admissionToVisibleMs === undefined).length;
 }
 
 function summarizePercentiles(actions: TrackedTransaction[]): PercentileSummary {
