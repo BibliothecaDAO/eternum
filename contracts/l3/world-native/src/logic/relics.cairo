@@ -253,7 +253,17 @@ pub mod RelicState {
             let explorer = crate::logic::troops::active_explorer(explorer_key, context.timestamp, context);
             self.refund_capture_stamina(explorer_key, explorer, context);
             if context.rules.unbox().epoch_seconds != 0 {
-                self.pay_expedition_site(site, explorer_key, explorer.owner, context, ref story_cursor);
+                let (_, next_cursor) = crate::expeditions::ISiteRewardsDispatcherTrait::pay_expedition_site(
+                    crate::expeditions::ISiteRewardsLibraryDispatcher {
+                        class_hash: self.logic_classes(site.game_id).resources.read(),
+                    },
+                    site,
+                    explorer_key,
+                    explorer.owner,
+                    crate::commands::action_context(context),
+                    story_cursor,
+                );
+                story_cursor = next_cursor;
             }
             ((), story_cursor)
         }
@@ -340,51 +350,6 @@ pub mod RelicState {
                     context.timestamp / rules.tick_config.armies_tick_in_seconds,
                 );
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
-        }
-
-        fn pay_expedition_site(
-            self: @ComponentState<TContractState>,
-            key: ResourceKey,
-            explorer: ExplorerKey,
-            home_id: u32,
-            context: ExecutionContext,
-            ref story_cursor: crate::ownership::StoryCursor,
-        ) {
-            let site = crate::logic::expeditions::clear_site(key);
-            let reward = crate::expeditions::site_reward(site);
-            if site.kind == crate::expeditions::SiteKind::FallenRealm {
-                IRelicMapLibraryDispatcher { class_hash: self.logic_classes(key.game_id).map.read() }
-                    .close_site_chest(key);
-            }
-            let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
-            if let Some(reward) = reward {
-                self
-                    .resources(key.game_id)
-                    .grant_resource(
-                        home,
-                        reward.resource_type,
-                        reward.amount,
-                        context.timestamp,
-                        crate::commands::resource_context(context),
-                    );
-            }
-            crate::logic::progression::award_xp(explorer, crate::progression::XpAward::Clear, context);
-            let actor = crate::logic::structures::structure(home).expect('missing home structure').owner;
-            crate::logic::stories::emit_entity_story(
-                key,
-                actor,
-                crate::ownership::Story::SitePayout(
-                    crate::expeditions::SitePayout {
-                        structure_id: home_id,
-                        explorer_id: explorer.explorer_id,
-                        site_id: key.entity_id,
-                        kind: site.kind,
-                        reward,
-                    },
-                ),
-                context.timestamp,
-                ref story_cursor,
-            );
         }
 
         fn pay_chest(

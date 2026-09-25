@@ -9,6 +9,7 @@ pub mod ResourcesLogic {
     use crate::logic::release::ReleaseState;
     use crate::logic::resources::ResourceState;
     use crate::ownership::{Story, StoryEvent};
+    use crate::relics::{IRelicMapDispatcherTrait, IRelicMapLibraryDispatcher};
     use crate::resources::ResourceKey;
     use crate::troops::ExplorerKey;
 
@@ -47,6 +48,61 @@ pub mod ResourcesLogic {
         ProductionEvent: ProductionState::Event,
         RowSet: RowSet,
         StoryEvent: StoryEvent,
+    }
+    #[abi(embed_v0)]
+    impl SiteRewards of crate::expeditions::ISiteRewards<ContractState> {
+        fn pay_expedition_site(
+            ref self: ContractState,
+            key: ResourceKey,
+            explorer: ExplorerKey,
+            home_id: u32,
+            context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
+            let context = crate::commands::load_context(key.game_id, context);
+            let site = crate::logic::expeditions::clear_site(key);
+            let reward = crate::expeditions::site_reward(site);
+            if site.kind == crate::expeditions::SiteKind::FallenRealm {
+                IRelicMapLibraryDispatcher { class_hash: self.release.classes(key.game_id).map.read() }
+                    .close_site_chest(key);
+            }
+            let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
+            if let Some(reward) = reward {
+                self
+                    .grant_resource(
+                        home,
+                        reward.resource_type,
+                        reward.amount,
+                        context.timestamp,
+                        crate::commands::resource_context(context),
+                    );
+            }
+            crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
+                crate::progression::IArmyProgressionLibraryDispatcher {
+                    class_hash: self.release.classes(key.game_id).relics.read(),
+                },
+                explorer,
+                crate::progression::XpAward::Clear,
+                crate::commands::action_context(context),
+            );
+            let actor = crate::logic::structures::structure(home).expect('missing home structure').owner;
+            crate::logic::stories::emit_entity_story(
+                key,
+                actor,
+                crate::ownership::Story::SitePayout(
+                    crate::expeditions::SitePayout {
+                        structure_id: home_id,
+                        explorer_id: explorer.explorer_id,
+                        site_id: key.entity_id,
+                        kind: site.kind,
+                        reward,
+                    },
+                ),
+                context.timestamp,
+                ref story_cursor,
+            );
+            ((), story_cursor)
+        }
     }
     #[abi(embed_v0)]
     impl Resources of crate::resources::IResourceOperations<ContractState> {

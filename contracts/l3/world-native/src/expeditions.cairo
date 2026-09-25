@@ -175,3 +175,15 @@ pub trait IFrontierDiscovery<T> {
         ref self: T, key: crate::map::TileKey, explorer_id: u32, seed: u256, context: crate::commands::ActionContext,
     ) -> crate::discovery::Discovery;
 }
+
+#[starknet::interface]
+pub trait ISiteRewards<T> {
+    fn pay_expedition_site(
+        ref self: T,
+        key: crate::resources::ResourceKey,
+        explorer: crate::troops::ExplorerKey,
+        home_id: u32,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
+}
