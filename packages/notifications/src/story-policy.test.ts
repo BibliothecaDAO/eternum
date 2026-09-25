@@ -33,6 +33,7 @@ it("covers every native story and tests every cumulative level", () => {
       "HyperstructurePoints",
       "RelicChestOpened",
       "ChestReward",
+      "AttributeChosen",
       "ExplorationReward",
       "SeasonEnded",
       "FaithPledged",
@@ -71,6 +72,7 @@ it("uses event-time recipients, normalizes duplicates, and excludes neutral addr
     }),
   ).toEqual(["0x1", "0x2"]);
   expect(storyRecipients("RealmCreatedStory", "0x003", battle)).toEqual(["0x3"]);
+  expect(storyRecipients("AttributeChosen", "0x003", { explorer_id: 7 })).toEqual(["0x3"]);
   expect(storyRecipients("BattleEvent", "0xff", { attacker: { player: "0x1" }, defender: { player: "0x01" } })).toEqual(
     ["0x1"],
   );

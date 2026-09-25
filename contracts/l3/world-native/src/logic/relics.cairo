@@ -260,9 +260,11 @@ pub mod RelicState {
                     army_slot_storage::persist(key, previous, explorer.troops).stamina
                 },
                 ArmySlotAction::Release(stamina) => {
+                    if let crate::troops::StaminaSource::Slot(_) = explorer.troops.stamina {
+                        crate::logic::progression::destroy(key);
+                    }
                     explorer.troops.stamina = stamina;
                     army_slot_storage::release(key, explorer);
-                    crate::logic::progression::destroy(key);
                     stamina
                 },
                 ArmySlotAction::GrantLogistics(award) => army_slot_storage::grant_logistics(key, explorer, award),

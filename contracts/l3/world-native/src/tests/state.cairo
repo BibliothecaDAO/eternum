@@ -267,3 +267,23 @@ pub fn assert_spatial_indexes(
         },
     );
 }
+
+pub fn assert_inline_armies_have_no_progress(address: ContractAddress, game_id: u32, entities: Span<u32>) {
+    for explorer_id in entities {
+        interact_with_state(
+            address,
+            || {
+                let key = crate::troops::ExplorerKey { game_id, explorer_id: *explorer_id };
+                assert!(crate::logic::progression::read(key).is_none());
+                if let Some(explorer) = crate::logic::troops::explorer(key) {
+                    assert!(
+                        match explorer.troops.stamina {
+                            crate::troops::StaminaSource::Inline(_) => true,
+                            crate::troops::StaminaSource::Slot(_) => false,
+                        },
+                    );
+                }
+            },
+        );
+    }
+}

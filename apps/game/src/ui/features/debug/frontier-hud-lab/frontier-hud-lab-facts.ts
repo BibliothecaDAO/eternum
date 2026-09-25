@@ -105,6 +105,8 @@ const playerRows = (clock: LabClock): WireRow[] => [
   { model: "ArmySlot", value: armySlot(clock, 202, 1, 150) },
   // The day's third army fell this morning: its slot keeps the tired bar for the next muster.
   { model: "ArmySlot", value: armySlot(clock, 0, 2, 40) },
+  { model: "ArmyProgress", value: armyProgress(clock, 201) },
+  { model: "ArmyProgress", value: armyProgress(clock, 202) },
   { model: "ExplorerTroops", value: army(clock, 201, 1_498, 0) },
   { model: "ExplorerTroops", value: army(clock, 202, 1, 1) },
   { model: "TileOccupancy", value: armyTile(clock, 201, 2, 1) },
@@ -178,6 +180,18 @@ const army = (clock: LabClock, explorerId: number, count: number, slot: number) 
     },
     battle_cooldown_end: 0,
   },
+});
+
+const armyProgress = (clock: LabClock, explorerId: number) => ({
+  game_id: clock.gameId,
+  explorer_id: explorerId,
+  level: 1,
+  xp: 0,
+  battle: 1,
+  logistics: 1,
+  scouting: 1,
+  support: 1,
+  pending: null,
 });
 
 const armySlot = (clock: LabClock, explorerId: number, slot: number, stamina: number) => ({

@@ -81,6 +81,7 @@ fn recorded_spatial_commands_match_replay_views() {
     ]
         .span();
     let mut frames = array![super::spatial_replay::initial(d.games, 3, entities, tiles)];
+    super::state::assert_inline_armies_have_no_progress(d.games, 3, array![first, second].span());
     let mut spy = spy_events();
     for (command, timestamp) in array![
         (Command::Move(Move { explorer_id: first, directions: array![0_u8].span() }), 120_u64),
@@ -89,6 +90,12 @@ fn recorded_spatial_commands_match_replay_views() {
         (manage(ManageTroops::RemoveExplorer(second)), 150),
     ] {
         assert!(execute(d, command, timestamp));
+        super::state::assert_inline_armies_have_no_progress(d.games, 3, array![first, second].span());
+        for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
+            for key in event.keys.span() {
+                assert!(*key != 'ArmyProgress', "inline lifecycle emitted progress");
+            }
+        }
         super::state::assert_spatial_indexes(d.games, 3, entities, tiles);
         frames.append(super::spatial_replay::capture(d.games, 3, entities, tiles, ref spy));
     }

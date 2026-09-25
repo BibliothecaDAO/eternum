@@ -413,6 +413,7 @@ fn blitz_ethereal_battle_uses_both_recorded_d20_rolls_in_damage_and_history() {
     let (d, _, _, attacker, defender) = setup(true);
     move_to(d, attacker, Coord { alt: true, x: 2000000, y: 2000000 });
     move_to(d, defender, Coord { alt: true, x: 2000015, y: 2000000 });
+    super::state::assert_inline_armies_have_no_progress(d.games, 3, array![attacker, defender].span());
     let before_attacker = troop(d, attacker).unwrap();
     let before_defender = troop(d, defender).unwrap();
     let game = crate::game::IGameDispatcher { contract_address: d.games };
@@ -458,6 +459,7 @@ fn blitz_ethereal_battle_uses_both_recorded_d20_rolls_in_damage_and_history() {
     assert_eq!(troop(d, attacker).unwrap().troops, expected_attacker);
     assert_eq!(expected_defender.count, 0);
     assert!(troop(d, defender).is_none());
+    super::state::assert_inline_armies_have_no_progress(d.games, 3, array![attacker, defender].span());
     let mut expected = array![];
     before_attacker.owner.serialize(ref expected);
     before_defender.coord.serialize(ref expected);
@@ -472,6 +474,9 @@ fn blitz_ethereal_battle_uses_both_recorded_d20_rolls_in_damage_and_history() {
     80_u64.serialize(ref expected);
     let mut found = false;
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
+        for key in event.keys.span() {
+            assert!(*key != 'ArmyProgress', "inline death emitted progress");
+        }
         if *event.keys.at(0) == selector!("BattleEvent") {
             assert_eq!(event.data.span(), expected.span());
             found = true;
@@ -619,6 +624,7 @@ fn cross_layer_battles_require_matching_coordinates_and_an_adjacent_spire() {
 #[test]
 fn season_immunity_rejects_combat_until_the_recorded_boundary() {
     let (d, _, _, attacker, defender) = setup_with_immunity(false, 20);
+    super::state::assert_inline_armies_have_no_progress(d.games, 3, array![attacker, defender].span());
     let before_attacker = troop(d, attacker);
     let before_defender = troop(d, defender);
     let command = Command::Battle(
@@ -629,6 +635,7 @@ fn season_immunity_rejects_combat_until_the_recorded_boundary() {
     assert_eq!(troop(d, defender), before_defender);
     assert!(execute_recorded_at(d, command, 120, 1000));
     assert!(troop(d, defender).is_none());
+    super::state::assert_inline_armies_have_no_progress(d.games, 3, array![attacker, defender].span());
 }
 
 #[test]

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hash } from "starknet";
+import { CairoCustomEnum, hash } from "starknet";
 import setFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import memberFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-member-set.json";
 import deleteFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-deleted.json";
@@ -34,7 +34,14 @@ describe("native row decoder", () => {
   it("keys chest results by game, recorded action and story index in both overlays", () => {
     const { native, fold } = setup();
     const rewards = [0, 1].map((index) =>
-      rowEvent("ChestReward", ["1", "9007199254740993", String(index)], ["0x111", "7", "3", "2", "2", "0", "0"]),
+      rowEvent("ChestReward", ["1", "9007199254740993", String(index)], {
+        player: "0x111",
+        explorer_id: 7,
+        epoch: 3,
+        depth: 2,
+        kind: new CairoCustomEnum({ Token: {} }),
+        quality: 0,
+      }),
     );
     const overlay = fold.overlay();
     native.applyReceipt(overlay, receipt(rewards), null, 0);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
-import { fullAtTick, staminaAt, type TroopStaminaRules } from "./troop-stamina";
+import { fullAtTick, musterStamina, staminaAt, type TroopStaminaRules } from "./troop-stamina";
 
 /** One game's rules, as its SliceRules carries them: knights hold 120 at T1 and regain 20 a tick. */
 const rules = {
@@ -45,6 +45,20 @@ describe("stamina under one game's rules", () => {
     expect(staminaAt(troops, 11, rules).amount).toBe(170n);
     expect(staminaAt(troops, 12, rules).amount).toBe(180n);
     expect(fullAtTick(troops, 10, rules)).toBe(12);
+  });
+
+  it("musters every troop tier at Logistics 1 and clamps a former occupant's larger bar before refill", () => {
+    for (const tier of [TroopTier.T1, TroopTier.T2, TroopTier.T3]) {
+      const troop = { category: TroopType.Knight, tier };
+      expect(musterStamina({ slot: 0, inherited: null }, troop, 10, rules)).toEqual({ amount: 35, max: 120 });
+      const inherited = { amount: 180n, updated_tick: 10n };
+      expect(musterStamina({ slot: 0, inherited }, troop, 10, rules)).toEqual({ amount: 120, max: 120 });
+      expect(musterStamina({ slot: 0, inherited }, troop, 11, rules)).toEqual({ amount: 120, max: 120 });
+      expect(musterStamina({ slot: 0, inherited: { amount: 7n, updated_tick: 10n } }, troop, 11, rules)).toEqual({
+        amount: 27,
+        max: 120,
+      });
+    }
   });
 
   it("finds the first tick an army is full", () => {
