@@ -201,3 +201,9 @@ pub fn shuffle_roster(count: u32, root: u256) -> Span<u8> {
 pub fn off_map_realm_reference(realm_id: u32) -> crate::troops::Coord {
     crate::troops::Coord { alt: false, x: 0xffffffff - realm_id, y: 0xffffffff }
 }
+
+#[starknet::interface]
+pub trait ITerrainDerivation<T> {
+    fn biome(self: @T, key: crate::map::TileKey, context: crate::commands::BiomeContext) -> u8;
+    fn expedition_home_ring(self: @T, game_id: u32, realm_id: u16, timestamp: u64) -> Span<(Coord, u8)>;
+}

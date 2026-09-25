@@ -599,6 +599,7 @@ mod recorded_receipts;
 mod season_lifecycle;
 
 mod structure_rules;
+mod terrain;
 
 mod test_conformance;
 

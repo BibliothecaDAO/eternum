@@ -66,6 +66,18 @@ pub mod SettlementLogic {
         VillageEvent: VillageState::Event,
     }
     #[abi(embed_v0)]
+    impl TerrainDerivation of crate::settlement::ITerrainDerivation<ContractState> {
+        fn biome(self: @ContractState, key: crate::map::TileKey, context: crate::commands::BiomeContext) -> u8 {
+            crate::logic::terrain::biome(key, context)
+        }
+        fn expedition_home_ring(
+            self: @ContractState, game_id: u32, realm_id: u16, timestamp: u64,
+        ) -> Span<(crate::troops::Coord, u8)> {
+            crate::logic::terrain::expedition_home_ring(game_id, realm_id, timestamp)
+        }
+    }
+
+    #[abi(embed_v0)]
     impl UpgradeRules of crate::upgrades::IUpgradeRules<ContractState> {
         #[cfg(test)]
         fn upgrade_limits(self: @ContractState, game_id: u32) -> UpgradeLimits {

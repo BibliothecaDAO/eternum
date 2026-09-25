@@ -41,6 +41,8 @@ pub mod settlement;
 pub mod settlement_domain;
 pub mod stories;
 pub mod structures;
+
+pub mod terrain;
 pub mod trade;
 pub mod troops;
 pub mod upgrades;

@@ -1,19 +1,16 @@
 pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
-    let climate = if game_context.epoch_seconds == 0 {
-        game_context.climate
-    } else {
-        let spacing = crate::logic::settlement::rules(key.game_id).spacing;
-        crate::expeditions::climate(
-            game_context.climate,
-            crate::troops::Coord { alt: key.alt, x: key.col, y: key.row },
-            game_context.start_main_at,
-            game_context.epoch_seconds,
-            spacing,
-        )
-    };
-    crate::biome::get_biome_with_climate(key.alt, key.col.into(), key.row.into(), climate).into()
+    crate::settlement::ITerrainDerivationDispatcherTrait::biome(terrain(key.game_id), key, game_context)
 }
-use starknet::storage::StorageMapReadAccess;
+
+fn terrain(game_id: u32) -> crate::settlement::ITerrainDerivationLibraryDispatcher {
+    let state = crate::state::read();
+    let release = state.game_releases.read(game_id);
+    assert!(release != 0, "game has no release");
+    crate::settlement::ITerrainDerivationLibraryDispatcher {
+        class_hash: state.releases.entry(release).classes.settlement.read(),
+    }
+}
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::map::{TileKey, TileOpt};
 
 pub fn occupancy(key: TileKey) -> Option<crate::map::TileOccupancy> {
@@ -315,36 +312,9 @@ pub mod MapLogic {
         fn expedition_home_ring(
             self: @ContractState, game_id: u32, realm_id: u16, timestamp: u64,
         ) -> Span<(Coord, u8)> {
-            let game_context = crate::commands::load_context(
-                game_id, crate::commands::ActionContext { raw_root: 0, timestamp: timestamp },
-            );
-
-            let rules = game_context.rules.unbox();
-            assert!(rules.epoch_seconds != 0, "game has no expeditions");
-            let site = crate::expeditions::site(
-                game_context.game.unbox().start_main_at,
-                rules.epoch_seconds,
-                crate::logic::settlement::rules(game_id).spacing,
-                realm_id,
-                timestamp,
-                0,
-            );
-            let mut ring = array![
-                (site, crate::logic::map::biome(tile_key(game_id, site), crate::commands::biome_context(game_context))),
-            ];
-            for direction in 0_u8..6 {
-                let coord = crate::geometry::neighbor(site, direction);
-                ring
-                    .append(
-                        (
-                            coord,
-                            crate::logic::map::biome(
-                                tile_key(game_id, coord), crate::commands::biome_context(game_context),
-                            ),
-                        ),
-                    );
-            }
-            ring.span()
+            crate::settlement::ITerrainDerivationDispatcherTrait::expedition_home_ring(
+                crate::logic::map::terrain(game_id), game_id, realm_id, timestamp,
+            )
         }
     }
     #[abi(embed_v0)]
