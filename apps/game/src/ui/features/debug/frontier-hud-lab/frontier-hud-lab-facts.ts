@@ -1,7 +1,7 @@
 /**
  * A Frontier day in facts: the recorded launch's rules, generated from the committed recording by `pnpm lab:frontier`
- * through Herald's own decoder, plus a hand-built player in the same shapes — one realm, two of today's armies and
- * the realm's holdings.
+ * through Herald's own decoder, plus a hand-built player in the same shapes — one realm with its castle producing labor,
+ * two of today's armies and the realm's holdings.
  */
 export const LAB_GAME_ID = 2;
 export const LAB_PLAYER = "0x5a11ab";
@@ -72,6 +72,30 @@ const playerRows = (clock: LabClock): WireRow[] => [
   { model: "ResourceBalance", value: balance(23, 1_250) },
   { model: "ResourceBalance", value: balance(35, 640) },
   { model: "ResourceBalance", value: balance(26, 420) },
+  {
+    model: "Building",
+    value: {
+      game_id: LAB_GAME_ID,
+      structure_id: LAB_REALM_ID,
+      inner_col: 10,
+      inner_row: 10,
+      category: 25,
+      paused: false,
+      labor_paid: "0",
+    },
+  },
+  {
+    model: "ResourceProduction",
+    value: {
+      game_id: LAB_GAME_ID,
+      entity_id: LAB_REALM_ID,
+      resource_type: 23,
+      building_count: 1,
+      production_rate: String((100n * PRECISION) / 3600n),
+      output_amount_left: "0",
+      last_updated_at: clock.nowSeconds,
+    },
+  },
   { model: "ExplorerTroops", value: army(clock, 201, 1_498, 30, 0) },
   { model: "ExplorerTroops", value: army(clock, 202, 1, 150, 0) },
   { model: "TileOccupancy", value: armyTile(clock, 201, 2, 1) },

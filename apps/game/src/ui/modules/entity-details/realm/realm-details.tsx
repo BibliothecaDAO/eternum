@@ -14,17 +14,20 @@ import { extractReadableErrorMessage } from "@/utils/error-message";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { Castle } from "@/ui/modules/entity-details/realm/castle";
+import { describeCastleLevel } from "./castle-level";
 import { copyPlayerAddressToClipboard, displayAddress } from "@/ui/utils/utils";
 import {
+  divideByPrecision,
   formatTime,
   getStructure,
   getStructureImmunityTimer,
   isStructureImmune,
+  ResourceManager,
   toHexString,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, type ID, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { formatIncomingEta, useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
@@ -140,6 +143,31 @@ const RealmVillageDetails = () => {
   );
 };
 
+const PRODUCTION_MODELS = ["ResourceProduction", "ResourceWeight"] as const;
+
+/** The realm's labor income as the chain produces it, the castle's and every workshop's together, per hour. */
+const LaborRateRow = ({ structureId }: { structureId: ID }) => {
+  const { setup } = useGame();
+  useNativeRevision(PRODUCTION_MODELS);
+  const labor = new ResourceManager(setup.store, structureId).current(ResourcesIds.Labor);
+  const perHour = labor ? divideByPrecision(Number(labor.production.production_rate), false) * 3600 : undefined;
+  return (
+    <SectionRow label="Labor / h">
+      <span className={CHIP_BASE} title="Labor production">
+        <span className="text-emerald-300">
+          {perHour === undefined ? "—" : `+${Math.round(perHour).toLocaleString()}`}
+        </span>
+        <ResourceIcon withTooltip={false} resource={ResourcesIds[ResourcesIds.Labor]} size="xs" />
+      </span>
+    </SectionRow>
+  );
+};
+
+/** What a castle level gives, from the game's rules. */
+const LevelGains = ({ level }: { level: number }) => (
+  <p className="text-[11px] leading-relaxed text-gold/80">{describeCastleLevel(level)}</p>
+);
+
 export const RealmUpgradeCompact = () => {
   const ordersAllowed = useUIStore(canIssueOrders);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
@@ -163,18 +191,14 @@ export const RealmUpgradeCompact = () => {
   if (upgradeInfo.isMaxLevel) {
     return (
       <div className="flex flex-col gap-2.5">
-        <SectionRow label="Labor / sec">
-          <span className={CHIP_BASE} title="Labor Production">
-            <span className="text-emerald-300">+1</span>
-            <ResourceIcon withTooltip={false} resource={ResourcesIds[ResourcesIds.Labor]} size="xs" />
-          </span>
-        </SectionRow>
+        <LaborRateRow structureId={structureEntityId} />
         <SectionRow label="Upgrade">
           <span className={CHIP_BASE} title="Max level reached">
             <CrownIcon className="h-3.5 w-3.5 text-gold" />
             <span className="text-gold">Max</span>
           </span>
         </SectionRow>
+        <LevelGains level={upgradeInfo.currentLevel} />
         {ladders}
       </div>
     );
@@ -197,16 +221,12 @@ export const RealmUpgradeCompact = () => {
 
   return (
     <div className="flex flex-col gap-2.5">
-      <SectionRow label="Labor / sec">
-        <span className={CHIP_BASE} title="Labor Production">
-          <span className="text-emerald-300">+1</span>
-          <ResourceIcon withTooltip={false} resource={ResourcesIds[ResourcesIds.Labor]} size="xs" />
-        </span>
-      </SectionRow>
+      <LaborRateRow structureId={structureEntityId} />
 
       <SectionRow label={`Upgrade to ${upgradeTargetLabel}`}>
         <RequirementChips requirements={requirements} />
       </SectionRow>
+      {nextLevel != null && <LevelGains level={nextLevel} />}
 
       {isOwner && (
         <div className="flex items-center justify-center gap-1.5 pt-1">

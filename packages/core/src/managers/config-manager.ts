@@ -368,6 +368,13 @@ export class ClientConfigManager {
     if (cap === undefined) throw new Error(`Unknown army level ${level}`);
     return cap;
   }
+  /** Field armies a structure of this level may keep. */
+  getArmySlots(level: number): number {
+    const config = this.rules().troop_limit_config;
+    const slots = [config.settlement_armies, config.city_armies, config.kingdom_armies, config.empire_armies][level];
+    if (slots === undefined) throw new Error(`Unknown army level ${level}`);
+    return slots;
+  }
   getTierStrength(tier: TroopTier): number {
     const config = this.rules().troop_limit_config;
     return [config.t1_tier_strength, config.t2_tier_strength, config.t3_tier_strength][troopTierIndex(tier)];

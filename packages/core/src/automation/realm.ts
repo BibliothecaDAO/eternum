@@ -1,3 +1,4 @@
+import { buildableRadius } from "../utils/castle-reach";
 import {
   configManager,
   divideByPrecision,
@@ -170,7 +171,7 @@ export function readBlitzRealmSuggestions(input: {
   // Suggestions weigh the realm itself; they never show its owner, so no player is named.
   const realm = getRealmInfo(realmId, store, () => null);
   const militaryTarget = resolveRecommendedMilitaryTarget(store, realm, buildingCounts);
-  const hasAvailableBuildingTile = generateBuildablePositions(Math.max(1, structure.base.level + 1)).some(
+  const hasAvailableBuildingTile = generateBuildablePositions(buildableRadius(structure.base.level)).some(
     (spot) => (spot.col !== BUILDINGS_CENTER[0] || spot.row !== BUILDINGS_CENTER[1]) && !tiles.isHexOccupied(spot),
   );
   return buildBlitzRealmSuggestions({

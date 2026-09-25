@@ -111,6 +111,18 @@ describe("native immutable configuration", () => {
     expect(manager.getCapacityConfigKg(CapacityConfig.None)).toBe(0);
   });
 
+  it("reads each castle level's army slots from the troop limits and refuses a level the game has none for", () => {
+    const { manager } = fixture();
+    const limits = preset.rules.troop_limit_config;
+    expect([0, 1, 2, 3].map((level) => manager.getArmySlots(level))).toEqual([
+      limits.settlement_armies,
+      limits.city_armies,
+      limits.kingdom_armies,
+      limits.empire_armies,
+    ]);
+    expect(() => manager.getArmySlots(4)).toThrow("Unknown army level 4");
+  });
+
   it("clears the previous game's rules before another game's snapshot", () => {
     const { manager, store } = fixture();
     manager.setActiveGame(55, 2);

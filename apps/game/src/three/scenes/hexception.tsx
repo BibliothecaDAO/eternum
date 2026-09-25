@@ -70,6 +70,7 @@ import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { createPausedLabel, gltfLoader } from "@/three/utils/utils";
 import { LeftView } from "@/types";
 import {
+  buildableRadius,
   BuildingSystemUpdate,
   NEUTRAL_BIOME_CLIMATE,
   StructureProgress,
@@ -877,7 +878,7 @@ export default class HexceptionScene extends HexagonScene {
     if (!account || !realm || realm.owner !== BigInt(account.address)) return false;
     if (spot.col === BUILDINGS_CENTER[0] && spot.row === BUILDINGS_CENTER[1]) return false;
     if (this.tileManager.isHexOccupied(spot)) return false;
-    const radius = Number(this.tileManager.getRealmLevel(entityId)) + 1;
+    const radius = buildableRadius(Number(this.tileManager.getRealmLevel(entityId)));
     if (
       !getLocalHexDisk({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] }, radius).some(
         (hex) => hex.col === spot.col && hex.row === spot.row,
@@ -1659,7 +1660,7 @@ export default class HexceptionScene extends HexagonScene {
     if (isMainHex) {
       const buildablePositions = generateHexPositions(
         { col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] },
-        this.structureStage + 1,
+        buildableRadius(this.structureStage),
       );
 
       positions = positions.filter(

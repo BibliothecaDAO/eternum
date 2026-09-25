@@ -1,6 +1,6 @@
 import { generateBuildablePositions } from "@bibliothecadao/eternum/automation";
 import { BUILDINGS_CENTER, BuildingType, ResourcesIds } from "@bibliothecadao/types";
-import type { BuildingTiles } from "@bibliothecadao/eternum";
+import { buildableRadius, type BuildingTiles } from "@bibliothecadao/eternum";
 import { toast } from "@/ui/features/event-feed/notify";
 import { getScopedGameId } from "@bibliothecadao/eternum/game-client";
 import { requireActiveGameClient } from "@/sync/active-game-client";
@@ -96,7 +96,7 @@ const readRealmTiles = (entityId: number) => {
 
   return {
     tileManager,
-    buildRadiusResolver: () => Math.max(1, Number(tileManager.getRealmLevel(entityId)) + 1),
+    buildRadiusResolver: () => buildableRadius(Number(tileManager.getRealmLevel(entityId))),
   };
 };
 

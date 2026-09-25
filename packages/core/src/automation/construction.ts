@@ -1,3 +1,4 @@
+import { buildableRadius } from "../utils/castle-reach";
 import { configManager, divideByPrecision, getBalance, getBlockTimestamp, getBuildingCosts } from "../index";
 import {
   BUILDINGS_CENTER,
@@ -177,7 +178,7 @@ const isSimpleCostLockedBuilding = (buildingType: BuildingType, useSimpleCost: b
 const resolveConstructionRadius = (input: ConstructionBuildabilityInput): number => {
   const tileManagerLevel = input.tileManager?.getRealmLevel?.(input.entityId);
   const level = toNumber(tileManagerLevel ?? input.realm?.level);
-  return Math.max(1, level + 1);
+  return buildableRadius(level);
 };
 
 const resolveDistanceFromCenter = (targetSpot: ConstructionSpot, maxDistance: number): number | null => {

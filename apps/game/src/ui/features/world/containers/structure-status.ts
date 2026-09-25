@@ -1,11 +1,10 @@
+import { buildablePlotCount } from "@bibliothecadao/eternum";
 import { BUILDINGS_CENTER } from "@bibliothecadao/types";
 
 const normalizeNonNegativeInteger = (value: number) => {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.trunc(value));
 };
-
-const resolveBuildRadius = (level: number) => normalizeNonNegativeInteger(level) + 1;
 
 export const formatPopulationStatusLabel = (population: number, populationCapacity: number) =>
   `${normalizeNonNegativeInteger(population)}/${normalizeNonNegativeInteger(populationCapacity)}`;
@@ -45,8 +44,7 @@ export const resolveAvailableBuildingTiles = ({
   level: number;
   occupiedBuildingTiles: number;
 }) => {
-  const radius = resolveBuildRadius(level);
-  const total = 3 * radius * (radius + 1);
+  const total = buildablePlotCount(normalizeNonNegativeInteger(level));
   const occupied = Math.min(normalizeNonNegativeInteger(occupiedBuildingTiles), total);
 
   return {

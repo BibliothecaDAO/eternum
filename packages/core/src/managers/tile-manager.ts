@@ -1,3 +1,4 @@
+import { buildableRadius } from "../utils/castle-reach";
 import {
   type GameplayAccount,
   BUILDINGS_CENTER,
@@ -21,7 +22,7 @@ import { configManager } from "./config-manager";
 
 const BUILDING_SLOT_COORDINATES = [
   { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] },
-  ...getHexesWithinRadius(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1], RealmLevels.Empire + 1),
+  ...getHexesWithinRadius(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1], buildableRadius(RealmLevels.Empire)),
 ];
 const OCCUPIED_SPACE_REASON = "space is occupied";
 

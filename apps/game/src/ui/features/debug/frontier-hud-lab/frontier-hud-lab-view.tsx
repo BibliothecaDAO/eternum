@@ -43,7 +43,7 @@ export const FrontierHudLabView = () => {
 const LabPacing = ({ store }: { store: NativeFactStore }) => {
   const rules = store.require("SliceRules", { game_id: LAB_GAME_ID });
   return (
-    <p className="pointer-events-none fixed bottom-32 left-1/2 z-40 -translate-x-1/2 rounded bg-black/70 px-2 py-1 font-sans text-[10px] text-gold/80">
+    <p className="pointer-events-none fixed top-36 left-1/2 z-40 -translate-x-1/2 rounded bg-black/70 px-2 py-1 font-sans text-[10px] text-gold/80">
       Lab · recorded launch pacing: {rules.epoch_seconds} s days, {String(rules.tick_config.armies_tick_in_seconds)} s
       ticks, +{rules.troop_stamina_config.stamina_gain_per_tick} stamina a tick
     </p>
@@ -68,6 +68,9 @@ const bootLab = async () => {
   const account = { address: LAB_PLAYER };
   useAccountStore.setState({ account: account as never });
   useUIStore.setState({ showBlankOverlay: false, structureEntityId: LAB_REALM_ID });
+  // The realm view opens on the castle's plot, so its panel shows.
+  if (window.location.pathname.includes("/hex"))
+    useUIStore.getState().setSelectedBuildingHex({ structureId: LAB_REALM_ID, innerCol: 10, innerRow: 10 });
   const refuse = () => Promise.reject(new Error("The Frontier HUD lab has no chain"));
   const systemCalls = new Proxy({}, { get: () => refuse });
   return { setup: { store, systemCalls } as unknown as GameClientSetup, account };

@@ -18,7 +18,8 @@ import { resolveRealmBootstrapErrorMessage } from "@/ui/modules/entity-details/h
 import { configManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress, LEVEL_DESCRIPTIONS, RealmLevels } from "@bibliothecadao/types";
+import { ContractAddress, RealmLevels } from "@bibliothecadao/types";
+import { describeCastleLevel } from "./castle-level";
 import { useState } from "react";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 
@@ -96,9 +97,7 @@ export const Castle = () => {
                   <h6 className="text-gold font-semibold mb-2">
                     Upgrade Requirements for {RealmLevels[getNextRealmLevel]}
                   </h6>
-                  <p className="text-gold/90 mb-4 text-sm">
-                    {LEVEL_DESCRIPTIONS[getNextRealmLevel as keyof typeof LEVEL_DESCRIPTIONS]}
-                  </p>
+                  <p className="text-gold/90 mb-4 text-sm">{describeCastleLevel(getNextRealmLevel)}</p>
                   <div className="flex flex-wrap gap-3">
                     {configManager.getRealmUpgradeCosts(getNextRealmLevel)?.map((a) => (
                       <ResourceCost
