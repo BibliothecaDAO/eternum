@@ -11,7 +11,9 @@ import { Pop } from "@/ui/motion/pop";
 import { Sweep } from "@/ui/motion/sweep";
 import { LandingCounter } from "@/ui/motion/landing-counter";
 import { TickNumber } from "@/ui/motion/tick-number";
+import { ChestMomentView } from "@/ui/features/frontier/chest/chest-moment-view";
 import { type ReactNode, useRef, useState } from "react";
+import { ChestLab } from "./chest-lab";
 import { PickLab } from "./pick-lab";
 import { SiteLab } from "./site-lab";
 
@@ -29,8 +31,9 @@ export const MotionLabView = () => {
   const setReduced = useWorldAppearanceStore((state) => state.setReducedMotion);
 
   return (
-    <div className="min-h-dvh bg-[#0c0a08] p-4 font-sans text-gold">
+    <div data-screen-shake className="min-h-dvh bg-[#0c0a08] p-4 font-sans text-gold">
       <MotionLayer />
+      <ChestMomentView />
       <header className="mb-4 flex flex-wrap items-center gap-2">
         <h1 className="mr-auto text-lg font-semibold">Motion primitives</h1>
         {([0, 1, 2, 3] as const).map((level) => (
@@ -86,6 +89,11 @@ export const MotionLabView = () => {
         <section className="sm:col-span-2 lg:col-span-3">
           <Panel title="site cleared · tap the card to dismiss">
             <SiteLab />
+          </Panel>
+        </section>
+        <section className="sm:col-span-2 lg:col-span-3">
+          <Panel title="chest · tap anywhere to skip, again to close">
+            <ChestLab intensity={intensity} />
           </Panel>
         </section>
       </div>
