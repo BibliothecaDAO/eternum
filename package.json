@@ -16,6 +16,7 @@
     "dev:webgpu": "pnpm --dir ./apps/game dev:webgpu",
     "dev:docs": "pnpm --dir ./apps/game-docs dev",
     "preview": "pnpm --dir ./apps/game preview",
+    "fixtures:native-presets": "bun contracts/l3/world-native/scripts/generate-preset-fixtures.ts",
     "config:generate": "pnpm --dir ./config run config:generate",
     "marketplace:migrate:local": "cd ./contracts/l2/marketplace && ./ext/scripts/migrate.sh",
     "seasonpass:deploy:local": "cd ./contracts/l2/season_pass/ext/scripts && ./deploy.sh",

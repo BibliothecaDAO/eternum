@@ -42,7 +42,7 @@ fn village_preset(mode: SettlementMode, game_rules: crate::rules::SliceRules) ->
     preset.settlement.spacing = 6;
     preset.settlement.realms = super::settlement::grants();
     preset.settlement.villages = VillageRules { troop_delay_ticks: 2, ..village_rules() };
-    let data = read_txt(@FileTrait::new("tests/fixtures/preset-3.txt"));
+    let data = read_txt(@FileTrait::new("tests/fixtures/current-presets/preset-3.txt"));
     let mut fields = data.span();
     let _: crate::rules::SliceRules = Serde::deserialize(ref fields).unwrap();
     preset.resources.resources = Serde::deserialize(ref fields).unwrap();

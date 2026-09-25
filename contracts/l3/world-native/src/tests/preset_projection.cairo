@@ -1,10 +1,8 @@
-// The two recorded launch calldata files are replayed unchanged. The supplementary launch
-// covers present spires/withdrawals and an explicit map override. Every expected row comes
-// from these production readers; Herald compares its projection with the same fixture.
+// Current presets come from source; Herald replays historical launches under their recorded schema.
 use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::{interact_with_state, start_cheat_caller_address};
 use starknet::ContractAddress;
-use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use crate::artificer::{IArtificerDispatcher, IArtificerDispatcherTrait};
 use crate::bridge::{IBridgeDispatcher, IBridgeDispatcherTrait};
 use crate::buildings::{IBuildingRulesDispatcher, IBuildingRulesDispatcherTrait};
@@ -17,7 +15,9 @@ use crate::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatc
 use crate::market::{IBankDispatcher, IBankDispatcherTrait};
 use crate::mines::{IMineRulesDispatcher, IMineRulesDispatcherTrait};
 use crate::production::{IProductionRulesDispatcher, IProductionRulesDispatcherTrait};
-use crate::registrar::{IRegistrarDispatcher, IRegistrarDispatcherTrait};
+use crate::registrar::{
+    IRegistrarDispatcher, IRegistrarDispatcherTrait, IRegistrarSafeDispatcher, IRegistrarSafeDispatcherTrait,
+};
 use crate::relics::{IRelicsDispatcher, IRelicsDispatcherTrait};
 use crate::settlement::{ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait};
 use crate::spires::{ISpiresDispatcher, ISpiresDispatcherTrait};
@@ -40,51 +40,61 @@ fn row<T, +Serde<T>, +Drop<T>>(ref rows: Array<ObservedRow>, model: felt252, key
 }
 
 fn launch(address: ContractAddress, name: ByteArray) -> u32 {
-    let mut registration = read_txt(@FileTrait::new(format!("tests/fixtures/preset-projection/{}-register.txt", name)))
+    let mut registration = read_txt(@FileTrait::new(format!("tests/fixtures/current-presets/{}-register.txt", name)))
         .span();
     let preset_id = Serde::deserialize(ref registration).unwrap();
     let definition = Serde::deserialize(ref registration).unwrap();
     assert!(registration.is_empty());
     let registrar = IRegistrarDispatcher { contract_address: address };
     registrar.register_preset(preset_id, definition);
-    let mut calldata = read_txt(@FileTrait::new(format!("tests/fixtures/preset-projection/{}-create.txt", name)))
-        .span();
+    let mut calldata = read_txt(@FileTrait::new(format!("tests/fixtures/current-presets/{}-create.txt", name))).span();
     let params = Serde::deserialize(ref calldata).unwrap();
     assert!(calldata.is_empty());
     registrar.create_game(params)
 }
 
 #[test]
-fn recorded_launch_readers_match_herald_fixture() {
-    let d = super::registrar::setup();
-    start_cheat_caller_address(d.games, super::authority());
-    assert_eq!(launch(d.games, "blitz"), 1);
-    assert_eq!(launch(d.games, "frontier"), 2);
-    compare(d.games, 1, "blitz");
-    compare(d.games, 2, "frontier");
+fn current_blitz_launch_readers_match_herald_projection() {
+    compare_current_launch("blitz");
 }
 
 #[test]
-fn optional_sections_and_explicit_map_match_herald_fixture() {
+fn current_frontier_launch_readers_match_herald_projection() {
+    compare_current_launch("frontier");
+}
+
+#[test]
+fn current_eternum_optional_sections_and_map_match_herald_projection() {
+    compare_current_launch("eternum");
+}
+
+fn compare_current_launch(name: ByteArray) {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    assert_eq!(launch(d.games, "optional"), 1);
-    let launch_rows = interact_with_state(
-        d.games,
-        || {
-            let state = crate::state::read();
-            let game = state.games.games.entry(1).read();
-            let commitment = state.registrar.presets.read(game.preset_id);
-            let mut rows = array![];
-            row(ref rows, 'Preset', array![game.preset_id.into()].span(), commitment);
-            row(ref rows, 'GameRegistry', array![1].span(), game);
-            row(ref rows, 'GameOverrides', array![1].span(), state.games.overrides.read(1));
-            row(ref rows, 'GameRelease', array![1].span(), (state.game_releases.read(1), commitment));
-            rows
-        },
-    );
-    compare_rows(launch_rows, "optional-launch");
-    compare(d.games, 1, "optional");
+    assert_eq!(launch(d.games, name.clone()), 1);
+    compare(d.games, 1, name);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn current_frontier_rejects_a_reintroduced_supply_pool() {
+    let d = super::registrar::setup();
+    start_cheat_caller_address(d.games, super::authority());
+    let mut registration = read_txt(@FileTrait::new("tests/fixtures/current-presets/frontier-register.txt")).span();
+    let preset_id: u32 = Serde::deserialize(ref registration).unwrap();
+    let mut definition: crate::presets::PresetDefinition = Serde::deserialize(ref registration).unwrap();
+    assert!(registration.is_empty());
+    assert!(definition.exploration.is_empty());
+    definition
+        .exploration =
+            array![
+                crate::exploration_rewards::ExplorationReward {
+                    resource_type: crate::resources::ESSENCE, amount: 1, amount_max: 1, weight: 1,
+                },
+            ]
+        .span();
+    assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());
+    assert_eq!(IRegistrarDispatcher { contract_address: d.games }.preset_commitment(preset_id), 0);
 }
 
 fn compare(address: ContractAddress, game_id: u32, name: ByteArray) {
@@ -92,10 +102,20 @@ fn compare(address: ContractAddress, game_id: u32, name: ByteArray) {
 }
 
 fn compare_rows(actual: Array<ObservedRow>, name: ByteArray) {
-    let mut serialized = array![];
-    actual.serialize(ref serialized);
-    let expected = read_txt(@FileTrait::new(format!("tests/fixtures/preset-projection/{}-rows.txt", name)));
-    assert_eq!(serialized, expected);
+    let mut serialized = read_txt(@FileTrait::new(format!("tests/fixtures/current-presets/{}-rows.txt", name))).span();
+    let expected: Array<ObservedRow> = Serde::deserialize(ref serialized).unwrap();
+    assert!(serialized.is_empty());
+    assert_eq!(actual.len(), expected.len());
+    for observed in actual.span() {
+        let mut matches = 0;
+        for projected in expected.span() {
+            if observed.model == projected.model && observed.keys == projected.keys {
+                assert_eq!(observed.values, projected.values);
+                matches += 1;
+            }
+        }
+        assert_eq!(matches, 1, "projection needs exactly one matching row");
+    }
 }
 
 fn observe(address: ContractAddress, game_id: u32) -> Array<ObservedRow> {

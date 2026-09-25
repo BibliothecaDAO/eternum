@@ -40,7 +40,7 @@ fn prepare_without_entitlement(
     grant_override: Option<Span<world_native::resources::ResourceAmount>>, blitz: bool, upgrade_cost: Option<u128>,
 ) -> ContractAddress {
     let season = setup();
-    let input = read_txt(@FileTrait::new("tests/fixtures/preset-3.txt"));
+    let input = read_txt(@FileTrait::new("tests/fixtures/current-presets/preset-3.txt"));
     let mut fields = input.span();
     let mut rules: world_native::rules::SliceRules = Serde::deserialize(ref fields).unwrap();
     let resources: Span<ResourceRule> = Serde::deserialize(ref fields).unwrap();

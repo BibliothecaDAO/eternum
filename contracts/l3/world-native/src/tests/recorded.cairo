@@ -66,7 +66,7 @@ pub const ETERNUM_RULES: u32 = crate::rules::DISCOVER_HYPERSTRUCTURES
     + crate::rules::COMBAT_DICE_ETHEREAL;
 
 pub fn rules() -> crate::rules::SliceRules {
-    let data = read_txt(@FileTrait::new("tests/fixtures/preset-3.txt"));
+    let data = read_txt(@FileTrait::new("tests/fixtures/current-presets/preset-3.txt"));
     let mut fields = data.span();
     Serde::deserialize(ref fields).unwrap()
 }

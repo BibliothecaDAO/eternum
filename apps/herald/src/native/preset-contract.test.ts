@@ -5,12 +5,42 @@ import { WorldFold } from "../world-fold";
 import type { DecodedWorldEvent, RpcReceipt, RpcTransaction } from "../types";
 import { NativeDecoder } from "./decoder";
 import { NativeIngestion } from "./ingestion";
-import { manifest, receipt, rowEvent } from "./fixtures";
+import { manifest, receipt } from "./fixtures";
+import type { NativeSchema } from "./schema";
+import recordedSchemaJson from "../../../../contracts/l3/world-native/tests/fixtures/preset-projection/recorded-schema.json";
+import { decodeMembers } from "./serde";
+import { presetPreimageCommitment } from "./preset-preimages";
+
+const recordedSchema = recordedSchemaJson as unknown as NativeSchema;
+const recordedManifest = {
+  ...manifest,
+  native: {
+    ...manifest.native,
+    activeSchema: recordedSchema.identity,
+    releaseSchemas: { "1": recordedSchema.identity },
+    schemas: { [recordedSchema.identity]: recordedSchema },
+  },
+};
 
 const directory = new URL("../../../../contracts/l3/world-native/tests/fixtures/preset-projection/", import.meta.url);
 const read = (name: string) => readFileSync(new URL(name, directory), "utf8");
 const json = <T>(name: string): T => JSON.parse(read(name));
+const provenance = json<{
+  fixtureHead: string;
+  schemaIdentity: string;
+  presets: Record<"blitz" | "frontier" | "optional", { id: string; commitment: string }>;
+}>("provenance.json");
 const felts = (name: string) => read(name).trim().split(/\s+/);
+
+function recordedRowEvent(name: string, keys: string[], values: string[]) {
+  const model = recordedSchema.models.find((model) => model.name === name)!;
+  const event = recordedSchema.games.events.find((event) => event.name === "RowSet")!;
+  return {
+    from_address: manifest.world.address,
+    keys: [...event.prefix, "1", model.identity],
+    data: [String(keys.length), ...keys, String(values.length), ...values],
+  };
+}
 
 function contractFrames(name: string) {
   const values = felts(`${name}-rows.txt`);
@@ -44,14 +74,33 @@ function facts(rows: DecodedWorldEvent[]) {
     );
 }
 
-describe("recorded launch configuration matches Cairo readers", () => {
+describe("historical launch projection under recorded provenance", () => {
+  it("decodes the archived partial preset without passing it through current registration", () => {
+    const archived = felts("../preset-3.txt");
+    const fields = decodeMembers(
+      recordedSchema,
+      [
+        { name: "rules", type: "world_native::rules::SliceRules" },
+        { name: "resources", type: "core::array::Span::<world_native::resources::ResourceRule>" },
+        { name: "buildings", type: "core::array::Span::<world_native::buildings::BuildingRuleConfig>" },
+      ],
+      archived,
+    );
+    expect(fields.resources).toHaveLength(58);
+    expect(fields.buildings).toHaveLength(40);
+    expect((fields.rules as Record<string, unknown>).map_center_offset).toBe(20n);
+  });
   it("matches present spires and withdrawals, a non-roster Triple preset, and an explicit map override", () => {
-    const decoder = new NativeDecoder(manifest);
+    const decoder = new NativeDecoder(recordedManifest);
     const ingestion = new NativeIngestion(decoder);
     const fold = new WorldFold(decoder.registry);
     const frames = contractFrames("optional-launch");
-    const events = frames.map(({ model, keys, values }) => rowEvent(model, keys, values));
+    const events = frames.map(({ model, keys, values }) => recordedRowEvent(model, keys, values));
     const registration = felts("optional-register.txt");
+    expect(BigInt(registration[0]!)).toBe(BigInt(provenance.presets.optional.id));
+    expect(BigInt(presetPreimageCommitment(registration.slice(1)))).toBe(
+      BigInt(provenance.presets.optional.commitment),
+    );
     ingestion.applyReceipt(fold, receipt(events.slice(0, 1)), 10, 0, [
       "1",
       manifest.world.address,
@@ -71,8 +120,9 @@ describe("recorded launch configuration matches Cairo readers", () => {
     ).toBe(987n);
   });
   it("replays every model and key for the recorded Blitz and Frontier launches", async () => {
+    expect(recordedSchema.identity).toBe(provenance.schemaIdentity);
     const first = json<RpcTransaction>("blitz-register-preset-transaction.json");
-    const decoder = new NativeDecoder({ ...manifest, world: { address: first.calldata![1]! } });
+    const decoder = new NativeDecoder({ ...recordedManifest, world: { address: first.calldata![1]! } });
     const ingestion = new NativeIngestion(decoder);
     const confirmed = new WorldFold(decoder.registry);
     const recorded: { receipt: RpcReceipt; transaction: RpcTransaction }[] = [];
@@ -81,6 +131,10 @@ describe("recorded launch configuration matches Cairo readers", () => {
       const registered = json<RpcReceipt>(`${name}-register-preset-receipt.json`);
       const created = json<RpcReceipt>(`${name}-create-game-receipt.json`);
       const launch = json<RpcTransaction>(`${name}-create-game-transaction.json`);
+      const definition = felts(`${name}-register.txt`);
+      const presetIdentity = provenance.presets[name as "blitz" | "frontier"];
+      expect(BigInt(definition[0]!)).toBe(BigInt(presetIdentity.id));
+      expect(BigInt(presetPreimageCommitment(definition.slice(1)))).toBe(BigInt(presetIdentity.commitment));
       recorded.push({ receipt: registered, transaction: registration }, { receipt: created, transaction: launch });
       expect(registration.calldata!.slice(4).map(BigInt)).toEqual(felts(`${name}-register.txt`).map(BigInt));
       expect(launch.calldata!.slice(4).map(BigInt)).toEqual(felts(`${name}-create.txt`).map(BigInt));

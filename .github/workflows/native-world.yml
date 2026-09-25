@@ -244,6 +244,10 @@ jobs:
         run: python3 scripts/generate-realm-metadata.py --check
       - name: Check generated configs match the config source
         run: pnpm run config:generate --check
+      - name: Check current preset fixtures match the preset source
+        run: |
+          pnpm run fixtures:native-presets
+          git diff --exit-code -- contracts/l3/world-native/tests/fixtures/current-presets
       - name: Type-check the shard tooling, harness and config
         run: |
           pnpm exec tsc -p deploy/athanor/tsconfig.json
