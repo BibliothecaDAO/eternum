@@ -48,6 +48,11 @@ pub fn current_definition(name: ByteArray) -> (u32, crate::presets::PresetDefini
     (preset_id, definition)
 }
 
+pub fn frontier_discovery_rules() -> crate::expeditions::FrontierDiscoveryRules {
+    let (_, definition) = current_definition("frontier");
+    definition.economy.discovery.unwrap()
+}
+
 pub fn frontier_progression_rules() -> crate::progression::ArmyProgressionRules {
     let (_, definition) = current_definition("frontier");
     definition.economy.progression.unwrap()
@@ -282,6 +287,10 @@ fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, game_
     if let Some(progression) = interact_with_state(address, || crate::logic::progression::rules(game_id)) {
         row(ref rows, 'ArmyProgressionRules', key, progression);
     }
+    if let Some(discovery) =
+        interact_with_state(address, || crate::logic::preset_record::for_game(game_id).discovery_rules.read()) {
+        row(ref rows, 'FrontierDiscoveryRules', key, discovery);
+    }
     row(ref rows, 'ArtificerCost', key, artificer.artificer_cost(game_id));
     let deposits = interact_with_state(address, || crate::logic::preset_record::for_game(game_id).deposit_rules.read());
     if deposits.is_some() {
@@ -309,4 +318,23 @@ fn observe_rewards(ref rows: Array<ObservedRow>, address: ContractAddress, game_
     let season_lifecycle = ISeasonLifecycleDispatcher { contract_address: address };
     row(ref rows, 'ExtractionRewards', key, extraction.extraction_rewards(game_id));
     row(ref rows, 'SeasonWinThreshold', key, season_lifecycle.season_win_threshold(game_id));
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn current_frontier_requires_discovery_and_chest_rules_and_refuses_sequential_odds() {
+    let d = super::registrar::setup();
+    start_cheat_caller_address(d.games, super::authority());
+    for invalid in 0_u8..3 {
+        let (preset_id, mut definition) = current_definition("frontier");
+        if invalid == 0 {
+            definition.economy.discovery = None;
+        } else if invalid == 1 {
+            definition.economy.chests = None;
+        } else {
+            definition.rules.map_config.camp_win_probability = 4;
+        }
+        assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());
+        assert_eq!(IRegistrarDispatcher { contract_address: d.games }.preset_commitment(preset_id), 0);
+    }
 }

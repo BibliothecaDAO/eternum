@@ -311,7 +311,7 @@ pub(crate) fn spend_stamina(
 }
 
 pub(crate) fn discovery_guards(
-    category: u8, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
+    category: u8, seed: u256, rules: crate::rules::SliceRules, timestamp: u64, bounds: Option<(u32, u32)>,
 ) -> Span<Troops> {
     use crate::troops::{TroopTier, TroopType};
     let light_guard = category == 4 || category == crate::camps::CAMP_CATEGORY;
@@ -344,7 +344,7 @@ pub(crate) fn discovery_guards(
         } else {
             0
         };
-        let troops = discovery_guard(category, tier, guard_seed, rules, timestamp);
+        let troops = discovery_guard_with_bounds(category, tier, guard_seed, rules, timestamp, bounds);
         guards.append(troops);
     }
     guards.span()
@@ -357,8 +357,26 @@ pub(crate) fn discovery_guard(
     rules: crate::rules::SliceRules,
     timestamp: u64,
 ) -> Troops {
-    let lower: u128 = rules.troop_limit_config.mercenaries_troop_lower_bound.into();
-    let upper: u128 = rules.troop_limit_config.mercenaries_troop_upper_bound.into();
+    discovery_guard_with_bounds(category, tier, seed, rules, timestamp, None)
+}
+
+fn discovery_guard_with_bounds(
+    category: TroopType,
+    tier: TroopTier,
+    seed: u256,
+    rules: crate::rules::SliceRules,
+    timestamp: u64,
+    bounds: Option<(u32, u32)>,
+) -> Troops {
+    let (lower, upper) = bounds
+        .unwrap_or(
+            (
+                rules.troop_limit_config.mercenaries_troop_lower_bound.into(),
+                rules.troop_limit_config.mercenaries_troop_upper_bound.into(),
+            ),
+        );
+    let lower: u128 = lower.into();
+    let upper: u128 = upper.into();
     Troops {
         category,
         tier,

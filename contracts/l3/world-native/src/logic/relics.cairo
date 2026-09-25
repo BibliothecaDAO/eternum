@@ -51,34 +51,6 @@ pub mod RelicState {
         ) -> Option<crate::relics::ChestReward> {
             self.data.relics.chest_rewards.read((game_id, order, index))
         }
-        fn grant_reveal_chest(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            command: OpenChest,
-            context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
-            let context = crate::commands::load_context(game_id, context);
-
-            let Some(rules) = self.chest_rules(game_id) else {
-                return ((), story_cursor);
-            };
-            let game = context.game.unbox();
-            assert_playing(game, context.timestamp);
-            crate::logic::troops::authorized_explorer(
-                ExplorerKey { game_id, explorer_id: command.explorer_id }, actor, context.timestamp, context,
-            );
-            let mut root = context.raw_root;
-            let seed = crate::random::game_root(ref root, game_id, game.seed);
-            if crate::random::range(
-                seed, Into::<u64, u128>::into(context.timestamp) + 29, rules.loose_one_in.into(),
-            ) == 0 {
-                self.pay_expedition_chest(game_id, actor, command, context, rules, ref story_cursor);
-            }
-            ((), story_cursor)
-        }
-
         fn relic_rules(self: @ComponentState<TContractState>, game_id: u32) -> Span<RelicRule> {
             if self.chest_rules(game_id).is_some() {
                 return array![].span();
@@ -105,6 +77,12 @@ pub mod RelicState {
             let explorer = crate::logic::troops::authorized_explorer(
                 ExplorerKey { game_id, explorer_id: command.explorer_id }, actor, context.timestamp, context,
             );
+            assert!(explorer.troops.count != 0, "explorer is dead");
+            if context.rules.unbox().epoch_seconds != 0 {
+                crate::expeditions::assert_same_region(
+                    explorer.coord, command.coord, crate::logic::settlement::rules(game_id).spacing,
+                );
+            }
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
             IRelicMapLibraryDispatcher { class_hash: classes.map.read() }.consume_relic_chest(game_id, command.coord);
             self.pay_chest(game_id, actor, command, context, ref story_cursor);
@@ -374,6 +352,10 @@ pub mod RelicState {
         ) {
             let site = crate::logic::expeditions::clear_site(key);
             let reward = crate::expeditions::site_reward(site);
+            if site.kind == crate::expeditions::SiteKind::FallenRealm {
+                IRelicMapLibraryDispatcher { class_hash: self.logic_classes(key.game_id).map.read() }
+                    .close_site_chest(key);
+            }
             let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
             if let Some(reward) = reward {
                 self

@@ -21,6 +21,7 @@ pub type Preset =
         crate::relics::RelicRule,
         crate::relics::ChestRules,
         crate::progression::ArmyProgressionRules,
+        crate::expeditions::FrontierDiscoveryRules,
         crate::bridge::DepositRules,
         crate::withdrawals::WithdrawalTerms,
         crate::withdrawals::Retention,

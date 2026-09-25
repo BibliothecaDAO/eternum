@@ -137,10 +137,41 @@ pub struct DepthRules {
     pub entry_stamina: u16,
     pub attunement_cost: u128,
     pub chest: crate::relics::ChestGround,
+    pub fallen_guard_lower: u32,
+    pub fallen_guard_upper: u32,
 }
 
 #[starknet::interface]
 pub trait IExpeditionRules<T> {
     #[cfg(test)]
     fn depth_rules(self: @T, game_id: u32, depth: u8) -> DepthRules;
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct FrontierDiscoveryRules {
+    pub camp_bps: u16,
+    pub rift_bps: u16,
+    pub fallen_realm_bps: u16,
+    pub loose_chest_bps: u16,
+    pub shrine_bps: u16,
+    pub well_bps: u16,
+    pub empty_reveal_limit: u8,
+}
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ExpeditionDiscoveryKey {
+    pub game_id: u32,
+    pub structure_id: u32,
+    pub epoch: u64,
+}
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ExpeditionDiscovery {
+    pub empty_reveals: u8,
+}
+#[starknet::interface]
+pub trait IFrontierDiscovery<T> {
+    fn frontier_discovery_rules(self: @T, game_id: u32) -> Option<FrontierDiscoveryRules>;
+    fn expedition_discovery(self: @T, key: ExpeditionDiscoveryKey) -> Option<ExpeditionDiscovery>;
+    fn discover_frontier_tile(
+        ref self: T, key: crate::map::TileKey, explorer_id: u32, seed: u256, context: crate::commands::ActionContext,
+    ) -> crate::discovery::Discovery;
 }

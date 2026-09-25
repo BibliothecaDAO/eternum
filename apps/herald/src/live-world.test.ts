@@ -195,6 +195,9 @@ describe("native live publication", () => {
           ...homes,
           ...armies,
           ...positions,
+          rowEvent("ExpeditionDiscovery", ["1", "1", String(Math.floor(dayStart / 86400))], { empty_reveals: 7 }),
+          rowEvent("ExpeditionDiscovery", ["1", "2", String(Math.floor(dayStart / 86400))], { empty_reveals: 3 }),
+          rowEvent("TileOccupancy", ["1", "0", "51", "50"], { entity_id: 300, category: 34, is_structure: false }),
           rowEvent("ResourceBalance", ["1", "1", "28"], ["100"]),
           rowEvent("ResourceBalance", ["1", "2", "28"], ["200"]),
           ...[1, 2, 10, 20].flatMap((entityId) => [
@@ -251,6 +254,12 @@ describe("native live publication", () => {
         }
       }
       expect(checkedEntityKeys.size).toBeGreaterThan(0);
+      expect(
+        snapshots
+          .find((message) => message.model === "ExpeditionDiscovery")
+          ?.rows.map((row) => Number(row.value.empty_reveals)),
+      ).toEqual([index === 0 ? 7 : 3]);
+
       expect(
         snapshots.find((message) => message.model === "Structure")?.rows.map((row) => Number(row.value.entity_id)),
       ).toEqual([index + 1]);
@@ -348,6 +357,13 @@ describe("native live publication", () => {
     expect(removed.some((row) => row.model === "Structure" || row.model === "ResourceBalance")).toBe(false);
     const today = live.snapshot("1", undefined, "0xa");
     expect(today.models.find((model) => model.model === "ExplorerTroops")?.rows).toEqual([]);
+    expect(today.models.find((model) => model.model === "ExpeditionDiscovery")?.rows).toEqual([]);
+    expect(removed.some((row) => row.model === "ExpeditionDiscovery")).toBe(true);
+    expect(
+      today.models
+        .find((model) => model.model === "TileOccupancy")
+        ?.rows.some((row) => Number(row.value.category) === 34),
+    ).toBe(false);
     expect(today.models.find((model) => model.model === "Structure")?.rows).toHaveLength(1);
     expect(
       today.models

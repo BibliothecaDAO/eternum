@@ -37,6 +37,7 @@ pub struct EconomyPreset {
     pub relics: Span<crate::relics::RelicRule>,
     pub chests: Option<crate::relics::ChestRules>,
     pub progression: Option<crate::progression::ArmyProgressionRules>,
+    pub discovery: Option<crate::expeditions::FrontierDiscoveryRules>,
     pub research_cost: u128,
     pub withdrawals: Option<WithdrawalPreset>,
 }
@@ -53,6 +54,15 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
+    assert!(preset.economy.chests.is_some() == (rules.epoch_seconds != 0), "chest rules require expedition");
+    assert!(preset.economy.discovery.is_some() == (rules.epoch_seconds != 0), "discovery requires expedition");
+    if let Some(discovery) = preset.economy.discovery {
+        crate::discovery::validate_frontier(discovery);
+        assert!(
+            rules.map_config.camp_win_probability == 0 && rules.map_config.shards_mines_win_probability == 0,
+            "expedition uses categorical odds",
+        );
+    }
     assert!(preset.economy.progression.is_some() == (rules.epoch_seconds != 0), "progression requires expedition");
     if let Some(progression) = preset.economy.progression {
         assert!(

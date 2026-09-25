@@ -31,3 +31,7 @@ sort-module-level-items = true
 
 [tool.scarb]
 allow-prebuilt-plugins = ["snforge_std"]
+
+[tool.snforge]
+# The categorical discovery gate evaluates 100,000 ordinary, Scouting and floor draws.
+max_n_steps = 500000000

@@ -117,6 +117,10 @@ function deriveEconomy(emit: EmitRule, economy: PresetRecord) {
     const progression = some(economy.progression);
     if (progression) emit("ArmyProgressionRules", progression);
   }
+  if ("discovery" in economy) {
+    const discovery = some(economy.discovery);
+    if (discovery) emit("FrontierDiscoveryRules", discovery);
+  }
   emit("ArtificerCost", { research: economy.research_cost });
   const withdrawals = some(economy.withdrawals);
   if (withdrawals) {

@@ -73,6 +73,19 @@ describe("verified preset configuration facts", () => {
     const depths = world.fold.gameRows("DepthRules", "1").map(({ value }) => value);
     expect(depths.map((row) => Number(row.reveal_percent))).toEqual([10, 15, 20, 25]);
     expect(depths.every((row) => !Object.hasOwn(row, "supply_multiplier"))).toBe(true);
+    const discovery = world.fold.gameRows("FrontierDiscoveryRules", "1")[0]!.value;
+    expect(
+      ["camp_bps", "rift_bps", "fallen_realm_bps", "loose_chest_bps", "empty_reveal_limit"].map((key) =>
+        Number(discovery[key]),
+      ),
+    ).toEqual([400, 400, 200, 200, 7]);
+    expect(depths.map((row) => [Number(row.fallen_guard_lower), Number(row.fallen_guard_upper)])).toEqual([
+      [2000, 4000],
+      [6000, 10000],
+      [16000, 24000],
+      [40000, 60000],
+    ]);
+
     expect(world.fold.gameRows("GameOverrides", "1")).toHaveLength(1);
     for (const scope of [undefined, {}, world.fold.subscriptionScope("1", "0x123", 1234)]) {
       const snapshot = world.fold.snapshot(1, 11, undefined, scope);

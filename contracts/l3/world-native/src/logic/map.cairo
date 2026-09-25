@@ -82,6 +82,14 @@ pub mod MapState {
         write_occupancy(key, Some(TileOccupancy { entity_id, category, is_structure }));
     }
 
+    pub fn close_site_chest(key: TileKey, site_id: u32) {
+        let previous = crate::logic::map::occupancy(key).expect('missing fallen realm');
+        assert!(previous.entity_id == site_id && previous.is_structure, "fallen realm occupancy mismatch");
+        write_occupancy(
+            key, Some(TileOccupancy { entity_id: site_id, category: crate::map::CHEST_OCCUPIER, is_structure: false }),
+        );
+    }
+
     pub fn reserve_hyperstructure(key: TileKey) {
         crate::logic::map::tile(key).expect('unrevealed reservation');
         assert!(crate::logic::map::occupancy(key).is_none(), "occupied reservation tile");
@@ -208,13 +216,12 @@ pub mod MapState {
 #[starknet::contract]
 pub mod MapLogic {
     use starknet::ContractAddress;
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
     use crate::geometry::{distance, spire_neighbor, tile_key};
     use crate::logic::map::MapState;
     use crate::logic::release::ReleaseState;
     use crate::logic::settlement::SettlementPoolState;
     use crate::map::{BIOME_SCALE, BYTE_RANGE, TileKey, TileOpt};
-    use crate::ownership::StoryResultTrait;
     use crate::troops::Coord;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     component!(path: SettlementPoolState, storage: settlements, event: SettlementEvent);
@@ -318,6 +325,47 @@ pub mod MapLogic {
         }
     }
     #[abi(embed_v0)]
+    impl FrontierDiscovery of crate::expeditions::IFrontierDiscovery<ContractState> {
+        fn frontier_discovery_rules(
+            self: @ContractState, game_id: u32,
+        ) -> Option<crate::expeditions::FrontierDiscoveryRules> {
+            crate::logic::preset_record::for_game(game_id).discovery_rules.read()
+        }
+        fn expedition_discovery(
+            self: @ContractState, key: crate::expeditions::ExpeditionDiscoveryKey,
+        ) -> Option<crate::expeditions::ExpeditionDiscovery> {
+            crate::logic::expeditions::discovery(key)
+        }
+        fn discover_frontier_tile(
+            ref self: ContractState,
+            key: TileKey,
+            explorer_id: u32,
+            seed: u256,
+            context: crate::commands::ActionContext,
+        ) -> crate::discovery::Discovery {
+            let context = crate::commands::load_context(key.game_id, context);
+            let rules = self.frontier_discovery_rules(key.game_id).expect('missing discovery rules');
+            let explorer_key = crate::troops::ExplorerKey { game_id: key.game_id, explorer_id };
+            let home = crate::state::read().troops.explorers.entry((key.game_id, explorer_id)).owner.read();
+            assert!(home != 0, "missing exploring army");
+            let progress = crate::logic::progression::require(explorer_key);
+            let counter = crate::expeditions::ExpeditionDiscoveryKey {
+                game_id: key.game_id,
+                structure_id: home,
+                epoch: crate::expeditions::absolute_epoch(context.rules.unbox().epoch_seconds, context.timestamp),
+            };
+            let empty = crate::logic::expeditions::discovery(counter).map(|row| row.empty_reveals).unwrap_or(0);
+            let result = crate::discovery::frontier(rules, progress.scouting, empty, seed, context.timestamp);
+            crate::logic::expeditions::record_discovery(counter, result);
+            if result == crate::discovery::Discovery::Chest {
+                crate::logic::map::MapState::occupy(
+                    key, crate::logic::game::allocate_entity(key.game_id), crate::map::CHEST_OCCUPIER, false,
+                );
+            }
+            result
+        }
+    }
+    #[abi(embed_v0)]
     impl Extraction of crate::exploration_rewards::IExtraction<ContractState> {
         fn extraction_rewards(
             self: @ContractState, game_id: u32,
@@ -415,19 +463,6 @@ pub mod MapLogic {
                     crate::commands::action_context(context),
                 );
             }
-            if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES)
-                && crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CHESTS)
-                && tile.data % 2 == 0 {
-                crate::relics::IRelicsDispatcherTrait::grant_reveal_chest(
-                    crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() },
-                    game_id,
-                    actor,
-                    crate::relics::OpenChest { explorer_id, coord },
-                    crate::commands::action_context(context),
-                    story_cursor,
-                )
-                    .resume_story(ref story_cursor);
-            }
             self
                 .record_extraction(
                     game_id,
@@ -490,7 +525,9 @@ pub mod MapLogic {
                             key, crate::logic::map::biome(key, crate::commands::biome_context(game_context)),
                         );
                     }
-                    crate::logic::map::MapState::occupy(key, crate::logic::game::allocate_entity(game_id), 34, false);
+                    crate::logic::map::MapState::occupy(
+                        key, crate::logic::game::allocate_entity(game_id), crate::map::CHEST_OCCUPIER, false,
+                    );
                     break;
                 }
                 destination = crate::geometry::neighbor(destination, 0);
@@ -506,10 +543,21 @@ pub mod MapLogic {
                     },
                 );
         }
+        fn close_site_chest(ref self: ContractState, site: crate::resources::ResourceKey) {
+            let status = crate::logic::expeditions::expedition_site(site).expect('missing expedition site');
+            assert!(
+                status.cleared && status.kind == crate::expeditions::SiteKind::FallenRealm, "fallen realm not cleared",
+            );
+            let coord = crate::structures::structure_coord(site);
+            crate::logic::map::MapState::close_site_chest(tile_key(site.game_id, coord), site.entity_id);
+        }
         fn consume_relic_chest(ref self: ContractState, game_id: u32, coord: Coord) {
             let key = tile_key(game_id, coord);
             let tile = crate::logic::map::tile(key).expect('missing chest tile');
-            assert!(tile.data % 2 == 0 && (tile.data / 2) % BYTE_RANGE == 34, "tile is not a relic chest");
+            assert!(
+                tile.data % 2 == 0 && (tile.data / 2) % BYTE_RANGE == crate::map::CHEST_OCCUPIER.into(),
+                "tile is not a relic chest",
+            );
             let id = ((tile.data / crate::map::OCCUPIER_SCALE) % crate::map::ENTITY_RANGE).try_into().unwrap();
             crate::logic::map::MapState::vacate(key, id);
         }

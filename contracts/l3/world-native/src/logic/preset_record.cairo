@@ -75,6 +75,7 @@ fn write_economy(preset: PresetWrite, rules: crate::rules::SliceRules, economy: 
     write_hyperstructures(preset, rules, economy.hyperstructures);
     write_relics(preset, rules, economy.relics, economy.chests);
     preset.progression_rules.write(economy.progression);
+    preset.discovery_rules.write(economy.discovery);
     preset.artificer_cost.write(economy.research_cost);
     if let Some(withdrawals) = economy.withdrawals {
         write_withdrawals(preset, withdrawals);
@@ -314,6 +315,10 @@ fn write_depths(preset: PresetWrite, rules: crate::rules::SliceRules, depths: Sp
         assert!(index != 0 || (value.entry_stamina == 0 && value.attunement_cost == 0), "surface needs no attunement");
         assert!(value.reveal_percent != 0 && value.reveal_percent <= 100, "invalid reveal percentage");
         assert!(value.guard_lower < value.guard_upper, "invalid depth guards");
+        assert!(
+            value.fallen_guard_lower != 0 && value.fallen_guard_lower < value.fallen_guard_upper,
+            "invalid fallen guards",
+        );
         preset.depth_rules.write(index.try_into().unwrap(), Some(value));
     }
     preset.depth_count.write(depths.len());
@@ -352,7 +357,6 @@ fn write_relics(
             game_rules.epoch_seconds != 0 && crate::rules::rule_enabled(game_rules, crate::rules::DEPTH_CONTENTS),
             "chest tables require depth rules",
         );
-        assert!(value.loose_one_in != 0, "empty loose chest lottery");
         assert!(
             Into::<u16, u32>::into(value.relic_probability) + value.cosmetic_probability.into() <= 10000,
             "invalid chest type probabilities",

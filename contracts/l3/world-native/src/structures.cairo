@@ -149,20 +149,25 @@ pub(crate) fn discovered_structure(
         Discovery::Mine => (4_u8, 12_u8, 0_u8, capacities.fragment_mine_capacity),
         Discovery::Hyperstructure => (2, 9, 3, capacities.hyperstructure_capacity),
         Discovery::BitcoinMine => (8, 38, 3, capacities.bitcoin_mine_capacity),
-        Discovery::Camp => (crate::camps::CAMP_CATEGORY, crate::camps::CAMP_OCCUPIER, 0, capacities.camp_capacity),
-        Discovery::None => panic!("discovery is not a structure"),
+        Discovery::Camp |
+        Discovery::FallenRealm => (
+            crate::camps::CAMP_CATEGORY, crate::camps::CAMP_OCCUPIER, 0, capacities.camp_capacity,
+        ),
+        Discovery::None | Discovery::Chest => panic!("discovery is not a structure"),
     };
     assert!(
         discovery == Discovery::Mine || coord.alt == (discovery == Discovery::BitcoinMine), "invalid discovery layer",
     );
-    let max_guards = if discovery == Discovery::Mine || discovery == Discovery::Camp {
+    let max_guards = if discovery == Discovery::Mine
+        || discovery == Discovery::Camp
+        || discovery == Discovery::FallenRealm {
         1
     } else {
         4
     };
     let base = StructureBase {
         troop_max_guard_count: max_guards,
-        troop_max_explorer_count: if discovery == Discovery::Camp {
+        troop_max_explorer_count: if discovery == Discovery::Camp || discovery == Discovery::FallenRealm {
             camp_armies
         } else {
             0

@@ -36,6 +36,7 @@ export const duelPreset: NativePreset = {
   spacing: 8,
   epochSeconds: 0,
   progression: null,
+  discovery: null,
   chests: null,
   board: null,
   depths: [],

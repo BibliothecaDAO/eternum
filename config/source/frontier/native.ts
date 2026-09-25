@@ -24,14 +24,7 @@ export const frontierPreset: NativePreset = {
   gameType: "frontier",
   environmentGameType: "frontier",
   settlementMode: "Single",
-  modeRules:
-    rule.HOME_REWARDS |
-    rule.DISCOVER_CAMPS |
-    rule.DISCOVER_CHESTS |
-    rule.UNOWNED_TARGETS |
-    rule.DEPTH_CONTENTS |
-    rule.REVEAL_SUPPLIES |
-    rule.SEASON_CLOSE,
+  modeRules: rule.HOME_REWARDS | rule.UNOWNED_TARGETS | rule.DEPTH_CONTENTS | rule.REVEAL_SUPPLIES | rule.SEASON_CLOSE,
   entryRule: rule.ENTRY_OPEN,
   commandMask: (
     [
@@ -47,6 +40,7 @@ export const frontierPreset: NativePreset = {
       "BuyRealmUpgrade",
       "EnterDepth",
       "ChooseAttribute",
+      "OpenRelicChest",
       "SetEntityName",
       "MarkGameSettled",
     ] satisfies Array<keyof typeof nativeCommandBits>
@@ -60,13 +54,24 @@ export const frontierPreset: NativePreset = {
     barracksIIICost: 45000,
     neighbors: [],
   },
+  discovery: {
+    campBps: 400,
+    riftBps: 400,
+    fallenRealmBps: 200,
+    looseChestBps: 200,
+    shrineBps: 300,
+    wellBps: 300,
+    emptyRevealLimit: 7,
+  },
   progression: { revealXp: 10, clearXp: 25, levelStepXp: 20 },
-  chests: { looseOneIn: 46, relicProbability: 9000, cosmeticProbability: 900, tokenCap: 1 },
+  chests: { relicProbability: 9000, cosmeticProbability: 900, tokenCap: 1 },
   depths: [
     {
       revealPercent: 10,
       guardLower: 1000,
       guardUpper: 1600,
+      fallenGuardLower: 2000,
+      fallenGuardUpper: 4000,
       revealSiteNeighbors: false,
       entryStamina: 0,
       attunementCost: 0,
@@ -76,6 +81,8 @@ export const frontierPreset: NativePreset = {
       revealPercent: 15,
       guardLower: 3000,
       guardUpper: 5000,
+      fallenGuardLower: 6000,
+      fallenGuardUpper: 10000,
       revealSiteNeighbors: false,
       entryStamina: 30,
       attunementCost: 150000,
@@ -85,6 +92,8 @@ export const frontierPreset: NativePreset = {
       revealPercent: 20,
       guardLower: 8000,
       guardUpper: 12000,
+      fallenGuardLower: 16000,
+      fallenGuardUpper: 24000,
       revealSiteNeighbors: false,
       entryStamina: 40,
       attunementCost: 330000,
@@ -94,6 +103,8 @@ export const frontierPreset: NativePreset = {
       revealPercent: 25,
       guardLower: 20000,
       guardUpper: 30000,
+      fallenGuardLower: 40000,
+      fallenGuardUpper: 60000,
       revealSiteNeighbors: false,
       entryStamina: 50,
       attunementCost: 850000,

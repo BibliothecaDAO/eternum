@@ -710,10 +710,11 @@ pub mod StructuresLogic {
                 Discovery::Hyperstructure => self.create_hyperstructure(key, seed, completed),
                 Discovery::BitcoinMine => {},
                 Discovery::Camp => {
-                    assert!(
-                        crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CAMPS), "camp discovery is disabled",
-                    );
                     if rules.epoch_seconds == 0 {
+                        assert!(
+                            crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CAMPS),
+                            "camp discovery is disabled",
+                        );
                         for resource in self.camp_resources(game_id) {
                             self
                                 .resources_dispatcher(game_id)
@@ -740,7 +741,8 @@ pub mod StructuresLogic {
                             );
                     }
                 },
-                Discovery::None => panic!("discovery is not a structure"),
+                Discovery::FallenRealm => { assert!(rules.epoch_seconds != 0, "fallen realm requires expeditions"); },
+                Discovery::None | Discovery::Chest => panic!("discovery is not a structure"),
             }
             crate::logic::structures::StructureState::create(key, record);
             crate::logic::map::MapState::occupy(tile_key(game_id, coord), id, occupier, true);
@@ -751,6 +753,7 @@ pub mod StructuresLogic {
                     match discovery {
                         Discovery::Camp => crate::expeditions::SiteKind::Camp,
                         Discovery::Mine => crate::expeditions::SiteKind::Rift,
+                        Discovery::FallenRealm => crate::expeditions::SiteKind::FallenRealm,
                         _ => panic!("invalid expedition site"),
                     },
                 )

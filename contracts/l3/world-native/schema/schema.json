@@ -2708,6 +2708,106 @@
       "derivedFrom": "preset"
     },
     {
+      "name": "FrontierDiscoveryRules",
+      "identity": "0x46726f6e74696572446973636f7665727952756c6573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "camp_bps",
+          "type": "core::integer::u16",
+          "id": "0x63616d705f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "rift_bps",
+          "type": "core::integer::u16",
+          "id": "0x726966745f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "fallen_realm_bps",
+          "type": "core::integer::u16",
+          "id": "0x66616c6c656e5f7265616c6d5f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "loose_chest_bps",
+          "type": "core::integer::u16",
+          "id": "0x6c6f6f73655f63686573745f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "shrine_bps",
+          "type": "core::integer::u16",
+          "id": "0x736872696e655f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "well_bps",
+          "type": "core::integer::u16",
+          "id": "0x77656c6c5f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "empty_reveal_limit",
+          "type": "core::integer::u8",
+          "id": "0x656d7074795f72657665616c5f6c696d6974",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 7,
+      "derivedFrom": "preset"
+    },
+    {
+      "name": "ExpeditionDiscovery",
+      "identity": "0x45787065646974696f6e446973636f76657279",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "empty_reveals",
+          "type": "core::integer::u8",
+          "id": "0x656d7074795f72657665616c73",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 1,
+      "absence": {
+        "parent": "Structure",
+        "parentKeys": {
+          "game_id": "game_id",
+          "entity_id": "structure_id"
+        },
+        "value": "zero",
+        "meaning": "No empty player reveals in this expedition yet."
+      }
+    },
+    {
       "name": "ChestRules",
       "identity": "0x436865737452756c6573",
       "scope": "game",
@@ -2719,12 +2819,6 @@
         }
       ],
       "members": [
-        {
-          "name": "loose_one_in",
-          "type": "core::integer::u16",
-          "id": "0x6c6f6f73655f6f6e655f696e",
-          "feltLength": 1
-        },
         {
           "name": "relic_probability",
           "type": "core::integer::u16",
@@ -2745,7 +2839,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 4,
+      "valueLength": 3,
       "derivedFrom": "preset"
     },
     {
@@ -5590,10 +5684,22 @@
           "type": "world_native::relics::ChestGround",
           "id": "0x6368657374",
           "feltLength": 4
+        },
+        {
+          "name": "fallen_guard_lower",
+          "type": "core::integer::u32",
+          "id": "0x66616c6c656e5f67756172645f6c6f776572",
+          "feltLength": 1
+        },
+        {
+          "name": "fallen_guard_upper",
+          "type": "core::integer::u32",
+          "id": "0x66616c6c656e5f67756172645f7570706572",
+          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 10,
+      "valueLength": 12,
       "observation": {
         "domain": "expedition",
         "fields": {
@@ -6727,6 +6833,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::expeditions::ExpeditionDiscovery>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::expeditions::ExpeditionDiscovery>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::expeditions::ExpeditionDiscovery"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::expeditions::ExpeditionSite>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::expeditions::ExpeditionSite>",
@@ -6734,6 +6854,20 @@
         {
           "name": "Some",
           "type": "world_native::expeditions::ExpeditionSite"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::expeditions::FrontierDiscoveryRules>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::expeditions::FrontierDiscoveryRules>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::expeditions::FrontierDiscoveryRules"
         },
         {
           "name": "None",
@@ -8312,6 +8446,14 @@
         {
           "name": "Camp",
           "type": "()"
+        },
+        {
+          "name": "FallenRealm",
+          "type": "()"
+        },
+        {
+          "name": "Chest",
+          "type": "()"
         }
       ]
     },
@@ -8346,6 +8488,42 @@
         {
           "name": "chest",
           "type": "world_native::relics::ChestGround"
+        },
+        {
+          "name": "fallen_guard_lower",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "fallen_guard_upper",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::expeditions::ExpeditionDiscovery": {
+      "type": "struct",
+      "name": "world_native::expeditions::ExpeditionDiscovery",
+      "members": [
+        {
+          "name": "empty_reveals",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::expeditions::ExpeditionDiscoveryKey": {
+      "type": "struct",
+      "name": "world_native::expeditions::ExpeditionDiscoveryKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -8364,6 +8542,40 @@
         {
           "name": "cleared",
           "type": "core::bool"
+        }
+      ]
+    },
+    "world_native::expeditions::FrontierDiscoveryRules": {
+      "type": "struct",
+      "name": "world_native::expeditions::FrontierDiscoveryRules",
+      "members": [
+        {
+          "name": "camp_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "rift_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "fallen_realm_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "loose_chest_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "shrine_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "well_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "empty_reveal_limit",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -9890,6 +10102,10 @@
           "type": "core::option::Option::<world_native::progression::ArmyProgressionRules>"
         },
         {
+          "name": "discovery",
+          "type": "core::option::Option::<world_native::expeditions::FrontierDiscoveryRules>"
+        },
+        {
           "name": "research_cost",
           "type": "core::integer::u128"
         },
@@ -10531,10 +10747,6 @@
       "type": "struct",
       "name": "world_native::relics::ChestRules",
       "members": [
-        {
-          "name": "loose_one_in",
-          "type": "core::integer::u16"
-        },
         {
           "name": "relic_probability",
           "type": "core::integer::u16"
@@ -12414,5 +12626,5 @@
       ]
     }
   },
-  "identity": "e179f6e69ee0259add3761ea84dfe4d353806c0180b66b51537f38a10be23fed"
+  "identity": "10191df77594bed8cb19b001ddec6237b3f50333c11f740f7703417a249cc01c"
 }

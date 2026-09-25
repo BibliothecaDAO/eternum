@@ -75,34 +75,47 @@ pub mod MovementLogic {
                 crate::logic::map::MapState::reveal(tile, biome.into());
                 IPointsLibraryDispatcher { class_hash: self.release.classes(game_id).season.read() }
                     .register_exploration(game_id, actor, crate::commands::action_context(context));
-                if !destination.alt {
-                    crate::relics::IRelicMapDispatcherTrait::discover_relic_chest(
-                        crate::relics::IRelicMapLibraryDispatcher {
-                            class_hash: self.release.classes(game_id).map.read(),
-                        },
-                        game_id,
-                        destination,
-                        explorer.coord,
-                        seed,
-                        context.timestamp,
-                        crate::commands::action_context(context),
-                    );
-                }
-                discovery = self
-                    .map_dispatcher(game_id)
-                    .discovery(
-                        tile,
-                        seed,
-                        crate::hyperstructures::IHyperstructuresDispatcherTrait::hyperstructure_count(
-                            crate::hyperstructures::IHyperstructuresLibraryDispatcher {
-                                class_hash: self.release.classes(game_id).economy.read(),
+                discovery =
+                    if rules.epoch_seconds != 0 {
+                        crate::expeditions::IFrontierDiscoveryDispatcherTrait::discover_frontier_tile(
+                            crate::expeditions::IFrontierDiscoveryLibraryDispatcher {
+                                class_hash: self.release.classes(game_id).map.read(),
                             },
-                            game_id,
-                        ),
-                        context.timestamp,
-                        crate::commands::action_context(context),
-                    );
-                if discovery != crate::discovery::Discovery::None {
+                            tile,
+                            command.explorer_id,
+                            seed,
+                            crate::commands::action_context(context),
+                        )
+                    } else {
+                        if !destination.alt {
+                            crate::relics::IRelicMapDispatcherTrait::discover_relic_chest(
+                                crate::relics::IRelicMapLibraryDispatcher {
+                                    class_hash: self.release.classes(game_id).map.read(),
+                                },
+                                game_id,
+                                destination,
+                                explorer.coord,
+                                seed,
+                                context.timestamp,
+                                crate::commands::action_context(context),
+                            );
+                        }
+                        self
+                            .map_dispatcher(game_id)
+                            .discovery(
+                                tile,
+                                seed,
+                                crate::hyperstructures::IHyperstructuresDispatcherTrait::hyperstructure_count(
+                                    crate::hyperstructures::IHyperstructuresLibraryDispatcher {
+                                        class_hash: self.release.classes(game_id).economy.read(),
+                                    },
+                                    game_id,
+                                ),
+                                context.timestamp,
+                                crate::commands::action_context(context),
+                            )
+                    };
+                if discovery != crate::discovery::Discovery::None && discovery != crate::discovery::Discovery::Chest {
                     self
                         .structures_dispatcher(game_id)
                         .create_discovery(

@@ -44,9 +44,17 @@ export interface NativePreset {
       population: number;
     }>;
   };
+  discovery: null | {
+    campBps: number;
+    riftBps: number;
+    fallenRealmBps: number;
+    looseChestBps: number;
+    shrineBps: number;
+    wellBps: number;
+    emptyRevealLimit: number;
+  };
   progression: null | { revealXp: number; clearXp: number; levelStepXp: number };
   chests: null | {
-    looseOneIn: number;
     relicProbability: number;
     cosmeticProbability: number;
     tokenCap: number;
@@ -55,6 +63,8 @@ export interface NativePreset {
     revealPercent: number;
     guardLower: number;
     guardUpper: number;
+    fallenGuardLower: number;
+    fallenGuardUpper: number;
     revealSiteNeighbors: boolean;
     entryStamina: number;
     attunementCost: number;

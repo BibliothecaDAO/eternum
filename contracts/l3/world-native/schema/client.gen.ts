@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "e179f6e69ee0259add3761ea84dfe4d353806c0180b66b51537f38a10be23fed";
+export const nativeFactSchemaIdentity = "10191df77594bed8cb19b001ddec6237b3f50333c11f740f7703417a249cc01c";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "ATTRIBUTE_DAMAGE_PERCENT": 10,
@@ -50,7 +50,9 @@ export interface NativeRows {
   ExtractionRewards: { readonly game_id: number; readonly rewards: readonly ({ readonly resource_type: number; readonly amount: bigint; readonly amount_max: bigint; readonly weight: bigint })[] };
   RelicRules: { readonly game_id: number; readonly rules: readonly ({ readonly rate_bps: number; readonly duration: number; readonly uses: number; readonly essence_cost: bigint; readonly draw_weight: bigint })[] };
   ArmyProgressionRules: { readonly game_id: number; readonly reveal_xp: number; readonly clear_xp: number; readonly level_step_xp: number };
-  ChestRules: { readonly game_id: number; readonly loose_one_in: number; readonly relic_probability: number; readonly cosmetic_probability: number; readonly token_cap: number };
+  FrontierDiscoveryRules: { readonly game_id: number; readonly camp_bps: number; readonly rift_bps: number; readonly fallen_realm_bps: number; readonly loose_chest_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
+  ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: number; readonly epoch: bigint; readonly empty_reveals: number };
+  ChestRules: { readonly game_id: number; readonly relic_probability: number; readonly cosmetic_probability: number; readonly token_cap: number };
   ChestPity: { readonly game_id: number; readonly player: bigint; readonly depth: number; readonly count: number };
   ChestTokens: { readonly game_id: number; readonly player: bigint; readonly epoch: bigint; readonly count: number };
   ChestReward: { readonly game_id: number; readonly order: bigint; readonly index: number; readonly player: bigint; readonly explorer_id: number; readonly epoch: bigint; readonly depth: number; readonly kind: "Relic" | "Cosmetic" | "Token"; readonly quality: number };
@@ -113,7 +115,7 @@ export interface NativeRows {
   ResourceRule: { readonly game_id: number; readonly resource_type: number; readonly unit_weight: bigint; readonly realm_rate: bigint; readonly village_rate: bigint };
   UpgradeLimits: { readonly game_id: number; readonly realm_max: number; readonly village_max: number };
   UpgradeRecipe: { readonly game_id: number; readonly level: number; readonly costs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
-  DepthRules: { readonly game_id: number; readonly depth: number; readonly reveal_percent: number; readonly guard_lower: number; readonly guard_upper: number; readonly reveal_site_neighbors: boolean; readonly entry_stamina: number; readonly attunement_cost: bigint; readonly chest: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly pity: number } };
+  DepthRules: { readonly game_id: number; readonly depth: number; readonly reveal_percent: number; readonly guard_lower: number; readonly guard_upper: number; readonly reveal_site_neighbors: boolean; readonly entry_stamina: number; readonly attunement_cost: bigint; readonly chest: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly pity: number }; readonly fallen_guard_lower: number; readonly fallen_guard_upper: number };
   GameRelease: { readonly game_id: number; readonly release_id: number; readonly preset_commitment: bigint };
   GameRegistry: { readonly game_id: number; readonly name: bigint; readonly preset_id: number; readonly creator: bigint; readonly settled: boolean; readonly ready: boolean; readonly dev_mode_on: boolean; readonly start_settling_at: bigint; readonly start_main_at: bigint; readonly end_at: bigint; readonly end_grace_seconds: number; readonly seed: bigint };
   GameOverrides: { readonly game_id: number; readonly registration_start: number; readonly biome_climate: { readonly elevation_scale_bps: number; readonly moisture_scale_bps: number; readonly elevation_bias_bps: number; readonly moisture_bias_bps: number; readonly elevation_seed: number; readonly moisture_seed: number }; readonly map: ({ readonly shards_mines_win_probability: number; readonly shards_mines_fail_probability: number; readonly camp_win_probability: number; readonly camp_fail_probability: number; readonly holysite_win_probability: number; readonly holysite_fail_probability: number; readonly bitcoin_mine_win_probability: number; readonly bitcoin_mine_fail_probability: number; readonly hyps_win_prob: number; readonly hyps_fail_prob: number; readonly hyps_fail_prob_increase_p_hex: number; readonly hyps_fail_prob_increase_p_fnd: number; readonly relic_discovery_interval_sec: number; readonly relic_hex_dist_from_center: number; readonly relic_chest_relics_per_chest: number }) | null; readonly map_center_offset: number };
@@ -136,6 +138,8 @@ export interface NativeKeys {
   ExtractionRewards: { readonly game_id: number };
   RelicRules: { readonly game_id: number };
   ArmyProgressionRules: { readonly game_id: number };
+  FrontierDiscoveryRules: { readonly game_id: number };
+  ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: number; readonly epoch: bigint };
   ChestRules: { readonly game_id: number };
   ChestPity: { readonly game_id: number; readonly player: bigint; readonly depth: number };
   ChestTokens: { readonly game_id: number; readonly player: bigint; readonly epoch: bigint };
@@ -385,6 +389,45 @@ export const nativeFactModels = {
       "level_step_xp": "u32"
     }
   },
+  "FrontierDiscoveryRules": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "camp_bps": "u16",
+      "rift_bps": "u16",
+      "fallen_realm_bps": "u16",
+      "loose_chest_bps": "u16",
+      "shrine_bps": "u16",
+      "well_bps": "u16",
+      "empty_reveal_limit": "u8"
+    }
+  },
+  "ExpeditionDiscovery": {
+    "keys": [
+      "game_id",
+      "structure_id",
+      "epoch"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "structure_id": "u32",
+      "epoch": "u64",
+      "empty_reveals": "u8"
+    },
+    "absence": {
+      "parent": "Structure",
+      "parentKeys": {
+        "game_id": "game_id",
+        "entity_id": "structure_id"
+      },
+      "value": "zero",
+      "meaning": "No empty player reveals in this expedition yet."
+    }
+  },
   "ChestRules": {
     "keys": [
       "game_id"
@@ -392,7 +435,6 @@ export const nativeFactModels = {
     "scope": "game",
     "fields": {
       "game_id": "u32",
-      "loose_one_in": "u16",
       "relic_probability": "u16",
       "cosmetic_probability": "u16",
       "token_cap": "u16"
@@ -1625,7 +1667,9 @@ export const nativeFactModels = {
         "uncommon": "u16",
         "rare": "u16",
         "pity": "u16"
-      }
+      },
+      "fallen_guard_lower": "u32",
+      "fallen_guard_upper": "u32"
     }
   },
   "GameRelease": {
@@ -1894,6 +1938,7 @@ export const nativeSyncScopes = {
   "RelicRules": "shared",
   "ChestRules": "shared",
   "ArmyProgressionRules": "shared",
+  "FrontierDiscoveryRules": "shared",
   "RelicDiscovery": "shared",
   "DepositRules": "shared",
   "WithdrawalRules": "shared",
@@ -2053,6 +2098,12 @@ export const nativeSyncScopes = {
     "entities": [
       "explorer_id"
     ]
+  },
+  "ExpeditionDiscovery": {
+    "realms": [
+      "structure_id"
+    ],
+    "epoch": "epoch"
   },
   "ArmySlot": {
     "realms": [

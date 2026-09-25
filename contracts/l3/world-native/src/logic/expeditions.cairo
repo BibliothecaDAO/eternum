@@ -45,3 +45,35 @@ pub fn depth_rules_at(game_id: u32, coord: Coord) -> DepthRules {
 pub fn depth_rules(game_id: u32, depth: u8) -> DepthRules {
     crate::logic::preset_record::for_game(game_id).depth_rules.read(depth).expect('missing depth rules')
 }
+
+pub fn discovery(key: ExpeditionDiscoveryKey) -> Option<ExpeditionDiscovery> {
+    crate::state::read()
+        .map_rules
+        .empty_reveals
+        .read((key.game_id, key.structure_id, key.epoch))
+        .map(|empty_reveals| ExpeditionDiscovery { empty_reveals })
+}
+
+pub fn record_discovery(key: ExpeditionDiscoveryKey, result: crate::discovery::Discovery) {
+    let empty_reveals = if result == crate::discovery::Discovery::None {
+        discovery(key).map(|value| value.empty_reveals).unwrap_or(0) + 1
+    } else {
+        0
+    };
+    crate::state::write()
+        .map_rules
+        .empty_reveals
+        .write((key.game_id, key.structure_id, key.epoch), Some(empty_reveals));
+    let mut keys = array![];
+    key.serialize(ref keys);
+    crate::logic::map::MapState::emit(
+        crate::logic::map::MapState::Event::RowSet(
+            crate::events::RowSet {
+                version: 1,
+                model: 'ExpeditionDiscovery',
+                keys: keys.span(),
+                values: array![empty_reveals.into()].span(),
+            },
+        ),
+    );
+}

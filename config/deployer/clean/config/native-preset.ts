@@ -237,6 +237,8 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
       entry_stamina: depth.entryStamina,
       attunement_cost: scaled(depth.attunementCost),
       chest: depth.chest,
+      fallen_guard_lower: depth.fallenGuardLower,
+      fallen_guard_upper: depth.fallenGuardUpper,
     })),
     realms: {
       resources: amounts(config.startingResources, config.resources.resourcePrecision),
@@ -265,6 +267,8 @@ function buildEconomy(
   tokens: Array<{ resource_type: number; token: string }>,
 ) {
   const chests = preset.chests;
+  if (chests === undefined || (chests !== null) !== (preset.epochSeconds !== 0))
+    throw new Error("Explicit chest rules are required for expedition presets only");
   const progression = preset.progression;
   if (progression === undefined || (progression !== null) !== (preset.epochSeconds !== 0))
     throw new Error("Explicit progression rules are required for expedition presets only");
@@ -274,6 +278,7 @@ function buildEconomy(
   )
     throw new Error("Progression XP values must be positive u32 integers");
   return {
+    discovery: buildDiscovery(preset),
     progression:
       progression === null
         ? new CairoOption(CairoOptionVariant.None)
@@ -286,7 +291,6 @@ function buildEconomy(
       chests === null
         ? new CairoOption(CairoOptionVariant.None)
         : new CairoOption(CairoOptionVariant.Some, {
-            loose_one_in: chests.looseOneIn,
             relic_probability: chests.relicProbability,
             cosmetic_probability: chests.cosmeticProbability,
             token_cap: chests.tokenCap,
@@ -466,4 +470,35 @@ function resolveBridgeTokens(config: Config, resources: readonly number[]) {
       return { resource_type, token };
     })
     .sort((a, b) => a.resource_type - b.resource_type);
+}
+
+function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
+  const rules = preset.discovery;
+  if (rules === undefined || (rules !== null) !== (preset.epochSeconds !== 0))
+    throw new Error("Explicit discovery rules are required for expedition presets only");
+  if (rules === null) return new CairoOption(CairoOptionVariant.None);
+  if (
+    Object.values(rules).some((value) => !Number.isSafeInteger(value) || value < 0 || value > 10000) ||
+    rules.emptyRevealLimit < 1 ||
+    rules.emptyRevealLimit > 255 ||
+    rules.campBps + rules.riftBps + rules.fallenRealmBps === 0 ||
+    rules.campBps +
+      rules.riftBps +
+      rules.fallenRealmBps +
+      rules.looseChestBps +
+      rules.shrineBps +
+      rules.wellBps +
+      1200 >
+      10000
+  )
+    throw new Error("Invalid categorical discovery rules");
+  return new CairoOption(CairoOptionVariant.Some, {
+    camp_bps: rules.campBps,
+    rift_bps: rules.riftBps,
+    fallen_realm_bps: rules.fallenRealmBps,
+    loose_chest_bps: rules.looseChestBps,
+    shrine_bps: rules.shrineBps,
+    well_bps: rules.wellBps,
+    empty_reveal_limit: rules.emptyRevealLimit,
+  });
 }

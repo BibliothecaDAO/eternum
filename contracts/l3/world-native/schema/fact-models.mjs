@@ -728,6 +728,7 @@ const presetDerivedModels = new Set([
   "RelicRules",
   "ChestRules",
   "ArmyProgressionRules",
+  "FrontierDiscoveryRules",
   "ArtificerCost",
   "DepositRules",
   "WithdrawalRules",
@@ -751,6 +752,13 @@ export function defineFactModels({ struct, model: declare }) {
         parent: "Hyperstructure",
         value: "zero",
         meaning: "No resource contribution to this hyperstructure.",
+      };
+    if (row.name === "ExpeditionDiscovery")
+      row.absence = {
+        parent: "Structure",
+        parentKeys: { entity_id: "structure_id" },
+        value: "zero",
+        meaning: "No empty player reveals in this expedition yet.",
       };
     if (row.name === "ArmySlot")
       row.absence = {
@@ -868,6 +876,18 @@ export function defineFactModels({ struct, model: declare }) {
       "game",
       [{ name: "game_id", type: "core::integer::u32" }],
       struct("progression::ArmyProgressionRules"),
+    ),
+    model(
+      "FrontierDiscoveryRules",
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      struct("expeditions::FrontierDiscoveryRules"),
+    ),
+    model(
+      "ExpeditionDiscovery",
+      "game",
+      struct("expeditions::ExpeditionDiscoveryKey"),
+      struct("expeditions::ExpeditionDiscovery"),
     ),
     model("ChestRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::ChestRules")),
     model(
@@ -1320,6 +1340,7 @@ export const syncScopes = {
       "RelicRules",
       "ChestRules",
       "ArmyProgressionRules",
+      "FrontierDiscoveryRules",
       "RelicDiscovery",
       "DepositRules",
       "WithdrawalRules",
@@ -1376,6 +1397,7 @@ export const syncScopes = {
   Building: { realms: ["structure_id"] },
   ExpeditionSite: { entities: ["entity_id"] },
   ArmyProgress: { entities: ["explorer_id"] },
+  ExpeditionDiscovery: { realms: ["structure_id"], epoch: "epoch" },
   ArmySlot: { realms: ["structure_id"], epoch: "epoch" },
   ExplorerTroops: { entities: ["explorer_id"] },
   Guard: { entities: ["structure_id"] },

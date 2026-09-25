@@ -660,7 +660,7 @@ fn chest_search_skips_the_explorers_vacated_start_tile() {
 
 #[test]
 fn chest_tables_control_type_quality_pity_and_token_cap() {
-    let rules = ChestRules { loose_one_in: 94, relic_probability: 9000, cosmetic_probability: 900, token_cap: 1 };
+    let rules = ChestRules { relic_probability: 9000, cosmetic_probability: 900, token_cap: 1 };
     let grounds = array![
         ChestGround { common: 7800, uncommon: 1800, rare: 350, pity: 400 },
         ChestGround { common: 6000, uncommon: 3000, rare: 800, pity: 100 },

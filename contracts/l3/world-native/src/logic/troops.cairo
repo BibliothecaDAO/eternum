@@ -272,15 +272,22 @@ pub mod TroopsLogic {
                     || category == 8,
                 "invalid guarded structure category",
             );
-            let mut rules = game_context.rules.unbox();
-            if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
+            let rules = game_context.rules.unbox();
+            let bounds = if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
                 let depth = crate::logic::expeditions::depth_rules_at(
                     key.game_id, crate::structures::structure_coord(key),
                 );
-                rules.troop_limit_config.mercenaries_troop_lower_bound = depth.guard_lower;
-                rules.troop_limit_config.mercenaries_troop_upper_bound = depth.guard_upper;
-            }
-            let guards = crate::troops::discovery_guards(category, seed, rules, timestamp);
+                Some(
+                    if site_kind == Some(crate::expeditions::SiteKind::FallenRealm) {
+                        (depth.fallen_guard_lower, depth.fallen_guard_upper)
+                    } else {
+                        (depth.guard_lower.into(), depth.guard_upper.into())
+                    },
+                )
+            } else {
+                None
+            };
+            let guards = crate::troops::discovery_guards(category, seed, rules, timestamp, bounds);
             assert!(base.troop_max_guard_count <= 4, "invalid guard slot limit");
             assert!(guards.len() <= base.troop_max_guard_count.into(), "guards exceed structure limit");
             for slot in 0..guards.len() {
