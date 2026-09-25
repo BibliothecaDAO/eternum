@@ -14,6 +14,7 @@
   "dependencies": {
     "@bibliothecadao/eternum": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
+    "@bibliothecadao/types": "workspace:*",
     "pg": "^8.18.0",
     "starknet": "catalog:web"
   },

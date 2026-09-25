@@ -1,3 +1,6 @@
+import { buildFrontierLeaderboard } from "./native/frontier-leaderboard";
+import type { HeraldGameLeaderboard } from "@bibliothecadao/eternum/game-sync";
+import { required, number } from "./native/values";
 import { parseStoryHistoryCursor } from "@bibliothecadao/eternum/game-sync";
 import { GameFinalizedError } from "./world-fold";
 import {
@@ -40,7 +43,10 @@ interface HeraldHttpState {
   decodedModelCount: number;
   fold: SnapshotSource;
   metrics: ReplayMetrics;
-  history?: Pick<HistoryStore, "queryStoryCursor" | "queryEvents" | "reviewSnapshot" | "transactionCount" | "activity">;
+  history?: Pick<
+    HistoryStore,
+    "queryStoryCursor" | "queryEvents" | "reviewSnapshot" | "transactionCount" | "activity" | "frontierHistory"
+  >;
   undecodableEventCount: () => number;
 }
 
@@ -160,7 +166,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
         const gameId = leaderboardMatch[1];
         const timestamp = state.chainTimestamp();
         if (timestamp <= 0) return jsonResponse({ error: "chain_clock_unavailable" }, 503);
-        return jsonResponse(leaderboard(gameId, timestamp));
+        return jsonResponse(await leaderboard(gameId, timestamp));
       } catch (error) {
         return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 503);
       }
@@ -233,19 +239,30 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
 /** Only successful known-game results enter the cache; the next head replaces the entire generation. */
 function cachedLeaderboard(state: HeraldHttpState, build: WorldReadModels["leaderboard"]) {
   let block = -1;
-  const responses = new Map<string, ReturnType<typeof build>>();
-  return (requestedGame: string, timestamp: number) => {
+  const responses = new Map<string, HeraldGameLeaderboard>();
+  return async (requestedGame: string, timestamp: number): Promise<HeraldGameLeaderboard> => {
     const head = state.confirmedBlock();
     if (block !== head) {
       responses.clear();
       block = head;
     }
     const gameId = BigInt(requestedGame).toString();
-    let response = responses.get(gameId);
-    if (!response) {
+    const cached = responses.get(gameId);
+    if (cached) return cached;
+    const rules = required(state.fold.modelRows("SliceRules"), gameId, "SliceRules");
+    let response: HeraldGameLeaderboard;
+    if (number(rules.epoch_seconds) > 0) {
+      if (!state.history || state.undecodableEventCount() > 0) throw new Error("Frontier history unavailable");
+      // Capture current facts before awaiting SQL, so a newer head cannot mix into this board.
+      const facts = new Map(
+        ["GameRegistry", "ChestRules", "Structure"].map((model) => [model, state.fold.modelRows(model)]),
+      );
+      const history = await state.history.frontierHistory(gameId, head);
+      response = buildFrontierLeaderboard((model) => facts.get(model) ?? [], gameId, history);
+    } else {
       response = build(state.fold.modelRows, gameId, timestamp, state.history?.activity(gameId) ?? null);
-      responses.set(gameId, response);
     }
+    if (state.confirmedBlock() === head) responses.set(gameId, response);
     return response;
   };
 }

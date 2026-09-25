@@ -45,7 +45,7 @@ function fixture(historyStore?: HistoryStore) {
     live.acceptReceipt({ ...receipt([tile(value)], hash), finality_status: "PRE_CONFIRMED" });
   const confirm = (value: string) =>
     confirmed.transactions.push({ receipt: receipt([tile(value)]), transaction: { type: "INVOKE" } });
-  return { live, messages, submit, confirm, confirmed, pending, fold, native, tile };
+  return { live, messages, submit, confirm, confirmed, pending, fold, native, tile, decoder };
 }
 
 describe("native live publication", () => {
@@ -119,6 +119,73 @@ describe("native live publication", () => {
     await live.publishChainClock();
 
     expect(hello()).toMatchObject({ type: "hello", confirmed_block: 10, confirmed_timestamp: 100 });
+  });
+
+  it("warns for a LORDS commitment only after its receipt is confirmed, once per day", async () => {
+    const { live, native, fold, confirmed, pending, decoder } = fixture();
+    native.applyReceipt(
+      fold,
+      receipt(
+        seedDerivedRows(fold, decoder, [
+          rowEvent("GameRegistry", ["1"], {
+            name: "0x46",
+            preset_id: 4,
+            creator: "0x111",
+            settled: false,
+            ready: true,
+            dev_mode_on: false,
+            start_settling_at: 0,
+            start_main_at: 100,
+            end_at: 99999999,
+            end_grace_seconds: 0,
+            seed: 42,
+          }),
+          rulesEvent("1"),
+          rowEvent("SettlementRules", ["1"], {
+            registration_start: 0,
+            registration_limit: 0,
+            mode: new CairoCustomEnum({ Single: {} }),
+            spacing: 100,
+          }),
+          rowEvent("ChestRules", ["1"], {
+            relic_probability: 90,
+            token_cap: 1,
+            lords_amounts: { common: 100, uncommon: 400, rare: 1500, epic: 6000 },
+            lords_pool: 1000000,
+            season_epochs: 70,
+          }),
+        ]),
+      ),
+      9,
+      0,
+    );
+    seedDerivedRows(fold, decoder, [
+      rowEvent("SliceRules", ["1"], { ...fold.modelRows("SliceRules")[0].value, epoch_seconds: 86400 }),
+    ]);
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const reward = receipt([rowEvent("LordsBudget", ["1"], { lords_committed: 11428 })], "0x991");
+      live.acceptReceipt({ ...reward, finality_status: "PRE_CONFIRMED" });
+      pending.timestamp = 86401;
+      await live.publishChainClock();
+      expect(warn).not.toHaveBeenCalled();
+      confirmed.block_number = 11;
+      confirmed.timestamp = 200;
+      confirmed.transactions.push({ receipt: reward, transaction: { type: "INVOKE" } });
+      await live.acceptSubscribedHead({ block_number: 11, timestamp: 200 });
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(JSON.parse(warn.mock.calls[0][0])).toMatchObject({
+        event: "frontier_lords_allowance_80_percent",
+        absolute_epoch: 0,
+        season_day: 0,
+        allowance: "14285",
+      });
+      await live.acceptSubscribedHead({ block_number: 11, timestamp: 201 });
+      expect(warn).toHaveBeenCalledTimes(1);
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it("invalidates directory readers only after confirmed changes", async () => {

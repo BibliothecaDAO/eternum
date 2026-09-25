@@ -73,6 +73,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
   },
   metrics,
   history: {
+    frontierHistory: async () => [],
     queryStoryCursor: async () => ({
       chain: "madara",
       world_address: "0x123",
@@ -173,7 +174,7 @@ it("serves the prepared leaderboard aggregate without paging history", async () 
   const response = await handler(new Request("http://herald/games/7/leaderboard"));
   expect(response.status).toBe(200);
   expect(response.headers.get("access-control-allow-origin")).toBe("*");
-  expect(await response.json()).toEqual({ game_id: "7", entries: [] });
+  expect(await response.json()).toEqual({ mode: "points", game_id: "7", entries: [] });
 });
 
 it("passes a battle-only history filter to the store before pagination", async () => {
@@ -190,6 +191,7 @@ it("passes a battle-only history filter to the store before pagination", async (
     fold: { ...httpState.fold, modelRows: () => [], snapshot: () => snapshot },
     undecodableEventCount: () => 0,
     history: {
+      frontierHistory: async () => [],
       queryStoryCursor: async () => ({
         chain: "madara",
         world_address: "0x123",
@@ -385,4 +387,63 @@ it("caches each leaderboard once per confirmed head and drops all previous-head 
   } finally {
     clearing.mockRestore();
   }
+});
+
+it("serves Frontier history at one confirmed head, caches successes only and keeps captured realm facts", async () => {
+  let head = 12;
+  let depth = 1;
+  let release!: (value: Awaited<ReturnType<NonNullable<typeof httpState.history>["frontierHistory"]>>) => void;
+  const frontierHistory = vi.fn(
+    () =>
+      new Promise<Awaited<ReturnType<NonNullable<typeof httpState.history>["frontierHistory"]>>>((resolve) => {
+        release = resolve;
+      }),
+  );
+  const modelRows = (model: string) => {
+    if (model === "SliceRules") return [{ key: "7", value: { game_id: "7", epoch_seconds: 86400 } }];
+    if (model === "ChestRules")
+      return [
+        { key: "7", value: { game_id: "7", lords_amounts: { common: 100, uncommon: 400, rare: 1500, epic: 6000 } } },
+      ];
+    if (model === "Structure")
+      return [
+        {
+          key: "1",
+          value: {
+            game_id: "7",
+            entity_id: "1",
+            owner: "10",
+            base: { category: 1 },
+            metadata: { deepest_depth: depth },
+          },
+        },
+      ];
+    return httpState.fold.modelRows(model);
+  };
+  const read = createHeraldRequestHandler({
+    ...httpState,
+    confirmedBlock: () => head,
+    fold: { ...httpState.fold, modelRows },
+    history: { ...httpState.history!, frontierHistory },
+    undecodableEventCount: () => 0,
+  });
+  const url = "http://herald/games/7/leaderboard";
+  const pending = read(new Request(url));
+  await vi.waitFor(() => expect(frontierHistory).toHaveBeenCalledWith("7", 12));
+  depth = 2;
+  head = 13;
+  release([]);
+  expect(await (await pending).json()).toMatchObject({ mode: "frontier", entries: [{ deepest_depth: 1 }] });
+  const next = read(new Request(url));
+  await vi.waitFor(() => expect(frontierHistory).toHaveBeenCalledWith("7", 13));
+  release([]);
+  expect(await (await next).json()).toMatchObject({ mode: "frontier", entries: [{ deepest_depth: 2 }] });
+  await read(new Request(url));
+  expect(frontierHistory).toHaveBeenCalledTimes(2);
+  head = 14;
+  frontierHistory.mockRejectedValueOnce(new Error("Frontier history is incomplete"));
+  expect((await read(new Request(url))).status).toBe(503);
+  frontierHistory.mockResolvedValueOnce([]);
+  expect((await read(new Request(url))).status).toBe(200);
+  expect(frontierHistory).toHaveBeenCalledTimes(4);
 });

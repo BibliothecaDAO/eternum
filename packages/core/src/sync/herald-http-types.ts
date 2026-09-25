@@ -129,9 +129,28 @@ export interface HeraldTransactionCount {
 export type HeraldLeaderboardEntry = PlayerLeaderboardActivityEntry;
 
 export interface HeraldLeaderboard {
+  mode: "points";
   game_id: string;
   entries: HeraldLeaderboardEntry[];
 }
+
+export interface HeraldFrontierLeaderboardEntry {
+  address: string;
+  structure_id: string;
+  rank: number;
+  sites_cleared: { total: number; camps: number; rifts: number; fallen_realms: number };
+  chests_earned: number;
+  rewards: { lords: string; essence: string; labor: string };
+  deepest_depth: number;
+}
+
+export interface HeraldFrontierLeaderboard {
+  game_id: string;
+  mode: "frontier";
+  entries: HeraldFrontierLeaderboardEntry[];
+}
+
+export type HeraldGameLeaderboard = HeraldLeaderboard | HeraldFrontierLeaderboard;
 
 /** Herald closes a game stream with this code when the game is finalized; the stream will never serve it again. */
 export const HERALD_GAME_FINALIZED_CLOSE = 4409;

@@ -1,3 +1,7 @@
+import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
+import { encodeMembers } from "./native/serde";
+import { buildFrontierLeaderboard } from "./native/frontier-leaderboard";
+import { manifest, receipt } from "./native/fixtures";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { describe, expect, it, vi } from "vitest";
@@ -181,6 +185,105 @@ describe("native confirmed history", () => {
         attacker: { player: "0x111", before: "0x64", after: "0x5a" },
         defender: { player: "0x222", after: "0x0" },
       });
+    } finally {
+      await store.close();
+      await admin.query(`DROP SCHEMA ${namespace} CASCADE`);
+      await admin.end();
+    }
+  });
+});
+
+describe("Frontier confirmed season history", () => {
+  it("prices decoded stories, deduplicates receipts, bounds by the head and replays identically after restart", async () => {
+    const admin = new Pool({ connectionString: databaseUrl });
+    const namespace = `frontier_history_${randomUUID().replaceAll("-", "")}`;
+    await admin.query(`CREATE SCHEMA ${namespace}`);
+    const url = new URL(databaseUrl!);
+    url.searchParams.set("options", `-c search_path=${namespace}`);
+    const open = () => new HistoryStore(url.toString(), "madara", "0x123", createNativeHistoryCodec(nativeSchema));
+    let store = open();
+    try {
+      await store.initialize();
+      const { native, fold } = setup();
+      const layout = nativeSchema.games.events.find((e) => e.name === "StoryEvent")!;
+      const stories = [0, 1, 2, 3].map(
+        (quality) =>
+          new CairoCustomEnum({
+            ChestReward: {
+              player: 10,
+              explorer_id: 7,
+              epoch: 100,
+              depth: 0,
+              kind: new CairoCustomEnum({ Token: {} }),
+              quality,
+              lords_exhausted: false,
+            },
+          }),
+      );
+      stories.push(
+        new CairoCustomEnum({
+          SitePayout: {
+            structure_id: 1,
+            explorer_id: 7,
+            site_id: 9,
+            kind: new CairoCustomEnum({ Camp: {} }),
+            reward: new CairoOption(CairoOptionVariant.Some, { resource_type: 23, amount: 500000000000n }),
+          },
+        }),
+      );
+      const events = stories.map((story, index) => {
+        const values = {
+          version: 1,
+          game_id: 1,
+          order: 100,
+          index,
+          owner: new CairoOption(CairoOptionVariant.Some, 10),
+          entity_id: new CairoOption(CairoOptionVariant.Some, 1),
+          tx_hash: 85,
+          story,
+          timestamp: 100,
+        };
+        return {
+          from_address: manifest.world.address,
+          keys: [
+            ...layout.prefix,
+            ...encodeMembers(
+              nativeSchema,
+              layout.members.filter((m) => m.kind === "key"),
+              values,
+            ),
+          ],
+          data: encodeMembers(
+            nativeSchema,
+            layout.members.filter((m) => m.kind === "data"),
+            values,
+          ),
+        };
+      });
+      const result = native.applyReceipt(fold, receipt(events), 10, 0);
+      await store.appendEvents(result.events, 10);
+      await store.appendEvents(result.events, 10);
+      await expect(store.frontierHistory("1", 11)).rejects.toThrow("incomplete");
+      expect(await store.frontierHistory("1", 9)).toEqual([]);
+      const history = await store.frontierHistory("1", 10);
+      expect(history).toHaveLength(5);
+      const values: Record<string, Record<string, unknown>> = {
+        GameRegistry: {},
+        ChestRules: { lords_amounts: { common: 100, uncommon: 400, rare: 1500, epic: 6000 } },
+        Structure: { entity_id: 1, owner: 10, base: { category: 1 }, metadata: { deepest_depth: 2 } },
+      };
+      const read = (model: string) => [{ key: "1", value: { game_id: "1", ...values[model] } }];
+      const board = buildFrontierLeaderboard(read, "1", history);
+      expect(board.entries[0]).toMatchObject({
+        chests_earned: 4,
+        sites_cleared: { total: 1, camps: 1 },
+        rewards: { lords: "8000", labor: "500000000000", essence: "0" },
+      });
+      await store.close();
+      store = open();
+      await store.initialize();
+      await store.appendEvents(result.events, 10);
+      expect(buildFrontierLeaderboard(read, "1", await store.frontierHistory("1", 10))).toEqual(board);
     } finally {
       await store.close();
       await admin.query(`DROP SCHEMA ${namespace} CASCADE`);

@@ -318,6 +318,22 @@ export class HistoryStore {
     return value === undefined ? null : Number(value);
   }
 
+  /** Confirmed season rewards use the existing deduplicated receipt history, never current site rows. */
+  public async frontierHistory(gameId: string, confirmedBlock: number): Promise<HeraldHistoryEvent[]> {
+    const complete = await this.historyProgress();
+    if (complete === null || complete < confirmedBlock) throw new Error("Frontier history is incomplete");
+    const result = await this.pool.query<HeraldHistoryEvent>(
+      `SELECT block_number::integer, transaction_index, event_index, game_id::text,
+              model, transaction_hash, value
+       FROM herald_history_events
+       WHERE chain = $1 AND world_address = $2 AND game_id = $3 AND block_number <= $4
+         AND model = 'StoryEvent' AND value->'story' ?| ARRAY['SitePayout','ChestReward','ExplorationReward']
+       ORDER BY block_number, transaction_index, event_index`,
+      [this.chain, this.worldAddress, gameId, confirmedBlock],
+    );
+    return result.rows;
+  }
+
   /** Pages story history forward from a consumer cursor; the progress marker never rewinds. */
   public async queryStoryCursor(after: StoryHistoryCursor | null, limit: number): Promise<HeraldStoryHistoryPage> {
     if (!Number.isInteger(limit) || limit < 1 || limit > 500) throw new Error("Invalid story page size");

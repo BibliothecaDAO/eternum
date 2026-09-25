@@ -1,3 +1,4 @@
+import { LordsAllowanceAlerts } from "./native/lords-allowance-alert";
 import { NativePresetCalldataUnavailable } from "./native/preset-preimages";
 import { worldView } from "@bibliothecadao/eternum";
 import { GameSubscription } from "./game-subscription";
@@ -67,6 +68,7 @@ const setBoundedTransactionEntry = <Value>(map: Map<string, Value>, key: string,
 const overlayIdentity = (receipt: RpcReceipt): string => `receipt:${normalizeFelt(receipt.transaction_hash)}`;
 
 export class LiveWorld {
+  private readonly lordsAllowanceAlerts = new LordsAllowanceAlerts();
   private readonly changeListeners = new Set<(models: ReadonlySet<string>) => void>();
 
   public readonly hub: GameStreamHub;
@@ -354,6 +356,7 @@ export class LiveWorld {
     // Recorded with the block it belongs to, before any other await, so an attach never pairs this block with an
     // older head's time.
     this.confirmedHeadTimestamp = head.timestamp;
+    this.lordsAllowanceAlerts.observe((model) => this.confirmedFold.modelRows(model), head.timestamp);
     await this.archiveFinalizedGames();
     let publishedChanges = false;
     for (const [block, changes] of confirmed.changes) {

@@ -18,6 +18,7 @@ import type { FoldRow } from "../types";
 export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "GameRegistry",
   "SliceRules",
+  "ChestRules",
   "SettlementRules",
   "SettlementProgress",
   "Structure",
@@ -29,25 +30,7 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "HyperstructureShares",
 ]);
 
-type Row = Record<string, unknown>;
-const integer = (value: unknown): bigint => BigInt(value as string | number | bigint);
-const number = (value: unknown): number => {
-  const result = Number(integer(value));
-  if (!Number.isSafeInteger(result)) throw new Error("Native directory value exceeds safe integer range");
-  return result;
-};
-const address = (value: unknown): string => `0x${integer(value).toString(16)}`;
-const record = (value: unknown): Row => {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Missing native record");
-  return value as Row;
-};
-const gameRows = (rows: FoldRow[], gameId: unknown): Row[] =>
-  rows.filter(({ value }) => integer(value.game_id) === integer(gameId)).map(({ value }) => value);
-const required = (rows: FoldRow[], gameId: unknown, model: string): Row => {
-  const result = gameRows(rows, gameId)[0];
-  if (!result) throw new Error(`Missing native ${model} for game ${String(gameId)}`);
-  return result;
-};
+import { integer, number, address, record, gameRows, required, type Row } from "./values";
 
 interface DirectoryRows {
   structures: FoldRow[];
@@ -249,6 +232,7 @@ function finalStandings(
   activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
 ): HeraldLeaderboard {
   return {
+    mode: "points",
     game_id: integer(gameId).toString(),
     entries: (result.players as Row[]).map((player) => ({
       address: address(player.player),
@@ -303,7 +287,7 @@ function rankPlayers(
   for (let index = 1; index < entries.length; index++) {
     if (ranked[index][1] === ranked[index - 1][1]) entries[index].rank = entries[index - 1].rank;
   }
-  return { game_id: integer(gameId).toString(), entries };
+  return { mode: "points", game_id: integer(gameId).toString(), entries };
 }
 
 function shortString(value: unknown): string {

@@ -648,6 +648,9 @@ importers:
       '@bibliothecadao/provider':
         specifier: workspace:*
         version: link:../../packages/provider
+      '@bibliothecadao/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       pg:
         specifier: ^8.18.0
         version: 8.18.0
