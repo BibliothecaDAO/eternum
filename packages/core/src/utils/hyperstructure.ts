@@ -2,6 +2,7 @@ import { type ID, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibli
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers";
+import { structureMapPosition } from "./expeditions";
 import { divideByPrecision } from "./utils";
 
 const HYPERSTRUCTURE_REALM_COUNT_TWO_PLAYER_MODE = 2;
@@ -26,9 +27,11 @@ export const getRealmCountPerHyperstructure = (store: NativeFactStore): Map<ID, 
   structures
     .filter((structure) => structure.base.category === StructureType.Hyperstructure)
     .forEach((hyperstructure) => {
+      const center = structureMapPosition(store, hyperstructure);
       const count = realms.filter((realm) => {
-        const colDistance = realm.base.coord_x - hyperstructure.base.coord_x;
-        const rowDistance = realm.base.coord_y - hyperstructure.base.coord_y;
+        const position = structureMapPosition(store, realm);
+        const colDistance = position.x - center.x;
+        const rowDistance = position.y - center.y;
         return colDistance ** 2 + rowDistance ** 2 <= radiusSquared;
       }).length;
       realmCounts.set(hyperstructure.entity_id, getEffectiveHyperstructureRealmCount(count));

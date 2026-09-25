@@ -11,7 +11,7 @@ export const usePlayerStructures = (owner?: ContractAddress) => {
     setup: { store },
     account: { account },
   } = useGame();
-  const revision = useNativeRevision(["Structure"]);
+  const revision = useNativeRevision(["Structure", "TileOccupancy"]);
   const names = usePlayerNamesRevision();
   const address = owner ?? BigInt(account.address);
   return useMemo(

@@ -147,10 +147,24 @@ pub struct ExplorerKey {
     pub explorer_id: u32,
 }
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
+pub struct ExplorerRecord {
+    pub owner: u32,
+    pub troops: Troops,
+}
+
+// Views join troop facts with the canonical spatial record; coordinates are never stored here.
+#[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
 pub struct ExplorerTroops {
     pub owner: u32,
     pub troops: Troops,
     pub coord: Coord,
+}
+
+#[generate_trait]
+pub impl ExplorerRecordProjection of ExplorerRecordTrait {
+    fn into_record(self: ExplorerTroops) -> ExplorerRecord {
+        ExplorerRecord { owner: self.owner, troops: self.troops }
+    }
 }
 
 #[derive(Drop, starknet::Event)]

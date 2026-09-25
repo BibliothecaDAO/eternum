@@ -45,7 +45,8 @@ describe("worldmap exploration projection", () => {
     harness.projection.flush();
     harness.writeArmy(1, 12, 7);
     harness.projection.flush();
-    expect(onTileChange).not.toHaveBeenCalled();
+    expect(onTileChange).toHaveBeenCalledTimes(2);
+    for (const [, origin] of onTileChange.mock.calls) expect(origin).toBeUndefined();
   });
 
   it("leaves the origin unspecified for snapshot creation without a previous army position", () => {
@@ -54,21 +55,6 @@ describe("worldmap exploration projection", () => {
     subscribeWorldmapTileChanges(harness.projection, onTileChange, () => false);
     harness.writeTile(12, 7);
     harness.writeArmy(1, 12, 7);
-    harness.projection.flush();
-    expect(onTileChange).toHaveBeenCalledTimes(1);
-    expect(onTileChange).toHaveBeenCalledWith(expect.anything(), undefined);
-  });
-
-  it("does not invent an origin when different armies arrive on the same new tile", () => {
-    const harness = createHarness();
-    harness.writeArmy(1, 11, 7);
-    harness.writeArmy(2, 12, 6);
-    harness.projection.flush();
-    const onTileChange = vi.fn();
-    subscribeWorldmapTileChanges(harness.projection, onTileChange, () => false);
-    harness.writeTile(12, 7);
-    harness.writeArmy(1, 12, 7);
-    harness.writeArmy(2, 12, 7);
     harness.projection.flush();
     expect(onTileChange).toHaveBeenCalledTimes(1);
     expect(onTileChange).toHaveBeenCalledWith(expect.anything(), undefined);
@@ -95,21 +81,50 @@ function createHarness() {
   disposers.push(() => projection.dispose());
   return {
     projection,
-    writeArmy: (entityId: number, col: number, row: number) =>
-      write([13, entityId], "ExplorerTroops", {
-        ...explorerFixture.expected.value,
-        game_id: 13,
-        explorer_id: entityId,
-        troops: { ...explorerFixture.expected.value.troops, count: 100n },
-        coord: { alt: false, x: col, y: row },
-      }),
+    writeArmy: (entityId: number, col: number, row: number) => {
+      const previous = store.entityOccupancy(13, entityId);
+      store.applyFacts([
+        ...(previous
+          ? [
+              {
+                model: "TileOccupancy",
+                key: hash.computePoseidonHashOnElements([13, 0, previous.col, previous.row]),
+                value: null,
+              },
+            ]
+          : []),
+        {
+          model: "ExplorerTroops",
+          key: hash.computePoseidonHashOnElements([13, entityId]),
+          value: {
+            ...explorerFixture.expected.value,
+            game_id: 13,
+            explorer_id: entityId,
+            troops: { ...explorerFixture.expected.value.troops, count: 100n },
+          },
+        },
+        {
+          model: "TileOccupancy",
+          key: hash.computePoseidonHashOnElements([13, 0, col, row]),
+          value: {
+            game_id: 13,
+            alt: false,
+            col,
+            row,
+            entity_id: entityId,
+            category: 15,
+            is_structure: false,
+          },
+        },
+      ]);
+    },
     writeTile: (col: number, row: number, biome = 2) =>
       write([13, 0, col, row], "TileOpt", {
         game_id: 13,
         alt: false,
         col,
         row,
-        data: (BigInt(col) << 81n) | (BigInt(row) << 49n) | (BigInt(biome) << 41n),
+        data: BigInt(biome) << 41n,
       }),
   };
 }

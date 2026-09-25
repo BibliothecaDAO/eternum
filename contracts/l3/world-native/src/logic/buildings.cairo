@@ -2,7 +2,7 @@ use starknet::storage::StorageMapReadAccess;
 use crate::buildings::Building;
 
 pub fn building(key: BuildingKey) -> Option<Building> {
-    let storage_key = (key.game_id, key.alt, key.outer_col, key.outer_row, key.inner_col, key.inner_row);
+    let storage_key = (key.game_id, key.structure_id, key.inner_col, key.inner_row);
     let building = crate::state::read().buildings.buildings.read(storage_key);
     if building.category != 0 {
         Some(building)
@@ -11,14 +11,10 @@ pub fn building(key: BuildingKey) -> Option<Building> {
     }
 }
 use crate::buildings::BuildingKey;
-use crate::structures::StructureBase;
 use crate::troops::Coord;
 
-pub fn building_key(game_id: u32, base: StructureBase, coord: Coord) -> BuildingKey {
-    let outer = crate::structures::structure_coord(base);
-    BuildingKey {
-        game_id, alt: outer.alt, outer_col: outer.x, outer_row: outer.y, inner_col: coord.x, inner_row: coord.y,
-    }
+pub fn building_key(key: crate::resources::ResourceKey, coord: Coord) -> BuildingKey {
+    BuildingKey { game_id: key.game_id, structure_id: key.entity_id, inner_col: coord.x, inner_row: coord.y }
 }
 
 #[starknet::component]
@@ -57,7 +53,7 @@ pub mod BuildingState {
             tier: u8,
             game_context: crate::commands::ExecutionContext,
         ) -> crate::buildings::BuildingEffect {
-            let Some(building) = self.building(building_key(key.game_id, base, coord)) else {
+            let Some(building) = self.building(building_key(key, coord)) else {
                 return Default::default();
             };
             let rules = game_context.rules.unbox();
@@ -76,7 +72,7 @@ pub mod BuildingState {
             let mut population = 0_u32;
             for direction in 0_u8..6 {
                 let neighbor_coord = crate::geometry::neighbor(coord, direction);
-                if let Some(neighbor) = self.building(building_key(key.game_id, base, neighbor_coord)) {
+                if let Some(neighbor) = self.building(building_key(key, neighbor_coord)) {
                     let neighbor_category = if neighbor_coord.x == 10 && neighbor_coord.y == 10 {
                         0
                     } else {
@@ -231,7 +227,7 @@ pub mod BuildingState {
             base_population: u32,
         ) {
             assert!(self.building(key).is_none(), "building location occupied");
-            let mut counts = self.data.buildings.structure_buildings.read((key.game_id, building.outer_entity_id));
+            let mut counts = self.data.buildings.structure_buildings.read((key.game_id, key.structure_id));
             change_count(ref counts, building.category, true);
             counts.population.current += population_cost.into();
             counts.population.max += capacity_grant.into();
@@ -239,7 +235,7 @@ pub mod BuildingState {
                 counts.population.current <= counts.population.max + base_population, "population exceeds capacity",
             );
             self.write_building(key, building);
-            self.write_counts(key.game_id, building.outer_entity_id, counts);
+            self.write_counts(key.game_id, key.structure_id, counts);
         }
         fn remove(
             ref self: ComponentState<TContractState>,
@@ -248,22 +244,19 @@ pub mod BuildingState {
             rule: BuildingRule,
             base_population: u32,
         ) {
-            let mut counts = self.data.buildings.structure_buildings.read((key.game_id, building.outer_entity_id));
+            let mut counts = self.data.buildings.structure_buildings.read((key.game_id, key.structure_id));
             change_count(ref counts, building.category, false);
             counts.population.current -= rule.population_cost.into();
             counts.population.max -= rule.capacity_grant.into();
             assert!(
                 counts.population.current <= counts.population.max + base_population, "population exceeds capacity",
             );
-            self.write_counts(key.game_id, building.outer_entity_id, counts);
+            self.write_counts(key.game_id, key.structure_id, counts);
             self
                 .data
                 .buildings
                 .buildings
-                .write(
-                    (key.game_id, key.alt, key.outer_col, key.outer_row, key.inner_col, key.inner_row),
-                    Default::default(),
-                );
+                .write((key.game_id, key.structure_id, key.inner_col, key.inner_row), Default::default());
             let mut keys = array![];
             key.serialize(ref keys);
             self.emit(RowDeleted { version: 1, model: 'Building', keys: keys.span() });
@@ -273,7 +266,7 @@ pub mod BuildingState {
                 .data
                 .buildings
                 .buildings
-                .write((key.game_id, key.alt, key.outer_col, key.outer_row, key.inner_col, key.inner_row), building);
+                .write((key.game_id, key.structure_id, key.inner_col, key.inner_row), building);
             let mut keys = array![];
             key.serialize(ref keys);
             let mut values = array![];

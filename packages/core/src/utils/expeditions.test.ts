@@ -7,24 +7,14 @@ import {
   isAtExpeditionSpire,
   liveHomeArmies,
   structureMapPosition,
+  structureLocalPosition,
 } from "./expeditions";
 
-const structure = (overrides: {
-  coord_x: number;
-  coord_y: number;
-  realm_id?: number;
-  alt?: boolean;
-  category?: StructureType;
-}) =>
+const structure = (overrides: { realm_id?: number; category?: StructureType } = {}) =>
   ({
     game_id: 7,
     entity_id: 42,
-    base: {
-      coord_x: overrides.coord_x,
-      coord_y: overrides.coord_y,
-      alt: overrides.alt ?? false,
-      category: overrides.category ?? StructureType.Realm,
-    },
+    base: { category: overrides.category ?? StructureType.Realm },
     metadata: { realm_id: overrides.realm_id ?? 3 },
   }) as never;
 
@@ -36,6 +26,7 @@ const expeditionRules = {
 
 const storeWith = (rows: Record<string, unknown>) => ({
   get: (model: string) => rows[model],
+  entityOccupancy: () => rows.TileOccupancy as { col: number; row: number; alt: boolean } | undefined,
   require: (model: string) => {
     if (!(model in rows)) throw new Error(`missing ${model}`);
     return rows[model];
@@ -45,48 +36,61 @@ const storeWith = (rows: Record<string, unknown>) => ({
 describe("structureMapPosition", () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it("maps a Frontier realm from its parking coordinate to today's expedition site", () => {
+  it("maps an off-map Frontier realm to today's expedition site", () => {
     vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: 86400 * 2 + 10 } as never);
     const store = storeWith({
       SliceRules: { epoch_seconds: 86400 },
       SettlementRules: { spacing: 10 },
       GameRegistry: { start_main_at: 86400n },
     });
-    expect(
-      structureMapPosition(store, structure({ coord_x: 0xffffffff - 3, coord_y: 0xffffffff, realm_id: 3 })),
-    ).toEqual({
+    expect(structureMapPosition(store, structure({ realm_id: 3 }))).toEqual({
       x: 25,
       y: 45,
       alt: false,
     });
   });
 
-  it("keeps every other structure on its own coordinate", () => {
-    const store = storeWith({});
-    expect(structureMapPosition(store, structure({ coord_x: 12, coord_y: 18 }))).toEqual({ x: 12, y: 18, alt: false });
-    expect(structureMapPosition(store, structure({ coord_x: 12, coord_y: 0xffffffff, alt: true }))).toEqual({
-      x: 12,
-      y: 0xffffffff,
-      alt: true,
-    });
+  it("keeps the local realm terrain reference stable across Frontier days", () => {
+    const store = storeWith(expeditionRules);
+    for (const day of [2, 3]) {
+      vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: 86400 * day } as never);
+      expect(structureLocalPosition(store, structure({ realm_id: 3 }))).toEqual({
+        x: 4294967292,
+        y: 4294967295,
+        alt: false,
+      });
+    }
   });
 
-  it("fails loudly on a parked realm in a game without expeditions", () => {
+  it("keeps every other structure on its own coordinate", () => {
+    for (const alt of [false, true]) {
+      const store = storeWith({ TileOccupancy: { col: 12, row: 18, alt } });
+      expect(structureMapPosition(store, structure())).toEqual({ x: 12, y: 18, alt });
+    }
+  });
+
+  it("fails loudly when an on-map structure has no occupancy", () => {
     const store = storeWith({ SliceRules: { epoch_seconds: 0 } });
-    expect(() => structureMapPosition(store, structure({ coord_x: 1, coord_y: 0xffffffff }))).toThrow(
-      "parked at the expedition sentinel",
-    );
+    expect(() => structureMapPosition(store, structure())).toThrow("Missing native position");
   });
 });
 
 describe("liveHomeArmies", () => {
   afterEach(() => vi.restoreAllMocks());
 
-  const army = (explorer_id: number, y: number, count = 1_000n, owner = 42) =>
-    ({ explorer_id, owner, coord: { x: 25, y, alt: false }, troops: { count } }) as never;
-  const armiesStore = (rules: Record<string, unknown>, armies: unknown[]) => ({
+  const army = (explorer_id: number, y: number, count = 1_000n, owner = 42) => ({
+    explorer_id,
+    owner,
+    position: { x: 25, y, alt: false },
+    troops: { count },
+  });
+  const armiesStore = (rules: Record<string, unknown>, armies: ReturnType<typeof army>[]) => ({
     ...storeWith(rules),
-    inGame: (model: string) => (model === "ExplorerTroops" ? armies : [])[Symbol.iterator](),
+    armiesAtHome: (_game: number, home: number) => armies.filter((army) => army.owner === home),
+    entityOccupancy: (_game: number, id: number) => {
+      const army = armies.find((army) => army.explorer_id === id);
+      return army && { col: army.position.x, row: army.position.y, alt: army.position.alt };
+    },
   });
   const atFloor = (seconds: number) =>
     vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentDefaultTick: seconds } as never);
@@ -115,7 +119,7 @@ describe("expedition spire", () => {
     ({
       game_id: 7,
       entity_id: 42,
-      base: { coord_x: 0xffffffff - 3, coord_y: 0xffffffff, alt: false, category: StructureType.Realm },
+      base: { category: StructureType.Realm },
       metadata: { realm_id: 3, attunement },
     }) as never;
 

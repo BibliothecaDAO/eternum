@@ -156,7 +156,7 @@ export function NewsHeadlineBridge() {
         if (!current || current.game_id !== getScopedGameId()) continue;
         const buildingName = resolveMilestone(current, getActiveGameSyncRuntime()?.getStatus() === "running");
         if (!buildingName) continue;
-        const structureId = current.outer_entity_id;
+        const structureId = current.structure_id;
         const structure = entityReader?.getStructure(structureId);
         const realmName = structure?.structureName || `Realm #${structureId}`;
         enqueue({

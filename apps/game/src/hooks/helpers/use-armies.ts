@@ -11,7 +11,7 @@ export const useExplorersByStructure = ({ structureEntityId }: { structureEntity
     setup: { store },
     account: { account },
   } = useGame();
-  const revision = useNativeRevision(["ExplorerTroops", "Structure", "ResourceWeight", "EntityName", "TileOpt"]);
+  const revision = useNativeRevision(["ExplorerTroops", "Structure", "ResourceWeight", "EntityName", "TileOccupancy"]);
   const names = usePlayerNamesRevision();
   return useMemo(
     () => readExplorers(store, structureEntityId, BigInt(account.address), getPlayerName),

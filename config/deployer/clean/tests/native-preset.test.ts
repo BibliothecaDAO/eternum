@@ -1,6 +1,6 @@
 import { blitzRosterOf, findRegistrarGame } from "../registrar/calls";
 import { afterAll, describe, expect, test, mock } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CallData, type Account, type RpcProvider } from "starknet";
@@ -46,6 +46,33 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
+  test("the contract Frontier command gate uses the published mask", () => {
+    const preset = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
+      FRONTIER_PRESET_ID,
+    );
+    const mask = BigInt(
+      readFileSync(
+        new URL("../../../../contracts/l3/world-native/tests/fixtures/frontier-command-mask.txt", import.meta.url),
+        "utf8",
+      ).trim(),
+    );
+    expect(preset.rules.command_mask).toBe(mask);
+    for (const command of [
+      "CreateTradeOrder",
+      "AcceptTradeOrder",
+      "CancelTradeOrder",
+      "BuyFromBank",
+      "SellToBank",
+      "AddBankLiquidity",
+      "RemoveBankLiquidity",
+      "SendResources",
+      "TransferStructureResourcesToExplorer",
+      "TransferExplorerResourcesToStructure",
+      "WithdrawResource",
+    ] as const)
+      expect(mask & BigInt(nativeCommandBits[command])).toBe(0n);
+  });
   test("the accelerated Frontier preset is Frontier with every season clock 120 times faster, under its own id", () => {
     const canonical = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),

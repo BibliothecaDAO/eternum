@@ -20,8 +20,7 @@ type RealmBuildTarget = {
 };
 
 type BuildSelection = {
-  outerCol: number;
-  outerRow: number;
+  structureId: number;
   innerCol: number;
   innerRow: number;
 };
@@ -94,11 +93,8 @@ const resolveAvailableBuildSpots = (tileManager: BuildingTiles, candidates: Buil
 
 const readRealmTiles = (entityId: number) => {
   const tileManager = requireActiveGameClient().views.buildingTiles(entityId);
-  const { col: outerCol, row: outerRow } = tileManager.getHexCoords();
 
   return {
-    outerCol,
-    outerRow,
     tileManager,
     buildRadiusResolver: () => Math.max(1, Number(tileManager.getRealmLevel(entityId)) + 1),
   };
@@ -139,7 +135,7 @@ const submitRealmBuilding = async ({
     return false;
   }
 
-  const { outerCol, outerRow, tileManager, buildRadiusResolver } = readRealmTiles(entityId);
+  const { tileManager, buildRadiusResolver } = readRealmTiles(entityId);
   const buildRadius = buildRadiusResolver();
   const candidates = generateBuildablePositions(buildRadius);
   const availableSpots = resolveAvailableBuildSpots(tileManager, candidates);
@@ -177,8 +173,7 @@ const submitRealmBuilding = async ({
         });
 
         onBuildSuccess?.({
-          outerCol,
-          outerRow,
+          structureId: entityId,
           innerCol: availableSpot.col,
           innerRow: availableSpot.row,
         });

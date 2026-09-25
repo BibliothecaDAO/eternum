@@ -1,3 +1,4 @@
+import { entityMapPosition } from "./tile";
 import { readExpeditionRules, structureMapPosition } from "./expeditions";
 import {
   type ArmyInfo,
@@ -33,12 +34,13 @@ export const formatArmies = (
     const structure = store.get("Structure", { ...keys, entity_id: explorer.owner });
     const home = structure && structureMapPosition(store, structure);
     const owner = getExplorerOwner(store, explorer);
+    const position = entityMapPosition(store, explorer.game_id, explorer.explorer_id);
     return {
       entityId: explorer.explorer_id,
       troops: explorer.troops,
       totalCapacity: weight ? getArmyTotalCapacityInKg(weight) : 0,
       weight: weight ? gramToKg(divideByPrecision(Number(weight.weight))) : 0,
-      position: explorer.coord,
+      position,
       entity_owner_id: explorer.owner,
       stamina: explorer.troops.stamina.amount,
       owner,
@@ -47,9 +49,9 @@ export const formatArmies = (
       explorer,
       isMine: isViewerOwner(owner, playerAddress),
       isMercenary: owner === 0n,
-      isHome: home !== undefined && isArmyAdjacentToStructure(explorer.coord, home.x, home.y, home.alt),
+      isHome: home !== undefined && isArmyAdjacentToStructure(position, home.x, home.y, home.alt),
       name: getArmyName(explorer.explorer_id, store),
-      hasAdjacentStructure: hasAdjacentOwnedStructure(explorer.coord, playerAddress, store),
+      hasAdjacentStructure: hasAdjacentOwnedStructure(position, playerAddress, store),
     };
   });
 
@@ -195,7 +197,7 @@ export const isOpenSpawnHex = (occupierId: number | undefined, expedition: boole
 
 /** The directions an army can be raised in from a structure, given the occupier of each explored neighbour. */
 export const openSpawnDirections = (
-  store: Pick<NativeFactStore, "get" | "require">,
+  store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
   structure: NativeRows["Structure"],
   occupierAt: (hex: { col: number; row: number }) => number | undefined,
 ): Direction[] => {

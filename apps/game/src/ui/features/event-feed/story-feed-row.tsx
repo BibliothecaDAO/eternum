@@ -9,7 +9,7 @@ import {
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { Position, configManager } from "@bibliothecadao/eternum";
+import { Position, configManager, structureMapPosition, entityMapPosition } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { formatFeedTime } from "./important-feed-rows";
@@ -24,9 +24,9 @@ export function resolveStoryEventPosition(event: ProcessedStoryEvent, store: Nat
     if (id == null) continue;
     const key = { game_id: configManager.getActiveGameId(), entity_id: Number(id) };
     const structure = store.get("Structure", key);
-    if (structure) return Position.fromContract({ x: structure.base.coord_x, y: structure.base.coord_y });
+    if (structure) return Position.fromContract(structureMapPosition(store, structure));
     const army = store.get("ExplorerTroops", { game_id: key.game_id, explorer_id: key.entity_id });
-    if (army) return Position.fromContract({ x: army.coord.x, y: army.coord.y });
+    if (army) return Position.fromContract(entityMapPosition(store, army.game_id, army.explorer_id));
   }
   return null;
 }
@@ -35,7 +35,7 @@ export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
   const {
     setup: { store },
   } = useGame();
-  useNativeRevision(["Structure", "ExplorerTroops"]);
+  useNativeRevision(["Structure", "ExplorerTroops", "TileOccupancy"]);
   const navigate = useNavigateToMapView();
   const position = resolveStoryEventPosition(event, store);
   const battle = event.story === "BattleEvent";

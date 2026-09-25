@@ -125,7 +125,7 @@ pub mod MovementLogic {
                 false,
             );
             self.pay_movement(game_id, ref explorer, rules, biome, exploring, context.timestamp, context);
-            crate::logic::troops::TroopState::save(key, explorer);
+            crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
 
             if !explorer.coord.alt {
                 crate::exploration_rewards::IExtractionDispatcherTrait::extract_exploration_reward(
@@ -156,7 +156,7 @@ pub mod MovementLogic {
             let game_context = crate::commands::load_context(game_id, game_context);
 
             let key = ExplorerKey { game_id, explorer_id };
-            let mut explorer = crate::logic::troops::explorer(key).expect('missing blocking explorer');
+            let explorer = crate::logic::troops::explorer(key).expect('missing blocking explorer');
             assert!(explorer.owner != 0, "blocking explorer has no owner");
             let origin = tile_key(game_id, explorer.coord);
             for direction in 0_u8..6 {
@@ -172,10 +172,8 @@ pub mod MovementLogic {
                     );
                 }
                 let category = crate::troops::explorer_occupier(explorer);
-                crate::logic::map::MapState::occupy(tile, explorer_id, category, false);
-                explorer.coord = destination;
-                crate::logic::troops::TroopState::save(key, explorer);
                 crate::logic::map::MapState::vacate(origin, explorer_id);
+                crate::logic::map::MapState::occupy(tile, explorer_id, category, false);
                 return;
             }
             self.destroy_explorer(key, explorer);
@@ -235,7 +233,7 @@ pub mod MovementLogic {
                 location, command.explorer_id, crate::troops::explorer_occupier(explorer), false,
             );
             explorer.coord = destination;
-            crate::logic::troops::TroopState::save(key, explorer);
+            crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
         }
         fn move_explorer(
             ref self: ContractState,
@@ -279,7 +277,7 @@ pub mod MovementLogic {
                 false,
             );
             self.pay_food(game_id, explorer, rules, false, context.timestamp, context);
-            crate::logic::troops::TroopState::save(key, explorer);
+            crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
         }
         fn toggle_alternate(
             ref self: ContractState,
@@ -322,7 +320,7 @@ pub mod MovementLogic {
                 destination_key, command.explorer_id, crate::troops::explorer_occupier(explorer), false,
             );
             explorer.coord = destination;
-            crate::logic::troops::TroopState::save(key, explorer);
+            crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
         }
     }
 }

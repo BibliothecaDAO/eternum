@@ -15,7 +15,8 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { DEFAULT_COORD_ALT } from "..";
+import { DEFAULT_COORD_ALT } from "../utils/tile";
+import { structureLocalPosition } from "../utils/expeditions";
 import { configManager } from "./config-manager";
 
 const BUILDING_SLOT_COORDINATES = [
@@ -38,21 +39,12 @@ const isOccupiedSpaceError = (error: unknown): boolean =>
   extractErrorMessage(error).toLowerCase().includes(OCCUPIED_SPACE_REASON);
 
 export class TileManager {
-  private readonly col: number;
-  private readonly row: number;
-  private readonly alt: boolean;
-
   private constructor(
     private readonly store: NativeFactStore,
     private readonly systemCalls: SystemCalls,
     private readonly structure: NativeRows["Structure"],
     private readonly gameId = configManager.getActiveGameId(),
-  ) {
-    // The structure's own coordinate keys its buildings, even where the map shows it elsewhere (a Frontier realm).
-    this.col = structure.base.coord_x;
-    this.row = structure.base.coord_y;
-    this.alt = structure.base.alt;
-  }
+  ) {}
 
   /** Bound to the structure, so callers name the structure instead of plumbing its hex. */
   static forStructure(store: NativeFactStore, systemCalls: SystemCalls, structureEntityId: ID): TileManager {
@@ -64,7 +56,8 @@ export class TileManager {
   }
 
   getHexCoords = () => {
-    return { col: this.col, row: this.row };
+    const position = structureLocalPosition(this.store, this.structure);
+    return { col: position.x, row: position.y };
   };
 
   getRealmLevel = (realmEntityId: number): RealmLevels => {
@@ -102,9 +95,7 @@ export class TileManager {
   getBuilding = (hexCoords: HexPosition) =>
     this.store.get("Building", {
       game_id: this.gameId,
-      alt: this.alt,
-      outer_col: this.col,
-      outer_row: this.row,
+      structure_id: this.structure.entity_id,
       inner_col: hexCoords.col,
       inner_row: hexCoords.row,
     });

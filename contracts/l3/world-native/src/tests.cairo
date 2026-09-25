@@ -27,6 +27,7 @@ mod resources;
 mod rule_storage;
 mod settlement;
 mod shared_storage;
+mod spatial_replay;
 mod spires;
 mod state;
 mod structure_storage;
@@ -615,7 +616,7 @@ fn row_set_member_and_deleted_have_exact_wire_shapes_and_zero_is_present() {
     let mut explorer = GameState { contract_address: deployment.games }.explorer(key).unwrap();
     assert_eq!(explorer.troops.count, 0);
     let mut values = array![];
-    explorer.serialize(ref values);
+    crate::troops::ExplorerRecordTrait::into_record(explorer).serialize(ref values);
     let events = spy.get_events().emitted_by(deployment.games);
     let mut matched = array![];
     for (address, event) in events.events {
@@ -634,9 +635,15 @@ fn row_set_member_and_deleted_have_exact_wire_shapes_and_zero_is_present() {
     fixture.update_troops(key, explorer.troops);
     fixture.destroy(key);
     let events = spy.get_events().emitted_by(deployment.games);
-    assert_eq!(events.events.len(), 2);
+    assert_eq!(events.events.len(), 3);
     let (_, member) = events.events.at(0);
-    let (_, deleted) = events.events.at(1);
+    let (_, occupancy_deleted) = events.events.at(1);
+    assert_eq!(
+        occupancy_deleted.keys.span(),
+        array![selector!("MapEvent"), selector!("RowDeleted"), 1, 'TileOccupancy'].span(),
+    );
+    assert_eq!(occupancy_deleted.data.span(), array![4, 1, 0, 12, 34].span());
+    let (_, deleted) = events.events.at(2);
     assert_eq!(
         member.keys.span(),
         array![selector!("TroopEvent"), selector!("RowMemberSet"), 1, 'ExplorerTroops', 'troops'].span(),

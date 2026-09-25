@@ -41,17 +41,38 @@ use crate::troops::{ExplorerKey, ExplorerTroops};
 pub fn explorer(key: ExplorerKey) -> Option<ExplorerTroops> {
     let state = crate::state::read();
     if state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.read() != 0 {
-        Some(state.troops.explorers.read((key.game_id, key.explorer_id)))
+        let record = state.troops.explorers.read((key.game_id, key.explorer_id));
+        Some(
+            ExplorerTroops {
+                owner: record.owner,
+                troops: record.troops,
+                coord: crate::logic::map::entity_coord(ResourceKey { game_id: key.game_id, entity_id: key.explorer_id })
+                    .expect('missing explorer position'),
+            },
+        )
     } else {
         None
     }
 }
 
+// This bounded reverse index is private; ExplorerTroops.owner is the emitted membership fact.
+pub fn home_armies(key: ResourceKey) -> Span<u32> {
+    let state = crate::state::read();
+    let mut armies = array![];
+    for slot in 0..state.troops.home_counts.read((key.game_id, key.entity_id)) {
+        armies.append(state.troops.home_armies.read((key.game_id, key.entity_id, slot)));
+    }
+    armies.span()
+}
+
 pub mod TroopState {
     use starknet::Event as EventTrait;
-    use starknet::storage::{StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
+    use starknet::storage::{
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
+    };
     use crate::events::{RowDeleted, RowMemberSet, RowSet};
-    use crate::troops::{ExplorerKey, ExplorerTroops, Troops};
+    use crate::troops::{ExplorerKey, ExplorerRecord, Troops};
 
     #[derive(Drop, starknet::Event)]
     pub enum Event {
@@ -60,11 +81,14 @@ pub mod TroopState {
         RowDeleted: RowDeleted,
     }
 
-    pub fn create(key: ExplorerKey, explorer: ExplorerTroops) {
+    pub fn create(key: ExplorerKey, explorer: ExplorerRecord) {
         let state = crate::state::write();
         assert!(key.game_id != 0 && key.explorer_id != 0, "reserved explorer key");
-        assert!(crate::logic::troops::explorer(key).is_none(), "explorer already exists");
+        assert!(
+            state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.read() == 0, "explorer already exists",
+        );
         assert!(explorer.owner != 0, "missing explorer owner");
+        write_home_membership(key, 0, explorer.owner);
         state.troops.explorers.write((key.game_id, key.explorer_id), explorer);
 
         let mut keys = array![];
@@ -73,9 +97,12 @@ pub mod TroopState {
         explorer.serialize(ref values);
         emit(Event::RowSet(RowSet { version: 1, model: 'ExplorerTroops', keys: keys.span(), values: values.span() }));
     }
-    pub fn save(key: ExplorerKey, explorer: ExplorerTroops) {
+    pub fn save(key: ExplorerKey, explorer: ExplorerRecord) {
         let state = crate::state::write();
-        assert!(crate::logic::troops::explorer(key).is_some(), "missing explorer");
+        let previous = state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.read();
+        assert!(previous != 0, "missing explorer");
+        assert!(explorer.owner != 0, "missing explorer owner");
+        write_home_membership(key, previous, explorer.owner);
         state.troops.explorers.write((key.game_id, key.explorer_id), explorer);
         let mut keys = array![];
         key.serialize(ref keys);
@@ -85,9 +112,8 @@ pub mod TroopState {
     }
     pub fn update_troops(key: ExplorerKey, troops: Troops) {
         let state = crate::state::write();
-        let mut explorer = crate::logic::troops::explorer(key).expect('missing explorer');
-        explorer.troops = troops;
-        state.troops.explorers.write((key.game_id, key.explorer_id), explorer);
+        assert!(state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.read() != 0, "missing explorer");
+        state.troops.explorers.entry((key.game_id, key.explorer_id)).troops.write(troops);
         let mut keys = array![];
         key.serialize(ref keys);
         let mut values = array![];
@@ -102,13 +128,45 @@ pub mod TroopState {
     }
     pub fn destroy(key: ExplorerKey) {
         let state = crate::state::write();
-        crate::logic::troops::explorer(key).expect('missing explorer');
+        let previous = state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.read();
+        assert!(previous != 0, "missing explorer");
+        write_home_membership(key, previous, 0);
 
         // Owner zero marks absence; recreation overwrites the complete explorer.
         state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.write(0);
         let mut keys = array![];
         key.serialize(ref keys);
         emit(Event::RowDeleted(RowDeleted { version: 1, model: 'ExplorerTroops', keys: keys.span() }));
+    }
+
+    fn write_home_membership(key: ExplorerKey, previous: u32, owner: u32) {
+        if previous == owner {
+            return;
+        }
+        let state = crate::state::write();
+        if previous != 0 {
+            let count = state.troops.home_counts.read((key.game_id, previous));
+            let mut next = 0_u16;
+            for slot in 0..count {
+                let id = state.troops.home_armies.read((key.game_id, previous, slot));
+                if id != key.explorer_id {
+                    state.troops.home_armies.write((key.game_id, previous, next), id);
+                    next += 1;
+                }
+            }
+            assert!(next + 1 == count, "missing home army index");
+            state.troops.home_armies.write((key.game_id, previous, next), 0);
+            state.troops.home_counts.write((key.game_id, previous), next);
+        }
+        if owner != 0 {
+            let home = crate::logic::structures::record(
+                crate::resources::ResourceKey { game_id: key.game_id, entity_id: owner },
+            );
+            let count = state.troops.home_counts.read((key.game_id, owner));
+            assert!(count < home.base.troop_max_explorer_count, "explorer limit reached");
+            state.troops.home_armies.write((key.game_id, owner, count), key.explorer_id);
+            state.troops.home_counts.write((key.game_id, owner), count + 1);
+        }
     }
 
     pub fn emit(event: Event) {
@@ -205,7 +263,7 @@ pub mod TroopsLogic {
             let mut rules = game_context.rules.unbox();
             if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
                 let depth = crate::logic::expeditions::depth_rules_at(
-                    key.game_id, crate::structures::structure_coord(base),
+                    key.game_id, crate::structures::structure_coord(key),
                 );
                 rules.troop_limit_config.mercenaries_troop_lower_bound = depth.guard_lower;
                 rules.troop_limit_config.mercenaries_troop_upper_bound = depth.guard_upper;
@@ -409,7 +467,10 @@ pub mod TroopsLogic {
             let mut explorer = crate::logic::troops::authorized_explorer(key, actor, timestamp, game_context);
             let home = crate::logic::troops::owned_structure(game_id, explorer.owner, actor);
             assert!(
-                crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(home.base)),
+                crate::geometry::adjacent(
+                    explorer.coord,
+                    crate::structures::structure_coord(ResourceKey { game_id, entity_id: explorer.owner }),
+                ),
                 "explorer not adjacent to home",
             );
             self
@@ -468,7 +529,9 @@ pub mod TroopsLogic {
                     ManagedArmy {
                         troops: guard.troops,
                         home: slot.structure_id,
-                        coord: crate::structures::structure_coord(home.base),
+                        coord: crate::structures::structure_coord(
+                            ResourceKey { game_id, entity_id: slot.structure_id },
+                        ),
                         level: home.base.level,
                     }
                 },
@@ -633,7 +696,10 @@ pub mod TroopsLogic {
             let rules = self.authorize(game_id, context);
             let home = crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
             if rules.epoch_seconds != 0 {
-                self.expire_home_armies(game_id, home, rules, context.timestamp, context);
+                self
+                    .expire_home_armies(
+                        ResourceKey { game_id, entity_id: command.structure_id }, rules, context.timestamp, context,
+                    );
             }
             let category = troop_type(command.category);
             let tier = troop_tier(command.tier);
@@ -646,12 +712,11 @@ pub mod TroopsLogic {
                     actor,
                     resource_type,
                     command.amount,
-                    id,
                     context.timestamp,
                     crate::commands::action_context(context),
                 );
             let origin = if rules.epoch_seconds == 0 {
-                crate::structures::structure_coord(home.base)
+                crate::structures::structure_coord(ResourceKey { game_id, entity_id: command.structure_id })
             } else {
                 crate::expeditions::site(
                     context.game.unbox().start_main_at,
@@ -677,7 +742,8 @@ pub mod TroopsLogic {
                 tile_key(game_id, coord), id, crate::troops::troop_occupier(troops), false,
             );
             crate::logic::troops::TroopState::create(
-                ExplorerKey { game_id, explorer_id: id }, ExplorerTroops { owner: command.structure_id, troops, coord },
+                ExplorerKey { game_id, explorer_id: id },
+                crate::troops::ExplorerRecord { owner: command.structure_id, troops },
             );
             self
                 .resources_dispatcher(game_id)
@@ -758,7 +824,7 @@ pub mod TroopsLogic {
             if explorer.troops.count == 0 {
                 self.destroy_explorer(key, explorer);
             } else {
-                crate::logic::troops::TroopState::save(key, explorer);
+                crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
             }
         }
     }
@@ -776,7 +842,7 @@ pub mod troop_helpers {
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
     use crate::rules::{RESOURCE_PRECISION, SliceRules};
     use crate::stamina::StaminaTrait;
-    use crate::structures::{IStructureOperationsLibraryDispatcher, Structure};
+    use crate::structures::IStructureOperationsLibraryDispatcher;
     use crate::troops::{Coord, ExplorerKey, ExplorerTroops};
     #[generate_trait]
     pub impl TroopHelpers<
@@ -788,16 +854,15 @@ pub mod troop_helpers {
 
         fn expire_home_armies(
             ref self: TContractState,
-            game_id: u32,
-            home: Structure,
+            home: ResourceKey,
             rules: SliceRules,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
             let start = game_context.game.unbox().start_main_at;
-            let spacing = self.expedition_spacing(game_id);
-            for id in home.troop_explorers {
-                let key = ExplorerKey { game_id, explorer_id: *id };
+            let spacing = self.expedition_spacing(home.game_id);
+            for id in crate::logic::troops::home_armies(home) {
+                let key = ExplorerKey { game_id: home.game_id, explorer_id: *id };
                 let explorer = crate::logic::troops::explorer(key).expect('missing home army');
                 if !crate::expeditions::is_current(explorer.coord, start, rules.epoch_seconds, spacing, timestamp) {
                     self.destroy_explorer(key, explorer);
@@ -869,7 +934,7 @@ pub mod troop_helpers {
                     crate::commands::biome_context(game_context),
                 );
             }
-            crate::logic::troops::TroopState::save(key, explorer);
+            crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
         }
         fn boost_guards(
             ref self: TContractState,
@@ -942,9 +1007,9 @@ pub mod troop_helpers {
         }
 
         fn destroy_explorer(ref self: TContractState, key: ExplorerKey, explorer: ExplorerTroops) {
-            crate::logic::structures::remove_explorer(
-                ResourceKey { game_id: key.game_id, entity_id: explorer.owner }, key.explorer_id,
-            );
+            self
+                .resources_dispatcher(key.game_id)
+                .destroy_resources(ResourceKey { game_id: key.game_id, entity_id: key.explorer_id });
             crate::logic::map::MapState::vacate(tile_key(key.game_id, explorer.coord), key.explorer_id);
             crate::logic::troops::TroopState::destroy(key);
         }

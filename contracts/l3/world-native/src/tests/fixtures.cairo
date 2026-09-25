@@ -16,7 +16,7 @@ pub mod TroopFixture {
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use crate::commands::{CreateExplorer, Explore};
     use crate::logic::troops::TroopState;
-    use crate::troops::{Coord, ExplorerKey, ExplorerTroops, Stamina, TroopTier, TroopType, Troops};
+    use crate::troops::{Coord, ExplorerKey, ExplorerRecord, Stamina, TroopTier, TroopType, Troops};
 
     #[storage]
     struct Storage {
@@ -32,6 +32,11 @@ pub mod TroopFixture {
     #[abi(embed_v0)]
     impl Fixture of super::IFixture<ContractState> {
         fn destroy(ref self: ContractState, key: ExplorerKey) {
+            let coord = crate::logic::map::entity_coord(
+                crate::resources::ResourceKey { game_id: key.game_id, entity_id: key.explorer_id },
+            )
+                .unwrap();
+            crate::logic::map::MapState::vacate(crate::geometry::tile_key(key.game_id, coord), key.explorer_id);
             crate::logic::troops::TroopState::destroy(key);
         }
         fn update_troops(ref self: ContractState, key: ExplorerKey, troops: Troops) {
@@ -62,9 +67,29 @@ pub mod TroopFixture {
             self.actor.write(actor);
             self.root.write(context.raw_root);
             self.timestamp.write(context.timestamp);
+            let home = crate::resources::ResourceKey { game_id, entity_id: command.structure_id };
+            if !crate::logic::structures::exists(home) {
+                crate::logic::structures::StructureState::create(
+                    home,
+                    crate::structures::StructureRecord {
+                        owner: actor,
+                        base: crate::structures::StructureBase {
+                            category: 1, troop_max_explorer_count: 1, ..Default::default(),
+                        },
+                        resources_packed: 0,
+                        metadata: Default::default(),
+                    },
+                );
+            }
+            crate::logic::map::MapState::occupy(
+                crate::geometry::tile_key(game_id, Coord { alt: false, x: command.structure_id + 5, y: 34 }),
+                command.structure_id,
+                15,
+                false,
+            );
             crate::logic::troops::TroopState::create(
                 ExplorerKey { game_id, explorer_id: command.structure_id },
-                ExplorerTroops {
+                ExplorerRecord {
                     owner: command.structure_id,
                     troops: Troops {
                         category: TroopType::Knight,
@@ -74,7 +99,6 @@ pub mod TroopFixture {
                         boosts: Default::default(),
                         battle_cooldown_end: 0,
                     },
-                    coord: Coord { alt: false, x: 12, y: 34 },
                 },
             );
             assert!(context.raw_root != 0, "fixture late rejection");

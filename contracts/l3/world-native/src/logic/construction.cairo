@@ -69,7 +69,7 @@ pub mod ConstructionLogic {
             let key = ResourceKey { game_id, entity_id: command.structure_id };
             let base = self.assert_building_command(key, actor, context.timestamp, context);
             let coord = self.resolve_building_coord(game_id, base, command.directions);
-            let location = crate::logic::buildings::building_key(game_id, base, coord);
+            let location = crate::logic::buildings::building_key(key, coord);
             let rule = self.buildings.rule(crate::buildings::BuildingRuleKey { game_id, category: command.category });
             let before = self.neighbor_effects(key, base, coord, context);
             self
@@ -134,7 +134,7 @@ pub mod ConstructionLogic {
 
             let key = ResourceKey { game_id, entity_id: command.structure_id };
             let base = self.assert_building_command(key, actor, context.timestamp, context);
-            let location = crate::logic::buildings::building_key(game_id, base, command.coord);
+            let location = crate::logic::buildings::building_key(key, command.coord);
             let building = self.buildings.building(location).expect('missing building');
             let board = self.buildings.board(game_id);
             assert!(
@@ -298,7 +298,7 @@ pub mod ConstructionLogic {
                 key, record.base, context.rules.unbox().troop_limit_config,
             );
             if record.base.category == 1 && context.rules.unbox().epoch_seconds == 0 {
-                let coord = Coord { alt: false, x: record.base.coord_x, y: record.base.coord_y };
+                let coord = crate::structures::structure_coord(key);
                 crate::logic::map::MapState::upgrade_realm(
                     crate::map::TileKey { game_id, alt: coord.alt, col: coord.x, row: coord.y },
                     structure_id,
@@ -331,9 +331,7 @@ pub mod ConstructionLogic {
             for x in 6_u32..15 {
                 for y in 6_u32..15 {
                     let coord = Coord { alt: false, x, y };
-                    if let Some(building) = self
-                        .buildings
-                        .building(crate::logic::buildings::building_key(key.game_id, record.base, coord)) {
+                    if let Some(building) = self.buildings.building(crate::logic::buildings::building_key(key, coord)) {
                         if building.category == 28 || building.category == 31 || building.category == 34 {
                             let before = self
                                 .buildings
@@ -390,7 +388,7 @@ pub mod ConstructionLogic {
             game_context: crate::commands::ExecutionContext,
             ref story_cursor: crate::ownership::StoryCursor,
         ) {
-            let building = Building { category, outer_entity_id: key.entity_id, paused: false, labor_paid: 0 };
+            let building = Building { category, paused: false, labor_paid: 0 };
             let rules = game_context.rules.unbox();
             self
                 .buildings
@@ -542,7 +540,7 @@ pub mod ConstructionLogic {
         ) {
             let key = ResourceKey { game_id, entity_id: command.structure_id };
             let base = self.assert_building_command(key, actor, timestamp, game_context);
-            let location = crate::logic::buildings::building_key(game_id, base, command.coord);
+            let location = crate::logic::buildings::building_key(key, command.coord);
             let mut building = self.buildings.building(location).expect('missing building');
             assert!(building.paused != paused, "building already in requested state");
             let before = self.neighbor_effects(key, base, command.coord, game_context);

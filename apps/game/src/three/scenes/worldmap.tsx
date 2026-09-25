@@ -3438,16 +3438,11 @@ export default class WorldmapScene extends WarpTravel {
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
     const armyPosition = this.getArmyDisplayPosition(selectedEntityId);
-    // Action paths plan from native store ExplorerTroops — the same coord the submit
-    // freshness guard checks. The visual display position may lag it mid-tween
-    // and is presentation only, never planning input.
-    const explorerTroopsCoord = this.game.store.get("ExplorerTroops", {
-      game_id: configManager.getActiveGameId(),
-      explorer_id: selectedEntityId,
-    })?.coord;
-    if (!explorerTroopsCoord) {
+    // Paths and the submission freshness guard read the same canonical occupancy.
+    const occupancy = this.game.store.entityOccupancy(configManager.getActiveGameId(), selectedEntityId);
+    if (!occupancy) {
       if (import.meta.env.DEV) {
-        console.error(`[Worldmap] Army ${selectedEntityId} has no ExplorerTroops coord; suppressing action paths`);
+        console.error(`[Worldmap] Army ${selectedEntityId} has no TileOccupancy; suppressing action paths`);
       }
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
       this.showSelectedArmyTile(selectedEntityId);

@@ -36,10 +36,6 @@ describe("buildExplorationSnapshot", () => {
       category: 1,
       level: 0,
       created_at: 0,
-      coord_x: 0,
-      coord_y: 0,
-      alt,
-      troop_explorer_count: 0,
       troop_max_guard_count: 1,
       troop_max_explorer_count: 1,
       starting_troops_granted: false,
@@ -53,7 +49,6 @@ describe("buildExplorationSnapshot", () => {
         owner,
         base,
         resources_packed: "0",
-        troop_explorers: [],
         metadata: {
           realm_id: id,
           order: 0,
@@ -65,13 +60,21 @@ describe("buildExplorationSnapshot", () => {
         },
       });
     }
-    for (const id of [1, armyId])
+    for (const id of [1, armyId]) {
       write("ExplorerTroops", id, {
         ...explorerFixture.expected.value,
         explorer_id: id,
         owner: explorerOwnerStructureId,
-        coord: { alt, x: 10, y: 10 },
       });
+      write("TileOccupancy", id, {
+        alt,
+        col: id === 1 ? 10 : 11,
+        row: 10,
+        entity_id: id,
+        category: 15,
+        is_structure: false,
+      });
+    }
     const worldSpatialProjection = {
       getTilesInBounds: vi.fn(() => [
         {

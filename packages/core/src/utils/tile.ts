@@ -1,9 +1,9 @@
 import { BiomeIdToType, type BiomeType, type Tile } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "../managers/config-manager";
-import { tileOptToTile } from "./tile-opt";
+import { tileFactsToTile } from "./tile-facts";
 
-export { tileOptToTile } from "./tile-opt";
+export { tileFactsToTile } from "./tile-facts";
 export const DEFAULT_COORD_ALT = false;
 
 export function getTileAt(
@@ -13,8 +13,19 @@ export function getTileAt(
   row: number,
   gameId = configManager.getActiveGameId(),
 ): Tile | undefined {
-  const rowValue = store.get("TileOpt", { game_id: gameId, alt, col, row });
-  return rowValue ? tileOptToTile(rowValue) : undefined;
+  const key = { game_id: gameId, alt, col, row };
+  return tileFactsToTile(key, store.get("TileOpt", key), store.get("TileOccupancy", key));
+}
+
+/** The canonical tile occupied by a live entity; a missing position is an incomplete fact set. */
+export function entityMapPosition(
+  store: Pick<NativeFactStore, "entityOccupancy">,
+  gameId: number,
+  entityId: number,
+): { x: number; y: number; alt: boolean } {
+  const tile = store.entityOccupancy(gameId, entityId);
+  if (!tile) throw new Error(`Missing native position for entity ${gameId}:${entityId}`);
+  return { x: tile.col, y: tile.row, alt: tile.alt };
 }
 
 /** The biome a tile's stored byte names; an unknown id is a broken fact, never a default. */

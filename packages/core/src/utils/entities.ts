@@ -1,12 +1,6 @@
+import { entityMapPosition } from "./tile";
 import { structureMapPosition } from "./expeditions";
-import {
-  CapacityConfig,
-  ContractAddress,
-  DirectionName,
-  getDirectionBetweenAdjacentHexes,
-  ID,
-  StructureType,
-} from "@bibliothecadao/types";
+import { CapacityConfig, ContractAddress, ID, StructureType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { shortString } from "starknet";
@@ -68,7 +62,7 @@ export const getEntityInfo = (
     entityId,
     capacityKg: Number(capacityKg) || 0,
     position: explorer
-      ? { x: explorer.coord.x, y: explorer.coord.y }
+      ? entityMapPosition(store, game_id, explorer.explorer_id)
       : structure
         ? structureMapPosition(store, structure)
         : undefined,
@@ -91,18 +85,12 @@ const getRealmName = (structure: NativeRows["Structure"]) => {
   return structure.metadata.has_wonder ? `WONDER - ${baseName}` : baseName;
 };
 
-export const getStructureName = (
-  structure: NativeRows["Structure"],
-  isBlitz: boolean,
-  parentRealmContractPosition?: { col: number; row: number },
-) => {
+export const getStructureName = (structure: NativeRows["Structure"], isBlitz: boolean) => {
   const cachedName = getEntityNameFromLocalStorage(structure.entity_id);
   let originalName = undefined;
 
   if (structure.base.category === StructureType.Realm) {
     originalName = getRealmName(structure);
-  } else if (structure.base.category === StructureType.Village && parentRealmContractPosition) {
-    originalName = getVillageName(structure, parentRealmContractPosition);
   } else if (structure.base.category === StructureType.Hyperstructure) {
     originalName = getHyperstructureName(structure);
   } else {
@@ -112,22 +100,6 @@ export const getStructureName = (
   }
 
   return { name: cachedName || originalName, originalName };
-};
-
-export const getVillageName = (
-  structure: NativeRows["Structure"],
-  parentRealmPosition: { col: number; row: number },
-) => {
-  const direction = getDirectionBetweenAdjacentHexes(parentRealmPosition, {
-    col: structure.base.coord_x,
-    row: structure.base.coord_y,
-  });
-
-  const directionName = direction ? DirectionName[direction] : "";
-
-  const realmId = structure.metadata.village_realm;
-  const baseName = getRealmNameById(realmId);
-  return `${baseName} - ${directionName} Village`;
 };
 
 export const setEntityNameLocalStorage = (entityId: ID, name: string) => {

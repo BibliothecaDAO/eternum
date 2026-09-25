@@ -1,3 +1,4 @@
+import { structureMapPosition } from "@bibliothecadao/eternum";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ResourceTransferPopover } from "@/ui/features/economy/resources/resource-transfer-popover";
@@ -321,7 +322,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       // Get structure position and navigate based on current view mode
       const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structureId });
       if (structure) {
-        const position = Position.fromContract({ x: structure.base.coord_x, y: structure.base.coord_y });
+        const position = Position.fromContract(structureMapPosition(store, structure));
         // Use goToStructure which handles both map view and hex view
         void goToStructure(structureId as ID, position, isMapView);
       }

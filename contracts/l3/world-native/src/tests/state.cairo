@@ -1,7 +1,7 @@
 // Storage observations replace the six fixture-only contract ABIs. Gameplay assertions use recorded commands.
 use snforge_std::interact_with_state;
 use starknet::ContractAddress;
-use starknet::storage::StorageMapReadAccess;
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 #[derive(Copy, Drop)]
 pub struct GameState {
     pub contract_address: ContractAddress,
@@ -129,6 +129,18 @@ pub impl StructureObservation of StructureObservationTrait {
             },
         )
     }
+    fn home_armies(
+        self: crate::structures::IStructureOperationsDispatcher, key: crate::resources::ResourceKey,
+    ) -> Span<u32> {
+        interact_with_state(self.contract_address, || crate::logic::troops::home_armies(key))
+    }
+
+    fn position(
+        self: crate::structures::IStructureOperationsDispatcher, key: crate::resources::ResourceKey,
+    ) -> Option<crate::troops::Coord> {
+        interact_with_state(self.contract_address, || crate::logic::map::entity_coord(key))
+    }
+
     fn structure(
         self: crate::structures::IStructureOperationsDispatcher, key: crate::resources::ResourceKey,
     ) -> Option<crate::structures::Structure> {
@@ -175,4 +187,73 @@ pub impl CombatObservation of CombatObservationTrait {
             crate::logic::combat::village_last_raided(key)
         })
     }
+}
+
+// Check both directions, including tiles an action vacated and entities it destroyed.
+pub fn assert_spatial_indexes(
+    address: ContractAddress, game_id: u32, entities: Span<u32>, tiles: Span<crate::troops::Coord>,
+) {
+    interact_with_state(
+        address,
+        || {
+            let state = crate::state::read();
+            for entity_id in entities {
+                let key = crate::resources::ResourceKey { game_id, entity_id: *entity_id };
+                let owner = state.troops.explorers.entry((game_id, *entity_id)).owner.read();
+                let position = crate::logic::map::entity_coord(key);
+                if owner != 0 {
+                    let coord = position.expect('army index missing');
+                    let occupancy = crate::logic::map::occupancy(crate::geometry::tile_key(game_id, coord)).unwrap();
+                    assert_eq!(occupancy.entity_id, *entity_id);
+                    assert!(!occupancy.is_structure);
+                    let home = crate::logic::troops::home_armies(
+                        crate::resources::ResourceKey { game_id, entity_id: owner },
+                    );
+                    let mut count = 0;
+                    for id in home {
+                        if *id == *entity_id {
+                            count += 1;
+                        }
+                    }
+                    assert_eq!(count, 1);
+                } else if !crate::logic::structures::exists(key) {
+                    assert!(position.is_none(), "absent entity retained spatial index");
+                }
+                if crate::logic::structures::exists(key) {
+                    if let Some(coord) = position {
+                        let occupancy = crate::logic::map::occupancy(crate::geometry::tile_key(game_id, coord))
+                            .unwrap();
+                        assert_eq!(occupancy.entity_id, *entity_id);
+                        assert!(occupancy.is_structure);
+                    }
+                    let home = crate::logic::troops::home_armies(key);
+                    assert!(home.len() <= crate::logic::structures::record(key).base.troop_max_explorer_count.into());
+                    for id in home {
+                        assert_eq!(state.troops.explorers.entry((game_id, *id)).owner.read(), *entity_id);
+                        assert!(
+                            crate::logic::map::entity_coord(crate::resources::ResourceKey { game_id, entity_id: *id })
+                                .is_some(),
+                        );
+                    }
+                    assert_eq!(state.troops.home_armies.read((game_id, *entity_id, home.len().try_into().unwrap())), 0);
+                }
+            }
+            for coord in tiles {
+                if let Some(occupancy) = crate::logic::map::occupancy(crate::geometry::tile_key(game_id, *coord)) {
+                    let key = crate::resources::ResourceKey { game_id, entity_id: occupancy.entity_id };
+                    let position = crate::logic::map::entity_coord(key);
+                    if occupancy.entity_id == 0 || occupancy.category == 34 || occupancy.category == 35 {
+                        assert!(position.is_none(), "tile-only fact entered entity index");
+                    } else {
+                        assert_eq!(position, Some(*coord));
+                        if occupancy.is_structure {
+                            assert!(crate::logic::structures::exists(key));
+                        } else {
+                            assert!(state.troops.explorers.entry((game_id, occupancy.entity_id)).owner.read() != 0);
+                        }
+                    }
+                }
+            }
+        },
+    );
 }

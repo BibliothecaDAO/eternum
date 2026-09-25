@@ -187,9 +187,7 @@ fn creator_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
     let third = ExplorerKey {
         game_id,
         explorer_id: *crate::structures::IStructureOperationsDispatcher { contract_address: d.games }
-            .structure(other_home)
-            .unwrap()
-            .troop_explorers
+            .home_armies(other_home)
             .at(0),
     };
     let homes = array![ResourceKey { game_id, entity_id: 1 }, other_home].span();
@@ -253,14 +251,7 @@ fn populated_facts(
         structures.structure_buildings(*home).serialize(ref facts);
         let labor = structures
             .building(
-                crate::buildings::BuildingKey {
-                    game_id,
-                    alt: false,
-                    outer_col: realm.base.coord_x,
-                    outer_row: realm.base.coord_y,
-                    inner_col: 10,
-                    inner_row: 10,
-                },
+                crate::buildings::BuildingKey { game_id, structure_id: *home.entity_id, inner_col: 10, inner_row: 10 },
             )
             .unwrap();
         assert_eq!(labor.category, 25);

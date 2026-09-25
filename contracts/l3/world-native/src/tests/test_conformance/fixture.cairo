@@ -455,7 +455,10 @@ fn gameplay_state(address: ContractAddress) -> Array<felt252> {
     structures
         .building(
             world_native::buildings::BuildingKey {
-                game_id: 7, alt: false, outer_col: target.x, outer_row: target.y, inner_col: 10, inner_row: 10,
+                game_id: 7,
+                structure_id: target_tile.and_then(|tile| world_native::map::structure_occupant(tile)).unwrap_or(0),
+                inner_col: 10,
+                inner_row: 10,
             },
         )
         .serialize(ref values);

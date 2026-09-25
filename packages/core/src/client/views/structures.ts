@@ -70,9 +70,9 @@ export const readHyperstructureUpdates = (store: NativeFactStore, entityId: ID):
   return row ? [row] : [];
 };
 
-export const readBuildings = (store: NativeFactStore, outerCol: number, outerRow: number, alt = false): Building[] =>
+export const readBuildings = (store: NativeFactStore, structureId: number): Building[] =>
   [...store.inGame("Building", configManager.getActiveGameId())]
-    .filter((row) => row.alt === alt && row.outer_col === outerCol && row.outer_row === outerRow)
+    .filter((row) => row.structure_id === structureId)
     .flatMap((building) => {
       const category = building.category as BuildingType;
       const resource = getProducedResource(category);

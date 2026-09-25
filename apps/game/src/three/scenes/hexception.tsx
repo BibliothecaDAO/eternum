@@ -633,9 +633,8 @@ export default class HexceptionScene extends HexagonScene {
       this.buildingUpdateUnsubscribe?.();
 
       // subscribe to building updates (create and destroy)
-      // Buildings are keyed by the structure's own coordinate; a Frontier realm's differs from the hex it stands on.
       this.buildingUpdateUnsubscribe = this.worldUpdateListener.Buildings.onBuildingUpdate(
-        { col: structure.base.coord_x, row: structure.base.coord_y },
+        structure.entity_id,
         (update: BuildingSystemUpdate) => this.handleBuildingUpdate(update, realmGeneration),
       );
 
@@ -660,10 +659,9 @@ export default class HexceptionScene extends HexagonScene {
       count: 4, // Moderate number of bolts for hex view
     });
 
-    // select center hex; its outer hex is the building key, the structure's own coordinate
+    // Select the center of this structure's building board.
     this.state.setSelectedBuildingHex({
-      outerCol: structure.base.coord_x,
-      outerRow: structure.base.coord_y,
+      structureId: structure.entity_id,
       innerCol: BUILDINGS_CENTER[0],
       innerRow: BUILDINGS_CENTER[1],
     });
@@ -834,7 +832,6 @@ export default class HexceptionScene extends HexagonScene {
       }
     } else {
       // if not building mode
-      const { col: outerCol, row: outerRow } = this.tileManager.getHexCoords();
 
       if (BUILDINGS_CENTER[0] === hexCoords.col && BUILDINGS_CENTER[1] === hexCoords.row) {
         const building = this.tileManager.getBuilding({ col: hexCoords.col, row: hexCoords.row });
@@ -843,8 +840,7 @@ export default class HexceptionScene extends HexagonScene {
         playBuildingSound(building?.category as BuildingType);
 
         this.state.setSelectedBuildingHex({
-          outerCol,
-          outerRow,
+          structureId: this.state.structureEntityId,
           innerCol: hexCoords.col,
           innerRow: hexCoords.row,
         });
@@ -856,16 +852,14 @@ export default class HexceptionScene extends HexagonScene {
         playBuildingSound(building?.category as BuildingType);
 
         this.state.setSelectedBuildingHex({
-          outerCol,
-          outerRow,
+          structureId: this.state.structureEntityId,
           innerCol: normalizedCoords.col,
           innerRow: normalizedCoords.row,
         });
         this.state.setLeftNavigationView(LeftView.EntityView);
       } else {
         this.state.setSelectedBuildingHex({
-          outerCol,
-          outerRow,
+          structureId: this.state.structureEntityId,
           innerCol: normalizedCoords.col,
           innerRow: normalizedCoords.row,
         });
@@ -1054,7 +1048,6 @@ export default class HexceptionScene extends HexagonScene {
       return;
     }
 
-    const { col: outerCol, row: outerRow } = this.tileManager.getHexCoords();
     const structureEntityId = this.state.structureEntityId;
     if (!structureEntityId) {
       return;
@@ -1066,8 +1059,7 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     this.state.setSelectedBuildingHex({
-      outerCol,
-      outerRow,
+      structureId: structureEntityId,
       innerCol: normalizedCoords.col,
       innerRow: normalizedCoords.row,
     });

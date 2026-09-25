@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "85e0e666285504530af42def0a1a699aadd46c59d5f80e4409aaf5dffbc4a84c",
+  "schemaIdentity": "37aaeb29b3199f2c2187033fc8c3fd4178f2a02facb48b07bf58f3731fc42bf1",
   "deployment": {
     "games": "0x100"
   },
@@ -15,7 +15,7 @@
       "0x2",
       "0x1",
       "0x7",
-      "0x12",
+      "0xf",
       "0x7",
       "0x0",
       "0x0",
@@ -30,10 +30,7 @@
       "0x0",
       "0x0",
       "0x0",
-      "0x0",
-      "0x0",
-      "0xc",
-      "0x22"
+      "0x0"
     ]
   },
   "expected": {

@@ -44,9 +44,9 @@ describe("native ownership projections", () => {
   it("narrows a snapshot to one account's rows: its structures, their armies, and every model without an owner", () => {
     const { fold, native } = setup();
     const structure = (id: string, owner: string) =>
-      rowEvent("Structure", ["1", id], [owner, ...Array.from({ length: 19 }, () => "0")]);
+      rowEvent("Structure", ["1", id], [owner, ...Array.from({ length: 14 }, () => "0")]);
     const army = (id: string, home: string) =>
-      rowEvent("ExplorerTroops", ["1", id], [home, ...Array.from({ length: 17 }, () => "0")]);
+      rowEvent("ExplorerTroops", ["1", id], [home, ...Array.from({ length: 14 }, () => "0")]);
     native.applyReceipt(
       fold,
       receipt([rulesEvent(), structure("7", "0xaaa"), structure("8", "0xbbb"), army("70", "7"), army("80", "8")]),

@@ -116,7 +116,7 @@ fn regional_banks_have_pinned_ids_guards_names_and_biome_only_surroundings() {
         assert_eq!(structure.base.category, 3);
         assert_eq!(structure.base.level, 3);
         assert_eq!(view(deployment).bank_name(key), 'Bank');
-        let coord = crate::structures::structure_coord(structure.base);
+        let coord = crate::tests::state::StructureObservationTrait::position(structures, key).unwrap();
         for direction in 0_u8..6 {
             let neighbor = crate::geometry::neighbor(coord, direction);
             let tile = crate::tests::state::MapObservationTrait::tile(tiles, crate::geometry::tile_key(3, neighbor))

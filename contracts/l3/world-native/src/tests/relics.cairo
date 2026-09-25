@@ -104,7 +104,7 @@ fn setup_with_reward(blitz: bool, resource_type: u8, amount: u128) -> (super::De
         ),
     );
     let structures = crate::structures::IStructureOperationsDispatcher { contract_address: deployment.games };
-    let id = crate::tests::state::StructureObservationTrait::structure(structures, home).unwrap().troop_explorers.at(0);
+    let id = crate::tests::state::StructureObservationTrait::home_armies(structures, home).at(0);
     let explorer = ResourceKey { game_id: 3, entity_id: *id };
     for id in 39_u8..57 {
         grant(deployment, explorer, id, 3 * RESOURCE_PRECISION);
@@ -150,11 +150,9 @@ fn chest(deployment: super::Deployment, origin: Coord, seed: u256, time: u64) ->
 }
 fn move_fixture(deployment: super::Deployment, key: ResourceKey, coord: Coord) {
     let explorer = troop(deployment, key);
-    set_fixture(
+    crate::tests::resource_commands::set_explorer_fixture(
         deployment.games,
-        selector!("troops"),
-        selector!("explorers"),
-        array![key.game_id.into(), key.entity_id.into()].span(),
+        crate::troops::ExplorerKey { game_id: key.game_id.into(), explorer_id: key.entity_id },
         crate::troops::ExplorerTroops { coord, ..explorer },
     );
 }
@@ -304,7 +302,10 @@ fn reveal_relics_reveal_only_the_ring_without_points_or_discovery() {
         ),
         before,
     );
-    assert!(map.tile(crate::geometry::tile_key(3, origin)).is_none());
+    // Moving the fixture places its occupancy but does not reveal its terrain.
+    let origin_tile = map.tile(crate::geometry::tile_key(3, origin)).unwrap();
+    assert_eq!(origin_tile.data / crate::map::BIOME_SCALE % crate::map::BYTE_RANGE, 0);
+    assert_eq!(origin_tile.data / crate::map::OCCUPIER_SCALE % crate::map::ENTITY_RANGE, explorer.entity_id.into());
     assert_eq!(balance(deployment, home, 38), 9250 * RESOURCE_PRECISION);
 }
 #[test]
@@ -535,20 +536,14 @@ fn extraction_rejects_wrong_layer_dead_explorer_and_mismatched_tile() {
     assert!(!extract_reward(deployment, explorer.entity_id, 40, 40));
     move_fixture(deployment, explorer, crate::geometry::neighbor(original.coord, 0));
     assert!(!extract_reward(deployment, explorer.entity_id, 40, 40));
-    set_fixture(
+    crate::tests::resource_commands::set_explorer_fixture(
         deployment.games,
-        selector!("troops"),
-        selector!("explorers"),
-        array![3, explorer.entity_id.into()].span(),
+        crate::troops::ExplorerKey { game_id: 3, explorer_id: explorer.entity_id },
         crate::troops::ExplorerTroops { troops: crate::troops::Troops { count: 0, ..original.troops }, ..original },
     );
     assert!(!extract_reward(deployment, explorer.entity_id, 40, 40));
-    set_fixture(
-        deployment.games,
-        selector!("troops"),
-        selector!("explorers"),
-        array![3, explorer.entity_id.into()].span(),
-        original,
+    crate::tests::resource_commands::set_explorer_fixture(
+        deployment.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: explorer.entity_id }, original,
     );
     assert!(extract_reward(deployment, explorer.entity_id, 40, 40));
 }

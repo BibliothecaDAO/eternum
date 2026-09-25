@@ -68,14 +68,7 @@ fn setup_with_mode(
                 80,
             ),
         );
-        ids
-            .append(
-                *IStructureOperationsDispatcher { contract_address: d.games }
-                    .structure(key)
-                    .unwrap()
-                    .troop_explorers
-                    .at(0),
-            );
+        ids.append(*IStructureOperationsDispatcher { contract_address: d.games }.home_armies(key).at(0));
     }
     let attacker = *ids.at(0);
     let defender = *ids.at(1);
@@ -110,7 +103,9 @@ fn move_to(d: super::Deployment, id: u32, coord: Coord) {
     explorer.coord = coord;
     map.occupy(crate::geometry::tile_key(3, explorer.coord), id, 2, false);
     stop_cheat_caller_address(d.games);
-    set_fixture(d.games, selector!("troops"), selector!("explorers"), array![3, id.into()].span(), explorer);
+    crate::tests::resource_commands::set_explorer_fixture(
+        d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: id }, explorer,
+    );
 }
 fn balance(d: super::Deployment, id: u32, resource_type: u8) -> u128 {
     IResourceOperationsDispatcher { contract_address: d.games }
@@ -144,7 +139,7 @@ fn guard(d: super::Deployment, key: ResourceKey, slot: u8) -> Guard {
 
 #[test]
 fn a_surviving_explorer_loots_the_defeated_army_before_its_resources_are_deleted() {
-    let (d, home, _, attacker, defender) = setup(false);
+    let (d, home, target, attacker, defender) = setup(false);
     grant(d, ResourceKey { game_id: 3, entity_id: defender }, 2, 90);
     let attacker_before = troop(d, attacker).unwrap();
     let defender_before = troop(d, defender).unwrap();
@@ -159,6 +154,12 @@ fn a_surviving_explorer_loots_the_defeated_army_before_its_resources_are_deleted
         ),
     );
     assert!(troop(d, defender).is_none());
+    super::state::assert_spatial_indexes(
+        d.games,
+        3,
+        array![home.entity_id, target.entity_id, attacker, defender].span(),
+        array![attacker_before.coord, defender_before.coord].span(),
+    );
     assert!(troop(d, attacker).unwrap().troops.count != 0);
     assert_eq!(balance(d, attacker, 2), 70);
     let mut expected = array![];
@@ -324,7 +325,9 @@ fn losing_the_final_attacking_guard_transfers_the_structure_to_the_adjacent_surv
     move_fixture(d, defender, 2000001);
     let mut explorer = troop(d, defender).unwrap();
     explorer.troops.count = 100 * RESOURCE_PRECISION;
-    set_fixture(d.games, selector!("troops"), selector!("explorers"), array![3, defender.into()].span(), explorer);
+    crate::tests::resource_commands::set_explorer_fixture(
+        d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: defender }, explorer,
+    );
     set_fixture(
         d.games,
         selector!("resources"),
@@ -381,7 +384,9 @@ fn raiding_requires_at_least_one_whole_troop_per_occupied_guard() {
     limit_guards(d, target, 4);
     let mut explorer = troop(d, attacker).unwrap();
     explorer.troops.count = RESOURCE_PRECISION;
-    set_fixture(d.games, selector!("troops"), selector!("explorers"), array![3, attacker.into()].span(), explorer);
+    crate::tests::resource_commands::set_explorer_fixture(
+        d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: attacker }, explorer,
+    );
     set_guard(d, target, 0, 1);
     set_guard(d, target, 3, 1);
     assert_terminal_rejection(d, raid(attacker, target, array![].span()), 80);
@@ -620,7 +625,9 @@ fn mutual_destruction_does_not_recreate_resource_rows_for_loot() {
     let (d, _, _, attacker, defender) = setup(false);
     let mut explorer = troop(d, attacker).unwrap();
     explorer.troops.count = RESOURCE_PRECISION;
-    set_fixture(d.games, selector!("troops"), selector!("explorers"), array![3, attacker.into()].span(), explorer);
+    crate::tests::resource_commands::set_explorer_fixture(
+        d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: attacker }, explorer,
+    );
     grant(d, ResourceKey { game_id: 3, entity_id: defender }, 2, 90);
     let mut spy = spy_events();
     assert!(
@@ -675,7 +682,7 @@ fn raid_ignores_guards_outside_the_structures_slot_limit() {
 
 #[test]
 fn structure_capture_ignores_guards_outside_the_slot_limit() {
-    let (d, _, target, attacker, _) = setup(false);
+    let (d, home, target, attacker, defender) = setup(false);
     limit_guards(d, target, 1);
     set_guard(d, target, 3, 100000);
     let before = troop(d, attacker).unwrap().troops.count;
@@ -688,6 +695,12 @@ fn structure_capture_ignores_guards_outside_the_slot_limit() {
     );
     assert_eq!(IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap().owner, d.actor);
     assert_eq!(troop(d, attacker).unwrap().troops.count, before);
+    crate::tests::state::assert_spatial_indexes(
+        d.games,
+        3,
+        array![home.entity_id, target.entity_id, attacker, defender].span(),
+        array![troop(d, attacker).unwrap().coord, troop(d, defender).unwrap().coord].span(),
+    );
 }
 
 #[test]
@@ -695,7 +708,9 @@ fn a_destroyed_raider_never_collects_loot_even_when_the_roll_wins() {
     let (d, _, target, attacker, _) = setup(false);
     let mut explorer = troop(d, attacker).unwrap();
     explorer.troops.count = RESOURCE_PRECISION;
-    set_fixture(d.games, selector!("troops"), selector!("explorers"), array![3, attacker.into()].span(), explorer);
+    crate::tests::resource_commands::set_explorer_fixture(
+        d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: attacker }, explorer,
+    );
     set_guard(d, target, 0, 1);
     grant(d, target, 2, 90);
     let mut spy = spy_events();
@@ -757,7 +772,7 @@ fn unowned_target_rule_rejects_owned_sites_and_allows_capture_of_an_unowned_site
         ),
     );
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
-    let attacker = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let attacker = *structures.home_armies(home).at(0);
     move_fixture(d, attacker, 2000009);
     let mut record = structures.structure(target).unwrap();
     record.owner = 999.try_into().unwrap();

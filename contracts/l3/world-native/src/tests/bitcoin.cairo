@@ -11,6 +11,7 @@ use crate::commands::{Command, ExecutionContext};
 use crate::resources::{IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceSlot};
 use crate::tests::StoryResultTestTrait;
 use crate::tests::state::ResourceObservationTrait;
+use crate::troops::Coord;
 use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, setup_with_rules};
 
 fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
@@ -275,8 +276,7 @@ fn bitcoin_discovery_reveals_six_biomes_without_points_or_neighbor_discoveries()
     let (deployment, _, _) = setup();
     let mine = mine(deployment, 2000100);
     let structures = crate::structures::IStructureOperationsDispatcher { contract_address: deployment.games };
-    let row = crate::tests::state::StructureObservationTrait::structure(structures, mine).unwrap();
-    let origin = crate::structures::structure_coord(row.base);
+    let origin = crate::tests::state::StructureObservationTrait::position(structures, mine).unwrap();
     let map = crate::map::IMapLogicDispatcher { contract_address: deployment.games };
     for direction in 0_u8..6 {
         let coord = crate::geometry::neighbor(origin, direction);
@@ -512,8 +512,8 @@ fn attacking_explorer(deployment: super::Deployment, home: ResourceKey, x: u32) 
             ..Default::default(),
         },
     };
-    super::resource_commands::set_fixture(
-        deployment.games, selector!("troops"), selector!("explorers"), array![3, id.into()].span(), explorer,
+    crate::tests::resource_commands::set_explorer_fixture(
+        deployment.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: id }, explorer,
     );
     start_cheat_caller_address(deployment.games, deployment.games);
     IResourceOperationsDispatcher { contract_address: deployment.games }
@@ -526,11 +526,6 @@ fn attacking_explorer(deployment: super::Deployment, home: ResourceKey, x: u32) 
                 crate::commands::ExecutionContext { timestamp: 30, ..crate::tests::context(deployment.games, 3) },
             ),
         );
-    stop_cheat_caller_address(deployment.games);
-    start_cheat_caller_address(deployment.games, deployment.games);
-    let map = crate::map::IMapLogicDispatcher { contract_address: deployment.games };
-    let tile = crate::geometry::tile_key(3, coord);
-    crate::tests::state::MapObservationTrait::occupy(map, tile, id, 17, false);
     stop_cheat_caller_address(deployment.games);
     id
 }
@@ -648,8 +643,8 @@ fn guard_attacks_reject_owned_wrong_layer_and_out_of_range_targets_without_advan
     let key = crate::troops::ExplorerKey { game_id: 3, explorer_id: explorer };
     let mut row = crate::tests::state::TroopObservationTrait::explorer(troop_view, key).unwrap();
     row.coord = crate::troops::Coord { alt: false, x: 2000085, y: 2000000 };
-    super::resource_commands::set_fixture(
-        deployment.games, selector!("troops"), selector!("explorers"), array![3, explorer.into()].span(), row,
+    crate::tests::resource_commands::set_explorer_fixture(
+        deployment.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: explorer }, row,
     );
     assert_terminal_rejection(deployment, attack, 40);
     assert_eq!(crate::tests::state::TroopObservationTrait::explorer(troop_view, key).unwrap(), row);
@@ -899,10 +894,19 @@ fn claim_execution_cost_does_not_grow_with_unrelated_settlements() {
             array![3, id.into()].span(),
             crate::structures::StructureRecord {
                 owner: d.actor,
-                base: crate::structures::StructureBase { coord_x: 2000300 + 10 * index, ..home_row.base },
+                base: home_row.base,
                 resources_packed: home_row.resources_packed,
                 metadata: home_row.metadata,
             },
+        );
+        snforge_std::interact_with_state(
+            d.games,
+            || crate::logic::map::MapState::relocate_fixture(
+                ResourceKey { game_id: 3, entity_id: id },
+                Coord { alt: false, x: 2000300 + 10 * index, y: 2000000 },
+                home_row.base.category,
+                true,
+            ),
         );
         IResourceOperationsDispatcher { contract_address: d.games }
             .initialize_resources(

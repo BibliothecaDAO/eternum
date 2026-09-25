@@ -502,7 +502,6 @@ pub mod GamesFixture {
             actor: starknet::ContractAddress,
             resource_type: u8,
             amount: u128,
-            explorer_id: u32,
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
@@ -513,7 +512,6 @@ pub mod GamesFixture {
                 actor,
                 resource_type,
                 amount,
-                explorer_id,
                 timestamp,
                 game_context,
             )

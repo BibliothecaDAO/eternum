@@ -1,3 +1,4 @@
+import { hasSingleTilePosition } from "@bibliothecadao/eternum/game-client";
 import {
   gameSyncRegion,
   gameSyncRowKeys,
@@ -19,6 +20,7 @@ export const SCOPE_INPUT_MODELS = new Set([
   "PlayerEntry",
   "Structure",
   "ExplorerTroops",
+  "TileOccupancy",
   "ProductionReceiver",
 ]);
 
@@ -27,7 +29,8 @@ export const scopeLookup = {
   entryOf: (player: unknown) => `PlayerEntry.player:${syncScalar(player)}`,
   structuresOf: (owner: unknown) => `Structure.owner:${syncScalar(owner)}`,
   structure: (entity: unknown) => `Structure.entity:${syncScalar(entity)}`,
-  structuresIn: (region: string) => `Structure.region:${region}`,
+  occupancyIn: (region: string) => `TileOccupancy.region:${region}`,
+  occupancyOf: (entity: unknown) => `TileOccupancy.entity:${syncScalar(entity)}`,
   armiesOf: (home: unknown) => `ExplorerTroops.owner:${syncScalar(home)}`,
   army: (entity: unknown) => `ExplorerTroops.entity:${syncScalar(entity)}`,
   receiversOf: (home: unknown) => `ProductionReceiver.home:${syncScalar(home)}`,
@@ -39,14 +42,14 @@ export function scopeInputKeys(model: string, row: DecodedRecord, spacing: numbe
   if (model === "PlayerEntry") return [scopeLookup.entryOf(row.player)];
   if (model === "ExplorerTroops") return [scopeLookup.armiesOf(row.owner), scopeLookup.army(row.explorer_id)];
   if (model === "ProductionReceiver") return [scopeLookup.receiversOf(row.home), scopeLookup.receiver(row.entity_id)];
-  if (model !== "Structure") return [];
-  const base = row.base as DecodedRecord;
-  const region =
-    spacing === undefined ? undefined : gameSyncRegion({ alt: base.alt, x: base.coord_x, y: base.coord_y }, spacing);
+  if (model === "Structure") return [scopeLookup.structuresOf(row.owner), scopeLookup.structure(row.entity_id)];
+  if (model !== "TileOccupancy") return [];
+  const region = spacing === undefined ? undefined : gameSyncRegion({ alt: row.alt, x: row.col, y: row.row }, spacing);
   return [
-    scopeLookup.structuresOf(row.owner),
-    scopeLookup.structure(row.entity_id),
-    ...(region === undefined ? [] : [scopeLookup.structuresIn(region)]),
+    ...(!hasSingleTilePosition({ entity_id: syncScalar(row.entity_id), category: syncScalar(row.category) })
+      ? []
+      : [scopeLookup.occupancyOf(row.entity_id)]),
+    ...(region === undefined ? [] : [scopeLookup.occupancyIn(region)]),
   ];
 }
 
@@ -58,8 +61,12 @@ export function scopeInputInterest(scope: GameSyncScope): Set<string> {
     ...(scope.actor === undefined ? [] : [scopeLookup.entryOf(scope.actor)]),
     ...[...expedition.owners].map(scopeLookup.structuresOf),
     ...[...expedition.realms].flatMap((realm) => [scopeLookup.armiesOf(realm), scopeLookup.receiversOf(realm)]),
-    ...[...expedition.regions].map(scopeLookup.structuresIn),
-    ...[...expedition.entities].flatMap((entity) => [scopeLookup.structure(entity), scopeLookup.army(entity)]),
+    ...[...expedition.regions].map(scopeLookup.occupancyIn),
+    ...[...expedition.entities].flatMap((entity) => [
+      scopeLookup.structure(entity),
+      scopeLookup.army(entity),
+      scopeLookup.occupancyOf(entity),
+    ]),
     ...[...expedition.productionSources].map(scopeLookup.receiver),
   ]);
 }

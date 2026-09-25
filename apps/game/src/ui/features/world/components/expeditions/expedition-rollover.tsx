@@ -44,7 +44,9 @@ export const ExpeditionRollover = () => {
       epochRef.current = epoch;
       getActiveGameSyncRuntime()?.getWorldSpatialProjection()?.rebuild();
       const realm = address
-        ? [...setup.store.structuresOwnedBy(gameId, BigInt(address))].find(isExpeditionRealm)
+        ? [...setup.store.structuresOwnedBy(gameId, BigInt(address))].find((structure) =>
+            isExpeditionRealm(setup.store, structure),
+          )
         : undefined;
       if (!realm) return;
       // The rollover fires on chain time, which runs ahead of the last block's timestamp, so the announced site is

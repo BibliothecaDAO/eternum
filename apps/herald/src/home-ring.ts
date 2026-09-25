@@ -97,14 +97,11 @@ interface RingDay {
 
 const ringKey = (gameId: string, realm: string, epoch: number) => `${gameId}:${realm}:${epoch}`;
 
-// MapState::reveal on an unoccupied surface tile writes coordinate_bits(key) + biome * BIOME_SCALE (map.cairo).
-const COL_SCALE = 0x200000000000000000000n;
-const ROW_SCALE = 0x2000000000000n;
+// MapState::reveal writes only terrain; the row key carries coordinates and occupancy is independent.
 const BIOME_SCALE = 0x20000000000n;
 
-/** The TileOpt data the chain writes when it reveals this surface tile with nobody on it. */
-export const revealedTileData = (tile: HomeRingTile): bigint =>
-  BigInt(tile.col) * COL_SCALE + BigInt(tile.row) * ROW_SCALE + BigInt(tile.biome) * BIOME_SCALE;
+/** The terrain-only TileOpt data written when the chain reveals this tile. */
+export const revealedTileData = (tile: HomeRingTile): bigint => BigInt(tile.biome) * BIOME_SCALE;
 
 /** Decodes expedition_home_ring's Span<(Coord, u8)>: a length, then (alt, x, y, biome) per tile. */
 export const decodeHomeRing = (felts: readonly string[]): HomeRingTile[] => {

@@ -345,6 +345,15 @@ fn reserved_hyperstructure_uses_recorded_time_after_an_outage() {
         let rules = IGameDispatcher { contract_address: season }.rules(8);
         let center = 2147483646 - rules.map_center_offset;
         let coord = world_native::troops::Coord { alt: false, x: center, y: center };
+        snforge_std::interact_with_state(
+            season,
+            || {
+                let reservation = crate::logic::map::occupancy(crate::geometry::tile_key(8, coord)).unwrap();
+                assert_eq!(reservation.entity_id, 0);
+                assert_eq!(reservation.category, 39);
+                assert!(crate::logic::map::entity_coord(ResourceKey { game_id: 8, entity_id: 0 }).is_none());
+            },
+        );
         let (action, envelope) = accepted(season, Command::CreateReservedHyperstructure(coord), 1201);
         start_cheat_block_timestamp_global(*clock);
         submit(season, action, envelope);
@@ -352,6 +361,8 @@ fn reserved_hyperstructure_uses_recorded_time_after_an_outage() {
         assert!(results.recorded_outcome(8, 1).unwrap().status == 1, "recorded materialization failed");
         let structures = IStructureOperationsDispatcher { contract_address: season };
         let key = ResourceKey { game_id: 8, entity_id: 1 };
+        crate::tests::state::assert_spatial_indexes(season, 8, array![1].span(), array![coord].span());
+        assert_eq!(IStructureOperationsDispatcher { contract_address: season }.position(key), Some(coord));
         let hyper = IHyperstructuresDispatcher { contract_address: season }.hyperstructure(key).unwrap();
         assert!(hyper.stage == world_native::hyperstructures::Stage::Complete);
         let mut facts = array![];

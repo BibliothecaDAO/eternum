@@ -15,9 +15,9 @@ vi.mock("@/utils/spectator-session", () => ({ isExplicitSpectateSession: () => s
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   Position: (await importOriginal<typeof import("@bibliothecadao/eternum")>()).Position,
   configManager: { getActiveGameId: () => 1, getMapCenter: () => 0 },
-  structureMapPosition: (_store: unknown, structure: { base: { coord_x: number; coord_y: number } }) => ({
-    x: structure.base.coord_x,
-    y: structure.base.coord_y,
+  structureMapPosition: (_store: unknown, structure: { entity_id: number }) => ({
+    x: structure.entity_id,
+    y: 8850,
   }),
 }));
 
@@ -29,7 +29,7 @@ const PLAYER = "0x7d79";
 const structure = (entity_id: number, owner: string) => ({
   entity_id,
   owner: BigInt(owner),
-  base: { coord_x: entity_id, coord_y: 8850, category: 1 },
+  base: { category: 1 },
 });
 
 const factStore = () => {

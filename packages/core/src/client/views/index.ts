@@ -45,7 +45,7 @@ export interface GameViews {
   allRealms(): StructureRow[];
   hyperstructureIds(owner: ContractAddress): ID[];
   hyperstructureUpdates(hyperstructureEntityId: ID): (HyperstructureRow | undefined)[];
-  buildings(outerCol: number, outerRow: number): Building[];
+  buildings(structureId: number): Building[];
   /** Occupancy, level, and the buildings standing on a structure's own slots, as the construction surfaces read them. */
   buildingTiles(structureEntityId: ID): BuildingTiles;
   resources(entityId: ID): ResourceManager;
@@ -71,7 +71,7 @@ export const createGameViews = (
     allRealms: () => readStructureRows(store, StructureType.Realm),
     hyperstructureIds: (owner) => readStructureIds(store, owner, StructureType.Hyperstructure),
     hyperstructureUpdates: (id) => readHyperstructureUpdates(store, id),
-    buildings: (col, row) => readBuildings(store, col, row),
+    buildings: (structureId) => readBuildings(store, structureId),
     buildingTiles: (id) => readBuildingTiles(store, systemCalls, id),
     resources: (id) => readResourceManager(store, id),
     resourceArrivals: (id) => readResourceArrivals(store, id),

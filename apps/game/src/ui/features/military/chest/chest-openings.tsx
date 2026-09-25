@@ -1,5 +1,5 @@
 import { toast } from "@/ui/features/event-feed/notify";
-import { configManager, WorldUpdateListener } from "@bibliothecadao/eternum";
+import { configManager, entityMapPosition, WorldUpdateListener } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useEffect } from "react";
 
@@ -18,7 +18,7 @@ export const ChestOpenings = () => {
         });
         toast.success(`Chest opened · ${QUALITY[reward.quality] ?? "Common"} ${KIND[reward.kind]}`, {
           id: `chest:${reward.resultKey.join(":")}`,
-          location: army ? { x: army.coord.x, y: army.coord.y } : undefined,
+          location: army ? entityMapPosition(setup.store, army.game_id, army.explorer_id) : undefined,
         });
       }),
     [setup],

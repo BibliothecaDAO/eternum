@@ -1,4 +1,5 @@
 use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
+use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::{
     EventSpyTrait, EventsFilterTrait, start_cheat_block_timestamp_global, start_cheat_caller_address,
     stop_cheat_caller_address,
@@ -677,6 +678,66 @@ fn recorded_roster_batches_block_early_play_and_report_ticket_progress() {
 }
 
 #[test]
+fn roster_settlement_displaces_an_army_without_a_stale_position_or_home_entry() {
+    let d = setup();
+    let preset = definition(true);
+    registry(d).register_preset(1, preset);
+    let game_id = registry(d).create_game(CreateGameParams { roster: roster(1), ..params(true) });
+    let rules = IGameDispatcher { contract_address: d.games }.rules(game_id);
+    let center = 2147483646 - rules.map_center_offset;
+    let origin = *crate::settlement_grid::settlement_location(
+        crate::troops::Coord { alt: false, x: center, y: center }, preset.settlement.mode, preset.settlement.spacing, 0,
+    )
+        .at(0);
+    let home = ResourceKey { game_id, entity_id: 10000 };
+    let army = crate::troops::ExplorerKey { game_id, explorer_id: 10001 };
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::logic::structures::StructureState::create(
+                home,
+                crate::structures::StructureRecord {
+                    owner: d.actor,
+                    base: crate::structures::StructureBase {
+                        category: 1, troop_max_explorer_count: 1, ..Default::default(),
+                    },
+                    resources_packed: 0,
+                    metadata: Default::default(),
+                },
+            );
+        },
+    );
+    super::resource_commands::set_explorer_fixture(
+        d.games,
+        army,
+        crate::troops::ExplorerTroops {
+            owner: home.entity_id,
+            coord: origin,
+            troops: crate::troops::Troops {
+                category: crate::troops::TroopType::Knight,
+                tier: crate::troops::TroopTier::T1,
+                count: RESOURCE_PRECISION,
+                stamina: crate::troops::Stamina { amount: 120, updated_tick: 0 },
+                boosts: Default::default(),
+                battle_cooldown_end: 0,
+            },
+        },
+    );
+    crate::tests::state::assert_spatial_indexes(d.games, game_id, array![10000, 10001].span(), array![origin].span());
+    super::season_lifecycle::execute_batch_in_game(d, game_id, Command::SettleBlitzRoster, 205, 0);
+    let moved = GameState { contract_address: d.games }.explorer(army).unwrap();
+    assert!(moved.coord != origin);
+    assert_eq!(moved.owner, home.entity_id);
+    crate::tests::state::assert_spatial_indexes(
+        d.games, game_id, array![1, 10000, 10001].span(), array![origin, moved.coord].span(),
+    );
+    assert_eq!(
+        IStructureOperationsDispatcher { contract_address: d.games }.position(ResourceKey { game_id, entity_id: 1 }),
+        Some(origin),
+    );
+}
+
+#[test]
 fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
     let d = setup();
     let mut preset = definition(true);
@@ -733,7 +794,7 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
         ),
     );
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
-    let explorer_id = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let explorer_id = *structures.home_armies(home).at(0);
     let troops = GameState { contract_address: d.games };
     let explorer = ExplorerKey { game_id, explorer_id };
     let origin = troops.explorer(explorer).unwrap().coord;
@@ -821,10 +882,7 @@ pub fn expedition_armies(d: super::Deployment, game_id: u32, category: u8) -> (E
         );
         assert!(execute_in_game(d, game_id, muster, 351, 351));
     }
-    let explorers = IStructureOperationsDispatcher { contract_address: d.games }
-        .structure(home)
-        .unwrap()
-        .troop_explorers;
+    let explorers = IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home);
     (ExplorerKey { game_id, explorer_id: *explorers.at(0) }, ExplorerKey { game_id, explorer_id: *explorers.at(1) })
 }
 
@@ -851,12 +909,8 @@ fn expedition_armies_merge_into_the_lower_stamina_and_never_past_the_size_limit(
     // A tired army merging into a rested one leaves the merged army tired: merging never refills.
     let mut tired = troops.explorer(source).unwrap();
     tired.troops.stamina.amount = 5;
-    super::resource_commands::set_fixture(
-        d.games,
-        selector!("troops"),
-        selector!("explorers"),
-        array![game_id.into(), source.explorer_id.into()].span(),
-        tired,
+    crate::tests::resource_commands::set_explorer_fixture(
+        d.games, crate::troops::ExplorerKey { game_id: game_id.into(), explorer_id: source.explorer_id }, tired,
     );
     assert!(troops.explorer(target).unwrap().troops.stamina.amount > 5);
     assert!(execute_in_game(d, game_id, transfer(source, target, 1), 352, 352));
@@ -876,12 +930,8 @@ fn expedition_armies_merge_into_the_lower_stamina_and_never_past_the_size_limit(
         * RESOURCE_PRECISION;
     let mut full = merged;
     full.troops.count = limit;
-    super::resource_commands::set_fixture(
-        d.games,
-        selector!("troops"),
-        selector!("explorers"),
-        array![game_id.into(), target.explorer_id.into()].span(),
-        full,
+    crate::tests::resource_commands::set_explorer_fixture(
+        d.games, crate::troops::ExplorerKey { game_id: game_id.into(), explorer_id: target.explorer_id }, full,
     );
     assert!(!execute_in_game(d, game_id, transfer(source, target, 1), 353, 353));
     assert_eq!(troops.explorer(target).unwrap().troops.count, limit);
@@ -954,14 +1004,14 @@ fn yesterdays_armies_leave_todays_army_cap_free() {
     assert!(execute_in_game(d, game_id, muster_command(category, 0), 351, 351));
     assert!(execute_in_game(d, game_id, muster_command(category, 1), 352, 352));
     assert!(!execute_in_game(d, game_id, muster_command(category, 2), 353, 353));
-    let yesterday = structures.structure(home).unwrap().troop_explorers;
+    let yesterday = structures.home_armies(home);
     // The next day both armies are dead by rule; the realm musters its full cap again.
     assert!(execute_in_game(d, game_id, muster_command(category, 0), 401, 401));
     assert!(execute_in_game(d, game_id, muster_command(category, 1), 402, 402));
     for id in yesterday {
         assert!(troops.explorer(ExplorerKey { game_id, explorer_id: *id }).is_none());
     }
-    assert_eq!(structures.structure(home).unwrap().troop_explorers.len(), 2);
+    assert_eq!(structures.home_armies(home).len(), 2);
 }
 
 #[test]
@@ -975,8 +1025,7 @@ fn a_home_ring_tile_reads_as_explored_and_an_explore_onto_it_moves_without_a_rol
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     assert!(execute_in_game(d, game_id, muster_command(category, 0), 351, 351));
     let key = ExplorerKey {
-        game_id,
-        explorer_id: *structures.structure(ResourceKey { game_id, entity_id: 1 }).unwrap().troop_explorers.at(0),
+        game_id, explorer_id: *structures.home_armies(ResourceKey { game_id, entity_id: 1 }).at(0),
     };
     let spawn = troops.explorer(key).unwrap().coord;
     let site = crate::geometry::neighbor(spawn, 3);
@@ -1008,12 +1057,8 @@ fn a_home_ring_tile_reads_as_explored_and_an_explore_onto_it_moves_without_a_rol
     let stamina = preset.rules.troop_stamina_config;
     let mut rested = troops.explorer(key).unwrap();
     rested.troops.stamina.amount += (stamina.stamina_travel_stamina_cost + stamina.stamina_bonus_value).into();
-    super::resource_commands::set_fixture(
-        d.games,
-        selector!("troops"),
-        selector!("explorers"),
-        array![game_id.into(), key.explorer_id.into()].span(),
-        rested,
+    crate::tests::resource_commands::set_explorer_fixture(
+        d.games, crate::troops::ExplorerKey { game_id: game_id.into(), explorer_id: key.explorer_id }, rested,
     );
     let before = troops.explorer(key).unwrap();
     let mut balances = array![];
@@ -1087,9 +1132,8 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     let home = ResourceKey { game_id, entity_id: home_id };
     let home_before = structures.structure(home).unwrap();
     assert_eq!(home_before.owner, d.actor);
-    let home_coord = crate::structures::structure_coord(home_before.base);
     let map = IMapLogicDispatcher { contract_address: d.games };
-    assert!(map.tile(crate::geometry::tile_key(game_id, home_coord)).is_none());
+    assert!(structures.position(home).is_none());
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let labor = ResourceSlot { game_id, entity_id: home_id, resource_type: 23 };
     let stored = resources.resource_balance(labor);
@@ -1097,7 +1141,7 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     let capacity = resources.resource_weight(home).capacity;
     let muster = muster_command(category, 0);
     assert!(execute_in_game(d, game_id, muster, 351, 351));
-    let old_id = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let old_id = *structures.home_armies(home).at(0);
     let troops = GameState { contract_address: d.games };
     let old = ExplorerKey { game_id, explorer_id: old_id };
     let yesterday = troops.explorer(old).unwrap().coord;
@@ -1107,8 +1151,14 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     assert_eq!(troops.explorer(old).unwrap().coord, crate::geometry::neighbor(yesterday, 0));
     assert!(execute_in_game(d, game_id, muster, 401, 401));
     assert!(troops.explorer(old).is_none());
-    let new_id = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let new_id = *structures.home_armies(home).at(0);
     let today = troops.explorer(ExplorerKey { game_id, explorer_id: new_id }).unwrap().coord;
+    super::state::assert_spatial_indexes(
+        d.games,
+        game_id,
+        array![home.entity_id, old_id, new_id].span(),
+        array![yesterday, crate::geometry::neighbor(yesterday, 0), today].span(),
+    );
     assert_ne!(today.y / preset.settlement.spacing, yesterday.y / preset.settlement.spacing);
     assert_eq!(
         map.tile(crate::geometry::tile_key(game_id, crate::geometry::neighbor(yesterday, 0))).unwrap().data
@@ -1117,7 +1167,7 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     );
     assert!(map.tile(crate::geometry::tile_key(game_id, crate::geometry::neighbor(today, 0))).is_none());
     assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: new_id, direction: 0 }), 420, 420));
-    assert_eq!(structures.structure(home).unwrap().base.coord_x, home_before.base.coord_x);
+    assert!(structures.position(home).is_none());
     assert_eq!(resources.resource_weight(home).capacity, capacity);
     assert_eq!(resources.resource_balance(labor), stored);
     assert_eq!(resources.resource_production(labor), producer);
@@ -1137,7 +1187,7 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     assert_eq!(resources.resource_production(labor).production_rate, producer.production_rate);
     assert!(execute_in_game(d, game_id, Command::LevelUp(home_id), 430, 430));
     assert_eq!(structures.structure(home).unwrap().base.level, 1);
-    assert!(map.tile(crate::geometry::tile_key(game_id, home_coord)).is_none());
+    assert!(structures.position(home).is_none());
 }
 
 #[test]
@@ -1269,8 +1319,8 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
         let record = structures.structure(home).unwrap();
         assert_eq!(record.base.troop_max_guard_count, 0);
         assert_eq!(record.base.troop_max_explorer_count, Into::<u8, u16>::into(level) + 2);
-        while structures.structure(home).unwrap().troop_explorers.len() < Into::<u8, u32>::into(level) + 2 {
-            let direction: u8 = structures.structure(home).unwrap().troop_explorers.len().try_into().unwrap();
+        while structures.home_armies(home).len() < Into::<u8, u32>::into(level) + 2 {
+            let direction: u8 = structures.home_armies(home).len().try_into().unwrap();
             assert!(
                 execute_in_game(
                     d,
@@ -1285,7 +1335,7 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
         }
         assert!(!execute_in_game(d, game_id, muster, 351, 351));
     }
-    let id = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let id = *structures.home_armies(home).at(0);
     let slot = ResourceSlot { game_id, entity_id: 1, resource_type: troop_resource };
     let before = resources.resource_balance(slot);
     assert!(
@@ -1439,7 +1489,7 @@ fn assert_expedition_capture(depth: u8) {
         ),
     );
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
-    let explorer_id = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let explorer_id = *structures.home_armies(home).at(0);
     let troops = GameState { contract_address: d.games };
     let army_key = ExplorerKey { game_id, explorer_id };
     let mut army = troops.explorer(army_key).unwrap();
@@ -1469,8 +1519,8 @@ fn assert_expedition_capture(depth: u8) {
         map.occupy(location, explorer_id, occupier, false);
         stop_cheat_caller_address(d.games);
     }
-    super::resource_commands::set_fixture(
-        d.games, selector!("troops"), selector!("explorers"), array![game_id.into(), explorer_id.into()].span(), army,
+    crate::tests::resource_commands::set_explorer_fixture(
+        d.games, crate::troops::ExplorerKey { game_id: game_id.into(), explorer_id: explorer_id }, army,
     );
     let supply = ResourceSlot { game_id, entity_id: 1, resource_type: 1 };
     let before_supplies = resources.resource_balance(supply);
@@ -1711,7 +1761,7 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
                 351,
             ),
         );
-        let explorer_id = *structures.structure(home).unwrap().troop_explorers.at((depth - 1).into());
+        let explorer_id = *structures.home_armies(home).at((depth - 1).into());
         let key = ExplorerKey { game_id, explorer_id };
         let before = troops.explorer(key).unwrap();
         let enter = Command::EnterDepth(crate::commands::EnterDepth { explorer_id, depth });
@@ -1773,7 +1823,7 @@ fn an_army_enters_a_depth_only_from_its_realms_spire_which_turns_each_day() {
     );
     // An army beside the realm's site but two tiles from its spire cannot enter a depth.
     assert!(execute_in_game(d, game_id, muster_command(category, (day + 3) % 6), 351, 351));
-    let away = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let away = *structures.home_armies(home).at(0);
     let troops = GameState { contract_address: d.games };
     let before = troops.explorer(ExplorerKey { game_id, explorer_id: away }).unwrap();
     assert!(
@@ -1878,7 +1928,7 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
     );
     assert!(execute_in_game(d, game_id, muster, 351, 351));
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
-    let explorer_id = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let explorer_id = *structures.home_armies(home).at(0);
     let relics = IRelicsDispatcher { contract_address: d.games };
     let mut spy = snforge_std::spy_events();
     let mut opened = 0_u32;
@@ -1911,7 +1961,7 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
     assert!(execute_in_game(d, game_id, muster, 400, 400));
     assert!(!resources.has_resource(ResourceKey { game_id, entity_id: explorer_id }));
     assert_eq!(relics.chest_pity(game_id, d.actor, 0), pity);
-    let second = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let second = *structures.home_armies(home).at(0);
     for timestamp in 410_u64..414 {
         assert!(
             execute_in_game(
@@ -2053,4 +2103,60 @@ fn creator_and_non_creator_roster_batches_produce_the_same_settlements() {
 
 fn next_entity(d: super::Deployment, game_id: u32) -> u32 {
     snforge_std::interact_with_state(d.games, || crate::state::read().games.next_entity.read(game_id))
+}
+
+#[test]
+fn frontier_refuses_off_map_economy_commands_before_reading_positions() {
+    let d = setup();
+    let mut preset = definition(false);
+    preset.rules.epoch_seconds = 86400;
+    preset.settlement.spacing = 1024;
+    preset
+        .rules
+        .command_mask = (*read_txt(@FileTrait::new("tests/fixtures/frontier-command-mask.txt")).at(0))
+        .try_into()
+        .unwrap();
+    registry(d).register_preset(1, preset);
+    let game_id = registry(d).create_game(params(false));
+    let transfer = crate::resources::ResourceTransfer {
+        from_entity_id: 1, to_entity_id: 2, resources: array![].span(),
+    };
+    let swap = crate::market::Swap { bank_id: 2, structure_id: 1, resource_type: 1, amount: 1 };
+    for command in array![
+        Command::CreateTradeOrder(
+            crate::trade::CreateOrder {
+                maker_id: 1,
+                taker_id: 2,
+                offered_resource: 1,
+                requested_resource: 2,
+                offered_per_lot: 1,
+                requested_per_lot: 1,
+                lots: 1,
+                expires_at: 399,
+            },
+        ),
+        Command::AcceptTradeOrder(crate::trade::AcceptOrder { trade_id: 1, taker_id: 2, lots: 1 }),
+        Command::CancelTradeOrder(1), Command::BuyFromBank(swap), Command::SellToBank(swap),
+        Command::AddBankLiquidity(
+            crate::market::AddLiquidity {
+                bank_id: 2, structure_id: 1, resource_type: 1, resource_amount: 1, lords_amount: 1,
+            },
+        ),
+        Command::RemoveBankLiquidity(
+            crate::market::RemoveLiquidity { bank_id: 2, structure_id: 1, resource_type: 1, shares: 1 },
+        ),
+        Command::SendResources(transfer), Command::TransferStructureResourcesToExplorer(transfer),
+        Command::TransferExplorerResourcesToStructure(transfer),
+        Command::WithdrawResource(
+            crate::bridge::Withdraw {
+                structure_id: 1, recipient: d.actor, resource_type: 1, amount: 1, client_fee_recipient: d.actor,
+            },
+        ),
+    ] {
+        assert!(!execute_in_game(d, game_id, command, 350, 350));
+        let result = IRecordedExecutionViewsDispatcher { contract_address: d.games }
+            .recorded_outcome(game_id.into(), super::recorded::head(d.games, game_id).order)
+            .unwrap();
+        assert_eq!(result.status_class, 'COMMAND_DISABLED');
+    }
 }

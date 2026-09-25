@@ -165,7 +165,7 @@ describe("native building facts", () => {
     });
     expect(fold.retainedRowCount()).toBe(0);
   });
-  const keys = ["1", "0", "2000", "2001", "11", "10"];
+  const keys = ["1", "7", "11", "10"];
   function buildingEvent(values?: string[]) {
     const model = schema.models.find((model) => model.name === "Building")!;
     const event = schema.games.events.find((event) => event.name === (values ? "RowSet" : "RowDeleted"))!;
@@ -179,20 +179,20 @@ describe("native building facts", () => {
     const { native, fold } = setup();
     native.applyReceipt(
       fold,
-      receipt([buildingEvent(["37", "7", "0", "0"]), resourceEvent("ResourceBalance", ["1", "7", "23"], ["90"])]),
+      receipt([buildingEvent(["37", "0", "0"]), resourceEvent("ResourceBalance", ["1", "7", "23"], ["90"])]),
       10,
       0,
     );
     expect(fold.modelRows("Building")[0].value).toMatchObject({
       category: "0x25",
-      outer_entity_id: "0x7",
+      structure_id: "0x7",
       paused: false,
     });
     expect(fold.modelRows("Building")[0].value).not.toHaveProperty("entity_id");
     expect(fold.modelRows("Building")[0].value).not.toHaveProperty("bonus_percent");
     native.applyReceipt(
       fold,
-      receipt([buildingEvent(["37", "7", "1", "0"]), resourceEvent("ResourceBalance", ["1", "7", "35"], ["60"])]),
+      receipt([buildingEvent(["37", "1", "0"]), resourceEvent("ResourceBalance", ["1", "7", "35"], ["60"])]),
       11,
       0,
     );
@@ -213,7 +213,7 @@ describe("native building facts", () => {
     expect(() =>
       native.applyReceipt(
         fold,
-        receipt([resourceEvent("ResourceBalance", ["1", "7", "23"], ["90"]), buildingEvent(["37", "7", "2", "0"])]),
+        receipt([resourceEvent("ResourceBalance", ["1", "7", "23"], ["90"]), buildingEvent(["37", "2", "0"])]),
         10,
         0,
       ),

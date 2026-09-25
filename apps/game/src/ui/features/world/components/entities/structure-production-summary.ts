@@ -117,11 +117,7 @@ export const useStructureProductionSummary = (
   resources?: ResourceManager | null,
 ): StructureProductionSummary => {
   const currentDefaultTick = useCurrentDefaultTick();
-  const buildingsData = useBuildings(
-    Number(structure?.base.coord_x ?? 0),
-    Number(structure?.base.coord_y ?? 0),
-    structure?.base.alt ?? false,
-  );
+  const buildingsData = useBuildings(structure?.entity_id);
 
   return useMemo(() => {
     if (!structure || !resources) return EMPTY_PRODUCTION_SUMMARY;

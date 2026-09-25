@@ -538,7 +538,7 @@ pub mod HyperstructureState {
                 return 2;
             }
             let distance = crate::settlement_grid::hyperstructure_scan_distance(rules.spacing, rules.mode);
-            let origin = crate::structures::structure_coord(self.structure(key).base);
+            let origin = crate::structures::structure_coord(key);
             let mut count = 0;
             for direction in array![(0, 4), (1, 5), (2, 0), (3, 1), (4, 2), (5, 3)] {
                 let (first, second) = direction;

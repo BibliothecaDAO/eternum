@@ -28,8 +28,7 @@ export interface ThreeStore {
 }
 
 export interface SelectedBuildingHex {
-  outerCol: number;
-  outerRow: number;
+  structureId: number;
   innerCol: number;
   innerRow: number;
 }
@@ -70,8 +69,7 @@ const areBuildingHexesEqual = (left: SelectedBuildingHex | null, right: Selected
   left === right ||
   (left !== null &&
     right !== null &&
-    left.outerCol === right.outerCol &&
-    left.outerRow === right.outerRow &&
+    left.structureId === right.structureId &&
     left.innerCol === right.innerCol &&
     left.innerRow === right.innerRow);
 

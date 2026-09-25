@@ -21,11 +21,11 @@ describe("structure-status", () => {
       countOccupiedBuildingTilesByStructure({
         trackedStructureIds: new Set([7, 8]),
         buildings: [
-          { outerEntityId: 7, innerCol: BUILDINGS_CENTER[0], innerRow: BUILDINGS_CENTER[1] },
-          { outerEntityId: 7, innerCol: 1, innerRow: 0 },
-          { outerEntityId: 7, innerCol: 1, innerRow: 1 },
-          { outerEntityId: 8, innerCol: 0, innerRow: 1 },
-          { outerEntityId: 99, innerCol: 2, innerRow: 0 },
+          { structureId: 7, innerCol: BUILDINGS_CENTER[0], innerRow: BUILDINGS_CENTER[1] },
+          { structureId: 7, innerCol: 1, innerRow: 0 },
+          { structureId: 7, innerCol: 1, innerRow: 1 },
+          { structureId: 8, innerCol: 0, innerRow: 1 },
+          { structureId: 99, innerCol: 2, innerRow: 0 },
         ],
       }),
     ).toEqual({

@@ -1,3 +1,4 @@
+import { structureMapPosition } from "@bibliothecadao/eternum";
 import { ChevronDown, Flame, Search, ShieldCheck, X } from "@/ui/design-system/atoms/game-icons";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
@@ -87,12 +88,12 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     if (!selectedStructure) return distances;
     playerStructuresFiltered.forEach((structure) => {
       distances[structure.structure.entity_id] = calculateDistance(
-        { x: structure.structure.base.coord_x, y: structure.structure.base.coord_y },
-        { x: selectedStructure.base.coord_x, y: selectedStructure.base.coord_y },
+        structureMapPosition(store, structure.structure),
+        structureMapPosition(store, selectedStructure),
       );
     });
     return distances;
-  }, [playerStructuresFiltered, selectedStructure]);
+  }, [playerStructuresFiltered, selectedStructure, store]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [burnAmount, setBurnAmount] = useState(0);

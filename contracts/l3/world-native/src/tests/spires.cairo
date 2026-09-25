@@ -80,6 +80,9 @@ fn production_initialization_places_the_same_spire_identity_on_both_layers_witho
             assert_eq!((tile.data / 512) % 0x100000000, (index + 1).into());
             assert_eq!((tile.data / 2) % 256, 35);
             assert_eq!(tile.data % 2, 1);
+            super::state::assert_spatial_indexes(
+                d.games, 3, array![(index + 1).try_into().unwrap()].span(), array![coord].span(),
+            );
             for direction in 0_u8..6 {
                 let access = map(d).tile(tile_key(3, spire_neighbor(coord, direction))).unwrap();
                 assert!(access.data / 0x20000000000 % 256 != 0);

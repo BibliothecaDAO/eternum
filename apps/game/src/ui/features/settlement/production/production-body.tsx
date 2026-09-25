@@ -14,7 +14,7 @@ export const ProductionBody = ({
   onSelectResource: (resource: ResourcesIds | null) => void;
 }) => {
   const mode = useGameModeConfig();
-  const buildings = useBuildings(realm.position.x, realm.position.y);
+  const buildings = useBuildings(realm.structure.entity_id);
   const productionBuildings = buildings.filter((building) => building && getProducedResource(building.category));
   const producedResources = useMemo(
     () =>

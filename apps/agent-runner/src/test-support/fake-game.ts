@@ -8,7 +8,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { WorldSpatialProjection, type HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
-import { ContractAddress, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { hash, type AccountInterface } from "starknet";
 import { vi } from "vitest";
 import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json";
@@ -109,42 +109,44 @@ export function writeFact(
   model: string,
   keys: (number | bigint)[],
   value: Record<string, unknown>,
+  related: Parameters<NativeFactStore["applyFacts"]>[0] = [],
 ): void {
-  store.applyFacts([{ model, key: hash.computePoseidonHashOnElements(keys), value }]);
+  store.applyFacts([{ model, key: hash.computePoseidonHashOnElements(keys), value }, ...related]);
 }
 
 export const seedStructure = (
   store: NativeFactStore,
   input: { entityId: number; owner: ContractAddress; x: number; y: number; category?: StructureType; level?: number },
 ): void => {
-  writeFact(store, "Structure", [GAME_ID, input.entityId], {
-    game_id: GAME_ID,
-    entity_id: input.entityId,
-    owner: input.owner,
-    base: {
-      category: input.category ?? StructureType.Realm,
-      coord_x: input.x,
-      coord_y: input.y,
-      alt: false,
-      level: input.level ?? 1,
-      troop_max_guard_count: 4,
-      troop_max_explorer_count: 3,
-      troop_explorer_count: 0,
-      created_at: 0,
-      starting_troops_granted: true,
+  writeFact(
+    store,
+    "Structure",
+    [GAME_ID, input.entityId],
+    {
+      game_id: GAME_ID,
+      entity_id: input.entityId,
+      owner: input.owner,
+      base: {
+        category: input.category ?? StructureType.Realm,
+        level: input.level ?? 1,
+        troop_max_guard_count: 4,
+        troop_max_explorer_count: 3,
+        created_at: 0,
+        starting_troops_granted: true,
+      },
+      metadata: {
+        realm_id: input.entityId,
+        order: 1,
+        has_wonder: false,
+        village_realm: 0,
+        mine_kind: 0,
+        attunement: 0,
+        barracks_tier: 0,
+      },
+      resources_packed: 0n,
     },
-    metadata: {
-      realm_id: input.entityId,
-      order: 1,
-      has_wonder: false,
-      village_realm: 0,
-      mine_kind: 0,
-      attunement: 0,
-      barracks_tier: 0,
-    },
-    troop_explorers: [],
-    resources_packed: 0n,
-  });
+    positionFacts(store, input.entityId, input.x, input.y, false, input.category ?? StructureType.Realm, true),
+  );
   writeFact(store, "ResourceWeight", [GAME_ID, input.entityId], {
     game_id: GAME_ID,
     entity_id: input.entityId,
@@ -153,24 +155,65 @@ export const seedStructure = (
   });
 };
 
+function positionFacts(
+  store: NativeFactStore,
+  entityId: number,
+  col: number,
+  row: number,
+  alt: boolean,
+  category: number,
+  isStructure: boolean,
+): Parameters<NativeFactStore["applyFacts"]>[0] {
+  const previous = store.entityOccupancy(GAME_ID, entityId);
+  return [
+    ...(previous
+      ? [
+          {
+            model: "TileOccupancy",
+            key: hash.computePoseidonHashOnElements([GAME_ID, Number(previous.alt), previous.col, previous.row]),
+            value: null,
+          },
+        ]
+      : []),
+    {
+      model: "TileOccupancy",
+      key: hash.computePoseidonHashOnElements([GAME_ID, Number(alt), col, row]),
+      value: { game_id: GAME_ID, alt, col, row, entity_id: entityId, category, is_structure: isStructure },
+    },
+  ];
+}
+
 export const seedExplorer = (
   store: NativeFactStore,
   input: { explorerId: number; owner: number; x: number; y: number; stamina?: bigint; count?: bigint; alt?: boolean },
 ): void => {
-  writeFact(store, "ExplorerTroops", [GAME_ID, input.explorerId], {
-    ...explorer.expected.value,
-    game_id: GAME_ID,
-    explorer_id: input.explorerId,
-    owner: input.owner,
-    troops: {
-      ...explorer.expected.value.troops,
-      category: "Knight",
-      tier: "T1",
-      count: input.count ?? 10000000000n,
-      stamina: { amount: input.stamina ?? 20n, updated_tick: 0n },
+  writeFact(
+    store,
+    "ExplorerTroops",
+    [GAME_ID, input.explorerId],
+    {
+      ...explorer.expected.value,
+      game_id: GAME_ID,
+      explorer_id: input.explorerId,
+      owner: input.owner,
+      troops: {
+        ...explorer.expected.value.troops,
+        category: "Knight",
+        tier: "T1",
+        count: input.count ?? 10000000000n,
+        stamina: { amount: input.stamina ?? 20n, updated_tick: 0n },
+      },
     },
-    coord: { x: input.x, y: input.y, alt: input.alt ?? false },
-  });
+    positionFacts(
+      store,
+      input.explorerId,
+      input.x,
+      input.y,
+      input.alt ?? false,
+      TileOccupier.ExplorerKnightT1Regular,
+      false,
+    ),
+  );
 };
 
 export const seedGameRegistry = (

@@ -196,3 +196,8 @@ pub fn shuffle_roster(count: u32, root: u256) -> Span<u8> {
     }
     players.span()
 }
+
+// Off-map realms retain their launch reference for the starting troop biome and immutable creation story.
+pub fn off_map_realm_reference(realm_id: u32) -> crate::troops::Coord {
+    crate::troops::Coord { alt: false, x: 0xffffffff - realm_id, y: 0xffffffff }
+}

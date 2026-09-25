@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { hash, shortString } from "starknet";
 import { WorldFold } from "../world-fold";
 import type { DecodedWorldEvent, RpcReceipt, RpcTransaction } from "../types";
+import type { NativeSchema } from "./schema";
 import { NativeDecoder } from "./decoder";
 import { NativeIngestion } from "./ingestion";
 import { manifest, receipt, rowEvent } from "./fixtures";
@@ -70,7 +71,18 @@ describe("recorded launch configuration matches Cairo readers", () => {
   });
   it("replays every model and key for the recorded Blitz and Frontier launches", async () => {
     const first = json<RpcTransaction>("blitz-register-preset-transaction.json");
-    const decoder = new NativeDecoder({ ...manifest, world: { address: first.calldata![1]! } });
+    // These immutable node receipts predate the spatial schema; decode them with their published layout.
+    const recordedSchema = json<NativeSchema>("recorded-schema.json");
+    const decoder = new NativeDecoder({
+      ...manifest,
+      world: { address: first.calldata![1]! },
+      native: {
+        ...manifest.native,
+        activeSchema: recordedSchema.identity,
+        releaseSchemas: { "1": recordedSchema.identity },
+        schemas: { [recordedSchema.identity]: recordedSchema },
+      },
+    });
     const ingestion = new NativeIngestion(decoder);
     const confirmed = new WorldFold(decoder.registry);
     const recorded: { receipt: RpcReceipt; transaction: RpcTransaction }[] = [];

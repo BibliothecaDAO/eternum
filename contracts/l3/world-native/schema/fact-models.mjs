@@ -226,10 +226,6 @@ export const factWireTypes = [
         type: "core::integer::u8",
       },
       {
-        name: "outer_entity_id",
-        type: "core::integer::u32",
-      },
-      {
         name: "paused",
         type: "core::bool",
       },
@@ -248,15 +244,7 @@ export const factWireTypes = [
         type: "core::integer::u32",
       },
       {
-        name: "alt",
-        type: "core::bool",
-      },
-      {
-        name: "outer_col",
-        type: "core::integer::u32",
-      },
-      {
-        name: "outer_row",
+        name: "structure_id",
         type: "core::integer::u32",
       },
       {
@@ -407,6 +395,23 @@ export const factWireTypes = [
         name: "seed",
         type: "core::felt252",
       },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::map::TileOccupancy",
+    members: [
+      { name: "entity_id", type: "core::integer::u32" },
+      { name: "category", type: "core::integer::u8" },
+      { name: "is_structure", type: "core::bool" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::troops::ExplorerRecord",
+    members: [
+      { name: "owner", type: "core::integer::u32" },
+      { name: "troops", type: "world_native::troops::Troops" },
     ],
   },
   {
@@ -592,10 +597,6 @@ export const factWireTypes = [
         type: "world_native::structures::StructureBase",
       },
       {
-        name: "troop_explorers",
-        type: "core::array::Span::<core::integer::u32>",
-      },
-      {
         name: "resources_packed",
         type: "core::integer::u128",
       },
@@ -609,10 +610,6 @@ export const factWireTypes = [
     type: "struct",
     name: "world_native::structures::StructureBase",
     members: [
-      {
-        name: "troop_explorer_count",
-        type: "core::integer::u16",
-      },
       {
         name: "troop_max_guard_count",
         type: "core::integer::u8",
@@ -630,23 +627,11 @@ export const factWireTypes = [
         type: "core::integer::u8",
       },
       {
-        name: "coord_x",
-        type: "core::integer::u32",
-      },
-      {
-        name: "coord_y",
-        type: "core::integer::u32",
-      },
-      {
         name: "level",
         type: "core::integer::u8",
       },
       {
         name: "starting_troops_granted",
-        type: "core::bool",
-      },
-      {
-        name: "alt",
         type: "core::bool",
       },
     ],
@@ -973,7 +958,8 @@ export function defineFactModels({ struct, model: declare }) {
     model("EntryEntitlement", "game", struct("settlement::EntryKey"), struct("settlement::EntryEntitlement")),
     model("PlayerEntry", "game", struct("settlement::EntryKey"), struct("settlement::PlayerEntry")),
     model("TileOpt", "game", struct("map::TileKey"), struct("map::TileOpt")),
-    model("ExplorerTroops", "game", struct("troops::ExplorerKey"), struct("troops::ExplorerTroops")),
+    model("TileOccupancy", "game", struct("map::TileKey"), struct("map::TileOccupancy")),
+    model("ExplorerTroops", "game", struct("troops::ExplorerKey"), struct("troops::ExplorerRecord")),
     model("Structure", "game", struct("resources::ResourceKey"), struct("structures::Structure")),
     model("ResourceBalance", "game", struct("resources::ResourceSlot"), [
       { name: "balance", type: "core::integer::u128" },
@@ -1200,12 +1186,13 @@ const behaviouralFacts = {
   UpgradeRecipe: { domain: "structure", fields: { costs: "costs" } },
   ExplorerTroops: {
     domain: "troops",
-    fields: { home: "owner", position: "coord", troops: "troops" },
+    fields: { home: "owner", troops: "troops" },
   },
-  TileOpt: { domain: "map", fields: { tile: "data" }, transform: "tile" },
+  TileOpt: { domain: "map", fields: { terrain: "data" } },
+  TileOccupancy: { domain: "map", fields: { entity: "entity_id", category: "category", isStructure: "is_structure" } },
   Building: {
     domain: "production",
-    fields: { category: "category", structure: "outer_entity_id", paused: "paused" },
+    fields: { category: "category", structure: "structure_id", paused: "paused" },
   },
   StructureBuildings: {
     domain: "production",
@@ -1237,12 +1224,8 @@ const behaviouralFacts = {
       owner: "owner",
       level: "base.level",
       kind: "base.category",
-      layer: "base.alt",
       mineKind: "metadata.mine_kind",
-      column: "base.coord_x",
-      row: "base.coord_y",
       foundedAt: "base.created_at",
-      explorers: "troop_explorers",
       explorerLimit: "base.troop_max_explorer_count",
       guardLimit: "base.troop_max_guard_count",
       startingTroopsGranted: "base.starting_troops_granted",
@@ -1366,7 +1349,8 @@ export const syncScopes = {
   RaidEvent: { owners: ["player", "target_owner"] },
   WonderFaith: { owners: ["last_recorded_owner"] },
   TileOpt: { regions: [{ alt: "alt", x: "col", y: "row" }] },
-  Building: { realms: ["outer_entity_id"] },
+  TileOccupancy: { regions: [{ alt: "alt", x: "col", y: "row" }], entities: ["entity_id"] },
+  Building: { realms: ["structure_id"] },
   ProductionReceiver: { realms: ["home"] },
   ExplorerTroops: { entities: ["explorer_id"] },
   Guard: { entities: ["structure_id"] },

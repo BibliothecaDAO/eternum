@@ -109,7 +109,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       store,
     },
   } = useGame();
-  const revision = useNativeRevision(["Structure", "Guard", "ExplorerTroops"]);
+  const revision = useNativeRevision(["Structure", "Guard", "ExplorerTroops", "TileOccupancy"]);
 
   const accountName = usePlayerDisplayName(account?.address);
   const selectedHex = useUIStore((state) => state.selectedHex);

@@ -112,7 +112,11 @@ pub mod EconomyLogic {
             assert!(context.timestamp < order.expires_at.into(), "trade expired");
             assert!(order.taker_id == 0 || order.taker_id == command.taker_id, "not the taker");
             assert!(command.lots != 0 && command.lots <= order.remaining_lots, "invalid purchase count");
-            assert!(!maker.base.alt && !taker.base.alt, "transportation only allowed on surface");
+            assert!(
+                !structure_coord(ResourceKey { game_id, entity_id: order.maker_id }).alt
+                    && !structure_coord(ResourceKey { game_id, entity_id: command.taker_id }).alt,
+                "transportation only allowed on surface",
+            );
             let fill = self
                 .settle_fill(game_id, order, command, maker, taker, context.timestamp, context, ref story_cursor);
             self.trades.fill(key, order, command.lots);
@@ -472,7 +476,11 @@ pub mod EconomyLogic {
         ) {
             let rules = game_context.rules.unbox();
             let travel_time = crate::transport::travel_time(
-                structure_coord(bank.base), structure_coord(player.base), resources, rules.speed_config, true,
+                structure_coord(ResourceKey { game_id, entity_id: bank_id }),
+                structure_coord(ResourceKey { game_id, entity_id: structure_id }),
+                resources,
+                rules.speed_config,
+                true,
             );
             let mut weight = 0;
             for resource in resources {
@@ -669,8 +677,7 @@ pub mod EconomyLogic {
                 .deliver(
                     game_id,
                     order.maker_id,
-                    taker,
-                    maker,
+                    command.taker_id,
                     ResourceAmount { resource_type: order.requested_resource, amount: requested },
                     timestamp,
                     game_context,
@@ -680,8 +687,7 @@ pub mod EconomyLogic {
                 .deliver(
                     game_id,
                     command.taker_id,
-                    maker,
-                    taker,
+                    order.maker_id,
                     ResourceAmount { resource_type: order.offered_resource, amount: offered },
                     timestamp,
                     game_context,
@@ -724,10 +730,16 @@ pub mod EconomyLogic {
         fn validate_offer(
             self: @ContractState, game_id: u32, actor: ContractAddress, command: CreateOrder, timestamp: u64,
         ) {
-            let maker = self.owned_structure(game_id, command.maker_id, actor);
-            assert!(!maker.base.alt, "transportation only allowed on surface");
+            self.owned_structure(game_id, command.maker_id, actor);
+            assert!(
+                !structure_coord(ResourceKey { game_id, entity_id: command.maker_id }).alt,
+                "transportation only allowed on surface",
+            );
             if command.taker_id != 0 {
-                assert!(!self.structure(game_id, command.taker_id).base.alt, "transportation only allowed on surface");
+                assert!(
+                    !structure_coord(ResourceKey { game_id, entity_id: command.taker_id }).alt,
+                    "transportation only allowed on surface",
+                );
             }
             assert!(command.offered_resource != command.requested_resource, "maker resource is taker resource");
             assert!(command.offered_resource != 57 && command.requested_resource != 57, "research is not tradable");
@@ -763,15 +775,14 @@ pub mod EconomyLogic {
             self: @ContractState,
             game_id: u32,
             destination: u32,
-            from: Structure,
-            to: Structure,
+            source: u32,
             resource: ResourceAmount,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
             ref story_cursor: crate::ownership::StoryCursor,
         ) {
-            let origin = structure_coord(from.base);
-            let target = structure_coord(to.base);
+            let origin = structure_coord(ResourceKey { game_id, entity_id: source });
+            let target = structure_coord(ResourceKey { game_id, entity_id: destination });
             let travel_time = if origin == target {
                 0
             } else {

@@ -52,10 +52,7 @@ export interface GameModeConfig {
     allowsTransfers: boolean;
   };
   structure: {
-    getName: (
-      structure: StructureNameInput,
-      parentRealmContractPosition?: { col: number; row: number },
-    ) => ReturnType<typeof getStructureName>;
+    getName: (structure: StructureNameInput) => ReturnType<typeof getStructureName>;
     getTypeName: (structureType: StructureType, mineKind?: number) => string | undefined;
     getEntityInfo: (
       entityId: ID,
@@ -92,8 +89,7 @@ function resolveBuildingModelPaths(isBlitz: boolean) {
 }
 
 const buildStructureHelpers = (isBlitz: boolean) => ({
-  getName: (structure: StructureNameInput, parentRealmContractPosition?: { col: number; row: number }) =>
-    getStructureName(structure, isBlitz, parentRealmContractPosition),
+  getName: (structure: StructureNameInput) => getStructureName(structure, isBlitz),
   getTypeName: getStructureTypeName,
   getEntityInfo: (entityId: ID, playerAccount: ContractAddress | null, store: NativeFactStore) =>
     getEntityInfo(entityId, playerAccount, store, isBlitz),

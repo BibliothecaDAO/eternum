@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { revealedTileData, type HomeRingTile, type HomeRingView } from "./home-ring";
+import { type HomeRingTile, type HomeRingView } from "./home-ring";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
 import { raw, receipt, rowEvent, rulesEvent, setup } from "./native/fixtures";
@@ -33,12 +33,7 @@ const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) =>
     rowEvent(
       "Structure",
       ["1", String(id)],
-      [
-        String(id + 9),
-        ...["0", "0", "2", "120", "1", "0", "0", "0", "1", "0", "0", "0"],
-        String(id),
-        ...["0", "0", "0", "0", "1", "0"],
-      ],
+      [String(id + 9), ...["0", "2", "120", "1", "0", "1", "0"], String(id), ...["0", "0", "0", "0", "1", "0"]],
     );
   native.applyReceipt(
     fold,
@@ -81,7 +76,7 @@ const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) =>
       call,
     } as unknown as MadaraRpc,
   });
-  return { live, native, decoder };
+  return { live, native, decoder, fold };
 };
 
 const connect = (live: LiveWorld, actor: string) => {
@@ -101,6 +96,23 @@ const tilesIn = (messages: HeraldStreamMessage[]) =>
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe("home ring", () => {
+  it("keeps spires and reservations in tile scope without treating them as positioned entities", () => {
+    const { native, fold } = frontierWorld();
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("TileOccupancy", ["1", "0", "50", "50"], ["999", "35", "1"]),
+        rowEvent("TileOccupancy", ["1", "1", "50", "50"], ["999", "35", "1"]),
+        rowEvent("TileOccupancy", ["1", "0", "51", "50"], ["0", "39", "1"]),
+      ]),
+      10,
+      0,
+    );
+    const scope = fold.subscriptionScope("1", "0xa", MID_DAY);
+    expect(scope.expedition?.entities.has("999")).toBe(false);
+    expect(scope.expedition?.entities.has("0")).toBe(false);
+  });
+
   it("reads a watched realm's ring once a day and shows it on connect, on arrival and on reconnect", async () => {
     const view = vi.fn<HomeRingView>(async () => RING);
     const { live, decoder } = frontierWorld(view);
@@ -115,7 +127,9 @@ describe("home ring", () => {
     // Each row is exactly the row the chain writes when it reveals the tile.
     const chainRows = RING.map((tile) => {
       const event = decoder.decode(
-        raw(rowEvent("TileOpt", ["1", "0", String(tile.col), String(tile.row)], [revealedTileData(tile).toString()])),
+        raw(
+          rowEvent("TileOpt", ["1", "0", String(tile.col), String(tile.row)], [(BigInt(tile.biome) << 41n).toString()]),
+        ),
       );
       const { set } = new WorldFold(decoder.registry).apply(event)!;
       return { key: set!.key, model: set!.model, value: set!.value };

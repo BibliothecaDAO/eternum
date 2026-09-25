@@ -93,7 +93,7 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
     return getRealmInfo(structureEntityId, setup.store, getPlayerName);
   }, [revision, liveStructure, liveStructureBuildings, setup.store, structureEntityId]);
 
-  const realmBuildings = useBuildings(Number(structureInfo?.position.x ?? 0), Number(structureInfo?.position.y ?? 0));
+  const realmBuildings = useBuildings(structureEntityId ?? undefined);
   const isRealm = structureInfo?.category === StructureType.Realm;
   const isBlitzWorld = resolvedWorldGameMode === "blitz";
   const ownerAddress = account.account?.address ? ContractAddress(account.account.address) : null;

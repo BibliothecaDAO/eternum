@@ -332,8 +332,8 @@ pub mod BridgeState {
                 );
                 travel_time =
                     crate::transport::travel_time(
-                        structure_coord(village.base),
-                        structure_coord(realm.base),
+                        structure_coord(ResourceKey { game_id, entity_id: village_id }),
+                        structure_coord(ResourceKey { game_id, entity_id: realm_id }),
                         array![resource].span(),
                         rules.speed_config,
                         false,

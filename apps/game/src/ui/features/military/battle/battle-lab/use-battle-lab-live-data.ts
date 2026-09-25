@@ -50,7 +50,7 @@ export const useBattleLabLiveData = (
   const {
     setup: { store },
   } = useGame();
-  const revision = useNativeRevision(["Structure", "Guard", "ExplorerTroops"]);
+  const revision = useNativeRevision(["Structure", "Guard", "ExplorerTroops", "TileOccupancy"]);
   const currentArmiesTick = useCurrentArmiesTick();
 
   const { attackerRelicEffects, targetRelicEffects, target, targetResources, isLoading } = useAttackTargetData(

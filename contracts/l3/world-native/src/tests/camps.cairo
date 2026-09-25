@@ -204,7 +204,7 @@ fn recorded_exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
         ),
     );
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
-    let explorer_id = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let explorer_id = *structures.home_armies(home).at(0);
     let key = ExplorerKey { game_id: 3, explorer_id };
     let troops = GameState { contract_address: d.games };
     let origin = troops.explorer(key).unwrap().coord;
@@ -239,7 +239,7 @@ fn recorded_eternum_exploration_does_not_create_a_camp() {
         ),
     );
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
-    let explorer_id = *structures.structure(home).unwrap().troop_explorers.at(0);
+    let explorer_id = *structures.home_armies(home).at(0);
     let key = ExplorerKey { game_id: 3, explorer_id };
     let troops = GameState { contract_address: d.games };
     let destination = neighbor(troops.explorer(key).unwrap().coord, 0);

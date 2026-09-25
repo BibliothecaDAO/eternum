@@ -16,11 +16,35 @@ pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
 use starknet::storage::StorageMapReadAccess;
 use crate::map::{TileKey, TileOpt};
 
+pub fn occupancy(key: TileKey) -> Option<crate::map::TileOccupancy> {
+    let state = crate::state::read();
+    crate::map::occupancy_from_bits(state.map.occupancy.read((key.game_id, key.alt, key.col, key.row)))
+}
+
+pub fn entity_coord(key: crate::resources::ResourceKey) -> Option<crate::troops::Coord> {
+    let state = crate::state::read();
+    state
+        .map
+        .entity_tiles
+        .read((key.game_id, key.entity_id))
+        .map(|tile| {
+            let (alt, x, y) = tile;
+            crate::troops::Coord { alt, x, y }
+        })
+}
+
 pub fn tile(key: TileKey) -> Option<TileOpt> {
     let state = crate::state::read();
     let storage_key = (key.game_id, key.alt, key.col, key.row);
-    if state.map.exists.read(storage_key) {
-        Some(TileOpt { data: state.map.tiles.read(storage_key) })
+    let occupier = occupancy(key);
+    if state.map.exists.read(storage_key) || occupier.is_some() {
+        Some(
+            TileOpt {
+                data: crate::map::coordinate_bits(key)
+                    + state.map.tiles.read(storage_key)
+                    + occupier.map(|occupancy| crate::map::occupancy_bits(occupancy)).unwrap_or(0),
+            },
+        )
     } else {
         None
     }
@@ -29,31 +53,84 @@ pub fn tile(key: TileKey) -> Option<TileOpt> {
 pub mod MapState {
     use starknet::Event as EventTrait;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
-    use crate::events::{RowMemberSet, RowSet};
-    use crate::map::{
-        BIOME_SCALE, BYTE_RANGE, ENTITY_RANGE, OCCUPIER_SCALE, RESERVED_HYPERSTRUCTURE, TileKey, TileOpt,
-        coordinate_bits,
-    };
+    use crate::events::{RowDeleted, RowSet};
+    use crate::map::{BIOME_SCALE, BYTE_RANGE, RESERVED_HYPERSTRUCTURE, TileKey, TileOccupancy};
 
     #[derive(Drop, starknet::Event)]
     pub enum Event {
         RowSet: RowSet,
-        RowMemberSet: RowMemberSet,
+        RowDeleted: RowDeleted,
     }
 
     pub fn reveal(key: TileKey, biome: u8) {
-        let state = crate::state::write();
+        let state = crate::state::read();
         assert!(key.game_id != 0, "reserved game id");
         assert!(biome > 0 && biome <= 17, "invalid biome");
+        let previous = state.map.tiles.read((key.game_id, key.alt, key.col, key.row));
+        assert!(previous / BIOME_SCALE % BYTE_RANGE == 0, "tile already revealed");
+        write_terrain(key, previous + biome.into() * BIOME_SCALE);
+    }
+
+    pub fn mark_reward_extracted(key: TileKey) {
+        let state = crate::state::read();
+        let previous = state.map.tiles.read((key.game_id, key.alt, key.col, key.row));
+        assert!(previous / BIOME_SCALE % BYTE_RANGE != 0, "tile must be revealed");
+        assert!(previous / crate::map::REWARD_EXTRACTED_FLAG % 2 == 0, "reward already extracted");
+        write_terrain(key, previous + crate::map::REWARD_EXTRACTED_FLAG);
+    }
+
+    pub fn occupy(key: TileKey, entity_id: u32, category: u8, is_structure: bool) {
+        assert!(entity_id != 0 && category != 0, "empty occupier");
+        assert!(crate::logic::map::occupancy(key).is_none(), "occupied tile");
+        write_occupancy(key, Some(TileOccupancy { entity_id, category, is_structure }));
+    }
+
+    pub fn reserve_hyperstructure(key: TileKey) {
+        crate::logic::map::tile(key).expect('unrevealed reservation');
+        assert!(crate::logic::map::occupancy(key).is_none(), "occupied reservation tile");
+        // Category distinguishes this reservation from an empty tile despite its zero entity id.
+        write_occupancy(
+            key,
+            Some(
+                TileOccupancy {
+                    entity_id: 0, category: RESERVED_HYPERSTRUCTURE.try_into().unwrap(), is_structure: true,
+                },
+            ),
+        );
+    }
+
+    pub fn release_hyperstructure(key: TileKey) {
+        let previous = crate::logic::map::occupancy(key).expect('missing reservation');
+        assert!(previous.category.into() == RESERVED_HYPERSTRUCTURE, "hyperstructure already created");
+        write_occupancy(key, None);
+    }
+
+    pub fn upgrade_realm(key: TileKey, entity_id: u32, wonder: bool, level: u8) {
+        let previous = crate::logic::map::occupancy(key).expect('missing realm tile');
+        assert!(!key.alt && previous.is_structure, "not a surface structure");
+        assert!(previous.entity_id == entity_id, "occupier mismatch");
+        assert!(previous.category >= 1 && previous.category <= 8, "not a realm tile");
+        assert!(level <= 3, "invalid realm level");
+        let category = level + if wonder {
+            5
+        } else {
+            1
+        };
+        write_occupancy(key, Some(TileOccupancy { category, ..previous }));
+    }
+
+    pub fn vacate(key: TileKey, entity_id: u32) {
+        let previous = crate::logic::map::occupancy(key).expect('undiscovered tile');
+        assert!(!previous.is_structure, "cannot vacate structure");
+        assert!(entity_id != 0 && previous.entity_id == entity_id, "occupier mismatch");
+        write_occupancy(key, None);
+    }
+
+    fn write_terrain(key: TileKey, data: u128) {
+        let state = crate::state::write();
         let storage_key = (key.game_id, key.alt, key.col, key.row);
-        let tile = crate::logic::map::tile(key);
-        let previous = tile.map(|tile| tile.data).unwrap_or(coordinate_bits(key));
-        assert!((previous / BIOME_SCALE) % BYTE_RANGE == 0, "tile already revealed");
-        let data = previous + biome.into() * BIOME_SCALE;
         state.map.tiles.write(storage_key, data);
-        if tile.is_none() {
-            state.map.exists.write(storage_key, true);
-        }
+        state.map.exists.write(storage_key, true);
         let mut keys = array![];
         key.serialize(ref keys);
         emit(
@@ -63,79 +140,64 @@ pub mod MapState {
         );
     }
 
-    pub fn occupy(key: TileKey, entity_id: u32, category: u8, is_structure: bool) {
-        let tile = crate::logic::map::tile(key).unwrap_or(TileOpt { data: coordinate_bits(key) });
-        assert!(tile.data % 2 == 0, "cannot occupy structure");
-        assert!(entity_id != 0 && category != 0, "empty occupier");
-        assert!(tile.data % BIOME_SCALE == 0, "occupied tile");
-        let data = tile.data
-            + entity_id.into() * OCCUPIER_SCALE
-            + category.into() * 2
-            + if is_structure {
-                1
-            } else {
-                0
-            };
-        write_occupancy(key, data);
+    // Chests and spires are tile-only facts; reservations have no entity yet.
+    fn has_single_position(occupier: TileOccupancy) -> bool {
+        occupier.entity_id != 0
+            && occupier.category != crate::map::CHEST_OCCUPIER
+            && occupier.category != crate::map::SPIRE_OCCUPIER
     }
 
-    pub fn reserve_hyperstructure(key: TileKey) {
-        let tile = crate::logic::map::tile(key).expect('unrevealed reservation');
-        assert!(tile.data % BIOME_SCALE == 0, "occupied reservation tile");
-        write_occupancy(key, tile.data + RESERVED_HYPERSTRUCTURE * 2 + 1);
-    }
-    pub fn release_hyperstructure(key: TileKey) {
-        let tile = crate::logic::map::tile(key).expect('missing reservation');
-        assert!((tile.data / 2) % BYTE_RANGE == RESERVED_HYPERSTRUCTURE, "hyperstructure already created");
-        write_occupancy(key, tile.data - tile.data % BIOME_SCALE);
-    }
-    pub fn upgrade_realm(key: TileKey, entity_id: u32, wonder: bool, level: u8) {
-        let tile = crate::logic::map::tile(key).expect('missing realm tile');
-        assert!(!key.alt && tile.data % 2 == 1, "not a surface structure");
-        assert!((tile.data / OCCUPIER_SCALE) % ENTITY_RANGE == entity_id.into(), "occupier mismatch");
-        let previous = (tile.data / 2) % BYTE_RANGE;
-        assert!(previous >= 1 && previous <= 8, "not a realm tile");
-        assert!(level <= 3, "invalid realm level");
-        let category: u128 = level.into() + if wonder {
-            5
-        } else {
-            1
-        };
-        write_occupancy(key, tile.data - previous * 2 + category * 2);
-    }
-
-    pub fn vacate(key: TileKey, entity_id: u32) {
-        let tile = crate::logic::map::tile(key).expect('undiscovered tile');
-        assert!(tile.data % 2 == 0, "cannot vacate structure");
-        assert!(entity_id != 0 && (tile.data / OCCUPIER_SCALE) % ENTITY_RANGE == entity_id.into(), "occupier mismatch");
-        write_occupancy(key, tile.data - tile.data % BIOME_SCALE);
-    }
-
-    pub fn write_occupancy(key: TileKey, data: u128) {
+    // The occupancy fact and its private reverse index are changed only here.
+    fn write_occupancy(key: TileKey, next: Option<TileOccupancy>) {
         let state = crate::state::write();
         let storage_key = (key.game_id, key.alt, key.col, key.row);
-        let existed = state.map.exists.read(storage_key);
-        state.map.tiles.write(storage_key, data);
-        if !existed {
-            state.map.exists.write(storage_key, true);
+        let previous = crate::logic::map::occupancy(key);
+        if let Some(occupier) = previous {
+            if has_single_position(occupier) {
+                state.map.entity_tiles.write((key.game_id, occupier.entity_id), None);
+            }
         }
+        if let Some(occupier) = next {
+            if has_single_position(occupier) {
+                assert!(
+                    state.map.entity_tiles.read((key.game_id, occupier.entity_id)).is_none(), "entity already placed",
+                );
+                state.map.entity_tiles.write((key.game_id, occupier.entity_id), Some((key.alt, key.col, key.row)));
+            }
+        }
+        state
+            .map
+            .occupancy
+            .write(
+                storage_key,
+                next.map(|occupancy| crate::map::occupancy_bits(occupancy)).unwrap_or(0).try_into().unwrap(),
+            );
         let mut keys = array![];
         key.serialize(ref keys);
-        if !existed {
-            emit(
-                Event::RowSet(
-                    RowSet { version: 1, model: 'TileOpt', keys: keys.span(), values: array![data.into()].span() },
-                ),
-            );
-            return;
+        match next {
+            Some(occupier) => {
+                let mut values = array![];
+                occupier.serialize(ref values);
+                emit(
+                    Event::RowSet(
+                        RowSet { version: 1, model: 'TileOccupancy', keys: keys.span(), values: values.span() },
+                    ),
+                );
+            },
+            None => emit(Event::RowDeleted(RowDeleted { version: 1, model: 'TileOccupancy', keys: keys.span() })),
+        };
+    }
+
+    #[cfg(test)]
+    pub fn relocate_fixture(
+        key: crate::resources::ResourceKey, coord: crate::troops::Coord, category: u8, is_structure: bool,
+    ) {
+        if let Some(previous) = crate::logic::map::entity_coord(key) {
+            write_occupancy(crate::geometry::tile_key(key.game_id, previous), None);
         }
-        emit(
-            Event::RowMemberSet(
-                RowMemberSet {
-                    version: 1, model: 'TileOpt', member: 'data', keys: keys.span(), values: array![data.into()].span(),
-                },
-            ),
-        );
+        let tile = crate::geometry::tile_key(key.game_id, coord);
+        assert!(crate::logic::map::occupancy(tile).is_none(), "occupied fixture destination");
+        write_occupancy(tile, Some(TileOccupancy { entity_id: key.entity_id, category, is_structure }));
     }
 
     pub fn emit(event: Event) {
@@ -365,7 +427,7 @@ pub mod MapLogic {
                 context.timestamp,
                 crate::commands::resource_context(context),
             );
-            crate::logic::map::MapState::write_occupancy(key, tile.data + crate::map::REWARD_EXTRACTED_FLAG);
+            crate::logic::map::MapState::mark_reward_extracted(key);
             if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES)
                 && crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CHESTS)
                 && tile.data % 2 == 0 {

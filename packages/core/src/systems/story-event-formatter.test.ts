@@ -27,11 +27,7 @@ const buildStore = () => {
       base: {
         category: 1,
         level,
-        coord_x: 2147483650,
-        coord_y: 2147483660,
-        alt: false,
         created_at: 0,
-        troop_explorer_count: 0,
         troop_max_guard_count: 4,
         troop_max_explorer_count: 4,
         starting_troops_granted: true,
@@ -45,7 +41,6 @@ const buildStore = () => {
         attunement: 0,
         barracks_tier: 0,
       },
-      troop_explorers: [],
       resources_packed: 0n,
     });
   const setExplorer = (id: number, owner: number, tier: string) =>

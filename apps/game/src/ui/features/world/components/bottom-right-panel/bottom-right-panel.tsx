@@ -211,22 +211,16 @@ const LocalTilePanel = () => {
     const base = liveStructure?.base;
     if (!base) return null;
     return {
-      outerCol: Number(base.coord_x),
-      outerRow: Number(base.coord_y),
+      structureId: liveStructure.entity_id,
       category: normalizeStructureCategory(base.category),
     };
   }, [liveStructure]);
 
   useEffect(() => {
     if (!selectedStructure) return;
-    if (
-      !selectedBuildingHex ||
-      selectedBuildingHex.outerCol !== selectedStructure.outerCol ||
-      selectedBuildingHex.outerRow !== selectedStructure.outerRow
-    ) {
+    if (!selectedBuildingHex || selectedBuildingHex.structureId !== selectedStructure.structureId) {
       setSelectedBuildingHex({
-        outerCol: selectedStructure.outerCol,
-        outerRow: selectedStructure.outerRow,
+        structureId: selectedStructure.structureId,
         innerCol: BUILDINGS_CENTER[0],
         innerRow: BUILDINGS_CENTER[1],
       });
@@ -235,12 +229,10 @@ const LocalTilePanel = () => {
 
   const building = useNativeRow(
     "Building",
-    selectedBuildingHex && liveStructure
+    selectedBuildingHex && liveStructure && selectedBuildingHex.structureId === liveStructure.entity_id
       ? {
           game_id: configManager.getActiveGameId(),
-          alt: liveStructure.base.alt,
-          outer_col: selectedBuildingHex.outerCol,
-          outer_row: selectedBuildingHex.outerRow,
+          structure_id: liveStructure.entity_id,
           inner_col: selectedBuildingHex.innerCol,
           inner_row: selectedBuildingHex.innerRow,
         }
@@ -315,12 +307,7 @@ const LocalTilePanel = () => {
 
   useEffect(() => {
     setShowDestroyConfirm(false);
-  }, [
-    selectedBuildingHex?.outerCol,
-    selectedBuildingHex?.outerRow,
-    selectedBuildingHex?.innerCol,
-    selectedBuildingHex?.innerRow,
-  ]);
+  }, [selectedBuildingHex?.structureId, selectedBuildingHex?.innerCol, selectedBuildingHex?.innerRow]);
 
   const buildCost =
     hasBuilding && buildingCategory !== null
@@ -342,12 +329,7 @@ const LocalTilePanel = () => {
     // building selection, and resetting on every render would block the
     // pickaxe toggle below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    selectedBuildingHex?.outerCol,
-    selectedBuildingHex?.outerRow,
-    selectedBuildingHex?.innerCol,
-    selectedBuildingHex?.innerRow,
-  ]);
+  }, [selectedBuildingHex?.structureId, selectedBuildingHex?.innerCol, selectedBuildingHex?.innerRow]);
 
   const canAddProduction =
     producedResource !== undefined &&
@@ -483,7 +465,7 @@ const LocalTilePanel = () => {
     if (!structureEntityId || !selectedStructure) return false;
     return resolveRealmHasAvailableBuildingTile({
       entityId: structureEntityId,
-      realmPosition: { x: selectedStructure.outerCol, y: selectedStructure.outerRow },
+      realmPosition: liveStructure ? structureMapPosition(setup.store, liveStructure) : undefined,
     });
   })();
 

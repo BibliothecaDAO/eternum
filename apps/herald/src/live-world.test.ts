@@ -139,55 +139,18 @@ describe("native live publication", () => {
       rowEvent(
         "Structure",
         ["1", String(id)],
-        [
-          String(id + 9),
-          "0",
-          "0",
-          "2",
-          "120",
-          "1",
-          "0",
-          "0",
-          "0",
-          "1",
-          "0",
-          "0",
-          "0",
-          String(id),
-          "0",
-          "0",
-          "0",
-          "0",
-          "1",
-          "0",
-        ],
+        [String(id + 9), "0", "2", "120", "1", "0", "1", "0", String(id), "0", "0", "0", "0", "1", "0"],
       ),
     );
     const armies = [1, 2].map((id) =>
       rowEvent(
         "ExplorerTroops",
         ["1", String(id * 10)],
-        [
-          String(id),
-          "0",
-          "0",
-          "1000",
-          "120",
-          "1",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          String(id * 100 - 50),
-          "50",
-        ],
+        [String(id), "0", "0", "1000", "120", "1", "0", "0", "0", "0", "0", "0", "0", "0", "0"],
       ),
+    );
+    const positions = [1, 2].map((id) =>
+      rowEvent("TileOccupancy", ["1", "0", String(id * 100 - 50), "50"], [String(id * 10), "15", "0"]),
     );
     native.applyReceipt(
       fold,
@@ -212,6 +175,7 @@ describe("native live publication", () => {
         rowEvent("SettlementRules", ["1"], ["0", "0", "0", "100"]),
         ...homes,
         ...armies,
+        ...positions,
         rowEvent("ResourceBalance", ["1", "1", "28"], ["100"]),
         rowEvent("ResourceBalance", ["1", "2", "28"], ["200"]),
         ...[1, 2, 10, 20].flatMap((entityId) => [
@@ -302,10 +266,18 @@ describe("native live publication", () => {
     messages.forEach((stream) => {
       stream.length = 0;
     });
-    const descended = { ...armies[0], data: [...armies[0].data] };
-    descended.data[descended.data.length - 1] = "150";
+    const descended = rowEvent("TileOccupancy", ["1", "0", "50", "150"], ["10", "15", "0"]);
+    const removedPosition = {
+      ...positions[0],
+      keys: [
+        ...schema.games.events.find((event) => event.name === "RowDeleted")!.prefix,
+        "1",
+        schema.models.find((model) => model.name === "TileOccupancy")!.identity,
+      ],
+      data: ["4", "1", "0", "50", "50"],
+    };
     live.acceptReceipt({
-      ...receipt([descended, rowEvent("ResourceBalance", ["1", "1", "28"], ["80"])], "0x71"),
+      ...receipt([removedPosition, descended, rowEvent("ResourceBalance", ["1", "1", "28"], ["80"])], "0x71"),
       finality_status: "PRE_CONFIRMED",
     });
     const depthDiffs = messages[0].filter((message) => message.type === "diff");

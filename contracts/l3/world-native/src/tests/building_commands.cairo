@@ -86,10 +86,28 @@ fn create(home: ResourceKey, category: u8) -> Command {
     )
 }
 fn east() -> BuildingKey {
-    BuildingKey { game_id: 3, alt: false, outer_col: 2000000, outer_row: 2000000, inner_col: 11, inner_row: 10 }
+    BuildingKey { game_id: 3, structure_id: 1, inner_col: 11, inner_row: 10 }
 }
 fn change(home: ResourceKey) -> ChangeBuilding {
     ChangeBuilding { structure_id: home.entity_id, coord: Coord { alt: false, x: 11, y: 10 } }
+}
+
+#[test]
+fn recorded_board_commands_match_replay_views() {
+    let (d, home) = building_world(None);
+    let entities = array![home.entity_id].span();
+    let tiles = array![IStructureOperationsDispatcher { contract_address: d.games }.position(home).unwrap()].span();
+    let mut frames = array![super::spatial_replay::initial(d.games, 3, entities, tiles)];
+    let mut spy = snforge_std::spy_events();
+    for (command, timestamp) in array![
+        (create(home, 37), 40_u64), (Command::PauseBuildingProduction(change(home)), 70),
+        (Command::ResumeBuildingProduction(change(home)), 100), (Command::DestroyBuilding(change(home)), 130),
+    ] {
+        assert!(execute(d, command, timestamp));
+        super::state::assert_spatial_indexes(d.games, 3, entities, tiles);
+        frames.append(super::spatial_replay::capture(d.games, 3, entities, tiles, ref spy));
+    }
+    super::spatial_replay::compare("buildings", frames);
 }
 
 #[test]
@@ -428,8 +446,8 @@ fn board_neighbors_change_production_capacity_and_population_and_demolition_refu
         deployment.games,
         selector!("buildings"),
         selector!("buildings"),
-        array![3, 0, 2000000, 2000000, 10, 10].span(),
-        Building { category: 25, outer_entity_id: home.entity_id, paused: false, labor_paid: 0 },
+        array![3, home.entity_id.into(), 10, 10].span(),
+        Building { category: 25, paused: false, labor_paid: 0 },
     );
     set_fixture(
         deployment.games,

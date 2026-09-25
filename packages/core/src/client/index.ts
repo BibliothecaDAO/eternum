@@ -9,3 +9,7 @@ export * from "./shard";
 export type { NativeRows, NativeKeys, NativeModelName } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 export type { GameClientSetup } from "./game-client";
+
+export { hasSingleTilePosition } from "./native-occupancy";
+
+export { entityMapPosition } from "../utils/tile";

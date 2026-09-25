@@ -1,3 +1,4 @@
+import { hasSingleTilePosition } from "@bibliothecadao/eternum/game-client";
 import {
   createEmptyActivityBreakdown,
   type HeraldGameDirectory,
@@ -10,6 +11,7 @@ import {
   unclaimedSharePoints,
 } from "@bibliothecadao/eternum/game-sync";
 import { nativeGameModeOf } from "@bibliothecadao/eternum";
+import { expeditionRealmSite, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 import { resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 
@@ -20,6 +22,7 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "SettlementRules",
   "SettlementProgress",
   "Structure",
+  "TileOccupancy",
   "PlayerEntry",
   "BlitzRoster",
   "BlitzResult",
@@ -49,6 +52,8 @@ const required = (rows: FoldRow[], gameId: unknown, model: string): Row => {
 
 interface DirectoryRows {
   structures: FoldRow[];
+  occupancy: Map<string, Row>;
+  rules: FoldRow[];
   settlementRules: FoldRow[];
   progress: FoldRow[];
   entries: FoldRow[];
@@ -59,6 +64,8 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
   const rows = (model: string) => input.fold.modelRows(model);
   const facts: DirectoryRows = {
     structures: rows("Structure"),
+    occupancy: structurePositions(rows("TileOccupancy")),
+    rules: rows("SliceRules"),
     settlementRules: rows("SettlementRules"),
     progress: rows("SettlementProgress"),
     entries: rows("PlayerEntry"),
@@ -68,6 +75,18 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
     .map(({ value }) => directoryEntry(value, facts, input))
     .sort((left, right) => right.game_id - left.game_id);
   return { chain: input.chain, confirmed_block: input.confirmedBlock, games };
+}
+
+function structurePositions(rows: FoldRow[]): Map<string, Row> {
+  return new Map(
+    rows
+      .filter(
+        ({ value }) =>
+          value.is_structure === true &&
+          hasSingleTilePosition({ entity_id: integer(value.entity_id), category: number(value.category) }),
+      )
+      .map(({ value }) => [`${integer(value.game_id)}:${integer(value.entity_id)}`, value]),
+  );
 }
 
 function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput): HeraldGameDirectoryEntry {
@@ -112,7 +131,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
           roster_member: roster.some((row) => address(row.account) === player),
           structures: gameRows(structures, game.game_id)
             .filter((row) => address(row.owner) === player)
-            .map(playerStructure),
+            .map((row) => playerStructure(row, game, settlement, facts, input.timestamp)),
         }
       : null,
     roster_count: roster.length,
@@ -128,16 +147,44 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
   };
 }
 
-function playerStructure(row: Row): HeraldPlayerStructure {
+function playerStructure(
+  row: Row,
+  game: Row,
+  settlement: Row,
+  facts: DirectoryRows,
+  timestamp: number,
+): HeraldPlayerStructure {
   const base = record(row.base);
+  const position = structurePosition(row, game, settlement, facts, timestamp);
   return {
     entity_id: number(row.entity_id),
     category: number(base.category),
     realm_id: number(record(row.metadata).realm_id),
-    coord_x: number(base.coord_x),
-    coord_y: number(base.coord_y),
+    coord_x: position.col,
+    coord_y: position.row,
     resources_packed: integer(row.resources_packed).toString(),
   };
+}
+
+function structurePosition(
+  row: Row,
+  game: Row,
+  settlement: Row,
+  facts: DirectoryRows,
+  timestamp: number,
+): { col: number; row: number } {
+  const rules = required(facts.rules, game.game_id, "SliceRules");
+  const epochSeconds = number(rules.epoch_seconds);
+  if (epochSeconds !== 0 && isRealmCategory(number(record(row.base).category))) {
+    return expeditionRealmSite(
+      { epochSeconds, spacing: number(settlement.spacing), startMainAt: number(game.start_main_at) },
+      number(record(row.metadata).realm_id),
+      timestamp,
+    );
+  }
+  const tile = facts.occupancy.get(`${integer(row.game_id)}:${integer(row.entity_id)}`);
+  if (!tile) throw new Error(`Missing native position for entity ${row.game_id}:${row.entity_id}`);
+  return { col: number(tile.col), row: number(tile.row) };
 }
 
 export function buildNativeLeaderboard(

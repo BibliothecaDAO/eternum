@@ -9,7 +9,7 @@
 // Run: pnpm --dir apps/herald measure:load --shape frontier --players 2000 --minutes 3 --sample-every 1
 import { parseArgs } from "node:util";
 import { LiveWorld } from "../src/live-world";
-import { receipt, rowEvent, schema, setup } from "../src/native/fixtures";
+import { receipt, rowEvent, schema, setup, manifest } from "../src/native/fixtures";
 import type { StreamSocket } from "../src/game-stream";
 import type { RpcBlockWithReceipts, RpcEvent } from "../src/types";
 
@@ -96,30 +96,63 @@ function frontierRows(game: number): RpcEvent[] {
       row("Structure", [game, structure], {
         owner: address,
         "base.category": "1",
-        "base.alt": "0",
-        "base.coord_x": String(column + 10),
-        "base.coord_y": "4294967295",
         "metadata.realm_id": String(player + 1),
       }),
       row("StructureBuildings", [game, structure]),
     );
     for (let resource = 1; resource <= RESOURCES_PER_REALM; resource++)
       events.push(row("ResourceBalance", [game, structure, resource]));
-    for (let army = 0; army < 2; army++) events.push(frontierArmy(game, player, army, 5 + army));
+    for (let army = 0; army < 2; army++) events.push(...frontierArmy(game, player, army, 5 + army));
     for (let tile = 0; tile < TILES_PER_PLAYER; tile++)
       events.push(row("TileOpt", [game, 0, column + (tile % SPACING), Math.floor(tile / SPACING)]));
   }
   return events;
 }
 
-const frontierArmy = (game: number, player: number, army: number, x: number) =>
-  row("ExplorerTroops", [game, realm(game, player) * 10 + army], {
-    owner: String(realm(game, player)),
-    "troops.count": "1000",
-    "coord.alt": "0",
-    "coord.x": String(player * SPACING + x),
-    "coord.y": "5",
-  });
+const occupied = new Map<string, [number, number, number, number]>();
+
+function place(
+  game: number,
+  entity: number,
+  col: number,
+  rowIndex: number,
+  category: number,
+  structure: boolean,
+): RpcEvent[] {
+  const id = `${game}:${entity}`;
+  const previous = occupied.get(id);
+  const keys: [number, number, number, number] = [game, 0, col, rowIndex];
+  occupied.set(id, keys);
+  const events: RpcEvent[] = [];
+  if (previous) {
+    const layout = schema.games.events.find((event) => event.name === "RowDeleted")!;
+    const model = schema.models.find((model) => model.name === "TileOccupancy")!;
+    events.push({
+      from_address: manifest.world.address,
+      keys: [...layout.prefix, "1", model.identity],
+      data: ["4", ...previous.map(String)],
+    });
+  }
+  events.push(
+    row("TileOccupancy", keys, {
+      entity_id: String(entity),
+      category: String(category),
+      is_structure: structure ? "1" : "0",
+    }),
+  );
+  return events;
+}
+
+const frontierArmy = (game: number, player: number, army: number, x: number) => {
+  const entity = realm(game, player) * 10 + army;
+  return [
+    row("ExplorerTroops", [game, entity], {
+      owner: String(realm(game, player)),
+      "troops.count": "1000",
+    }),
+    ...place(game, entity, player * SPACING + x, 5, 15, false),
+  ];
+};
 
 function gameRows(game: number): RpcEvent[] {
   if (FRONTIER) return frontierRows(game);
@@ -139,12 +172,13 @@ function gameRows(game: number): RpcEvent[] {
       row("PlayerPoints", [game, owner(game, player)]),
       row("EntityName", [game, structure]),
       row("Structure", [game, structure]),
+      ...place(game, structure, player * 1000, 0, 1, true),
       row("StructureBuildings", [game, structure]),
       row("ResourceWeight", [game, structure]),
       row("ProductionBonus", [game, structure]),
     );
     for (let index = 0; index < BUILDINGS_PER_REALM; index++)
-      events.push(row("Building", [game, 0, player, 0, index % 7, Math.floor(index / 7)]));
+      events.push(row("Building", [game, structure, index % 7, Math.floor(index / 7)]));
     for (let resource = 1; resource <= RESOURCES_PER_REALM; resource++)
       events.push(row("ResourceBalance", [game, structure, resource]));
     for (let resource = 1; resource <= PRODUCTIONS_PER_REALM; resource++)
@@ -153,13 +187,20 @@ function gameRows(game: number): RpcEvent[] {
         row("ProductionReceiver", [game, structure, resource]),
       );
     for (let army = 0; army < ARMIES_PER_PLAYER; army++)
-      events.push(row("ExplorerTroops", [game, structure * 10 + army]));
+      events.push(
+        row("ExplorerTroops", [game, structure * 10 + army], { owner: String(structure) }),
+        ...place(game, structure * 10 + army, player * 1000 + 5 + army, 5, 15, false),
+      );
     for (let tile = 0; tile < TILES_PER_PLAYER; tile++)
       events.push(row("TileOpt", [game, 0, player * 1_000 + tile, tile]));
   }
   for (let structure = 0; structure < MAP_STRUCTURES_PER_GAME; structure++) {
     const entity = game * 10_000 + 1_000 + structure;
-    events.push(row("Structure", [game, entity]), row("StructureBuildings", [game, entity]));
+    events.push(
+      row("Structure", [game, entity]),
+      row("StructureBuildings", [game, entity]),
+      ...place(game, entity, 100000 + structure, 100000, 1, true),
+    );
     for (let slot = 0; slot < 2; slot++) events.push(row("Guard", [game, entity, slot]));
     for (let resource = 1; resource <= 5; resource++) events.push(row("ResourceBalance", [game, entity, resource]));
   }
@@ -172,7 +213,7 @@ function action(game: number, player: number, step: number): RpcEvent[] {
   if (FRONTIER)
     return [
       row("TileOpt", [game, 0, player * SPACING + (step % SPACING), step % 3]),
-      frontierArmy(game, player, step % 2, 5 + (step % 10)),
+      ...frontierArmy(game, player, step % 2, 5 + (step % 10)),
       row("ResourceBalance", [game, structure, (step % RESOURCES_PER_REALM) + 1]),
     ];
   const balances = [1, 2, 3].map((offset) =>
@@ -181,12 +222,13 @@ function action(game: number, player: number, step: number): RpcEvent[] {
   if (step % 3 === 0)
     return [
       row("TileOpt", [game, 0, player * 1_000 + (step % TILES_PER_PLAYER), step % TILES_PER_PLAYER]),
-      row("ExplorerTroops", [game, structure * 10 + (step % ARMIES_PER_PLAYER)]),
+      row("ExplorerTroops", [game, structure * 10 + (step % ARMIES_PER_PLAYER)], { owner: String(structure) }),
+      ...place(game, structure * 10 + (step % ARMIES_PER_PLAYER), player * 1000 + 5 + (step % 10), 5, 15, false),
       ...balances,
     ];
   if (step % 3 === 1)
     return [
-      row("Building", [game, 0, player, 0, step % 7, Math.floor(step / 7) % 3]),
+      row("Building", [game, structure, step % 7, Math.floor(step / 7) % 3]),
       row("StructureBuildings", [game, structure]),
       ...balances,
     ];

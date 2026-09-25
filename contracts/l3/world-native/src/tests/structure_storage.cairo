@@ -7,18 +7,14 @@ fn structure_base_storage_has_one_slot_and_preserves_boundaries() {
     assert!(Store::<StructureBase>::size() == 1);
     assert!(StructureBasePacking::pack(Default::default()) == 0);
     let maximum = StructureBase {
-        troop_explorer_count: 0xffff,
         troop_max_guard_count: 0xff,
         troop_max_explorer_count: 0xffff,
         created_at: 0xffffffff,
         category: 0xff,
-        coord_x: 0xffffffff,
-        coord_y: 0xffffffff,
         level: 0xff,
         starting_troops_granted: true,
-        alt: true,
     };
-    let packed = 0xffffffffffffffff0000000003ffffffffffffffffffffff;
+    let packed = 0x1ffffffffffffffff0000ff;
     assert!(StructureBasePacking::pack(maximum) == packed);
     assert!(StructureBasePacking::unpack(packed) == maximum);
 }
@@ -26,28 +22,15 @@ fn structure_base_storage_has_one_slot_and_preserves_boundaries() {
 #[test]
 #[fuzzer(runs: 256)]
 fn structure_base_storage_keeps_fields_independent(
-    explorers: u16,
-    guard_limit: u8,
-    explorer_limit: u16,
-    created_at: u32,
-    category: u8,
-    x: u32,
-    y: u32,
-    level: u8,
-    granted: bool,
-    alt: bool,
+    guard_limit: u8, explorer_limit: u16, created_at: u32, category: u8, level: u8, granted: bool,
 ) {
     let original = StructureBase {
-        troop_explorer_count: explorers,
         troop_max_guard_count: guard_limit,
         troop_max_explorer_count: explorer_limit,
         created_at,
         category,
-        coord_x: x,
-        coord_y: y,
         level,
         starting_troops_granted: granted,
-        alt,
     };
     assert!(StructureBasePacking::unpack(StructureBasePacking::pack(original)) == original);
     let updated = StructureBase { starting_troops_granted: !granted, ..original };

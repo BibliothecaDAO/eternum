@@ -6,6 +6,8 @@ import {
   getGuardsByStructure,
   RaidSimulator,
   storedBiomeAt,
+  entityMapPosition,
+  structureMapPosition,
   type Army,
   type GameClient,
 } from "@bibliothecadao/eternum";
@@ -124,7 +126,7 @@ const simulateRaid = (client: GameClient, attackerId: ID, structureId: ID): stri
   const guards = getGuardsByStructure(structure, client.setup.store)
     .filter((guard) => Number(guard.troops.count) > 0)
     .map((guard) => troopsToArmy(guard.troops));
-  const biome = biomeAt(client, { x: structure.base.coord_x, y: structure.base.coord_y });
+  const biome = biomeAt(client, structureMapPosition(client.setup.store, structure));
   const result = new RaidSimulator(configManager.getCombatConfig()).simulateRaid(raider.army, guards, biome);
   return [
     `Raid on structure #${structureId} (${biome}) by ${describeArmy(raider.army)} against ${guards.length} guard slot(s).`,
@@ -166,7 +168,11 @@ const simulateBuildingCost = (
 const explorerCombatant = (client: GameClient, explorerId: ID): Combatant | undefined => {
   const row = client.setup.store.get("ExplorerTroops", { game_id: client.gameId, explorer_id: explorerId });
   if (!row) return undefined;
-  return { army: troopsToArmy(row.troops), hex: { x: row.coord.x, y: row.coord.y }, isStructureGuard: false };
+  return {
+    army: troopsToArmy(row.troops),
+    hex: entityMapPosition(client.setup.store, client.gameId, explorerId),
+    isStructureGuard: false,
+  };
 };
 
 /** The guard slot with the most troops stands for the structure in a one-on-one preview. */
@@ -179,7 +185,7 @@ const strongestGuard = (client: GameClient, structureId: ID): Combatant | undefi
   if (!guard) return undefined;
   return {
     army: troopsToArmy(guard.troops),
-    hex: { x: structure.base.coord_x, y: structure.base.coord_y },
+    hex: structureMapPosition(client.setup.store, structure),
     isStructureGuard: true,
   };
 };

@@ -34,7 +34,7 @@ pub fn battle_guard(
     assert!(attacker.troops.count != 0, "aggressor has no troops");
     assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp, context);
     assert_battle_immunity(game_id, command.defender_id, rules, context.timestamp, context);
-    let destination = crate::structures::structure_coord(target.base);
+    let destination = crate::structures::structure_coord(target_key);
     let stride: u128 = if destination.alt {
         15
     } else {
@@ -87,7 +87,7 @@ pub fn battle_guard(
                 tick,
                 true,
             );
-        crate::logic::troops::TroopState::save(key, attacker);
+        crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(attacker));
     }
     try_capture(key, attacker, target_key, target, rules, context, ref story_cursor);
     if slot.is_some() {
@@ -202,7 +202,7 @@ pub fn guard_attack(
     let mut defender = crate::logic::troops::active_explorer(defender_key, context.timestamp, context);
     let defender_owner = explorer_owner(defender_key, defender);
     assert!(guard.troops.count != 0 && defender.troops.count != 0, "dead combatant");
-    let coord = crate::structures::structure_coord(home.base);
+    let coord = crate::structures::structure_coord(ResourceKey { game_id, entity_id: command.guard.structure_id });
     assert_structure_range(coord, defender.coord, guard.troops.attack_range());
     assert_battle_immunity(game_id, command.guard.structure_id, rules, context.timestamp, context);
     assert_battle_immunity(game_id, defender.owner, rules, context.timestamp, context);
@@ -264,7 +264,7 @@ pub fn raid(
     let target = crate::logic::structures::structure(target_key).expect('missing raid target');
     assert!(target.owner != actor, "actor owns defender");
     assert!(explorer.troops.count != 0, "aggressor has no troops");
-    let destination = crate::structures::structure_coord(target.base);
+    let destination = crate::structures::structure_coord(target_key);
     assert!(crate::geometry::adjacent(explorer.coord, destination), "raid requires adjacency");
     assert_battle_immunity(game_id, explorer.owner, rules, context.timestamp, context);
     assert_battle_immunity(game_id, command.structure_id, rules, context.timestamp, context);
@@ -441,7 +441,7 @@ pub fn try_capture(
         || (target.base.category == 5 && !crate::rules::rule_enabled(rules, crate::rules::CAPTURE_VILLAGES)) {
         return;
     }
-    if !crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(target.base))
+    if !crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(key))
         || crate::logic::guards::GuardState::next(key, target.base.troop_max_guard_count).is_some() {
         return;
     }
@@ -482,7 +482,7 @@ pub fn grant_capture_rewards(
                 refund.into(),
                 context.timestamp / rules.tick_config.armies_tick_in_seconds,
             );
-        crate::logic::troops::TroopState::save(explorer_key, explorer);
+        crate::logic::troops::TroopState::save(explorer_key, crate::troops::ExplorerRecordTrait::into_record(explorer));
     }
     let camp = target.base.category == crate::camps::CAMP_CATEGORY;
     let home_rewards = camp && crate::rules::rule_enabled(rules, crate::rules::HOME_CAMP_REWARDS);
@@ -491,7 +491,7 @@ pub fn grant_capture_rewards(
         return;
     }
     let classes = classes(key.game_id);
-    let coord = crate::structures::structure_coord(target.base);
+    let coord = crate::structures::structure_coord(key);
     let depth = if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
         Some(crate::logic::expeditions::depth_rules_at(key.game_id, coord))
     } else {

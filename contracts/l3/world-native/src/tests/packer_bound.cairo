@@ -30,10 +30,7 @@ const TICKET_TIMESTAMP: u64 = 140;
 #[test]
 fn a_full_batch_of_camp_discovering_explores_fits_one_transaction() {
     let (d, home) = setup_realm_with_explorers(GATEWAY_MAX_BATCH);
-    let explorers = IStructureOperationsDispatcher { contract_address: d.games }
-        .structure(home)
-        .unwrap()
-        .troop_explorers;
+    let explorers = IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home);
     let batch = explore_outward_batch(d, explorers);
 
     start_cheat_block_timestamp_global(5000);

@@ -21,15 +21,10 @@ const structure = (owner: string, game = 1) => ({
     category: 1,
     level: 0,
     created_at: "0x1",
-    coord_x: 12,
-    coord_y: 34,
-    alt: false,
-    troop_explorer_count: 0,
     troop_max_guard_count: 0,
     troop_max_explorer_count: 0,
     starting_troops_granted: false,
   },
-  troop_explorers: [],
   resources_packed: "0x0",
   metadata: {
     realm_id: 1,
@@ -43,6 +38,51 @@ const structure = (owner: string, game = 1) => ({
 });
 
 describe("native fact store", () => {
+  it("keeps home and position indexes atomic through movement, reassignment and death", () => {
+    const store = new NativeFactStore();
+    const tile = (col: number) => ({
+      game_id: 1,
+      alt: false,
+      col,
+      row: 34,
+      entity_id: 7,
+      category: 15,
+      is_structure: false,
+    });
+    store.applyFacts([set("0x7", "ExplorerTroops", explorer), set("0x10", "TileOccupancy", tile(12))]);
+    const owner = Number(explorer.owner);
+    expect([...store.armiesAtHome(1, owner)]).toHaveLength(1);
+    store.subscribe(() => {
+      const army = store.get("ExplorerTroops", { game_id: 1, explorer_id: 7 });
+      expect(store.entityOccupancy(1, 7)?.col).toBe(army ? 13 : undefined);
+      expect([...store.armiesAtHome(1, owner)]).toEqual([]);
+      expect([...store.armiesAtHome(1, 99)]).toHaveLength(army ? 1 : 0);
+    });
+    store.applyFacts([
+      remove("0x10", "TileOccupancy"),
+      set("0x11", "TileOccupancy", tile(13)),
+      set("0x7", "ExplorerTroops", { ...explorer, owner: 99 }),
+    ]);
+    store.applyFacts([remove("0x7", "ExplorerTroops"), remove("0x11", "TileOccupancy")]);
+  });
+
+  it("keeps both spire layers and reservations by tile without entity positions", () => {
+    const store = new NativeFactStore();
+    const tile = { game_id: 1, col: 12, row: 34, entity_id: 8, category: 35, is_structure: true };
+    store.applyFacts([
+      set("0x10", "TileOccupancy", { ...tile, alt: false }),
+      set("0x11", "TileOccupancy", { ...tile, alt: true }),
+      set("0x12", "TileOccupancy", { ...tile, alt: false, col: 13, entity_id: 0, category: 39 }),
+    ]);
+    for (const alt of [false, true])
+      expect(store.require("TileOccupancy", { game_id: 1, alt, col: 12, row: 34 }).entity_id).toBe(8);
+    expect(store.entityOccupancy(1, 8)).toBeUndefined();
+    expect(store.entityOccupancy(1, 0)).toBeUndefined();
+    store.applyFacts([set("0x12", "TileOccupancy", { ...tile, alt: false, col: 13, entity_id: 9, category: 9 })]);
+    expect(store.entityOccupancy(1, 9)?.col).toBe(13);
+    expect(store.entityOccupancy(1, 0)).toBeUndefined();
+  });
+
   it("preserves absent map overrides and validates present overrides atomically", () => {
     const store = new NativeFactStore();
     const overrides: NativeRows["GameOverrides"] = {
@@ -111,7 +151,7 @@ describe("native fact store", () => {
     const row = store.get("ExplorerTroops", { game_id: 1, explorer_id: 7 })!;
     expect(row.troops.category).toBe("Knight");
     expect(row.troops.count).toBe(0n);
-    expect(row.coord).toEqual({ alt: false, x: 12, y: 34 });
+    expect(row).not.toHaveProperty("coord");
     expect(Object.isFrozen(row)).toBe(true);
     expect(Object.isFrozen(row.troops)).toBe(true);
   });

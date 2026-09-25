@@ -1,4 +1,6 @@
+import { tileFactsToTile } from "@bibliothecadao/eternum";
 import {
+  NativeFactStore,
   fetchHeraldGameHistory,
   fetchHeraldGameLeaderboard,
   fetchHeraldGameReviewSnapshot,
@@ -14,7 +16,7 @@ import {
 } from "@/services/leaderboard/landing-leaderboard-service";
 
 import type { HeraldGameSnapshot, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
-import { RESOURCE_PRECISION, tileDataToTile } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
 import { buildGameReviewDerivedMetrics, type GameReviewValueMetric } from "./game-review-stats-utils";
 
@@ -216,25 +218,28 @@ const formatFingerprint = (left: number, right: number): string => {
   return `${value.slice(0, 4)}-${value.slice(4, 8)}-${value.slice(8, 12)}-${value.slice(12, 16)}`;
 };
 
-const buildMapSnapshot = (snapshot: HeraldGameSnapshot): GameReviewMapSnapshot => {
-  const tiles = modelRows(snapshot, "TileOpt")
-    .flatMap((row) => {
-      try {
-        const tile = tileDataToTile(row.data as string | number | bigint);
-        return [
-          {
-            alt: tile.alt,
-            col: Math.trunc(Number(tile.col)),
-            row: Math.trunc(Number(tile.row)),
-            biome: Math.trunc(Number(tile.biome)),
-            hasOccupier: Number(tile.occupier_id) > 0,
-            occupierType: Math.trunc(Number(tile.occupier_type)),
-            occupierIsStructure: Boolean(tile.occupier_is_structure),
-          } satisfies GameReviewMapSnapshotTile,
-        ];
-      } catch {
-        return [];
-      }
+export const buildMapSnapshot = (snapshot: HeraldGameSnapshot): GameReviewMapSnapshot => {
+  const store = new NativeFactStore();
+  store.applyFacts(
+    snapshot.models
+      .filter(({ model }) => model === "TileOpt" || model === "TileOccupancy")
+      .flatMap(({ model, rows }) => rows.map((row) => ({ model, ...row }))),
+  );
+  const positions = new Map(
+    [...store.rows("TileOpt"), ...store.rows("TileOccupancy")].map((row) => [`${row.alt}:${row.col}:${row.row}`, row]),
+  );
+  const tiles = [...positions.values()]
+    .map((key) => {
+      const tile = tileFactsToTile(key, store.get("TileOpt", key), store.get("TileOccupancy", key))!;
+      return {
+        alt: tile.alt,
+        col: tile.col,
+        row: tile.row,
+        biome: tile.biome,
+        hasOccupier: tile.occupier_type !== 0,
+        occupierType: tile.occupier_type,
+        occupierIsStructure: tile.occupier_is_structure,
+      } satisfies GameReviewMapSnapshotTile;
     })
     .toSorted((left, right) => Number(left.alt) - Number(right.alt) || left.row - right.row || left.col - right.col);
   if (tiles.length === 0) return { available: false, reason: "Map snapshot unavailable." };

@@ -20,44 +20,24 @@ pub fn record(key: ResourceKey) -> StructureRecord {
 }
 
 pub fn structure(key: ResourceKey) -> Option<Structure> {
-    let state = crate::state::read();
     if !exists(key) {
         return None;
     }
     let record = record(key);
-    let mut explorers = array![];
-    for index in 0..record.base.troop_explorer_count {
-        explorers.append(state.structures.explorers.read((key.game_id, key.entity_id, index)));
-    }
     Some(
         Structure {
             owner: record.owner,
             base: record.base,
-            troop_explorers: explorers.span(),
             resources_packed: record.resources_packed,
             metadata: record.metadata,
         },
     )
 }
 
-pub fn remove_explorer(key: ResourceKey, explorer_id: u32) {
-    StructureState::remove_explorer(key, explorer_id);
-    let state = crate::state::read();
-    let release_id = state.game_releases.read(key.game_id);
-    assert!(release_id != 0, "game has no release");
-    crate::resources::IResourceOperationsDispatcherTrait::destroy_resources(
-        crate::resources::IResourceOperationsLibraryDispatcher {
-            class_hash: state.releases.entry(release_id).classes.resources.read(),
-        },
-        ResourceKey { game_id: key.game_id, entity_id: explorer_id },
-    );
-}
-
 pub mod StructureState {
     use starknet::Event as EventTrait;
     use starknet::storage::{
-        StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
-        StoragePointerWriteAccess,
+        StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use crate::events::{RowMemberSet, RowSet};
     use crate::resources::ResourceKey;
@@ -138,60 +118,6 @@ pub mod StructureState {
         state.structures.structures.entry((key.game_id, key.entity_id)).base.write(base);
         emit_base(key, base);
     }
-    pub fn append_explorer(key: ResourceKey, explorer_id: u32) {
-        let state = crate::state::write();
-        let mut record = crate::logic::structures::record(key);
-        assert!(record.base.troop_explorer_count < record.base.troop_max_explorer_count, "structure explorer limit");
-        state.structures.explorers.write((key.game_id, key.entity_id, record.base.troop_explorer_count), explorer_id);
-        record.base.troop_explorer_count += 1;
-        state.structures.structures.entry((key.game_id, key.entity_id)).base.write(record.base);
-        emit_explorers(key);
-    }
-    pub fn remove_explorer(key: ResourceKey, explorer_id: u32) {
-        let state = crate::state::write();
-        let mut record = crate::logic::structures::record(key);
-        let mut found = false;
-        let mut next = 0;
-        for index in 0..record.base.troop_explorer_count {
-            let id = state.structures.explorers.read((key.game_id, key.entity_id, index));
-            if id == explorer_id {
-                found = true;
-            } else {
-                state.structures.explorers.write((key.game_id, key.entity_id, next), id);
-                next += 1;
-            }
-        }
-        assert!(found, "explorer absent from structure");
-        record.base.troop_explorer_count = next;
-        state.structures.structures.entry((key.game_id, key.entity_id)).base.write(record.base);
-        emit_explorers(key);
-    }
-    pub fn emit_explorers(key: ResourceKey) {
-        let structure = crate::logic::structures::structure(key).unwrap();
-        let mut keys = array![];
-        key.serialize(ref keys);
-        let mut base = array![];
-        structure.base.serialize(ref base);
-        emit(
-            Event::RowMemberSet(
-                RowMemberSet { version: 1, model: 'Structure', member: 'base', keys: keys.span(), values: base.span() },
-            ),
-        );
-        let mut explorers = array![];
-        structure.troop_explorers.serialize(ref explorers);
-        emit(
-            Event::RowMemberSet(
-                RowMemberSet {
-                    version: 1,
-                    model: 'Structure',
-                    member: 'troop_explorers',
-                    keys: keys.span(),
-                    values: explorers.span(),
-                },
-            ),
-        );
-    }
-
     pub fn emit(event: Event) {
         let mut keys = array![selector!("StructureEvent")];
         let mut data = array![];
@@ -292,8 +218,6 @@ pub mod StructuresLogic {
                     troop_max_guard_count: 4,
                     troop_max_explorer_count: 0,
                     created_at: timestamp.try_into().unwrap(),
-                    coord_x: coord.x,
-                    coord_y: coord.y,
                     ..Default::default(),
                 },
                 resources_packed: 0,
@@ -349,9 +273,7 @@ pub mod StructuresLogic {
             let game = game_context.game.unbox();
             assert!(game.dev_mode_on, "fixture provisioning requires development game");
             assert!(!coord.alt && actor != 0.try_into().unwrap(), "invalid realm owner or layer");
-            let record = realm_record(
-                actor, coord, get_block_timestamp(), game_context.rules.unbox().troop_limit_config,
-            );
+            let record = realm_record(actor, get_block_timestamp(), game_context.rules.unbox().troop_limit_config);
             let key = self.place_settlement(game_id, coord, record, game_context);
             for grant in grants {
                 let (resource_type, amount) = *grant;
@@ -373,7 +295,6 @@ pub mod StructuresLogic {
             actor: ContractAddress,
             resource_type: u8,
             amount: u128,
-            explorer_id: u32,
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
@@ -384,7 +305,6 @@ pub mod StructuresLogic {
             assert!(resource_type >= 26 && resource_type <= 34, "invalid troop resource");
             assert!(amount > 0 && amount % RESOURCE_PRECISION == 0, "invalid troop amount");
             self.spend(key, resource_type, amount, timestamp, crate::commands::resource_context(game_context));
-            crate::logic::structures::StructureState::append_explorer(key, explorer_id);
         }
     }
     #[abi(embed_v0)]
@@ -440,7 +360,7 @@ pub mod StructuresLogic {
         ) -> (u32, crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
-            let mut record = realm_record(actor, coord, context.timestamp, context.rules.unbox().troop_limit_config);
+            let mut record = realm_record(actor, context.timestamp, context.rules.unbox().troop_limit_config);
             match creation {
                 crate::settlement::SettlementCreation::Realm(realm) => {
                     record.metadata.realm_id = realm.realm_id;
@@ -484,7 +404,6 @@ pub mod StructuresLogic {
                     self
                         .create_producer(
                             key,
-                            coord,
                             0,
                             crate::logic::resources::rule(key.game_id, 23).village_rate,
                             23,
@@ -706,23 +625,17 @@ pub mod StructuresLogic {
         }
         packed
     }
-    fn realm_record(
-        actor: ContractAddress, coord: Coord, timestamp: u64, config: crate::rules::TroopLimitConfig,
-    ) -> StructureRecord {
+    fn realm_record(actor: ContractAddress, timestamp: u64, config: crate::rules::TroopLimitConfig) -> StructureRecord {
         let (armies, guards) = crate::upgrades::troop_limits(config, 0);
         StructureRecord {
             owner: actor,
             base: StructureBase {
-                troop_explorer_count: 0,
                 troop_max_guard_count: guards,
                 troop_max_explorer_count: armies,
                 created_at: timestamp.try_into().unwrap(),
                 category: 1,
-                coord_x: coord.x,
-                coord_y: coord.y,
                 level: 0,
                 starting_troops_granted: false,
-                alt: coord.alt,
             },
             resources_packed: 0,
             metadata: Default::default(),
@@ -793,7 +706,6 @@ pub mod StructuresLogic {
                     self
                         .create_producer(
                             key,
-                            coord,
                             cap,
                             rate,
                             config.resource_type,
@@ -826,7 +738,6 @@ pub mod StructuresLogic {
                         self
                             .create_producer(
                                 key,
-                                coord,
                                 0xffffffffffffffffffffffffffffffff,
                                 labor_rate,
                                 23,
@@ -840,6 +751,7 @@ pub mod StructuresLogic {
                 Discovery::None => panic!("discovery is not a structure"),
             }
             crate::logic::structures::StructureState::create(key, record);
+            crate::logic::map::MapState::occupy(tile_key(game_id, coord), id, occupier, true);
             crate::guards::IGuardsDispatcherTrait::initialize_structure_guards(
                 crate::guards::IGuardsLibraryDispatcher { class_hash: self.release.classes(game_id).troops.read() },
                 key,
@@ -847,7 +759,6 @@ pub mod StructuresLogic {
                 timestamp,
                 crate::commands::action_context(game_context),
             );
-            crate::logic::map::MapState::occupy(tile_key(game_id, coord), id, occupier, true);
             id
         }
 
@@ -916,11 +827,9 @@ pub mod StructuresLogic {
             game_context: crate::commands::ExecutionContext,
             ref story_cursor: crate::ownership::StoryCursor,
         ) {
-            let record = crate::logic::structures::record(key);
             let counts = self.buildings.data.buildings.structure_buildings.read((key.game_id, key.entity_id));
             const LABOR_COUNT_SCALE: u128 = 0x10000000000000000;
             assert!(counts.packed_counts_2 / LABOR_COUNT_SCALE % 256 == 0, "realm already provisioned");
-            let coord = Coord { alt: false, x: record.base.coord_x, y: record.base.coord_y };
             self.grant_realm_troops(key, timestamp, game_context, ref story_cursor);
             let grants = crate::logic::settlement::grants(key.game_id);
             self.grant_non_troop_resources(key, grants.resources, timestamp, game_context);
@@ -928,7 +837,6 @@ pub mod StructuresLogic {
             self
                 .create_producer(
                     key,
-                    coord,
                     0xffffffffffffffffffffffffffffffff,
                     crate::logic::resources::rule(key.game_id, 23).realm_rate,
                     23,
@@ -997,7 +905,11 @@ pub mod StructuresLogic {
                 return;
             }
             crate::logic::structures::StructureState::mark_starting_troops(key);
-            let coord = Coord { alt: false, x: record.base.coord_x, y: record.base.coord_y };
+            let coord = if game_context.rules.unbox().epoch_seconds != 0 && record.base.category == 1 {
+                crate::settlement::off_map_realm_reference(record.metadata.realm_id.into())
+            } else {
+                crate::structures::structure_coord(key)
+            };
             let biome = self
                 .map_dispatcher(key.game_id)
                 .biome(tile_key(key.game_id, coord), crate::commands::biome_context(game_context));
@@ -1060,9 +972,7 @@ pub mod StructuresLogic {
                     crate::mines::MineKindKey { game_id: key.game_id, kind: record.metadata.mine_kind },
                 );
                 let rate = if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
-                    crate::logic::expeditions::depth_rules_at(
-                        key.game_id, crate::structures::structure_coord(record.base),
-                    )
+                    crate::logic::expeditions::depth_rules_at(key.game_id, crate::structures::structure_coord(key))
                         .mine_rate
                 } else {
                     mine.production_rate
@@ -1117,7 +1027,6 @@ pub mod StructuresLogic {
         fn create_producer(
             ref self: ContractState,
             key: ResourceKey,
-            coord: Coord,
             cap: u128,
             rate: u64,
             resource_type: u8,
@@ -1137,17 +1046,8 @@ pub mod StructuresLogic {
             self
                 .buildings
                 .create(
-                    BuildingKey {
-                        game_id: key.game_id,
-                        alt: coord.alt,
-                        outer_col: coord.x,
-                        outer_row: coord.y,
-                        inner_col: 10,
-                        inner_row: 10,
-                    },
-                    Building {
-                        category: building_category, outer_entity_id: key.entity_id, paused: false, labor_paid: 0,
-                    },
+                    BuildingKey { game_id: key.game_id, structure_id: key.entity_id, inner_col: 10, inner_row: 10 },
+                    Building { category: building_category, paused: false, labor_paid: 0 },
                     // A producer the world places at a structure's centre costs no population: only a player's
                     // building does. The centre labor producer cannot be destroyed, so nothing refunds this.
                     0,

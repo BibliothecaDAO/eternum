@@ -39,16 +39,13 @@ describe("native scene updates", () => {
   it("reads building additions and removals from committed facts and unsubscribes", () => {
     const { store, listener } = fixture();
     const changed = vi.fn();
-    const stop = listener.Buildings.onBuildingUpdate({ col: 20, row: 30 }, changed);
+    const stop = listener.Buildings.onBuildingUpdate(7, changed);
     const building = {
       game_id: 1,
-      alt: false,
-      outer_col: 20,
-      outer_row: 30,
+      structure_id: 7,
       inner_col: 11,
       inner_row: 10,
       category: 3,
-      outer_entity_id: 7,
       paused: false,
       labor_paid: 0n,
     };

@@ -186,7 +186,22 @@ function createHarness() {
   const writeTile = (tileId: string, col: number, row: number, entityId: number, occupierType: TileOccupier) => {
     const key = hash.computePoseidonHashOnElements([11, 0, col, row]);
     tileKeys.set(tileId, key);
-    return store.applyFacts([{ model: "TileOpt", key: key, value: tileModel(col, row, entityId, occupierType) }]);
+    return store.applyFacts([
+      { model: "TileOpt", key, value: tileModel(col, row) },
+      {
+        model: "TileOccupancy",
+        key,
+        value: {
+          game_id: 11,
+          alt: false,
+          col,
+          row,
+          entity_id: entityId,
+          category: occupierType,
+          is_structure: true,
+        },
+      },
+    ]);
   };
 
   return {
@@ -215,6 +230,7 @@ function createHarness() {
       await store.applyFacts([
         { model: "Structure", key: structureEntityKey(entityId), value: null },
         { model: "TileOpt", key: tileKeys.get(tileId)!, value: null },
+        { model: "TileOccupancy", key: tileKeys.get(tileId)!, value: null },
       ]);
       projection.flush();
     },
@@ -251,10 +267,6 @@ function structureModel(entityId: number, owner: bigint, category: StructureType
       category,
       level,
       created_at: 0,
-      coord_x: 0,
-      coord_y: 0,
-      alt: false,
-      troop_explorer_count: 0,
       troop_max_guard_count: 1,
       troop_max_explorer_count: 1,
       starting_troops_granted: false,
@@ -269,30 +281,17 @@ function structureModel(entityId: number, owner: bigint, category: StructureType
       barracks_tier: 0,
     },
     resources_packed: "0",
-    troop_explorers: [],
   };
 }
 
-function tileModel(col: number, row: number, entityId: number, occupierType: TileOccupier) {
+function tileModel(col: number, row: number) {
   return {
     alt: false,
     col,
-    data: `0x${encodeTile(col, row, entityId, occupierType).toString(16)}`,
+    data: 4n << 41n,
     game_id: "0xb",
     row,
   };
-}
-
-function encodeTile(col: number, row: number, entityId: number, occupierType: TileOccupier): bigint {
-  const grasslandBiome = 4n;
-  return (
-    (BigInt(col) << 81n) |
-    (BigInt(row) << 49n) |
-    (grasslandBiome << 41n) |
-    (BigInt(entityId) << 9n) |
-    (BigInt(occupierType) << 1n) |
-    1n
-  );
 }
 
 function structureEntityKey(entityId: number): string {

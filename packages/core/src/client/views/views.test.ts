@@ -1,4 +1,5 @@
 import { ContractAddress, getNeighborHexes, StructureType } from "@bibliothecadao/types";
+import { hash } from "starknet";
 import { describe, expect, it } from "vitest";
 import { ClientConfigManager, createGameViews, type GameViews } from "../../index";
 import { NativeFactStore } from "../native-fact-store";
@@ -74,6 +75,19 @@ const seedStructure = (
 ) =>
   store.applyFacts([
     {
+      model: "TileOccupancy",
+      key: hash.computePoseidonHashOnElements([GAME_ID, 0, input.x, input.y]),
+      value: {
+        game_id: GAME_ID,
+        alt: false,
+        col: input.x,
+        row: input.y,
+        entity_id: input.entityId,
+        category: input.category,
+        is_structure: true,
+      },
+    },
+    {
       model: "Structure",
       key: `0x${input.entityId.toString(16)}`,
       value: {
@@ -82,12 +96,8 @@ const seedStructure = (
         owner: input.owner,
         base: {
           category: input.category,
-          coord_x: input.x,
-          coord_y: input.y,
-          alt: false,
           level: 0,
           created_at: 1,
-          troop_explorer_count: 0,
           troop_max_guard_count: 1,
           troop_max_explorer_count: 1,
           starting_troops_granted: false,
@@ -102,7 +112,6 @@ const seedStructure = (
           barracks_tier: 0,
         },
         resources_packed: 0n,
-        troop_explorers: [],
       },
     },
   ]);
@@ -112,6 +121,19 @@ const seedExplorer = (
   input: { explorerId: number; owner: number; x: number; y: number; stamina: bigint },
 ) =>
   store.applyFacts([
+    {
+      model: "TileOccupancy",
+      key: hash.computePoseidonHashOnElements([GAME_ID, 0, input.x, input.y]),
+      value: {
+        game_id: GAME_ID,
+        alt: false,
+        col: input.x,
+        row: input.y,
+        entity_id: input.explorerId,
+        category: 15,
+        is_structure: false,
+      },
+    },
     {
       model: "ExplorerTroops",
       key: `0x${input.explorerId.toString(16)}`,
@@ -126,7 +148,6 @@ const seedExplorer = (
           count: 100n,
           stamina: { amount: input.stamina, updated_tick: 1n },
         },
-        coord: { alt: false, x: input.x, y: input.y },
       },
     },
   ]);

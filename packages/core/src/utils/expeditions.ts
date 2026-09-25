@@ -1,9 +1,10 @@
+import { MAX_U32 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { getBlockTimestamp } from "./timestamp";
 
-const EXPEDITION_SENTINEL_ROW = 0xffffffff;
+import { entityMapPosition } from "./tile";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 
@@ -45,48 +46,51 @@ export const isCurrentExpeditionArmy = (
  * is still a fact. Today is judged at the execution floor, the time the next command will run at.
  */
 export const liveHomeArmies = (
-  store: Pick<NativeFactStore, "get" | "require" | "inGame">,
+  store: Pick<NativeFactStore, "get" | "require" | "armiesAtHome" | "entityOccupancy">,
   structureId: number,
   gameId: number,
 ): NativeRows["ExplorerTroops"][] => {
-  const armies = [...store.inGame("ExplorerTroops", gameId)].filter(
-    (army) => army.owner === structureId && army.troops.count > 0n,
-  );
+  const armies = [...store.armiesAtHome(gameId, structureId)].filter((army) => army.troops.count > 0n);
   const rules = readExpeditionRules(store, gameId);
   if (!rules) return armies;
   const floorSeconds = getBlockTimestamp().currentDefaultTick;
-  return armies.filter((army) => isCurrentExpeditionArmy(rules, army.coord, floorSeconds));
+  return armies.filter((army) =>
+    isCurrentExpeditionArmy(rules, entityMapPosition(store, gameId, army.explorer_id), floorSeconds),
+  );
 };
 
 /** A player's expedition home is a realm: its armies muster each day, and other structures are only met on the way. */
 export const isRealmCategory = (category: number): boolean => category === StructureType.Realm;
 
-/** A Frontier realm keeps no map coordinate of its own: the contract parks it at a sentinel and raises it daily. */
-export const isExpeditionRealm = (structure: NativeRows["Structure"]): boolean =>
-  !structure.base.alt && structure.base.coord_y === EXPEDITION_SENTINEL_ROW;
-
-/**
- * Where a structure stands on the world map. In a game with expeditions (epoch_seconds set, the contract's own
- * condition) a realm stands on the site the contract raises it on today; every other structure stands on its own
- * coordinate. This is the one rule for a structure's map position; the raw coordinate stays the key of its buildings
- * and tiles, never a place to point a camera at.
- */
-export const structureMapPosition = (
+/** Frontier realms occupy no stored tile; their daily sites follow the expedition rules. */
+export const isExpeditionRealm = (
   store: Pick<NativeFactStore, "get" | "require">,
+  structure: NativeRows["Structure"],
+): boolean => isRealmCategory(structure.base.category) && readExpeditionRules(store, structure.game_id) !== null;
+
+/** Frontier homes use their daily site; all other structures read their canonical occupancy. */
+export const structureMapPosition = (
+  store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
   structure: NativeRows["Structure"],
 ): { x: number; y: number; alt: boolean } => {
   const rules = readExpeditionRules(store, structure.game_id);
-  if (rules && isRealmCategory(structure.base.category) && !structure.base.alt) {
+  if (rules && isRealmCategory(structure.base.category)) {
     const site = expeditionRealmSite(rules, structure.metadata.realm_id, getBlockTimestamp().currentBlockTimestamp);
     return { x: site.col, y: site.row, alt: false };
   }
-  if (isExpeditionRealm(structure)) {
-    throw new Error(
-      `Structure ${structure.entity_id} is parked at the expedition sentinel in a game without expeditions`,
-    );
-  }
-  return { x: structure.base.coord_x, y: structure.base.coord_y, alt: structure.base.alt };
+  return entityMapPosition(store, structure.game_id, structure.entity_id);
 };
+
+/** The stable reference used to seed a realm's local terrain, independent of its daily map site. */
+export function structureLocalPosition(
+  store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
+  structure: NativeRows["Structure"],
+): { x: number; y: number; alt: boolean } {
+  if (isExpeditionRealm(store, structure)) {
+    return { x: Number(MAX_U32) - structure.metadata.realm_id, y: Number(MAX_U32), alt: false };
+  }
+  return entityMapPosition(store, structure.game_id, structure.entity_id);
+}
 
 /** Where a realm stands on today's surface region: the site the contract computes for (realm id, day, depth 0). */
 export const expeditionRealmSite = (
@@ -132,6 +136,6 @@ export const expeditionSpires = (
   const rules = readExpeditionRules(store, gameId);
   if (!rules) return [];
   return [...store.inGame("Structure", gameId)]
-    .filter((structure) => isExpeditionRealm(structure) && structure.metadata.attunement >= 1)
+    .filter((structure) => isExpeditionRealm(store, structure) && structure.metadata.attunement >= 1)
     .map((structure) => expeditionSpireTile(rules, structure, nowSeconds));
 };

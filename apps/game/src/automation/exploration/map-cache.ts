@@ -1,3 +1,4 @@
+import { entityMapPosition } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { configManager, getExplorerOwner, Position } from "@bibliothecadao/eternum";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
@@ -35,11 +36,12 @@ export const buildExplorationSnapshot = async ({
   worldSpatialProjection,
 }: SnapshotParams): Promise<ExplorationMapSnapshot | null> => {
   const explorer = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
-  if (!explorer?.coord) return null;
+  if (!explorer) return null;
+  const position = entityMapPosition(store, explorer.game_id, explorerId);
 
-  const centerCol = Number(explorer.coord.x);
-  const centerRow = Number(explorer.coord.y);
-  const alt = explorer.coord.alt;
+  const centerCol = position.x;
+  const centerRow = position.y;
+  const alt = position.alt;
   const radius = Math.max(1, Math.round(scopeRadius)) * (alt ? ETHEREAL_STRIDE : 1);
   const bounds = {
     minCol: centerCol - radius,

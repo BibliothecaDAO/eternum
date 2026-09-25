@@ -1,16 +1,13 @@
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct BuildingKey {
     pub game_id: u32,
-    pub alt: bool,
-    pub outer_col: u32,
-    pub outer_row: u32,
+    pub structure_id: u32,
     pub inner_col: u32,
     pub inner_row: u32,
 }
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
 pub struct Building {
     pub category: u8,
-    pub outer_entity_id: u32,
     pub paused: bool,
     pub labor_paid: u128,
 }
@@ -32,20 +29,17 @@ const PAUSED_SCALE: u64 = 0x10000000000;
 
 pub impl BuildingPacking of starknet::storage_access::StorePacking<Building, felt252> {
     fn pack(value: Building) -> felt252 {
-        let identity: u64 = value.category.into()
-            + Into::<u32, u64>::into(value.outer_entity_id) * 256
-            + if value.paused {
-                PAUSED_SCALE
-            } else {
-                0
-            };
+        let identity: u64 = value.category.into() + if value.paused {
+            PAUSED_SCALE
+        } else {
+            0
+        };
         identity.into() + Into::<u128, felt252>::into(value.labor_paid) * 0x10000000000000000
     }
     fn unpack(value: felt252) -> Building {
         let value: u256 = value.into();
         Building {
             category: (value.low % 256).try_into().unwrap(),
-            outer_entity_id: (value.low / 256 % 0x100000000).try_into().unwrap(),
             paused: value.low / Into::<u64, u128>::into(PAUSED_SCALE) % 2 != 0,
             labor_paid: value.low / 0x10000000000000000 + value.high * 0x10000000000000000,
         }

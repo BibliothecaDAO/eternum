@@ -230,6 +230,15 @@ const snapshot = (army: ArmyState | null, neighbour: ArmyState | null, owner: st
       ],
     },
     {
+      model: "TileOccupancy",
+      rows: [
+        ...(army ? [armyPosition(ARMY, HOME, army)] : []),
+        ...(neighbour ? [armyPosition(NEIGHBOUR_ARMY, NEIGHBOUR_HOME, neighbour)] : []),
+      ]
+        .filter(({ home }) => owner === null || BigInt(STRUCTURE_OWNERS.get(home)!) === BigInt(owner))
+        .map(({ home: _home, ...row }) => row),
+    },
+    {
       model: "ExplorerTroops",
       rows: [
         ...(army ? [armyRow(ARMY, HOME, army)] : []),
@@ -246,13 +255,26 @@ const armyRow = (explorerId: number, home: number, army: ArmyState) => ({
     game_id: GAME_ID,
     explorer_id: explorerId,
     owner: home,
-    // An army stands in the region of the day it marched out on.
-    coord: { x: REGION_SPACING / 2, y: army.day * 4 * REGION_SPACING + REGION_SPACING / 2, alt: false },
     troops: {
       ...explorerFixture.expected.value.troops,
       count: "0x64",
       stamina: { amount: army.amount, updated_tick: army.updatedTick },
     },
+  },
+});
+
+const armyPosition = (explorerId: number, home: number, army: ArmyState) => ({
+  home,
+  key: `0x${explorerId.toString(16)}`,
+  value: {
+    game_id: GAME_ID,
+    // An army stands in the region of the day it marched out on.
+    alt: false,
+    col: (home === HOME ? 0 : REGION_SPACING) + REGION_SPACING / 2,
+    row: army.day * 4 * REGION_SPACING + REGION_SPACING / 2,
+    entity_id: explorerId,
+    category: 15,
+    is_structure: false,
   },
 });
 

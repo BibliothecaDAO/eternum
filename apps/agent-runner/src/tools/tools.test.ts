@@ -71,7 +71,6 @@ describe("observe_game", () => {
     expect(renderFocus(game, "empire")).not.toContain("#13");
     expect(renderFocus(game, "armies")).toContain("#101 (home #12): 10 Knight T1, stamina 20");
     expect(renderFocus(game, "armies")).toContain("at home");
-    // The projection places structures from TileOpt rows, which this world does not seed; armies come from ExplorerTroops.
     expect(renderFocus(game, "nearby")).toContain("Explorer #101 at (101,100)");
     expect(renderFocus(game, "nearby")).toContain("army #201 Knight T1 at (101,101)");
     expect(renderFocus(game, "events")).toContain("StoryEvent");

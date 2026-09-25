@@ -36,7 +36,7 @@ function structure(id: string, category: string, owner: string) {
   return rowEvent(
     "Structure",
     ["1", id],
-    [owner, "0", "0", "0", "0", category, "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"],
+    [owner, "0", "0", "0", category, "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"],
   );
 }
 
@@ -45,7 +45,12 @@ describe("native directory and leaderboard", () => {
     const { fold, native } = world();
     native.applyReceipt(
       fold,
-      receipt([structure("7", "1", "0x111"), structure("8", "5", "0x111"), structure("9", "3", "0x222")]),
+      receipt([
+        structure("7", "1", "0x111"),
+        structure("8", "5", "0x111"),
+        structure("9", "3", "0x222"),
+        ...[7, 8, 9].map((id) => rowEvent("TileOccupancy", ["1", "0", String(id), "0"], [String(id), "1", "1"])),
+      ]),
       11,
       0,
     );
@@ -61,8 +66,8 @@ describe("native directory and leaderboard", () => {
         settled: true,
         roster_member: true,
         structures: [
-          { entity_id: 7, category: 1, realm_id: 0, coord_x: 0, coord_y: 0, resources_packed: "0" },
-          { entity_id: 8, category: 5, realm_id: 0, coord_x: 0, coord_y: 0, resources_packed: "0" },
+          { entity_id: 7, category: 1, realm_id: 0, coord_x: 7, coord_y: 0, resources_packed: "0" },
+          { entity_id: 8, category: 5, realm_id: 0, coord_x: 8, coord_y: 0, resources_packed: "0" },
         ],
       },
       roster_count: 2,
@@ -188,6 +193,7 @@ it("evicts a finalized game to its directory and standings, the same way live an
   };
   const finalized = [
     structure("7", "1", "0x111"),
+    rowEvent("TileOccupancy", ["1", "0", "7", "0"], ["7", "1", "1"]),
     rowEvent("TileOpt", ["1", "0", "5", "5"], ["1"]),
     rowEvent("TileOpt", ["2", "0", "5", "5"], ["1"]),
     gameEvent("2", "0", "0", "1"),

@@ -9,6 +9,7 @@ import {
   getBuildingCosts,
   getBlockTimestamp,
   getTileAt,
+  entityMapPosition,
   liveHomeArmies,
   ResourceManager,
   type GameClient,
@@ -582,7 +583,7 @@ function planBuilding(client: GameClient, player: Player): Action | undefined {
   const realm = home(client, player);
   const buildings = [...client.setup.store.inGame("Building", client.gameId)].filter(
     (row) =>
-      row.outer_entity_id === player.realmId &&
+      row.structure_id === player.realmId &&
       (row.inner_col !== BUILDINGS_CENTER[0] || row.inner_row !== BUILDINGS_CENTER[1]),
   );
   const counts = (category: number) => buildings.filter((building) => building.category === category).length;
@@ -721,12 +722,13 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
           recipient: { kind: "Explorer", value: undefined },
         },
       });
-    const neighbors = getNeighborHexes(army.coord.x, army.coord.y);
+    const coord = entityMapPosition(client.setup.store, client.gameId, army.explorer_id);
+    const neighbors = getNeighborHexes(coord.x, coord.y);
     const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
     const realm = home(client, player);
     const depth = realm.metadata.attunement;
     const atEntrance =
-      Math.floor(army.coord.y / spacing) % 4 === 0 &&
+      Math.floor(coord.y / spacing) % 4 === 0 &&
       neighbors.some(
         (spot) =>
           spot.col === (realm.metadata.realm_id - 1) * spacing + spacing / 2 &&
@@ -834,8 +836,9 @@ export function holdsForSite(stamina: number, attackRequirement: number): boolea
 }
 function pathToUnexplored(client: GameClient, army: Army): number | undefined {
   const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
-  const queue = [{ x: army.coord.x, y: army.coord.y, direction: undefined as number | undefined }];
-  const visited = new Set([`${army.coord.x},${army.coord.y}`]);
+  const coord = entityMapPosition(client.setup.store, client.gameId, army.explorer_id);
+  const queue = [{ x: coord.x, y: coord.y, direction: undefined as number | undefined }];
+  const visited = new Set([`${coord.x},${coord.y}`]);
   for (const current of queue)
     for (const spot of getNeighborHexes(current.x, current.y)) {
       if (
@@ -866,7 +869,7 @@ function observeProgress(client: GameClient, game: HarnessGame, player: Player) 
   const day = currentDay(player);
   day.armyIds = [...new Set([...day.armyIds, ...activeArmies(client, player).map((army) => army.explorer_id)])];
   day.layout = [...client.setup.store.inGame("Building", game.gameId)]
-    .filter((row) => row.outer_entity_id === player.realmId)
+    .filter((row) => row.structure_id === player.realmId)
     .map((row) => `${row.inner_col},${row.inner_row}:${row.category}`)
     .sort()
     .join(";");

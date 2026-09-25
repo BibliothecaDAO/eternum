@@ -24,6 +24,10 @@
     "HYPERSTRUCTURE_MULTIPLIERS": 32768,
     "PRODUCTION_START": 131072
   },
+  "tileOccupierConstants": {
+    "CHEST_OCCUPIER": 34,
+    "SPIRE_OCCUPIER": 35
+  },
   "logicClasses": {
     "season": "SeasonLogic",
     "map": "MapLogic",
@@ -301,10 +305,10 @@
         ]
       },
       {
-        "name": "RowMemberSet",
+        "name": "RowDeleted",
         "prefix": [
           "0x339d662f1b78d40a4a9a8af5d11e87eeadf88328ec76727e8437ea951b17c4a",
-          "0x2016d01ac221539fcc960c46b5ba2df505fc9c7032934961e1eeaec5f23b587"
+          "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
         ],
         "members": [
           {
@@ -318,17 +322,7 @@
             "kind": "key"
           },
           {
-            "name": "member",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
             "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          },
-          {
-            "name": "values",
             "type": "core::array::Span::<core::felt252>",
             "kind": "data"
           }
@@ -4293,9 +4287,65 @@
       "observation": {
         "domain": "map",
         "fields": {
-          "tile": "data"
+          "terrain": "data"
+        }
+      }
+    },
+    {
+      "name": "TileOccupancy",
+      "identity": "0x54696c654f63637570616e6379",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
         },
-        "transform": "tile"
+        {
+          "name": "alt",
+          "type": "core::bool",
+          "feltLength": 1
+        },
+        {
+          "name": "col",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "row",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32",
+          "id": "0x656e746974795f6964",
+          "feltLength": 1
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8",
+          "id": "0x63617465676f7279",
+          "feltLength": 1
+        },
+        {
+          "name": "is_structure",
+          "type": "core::bool",
+          "id": "0x69735f737472756374757265",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 4,
+      "valueLength": 3,
+      "observation": {
+        "domain": "map",
+        "fields": {
+          "entity": "entity_id",
+          "category": "category",
+          "isStructure": "is_structure"
+        }
       }
     },
     {
@@ -4326,21 +4376,14 @@
           "type": "world_native::troops::Troops",
           "id": "0x74726f6f7073",
           "feltLength": 14
-        },
-        {
-          "name": "coord",
-          "type": "world_native::troops::Coord",
-          "id": "0x636f6f7264",
-          "feltLength": 3
         }
       ],
       "keyLength": 2,
-      "valueLength": 18,
+      "valueLength": 15,
       "observation": {
         "domain": "troops",
         "fields": {
           "home": "owner",
-          "position": "coord",
           "troops": "troops"
         }
       }
@@ -4372,13 +4415,7 @@
           "name": "base",
           "type": "world_native::structures::StructureBase",
           "id": "0x62617365",
-          "feltLength": 10
-        },
-        {
-          "name": "troop_explorers",
-          "type": "core::array::Span::<core::integer::u32>",
-          "id": "0x74726f6f705f6578706c6f72657273",
-          "feltLength": null
+          "feltLength": 6
         },
         {
           "name": "resources_packed",
@@ -4394,19 +4431,15 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": null,
+      "valueLength": 15,
       "observation": {
         "domain": "structures",
         "fields": {
           "owner": "owner",
           "level": "base.level",
           "kind": "base.category",
-          "layer": "base.alt",
           "mineKind": "metadata.mine_kind",
-          "column": "base.coord_x",
-          "row": "base.coord_y",
           "foundedAt": "base.created_at",
-          "explorers": "troop_explorers",
           "explorerLimit": "base.troop_max_explorer_count",
           "guardLimit": "base.troop_max_guard_count",
           "startingTroopsGranted": "base.starting_troops_granted",
@@ -4892,17 +4925,7 @@
           "feltLength": 1
         },
         {
-          "name": "alt",
-          "type": "core::bool",
-          "feltLength": 1
-        },
-        {
-          "name": "outer_col",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "outer_row",
+          "name": "structure_id",
           "type": "core::integer::u32",
           "feltLength": 1
         },
@@ -4925,12 +4948,6 @@
           "feltLength": 1
         },
         {
-          "name": "outer_entity_id",
-          "type": "core::integer::u32",
-          "id": "0x6f757465725f656e746974795f6964",
-          "feltLength": 1
-        },
-        {
           "name": "paused",
           "type": "core::bool",
           "id": "0x706175736564",
@@ -4943,13 +4960,13 @@
           "feltLength": 1
         }
       ],
-      "keyLength": 6,
-      "valueLength": 4,
+      "keyLength": 4,
+      "valueLength": 3,
       "observation": {
         "domain": "production",
         "fields": {
           "category": "category",
-          "structure": "outer_entity_id",
+          "structure": "structure_id",
           "paused": "paused"
         }
       }
@@ -7505,10 +7522,6 @@
           "type": "core::integer::u8"
         },
         {
-          "name": "outer_entity_id",
-          "type": "core::integer::u32"
-        },
-        {
           "name": "paused",
           "type": "core::bool"
         },
@@ -7527,15 +7540,7 @@
           "type": "core::integer::u32"
         },
         {
-          "name": "alt",
-          "type": "core::bool"
-        },
-        {
-          "name": "outer_col",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "outer_row",
+          "name": "structure_id",
           "type": "core::integer::u32"
         },
         {
@@ -8967,6 +8972,24 @@
         {
           "name": "row",
           "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::map::TileOccupancy": {
+      "type": "struct",
+      "name": "world_native::map::TileOccupancy",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "is_structure",
+          "type": "core::bool"
         }
       ]
     },
@@ -11203,10 +11226,6 @@
           "type": "world_native::structures::StructureBase"
         },
         {
-          "name": "troop_explorers",
-          "type": "core::array::Span::<core::integer::u32>"
-        },
-        {
           "name": "resources_packed",
           "type": "core::integer::u128"
         },
@@ -11220,10 +11239,6 @@
       "type": "struct",
       "name": "world_native::structures::StructureBase",
       "members": [
-        {
-          "name": "troop_explorer_count",
-          "type": "core::integer::u16"
-        },
         {
           "name": "troop_max_guard_count",
           "type": "core::integer::u8"
@@ -11241,23 +11256,11 @@
           "type": "core::integer::u8"
         },
         {
-          "name": "coord_x",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "coord_y",
-          "type": "core::integer::u32"
-        },
-        {
           "name": "level",
           "type": "core::integer::u8"
         },
         {
           "name": "starting_troops_granted",
-          "type": "core::bool"
-        },
-        {
-          "name": "alt",
           "type": "core::bool"
         }
       ]
@@ -11642,6 +11645,20 @@
         }
       ]
     },
+    "world_native::troops::ExplorerRecord": {
+      "type": "struct",
+      "name": "world_native::troops::ExplorerRecord",
+      "members": [
+        {
+          "name": "owner",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "troops",
+          "type": "world_native::troops::Troops"
+        }
+      ]
+    },
     "world_native::troops::ExplorerTroops": {
       "type": "struct",
       "name": "world_native::troops::ExplorerTroops",
@@ -11971,5 +11988,5 @@
       ]
     }
   },
-  "identity": "85e0e666285504530af42def0a1a699aadd46c59d5f80e4409aaf5dffbc4a84c"
+  "identity": "37aaeb29b3199f2c2187033fc8c3fd4178f2a02facb48b07bf58f3731fc42bf1"
 }

@@ -71,7 +71,7 @@ export const RaidContainer = ({
       store,
     },
   } = useGame();
-  const revision = useNativeRevision(["ExplorerTroops", "Structure"]);
+  const revision = useNativeRevision(["ExplorerTroops", "Structure", "TileOccupancy"]);
   const resourceWeight = useNativeRow("ResourceWeight", {
     game_id: configManager.getActiveGameId(),
     entity_id: attackerEntityId,

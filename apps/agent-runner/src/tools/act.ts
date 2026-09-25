@@ -2,6 +2,7 @@ import {
   ActionPaths,
   buildArmyPathIndexes,
   getBlockTimestamp,
+  entityMapPosition,
   type ActionPath,
   type GameClient,
 } from "@bibliothecadao/eternum";
@@ -87,7 +88,7 @@ const armyPaths = (client: GameClient, explorerId: ID): ActionPaths => {
   const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
   return client.actions.armyPaths({
     explorerId,
-    ...buildArmyPathIndexes(client, explorer.coord.alt),
+    ...buildArmyPathIndexes(client, entityMapPosition(client.setup.store, client.gameId, explorer.explorer_id).alt),
     currentDefaultTick,
     currentArmiesTick,
     playerAddress: viewerOf(client),

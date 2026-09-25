@@ -477,7 +477,7 @@ export class ArmyManager {
 
   private async ensureArmyPresentation(renderable: ArmySpatialRenderable): Promise<void> {
     const explorerTroops = this.resolveLiveExplorerTroopsComponent(renderable.entityId);
-    if (!explorerTroops || explorerTroops.troops.count <= 0n || explorerTroops.coord.alt !== activeMapLayer()) return;
+    if (!explorerTroops || explorerTroops.troops.count <= 0n || renderable.hexCoords.alt !== activeMapLayer()) return;
 
     const existing = this.armyPresentations.get(renderable.entityId);
     if (!existing) {
@@ -543,7 +543,7 @@ export class ArmyManager {
       }
 
       const explorerTroops = this.resolveLiveExplorerTroopsComponent(renderable.entityId);
-      if (!explorerTroops || explorerTroops.troops.count <= 0n || explorerTroops.coord.alt !== activeMapLayer()) {
+      if (!explorerTroops || explorerTroops.troops.count <= 0n || renderable.hexCoords.alt !== activeMapLayer()) {
         continue;
       }
 

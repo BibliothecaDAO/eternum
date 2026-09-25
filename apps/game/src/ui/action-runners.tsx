@@ -1,3 +1,4 @@
+import { structureMapPosition } from "@bibliothecadao/eternum";
 import { resolveResourceArrivalIndicators } from "@/ui/utils/resource-arrival-indicators";
 
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -218,7 +219,7 @@ const AutoProvisionRealms = () => {
               entityId: Number(structure.entityId),
               name: getStructureName(structure.structure, getIsBlitz()).name,
               provisioned: getBuildingCount(BuildingType.ResourceLabor, packedCounts) > 0,
-              location: { x: structure.structure.base.coord_x, y: structure.structure.base.coord_y },
+              location: structureMapPosition(store, structure.structure),
             },
           ];
         });

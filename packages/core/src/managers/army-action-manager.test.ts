@@ -47,17 +47,15 @@ function buildTileOptData(input: {
   occupierType: number;
   occupierId: number;
   alt?: boolean;
-}): {
-  data: bigint;
-} {
-  const data =
-    BigInt(input.alt ?? false) |
-    (BigInt(input.occupierType) << 1n) |
-    (BigInt(input.occupierId) << 9n) |
-    (BigInt(input.biome) << 41n) |
-    (BigInt(input.row) << 49n) |
-    (BigInt(input.col) << 81n);
-  return { data };
+}): { data: bigint; occupancy: { entity_id: number; category: number; is_structure: boolean } } {
+  return {
+    data: BigInt(input.biome) << 41n,
+    occupancy: {
+      entity_id: input.occupierId,
+      category: input.occupierType,
+      is_structure: false,
+    },
+  };
 }
 
 function createTestSetup(systemCalls: Record<string, unknown> = {}) {
@@ -77,7 +75,6 @@ function createTestSetup(systemCalls: Record<string, unknown> = {}) {
         TEST_ENTITY_ID.toString(),
         {
           owner: 77,
-          coord: { alt: false, x: oldFeltStart.col, y: oldFeltStart.row },
           troops: {
             category: TroopType.Knight,
             count: BigInt(RESOURCE_PRECISION),
@@ -85,15 +82,29 @@ function createTestSetup(systemCalls: Record<string, unknown> = {}) {
         },
       ],
     ]),
+    Positions: new Map([[TEST_ENTITY_ID.toString(), { alt: false, x: oldFeltStart.col, y: oldFeltStart.row }]]),
     TileOpt: new Map(),
   } as any;
 
   const read = (model: string, keys: { explorer_id?: number; alt?: boolean; col?: number; row?: number }) => {
     if (model === "ExplorerTroops") return components.ExplorerTroops.get(String(keys.explorer_id));
-    if (model === "TileOpt") return components.TileOpt.get(toTileEntityKey(keys.alt!, keys.col!, keys.row!));
+    const tile = components.TileOpt.get(toTileEntityKey(keys.alt!, keys.col!, keys.row!));
+    if (model === "TileOpt") return tile && { data: tile.data };
+    if (model === "TileOccupancy") return tile?.occupancy;
     return undefined;
   };
-  const manager = new ArmyActionManager({ get: read, require: read } as any, systemCalls as any, TEST_ENTITY_ID as any);
+  const manager = new ArmyActionManager(
+    {
+      get: read,
+      require: read,
+      entityOccupancy: (_game: number, entity: number) => {
+        const p = components.Positions.get(String(entity));
+        return p && { col: p.x, row: p.y, alt: p.alt };
+      },
+    } as any,
+    systemCalls as any,
+    TEST_ENTITY_ID as any,
+  );
   vi.spyOn(manager, "getFood").mockReturnValue({ wheat: 999, fish: 999 });
 
   return {
@@ -132,7 +143,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     vi.restoreAllMocks();
   });
 
-  it("anchors first-hop highlights to the ExplorerTroops coord — the same coord the submit freshness guard checks", () => {
+  it("anchors first-hop highlights to the TileOccupancy — the same coord the submit freshness guard checks", () => {
     const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
 
     const actionPaths = manager.findActionPaths(
@@ -185,7 +196,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
   it.each([false, true])("uses stride-one portal access on the army's layer (alt=%s)", (alt) => {
     const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
       createTestSetup();
-    components.ExplorerTroops.get(TEST_ENTITY_ID.toString()).coord.alt = alt;
+    components.Positions.get(TEST_ENTITY_ID.toString()).alt = alt;
     const spire = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
     components.TileOpt.set(
       toTileEntityKey(alt, spire.col, spire.row),
@@ -205,7 +216,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
   it("uses ethereal attack distance for mines and armies", () => {
     const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
       createTestSetup();
-    components.ExplorerTroops.get(TEST_ENTITY_ID.toString()).coord.alt = true;
+    components.Positions.get(TEST_ENTITY_ID.toString()).alt = true;
     const mineHex = { col: oldFeltStart.col + ETHEREAL_STRIDE, row: oldFeltStart.row };
     const tooFar = { col: mineHex.col + 1, row: mineHex.row };
     setNestedMapValue(structureHexes, mineHex.col - TEST_FELT_CENTER, mineHex.row - TEST_FELT_CENTER, {
@@ -336,7 +347,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
 });
 
 describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
-  it("rejects explore when path[0] differs from ExplorerTroops.coord", async () => {
+  it("rejects explore when path[0] differs from TileOccupancy", async () => {
     const systemCalls = {
       explorer_explore: vi.fn().mockResolvedValue({}),
       explorer_travel: vi.fn().mockResolvedValue({}),
@@ -345,7 +356,7 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
     const { manager, oldFeltStart } = createTestSetup(systemCalls);
     // Pick two adjacent neighbor hexes that both differ from oldFeltStart.
     // path[0] claims the army is at a neighbor (not the oldFeltStart that
-    // ExplorerTroops.coord reports), so the freshness guard must reject.
+    // TileOccupancy reports), so the freshness guard must reject.
     const neighbor1 = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
     const neighbor2 = getNeighborHexes(neighbor1.col, neighbor1.row).find(
       (n) => n.col !== oldFeltStart.col || n.row !== oldFeltStart.row,
@@ -363,7 +374,7 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
     expect(systemCalls.explorer_explore).not.toHaveBeenCalled();
   });
 
-  it("allows explore when path[0] matches ExplorerTroops.coord", async () => {
+  it("allows explore when path[0] matches TileOccupancy", async () => {
     const systemCalls = {
       explorer_explore: vi.fn().mockResolvedValue({}),
       explorer_travel: vi.fn().mockResolvedValue({}),
@@ -416,7 +427,7 @@ describe("ArmyActionManager.moveArmy spire traversal", () => {
       explorer_explore: vi.fn().mockResolvedValue({}),
     };
     const { manager, components, oldFeltStart } = createTestSetup(systemCalls);
-    components.ExplorerTroops.get(TEST_ENTITY_ID.toString()).coord.alt = alt;
+    components.Positions.get(TEST_ENTITY_ID.toString()).alt = alt;
     const spireHex = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
     const spireDirection = getDirectionBetweenAdjacentHexes(oldFeltStart, spireHex);
 
@@ -456,7 +467,7 @@ describe("ArmyActionManager ethereal submissions", () => {
     const explorer_explore = vi.fn().mockResolvedValue({});
     const { manager, components, oldFeltStart } = createTestSetup({ explorer_explore });
     oldFeltStart.row = row;
-    Object.assign(components.ExplorerTroops.get(TEST_ENTITY_ID.toString()).coord, { alt, y: row });
+    Object.assign(components.Positions.get(TEST_ENTITY_ID.toString()), { alt, y: row });
     const stride = alt ? ETHEREAL_STRIDE : 1;
     const destination = {
       col: oldFeltStart.col + (row % 2 === 0 ? stride : 0),
@@ -482,7 +493,7 @@ describe("ArmyActionManager ethereal submissions", () => {
   it("rejects a stale surface path after the army crosses", async () => {
     const explorer_travel = vi.fn();
     const { manager, components, oldFeltStart } = createTestSetup({ explorer_travel });
-    components.ExplorerTroops.get(TEST_ENTITY_ID.toString()).coord.alt = true;
+    components.Positions.get(TEST_ENTITY_ID.toString()).alt = true;
     const destination = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
     await expect(
       manager.moveArmy(

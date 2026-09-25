@@ -10,6 +10,7 @@ import {
   ResourceManager,
   StaminaManager,
   storedBiomeAt,
+  entityMapPosition,
 } from "@bibliothecadao/eternum";
 import { getNeighborHexes, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -154,9 +155,10 @@ const resolveStructureFoodBalance = (
 
 // Travel reaches only revealed tiles, so the cheapest step reads the neighbours' stored biomes and skips the rest.
 const resolveCheapestNeighborTravelStamina = (army: ExplorerTroopsValue, store: NativeFactStore): number => {
-  const neighbors = getNeighborHexes(army.coord.x, army.coord.y);
+  const position = entityMapPosition(store, army.game_id, army.explorer_id);
+  const neighbors = getNeighborHexes(position.x, position.y);
   return neighbors.reduce((min, neighbor) => {
-    const biome = storedBiomeAt(store, army.coord.alt, neighbor.col, neighbor.row);
+    const biome = storedBiomeAt(store, position.alt, neighbor.col, neighbor.row);
     if (!biome) return min;
     const staminaCost = configManager.getTravelStaminaCost(biome, army.troops.category as TroopType);
     return min === 0 ? staminaCost : Math.min(min, staminaCost);

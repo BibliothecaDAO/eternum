@@ -288,7 +288,10 @@ pub mod ResourcesLogic {
             )
                 .expect('missing recipient structure');
             assert!(
-                crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(structure.base)),
+                crate::geometry::adjacent(
+                    explorer.coord,
+                    crate::structures::structure_coord(ResourceKey { game_id, entity_id: command.to_entity_id }),
+                ),
                 "explorer and structure are not adjacent",
             );
             for resource in command.resources {
@@ -416,12 +419,11 @@ pub mod ResourcesLogic {
             assert!(command.from_entity_id != 0 && command.to_entity_id != 0, "missing transfer entity");
             let from_key = ResourceKey { game_id, entity_id: command.from_entity_id };
             assert!(crate::logic::structures::owner(from_key) == actor, "actor does not own structure");
-            let from = crate::logic::structures::structure(from_key).expect('missing sending structure');
             let to = crate::logic::troops::active_explorer(
                 ExplorerKey { game_id, explorer_id: command.to_entity_id }, context.timestamp, context,
             );
             assert!(
-                crate::geometry::adjacent(crate::structures::structure_coord(from.base), to.coord),
+                crate::geometry::adjacent(crate::structures::structure_coord(from_key), to.coord),
                 "structure and explorer are not adjacent",
             );
             for resource in command.resources {
@@ -486,8 +488,8 @@ pub mod ResourcesLogic {
                 "transfers require the same owner",
             );
             let travel_time = crate::transport::travel_time(
-                crate::structures::structure_coord(source.base),
-                crate::structures::structure_coord(destination.base),
+                crate::structures::structure_coord(from),
+                crate::structures::structure_coord(to),
                 command.resources,
                 rules.speed_config,
                 false,

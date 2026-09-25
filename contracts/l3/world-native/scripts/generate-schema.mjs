@@ -139,12 +139,21 @@ const ruleConstants = Object.fromEntries(
   ]),
 );
 
+const mapSource = await readFile(new URL("src/map.cairo", root), "utf8");
+const tileOccupierConstants = Object.fromEntries(
+  [...mapSource.matchAll(/^pub const ([A-Z][A-Z0-9_]*_OCCUPIER): u8 = ([0-9]+);$/gm)].map(([, name, value]) => [
+    name,
+    Number(value),
+  ]),
+);
+
 // Every library emits in Games' context. A prefix must identify exactly one layout.
 const gamesEvents = uniqueEventLayouts(Object.values(artifacts).flatMap(eventLayouts));
 const productionAbi = Object.values(artifacts).flat();
 
 const schema = {
   ruleConstants,
+  tileOccupierConstants,
   logicClasses,
   version: 2,
   cairoVersion: "2.17.0",
@@ -259,7 +268,7 @@ async function writeFixtures(schema) {
     { type: "function", name: "key", inputs: [], outputs: model.keys, state_mutability: "view" },
     { type: "function", name: "value", inputs: [], outputs: model.members, state_mutability: "view" },
   ]);
-  const values = [7, ...zeroTroops, 0, 12, 34];
+  const values = [7, ...zeroTroops];
   const key = toJsonValue(decoder.parse("key", ["1", "7"]));
   const value = toJsonValue(decoder.parse("value", values.map(String)));
   const troops = value.troops;
@@ -379,6 +388,7 @@ const declarations = [
   "// Generated from native fact models and contract ABIs. Run the native schema generator to update.",
   `export const nativeFactSchemaIdentity = ${JSON.stringify(schema.identity)};`,
   `export const nativeRuleConstants = ${JSON.stringify(ruleConstants, null, 2)} as const;`,
+  `export const nativeTileOccupierConstants = ${JSON.stringify(tileOccupierConstants, null, 2)} as const;`,
   "export interface NativeRows {",
   ...factRows.map(([name, row]) => `  ${name}: ${row.ts};`),
   "}",

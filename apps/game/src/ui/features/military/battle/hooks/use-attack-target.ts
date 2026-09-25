@@ -1,3 +1,4 @@
+import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import {
@@ -9,7 +10,6 @@ import {
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
   StaminaManager,
-  tileOptToTile,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -69,14 +69,8 @@ export const useAttackTargetData = (
     setup: { store },
   } = useGame();
 
-  const targetTileOpt = useNativeRow("TileOpt", {
-    game_id: configManager.getActiveGameId(),
-    alt: targetAlt,
-    col: targetHex.x,
-    row: targetHex.y,
-  });
+  const targetTile = useTileAt(targetHex.x, targetHex.y, targetAlt);
   const guardsRevision = useNativeRevision(["Guard", "Structure"]);
-  const targetTile = useMemo(() => (targetTileOpt ? tileOptToTile(targetTileOpt) : undefined), [targetTileOpt]);
 
   const { currentArmiesTick, currentBlockTimestamp } = useBlockTimestamp();
   const attackerStructure = useNativeRow(

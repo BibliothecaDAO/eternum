@@ -48,14 +48,17 @@ fn level_up_rejects_unowned_missing_wrong_category_unfunded_and_maximum_structur
     assert_terminal_rejection(d, Command::LevelUp(home.entity_id), 80);
     save(d, home, original);
     let map = IMapLogicDispatcher { contract_address: d.games };
-    let location = crate::geometry::tile_key(3, crate::structures::structure_coord(original.base));
+    let location = crate::geometry::tile_key(
+        3, IStructureOperationsDispatcher { contract_address: d.games }.position(home).unwrap(),
+    );
     let tile = map.tile(location).unwrap();
     let storage_key = array![3, location.alt.into(), location.col.into(), location.row.into()].span();
-    set_fixture(d.games, selector!("map"), selector!("tiles"), storage_key, tile.data + 512);
+    let occupancy: u64 = (tile.data % 0x20000000000).try_into().unwrap();
+    set_fixture(d.games, selector!("map"), selector!("occupancy"), storage_key, occupancy + 512);
     assert_terminal_rejection(d, Command::LevelUp(home.entity_id), 80);
     assert_eq!(record(d, home), original);
     assert_eq!(map.tile(location).unwrap().data, tile.data + 512);
-    set_fixture(d.games, selector!("map"), selector!("tiles"), storage_key, tile.data);
+    set_fixture(d.games, selector!("map"), selector!("occupancy"), storage_key, occupancy);
     assert!(execute(d, Command::LevelUp(home.entity_id), 80));
     assert_eq!(record(d, home).base.level, 1);
     assert_eq!(map.tile(location).unwrap().data, tile.data + 2);

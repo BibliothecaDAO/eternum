@@ -1,5 +1,7 @@
 use crate::troops::Coord;
-// TileOpt preserves the original packed wire layout.
+pub const CHEST_OCCUPIER: u8 = 34;
+pub const SPIRE_OCCUPIER: u8 = 35;
+// Tile views assemble the original packed layout from terrain and occupancy facts.
 pub(crate) const REWARD_EXTRACTED_FLAG: u128 = 0x20000000000000000000000000000;
 const LAYER_FLAG: u128 = 0x80000000000000000000000000000000;
 const COL_SCALE: u128 = 0x200000000000000000000;
@@ -21,6 +23,37 @@ pub struct TileKey {
 #[derive(Copy, Drop, Serde, PartialEq, Debug)]
 pub struct TileOpt {
     pub data: u128,
+}
+
+#[derive(Copy, Drop, Serde, PartialEq, Debug)]
+pub struct TileOccupancy {
+    pub entity_id: u32,
+    pub category: u8,
+    pub is_structure: bool,
+}
+
+pub(crate) fn occupancy_bits(occupancy: TileOccupancy) -> u128 {
+    occupancy.entity_id.into() * OCCUPIER_SCALE
+        + occupancy.category.into() * 2
+        + if occupancy.is_structure {
+            1
+        } else {
+            0
+        }
+}
+
+pub(crate) fn occupancy_from_bits(data: u64) -> Option<TileOccupancy> {
+    if data == 0 {
+        return None;
+    }
+    let data: u128 = data.into();
+    Some(
+        TileOccupancy {
+            entity_id: (data / OCCUPIER_SCALE).try_into().unwrap(),
+            category: (data / 2 % BYTE_RANGE).try_into().unwrap(),
+            is_structure: data % 2 == 1,
+        },
+    )
 }
 
 

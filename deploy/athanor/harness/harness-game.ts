@@ -8,6 +8,8 @@ import {
   FELT_CENTER,
   getBlockTimestamp,
   getTileAt,
+  entityMapPosition,
+  structureMapPosition,
   ResourceManager,
   StaminaManager,
   multiplyByPrecision,
@@ -162,7 +164,7 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
     },
     structureCoord: (structureId) => {
       const structure = store.get("Structure", { game_id, entity_id: structureId });
-      return structure ? { x: structure.base.coord_x, y: structure.base.coord_y } : undefined;
+      return structure ? structureMapPosition(store, structure) : undefined;
     },
     startingTroopType: (structureId) => {
       const resource = new ResourceManager(store, structureId);
@@ -179,7 +181,7 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
       const row = store.get("ExplorerTroops", { game_id, explorer_id: explorerId });
       if (!row) return undefined;
       return {
-        coord: { x: row.coord.x, y: row.coord.y },
+        coord: entityMapPosition(store, game_id, explorerId),
         staminaAmount: BigInt(row.troops.stamina.amount),
         staminaUpdatedTick: BigInt(row.troops.stamina.updated_tick),
       };

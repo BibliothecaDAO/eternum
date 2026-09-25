@@ -1,3 +1,4 @@
+import { entityMapPosition } from "../utils/tile";
 import {
   type BiomeType,
   type ContractAddress,
@@ -113,11 +114,7 @@ export class ArmyActionManager {
   };
 
   private readonly _getCurrentPosition = () => {
-    const position = this.store.require("ExplorerTroops", {
-      game_id: configManager.getActiveGameId(),
-      explorer_id: this.entityId,
-    })?.coord;
-    if (!position) throw new Error("Explorer position is unavailable");
+    const position = entityMapPosition(this.store, configManager.getActiveGameId(), this.entityId);
     return { col: position.x, row: position.y, alt: position.alt };
   };
 
@@ -402,24 +399,13 @@ export class ArmyActionManager {
 
     // A selected path must still start at the authoritative explorer position.
     const pathStart = path[0]?.hex;
-    const explorerTroops = this.store.require("ExplorerTroops", {
-      game_id: configManager.getActiveGameId(),
-      explorer_id: this.entityId,
-    });
-    const chainCoord = explorerTroops?.coord as { x?: unknown; y?: unknown } | undefined;
-    if (pathStart && chainCoord !== undefined && chainCoord.x !== undefined && chainCoord.y !== undefined) {
-      const chainCol = Number(chainCoord.x);
-      const chainRow = Number(chainCoord.y);
-      if (Number.isFinite(chainCol) && Number.isFinite(chainRow)) {
-        const matchesPathStart = pathStart.col === chainCol && pathStart.row === chainRow;
-        if (!matchesPathStart) {
-          return Promise.reject(
-            new Error(
-              `Explorer position drifted — path expected (${pathStart.col}, ${pathStart.row}) but chain reports (${chainCol}, ${chainRow}). Retry with a fresh path.`,
-            ),
-          );
-        }
-      }
+    const position = entityMapPosition(this.store, configManager.getActiveGameId(), this.entityId);
+    if (pathStart && (pathStart.col !== position.x || pathStart.row !== position.y)) {
+      return Promise.reject(
+        new Error(
+          `Explorer position drifted — path expected (${pathStart.col}, ${pathStart.row}) but chain reports (${position.x}, ${position.y}). Retry with a fresh path.`,
+        ),
+      );
     }
 
     return this.systemCalls.explorer_explore({

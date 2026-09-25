@@ -110,7 +110,7 @@ const renderEmpire = (game: RunnerGame): string => {
 
 const renderStructure = (game: RunnerGame, structure: Structure, realm: RealmInfo | undefined): string => {
   const base = structure.structure.base;
-  const head = `#${structure.entityId} ${StructureType[structure.category]} L${base.level} at (${base.coord_x},${base.coord_y})`;
+  const head = `#${structure.entityId} ${StructureType[structure.category]} L${base.level} at (${structure.position.x},${structure.position.y})`;
   const troops = `guards ${[...game.client.setup.store.inGame("Guard", game.client.gameId)].filter((row) => row.structure_id === structure.entityId && row.troops.count > 0n).length}/${base.troop_max_guard_count}, explorers ${liveHomeArmies(game.client.setup.store, structure.entityId, game.client.gameId).length}/${base.troop_max_explorer_count}`;
   if (!realm) return `${head}: ${troops}`;
   const produced = realm.resources.map((resource) => resourceName(resource)).join(", ") || "none";
@@ -173,7 +173,7 @@ const renderSurroundings = (game: RunnerGame, army: ArmyInfo): string => {
   const { projection } = game.client;
   const center = army.position;
   const bounds = {
-    alt: army.explorer.coord.alt,
+    alt: army.position.alt,
     minCol: center.x - NEARBY_REACH,
     maxCol: center.x + NEARBY_REACH,
     minRow: center.y - NEARBY_REACH,

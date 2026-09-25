@@ -178,7 +178,7 @@ export const RelicActivationSelector = ({
     account: { account },
   } = useGame();
   const mode = useGameModeConfig();
-  const revision = useNativeRevision(["Structure", "ExplorerTroops"]);
+  const revision = useNativeRevision(["Structure", "ExplorerTroops", "TileOccupancy"]);
 
   const playerStructures = useFactView(playerStructuresView);
 

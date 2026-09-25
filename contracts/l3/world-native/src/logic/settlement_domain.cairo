@@ -144,7 +144,7 @@ pub mod SettlementLogic {
                         game_id, progress.realm_count, seed, crate::commands::action_context(context),
                     )
             } else {
-                crate::troops::Coord { alt: false, x: 0xffffffff - realm_id, y: 0xffffffff }
+                crate::settlement::off_map_realm_reference(realm_id)
             };
             ISettlementCreationLibraryDispatcher { class_hash: classes.structures.read() }
                 .create_settlement(

@@ -1,3 +1,4 @@
+import { entityMapPosition, structureMapPosition } from "@bibliothecadao/eternum";
 import { getActiveGameStore } from "@/sync/active-game-client";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
@@ -93,7 +94,7 @@ const readPlayerRelics = (store: NativeFactStore, viewer: ContractAddress | null
   const structures = readPlayerStructures(store, viewer).flatMap((structure) => {
     const relics = readRelicsOf(store, structure.entityId);
     if (relics.length === 0) return [];
-    const position = { alt: structure.structure.base.alt, x: structure.position.x, y: structure.position.y };
+    const position = structureMapPosition(store, structure.structure);
     return [
       {
         entityId: structure.entityId,
@@ -109,7 +110,7 @@ const readPlayerRelics = (store: NativeFactStore, viewer: ContractAddress | null
     const army = store.get("ExplorerTroops", { game_id: activeGameId(), explorer_id: entityId });
     if (relics.length === 0 || !army) return [];
     return [
-      { entityId, position: { alt: army.coord.alt, x: army.coord.x, y: army.coord.y }, relics, type: EntityType.ARMY },
+      { entityId, position: entityMapPosition(store, army.game_id, army.explorer_id), relics, type: EntityType.ARMY },
     ];
   });
   return { structures, armies };
@@ -125,7 +126,7 @@ const readSeasonClock = () => {
   };
 };
 
-const PLAYER_STRUCTURE_FACTS = ["Structure", "StructureBuildings"] as const;
+const PLAYER_STRUCTURE_FACTS = ["Structure", "StructureBuildings", "TileOccupancy"] as const;
 export const RESOURCE_FACTS = ["ResourceBalance", "ResourceProduction", "ResourceWeight", "ProductionBonus"] as const;
 
 export const playerStructuresView: FactView<Structure[]> = {
@@ -140,7 +141,7 @@ export const readActivePlayerStructures = (): Structure[] => {
 };
 
 export const selectableArmiesView: FactView<Array<{ entityId: number }>> = {
-  models: ["ExplorerTroops"],
+  models: ["ExplorerTroops", "Structure", "TileOccupancy", "ResourceWeight", "EntityName"],
   read: readSelectableArmies,
 };
 
@@ -164,13 +165,13 @@ export const gameStructuresView: FactView<NativeRows["Structure"][]> = {
   read: inActiveGame("Structure"),
 };
 
-export const buildingTilesView: FactView<Array<{ innerCol: number; innerRow: number; outerEntityId: number }>> = {
+export const buildingTilesView: FactView<Array<{ innerCol: number; innerRow: number; structureId: number }>> = {
   models: ["Building"],
   read: (store) =>
     inActiveGame("Building")(store).map((building) => ({
       innerCol: building.inner_col,
       innerRow: building.inner_row,
-      outerEntityId: building.outer_entity_id,
+      structureId: building.structure_id,
     })),
 };
 

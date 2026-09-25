@@ -1,3 +1,4 @@
+import { structureMapPosition } from "@bibliothecadao/eternum";
 import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
 import {
   Castle,
@@ -97,7 +98,7 @@ function useFeedRowTarget(row: ImportantFeedRow): Position | null {
   }
   if (row.kind === "story") return resolveStoryEventPosition(row.event, store);
   if (row.kind === "arrival") {
-    return structure ? Position.fromContract({ x: structure.base.coord_x, y: structure.base.coord_y }) : null;
+    return structure ? Position.fromContract(structureMapPosition(store, structure)) : null;
   }
   if (row.kind === "notice") return row.notice.location ? Position.fromContract(row.notice.location) : null;
   return null;

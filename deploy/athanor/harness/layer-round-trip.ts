@@ -1,14 +1,13 @@
 import { attachAcceptedBlocks } from "./gas-collector";
-import { ETHEREAL_STRIDE, tileDataToTile } from "@bibliothecadao/types";
+import { ETHEREAL_STRIDE, type Tile } from "@bibliothecadao/types";
 import { setTimeout as sleep } from "node:timers/promises";
 import type { HarnessProvider } from "./provider";
-import type { GameClient } from "@bibliothecadao/eternum";
+import { entityMapPosition, getTileAt, type GameClient } from "@bibliothecadao/eternum";
 import { cubeDistance, neighbor, trackTransaction, type HarnessBot, type TrackedTransaction } from "./driver";
 import type { HarnessGame } from "./harness-game";
 
 type Coord = { alt: boolean; x: number; y: number };
 type Explorer = Coord & { explorerId: string; owner: string; stamina: number; staminaUpdatedTick: number };
-type Tile = ReturnType<typeof tileDataToTile>;
 type StepKind = "approach" | "enter" | "explore" | "return" | "exit";
 
 export interface LayerRoundTripEvidence {
@@ -64,7 +63,7 @@ async function prepareRoundTrip(
   const { store } = options.client.setup;
   const preset = store.get("SliceRules", { game_id: options.gameId });
   if (!preset) throw new Error("Layer round trip requires synchronized game rules");
-  const explorers = [...store.inGame("ExplorerTroops", options.gameId)].map(readExplorer);
+  const explorers = [...store.inGame("ExplorerTroops", options.gameId)].map((row) => readExplorer(options.client, row));
   const tiles = readTiles(options.client);
   const spires = tiles.filter((tile) => !tile.alt && tile.occupier_type === SPIRE_OCCUPIER);
   if (!spires.length) throw new Error("Eternum game has no spires");
@@ -269,7 +268,7 @@ async function submitStep(context: RoundTripContext, kind: StepKind, act: () => 
     explorer_id: Number(before.explorerId),
   });
   if (!row) throw new Error(`Explorer ${before.explorerId} disappeared`);
-  context.explorer = readExplorer(row);
+  context.explorer = readExplorer(context.client, row);
   step.explorer = positionOf(context.explorer);
 }
 
@@ -292,15 +291,22 @@ const positionOf = ({ alt, x, y }: Coord): Coord => ({ alt, x, y });
 const samePosition = (a: Coord, b: Coord) => a.alt === b.alt && a.x === b.x && a.y === b.y;
 const sameTile = (tile: Tile, coord: Coord) => tile.alt === coord.alt && tile.col === coord.x && tile.row === coord.y;
 function readTiles(client: GameClient) {
-  return [...client.setup.store.inGame("TileOpt", client.gameId)].map((row) => tileDataToTile(row.data));
+  const { store } = client.setup;
+  const keys = new Map(
+    [...store.inGame("TileOpt", client.gameId), ...store.inGame("TileOccupancy", client.gameId)].map((tile) => [
+      `${tile.alt}:${tile.col}:${tile.row}`, tile,
+    ]),
+  );
+  return [...keys.values()].map((tile) => getTileAt(store, tile.alt, tile.col, tile.row, client.gameId)!);
 }
 function readExplorer(
+  client: GameClient,
   row: import("../../../contracts/l3/world-native/schema/client.gen").NativeRows["ExplorerTroops"],
 ): Explorer {
   return {
     explorerId: String(row.explorer_id),
     owner: String(row.owner),
-    ...row.coord,
+    ...entityMapPosition(client.setup.store, client.gameId, row.explorer_id),
     stamina: Number(row.troops.stamina.amount),
     staminaUpdatedTick: Number(row.troops.stamina.updated_tick),
   };

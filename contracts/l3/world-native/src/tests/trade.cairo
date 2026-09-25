@@ -204,6 +204,11 @@ fn trade_rules_are_authorized_immutable_and_game_scoped() {
 fn change_structure(deployment: super::Deployment, key: ResourceKey, category: u8, alt: bool) {
     let view = crate::structures::IStructureOperationsDispatcher { contract_address: deployment.games };
     let structure = crate::tests::state::StructureObservationTrait::structure(view, key).unwrap();
+    let coord = crate::tests::state::StructureObservationTrait::position(view, key).unwrap();
+    snforge_std::interact_with_state(
+        deployment.games,
+        || crate::logic::map::MapState::relocate_fixture(key, crate::troops::Coord { alt, ..coord }, category, true),
+    );
     super::resource_commands::set_fixture(
         deployment.games,
         selector!("structures"),
@@ -211,7 +216,7 @@ fn change_structure(deployment: super::Deployment, key: ResourceKey, category: u
         array![3, key.entity_id.into()].span(),
         crate::structures::StructureRecord {
             owner: structure.owner,
-            base: crate::structures::StructureBase { category, alt, ..structure.base },
+            base: crate::structures::StructureBase { category, ..structure.base },
             resources_packed: structure.resources_packed,
             metadata: structure.metadata,
         },

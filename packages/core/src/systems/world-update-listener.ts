@@ -1,4 +1,4 @@
-import { BuildingType, type HexPosition, type ID, type ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/types";
 import type { GameClientSetup } from "../client/game-client";
 import { configManager } from "../managers/config-manager";
 import { divideByPrecision } from "../utils/utils";
@@ -28,18 +28,12 @@ export class WorldUpdateListener {
 
   get Buildings() {
     return {
-      onBuildingUpdate: (hex: HexPosition, callback: (value: BuildingSystemUpdate) => void): (() => void) =>
+      onBuildingUpdate: (structureId: ID, callback: (value: BuildingSystemUpdate) => void): (() => void) =>
         this.setup.store.subscribe((changes) => {
           for (const change of changes) {
             if (change.model !== "Building") continue;
             const row = change.current ?? change.previous;
-            if (
-              !row ||
-              row.game_id !== configManager.getActiveGameId() ||
-              row.outer_col !== hex.col ||
-              row.outer_row !== hex.row
-            )
-              continue;
+            if (!row || row.game_id !== configManager.getActiveGameId() || row.structure_id !== structureId) continue;
             callback({
               buildingType: change.current?.category ?? BuildingType.None,
               innerCol: row.inner_col,

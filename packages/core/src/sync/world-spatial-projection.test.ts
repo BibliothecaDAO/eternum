@@ -11,25 +11,6 @@ import {
   projectionChangesForLayer,
 } from "./world-spatial-projection";
 
-const encodeTile = (input: {
-  alt?: boolean;
-  biome?: number;
-  col: number;
-  row: number;
-  occupierId: number;
-  occupierType: number;
-  occupierIsStructure?: boolean;
-  rewardExtracted?: boolean;
-}) =>
-  (BigInt(input.alt ? 1 : 0) << 127n) |
-  (BigInt(input.rewardExtracted ? 1 : 0) << 113n) |
-  (BigInt(input.col) << 81n) |
-  (BigInt(input.row) << 49n) |
-  (BigInt(input.biome ?? 0) << 41n) |
-  (BigInt(input.occupierId) << 9n) |
-  (BigInt(input.occupierType) << 1n) |
-  BigInt(input.occupierIsStructure ? 1 : 0);
-
 const createHarness = () => {
   const facts = new NativeFactStore();
   const aliases = new Map<string, string>();
@@ -38,6 +19,7 @@ const createHarness = () => {
   const rules = new Map<string, object>();
   const source = {
     entries: facts.entries.bind(facts),
+    entityOccupancy: facts.entityOccupancy.bind(facts),
     get: ((model: string, keys: object) => rules.get(model) ?? facts.get(model as "TileOpt", keys as never)) as never,
     require: ((model: string, keys: object) =>
       rules.get(model) ?? facts.require(model as "TileOpt", keys as never)) as never,
@@ -46,7 +28,12 @@ const createHarness = () => {
         if (notify) listener(changes);
       }),
   };
+  let batch: GameSyncFact[] | undefined;
   const apply = (changes: GameSyncFact[], skip = false) => {
+    if (batch) {
+      batch.push(...changes);
+      return;
+    }
     notify = !skip;
     try {
       facts.applyFacts(changes);
@@ -54,8 +41,19 @@ const createHarness = () => {
       notify = true;
     }
   };
+  const atomic = (writeFacts: () => void, skip = false) => {
+    batch = [];
+    try {
+      writeFacts();
+      const changes = batch;
+      batch = undefined;
+      apply(changes, skip);
+    } finally {
+      batch = undefined;
+    }
+  };
   const write = (
-    model: "TileOpt" | "ExplorerTroops" | "Structure",
+    model: "TileOpt" | "TileOccupancy" | "ExplorerTroops" | "Structure",
     alias: string,
     keys: (number | boolean)[],
     row: object,
@@ -69,7 +67,11 @@ const createHarness = () => {
     apply(changes, skip);
     aliases.set(`${model}:${alias}`, id);
   };
-  const remove = (model: "TileOpt" | "ExplorerTroops", alias: string, options?: { skipUpdateStream: boolean }) => {
+  const remove = (
+    model: "TileOpt" | "TileOccupancy" | "ExplorerTroops",
+    alias: string,
+    options?: { skipUpdateStream: boolean },
+  ) => {
     const id = aliases.get(`${model}:${alias}`);
     if (id) apply([{ model, key: id, value: null }], options?.skipUpdateStream);
   };
@@ -87,19 +89,27 @@ const createHarness = () => {
     },
     skipUpdateStream = false,
   ) =>
-    write(
-      "TileOpt",
-      entityId,
-      [13, input.alt ?? false, input.col, input.row],
-      {
-        game_id: 13,
-        alt: input.alt ?? false,
-        col: input.col,
-        row: input.row,
-        data: encodeTile({ biome: 4, ...input, occupierType: input.occupierType ?? TileOccupier.Chest }),
-      },
-      skipUpdateStream,
-    );
+    atomic(() => {
+      const keys = [13, input.alt ?? false, input.col, input.row];
+      const key = { game_id: 13, alt: input.alt ?? false, col: input.col, row: input.row };
+      write(
+        "TileOpt",
+        entityId,
+        keys,
+        { ...key, data: (BigInt(input.biome ?? 4) << 41n) | (BigInt(input.rewardExtracted ? 1 : 0) << 113n) },
+        false,
+      );
+      const category = input.occupierType ?? TileOccupier.Chest;
+      if (category !== 0)
+        write(
+          "TileOccupancy",
+          entityId,
+          keys,
+          { ...key, entity_id: input.occupierId, category, is_structure: input.occupierIsStructure ?? false },
+          false,
+        );
+      else remove("TileOccupancy", entityId);
+    }, skipUpdateStream);
   const writeArmy = (
     entityId: string,
     input: {
@@ -113,35 +123,46 @@ const createHarness = () => {
     },
     skipUpdateStream = false,
   ) =>
-    write(
-      "ExplorerTroops",
-      entityId,
-      [13, input.explorerId],
-      {
-        game_id: 13,
-        explorer_id: input.explorerId,
-        ...explorerFixture.expected.value,
-        troops: {
-          ...explorerFixture.expected.value.troops,
-          category: input.category ?? "Knight",
-          tier: input.tier ?? "T1",
-          count: input.count ?? 100n,
+    atomic(() => {
+      write(
+        "TileOccupancy",
+        `army-${entityId}`,
+        [13, input.alt ?? false, input.col, input.row],
+        {
+          game_id: 13,
+          alt: input.alt ?? false,
+          col: input.col,
+          row: input.row,
+          entity_id: input.explorerId,
+          category: 15,
+          is_structure: false,
         },
-        coord: { alt: input.alt ?? false, x: input.col, y: input.row },
-      },
-      skipUpdateStream,
-    );
+        false,
+      );
+      write(
+        "ExplorerTroops",
+        entityId,
+        [13, input.explorerId],
+        {
+          game_id: 13,
+          explorer_id: input.explorerId,
+          ...explorerFixture.expected.value,
+          troops: {
+            ...explorerFixture.expected.value.troops,
+            category: input.category ?? "Knight",
+            tier: input.tier ?? "T1",
+            count: input.count ?? 100n,
+          },
+        },
+        false,
+      );
+    }, skipUpdateStream);
   const writeExpeditionRules = (epochSeconds: number, spacing: number, startMainAt: number) => {
     rules.set("SliceRules", { game_id: 13, epoch_seconds: epochSeconds });
     rules.set("SettlementRules", { game_id: 13, spacing });
     rules.set("GameRegistry", { game_id: 13, start_main_at: BigInt(startMainAt) });
   };
-  const writeRealm = (
-    entityId: number,
-    realmId: number,
-    level: number,
-    coord = { x: 0xffffffff - realmId, y: 0xffffffff },
-  ) =>
+  const writeRealm = (entityId: number, realmId: number, level: number) =>
     write(
       "Structure",
       `realm-${entityId}`,
@@ -154,15 +175,10 @@ const createHarness = () => {
           category: 1,
           level,
           created_at: "0x1",
-          coord_x: coord.x,
-          coord_y: coord.y,
-          alt: false,
-          troop_explorer_count: 0,
           troop_max_guard_count: 0,
           troop_max_explorer_count: 0,
           starting_troops_granted: false,
         },
-        troop_explorers: [],
         resources_packed: "0x0",
         metadata: {
           realm_id: realmId,
@@ -183,8 +199,16 @@ const createHarness = () => {
     writeArmy,
     writeExpeditionRules,
     writeRealm,
-    removeTile: (alias: string, options?: { skipUpdateStream: boolean }) => remove("TileOpt", alias, options),
-    removeArmy: (alias: string, options?: { skipUpdateStream: boolean }) => remove("ExplorerTroops", alias, options),
+    removeTile: (alias: string, options?: { skipUpdateStream: boolean }) =>
+      atomic(() => {
+        remove("TileOpt", alias);
+        remove("TileOccupancy", alias);
+      }, options?.skipUpdateStream),
+    removeArmy: (alias: string, options?: { skipUpdateStream: boolean }) =>
+      atomic(() => {
+        remove("ExplorerTroops", alias);
+        remove("TileOccupancy", `army-${alias}`);
+      }, options?.skipUpdateStream),
   };
 };
 
@@ -195,16 +219,18 @@ describe("WorldSpatialProjection", () => {
     try {
       harness.writeExpeditionRules(86_400, 16, 86_400 * 10);
       harness.writeRealm(21, 3, 1);
-      harness.writeRealm(22, 4, 0, { x: 40, y: 50 });
+      harness.writeRealm(22, 4, 0);
       harness.projection.start();
       const surface = { alt: false, minCol: 0, maxCol: 200, minRow: 0, maxRow: 200 };
       expect(harness.projection.getStructuresInBounds(surface)).toEqual([
         expect.objectContaining({ entityId: 21, hexCoords: { alt: false, col: 40, row: 8 }, occupierType: 2 }),
+        expect.objectContaining({ entityId: 22, hexCoords: { alt: false, col: 56, row: 8 } }),
       ]);
       setBlockTimestampSource(() => 86_400 * 11 + 100);
       harness.projection.rebuild();
       expect(harness.projection.getStructuresInBounds(surface)).toEqual([
         expect.objectContaining({ entityId: 21, hexCoords: { alt: false, col: 40, row: 72 } }),
+        expect.objectContaining({ entityId: 22, hexCoords: { alt: false, col: 56, row: 72 } }),
       ]);
     } finally {
       setBlockTimestampSource(null);
@@ -213,7 +239,7 @@ describe("WorldSpatialProjection", () => {
   });
 
   it("keeps an unrevealed spawn out of terrain and path indexes without hiding its explorer", () => {
-    const { projection, writeTile, writeArmy } = createHarness();
+    const { projection, writeTile, writeArmy, removeArmy } = createHarness();
     writeTile("spawn", {
       col: 100,
       row: 200,
@@ -225,6 +251,8 @@ describe("WorldSpatialProjection", () => {
     projection.start();
     expect(projection.getTiles(false)).toEqual([]);
     expect(projection.getArmies(false)).toHaveLength(1);
+    removeArmy("explorer");
+    expect(projection.getArmies(false)).toEqual([]);
     writeTile("spawn", { col: 100, row: 200, biome: 0, occupierId: 0, occupierType: TileOccupier.None });
     expect(projection.getTiles(false)).toEqual([]);
     writeTile("spawn", { col: 100, row: 200, biome: 4, occupierId: 0, occupierType: TileOccupier.None });

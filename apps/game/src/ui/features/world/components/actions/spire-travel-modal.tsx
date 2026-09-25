@@ -2,7 +2,7 @@ import { ArrowRightLeft, ShieldAlert, Sparkles } from "@/ui/design-system/atoms/
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import Button from "@/ui/design-system/atoms/button";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
-import { getTileAt, configManager } from "@bibliothecadao/eternum";
+import { getTileAt, configManager, entityMapPosition } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import type { ID } from "@bibliothecadao/types";
@@ -25,11 +25,10 @@ export const SpireTravelModal = ({
     game_id: configManager.getActiveGameId(),
     explorer_id: explorerId,
   });
-  const explorerLayer = explorer?.coord.alt ?? false;
-  useNativeRevision(["TileOpt"]);
-  const destination = explorer
-    ? getTileAt(store, !explorerLayer, Number(explorer.coord.x), Number(explorer.coord.y))
-    : undefined;
+  useNativeRevision(["TileOpt", "TileOccupancy"]);
+  const position = explorer ? entityMapPosition(store, explorer.game_id, explorerId) : undefined;
+  const explorerLayer = position?.alt ?? false;
+  const destination = position ? getTileAt(store, !explorerLayer, position.x, position.y) : undefined;
   const crossing = resolveSpireCrossing(explorerLayer, destination);
   const sideName = crossing.toEthereal ? "the Ethereal Layer" : "the surface";
 

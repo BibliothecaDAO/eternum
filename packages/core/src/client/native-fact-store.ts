@@ -1,3 +1,4 @@
+import { hasSingleTilePosition } from "./native-occupancy";
 import {
   nativeFactModels,
   type NativeKeys,
@@ -45,6 +46,8 @@ export class NativeFactStore implements GameSyncStore {
   private readonly wireKeys = new Map<NativeModelName, Map<string, string>>();
   private readonly gameKeys = new Map<string, Set<string>>();
   private readonly ownerKeys = new Map<string, Set<string>>();
+  private readonly armyHomeKeys = new Map<string, Set<string>>();
+  private readonly spatialKeys = new Map<string, Set<string>>();
   private readonly eventListeners = new Set<(event: GameSyncEvent) => void>();
   private readonly listeners = new Set<(changes: readonly NativeFactChange[]) => void>();
 
@@ -74,6 +77,19 @@ export class NativeFactStore implements GameSyncStore {
   *structuresOwnedBy(gameId: number, owner: bigint): IterableIterator<NativeRows["Structure"]> {
     for (const key of this.ownerKeys.get(`${gameId}:${owner}`) ?? [])
       yield this.models.get("Structure")!.get(key)!.row as NativeRows["Structure"];
+  }
+
+  *armiesAtHome(gameId: number, home: number): IterableIterator<NativeRows["ExplorerTroops"]> {
+    for (const key of this.armyHomeKeys.get(`${gameId}:${home}`) ?? [])
+      yield this.models.get("ExplorerTroops")!.get(key)!.row as NativeRows["ExplorerTroops"];
+  }
+
+  entityOccupancy(gameId: number, entityId: number): NativeRows["TileOccupancy"] | undefined {
+    const keys = this.spatialKeys.get(`${gameId}:${entityId}`);
+    if (!keys?.size) return undefined;
+    if (keys.size !== 1) throw new Error(`Multiple native positions for entity ${gameId}:${entityId}`);
+    const key = keys.values().next().value!;
+    return this.models.get("TileOccupancy")!.get(key)!.row as NativeRows["TileOccupancy"];
   }
 
   subscribe(listener: (changes: readonly NativeFactChange[]) => void): () => void {
@@ -160,11 +176,10 @@ export class NativeFactStore implements GameSyncStore {
         const previous = values.get(key)?.row;
         if (!previous && !current) continue;
         if (previous && current && isSameFact(previous, current)) continue;
-        if (previous) this.index(model, key, previous, false);
+        this.index(model, key, previous, current);
         if (current) {
           values.set(key, { row: current, wireId: id });
           keys.set(id, key);
-          this.index(model, key, current, true);
         } else {
           values.delete(key);
           keys.delete(id);
@@ -175,11 +190,43 @@ export class NativeFactStore implements GameSyncStore {
     return Object.freeze(changes);
   }
 
-  private index(model: NativeModelName, key: string, row: Fact, adding: boolean): void {
-    if (definitions[model].scope === "game") updateIndex(this.gameKeys, `${model}:${gameIdOf(row)}`, key, adding);
+  private index(model: NativeModelName, key: string, previous: Fact | undefined, current: Fact | undefined): void {
+    if (definitions[model].scope === "game")
+      updateMembership(
+        this.gameKeys,
+        key,
+        previous && `${model}:${gameIdOf(previous)}`,
+        current && `${model}:${gameIdOf(current)}`,
+      );
     if (model === "Structure") {
-      const structure = row as NativeRows["Structure"];
-      updateIndex(this.ownerKeys, `${structure.game_id}:${structure.owner}`, key, adding);
+      const before = previous as NativeRows["Structure"] | undefined;
+      const after = current as NativeRows["Structure"] | undefined;
+      updateMembership(
+        this.ownerKeys,
+        key,
+        before && `${before.game_id}:${before.owner}`,
+        after && `${after.game_id}:${after.owner}`,
+      );
+    }
+    if (model === "ExplorerTroops") {
+      const before = previous as NativeRows["ExplorerTroops"] | undefined;
+      const after = current as NativeRows["ExplorerTroops"] | undefined;
+      updateMembership(
+        this.armyHomeKeys,
+        key,
+        before && `${before.game_id}:${before.owner}`,
+        after && `${after.game_id}:${after.owner}`,
+      );
+    }
+    if (model === "TileOccupancy") {
+      const before = previous as NativeRows["TileOccupancy"] | undefined;
+      const after = current as NativeRows["TileOccupancy"] | undefined;
+      updateMembership(
+        this.spatialKeys,
+        key,
+        before && hasSingleTilePosition(before) ? `${before.game_id}:${before.entity_id}` : undefined,
+        after && hasSingleTilePosition(after) ? `${after.game_id}:${after.entity_id}` : undefined,
+      );
     }
   }
 }
@@ -194,6 +241,17 @@ function isSameFact(left: unknown, right: unknown): boolean {
     leftEntries.length === Object.keys(right).length &&
     leftEntries.every(([field, value]) => isSameFact(value, (right as Record<string, unknown>)[field]))
   );
+}
+
+function updateMembership(
+  index: Map<string, Set<string>>,
+  key: string,
+  previous: string | undefined,
+  current: string | undefined,
+): void {
+  if (previous === current) return;
+  if (previous !== undefined) updateIndex(index, previous, key, false);
+  if (current !== undefined) updateIndex(index, current, key, true);
 }
 
 function updateIndex(index: Map<string, Set<string>>, group: string, key: string, adding: boolean): void {

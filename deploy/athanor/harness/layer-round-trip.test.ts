@@ -18,30 +18,11 @@ function fixture(
   const calls: Call[] = [];
   const tiles = new Map<string, { coord: Position; biome: number; occupier: number; type: number }>();
   const key = (coord: Position) => `${coord.alt}:${coord.x}:${coord.y}`;
-  const put = (coord: Position, occupier: number, type = 1) =>
+  const put = (coord: Position, occupier: number, type = 15) =>
     tiles.set(key(coord), { coord, biome: 3, occupier, type });
   put(explorer, 9);
   put({ alt: false, x: 100, y: 100 }, 11, 35);
   if (!options.omitAlternateSpire) put({ alt: true, x: 100, y: 100 }, 11, 35);
-  const packed = ({
-    coord,
-    biome,
-    occupier,
-    type,
-  }: {
-    coord: Position;
-    biome: number;
-    occupier: number;
-    type: number;
-  }) =>
-    String(
-      (BigInt(coord.alt) << 127n) |
-        (BigInt(coord.x) << 81n) |
-        (BigInt(coord.y) << 49n) |
-        (BigInt(biome) << 41n) |
-        (BigInt(occupier) << 9n) |
-        (BigInt(type) << 1n),
-    );
   const rows = (model: string): Record<string, unknown>[] => {
     switch (model) {
       case "GameRegistry":
@@ -65,14 +46,20 @@ function fixture(
         return [
           {
             game_id: 7,
-            explorer_id: "9",
-            owner: "5",
-            coord: explorer,
+            explorer_id: 9,
+            owner: 5,
             troops: { stamina: { amount: stamina, updated_tick: 1 } },
           },
         ];
       case "TileOpt":
-        return [...tiles.values()].map((tile) => ({ game_id: 7, data: packed(tile) }));
+        return [...tiles.values()].map(({ coord, biome }) => ({
+          game_id: 7, alt: coord.alt, col: coord.x, row: coord.y, data: BigInt(biome) << 41n,
+        }));
+      case "TileOccupancy":
+        return [...tiles.values()].filter((tile) => tile.occupier !== 0).map(({ coord, occupier, type }) => ({
+          game_id: 7, alt: coord.alt, col: coord.x, row: coord.y,
+          entity_id: occupier, category: type, is_structure: type >= 35,
+        }));
       default:
         throw new Error(`Unexpected model ${model}`);
     }
@@ -146,7 +133,9 @@ function fixture(
           gameId: 7,
           setup: {
             store: {
-              get: (model: string) => rows(model)[0],
+              get: (model: string, keys: Record<string, unknown>) => rows(model).find((row) =>
+                Object.entries(keys).every(([key, value]) => row[key] === value)),
+              entityOccupancy: (_gameId: number, entityId: number) => rows("TileOccupancy").find((row) => row.entity_id === entityId),
               inGame: (model: string) => rows(model),
             },
             systemCalls: {

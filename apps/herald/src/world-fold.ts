@@ -1,3 +1,4 @@
+import { hasSingleTilePosition } from "@bibliothecadao/eternum/game-client";
 import {
   NativePresetPreimageUnavailable,
   presetPreimageCommitment,
@@ -102,7 +103,7 @@ export const checkpointModelMismatch = (registry: ModelRegistry, checkpoint: Fol
 
 // The client streams the snapshot into its store one model page at a time and renders from the first pages that
 // carry the world's structures and explored tiles; those go first, the rest keep registry order.
-const SNAPSHOT_STREAMING_PRIORITY: readonly string[] = ["TileOpt", "Structure"];
+const SNAPSHOT_STREAMING_PRIORITY: readonly string[] = ["TileOpt", "TileOccupancy", "Structure"];
 
 const orderSnapshotModelsForStreaming = <TDefinition extends { name: string }>(
   definitions: readonly TDefinition[],
@@ -361,14 +362,12 @@ export class WorldFold {
     const regions = new Set<string>();
     const armies = this.scopeRows("ExplorerTroops", gameId, spacing, [...realms].map(scopeLookup.armiesOf)).filter(
       ({ value }) => {
-        const coord = value.coord as DecodedRecord;
-        return (
-          BigInt((value.troops as DecodedRecord).count as string) > 0n &&
-          isCurrentExpeditionArmy(
-            expedition,
-            { x: Number(coord.x), y: Number(coord.y), alt: coord.alt === true },
-            timestamp,
-          )
+        if (BigInt((value.troops as DecodedRecord).count as string) <= 0n) return false;
+        const coord = this.entityPosition(gameId, spacing, value.explorer_id);
+        return isCurrentExpeditionArmy(
+          expedition,
+          { x: Number(coord.x), y: Number(coord.y), alt: coord.alt === true },
+          timestamp,
         );
       },
     );
@@ -379,12 +378,21 @@ export class WorldFold {
         regions.add(gameSyncRegion({ alt: false, x: site.col, y: site.row }, spacing)!);
       }
     for (const { value } of armies) {
-      const region = gameSyncRegion(value.coord as DecodedRecord, spacing);
+      const region = gameSyncRegion(this.entityPosition(gameId, spacing, value.explorer_id), spacing);
       if (region !== undefined) regions.add(region);
     }
     const entities = new Set([...realms, ...armies.map(({ value }) => syncScalar(value.explorer_id))]);
-    for (const { value } of this.scopeRows("Structure", gameId, spacing, [...regions].map(scopeLookup.structuresIn))) {
-      if (!isRealmCategory(Number((value.base as DecodedRecord).category))) entities.add(syncScalar(value.entity_id));
+    for (const { value } of this.scopeRows(
+      "TileOccupancy",
+      gameId,
+      spacing,
+      [...regions].map(scopeLookup.occupancyIn),
+    )) {
+      if (
+        value.is_structure === true &&
+        hasSingleTilePosition({ entity_id: syncScalar(value.entity_id), category: syncScalar(value.category) })
+      )
+        entities.add(syncScalar(value.entity_id));
     }
     const productionSources = new Set(
       this.scopeRows("ProductionReceiver", gameId, spacing, [...realms].map(scopeLookup.receiversOf)).map(({ value }) =>
@@ -393,6 +401,13 @@ export class WorldFold {
     );
     scope.expedition = { epoch, spacing, owners, realms, realmTraits, regions, entities, productionSources };
     return scope;
+  }
+
+  private entityPosition(gameId: string, spacing: number, entityId: unknown): DecodedRecord {
+    const positions = this.scopeRows("TileOccupancy", gameId, spacing, [scopeLookup.occupancyOf(entityId)]);
+    if (positions.length !== 1) throw new Error(`Expected one position for entity ${gameId}:${syncScalar(entityId)}`);
+    const { value } = positions[0]!;
+    return { x: value.col, y: value.row, alt: value.alt };
   }
 
   /**

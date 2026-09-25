@@ -6,6 +6,7 @@ import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
   configManager,
   expeditionSpireTile,
+  entityMapPosition,
   getBlockTimestamp,
   isAtExpeditionSpire,
   isExpeditionRealm,
@@ -27,16 +28,16 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
   } = useGame();
   const account = useAccountStore((state) => state.account);
   const [pending, setPending] = useState<number | null>(null);
-  useNativeRevision(["ExplorerTroops", "Structure"]);
+  useNativeRevision(["ExplorerTroops", "Structure", "TileOccupancy"]);
   const gameId = configManager.getActiveGameId();
   const explorer = store.get("ExplorerTroops", { game_id: gameId, explorer_id: armyEntityId });
   const home = explorer ? store.get("Structure", { game_id: gameId, entity_id: explorer.owner }) : undefined;
   const rules = readExpeditionRules(store, gameId);
-  if (!explorer || !home || !rules || !isExpeditionRealm(home) || !account) return null;
+  if (!explorer || !home || !rules || !isExpeditionRealm(store, home) || !account) return null;
   if (home.owner !== BigInt(account.address) || home.metadata.attunement === 0) return null;
 
   const spire = expeditionSpireTile(rules, home, getBlockTimestamp().currentBlockTimestamp);
-  const besideSpire = isAtExpeditionSpire(spire, explorer.coord);
+  const besideSpire = isAtExpeditionSpire(spire, entityMapPosition(store, gameId, armyEntityId));
   const stamina = Number(StaminaManager.getStamina(explorer.troops, getBlockTimestamp().currentArmiesTick).amount);
   const depths = Array.from({ length: home.metadata.attunement }, (_, index) => index + 1).map((depth) => ({
     depth,

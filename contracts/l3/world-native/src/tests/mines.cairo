@@ -8,7 +8,7 @@ use crate::mines::{
 use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::{IResourceOperationsDispatcher, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
-use crate::structures::{IStructureOperationsDispatcher, IStructureOperationsDispatcherTrait, structure_coord};
+use crate::structures::{IStructureOperationsDispatcher, IStructureOperationsDispatcherTrait};
 use crate::tests::state::{MapObservationTrait, ResourceObservationTrait, StructureObservationTrait};
 use crate::troops::{Coord, TroopTier, TroopType};
 
@@ -190,7 +190,7 @@ fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
         let structure = structures.structure(ResourceKey { game_id: 3, entity_id: id }).unwrap();
         assert_eq!(structure.metadata.mine_kind, kind);
         assert_eq!(structure.base.category, 4);
-        assert_eq!(structure_coord(structure.base), coord);
+        assert_eq!(structures.position(ResourceKey { game_id: 3, entity_id: id }).unwrap(), coord);
         assert_eq!(
             crate::guards::IGuardsDispatcherTrait::guard(
                 crate::guards::IGuardsDispatcher { contract_address: deployment.games },

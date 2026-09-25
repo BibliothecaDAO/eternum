@@ -110,10 +110,9 @@ const fingerprintArmy = (army: ArmyInfo): string =>
 // Reach
 
 const structureReach = (structure: Structure): HexBounds =>
-  boundsAround(structure.structure.base.coord_x, structure.structure.base.coord_y, false);
+  boundsAround(structure.position.x, structure.position.y, structure.position.alt);
 
-const armyReach = (army: ArmyInfo): HexBounds =>
-  boundsAround(army.position.x, army.position.y, army.explorer.coord.alt);
+const armyReach = (army: ArmyInfo): HexBounds => boundsAround(army.position.x, army.position.y, army.position.alt);
 
 const boundsAround = (col: number, row: number, alt: boolean): HexBounds => ({
   alt,

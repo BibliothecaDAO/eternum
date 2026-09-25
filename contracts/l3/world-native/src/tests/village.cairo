@@ -167,13 +167,13 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_recorded_time() {
     let village = structures.structure(key).unwrap();
     assert!(village.base.category == 5 && village.metadata.village_realm == realm);
     assert!(village.owner == deployment.actor && !village.base.starting_troops_granted);
-    assert!(village.base.coord_x != 2000000 || village.base.coord_y != 2000000);
+    let coord = structures.position(key).unwrap();
+    assert!(coord.x != 2000000 || coord.y != 2000000);
     assert!(
         resource_store
             .resource_production(ResourceSlot { game_id: 3, entity_id: village_id, resource_type: 23 })
             .production_rate > 0,
     );
-    let coord = Coord { alt: false, x: village.base.coord_x, y: village.base.coord_y };
     let map = IMapLogicDispatcher { contract_address: deployment.games };
     for direction in 0_u8..6 {
         let tile = map.tile(crate::geometry::tile_key(3, crate::geometry::neighbor(coord, direction))).unwrap();

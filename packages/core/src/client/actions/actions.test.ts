@@ -92,7 +92,15 @@ const seedExplorerWithTravelPath = (store: NativeFactStore) => {
     game_id: GAME_ID,
     explorer_id: EXPLORER_ID,
     owner: STRUCTURE_ID,
-    coord: { x: start.col, y: start.row, alt: false },
+  });
+  write(store, "TileOccupancy", [GAME_ID, false, start.col, start.row], {
+    game_id: GAME_ID,
+    alt: false,
+    col: start.col,
+    row: start.row,
+    entity_id: EXPLORER_ID,
+    category: 15,
+    is_structure: false,
   });
   return [
     { hex: start, actionType: ActionType.Move },
@@ -100,18 +108,14 @@ const seedExplorerWithTravelPath = (store: NativeFactStore) => {
   ];
 };
 
-const seedStructure = (store: NativeFactStore, position: { x: number; y: number }) =>
+const seedStructure = (store: NativeFactStore, position: { x: number; y: number }) => {
   write(store, "Structure", [GAME_ID, STRUCTURE_ID], {
     game_id: GAME_ID,
     entity_id: STRUCTURE_ID,
     owner: 0xabcn,
     base: {
-      coord_x: position.x,
-      coord_y: position.y,
-      alt: false,
       level: 1,
       category: 1,
-      troop_explorer_count: 0,
       troop_max_explorer_count: 2,
       troop_max_guard_count: 1,
       created_at: 0,
@@ -126,10 +130,20 @@ const seedStructure = (store: NativeFactStore, position: { x: number; y: number 
       attunement: 0,
       barracks_tier: 0,
     },
-    troop_explorers: [],
     resources_packed: 0n,
   });
 
-function write(store: NativeFactStore, model: string, keys: number[], value: Record<string, unknown>) {
-  store.applyFacts([{ model, key: hash.computePoseidonHashOnElements(keys), value }]);
+  write(store, "TileOccupancy", [GAME_ID, false, position.x, position.y], {
+    game_id: GAME_ID,
+    alt: false,
+    col: position.x,
+    row: position.y,
+    entity_id: STRUCTURE_ID,
+    category: 1,
+    is_structure: true,
+  });
+};
+
+function write(store: NativeFactStore, model: string, keys: (number | boolean)[], value: Record<string, unknown>) {
+  store.applyFacts([{ model, key: hash.computePoseidonHashOnElements(keys.map(BigInt)), value }]);
 }

@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "85e0e666285504530af42def0a1a699aadd46c59d5f80e4409aaf5dffbc4a84c";
+export const nativeFactSchemaIdentity = "37aaeb29b3199f2c2187033fc8c3fd4178f2a02facb48b07bf58f3731fc42bf1";
 export const nativeRuleConstants = {
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
@@ -24,6 +24,10 @@ export const nativeRuleConstants = {
   "OWNER_ONLY_SHARES": 16384,
   "HYPERSTRUCTURE_MULTIPLIERS": 32768,
   "PRODUCTION_START": 131072
+} as const;
+export const nativeTileOccupierConstants = {
+  "CHEST_OCCUPIER": 34,
+  "SPIRE_OCCUPIER": 35
 } as const;
 export interface NativeRows {
   Preset: { readonly preset_id: number; readonly commitment: bigint };
@@ -77,8 +81,9 @@ export interface NativeRows {
   EntryEntitlement: { readonly game_id: number; readonly owner: bigint; readonly realm_id: bigint; readonly metadata_1: bigint; readonly metadata_2: bigint; readonly metadata_3: bigint; readonly pass_kind: number };
   PlayerEntry: { readonly game_id: number; readonly owner: bigint; readonly player: bigint };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly data: bigint };
-  ExplorerTroops: { readonly game_id: number; readonly explorer_id: number; readonly owner: number; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly amount: bigint; readonly updated_tick: bigint }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_tick: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_tick: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_tick_count: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_tick: number }; readonly battle_cooldown_end: number }; readonly coord: { readonly alt: boolean; readonly x: number; readonly y: number } };
-  Structure: { readonly game_id: number; readonly entity_id: number; readonly owner: bigint; readonly base: { readonly troop_explorer_count: number; readonly troop_max_guard_count: number; readonly troop_max_explorer_count: number; readonly created_at: number; readonly category: number; readonly coord_x: number; readonly coord_y: number; readonly level: number; readonly starting_troops_granted: boolean; readonly alt: boolean }; readonly troop_explorers: readonly (number)[]; readonly resources_packed: bigint; readonly metadata: { readonly realm_id: number; readonly order: number; readonly has_wonder: boolean; readonly village_realm: number; readonly mine_kind: number; readonly attunement: number; readonly barracks_tier: number } };
+  TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly entity_id: number; readonly category: number; readonly is_structure: boolean };
+  ExplorerTroops: { readonly game_id: number; readonly explorer_id: number; readonly owner: number; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly amount: bigint; readonly updated_tick: bigint }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_tick: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_tick: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_tick_count: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_tick: number }; readonly battle_cooldown_end: number } };
+  Structure: { readonly game_id: number; readonly entity_id: number; readonly owner: bigint; readonly base: { readonly troop_max_guard_count: number; readonly troop_max_explorer_count: number; readonly created_at: number; readonly category: number; readonly level: number; readonly starting_troops_granted: boolean }; readonly resources_packed: bigint; readonly metadata: { readonly realm_id: number; readonly order: number; readonly has_wonder: boolean; readonly village_realm: number; readonly mine_kind: number; readonly attunement: number; readonly barracks_tier: number } };
   ResourceBalance: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number; readonly balance: bigint };
   ResourceProduction: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number; readonly building_count: number; readonly production_rate: bigint; readonly output_amount_left: bigint; readonly last_updated_at: number };
   ProductionReceiver: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number; readonly home: number; readonly end_at: number };
@@ -88,7 +93,7 @@ export interface NativeRows {
   ResourceArrival: { readonly game_id: number; readonly entity_id: number; readonly day: bigint; readonly slot: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   BoardRules: { readonly game_id: number; readonly demolition_refund_bps: number; readonly workshop_rate: bigint; readonly barracks_ii_cost: bigint; readonly barracks_iii_cost: bigint; readonly neighbors: readonly ({ readonly building: number; readonly neighbor: number; readonly production_bps: number; readonly capacity_bps: number; readonly population: number })[] };
   BuildingRule: { readonly game_id: number; readonly category: number; readonly population_cost: number; readonly capacity_grant: number; readonly simple_cost: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly complex_cost: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
-  Building: { readonly game_id: number; readonly alt: boolean; readonly outer_col: number; readonly outer_row: number; readonly inner_col: number; readonly inner_row: number; readonly category: number; readonly outer_entity_id: number; readonly paused: boolean; readonly labor_paid: bigint };
+  Building: { readonly game_id: number; readonly structure_id: number; readonly inner_col: number; readonly inner_row: number; readonly category: number; readonly paused: boolean; readonly labor_paid: bigint };
   StructureBuildings: { readonly game_id: number; readonly entity_id: number; readonly packed_counts_1: bigint; readonly packed_counts_2: bigint; readonly packed_counts_3: bigint; readonly population: { readonly current: number; readonly max: number } };
   Hyperstructure: { readonly game_id: number; readonly entity_id: number; readonly stage: "Foundation" | "Construction" | "Complete"; readonly access: "Public" | "Private" | "GuildOnly"; readonly seed: bigint };
   HyperstructureProgress: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number; readonly contributed: bigint };
@@ -164,6 +169,7 @@ export interface NativeKeys {
   EntryEntitlement: { readonly game_id: number; readonly owner: bigint };
   PlayerEntry: { readonly game_id: number; readonly owner: bigint };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
+  TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: number };
   Structure: { readonly game_id: number; readonly entity_id: number };
   ResourceBalance: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number };
@@ -175,7 +181,7 @@ export interface NativeKeys {
   ResourceArrival: { readonly game_id: number; readonly entity_id: number; readonly day: bigint; readonly slot: number };
   BoardRules: { readonly game_id: number };
   BuildingRule: { readonly game_id: number; readonly category: number };
-  Building: { readonly game_id: number; readonly alt: boolean; readonly outer_col: number; readonly outer_row: number; readonly inner_col: number; readonly inner_row: number };
+  Building: { readonly game_id: number; readonly structure_id: number; readonly inner_col: number; readonly inner_row: number };
   StructureBuildings: { readonly game_id: number; readonly entity_id: number };
   Hyperstructure: { readonly game_id: number; readonly entity_id: number };
   HyperstructureProgress: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number };
@@ -984,6 +990,24 @@ export const nativeFactModels = {
       "data": "u128"
     }
   },
+  "TileOccupancy": {
+    "keys": [
+      "game_id",
+      "alt",
+      "col",
+      "row"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "alt": "boolean",
+      "col": "u32",
+      "row": "u32",
+      "entity_id": "u32",
+      "category": "u8",
+      "is_structure": "boolean"
+    }
+  },
   "ExplorerTroops": {
     "keys": [
       "game_id",
@@ -1025,11 +1049,6 @@ export const nativeFactModels = {
           "incr_explore_reward_end_tick": "u32"
         },
         "battle_cooldown_end": "u32"
-      },
-      "coord": {
-        "alt": "boolean",
-        "x": "u32",
-        "y": "u32"
       }
     }
   },
@@ -1044,20 +1063,13 @@ export const nativeFactModels = {
       "entity_id": "u32",
       "owner": "felt",
       "base": {
-        "troop_explorer_count": "u16",
         "troop_max_guard_count": "u8",
         "troop_max_explorer_count": "u16",
         "created_at": "u32",
         "category": "u8",
-        "coord_x": "u32",
-        "coord_y": "u32",
         "level": "u8",
-        "starting_troops_granted": "boolean",
-        "alt": "boolean"
+        "starting_troops_granted": "boolean"
       },
-      "troop_explorers": [
-        "u32"
-      ],
       "resources_packed": "u128",
       "metadata": {
         "realm_id": "u16",
@@ -1242,22 +1254,17 @@ export const nativeFactModels = {
   "Building": {
     "keys": [
       "game_id",
-      "alt",
-      "outer_col",
-      "outer_row",
+      "structure_id",
       "inner_col",
       "inner_row"
     ],
     "scope": "game",
     "fields": {
       "game_id": "u32",
-      "alt": "boolean",
-      "outer_col": "u32",
-      "outer_row": "u32",
+      "structure_id": "u32",
       "inner_col": "u32",
       "inner_row": "u32",
       "category": "u8",
-      "outer_entity_id": "u32",
       "paused": "boolean",
       "labor_paid": "u128"
     }
@@ -1906,9 +1913,21 @@ export const nativeSyncScopes = {
       }
     ]
   },
+  "TileOccupancy": {
+    "regions": [
+      {
+        "alt": "alt",
+        "x": "col",
+        "y": "row"
+      }
+    ],
+    "entities": [
+      "entity_id"
+    ]
+  },
   "Building": {
     "realms": [
-      "outer_entity_id"
+      "structure_id"
     ]
   },
   "ProductionReceiver": {

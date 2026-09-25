@@ -194,12 +194,47 @@ pub fn set_fixture<T, +starknet::storage_access::Store<T>, +Drop<T>, +Copy<T>>(
     snforge_std::interact_with_state(address, || starknet::storage_access::Store::<T>::write(0, base, value).unwrap());
 }
 
+pub fn set_explorer_fixture(
+    address: starknet::ContractAddress, key: crate::troops::ExplorerKey, explorer: crate::troops::ExplorerTroops,
+) {
+    snforge_std::interact_with_state(
+        address,
+        || {
+            let position = ResourceKey { game_id: key.game_id, entity_id: key.explorer_id };
+            let exists = crate::logic::troops::explorer(key).is_some();
+            crate::logic::map::MapState::relocate_fixture(
+                position, explorer.coord, crate::troops::troop_occupier(explorer.troops), false,
+            );
+            let record = crate::troops::ExplorerRecordTrait::into_record(explorer);
+            if exists {
+                crate::logic::troops::TroopState::save(key, record);
+            } else {
+                crate::logic::troops::TroopState::create(key, record);
+            }
+        },
+    );
+}
+
 fn explorer_fixture(deployment: Deployment, id: u32, owner: u32, coord: Coord, capacity: u128) -> ResourceKey {
+    // These transfer fixtures need several armies at one home without exercising recruitment limits.
+    let home = IStructureOperationsDispatcher { contract_address: deployment.games }
+        .structure(ResourceKey { game_id: 3, entity_id: owner })
+        .unwrap();
     set_fixture(
         deployment.games,
-        selector!("troops"),
-        selector!("explorers"),
-        array![3, id.into()].span(),
+        selector!("structures"),
+        selector!("structures"),
+        array![3, owner.into()].span(),
+        StructureRecord {
+            owner: home.owner,
+            base: crate::structures::StructureBase { troop_max_explorer_count: 8, ..home.base },
+            resources_packed: home.resources_packed,
+            metadata: home.metadata,
+        },
+    );
+    crate::tests::resource_commands::set_explorer_fixture(
+        deployment.games,
+        crate::troops::ExplorerKey { game_id: 3, explorer_id: id },
         crate::troops::ExplorerTroops { owner, coord, ..Default::default() },
     );
     let key = ResourceKey { game_id: 3, entity_id: id };
@@ -677,12 +712,17 @@ fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
     } else {
         Coord { alt: false, x: 2000009, y: 2000000 }
     };
-    set_fixture(
+    crate::tests::resource_commands::set_explorer_fixture(
         deployment.games,
-        selector!("troops"),
-        selector!("explorers"),
-        array![3, 70].span(),
+        crate::troops::ExplorerKey { game_id: 3, explorer_id: 70 },
         crate::troops::ExplorerTroops { owner: home.entity_id, coord, ..Default::default() },
+    );
+    let target_position = structures.position(target).unwrap();
+    snforge_std::interact_with_state(
+        deployment.games,
+        || crate::logic::map::MapState::relocate_fixture(
+            target, Coord { alt: coord.alt, ..target_position }, category, true,
+        ),
     );
     for owner in array![deployment.actor, 0x998.try_into().unwrap(), 0x999.try_into().unwrap()] {
         set_fixture(
@@ -692,7 +732,7 @@ fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
             array![3, target.entity_id.into()].span(),
             StructureRecord {
                 owner,
-                base: crate::structures::StructureBase { category, alt: coord.alt, ..structure.base },
+                base: crate::structures::StructureBase { category, ..structure.base },
                 metadata: crate::structures::StructureMetadata { village_realm: home.entity_id, ..structure.metadata },
                 resources_packed: structure.resources_packed,
             },

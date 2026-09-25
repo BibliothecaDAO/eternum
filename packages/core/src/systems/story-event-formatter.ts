@@ -1,6 +1,7 @@
 import { BuildingType, BuildingTypeToString, GuardSlot, RESOURCE_PRECISION, resources } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { getStructureName, type PlayerNameResolver } from "../utils/entities";
+import { structureMapPosition } from "../utils/expeditions";
 import { Position } from "./position";
 import { getIsBlitz } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
@@ -535,7 +536,7 @@ function describeStructureDetails(
 
   const name = getStructureName(structure, getIsBlitz()).name;
   const level = toNumber(structure.base?.level);
-  const coord = formatCoord({ x: structure.base?.coord_x, y: structure.base?.coord_y });
+  const coord = formatCoord(structureMapPosition(components, structure));
 
   return joinPieces([name, level !== null ? `Level ${level}` : undefined, coord ? `at ${coord}` : undefined]);
 }

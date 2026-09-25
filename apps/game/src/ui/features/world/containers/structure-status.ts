@@ -17,12 +17,12 @@ export const countOccupiedBuildingTilesByStructure = ({
   buildings,
   trackedStructureIds,
 }: {
-  buildings: Array<{ outerEntityId: number; innerCol: number; innerRow: number }>;
+  buildings: Array<{ structureId: number; innerCol: number; innerRow: number }>;
   trackedStructureIds: ReadonlySet<number>;
 }) =>
   buildings.reduce<Record<number, number>>((counts, building) => {
-    const outerEntityId = normalizeNonNegativeInteger(building.outerEntityId);
-    if (!trackedStructureIds.has(outerEntityId)) {
+    const structureId = normalizeNonNegativeInteger(building.structureId);
+    if (!trackedStructureIds.has(structureId)) {
       return counts;
     }
 
@@ -34,7 +34,7 @@ export const countOccupiedBuildingTilesByStructure = ({
       return counts;
     }
 
-    counts[outerEntityId] = (counts[outerEntityId] ?? 0) + 1;
+    counts[structureId] = (counts[structureId] ?? 0) + 1;
     return counts;
   }, {});
 

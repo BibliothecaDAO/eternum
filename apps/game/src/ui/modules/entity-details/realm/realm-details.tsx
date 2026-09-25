@@ -51,7 +51,7 @@ const RealmVillageDetails = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setTooltip = useTooltipStore((state) => state.setTooltip);
   const mode = useGameModeConfig();
-  const revision = useNativeRevision(["Structure", "Guard", "GuildMember"]);
+  const revision = useNativeRevision(["Structure", "Guard", "GuildMember", "TileOccupancy"]);
 
   const structure = useMemo(
     () =>
