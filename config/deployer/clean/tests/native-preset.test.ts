@@ -132,6 +132,17 @@ describe("native presets", () => {
     expect(playtest.settlement.realms).toEqual(design.settlement.realms);
   });
 
+  test("Frontier replaces the supply pool with depth reveal percentages", () => {
+    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_PLAYTEST_PRESET_ID]) {
+      const generated = loadNativePresetConfiguration("madara.frontier", id);
+      expect(generated.blitz.exploration.rewards).toEqual([]);
+      const preset = buildNativePreset(generated, id);
+      expect(preset.exploration).toEqual([]);
+      expect(preset.settlement.depths.map(({ supply_multiplier }) => supply_multiplier)).toEqual([10, 15, 20, 25]);
+    }
+    for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).exploration.length).toBeGreaterThan(0);
+  });
+
   test("a Frontier camp pays its chest, never resources", () => {
     const design = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),

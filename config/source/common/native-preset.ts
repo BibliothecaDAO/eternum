@@ -51,7 +51,7 @@ export interface NativePreset {
     tokenCap: number;
   };
   depths: Array<{
-    supplyMultiplier: number;
+    revealPercent: number;
     guardLower: number;
     guardUpper: number;
     mineCapMin: number;

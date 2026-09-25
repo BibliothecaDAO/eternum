@@ -18,14 +18,14 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
     write_structures(preset, definition.structures);
     write_settlement(preset, definition.rules, definition.settlement);
     write_economy(preset, definition.rules, definition.economy);
-    write_exploration(preset, definition.exploration);
+    write_exploration(preset, definition.rules, definition.exploration);
     preset.season_win_points.write(definition.season_win_points);
 }
 
 fn record_exists(preset: PresetWrite) -> bool {
-    // write_exploration rejects empty pools, so every successfully stored preset has a nonzero count.
+    // Every validated preset has a nonzero army tick, including one without an exploration pool.
     // Registration is atomic: a failed write cannot leave this marker on a partial record.
-    preset.exploration_reward_count.read() != 0
+    preset.rules.tick_config.armies_tick_in_seconds.read() != 0
 }
 
 pub fn for_game(game_id: u32) -> StoragePath<crate::state::Preset> {
@@ -311,7 +311,7 @@ fn write_depths(preset: PresetWrite, rules: crate::rules::SliceRules, depths: Sp
         );
         assert!(ground.pity != 0, "zero relic pity threshold");
         assert!(index != 0 || (value.entry_stamina == 0 && value.attunement_cost == 0), "surface needs no attunement");
-        assert!(value.supply_multiplier != 0, "zero supply multiplier");
+        assert!(value.supply_multiplier != 0 && value.supply_multiplier <= 100, "invalid reveal percentage");
         assert!(value.guard_lower < value.guard_upper, "invalid depth guards");
         assert!(value.mine_cap_min != 0 && value.mine_cap_min <= value.mine_cap_max, "invalid depth mine cap");
         assert!(value.mine_rate != 0, "zero depth mine rate");
@@ -371,7 +371,14 @@ fn write_relics(
     preset.chest_rules.write(chests);
 }
 
-fn write_exploration(preset: PresetWrite, rewards: Span<crate::exploration_rewards::ExplorationReward>) {
+fn write_exploration(
+    preset: PresetWrite, rules: crate::rules::SliceRules, rewards: Span<crate::exploration_rewards::ExplorationReward>,
+) {
+    if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
+        assert!(crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS), "reveal yield requires depth rules");
+        assert!(rewards.is_empty(), "reveal yield replaces supply pool");
+        return;
+    }
     assert!(!rewards.is_empty(), "empty exploration pool");
     let mut total: u128 = 0;
     for index in 0..rewards.len() {

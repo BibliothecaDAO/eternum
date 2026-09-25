@@ -1375,7 +1375,24 @@ fn deep_sites_scale_rewards_and_guards_and_trove_income_stops_at_rollover() {
     assert_expedition_capture(3);
 }
 
+#[test]
+fn frontier_reveal_pays_equal_strength_on_surface_and_ethereal_one() {
+    assert_capture_with_reveal(0, 1500 * RESOURCE_PRECISION, crate::troops::TroopTier::T1, 150 * RESOURCE_PRECISION);
+    assert_capture_with_reveal(0, 500 * RESOURCE_PRECISION, crate::troops::TroopTier::T2, 150 * RESOURCE_PRECISION);
+    assert_capture_with_reveal(1, 1500 * RESOURCE_PRECISION, crate::troops::TroopTier::T1, 225 * RESOURCE_PRECISION);
+    assert_capture_with_reveal(1, 500 * RESOURCE_PRECISION, crate::troops::TroopTier::T2, 225 * RESOURCE_PRECISION);
+}
+
 fn assert_expedition_capture(depth: u8) {
+    assert_capture_with_reveal(
+        depth,
+        1000 * RESOURCE_PRECISION,
+        crate::troops::TroopTier::T1,
+        (100 + Into::<u8, u128>::into(depth) * 50) * RESOURCE_PRECISION,
+    );
+}
+
+fn assert_capture_with_reveal(depth: u8, count: u128, tier: crate::troops::TroopTier, reveal_amount: u128) {
     let d = setup();
     let mut preset = definition(true);
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
@@ -1388,11 +1405,13 @@ fn assert_expedition_capture(depth: u8) {
         | crate::rules::HOME_CAMP_REWARDS
         | crate::rules::HOME_MINE_PRODUCTION
         | crate::rules::CAPTURE_CHESTS;
+    preset.exploration = array![].span();
     preset.settlement.spacing = 1024;
     preset.rules.troop_limit_config.camp_armies = 0;
     preset.rules.troop_limit_config.starting_guard = 0;
     preset.rules.troop_limit_config.settlement_deployment_cap = 3000;
     preset.rules.troop_limit_config.t1_tier_modifier = 100;
+    preset.rules.troop_limit_config.t2_tier_strength = 3;
     preset.rules.battle_config.regular_immunity_ticks = 0;
     preset
         .rules
@@ -1418,7 +1437,7 @@ fn assert_expedition_capture(depth: u8) {
         depths
             .append(
                 crate::expeditions::DepthRules {
-                    supply_multiplier: index + 1,
+                    supply_multiplier: 10 + index * 5,
                     guard_lower: index + 1,
                     guard_upper: index + 2,
                     mine_cap_min: if index == 0 {
@@ -1494,6 +1513,8 @@ fn assert_expedition_capture(depth: u8) {
     let army_key = ExplorerKey { game_id, explorer_id };
     let mut army = troops.explorer(army_key).unwrap();
     let map = IMapLogicDispatcher { contract_address: d.games };
+    army.troops.count = count;
+    army.troops.tier = tier;
     let original = army.coord;
     army.coord.y += Into::<u8, u32>::into(depth) * preset.settlement.spacing;
     if depth != 0 {
@@ -1522,8 +1543,9 @@ fn assert_expedition_capture(depth: u8) {
     crate::tests::resource_commands::set_explorer_fixture(
         d.games, crate::troops::ExplorerKey { game_id: game_id.into(), explorer_id: explorer_id }, army,
     );
-    let supply = ResourceSlot { game_id, entity_id: 1, resource_type: 1 };
-    let before_supplies = resources.resource_balance(supply);
+    let labor_supply = ResourceSlot { game_id, entity_id: 1, resource_type: 23 };
+    let essence_supply = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
+    let before_supplies = resources.resource_balance(labor_supply) + resources.resource_balance(essence_supply);
     assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id, direction: 0 }), 360, 360));
     let coord = crate::geometry::neighbor(army.coord, 0);
     let map = IMapLogicDispatcher { contract_address: d.games };
@@ -1534,8 +1556,8 @@ fn assert_expedition_capture(depth: u8) {
     assert_eq!(structures.structure(camp).unwrap().base.troop_max_explorer_count, 0);
     assert_eq!(troops.explorer(army_key).unwrap().coord, army.coord);
     assert_eq!(
-        resources.resource_balance(supply) - before_supplies,
-        (Into::<u8, u128>::into(depth) + 1) * 10 * RESOURCE_PRECISION,
+        resources.resource_balance(labor_supply) + resources.resource_balance(essence_supply) - before_supplies,
+        reveal_amount,
     );
     let guards = IGuardsDispatcher { contract_address: d.games };
     assert_eq!(
@@ -1844,6 +1866,7 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
         | DISCOVER_CHESTS
         | crate::rules::REVEAL_SUPPLIES
         | crate::rules::DEPTH_CONTENTS;
+    preset.exploration = array![].span();
     preset.settlement.spacing = 1024;
     preset.rules.troop_limit_config.starting_guard = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;

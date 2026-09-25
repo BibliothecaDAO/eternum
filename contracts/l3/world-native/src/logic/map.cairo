@@ -402,17 +402,26 @@ pub mod MapLogic {
             if tile.data / crate::map::REWARD_EXTRACTED_FLAG % 2 == 1 {
                 return ((), story_cursor);
             }
-            let reward = crate::exploration_rewards::draw(self.extraction_rewards(game_id), seed, context.timestamp);
-            let multiplier = if crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS) {
-                crate::logic::expeditions::depth_rules_at(game_id, coord).supply_multiplier
+            let reward = if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
+                crate::exploration_rewards::reveal_reward(
+                    explorer.troops,
+                    rules.troop_limit_config,
+                    crate::logic::expeditions::depth_rules_at(game_id, coord).supply_multiplier,
+                    seed,
+                    context.timestamp,
+                )
             } else {
-                1
+                let drawn = crate::exploration_rewards::draw(self.extraction_rewards(game_id), seed, context.timestamp);
+                crate::resources::ResourceAmount {
+                    resource_type: drawn.resource_type,
+                    amount: crate::exploration_rewards::boosted_amount(
+                        drawn.amount,
+                        explorer.troops.boosts,
+                        context.timestamp / rules.tick_config.armies_tick_in_seconds,
+                    ),
+                }
             };
-            let amount = crate::exploration_rewards::boosted_amount(
-                reward.amount * multiplier.into(),
-                explorer.troops.boosts,
-                context.timestamp / rules.tick_config.armies_tick_in_seconds,
-            );
+            let amount = reward.amount;
             let receiver = crate::exploration_rewards::receiver(
                 crate::rules::rule_enabled(rules, crate::rules::HOME_REWARDS),
                 explorer_id,

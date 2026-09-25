@@ -1,6 +1,8 @@
 use crate::rules::RESOURCE_PRECISION;
 
+pub const LABOR: u8 = 23;
 pub const LORDS: u8 = 37;
+pub const ESSENCE: u8 = 38;
 pub const UNLIMITED_OUTPUT: u128 = 0xffffffffffffffffffffffffffffffff;
 pub const RESOURCE_RATE_SCALE: u128 = 0x10000000000000000;
 pub(crate) const FIRST_TROOP_RESOURCE: u8 = 26;

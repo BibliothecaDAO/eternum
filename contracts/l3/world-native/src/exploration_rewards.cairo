@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use crate::resources::ResourceKey;
+use crate::resources::{ESSENCE, LABOR, ResourceKey};
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct ExplorationReward {
@@ -60,6 +60,26 @@ pub fn draw(rewards: Span<ExplorationReward>, seed: u256, timestamp: u64) -> Exp
     }
     panic!("invalid exploration draw")
 }
+pub fn reveal_reward(
+    troops: crate::troops::Troops, limits: crate::rules::TroopLimitConfig, percent: u16, seed: u256, timestamp: u64,
+) -> crate::resources::ResourceAmount {
+    let tier_strength: u128 = match troops.tier {
+        crate::troops::TroopTier::T1 => limits.t1_tier_strength.into(),
+        crate::troops::TroopTier::T2 => limits.t2_tier_strength.into(),
+        crate::troops::TroopTier::T3 => limits.t3_tier_strength.into(),
+    };
+    let strength_scaled = troops.count * tier_strength;
+    let numerator = strength_scaled * percent.into();
+    crate::resources::ResourceAmount {
+        resource_type: if crate::random::range(seed, timestamp.into() + 18, 2) == 0 {
+            ESSENCE
+        } else {
+            LABOR
+        },
+        amount: numerator / 100,
+    }
+}
+
 pub fn boosted_amount(amount: u128, boosts: crate::troops::TroopBoosts, tick: u64) -> u128 {
     let bonus = if tick <= boosts.incr_explore_reward_end_tick.into() {
         amount * boosts.incr_explore_reward_percent_num.into() / 10000

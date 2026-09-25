@@ -226,7 +226,7 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
     mode: new CairoCustomEnum({ [preset.settlementMode]: {} }),
     spacing: preset.spacing,
     depths: preset.depths.map((depth) => ({
-      supply_multiplier: depth.supplyMultiplier,
+      supply_multiplier: depth.revealPercent,
       guard_lower: depth.guardLower,
       guard_upper: depth.guardUpper,
       mine_cap_min: scaled(depth.mineCapMin),

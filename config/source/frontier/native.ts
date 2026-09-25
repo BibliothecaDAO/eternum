@@ -23,11 +23,7 @@ export const frontierPreset: NativePreset = {
     essence_cost: 0,
     draw_weight: [0, 1, 2, 3, 4, 5, 8, 9].includes(index) ? rule.draw_weight : 0,
   })),
-  supplies: [
-    { resource_type: 38, amount: 50, amount_max: 300, weight: 1 },
-    { resource_type: 23, amount: 60, amount_max: 450, weight: 1 },
-    { resource_type: 26, amount: 30, amount_max: 250, weight: 1 },
-  ],
+  supplies: [],
   bridgeResources: [],
   id: FRONTIER_PRESET_ID,
   gameType: "frontier",
@@ -75,7 +71,7 @@ export const frontierPreset: NativePreset = {
   chests: { looseOneIn: 46, relicProbability: 9000, cosmeticProbability: 900, tokenCap: 1 },
   depths: [
     {
-      supplyMultiplier: 1,
+      revealPercent: 10,
       guardLower: 1000,
       guardUpper: 1600,
       mineCapMin: 3000,
@@ -88,7 +84,7 @@ export const frontierPreset: NativePreset = {
       chest: { common: 7800, uncommon: 1800, rare: 350, pity: 400 },
     },
     {
-      supplyMultiplier: 4,
+      revealPercent: 15,
       guardLower: 3000,
       guardUpper: 5000,
       mineCapMin: 10000,
@@ -101,7 +97,7 @@ export const frontierPreset: NativePreset = {
       chest: { common: 6000, uncommon: 3000, rare: 800, pity: 100 },
     },
     {
-      supplyMultiplier: 8,
+      revealPercent: 20,
       guardLower: 8000,
       guardUpper: 12000,
       mineCapMin: 20000,
@@ -114,7 +110,7 @@ export const frontierPreset: NativePreset = {
       chest: { common: 4200, uncommon: 3800, rare: 1500, pity: 40 },
     },
     {
-      supplyMultiplier: 16,
+      revealPercent: 25,
       guardLower: 20000,
       guardUpper: 30000,
       mineCapMin: 40000,
