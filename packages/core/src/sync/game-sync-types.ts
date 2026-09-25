@@ -99,6 +99,8 @@ export interface GameSyncSnapshotState {
   gameId: number;
   complete: boolean;
   actor: string | null | undefined;
+  /** The player whose realm the completed scope also streams; absent when not visiting. */
+  visit?: string;
   timestamp: number | undefined;
 }
 

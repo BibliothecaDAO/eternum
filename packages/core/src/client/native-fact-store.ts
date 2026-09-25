@@ -78,6 +78,7 @@ export class NativeFactStore implements GameSyncStore {
       before.gameId === state.gameId &&
       before.complete === state.complete &&
       before.actor === state.actor &&
+      before.visit === state.visit &&
       before.timestamp === state.timestamp
     )
       return;
@@ -154,6 +155,7 @@ export class NativeFactStore implements GameSyncStore {
               .filter((row) => scopeInputKeys(model, row, spacing).some((key) => selected.has(key)))
               .map((row) => ({ value: row }));
           },
+          snapshot.visit,
         ),
       };
     } catch (error) {

@@ -38,7 +38,7 @@ type HeraldMessage =
     })
   | (HeraldMessageBase & { type: "snapshot"; model: string; rows: HeraldRow[] })
   | (HeraldMessageBase & { type: "snapshot_end" })
-  | (HeraldMessageBase & { type: "scope"; actor?: string; expedition: boolean; set: HeraldSet[] })
+  | (HeraldMessageBase & { type: "scope"; actor?: string; visit?: string; expedition: boolean; set: HeraldSet[] })
   | (HeraldMessageBase & {
       type: "diff";
       block: number | null;
@@ -115,6 +115,32 @@ const toFact = ({ model, key, value }: HeraldSet): GameSyncFact => ({ model, key
 
 const toRemoval = ({ model, key }: HeraldDelete): GameSyncFact => ({ model, key, value: null });
 
+/** Who the stream serves: the acting account (null for a spectator) and the player whose realm it visits, if any. */
+interface ScopeSelection {
+  actor: string | null;
+  visit: string | null;
+}
+
+const canonicalAddress = (address: string | undefined): string | null =>
+  address === undefined ? null : `0x${BigInt(address).toString(16)}`;
+
+const sameSelection = (left: ScopeSelection, right: ScopeSelection): boolean =>
+  left.actor === right.actor && left.visit === right.visit;
+
+/** The stream URL carries the selection, so a reconnect resumes the same actor and visit. */
+const selectionOf = (streamUrl: string): ScopeSelection => {
+  const { searchParams } = new URL(streamUrl);
+  return { actor: searchParams.get("actor"), visit: searchParams.get("visit") };
+};
+
+const withSelection = (streamUrl: string, selection: ScopeSelection): string => {
+  const url = new URL(streamUrl);
+  for (const [name, value] of Object.entries(selection))
+    if (value === null) url.searchParams.delete(name);
+    else url.searchParams.set(name, value);
+  return url.toString();
+};
+
 /**
  * Herald's stream, forwarded in order: snapshots, scope replacements and diffs become store facts, event rows become
  * events. The transport keeps no copy of the rows it forwards; the native store is the one place they live.
@@ -128,7 +154,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private socket?: HeraldSocket;
   private reconnectTimer?: ReturnType<typeof setTimeout>;
   private helloTimer?: ReturnType<typeof setTimeout>;
-  private pendingActor?: string | null;
+  private pendingSelection?: ScopeSelection;
   private resumed = false;
   private epoch = "";
   private seq = 0;
@@ -141,8 +167,9 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private snapshotBytesReceived = 0;
   private snapshotModelsReceived = 0;
   private snapshotRowsReceived = 0;
-  private snapshotActor: string | null = null;
+  private snapshotSelection: ScopeSelection = { actor: null, visit: null };
   private completeActor: string | null | undefined;
+  private completeVisit: string | null = null;
   private actorSnapshotGeneration = 0;
   private readonly actorSnapshotWaiters = new Set<Deferred<void>>();
 
@@ -151,25 +178,26 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.socketFactory = options.socketFactory ?? ((url) => new WebSocket(url) as unknown as HeraldSocket);
   }
 
-  public selectActor(actor: string | undefined): void {
-    const url = new URL(this.options.url);
-    const address = actor === undefined ? null : `0x${BigInt(actor).toString(16)}`;
-    if (url.searchParams.get("actor") === address) return;
+  /**
+   * The scope this client streams: the acting account and, while visiting, another player's realm. The pair is replaced
+   * whole, so selecting an actor without a visit leaves any visit, as Herald reads it.
+   */
+  public selectActor(actor: string | undefined, visit?: string): void {
+    const selection = { actor: canonicalAddress(actor), visit: canonicalAddress(visit) };
+    if (sameSelection(selectionOf(this.options.url), selection)) return;
     this.completeActor = undefined;
     this.publishSnapshotState();
     this.actorSnapshotGeneration++;
     this.rejectActorSnapshots(new Error("Gameplay actor changed before its snapshot completed"));
-    if (address === null) url.searchParams.delete("actor");
-    else url.searchParams.set("actor", address);
-    this.options.url = url.toString();
-    this.pendingActor = address;
+    this.options.url = withSelection(this.options.url, selection);
+    this.pendingSelection = selection;
     this.sendActorSelection();
   }
 
-  /** Absence is meaningful only after this actor's complete scope has reached the store. */
+  /** Absence is meaningful only after this actor's complete scope has reached the store; a visit stays open. */
   public prepareActor(actor: string): Promise<void> {
-    this.selectActor(actor);
-    const address = `0x${BigInt(actor).toString(16)}`;
+    const address = canonicalAddress(actor);
+    if (selectionOf(this.options.url).actor !== address) this.selectActor(actor);
     if (this.completeActor === address) return Promise.resolve();
     if (this.stopped) return Promise.reject(new Error("Herald transport is not active"));
     const waiter = deferred<void>();
@@ -189,21 +217,24 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     return this.completeActor;
   }
 
-  private publishSnapshotState(actor = this.completeActor): void | Promise<void> {
+  /** The store's gate: whether the selected scope is complete, and for which actor and visit. */
+  private publishSnapshotState(actor = this.completeActor, visit = this.completeVisit): void | Promise<void> {
     return this.handlers?.onSnapshotState?.({
       gameId: this.options.gameId,
       complete: actor !== undefined,
       actor,
+      ...(visit === null ? {} : { visit }),
       timestamp: this.completedTimestamp(),
     });
   }
 
-  private finishActorSnapshot(actor: string | null, applied: boolean | Promise<boolean> | undefined): void {
+  private finishActorSnapshot(selection: ScopeSelection, applied: boolean | Promise<boolean> | undefined): void {
+    const { actor, visit } = selection;
     const generation = ++this.actorSnapshotGeneration;
     const current = () => !this.stopped && generation === this.actorSnapshotGeneration;
     const complete = (applied: boolean | undefined) => {
       if (!current()) return;
-      if (new URL(this.options.url).searchParams.get("actor") !== actor) return;
+      if (!sameSelection(selectionOf(this.options.url), selection)) return;
       if (applied !== true) {
         this.rejectActorSnapshots(new Error("Actor snapshot was not applied"));
         return;
@@ -211,11 +242,12 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       const finish = () => {
         if (!current()) return;
         this.completeActor = actor;
+        this.completeVisit = visit;
         if (actor === null) return;
         this.actorSnapshotWaiters.forEach((waiter) => waiter.resolve());
         this.actorSnapshotWaiters.clear();
       };
-      const written = this.publishSnapshotState(actor);
+      const written = this.publishSnapshotState(actor, visit);
       if (written) void written.then(finish);
       else finish();
     };
@@ -232,9 +264,10 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   }
 
   private sendActorSelection(): void {
-    if (!this.resumed || !this.socket || this.pendingActor === undefined) return;
-    this.socket.send(JSON.stringify({ type: "select_actor", actor: this.pendingActor }));
-    this.pendingActor = undefined;
+    if (!this.resumed || !this.socket || this.pendingSelection === undefined) return;
+    const { actor, visit } = this.pendingSelection;
+    this.socket.send(JSON.stringify({ type: "select_actor", actor, visit }));
+    this.pendingSelection = undefined;
   }
 
   public async subscribe(handlers: GameSyncSubscriptionHandlers): Promise<GameSyncWriter> {
@@ -260,7 +293,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private connect(): void {
     if (this.stopped) return;
     this.resumed = false;
-    this.snapshotActor = new URL(this.options.url).searchParams.get("actor");
+    this.snapshotSelection = selectionOf(this.options.url);
     const socket = this.socketFactory(this.options.url);
     this.socket = socket;
     this.helloTimer = setTimeout(() => {
@@ -358,7 +391,10 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.completeActor = undefined;
     this.publishSnapshotState();
     const applied = this.handlers?.onScope(message.set.map(toFact), message.expedition);
-    this.finishActorSnapshot(message.actor === undefined ? null : `0x${BigInt(message.actor).toString(16)}`, applied);
+    this.finishActorSnapshot(
+      { actor: canonicalAddress(message.actor), visit: canonicalAddress(message.visit) },
+      applied,
+    );
     this.epoch = message.epoch;
     this.seq = message.seq;
     this.acceptingSnapshotOverlay = true;
@@ -400,7 +436,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     }
     this.snapshotStreaming = false;
     this.firstSnapshotEnded = true;
-    this.finishActorSnapshot(this.snapshotActor, this.handlers?.onSnapshotEnd());
+    this.finishActorSnapshot(this.snapshotSelection, this.handlers?.onSnapshotEnd());
     this.epoch = message.epoch;
     this.seq = message.seq;
     this.forceFreshSnapshot = false;

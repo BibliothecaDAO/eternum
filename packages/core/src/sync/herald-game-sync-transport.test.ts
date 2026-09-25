@@ -9,6 +9,7 @@ import type {
   GameSyncFact,
   GameSyncFactBatch,
   GameSyncSnapshotChunkProgress,
+  GameSyncSnapshotState,
   GameSyncSubscriptionHandlers,
   GameSyncTransaction,
 } from "./game-sync-types";
@@ -257,7 +258,7 @@ describe("HeraldGameSyncTransport", () => {
     const { socket, writer } = await attached(harness);
     snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
     harness.transport.selectActor("0x000111");
-    expect(socket.sent.at(-1)).toEqual({ type: "select_actor", actor: "0x111" });
+    expect(socket.sent.at(-1)).toEqual({ type: "select_actor", actor: "0x111", visit: null });
     expect(socket.closed).toBe(false);
     socket.receive({
       type: "scope",
@@ -279,6 +280,62 @@ describe("HeraldGameSyncTransport", () => {
     expect(new URL(harness.urls[1]).searchParams.get("actor")).toBe("0x222");
     harness.sockets[1].receive(hello("epoch-a:546", 2));
     expect(harness.sockets[1].sent.at(-1)).toEqual({ type: "resume", epoch: "epoch-a:546", seq: 1 });
+    writer.cancel();
+  });
+
+  it("visits another realm as one actor/visit pair, resumes it after reconnect and leaves it whole", async () => {
+    vi.useFakeTimers();
+    const harness = streamHarness();
+    const gates: GameSyncSnapshotState[] = [];
+    harness.handlers.onSnapshotState = (state) => void gates.push(state);
+    const { socket, writer } = await attached(harness);
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
+    harness.transport.selectActor("0x111");
+    socket.receive({ type: "scope", epoch: "epoch-a:1", seq: 1, actor: "0x111", expedition: true, set: [] });
+    await harness.transport.prepareActor("0x111");
+
+    harness.transport.selectActor("0x111", "0x00222");
+    expect(socket.sent.at(-1)).toEqual({ type: "select_actor", actor: "0x111", visit: "0x222" });
+    // A submit while visiting waits on the visit's scope and keeps it open.
+    const submitting = vi.fn();
+    const prepared = harness.transport.prepareActor("0x111").then(submitting);
+    socket.receive({ type: "scope", epoch: "epoch-a:2", seq: 1, actor: "0x111", expedition: true, set: [] });
+    await Promise.resolve();
+    expect(submitting).not.toHaveBeenCalled();
+    socket.receive({
+      type: "scope",
+      epoch: "epoch-a:3",
+      seq: 1,
+      actor: "0x111",
+      visit: "0x222",
+      expedition: true,
+      set: [],
+    });
+    await prepared;
+    // The store's gate opens on the visited scope only once that scope has applied.
+    expect(gates.at(-1)).toMatchObject({ complete: true, actor: "0x111", visit: "0x222" });
+    expect(socket.sent.filter((message) => (message as { type: string }).type === "select_actor")).toHaveLength(2);
+
+    socket.close();
+    await vi.advanceTimersByTimeAsync(200);
+    const resumed = new URL(harness.urls[1]).searchParams;
+    expect([resumed.get("actor"), resumed.get("visit")]).toEqual(["0x111", "0x222"]);
+
+    harness.sockets[1].receive(hello("epoch-a:3", 2));
+    harness.transport.selectActor("0x111", undefined);
+    expect(harness.sockets[1].sent.at(-1)).toEqual({ type: "select_actor", actor: "0x111", visit: null });
+    expect(new URL(harness.transport["options"].url).searchParams.has("visit")).toBe(false);
+    harness.sockets[1].receive({
+      type: "scope",
+      epoch: "epoch-a:4",
+      seq: 1,
+      actor: "0x111",
+      expedition: true,
+      set: [],
+    });
+    await Promise.resolve();
+    expect(gates.at(-1)).toMatchObject({ complete: true, actor: "0x111" });
+    expect(gates.at(-1)).not.toHaveProperty("visit");
     writer.cancel();
   });
 

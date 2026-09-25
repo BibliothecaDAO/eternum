@@ -690,6 +690,16 @@ describe("declared fact absence", () => {
     expect(seen.at(-1)).toContain("INCOMPLETE_SCOPE: Expected one position for scope entity");
   });
 
+  it("scopes a visited realm alongside the actor's own, and drops it when the visit ends", () => {
+    const store = new NativeFactStore();
+    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 0 })]);
+    const state = { gameId: 1, complete: true, actor: "0x111", timestamp: 350 };
+    store.setSnapshot({ ...state, visit: "0x222" });
+    expect(store.subscriptionScope().known).toEqual({ actor: "0x111", visit: "0x222" });
+    store.setSnapshot(state);
+    expect(store.subscriptionScope().known).toEqual({ actor: "0x111" });
+  });
+
   it("notifies sparse readers when gates open, while actor nonces ignore expedition clock", () => {
     const store = new NativeFactStore();
     store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 100 })]);
