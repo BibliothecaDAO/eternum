@@ -101,6 +101,32 @@ const playerRows = (clock: LabClock): WireRow[] => [
       last_updated_at: clock.nowSeconds,
     },
   },
+  // Today's ground around the site is explored grassland, so its tiles open their panels.
+  ...exploredGround(clock),
+  // The realm stands on today's site, with no buildings raised yet beyond the castle.
+  {
+    model: "TileOccupancy",
+    value: {
+      game_id: clock.gameId,
+      alt: false,
+      col: clock.siteCol,
+      row: clock.siteRow,
+      entity_id: LAB_REALM_ID,
+      category: 1,
+      is_structure: true,
+    },
+  },
+  {
+    model: "StructureBuildings",
+    value: {
+      game_id: clock.gameId,
+      entity_id: LAB_REALM_ID,
+      packed_counts_1: "0",
+      packed_counts_2: "0",
+      packed_counts_3: "0",
+      population: { current: 0, max: 6 },
+    },
+  },
   { model: "ArmySlot", value: armySlot(clock, 201, 0, 30) },
   { model: "ArmySlot", value: armySlot(clock, 202, 1, 150) },
   // The day's third army fell this morning: its slot keeps the tired bar for the next muster.
@@ -223,3 +249,21 @@ const armyTile = (clock: LabClock, explorerId: number, colOffset: number, rowOff
   category: 15,
   is_structure: false,
 });
+
+const GRASSLAND = 11;
+const BIOME_SCALE = 0x20000000000n;
+
+/** Explored tiles around today's site in TileOpt's packed form: the biome sits above the tile's other bits. */
+const exploredGround = (clock: LabClock): WireRow[] =>
+  Array.from({ length: 9 }, (_, column) =>
+    Array.from({ length: 7 }, (_, row) => ({
+      model: "TileOpt",
+      value: {
+        game_id: clock.gameId,
+        alt: false,
+        col: clock.siteCol + column - 4,
+        row: clock.siteRow + row - 3,
+        data: (BigInt(GRASSLAND) * BIOME_SCALE).toString(),
+      },
+    })),
+  ).flat();

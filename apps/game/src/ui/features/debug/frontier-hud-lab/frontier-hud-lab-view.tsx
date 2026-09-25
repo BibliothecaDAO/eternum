@@ -7,6 +7,12 @@ import { bindChainTime } from "@/sync/chain-time-binding";
 import { SurfaceHost } from "@/ui/design-system/molecules/popover";
 import { FrontierHud } from "@/ui/features/frontier/frontier-hud";
 import { MotionLayer } from "@/ui/motion/motion-layer";
+import { ContextMenu } from "@/ui/features/world/components/context-menu/context-menu";
+import { LeftViewSurfaces } from "@/ui/features/world/containers/left-view-surfaces";
+import { installActiveGameClient } from "@/sync/active-game-client";
+import { createGameViews, type GameClient } from "@bibliothecadao/eternum";
+import { installFreshGameSyncRuntime, WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
+import { ContractAddress } from "@bibliothecadao/types";
 import { useBootDocumentState } from "@/ui/modules/boot-loader/boot-loader-state";
 import { BlockTimestampPoller } from "@/ui/shared/components/block-timestamp-poller";
 import { configManager, readExpeditionRules } from "@bibliothecadao/eternum";
@@ -36,6 +42,9 @@ export const FrontierHudLabView = () => {
       <SurfaceHost />
       <FrontierHud rules={readExpeditionRules(lab.setup.store, lab.gameId)!} />
       <MotionLayer />
+      {/* The world layout's own surfaces, so muster, build and the context menu open here as they do in a game. */}
+      <ContextMenu />
+      <LeftViewSurfaces />
       <LabPacing store={lab.setup.store} gameId={lab.gameId} />
     </GameProvider>
   );
@@ -45,7 +54,11 @@ export const FrontierHudLabView = () => {
 const LabPacing = ({ store, gameId }: { store: NativeFactStore; gameId: number }) => {
   const rules = store.require("SliceRules", { game_id: gameId });
   return (
-    <p className="pointer-events-none fixed top-36 left-1/2 z-40 -translate-x-1/2 rounded bg-black/70 px-2 py-1 font-sans text-[10px] text-gold/80">
+    // Lab chrome: review captures hide [data-lab-chrome], so nothing outside the game is read as the game.
+    <p
+      data-lab-chrome
+      className="pointer-events-none fixed top-36 left-1/2 z-40 -translate-x-1/2 rounded bg-black/70 px-2 py-1 font-sans text-[10px] text-gold/80"
+    >
       Lab · launch pacing: {rules.epoch_seconds} s days, {String(rules.tick_config.armies_tick_in_seconds)} s ticks, +
       {rules.troop_stamina_config.stamina_gain_per_tick} stamina a tick
     </p>
@@ -77,7 +90,9 @@ const bootLab = async () => {
     useUIStore.getState().setSelectedBuildingHex({ structureId: LAB_REALM_ID, innerCol: 10, innerRow: 10 });
   const refuse = () => Promise.reject(new Error("The Frontier HUD lab has no chain"));
   const systemCalls = new Proxy({}, { get: () => refuse });
-  return { setup: { store, systemCalls } as unknown as GameClientSetup, account, gameId: day.gameId };
+  const setup = { store, systemCalls } as unknown as GameClientSetup;
+  installLabClient(setup);
+  return { setup, account, gameId: day.gameId };
 };
 
 /** The lab's shard answers from memory: a manifest naming the lab chain, and an empty event history. */
@@ -104,4 +119,15 @@ const openLabShard = async (gameId: number) => {
   const game = { chainId: LAB_CHAIN_ID, gameId };
   saveGameProfile({ ...game, presetId: 5, name: "Frontier lab", fetchedAt: 0 });
   setActiveGame(game);
+};
+
+/**
+ * What a booted game installs and the lab's surfaces read: the map's spatial projection over the lab's facts, and a
+ * game client whose views read them. The client has no chain: its actions refuse like the lab's system calls.
+ */
+const installLabClient = (setup: GameClientSetup) => {
+  installFreshGameSyncRuntime().installWorldSpatialProjection(new WorldSpatialProjection({ store: setup.store }));
+  const client = { setup, connect() {}, disconnect() {}, dispose() {}, visit() {} } as unknown as GameClient;
+  Object.assign(client, { views: createGameViews(client, ContractAddress(BigInt(LAB_PLAYER)), () => null) });
+  installActiveGameClient(client);
 };
