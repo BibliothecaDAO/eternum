@@ -143,6 +143,9 @@ describe("native resource facts", () => {
     const manager = new ResourceManager(store, 7, 1);
     expect(manager.trainsFromWheat()).toBe(true);
     expect(new ResourceManager(store, 8, 1).trainsFromWheat()).toBe(false);
+    // Farms grow 100 a second; the barracks trains 10 a second at 2 wheat each (rates in game precision).
+    expect(manager.wheatPerHour()).toEqual({ produced: (100 / 1e9) * 3600, consumed: (20 / 1e9) * 3600 });
+    expect(new ResourceManager(store, 8, 1).wheatPerHour()).toBeUndefined();
     expect(manager.balanceWithProduction(101, 26).balance).toBe(30);
     expect(manager.balanceWithProduction(101, 35).balance).toBe(70);
     expect(manager.balance(35)).toBe(60n);
