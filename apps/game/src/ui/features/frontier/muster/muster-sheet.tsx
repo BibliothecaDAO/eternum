@@ -3,9 +3,8 @@ import { useCurrentArmiesTick, useCurrentDefaultTick } from "@/hooks/helpers/use
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requireActiveGameClient } from "@/sync/active-game-client";
-import { Eye, Flag, Swords, Zap } from "@/ui/design-system/atoms/game-icons";
+import { Eye } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { structureMapPosition } from "@bibliothecadao/eternum";
@@ -13,6 +12,7 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { getNeighborHexes, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { formatAmount } from "../frontier-format";
+import { BoltGlyph, SlotBanner, SwordGlyph } from "../glyphs";
 import {
   type MusterStack,
   musterArmy,
@@ -76,22 +76,21 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
       data-muster-sheet
       // A bottom sheet over the dock on a phone held upright; at the foot of the screen otherwise.
       className={cn(
-        OVERLAY_SURFACE_BASE,
-        "pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex flex-col gap-3 rounded-t-2xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))] font-sans",
-        "landscape:inset-x-auto landscape:bottom-4 landscape:left-1/2 landscape:w-[min(520px,60vw)] landscape:-translate-x-1/2 landscape:rounded-2xl",
+        "frontier-sheet pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex flex-col gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] font-sans",
+        "landscape:inset-x-auto landscape:bottom-4 landscape:left-1/2 landscape:w-[min(520px,60vw)] landscape:-translate-x-1/2",
       )}
     >
       {/* The sheet's handle closes it, as a swipe down would. */}
       <button type="button" aria-label="Close" onClick={onClose} className="-mt-2 flex h-6 justify-center">
-        <span className="mt-1 h-1 w-12 rounded-full bg-gold/30" />
+        <span className="frontier-handle mt-1" />
       </button>
       <header className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gold">Muster</h2>
+        <h2 className="frontier-title">Muster</h2>
         {plan && <SlotBanners used={plan.slots.used} allowed={plan.slots.allowed} />}
       </header>
       {plan && plan.stacks.length > 1 && <StackPicker stacks={plan.stacks} chosen={chosen} onChoose={setChosen} />}
       <PortraitRing stack={stack} share={maximum > 0 ? count / maximum : 0} />
-      <p className="text-center text-4xl font-bold tabular-nums text-gold" aria-label="Troops">
+      <p className="frontier-hero text-center tabular-nums" aria-label="Troops">
         {stack ? formatAmount(preview?.count ?? 0) : "—"}
       </p>
       <label className="flex flex-col gap-1">
@@ -106,30 +105,21 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
           style={{ background: sliderTrack(maximum > 0 ? Math.min(count, maximum) / maximum : 0) }}
           className="h-3 w-full cursor-pointer appearance-none rounded-full [&::-moz-range-thumb]:size-7 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[radial-gradient(circle_at_35%_35%,#fbe3a3,#e39001)] [&::-webkit-slider-thumb]:size-7 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[radial-gradient(circle_at_35%_35%,#fbe3a3,#e39001)] [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(227,144,1,0.6)]"
         />
-        <span className="flex justify-between text-xs tabular-nums text-gold/50">
+        <span className="frontier-scale-end flex justify-between tabular-nums">
           <span>0</span>
           <span>{formatAmount(maximum)}</span>
         </span>
       </label>
       <div className="grid grid-cols-3 gap-2">
-        <Chip
-          label="Strength"
-          icon={<Swords className="size-5" />}
-          value={preview ? formatAmount(preview.strength) : "—"}
-        />
+        <Chip label="Strength" icon={<SwordGlyph />} value={preview ? formatAmount(preview.strength) : "—"} />
         <YieldChip scaled={preview?.revealYield} />
         <Chip
           label="Starting stamina"
-          icon={<Zap className="size-5" />}
+          icon={<BoltGlyph />}
           value={preview?.stamina ? formatAmount(preview.stamina.amount) : "—"}
         />
       </div>
-      <button
-        type="button"
-        disabled={!canMuster}
-        onClick={() => void muster()}
-        className="min-h-14 rounded-2xl bg-gradient-to-b from-[#f7c35a] to-[#e39001] text-xl font-bold text-[#1b1207] shadow-[0_0_28px_rgba(227,144,1,0.55),inset_0_1px_0_rgba(255,255,255,0.35)] disabled:opacity-40 disabled:shadow-none"
-      >
+      <button type="button" disabled={!canMuster} onClick={() => void muster()} className="frontier-primary">
         Muster
       </button>
     </section>
@@ -150,18 +140,18 @@ const useMusterDirection = (realm: NativeRows["Structure"]) => {
 
 /** The day's army slots as banners: a filled banner holds an army, an empty one waits for this muster. */
 const SlotBanners = ({ used, allowed }: { used: number; allowed: number }) => (
-  <span className="flex gap-1" aria-label={`${used} of ${allowed} armies today`}>
+  <span className="flex gap-1.5" aria-label={`${used} of ${allowed} armies today`}>
     {Array.from({ length: allowed }, (_, index) => (
-      <Flag key={index} className={cn("size-6", index < used ? "opacity-100" : "opacity-30")} />
+      <SlotBanner key={index} used={index < used} />
     ))}
   </span>
 );
 
-/** The army's diorama: its troops on their hex base, the art an army card shows. */
 /** The slider's track: amber up to the thumb, the faint gold of the unfilled ring beyond it. */
 const sliderTrack = (share: number) =>
   `linear-gradient(to right, #e39001 ${share * 100}%, rgba(223, 170, 84, 0.15) ${share * 100}%)`;
 
+/** The army's diorama: its troops on their hex base, the art an army card shows. */
 const troopArt = (stack: MusterStack) => `/images/armies/${stack.type.toLowerCase()}${stack.tier}.png`;
 
 /** The troops as their portrait, inside a ring that fills with the share of the stack being mustered. */
@@ -233,12 +223,9 @@ const StackPicker = ({
 );
 
 const Chip = ({ label, icon, value }: { label: string; icon: React.ReactNode; value: string }) => (
-  <span
-    aria-label={`${label} ${value}`}
-    className="flex min-h-11 items-center justify-center gap-2 rounded-full border border-gold/20 bg-black/40 px-2 text-base font-semibold tabular-nums text-gold [&_img]:size-5 [&_svg]:size-5"
-  >
+  <span aria-label={`${label} ${value}`} className="frontier-chip justify-center">
     {icon}
-    {value}
+    <span className="frontier-chip-number tabular-nums">{value}</span>
   </span>
 );
 
@@ -247,11 +234,11 @@ const YieldChip = ({ scaled }: { scaled: bigint | undefined }) => {
   const whole = scaled === undefined ? undefined : scaled / PRECISION;
   const icons =
     whole === 0n ? (
-      <Eye className="size-5" />
+      <Eye />
     ) : (
-      <span className="flex -space-x-1">
-        <img src={`/images/resources/${ResourcesIds.Essence}.png`} alt="" className="size-5" />
-        <img src={`/images/resources/${ResourcesIds.Labor}.png`} alt="" className="size-5" />
+      <span className="flex items-center justify-center -space-x-1">
+        <img src={`/images/resources/${ResourcesIds.Essence}.png`} alt="" className="size-4" />
+        <img src={`/images/resources/${ResourcesIds.Labor}.png`} alt="" className="size-4" />
       </span>
     );
   return (

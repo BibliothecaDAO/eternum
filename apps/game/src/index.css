@@ -428,6 +428,12 @@ html.scene-viewport body {
   text-transform: uppercase;
 }
 
+/* The overlay surface's gradient: every mode's panels and sheets share it; Frontier warms it (below). */
+:root {
+  --overlay-surface-from: #192930;
+  --overlay-surface-to: #101c23;
+}
+
 /* Frontier type, the owner's dyslexia rule: Atkinson Hyperlegible body, Lexend headings, sentence case, no italics,
    larger sizes. FrontierHud sets the class on <html>, so popovers and sheets rendered outside it follow too. */
 html.frontier-type body,
@@ -464,6 +470,111 @@ html.frontier-type .hud-body {
 }
 html.frontier-type .hud-value {
   font-size: 0.9375rem;
+}
+/* Frontier's visual direction (design §3.12), the designer's tokens in one place: warm ink surfaces, the palette, and
+   numbers in the rounded display face (Lexend 800, tabular so a rolling count never jitters). Scoped here so every
+   Frontier sheet gets them and no other mode changes. */
+html.frontier-type {
+  --overlay-surface-from: rgba(38, 29, 17, 0.98);
+  --overlay-surface-to: rgba(16, 12, 8, 0.99);
+  --frontier-void: #0c0a08;
+  --frontier-line: #46351c;
+  --frontier-line2: #6b5230;
+  --frontier-parchment: #eadfc8;
+  --frontier-gold: #dfaa54;
+  --frontier-gold2: #f3d08a;
+  --frontier-muted: #a2926f;
+  --frontier-faint: #6e6148;
+  --frontier-amber: #e39001;
+  --frontier-hot: #f6ac1d;
+  --frontier-ink: #1b1207;
+  --frontier-stamina: #9fd06a;
+}
+html.frontier-type :is(.tabular-nums, .hud-value) {
+  font-family: "Lexend", system-ui, sans-serif;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+html.frontier-type .frontier-sheet {
+  /* An opaque base under the translucent gradient: nothing beneath a sheet shows through it. */
+  background: linear-gradient(180deg, var(--overlay-surface-from), var(--overlay-surface-to)), var(--frontier-void);
+  border: 0;
+  border-top: 1px solid var(--frontier-line2);
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.7);
+}
+@media (orientation: landscape) {
+  html.frontier-type .frontier-sheet {
+    border: 1px solid var(--frontier-line2);
+    border-radius: 24px;
+  }
+}
+html.frontier-type .frontier-handle {
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: #5a4a30;
+}
+html.frontier-type .frontier-card {
+  background: linear-gradient(180deg, #2a2013, #15100a);
+  border: 1px solid var(--frontier-line);
+  border-radius: 18px;
+}
+html.frontier-type .frontier-card[aria-pressed="true"] {
+  border: 2px solid var(--frontier-hot);
+  box-shadow: 0 0 18px rgba(246, 172, 29, 0.45);
+  transform: translateY(-8px);
+}
+html.frontier-type .frontier-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(10, 8, 6, 0.72);
+  border: 1px solid var(--frontier-line);
+  border-radius: 999px;
+  padding: 3px 11px 3px 4px;
+}
+html.frontier-type .frontier-chip > :first-child {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+html.frontier-type .frontier-chip-number {
+  font-size: 17px;
+  color: var(--frontier-parchment);
+}
+html.frontier-type .frontier-primary {
+  height: 60px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffc24a, #e39001 62%, #b76f00);
+  border: 1px solid #ffd98a;
+  box-shadow:
+    0 5px 0 #6d4300,
+    0 10px 22px rgba(227, 144, 1, 0.35);
+  font-family: "Lexend", system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--frontier-ink);
+}
+html.frontier-type .frontier-primary:disabled {
+  opacity: 0.45;
+  box-shadow: 0 5px 0 #6d4300;
+}
+html.frontier-type .frontier-title {
+  font-family: "Lexend", system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--frontier-parchment);
+}
+html.frontier-type .frontier-hero {
+  font-size: 34px;
+  color: #fff3c4;
+  text-shadow: 0 2px 0 var(--frontier-ink);
+}
+html.frontier-type .frontier-scale-end {
+  font-size: 13px;
+  color: var(--frontier-faint);
 }
 
 .font-grotesk {
