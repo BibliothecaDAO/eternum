@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { Effect, Layer } from "effect";
 import { decodeLaunchEnv } from "./env";
-import { launchExecutorLayer, launchTargetOf } from "./executor";
+import { launchExecutorLayer, launchTargetOf, shardChainOf } from "./executor";
 import { processNextLaunch } from "./process-launch";
 import { D1LaunchStore, databaseLayer } from "./store";
 
@@ -22,7 +22,7 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
 
   override async alarm(): Promise<void> {
     const env = decodeLaunchEnv(this.env);
-    const store = new D1LaunchStore(env.DB);
+    const store = new D1LaunchStore(env.DB, shardChainOf(env));
     const services = Layer.mergeAll(databaseLayer(store), launchExecutorLayer(launchTargetOf(env)));
     await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(services)));
     const next = await store.nextDue();

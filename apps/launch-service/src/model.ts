@@ -15,6 +15,8 @@ export type LaunchSummary = LaunchGameSummary | FinalizedGameSummary;
 
 export interface LaunchRun {
   id: string;
+  /** The chain the run launches on or records results from, taken from the shard's /manifest when it was queued. */
+  chainId: string;
   kind: LaunchKind;
   environment: GameEnvironmentId;
   name: string;

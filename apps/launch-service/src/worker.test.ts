@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Miniflare } from "miniflare";
 import { afterAll, beforeAll, expect, it } from "vitest";
+import schema from "../../../contracts/l3/world-native/schema/schema.json";
 
 /**
  * The Worker as Cloudflare runs it: the bundle wrangler deploys, its cron tick, its registrar Durable Object and D1 in
@@ -12,6 +13,18 @@ import { afterAll, beforeAll, expect, it } from "vitest";
 const ORIGIN = "https://staging.realms.party";
 const LAUNCHER = "0x123";
 const SHARD_URL = "https://shard.test";
+const SHARD_CHAIN = "0x534e5f574f524b4552";
+/** The shard's /manifest names its chain and this Worker's release; every other shard call fails, as a node would. */
+const SHARD_MANIFEST = {
+  version: 1,
+  chainId: SHARD_CHAIN,
+  releaseSchemas: { "1": schema.identity },
+  rpcUrl: `${SHARD_URL}/rpc`,
+  admissionUrl: `${SHARD_URL}/admission`,
+  accountClassHash: "0x2",
+  guardianPublicKey: "0x9",
+  contracts: { games: "0x77" },
+};
 
 let mf: Miniflare;
 let db: D1Database;
@@ -43,7 +56,9 @@ beforeAll(async () => {
       VERSION: { id: "workerd-test", tag: "", timestamp: "" },
     },
     outboundService: (request: Request) =>
-      new Response(`${request.url} unavailable`, { status: request.url === `${SHARD_URL}/manifest` ? 503 : 599 }),
+      request.url === `${SHARD_URL}/manifest`
+        ? Response.json(SHARD_MANIFEST)
+        : new Response(`${request.url} unavailable`, { status: 599 }),
   });
   db = (await mf.getD1Database("DB")) as unknown as D1Database;
   const migrations = new URL("../migrations/", import.meta.url);
@@ -90,13 +105,14 @@ it("opens a Blitz window, ticks the schedule, queues an authorized launch and re
 
   await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
   const deadline = Date.now() + 10_000;
-  let run: { status: string; attempts: number; error_message: string | null } | null = null;
+  let run: { chain_id: string; status: string; attempts: number; error_message: string | null } | null = null;
   while (Date.now() < deadline && !run?.error_message) {
-    run = await db.prepare("SELECT status, attempts, error_message FROM launch_runs").first();
+    run = await db.prepare("SELECT chain_id, status, attempts, error_message FROM launch_runs").first();
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  expect(run).toMatchObject({ status: "queued", attempts: 1 });
-  expect(run?.error_message).toMatch(new RegExp(`^Shard ${SHARD_URL} manifest failed: 503`));
+  // The run is keyed to the chain the manifest names, and the registrar's first attempt records the node's failure.
+  expect(run).toMatchObject({ chain_id: SHARD_CHAIN, status: "queued", attempts: 1 });
+  expect(run?.error_message).toBeTruthy();
 }, 60_000);
 
 it("launches a game that is ready now while a result waits an hour for its game's end", async () => {
@@ -110,10 +126,17 @@ it("launches a game that is ready now while a result waits an hour for its game'
   const now = Date.now();
   await db
     .prepare(
-      `INSERT INTO launch_runs (id, kind, environment, name, request, status, available_at, created_at, updated_at)
-       VALUES ('waiting-result', 'result', 'madara.blitz', 'bltz-later', ?, 'queued', ?, ?, ?)`,
+      `INSERT INTO launch_runs
+         (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at)
+       VALUES ('waiting-result', ?, 'result', 'madara.blitz', 'bltz-later', ?, 'queued', ?, ?, ?)`,
     )
-    .bind(JSON.stringify({ environment: "madara.blitz", gameName: "bltz-later", gameId: 4 }), now + 3_600_000, now, now)
+    .bind(
+      SHARD_CHAIN,
+      JSON.stringify({ environment: "madara.blitz", gameName: "bltz-later", gameId: 4 }),
+      now + 3_600_000,
+      now,
+      now,
+    )
     .run();
   await tick(); // a pass finds nothing due and sleeps until the result's hour
   await new Promise((resolve) => setTimeout(resolve, 1_000));
@@ -140,10 +163,11 @@ it("runs a continued launch at once, even while the registrar sleeps until a res
   const insert = (id: string, kind: string, name: string, status: string, availableAt: number, request: object) =>
     db
       .prepare(
-        `INSERT INTO launch_runs (id, kind, environment, name, request, status, available_at, created_at, updated_at)
-         VALUES (?, ?, 'madara.blitz', ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO launch_runs
+           (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at)
+         VALUES (?, ?, ?, 'madara.blitz', ?, ?, ?, ?, ?, ?)`,
       )
-      .bind(id, kind, name, JSON.stringify(request), status, availableAt, now, now)
+      .bind(id, SHARD_CHAIN, kind, name, JSON.stringify(request), status, availableAt, now, now)
       .run();
   await insert("waiting", "result", "bltz-later", "queued", now + 3_600_000, {
     environment: "madara.blitz",

@@ -6,7 +6,7 @@ import type { IdentityResolver } from "./auth";
 import { D1CalendarStore } from "./calendar-store";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
-import { createLaunchTestDatabase } from "./test-database";
+import { createLaunchTestDatabase, testChain } from "./test-database";
 
 const ALLOWED_ORIGIN = "https://play.realms.party";
 const ALLOWED_ADDRESS = "0x123";
@@ -31,10 +31,10 @@ afterEach(async () => {
 
 const createApp = (
   resolver: IdentityResolver,
-  slots = new D1SlotStore(database.db),
+  slots = new D1SlotStore(database.db, new D1LaunchStore(database.db, testChain())),
   playerAccount = vi.fn(async (_realmsId: string) => PLAYER_ACCOUNT),
 ) => {
-  const store = new D1LaunchStore(database.db);
+  const store = new D1LaunchStore(database.db, testChain());
   return {
     app: createLaunchApp({
       config: {
@@ -79,7 +79,7 @@ describe("free slot registration", () => {
   });
 
   test("does not register a player whose shard account cannot be read", async () => {
-    const slots = new D1SlotStore(database.db);
+    const slots = new D1SlotStore(database.db, new D1LaunchStore(database.db, testChain()));
     const { app } = createApp(
       signedIn("0x456"),
       slots,

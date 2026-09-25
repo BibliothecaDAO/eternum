@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, test } from "vitest";
 import { nextBlitzSlot, runLaunchSchedule } from "./schedule";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
-import { createLaunchTestDatabase } from "./test-database";
+import { createLaunchTestDatabase, testChain } from "./test-database";
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
@@ -26,8 +26,8 @@ const closeSlots = () =>
     .run();
 
 test("registration and frozen groups survive concurrency, an interrupted freeze and a restart", async () => {
-  const launches = new D1LaunchStore(database.db);
-  const slots = new D1SlotStore(database.db);
+  const launches = new D1LaunchStore(database.db, testChain());
+  const slots = new D1SlotStore(database.db, launches);
   const closesAt = new Date(Date.now() + 60_000).toISOString();
   await slots.create("friday", closesAt);
   expect(await slots.create("friday", closesAt)).toMatchObject({ name: "friday", closesAt });
@@ -74,7 +74,7 @@ test("registration and frozen groups survive concurrency, an interrupted freeze 
     );
   }
 
-  const restarted = new D1SlotStore(database.db);
+  const restarted = new D1SlotStore(database.db, launches);
   expect(await restarted.freeze("friday")).toEqual(first);
   expect(await restarted.list()).toEqual([first]);
   expect((await launches.list("madara.blitz", "game")).map(({ id }) => id).sort()).toEqual(
@@ -84,8 +84,8 @@ test("registration and frozen groups survive concurrency, an interrupted freeze 
 });
 
 test("every tick names the same next slot and a frozen slot is pruned when the next one freezes", async () => {
-  const launches = new D1LaunchStore(database.db);
-  const slots = new D1SlotStore(database.db);
+  const launches = new D1LaunchStore(database.db, testChain());
+  const slots = new D1SlotStore(database.db, launches);
   const blitzWindow = {
     phase: "blitz" as const,
     startsAt: "2026-10-01T00:00:00.000Z",
@@ -120,8 +120,8 @@ test("every tick names the same next slot and a frozen slot is pruned when the n
 });
 
 test("the schedule freezes zero and single-player slots without inventing players", async () => {
-  const launches = new D1LaunchStore(database.db);
-  const slots = new D1SlotStore(database.db);
+  const launches = new D1LaunchStore(database.db, testChain());
+  const slots = new D1SlotStore(database.db, launches);
   const closesAt = new Date(Date.now() + 60_000).toISOString();
   await slots.create("empty", closesAt);
   await slots.create("solo", closesAt);

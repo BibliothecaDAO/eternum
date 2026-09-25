@@ -4,7 +4,7 @@ import { createLaunchApp } from "./app";
 import { createIdentityResolver } from "./auth";
 import { D1CalendarStore } from "./calendar-store";
 import { decodeLaunchEnv, type LaunchEnv } from "./env";
-import { readLaunchShard } from "./executor";
+import { readLaunchShard, shardChainOf } from "./executor";
 import { runLaunchSchedule } from "./schedule";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
@@ -20,20 +20,26 @@ export default {
   },
   async scheduled(_controller: ScheduledController, rawEnv: Record<string, unknown>): Promise<void> {
     const env = decodeLaunchEnv(rawEnv);
-    await Effect.runPromise(
-      runLaunchSchedule(new D1LaunchStore(env.DB), new D1SlotStore(env.DB), new D1CalendarStore(env.DB), new Date()),
-    );
+    const { launches, slots, calendar } = launchStoresOf(env);
+    await Effect.runPromise(runLaunchSchedule(launches, slots, calendar, new Date()));
     // The backstop: whatever a tick queued, and anything due that no queueing path armed, runs now.
     await registrarOf(env).armFor(Date.now());
   },
+};
+
+/** The launch service's stores on one D1, keyed to the chain the shard's /manifest names. */
+const launchStoresOf = (env: LaunchEnv) => {
+  const launches = new D1LaunchStore(env.DB, shardChainOf(env));
+  return { launches, slots: new D1SlotStore(env.DB, launches), calendar: new D1CalendarStore(env.DB) };
 };
 
 const registrarOf = (env: LaunchEnv) => env.REGISTRAR.get(env.REGISTRAR.idFromName("registrar"));
 
 export { Registrar } from "./registrar";
 
-const launchAppOf = (env: LaunchEnv) =>
-  createLaunchApp({
+const launchAppOf = (env: LaunchEnv) => {
+  const { launches, slots, calendar } = launchStoresOf(env);
+  return createLaunchApp({
     config: {
       allowedOrigins: new Set([new URL(env.BASE_URL).origin]),
       launcherAllowlist: env.launchers,
@@ -41,12 +47,13 @@ const launchAppOf = (env: LaunchEnv) =>
     },
     deployment: { environment: env.ENVIRONMENT, version: env.VERSION.id },
     identity: createIdentityResolver(env.BASE_URL, (url, init) => env.IDENTITY.fetch(url, init)),
-    store: new D1LaunchStore(env.DB),
-    slots: new D1SlotStore(env.DB),
-    calendar: new D1CalendarStore(env.DB),
+    store: launches,
+    slots,
+    calendar,
     registrar: { armFor: (dueAt) => registrarOf(env).armFor(dueAt) },
     playerAccount: async (realmsId) => {
       const { shard } = await readLaunchShard(env.SHARD_URL);
       return realmsAccountAddress(realmsId, shard.accountClassHash, shard.guardianPublicKey);
     },
   });
+};

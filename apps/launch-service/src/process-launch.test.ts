@@ -6,13 +6,13 @@ import { LaunchExecutor } from "./executor";
 import { processNextLaunch } from "./process-launch";
 import { GameNotEnded } from "./results";
 import { D1LaunchStore, databaseLayer } from "./store";
-import { createLaunchTestDatabase } from "./test-database";
+import { createLaunchTestDatabase, testChain } from "./test-database";
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 let store: D1LaunchStore;
 beforeEach(async () => {
   database = await createLaunchTestDatabase();
-  store = new D1LaunchStore(database.db);
+  store = new D1LaunchStore(database.db, testChain());
 });
 afterEach(async () => {
   await database.close();

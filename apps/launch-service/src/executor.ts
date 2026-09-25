@@ -43,6 +43,10 @@ export const readLaunchShard = async (shardUrl: string): Promise<{ shard: Shard;
   return { shard, world: registrarWorldOf(shard, RELEASE_SCHEMA) };
 };
 
+/** The chain id the shard's /manifest names: the key every launch run is stored under. */
+export const shardChainOf = (env: LaunchEnv) => async (): Promise<string> =>
+  (await readLaunchShard(env.SHARD_URL)).shard.chainId;
+
 const requirePersistedStartTime = (request: CreateGameRequest): string => {
   if (!request.gameStartTime) throw new Error(`Launch request for ${request.gameName} has no persisted start time`);
   return request.gameStartTime;
@@ -75,6 +79,12 @@ const buildGameRequest = (
 
 const executeRun = async (run: LaunchRun, store: LaunchRunStore, target: LaunchTarget): Promise<LaunchSummary> => {
   const launchShard = await readLaunchShard(target.shardUrl);
+  // The shard behind SHARD_URL can change under a queued run; a run only ever executes on the chain it was queued for.
+  if (run.chainId !== launchShard.shard.chainId) {
+    throw new Error(
+      `Launch ${run.id} belongs to chain ${run.chainId}, but the shard is now on ${launchShard.shard.chainId}`,
+    );
+  }
   if (run.kind === "game" && !("gameId" in run.request)) {
     return launchGame(buildGameRequest(run.request, target, launchShard), store);
   }

@@ -1,5 +1,7 @@
 import { nativePresetIdFor } from "../../../config/source/native";
 import { normalizeAddress } from "./address";
+import type { CreateGameRequest } from "./schemas";
+import type { D1LaunchStore } from "./store";
 import {
   SlotConflict,
   SlotNotFound,
@@ -30,7 +32,10 @@ interface RegistrationRow {
  * it, so two freezers read the same roster and write the same groups.
  */
 export class D1SlotStore implements SlotStore {
-  constructor(private readonly db: D1Database) {}
+  constructor(
+    private readonly db: D1Database,
+    private readonly launches: D1LaunchStore,
+  ) {}
 
   async create(name: string, closesAt: string): Promise<PlaytestSlot> {
     const closes = Date.parse(closesAt);
@@ -93,7 +98,7 @@ export class D1SlotStore implements SlotStore {
     const groups = splitPlaytestRoster(slot.registrations);
     await this.db.batch([
       ...groups.map((group, index) => this.assignGame(name, group, index + 1)),
-      ...groups.map((group, index) => this.queueSlotGame(slot, index + 1, group)),
+      ...(await Promise.all(groups.map((group, index) => this.queueSlotGame(slot, index + 1, group)))),
       this.db
         .prepare("UPDATE playtest_slots SET frozen_at = ? WHERE name = ? AND frozen_at IS NULL")
         .bind(Date.now(), name),
@@ -124,24 +129,15 @@ export class D1SlotStore implements SlotStore {
   }
 
   private queueSlotGame(slot: PlaytestSlot, gameNumber: number, players: readonly SlotRegistration[]) {
-    const gameName = `${slot.name}-${gameNumber}`;
-    const request = {
+    return this.launches.scheduleStatement("game", {
       environment: "madara.blitz",
-      version: String(nativePresetIdFor("blitz")),
-      gameName,
+      version: String(nativePresetIdFor("blitz")) as CreateGameRequest["version"],
+      gameName: `${slot.name}-${gameNumber}`,
       gameStartTime: slot.closesAt,
       devModeOn: false,
       singleRealmMode: false,
       rosterAccounts: players.map(({ account }) => account),
-    };
-    const now = Date.now();
-    return this.db
-      .prepare(
-        `INSERT INTO launch_runs (id, kind, environment, name, request, status, available_at, created_at, updated_at)
-         VALUES (?, 'game', 'madara.blitz', ?, ?, 'queued', ?, ?, ?)
-         ON CONFLICT (kind, environment, name) DO NOTHING`,
-      )
-      .bind(crypto.randomUUID(), gameName, JSON.stringify(request), now, now, now);
+    });
   }
 
   private async readSlot(name: string): Promise<PlaytestSlot> {

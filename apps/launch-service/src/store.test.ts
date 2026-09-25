@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { scheduleFrontierSeason } from "./schedule";
 import { D1LaunchStore } from "./store";
-import { createLaunchTestDatabase } from "./test-database";
+import { createLaunchTestDatabase, testChain } from "./test-database";
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
@@ -26,7 +26,7 @@ const frontierSummary = (gameName: string, seasonStart: string) => ({
 });
 
 test("supports both launch formats and refuses an unknown environment", async () => {
-  const store = new D1LaunchStore(database.db);
+  const store = new D1LaunchStore(database.db, testChain());
   const blitz = await store.enqueue("game", { environment: "madara.blitz", gameName: "existing-blitz" });
   const eternum = await store.enqueue("game", { environment: "madara.eternum", gameName: "new-eternum" });
   expect((await store.find("game", "madara.blitz", blitz.name))?.id).toBe(blitz.id);
@@ -38,7 +38,7 @@ test("supports both launch formats and refuses an unknown environment", async ()
 });
 
 test("creation and delayed finalization are one durable write and survive a restart", async () => {
-  const store = new D1LaunchStore(database.db);
+  const store = new D1LaunchStore(database.db, testChain());
   const queued = await store.enqueue("game", { environment: "madara.blitz", gameName: "native-results" });
   const started = (await store.startNext(Date.now()))!;
   const summary = {
@@ -59,7 +59,7 @@ test("creation and delayed finalization are one durable write and survive a rest
   expect((await store.find("game", "madara.blitz", queued.name))?.status).toBe("running");
   await store.complete(started.id, summary);
 
-  const restarted = new D1LaunchStore(database.db);
+  const restarted = new D1LaunchStore(database.db, testChain());
   expect((await restarted.find("result", "madara.blitz", queued.name))?.request).toEqual({
     environment: "madara.blitz",
     gameName: queued.name,
@@ -83,10 +83,10 @@ test("creation and delayed finalization are one durable write and survive a rest
 });
 
 test("a launch interrupted while running is resumed, not queued twice", async () => {
-  const store = new D1LaunchStore(database.db);
+  const store = new D1LaunchStore(database.db, testChain());
   const queued = await store.enqueue("game", { environment: "madara.blitz", gameName: "interrupted" });
   expect((await store.startNext(Date.now()))?.id).toBe(queued.id);
-  const resumed = await new D1LaunchStore(database.db).startNext(Date.now());
+  const resumed = await new D1LaunchStore(database.db, testChain()).startNext(Date.now());
   expect(resumed).toMatchObject({ id: queued.id, status: "running", attempts: 2 });
   expect(await store.enqueue("game", { environment: "madara.blitz", gameName: "interrupted" })).toMatchObject({
     id: queued.id,
@@ -103,7 +103,7 @@ const season = (startsAt: string) => ({
 });
 
 test("one Frontier season is created once by every tick and continued like any failed run", async () => {
-  const store = new D1LaunchStore(database.db);
+  const store = new D1LaunchStore(database.db, testChain());
   const seasonStart = "2027-01-01T00:00:00.000Z";
   const queued = await scheduleFrontierSeason(store, season(seasonStart));
   expect(queued.name).toBe("frontier-1798761600");
@@ -134,4 +134,27 @@ test("one Frontier season is created once by every tick and continued like any f
   const next = await scheduleFrontierSeason(store, season("2027-04-30T00:00:00.000Z"));
   expect(next.id).not.toBe(queued.id);
   expect((await store.startNext(Date.now()))?.id).toBe(next.id);
+});
+
+test("a store on another chain sees none of the previous chain's runs and schedules its own season", async () => {
+  const seasonStart = "2027-01-01T00:00:00.000Z";
+  const oldChain = new D1LaunchStore(database.db, testChain("0x1"));
+  const launched = await oldChain.enqueue("game", { environment: "madara.blitz", gameName: "bltz-7" });
+  const started = (await oldChain.startNext(Date.now()))!;
+  await oldChain.complete(started.id, {
+    ...frontierSummary(launched.name, seasonStart),
+    environment: "madara.blitz",
+    gameType: "blitz",
+    gameId: 7,
+    finalizeAt: Math.floor(Date.now() / 1_000) - 1,
+  });
+  const oldSeason = await scheduleFrontierSeason(oldChain, season(seasonStart));
+
+  // SHARD_URL now points at a new chain behind the same D1.
+  const newChain = new D1LaunchStore(database.db, testChain("0x2"));
+  expect(await newChain.startNext(Date.now())).toBeNull(); // the old chain's due result never runs here
+  expect(await newChain.list("madara.blitz")).toEqual([]);
+  const newSeason = await scheduleFrontierSeason(newChain, season(seasonStart));
+  expect(newSeason).toMatchObject({ name: oldSeason.name, chainId: "0x2", status: "queued" });
+  expect(newSeason.id).not.toBe(oldSeason.id);
 });

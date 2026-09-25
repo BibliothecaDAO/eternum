@@ -4,7 +4,7 @@ import { D1CalendarStore } from "./calendar-store";
 import { runLaunchSchedule } from "./schedule";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
-import { createLaunchTestDatabase } from "./test-database";
+import { createLaunchTestDatabase, testChain } from "./test-database";
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
@@ -16,8 +16,8 @@ afterEach(async () => {
 
 const at = (iso: string) => new Date(iso);
 const stores = () => {
-  const launches = new D1LaunchStore(database.db);
-  const slots = new D1SlotStore(database.db);
+  const launches = new D1LaunchStore(database.db, testChain());
+  const slots = new D1SlotStore(database.db, launches);
   const calendar = new D1CalendarStore(database.db);
   const tick = (now: Date) => Effect.runPromise(runLaunchSchedule(launches, slots, calendar, now));
   return { launches, slots, calendar, tick };

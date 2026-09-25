@@ -20,3 +20,10 @@ const migrationStatements = (): string[] => {
     .map((statement) => statement.trim())
     .filter(Boolean);
 };
+
+/** The chain a test store keys its runs under, as a shard's /manifest would name it. */
+export const TEST_CHAIN = "0x534e5f5445535f5348415244";
+export const testChain =
+  (chainId = TEST_CHAIN) =>
+  async () =>
+    chainId;
