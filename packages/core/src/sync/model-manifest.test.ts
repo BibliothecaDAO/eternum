@@ -16,7 +16,8 @@ type Rule = Partial<Record<(typeof SETS)[number], readonly string[]>> & {
  * its day. The key encoding must admit exactly these.
  */
 const declaredMembership = (model: string, row: Record<string, unknown>, scope: GameSyncScope): boolean => {
-  const rule = nativeSyncScopes[model as keyof typeof nativeSyncScopes] as "shared" | "actor" | Rule;
+  const rule = nativeSyncScopes[model as keyof typeof nativeSyncScopes] as "shared" | "actor" | "internal" | Rule;
+  if (rule === "internal") return false;
   if (rule === "actor") return scope.actor !== undefined && syncScalar(row.actor) === syncScalar(scope.actor);
   const expedition = scope.expedition;
   if (!expedition || rule === "shared") return true;

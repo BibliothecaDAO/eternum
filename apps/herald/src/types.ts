@@ -116,6 +116,7 @@ export interface FoldCheckpoint {
   version: 1;
   world_address: Felt;
   models: FoldCheckpointModel[];
+  preset_preimages?: { commitment: string; felts: readonly string[] }[];
 }
 
 export interface FoldSet {

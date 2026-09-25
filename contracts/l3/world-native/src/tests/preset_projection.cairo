@@ -1,0 +1,254 @@
+// The two recorded launch calldata files are replayed unchanged. The supplementary launch
+// covers present spires/withdrawals and an explicit map override. Every expected row comes
+// from these production readers; Herald compares its projection with the same fixture.
+use snforge_std::fs::{FileTrait, read_txt};
+use snforge_std::{interact_with_state, start_cheat_caller_address};
+use starknet::ContractAddress;
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
+use crate::artificer::{IArtificerDispatcher, IArtificerDispatcherTrait};
+use crate::bridge::{IBridgeDispatcher, IBridgeDispatcherTrait};
+use crate::buildings::{IBuildingRulesDispatcher, IBuildingRulesDispatcherTrait};
+use crate::camps::{ICampRulesDispatcher, ICampRulesDispatcherTrait};
+use crate::expeditions::{IExpeditionRulesDispatcher, IExpeditionRulesDispatcherTrait};
+use crate::exploration_rewards::{IExtractionDispatcher, IExtractionDispatcherTrait};
+use crate::faith::{IFaithDispatcher, IFaithDispatcherTrait};
+use crate::game::{IGameDispatcher, IGameDispatcherTrait, ISeasonLifecycleDispatcher, ISeasonLifecycleDispatcherTrait};
+use crate::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait};
+use crate::market::{IBankDispatcher, IBankDispatcherTrait};
+use crate::mines::{IMineRulesDispatcher, IMineRulesDispatcherTrait};
+use crate::production::{IProductionRulesDispatcher, IProductionRulesDispatcherTrait};
+use crate::registrar::{IRegistrarDispatcher, IRegistrarDispatcherTrait};
+use crate::relics::{IRelicsDispatcher, IRelicsDispatcherTrait};
+use crate::settlement::{ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait};
+use crate::spires::{ISpiresDispatcher, ISpiresDispatcherTrait};
+use crate::trade::{ITradeDispatcher, ITradeDispatcherTrait};
+use crate::upgrades::{IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait};
+use crate::village::{IVillagesDispatcher, IVillagesDispatcherTrait};
+use crate::withdrawals::{IWithdrawalsDispatcher, IWithdrawalsDispatcherTrait};
+
+#[derive(Drop, Serde, Debug, PartialEq)]
+struct ObservedRow {
+    model: felt252,
+    keys: Span<felt252>,
+    values: Span<felt252>,
+}
+
+fn row<T, +Serde<T>, +Drop<T>>(ref rows: Array<ObservedRow>, model: felt252, keys: Span<felt252>, value: T) {
+    let mut values = array![];
+    value.serialize(ref values);
+    rows.append(ObservedRow { model, keys, values: values.span() });
+}
+
+fn launch(address: ContractAddress, name: ByteArray) -> u32 {
+    let mut registration = read_txt(@FileTrait::new(format!("tests/fixtures/preset-projection/{}-register.txt", name)))
+        .span();
+    let preset_id = Serde::deserialize(ref registration).unwrap();
+    let definition = Serde::deserialize(ref registration).unwrap();
+    assert!(registration.is_empty());
+    let registrar = IRegistrarDispatcher { contract_address: address };
+    registrar.register_preset(preset_id, definition);
+    let mut calldata = read_txt(@FileTrait::new(format!("tests/fixtures/preset-projection/{}-create.txt", name)))
+        .span();
+    let params = Serde::deserialize(ref calldata).unwrap();
+    assert!(calldata.is_empty());
+    registrar.create_game(params)
+}
+
+#[test]
+fn recorded_launch_readers_match_herald_fixture() {
+    let d = super::registrar::setup();
+    start_cheat_caller_address(d.games, super::authority());
+    assert_eq!(launch(d.games, "blitz"), 1);
+    assert_eq!(launch(d.games, "frontier"), 2);
+    compare(d.games, 1, "blitz");
+    compare(d.games, 2, "frontier");
+}
+
+#[test]
+fn optional_sections_and_explicit_map_match_herald_fixture() {
+    let d = super::registrar::setup();
+    start_cheat_caller_address(d.games, super::authority());
+    assert_eq!(launch(d.games, "optional"), 1);
+    let launch_rows = interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::read();
+            let game = state.games.games.entry(1).read();
+            let commitment = state.registrar.presets.read(game.preset_id);
+            let mut rows = array![];
+            row(ref rows, 'Preset', array![game.preset_id.into()].span(), commitment);
+            row(ref rows, 'GameRegistry', array![1].span(), game);
+            row(ref rows, 'GameOverrides', array![1].span(), state.games.overrides.read(1));
+            row(ref rows, 'GameRelease', array![1].span(), (state.game_releases.read(1), commitment));
+            rows
+        },
+    );
+    compare_rows(launch_rows, "optional-launch");
+    compare(d.games, 1, "optional");
+}
+
+fn compare(address: ContractAddress, game_id: u32, name: ByteArray) {
+    compare_rows(observe(address, game_id), name);
+}
+
+fn compare_rows(actual: Array<ObservedRow>, name: ByteArray) {
+    let mut serialized = array![];
+    actual.serialize(ref serialized);
+    let expected = read_txt(@FileTrait::new(format!("tests/fixtures/preset-projection/{}-rows.txt", name)));
+    assert_eq!(serialized, expected);
+}
+
+fn observe(address: ContractAddress, game_id: u32) -> Array<ObservedRow> {
+    let mut rows = array![];
+    observe_game_rules(ref rows, address, game_id);
+    observe_resources(ref rows, address, game_id);
+    observe_structures(ref rows, address, game_id);
+    observe_settlement(ref rows, address, game_id);
+    observe_economy(ref rows, address, game_id);
+    observe_rewards(ref rows, address, game_id);
+    rows
+}
+
+fn observe_game_rules(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
+    let key = array![game_id.into()].span();
+    let game = IGameDispatcher { contract_address: address };
+    let settlement_views = ISettlementViewsDispatcher { contract_address: address };
+    row(ref rows, 'SliceRules', key, game.rules(game_id));
+    row(ref rows, 'SettlementRules', key, settlement_views.settlement_rules(game_id));
+}
+
+fn observe_resources(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
+    let key = array![game_id.into()].span();
+    let production_rules = IProductionRulesDispatcher { contract_address: address };
+    let mine_rules = IMineRulesDispatcher { contract_address: address };
+    for resource_type in 1_u8..59 {
+        let rule = interact_with_state(address, || crate::logic::resources::rule(game_id, resource_type));
+        let resource_key = array![game_id.into(), resource_type.into()].span();
+        row(ref rows, 'ResourceRule', resource_key, (rule.unit_weight, rule.realm_rate, rule.village_rate));
+        row(
+            ref rows,
+            'ProductionRecipe',
+            resource_key,
+            production_rules.production_recipe(crate::production::RecipeKey { game_id, resource_type }),
+        );
+    }
+    let kinds = interact_with_state(
+        address,
+        || {
+            let preset = crate::logic::preset_record::for_game(game_id);
+            let mut kinds = array![];
+            for index in 0..preset.mine_kind_count.read() {
+                kinds.append(preset.mine_kind_ids.read(index));
+            }
+            kinds
+        },
+    );
+    for kind in kinds {
+        row(
+            ref rows,
+            'MineKindConfig',
+            array![game_id.into(), kind.into()].span(),
+            mine_rules.mine_kind(crate::mines::MineKindKey { game_id, kind }),
+        );
+    }
+    row(ref rows, 'MinePool', key, mine_rules.mine_pool(crate::mines::MinePoolKey { game_id }));
+}
+
+fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
+    let key = array![game_id.into()].span();
+    let building_rules = IBuildingRulesDispatcher { contract_address: address };
+    let camp_rules = ICampRulesDispatcher { contract_address: address };
+    let faith = IFaithDispatcher { contract_address: address };
+    let upgrade_rules = IUpgradeRulesDispatcher { contract_address: address };
+    for category in 1_u8..41 {
+        row(
+            ref rows,
+            'BuildingRule',
+            array![game_id.into(), category.into()].span(),
+            building_rules.building_rule(crate::buildings::BuildingRuleKey { game_id, category }),
+        );
+    }
+    if let Some(board) =
+        interact_with_state(address, || crate::logic::construction::ConstructionLogic::observed_board_rules(game_id)) {
+        row(ref rows, 'BoardRules', key, board);
+    }
+    row(ref rows, 'CampResources', key, camp_rules.camp_resources(game_id));
+    row(ref rows, 'FaithRules', key, faith.faith_rules(game_id));
+    let limits = upgrade_rules.upgrade_limits(game_id);
+    row(ref rows, 'UpgradeLimits', key, limits);
+    for level in 1..core::cmp::max(limits.realm_max, limits.village_max) + 1 {
+        row(
+            ref rows,
+            'UpgradeRecipe',
+            array![game_id.into(), level.into()].span(),
+            upgrade_rules.upgrade_recipe(game_id, level),
+        );
+    }
+}
+
+fn observe_settlement(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
+    let key = array![game_id.into()].span();
+    let settlement_views = ISettlementViewsDispatcher { contract_address: address };
+    let villages = IVillagesDispatcher { contract_address: address };
+    let expedition_rules = IExpeditionRulesDispatcher { contract_address: address };
+    let spires = ISpiresDispatcher { contract_address: address };
+    row(ref rows, 'RealmGrants', key, settlement_views.realm_grants(game_id));
+    row(ref rows, 'VillageRules', key, villages.village_rules(game_id));
+    let depths = interact_with_state(address, || crate::logic::preset_record::for_game(game_id).depth_count.read());
+    for depth in 0..depths {
+        row(
+            ref rows,
+            'DepthRules',
+            array![game_id.into(), depth.into()].span(),
+            expedition_rules.depth_rules(game_id, depth.try_into().unwrap()),
+        );
+    }
+    if let Some(layout) = spires.spire_layout(game_id) {
+        row(ref rows, 'SpireLayout', key, layout);
+    }
+}
+
+fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
+    let key = array![game_id.into()].span();
+    let trade = ITradeDispatcher { contract_address: address };
+    let bank = IBankDispatcher { contract_address: address };
+    let hyperstructures = IHyperstructuresDispatcher { contract_address: address };
+    let relics = IRelicsDispatcher { contract_address: address };
+    let artificer = IArtificerDispatcher { contract_address: address };
+    let bridge = IBridgeDispatcher { contract_address: address };
+    let withdrawals = IWithdrawalsDispatcher { contract_address: address };
+    row(ref rows, 'TradeRules', key, trade.trade_rules(game_id));
+    row(ref rows, 'BankRules', key, bank.bank_rules(game_id));
+    row(ref rows, 'HyperstructureRules', key, hyperstructures.hyperstructure_rules(game_id));
+    row(ref rows, 'RelicRules', key, relics.relic_rules(game_id));
+    if let Some(chests) = relics.chest_rules(game_id) {
+        row(ref rows, 'ChestRules', key, chests);
+    }
+    row(ref rows, 'ArtificerCost', key, artificer.artificer_cost(game_id));
+    let deposits = interact_with_state(address, || crate::logic::preset_record::for_game(game_id).deposit_rules.read());
+    if deposits.is_some() {
+        row(ref rows, 'DepositRules', key, bridge.deposit_rules(game_id));
+        row(ref rows, 'WithdrawalRules', key, withdrawals.withdrawal_rules(game_id));
+        for resource_type in 1_u8..59 {
+            let token = interact_with_state(
+                address, || crate::logic::preset_record::for_game(game_id).withdrawal_tokens.read(resource_type),
+            );
+            if token != 0.try_into().unwrap() {
+                row(
+                    ref rows,
+                    'ResourceToken',
+                    array![game_id.into(), resource_type.into()].span(),
+                    withdrawals.resource_token(crate::market::MarketKey { game_id, resource_type }),
+                );
+            }
+        }
+    }
+}
+
+fn observe_rewards(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
+    let key = array![game_id.into()].span();
+    let extraction = IExtractionDispatcher { contract_address: address };
+    let season_lifecycle = ISeasonLifecycleDispatcher { contract_address: address };
+    row(ref rows, 'ExtractionRewards', key, extraction.extraction_rewards(game_id));
+    row(ref rows, 'SeasonWinThreshold', key, season_lifecycle.season_win_threshold(game_id));
+}

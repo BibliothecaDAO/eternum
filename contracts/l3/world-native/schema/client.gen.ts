@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "82ac32d805cce9e68b64e8cc5d9cd79ab5c14d74778e99c77dae3c3b1d2c9084";
+export const nativeFactSchemaIdentity = "85e0e666285504530af42def0a1a699aadd46c59d5f80e4409aaf5dffbc4a84c";
 export const nativeRuleConstants = {
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
@@ -84,12 +84,10 @@ export interface NativeRows {
   ProductionReceiver: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number; readonly home: number; readonly end_at: number };
   ProductionBonus: { readonly game_id: number; readonly entity_id: number; readonly incr_resource_rate_percent_num: number; readonly incr_labor_rate_percent_num: number; readonly incr_troop_rate_percent_num: number; readonly incr_resource_rate_end_tick: number; readonly incr_labor_rate_end_tick: number; readonly incr_troop_rate_end_tick: number };
   ProductionRecipe: { readonly game_id: number; readonly resource_type: number; readonly simple_output: bigint; readonly complex_output: bigint; readonly simple_inputs: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly complex_inputs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
-  ProductionReady: { readonly game_id: number; readonly ready: boolean };
   ResourceWeight: { readonly game_id: number; readonly entity_id: number; readonly capacity: bigint; readonly weight: bigint };
   ResourceArrival: { readonly game_id: number; readonly entity_id: number; readonly day: bigint; readonly slot: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   BoardRules: { readonly game_id: number; readonly demolition_refund_bps: number; readonly workshop_rate: bigint; readonly barracks_ii_cost: bigint; readonly barracks_iii_cost: bigint; readonly neighbors: readonly ({ readonly building: number; readonly neighbor: number; readonly production_bps: number; readonly capacity_bps: number; readonly population: number })[] };
   BuildingRule: { readonly game_id: number; readonly category: number; readonly population_cost: number; readonly capacity_grant: number; readonly simple_cost: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly complex_cost: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
-  BuildingRulesReady: { readonly game_id: number; readonly ready: boolean };
   Building: { readonly game_id: number; readonly alt: boolean; readonly outer_col: number; readonly outer_row: number; readonly inner_col: number; readonly inner_row: number; readonly category: number; readonly outer_entity_id: number; readonly paused: boolean; readonly labor_paid: bigint };
   StructureBuildings: { readonly game_id: number; readonly entity_id: number; readonly packed_counts_1: bigint; readonly packed_counts_2: bigint; readonly packed_counts_3: bigint; readonly population: { readonly current: number; readonly max: number } };
   Hyperstructure: { readonly game_id: number; readonly entity_id: number; readonly stage: "Foundation" | "Construction" | "Complete"; readonly access: "Public" | "Private" | "GuildOnly"; readonly seed: bigint };
@@ -101,7 +99,6 @@ export interface NativeRows {
   FaithfulStructure: { readonly game_id: number; readonly structure_id: number; readonly wonder_id: number; readonly faithful_since: bigint; readonly fp_to_wonder_owner_per_sec: number; readonly fp_to_struct_owner_per_sec: number; readonly last_recorded_owner: bigint };
   PlayerFaithPoints: { readonly game_id: number; readonly player: bigint; readonly wonder_id: number; readonly points_claimed: bigint; readonly points_per_sec_as_owner: number; readonly points_per_sec_as_pledger: number; readonly last_updated_at: bigint };
   ResourceRule: { readonly game_id: number; readonly resource_type: number; readonly unit_weight: bigint; readonly realm_rate: bigint; readonly village_rate: bigint };
-  ResourceRulesReady: { readonly game_id: number; readonly ready: boolean };
   UpgradeLimits: { readonly game_id: number; readonly realm_max: number; readonly village_max: number };
   UpgradeRecipe: { readonly game_id: number; readonly level: number; readonly costs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   DepthRules: { readonly game_id: number; readonly depth: number; readonly supply_multiplier: number; readonly guard_lower: number; readonly guard_upper: number; readonly mine_cap_min: bigint; readonly mine_cap_max: bigint; readonly mine_rate: bigint; readonly mine_chest: boolean; readonly reveal_site_neighbors: boolean; readonly entry_stamina: number; readonly attunement_cost: bigint; readonly chest: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly pity: number } };
@@ -174,12 +171,10 @@ export interface NativeKeys {
   ProductionReceiver: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number };
   ProductionBonus: { readonly game_id: number; readonly entity_id: number };
   ProductionRecipe: { readonly game_id: number; readonly resource_type: number };
-  ProductionReady: { readonly game_id: number };
   ResourceWeight: { readonly game_id: number; readonly entity_id: number };
   ResourceArrival: { readonly game_id: number; readonly entity_id: number; readonly day: bigint; readonly slot: number };
   BoardRules: { readonly game_id: number };
   BuildingRule: { readonly game_id: number; readonly category: number };
-  BuildingRulesReady: { readonly game_id: number };
   Building: { readonly game_id: number; readonly alt: boolean; readonly outer_col: number; readonly outer_row: number; readonly inner_col: number; readonly inner_row: number };
   StructureBuildings: { readonly game_id: number; readonly entity_id: number };
   Hyperstructure: { readonly game_id: number; readonly entity_id: number };
@@ -191,7 +186,6 @@ export interface NativeKeys {
   FaithfulStructure: { readonly game_id: number; readonly structure_id: number };
   PlayerFaithPoints: { readonly game_id: number; readonly player: bigint; readonly wonder_id: number };
   ResourceRule: { readonly game_id: number; readonly resource_type: number };
-  ResourceRulesReady: { readonly game_id: number };
   UpgradeLimits: { readonly game_id: number };
   UpgradeRecipe: { readonly game_id: number; readonly level: number };
   DepthRules: { readonly game_id: number; readonly depth: number };
@@ -1164,16 +1158,6 @@ export const nativeFactModels = {
       ]
     }
   },
-  "ProductionReady": {
-    "keys": [
-      "game_id"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "ready": "boolean"
-    }
-  },
   "ResourceWeight": {
     "keys": [
       "game_id",
@@ -1253,16 +1237,6 @@ export const nativeFactModels = {
           "amount": "u128"
         }
       ]
-    }
-  },
-  "BuildingRulesReady": {
-    "keys": [
-      "game_id"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "ready": "boolean"
     }
   },
   "Building": {
@@ -1457,16 +1431,6 @@ export const nativeFactModels = {
       "unit_weight": "u128",
       "realm_rate": "u64",
       "village_rate": "u64"
-    }
-  },
-  "ResourceRulesReady": {
-    "keys": [
-      "game_id"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "ready": "boolean"
     }
   },
   "UpgradeLimits": {
@@ -1790,6 +1754,7 @@ export const nativeFactModels = {
   }
 } as const;
 export const nativeSyncScopes = {
+  "GameOverrides": "internal",
   "ActionNonce": "actor",
   "ExecutionRecorded": "actor",
   "BatchProgress": "actor",
@@ -1826,19 +1791,15 @@ export const nativeSyncScopes = {
   "VillageRules": "shared",
   "VillagePool": "shared",
   "ProductionRecipe": "shared",
-  "ProductionReady": "shared",
   "BoardRules": "shared",
   "BuildingRule": "shared",
-  "BuildingRulesReady": "shared",
   "HyperstructureRules": "shared",
   "ResourceRule": "shared",
-  "ResourceRulesReady": "shared",
   "UpgradeLimits": "shared",
   "UpgradeRecipe": "shared",
   "DepthRules": "shared",
   "GameRegistry": "shared",
   "GameRelease": "shared",
-  "GameOverrides": "shared",
   "SliceRules": "shared",
   "EntitySequence": "shared",
   "PointsTotal": "shared",

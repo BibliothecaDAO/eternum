@@ -4699,28 +4699,6 @@
       }
     },
     {
-      "name": "ProductionReady",
-      "identity": "0x50726f64756374696f6e5265616479",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "ready",
-          "type": "core::bool",
-          "id": "0x7265616479",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1
-    },
-    {
       "name": "ResourceWeight",
       "identity": "0x5265736f75726365576569676874",
       "scope": "game",
@@ -4853,9 +4831,9 @@
       "keyLength": 1,
       "valueLength": null,
       "absence": {
-        "parent": "BuildingRulesReady",
+        "parent": "GameRelease",
         "value": "empty",
-        "meaning": "This game uses base building rates and grants without board bonuses or demolition refunds."
+        "meaning": "The verified preset has no board section; this game uses base building rates and grants without board bonuses or demolition refunds."
       }
     },
     {
@@ -4902,28 +4880,6 @@
       ],
       "keyLength": 2,
       "valueLength": null
-    },
-    {
-      "name": "BuildingRulesReady",
-      "identity": "0x4275696c64696e6752756c65735265616479",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "ready",
-          "type": "core::bool",
-          "id": "0x7265616479",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1
     },
     {
       "name": "Building",
@@ -5463,28 +5419,6 @@
       ],
       "keyLength": 2,
       "valueLength": 3
-    },
-    {
-      "name": "ResourceRulesReady",
-      "identity": "0x5265736f7572636552756c65735265616479",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "ready",
-          "type": "core::bool",
-          "id": "0x7265616479",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1
     },
     {
       "name": "UpgradeLimits",
@@ -12037,5 +11971,5 @@
       ]
     }
   },
-  "identity": "82ac32d805cce9e68b64e8cc5d9cd79ab5c14d74778e99c77dae3c3b1d2c9084"
+  "identity": "85e0e666285504530af42def0a1a699aadd46c59d5f80e4409aaf5dffbc4a84c"
 }

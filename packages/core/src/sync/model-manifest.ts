@@ -25,6 +25,7 @@ type SyncSet = "owners" | "entities" | "realms" | "realmTraits" | "productionSou
 type SyncRule =
   | "shared"
   | "actor"
+  | "internal"
   | ({ readonly [set in SyncSet]?: readonly string[] } & {
       readonly regions?: readonly { readonly alt: string; readonly x: string; readonly y: string }[];
       readonly epoch?: string;
@@ -39,10 +40,14 @@ function syncRule(model: string): SyncRule {
   return rule;
 }
 
+export function isClientGameSyncModel(model: string): boolean {
+  return syncRule(model) !== "internal";
+}
+
 /** Actor changes replace these rows atomically while retaining shared game configuration. */
 export function isScopedGameSyncModel(model: string, expedition: boolean): boolean {
   const rule = syncRule(model);
-  return rule === "actor" || (expedition && rule !== "shared");
+  return rule === "actor" || (expedition && typeof rule !== "string");
 }
 
 export function syncScalar(value: unknown): string {
@@ -69,6 +74,7 @@ export function gameSyncRowKeys(
   spacing: number | undefined,
 ): "shared" | string[] {
   const rule = syncRule(model);
+  if (rule === "internal") return [];
   if (rule === "shared") return "shared";
   if (rule === "actor") return [`actor:${syncScalar(row.actor)}`];
   const epoch = rule.epoch === undefined ? "" : `@${Number(row[rule.epoch])}`;
@@ -108,7 +114,9 @@ export function gameSyncScopeKeys(scope: GameSyncScope): ReadonlySet<string> {
  * is how every Blitz subscription holds each row a diff routes to it.
  */
 export function rowInGameSyncScope(model: string, row: Record<string, unknown>, scope: GameSyncScope): boolean {
-  if (syncRule(model) !== "actor" && holdsEveryScopedRow(scope)) return true;
+  const rule = syncRule(model);
+  if (rule === "internal") return false;
+  if (rule !== "actor" && holdsEveryScopedRow(scope)) return true;
   const keys = gameSyncRowKeys(model, row, scope.expedition?.spacing);
   if (keys === "shared") return true;
   const held = gameSyncScopeKeys(scope);

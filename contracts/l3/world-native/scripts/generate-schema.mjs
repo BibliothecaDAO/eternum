@@ -366,7 +366,7 @@ function validatedSyncScopes() {
   const unknown = Object.keys(syncScopes).filter((name) => !fields.has(name));
   if (unknown.length > 0) throw new Error(`Subscription scope for unknown facts ${unknown.join(", ")}`);
   for (const [name, rule] of Object.entries(syncScopes)) {
-    if (rule === "shared" || rule === "actor") continue;
+    if (rule === "shared" || rule === "actor" || rule === "internal") continue;
     const { epoch, regions = [], ...sets } = rule;
     const named = [...Object.values(sets).flat(), ...regions.flatMap((region) => Object.values(region))];
     if (epoch !== undefined) named.push(epoch);

@@ -752,9 +752,10 @@ export function defineFactModels({ struct, model: declare }) {
       };
     if (row.name === "BoardRules")
       row.absence = {
-        parent: "BuildingRulesReady",
+        parent: "GameRelease",
         value: "empty",
-        meaning: "This game uses base building rates and grants without board bonuses or demolition refunds.",
+        meaning:
+          "The verified preset has no board section; this game uses base building rates and grants without board bonuses or demolition refunds.",
       };
     if (row.name === "ChestRules")
       row.absence = { parent: "RelicRules", value: "empty", meaning: "This game uses interval relic chests." };
@@ -981,12 +982,10 @@ export function defineFactModels({ struct, model: declare }) {
     model("ProductionReceiver", "game", struct("resources::ResourceSlot"), struct("resources::ProductionReceiver")),
     model("ProductionBonus", "game", struct("resources::ResourceKey"), struct("production::ProductionBonus")),
     model("ProductionRecipe", "game", struct("production::RecipeKey"), struct("production::ProductionRecipe")),
-    model("ProductionReady", "game", [struct("resources::ResourceKey")[0]], [{ name: "ready", type: "core::bool" }]),
     model("ResourceWeight", "game", struct("resources::ResourceKey"), struct("resources::Weight")),
     model("ResourceArrival", "game", struct("arrivals::ArrivalKey"), struct("arrivals::Arrival")),
     model("BoardRules", "game", [struct("resources::ResourceKey")[0]], struct("buildings::BoardRules")),
     model("BuildingRule", "game", struct("buildings::BuildingRuleKey"), struct("buildings::BuildingRule")),
-    model("BuildingRulesReady", "game", [struct("resources::ResourceKey")[0]], [{ name: "ready", type: "core::bool" }]),
     model("Building", "game", struct("buildings::BuildingKey"), struct("buildings::Building")),
     model("StructureBuildings", "game", struct("resources::ResourceKey"), struct("buildings::StructureBuildings")),
     model("Hyperstructure", "game", struct("resources::ResourceKey"), struct("hyperstructures::Hyperstructure")),
@@ -1020,7 +1019,6 @@ export function defineFactModels({ struct, model: declare }) {
       [struct("resources::ResourceKey")[0], struct("resources::ResourceRule")[0]],
       struct("resources::ResourceRule").slice(1),
     ),
-    model("ResourceRulesReady", "game", [struct("resources::ResourceKey")[0]], [{ name: "ready", type: "core::bool" }]),
     model(
       "UpgradeLimits",
       "game",
@@ -1286,14 +1284,16 @@ const behaviouralFacts = {
 };
 
 // Which rows a player's subscription carries. "shared" rows reach every subscriber and "actor" rows only the selected
-// gameplay account. In an expedition game every other row is in scope when any listed field names one of the player's
-// owners, entities, realms, realm traits, production sources or regions; `epoch` also requires the current day.
+// gameplay account. "internal" rows remain in Herald and never reach a subscription. In an expedition game every
+// other row is in scope when any listed field names one of the player's owners, entities, realms, realm traits,
+// production sources or regions; `epoch` also requires the current day.
 // Generation fails for a fact or event without an entry here.
 const shared = "shared";
 const byEntity = { entities: ["entity_id"] };
 const byOwner = { owners: ["owner"] };
 const byPlayer = { owners: ["player"] };
 export const syncScopes = {
+  GameOverrides: "internal",
   ActionNonce: "actor",
   ExecutionRecorded: "actor",
   BatchProgress: "actor",
@@ -1332,19 +1332,15 @@ export const syncScopes = {
       "VillageRules",
       "VillagePool",
       "ProductionRecipe",
-      "ProductionReady",
       "BoardRules",
       "BuildingRule",
-      "BuildingRulesReady",
       "HyperstructureRules",
       "ResourceRule",
-      "ResourceRulesReady",
       "UpgradeLimits",
       "UpgradeRecipe",
       "DepthRules",
       "GameRegistry",
       "GameRelease",
-      "GameOverrides",
       "SliceRules",
       "EntitySequence",
       "PointsTotal",

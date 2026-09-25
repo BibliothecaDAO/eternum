@@ -1,4 +1,9 @@
 import {
+  NativePresetPreimageUnavailable,
+  presetPreimageCommitment,
+  type VerifiedPreset,
+} from "./native/preset-preimages";
+import {
   expeditionEpoch,
   expeditionRealmSite,
   isCurrentExpeditionArmy,
@@ -8,6 +13,7 @@ import {
   gameSyncRegion,
   gameSyncRowKeys,
   gameSyncScopeKeys,
+  isClientGameSyncModel,
   isScopedGameSyncModel,
   rowInGameSyncScope,
   syncScalar,
@@ -85,6 +91,11 @@ export const checkpointModelMismatch = (registry: ModelRegistry, checkpoint: Fol
   const restoredModels = new Set(checkpoint.models.map(({ model }) => model));
   const missing = [...expectedModels].filter((model) => !restoredModels.has(model));
   const unexpected = [...restoredModels].filter((model) => !expectedModels.has(model));
+  if (
+    checkpoint.models.some(({ model, rows }) => model === "Preset" && rows.length > 0) &&
+    !checkpoint.preset_preimages
+  )
+    return "preset registration preimages are absent";
   if (missing.length === 0 && unexpected.length === 0) return undefined;
   return `missing=${missing.join(",") || "none"}, unexpected=${unexpected.join(",") || "none"}`;
 };
@@ -134,6 +145,8 @@ export class WorldFold {
 
   private readonly parent?: WorldFold;
 
+  private readonly presetPreimages = new Map<string, readonly string[]>();
+
   private readonly rowsByModel = new Map<string, Map<string, StoredModelRow | null>>();
 
   private readonly entityIdsByGameByModel = new Map<string, Map<string, Set<string>>>();
@@ -175,6 +188,12 @@ export class WorldFold {
         fold.addEntityToGameIndex(model.model, row.entity_id, stored);
       }
     }
+    for (const preset of checkpoint.preset_preimages ?? []) {
+      if (presetPreimageCommitment(preset.felts) !== BigInt(preset.commitment).toString())
+        throw new Error("Checkpoint preset preimage commitment mismatch");
+      fold.rememberPreset(preset);
+    }
+    for (const { value } of fold.modelRows("Preset")) fold.presetPreimage(String(value.commitment));
     // A checkpoint may predate a game's eviction, but no write after its finalization is kept.
     for (const gameId of fold.finalizedGameIds()) fold.evictedGames.add(gameId);
     return fold;
@@ -240,19 +259,35 @@ export class WorldFold {
           return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
         }),
       })),
+      preset_preimages: [...this.allPresetPreimages()].map(([commitment, felts]) => ({ commitment, felts })),
       version: 1,
       native_schema_identity: this.registry.nativeSchemaIdentity,
       world_address: this.registry.worldAddress,
     };
   }
 
+  public rememberPreset({ commitment, felts }: VerifiedPreset): void {
+    this.presetPreimages.set(BigInt(commitment).toString(), Object.freeze([...felts]));
+  }
+
+  public presetPreimage(commitment: string): readonly string[] {
+    const key = BigInt(commitment).toString();
+    const felts = this.presetPreimages.get(key) ?? this.parent?.presetPreimage(key);
+    if (!felts) throw new NativePresetPreimageUnavailable(key);
+    return felts;
+  }
+
+  private allPresetPreimages(): Map<string, readonly string[]> {
+    return new Map([...(this.parent?.allPresetPreimages() ?? []), ...this.presetPreimages]);
+  }
+
   public overlay(): WorldFold {
     return new WorldFold(this.registry, this);
   }
 
-  /** Every row the fold holds for the game, even one already marked for eviction: a review is frozen before eviction. */
+  /** Every client fact, including those marked for eviction: a review is frozen before eviction. */
   public reviewSnapshot(gameId: string | number | bigint, confirmedBlock: number): GameSnapshot {
-    return this.snapshotRows(gameId, confirmedBlock, persistentModelNames(this.registry));
+    return this.snapshotRows(gameId, confirmedBlock);
   }
 
   /** Chain events this confirmed fold skipped because they broke a contract invariant (see reportInvariantViolation). */
@@ -499,9 +534,11 @@ export class WorldFold {
   }
 
   private snapshotDefinitions(requestedModels?: readonly string[]) {
-    const definitions = [...this.registry.persistent.map(({ definition }) => definition)];
+    const definitions = this.registry.persistent
+      .map(({ definition }) => definition)
+      .filter(({ name }) => isClientGameSyncModel(name));
     if (!requestedModels || requestedModels.length === 0) {
-      return orderSnapshotModelsForStreaming(this.registry.persistent.map(({ definition }) => definition));
+      return orderSnapshotModelsForStreaming(definitions);
     }
 
     const requested = new Set(requestedModels);

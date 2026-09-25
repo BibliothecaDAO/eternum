@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "82ac32d805cce9e68b64e8cc5d9cd79ab5c14d74778e99c77dae3c3b1d2c9084",
+  "schemaIdentity": "85e0e666285504530af42def0a1a699aadd46c59d5f80e4409aaf5dffbc4a84c",
   "commandAbi": [
     {
       "type": "interface",
@@ -1638,10 +1638,6 @@
       "scope": "game"
     },
     {
-      "name": "ProductionReady",
-      "scope": "game"
-    },
-    {
       "name": "ResourceWeight",
       "scope": "game"
     },
@@ -1655,10 +1651,6 @@
     },
     {
       "name": "BuildingRule",
-      "scope": "game"
-    },
-    {
-      "name": "BuildingRulesReady",
       "scope": "game"
     },
     {
@@ -1703,10 +1695,6 @@
     },
     {
       "name": "ResourceRule",
-      "scope": "game"
-    },
-    {
-      "name": "ResourceRulesReady",
       "scope": "game"
     },
     {

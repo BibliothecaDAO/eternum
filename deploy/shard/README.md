@@ -102,6 +102,13 @@ Anyone can host unranked games; ranked games require an approved shard.
 release is a separate operator action; never recreate genesis for an existing shard. CI publishes immutable images and
 this archive from `shard-v*` tags; it does not deploy a box or change a live hostname.
 
+## Operations: register a preset
+
+Preset registration must be a direct authority account call through `__execute__`. Herald verifies the registration
+calldata against the chain's `NATIVE_PRESET v1` commitment and halts with `NativePresetRegistrationInvalid` on an
+unsupported path. A multisig, timelock or outside-execution path needs Herald decoding support before it can register
+presets. Use the init image's preset-registration path for the supported account call format.
+
 ## Operations: apply a logic hotfix
 
 Use the new package's init and Herald image digests in `.env`, keeping the existing shard identity, data and Games

@@ -38,6 +38,12 @@ pub mod ConstructionLogic {
         StoryEvent: StoryEvent,
         RowSet: RowSet,
     }
+    #[cfg(test)]
+    pub fn observed_board_rules(game_id: u32) -> Option<crate::buildings::BoardRules> {
+        let state = contract_state_for_testing();
+        state.buildings.board(game_id)
+    }
+
     #[abi(embed_v0)]
     impl BuildingRules of crate::buildings::IBuildingRules<ContractState> {
         #[cfg(test)]

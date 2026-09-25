@@ -28,7 +28,7 @@ export function transactionScopes(
   return [...scopes.values()];
 }
 
-function accountCalls(calldata: string[]) {
+export function accountCalls(calldata: string[]) {
   const count = boundedLength(calldata[0], calldata.length / 3);
   const calls: { address: string; selector: string; calldata: string[] }[] = [];
   let offset = 1;

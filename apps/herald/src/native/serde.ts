@@ -1,4 +1,4 @@
-import { CallData, type Abi } from "starknet";
+import { CallData, type Abi, type RawArgs } from "starknet";
 import type { DecodedRecord } from "../types";
 import { schemaAbi, type NativeMember, type NativeSchema } from "./schema";
 
@@ -15,6 +15,11 @@ export function decodeMembers(schema: NativeSchema, members: NativeMember[], fel
   return memberDecoder(schema, members).parse("row", felts) as DecodedRecord;
 }
 
+/** Serialize a derived row through the same schema that validates its decoded form. */
+export function encodeMembers(schema: NativeSchema, members: NativeMember[], values: DecodedRecord): string[] {
+  return memberDecoder(schema, members).compile("row", values as RawArgs);
+}
+
 function memberDecoder(schema: NativeSchema, members: NativeMember[]): CallData {
   let layouts = decoders.get(schema);
   if (!layouts) {
@@ -27,7 +32,7 @@ function memberDecoder(schema: NativeSchema, members: NativeMember[]): CallData 
   if (existing) return existing;
   const abi = [
     ...schemaAbi(schema),
-    { type: "function", name: "row", inputs: [], outputs: members, state_mutability: "view" },
+    { type: "function", name: "row", inputs: members, outputs: members, state_mutability: "view" },
   ] as Abi;
   const decoder = new CallData(abi);
   layouts.set(key, decoder);

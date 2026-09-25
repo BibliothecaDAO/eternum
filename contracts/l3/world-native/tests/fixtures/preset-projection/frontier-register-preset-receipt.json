@@ -1,0 +1,71 @@
+{
+  "type": "INVOKE",
+  "actual_fee": {
+    "amount": "0x15d77a4595a0",
+    "unit": "FRI"
+  },
+  "events": [
+    {
+      "from_address": "0x55b34ce967638175fcb2f5ff4e50b1e7b5f91808598e1199759c36d1941ebf6",
+      "data": [
+        "0x1",
+        "0x2329",
+        "0x1",
+        "0x32d040d38eaec07c36ec90bfc3881c0595100110f8772c1cd7c1e406d72d463"
+      ],
+      "keys": [
+        "0x1d49ec0dbefa7d265631af343d40c174377daf255950534c56e7ea482e0b434",
+        "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724",
+        "0x1",
+        "0x507265736574"
+      ]
+    }
+  ],
+  "execution_resources": {
+    "l1_gas": 0,
+    "l1_data_gas": 36192,
+    "l2_gas": 240152089
+  },
+  "finality_status": "ACCEPTED_ON_L2",
+  "messages_sent": [],
+  "transaction_hash": "0x5fe3c1f8331a0f461a772a567e348742e18fb18baccb79b292b6571fa1bf9b8",
+  "execution_status": "SUCCEEDED",
+  "block_hash": "0x2d812b7eea193fd38bce8c9a56662e57a4d7b1b3707af477c52cec230296376",
+  "block_number": 119,
+  "statusReceipt": "SUCCEEDED",
+  "value": {
+    "type": "INVOKE",
+    "actual_fee": {
+      "amount": "0x15d77a4595a0",
+      "unit": "FRI"
+    },
+    "events": [
+      {
+        "from_address": "0x55b34ce967638175fcb2f5ff4e50b1e7b5f91808598e1199759c36d1941ebf6",
+        "data": [
+          "0x1",
+          "0x2329",
+          "0x1",
+          "0x32d040d38eaec07c36ec90bfc3881c0595100110f8772c1cd7c1e406d72d463"
+        ],
+        "keys": [
+          "0x1d49ec0dbefa7d265631af343d40c174377daf255950534c56e7ea482e0b434",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724",
+          "0x1",
+          "0x507265736574"
+        ]
+      }
+    ],
+    "execution_resources": {
+      "l1_gas": 0,
+      "l1_data_gas": 36192,
+      "l2_gas": 240152089
+    },
+    "finality_status": "ACCEPTED_ON_L2",
+    "messages_sent": [],
+    "transaction_hash": "0x5fe3c1f8331a0f461a772a567e348742e18fb18baccb79b292b6571fa1bf9b8",
+    "execution_status": "SUCCEEDED",
+    "block_hash": "0x2d812b7eea193fd38bce8c9a56662e57a4d7b1b3707af477c52cec230296376",
+    "block_number": 119
+  }
+}

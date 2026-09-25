@@ -1,0 +1,71 @@
+{
+  "type": "INVOKE",
+  "actual_fee": {
+    "amount": "0x297a4109e500",
+    "unit": "FRI"
+  },
+  "events": [
+    {
+      "from_address": "0x55b34ce967638175fcb2f5ff4e50b1e7b5f91808598e1199759c36d1941ebf6",
+      "data": [
+        "0x1",
+        "0x2",
+        "0x1",
+        "0x50114f47aa8de5c65398e89df2d382632ca4fd16a5c644f6ca8fd1b12ac6e74"
+      ],
+      "keys": [
+        "0x1d49ec0dbefa7d265631af343d40c174377daf255950534c56e7ea482e0b434",
+        "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724",
+        "0x1",
+        "0x507265736574"
+      ]
+    }
+  ],
+  "execution_resources": {
+    "l1_gas": 0,
+    "l1_data_gas": 77472,
+    "l2_gas": 456050440
+  },
+  "finality_status": "ACCEPTED_ON_L2",
+  "messages_sent": [],
+  "transaction_hash": "0x2c1a9972a2f236111a948d0a1d7262eb3422152ca1330bf3e8d8c5631755f58",
+  "execution_status": "SUCCEEDED",
+  "block_hash": "0x395cfec9cca3a718976df3c1d5709bba177ce92f7bbb64a495dfc57b8c43e34",
+  "block_number": 112,
+  "statusReceipt": "SUCCEEDED",
+  "value": {
+    "type": "INVOKE",
+    "actual_fee": {
+      "amount": "0x297a4109e500",
+      "unit": "FRI"
+    },
+    "events": [
+      {
+        "from_address": "0x55b34ce967638175fcb2f5ff4e50b1e7b5f91808598e1199759c36d1941ebf6",
+        "data": [
+          "0x1",
+          "0x2",
+          "0x1",
+          "0x50114f47aa8de5c65398e89df2d382632ca4fd16a5c644f6ca8fd1b12ac6e74"
+        ],
+        "keys": [
+          "0x1d49ec0dbefa7d265631af343d40c174377daf255950534c56e7ea482e0b434",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724",
+          "0x1",
+          "0x507265736574"
+        ]
+      }
+    ],
+    "execution_resources": {
+      "l1_gas": 0,
+      "l1_data_gas": 77472,
+      "l2_gas": 456050440
+    },
+    "finality_status": "ACCEPTED_ON_L2",
+    "messages_sent": [],
+    "transaction_hash": "0x2c1a9972a2f236111a948d0a1d7262eb3422152ca1330bf3e8d8c5631755f58",
+    "execution_status": "SUCCEEDED",
+    "block_hash": "0x395cfec9cca3a718976df3c1d5709bba177ce92f7bbb64a495dfc57b8c43e34",
+    "block_number": 112
+  }
+}

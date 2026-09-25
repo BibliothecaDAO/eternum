@@ -1,3 +1,11 @@
+import {
+  NativePresetRegistrationInvalid,
+  decodePresetPreimage,
+  verifyPresetRegistrations,
+  type VerifiedPreset,
+} from "./preset-preimages";
+import { derivePresetFacts } from "./preset-facts";
+import { nativeEntityId } from "./entity-id";
 import { nativeExecutionOutcomes } from "@bibliothecadao/provider";
 import { transactionScopes } from "./transactions";
 import type { MadaraRpc } from "../madara-rpc";
@@ -80,14 +88,27 @@ export class NativeIngestion {
     return transactionScopes(this.decoder.manifest, transaction.calldata);
   }
 
-  applyReceipt(fold: WorldFold, receipt: RpcReceipt, blockNumber: number | null, transactionIndex: number) {
+  applyReceipt(
+    fold: WorldFold,
+    receipt: RpcReceipt,
+    blockNumber: number | null,
+    transactionIndex: number,
+    calldata?: string[],
+  ) {
     const preview = fold.overlay();
-    const events = this.validateReceipt(preview, receipt, blockNumber, transactionIndex);
-    return { events, changes: this.commit(fold, events) };
+    const { events, decoded, presets } = this.validateReceipt(
+      preview,
+      receipt,
+      blockNumber,
+      transactionIndex,
+      calldata,
+    );
+    presets.forEach((preset) => fold.rememberPreset(preset));
+    return { events, decoded, changes: this.commit(fold, events) };
   }
 
-  actionReceipt(fold: WorldFold, receipt: RpcReceipt): RpcReceipt {
-    this.validateReceipt(fold.overlay(), receipt, receipt.block_number ?? null, 0);
+  actionReceipt(fold: WorldFold, receipt: RpcReceipt, calldata?: string[]): RpcReceipt {
+    this.validateReceipt(fold.overlay(), receipt, receipt.block_number ?? null, 0, calldata);
     return this.executionReceipt(receipt);
   }
 
@@ -108,6 +129,7 @@ export class NativeIngestion {
     if (this.halted) throw this.halted;
     const preview = input.fold.overlay();
     const events: DecodedWorldEvent[] = [];
+    const presets: VerifiedPreset[] = [];
     const transactions: RpcBlockTransaction[] = [];
     let pages = 0;
     for (
@@ -120,7 +142,16 @@ export class NativeIngestion {
       pages++;
       block.transactions.forEach(({ receipt, transaction }, index) => {
         try {
-          events.push(...this.validateReceipt(preview, receipt, number, index, input.preconfirmed?.(receipt)));
+          const validated = this.validateReceipt(
+            preview,
+            receipt,
+            number,
+            index,
+            transaction.calldata,
+            input.preconfirmed?.(receipt),
+          );
+          events.push(...validated.events);
+          presets.push(...validated.presets);
           transactions.push({
             transaction,
             receipt: this.executionReceipt({ ...receipt, block_number: number }),
@@ -130,6 +161,7 @@ export class NativeIngestion {
         }
       });
     }
+    presets.forEach((preset) => input.fold.rememberPreset(preset));
     const changes = this.commit(input.fold, events);
     const byBlock = new Map<number, FoldChange[]>();
     changes.forEach(({ event, change }) => {
@@ -163,12 +195,40 @@ export class NativeIngestion {
     receipt: RpcReceipt,
     blockNumber: number | null,
     transactionIndex: number,
+    calldata?: string[],
     earlier?: PreconfirmedDecode,
-  ): DecodedWorldEvent[] {
-    if (receipt.execution_status === "REVERTED") return [];
+  ): { events: DecodedWorldEvent[]; decoded: DecodedWorldEvent[]; presets: VerifiedPreset[] } {
+    if (receipt.execution_status === "REVERTED") return { events: [], decoded: [], presets: [] };
     const decoded = this.decodeReceipt(receipt, blockNumber, transactionIndex, earlier);
+    if (receipt.execution_status !== "SUCCEEDED" && decoded.some((event) => event.model.name === "Preset"))
+      throw new NativePresetRegistrationInvalid("Preset preimages require a successful execution");
+    const presets = verifyPresetRegistrations(this.decoder.manifest, decoded, calldata);
+    presets.forEach((preset) => fold.rememberPreset(preset));
     decoded.forEach((event) => fold.apply(event));
-    return decoded;
+    const derived = decoded.flatMap((event) =>
+      event.model.name === "GameOverrides" ? this.gameConfiguration(fold, event) : [],
+    );
+    derived.forEach((event) => fold.apply(event));
+    return { events: [...decoded, ...derived], decoded, presets };
+  }
+
+  private gameConfiguration(fold: WorldFold, launch: DecodedWorldEvent): DecodedWorldEvent[] {
+    if (launch.kind !== "set") throw new Error("GameOverrides must be an immutable launch fact");
+    const gameId = String(launch.key.game_id);
+    const key = nativeEntityId([gameId]);
+    const game = fold.currentRow("GameRegistry", key)?.value;
+    const release = fold.currentRow("GameRelease", key)?.value;
+    if (!game || !release) throw new Error("GameOverrides requires GameRegistry and GameRelease");
+    const preset = fold.currentRow("Preset", nativeEntityId([String(game.preset_id)]))?.value;
+    if (!preset || BigInt(preset.commitment as string) !== BigInt(release.preset_commitment as string))
+      throw new Error("GameRelease preset commitment differs from registered preset");
+    const schema = this.decoder.manifest.native.schemas[this.decoder.manifest.native.activeSchema]!;
+    const definition = decodePresetPreimage(schema, fold.presetPreimage(String(preset.commitment)));
+    const roster = fold.currentRow("BlitzRoster", key)?.value.players as unknown[] | undefined;
+    // A5 settlement::rules reads registrar.roster_sizes; a launch without a roster leaves it zero.
+    const registrationLimit = roster?.length ?? 0;
+    const overrides = fold.currentRow("GameOverrides", key)!.value;
+    return derivePresetFacts(this.decoder, definition, overrides, registrationLimit, launch);
   }
 
   /**
