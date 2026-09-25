@@ -184,9 +184,13 @@ The owner-approved `LAUNCHER_ALLOWLIST` is `0x055be462e718c4166d656d11f89e341115
 further launchers require the owner's word. After a client deploy, verify the served bundle has no public RPC fallback
 and exercise sign-in.
 
-Use a staging tunnel connector of its own and fresh volumes for every shard. Hold the shared
-`/opt/athanor/isolated-stack.lock` during deployment and verification. Verify the app, launch service and every public
-manifest before handing staging to the other streams.
+Deploy one of our shards from its release with
+`OPERATOR_TOKEN=... python3 deploy/athanor/scripts/deploy.py ENVIRONMENT DIRECTORY`. `deploy/release/ENVIRONMENT.json`
+is the environment's inputs, including the only preset set it registers. The command takes
+`/opt/athanor/isolated-stack.lock` itself, so do not hold it around the command; it refuses to start when initialization
+would receive no operator approval, and it fails naming every way the shard differs from the tag's release.json. Use a
+staging tunnel connector of its own and fresh volumes for every shard. Hold the lock by hand for verification
+afterwards, and verify the app, launch service and every public manifest before handing staging to the other streams.
 
 ## Native deployment
 

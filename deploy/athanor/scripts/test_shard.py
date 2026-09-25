@@ -233,6 +233,11 @@ class ShardTest(unittest.TestCase):
             self.assertEqual(config["exporters"]["file"]["path"], "/data/metrics.jsonl")
             self.assertEqual((directory / "metrics").stat().st_mode & 0o777, 0o700)
 
+    def test_docker_keeps_exactly_the_operator_token_through_sudo(self):
+        # sudo resets the environment: without this the token never reaches initialization.
+        preserved = [flag for flag in shard.DOCKER if flag.startswith("--preserve-env")]
+        self.assertEqual(preserved, ["--preserve-env=OPERATOR_TOKEN"])
+
     def test_the_collector_scrapes_the_gateway_metrics_listener_not_its_admission_port(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)

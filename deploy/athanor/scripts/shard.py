@@ -21,7 +21,8 @@ import candidate_guard
 
 ROOT = Path(__file__).resolve().parents[3]
 METRICS_CONTEXT = ROOT / "deploy/athanor/metrics"
-DOCKER = ["sudo", "-n", "docker"]
+# sudo resets the environment; the operator token passes through to initialization only when it is kept.
+DOCKER = ["sudo", "-n", "--preserve-env=OPERATOR_TOKEN", "docker"]
 # Gateway connections: each player holds about two (a 100-connection server refused a 96-player slot at its 48th
 # player), plus a fixed allowance for the sequencing authority, Herald and tooling. The node's own limit is the
 # package's: players never reach the node directly.

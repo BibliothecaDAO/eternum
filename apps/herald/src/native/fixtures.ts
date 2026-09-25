@@ -16,6 +16,7 @@ export const manifest: NativeManifest = {
     releaseSchemas: { "1": schema.identity },
     schemas: { [schema.identity]: schema },
     gamesClassHash: "0x123",
+    migrationClassHash: "0x0",
     releaseId: 1,
     logic: Object.fromEntries(Object.keys(schema.logicClasses).map((name) => [name, "0x123"])),
   },
