@@ -118,12 +118,12 @@ describe("liveHomeArmies", () => {
 describe("expedition spire", () => {
   // Spacing 10, days from 86400: realm 3's day-two site is (25, 45), an odd row.
   const rules = { epochSeconds: 86400, spacing: 10, startMainAt: 86400 };
-  const realm = (attunement: number) =>
+  const realm = (id: number) =>
     ({
       game_id: 7,
-      entity_id: 42,
+      entity_id: id,
       base: { category: StructureType.Realm },
-      metadata: { realm_id: 3, attunement },
+      metadata: { realm_id: 3 },
     }) as never;
 
   it("stands on the home ring's tile in direction (day % 6) and turns one step each day", () => {
@@ -140,9 +140,14 @@ describe("expedition spire", () => {
     expect(isAtExpeditionSpire(spire, { x: 27, y: 46 })).toBe(false);
   });
 
-  it("lights a spire only for a realm with attunement", () => {
+  it("lights a spire only for a realm with depth research", () => {
     const store = {
       ...storeWith(expeditionRules),
+      get: (model: string, key: { structure_id: number }) =>
+        model === "RealmKnowledge"
+          ? { learned: key.structure_id === 2 ? 1 << 10 : 0 }
+          : storeWith(expeditionRules).get(model),
+      require: () => ({ effect: { Depth: 1 } }),
       inGame: (model: string) => (model === "Structure" ? [realm(0), realm(2)] : [])[Symbol.iterator](),
     };
     expect(expeditionSpires(store as never, 7, 86400 * 2 + 10)).toEqual([{ col: 25, row: 46 }]);

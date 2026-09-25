@@ -33,8 +33,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
   const settle_season = (props: Parameters<typeof provider.settle_season>[0]) => provider.settle_season(props);
   const enter_depth = (props: Parameters<typeof provider.enter_depth>[0]) => provider.enter_depth(props);
-  const buy_realm_upgrade = (props: Parameters<typeof provider.buy_realm_upgrade>[0]) =>
-    provider.buy_realm_upgrade(props);
+  const research = (props: Parameters<typeof provider.research>[0]) => provider.research(props);
+  const upgrade_building = (props: Parameters<typeof provider.upgrade_building>[0]) => provider.upgrade_building(props);
   const choose_attribute = (props: Parameters<typeof provider.choose_attribute>[0]) => provider.choose_attribute(props);
 
   const bitcoin_mine_contribute_labor = async (
@@ -398,7 +398,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     disband_guild: withAuth(disband_guild),
     settle_season: withAuth(settle_season),
     enter_depth: withAuth(enter_depth),
-    buy_realm_upgrade: withAuth(buy_realm_upgrade),
+    research: withAuth(research),
+    upgrade_building: withAuth(upgrade_building),
     choose_attribute: withAuth(choose_attribute),
     bridge_deposit_into_realm: withAuth(bridge_deposit_into_realm),
     bridge_withdraw_from_realm: withAuth(bridge_withdraw_from_realm),

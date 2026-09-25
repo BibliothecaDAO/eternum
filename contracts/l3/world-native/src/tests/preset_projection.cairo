@@ -231,6 +231,24 @@ fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress, ga
     if let Some(board) =
         interact_with_state(address, || crate::logic::construction::ConstructionLogic::observed_board_rules(game_id)) {
         row(ref rows, 'BoardRules', key, board);
+        for node in 0..crate::research::NODE_COUNT {
+            row(
+                ref rows,
+                'ResearchNode',
+                array![game_id.into(), node.into()].span(),
+                interact_with_state(address, || crate::logic::research::node(game_id, node)),
+            );
+        }
+        for category in array![1_u8, 2, 28, 37] {
+            for tier in 2_u8..4 {
+                row(
+                    ref rows,
+                    'BuildingTierRule',
+                    array![game_id.into(), category.into(), tier.into()].span(),
+                    interact_with_state(address, || crate::logic::research::tier_rule(game_id, category, tier)),
+                );
+            }
+        }
     }
     row(ref rows, 'CampResources', key, camp_rules.camp_resources(game_id));
     row(ref rows, 'FaithRules', key, faith.faith_rules(game_id));

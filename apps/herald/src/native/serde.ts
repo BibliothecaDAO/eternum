@@ -100,7 +100,7 @@ class SerdeReader {
   }
 }
 
-function tupleTypes(type: string): string[] {
+export function tupleTypes(type: string): string[] {
   const members: string[] = [];
   let depth = 0;
   let start = 1;

@@ -13,8 +13,8 @@ export function resolveBuildingRequirements(
   type: BuildingType,
   useSimpleCost: boolean,
   currentDefaultTick: number,
-): ResourceRequirement[] {
-  return (getBuildingCosts(entityId, store, type, useSimpleCost) ?? []).map((cost) => ({
+): ResourceRequirement[] | undefined {
+  return getBuildingCosts(entityId, store, type, useSimpleCost)?.map((cost) => ({
     resource: cost.resource,
     amount: cost.amount,
     current: knownBalance(getBalance(entityId, cost.resource, currentDefaultTick, store).balance),

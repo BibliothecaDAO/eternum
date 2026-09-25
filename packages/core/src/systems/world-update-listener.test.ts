@@ -76,6 +76,7 @@ describe("native scene updates", () => {
       category: 3,
       paused: false,
       labor_paid: 0n,
+      tier: 1,
     };
     store.applyFacts([{ model: "Building", key: "0x1", value: building }]);
     expect(changed).toHaveBeenLastCalledWith({ buildingType: 3, innerCol: 11, innerRow: 10, paused: false });

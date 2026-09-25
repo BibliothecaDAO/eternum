@@ -89,6 +89,12 @@ function deriveResources(emit: EmitRule, resources: PresetRecord) {
 
 function deriveStructures(emit: EmitRule, structures: PresetRecord) {
   for (const { category, rule } of records(structures.buildings)) emit("BuildingRule", record(rule), { category });
+  // Historical registration predates the research tree; current presets carry both arrays.
+  if ("research" in structures) {
+    for (const { node, rule } of records(structures.research)) emit("ResearchNode", record(rule), { node });
+    for (const { category, tier, rule } of records(structures.building_tiers))
+      emit("BuildingTierRule", record(rule), { category, tier });
+  }
   const board = some(structures.board);
   if (board) emit("BoardRules", board);
   emit("CampResources", { resources: structures.camps });

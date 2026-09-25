@@ -10,6 +10,7 @@ pub struct Building {
     pub category: u8,
     pub paused: bool,
     pub labor_paid: u128,
+    pub tier: u8,
 }
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
 pub struct Population {
@@ -29,17 +30,20 @@ const PAUSED_SCALE: u64 = 0x10000000000;
 
 pub impl BuildingPacking of starknet::storage_access::StorePacking<Building, felt252> {
     fn pack(value: Building) -> felt252 {
-        let identity: u64 = value.category.into() + if value.paused {
-            PAUSED_SCALE
-        } else {
-            0
-        };
+        let identity: u64 = value.category.into()
+            + Into::<u8, u64>::into(value.tier) * 256
+            + if value.paused {
+                PAUSED_SCALE
+            } else {
+                0
+            };
         identity.into() + Into::<u128, felt252>::into(value.labor_paid) * 0x10000000000000000
     }
     fn unpack(value: felt252) -> Building {
         let value: u256 = value.into();
         Building {
             category: (value.low % 256).try_into().unwrap(),
+            tier: (value.low / 256 % 256).try_into().unwrap(),
             paused: value.low / Into::<u64, u128>::into(PAUSED_SCALE) % 2 != 0,
             labor_paid: value.low / 0x10000000000000000 + value.high * 0x10000000000000000,
         }
@@ -121,30 +125,9 @@ pub struct BuildingTerms {
     pub complex_count: u8,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct NeighborBonus {
-    pub building: u8,
-    pub neighbor: u8,
-    pub production_bps: u16,
-    pub capacity_bps: u16,
-    pub population: u8,
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct BoardRules {
     pub demolition_refund_bps: u16,
     pub workshop_rate: u64,
-    pub barracks_ii_cost: u128,
-    pub barracks_iii_cost: u128,
-    pub neighbors: Span<NeighborBonus>,
-}
-
-#[derive(Copy, Drop, starknet::Store)]
-pub struct BoardTerms {
-    pub demolition_refund_bps: u16,
-    pub workshop_rate: u64,
-    pub barracks_ii_cost: u128,
-    pub barracks_iii_cost: u128,
-    pub neighbor_count: u8,
 }
 
 #[derive(Copy, Drop, Default, Debug, PartialEq)]
@@ -175,6 +158,14 @@ pub struct ChangeBuilding {
 }
 #[starknet::interface]
 pub trait IBuildingCommands<T> {
+    fn upgrade_building(
+        ref self: T,
+        game_id: u32,
+        actor: starknet::ContractAddress,
+        command: ChangeBuilding,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
     fn create_building(
         ref self: T,
         game_id: u32,

@@ -148,7 +148,15 @@ type ResourceProductionStatus = {
 
 export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
   const game = useGame();
-  useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building"]);
+  useNativeRevision([
+    "ResourceBalance",
+    "ResourceProduction",
+    "ResourceWeight",
+    "Building",
+    "RealmKnowledge",
+    "ResearchNode",
+    "BuildingTierRule",
+  ]);
   const lane = useCompactLane();
   const [summaryOpen, setSummaryOpen] = useState(false);
 
@@ -1168,7 +1176,7 @@ const BuildingCard = ({
   currentTime?: number;
   toolTip: React.ReactElement;
   /** Held / needed per resource, shown while the card is hovered. */
-  requirements: ResourceRequirement[];
+  requirements: ResourceRequirement[] | undefined;
   resourceId?: ResourcesIds;
   /**
    * Optional "this resource feeds X troop tier" hint for the blitz T2/T3
@@ -1454,7 +1462,15 @@ const ResourceInfo = ({
   useSimpleCost?: boolean;
 }) => {
   const game = useGame();
-  useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building"]);
+  useNativeRevision([
+    "ResourceBalance",
+    "ResourceProduction",
+    "ResourceWeight",
+    "Building",
+    "RealmKnowledge",
+    "ResearchNode",
+    "BuildingTierRule",
+  ]);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   // Undefined when the recipe is unknown here: shown as "—", never as a free cost. Relics hold an empty recipe.
   let cost = configManager.getRecipeInputs(resourceId, useSimpleCost);
@@ -1467,14 +1483,12 @@ const ResourceInfo = ({
     cost = adjustWonderLordsCost(cost);
   }
 
-  const structureBuildings = useNativeRow(
+  useNativeRow(
     "StructureBuildings",
     entityId === undefined ? undefined : { game_id: configManager.getActiveGameId(), entity_id: entityId },
   );
 
-  const buildingCost = useMemo(() => {
-    return getBuildingCosts(entityId ?? 0, game.setup.store, buildingId, useSimpleCost) ?? [];
-  }, [entityId, game.setup.store, buildingId, structureBuildings, useSimpleCost]);
+  const buildingCost = getBuildingCosts(entityId ?? 0, game.setup.store, buildingId, useSimpleCost);
 
   const buildingPopCapacityConfig = configManager.getBuildingCategoryConfig(buildingId);
   const population = buildingPopCapacityConfig.population_cost;
@@ -1567,7 +1581,8 @@ const ResourceInfo = ({
         )
       )}
 
-      {Object.keys(buildingCost).length > 0 && (
+      {buildingCost === undefined && <p>Building Creation Cost: —</p>}
+      {buildingCost && buildingCost.length > 0 && (
         <>
           <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">
             Building Creation Cost
@@ -1629,13 +1644,21 @@ const BuildingInfo = ({
   useSimpleCost?: boolean;
 }) => {
   const game = useGame();
-  useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building"]);
+  useNativeRevision([
+    "ResourceBalance",
+    "ResourceProduction",
+    "ResourceWeight",
+    "Building",
+    "RealmKnowledge",
+    "ResearchNode",
+    "BuildingTierRule",
+  ]);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
   const resourceProducedName = resourceProduced ? findResourceById(resourceProduced)?.trait : undefined;
 
-  const buildingCost = getBuildingCosts(entityId ?? 0, game.setup.store, buildingId, useSimpleCost) || [];
+  const buildingCost = getBuildingCosts(entityId ?? 0, game.setup.store, buildingId, useSimpleCost);
 
   const buildingPopCapacityConfig = configManager.getBuildingCategoryConfig(buildingId);
   const population = buildingPopCapacityConfig.population_cost;
@@ -1741,7 +1764,8 @@ const BuildingInfo = ({
         </div>
       ) : null}
 
-      {Object.keys(buildingCost).length !== 0 && (
+      {buildingCost === undefined && <p>Building Creation Cost: —</p>}
+      {buildingCost && buildingCost.length > 0 && (
         <>
           <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">
             Building Creation Cost

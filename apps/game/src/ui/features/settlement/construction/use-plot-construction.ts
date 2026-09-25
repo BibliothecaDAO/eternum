@@ -48,6 +48,9 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
     "ResourceWeight",
     "ProductionBonus",
     "Building",
+    "RealmKnowledge",
+    "ResearchNode",
+    "BuildingTierRule",
   ]);
   const realm = getRealmInfo(target.entityId, store, getPlayerName);
   const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: target.entityId });

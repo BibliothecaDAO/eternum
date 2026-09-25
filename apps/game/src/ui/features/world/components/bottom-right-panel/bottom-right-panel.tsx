@@ -196,7 +196,16 @@ const LocalTilePanel = () => {
     game_id: configManager.getActiveGameId(),
     entity_id: structureEntityId,
   });
-  useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "StructureBuildings", "Building"]);
+  useNativeRevision([
+    "ResourceBalance",
+    "ResourceProduction",
+    "ResourceWeight",
+    "StructureBuildings",
+    "Building",
+    "RealmKnowledge",
+    "ResearchNode",
+    "BuildingTierRule",
+  ]);
   const selectedStructure = useMemo(() => {
     const base = liveStructure?.base;
     if (!base) return null;
@@ -299,12 +308,11 @@ const LocalTilePanel = () => {
     setShowDestroyConfirm(false);
   }, [selectedBuildingHex?.structureId, selectedBuildingHex?.innerCol, selectedBuildingHex?.innerRow]);
 
-  const buildCost =
+  const nextBuildCost =
     hasBuilding && buildingCategory !== null
-      ? normalizeResourceEntries(
-          getBuildingCosts(structureEntityId, setup.store, buildingCategory as BuildingType, useSimpleCost) ?? [],
-        )
-      : [];
+      ? getBuildingCosts(structureEntityId, setup.store, buildingCategory as BuildingType, useSimpleCost)
+      : undefined;
+  const buildCost = normalizeResourceEntries(nextBuildCost ?? []);
 
   const canManageBuilding =
     ordersAllowed && playerStructures.some((structure) => structure.entityId === structureEntityId);
@@ -592,6 +600,7 @@ const LocalTilePanel = () => {
       {canManageBuilding && (
         <InfoBubble title="Actions" icon={Hammer}>
           <div className="flex flex-col gap-2.5">
+            {nextBuildCost === undefined && <SectionRow label="Build cost">—</SectionRow>}
             {buildCost.length > 0 && (
               <SectionRow label="Build cost">
                 {buildCost.map((entry, index) => {

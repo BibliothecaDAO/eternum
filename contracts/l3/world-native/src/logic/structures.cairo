@@ -56,6 +56,27 @@ pub mod StructureState {
         state.structures.structures.entry((key.game_id, key.entity_id)).base.write(base);
         emit_base(key, base);
     }
+    pub fn record_depth(key: ResourceKey, depth: u8) {
+        let mut metadata = crate::logic::structures::record(key).metadata;
+        if depth <= metadata.deepest_depth {
+            return;
+        }
+        metadata.deepest_depth = depth;
+        crate::state::write().structures.structures.entry((key.game_id, key.entity_id)).metadata.write(metadata);
+        let mut values = array![];
+        metadata.serialize(ref values);
+        emit(
+            Event::RowMemberSet(
+                RowMemberSet {
+                    version: 1,
+                    model: 'Structure',
+                    member: 'metadata',
+                    keys: array![key.game_id.into(), key.entity_id.into()].span(),
+                    values: values.span(),
+                },
+            ),
+        );
+    }
     pub fn emit_base(key: ResourceKey, base: crate::structures::StructureBase) {
         let mut values = array![];
         base.serialize(ref values);
@@ -383,6 +404,10 @@ pub mod StructuresLogic {
             let key = self.place_settlement(game_id, coord, record, context);
             match creation {
                 crate::settlement::SettlementCreation::Realm(realm) => {
+                    if context.rules.unbox().epoch_seconds != 0 {
+                        crate::logic::research::write(key, crate::research::RealmKnowledge { learned: 0 });
+                    }
+
                     if realm.activate_economy {
                         self.provision_realm_economy(key, context.timestamp, context, ref story_cursor);
                     } else if realm.grant_troops {
@@ -1014,7 +1039,7 @@ pub mod StructuresLogic {
                 .buildings
                 .create(
                     BuildingKey { game_id: key.game_id, structure_id: key.entity_id, inner_col: 10, inner_row: 10 },
-                    Building { category: building_category, paused: false, labor_paid: 0 },
+                    Building { category: building_category, paused: false, labor_paid: 0, tier: 1 },
                     // A producer the world places at a structure's centre costs no population: only a player's
                     // building does. The centre labor producer cannot be destroyed, so nothing refunds this.
                     0,

@@ -178,16 +178,23 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
         : new CairoOption(CairoOptionVariant.Some, {
             demolition_refund_bps: board.demolitionRefundBps,
             workshop_rate: scaled(board.workshopRate, precision),
-            barracks_ii_cost: scaled(board.barracksIICost, precision),
-            barracks_iii_cost: scaled(board.barracksIIICost, precision),
-            neighbors: board.neighbors.map((bonus) => ({
-              building: bonus.building,
-              neighbor: bonus.neighbor,
-              production_bps: bonus.productionBps,
-              capacity_bps: bonus.capacityBps,
-              population: bonus.population,
-            })),
           }),
+    research: preset.research.map(({ node, prerequisites, essenceCost, effect }) => ({
+      node,
+      rule: { prerequisites, essence_cost: scaled(essenceCost, precision), effect: researchEffect(effect) },
+    })),
+    building_tiers: preset.buildingTiers.map(
+      ({ category, tier, laborUpgradeCost, outputMultiplierBps, capacityMultiplierBps, populationMultiplierBps }) => ({
+        category,
+        tier,
+        rule: {
+          labor_upgrade_cost: scaled(laborUpgradeCost, precision),
+          output_multiplier_bps: outputMultiplierBps,
+          capacity_multiplier_bps: capacityMultiplierBps,
+          population_multiplier_bps: populationMultiplierBps,
+        },
+      }),
+    ),
     buildings: Array.from({ length: 40 }, (_, index) => {
       const category = index + 1;
       // Legacy presets have no storehouse recipe; Essence is mine-only.
@@ -235,7 +242,6 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
       guard_upper: depth.guardUpper,
       reveal_site_neighbors: depth.revealSiteNeighbors,
       entry_stamina: depth.entryStamina,
-      attunement_cost: scaled(depth.attunementCost),
       chest: depth.chest,
       fallen_guard_lower: depth.fallenGuardLower,
       fallen_guard_upper: depth.fallenGuardUpper,
@@ -524,4 +530,15 @@ function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
     well_bps: rules.wellBps,
     empty_reveal_limit: rules.emptyRevealLimit,
   });
+}
+
+function researchEffect(effect: ReturnType<typeof nativePresetForId>["research"][number]["effect"]) {
+  switch (effect.kind) {
+    case "BuildingTier":
+      return new CairoCustomEnum({ BuildingTier: { 0: effect.category, 1: effect.tier } });
+    case "MapContent":
+      return new CairoCustomEnum({ MapContent: new CairoCustomEnum({ [effect.content]: {} }) });
+    case "Depth":
+      return new CairoCustomEnum({ Depth: effect.depth });
+  }
 }

@@ -4,6 +4,8 @@ import type { Account } from "starknet";
 import { createOperatorAccount } from "../../../config/deployer/clean/shared/madara-account";
 import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
 import {
+  researchedBuildingTier,
+  researchedDepths,
   createGameActions,
   configManager,
   getBuildingCosts,
@@ -566,27 +568,38 @@ function planUpgrade(client: GameClient, player: Player): Action | undefined {
       cost: recipe.costs.find((cost) => cost.resource_type === 38)?.amount ?? 0n,
       action: { kind: "LevelUp", value: player.realmId },
     });
-  const board = store.require("BoardRules", { game_id: client.gameId });
-  if (realm.metadata.barracks_tier < 2)
-    candidates.push({
-      cost: realm.metadata.barracks_tier === 0 ? board.barracks_ii_cost : board.barracks_iii_cost,
-      action: {
-        kind: "BuyRealmUpgrade",
-        value: { structure_id: player.realmId, lane: { kind: "Barracks", value: undefined } },
-      },
+  const learned = store.require("RealmKnowledge", { game_id: client.gameId, structure_id: player.realmId }).learned;
+  for (const node of store.inGame("ResearchNode", client.gameId)) {
+    if ((learned & (1 << node.node)) !== 0 || (learned & node.prerequisites) !== node.prerequisites) continue;
+    if (node.essence_cost <= essence)
+      candidates.push({
+        cost: node.essence_cost,
+        action: { kind: "Research", value: { structure_id: player.realmId, node: node.node } },
+      });
+  }
+  for (const building of store.inGame("Building", client.gameId)) {
+    if (building.structure_id !== player.realmId) continue;
+    const unlocked = known(
+      researchedBuildingTier(store, client.gameId, player.realmId, building.category),
+      player.realmId,
+      "researched tier",
+    );
+    if (building.tier >= unlocked) continue;
+    const rule = store.require("BuildingTierRule", {
+      game_id: client.gameId,
+      category: building.category,
+      tier: building.tier + 1,
     });
-  if (realm.metadata.attunement < 3)
-    candidates.push({
-      cost: store.require("DepthRules", { game_id: client.gameId, depth: realm.metadata.attunement + 1 })
-        .attunement_cost,
-      action: {
-        kind: "BuyRealmUpgrade",
-        value: { structure_id: player.realmId, lane: { kind: "Attunement", value: undefined } },
-      },
-    });
-  const selected = candidates
-    .filter((candidate) => candidate.cost <= essence)
-    .sort((a, b) => Number(a.cost - b.cost))[0];
+    if (rule.labor_upgrade_cost <= balance(client, player, 23))
+      candidates.push({
+        cost: rule.labor_upgrade_cost,
+        action: {
+          kind: "UpgradeBuilding",
+          value: { structure_id: player.realmId, coord: { alt: false, x: building.inner_col, y: building.inner_row } },
+        },
+      });
+  }
+  const selected = candidates.sort((a, b) => Number(a.cost - b.cost))[0];
   return selected ? command(client, player, selected.action) : undefined;
 }
 function planBuilding(client: GameClient, player: Player): Action | undefined {
@@ -601,7 +614,12 @@ function planBuilding(client: GameClient, player: Player): Action | undefined {
   const training = known(
     new ResourceManager(client.setup.store, player.realmId, client.gameId).balanceWithProduction(
       getBlockTimestamp().currentDefaultTick,
-      (26 + realm.metadata.barracks_tier) as ResourcesIds,
+      (25 +
+        known(
+          researchedBuildingTier(client.setup.store, client.gameId, player.realmId, 28),
+          player.realmId,
+          "researched barracks tier",
+        )) as ResourcesIds,
     ),
     player.realmId,
     "troop training balance",
@@ -654,22 +672,7 @@ function planStorageDemolition(
   player: Player,
   buildings: NativeRows["Building"][],
 ): Action | undefined {
-  const storageBonuses = client.setup.store
-    .require("BoardRules", { game_id: client.gameId })
-    .neighbors.filter((bonus) => bonus.neighbor === 37 && bonus.capacity_bps > 0)
-    .map((bonus) => bonus.building);
-  const surplusFarm = buildings.find(
-    (building) =>
-      building.category === 37 &&
-      !getNeighborHexes(building.inner_col, building.inner_row).some((spot) =>
-        buildings.some(
-          (neighbor) =>
-            neighbor.inner_col === spot.col &&
-            neighbor.inner_row === spot.row &&
-            storageBonuses.includes(neighbor.category),
-        ),
-      ),
-  );
+  const surplusFarm = buildings.find((building) => building.category === 37);
   return surplusFarm
     ? command(client, player, {
         kind: "DestroyBuilding",
@@ -688,7 +691,12 @@ function planMuster(client: GameClient, player: Player): Action | undefined {
     realm.base.level
   ]!;
   if (armies.length >= slots) return;
-  let tier = realm.metadata.barracks_tier;
+  let tier =
+    known(
+      researchedBuildingTier(client.setup.store, client.gameId, player.realmId, 28),
+      player.realmId,
+      "researched barracks tier",
+    ) - 1;
   let troops = 0n;
   for (; tier >= 0; tier--) {
     const resource = (26 + tier) as ResourcesIds;
@@ -735,7 +743,14 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
     const neighbors = getNeighborHexes(coord.x, coord.y);
     const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
     const realm = home(client, player);
-    const depth = realm.metadata.attunement;
+    const depth = Math.max(
+      0,
+      ...known(
+        researchedDepths(client.setup.store, client.gameId, player.realmId),
+        player.realmId,
+        "researched depths",
+      ),
+    );
     const atEntrance =
       Math.floor(coord.y / spacing) % 4 === 0 &&
       neighbors.some(
@@ -869,8 +884,25 @@ function observeProgress(client: GameClient, game: HarnessGame, player: Player) 
   const realm = home(client, player);
   for (const [lane, level] of [
     ["castle", realm.base.level],
-    ["barracks", realm.metadata.barracks_tier],
-    ["attunement", realm.metadata.attunement],
+    [
+      "barracks",
+      known(
+        researchedBuildingTier(client.setup.store, client.gameId, player.realmId, 28),
+        player.realmId,
+        "researched barracks tier",
+      ) - 1,
+    ],
+    [
+      "depth",
+      Math.max(
+        0,
+        ...known(
+          researchedDepths(client.setup.store, client.gameId, player.realmId),
+          player.realmId,
+          "researched depths",
+        ),
+      ),
+    ],
   ] as const) {
     if (level > 0 && !player.rungs.some((rung) => rung.lane === lane && rung.level === level))
       player.rungs.push({ lane, level, at: now() });
@@ -928,10 +960,10 @@ export function summarizeFrontierDesign(evidence: FrontierEvidence) {
             : null,
         ),
       },
-      attunementOneDays: {
+      depthOneDays: {
         target: profile === "check-in" ? "20–28 days" : null,
         values: players.map((player) => {
-          const rung = player.rungs.find((rung) => rung.lane === "attunement" && rung.level === 1);
+          const rung = player.rungs.find((rung) => rung.lane === "depth" && rung.level === 1);
           return rung ? (rung.at - player.settledAt) / evidence.epochSeconds : null;
         }),
         note: "Null means not reached within observedDays, not an estimated completion date",

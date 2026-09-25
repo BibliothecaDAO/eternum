@@ -75,8 +75,7 @@ export const structureValue = {
     has_wonder: false,
     village_realm: 0,
     mine_kind: 0,
-    attunement: 0,
-    barracks_tier: 0,
+    deepest_depth: 0,
   },
 } satisfies Omit<NativeRows["Structure"], "game_id" | "entity_id">;
 

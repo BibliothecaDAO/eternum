@@ -91,6 +91,7 @@ export const commandRoutes = [
   { name: "ProvisionAndUpgradeRealm", logic: "structures", entrypoint: "provision_and_upgrade_realm" },
   { name: "SetEntityName", logic: "structures", entrypoint: "set_entity_name" },
   { name: "EnterDepth", logic: "movement", entrypoint: "enter_depth" },
-  { name: "BuyRealmUpgrade", logic: "construction", entrypoint: "buy_realm_upgrade" },
+  { name: "Research", logic: "construction", entrypoint: "research" },
   { name: "ChooseAttribute", logic: "relics", entrypoint: "choose_attribute" },
+  { name: "UpgradeBuilding", logic: "construction", entrypoint: "upgrade_building" },
 ];

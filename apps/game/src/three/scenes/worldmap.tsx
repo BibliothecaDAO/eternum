@@ -1324,7 +1324,7 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  /** Frontier's spires stand by rule on each attuned realm's ring; they move when attunement or the day changes. */
+  /** Frontier's spires stand by rule on each researched realm's ring; they move when knowledge or the day changes. */
   private createRuleSpires(): RuleSpires {
     const store = this.game.store;
     const projection = this.worldSpatialProjection;
@@ -1332,7 +1332,8 @@ export default class WorldmapScene extends WarpTravel {
       hexes: () => expeditionSpires(store, configManager.getActiveGameId(), getBlockTimestamp().currentBlockTimestamp),
       subscribe: (onChange) => {
         const unsubscribeFacts = store.subscribe((changes) => {
-          if (changes.some((change) => change.model === "Structure")) onChange();
+          if (changes.some((change) => ["Structure", "RealmKnowledge", "ResearchNode"].includes(change.model)))
+            onChange();
         });
         // The day turning over re-projects every realm onto its new site.
         const unsubscribeStructures = projection.subscribeStructures(() => onChange());

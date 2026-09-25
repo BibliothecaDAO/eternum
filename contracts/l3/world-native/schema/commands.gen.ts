@@ -68,8 +68,9 @@ export const nativeCommandBits = {
   "ProvisionAndUpgradeRealm": "18446744073709551616",
   "SetEntityName": "36893488147419103232",
   "EnterDepth": "73786976294838206464",
-  "BuyRealmUpgrade": "147573952589676412928",
-  "ChooseAttribute": "295147905179352825856"
+  "Research": "147573952589676412928",
+  "ChooseAttribute": "295147905179352825856",
+  "UpgradeBuilding": "590295810358705651712"
 } as const;
 export interface NativeCommandPayloads {
   CreateExplorer: { readonly structure_id: BigNumberish; readonly category: BigNumberish; readonly tier: BigNumberish; readonly amount: BigNumberish; readonly direction: BigNumberish };
@@ -139,7 +140,8 @@ export interface NativeCommandPayloads {
   ProvisionAndUpgradeRealm: BigNumberish;
   SetEntityName: { readonly entity_id: BigNumberish; readonly name: BigNumberish };
   EnterDepth: { readonly explorer_id: BigNumberish; readonly depth: BigNumberish };
-  BuyRealmUpgrade: { readonly structure_id: BigNumberish; readonly lane: { readonly kind: "Attunement"; readonly value: undefined } | { readonly kind: "Barracks"; readonly value: undefined } };
+  Research: { readonly structure_id: BigNumberish; readonly node: BigNumberish };
   ChooseAttribute: { readonly explorer_id: BigNumberish; readonly offer_id: BigNumberish; readonly attribute: { readonly kind: "Battle"; readonly value: undefined } | { readonly kind: "Logistics"; readonly value: undefined } | { readonly kind: "Scouting"; readonly value: undefined } | { readonly kind: "Support"; readonly value: undefined } };
+  UpgradeBuilding: { readonly structure_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
 }
 export type NativeCommand = { [K in keyof NativeCommandPayloads]: { kind: K; value: NativeCommandPayloads[K] } }[keyof NativeCommandPayloads];

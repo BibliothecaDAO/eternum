@@ -82,6 +82,8 @@ pub(crate) fn definition(blitz: bool) -> PresetDefinition {
             surface_mines: array![crate::mines::MineWeight { kind: 1, weight: 1 }].span(),
         },
         structures: StructurePreset {
+            research: array![].span(),
+            building_tiers: array![].span(),
             board: None,
             buildings: super::building_commands::rules(),
             camps: array![].span(),
@@ -830,6 +832,9 @@ pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
     preset.economy.chests = frontier.economy.chests;
     preset.economy.relics = array![].span();
     preset.settlement.depths = frontier.settlement.depths;
+    preset.structures.board = frontier.structures.board;
+    preset.structures.research = frontier.structures.research;
+    preset.structures.building_tiers = frontier.structures.building_tiers;
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
@@ -1530,7 +1535,6 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
                     guard_upper: index + 1,
                     reveal_site_neighbors: false,
                     entry_stamina: 0,
-                    attunement_cost: 0,
                     chest: crate::relics::ChestGround { common: 10000, uncommon: 0, rare: 0, pity: 20 },
                 },
             );
@@ -1797,7 +1801,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
 }
 
 #[test]
-fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() {
+fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
     let d = setup();
     let mut preset = definition(true);
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
@@ -1837,12 +1841,14 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
                     } else {
                         20 + 10 * depth
                     },
-                    attunement_cost: Into::<u16, u128>::into(depth) * 100 * RESOURCE_PRECISION,
                     chest: crate::relics::ChestGround { common: 10000, uncommon: 0, rare: 0, pity: 20 },
                 },
             );
     }
     preset.settlement.depths = depths.span();
+    preset.structures.board = frontier.structures.board;
+    preset.structures.research = frontier.structures.research;
+    preset.structures.building_tiers = frontier.structures.building_tiers;
     registry(d).register_preset(1, preset);
     let game_id = registry(d)
         .create_game(
@@ -1881,7 +1887,7 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
         .grant_resource(
             home,
             38,
-            1000 * RESOURCE_PRECISION,
+            1000000 * RESOURCE_PRECISION,
             350,
             crate::commands::resource_context(
                 crate::commands::ExecutionContext { timestamp: 350, ..crate::tests::context(d.games, (home).game_id) },
@@ -1890,9 +1896,6 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
     stop_cheat_caller_address(d.games);
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let troops = GameState { contract_address: d.games };
-    let buy = Command::BuyRealmUpgrade(
-        crate::upgrades::BuyRealmUpgrade { structure_id: 1, lane: crate::upgrades::RealmUpgradeLane::Attunement },
-    );
     let map = IMapLogicDispatcher { contract_address: d.games };
     // Today's spire stands on the home ring's direction (day % 6); each army musters on it or beside it.
     let start = IGameDispatcher { contract_address: d.games }.game(game_id).start_main_at;
@@ -1922,12 +1925,21 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
         let enter = Command::EnterDepth(crate::commands::EnterDepth { explorer_id, depth });
         assert!(!execute_in_game(d, game_id, enter, 351, 351));
         assert_eq!(troops.resolved_explorer(key).unwrap(), before);
+        let buy = Command::Research(crate::research::Research { structure_id: 1, node: depth + 9 });
         let balance = resources.resource_balance(essence);
         assert!(execute_in_game(d, game_id, buy, 351, 351));
-        assert_eq!(structures.structure(home).unwrap().metadata.attunement, depth);
+        assert_eq!(
+            snforge_std::interact_with_state(d.games, || crate::logic::research::require(home)).learned
+                & crate::research::node_bit(depth + 9),
+            crate::research::node_bit(depth + 9),
+        );
         let after_purchase = resources.resource_balance(essence);
-        assert_eq!(balance - after_purchase, Into::<u8, u128>::into(depth) * 100 * RESOURCE_PRECISION);
+        assert_eq!(
+            balance - after_purchase,
+            *frontier.structures.research.at(Into::<u8, u32>::into(depth) + 9).rule.essence_cost,
+        );
         assert!(execute_in_game(d, game_id, enter, 351, 351));
+        assert_eq!(structures.structure(home).unwrap().metadata.deepest_depth, depth);
         let inside = troops.resolved_explorer(key).unwrap();
         // The army lands on revealed ground in the depth below, with no discovery on its landing tile.
         let landing = map.tile(crate::geometry::tile_key(game_id, inside.coord)).unwrap().data;
@@ -1939,9 +1951,35 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
         assert_eq!(resources.resource_balance(essence), after_purchase);
         assert!(!execute_in_game(d, game_id, enter, 351, 351));
         assert_eq!(troops.resolved_explorer(key).unwrap(), inside);
+        if depth == 2 {
+            // Return the fixture army to the surface spire, then exercise a shallower real entry.
+            start_cheat_caller_address(d.games, d.games);
+            map.vacate(crate::geometry::tile_key(game_id, inside.coord), explorer_id);
+            map
+                .occupy(
+                    crate::geometry::tile_key(game_id, before.coord),
+                    explorer_id,
+                    crate::troops::explorer_occupier(inside),
+                    false,
+                );
+            stop_cheat_caller_address(d.games);
+            super::resource_commands::set_explorer_fixture(
+                d.games, key, crate::troops::ExplorerTroops { coord: before.coord, ..inside },
+            );
+            assert!(
+                execute_in_game(
+                    d, game_id, Command::EnterDepth(crate::commands::EnterDepth { explorer_id, depth: 1 }), 351, 351,
+                ),
+            );
+            assert_eq!(structures.structure(home).unwrap().metadata.deepest_depth, 2);
+        }
     }
     let balance = resources.resource_balance(essence);
-    assert!(!execute_in_game(d, game_id, buy, 351, 351));
+    assert!(
+        !execute_in_game(
+            d, game_id, Command::Research(crate::research::Research { structure_id: 1, node: 12 }), 351, 351,
+        ),
+    );
     assert_eq!(resources.resource_balance(essence), balance);
 }
 
@@ -1959,10 +1997,17 @@ fn an_army_enters_a_depth_only_from_its_realms_spire_which_turns_each_day() {
         array![game_id.into(), 1].span(),
         crate::structures::StructureRecord {
             owner: record.owner,
-            base: record.base,
-            // The realm's produced resources play no part in depth entry.
+            base: record.base, // The realm's produced resources play no part in depth entry.
             resources_packed: 0,
-            metadata: crate::structures::StructureMetadata { attunement: 1, ..record.metadata },
+            metadata: record.metadata,
+        },
+    );
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::logic::research::write(
+                home, crate::research::RealmKnowledge { learned: crate::research::node_bit(10) },
+            );
         },
     );
     let start = IGameDispatcher { contract_address: d.games }.game(game_id).start_main_at;
@@ -2070,7 +2115,6 @@ fn setup_frontier_chests_with_payout(
                     guard_upper: 1,
                     reveal_site_neighbors: false,
                     entry_stamina: 0,
-                    attunement_cost: 0,
                     chest: ground,
                 },
             );

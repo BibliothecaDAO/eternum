@@ -674,16 +674,27 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  public async buy_realm_upgrade(
-    props: SystemProps.SystemSigner & { structureId: number; lane: "Barracks" | "Attunement" },
+  public async research(props: SystemProps.SystemSigner & { structureId: number; node: number }) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "Research",
+        value: { structure_id: props.structureId, node: props.node },
+      },
+      TransactionType.RESEARCH,
+    );
+  }
+
+  public async upgrade_building(
+    props: SystemProps.SystemSigner & { structureId: number; coord: { alt: boolean; x: number; y: number } },
   ) {
     return this.submitCommand(
       props.signer,
       {
-        kind: "BuyRealmUpgrade",
-        value: { structure_id: props.structureId, lane: { kind: props.lane, value: undefined } },
+        kind: "UpgradeBuilding",
+        value: { structure_id: props.structureId, coord: props.coord },
       },
-      TransactionType.BUY_REALM_UPGRADE,
+      TransactionType.UPGRADE_BUILDING,
     );
   }
 

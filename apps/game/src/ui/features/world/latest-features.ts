@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-26",
+    title: "Research and building tiers",
+    description:
+      "Research unlocks building tiers and depths. Existing buildings upgrade individually for labor; new buildings include their researched tier in the price.",
+    type: "feature",
+    gameSlug: "frontier",
+  },
+  {
     date: "2026-09-25",
     title: "Frontier LORDS chests",
     description:

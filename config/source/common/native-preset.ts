@@ -34,16 +34,24 @@ export interface NativePreset {
   board: null | {
     demolitionRefundBps: number;
     workshopRate: number;
-    barracksIICost: number;
-    barracksIIICost: number;
-    neighbors: Array<{
-      building: number;
-      neighbor: number;
-      productionBps: number;
-      capacityBps: number;
-      population: number;
-    }>;
   };
+  research: readonly {
+    node: number;
+    prerequisites: number;
+    essenceCost: number;
+    effect:
+      | { kind: "BuildingTier"; category: number; tier: number }
+      | { kind: "MapContent"; content: "Shrine" | "Well" }
+      | { kind: "Depth"; depth: number };
+  }[];
+  buildingTiers: readonly {
+    category: number;
+    tier: number;
+    laborUpgradeCost: number;
+    outputMultiplierBps: number;
+    capacityMultiplierBps: number;
+    populationMultiplierBps: number;
+  }[];
   discovery: null | {
     campBps: number;
     riftBps: number;
@@ -71,7 +79,6 @@ export interface NativePreset {
     fallenGuardTier: "T1" | "T2" | "T3";
     revealSiteNeighbors: boolean;
     entryStamina: number;
-    attunementCost: number;
     chest: { common: number; uncommon: number; rare: number; pity: number };
   }>;
 }

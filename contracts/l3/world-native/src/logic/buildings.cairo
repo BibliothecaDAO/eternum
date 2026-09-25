@@ -50,7 +50,6 @@ pub mod BuildingState {
             base: StructureBase,
             coord: Coord,
             board: crate::buildings::BoardRules,
-            tier: u8,
             game_context: crate::commands::ExecutionContext,
         ) -> crate::buildings::BuildingEffect {
             let Some(building) = self.building(building_key(key, coord)) else {
@@ -59,7 +58,7 @@ pub mod BuildingState {
             let rules = game_context.rules.unbox();
             let mut resource_type = crate::buildings::produced_resource(building.category);
             if resource_type == 26 || resource_type == 29 || resource_type == 32 {
-                resource_type += tier;
+                resource_type += building.tier - 1;
             }
             let castle = coord.x == 10 && coord.y == 10;
             let category = if castle {
@@ -74,11 +73,21 @@ pub mod BuildingState {
             } else {
                 1
             };
-            let population = if marked {
-                self.rule(BuildingRuleKey { game_id: key.game_id, category: building.category }).capacity_grant.into()
+            let tier_rule = if building.tier > 1 {
+                Some(crate::logic::research::tier_rule(key.game_id, building.category, building.tier))
             } else {
-                0
+                None
             };
+            let output_bps = tier_rule.map(|rule| rule.output_multiplier_bps).unwrap_or(10000);
+            let capacity_bps = tier_rule.map(|rule| rule.capacity_multiplier_bps).unwrap_or(10000);
+            let population_bps = tier_rule.map(|rule| rule.population_multiplier_bps).unwrap_or(10000);
+            let base_population: u32 = self
+                .rule(BuildingRuleKey { game_id: key.game_id, category: building.category })
+                .capacity_grant
+                .into();
+            // Creation/removal already accounts for the base grant; board effects own only its excess.
+            let population = base_population * population_bps / 10000 * multiplier.try_into().unwrap()
+                - base_population;
             let rate = if resource_type == 0 || building.paused {
                 0
             } else if category == 25 {
@@ -97,7 +106,12 @@ pub mod BuildingState {
                 0
             };
             crate::buildings::BuildingEffect {
-                resource_type, rate: rate * multiplier, capacity: capacity * multiplier.into(), population,
+                resource_type,
+                rate: (Into::<u64, u128>::into(rate) * output_bps.into() / 10000 * multiplier.into())
+                    .try_into()
+                    .unwrap(),
+                capacity: capacity * capacity_bps.into() / 10000 * multiplier.into(),
+                population,
             }
         }
         fn apply_board_effects(
@@ -165,24 +179,9 @@ pub mod BuildingState {
             }
         }
         fn board(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::buildings::BoardRules> {
-            let preset = crate::logic::preset_record::for_game(game_id);
-            let Some(terms) = preset.board_terms.read() else {
-                return None;
-            };
-            let mut neighbors = array![];
-            for index in 0..terms.neighbor_count {
-                neighbors.append(preset.board_neighbors.read(index));
-            }
-            Some(
-                crate::buildings::BoardRules {
-                    demolition_refund_bps: terms.demolition_refund_bps,
-                    workshop_rate: terms.workshop_rate,
-                    barracks_ii_cost: terms.barracks_ii_cost,
-                    barracks_iii_cost: terms.barracks_iii_cost,
-                    neighbors: neighbors.span(),
-                },
-            )
+            crate::logic::preset_record::for_game(game_id).board_terms.read()
         }
+
         fn rule(self: @ComponentState<TContractState>, key: BuildingRuleKey) -> BuildingRule {
             let preset = crate::logic::preset_record::for_game(key.game_id);
             assert!(key.category > 0 && key.category <= 40, "invalid building category");

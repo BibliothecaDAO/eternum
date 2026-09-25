@@ -13,7 +13,7 @@ interface CompactBuildingCardProps {
   image: string;
   count: number;
   status?: string;
-  requirements: ResourceRequirement[];
+  requirements: ResourceRequirement[] | undefined;
   disabledReason?: string;
   details: ReactNode;
   active: boolean;

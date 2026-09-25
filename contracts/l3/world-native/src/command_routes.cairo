@@ -11,7 +11,7 @@ pub struct CommandRoute {
 
 pub const SETTLE_BLITZ_ROSTER: u32 = 7;
 
-pub const COMMAND_ROUTES: [CommandRoute; 69] = [
+pub const COMMAND_ROUTES: [CommandRoute; 70] = [
     CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false },
     CommandRoute { logic: 16, selector: selector!("explore"), items_offset: None, batch: false },
     CommandRoute { logic: 12, selector: selector!("battle"), items_offset: Some(2), batch: false },
@@ -89,8 +89,9 @@ pub const COMMAND_ROUTES: [CommandRoute; 69] = [
     CommandRoute { logic: 5, selector: selector!("provision_and_upgrade_realm"), items_offset: None, batch: false },
     CommandRoute { logic: 5, selector: selector!("set_entity_name"), items_offset: None, batch: false },
     CommandRoute { logic: 16, selector: selector!("enter_depth"), items_offset: None, batch: false },
-    CommandRoute { logic: 3, selector: selector!("buy_realm_upgrade"), items_offset: None, batch: false },
+    CommandRoute { logic: 3, selector: selector!("research"), items_offset: None, batch: false },
     CommandRoute { logic: 15, selector: selector!("choose_attribute"), items_offset: None, batch: false },
+    CommandRoute { logic: 3, selector: selector!("upgrade_building"), items_offset: None, batch: false },
 ];
 
 pub fn logic_class(
@@ -189,6 +190,7 @@ pub enum Command {
     ProvisionAndUpgradeRealm: core::integer::u32,
     SetEntityName: crate::names::SetEntityName,
     EnterDepth: crate::commands::EnterDepth,
-    BuyRealmUpgrade: crate::upgrades::BuyRealmUpgrade,
+    Research: crate::research::Research,
     ChooseAttribute: crate::progression::ChooseAttribute,
+    UpgradeBuilding: crate::buildings::ChangeBuilding,
 }

@@ -87,6 +87,7 @@ const playerRows = (clock: LabClock): WireRow[] => [
       category: 25,
       paused: false,
       labor_paid: "0",
+      tier: "1",
     },
   },
   {
@@ -127,6 +128,7 @@ const playerRows = (clock: LabClock): WireRow[] => [
       population: { current: 0, max: 6 },
     },
   },
+  { model: "RealmKnowledge", value: { game_id: clock.gameId, structure_id: LAB_REALM_ID, learned: 0 } },
   { model: "ArmySlot", value: armySlot(clock, 201, 0, 30) },
   { model: "ArmySlot", value: armySlot(clock, 202, 1, 150) },
   // The day's third army fell this morning: its slot keeps the tired bar for the next muster.
@@ -183,8 +185,7 @@ const realm = (clock: LabClock) => ({
     has_wonder: false,
     village_realm: 0,
     mine_kind: 0,
-    attunement: 0,
-    barracks_tier: 0,
+    deepest_depth: 0,
   },
 });
 

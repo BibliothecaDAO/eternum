@@ -20,11 +20,12 @@ export const RequirementChips = ({
   requirements,
   className,
 }: {
-  requirements: ResourceRequirement[];
+  requirements: ResourceRequirement[] | undefined;
   className?: string;
 }) => (
   <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
-    {requirements.map((req) => {
+    {requirements === undefined && <span className={REQUIREMENT_CHIP}>—</span>}
+    {requirements?.map((req) => {
       const isMet = req.current !== undefined && req.current >= req.amount;
       const incomingTitle = req.incoming
         ? ` (+${Math.floor(req.incoming.amount).toLocaleString()} in transit, ${formatIncomingEta(req.incoming.etaSeconds)})`

@@ -39,5 +39,7 @@ export const duelPreset: NativePreset = {
   discovery: null,
   chests: null,
   board: null,
+  research: [],
+  buildingTiers: [],
   depths: [],
 };

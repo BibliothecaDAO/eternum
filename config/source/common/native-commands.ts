@@ -39,5 +39,6 @@ export const arenaCommandMask = commandMask([
   "ClaimPlayerFaithPoints",
   "Raid",
   "EnterDepth",
-  "BuyRealmUpgrade",
+  "Research",
+  "UpgradeBuilding",
 ]);

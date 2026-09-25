@@ -161,7 +161,7 @@ describe("native live publication", () => {
           category: 1,
           starting_troops_granted: true,
         },
-        metadata: { ...structureValue.metadata, realm_id: id, attunement: 1 },
+        metadata: { ...structureValue.metadata, realm_id: id },
       }),
     );
     const armies = [1, 2].map((id) =>

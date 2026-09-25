@@ -1,3 +1,4 @@
+import { researchedDepths } from "@bibliothecadao/eternum";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
@@ -29,13 +30,14 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
   } = useGame();
   const account = useAccountStore((state) => state.account);
   const [pending, setPending] = useState<number | null>(null);
-  useNativeRevision(["ArmySlot", "ExplorerTroops", "Structure", "TileOccupancy"]);
+  useNativeRevision(["ArmySlot", "ExplorerTroops", "Structure", "RealmKnowledge", "ResearchNode", "TileOccupancy"]);
   const gameId = configManager.getActiveGameId();
   const explorer = store.get("ExplorerTroops", { game_id: gameId, explorer_id: armyEntityId });
   const home = explorer ? store.get("Structure", { game_id: gameId, entity_id: explorer.owner }) : undefined;
   const rules = readExpeditionRules(store, gameId);
   if (!explorer || !home || !rules || !isExpeditionRealm(store, home) || !account) return null;
-  if (home.owner !== BigInt(account.address) || home.metadata.attunement === 0) return null;
+  const unlocked = researchedDepths(store, gameId, home.entity_id);
+  if (home.owner !== BigInt(account.address) || !unlocked?.length) return null;
 
   const spire = expeditionSpireTile(rules, home, getBlockTimestamp().currentBlockTimestamp);
   const besideSpire = isAtExpeditionSpire(spire, entityMapPosition(store, gameId, armyEntityId));
@@ -43,7 +45,7 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
   const stamina = troops
     ? Number(StaminaManager.getStamina(troops, getBlockTimestamp().currentArmiesTick).amount)
     : undefined;
-  const depths = Array.from({ length: home.metadata.attunement }, (_, index) => index + 1).map((depth) => ({
+  const depths = unlocked.map((depth) => ({
     depth,
     cost: store.require("DepthRules", { game_id: gameId, depth }).entry_stamina,
   }));

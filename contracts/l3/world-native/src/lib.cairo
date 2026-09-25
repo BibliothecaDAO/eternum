@@ -41,6 +41,7 @@ pub mod realms;
 pub mod recording;
 pub mod registrar;
 pub mod relics;
+pub mod research;
 pub mod resources;
 pub mod rules;
 pub mod settlement;

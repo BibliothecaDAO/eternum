@@ -4627,11 +4627,11 @@
           "name": "metadata",
           "type": "world_native::structures::StructureMetadata",
           "id": "0x6d65746164617461",
-          "feltLength": 7
+          "feltLength": 6
         }
       ],
       "keyLength": 2,
-      "valueLength": 15,
+      "valueLength": 14,
       "observation": {
         "domain": "structures",
         "fields": {
@@ -4984,6 +4984,124 @@
       }
     },
     {
+      "name": "RealmKnowledge",
+      "identity": "0x5265616c6d4b6e6f776c65646765",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "learned",
+          "type": "core::integer::u16",
+          "id": "0x6c6561726e6564",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
+    },
+    {
+      "name": "ResearchNode",
+      "identity": "0x52657365617263684e6f6465",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "node",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "prerequisites",
+          "type": "core::integer::u16",
+          "id": "0x70726572657175697369746573",
+          "feltLength": 1
+        },
+        {
+          "name": "essence_cost",
+          "type": "core::integer::u128",
+          "id": "0x657373656e63655f636f7374",
+          "feltLength": 1
+        },
+        {
+          "name": "effect",
+          "type": "world_native::research::ResearchEffect",
+          "id": "0x656666656374",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": null,
+      "derivedFrom": "preset"
+    },
+    {
+      "name": "BuildingTierRule",
+      "identity": "0x4275696c64696e675469657252756c65",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "category",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        },
+        {
+          "name": "tier",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "labor_upgrade_cost",
+          "type": "core::integer::u128",
+          "id": "0x6c61626f725f757067726164655f636f7374",
+          "feltLength": 1
+        },
+        {
+          "name": "output_multiplier_bps",
+          "type": "core::integer::u32",
+          "id": "0x6f75747075745f6d756c7469706c6965725f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "capacity_multiplier_bps",
+          "type": "core::integer::u32",
+          "id": "0x63617061636974795f6d756c7469706c6965725f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "population_multiplier_bps",
+          "type": "core::integer::u32",
+          "id": "0x706f70756c6174696f6e5f6d756c7469706c6965725f627073",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 4,
+      "derivedFrom": "preset"
+    },
+    {
       "name": "BoardRules",
       "identity": "0x426f61726452756c6573",
       "scope": "game",
@@ -5006,28 +5124,10 @@
           "type": "core::integer::u64",
           "id": "0x776f726b73686f705f72617465",
           "feltLength": 1
-        },
-        {
-          "name": "barracks_ii_cost",
-          "type": "core::integer::u128",
-          "id": "0x6261727261636b735f69695f636f7374",
-          "feltLength": 1
-        },
-        {
-          "name": "barracks_iii_cost",
-          "type": "core::integer::u128",
-          "id": "0x6261727261636b735f6969695f636f7374",
-          "feltLength": 1
-        },
-        {
-          "name": "neighbors",
-          "type": "core::array::Span::<world_native::buildings::NeighborBonus>",
-          "id": "0x6e65696768626f7273",
-          "feltLength": null
         }
       ],
       "keyLength": 1,
-      "valueLength": null,
+      "valueLength": 2,
       "derivedFrom": "preset"
     },
     {
@@ -5120,10 +5220,16 @@
           "type": "core::integer::u128",
           "id": "0x6c61626f725f70616964",
           "feltLength": 1
+        },
+        {
+          "name": "tier",
+          "type": "core::integer::u8",
+          "id": "0x74696572",
+          "feltLength": 1
         }
       ],
       "keyLength": 4,
-      "valueLength": 3,
+      "valueLength": 4,
       "observation": {
         "domain": "production",
         "fields": {
@@ -5714,12 +5820,6 @@
           "feltLength": 1
         },
         {
-          "name": "attunement_cost",
-          "type": "core::integer::u128",
-          "id": "0x617474756e656d656e745f636f7374",
-          "feltLength": 1
-        },
-        {
           "name": "chest",
           "type": "world_native::relics::ChestGround",
           "id": "0x6368657374",
@@ -5751,7 +5851,7 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 14,
+      "valueLength": 13,
       "observation": {
         "domain": "expedition",
         "fields": {
@@ -6573,16 +6673,6 @@
         }
       ]
     },
-    "core::array::Span::<world_native::buildings::NeighborBonus>": {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::buildings::NeighborBonus>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::buildings::NeighborBonus>"
-        }
-      ]
-    },
     "core::array::Span::<world_native::expeditions::DepthRules>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::expeditions::DepthRules>",
@@ -6690,6 +6780,26 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<world_native::relics::RelicRule>"
+        }
+      ]
+    },
+    "core::array::Span::<world_native::research::BuildingTierConfig>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::research::BuildingTierConfig>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::research::BuildingTierConfig>"
+        }
+      ]
+    },
+    "core::array::Span::<world_native::research::ResearchNodeConfig>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::research::ResearchNodeConfig>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::research::ResearchNodeConfig>"
         }
       ]
     },
@@ -7074,6 +7184,20 @@
         {
           "name": "Some",
           "type": "world_native::relics::LordsBudget"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::research::RealmKnowledge>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::research::RealmKnowledge>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::research::RealmKnowledge"
         },
         {
           "name": "None",
@@ -7774,18 +7898,6 @@
         {
           "name": "workshop_rate",
           "type": "core::integer::u64"
-        },
-        {
-          "name": "barracks_ii_cost",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "barracks_iii_cost",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "neighbors",
-          "type": "core::array::Span::<world_native::buildings::NeighborBonus>"
         }
       ]
     },
@@ -7804,6 +7916,10 @@
         {
           "name": "labor_paid",
           "type": "core::integer::u128"
+        },
+        {
+          "name": "tier",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -7912,32 +8028,6 @@
         {
           "name": "use_simple",
           "type": "core::bool"
-        }
-      ]
-    },
-    "world_native::buildings::NeighborBonus": {
-      "type": "struct",
-      "name": "world_native::buildings::NeighborBonus",
-      "members": [
-        {
-          "name": "building",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "neighbor",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "production_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "capacity_bps",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "population",
-          "type": "core::integer::u8"
         }
       ]
     },
@@ -8376,12 +8466,16 @@
           "type": "world_native::commands::EnterDepth"
         },
         {
-          "name": "BuyRealmUpgrade",
-          "type": "world_native::upgrades::BuyRealmUpgrade"
+          "name": "Research",
+          "type": "world_native::research::Research"
         },
         {
           "name": "ChooseAttribute",
           "type": "world_native::progression::ChooseAttribute"
+        },
+        {
+          "name": "UpgradeBuilding",
+          "type": "world_native::buildings::ChangeBuilding"
         }
       ]
     },
@@ -8546,10 +8640,6 @@
         {
           "name": "entry_stamina",
           "type": "core::integer::u16"
-        },
-        {
-          "name": "attunement_cost",
-          "type": "core::integer::u128"
         },
         {
           "name": "chest",
@@ -10284,6 +10374,14 @@
           "type": "core::option::Option::<world_native::buildings::BoardRules>"
         },
         {
+          "name": "research",
+          "type": "core::array::Span::<world_native::research::ResearchNodeConfig>"
+        },
+        {
+          "name": "building_tiers",
+          "type": "core::array::Span::<world_native::research::BuildingTierConfig>"
+        },
+        {
           "name": "buildings",
           "type": "core::array::Span::<world_native::buildings::BuildingRuleConfig>"
         },
@@ -10934,6 +11032,134 @@
         {
           "name": "draw_weight",
           "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::research::BuildingTierConfig": {
+      "type": "struct",
+      "name": "world_native::research::BuildingTierConfig",
+      "members": [
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "tier",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "rule",
+          "type": "world_native::research::BuildingTierRule"
+        }
+      ]
+    },
+    "world_native::research::BuildingTierRule": {
+      "type": "struct",
+      "name": "world_native::research::BuildingTierRule",
+      "members": [
+        {
+          "name": "labor_upgrade_cost",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "output_multiplier_bps",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "capacity_multiplier_bps",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "population_multiplier_bps",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::research::MapContentKind": {
+      "type": "enum",
+      "name": "world_native::research::MapContentKind",
+      "variants": [
+        {
+          "name": "Shrine",
+          "type": "()"
+        },
+        {
+          "name": "Well",
+          "type": "()"
+        }
+      ]
+    },
+    "world_native::research::RealmKnowledge": {
+      "type": "struct",
+      "name": "world_native::research::RealmKnowledge",
+      "members": [
+        {
+          "name": "learned",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    "world_native::research::Research": {
+      "type": "struct",
+      "name": "world_native::research::Research",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "node",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::research::ResearchEffect": {
+      "type": "enum",
+      "name": "world_native::research::ResearchEffect",
+      "variants": [
+        {
+          "name": "BuildingTier",
+          "type": "(core::integer::u8, core::integer::u8)"
+        },
+        {
+          "name": "MapContent",
+          "type": "world_native::research::MapContentKind"
+        },
+        {
+          "name": "Depth",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::research::ResearchNode": {
+      "type": "struct",
+      "name": "world_native::research::ResearchNode",
+      "members": [
+        {
+          "name": "prerequisites",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "essence_cost",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "effect",
+          "type": "world_native::research::ResearchEffect"
+        }
+      ]
+    },
+    "world_native::research::ResearchNodeConfig": {
+      "type": "struct",
+      "name": "world_native::research::ResearchNodeConfig",
+      "members": [
+        {
+          "name": "node",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "rule",
+          "type": "world_native::research::ResearchNode"
         }
       ]
     },
@@ -11916,11 +12142,7 @@
           "type": "core::integer::u8"
         },
         {
-          "name": "attunement",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "barracks_tier",
+          "name": "deepest_depth",
           "type": "core::integer::u8"
         }
       ]
@@ -12551,34 +12773,6 @@
         }
       ]
     },
-    "world_native::upgrades::BuyRealmUpgrade": {
-      "type": "struct",
-      "name": "world_native::upgrades::BuyRealmUpgrade",
-      "members": [
-        {
-          "name": "structure_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "lane",
-          "type": "world_native::upgrades::RealmUpgradeLane"
-        }
-      ]
-    },
-    "world_native::upgrades::RealmUpgradeLane": {
-      "type": "enum",
-      "name": "world_native::upgrades::RealmUpgradeLane",
-      "variants": [
-        {
-          "name": "Attunement",
-          "type": "()"
-        },
-        {
-          "name": "Barracks",
-          "type": "()"
-        }
-      ]
-    },
     "world_native::upgrades::UpgradeLimits": {
       "type": "struct",
       "name": "world_native::upgrades::UpgradeLimits",
@@ -12744,5 +12938,5 @@
       ]
     }
   },
-  "identity": "6cbcc3b969cb303c92a84cac96b0b83d5f55bbcea46976e9ee9c43ebd6a87b3e"
+  "identity": "d8ee99c7d886395e70c82eb2a0649508c370eb50a5b4bc7e20b306277ddc0401"
 }

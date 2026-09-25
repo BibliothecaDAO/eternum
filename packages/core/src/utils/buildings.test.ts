@@ -18,7 +18,7 @@ const storeWith = (category: BuildingType, standing: number, board: boolean) => 
   const [packed_counts_1, packed_counts_2, packed_counts_3] = setBuildingCount(category, [0n, 0n, 0n], standing);
   const rows: Record<string, unknown> = {
     StructureBuildings: { packed_counts_1, packed_counts_2, packed_counts_3 },
-    ...(board ? { BoardRules: {} } : {}),
+    ...(board ? { BoardRules: {}, RealmKnowledge: { learned: 0 } } : {}),
   };
   return { get: (model: string) => rows[model] } as never;
 };
@@ -50,4 +50,24 @@ it("leaves the realm's own workshop out of the count on a realm board, as the ch
   expect(nextCost(BuildingType.ResourceLabor, 1, true)).toBe(chainCost(BASE, 2 - 1));
   expect(nextCost(BuildingType.ResourceLabor, 2, true)).toBe(chainCost(BASE, 3 - 1));
   expect(nextCost(BuildingType.ResourceLabor, 2)).toBe(chainCost(BASE, 3));
+});
+
+it("adds each researched tier price once, without applying the building copy surcharge to upgrades", () => {
+  vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+  vi.spyOn(configManager, "getBuildingBaseCostPercentIncrease").mockReturnValue(INCREASE_BPS);
+  vi.spyOn(configManager, "getBuildingCosts").mockReturnValue([{ resource: ResourcesIds.Labor, amount: 100 }]);
+  const base = storeWith(BuildingType.ResourceWheat, 2, true) as { get: (model: string) => unknown };
+  const facts = {
+    get: (model: string) => (model === "RealmKnowledge" ? { learned: 3 } : base.get(model)),
+    require: (model: string, keys: { node?: number; tier?: number }) => {
+      if (model === "ResearchNode")
+        return { effect: { BuildingTier: { 0: BuildingType.ResourceWheat, 1: keys.node === 0 ? 2 : 3 } } };
+      if (model === "BuildingTierRule")
+        return { labor_upgrade_cost: BigInt(keys.tier === 2 ? 200 : 400) * 1_000_000_000n };
+      throw new Error(`Unexpected row ${model}`);
+    },
+  } as never;
+  expect(getBuildingCosts(REALM, facts, BuildingType.ResourceWheat, true)).toEqual([
+    { resource: ResourcesIds.Labor, amount: chainCost(100, 3) + 200 + 400 },
+  ]);
 });

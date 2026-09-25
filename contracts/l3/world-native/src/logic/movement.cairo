@@ -210,7 +210,12 @@ pub mod MovementLogic {
             let mut explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
             let home = crate::logic::troops::owned_structure(game_id, explorer.owner, actor);
-            assert!(command.depth != 0 && command.depth <= home.metadata.attunement, "depth is not unlocked");
+            let home_key = crate::resources::ResourceKey { game_id, entity_id: explorer.owner };
+            assert!(command.depth > 0 && command.depth < 4, "invalid expedition depth");
+            assert!(
+                crate::logic::research::has_effect(home_key, crate::research::ResearchEffect::Depth(command.depth)),
+                "depth is not unlocked",
+            );
             let spacing = self.expedition_spacing(game_id);
             let spire = crate::expeditions::spire(
                 context.game.unbox().start_main_at,
@@ -245,6 +250,7 @@ pub mod MovementLogic {
             crate::logic::map::MapState::occupy(
                 location, command.explorer_id, crate::troops::explorer_occupier(explorer), false,
             );
+            crate::logic::structures::StructureState::record_depth(home_key, command.depth);
             explorer.coord = destination;
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
         }

@@ -1,9 +1,7 @@
 #[starknet::contract]
 pub mod ConstructionLogic {
     use starknet::ContractAddress;
-    use starknet::storage::{
-        StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
-    };
+    use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
     use crate::buildings::{Building, BuildingKey};
     use crate::events::RowSet;
     use crate::game::assert_playing;
@@ -13,7 +11,7 @@ pub mod ConstructionLogic {
     use crate::ownership::{Story, StoryEvent};
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
     use crate::rules::RESOURCE_PRECISION;
-    use crate::structures::{StructureBase, StructureRecord};
+    use crate::structures::StructureBase;
     use crate::troops::Coord;
     component!(path: BuildingState, storage: buildings, event: BuildingEvent);
     impl BuildingInternal = BuildingState::InternalImpl<ContractState>;
@@ -56,6 +54,42 @@ pub mod ConstructionLogic {
 
     #[abi(embed_v0)]
     impl BuildingCommands of crate::buildings::IBuildingCommands<ContractState> {
+        fn upgrade_building(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::buildings::ChangeBuilding,
+            context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
+            let context = crate::commands::load_context(game_id, context);
+            let key = ResourceKey { game_id, entity_id: command.structure_id };
+            let base = self.assert_building_command(key, actor, context.timestamp, context);
+            assert!(self.buildings.board(game_id).is_some(), "building tiers require a board");
+            let location = crate::logic::buildings::building_key(key, command.coord);
+            let mut building = self.buildings.building(location).expect('missing building');
+            let next = building.tier + 1;
+            assert!(
+                next <= crate::logic::research::building_tier(key, building.category),
+                "building tier is not researched",
+            );
+            let rule = crate::logic::research::tier_rule(game_id, building.category, next);
+            let before = self.board_effects(key, base, command.coord, context);
+            self
+                .pay_tier_labor(
+                    key, actor, command.coord, building.category, rule.labor_upgrade_cost, context, ref story_cursor,
+                );
+            building.tier = next;
+            building.labor_paid += rule.labor_upgrade_cost;
+            self.buildings.write_building(location, building);
+            self
+                .buildings
+                .apply_board_effects(
+                    key, before, self.board_effects(key, base, command.coord, context), context.timestamp, context,
+                );
+            ((), story_cursor)
+        }
+
         fn create_building(
             ref self: ContractState,
             game_id: u32,
@@ -117,7 +151,12 @@ pub mod ConstructionLogic {
                 );
             if self.buildings.board(game_id).is_some() {
                 let mut building = self.buildings.building(location).unwrap();
-                building.labor_paid = labor_paid;
+                let mut upgrades = 0;
+                for tier in 2..building.tier + 1 {
+                    upgrades += crate::logic::research::tier_rule(game_id, building.category, tier).labor_upgrade_cost;
+                }
+                self.pay_tier_labor(key, actor, coord, building.category, upgrades, context, ref story_cursor);
+                building.labor_paid = labor_paid + upgrades;
                 self.buildings.write_building(location, building);
             }
             ((), story_cursor)
@@ -204,63 +243,54 @@ pub mod ConstructionLogic {
         }
     }
 
-    #[inline(never)]
     #[abi(embed_v0)]
-    impl Upgrades of crate::upgrades::IStructureUpgrades<ContractState> {
-        fn buy_realm_upgrade(
+    impl ResearchCommands of crate::research::IResearch<ContractState> {
+        fn research(
             ref self: ContractState,
             game_id: u32,
             actor: ContractAddress,
-            command: crate::upgrades::BuyRealmUpgrade,
+            command: crate::research::Research,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
+            story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
-
-            let _ = self.release.classes(game_id);
-
-            assert_playing(context.game.unbox(), context.timestamp);
             let key = ResourceKey { game_id, entity_id: command.structure_id };
-            let mut record = crate::logic::structures::record(key);
-            assert!(record.owner == actor && record.base.category == 1, "actor does not own realm");
-            match command.lane {
-                crate::upgrades::RealmUpgradeLane::Barracks => {
-                    record.metadata.barracks_tier = self.buy_barracks_tier(key, record, context.timestamp, context);
-                },
-                crate::upgrades::RealmUpgradeLane::Attunement => {
-                    assert!(record.metadata.attunement < 3, "attunement is complete");
-                    let next = record.metadata.attunement + 1;
-                    let depth = crate::logic::expeditions::depth_rules(game_id, next);
-                    self
-                        .spend(
-                            key,
-                            38,
-                            depth.attunement_cost,
-                            context.timestamp,
-                            crate::commands::resource_context(context),
-                        );
-                    record.metadata.attunement = next;
-                },
-            }
-            self.data.structures.structures.entry((game_id, command.structure_id)).metadata.write(record.metadata);
-            let mut values = array![];
-            record.metadata.serialize(ref values);
+            let base = self.assert_building_command(key, actor, context.timestamp, context);
+            assert!(base.category == 1 && self.buildings.board(game_id).is_some(), "research requires a realm board");
+            let mut knowledge = crate::logic::research::require(key);
+            let rule = crate::logic::research::node(game_id, command.node);
+            let bit = crate::research::node_bit(command.node);
+            assert!(knowledge.learned & bit == 0, "research already learned");
+            assert!(knowledge.learned & rule.prerequisites == rule.prerequisites, "research prerequisite missing");
             self
-                .emit(
-                    Event::StructureEvent(
-                        StructureState::Event::RowMemberSet(
-                            crate::events::RowMemberSet {
-                                version: 1,
-                                model: 'Structure',
-                                member: 'metadata',
-                                keys: array![game_id.into(), command.structure_id.into()].span(),
-                                values: values.span(),
-                            },
-                        ),
-                    ),
+                .spend(
+                    key,
+                    crate::resources::ESSENCE,
+                    rule.essence_cost,
+                    context.timestamp,
+                    crate::commands::resource_context(context),
                 );
+            knowledge.learned = knowledge.learned | bit;
+            crate::logic::research::write(key, knowledge);
         }
+        fn realm_knowledge(self: @ContractState, key: ResourceKey) -> Option<crate::research::RealmKnowledge> {
+            crate::logic::research::knowledge(key)
+        }
+        #[cfg(test)]
+        fn research_node(self: @ContractState, game_id: u32, node: u8) -> crate::research::ResearchNode {
+            crate::logic::research::node(game_id, node)
+        }
+        #[cfg(test)]
+        fn building_tier_rule(
+            self: @ContractState, game_id: u32, category: u8, tier: u8,
+        ) -> crate::research::BuildingTierRule {
+            crate::logic::research::tier_rule(game_id, category, tier)
+        }
+    }
 
+    #[inline(never)]
+    #[abi(embed_v0)]
+    impl Upgrades of crate::upgrades::IStructureUpgrades<ContractState> {
         fn level_up(
             ref self: ContractState,
             game_id: u32,
@@ -312,44 +342,6 @@ pub mod ConstructionLogic {
     }
     #[generate_trait]
     impl Internal of InternalTrait {
-        fn buy_barracks_tier(
-            ref self: ContractState,
-            key: ResourceKey,
-            record: StructureRecord,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) -> u8 {
-            let board = self.buildings.board(key.game_id).expect('barracks lane is disabled');
-            let tier = record.metadata.barracks_tier;
-            assert!(tier < 2, "barracks tier is complete");
-            let cost = if tier == 0 {
-                board.barracks_ii_cost
-            } else {
-                board.barracks_iii_cost
-            };
-            self.spend(key, 38, cost, timestamp, crate::commands::resource_context(game_context));
-            for x in 6_u32..15 {
-                for y in 6_u32..15 {
-                    let coord = Coord { alt: false, x, y };
-                    if let Some(building) = self.buildings.building(crate::logic::buildings::building_key(key, coord)) {
-                        if building.category == 28 || building.category == 31 || building.category == 34 {
-                            let before = self
-                                .buildings
-                                .building_effect(key, record.base, coord, board, tier, game_context);
-                            let after = self
-                                .buildings
-                                .building_effect(key, record.base, coord, board, tier + 1, game_context);
-                            self
-                                .buildings
-                                .apply_board_effects(
-                                    key, array![before].span(), array![after].span(), timestamp, game_context,
-                                );
-                        }
-                    }
-                }
-            }
-            tier + 1
-        }
         fn emit_structure_upgrade(
             ref self: ContractState,
             key: ResourceKey,
@@ -388,7 +380,12 @@ pub mod ConstructionLogic {
             game_context: crate::commands::ExecutionContext,
             ref story_cursor: crate::ownership::StoryCursor,
         ) {
-            let building = Building { category, paused: false, labor_paid: 0 };
+            let tier = if self.buildings.board(key.game_id).is_some() {
+                crate::logic::research::building_tier(key, category)
+            } else {
+                1
+            };
+            let building = Building { category, paused: false, labor_paid: 0, tier };
             let rules = game_context.rules.unbox();
             self
                 .buildings
@@ -466,8 +463,7 @@ pub mod ConstructionLogic {
             let Some(board) = self.buildings.board(key.game_id) else {
                 return array![].span();
             };
-            let tier = crate::logic::structures::record(key).metadata.barracks_tier;
-            array![self.buildings.building_effect(key, base, coord, board, tier, game_context)].span()
+            array![self.buildings.building_effect(key, base, coord, board, game_context)].span()
         }
 
         fn change_building_production(
@@ -614,6 +610,41 @@ pub mod ConstructionLogic {
                 ref story_cursor,
             );
             labor_paid
+        }
+
+        fn pay_tier_labor(
+            ref self: ContractState,
+            key: ResourceKey,
+            actor: ContractAddress,
+            coord: Coord,
+            category: u8,
+            amount: u128,
+            context: crate::commands::ExecutionContext,
+            ref story_cursor: crate::ownership::StoryCursor,
+        ) {
+            if amount == 0 {
+                return;
+            }
+            self
+                .spend(
+                    key, crate::resources::LABOR, amount, context.timestamp, crate::commands::resource_context(context),
+                );
+            crate::logic::stories::emit_entity_story(
+                key,
+                actor,
+                Story::BuildingPaymentStory(
+                    crate::ownership::BuildingPaymentStory {
+                        coord,
+                        category,
+                        cost: array![
+                            crate::resources::ResourceAmount { resource_type: crate::resources::LABOR, amount },
+                        ]
+                            .span(),
+                    },
+                ),
+                context.timestamp,
+                ref story_cursor,
+            );
         }
 
         fn resources_dispatcher(self: @ContractState, game_id: u32) -> IResourceOperationsLibraryDispatcher {

@@ -1,4 +1,5 @@
-import { BuildingType, ID, ResourcesIds } from "@bibliothecadao/types";
+import { researchedBuildingTier } from "./realm-research";
+import { BuildingType, ID, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { configManager, getBuildingCount } from "..";
 
@@ -39,10 +40,29 @@ export const getBuildingCosts = (
 
   const increase = configManager.getBuildingBaseCostPercentIncrease() / 10000;
   const scale = countedBuildingsStanding(realmEntityId, buildingCategory, store);
-  return costs.map((cost) => ({
+  const result = costs.map((cost) => ({
     resource: cost.resource,
     amount: cost.amount + scale * scale * cost.amount * increase,
   }));
+  const gameId = configManager.getActiveGameId();
+  if (store.get("BoardRules", { game_id: gameId })) {
+    const tier = researchedBuildingTier(store, gameId, realmEntityId, buildingCategory);
+    if (tier === undefined) return undefined;
+    let upgrades = 0n;
+    for (let next = 2; next <= tier; next++) {
+      upgrades += store.require("BuildingTierRule", {
+        game_id: gameId,
+        category: buildingCategory,
+        tier: next,
+      }).labor_upgrade_cost;
+    }
+    if (upgrades > 0n) {
+      const labor = result.find((cost) => cost.resource === ResourcesIds.Labor);
+      if (!labor) throw new Error("Research building has no labor base cost");
+      labor.amount += Number(upgrades) / RESOURCE_PRECISION;
+    }
+  }
+  return result;
 };
 
 const countedBuildingsStanding = (realmEntityId: ID, buildingCategory: BuildingType, store: NativeFactStore) => {

@@ -185,6 +185,62 @@ describe("native presets", () => {
     }
   });
 
+  test("Frontier research prices and per-building tiers are explicit resource-precision rows", () => {
+    const preset = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
+      FRONTIER_PRESET_ID,
+    );
+    const precision = 1_000_000_000n;
+    expect(
+      preset.structures.research.map(({ node, rule }) => [
+        node,
+        rule.prerequisites,
+        BigInt(rule.essence_cost) / precision,
+      ]),
+    ).toEqual([
+      [0, 0, 150n],
+      [1, 1, 12000n],
+      [2, 0, 3000n],
+      [3, 4, 40000n],
+      [4, 0, 1000n],
+      [5, 16, 15000n],
+      [6, 0, 400n],
+      [7, 64, 12000n],
+      [8, 0, 2000n],
+      [9, 0, 6000n],
+      [10, 0, 80000n],
+      [11, 1024, 200000n],
+      [12, 2048, 450000n],
+    ]);
+    expect(
+      preset.structures.building_tiers.map(({ category, tier, rule }) => [
+        category,
+        tier,
+        BigInt(rule.labor_upgrade_cost) / precision,
+        rule.output_multiplier_bps,
+        rule.capacity_multiplier_bps,
+        rule.population_multiplier_bps,
+      ]),
+    ).toEqual([
+      [37, 2, 200n, 20000, 10000, 10000],
+      [37, 3, 400n, 40000, 10000, 10000],
+      [28, 2, 2400n, 10000, 10000, 10000],
+      [28, 3, 4800n, 10000, 10000, 10000],
+      [2, 2, 2000n, 10000, 20000, 10000],
+      [2, 3, 4000n, 10000, 40000, 10000],
+      [1, 2, 600n, 10000, 10000, 20000],
+      [1, 3, 1200n, 10000, 10000, 40000],
+    ]);
+    expect(preset.structures.building_tiers.some(({ tier }) => tier === 1)).toBe(false);
+    for (const category of [31, 34]) {
+      const rule = preset.structures.buildings.find((row) => row.category === category)!.rule;
+      expect(rule.simple_cost).toEqual([]);
+      expect(rule.complex_cost).toEqual([]);
+    }
+    expect(preset.structures.board.unwrap()).not.toHaveProperty("neighbors");
+    for (const depth of preset.settlement.depths) expect(depth).not.toHaveProperty("attunement_cost");
+  });
+
   test("Frontier owns discovery odds in its categorical row and fallen guards in each depth", () => {
     const preset = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),

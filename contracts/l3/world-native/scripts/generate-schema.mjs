@@ -1,3 +1,4 @@
+import { tupleTypes } from "../../../../apps/herald/src/native/serde.ts";
 import { compileCommandRoutes } from "./command-routes.mjs";
 import { execFileSync } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -89,6 +90,7 @@ function struct(name) {
 
 function feltLength(type) {
   if (type === "()") return 0;
+  if (type.startsWith("(")) return sumLengths(tupleTypes(type).map(feltLength));
   if (/^core::array::(Span|Array)::</.test(type)) return null;
   const item = types.get(type);
   if (item?.type === "struct") return sumLengths(item.members.map((member) => feltLength(member.type)));
@@ -356,6 +358,7 @@ async function writeText(path, text) {
 }
 
 function factType(type) {
+  if (type.startsWith("(")) return factMembers(tupleTypes(type).map((type, index) => ({ name: String(index), type })));
   if (type === "core::bool") return { ts: "boolean", wire: "boolean" };
   if (type === "core::felt252" || type.endsWith("::ContractAddress") || type.endsWith("::ClassHash"))
     return { ts: "bigint", wire: "felt" };

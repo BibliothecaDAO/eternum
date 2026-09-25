@@ -1,3 +1,4 @@
+import { researchedDepths } from "./realm-research";
 import { MAX_U32 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -135,7 +136,7 @@ export const expeditionRealmSite = (
 };
 
 /**
- * The day's spire, which attunement lights: the home-ring tile in direction (day % 6) around today's site, turning one
+ * The day's spire, which depth research lights: the home-ring tile in direction (day % 6) around today's site, turning one
  * step each day. The contract's enter_depth takes an army on or beside it; nothing stores it.
  */
 export const expeditionSpireTile = (
@@ -155,7 +156,7 @@ export const isAtExpeditionSpire = (spire: { col: number; row: number }, coord: 
   (spire.col === coord.x && spire.row === coord.y) ||
   getNeighborHexes(spire.col, spire.row).some((hex) => hex.col === coord.x && hex.row === coord.y);
 
-/** Every spire lit today that the store knows of: one per expedition realm with attunement. */
+/** Every spire lit today that the store knows of: one per expedition realm with depth research. */
 export const expeditionSpires = (
   store: Pick<NativeFactStore, "get" | "require" | "inGame">,
   gameId: number,
@@ -164,6 +165,10 @@ export const expeditionSpires = (
   const rules = readExpeditionRules(store, gameId);
   if (!rules) return [];
   return [...store.inGame("Structure", gameId)]
-    .filter((structure) => isExpeditionRealm(store, structure) && structure.metadata.attunement >= 1)
+    .filter(
+      (structure) =>
+        isExpeditionRealm(store, structure) &&
+        (researchedDepths(store, structure.game_id, structure.entity_id)?.length ?? 0) > 0,
+    )
     .map((structure) => expeditionSpireTile(rules, structure, nowSeconds));
 };

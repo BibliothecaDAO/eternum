@@ -62,8 +62,7 @@ pub struct StructureMetadata {
     // associated with village
     pub village_realm: u32,
     pub mine_kind: u8,
-    pub attunement: u8,
-    pub barracks_tier: u8,
+    pub deepest_depth: u8,
 }
 const ORDER_SCALE: u128 = 0x10000;
 const WONDER_SCALE: u128 = 0x1000000;
@@ -81,8 +80,7 @@ pub impl StructureMetadataPacking of starknet::storage_access::StorePacking<Stru
             + wonder * WONDER_SCALE
             + value.village_realm.into() * CONNECTED_REALM_SCALE
             + value.mine_kind.into() * MINE_KIND_SCALE
-            + value.attunement.into() * 0x1000000000000000000
-            + value.barracks_tier.into() * 0x100000000000000000000
+            + value.deepest_depth.into() * 0x1000000000000000000
     }
     fn unpack(value: u128) -> StructureMetadata {
         StructureMetadata {
@@ -91,8 +89,7 @@ pub impl StructureMetadataPacking of starknet::storage_access::StorePacking<Stru
             has_wonder: value / WONDER_SCALE % 2 != 0,
             village_realm: (value / CONNECTED_REALM_SCALE % U32_RANGE).try_into().unwrap(),
             mine_kind: (value / MINE_KIND_SCALE % 256).try_into().unwrap(),
-            attunement: (value / 0x1000000000000000000 % 256).try_into().unwrap(),
-            barracks_tier: (value / 0x100000000000000000000).try_into().unwrap(),
+            deepest_depth: (value / 0x1000000000000000000 % 256).try_into().unwrap(),
         }
     }
 }

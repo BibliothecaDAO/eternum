@@ -68,6 +68,11 @@ fn building_preset(board: Option<crate::buildings::BoardRules>) -> crate::preset
     }
     preset.structures.buildings = configured.span();
     preset.structures.board = board;
+    if board.is_some() {
+        let (_, frontier) = super::preset_projection::current_definition("frontier");
+        preset.structures.research = frontier.structures.research;
+        preset.structures.building_tiers = frontier.structures.building_tiers;
+    }
     let recipe = UpgradeRecipe { costs: array![].span() };
     preset.structures.upgrade_limits = UpgradeLimits { realm_max: 3, village_max: 2 };
     preset.structures.upgrades = array![recipe, recipe, recipe].span();
@@ -75,6 +80,14 @@ fn building_preset(board: Option<crate::buildings::BoardRules>) -> crate::preset
 }
 fn building_world_with_preset(preset: crate::presets::PresetDefinition) -> (super::Deployment, ResourceKey) {
     let (deployment, home, _) = super::resource_commands::setup_with_preset(preset);
+    if preset.structures.board.is_some() {
+        snforge_std::interact_with_state(
+            deployment.games,
+            || {
+                crate::logic::research::write(home, crate::research::RealmKnowledge { learned: 0 });
+            },
+        );
+    }
     (deployment, home)
 }
 fn building_world(board: Option<crate::buildings::BoardRules>) -> (super::Deployment, ResourceKey) {
@@ -396,15 +409,7 @@ fn a_labor_building_a_player_builds_costs_its_rule_population() {
 fn marked_ring_plot_doubles_output_capacity_and_population_without_neighbor_bonuses() {
     for category in array![37_u8, 2, 1] {
         let mut preset = building_preset(
-            Some(
-                crate::buildings::BoardRules {
-                    demolition_refund_bps: 5000,
-                    workshop_rate: 20,
-                    barracks_ii_cost: 80,
-                    barracks_iii_cost: 450,
-                    neighbors: array![].span(),
-                },
-            ),
+            Some(crate::buildings::BoardRules { demolition_refund_bps: 5000, workshop_rate: 20 }),
         );
         preset.rules.building_config.base_population = 20;
         preset.rules.building_config.base_cost_percent_increase = 1500;
@@ -467,7 +472,7 @@ fn seed_board_castle(deployment: super::Deployment, home: ResourceKey) {
         selector!("buildings"),
         selector!("buildings"),
         array![home.game_id.into(), home.entity_id.into(), 10, 10].span(),
-        crate::buildings::Building { category: 25, paused: false, labor_paid: 0 },
+        crate::buildings::Building { category: 25, paused: false, labor_paid: 0, tier: 1 },
     );
     let mut counts = IStructureOperationsDispatcher { contract_address: deployment.games }.structure_buildings(home);
     crate::buildings::change_count(ref counts, 25, true);
@@ -576,66 +581,11 @@ fn castle_ring_limit_accepts_four_and_rejects_five() {
     );
 }
 
-#[test]
-fn barracks_lane_charges_each_essence_cost_and_changes_existing_barracks_to_the_bought_tier() {
-    use crate::buildings::BoardRules;
-    use crate::upgrades::{BuyRealmUpgrade, RealmUpgradeLane};
-    let mut preset = building_preset(
-        Some(
-            BoardRules {
-                demolition_refund_bps: 5000,
-                workshop_rate: 20,
-                barracks_ii_cost: 80,
-                barracks_iii_cost: 450,
-                neighbors: array![].span(),
-            },
-        ),
-    );
-    preset.rules.command_mask = 0xffffffffffffffffffffffffffffffff;
-    let (deployment, home) = building_world_with_preset(preset);
-    let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
-    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-    super::resource_commands::grant(deployment, home, 23, 100);
-    super::resource_commands::grant(deployment, home, 38, 79);
-    assert!(execute(deployment, create(home, 28), 40));
-    let essence = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 38 };
-    let troops = ResourceSlot { resource_type: 26, ..essence };
-    let buy = Command::BuyRealmUpgrade(
-        BuyRealmUpgrade { structure_id: home.entity_id, lane: RealmUpgradeLane::Barracks },
-    );
-    assert_terminal_rejection(deployment, buy, 40);
-    assert_eq!(resources.resource_balance(essence), 79);
-    assert_eq!(structures.structure(home).unwrap().metadata.barracks_tier, 0);
-    assert_eq!(resources.resource_production(troops).production_rate, 2);
-    super::resource_commands::grant(deployment, home, 38, 451);
-    assert!(execute(deployment, buy, 40));
-    assert_eq!(resources.resource_balance(essence), 450);
-    assert_eq!(structures.structure(home).unwrap().metadata.barracks_tier, 1);
-    assert_eq!(resources.resource_production(troops).production_rate, 0);
-    assert_eq!(resources.resource_production(ResourceSlot { resource_type: 27, ..troops }).production_rate, 2);
-    assert!(execute(deployment, buy, 40));
-    assert_eq!(resources.resource_balance(essence), 0);
-    assert_eq!(structures.structure(home).unwrap().metadata.barracks_tier, 2);
-    assert_eq!(resources.resource_production(ResourceSlot { resource_type: 27, ..troops }).production_rate, 0);
-    assert_eq!(resources.resource_production(ResourceSlot { resource_type: 28, ..troops }).production_rate, 2);
-    assert_terminal_rejection(deployment, buy, 40);
-    assert_eq!(structures.structure(home).unwrap().metadata.barracks_tier, 2);
-}
 
 #[test]
 fn unlimited_training_consumes_its_simple_recipe_and_waits_for_farm_wheat_without_refills() {
     use crate::buildings::BoardRules;
-    let mut preset = building_preset(
-        Some(
-            BoardRules {
-                demolition_refund_bps: 5000,
-                workshop_rate: 20,
-                barracks_ii_cost: 80,
-                barracks_iii_cost: 450,
-                neighbors: array![].span(),
-            },
-        ),
-    );
+    let mut preset = building_preset(Some(BoardRules { demolition_refund_bps: 5000, workshop_rate: 20 }));
     let mut recipes = array![];
     for recipe in super::production::recipes() {
         recipes
@@ -720,4 +670,181 @@ fn unlimited_training_consumes_its_simple_recipe_and_waits_for_farm_wheat_withou
     assert_eq!(resources.resource_balance(wheat), 8);
     assert_eq!(resources.resource_production(troop).output_amount_left, crate::resources::UNLIMITED_OUTPUT);
     stop_cheat_caller_address(deployment.games);
+}
+
+#[test]
+fn research_and_individual_barracks_tiers_keep_existing_troops_and_other_buildings() {
+    let mut preset = building_preset(
+        Some(crate::buildings::BoardRules { demolition_refund_bps: 5000, workshop_rate: 20 }),
+    );
+    preset.rules.command_mask = 0xffffffffffffffffffffffffffffffff;
+    preset.rules.building_config.base_population = 40;
+    let (d, home) = building_world_with_preset(preset);
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let structures = IStructureOperationsDispatcher { contract_address: d.games };
+    super::resource_commands::grant(d, home, crate::resources::LABOR, 1000000 * crate::rules::RESOURCE_PRECISION);
+    super::resource_commands::grant(d, home, crate::resources::ESSENCE, 1000000 * crate::rules::RESOURCE_PRECISION);
+    let essence = ResourceSlot {
+        game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::ESSENCE,
+    };
+    let labor = ResourceSlot { resource_type: crate::resources::LABOR, ..essence };
+    let t1 = ResourceSlot { resource_type: 26, ..essence };
+    let t2 = ResourceSlot { resource_type: 27, ..essence };
+    super::resource_commands::grant(d, home, 26, 17);
+    let first = change(home);
+    let second_coord = crate::geometry::neighbor(Coord { alt: false, x: 10, y: 10 }, 1);
+    let second_key = crate::logic::buildings::building_key(home, second_coord);
+    assert!(execute(d, create(home, 28), 40));
+    let first_rate = resources.resource_production(t1).production_rate;
+    assert!(
+        execute(
+            d,
+            Command::CreateBuilding(
+                CreateBuilding {
+                    structure_id: home.entity_id, directions: array![1].span(), category: 28, use_simple: true,
+                },
+            ),
+            40,
+        ),
+    );
+    let total_rate = resources.resource_production(t1).production_rate;
+    let research_ii = Command::Research(crate::research::Research { structure_id: home.entity_id, node: 2 });
+    let research_iii = Command::Research(crate::research::Research { structure_id: home.entity_id, node: 3 });
+    assert_terminal_rejection(d, research_iii, 40);
+    assert_terminal_rejection(d, Command::UpgradeBuilding(first), 40);
+    let before = resources.resource_balance(essence);
+    assert!(execute(d, research_ii, 40));
+    assert_eq!(before - resources.resource_balance(essence), 3000 * crate::rules::RESOURCE_PRECISION);
+    assert_terminal_rejection(d, research_ii, 40);
+    assert_eq!(resources.resource_production(t1).production_rate, total_rate);
+    assert_eq!(structures.building(second_key).unwrap().tier, 1);
+    let old_population = structures.structure_buildings(home).population.current;
+    let before = resources.resource_balance(labor);
+    assert!(execute(d, Command::UpgradeBuilding(first), 40));
+    assert_eq!(before - resources.resource_balance(labor), 2400 * crate::rules::RESOURCE_PRECISION);
+    assert_eq!(structures.building(crate::logic::buildings::building_key(home, first.coord)).unwrap().tier, 2);
+    assert_eq!(structures.building(second_key).unwrap().tier, 1);
+    assert_eq!(resources.resource_production(t1).production_rate, total_rate - first_rate);
+    assert_eq!(resources.resource_production(t2).production_rate, first_rate);
+    assert_eq!(resources.resource_balance(t1), 17);
+    assert_eq!(structures.structure_buildings(home).population.current, old_population);
+    assert!(execute(d, research_iii, 40));
+    assert!(execute(d, Command::UpgradeBuilding(first), 40));
+    assert_terminal_rejection(d, Command::UpgradeBuilding(first), 40);
+    assert_eq!(structures.building(second_key).unwrap().tier, 1);
+    assert_eq!(resources.resource_balance(t1), 17);
+    let before = resources.resource_balance(labor);
+    assert!(
+        execute(
+            d,
+            Command::CreateBuilding(
+                CreateBuilding {
+                    structure_id: home.entity_id, directions: array![2].span(), category: 28, use_simple: true,
+                },
+            ),
+            40,
+        ),
+    );
+    let newest = structures
+        .building(
+            crate::logic::buildings::building_key(
+                home, crate::geometry::neighbor(Coord { alt: false, x: 10, y: 10 }, 2),
+            ),
+        )
+        .unwrap();
+    assert_eq!(newest.tier, 3);
+    let base_cost = 100
+        + 4 * crate::math::PercentageImpl::get(100, preset.rules.building_config.base_cost_percent_increase.into());
+    assert_eq!(before - resources.resource_balance(labor), base_cost + 7200 * crate::rules::RESOURCE_PRECISION);
+    assert_eq!(newest.labor_paid, base_cost + 7200 * crate::rules::RESOURCE_PRECISION);
+}
+
+#[test]
+fn individual_farm_storehouse_and_hut_tiers_double_effects_with_the_ring_once() {
+    for (category, node) in array![(37_u8, 0_u8), (2, 4), (1, 6)] {
+        let mut preset = building_preset(
+            Some(crate::buildings::BoardRules { demolition_refund_bps: 5000, workshop_rate: 20 }),
+        );
+        preset.rules.command_mask = 0xffffffffffffffffffffffffffffffff;
+        preset.rules.building_config.base_population = 40;
+        preset.rules.capacity_config.storehouse_boost_capacity = 10;
+        let (d, home) = building_world_with_preset(preset);
+        super::resource_commands::grant(d, home, crate::resources::LABOR, 1000000 * crate::rules::RESOURCE_PRECISION);
+        super::resource_commands::grant(d, home, crate::resources::ESSENCE, 1000000 * crate::rules::RESOURCE_PRECISION);
+        let baseline = board_output(d, home, category);
+        assert!(execute(d, create(home, category), 40));
+        let base = board_output(d, home, category) - baseline;
+        assert!(base > 0);
+        let marked = crate::building_ring::marked_plot(1, 1);
+        assert!(
+            execute(
+                d,
+                Command::CreateBuilding(
+                    CreateBuilding {
+                        structure_id: home.entity_id, directions: array![4_u8].span(), category, use_simple: true,
+                    },
+                ),
+                40,
+            ),
+        );
+        assert_eq!(board_output(d, home, category) - baseline, base * 3);
+        for tier in 2_u8..4 {
+            assert!(
+                execute(
+                    d,
+                    Command::Research(
+                        crate::research::Research { structure_id: home.entity_id, node: node + tier - 2 },
+                    ),
+                    40,
+                ),
+            );
+            // Learning affects future builds; this standing building keeps its own tier until upgraded.
+            let prior = if tier == 2 {
+                base * 2
+            } else {
+                base * 4
+            };
+            assert_eq!(board_output(d, home, category) - baseline - base, prior);
+            assert!(
+                execute(
+                    d, Command::UpgradeBuilding(ChangeBuilding { structure_id: home.entity_id, coord: marked }), 40,
+                ),
+            );
+            assert_eq!(board_output(d, home, category) - baseline - base, prior * 2);
+        }
+    }
+}
+
+#[test]
+fn research_nodes_charge_their_preset_price_once_and_obey_only_their_prerequisites() {
+    let mut preset = building_preset(
+        Some(crate::buildings::BoardRules { demolition_refund_bps: 5000, workshop_rate: 20 }),
+    );
+    preset.rules.command_mask = 0xffffffffffffffffffffffffffffffff;
+    let (d, home) = building_world_with_preset(preset);
+    super::resource_commands::grant(d, home, crate::resources::ESSENCE, 1000000 * crate::rules::RESOURCE_PRECISION);
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let essence = ResourceSlot {
+        game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::ESSENCE,
+    };
+    for row in preset.structures.research {
+        if *row.rule.prerequisites != 0 {
+            assert_terminal_rejection(
+                d, Command::Research(crate::research::Research { structure_id: home.entity_id, node: *row.node }), 40,
+            );
+        }
+    }
+    let mut learned = 0;
+    for row in preset.structures.research {
+        let command = Command::Research(crate::research::Research { structure_id: home.entity_id, node: *row.node });
+        let before = resources.resource_balance(essence);
+        assert!(execute(d, command, 40));
+        assert_eq!(before - resources.resource_balance(essence), *row.rule.essence_cost);
+        learned = learned | crate::research::node_bit(*row.node);
+        assert_eq!(
+            snforge_std::interact_with_state(d.games, || crate::logic::research::require(home)).learned, learned,
+        );
+        assert_terminal_rejection(d, command, 40);
+        assert_eq!(resources.resource_balance(essence), before - *row.rule.essence_cost);
+    }
 }

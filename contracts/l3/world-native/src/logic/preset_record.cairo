@@ -39,6 +39,7 @@ pub fn for_game(game_id: u32) -> StoragePath<crate::state::Preset> {
 
 fn write_structures(preset: PresetWrite, structures: crate::presets::StructurePreset) {
     write_buildings(preset, structures.buildings, structures.board);
+    write_research(preset, structures);
     for index in 0..structures.camps.len() {
         let resource = *structures.camps.at(index);
         crate::resources::assert_resource(resource.resource_type);
@@ -201,26 +202,7 @@ fn write_buildings(
     if let Some(board) = board {
         assert!(board.demolition_refund_bps <= 10000, "invalid demolition refund");
         assert!(board.workshop_rate != 0, "zero workshop rate");
-        assert!(board.barracks_ii_cost != 0 && board.barracks_iii_cost != 0, "zero barracks cost");
-        let count: u8 = board.neighbors.len().try_into().unwrap();
-        for index in 0..count {
-            let bonus = *board.neighbors.at(index.into());
-            assert!(bonus.building > 0 && bonus.building <= 40 && bonus.neighbor <= 40, "invalid neighbor category");
-            preset.board_neighbors.write(index, bonus);
-        }
-        preset
-            .board_terms
-            .write(
-                Some(
-                    crate::buildings::BoardTerms {
-                        demolition_refund_bps: board.demolition_refund_bps,
-                        workshop_rate: board.workshop_rate,
-                        barracks_ii_cost: board.barracks_ii_cost,
-                        barracks_iii_cost: board.barracks_iii_cost,
-                        neighbor_count: count,
-                    },
-                ),
-            );
+        preset.board_terms.write(Some(board));
     }
 }
 
@@ -312,7 +294,7 @@ fn write_depths(preset: PresetWrite, rules: crate::rules::SliceRules, depths: Sp
             "invalid chest quality probabilities",
         );
         assert!(ground.pity != 0, "zero relic pity threshold");
-        assert!(index != 0 || (value.entry_stamina == 0 && value.attunement_cost == 0), "surface needs no attunement");
+        assert!(index != 0 || value.entry_stamina == 0, "surface needs no entry stamina");
         assert!(value.reveal_percent != 0 && value.reveal_percent <= 100, "invalid reveal percentage");
         assert!(value.guard_lower != 0 && value.guard_lower <= value.guard_upper, "invalid depth guards");
         assert!(
@@ -460,5 +442,55 @@ fn write_withdrawals(preset: PresetWrite, withdrawals: crate::presets::Withdrawa
             preset.withdrawal_tokens.read(*token.resource_type) == 0.try_into().unwrap(), "duplicate resource token",
         );
         preset.withdrawal_tokens.write(*token.resource_type, *token.token);
+    }
+}
+
+fn write_research(preset: PresetWrite, structures: crate::presets::StructurePreset) {
+    if structures.board.is_none() {
+        assert!(structures.research.is_empty() && structures.building_tiers.is_empty(), "research needs a board");
+        return;
+    }
+    assert!(structures.research.len() == crate::research::NODE_COUNT.into(), "incomplete research tree");
+    for id in 0..crate::research::NODE_COUNT {
+        let entry = *structures.research.at(id.into());
+        let bit = crate::research::node_bit(id);
+        assert!(entry.node == id && entry.rule.prerequisites < bit, "invalid research prerequisites");
+        assert!(entry.rule.essence_cost != 0, "empty research price");
+        for previous in 0..id {
+            assert!(
+                preset.research_nodes.read(previous).unwrap().effect != entry.rule.effect, "duplicate research effect",
+            );
+        }
+        preset.research_nodes.write(id, Some(entry.rule));
+    }
+    assert!(structures.building_tiers.len() == 8, "incomplete building tiers");
+    for entry in structures.building_tiers {
+        assert!(*entry.tier == 2 || *entry.tier == 3, "invalid building tier");
+        assert!(
+            *entry.category == 1 || *entry.category == 2 || *entry.category == 28 || *entry.category == 37,
+            "invalid tier category",
+        );
+        let key = (*entry.category, *entry.tier);
+        assert!(preset.building_tiers.read(key).is_none(), "duplicate building tier");
+        let rule = *entry.rule;
+        assert!(
+            rule.labor_upgrade_cost != 0
+                && rule.output_multiplier_bps != 0
+                && rule.capacity_multiplier_bps != 0
+                && rule.population_multiplier_bps >= 10000,
+            "empty building tier rule",
+        );
+        preset.building_tiers.write(key, Some(rule));
+    }
+    for entry in structures.research {
+        match *entry.rule.effect {
+            crate::research::ResearchEffect::BuildingTier((
+                category, tier,
+            )) => { assert!(preset.building_tiers.read((category, tier)).is_some(), "research tier is missing"); },
+            crate::research::ResearchEffect::MapContent(_) => {},
+            crate::research::ResearchEffect::Depth(depth) => {
+                assert!(depth > 0 && depth < 4, "invalid research depth");
+            },
+        }
     }
 }

@@ -45,7 +45,7 @@ const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) =>
         category: 1,
         starting_troops_granted: true,
       },
-      metadata: { ...structureValue.metadata, realm_id: id, attunement: 1 },
+      metadata: { ...structureValue.metadata, realm_id: id },
     });
   native.applyReceipt(
     fold,

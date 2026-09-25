@@ -92,8 +92,8 @@ pub fn is_home_ring(coord: Coord, spacing: u32) -> bool {
     ring
 }
 
-// The day's spire, which attunement lights: one of the home ring's six tiles, turning one step each day so the first
-// march from home differs daily. It is a rule, not a stored structure.
+// The day's spire, which depth research lights: one of the home ring's six tiles, turning one step each day so the
+// first march from home differs daily. It is a rule, not a stored structure.
 pub fn spire(start: u64, seconds: u32, spacing: u32, realm_id: u16, timestamp: u64) -> Coord {
     let site = site(start, seconds, spacing, realm_id, timestamp, 0);
     let season_day = season_day(start, seconds, timestamp);
@@ -135,7 +135,6 @@ pub struct DepthRules {
     pub guard_upper: u16,
     pub reveal_site_neighbors: bool,
     pub entry_stamina: u16,
-    pub attunement_cost: u128,
     pub chest: crate::relics::ChestGround,
     pub fallen_guard_lower: u32,
     pub fallen_guard_upper: u32,

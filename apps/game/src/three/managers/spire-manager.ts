@@ -11,11 +11,11 @@ import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } fro
 import { getWorldPositionForHex } from "../utils";
 import { gltfLoader } from "../utils/utils";
 
-/** Spires stood on the surface by a rule rather than a tile: a Frontier realm's spire, lit by attunement. */
+/** Spires stood on the surface by a rule rather than a tile: a Frontier realm's spire, lit by depth research. */
 export interface RuleSpires {
   /** Their hexes on the surface, in contract coordinates. */
   hexes(): Array<{ col: number; row: number }>;
-  /** Calls back when a rule input changes: a realm's attunement, or the day turning over. */
+  /** Calls back when a rule input changes: a realm's knowledge, or the day turning over. */
   subscribe(onChange: () => void): () => void;
 }
 

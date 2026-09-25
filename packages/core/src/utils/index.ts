@@ -35,3 +35,5 @@ export * from "./trades";
 export * from "./transport";
 export * from "./travel";
 export * from "./utils";
+
+export * from "./realm-research";

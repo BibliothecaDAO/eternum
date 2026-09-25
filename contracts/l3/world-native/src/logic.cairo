@@ -35,6 +35,7 @@ pub mod registry;
 pub mod release;
 pub mod relics;
 pub mod relics_domain;
+pub mod research;
 pub mod resources;
 pub mod resources_domain;
 pub mod season;

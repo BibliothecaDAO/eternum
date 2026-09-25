@@ -69,7 +69,8 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
                   />
                   <span className="block font-semibold">{building.label}</span>
                   <span className="flex flex-wrap justify-center gap-x-2 gap-y-1 py-1 text-[10px] tabular-nums">
-                    {building.requirements.map((cost) => (
+                    {building.requirements === undefined && "—"}
+                    {building.requirements?.map((cost) => (
                       <span
                         key={cost.resource}
                         className="inline-flex items-center gap-0.5"

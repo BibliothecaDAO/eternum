@@ -554,6 +554,24 @@ pub mod GamesFixture {
     pub impl BuildingCommandsFixture<
         TContractState, +Drop<TContractState>,
     > of crate::buildings::IBuildingCommands<TContractState> {
+        fn upgrade_building(
+            ref self: TContractState,
+            game_id: u32,
+            actor: starknet::ContractAddress,
+            command: crate::buildings::ChangeBuilding,
+            context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
+            let classes = fixture_classes(game_id);
+            crate::buildings::IBuildingCommandsDispatcherTrait::upgrade_building(
+                crate::buildings::IBuildingCommandsLibraryDispatcher { class_hash: classes.construction.read() },
+                game_id,
+                actor,
+                command,
+                context,
+                story_cursor,
+            )
+        }
         fn create_building(
             ref self: TContractState,
             game_id: u32,

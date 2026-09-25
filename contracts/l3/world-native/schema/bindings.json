@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "6cbcc3b969cb303c92a84cac96b0b83d5f55bbcea46976e9ee9c43ebd6a87b3e",
+  "schemaIdentity": "d8ee99c7d886395e70c82eb2a0649508c370eb50a5b4bc7e20b306277ddc0401",
   "commandAbi": [
     {
       "type": "interface",
@@ -292,12 +292,16 @@
           "type": "world_native::commands::EnterDepth"
         },
         {
-          "name": "BuyRealmUpgrade",
-          "type": "world_native::upgrades::BuyRealmUpgrade"
+          "name": "Research",
+          "type": "world_native::research::Research"
         },
         {
           "name": "ChooseAttribute",
           "type": "world_native::progression::ChooseAttribute"
+        },
+        {
+          "name": "UpgradeBuilding",
+          "type": "world_native::buildings::ChangeBuilding"
         }
       ]
     },
@@ -1355,29 +1359,15 @@
     },
     {
       "type": "struct",
-      "name": "world_native::upgrades::BuyRealmUpgrade",
+      "name": "world_native::research::Research",
       "members": [
         {
           "name": "structure_id",
           "type": "core::integer::u32"
         },
         {
-          "name": "lane",
-          "type": "world_native::upgrades::RealmUpgradeLane"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "world_native::upgrades::RealmUpgradeLane",
-      "variants": [
-        {
-          "name": "Attunement",
-          "type": "()"
-        },
-        {
-          "name": "Barracks",
-          "type": "()"
+          "name": "node",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -1703,6 +1693,18 @@
     },
     {
       "name": "ResourceArrival",
+      "scope": "game"
+    },
+    {
+      "name": "RealmKnowledge",
+      "scope": "game"
+    },
+    {
+      "name": "ResearchNode",
+      "scope": "game"
+    },
+    {
+      "name": "BuildingTierRule",
       "scope": "game"
     },
     {
