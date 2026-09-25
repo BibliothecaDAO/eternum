@@ -1523,9 +1523,11 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
                 crate::expeditions::DepthRules {
                     fallen_guard_lower: 2000,
                     fallen_guard_upper: 4000,
+                    guard_step: 1,
+                    fallen_guard_tier: crate::troops::TroopTier::T1,
                     reveal_percent: 10 + index * 5,
                     guard_lower: index + 1,
-                    guard_upper: index + 2,
+                    guard_upper: index + 1,
                     reveal_site_neighbors: false,
                     entry_stamina: 0,
                     attunement_cost: 0,
@@ -1824,9 +1826,11 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
                 crate::expeditions::DepthRules {
                     fallen_guard_lower: 2000,
                     fallen_guard_upper: 4000,
+                    guard_step: 1,
+                    fallen_guard_tier: crate::troops::TroopTier::T1,
                     reveal_percent: depth + 1,
                     guard_lower: depth + 1,
-                    guard_upper: depth + 2,
+                    guard_upper: depth + 1,
                     reveal_site_neighbors: false,
                     entry_stamina: if depth == 0 {
                         0
@@ -2059,9 +2063,11 @@ fn setup_frontier_chests_with_payout(
                 crate::expeditions::DepthRules {
                     fallen_guard_lower: 2000,
                     fallen_guard_upper: 4000,
+                    guard_step: 1,
+                    fallen_guard_tier: crate::troops::TroopTier::T1,
                     reveal_percent: 1,
                     guard_lower: 1,
-                    guard_upper: 2,
+                    guard_upper: 1,
                     reveal_site_neighbors: false,
                     entry_stamina: 0,
                     attunement_cost: 0,
@@ -2255,7 +2261,7 @@ fn frontier_fallen_realm_capture_places_exactly_one_closed_chest_without_paying_
     assert_eq!(initial.kind, crate::expeditions::SiteKind::FallenRealm);
     assert!(
         initial.initial_guard_count >= 2000
-            * RESOURCE_PRECISION && initial.initial_guard_count < 4000
+            * RESOURCE_PRECISION && initial.initial_guard_count <= 4000
             * RESOURCE_PRECISION,
     );
     let mut spy = snforge_std::spy_events();
@@ -2834,4 +2840,41 @@ fn place_frontier_chest_fixture(d: super::Deployment, game_id: u32, coord: crate
             crate::logic::map::MapState::occupy(tile, id, crate::map::CHEST_OCCUPIER, false);
         },
     );
+}
+
+#[test]
+fn frontier_sites_store_the_seeded_category_and_depth_tier_with_the_count_basis() {
+    let d = setup();
+    let (preset_id, preset) = super::preset_projection::current_definition("frontier");
+    registry(d).register_preset(preset_id, preset);
+    let game_id = registry(d).create_game(CreateGameParams { preset_id, ..params(false) });
+    let context = crate::commands::ExecutionContext { timestamp: 360, ..crate::tests::context(d.games, game_id) };
+    start_cheat_caller_address(d.games, d.games);
+    for depth_index in 0_u32..4 {
+        let depth = *preset.settlement.depths.at(depth_index);
+        for (discovery, kind, offset) in array![
+            (crate::discovery::Discovery::Camp, crate::expeditions::SiteKind::Camp, 0_u32),
+            (crate::discovery::Discovery::Mine, crate::expeditions::SiteKind::Rift, 1),
+            (crate::discovery::Discovery::FallenRealm, crate::expeditions::SiteKind::FallenRealm, 2),
+        ] {
+            let coord = crate::troops::Coord {
+                alt: false, x: 100 + offset, y: depth_index * preset.settlement.spacing + preset.settlement.spacing / 2,
+            };
+            let seed = 123 + Into::<u32, u256>::into(offset);
+            let id = IStructureOperationsDispatcher { contract_address: d.games }
+                .create_discovery(game_id, coord, discovery, seed, 360, crate::commands::action_context(context));
+            let guard = IGuardsDispatcher { contract_address: d.games }
+                .guard(GuardKey { game_id, structure_id: id, slot: 0 });
+            let expected = crate::troops::frontier_guard(kind, depth, seed, context.rules.unbox(), 360);
+            assert_eq!(guard.troops, expected);
+            let site = snforge_std::interact_with_state(
+                d.games,
+                || {
+                    crate::logic::expeditions::expedition_site(ResourceKey { game_id, entity_id: id }).unwrap()
+                },
+            );
+            assert_eq!(site.initial_guard_count, expected.count);
+            assert_eq!(site.kind, kind);
+        }
+    }
 }

@@ -47,18 +47,25 @@ function buildInputs(): string {
   const timestamp = tick * rules.tick_config.armies_tick_in_seconds;
   for (let pair = 0; pair < 100; pair++) {
     const attacker = [0, pair % 3, BigInt(1 + draw(30_000)) * 1_000_000_000n, 150, tick, (pair % 5) * 10];
-    const defender = [0, Math.floor(pair / 3) % 3, BigInt(1 + draw(30_000)) * 1_000_000_000n, draw(151), tick, 0];
+    const defender = [
+      Math.floor(pair / 18) % 3,
+      Math.floor(pair / 3) % 3,
+      BigInt(1 + draw(30_000)) * 1_000_000_000n,
+      draw(151),
+      tick,
+      0,
+    ];
     for (const alt of [0, 1]) {
       lines.push(
         [
           pair * 2 + alt,
           alt,
-          alt ? 17 : 11,
+          [1, 4, 7, 11, 17][pair % 5],
           1,
           timestamp,
           tick,
           0,
-          pair % 2,
+          Math.floor(pair / 9) % 2,
           ...attacker,
           ...defender,
           0,

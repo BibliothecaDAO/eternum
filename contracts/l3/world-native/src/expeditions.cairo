@@ -139,6 +139,8 @@ pub struct DepthRules {
     pub chest: crate::relics::ChestGround,
     pub fallen_guard_lower: u32,
     pub fallen_guard_upper: u32,
+    pub guard_step: u32,
+    pub fallen_guard_tier: crate::troops::TroopTier,
 }
 
 #[starknet::interface]

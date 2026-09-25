@@ -1,3 +1,4 @@
+use core::dict::Felt252DictTrait;
 use snforge_std::fs::{FileTrait, read_txt};
 use crate::combat::{CombatContext, TroopsTrait};
 use crate::rules::{TroopDamageConfig, TroopStaminaConfig};
@@ -60,10 +61,21 @@ fn check_vectors(record: bool) {
     let stamina: TroopStaminaConfig = Serde::deserialize(ref fields).unwrap();
     let tick_interval: u64 = Serde::deserialize(ref fields).unwrap();
     let mut surface = None;
+    let mut coverage: core::dict::Felt252Dict<bool> = Default::default();
     for id in 0..count {
         let exchange: Exchange = Serde::deserialize(ref fields).unwrap();
         assert_eq!(exchange.id, id);
         assert_eq!(exchange.alt, id % 2 == 1);
+        let category: u8 = exchange.defender.category.into();
+        let attacker_tier = tier_index(exchange.attacker.tier);
+        let defender_tier = tier_index(exchange.defender.tier);
+        let guard = if exchange.defender_is_structure_guard {
+            1_u8
+        } else {
+            0
+        };
+        let key: felt252 = (category * 18 + guard * 9 + defender_tier * 3 + attacker_tier).into();
+        coverage.insert(key, true);
         let actual = resolve_exchange(exchange, damage, stamina, tick_interval);
         if exchange.alt {
             assert_eq!(actual, surface.unwrap());
@@ -82,6 +94,9 @@ fn check_vectors(record: bool) {
         } else {
             assert_eq!(actual, exchange.expected, "combat vector {} differs", id);
         }
+    }
+    for key in 0_u8..54 {
+        assert!(coverage.get(key.into()), "missing category/tier/guard pairing");
     }
     assert!(fields.is_empty(), "trailing combat vector data");
 }
@@ -135,5 +150,13 @@ fn troops(side: Side, tick: u64) -> Troops {
             incr_explore_reward_end_tick: 0,
         },
         battle_cooldown_end: 0,
+    }
+}
+
+fn tier_index(tier: TroopTier) -> u8 {
+    match tier {
+        TroopTier::T1 => 0,
+        TroopTier::T2 => 1,
+        TroopTier::T3 => 2,
     }
 }

@@ -311,7 +311,7 @@ pub(crate) fn spend_stamina(
 }
 
 pub(crate) fn discovery_guards(
-    category: u8, seed: u256, rules: crate::rules::SliceRules, timestamp: u64, bounds: Option<(u32, u32)>,
+    category: u8, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
 ) -> Span<Troops> {
     use crate::troops::{TroopTier, TroopType};
     let light_guard = category == 4 || category == crate::camps::CAMP_CATEGORY;
@@ -344,7 +344,7 @@ pub(crate) fn discovery_guards(
         } else {
             0
         };
-        let troops = discovery_guard_with_bounds(category, tier, guard_seed, rules, timestamp, bounds);
+        let troops = discovery_guard(category, tier, guard_seed, rules, timestamp);
         guards.append(troops);
     }
     guards.span()
@@ -357,30 +357,44 @@ pub(crate) fn discovery_guard(
     rules: crate::rules::SliceRules,
     timestamp: u64,
 ) -> Troops {
-    discovery_guard_with_bounds(category, tier, seed, rules, timestamp, None)
+    let lower: u128 = rules.troop_limit_config.mercenaries_troop_lower_bound.into();
+    let upper: u128 = rules.troop_limit_config.mercenaries_troop_upper_bound.into();
+    let count = lower + crate::random::range(seed, 1, upper - lower);
+    discovered_guard(category, tier, count, rules, timestamp)
 }
 
-fn discovery_guard_with_bounds(
-    category: TroopType,
-    tier: TroopTier,
+pub(crate) fn frontier_guard(
+    kind: crate::expeditions::SiteKind,
+    depth: crate::expeditions::DepthRules,
     seed: u256,
     rules: crate::rules::SliceRules,
     timestamp: u64,
-    bounds: Option<(u32, u32)>,
 ) -> Troops {
-    let (lower, upper) = bounds
-        .unwrap_or(
-            (
-                rules.troop_limit_config.mercenaries_troop_lower_bound.into(),
-                rules.troop_limit_config.mercenaries_troop_upper_bound.into(),
-            ),
-        );
+    let (category, tier, lower, upper) = if kind == crate::expeditions::SiteKind::FallenRealm {
+        (TroopType::Knight, depth.fallen_guard_tier, depth.fallen_guard_lower, depth.fallen_guard_upper)
+    } else {
+        let category = match crate::random::range(seed, 2, 3) {
+            0 => TroopType::Knight,
+            1 => TroopType::Paladin,
+            _ => TroopType::Crossbowman,
+        };
+        (category, TroopTier::T1, depth.guard_lower.into(), depth.guard_upper.into())
+    };
+    let step: u128 = depth.guard_step.into();
     let lower: u128 = lower.into();
     let upper: u128 = upper.into();
+    // Preset validation makes both inclusive endpoints reachable on the grid.
+    let count = lower + step * crate::random::range(seed, 1, (upper - lower) / step + 1);
+    discovered_guard(category, tier, count, rules, timestamp)
+}
+
+fn discovered_guard(
+    category: TroopType, tier: TroopTier, count: u128, rules: crate::rules::SliceRules, timestamp: u64,
+) -> Troops {
     Troops {
         category,
         tier,
-        count: (lower + crate::random::range(seed, 1, upper - lower)) * crate::rules::RESOURCE_PRECISION,
+        count: count * crate::rules::RESOURCE_PRECISION,
         stamina: crate::troops::Stamina {
             amount: 0, updated_tick: timestamp / rules.tick_config.armies_tick_in_seconds,
         }

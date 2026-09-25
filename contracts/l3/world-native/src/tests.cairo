@@ -11,6 +11,7 @@ mod fact_wire;
 mod fixtures;
 mod frontier_combat_vectors;
 mod frontier_discovery;
+mod frontier_guards;
 mod frontier_reveal;
 pub(crate) mod games_fixture;
 mod games_host;

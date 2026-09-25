@@ -67,6 +67,8 @@ export interface NativePreset {
     guardUpper: number;
     fallenGuardLower: number;
     fallenGuardUpper: number;
+    guardStep: number;
+    fallenGuardTier: "T1" | "T2" | "T3";
     revealSiteNeighbors: boolean;
     entryStamina: number;
     attunementCost: number;

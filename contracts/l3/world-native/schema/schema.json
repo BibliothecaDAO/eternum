@@ -5736,10 +5736,22 @@
           "type": "core::integer::u32",
           "id": "0x66616c6c656e5f67756172645f7570706572",
           "feltLength": 1
+        },
+        {
+          "name": "guard_step",
+          "type": "core::integer::u32",
+          "id": "0x67756172645f73746570",
+          "feltLength": 1
+        },
+        {
+          "name": "fallen_guard_tier",
+          "type": "world_native::troops::TroopTier",
+          "id": "0x66616c6c656e5f67756172645f74696572",
+          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 12,
+      "valueLength": 14,
       "observation": {
         "domain": "expedition",
         "fields": {
@@ -8550,6 +8562,14 @@
         {
           "name": "fallen_guard_upper",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "guard_step",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "fallen_guard_tier",
+          "type": "world_native::troops::TroopTier"
         }
       ]
     },
@@ -12724,5 +12744,5 @@
       ]
     }
   },
-  "identity": "986878e8512fdb691df7a43669c47e3e1c7eac5e72f44bc6fdb0100039c653a7"
+  "identity": "6cbcc3b969cb303c92a84cac96b0b83d5f55bbcea46976e9ee9c43ebd6a87b3e"
 }

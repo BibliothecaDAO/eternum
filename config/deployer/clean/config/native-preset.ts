@@ -239,6 +239,8 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
       chest: depth.chest,
       fallen_guard_lower: depth.fallenGuardLower,
       fallen_guard_upper: depth.fallenGuardUpper,
+      guard_step: depth.guardStep,
+      fallen_guard_tier: new CairoCustomEnum({ [depth.fallenGuardTier]: {} }),
     })),
     realms: {
       resources: amounts(config.startingResources, config.resources.resourcePrecision),

@@ -101,6 +101,8 @@ describe("verified preset configuration facts", () => {
     expect(world.fold.gameRows("ProductionRecipe", "1")).toHaveLength(58);
     expect(world.fold.gameRows("BuildingRule", "1")).toHaveLength(40);
     const depths = world.fold.gameRows("DepthRules", "1").map(({ value }) => value);
+    expect(depths.map((row) => Number(row.guard_step))).toEqual([100, 100, 100, 100]);
+    expect(depths.map((row) => row.fallen_guard_tier)).toEqual(["T1", "T2", "T3", "T3"]);
     expect(depths.map((row) => Number(row.reveal_percent))).toEqual([10, 15, 20, 25]);
     expect(depths.every((row) => !Object.hasOwn(row, "supply_multiplier"))).toBe(true);
     const discovery = world.fold.gameRows("FrontierDiscoveryRules", "1")[0]!.value;
@@ -111,9 +113,9 @@ describe("verified preset configuration facts", () => {
     ).toEqual([400, 400, 200, 200, 7]);
     expect(depths.map((row) => [Number(row.fallen_guard_lower), Number(row.fallen_guard_upper)])).toEqual([
       [2000, 4000],
-      [6000, 10000],
-      [16000, 24000],
-      [40000, 60000],
+      [2000, 3500],
+      [2000, 2500],
+      [4500, 6500],
     ]);
 
     expect(world.fold.gameRows("GameOverrides", "1")).toHaveLength(1);

@@ -202,14 +202,27 @@ describe("native presets", () => {
     expect(preset.economy.chests.unwrap()).not.toHaveProperty("loose_one_in");
     expect(preset.rules.map_config.camp_win_probability).toBe(0);
     expect(preset.rules.map_config.shards_mines_win_probability).toBe(0);
-    expect(preset.settlement.depths.map((depth) => [depth.fallen_guard_lower, depth.fallen_guard_upper])).toEqual([
-      [2000, 4000],
-      [6000, 10000],
-      [16000, 24000],
-      [40000, 60000],
+    expect(
+      preset.settlement.depths.map((depth) => [
+        depth.guard_lower,
+        depth.guard_upper,
+        depth.fallen_guard_lower,
+        depth.fallen_guard_upper,
+        depth.guard_step,
+        depth.fallen_guard_tier.activeVariant(),
+      ]),
+    ).toEqual([
+      [1000, 1600, 2000, 4000, 100, "T1"],
+      [3000, 5000, 2000, 3500, 100, "T2"],
+      [8000, 12000, 2000, 2500, 100, "T3"],
+      [20000, 30000, 4500, 6500, 100, "T3"],
     ]);
-    for (const depth of preset.settlement.depths)
-      expect(depth.fallen_guard_lower).toBeLessThan(depth.fallen_guard_upper);
+    for (const depth of preset.settlement.depths) {
+      expect(depth.guard_lower).toBeLessThanOrEqual(depth.guard_upper);
+      expect(depth.fallen_guard_lower).toBeLessThanOrEqual(depth.fallen_guard_upper);
+      for (const bound of [depth.guard_lower, depth.guard_upper, depth.fallen_guard_lower, depth.fallen_guard_upper])
+        expect(bound % depth.guard_step).toBe(0);
+    }
   });
 
   test("Blitz and Duel carry no labor-paid production, while Frontier trains troops and Eternum keeps its labor path", () => {
