@@ -267,6 +267,7 @@ export class WorldFold {
     const existing = this.storedRow(event.model.name, event.entityId);
     if (event.kind === "delete" && !existing) return undefined;
 
+    const previous = this.currentRow(event.model.name, event.entityId);
     if (event.kind === "set") {
       rows.set(event.entityId, { key: event.key, value: event.value });
     } else if (event.kind === "delete") {
@@ -287,8 +288,8 @@ export class WorldFold {
     this.updateDirectoryIndex(event.model.name, event.entityId, existing, rows.get(event.entityId) ?? undefined);
     if (!this.parent) this.updateScopeIndex(event.model.name, event.entityId, existing, rows.get(event.entityId));
 
-    if (event.kind === "delete") return { del: { key: event.entityId, model: event.model.name }, gameId };
-    return { gameId, set: this.currentRow(event.model.name, event.entityId)! };
+    if (event.kind === "delete") return { del: { key: event.entityId, model: event.model.name }, gameId, previous };
+    return { gameId, set: this.currentRow(event.model.name, event.entityId)!, previous };
   }
 
   public currentRow(model: string, entityId: string): FoldSet | undefined {

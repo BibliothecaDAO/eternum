@@ -45,6 +45,11 @@ describe("native live publication", () => {
     submit("1");
     expect(messages.filter((message) => message.type === "diff")).toHaveLength(1);
     expect(live.snapshot("1").models.find((model) => model.model === "TileOpt")!.rows).toEqual([]);
+    const reconnected: Array<Record<string, unknown>> = [];
+    const connection = live.attach("1", { send: (text) => reconnected.push(JSON.parse(text)) });
+    live.resume(connection, { type: "resume", epoch: "old", seq: 0 });
+    expect(reconnected.some((message) => message.type === "diff")).toBe(true);
+    expect(reconnected.every((message) => !("deletedRows" in message))).toBe(true);
   });
 
   it("waits for the history commit before publishing the confirmed head", async () => {
