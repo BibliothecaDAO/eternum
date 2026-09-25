@@ -10,6 +10,7 @@ import { GameFinalizedError } from "./world-fold";
 export interface HeraldSocketData {
   gameId: string;
   actor?: string;
+  visit?: string;
   session?: GameStreamSession;
 }
 
@@ -29,9 +30,20 @@ export function acceptGameStream(
   gameId: string,
   actor: string | undefined,
   live: Pick<LiveWorld, "hasGame">,
+  visit?: string,
 ): HeraldSocketData | Response {
   if (!live.hasGame(gameId)) return Response.json({ error: "unknown_game", game_id: gameId }, { status: 404 });
-  return actor === undefined ? { gameId } : { gameId, actor };
+  try {
+    const acting = parseScopeAddress(actor);
+    const visiting = parseScopeAddress(visit);
+    return {
+      gameId,
+      ...(acting === undefined ? {} : { actor: acting }),
+      ...(visiting === undefined ? {} : { visit: visiting }),
+    };
+  } catch (error) {
+    return new Response(error instanceof Error ? error.message : String(error), { status: 400 });
+  }
 }
 
 /** The stream socket's entries, each guarded: open attaches, a message resumes or selects an actor, close detaches. */
@@ -39,22 +51,33 @@ export function createStreamSocketHandlers(live: StreamWorld) {
   return {
     open: (socket: HeraldSocket) =>
       guardStream(socket, "open", () => {
-        socket.data.session = live.attach(socket.data.gameId, socket, socket.data.actor);
+        socket.data.session = live.attach(socket.data.gameId, socket, socket.data.actor, socket.data.visit);
       }),
     message: (socket: HeraldSocket, message: string | Buffer) =>
       guardStream(socket, "message", () => {
         if (!socket.data.session) throw new Error("Stream session is not attached");
-        const request = JSON.parse(String(message)) as { type?: string; actor?: string | null };
+        const request = JSON.parse(String(message)) as { type?: string; actor?: unknown; visit?: unknown };
         if (request.type !== "select_actor") return live.resume(socket.data.session, parseResume(message));
-        if (request.actor !== null && (typeof request.actor !== "string" || !/^0x[0-9a-f]{1,64}$/i.test(request.actor)))
-          throw new Error("Invalid gameplay account");
-        live.selectActor(socket.data.session, request.actor ?? undefined);
+        if (request.actor === undefined) throw new Error("Invalid gameplay account");
+        const actor = parseScopeAddress(request.actor);
+        const visit = parseScopeAddress(request.visit);
+        live.selectActor(socket.data.session, actor, visit);
+        socket.data.actor = actor;
+        socket.data.visit = visit;
       }),
     close: (socket: HeraldSocket) =>
       guardStream(socket, "close", () => {
         if (socket.data.session) live.detach(socket.data.session);
       }),
   };
+}
+
+export function parseScopeAddress(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "string" || !/^0x[0-9a-f]{1,64}$/i.test(value)) throw new Error("Invalid gameplay account");
+  const address = BigInt(value);
+  if (address === 0n || address >= (1n << 251n) - 256n) throw new Error("Invalid gameplay account");
+  return `0x${address.toString(16)}`;
 }
 
 /** Answers an HTTP request; a failure becomes a named 409 for a finalized game, else a 500, and is logged. */

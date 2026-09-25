@@ -9,7 +9,16 @@ import { rowInGameSyncScope, isClientGameSyncModel } from "@bibliothecadao/etern
 import { decodeHomeRing, homeRingTileData, type HomeRingTile, type HomeRingView } from "./home-ring";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
-import { structureValue, seedDerivedRows, raw, receipt, rowEvent, rulesEvent, setup } from "./native/fixtures";
+import {
+  structureValue,
+  explorerValue,
+  seedDerivedRows,
+  raw,
+  receipt,
+  rowEvent,
+  rulesEvent,
+  setup,
+} from "./native/fixtures";
 import type { HeraldStreamMessage } from "./stream-protocol";
 import type { RpcBlockWithReceipts } from "./types";
 import { WorldFold } from "./world-fold";
@@ -360,5 +369,58 @@ describe("client and Herald subscription scope parity", () => {
       }).known?.count,
     ).toBe(0);
     expect(guardReads.some((read) => (read as { unknown?: string }).unknown === "UNKNOWN_SCOPE_CLOCK")).toBe(true);
+  });
+});
+
+describe("visited realm subscription", () => {
+  it("includes buildings and knowledge, excludes the visited army's region, and drops visit rows on leaving", async () => {
+    const { live, fold, native } = frontierWorld(async (_gameId, realmId) =>
+      RING.map((tile) => ({ ...tile, col: tile.col + (realmId - 1) * 100 })),
+    );
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("PlayerEntry", ["1", "11"], { player: "187" }),
+        rowEvent("RealmKnowledge", ["1", "1"], { learned: 0 }),
+        rowEvent("RealmKnowledge", ["1", "2"], { learned: 3 }),
+        rowEvent("Building", ["1", "2", "10", "10"], {
+          category: 37,
+          paused: false,
+          labor_paid: 200000000000n,
+          tier: 2,
+        }),
+        rowEvent("ExplorerTroops", ["1", "20"], explorerValue("2", 1000n, 30n, 1n)),
+        rowEvent("TileOccupancy", ["1", "0", "150", "150"], { entity_id: 20, category: 15, is_structure: false }),
+        rowEvent("TileOpt", ["1", "0", "150", "150"], { data: 5n << 41n }),
+        rowEvent("ActionNonce", ["1", "10"], { next_nonce: 7 }),
+        rowEvent("ActionNonce", ["1", "11"], { next_nonce: 9 }),
+      ]),
+      9,
+      1,
+    );
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: MID_DAY });
+    const messages: HeraldStreamMessage[] = [];
+    const session = live.attach("1", { send: (text) => messages.push(JSON.parse(text)) }, "0xa", "0xbb");
+    live.resume(session, { type: "resume", epoch: "", seq: 0 });
+    await settle();
+    const snapshot = messages
+      .filter((message) => message.type === "snapshot")
+      .flatMap(({ model, rows }) => rows.map((row) => ({ ...row, model })));
+    expect(
+      snapshot.filter((row) => row.model === "RealmKnowledge").map((row) => Number(row.value.structure_id)),
+    ).toEqual([1, 2]);
+    expect(snapshot.filter((row) => row.model === "Building")).toHaveLength(1);
+    expect(snapshot.filter((row) => row.model === "ExplorerTroops")).toHaveLength(1);
+    expect(snapshot.filter((row) => row.model === "ActionNonce").map((row) => Number(row.value.actor))).toEqual([10]);
+    expect(tilesIn(messages).some((row) => Number(row.value.col) >= 100)).toBe(false);
+    expect(fold.subscriptionScope("1", "0xa", MID_DAY, "0xbb").expedition?.regions).toEqual(new Set(["0:0"]));
+    messages.length = 0;
+    live.selectActor(session, "0xa");
+    const scope = messages.find((message) => message.type === "scope")!;
+    expect(scope.visit).toBeUndefined();
+    expect(
+      scope.set.filter((row) => row.model === "RealmKnowledge").map((row) => Number(row.value.structure_id)),
+    ).toEqual([1]);
+    expect(scope.set.some((row) => row.model === "Building" || row.model === "ExplorerTroops")).toBe(false);
   });
 });

@@ -194,15 +194,15 @@ export class LiveWorld {
     return this.overlayFold.gameRows("GameRegistry", gameId).length > 0;
   }
 
-  public attach(gameId: string, socket: StreamSocket, actor?: string): GameStreamSession {
-    return this.hub.attach(this.subscription(gameId, socket, actor));
+  public attach(gameId: string, socket: StreamSocket, actor?: string, visit?: string): GameStreamSession {
+    return this.hub.attach(this.subscription(gameId, socket, actor, visit));
   }
 
-  public selectActor(session: GameStreamSession, actor: string | undefined): void {
-    this.hub.selectActor(session, this.subscription(session.gameId, session.socket, actor));
+  public selectActor(session: GameStreamSession, actor: string | undefined, visit?: string): void {
+    this.hub.selectActor(session, this.subscription(session.gameId, session.socket, actor, visit));
   }
 
-  private subscription(gameId: string, socket: StreamSocket, actor?: string) {
+  private subscription(gameId: string, socket: StreamSocket, actor?: string, visit?: string) {
     const subscription = new GameSubscription(
       gameId,
       actor,
@@ -210,9 +210,11 @@ export class LiveWorld {
       () => this.confirmedBlockValue,
       () => this.lastClockTimestamp,
       this.homeRing,
+      visit,
     );
     return {
       actor,
+      visit,
       confirmedBlock: this.confirmedBlockValue,
       confirmedTimestamp: this.confirmedHeadTimestamp,
       gameId,

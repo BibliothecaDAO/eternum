@@ -371,9 +371,18 @@ export class WorldFold {
     }));
   }
 
-  public subscriptionScope(gameId: string, actor: string | undefined, timestamp: number): GameSyncScope {
-    return deriveGameSyncScope(actor, timestamp, this.expeditionRules(gameId), (model, spacing, keys) =>
-      this.scopeRows(model, gameId, spacing, keys),
+  public subscriptionScope(
+    gameId: string,
+    actor: string | undefined,
+    timestamp: number,
+    visit?: string,
+  ): GameSyncScope {
+    return deriveGameSyncScope(
+      actor,
+      timestamp,
+      this.expeditionRules(gameId),
+      (model, spacing, keys) => this.scopeRows(model, gameId, spacing, keys),
+      visit,
     );
   }
 

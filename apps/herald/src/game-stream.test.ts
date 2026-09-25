@@ -23,6 +23,39 @@ const recordingSocket = (): StreamSocket & { messages: Array<Record<string, unkn
 };
 
 describe("GameStreamHub", () => {
+  it("isolates visit replay identities and sends the actor's outcomes to all of its visits", () => {
+    const hub = new GameStreamHub("epoch-a");
+    const attach = (actor: string, visit?: string) => {
+      const socket = recordingSocket();
+      const session = hub.attach({
+        actor,
+        visit,
+        socket,
+        gameId: "7",
+        confirmedBlock: 12,
+        preconfirmedBlock: null,
+        snapshot: () => snapshot,
+        overlay: () => [],
+      });
+      return { socket, session };
+    };
+    const home = attach("0xa");
+    hub.resume(home.session, { type: "resume", epoch: "", seq: 0 });
+    const visiting = attach("0xa", "0xb");
+    hub.resume(visiting.session, { type: "resume", epoch: String(home.socket.messages[0].epoch), seq: 0 });
+    expect(visiting.socket.messages.some((message) => message.type === "snapshot")).toBe(true);
+    const peer = attach("0xb", "0xa");
+    hub.resume(peer.session, { type: "resume", epoch: "", seq: 0 });
+    hub.publishTransaction("7", { hash: "0x123", status: "ACCEPTED", block: 12 }, ["0xa"]);
+    for (const { socket } of [home, visiting]) expect(socket.messages.at(-1)?.type).toBe("tx");
+    expect(peer.socket.messages.some((message) => message.type === "tx")).toBe(false);
+    const cursor = visiting.socket.messages.at(-1)!;
+    hub.detach(visiting.session);
+    const resumed = attach("0x00a", "0x00b");
+    hub.resume(resumed.session, { type: "resume", epoch: String(cursor.epoch), seq: Number(cursor.seq) });
+    expect(resumed.socket.messages.some((message) => message.type === "snapshot")).toBe(false);
+  });
+
   it("attaches before the snapshot boundary and emits later messages without a gap", () => {
     const hub = new GameStreamHub("epoch-a");
     const socket = recordingSocket();

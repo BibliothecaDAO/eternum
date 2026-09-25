@@ -15,6 +15,7 @@ export function deriveGameSyncScope(
   timestamp: number,
   expedition: { epochSeconds: number; spacing: number; startMainAt: number } | null,
   read: ScopeRowReader,
+  visit?: string,
 ): GameSyncScope {
   const position = (entity: unknown) => {
     if (!expedition) throw new Error("Position requires expedition rules");
@@ -23,19 +24,21 @@ export function deriveGameSyncScope(
     const row = positions[0].value;
     return { x: Number(row.col), y: Number(row.row), alt: row.alt === true };
   };
-  if (actor !== undefined && (BigInt(actor) <= 0n || BigInt(actor) >= (1n << 251n) - 256n))
-    throw new Error("Invalid gameplay account");
-  const scope: GameSyncScope = { actor };
+  for (const account of [actor, visit]) {
+    if (account !== undefined && (BigInt(account) <= 0n || BigInt(account) >= (1n << 251n) - 256n))
+      throw new Error("Invalid gameplay account");
+  }
+  const scope: GameSyncScope = { actor, ...(visit === undefined ? {} : { visit }) };
   if (!expedition) return scope;
   const { spacing } = expedition;
   const currentAbsoluteEpoch = timestamp < expedition.startMainAt ? -1 : absoluteEpoch(expedition, timestamp);
-  const owners = new Set<string>(actor === undefined ? [] : [syncScalar(actor)]);
-  if (actor !== undefined)
-    for (const { value } of read("PlayerEntry", spacing, [scopeLookup.entryOf(actor)]))
-      owners.add(syncScalar(value.owner));
+  const actingOwners = resolveOwners(actor, spacing, read);
+  const owners = new Set([...actingOwners, ...resolveOwners(visit, spacing, read)]);
   const homes = read("Structure", spacing, [...owners].map(scopeLookup.structuresOf)).filter(({ value }) =>
     isRealmCategory(Number((value.base as Record<string, unknown>).category)),
   );
+  const actingHomes = homes.filter(({ value }) => actingOwners.has(syncScalar(value.owner)));
+  const actingRealms = new Set(actingHomes.map(({ value }) => syncScalar(value.entity_id)));
   const realms = new Set(homes.map(({ value }) => syncScalar(value.entity_id)));
   const realmTraits = new Set(
     homes.map(({ value }) => syncScalar((value.metadata as Record<string, unknown>).realm_id)),
@@ -51,12 +54,17 @@ export function deriveGameSyncScope(
     );
   });
   // With no current army, morning muster starts on the surface, at the site the contract raises the realm on today.
-  if (currentAbsoluteEpoch >= 0 && armies.length === 0)
-    for (const realm of realmTraits) {
-      const site = expeditionRealmSite(expedition, Number(realm), timestamp);
+  const actingArmies = armies.filter(({ value }) => actingRealms.has(syncScalar(value.owner)));
+  if (currentAbsoluteEpoch >= 0 && actingArmies.length === 0)
+    for (const { value } of actingHomes) {
+      const site = expeditionRealmSite(
+        expedition,
+        Number((value.metadata as Record<string, unknown>).realm_id),
+        timestamp,
+      );
       regions.add(gameSyncRegion({ alt: false, x: site.col, y: site.row }, spacing)!);
     }
-  for (const { value } of armies) {
+  for (const { value } of actingArmies) {
     const region = gameSyncRegion(position(value.explorer_id), spacing);
     if (region !== undefined) regions.add(region);
   }
@@ -78,6 +86,14 @@ export function deriveGameSyncScope(
     entities,
   };
   return scope;
+}
+
+function resolveOwners(account: string | undefined, spacing: number, read: ScopeRowReader): Set<string> {
+  if (account === undefined) return new Set();
+  return new Set([
+    syncScalar(account),
+    ...read("PlayerEntry", spacing, [scopeLookup.entryOf(account)]).map(({ value }) => syncScalar(value.owner)),
+  ]);
 }
 
 /** The lookups subscriptionScope makes, spelled once: rows are indexed under them and a scope is taken through them. */

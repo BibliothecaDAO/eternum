@@ -31,6 +31,7 @@ export class GameSubscription {
     private readonly block: () => number,
     private readonly timestamp: () => number,
     private readonly ring?: Pick<HomeRing, "rows" | "row">,
+    private readonly visit?: string,
   ) {}
 
   public snapshot(): GameSnapshot {
@@ -87,7 +88,7 @@ export class GameSubscription {
     const known = this.scopes.get(preconfirmed);
     if (known && timestamp < known.validUntil) return known.scope;
     const fold = this.fold(preconfirmed);
-    const scope = fold.subscriptionScope(this.gameId, this.actor, timestamp);
+    const scope = fold.subscriptionScope(this.gameId, this.actor, timestamp, this.visit);
     this.scopes.set(preconfirmed, {
       scope,
       inputs: scopeInputInterest(scope),

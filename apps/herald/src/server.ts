@@ -7,7 +7,13 @@ import { CheckpointStore } from "./checkpoint-store";
 import { createHeraldRequestHandler } from "./http";
 import { MadaraRpc } from "./madara-rpc";
 import { MadaraSubscriptions } from "./madara-subscriptions";
-import { acceptGameStream, answerSafely, createStreamSocketHandlers, type HeraldSocketData } from "./request-guards";
+import {
+  acceptGameStream,
+  parseScopeAddress,
+  answerSafely,
+  createStreamSocketHandlers,
+  type HeraldSocketData,
+} from "./request-guards";
 import { HistoryStore } from "./history-store";
 import { assertShardChain, buildShardManifest, readShardDocument } from "./shard-manifest";
 
@@ -156,14 +162,14 @@ const main = async (): Promise<void> => {
         const url = new URL(request.url);
         if (url.pathname === "/games/updates") bunServer.timeout(request, 0);
         const gameId = streamGameId(url.pathname);
-        const actor = url.searchParams.get("actor") ?? undefined;
-        if (
-          actor !== undefined &&
-          (!/^0x[0-9a-f]{1,64}$/i.test(actor) || BigInt(actor) === 0n || BigInt(actor) >= (1n << 251n) - 256n)
-        )
+        let actor: string | undefined;
+        try {
+          actor = parseScopeAddress(url.searchParams.get("actor"));
+        } catch {
           return new Response("Invalid gameplay account", { status: 400 });
+        }
         if (gameId) {
-          const stream = acceptGameStream(gameId, actor, live);
+          const stream = acceptGameStream(gameId, actor, live, url.searchParams.get("visit") ?? undefined);
           if (stream instanceof Response) return stream;
           if (bunServer.upgrade(request, { data: stream })) return;
         }

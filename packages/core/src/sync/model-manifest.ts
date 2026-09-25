@@ -9,6 +9,7 @@ export interface GameSyncModelDefinition {
 
 export interface GameSyncScope {
   actor?: string;
+  visit?: string;
   expedition?: {
     absoluteEpoch: number;
     spacing: number;

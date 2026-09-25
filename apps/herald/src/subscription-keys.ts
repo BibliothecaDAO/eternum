@@ -28,6 +28,7 @@ export function scopeInputInterest(scope: GameSyncScope): Set<string> {
   if (!expedition) return new Set();
   return new Set([
     ...(scope.actor === undefined ? [] : [scopeLookup.entryOf(scope.actor)]),
+    ...(scope.visit === undefined ? [] : [scopeLookup.entryOf(scope.visit)]),
     ...[...expedition.owners].map(scopeLookup.structuresOf),
     ...[...expedition.realms].map(scopeLookup.armiesOf),
     ...[...expedition.regions].map(scopeLookup.occupancyIn),

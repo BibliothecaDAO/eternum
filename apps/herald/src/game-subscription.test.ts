@@ -24,6 +24,37 @@ const army = (owner: string, explorer: string) => ({
 });
 
 describe("GameSubscription", () => {
+  it("invalidates a visit when its player entry resolves to an owner", () => {
+    const subscriptionScope = vi.fn(() => ({ ...expeditionScope(), visit: "0xbbb" }));
+    const fold = {
+      subscriptionScope,
+      scopeValidUntil: () => 86_400,
+      subscriptionSnapshot: () => ({ confirmed_block: 1, game_id: "1", models: [] }),
+      currentRow: () => undefined,
+    } as unknown as WorldFold;
+    const subscription = new GameSubscription(
+      "1",
+      "0x111",
+      () => fold,
+      () => 1,
+      () => 100,
+      undefined,
+      "0xbbb",
+    );
+    subscription.snapshot();
+    subscription.project({ type: "head", block: 2, preconfirmed: true, timestamp: 100 });
+    expect(subscriptionScope).toHaveBeenCalledTimes(2);
+    subscription.project({
+      type: "diff",
+      block: 2,
+      preconfirmed: true,
+      del: [],
+      set: [{ model: "PlayerEntry", key: "entry", value: { game_id: "1", player: "3003", owner: "11" } }],
+    });
+    expect(subscriptionScope).toHaveBeenCalledTimes(3);
+    expect(subscriptionScope).toHaveBeenLastCalledWith("1", "0x111", 100, "0xbbb");
+  });
+
   it("takes a scope once, and again only when a change touches it or the expedition rolls over", () => {
     let now = 100;
     const subscriptionScope = vi.fn(expeditionScope);
