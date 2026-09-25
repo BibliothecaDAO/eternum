@@ -93,3 +93,20 @@ file at a larger uniform scale from the frontend's single depth table. There is 
 At scale 1, decoded bounds are approximately X [-0.35135, 0.34541], Y [0.01752, 1.71955], Z [-0.27902, 0.34451]. The
 footprint is 0.69676 by 0.62353. First ruin contact is at uniform scale 1.71673; the recommended maximum is **1.70**.
 The tile-only limit is 2.00147. Preserve the shared ground-center origin and +Z facing; keep the ruin at scale 1.
+
+## Shrine
+
+Asset ID: `shrine`. Runtime path: `/models/frontier/shrine.glb`.
+
+```sh
+blender --background --threads 2 --python-exit-code 1 --python apps/game/scripts/frontier/build-shrine.py
+node apps/game/scripts/optimize-structure-models.mjs frontier/shrine.glb
+node apps/game/scripts/optimize-structure-models.mjs --verify frontier/shrine.glb
+```
+
+The arch, sun relief and altar follow the approved Direction A. This is a static site: research unlocks discovery; using
+it grants one attribute level and removes tile occupancy. There is no spent model, opening animation, ownership cloth or
+separate gameplay state embedded in the GLB. Frontend integration owns visibility and removal.
+
+This is an asset handoff to the Frontier frontend lane; live placement and interaction validation belong to that
+integration. The existing C2 chest is reused unchanged. Ring-plot highlighting is frontend-owned and has no model.
