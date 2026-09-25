@@ -1,8 +1,7 @@
 import { AudioManager } from "@/audio/core/AudioManager";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { flashScreen, flySprites, fountainSprites, shakeScreen } from "@/ui/motion/motion-layer";
-import { INTENSITY_LABEL } from "@/ui/motion/motion-scale";
+import { INTENSITY, INTENSITY_LABEL } from "@/ui/motion/motion-scale";
 import { playHaptic } from "@/ui/motion/motion-settings";
 import { Pop } from "@/ui/motion/pop";
 import { GOLD_COIN_ICON } from "@/ui/motion/gold-coin";
@@ -10,8 +9,9 @@ import { RarityChip } from "@/ui/motion/rarity-chip";
 import { TickNumber } from "@/ui/motion/tick-number";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { AttributeOfferCard } from "../attributes/attribute-offer-card";
+import { Chip } from "../frontier-chips";
 import {
   advanceChestMoment,
   type ChestResult,
@@ -22,6 +22,9 @@ import {
 } from "./chest-moment";
 
 const TOKEN_ICON = `/images/resources/${ResourcesIds.Lords}.png`;
+const CHEST_ART = "/image-icons/ui-chest.png";
+/** The coins ringing the chest on a LORDS card (mockup 6), as angles around it. */
+const COIN_RING_DEGREES = [-160, -125, -90, -55, -20, 200, 160];
 const SCRIM_OPACITY = 0.55;
 const OPENING_CAPTION_AFTER_MS = 2_500;
 const CARD_FAN_DELAY_MS = 280;
@@ -134,6 +137,7 @@ const usePacing = () => {
   }, [phase, hasResult]);
 };
 
+/** A long hold shows it is still opening: three pulsing dots under the chest, no words. */
 const OpeningCaption = ({ openedAt, at }: { openedAt: number; at: { x: number; y: number } }) => {
   const [late, setLate] = useState(false);
   useEffect(() => {
@@ -145,9 +149,20 @@ const OpeningCaption = ({ openedAt, at }: { openedAt: number; at: { x: number; y
   }, [openedAt]);
   if (!late) return null;
   return (
-    <p className="absolute -translate-x-1/2 text-base text-gold/90" style={{ left: at.x, top: at.y + 36 }}>
-      Opening…
-    </p>
+    <span
+      role="status"
+      aria-label="Opening"
+      className="absolute flex -translate-x-1/2 gap-1.5"
+      style={{ left: at.x, top: at.y + 36 }}
+    >
+      {[0, 1, 2].map((dot) => (
+        <span
+          key={dot}
+          className="size-2.5 animate-pulse rounded-full bg-[#dfaa54]"
+          style={{ animationDelay: `${dot * 200}ms` }}
+        />
+      ))}
+    </span>
   );
 };
 
@@ -164,7 +179,7 @@ const ChestReveal = ({
   skipped: boolean;
   onSettled: () => void;
 }) => (
-  <div className="absolute inset-x-0 top-[22%] flex flex-col items-center gap-3 px-4">
+  <div className="absolute inset-x-0 top-[18%] mx-auto flex w-full max-w-md flex-col items-center gap-3 px-4 font-sans">
     {result.outcome.kind === "lords" ? (
       <LordsReveal
         lords={result.outcome.lords}
@@ -181,8 +196,9 @@ const ChestReveal = ({
 );
 
 /**
- * The card shows its rarity first. Gold coins fountain from the chest and up to 24 fly into the card's "+N LORDS", which
- * appears with the first landing, rolls up from zero and pulses on each landing after it: it never reads "+0".
+ * The LORDS card (mockup 6): the open chest in its rarity's rays, ringed by coins, the amount large and the rarity's
+ * pips and word under it. Gold coins fountain from the world's chest and up to 24 fly into the amount, which appears
+ * with the first landing, rolls up from zero and pulses on each landing after it: it never reads "0".
  */
 const LordsReveal = ({
   lords,
@@ -235,23 +251,44 @@ const LordsReveal = ({
   }, [landed, onSettled]);
 
   return (
-    <Pop className={cn(OVERLAY_SURFACE_BASE, "flex flex-col items-center gap-2 rounded-2xl px-6 py-4")}>
-      {/* Laid out from the start, so the coins have somewhere to land, but hidden until the first one does. */}
-      <span className={cn("flex items-center gap-2 text-3xl font-semibold text-gold", !landed && "invisible")}>
-        <img src={TOKEN_ICON} alt="" className="h-8 w-8" />
-        <span ref={label}>
-          +<TickNumber value={landed ? lords : 0} nudge={nudge} speed={speed} />
+    <Pop className="w-full">
+      <RarityCard intensity={intensity}>
+        <span className="relative size-52">
+          {COIN_RING_DEGREES.map((degrees) => (
+            <img
+              key={degrees}
+              src={TOKEN_ICON}
+              alt=""
+              className="absolute size-8 rounded-full ring-2 ring-[#dfaa54]/70"
+              style={{
+                left: `calc(50% + ${Math.cos((degrees * Math.PI) / 180) * 90}px - 16px)`,
+                top: `calc(50% + ${Math.sin((degrees * Math.PI) / 180) * 78}px - 16px)`,
+              }}
+            />
+          ))}
+          <img
+            src={CHEST_ART}
+            alt=""
+            className="absolute left-1/2 top-1/2 size-32 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_24px_rgba(246,172,29,0.7)]"
+          />
         </span>
-        LORDS
-      </span>
-      <RarityChip intensity={intensity} />
+        {/* Laid out from the start, so the coins have somewhere to land, but hidden until the first one does. */}
+        <span
+          ref={label}
+          aria-label={`${lords} LORDS`}
+          className={cn("frontier-hero text-[56px] leading-none tabular-nums", !landed && "invisible")}
+        >
+          <TickNumber value={landed ? lords : 0} nudge={nudge} speed={speed} />
+        </span>
+        <RarityChip intensity={intensity} />
+      </RarityCard>
     </Pop>
   );
 };
 
 /**
- * The Loot item card rises with its rarity, then fans into the army's three offer cards. Under a LORDS roll the season
- * could not pay, a neutral ribbon says so: no red and no sting.
+ * The relic card rises with its Loot name and rarity, then fans into the army's three offer cards. Under a LORDS roll
+ * the season could not pay, a greyed coin with the reset hour says so: no red and no sting.
  */
 const RelicReveal = ({
   result,
@@ -275,16 +312,21 @@ const RelicReveal = ({
   return (
     <>
       {outcome.lordsSpent && (
-        <Pop className={cn(OVERLAY_SURFACE_BASE, "rounded-full px-4 py-1.5 text-sm text-gold/90")}>
-          Today's LORDS are spent. More at 00:00 UTC.
+        <Pop>
+          <Chip
+            label="Today's LORDS are spent; more at midnight UTC"
+            icon={<img src={TOKEN_ICON} alt="" className="opacity-60 grayscale" />}
+            value="00:00"
+          />
         </Pop>
       )}
-      <Pop className={cn(OVERLAY_SURFACE_BASE, "flex flex-col items-center gap-2 rounded-2xl px-5 py-3 text-center")}>
-        <h2 className="text-lg font-semibold text-gold">{relic.name}</h2>
-        <RarityChip intensity={outcome.intensity} />
-        <p className="text-sm text-gold/80">+{relic.offer.amount} to one of these</p>
+      <Pop className="w-full">
+        <RarityCard intensity={outcome.intensity}>
+          <h2 className="frontier-title text-center">{relic.name}</h2>
+          <RarityChip intensity={outcome.intensity} />
+        </RarityCard>
       </Pop>
-      <div className="flex justify-center gap-2">
+      <div className="grid w-full grid-cols-3 gap-2">
         {relic.offer.choices.map((choice, index) => (
           <Pop key={choice.attribute} delayMs={skipped ? 0 : CARD_FAN_DELAY_MS + index * CARD_STAGGER_MS}>
             <span className="frontier-card block">
@@ -296,3 +338,20 @@ const RelicReveal = ({
     </>
   );
 };
+
+/** A result's card: Frontier's card edged in the rarity's colour, with its rays behind what it holds. */
+const RarityCard = ({ intensity, children }: { intensity: 0 | 1 | 2 | 3; children: ReactNode }) => (
+  <span
+    className="frontier-card relative flex w-full flex-col items-center gap-3 overflow-hidden px-5 pb-5 pt-4"
+    style={{ borderColor: INTENSITY.colour[intensity] }}
+  >
+    <span
+      aria-hidden
+      className="absolute inset-0"
+      style={{
+        background: `repeating-conic-gradient(from 0deg at 50% 40%, ${INTENSITY.colour[intensity]}26 0deg 7deg, transparent 7deg 20deg)`,
+      }}
+    />
+    <span className="relative flex flex-col items-center gap-3">{children}</span>
+  </span>
+);
