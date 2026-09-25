@@ -27,6 +27,7 @@ const LEVEL_OFFER: AttributeOfferFacts = {
   choices: ["Battle", "Scouting", "Support"],
 };
 const ARMY: ArmyProgressFacts = {
+  game_id: 1,
   explorer_id: 201,
   level: 3,
   xp: 40,
@@ -72,11 +73,11 @@ describe("the pick", () => {
     expect(read()).toMatchObject({ phase: "failed", error: "This offer was already answered.", lifted: "Scouting" });
 
     await act(async () =>
-      onAttributeChosen({ explorer_id: 201, offer_id: 99, attribute: "Scouting", applied: 1, lost: 0 }),
+      onAttributeChosen({ explorerId: 201, offerId: 99, attribute: "Scouting", applied: 1, lost: 0 }),
     );
     expect(read()?.phase).toBe("failed");
     await act(async () =>
-      onAttributeChosen({ explorer_id: 201, offer_id: 7, attribute: "Scouting", applied: 1, lost: 0 }),
+      onAttributeChosen({ explorerId: 201, offerId: 7, attribute: "Scouting", applied: 1, lost: 0 }),
     );
     expect(read()).toMatchObject({ phase: "chosen", chosen: { applied: 1, lost: 0 } });
     expect(plays).toContain("card.pick");

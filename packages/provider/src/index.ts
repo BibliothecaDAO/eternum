@@ -687,6 +687,28 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
+  /** Answers an army's pending attribute offer with one of its three choices. */
+  public async choose_attribute(
+    props: SystemProps.SystemSigner & {
+      explorerId: number;
+      offerId: number;
+      attribute: "Battle" | "Logistics" | "Scouting" | "Support";
+    },
+  ) {
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "ChooseAttribute",
+        value: {
+          explorer_id: props.explorerId,
+          offer_id: props.offerId,
+          attribute: { kind: props.attribute, value: undefined },
+        },
+      },
+      TransactionType.CHOOSE_ATTRIBUTE,
+    );
+  }
+
   public async settle_season(props: SystemProps.SystemSigner & { name: string; selectedRealm?: number }) {
     return this.submitCommand(
       props.signer,

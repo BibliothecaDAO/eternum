@@ -10,7 +10,7 @@ vi.mock("@/ui/motion/motion-settings", () => ({ playHaptic: () => {} }));
 import { bankedPicks, levelProgress, progressChange, xpGained } from "./attributes";
 import { playArmyProgress } from "./progress-moment";
 
-const RULES = { reveal_xp: 10, clear_xp: 25, level_step_xp: 20 };
+const RULES = { game_id: 1, reveal_xp: 10, clear_xp: 25, level_step_xp: 20 };
 
 beforeEach(() => {
   vi.useFakeTimers();

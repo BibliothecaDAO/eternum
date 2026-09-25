@@ -105,7 +105,17 @@ const playerRows = (clock: LabClock): WireRow[] => [
   { model: "ArmySlot", value: armySlot(clock, 202, 1, 150) },
   // The day's third army fell this morning: its slot keeps the tired bar for the next muster.
   { model: "ArmySlot", value: armySlot(clock, 0, 2, 40) },
-  { model: "ArmyProgress", value: armyProgress(clock, 201) },
+  // Army 1 reached level 2 this morning and its pick is still waiting, with more XP banking behind it.
+  {
+    model: "ArmyProgress",
+    value: {
+      ...armyProgress(clock, 201),
+      level: 2,
+      xp: 45,
+      battle: 2,
+      pending: { id: 1, source: "Level", amount: 1, choices: ["Battle", "Scouting", "Support"] },
+    },
+  },
   { model: "ArmyProgress", value: armyProgress(clock, 202) },
   { model: "ExplorerTroops", value: army(clock, 201, 1_498, 0) },
   { model: "ExplorerTroops", value: army(clock, 202, 1, 1) },

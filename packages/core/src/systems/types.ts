@@ -31,6 +31,14 @@ export type ExplorerRewardSystemUpdate = {
   coord: { x: number; y: number };
   timestamp: number;
 };
+/** An army's answer to its attribute offer: the attribute raised, the levels it gained and any lost past the cap. */
+export type AttributeChosenSystemUpdate = {
+  explorerId: ID;
+  offerId: number;
+  attribute: "Battle" | "Logistics" | "Scouting" | "Support";
+  applied: number;
+  lost: number;
+};
 /** A Frontier chest opened on capture: what the army found and how deep it stood. */
 export type ChestRewardSystemUpdate = {
   resultKey: readonly [gameId: string, order: string, index: string];

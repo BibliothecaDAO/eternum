@@ -1,6 +1,7 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { playHaptic } from "@/ui/motion/motion-settings";
 import { create } from "zustand";
+import type { AttributeChosenSystemUpdate } from "@bibliothecadao/eternum";
 import type { Attribute, AttributeOfferFacts } from "./attributes";
 
 /**
@@ -9,15 +10,7 @@ import type { Attribute, AttributeOfferFacts } from "./attributes";
  * own AttributeChosen story arrives; ArmyProgress stays the only fact for levels and the offer, and an offer that leaves
  * it closes the panel however the result came. Never a forced modal: "Later" leaves the offer waiting on its army.
  */
-export interface AttributeChosenStory {
-  explorer_id: number;
-  offer_id: number;
-  attribute: Attribute;
-  applied: number;
-  lost: number;
-}
-
-export type PickPhase = "choosing" | "committing" | "chosen" | "failed";
+type PickPhase = "choosing" | "committing" | "chosen" | "failed";
 
 interface Pick {
   explorerId: number;
@@ -25,7 +18,7 @@ interface Pick {
   lifted: Attribute | null;
   phase: PickPhase;
   error: string | null;
-  chosen: AttributeChosenStory | null;
+  chosen: AttributeChosenSystemUpdate | null;
 }
 
 const usePickStore = create<{ pick: Pick | null }>(() => ({ pick: null }));
@@ -70,9 +63,9 @@ export const commitPick = (send: (attribute: Attribute) => Promise<void>): void 
 };
 
 /** The player's own AttributeChosen: the chosen card flies home. */
-export const onAttributeChosen = (story: AttributeChosenStory): void => {
+export const onAttributeChosen = (story: AttributeChosenSystemUpdate): void => {
   const pick = current();
-  if (!pick || story.explorer_id !== pick.explorerId || story.offer_id !== pick.offer.id) return;
+  if (!pick || story.explorerId !== pick.explorerId || story.offerId !== pick.offer.id) return;
   void AudioManager.getInstance().play("card.pick");
   playHaptic(1);
   set({ ...pick, lifted: story.attribute, phase: "chosen", chosen: story });

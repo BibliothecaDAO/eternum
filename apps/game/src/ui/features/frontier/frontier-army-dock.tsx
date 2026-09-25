@@ -28,10 +28,20 @@ import { Sweep } from "@/ui/motion/sweep";
 import { formatAmount, formatClock } from "./frontier-format";
 import { useExpeditionRules } from "./frontier-home";
 import { describeSlotBar, useOpenArmySlots } from "./frontier-muster-stamina";
+import { ArmyLevel } from "./attributes/army-level";
+import { AttributeBadge } from "./attributes/attribute-badge";
+import { PickChip } from "./attributes/pick-chip";
 import { formatRevealYield, useRevealYield } from "./frontier-reveal-yield";
 import { useMusterPointed } from "./guide/guide-pointer";
 
-const ARMY_MODELS = ["ArmySlot", "ExplorerTroops", "TileOccupancy", "EntityName"] as const;
+const ARMY_MODELS = [
+  "ArmySlot",
+  "ArmyProgress",
+  "ArmyProgressionRules",
+  "ExplorerTroops",
+  "TileOccupancy",
+  "EntityName",
+] as const;
 
 /**
  * One card per army slot the castle grants: today's armies with their strength and stamina, then a Muster card for
@@ -100,23 +110,44 @@ const ArmyCard = ({ army, position }: { army: NativeRows["ExplorerTroops"]; posi
     navigateToMapView(Position.fromContract(coord));
   };
 
+  // Progress and its rules are required facts: until both arrive the card shows no level, badge or pick.
+  const progress = setup.store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
+  const rules = setup.store.get("ArmyProgressionRules", { game_id: army.game_id });
+
+  // The Pick chip is its own button, so it sits in the card's corner rather than inside the card's button; the dock
+  // scrolls, so the corner stays inside the card's bounds.
   return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      onClick={pick}
-      className={cn(OVERLAY_SURFACE_BASE, CARD, selected && OVERLAY_SURFACE_ACTIVE)}
-    >
-      <span className={cn(HUD_LABEL_BRIGHT, "truncate normal-case tracking-normal")}>
-        {dockArmyName(setup.store, army.explorer_id, position)}
-      </span>
-      <span className="flex items-baseline gap-1">
-        <span className={cn(HUD_VALUE, "tabular-nums")}>{formatAmount(armyStrength(army.troops, limits))}</span>
-        <span className={HUD_LABEL}>strength</span>
-      </span>
-      <StaminaBar stamina={stamina} />
-      <ArmyRevealYield army={army} />
-    </button>
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        aria-pressed={selected}
+        onClick={pick}
+        className={cn(OVERLAY_SURFACE_BASE, CARD, selected && OVERLAY_SURFACE_ACTIVE)}
+      >
+        <span
+          className={cn(
+            HUD_LABEL_BRIGHT,
+            "truncate normal-case tracking-normal",
+            progress?.pending && "min-h-7 pr-16 leading-7",
+          )}
+        >
+          {dockArmyName(setup.store, army.explorer_id, position)}
+        </span>
+        <span className="flex items-baseline gap-1">
+          <span className={cn(HUD_VALUE, "tabular-nums")}>{formatAmount(armyStrength(army.troops, limits))}</span>
+          <span className={HUD_LABEL}>strength</span>
+        </span>
+        <StaminaBar stamina={stamina} />
+        {progress && rules && <ArmyLevel progress={progress} rules={rules} />}
+        {progress && <AttributeBadge progress={progress} />}
+        <ArmyRevealYield army={army} />
+      </button>
+      {progress && rules && (
+        <span className="absolute right-2 top-1.5">
+          <PickChip progress={progress} rules={rules} />
+        </span>
+      )}
+    </div>
   );
 };
 

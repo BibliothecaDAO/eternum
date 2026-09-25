@@ -1,32 +1,15 @@
 import { Eye, Flag, Footprints, Swords } from "@/ui/design-system/atoms/game-icons";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
-/**
- * An army's attributes as the agreed facts carry them (backend shapes v5). ArmyProgress is the one current fact for
- * levels and the pending offer; the attributes train's generated rows replace these types when it lands.
- */
-export type Attribute = "Battle" | "Logistics" | "Scouting" | "Support";
+/** An army's progress, its pending offer and the game's XP rules, exactly as the native store carries them. */
+export type ArmyProgressFacts = NativeRows["ArmyProgress"];
+export type AttributeOfferFacts = NonNullable<ArmyProgressFacts["pending"]>;
+export type Attribute = AttributeOfferFacts["choices"][number];
+export type ProgressionRulesFacts = NativeRows["ArmyProgressionRules"];
 
 export const ATTRIBUTES: readonly Attribute[] = ["Battle", "Logistics", "Scouting", "Support"];
 
 export const MAX_ATTRIBUTE_LEVEL = 5;
-
-export interface AttributeOfferFacts {
-  id: number;
-  source: "Level" | "Relic" | "Shrine";
-  amount: number;
-  choices: readonly Attribute[];
-}
-
-export interface ArmyProgressFacts {
-  explorer_id: number;
-  level: number;
-  xp: number;
-  battle: number;
-  logistics: number;
-  scouting: number;
-  support: number;
-  pending: AttributeOfferFacts | null;
-}
 
 /** The army's level in one attribute. */
 export const attributeLevel = (progress: ArmyProgressFacts, attribute: Attribute): number =>
@@ -36,13 +19,6 @@ export const attributeLevel = (progress: ArmyProgressFacts, attribute: Attribute
     Scouting: progress.scouting,
     Support: progress.support,
   })[attribute];
-
-/** The game's ArmyProgressionRules (backend shapes v6): XP per reveal and per clear, and the step each level costs. */
-export interface ProgressionRulesFacts {
-  reveal_xp: number;
-  clear_xp: number;
-  level_step_xp: number;
-}
 
 /**
  * How far an army is into its level, where level L costs `level_step_xp × L`. While an offer waits, XP keeps banking

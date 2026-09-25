@@ -6,6 +6,7 @@ import { storyEventKeys } from "../sync/story-event-identity";
 import type {
   BattleEventSystemUpdate,
   BuildingSystemUpdate,
+  AttributeChosenSystemUpdate,
   ExplorerRewardSystemUpdate,
   RelicChestOpenedSystemUpdate,
   ChestRewardSystemUpdate,
@@ -87,6 +88,24 @@ export class WorldUpdateListener {
     };
   }
 
+  get Attributes() {
+    return {
+      onAttributeChosen: (callback: (value: AttributeChosenSystemUpdate) => void) =>
+        this.onStory("AttributeChosen", (payload) => {
+          const attribute =
+            typeof payload.attribute === "string" ? payload.attribute : Object.keys(fields(payload.attribute) ?? {})[0];
+          if (!isAttribute(attribute)) throw new Error("Malformed attribute choice");
+          callback({
+            explorerId: integer(payload.explorer_id),
+            offerId: integer(payload.offer_id),
+            attribute,
+            applied: integer(payload.applied),
+            lost: integer(payload.lost),
+          });
+        }),
+    };
+  }
+
   get ChestRewards() {
     return {
       onChestReward: (callback: (value: ChestRewardSystemUpdate) => void) =>
@@ -161,3 +180,7 @@ export class WorldUpdateListener {
     };
   }
 }
+
+const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Support"] as const;
+const isAttribute = (value: unknown): value is AttributeChosenSystemUpdate["attribute"] =>
+  ATTRIBUTES.includes(value as AttributeChosenSystemUpdate["attribute"]);

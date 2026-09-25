@@ -15,8 +15,9 @@ import { playArmyProgress } from "@/ui/features/frontier/attributes/progress-mom
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
 /** ArmyProgressionRules and ArmyProgress exactly as the agreed shapes carry them (backend shapes v6). */
-const RULES: ProgressionRulesFacts = { reveal_xp: 10, clear_xp: 25, level_step_xp: 20 };
+const RULES: ProgressionRulesFacts = { game_id: 1, reveal_xp: 10, clear_xp: 25, level_step_xp: 20 };
 const ARMY: ArmyProgressFacts = {
+  game_id: 1,
   explorer_id: 201,
   level: 3,
   xp: 40,
@@ -85,8 +86,8 @@ export const PickLab = () => {
         const before = progress[COLUMN[attribute]];
         const applied = Math.min(5, before + pending.amount) - before;
         onAttributeChosen({
-          explorer_id: progress.explorer_id,
-          offer_id: pending.id,
+          explorerId: progress.explorer_id,
+          offerId: pending.id,
           attribute,
           applied,
           lost: pending.amount - applied,

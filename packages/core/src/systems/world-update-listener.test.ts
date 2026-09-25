@@ -36,6 +36,33 @@ describe("native scene updates", () => {
     });
   });
 
+  it("reads an army's attribute choice in either enum form, and refuses one it cannot name", () => {
+    const { store, listener } = fixture();
+    const chosen = vi.fn();
+    listener.Attributes.onAttributeChosen(chosen);
+    const story = (attribute: unknown) =>
+      store.applyEvent({
+        model: "StoryEvent",
+        key: "receipt-key",
+        value: {
+          game_id: 1,
+          order: "4",
+          index: 0,
+          timestamp: 100,
+          story: {
+            AttributeChosen: { explorer_id: 7, offer_id: 3, source: "Level", attribute, applied: 1, lost: 2 },
+          },
+        },
+      });
+    story("Scouting");
+    story({ Battle: {} });
+    expect(chosen.mock.calls.map(([update]) => update)).toEqual([
+      { explorerId: 7, offerId: 3, attribute: "Scouting", applied: 1, lost: 2 },
+      { explorerId: 7, offerId: 3, attribute: "Battle", applied: 1, lost: 2 },
+    ]);
+    expect(() => story("Luck")).toThrow("Malformed attribute choice");
+  });
+
   it("reads building additions and removals from committed facts and unsubscribes", () => {
     const { store, listener } = fixture();
     const changed = vi.fn();
