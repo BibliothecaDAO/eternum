@@ -544,6 +544,31 @@ html.frontier-type .frontier-chip-number {
   font-size: 17px;
   color: var(--frontier-parchment);
 }
+/* A number that is good or bad news (mockup 2's wheat), and the price a build or a muster pays. */
+html.frontier-type .frontier-chip[data-tone="gain"] {
+  border-color: var(--frontier-stamina);
+}
+html.frontier-type .frontier-chip[data-tone="gain"] .frontier-chip-number {
+  color: #b9e58a;
+}
+html.frontier-type .frontier-chip[data-tone="loss"] {
+  border-color: #e0533f;
+}
+html.frontier-type .frontier-chip[data-tone="loss"] .frontier-chip-number {
+  color: #ff8a73;
+}
+html.frontier-type .frontier-chip[data-tone="price"] {
+  background: linear-gradient(180deg, #f7b93a, #d98a00);
+  border-color: #ffd98a;
+}
+html.frontier-type .frontier-chip[data-tone="price"] .frontier-chip-number {
+  color: var(--frontier-ink);
+}
+/* On the primary button the price sits inset, a shade of the button's own amber. */
+html.frontier-type .frontier-primary .frontier-chip[data-tone="price"] {
+  background: rgba(109, 67, 0, 0.28);
+  border-color: rgba(109, 67, 0, 0.55);
+}
 /* The dock's smaller chip (mockup 7): the same token at card scale. */
 html.frontier-type .frontier-chip.frontier-chip-sm {
   gap: 4px;

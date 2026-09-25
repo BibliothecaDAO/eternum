@@ -141,6 +141,13 @@ export class InteractiveHexManager {
     return this.isRenderingAllHexes ? this.allHexes.has(key) : this.visibleHexes.has(key);
   }
 
+  /** Where something stands on a hex: its centre, on the terrain's surface. */
+  public surfacePosition(hexCoords: { col: number; row: number }): THREE.Vector3 {
+    const position = this.space.positionForHex(hexCoords);
+    position.y = this.surfaceY(position.x, position.z);
+    return position;
+  }
+
   public setCameraView(cameraView: number) {
     this.hoverHexManager.setCameraView(cameraView);
   }

@@ -12,14 +12,20 @@ export const Chip = ({
   icon,
   value,
   small = false,
+  tone,
 }: {
   label: string;
   icon: ReactNode;
   value: string;
   /** The dock's card-scale chip. */
   small?: boolean;
+  tone?: "gain" | "loss" | "price";
 }) => (
-  <span aria-label={`${label} ${value}`} className={cn("frontier-chip justify-center", small && "frontier-chip-sm")}>
+  <span
+    aria-label={`${label} ${value}`}
+    data-tone={tone}
+    className={cn("frontier-chip justify-center", small && "frontier-chip-sm")}
+  >
     {icon}
     <span className="frontier-chip-number tabular-nums">{value}</span>
   </span>

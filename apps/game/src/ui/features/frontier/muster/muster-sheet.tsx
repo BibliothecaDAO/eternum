@@ -72,7 +72,7 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   return (
     <section
       aria-label="Muster"
-      data-muster-sheet
+      data-frontier-sheet
       // A bottom sheet over the dock on a phone held upright; at the foot of the screen otherwise.
       className={cn(
         "frontier-sheet pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex flex-col gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] font-sans",

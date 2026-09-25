@@ -195,6 +195,8 @@ export default class HexceptionScene extends HexagonScene {
   /** This realm's marked plots, one per ring on a realm board: always highlighted, and set on a greener ground. */
   private markedPlots: { col: number; row: number }[] = [];
   private buildingPreview: BuildingPreview | null = null;
+  /** The plot a build sheet chose: its ghost stands there instead of following the pointer, and a tap selects. */
+  private pinnedPlot: HexPosition | null = null;
   /** The entered structure's building slots; setup() binds it before the scene is entered. */
   private tileManager!: BuildingTiles;
   private labels: {
@@ -344,7 +346,11 @@ export default class HexceptionScene extends HexagonScene {
         (building) => {
           if (building) {
             this.interactiveHexManager.setAuraVisibility(false);
-            this.getOrCreateBuildingPreview().setPreviewBuilding(building as any);
+            this.pinnedPlot = building.plot ?? null;
+            const preview = this.getOrCreateBuildingPreview();
+            preview.setPreviewBuilding(building as any);
+            if (this.pinnedPlot)
+              preview.setBuildingPosition(this.interactiveHexManager.surfacePosition(this.pinnedPlot));
             this.renderBuildingPlacementHighlights();
           } else {
             this.interactiveHexManager.setAuraVisibility(true);
@@ -492,6 +498,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private clearBuildingMode() {
+    this.pinnedPlot = null;
     this.buildingPreview?.clearPreviewBuilding();
     this.renderRestingHighlights();
     this.state.setPreviewBuilding(null);
@@ -817,7 +824,8 @@ export default class HexceptionScene extends HexagonScene {
     if (hexCoords === null) return;
 
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
-    const buildingType = this.buildingPreview?.getPreviewBuilding();
+    // A pinned ghost is the build sheet's to place; a tap picks another plot.
+    const buildingType = this.pinnedPlot ? null : this.buildingPreview?.getPreviewBuilding();
 
     const account = useAccountStore.getState().account;
     const canConstruct = !!account && canIssueOrders();
@@ -899,8 +907,18 @@ export default class HexceptionScene extends HexagonScene {
     }
   }
 
+  /** The unpinned ghost follows the pointer, red over a plot it cannot stand on. */
+  private followPointerWithPreview(position: Vector3, hex: HexPosition): void {
+    this.buildingPreview?.setBuildingPosition(position);
+    if (this.tileManager.isHexOccupied(hex) || (hex.col === BUILDINGS_CENTER[0] && hex.row === BUILDINGS_CENTER[1])) {
+      this.buildingPreview?.setBuildingColor(new Color(0xff0000));
+    } else {
+      this.buildingPreview?.resetBuildingColor();
+    }
+  }
+
   private openPlotConstruction(spot: HexPosition): boolean {
-    if (!this.isEntered || !canIssueOrders()) return false;
+    if (!this.isEntered || !canIssueOrders() || !this.mode.ui.showPlotPicker) return false;
     const entityId = useUIStore.getState().structureEntityId;
     const account = useAccountStore.getState().account;
     const realm = getRealmInfo(entityId, this.game.store, getPlayerName);
@@ -964,16 +982,7 @@ export default class HexceptionScene extends HexagonScene {
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     //check if it on main hex
 
-    this.buildingPreview?.setBuildingPosition(position);
-
-    if (
-      this.tileManager.isHexOccupied(normalizedCoords) ||
-      (normalizedCoords.col === BUILDINGS_CENTER[0] && normalizedCoords.row === BUILDINGS_CENTER[1])
-    ) {
-      this.buildingPreview?.setBuildingColor(new Color(0xff0000));
-    } else {
-      this.buildingPreview?.resetBuildingColor();
-    }
+    if (!this.pinnedPlot) this.followPointerWithPreview(position, normalizedCoords);
     const building = this.tileManager.getBuilding(normalizedCoords) as
       | { category: BuildingType; structureType?: StructureType }
       | undefined;
@@ -1268,8 +1277,10 @@ export default class HexceptionScene extends HexagonScene {
   private renderBuildingPlacementHighlights(): void {
     const isMarked = (hex: { col: number; row: number }) =>
       this.markedPlots.some((plot) => plot.col === hex.col && plot.row === hex.row);
+    // A pinned ghost marks its one plot; a free one shows every plot it may stand on.
+    const plots = this.pinnedPlot ? [this.pinnedPlot] : this.highlights;
     this.highlightHexManager.highlightHexes([
-      ...this.highlights
+      ...plots
         .filter((hex) => !isMarked(hex))
         .map((hex) => ({
           hex: { col: hex.col, row: hex.row },

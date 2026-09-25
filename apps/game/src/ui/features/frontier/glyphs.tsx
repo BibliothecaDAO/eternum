@@ -98,3 +98,11 @@ export const PlusGlyph = ({ className }: { className?: string }) => (
     <path d="M14 7v14M7 14h14" stroke={GOLD} strokeWidth="3" strokeLinecap="round" />
   </svg>
 );
+
+/** Population: a figure's head and shoulders in parchment. */
+export const PersonGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 28 28" className={className} aria-hidden>
+    <circle cx="14" cy="9.5" r="4.5" fill={PARCHMENT} stroke={INK} strokeWidth="1.5" />
+    <path d="M5.5 23.5a8.5 7 0 0 1 17 0z" fill={PARCHMENT} stroke={INK} strokeWidth="1.5" strokeLinejoin="round" />
+  </svg>
+);

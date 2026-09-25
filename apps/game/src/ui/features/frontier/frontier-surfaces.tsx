@@ -7,7 +7,8 @@ import { MusterSheet } from "./muster/muster-sheet";
 
 /**
  * The workspaces a Frontier game opens over its map, from the same view every opener sets (the dock's Muster card,
- * the realm's map menu): its own muster sheet, and the shared build until Frontier's own build sheet replaces it.
+ * the realm's map menu): its own muster sheet, and the shared build the realm menu's build actions open (a tapped
+ * plot opens Frontier's build sheet from the selection instead).
  * No order surface opens for a realm the player does not own.
  */
 export const FrontierSurfaces = ({ realm }: { realm: NativeRows["Structure"] | null }) => {

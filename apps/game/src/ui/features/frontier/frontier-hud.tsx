@@ -44,7 +44,7 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
       aria-label="Frontier HUD"
       // The session happens on the map: while the selection sheet shows something, Ysolde waits out of the way (her
       // line stays unseen) instead of stacking on it, by the same test the sheet uses to show itself.
-      className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-2 [&:has([data-selection-sheet]_[data-sheet-content]>*)_[data-guide]]:hidden [&:has([data-muster-sheet])_[data-guide]]:hidden"
+      className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-2 [&:has([data-selection-sheet]_[data-sheet-content]>*)_[data-guide]]:hidden [&:has([data-frontier-sheet])_[data-guide]]:hidden"
       style={SAFE_AREA}
     >
       <FrontierStatusStrip rules={rules} realm={realm} />
@@ -64,7 +64,7 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
           </div>
           <QuickFeedRows />
         </div>
-        <FrontierSelectionSheet />
+        <FrontierSelectionSheet realm={realm} />
         {/* The dock, chat and guide keep their height; the selection sheet above scrolls to make room. */}
         <div className="flex min-h-0 shrink-0 flex-col-reverse gap-2 landscape:order-first landscape:w-48 landscape:flex-col">
           {realm && <FrontierArmyDock realm={realm} />}
