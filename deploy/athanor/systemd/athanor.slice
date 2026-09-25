@@ -1,10 +1,13 @@
 [Unit]
-Description=Isolated native candidate resource budget
+Description=Resource budget for campaign trials on a box that runs only shards
 
+# Owner ruling 2026-09-25: the slice may take most of the box, keeping about 13 GB outside it for dockerd, cloudflared,
+# backups and on-box builds; nothing competes for CPU or IO, so the weights are the default. Every CPU is allowed by
+# the drop-in host/bootstrap.sh writes for the box's own count.
 [Slice]
-CPUWeight=20
-MemoryHigh=44G
-MemoryMax=48G
+CPUWeight=100
+MemoryHigh=76G
+MemoryMax=80G
 MemorySwapMax=0
-IOWeight=20
+IOWeight=100
 TasksMax=4096
