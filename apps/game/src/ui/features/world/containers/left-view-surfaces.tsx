@@ -41,20 +41,7 @@ const ActiveViewSurface = () => {
   // Esc handling lives inside each view's popover panel, so we don't double-bind it here.
   const closeView = useCallback(() => setView(LeftView.None), [setView]);
 
-  if (surface === "build") {
-    return (
-      <PopoverPanel
-        id="build"
-        ariaLabel="Build"
-        anchor="top-center"
-        rememberPosition
-        className="w-auto p-0"
-        onDismiss={closeView}
-      >
-        <ConstructionModal structureEntityId={structureEntityId} />
-      </PopoverPanel>
-    );
-  }
+  if (surface === "build") return <BuildSurface structureEntityId={structureEntityId} onClose={closeView} />;
   if (surface === "logistics") {
     return (
       <PopoverPanel
@@ -93,6 +80,20 @@ const ActiveViewSurface = () => {
   }
   return null;
 };
+
+/** The build workspace over the map, shared by every mode's view surfaces. */
+export const BuildSurface = ({ structureEntityId, onClose }: { structureEntityId: ID; onClose: () => void }) => (
+  <PopoverPanel
+    id="build"
+    ariaLabel="Build"
+    anchor="top-center"
+    rememberPosition
+    className="w-auto p-0"
+    onDismiss={onClose}
+  >
+    <ConstructionModal structureEntityId={structureEntityId} />
+  </PopoverPanel>
+);
 
 const StructureEditSurface = () => {
   const mode = useGameModeConfig();

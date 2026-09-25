@@ -127,11 +127,18 @@ const HUD = () => {
   const expeditionRules = useExpeditionRules();
   return (
     <>
-      {expeditionRules ? <FrontierHud rules={expeditionRules} /> : <ArenaHud />}
+      {/* A Frontier game opens its own surfaces (muster, build) from its HUD; the other modes share these. */}
+      {expeditionRules ? (
+        <FrontierHud rules={expeditionRules} />
+      ) : (
+        <>
+          <ArenaHud />
+          <LeftViewSurfaces />
+        </>
+      )}
       {/* Every mode's moments fly their sprites on this one layer. */}
       <MotionLayer />
       <ContextMenu />
-      <LeftViewSurfaces />
     </>
   );
 };

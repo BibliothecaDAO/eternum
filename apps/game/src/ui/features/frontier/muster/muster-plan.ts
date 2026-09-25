@@ -16,7 +16,7 @@ import { type Direction, RESOURCE_PRECISION, TroopTier, TroopType } from "@bibli
  * What Frontier's muster needs, read from facts with no UI of its own: the realm's next open slot and the troop stacks
  * it holds, then for a chosen stack and count the army it would make. The sheet's look comes from the visual redo.
  */
-interface MusterStack {
+export interface MusterStack {
   type: TroopType;
   tier: TroopTier;
   /** Whole troops waiting at the realm. */
@@ -41,7 +41,7 @@ const PRECISION = BigInt(RESOURCE_PRECISION);
 export const readMusterPlan = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
-  tick: number,
+  defaultTick: number,
 ): MusterPlan | undefined => {
   const allowed = realm.base.troop_max_explorer_count;
   const open = openArmySlots(store, { game_id: realm.game_id, entity_id: realm.entity_id, allowedSlots: allowed });
@@ -49,7 +49,7 @@ export const readMusterPlan = (
   const stacks: MusterStack[] = [];
   for (const tier of TIERS)
     for (const type of TYPES) {
-      const balance = getBalance(realm.entity_id, getTroopResourceId(type, tier), tick, store).balance;
+      const balance = getBalance(realm.entity_id, getTroopResourceId(type, tier), defaultTick, store).balance;
       if (balance === undefined) return undefined;
       const available = Number(BigInt(balance) / PRECISION);
       if (available > 0)
@@ -68,7 +68,7 @@ export const previewMuster = (
   plan: MusterPlan,
   stack: MusterStack,
   count: number,
-  tick: number,
+  armiesTick: number,
 ): {
   count: number;
   strength: number;
@@ -85,7 +85,7 @@ export const previewMuster = (
     strength: armyStrength(troops, limits),
     revealYield: percent === undefined ? undefined : revealYield(troops, limits, percent),
     stamina: plan.next
-      ? musterStamina(plan.next, { category: stack.type, tier: stack.tier }, tick, staminaRules)
+      ? musterStamina(plan.next, { category: stack.type, tier: stack.tier }, armiesTick, staminaRules)
       : null,
   };
 };

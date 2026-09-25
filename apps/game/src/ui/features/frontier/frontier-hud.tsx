@@ -3,6 +3,7 @@ import { QuickFeed } from "@/ui/features/event-feed/quick-feed";
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import { type CSSProperties, useEffect, useState } from "react";
 import { FrontierPick } from "./attributes/frontier-pick";
+import { FrontierSurfaces } from "./frontier-surfaces";
 import { FrontierArmyDock } from "./frontier-army-dock";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
@@ -41,10 +42,11 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
       aria-label="Frontier HUD"
       // The session happens on the map: while the selection sheet shows something, Ysolde waits out of the way (her
       // line stays unseen) instead of stacking on it, by the same test the sheet uses to show itself.
-      className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-2 [&:has([data-selection-sheet]_[data-sheet-content]>*)_[data-guide]]:hidden"
+      className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-2 [&:has([data-selection-sheet]_[data-sheet-content]>*)_[data-guide]]:hidden [&:has([data-muster-sheet])_[data-guide]]:hidden"
       style={SAFE_AREA}
     >
       <FrontierStatusStrip rules={rules} realm={realm} />
+      <FrontierSurfaces realm={realm} />
       <div className="flex min-h-0 flex-1 flex-col justify-end gap-2 landscape:flex-row landscape:items-stretch landscape:justify-between">
         <div className="flex max-w-[min(360px,70vw)] flex-col items-end gap-1 self-end portrait:mb-auto landscape:order-2 landscape:mb-auto landscape:ml-auto landscape:self-start">
           <QuickFeed logOpen={logOpen} onLogToggle={() => setLogOpen((open) => !open)} />

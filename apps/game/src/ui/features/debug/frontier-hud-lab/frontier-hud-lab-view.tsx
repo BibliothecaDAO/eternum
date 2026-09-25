@@ -8,7 +8,6 @@ import { SurfaceHost } from "@/ui/design-system/molecules/popover";
 import { FrontierHud } from "@/ui/features/frontier/frontier-hud";
 import { MotionLayer } from "@/ui/motion/motion-layer";
 import { ContextMenu } from "@/ui/features/world/components/context-menu/context-menu";
-import { LeftViewSurfaces } from "@/ui/features/world/containers/left-view-surfaces";
 import { installActiveGameClient } from "@/sync/active-game-client";
 import { createGameViews, type GameClient } from "@bibliothecadao/eternum";
 import { installFreshGameSyncRuntime, WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
@@ -42,9 +41,8 @@ export const FrontierHudLabView = () => {
       <SurfaceHost />
       <FrontierHud rules={readExpeditionRules(lab.setup.store, lab.gameId)!} />
       <MotionLayer />
-      {/* The world layout's own surfaces, so muster, build and the context menu open here as they do in a game. */}
+      {/* The world layout's context menu; muster and build open from the HUD's own surfaces, as in a game. */}
       <ContextMenu />
-      <LeftViewSurfaces />
       <LabPacing store={lab.setup.store} gameId={lab.gameId} />
     </GameProvider>
   );
