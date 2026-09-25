@@ -311,7 +311,7 @@ describe("native presets", () => {
     expect(next.settlement.realms.realm_resources).toHaveLength(9);
   });
 
-  test("registration reads the current commitment and replaces changed balances", async () => {
+  test("registration reads the current commitment and refuses a registered id locally", async () => {
     const registration = buildNativePresetRegistration(buildNativePreset(configuration(3), 3), 1, manifestPath);
     let commitment = registration.commitment;
     const account = {
@@ -319,12 +319,16 @@ describe("native presets", () => {
       getClassHashAt: async () => "0x456",
       callContract: async () => [commitment],
       execute: async () => {
-        throw new Error("replacement submitted");
+        throw new Error("registration submitted");
       },
     } as unknown as Account;
     expect(await registerNativePreset(account, 1, registration)).toBeNull();
     commitment = "0x1";
-    await expect(registerNativePreset(account, 1, registration)).rejects.toThrow("replacement submitted");
+    await expect(registerNativePreset(account, 1, registration)).rejects.toThrow(
+      "Preset 1 is registered with commitment 0x1",
+    );
+    commitment = "0x0";
+    await expect(registerNativePreset(account, 1, registration)).rejects.toThrow("registration submitted");
   });
 
   test("a stale manifest cannot register through a replaced registrar", async () => {

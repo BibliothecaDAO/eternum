@@ -32,15 +32,15 @@ def configuration():
 
 
 def requested_presets(environ, facts):
-    """The presets this shard registers, from PRESETS; an id outside the release's catalogue is refused before
-    anything deploys."""
+    """The presets this shard registers, from PRESETS, with the commitment the release gives each; an id outside the
+    release's catalogue is refused before anything deploys."""
     ids = [int(value) for value in environ.get("PRESETS", "").split(",") if value.strip()]
     if not ids:
         raise ValueError("PRESETS must name the preset ids this shard registers, e.g. PRESETS=2,5")
     unknown = [preset for preset in ids if str(preset) not in facts["presets"]]
     if unknown:
         raise ValueError(f"Presets {unknown} are not in this release's catalogue {sorted(facts['presets'], key=int)}")
-    return ids
+    return {preset: facts["presets"][str(preset)] for preset in ids}
 
 
 def default_gateway(route_table):
@@ -137,16 +137,22 @@ def deploy_world_once(config, env):
 
 
 # Registration is idempotent, so every start registers the listed presets: one added later registers without
-# touching the shard's identity. The record holds the commitment each preset has on chain.
+# touching the shard's identity. The record holds the commitment each preset has on chain, which must be the release's.
 def register_presets(env, presets):
     env = {**env, "DEPLOYER_ACCOUNT_ADDRESS": json.loads((DATA / "gameplay-contracts.json").read_text())["operatorAccountAddress"]}
     commitments = {}
-    for preset in presets:
+    for preset, released in presets.items():
         record = DATA / f"preset-{preset}.json"
         shard.run(["bun", "config/deployer/clean/registrar/register-preset.ts", "--preset-id", str(preset),
                    "--record", str(record)], DATA, f"preset-{preset}", env)
-        commitments[str(preset)] = json.loads(record.read_text())["commitment"]
+        commitments[str(preset)] = chain_commitment(preset, json.loads(record.read_text())["commitment"], released)
     return commitments
+
+
+def chain_commitment(preset, on_chain, released):
+    if int(on_chain, 16) != int(released, 16):
+        raise ValueError(f"Preset {preset} commits to {on_chain} on chain; this release's facts say {released}")
+    return on_chain
 
 
 if __name__ == "__main__":

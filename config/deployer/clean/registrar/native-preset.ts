@@ -65,6 +65,11 @@ export async function registerNativePreset(
     block,
   );
   if (BigInt(existing) === BigInt(registration.commitment)) return null;
+  // A registered id is immutable on chain; a different definition under it would only revert there.
+  if (BigInt(existing) !== 0n)
+    throw new Error(
+      `Preset ${presetId} is registered with commitment ${existing}; this definition commits to ${registration.commitment}`,
+    );
   const receipt = await account.execute({
     contractAddress: registration.address,
     entrypoint: "register_preset",

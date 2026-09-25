@@ -76,11 +76,19 @@ class ShardTest(unittest.TestCase):
         package = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(package)
         facts = {"presets": {"2": "0x2", "3": "0x3", "5": "0x5", "101": "0x65"}}
-        self.assertEqual(package.requested_presets({"PRESETS": "2,5"}, facts), [2, 5])
+        self.assertEqual(package.requested_presets({"PRESETS": "2,5"}, facts), {2: "0x2", 5: "0x5"})
         with self.assertRaisesRegex(ValueError, r"Presets \[1\] are not in this release's catalogue"):
             package.requested_presets({"PRESETS": "2,1"}, facts)
         with self.assertRaisesRegex(ValueError, "PRESETS must name"):
             package.requested_presets({"PRESETS": ""}, facts)
+
+    def test_package_init_refuses_a_preset_whose_chain_commitment_is_not_the_release(self):
+        spec = importlib.util.spec_from_file_location("shard_init", shard.ROOT / "deploy/shard/init.py")
+        package = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(package)
+        self.assertEqual(package.chain_commitment(2, "0x02", "0x2"), "0x02")
+        with self.assertRaisesRegex(ValueError, "Preset 2 commits to 0x3 on chain; this release's facts say 0x2"):
+            package.chain_commitment(2, "0x3", "0x2")
 
     def test_package_init_derives_the_trusted_proxy_only_behind_loopback_bindings(self):
         spec = importlib.util.spec_from_file_location("shard_init", shard.ROOT / "deploy/shard/init.py")
