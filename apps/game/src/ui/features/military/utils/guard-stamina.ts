@@ -3,6 +3,7 @@ import { Troops, TroopTier, TroopType } from "@bibliothecadao/types";
 
 interface GuardTroopsLike {
   category?: unknown;
+  staminaMax?: number;
   tier?: unknown;
   stamina?: {
     amount?: unknown;
@@ -67,6 +68,7 @@ const buildGuardTroopsForStaminaComputation = (
     category,
     tier,
     count: 0n,
+    staminaMax: troops.staminaMax,
     stamina: {
       amount: toBigIntOrZero(troops.stamina?.amount),
       updated_tick: toBigIntOrZero(troops.stamina?.updated_tick),
@@ -99,7 +101,7 @@ export const getGuardStaminaSnapshot = (
 
   let max = 0;
   try {
-    max = StaminaManager.getMaxStamina(category, tier);
+    max = StaminaManager.getMaxStamina(category, tier, data.staminaMax);
   } catch {
     return null;
   }

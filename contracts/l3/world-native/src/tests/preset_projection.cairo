@@ -39,12 +39,22 @@ fn row<T, +Serde<T>, +Drop<T>>(ref rows: Array<ObservedRow>, model: felt252, key
     rows.append(ObservedRow { model, keys, values: values.span() });
 }
 
-fn launch(address: ContractAddress, name: ByteArray) -> u32 {
+pub fn current_definition(name: ByteArray) -> (u32, crate::presets::PresetDefinition) {
     let mut registration = read_txt(@FileTrait::new(format!("tests/fixtures/current-presets/{}-register.txt", name)))
         .span();
     let preset_id = Serde::deserialize(ref registration).unwrap();
     let definition = Serde::deserialize(ref registration).unwrap();
     assert!(registration.is_empty());
+    (preset_id, definition)
+}
+
+pub fn frontier_progression_rules() -> crate::progression::ArmyProgressionRules {
+    let (_, definition) = current_definition("frontier");
+    definition.economy.progression.unwrap()
+}
+
+fn launch(address: ContractAddress, name: ByteArray) -> u32 {
+    let (preset_id, definition) = current_definition(name.clone());
     let registrar = IRegistrarDispatcher { contract_address: address };
     registrar.register_preset(preset_id, definition);
     let mut calldata = read_txt(@FileTrait::new(format!("tests/fixtures/current-presets/{}-create.txt", name))).span();
@@ -95,6 +105,31 @@ fn current_frontier_rejects_a_reintroduced_supply_pool() {
         .span();
     assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());
     assert_eq!(IRegistrarDispatcher { contract_address: d.games }.preset_commitment(preset_id), 0);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn current_frontier_requires_complete_progression_rules() {
+    let d = super::registrar::setup();
+    start_cheat_caller_address(d.games, super::authority());
+    for invalid in 0_u8..4 {
+        let (preset_id, mut definition) = current_definition("frontier");
+        let mut progression = definition.economy.progression.unwrap();
+        if invalid == 1 {
+            progression.reveal_xp = 0;
+        } else if invalid == 2 {
+            progression.clear_xp = 0;
+        } else if invalid == 3 {
+            progression.level_step_xp = 0;
+        }
+        definition.economy.progression = if invalid == 0 {
+            None
+        } else {
+            Some(progression)
+        };
+        assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());
+        assert_eq!(IRegistrarDispatcher { contract_address: d.games }.preset_commitment(preset_id), 0);
+    }
 }
 
 fn compare(address: ContractAddress, game_id: u32, name: ByteArray) {
@@ -243,6 +278,9 @@ fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, game_
     row(ref rows, 'RelicRules', key, relics.relic_rules(game_id));
     if let Some(chests) = relics.chest_rules(game_id) {
         row(ref rows, 'ChestRules', key, chests);
+    }
+    if let Some(progression) = interact_with_state(address, || crate::logic::progression::rules(game_id)) {
+        row(ref rows, 'ArmyProgressionRules', key, progression);
     }
     row(ref rows, 'ArtificerCost', key, artificer.artificer_cost(game_id));
     let deposits = interact_with_state(address, || crate::logic::preset_record::for_game(game_id).deposit_rules.read());

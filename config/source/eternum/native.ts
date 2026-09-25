@@ -41,6 +41,7 @@ export const eternumPreset: NativePreset = {
   commandMask: commandMask(["EnterDepth", "BuyRealmUpgrade"]),
   spacing: 6,
   epochSeconds: 0,
+  progression: null,
   chests: null,
   board: null,
   depths: [],

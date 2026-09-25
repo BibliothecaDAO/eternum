@@ -35,6 +35,7 @@ export const blitzPreset: NativePreset = {
   commandMask: arenaCommandMask,
   spacing: 6,
   epochSeconds: 0,
+  progression: null,
   chests: null,
   board: null,
   depths: [],

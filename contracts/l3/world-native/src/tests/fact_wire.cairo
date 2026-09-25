@@ -27,6 +27,8 @@ pub struct FactWire {
     pub tile_occupancy: crate::map::TileOccupancy,
     pub army_slot_key: crate::troops::ArmySlotKey,
     pub army_slot: crate::troops::ArmySlot,
+    pub army_progress: crate::progression::ArmyProgress,
+    pub army_progression_rules: crate::progression::ArmyProgressionRules,
     pub explorer_record: crate::troops::ExplorerRecord,
     pub liquidity_key: crate::market::LiquidityKey,
     pub mine_kind_key: crate::mines::MineKindKey,

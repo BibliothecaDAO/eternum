@@ -19,6 +19,7 @@ mod mines;
 mod packer_bound;
 mod preset_projection;
 mod production;
+mod progression;
 mod realms;
 mod recorded;
 mod registrar;

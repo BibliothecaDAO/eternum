@@ -121,9 +121,13 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
   FaithRemoved: { fields: [3, 9], expected: { structure_id: 3n, wonder_id: 9n } },
   BlitzFinalized: { fields: [11], expected: 11n },
   RelicCrafted: { fields: [4], expected: 4n },
+  AttributeChosen: {
+    fields: [7, 9, 1, 1, 2, 1],
+    expected: { explorer_id: 7n, offer_id: 9n, source: "Relic", attribute: "Logistics", applied: 2n, lost: 1n },
+  },
   ChestReward: {
-    fields: [17, 7, 3, 2, 2, 3, 0],
-    expected: { player: 17n, explorer_id: 7n, epoch: 3n, depth: 2n, kind: "Token", quality: 3n, relic_id: 0n },
+    fields: [17, 7, 3, 2, 2, 3],
+    expected: { player: 17n, explorer_id: 7n, epoch: 3n, depth: 2n, kind: "Token", quality: 3n },
   },
   ExplorerCreateStory: {
     fields: [7, 3, 1, 2, 100, 4],

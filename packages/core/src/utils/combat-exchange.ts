@@ -253,8 +253,14 @@ const incomingMultiplier = (troops: ExchangeTroops, isStructureGuard: boolean): 
   isStructureGuard && troops.category === "Knight" ? percent(85) : unscaled(1);
 
 const activeBoosts = (troops: ExchangeTroops, currentTick: number) => ({
-  dealt: troops.boosts.incr_damage_dealt_end_tick <= currentTick ? 0 : troops.boosts.incr_damage_dealt_percent_num,
-  gotten: troops.boosts.decr_damage_gotten_end_tick <= currentTick ? 0 : troops.boosts.decr_damage_gotten_percent_num,
+  dealt:
+    troops.boosts.incr_damage_dealt_end_tick !== 0 && troops.boosts.incr_damage_dealt_end_tick <= currentTick
+      ? 0
+      : troops.boosts.incr_damage_dealt_percent_num,
+  gotten:
+    troops.boosts.decr_damage_gotten_end_tick !== 0 && troops.boosts.decr_damage_gotten_end_tick <= currentTick
+      ? 0
+      : troops.boosts.decr_damage_gotten_percent_num,
 });
 
 const refundMultiplier = (dealt: Fixed, taken: Fixed): Fixed => {

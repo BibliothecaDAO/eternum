@@ -247,7 +247,7 @@ jobs:
       - name: Check current preset fixtures match the preset source
         run: |
           pnpm run fixtures:native-presets
-          git diff --exit-code -- contracts/l3/world-native/tests/fixtures/current-presets
+          git diff --exit-code -- contracts/l3/world-native/tests/fixtures/current-presets contracts/l3/world-native/tests/fixtures/frontier-command-mask.txt
       - name: Type-check the shard tooling, harness and config
         run: |
           pnpm exec tsc -p deploy/athanor/tsconfig.json

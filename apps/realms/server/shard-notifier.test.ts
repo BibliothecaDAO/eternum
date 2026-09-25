@@ -247,6 +247,15 @@ const snapshot = (army: ArmyState | null, neighbour: ArmyState | null, owner: st
       ].filter(({ value }) => owner === null || BigInt(STRUCTURE_OWNERS.get(value.structure_id)!) === BigInt(owner)),
     },
     {
+      model: "ArmyProgress",
+      rows: [
+        ...(army ? [armyProgressRow(ARMY, HOME)] : []),
+        ...(neighbour ? [armyProgressRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME)] : []),
+      ]
+        .filter(({ home }) => owner === null || BigInt(STRUCTURE_OWNERS.get(home)!) === BigInt(owner))
+        .map(({ home: _home, ...row }) => row),
+    },
+    {
       model: "ExplorerTroops",
       rows: [
         ...(army ? [armyRow(ARMY, HOME, army)] : []),
@@ -268,6 +277,22 @@ const armyRow = (explorerId: number, home: number, army: ArmyState) => ({
       count: "0x64",
       stamina: { Slot: 0 },
     },
+  },
+});
+
+const armyProgressRow = (explorerId: number, home: number) => ({
+  home,
+  key: `0x${explorerId.toString(16)}`,
+  value: {
+    game_id: GAME_ID,
+    explorer_id: explorerId,
+    level: 1,
+    xp: 0,
+    battle: 1,
+    logistics: 1,
+    scouting: 1,
+    support: 1,
+    pending: null,
   },
 });
 

@@ -62,7 +62,11 @@ const readGuideFacts = (
       ? [
           {
             current: Number(StaminaManager.getStamina(troops, clock.armiesTick).amount),
-            max: StaminaManager.getMaxStamina(army.troops.category as TroopType, army.troops.tier as TroopTier),
+            max: StaminaManager.getMaxStamina(
+              army.troops.category as TroopType,
+              army.troops.tier as TroopTier,
+              troops.staminaMax,
+            ),
           },
         ]
       : [];

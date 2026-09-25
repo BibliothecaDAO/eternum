@@ -66,6 +66,7 @@ pub enum Story {
     GuardDeleteStory: crate::troop_management::GuardSlot,
     TroopsTransferred: crate::troop_management::TransferTroops,
     ChestReward: crate::relics::ChestReward,
+    AttributeChosen: crate::progression::AttributeChosen,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

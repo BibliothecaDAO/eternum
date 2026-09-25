@@ -156,7 +156,8 @@ pub impl TroopObservation of TroopObservationTrait {
         interact_with_state(
             self.contract_address,
             || {
-                crate::logic::troops::explorer(key).map(|explorer| crate::logic::army_slots::resolve(key, explorer))
+                crate::logic::troops::explorer(key)
+                    .map(|explorer| crate::logic::army_slots::resolve(key, explorer, None))
             },
         )
     }

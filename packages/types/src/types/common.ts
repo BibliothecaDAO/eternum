@@ -155,6 +155,8 @@ export type RelicEffectWithEndTick = { id: ResourcesIds; endTick: number };
 
 export type Troops = Omit<NativeRows["ExplorerTroops"]["troops"], "stamina"> & {
   readonly stamina: { readonly amount: bigint; readonly updated_tick: bigint };
+  /** Derived from the slot army's current attributes; never a stored fact. */
+  readonly staminaMax?: number;
 };
 export type TroopTier = Troops["tier"];
 export const TroopTier = { T1: "T1", T2: "T2", T3: "T3" } as const;

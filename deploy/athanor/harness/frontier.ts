@@ -718,18 +718,17 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
   const stamina = rules.troop_stamina_config;
   for (const army of activeArmies(client, player)) {
     const amount = game.explorerStamina(army.explorer_id, game.currentTicks().armies);
-    if (army.troops.battle_cooldown_end > game.currentTicks().armies) continue;
-    const relic = [...client.setup.store.inGame("ResourceBalance", client.gameId)].find(
-      (row) =>
-        row.entity_id === army.explorer_id && row.resource_type >= 39 && row.resource_type <= 56 && row.balance > 0n,
-    );
-    if (relic)
+    const offer = client.setup.store.require("ArmyProgress", {
+      game_id: client.gameId,
+      explorer_id: army.explorer_id,
+    }).pending;
+    if (offer)
       return command(client, player, {
-        kind: "ApplyRelic",
+        kind: "ChooseAttribute",
         value: {
-          entity_id: army.explorer_id,
-          relic_id: relic.resource_type,
-          recipient: { kind: "Explorer", value: undefined },
+          explorer_id: army.explorer_id,
+          offer_id: offer.id,
+          attribute: { kind: offer.choices[0]!, value: undefined },
         },
       });
     const coord = entityMapPosition(client.setup.store, client.gameId, army.explorer_id);

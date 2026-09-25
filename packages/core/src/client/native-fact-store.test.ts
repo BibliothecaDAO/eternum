@@ -462,8 +462,25 @@ describe("declared fact absence", () => {
     expect(resolveExplorerTroops(store, { ...army, owner: 8 })).toBeUndefined();
     expect(() => resolveExplorerTroops(store, army)).toThrow("unused");
     const occupied = { ...slot, explorer_id: army.explorer_id, stamina: { amount: "7", updated_tick: "17" } };
-    store.applyFacts([set("0x70", "ArmySlot", occupied)]);
+    store.applyFacts([
+      set("0x70", "ArmySlot", occupied),
+      set("0x72", "ArmyProgress", {
+        game_id: 1,
+        explorer_id: army.explorer_id,
+        level: 3,
+        xp: 17,
+        battle: 3,
+        logistics: 3,
+        scouting: 1,
+        support: 1,
+        pending: null,
+      }),
+    ]);
     expect(resolveExplorerTroops(store, army)?.stamina).toEqual({ amount: 7n, updated_tick: 17n });
+    expect(resolveExplorerTroops(store, army)?.staminaMax).toBe(
+      Number(preset.rules.troop_stamina_config.stamina_knight_max) + 60,
+    );
+    expect(resolveExplorerTroops(store, army)?.boosts.incr_damage_dealt_percent_num).toBe(20);
     store.applyFacts([set("0x70", "ArmySlot", { ...occupied, explorer_id: army.explorer_id + 1 })]);
     expect(() => resolveExplorerTroops(store, army)).toThrow("occupant mismatch");
     store.applyFacts([remove("0x70", "ArmySlot")]);

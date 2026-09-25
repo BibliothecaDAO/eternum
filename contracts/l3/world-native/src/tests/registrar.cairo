@@ -108,6 +108,7 @@ pub(crate) fn definition(blitz: bool) -> PresetDefinition {
             },
         },
         economy: EconomyPreset {
+            progression: None,
             trade: crate::trade::TradeRules { max_count: 2 },
             banks: crate::market::BankRules {
                 lp_fee_num: 3, lp_fee_denom: 1000, owner_fee_num: 1, owner_fee_denom: 100,
@@ -820,7 +821,10 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
 pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
     let mut preset = definition(true);
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
+    preset.rules.command_mask = preset.rules.command_mask
+        | (*read_txt(@FileTrait::new("tests/fixtures/frontier-command-mask.txt")).at(0)).try_into().unwrap();
     preset.rules.epoch_seconds = 100;
+    preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
     preset.rules.mode_rules = HOME_REWARDS;
     preset.settlement.spacing = 1024;
     preset.rules.map_config.shards_mines_win_probability = 0;
@@ -1239,6 +1243,7 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     let mut preset = definition(true);
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
     preset.rules.epoch_seconds = 86400;
+    preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
     preset.rules.mode_rules = HOME_REWARDS | crate::rules::UNOWNED_TARGETS;
     preset.settlement.spacing = 1024;
     let limits = crate::rules::TroopLimitConfig {
@@ -1414,6 +1419,7 @@ fn assert_capture_with_reveal(depth: u8, count: u128, tier: crate::troops::Troop
     let mut preset = definition(true);
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
     preset.rules.epoch_seconds = 100;
+    preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
     preset.rules.mode_rules = HOME_REWARDS
         | DISCOVER_CAMPS
         | crate::rules::UNOWNED_TARGETS
@@ -1695,6 +1701,7 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
     let mut preset = definition(true);
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
     preset.rules.epoch_seconds = 100;
+    preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
     preset.rules.mode_rules = HOME_REWARDS | crate::rules::DEPTH_CONTENTS;
     preset.rules.command_mask = 0xffffffffffffffffffffffffffffffff;
     preset.settlement.spacing = 1024;
@@ -1874,11 +1881,24 @@ fn an_army_enters_a_depth_only_from_its_realms_spire_which_turns_each_day() {
 }
 
 #[test]
-fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollover() {
+fn reveal_chests_issue_attribute_offers_record_claims_and_expire_progress_at_rollover() {
     let d = setup();
     let mut preset = definition(true);
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
     preset.rules.epoch_seconds = 100;
+    preset
+        .economy
+        .progression =
+            Some(
+                crate::progression::ArmyProgressionRules {
+                    level_step_xp: 1000, ..super::preset_projection::frontier_progression_rules(),
+                },
+            );
+    preset
+        .rules
+        .command_mask = (*read_txt(@FileTrait::new("tests/fixtures/frontier-command-mask.txt")).at(0))
+        .try_into()
+        .unwrap();
     preset.rules.mode_rules = HOME_REWARDS
         | DISCOVER_CHESTS
         | crate::rules::REVEAL_SUPPLIES
@@ -1915,20 +1935,7 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
     preset
         .economy
         .chests = Some(ChestRules { loose_one_in: 1, relic_probability: 0, cosmetic_probability: 5000, token_cap: 1 });
-    let mut relics = array![];
-    for index in 0..18_u32 {
-        relics
-            .append(
-                crate::relics::RelicRule {
-                    essence_cost: 0, draw_weight: if index == 0 {
-                        1
-                    } else {
-                        0
-                    }, ..*preset.economy.relics.at(index),
-                },
-            );
-    }
-    preset.economy.relics = relics.span();
+    preset.economy.relics = array![].span();
     registry(d).register_preset(1, preset);
     let game_id = registry(d)
         .create_game(
@@ -1975,6 +1982,7 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
     let explore = Command::Explore(Explore { explorer_id, direction: 0 });
     for timestamp in array![360_u64, 361, 365, 366, 368] {
         assert!(execute_in_game(d, game_id, explore, timestamp, timestamp));
+        choose_pending_attribute(d, game_id, explorer_id, timestamp);
         opened += 1;
     }
     assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id, direction: 3 }), 372, 372));
@@ -1983,8 +1991,8 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
     assert_eq!(relics.chest_tokens(game_id, d.actor, 3), 1);
     let common = ResourceSlot { game_id, entity_id: explorer_id, resource_type: 39 };
     let epic = ResourceSlot { resource_type: 40, ..common };
-    assert!(resources.resource_balance(common) >= RESOURCE_PRECISION);
-    assert!(resources.resource_balance(epic) >= RESOURCE_PRECISION);
+    assert_eq!(resources.resource_balance(common), 0);
+    assert_eq!(resources.resource_balance(epic), 0);
     assert_eq!(resources.resource_balance(ResourceSlot { entity_id: 1, ..common }), 0);
     let essence = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
     let before_essence = resources.resource_balance(essence);
@@ -1993,13 +2001,19 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
             entity_id: explorer_id, relic_id: 39, recipient: crate::relics::Recipient::Explorer,
         },
     );
-    assert!(execute_in_game(d, game_id, apply, timestamp, timestamp));
+    assert!(!execute_in_game(d, game_id, apply, timestamp, timestamp));
     assert_eq!(resources.resource_balance(essence), before_essence);
     let pity = relics.chest_pity(game_id, d.actor, 0);
     assert_eq!(pity, 1);
     assert!(!execute_in_game(d, game_id, apply, 400, 400));
     assert!(execute_in_game(d, game_id, muster, 400, 400));
     assert!(!resources.has_resource(ResourceKey { game_id, entity_id: explorer_id }));
+    assert!(
+        snforge_std::interact_with_state(
+            d.games, || crate::logic::progression::read(ExplorerKey { game_id, explorer_id }),
+        )
+            .is_none(),
+    );
     assert_eq!(relics.chest_pity(game_id, d.actor, 0), pity);
     let second = *structures.home_armies(home).at(0);
     for timestamp in 410_u64..414 {
@@ -2008,6 +2022,7 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
                 d, game_id, Command::Explore(Explore { explorer_id: second, direction: 0 }), timestamp, timestamp,
             ),
         );
+        choose_pending_attribute(d, game_id, second, timestamp);
         opened += 1;
     }
     assert_eq!(relics.chest_tokens(game_id, d.actor, 3), 1);
@@ -2034,15 +2049,12 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
                     let order = story.order;
                     let index = story.index;
                     assert_eq!(relics.chest_reward(game_id, order, index).unwrap(), reward);
-                    assert_eq!(reward.relic_id, 0);
                     assert_eq!(reward.quality, 0);
                     if reward.kind == ChestKind::Token {
                         token_claims += 1;
                     } else {
                         cosmetic_claims += 1;
                     }
-                } else {
-                    assert!(reward.relic_id == 39 || reward.relic_id == 40);
                 }
             }
         }
@@ -2153,6 +2165,7 @@ fn frontier_refuses_off_map_economy_commands_before_reading_positions() {
     let d = setup();
     let mut preset = definition(false);
     preset.rules.epoch_seconds = 86400;
+    preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
     preset.settlement.spacing = 1024;
     preset
         .rules
@@ -2272,4 +2285,31 @@ fn expedition_death_releases_the_slot_with_the_final_battle_bar() {
     let reused = snforge_std::interact_with_state(d.games, || crate::logic::army_slot_storage::read(key)).unwrap();
     assert!(reused.explorer_id != first.explorer_id && reused.explorer_id != 0);
     assert_eq!(reused.stamina, vacant.stamina);
+}
+
+fn choose_pending_attribute(d: super::Deployment, game_id: u32, explorer_id: u32, timestamp: u64) {
+    let progress = snforge_std::interact_with_state(
+        d.games, || crate::logic::progression::require(ExplorerKey { game_id, explorer_id }),
+    );
+    if let Some(offer) = progress.pending {
+        let mut choice = *offer.choices.at(0);
+        for attribute in offer.choices {
+            if crate::progression::attribute_level(
+                progress, *attribute,
+            ) < crate::progression::attribute_level(progress, choice) {
+                choice = *attribute;
+            }
+        }
+        assert!(
+            execute_in_game(
+                d,
+                game_id,
+                Command::ChooseAttribute(
+                    crate::progression::ChooseAttribute { explorer_id, offer_id: offer.id, attribute: choice },
+                ),
+                timestamp,
+                timestamp,
+            ),
+        );
+    }
 }

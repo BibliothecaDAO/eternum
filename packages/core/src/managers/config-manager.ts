@@ -18,7 +18,6 @@ import { enabledHelpTransfers, type HelpTransfer } from "../utils/army-help";
 import { isModeRuleEnabled } from "../utils/mode-rules";
 import { tierStrength } from "../utils/tier-strength";
 import { hasEnabledProductionPath } from "../utils/production-path";
-import { troopStaminaLimits } from "./troop-stamina";
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
 import { getBlockTimestamp } from "../utils/timestamp";
 import type { BiomeClimateConfig } from "../utils/biome";
@@ -540,9 +539,6 @@ export class ClientConfigManager {
       travelWheatBurnAmount: config.stamina_travel_wheat_cost / RESOURCE_PRECISION,
       travelFishBurnAmount: config.stamina_travel_fish_cost / RESOURCE_PRECISION,
     };
-  }
-  getTroopStaminaConfig(troopType: TroopType, troopTier: TroopTier) {
-    return troopStaminaLimits(this.getTroopStaminaRules(), troopType, troopTier);
   }
   getTroopStaminaRules() {
     return this.rules().troop_stamina_config;

@@ -30,6 +30,6 @@ export class StaminaManager {
     return fullAtTick(troops, currentArmiesTick, configManager.getTroopStaminaRules());
   }
 
-  public static getMaxStamina = (troopCategory: TroopType, troopTier: TroopTier): number =>
-    troopStaminaLimits(configManager.getTroopStaminaRules(), troopCategory, troopTier).staminaMax;
+  public static getMaxStamina = (troopCategory: TroopType, troopTier: TroopTier, resolvedMaximum?: number): number =>
+    resolvedMaximum ?? troopStaminaLimits(configManager.getTroopStaminaRules(), troopCategory, troopTier).staminaMax;
 }

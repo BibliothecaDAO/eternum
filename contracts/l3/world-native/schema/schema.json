@@ -1,5 +1,9 @@
 {
   "ruleConstants": {
+    "ATTRIBUTE_CAP": 5,
+    "ATTRIBUTE_DAMAGE_PERCENT": 10,
+    "ATTRIBUTE_STAMINA": 30,
+    "ATTRIBUTE_SCOUTING_BPS": 150,
     "ENTRY_ENTITLEMENT": 0,
     "ENTRY_OPEN": 1,
     "ENTRY_ROSTER": 2,
@@ -2672,6 +2676,41 @@
       "derivedFrom": "preset"
     },
     {
+      "name": "ArmyProgressionRules",
+      "identity": "0x41726d7950726f6772657373696f6e52756c6573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "reveal_xp",
+          "type": "core::integer::u32",
+          "id": "0x72657665616c5f7870",
+          "feltLength": 1
+        },
+        {
+          "name": "clear_xp",
+          "type": "core::integer::u32",
+          "id": "0x636c6561725f7870",
+          "feltLength": 1
+        },
+        {
+          "name": "level_step_xp",
+          "type": "core::integer::u32",
+          "id": "0x6c6576656c5f737465705f7870",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 3,
+      "derivedFrom": "preset"
+    },
+    {
       "name": "ChestRules",
       "identity": "0x436865737452756c6573",
       "scope": "game",
@@ -2841,16 +2880,10 @@
           "type": "core::integer::u8",
           "id": "0x7175616c697479",
           "feltLength": 1
-        },
-        {
-          "name": "relic_id",
-          "type": "core::integer::u8",
-          "id": "0x72656c69635f6964",
-          "feltLength": 1
         }
       ],
       "keyLength": 3,
-      "valueLength": 7
+      "valueLength": 6
     },
     {
       "name": "RelicDiscovery",
@@ -4229,6 +4262,69 @@
           "isStructure": "is_structure"
         }
       }
+    },
+    {
+      "name": "ArmyProgress",
+      "identity": "0x41726d7950726f6772657373",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "level",
+          "type": "core::integer::u16",
+          "id": "0x6c6576656c",
+          "feltLength": 1
+        },
+        {
+          "name": "xp",
+          "type": "core::integer::u32",
+          "id": "0x7870",
+          "feltLength": 1
+        },
+        {
+          "name": "battle",
+          "type": "core::integer::u8",
+          "id": "0x626174746c65",
+          "feltLength": 1
+        },
+        {
+          "name": "logistics",
+          "type": "core::integer::u8",
+          "id": "0x6c6f67697374696373",
+          "feltLength": 1
+        },
+        {
+          "name": "scouting",
+          "type": "core::integer::u8",
+          "id": "0x73636f7574696e67",
+          "feltLength": 1
+        },
+        {
+          "name": "support",
+          "type": "core::integer::u8",
+          "id": "0x737570706f7274",
+          "feltLength": 1
+        },
+        {
+          "name": "pending",
+          "type": "core::option::Option::<world_native::progression::AttributeOffer>",
+          "id": "0x70656e64696e67",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": null
     },
     {
       "name": "ArmySlot",
@@ -6442,6 +6538,16 @@
         }
       ]
     },
+    "core::array::Span::<world_native::progression::Attribute>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::progression::Attribute>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::progression::Attribute>"
+        }
+      ]
+    },
     "core::array::Span::<world_native::registrar::RosterPlayer>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::registrar::RosterPlayer>",
@@ -6612,6 +6718,20 @@
         }
       ]
     },
+    "core::option::Option::<core::integer::u64>": {
+      "type": "enum",
+      "name": "core::option::Option::<core::integer::u64>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<core::starknet::contract_address::ContractAddress>": {
       "type": "enum",
       "name": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
@@ -6689,6 +6809,48 @@
         {
           "name": "Some",
           "type": "world_native::presets::WithdrawalPreset"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::progression::ArmyProgress>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::progression::ArmyProgress>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::progression::ArmyProgress"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::progression::ArmyProgressionRules>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::progression::ArmyProgressionRules>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::progression::ArmyProgressionRules"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::progression::AttributeOffer>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::progression::AttributeOffer>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::progression::AttributeOffer"
         },
         {
           "name": "None",
@@ -8007,6 +8169,10 @@
         {
           "name": "BuyRealmUpgrade",
           "type": "world_native::upgrades::BuyRealmUpgrade"
+        },
+        {
+          "name": "ChooseAttribute",
+          "type": "world_native::progression::ChooseAttribute"
         }
       ]
     },
@@ -9551,6 +9717,10 @@
         {
           "name": "ChestReward",
           "type": "world_native::relics::ChestReward"
+        },
+        {
+          "name": "AttributeChosen",
+          "type": "world_native::progression::AttributeChosen"
         }
       ]
     },
@@ -9655,6 +9825,10 @@
         {
           "name": "chests",
           "type": "core::option::Option::<world_native::relics::ChestRules>"
+        },
+        {
+          "name": "progression",
+          "type": "core::option::Option::<world_native::progression::ArmyProgressionRules>"
         },
         {
           "name": "research_cost",
@@ -9898,6 +10072,182 @@
         }
       ]
     },
+    "world_native::progression::ArmyProgress": {
+      "type": "struct",
+      "name": "world_native::progression::ArmyProgress",
+      "members": [
+        {
+          "name": "level",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "xp",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "battle",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "logistics",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "scouting",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "support",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "pending",
+          "type": "core::option::Option::<world_native::progression::AttributeOffer>"
+        }
+      ]
+    },
+    "world_native::progression::ArmyProgressionRules": {
+      "type": "struct",
+      "name": "world_native::progression::ArmyProgressionRules",
+      "members": [
+        {
+          "name": "reveal_xp",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "clear_xp",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "level_step_xp",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::progression::Attribute": {
+      "type": "enum",
+      "name": "world_native::progression::Attribute",
+      "variants": [
+        {
+          "name": "Battle",
+          "type": "()"
+        },
+        {
+          "name": "Logistics",
+          "type": "()"
+        },
+        {
+          "name": "Scouting",
+          "type": "()"
+        },
+        {
+          "name": "Support",
+          "type": "()"
+        }
+      ]
+    },
+    "world_native::progression::AttributeChosen": {
+      "type": "struct",
+      "name": "world_native::progression::AttributeChosen",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "offer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "source",
+          "type": "world_native::progression::OfferSource"
+        },
+        {
+          "name": "attribute",
+          "type": "world_native::progression::Attribute"
+        },
+        {
+          "name": "applied",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "lost",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::progression::AttributeOffer": {
+      "type": "struct",
+      "name": "world_native::progression::AttributeOffer",
+      "members": [
+        {
+          "name": "id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "source",
+          "type": "world_native::progression::OfferSource"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "choices",
+          "type": "core::array::Span::<world_native::progression::Attribute>"
+        }
+      ]
+    },
+    "world_native::progression::ChooseAttribute": {
+      "type": "struct",
+      "name": "world_native::progression::ChooseAttribute",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "offer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "attribute",
+          "type": "world_native::progression::Attribute"
+        }
+      ]
+    },
+    "world_native::progression::OfferSource": {
+      "type": "enum",
+      "name": "world_native::progression::OfferSource",
+      "variants": [
+        {
+          "name": "Level",
+          "type": "()"
+        },
+        {
+          "name": "Relic",
+          "type": "()"
+        },
+        {
+          "name": "Shrine",
+          "type": "()"
+        }
+      ]
+    },
+    "world_native::progression::XpAward": {
+      "type": "enum",
+      "name": "world_native::progression::XpAward",
+      "variants": [
+        {
+          "name": "Reveal",
+          "type": "()"
+        },
+        {
+          "name": "Clear",
+          "type": "()"
+        }
+      ]
+    },
     "world_native::realms::RealmCatalogue": {
       "type": "struct",
       "name": "world_native::realms::RealmCatalogue",
@@ -10114,10 +10464,6 @@
         },
         {
           "name": "quality",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "relic_id",
           "type": "core::integer::u8"
         }
       ]
@@ -11538,7 +11884,7 @@
       "variants": [
         {
           "name": "Resolve",
-          "type": "()"
+          "type": "core::option::Option::<core::integer::u64>"
         },
         {
           "name": "Allocate",
@@ -11551,6 +11897,10 @@
         {
           "name": "Release",
           "type": "world_native::troops::StaminaSource"
+        },
+        {
+          "name": "GrantLogistics",
+          "type": "world_native::troops::LogisticsStamina"
         }
       ]
     },
@@ -11573,6 +11923,10 @@
         {
           "name": "initial",
           "type": "world_native::troops::Stamina"
+        },
+        {
+          "name": "maximum",
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -11659,6 +12013,34 @@
         {
           "name": "coord",
           "type": "world_native::troops::Coord"
+        }
+      ]
+    },
+    "world_native::troops::LogisticsStamina": {
+      "type": "struct",
+      "name": "world_native::troops::LogisticsStamina",
+      "members": [
+        {
+          "name": "stamina",
+          "type": "world_native::troops::StaminaSource"
+        },
+        {
+          "name": "levels",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::troops::ResolvedArmySlot": {
+      "type": "struct",
+      "name": "world_native::troops::ResolvedArmySlot",
+      "members": [
+        {
+          "name": "stamina",
+          "type": "world_native::troops::StaminaSource"
+        },
+        {
+          "name": "battle_bonus_percent",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -11987,5 +12369,5 @@
       ]
     }
   },
-  "identity": "a0b6e1dcb1cf1d8a633fa6ed996663d6df83dfdaba2430923c9b4b1de0423c04"
+  "identity": "cc7a688af93e4aea9a150b859f3978cc5c9457dc6e456b10898939ee239956ca"
 }

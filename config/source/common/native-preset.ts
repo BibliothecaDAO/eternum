@@ -44,6 +44,7 @@ export interface NativePreset {
       population: number;
     }>;
   };
+  progression: null | { revealXp: number; clearXp: number; levelStepXp: number };
   chests: null | {
     looseOneIn: number;
     relicProbability: number;

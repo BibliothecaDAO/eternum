@@ -36,6 +36,7 @@ pub struct EconomyPreset {
     pub hyperstructures: crate::hyperstructures::HyperstructureRules,
     pub relics: Span<crate::relics::RelicRule>,
     pub chests: Option<crate::relics::ChestRules>,
+    pub progression: Option<crate::progression::ArmyProgressionRules>,
     pub research_cost: u128,
     pub withdrawals: Option<WithdrawalPreset>,
 }
@@ -52,6 +53,13 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
+    assert!(preset.economy.progression.is_some() == (rules.epoch_seconds != 0), "progression requires expedition");
+    if let Some(progression) = preset.economy.progression {
+        assert!(
+            progression.reveal_xp != 0 && progression.clear_xp != 0 && progression.level_step_xp != 0,
+            "empty progression rules",
+        );
+    }
     assert!(rules.tick_config.armies_tick_in_seconds != 0, "zero army tick");
     if rules.bitcoin_mine_config.enabled {
         assert!(rules.tick_config.bitcoin_phase_in_seconds != 0, "zero Bitcoin phase duration");

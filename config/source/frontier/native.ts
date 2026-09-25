@@ -1,7 +1,6 @@
 import type { NativePreset } from "../common/native-preset";
 import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/client.gen";
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
-import { relicRules } from "../common/native-data";
 import { FRONTIER_PRESET_ID } from "../common/native-preset-modes";
 
 export const frontierPreset: NativePreset = {
@@ -18,11 +17,7 @@ export const frontierPreset: NativePreset = {
   bitcoinEnabled: false,
   startingTroops: Array.from({ length: 17 }, () => "Knight" as const),
   realmResources: [],
-  relics: relicRules.map((rule, index) => ({
-    ...rule,
-    essence_cost: 0,
-    draw_weight: [0, 1, 2, 3, 4, 5, 8, 9].includes(index) ? rule.draw_weight : 0,
-  })),
+  relics: [],
   supplies: [],
   bridgeResources: [],
   id: FRONTIER_PRESET_ID,
@@ -54,7 +49,7 @@ export const frontierPreset: NativePreset = {
       "LevelUp",
       "BuyRealmUpgrade",
       "EnterDepth",
-      "ApplyRelic",
+      "ChooseAttribute",
       "SetEntityName",
       "MarkGameSettled",
     ] satisfies Array<keyof typeof nativeCommandBits>
@@ -68,6 +63,7 @@ export const frontierPreset: NativePreset = {
     barracksIIICost: 45000,
     neighbors: [],
   },
+  progression: { revealXp: 10, clearXp: 25, levelStepXp: 20 },
   chests: { looseOneIn: 46, relicProbability: 9000, cosmeticProbability: 900, tokenCap: 1 },
   depths: [
     {

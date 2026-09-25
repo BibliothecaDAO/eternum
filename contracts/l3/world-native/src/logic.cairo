@@ -27,6 +27,7 @@ pub mod presets;
 pub mod prizes;
 pub mod production;
 pub mod production_domain;
+pub mod progression;
 pub mod raid;
 pub mod realms;
 pub mod registrar;

@@ -389,15 +389,27 @@ pub struct ArmySlotAllocation {
     pub epoch: u64,
     pub allowance: u8,
     pub initial: Stamina,
+    pub maximum: u64,
+}
+#[derive(Copy, Drop, Serde)]
+pub struct LogisticsStamina {
+    pub stamina: StaminaSource,
+    pub levels: u8,
 }
 #[derive(Copy, Drop, Serde)]
 pub enum ArmySlotAction {
-    Resolve,
+    Resolve: Option<u64>,
     Allocate: ArmySlotAllocation,
     Persist: StaminaSource,
     Release: StaminaSource,
+    GrantLogistics: LogisticsStamina,
+}
+#[derive(Copy, Drop, Serde)]
+pub struct ResolvedArmySlot {
+    pub stamina: StaminaSource,
+    pub battle_bonus_percent: u16,
 }
 #[starknet::interface]
 pub trait IArmySlotStamina<T> {
-    fn army_slot_stamina(ref self: T, key: ExplorerKey, action: ArmySlotAction) -> StaminaSource;
+    fn army_slot_stamina(ref self: T, key: ExplorerKey, action: ArmySlotAction) -> ResolvedArmySlot;
 }

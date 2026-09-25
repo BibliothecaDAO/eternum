@@ -307,17 +307,22 @@ pub impl TroopsImpl of TroopsTrait {
         /// APPLY BATTLE DAMAGE BOOST/REDUCTION EFFECTS
         //////////////////////////////////////////////////
 
-        if alpha.boosts.incr_damage_dealt_end_tick.into() <= current_tick {
+        // A zero end tick marks a derived attribute bonus with no expiry.
+        if alpha.boosts.incr_damage_dealt_end_tick != 0
+            && alpha.boosts.incr_damage_dealt_end_tick.into() <= current_tick {
             alpha.boosts.incr_damage_dealt_percent_num = 0;
         }
-        if alpha.boosts.decr_damage_gotten_end_tick.into() <= current_tick {
+        if alpha.boosts.decr_damage_gotten_end_tick != 0
+            && alpha.boosts.decr_damage_gotten_end_tick.into() <= current_tick {
             alpha.boosts.decr_damage_gotten_percent_num = 0;
         }
 
-        if bravo.boosts.incr_damage_dealt_end_tick.into() <= current_tick {
+        if bravo.boosts.incr_damage_dealt_end_tick != 0
+            && bravo.boosts.incr_damage_dealt_end_tick.into() <= current_tick {
             bravo.boosts.incr_damage_dealt_percent_num = 0;
         }
-        if bravo.boosts.decr_damage_gotten_end_tick.into() <= current_tick {
+        if bravo.boosts.decr_damage_gotten_end_tick != 0
+            && bravo.boosts.decr_damage_gotten_end_tick.into() <= current_tick {
             bravo.boosts.decr_damage_gotten_percent_num = 0;
         }
 

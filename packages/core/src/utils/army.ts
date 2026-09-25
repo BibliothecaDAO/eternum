@@ -162,7 +162,7 @@ export const getGuardsByStructure = (structure: NativeRows["Structure"], store: 
         ? [
             {
               slot: guard.slot,
-              troops: inlineTroops(guard.troops),
+              troops: inlineTroops(guard.troops, store.require("SliceRules", { game_id: structure.game_id })),
               destroyedTick: guard.destroyed_tick,
               cooldownEnd: guard.destroyed_tick === 0 ? 0 : guard.destroyed_tick * tickSeconds + delay,
             },

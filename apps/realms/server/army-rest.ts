@@ -109,6 +109,7 @@ export const readActorArmies = async (
       "PlayerEntry",
       "ExplorerTroops",
       "ArmySlot",
+      "ArmyProgress",
       "TileOccupancy",
     ],
     actor,
@@ -142,7 +143,7 @@ export const readActorArmies = async (
       return [
         {
           armyId: army.explorer_id,
-          full: Number(stamina.amount) >= staminaMax,
+          full: Number(stamina.amount) >= (troops.staminaMax ?? staminaMax),
           fullAt: fullTick === null ? null : fullTick * tickSeconds * 1000,
         },
       ];

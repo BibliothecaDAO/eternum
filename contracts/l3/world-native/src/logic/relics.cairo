@@ -81,6 +81,9 @@ pub mod RelicState {
         }
 
         fn relic_rules(self: @ComponentState<TContractState>, game_id: u32) -> Span<RelicRule> {
+            if self.chest_rules(game_id).is_some() {
+                return array![].span();
+            }
             let preset = crate::logic::preset_record::for_game(game_id);
             let mut rules = array![];
             for id in crate::relics::FIRST_RELIC..crate::relics::LAST_RELIC + 1 {
@@ -163,21 +166,94 @@ pub mod RelicState {
                 );
         }
     }
+    #[embeddable_as(ArmyProgressionImpl)]
+    pub impl ArmyProgression<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl Life: ReleaseState::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of crate::progression::IArmyProgression<ComponentState<TContractState>> {
+        fn army_progress(
+            self: @ComponentState<TContractState>, key: ExplorerKey,
+        ) -> Option<crate::progression::ArmyProgress> {
+            crate::logic::progression::read(key)
+        }
+        fn army_progression_rules(
+            self: @ComponentState<TContractState>, game_id: u32,
+        ) -> Option<crate::progression::ArmyProgressionRules> {
+            crate::logic::progression::rules(game_id)
+        }
+        fn grant_army_xp(
+            ref self: ComponentState<TContractState>,
+            key: ExplorerKey,
+            award: crate::progression::XpAward,
+            context: crate::commands::ActionContext,
+        ) {
+            crate::logic::progression::award_xp(key, award, crate::commands::load_context(key.game_id, context));
+        }
+        fn choose_attribute(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::progression::ChooseAttribute,
+            context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
+            let context = crate::commands::load_context(game_id, context);
+            self.assert_command(game_id, context.timestamp, context);
+            let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
+            let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+            let mut progress = crate::logic::progression::require(key);
+            let choice = crate::progression::apply_choice(ref progress, command);
+            if choice.attribute == crate::progression::Attribute::Logistics {
+                crate::logic::army_slots::grant_logistics(key, explorer.troops.stamina, choice.applied);
+            }
+            crate::logic::progression::offer_earned_level(key, ref progress, context);
+            crate::logic::progression::write(key, progress);
+            let index = crate::ownership::StoryCursorTrait::next(ref story_cursor);
+            self
+                .emit(
+                    crate::ownership::StoryEvent {
+                        version: 1,
+                        game_id,
+                        order: story_cursor.order,
+                        index,
+                        entity_id: Some(command.explorer_id),
+                        owner: Some(actor),
+                        timestamp: context.timestamp,
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: crate::ownership::Story::AttributeChosen(choice),
+                    },
+                );
+            ((), story_cursor)
+        }
+    }
     #[embeddable_as(ArmySlotStaminaImpl)]
     pub impl ArmySlotStamina<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of crate::troops::IArmySlotStamina<ComponentState<TContractState>> {
         fn army_slot_stamina(
             ref self: ComponentState<TContractState>, key: ExplorerKey, action: crate::troops::ArmySlotAction,
-        ) -> crate::troops::StaminaSource {
-            use crate::troops::ArmySlotAction;
+        ) -> crate::troops::ResolvedArmySlot {
+            use crate::troops::{ArmySlotAction, ResolvedArmySlot};
             use crate::logic::army_slot_storage;
             if let ArmySlotAction::Allocate(value) = action {
-                return army_slot_storage::allocate(key, value.home, value.epoch, value.allowance, value.initial);
+                crate::logic::progression::create(key);
+                return ResolvedArmySlot {
+                    stamina: army_slot_storage::allocate(
+                        key, value.home, value.epoch, value.allowance, value.initial, value.maximum,
+                    ),
+                    battle_bonus_percent: 0,
+                };
             }
             let mut explorer = crate::logic::troops::explorer(key).expect('missing slot explorer');
-            match action {
-                ArmySlotAction::Resolve => army_slot_storage::resolve(key, explorer).troops.stamina,
+            let mut battle_bonus_percent = 0;
+            let stamina = match action {
+                ArmySlotAction::Resolve(timestamp) => {
+                    battle_bonus_percent = Into::<u8, u16>::into(crate::logic::progression::require(key).battle - 1)
+                        * crate::rules::ATTRIBUTE_DAMAGE_PERCENT.into();
+                    army_slot_storage::resolve(key, explorer, timestamp).troops.stamina
+                },
                 ArmySlotAction::Persist(stamina) => {
                     let previous = explorer.into_record();
                     explorer.troops.stamina = stamina;
@@ -186,10 +262,13 @@ pub mod RelicState {
                 ArmySlotAction::Release(stamina) => {
                     explorer.troops.stamina = stamina;
                     army_slot_storage::release(key, explorer);
+                    crate::logic::progression::destroy(key);
                     stamina
                 },
+                ArmySlotAction::GrantLogistics(award) => army_slot_storage::grant_logistics(key, explorer, award),
                 ArmySlotAction::Allocate(_) => panic!("allocation already handled"),
-            }
+            };
+            ResolvedArmySlot { stamina, battle_bonus_percent }
         }
     }
 
@@ -311,6 +390,9 @@ pub mod RelicState {
         ) {
             let rules = context.rules.unbox();
             let camp = category == crate::camps::CAMP_CATEGORY;
+            if rules.epoch_seconds != 0 && (camp || category == 4) {
+                crate::logic::progression::award_xp(explorer_key, crate::progression::XpAward::Clear, context);
+            }
             let home_rewards = camp && crate::rules::rule_enabled(rules, crate::rules::HOME_CAMP_REWARDS);
             let chests = crate::rules::rule_enabled(rules, crate::rules::CAPTURE_CHESTS);
             if !home_rewards && !chests {
@@ -405,6 +487,8 @@ pub mod RelicState {
             rules: crate::relics::ChestRules,
             ref story_cursor: crate::ownership::StoryCursor,
         ) {
+            let explorer_key = ExplorerKey { game_id, explorer_id: command.explorer_id };
+            crate::logic::progression::assert_can_receive_offer(crate::logic::progression::require(explorer_key));
             let game = context.game.unbox();
             let game_rules = context.rules.unbox();
             let spacing = crate::logic::settlement::rules(game_id).spacing;
@@ -416,51 +500,14 @@ pub mod RelicState {
             let seed = crate::random::game_root(ref root, game_id, game.seed);
             let ground = crate::logic::expeditions::depth_rules(game_id, depth).chest;
             let roll = crate::relics::roll_chest(rules, ground, old_pity, tokens, seed, context.timestamp);
-            let relic_id = self
-                .grant_rolled_relic(game_id, command.explorer_id, roll, seed, context.timestamp, context);
+            if roll.kind == crate::relics::ChestKind::Relic {
+                crate::logic::progression::grant_relic(explorer_key, roll.quality, context);
+            }
             self.write_chest_counters(game_id, actor, depth, epoch, roll, old_pity, tokens);
             let reward = crate::relics::ChestReward {
-                player: actor,
-                explorer_id: command.explorer_id,
-                epoch,
-                depth,
-                kind: roll.kind,
-                quality: roll.quality,
-                relic_id,
+                player: actor, explorer_id: command.explorer_id, epoch, depth, kind: roll.kind, quality: roll.quality,
             };
             self.record_expedition_chest(game_id, reward, context.timestamp, ref story_cursor);
-        }
-
-        fn grant_rolled_relic(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            explorer_id: u32,
-            roll: crate::relics::ChestRoll,
-            seed: u256,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) -> u8 {
-            if roll.kind == crate::relics::ChestKind::Relic {
-                let drawn = *crate::relics::draw_relics(self.relic_rules(game_id), seed, timestamp + 41, 1).at(0);
-                let strength = if roll.quality < 2 {
-                    0
-                } else {
-                    1
-                };
-                let id = crate::relics::FIRST_RELIC + (drawn - crate::relics::FIRST_RELIC) / 2 * 2 + strength;
-                self
-                    .resources(game_id)
-                    .grant_resource(
-                        ResourceKey { game_id, entity_id: explorer_id },
-                        id,
-                        crate::rules::RESOURCE_PRECISION,
-                        timestamp,
-                        crate::commands::resource_context(game_context),
-                    );
-                id
-            } else {
-                0
-            }
         }
 
         fn write_chest_counters(

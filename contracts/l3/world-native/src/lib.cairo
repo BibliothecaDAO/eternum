@@ -34,6 +34,7 @@ pub mod names;
 pub mod ownership;
 pub mod presets;
 pub mod production;
+pub mod progression;
 pub mod raid;
 pub mod random;
 pub mod realms;

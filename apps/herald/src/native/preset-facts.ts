@@ -112,6 +112,11 @@ function deriveEconomy(emit: EmitRule, economy: PresetRecord) {
   emit("RelicRules", { rules: economy.relics });
   const chests = some(economy.chests);
   if (chests) emit("ChestRules", chests);
+  // Older preset provenance predates progression; current registration requires it for expeditions.
+  if ("progression" in economy) {
+    const progression = some(economy.progression);
+    if (progression) emit("ArmyProgressionRules", progression);
+  }
   emit("ArtificerCost", { research: economy.research_cost });
   const withdrawals = some(economy.withdrawals);
   if (withdrawals) {

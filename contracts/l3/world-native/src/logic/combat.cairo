@@ -617,6 +617,31 @@ pub fn resolve_battle(
     game_context: crate::commands::ExecutionContext,
 ) -> (Troops, Troops) {
     let rules = game_context.rules.unbox();
+    if rules.epoch_seconds != 0 {
+        let tick = context.timestamp / rules.tick_config.armies_tick_in_seconds;
+        if context.attacker_is_structure_guard {
+            attacker
+                .stamina
+                .refill(
+                    ref attacker.boosts,
+                    attacker.category,
+                    crate::troops::TroopTier::T1,
+                    rules.troop_stamina_config,
+                    tick,
+                );
+        }
+        if context.defender_is_structure_guard {
+            defender
+                .stamina
+                .refill(
+                    ref defender.boosts,
+                    defender.category,
+                    crate::troops::TroopTier::T1,
+                    rules.troop_stamina_config,
+                    tick,
+                );
+        }
+    }
     attacker
         .attack_with_context(
             ref defender,

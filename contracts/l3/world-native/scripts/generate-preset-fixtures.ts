@@ -16,6 +16,9 @@ for (const [name, id] of [
   write(`${name}-register.txt`, fixture.registration);
   write(`${name}-create.txt`, fixture.creation);
   write(`${name}-rows.txt`, serializePresetRows(fixture.rows));
+  if (id === 5) {
+    writeFileSync(new URL("../frontier-command-mask.txt", directory), `${fixture.definition.rules.command_mask}\n`);
+  }
   if (id === 3) {
     const current = conformancePreset(fixture.definition);
     write("preset-3.txt", current.felts);

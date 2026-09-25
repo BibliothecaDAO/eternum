@@ -41,7 +41,7 @@
   },
   "tick": {
     "defaultTickIntervalInSeconds": 1,
-    "armiesTickIntervalInSeconds": 3600,
+    "armiesTickIntervalInSeconds": 120,
     "deliveryTickIntervalInSeconds": 180,
     "bitcoinPhaseInSeconds": 600
   },
@@ -561,13 +561,13 @@
     "stamina": {
       "damageStaminaRefund": false,
       "captureStaminaRefund": 0,
-      "staminaGainPerTick": 30,
+      "staminaGainPerTick": 1,
       "staminaInitial": 150,
       "staminaBonusValue": 0,
       "staminaKnightMax": 150,
       "staminaPaladinMax": 150,
       "staminaCrossbowmanMax": 150,
-      "staminaAttackReq": 50,
+      "staminaAttackReq": 30,
       "staminaDefenseReq": 40,
       "staminaExploreWheatCost": 0.03,
       "staminaExploreFishCost": 0,

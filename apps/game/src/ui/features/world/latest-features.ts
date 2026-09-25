@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-25",
+    title: "Army attributes and relics",
+    description:
+      "Your Frontier armies earn attribute choices from exploration, victories and relics. Battle increases damage, and Logistics expands the stamina bar.",
+    type: "feature",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-09-25",
     title: "Stamina while loading",
     description: "Army stamina shows — while its daily slot is loading, and actions wait until the bar is known.",
     type: "fix",

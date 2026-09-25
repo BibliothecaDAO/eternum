@@ -69,7 +69,6 @@ pub struct ChestReward {
     pub depth: u8,
     pub kind: ChestKind,
     pub quality: u8,
-    pub relic_id: u8,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

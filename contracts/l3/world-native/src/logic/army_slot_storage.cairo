@@ -1,9 +1,9 @@
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::events::RowSet;
-use crate::stamina::StaminaSourceTrait;
+use crate::stamina::{StaminaSourceTrait, StaminaTrait};
 use crate::troops::{
-    ArmySlot, ArmySlotKey, ArmySlotRecord, Coord, ExplorerKey, ExplorerRecord, ExplorerTroops, Stamina, StaminaSource,
-    Troops,
+    ArmySlot, ArmySlotKey, ArmySlotRecord, Coord, ExplorerKey, ExplorerRecord, ExplorerRecordTrait, ExplorerTroops,
+    Stamina, StaminaSource, Troops,
 };
 
 pub fn read(key: ArmySlotKey) -> Option<ArmySlot> {
@@ -48,21 +48,39 @@ fn occupied(key: ArmySlotKey, explorer_id: u32) -> ArmySlot {
 }
 
 // Command arithmetic gets a transient bar; only persist writes it back, preserving the stored Slot tag.
-pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops) -> ExplorerTroops {
+pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, timestamp: Option<u64>) -> ExplorerTroops {
     if let StaminaSource::Slot(slot) = explorer.troops.stamina {
         let slot_key = key_for(key, explorer.owner, explorer.coord, slot);
-        explorer.troops.stamina = StaminaSource::Inline(occupied(slot_key, key.explorer_id).stamina);
+        let mut stamina = occupied(slot_key, key.explorer_id).stamina;
+        if let Some(timestamp) = timestamp {
+            let progress = crate::logic::progression::require(key);
+            let rules = crate::logic::game::rules(key.game_id);
+            let maximum = crate::progression::stamina_max(
+                progress, explorer.troops.category, rules.troop_stamina_config,
+            );
+            stamina
+                .refill_to_max(
+                    ref explorer.troops.boosts,
+                    maximum,
+                    rules.troop_stamina_config,
+                    timestamp / rules.tick_config.armies_tick_in_seconds,
+                );
+            stamina.amount = core::cmp::min(stamina.amount, maximum);
+        }
+        explorer.troops.stamina = StaminaSource::Inline(stamina);
     }
     explorer
 }
 
-pub fn allocate(key: ExplorerKey, home: u32, epoch: u64, allowance: u8, initial: Stamina) -> StaminaSource {
+pub fn allocate(
+    key: ExplorerKey, home: u32, epoch: u64, allowance: u8, initial: Stamina, maximum: u64,
+) -> StaminaSource {
     for slot in 0..allowance {
         let slot_key = ArmySlotKey { game_id: key.game_id, structure_id: home, epoch, slot };
         let value = read(slot_key);
         if value.is_none() || value.unwrap().explorer_id == 0 {
             let stamina = match value {
-                Some(value) => value.stamina,
+                Some(value) => Stamina { amount: core::cmp::min(value.stamina.amount, maximum), ..value.stamina },
                 None => initial,
             };
             write(slot_key, ArmySlot { explorer_id: key.explorer_id, stamina });
@@ -105,4 +123,14 @@ pub fn release(key: ExplorerKey, explorer: ExplorerTroops) {
         value.explorer_id = 0;
         write(slot_key, value);
     }
+}
+
+pub fn grant_logistics(
+    key: ExplorerKey, mut explorer: ExplorerTroops, award: crate::troops::LogisticsStamina,
+) -> StaminaSource {
+    let previous = explorer.into_record();
+    let mut stamina = award.stamina.inline();
+    stamina.amount += Into::<u8, u64>::into(award.levels) * crate::rules::ATTRIBUTE_STAMINA.into();
+    explorer.troops.stamina = StaminaSource::Inline(stamina);
+    persist(key, previous, explorer.troops).stamina
 }

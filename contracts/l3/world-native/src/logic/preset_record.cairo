@@ -74,6 +74,7 @@ fn write_economy(preset: PresetWrite, rules: crate::rules::SliceRules, economy: 
     write_banks(preset, economy.banks);
     write_hyperstructures(preset, rules, economy.hyperstructures);
     write_relics(preset, rules, economy.relics, economy.chests);
+    preset.progression_rules.write(economy.progression);
     preset.artificer_cost.write(economy.research_cost);
     if let Some(withdrawals) = economy.withdrawals {
         write_withdrawals(preset, withdrawals);
@@ -358,6 +359,9 @@ fn write_relics(
             Into::<u16, u32>::into(value.relic_probability) + value.cosmetic_probability.into() <= 10000,
             "invalid chest type probabilities",
         );
+        assert!(rules.is_empty(), "attribute chests replace timed relics");
+        preset.chest_rules.write(chests);
+        return;
     }
     assert!(rules.len() == 18, "all eighteen relic rules required");
     let mut total: u128 = 0;

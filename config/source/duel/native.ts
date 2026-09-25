@@ -35,6 +35,7 @@ export const duelPreset: NativePreset = {
   commandMask: arenaCommandMask,
   spacing: 8,
   epochSeconds: 0,
+  progression: null,
   chests: null,
   board: null,
   depths: [],

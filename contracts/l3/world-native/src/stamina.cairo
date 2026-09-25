@@ -29,6 +29,22 @@ pub impl StaminaImpl of StaminaTrait {
         troop_stamina_config: TroopStaminaConfig,
         current_tick: u64,
     ) {
+        self
+            .refill_to_max(
+                ref troop_boosts,
+                Self::max(troop_type, troop_tier, troop_stamina_config),
+                troop_stamina_config,
+                current_tick,
+            );
+    }
+
+    fn refill_to_max(
+        ref self: Stamina,
+        ref troop_boosts: TroopBoosts,
+        maximum: u64,
+        troop_stamina_config: TroopStaminaConfig,
+        current_tick: u64,
+    ) {
         if (self.updated_tick == current_tick) {
             return;
         }
@@ -56,11 +72,7 @@ pub impl StaminaImpl of StaminaTrait {
             troop_boosts.incr_stamina_regen_tick_count -= boost_num_ticks_passed.try_into().unwrap();
 
             // refill stamina
-            self
-                .amount =
-                    core::cmp::min(
-                        self.amount + total_stamina_gain, Self::max(troop_type, troop_tier, troop_stamina_config),
-                    );
+            self.amount = core::cmp::min(self.amount + total_stamina_gain, maximum);
             self.updated_tick = current_tick;
         }
     }

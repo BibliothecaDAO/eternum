@@ -111,7 +111,11 @@ const ArmyChip = ({
 
   const maxStamina = useMemo(() => {
     if (!army.troops) return 0;
-    return StaminaManager.getMaxStamina(army.troops.category as TroopType, army.troops.tier as TroopTier);
+    return StaminaManager.getMaxStamina(
+      army.troops.category as TroopType,
+      army.troops.tier as TroopTier,
+      army.troops.staminaMax,
+    );
   }, [army.troops]);
 
   const onTroopSwap = useCallback(

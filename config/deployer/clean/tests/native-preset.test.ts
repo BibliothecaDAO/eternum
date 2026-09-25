@@ -127,7 +127,7 @@ describe("native presets", () => {
 
     expect(playtest.rules.epoch_seconds).toBe(3_600);
     expect(playtest.rules.epoch_seconds * 24).toBe(design.rules.epoch_seconds);
-    expect(playtest.rules.tick_config.armies_tick_in_seconds).toBe(150);
+    expect(playtest.rules.tick_config.armies_tick_in_seconds).toBe(5);
     expect(playtest.rules.tick_config.armies_tick_in_seconds * 24).toBe(
       design.rules.tick_config.armies_tick_in_seconds,
     );
@@ -282,12 +282,17 @@ describe("native presets", () => {
       (Number(design.resources.resources.find(({ resource_type }) => resource_type === resource)!.realm_rate) * 3600) /
       1_000_000_000;
 
-    expect(design.rules.tick_config.armies_tick_in_seconds).toBe(3600);
+    expect(design.rules.tick_config.armies_tick_in_seconds).toBe(120);
     expect(design.rules.troop_stamina_config).toMatchObject({
-      stamina_gain_per_tick: 30,
+      stamina_gain_per_tick: 1,
+      stamina_explore_stamina_cost: 30,
+      stamina_travel_stamina_cost: 10,
+      stamina_attack_req: 30,
       capture_stamina_refund: 0,
       stamina_initial: 150,
     });
+    expect(design.economy.relics).toEqual([]);
+    expect(design.economy.progression.unwrap()).toEqual({ reveal_xp: 10, clear_xp: 25, level_step_xp: 20 });
     expect(design.settlement.realms.resources).toEqual([
       { resource_type: 26, amount: 1_500_000_000_000n },
       { resource_type: 35, amount: 1_000_000_000_000n },

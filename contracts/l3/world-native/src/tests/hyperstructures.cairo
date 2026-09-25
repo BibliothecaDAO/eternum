@@ -398,7 +398,9 @@ fn hyperstructure_configuration_requires_authority_and_initialization_requires_o
     assert!(registry.register_preset(10003, preset).is_err());
     let invalid = crate::presets::PresetDefinition {
         economy: crate::presets::EconomyPreset {
-            hyperstructures: HyperstructureRules { resources: array![].span(), ..rules() }, ..preset.economy,
+            progression: None,
+            hyperstructures: HyperstructureRules { resources: array![].span(), ..rules() },
+            ..preset.economy,
         },
         ..preset,
     };

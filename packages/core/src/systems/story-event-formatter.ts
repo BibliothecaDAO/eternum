@@ -43,6 +43,20 @@ const CHEST_KIND_LABELS: Record<string, string> = { Relic: "relic", Cosmetic: "c
 const EXPEDITION_GROUND_LABELS = ["the surface", "Ethereal I", "Ethereal II", "Ethereal III"];
 
 const formatters: Record<string, StoryFormatter> = {
+  AttributeChosen: (event, payload, components) => {
+    const attribute = formatEnum(payload.attribute);
+    const applied = toNumber(payload.applied);
+    const lost = toNumber(payload.lost);
+    if (!attribute || applied === null || lost === null) throw new Error("Incomplete attribute choice story");
+    return {
+      title: `${attribute} +${applied}`,
+      description: joinPieces([
+        describeExplorer(payload.explorer_id, components),
+        lost > 0 ? `${lost} ${lost === 1 ? "level" : "levels"} lost at the cap` : undefined,
+      ]),
+      icon: "scroll",
+    };
+  },
   ChestReward: (event, payload, components) => {
     const quality = labelAt(CHEST_QUALITY_LABELS, payload.quality);
     const kind = CHEST_KIND_LABELS[formatEnum(payload.kind) ?? ""] ?? "reward";

@@ -425,6 +425,9 @@ fn assert_oversized_loot_terminal(raid: bool) {
 pub fn fixture_preset(rules: crate::rules::SliceRules) -> crate::presets::PresetDefinition {
     let mut preset = super::registrar::definition(rules.entry_rule == crate::rules::ENTRY_ROSTER);
     preset.rules = rules;
+    if rules.epoch_seconds != 0 {
+        preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
+    }
     preset.season_win_points = 0;
     preset.economy.withdrawals = None;
     preset

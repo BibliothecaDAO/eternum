@@ -35,6 +35,7 @@ pub struct GamesStorage<
     TTradeOrder,
     TExplorerTroops,
     TArmySlot,
+    TArmyProgress,
     TVillagePass,
 > {
     pub authority: ContractAddress,
@@ -67,6 +68,6 @@ pub struct GamesStorage<
     pub structures: crate::structures::StructureStateStorage<TStructureRecord>,
     pub structure_rules: crate::structures::StructuresDomainStorage,
     pub trade: crate::trade::TradeStateStorage<TTradeOrder>,
-    pub troops: crate::troops::TroopStateStorage<TExplorerTroops, TArmySlot>,
+    pub troops: crate::troops::TroopStateStorage<TExplorerTroops, TArmySlot, TArmyProgress>,
     pub village: crate::village::VillageStateStorage<TVillagePass>,
 }

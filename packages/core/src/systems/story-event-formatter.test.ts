@@ -156,3 +156,18 @@ it.each([
     expect(result.description).not.toContain("undefined");
   }
 });
+
+it("shows applied attribute levels and lost excess from history without reconstructing current levels", () => {
+  expect(
+    buildStoryEventPresentation(
+      story("AttributeChosen", {
+        explorer_id: 7,
+        offer_id: 9,
+        source: "Relic",
+        attribute: "Logistics",
+        applied: 1,
+        lost: 3,
+      }),
+    ),
+  ).toMatchObject({ title: "Logistics +1", description: "Army · 3 levels lost at the cap" });
+});

@@ -20,6 +20,7 @@ pub type Preset =
         crate::hyperstructures::ConstructionResource,
         crate::relics::RelicRule,
         crate::relics::ChestRules,
+        crate::progression::ArmyProgressionRules,
         crate::bridge::DepositRules,
         crate::withdrawals::WithdrawalTerms,
         crate::withdrawals::Retention,
@@ -59,6 +60,7 @@ pub type Storage =
         crate::trade::TradeOrder,
         crate::troops::ExplorerRecord,
         crate::troops::ArmySlotRecord,
+        crate::progression::PackedArmyProgress,
         crate::village::VillagePass,
     >;
 

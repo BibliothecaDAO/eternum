@@ -196,8 +196,10 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
       return Number(stamina.amount);
     },
     explorerMaxStamina: (explorerId) => {
-      const { troops } = store.require("ExplorerTroops", { game_id, explorer_id: explorerId });
-      return StaminaManager.getMaxStamina(troops.category, troops.tier);
+      const row = store.require("ExplorerTroops", { game_id, explorer_id: explorerId });
+      const troops = resolveExplorerTroops(store, row);
+      if (!troops) throw new Error(`Explorer ${explorerId} has no synchronized stamina`);
+      return StaminaManager.getMaxStamina(troops.category, troops.tier, troops.staminaMax);
     },
     minimumStaminaFor: (kind) =>
       kind === "explore" ? configManager.getExploreStaminaCost() : configManager.getMinTravelStaminaCost(),

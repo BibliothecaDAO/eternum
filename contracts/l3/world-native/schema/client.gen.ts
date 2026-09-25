@@ -1,6 +1,10 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "a0b6e1dcb1cf1d8a633fa6ed996663d6df83dfdaba2430923c9b4b1de0423c04";
+export const nativeFactSchemaIdentity = "cc7a688af93e4aea9a150b859f3978cc5c9457dc6e456b10898939ee239956ca";
 export const nativeRuleConstants = {
+  "ATTRIBUTE_CAP": 5,
+  "ATTRIBUTE_DAMAGE_PERCENT": 10,
+  "ATTRIBUTE_STAMINA": 30,
+  "ATTRIBUTE_SCOUTING_BPS": 150,
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
   "ENTRY_ROSTER": 2,
@@ -48,10 +52,11 @@ export interface NativeRows {
   SeasonWinThreshold: { readonly game_id: number; readonly points: bigint };
   ExtractionRewards: { readonly game_id: number; readonly rewards: readonly ({ readonly resource_type: number; readonly amount: bigint; readonly amount_max: bigint; readonly weight: bigint })[] };
   RelicRules: { readonly game_id: number; readonly rules: readonly ({ readonly rate_bps: number; readonly duration: number; readonly uses: number; readonly essence_cost: bigint; readonly draw_weight: bigint })[] };
+  ArmyProgressionRules: { readonly game_id: number; readonly reveal_xp: number; readonly clear_xp: number; readonly level_step_xp: number };
   ChestRules: { readonly game_id: number; readonly loose_one_in: number; readonly relic_probability: number; readonly cosmetic_probability: number; readonly token_cap: number };
   ChestPity: { readonly game_id: number; readonly player: bigint; readonly depth: number; readonly count: number };
   ChestTokens: { readonly game_id: number; readonly player: bigint; readonly epoch: bigint; readonly count: number };
-  ChestReward: { readonly game_id: number; readonly order: bigint; readonly index: number; readonly player: bigint; readonly explorer_id: number; readonly epoch: bigint; readonly depth: number; readonly kind: "Relic" | "Cosmetic" | "Token"; readonly quality: number; readonly relic_id: number };
+  ChestReward: { readonly game_id: number; readonly order: bigint; readonly index: number; readonly player: bigint; readonly explorer_id: number; readonly epoch: bigint; readonly depth: number; readonly kind: "Relic" | "Cosmetic" | "Token"; readonly quality: number };
   RelicDiscovery: { readonly game_id: number; readonly last_at: bigint };
   DepositRules: { readonly game_id: number; readonly paused: boolean; readonly realm_fee_bps: number; readonly velords_fee_bps: number; readonly season_fee_bps: number; readonly client_fee_bps: number };
   WithdrawalRules: { readonly game_id: number; readonly paused: boolean; readonly bank_fee_bps: number; readonly velords_fee_bps: number; readonly season_fee_bps: number; readonly client_fee_bps: number; readonly velords_recipient: bigint; readonly season_recipient: bigint; readonly retention: readonly ({ readonly troop_percent: number; readonly resource_percent: number })[] };
@@ -85,6 +90,7 @@ export interface NativeRows {
   PlayerEntry: { readonly game_id: number; readonly owner: bigint; readonly player: bigint };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly data: bigint };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly entity_id: number; readonly category: number; readonly is_structure: boolean };
+  ArmyProgress: { readonly game_id: number; readonly explorer_id: number; readonly level: number; readonly xp: number; readonly battle: number; readonly logistics: number; readonly scouting: number; readonly support: number; readonly pending: ({ readonly id: number; readonly source: "Level" | "Relic" | "Shrine"; readonly amount: number; readonly choices: readonly ("Battle" | "Logistics" | "Scouting" | "Support")[] }) | null };
   ArmySlot: { readonly game_id: number; readonly structure_id: number; readonly epoch: bigint; readonly slot: number; readonly explorer_id: number; readonly stamina: { readonly amount: bigint; readonly updated_tick: bigint } };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: number; readonly owner: number; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly updated_tick: bigint } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_tick: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_tick: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_tick_count: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_tick: number }; readonly battle_cooldown_end: number } };
   Structure: { readonly game_id: number; readonly entity_id: number; readonly owner: bigint; readonly base: { readonly troop_max_guard_count: number; readonly troop_max_explorer_count: number; readonly created_at: number; readonly category: number; readonly level: number; readonly starting_troops_granted: boolean }; readonly resources_packed: bigint; readonly metadata: { readonly realm_id: number; readonly order: number; readonly has_wonder: boolean; readonly village_realm: number; readonly mine_kind: number; readonly attunement: number; readonly barracks_tier: number } };
@@ -132,6 +138,7 @@ export interface NativeKeys {
   SeasonWinThreshold: { readonly game_id: number };
   ExtractionRewards: { readonly game_id: number };
   RelicRules: { readonly game_id: number };
+  ArmyProgressionRules: { readonly game_id: number };
   ChestRules: { readonly game_id: number };
   ChestPity: { readonly game_id: number; readonly player: bigint; readonly depth: number };
   ChestTokens: { readonly game_id: number; readonly player: bigint; readonly epoch: bigint };
@@ -169,6 +176,7 @@ export interface NativeKeys {
   PlayerEntry: { readonly game_id: number; readonly owner: bigint };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
+  ArmyProgress: { readonly game_id: number; readonly explorer_id: number };
   ArmySlot: { readonly game_id: number; readonly structure_id: number; readonly epoch: bigint; readonly slot: number };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: number };
   Structure: { readonly game_id: number; readonly entity_id: number };
@@ -368,6 +376,18 @@ export const nativeFactModels = {
       ]
     }
   },
+  "ArmyProgressionRules": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "reveal_xp": "u32",
+      "clear_xp": "u32",
+      "level_step_xp": "u32"
+    }
+  },
   "ChestRules": {
     "keys": [
       "game_id"
@@ -439,8 +459,7 @@ export const nativeFactModels = {
           "Token"
         ]
       },
-      "quality": "u8",
-      "relic_id": "u8"
+      "quality": "u8"
     }
   },
   "RelicDiscovery": {
@@ -1012,6 +1031,46 @@ export const nativeFactModels = {
       "entity_id": "u32",
       "category": "u8",
       "is_structure": "boolean"
+    }
+  },
+  "ArmyProgress": {
+    "keys": [
+      "game_id",
+      "explorer_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "explorer_id": "u32",
+      "level": "u16",
+      "xp": "u32",
+      "battle": "u8",
+      "logistics": "u8",
+      "scouting": "u8",
+      "support": "u8",
+      "pending": {
+        "option": {
+          "id": "u32",
+          "source": {
+            "enum": [
+              "Level",
+              "Relic",
+              "Shrine"
+            ]
+          },
+          "amount": "u8",
+          "choices": [
+            {
+              "enum": [
+                "Battle",
+                "Logistics",
+                "Scouting",
+                "Support"
+              ]
+            }
+          ]
+        }
+      }
     }
   },
   "ArmySlot": {
@@ -1836,6 +1895,7 @@ export const nativeSyncScopes = {
   "ExtractionRewards": "shared",
   "RelicRules": "shared",
   "ChestRules": "shared",
+  "ArmyProgressionRules": "shared",
   "RelicDiscovery": "shared",
   "DepositRules": "shared",
   "WithdrawalRules": "shared",
@@ -1989,6 +2049,11 @@ export const nativeSyncScopes = {
   "ProductionReceiver": {
     "realms": [
       "home"
+    ]
+  },
+  "ArmyProgress": {
+    "entities": [
+      "explorer_id"
     ]
   },
   "ArmySlot": {

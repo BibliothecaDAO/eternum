@@ -36,7 +36,7 @@ export const getExplorerStaminaSnapshot = (
   const stamina = StaminaManager.getStamina(troops, input.currentArmiesTick);
   return {
     current: Number(stamina.amount),
-    max: StaminaManager.getMaxStamina(troops.category as TroopType, troops.tier as TroopTier),
+    max: StaminaManager.getMaxStamina(troops.category as TroopType, troops.tier as TroopTier, troops.staminaMax),
     stamina,
     troops,
   };

@@ -120,7 +120,7 @@
     },
     "map_center_offset": 20,
     "spire_travel_essence_cost": "0x2540be400",
-    "command_mask": "0x3ffffffffffffffff",
+    "command_mask": "0x13ffffffffffffffff",
     "epoch_seconds": 0,
     "mode_rules": 1057816,
     "entry_rule": 0,

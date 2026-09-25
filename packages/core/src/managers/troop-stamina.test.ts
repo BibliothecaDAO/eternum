@@ -40,6 +40,13 @@ describe("stamina under one game's rules", () => {
     expect(staminaAt(knight(0, 0), 4, rules)).toEqual({ amount: 35n, updated_tick: 4n });
   });
 
+  it("uses the resolved Logistics cap without adding the troop-tier bonus", () => {
+    const troops = { ...knight(150, 10), tier: TroopTier.T3, staminaMax: 180 };
+    expect(staminaAt(troops, 11, rules).amount).toBe(170n);
+    expect(staminaAt(troops, 12, rules).amount).toBe(180n);
+    expect(fullAtTick(troops, 10, rules)).toBe(12);
+  });
+
   it("finds the first tick an army is full", () => {
     expect(fullAtTick(knight(10, 100), 100, rules)).toBe(106);
     expect(fullAtTick(knight(120, 100), 103, rules)).toBe(103);

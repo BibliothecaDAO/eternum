@@ -1,5 +1,6 @@
 import { TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 /** One game's stamina rules, exactly as its SliceRules carries them. */
@@ -25,6 +26,7 @@ export function staminaAt(troops: Troops, currentArmiesTick: number, rules: Troo
     troops.category as TroopType,
     troops.tier as TroopTier,
   );
+  const maximum = troops.staminaMax ?? staminaMax;
 
   if (lastRefillTick >= BigInt(currentArmiesTick)) {
     return structuredClone(troops.stamina);
@@ -32,7 +34,7 @@ export function staminaAt(troops: Troops, currentArmiesTick: number, rules: Troo
 
   if (lastRefillTick === 0n) {
     return {
-      amount: BigInt(Math.min(staminaInitial, staminaMax)),
+      amount: BigInt(Math.min(staminaInitial, maximum)),
       updated_tick: BigInt(currentArmiesTick),
     };
   }
@@ -46,14 +48,15 @@ export function staminaAt(troops: Troops, currentArmiesTick: number, rules: Troo
   const totalStaminaSinceLastTick = ticksSinceLastRefill * staminaPerTick + additionalStaminaBoost;
 
   return {
-    amount: BigInt(Math.min(Number(troops.stamina.amount) + totalStaminaSinceLastTick, staminaMax)),
+    amount: BigInt(Math.min(Number(troops.stamina.amount) + totalStaminaSinceLastTick, maximum)),
     updated_tick: BigInt(currentArmiesTick),
   };
 }
 
 /** The first tick at which the troop's stamina is full, or null when it never refills. */
 export function fullAtTick(troops: Troops, currentArmiesTick: number, rules: TroopStaminaRules): number | null {
-  const { staminaMax } = troopStaminaLimits(rules, troops.category as TroopType, troops.tier as TroopTier);
+  const staminaMax =
+    troops.staminaMax ?? troopStaminaLimits(rules, troops.category as TroopType, troops.tier as TroopTier).staminaMax;
   const isFull = (tick: number) => Number(staminaAt(troops, tick, rules).amount) >= staminaMax;
   if (isFull(currentArmiesTick)) return currentArmiesTick;
   const gain = Number(rules.stamina_gain_per_tick);
@@ -70,9 +73,17 @@ export function fullAtTick(troops: Troops, currentArmiesTick: number, rules: Tro
 }
 
 /** Guard and non-expedition arithmetic accepts only the inline variant. */
-export function inlineTroops(troops: NativeRows["ExplorerTroops"]["troops"]): Troops {
+export function inlineTroops(troops: NativeRows["ExplorerTroops"]["troops"], rules?: NativeRows["SliceRules"]): Troops {
   if (!("Inline" in troops.stamina)) throw new Error("Army slot requires its home and current epoch");
-  return { ...troops, stamina: troops.stamina.Inline };
+  return {
+    ...troops,
+    stamina: troops.stamina.Inline,
+    ...(rules && rules.epoch_seconds !== 0
+      ? {
+          staminaMax: troopStaminaLimits(rules.troop_stamina_config, troops.category, TroopTier.T1).staminaMax,
+        }
+      : {}),
+  };
 }
 
 /** The sole explorer bar resolver; an occupied slot must be present and name this explorer. */
@@ -93,7 +104,19 @@ export function resolveExplorerTroops(
   if (result.unknown) return undefined;
   if (!result.known) throw new Error("Missing occupied army slot: unused");
   if (result.known.explorer_id !== explorer.explorer_id) throw new Error("Army slot occupant mismatch");
-  return { ...explorer.troops, stamina: result.known.stamina };
+  const progress = store.require("ArmyProgress", { game_id: explorer.game_id, explorer_id: explorer.explorer_id });
+  const rules = store.require("SliceRules", { game_id: explorer.game_id });
+  const base = troopStaminaLimits(rules.troop_stamina_config, explorer.troops.category, TroopTier.T1).staminaMax;
+  return {
+    ...explorer.troops,
+    stamina: result.known.stamina,
+    staminaMax: base + (progress.logistics - 1) * nativeRuleConstants.ATTRIBUTE_STAMINA,
+    boosts: {
+      ...explorer.troops.boosts,
+      incr_damage_dealt_percent_num: (progress.battle - 1) * nativeRuleConstants.ATTRIBUTE_DAMAGE_PERCENT,
+      incr_damage_dealt_end_tick: 0,
+    },
+  };
 }
 
 /** A slot a home can muster into today, with the bar the army starts on: fresh, or the bar its last army left. */

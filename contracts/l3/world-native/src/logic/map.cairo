@@ -407,6 +407,14 @@ pub mod MapLogic {
                 crate::commands::resource_context(context),
             );
             crate::logic::map::MapState::mark_reward_extracted(key);
+            if rules.epoch_seconds != 0 {
+                crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
+                    crate::progression::IArmyProgressionLibraryDispatcher { class_hash: classes.relics.read() },
+                    crate::troops::ExplorerKey { game_id, explorer_id },
+                    crate::progression::XpAward::Reveal,
+                    crate::commands::action_context(context),
+                );
+            }
             if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES)
                 && crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CHESTS)
                 && tile.data % 2 == 0 {

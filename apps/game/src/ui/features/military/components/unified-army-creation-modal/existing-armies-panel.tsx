@@ -68,7 +68,11 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
 
   const maxStamina = useMemo(() => {
     if (!army.troops) return 0;
-    return StaminaManager.getMaxStamina(army.troops.category as TroopType, army.troops.tier as TroopTier);
+    return StaminaManager.getMaxStamina(
+      army.troops.category as TroopType,
+      army.troops.tier as TroopTier,
+      army.troops.staminaMax,
+    );
   }, [army.troops]);
 
   const staminaPercent = stamina && maxStamina > 0 ? Math.min(100, (Number(stamina.amount) / maxStamina) * 100) : 0;

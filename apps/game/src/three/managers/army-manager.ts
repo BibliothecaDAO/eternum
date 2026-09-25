@@ -526,7 +526,7 @@ export class ArmyManager {
       tier,
       troopCount: divideByPrecision(Number(explorerTroops.troops.count)),
       currentStamina: troops ? Number(troops.stamina.amount) : undefined,
-      maxStamina: StaminaManager.getMaxStamina(category, tier),
+      maxStamina: troops ? StaminaManager.getMaxStamina(category, tier, troops.staminaMax) : undefined,
       battleCooldownEnd: explorerTroops.troops.battle_cooldown_end,
     };
   }
@@ -1890,20 +1890,26 @@ export class ArmyManager {
       return null;
     }
 
-    // todo: currently taking max stamina of paladin as max stamina but need to refactor
-    const maxTroopStamina = configManager.getTroopStaminaConfig(TroopType.Paladin, TroopTier.T3);
-    const staminaMax = Number(maxTroopStamina?.staminaMax ?? 0);
-    const minTravelCost = configManager.getMinTravelStaminaCost();
-    const maxHex = Math.max(0, Math.floor(staminaMax / Math.max(minTravelCost, 1)));
+    const troops = this.resolveLiveExplorerTroops(entityId);
+    const maxHex = troops
+      ? Math.max(
+          0,
+          Math.floor(
+            StaminaManager.getMaxStamina(troops.category, troops.tier, troops.staminaMax) /
+              Math.max(configManager.getMinTravelStaminaCost(), 1),
+          ),
+        )
+      : undefined;
 
-    const shouldUseWorkerPath = shouldUseWorkerPathForArmy({ isMine: armyData.isMine });
+    const shouldUseWorkerPath = maxHex !== undefined && shouldUseWorkerPathForArmy({ isMine: armyData.isMine });
     if (!shouldUseWorkerPath) {
       incrementWorldmapRenderCounter("workerFindPathBypasses");
     }
 
-    const workerPath = shouldUseWorkerPath
-      ? await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex)
-      : null;
+    const workerPath =
+      shouldUseWorkerPath && maxHex !== undefined
+        ? await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex)
+        : null;
     const path = resolveMovementPath(armyData.hexCoords, hexCoords, workerPath);
     const worldPath = path.map((pos) => this.getArmyWorldPositionInto(new Vector3(), pos));
 

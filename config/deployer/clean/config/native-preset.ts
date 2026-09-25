@@ -269,7 +269,23 @@ function buildEconomy(
   tokens: Array<{ resource_type: number; token: string }>,
 ) {
   const chests = preset.chests;
+  const progression = preset.progression;
+  if (progression === undefined || (progression !== null) !== (preset.epochSeconds !== 0))
+    throw new Error("Explicit progression rules are required for expedition presets only");
+  if (
+    progression &&
+    Object.values(progression).some((value) => !Number.isSafeInteger(value) || value <= 0 || value > 0xffff_ffff)
+  )
+    throw new Error("Progression XP values must be positive u32 integers");
   return {
+    progression:
+      progression === null
+        ? new CairoOption(CairoOptionVariant.None)
+        : new CairoOption(CairoOptionVariant.Some, {
+            reveal_xp: progression.revealXp,
+            clear_xp: progression.clearXp,
+            level_step_xp: progression.levelStepXp,
+          }),
     chests:
       chests === null
         ? new CairoOption(CairoOptionVariant.None)

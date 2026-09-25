@@ -19,7 +19,7 @@ pub fn active_explorer(
             "EXPIRED_ARMY",
         );
     }
-    crate::logic::army_slots::resolve(key, explorer)
+    crate::logic::army_slots::resolve(key, explorer, Some(timestamp))
 }
 
 pub fn owned_structure(game_id: u32, entity_id: u32, actor: ContractAddress) -> Structure {
@@ -758,6 +758,7 @@ pub mod TroopsLogic {
                             crate::expeditions::absolute_epoch(rules.epoch_seconds, context.timestamp),
                             home.base.troop_max_explorer_count.try_into().expect('invalid slot allowance'),
                             troops.stamina.inline(),
+                            crate::stamina::StaminaImpl::max(category, TroopTier::T1, rules.troop_stamina_config),
                         );
             }
             crate::logic::map::MapState::occupy(
