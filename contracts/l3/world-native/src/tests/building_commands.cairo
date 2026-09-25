@@ -1,3 +1,4 @@
+use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::buildings::{BuildingKey, BuildingRule, BuildingRuleConfig, ChangeBuilding, CreateBuilding};
 use crate::commands::Command;
@@ -392,174 +393,187 @@ fn a_labor_building_a_player_builds_costs_its_rule_population() {
 }
 
 #[test]
-fn board_neighbors_change_production_capacity_and_population_and_demolition_refunds_paid_labor() {
-    use crate::buildings::{BoardRules, Building, NeighborBonus, StructureBuildings};
-    let mut neighbors = array![];
-    for (building, neighbor) in array![(37_u8, 2_u8), (28, 37), (28, 0), (25, 0)] {
-        neighbors.append(NeighborBonus { building, neighbor, production_bps: 1000, capacity_bps: 0, population: 0 });
-    }
-    for neighbor in array![37_u8, 25] {
-        neighbors.append(NeighborBonus { building: 2, neighbor, production_bps: 0, capacity_bps: 1000, population: 0 });
-    }
-    neighbors.append(NeighborBonus { building: 1, neighbor: 0, production_bps: 0, capacity_bps: 0, population: 2 });
-    let mut preset = building_preset(
-        Some(
-            BoardRules {
-                demolition_refund_bps: 5000,
-                workshop_rate: 20,
-                barracks_ii_cost: 80,
-                barracks_iii_cost: 450,
-                neighbors: neighbors.span(),
-            },
-        ),
-    );
-    preset.rules.building_config.base_population = 6;
-    preset.rules.building_config.base_cost_percent_increase = 1500;
-    preset.rules.capacity_config.storehouse_boost_capacity = 10;
-    let mut resources = array![];
-    for rule in preset.resources.resources {
-        resources
-            .append(
-                if *rule.resource_type == 23 || *rule.resource_type == 26 || *rule.resource_type == 35 {
-                    crate::resources::ResourceRule { unit_weight: 0, realm_rate: 10, village_rate: 0, ..*rule }
-                } else {
-                    *rule
+fn marked_ring_plot_doubles_output_capacity_and_population_without_neighbor_bonuses() {
+    for category in array![37_u8, 2, 1] {
+        let mut preset = building_preset(
+            Some(
+                crate::buildings::BoardRules {
+                    demolition_refund_bps: 5000,
+                    workshop_rate: 20,
+                    barracks_ii_cost: 80,
+                    barracks_iii_cost: 450,
+                    neighbors: array![].span(),
                 },
-            );
+            ),
+        );
+        preset.rules.building_config.base_population = 20;
+        preset.rules.building_config.base_cost_percent_increase = 1500;
+        preset.rules.capacity_config.storehouse_boost_capacity = 10;
+        let (deployment, home) = building_world_with_preset(preset);
+        seed_board_castle(deployment, home);
+        super::resource_commands::grant(deployment, home, 23, 10000);
+        let baseline = board_output(deployment, home, category);
+        assert!(execute(deployment, create(home, category), 40));
+        let ordinary = board_output(deployment, home, category) - baseline;
+        assert!(ordinary > 0, "fixture must produce an effect");
+        let marked = crate::building_ring::marked_plot(1, 1);
+        assert_eq!(marked, crate::geometry::neighbor(Coord { alt: false, x: 10, y: 10 }, 4));
+        assert!(
+            execute(
+                deployment,
+                Command::CreateBuilding(
+                    CreateBuilding {
+                        structure_id: home.entity_id, category, directions: array![4_u8].span(), use_simple: true,
+                    },
+                ),
+                40,
+            ),
+        );
+        assert_eq!(board_output(deployment, home, category) - baseline, 3 * ordinary);
+        // A workshop beside the marked tile changes none of its effects.
+        assert!(
+            execute(
+                deployment,
+                Command::CreateBuilding(
+                    CreateBuilding {
+                        structure_id: home.entity_id, category: 25, directions: array![5_u8].span(), use_simple: true,
+                    },
+                ),
+                40,
+            ),
+        );
+        assert_eq!(board_output(deployment, home, category) - baseline, 3 * ordinary);
+        assert!(execute(deployment, Command::DestroyBuilding(change(home)), 40));
+        assert_eq!(board_output(deployment, home, category) - baseline, 2 * ordinary);
+        let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
+        let labor = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 23 };
+        let before = resources.resource_balance(labor);
+        assert!(
+            execute(
+                deployment,
+                Command::DestroyBuilding(ChangeBuilding { structure_id: home.entity_id, coord: marked }),
+                40,
+            ),
+        );
+        assert_eq!(resources.resource_balance(labor), before + 57);
+        assert_eq!(board_output(deployment, home, category), baseline);
     }
-    preset.resources.resources = resources.span();
+}
+
+fn seed_board_castle(deployment: super::Deployment, home: ResourceKey) {
+    // Workshop copy pricing excludes the castle provisioned at settlement.
+    set_fixture(
+        deployment.games,
+        selector!("buildings"),
+        selector!("buildings"),
+        array![home.game_id.into(), home.entity_id.into(), 10, 10].span(),
+        crate::buildings::Building { category: 25, paused: false, labor_paid: 0 },
+    );
+    let mut counts = IStructureOperationsDispatcher { contract_address: deployment.games }.structure_buildings(home);
+    crate::buildings::change_count(ref counts, 25, true);
+    set_fixture(
+        deployment.games,
+        selector!("buildings"),
+        selector!("structure_buildings"),
+        array![home.game_id.into(), home.entity_id.into()].span(),
+        counts,
+    );
+}
+
+fn board_output(deployment: super::Deployment, home: ResourceKey, category: u8) -> u128 {
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
+    match category {
+        37 => resources
+            .resource_production(ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type: 35 })
+            .production_rate
+            .into(),
+        2 => resources.resource_weight(home).capacity,
+        1 => IStructureOperationsDispatcher { contract_address: deployment.games }
+            .structure_buildings(home)
+            .population
+            .max
+            .into(),
+        _ => panic!("unsupported board effect fixture"),
+    }
+}
+
+#[test]
+fn building_ring_matches_shared_vectors_through_the_highest_castle_ring() {
+    let input = read_txt(@FileTrait::new("tests/fixtures/frontier-ring-v1.txt"));
+    let mut fields = input.span();
+    let version: u32 = Serde::deserialize(ref fields).unwrap();
+    let count: u32 = Serde::deserialize(ref fields).unwrap();
+    assert_eq!(version, 1);
+    let highest_ring: u32 = building_preset(None).structures.upgrade_limits.realm_max.into() + 1;
+    assert_eq!(count, 12 * highest_ring);
+    let mut highest_ring_rows = 0;
+    for _ in 0..count {
+        let (realm_id, ring, x, y): (u16, u8, u32, u32) = Serde::deserialize(ref fields).unwrap();
+        assert!(ring > 0 && ring.into() <= highest_ring, "vector ring outside preset");
+        if ring.into() == highest_ring {
+            highest_ring_rows += 1;
+        }
+        let expected = Coord { alt: false, x, y };
+        assert_eq!(crate::building_ring::marked_plot(realm_id, ring.into()), expected);
+        assert_eq!(crate::geometry::distance(Coord { alt: false, x: 10, y: 10 }, expected), ring.into());
+        assert!(crate::building_ring::is_marked_plot(realm_id, expected));
+    }
+    assert_eq!(highest_ring_rows, 12);
+    assert!(fields.is_empty(), "trailing building ring vectors");
+}
+
+#[test]
+fn castle_ring_limit_accepts_four_and_rejects_five() {
+    let preset = building_preset(None);
+    let highest_level = preset.structures.upgrade_limits.realm_max;
     let (deployment, home) = building_world_with_preset(preset);
     let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
-    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-    let mut realm = structures.structure(home).unwrap();
-    realm.base.level = 1;
+    let structure = structures.structure(home).unwrap();
     set_fixture(
         deployment.games,
         selector!("structures"),
         selector!("structures"),
         array![3, home.entity_id.into()].span(),
         crate::structures::StructureRecord {
-            owner: realm.owner, base: realm.base, metadata: realm.metadata, resources_packed: realm.resources_packed,
+            owner: structure.owner,
+            base: crate::structures::StructureBase { level: highest_level, ..structure.base },
+            metadata: structure.metadata,
+            resources_packed: structure.resources_packed,
         },
     );
-    set_fixture(
-        deployment.games,
-        selector!("buildings"),
-        selector!("buildings"),
-        array![3, home.entity_id.into(), 10, 10].span(),
-        Building { category: 25, paused: false, labor_paid: 0 },
-    );
-    set_fixture(
-        deployment.games,
-        selector!("buildings"),
-        selector!("structure_buildings"),
-        array![3, home.entity_id.into()].span(),
-        StructureBuildings { packed_counts_2: 0x10000000000000000, ..Default::default() },
-    );
-    super::resource_commands::grant(deployment, home, 23, 10000);
-    start_cheat_caller_address(deployment.games, deployment.games);
-    resources
-        .start_production(
-            home,
-            23,
-            10,
-            0xffffffffffffffffffffffffffffffff,
-            40,
-            crate::commands::resource_context(
-                crate::commands::ExecutionContext {
-                    timestamp: 40, ..crate::tests::context(deployment.games, (home).game_id),
-                },
-            ),
-        );
-    stop_cheat_caller_address(deployment.games);
-    let capacity = resources.resource_weight(home).capacity;
-    let labor = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 23 };
-    let wheat = ResourceSlot { resource_type: 35, ..labor };
-    let troops = ResourceSlot { resource_type: 26, ..labor };
-    for (category, directions) in array![
-        (37_u8, array![0_u8].span()), (25, array![5_u8].span()), (2, array![0_u8, 5].span()), (28, array![1_u8].span()),
-        (1, array![3_u8].span()),
-    ] {
-        assert!(
-            execute(
-                deployment,
-                Command::CreateBuilding(
-                    CreateBuilding { structure_id: home.entity_id, category, directions, use_simple: true },
-                ),
-                40,
-            ),
-        );
-    }
-    assert_eq!(resources.resource_production(wheat).production_rate, 11);
-    assert_eq!(resources.resource_production(troops).production_rate, 12);
-    assert_eq!(resources.resource_production(labor).production_rate, 32);
-    assert_eq!(resources.resource_weight(home).capacity, capacity + 12 * crate::rules::RESOURCE_PRECISION);
-    assert_eq!(structures.structure_buildings(home).population.max, 8);
-
-    let before = resources.resource_balance(labor);
     assert!(
         execute(
             deployment,
             Command::CreateBuilding(
                 CreateBuilding {
-                    structure_id: home.entity_id, category: 37, directions: array![3_u8, 3].span(), use_simple: true,
+                    structure_id: home.entity_id,
+                    directions: array![0_u8, 0, 0, 0].span(),
+                    category: 37,
+                    use_simple: true,
                 },
             ),
             40,
         ),
     );
-    assert_eq!(resources.resource_balance(labor), before - 115);
-    assert!(
-        execute(
-            deployment,
-            Command::DestroyBuilding(
-                ChangeBuilding { structure_id: home.entity_id, coord: Coord { alt: false, x: 8, y: 10 } },
-            ),
-            40,
+    let before = resource_facts(deployment, home);
+    assert_terminal_rejection(
+        deployment,
+        Command::CreateBuilding(
+            CreateBuilding {
+                structure_id: home.entity_id,
+                directions: array![0_u8, 0, 0, 0, 0].span(),
+                category: 37,
+                use_simple: true,
+            },
         ),
+        40,
     );
-    assert_eq!(resources.resource_balance(labor), before - 115 + 57);
-
-    assert!(execute(deployment, Command::DestroyBuilding(change(home)), 40));
-    assert_eq!(resources.resource_production(troops).production_rate, 11);
-    assert_eq!(resources.resource_weight(home).capacity, capacity + 11 * crate::rules::RESOURCE_PRECISION);
+    assert_eq!(resource_facts(deployment, home), before);
     assert!(
-        execute(
-            deployment,
-            Command::DestroyBuilding(
-                ChangeBuilding { structure_id: home.entity_id, coord: Coord { alt: false, x: 11, y: 9 } },
-            ),
-            40,
-        ),
+        structures
+            .building(BuildingKey { game_id: home.game_id, structure_id: home.entity_id, inner_col: 15, inner_row: 10 })
+            .is_none(),
     );
-    assert_eq!(resources.resource_production(labor).production_rate, 10);
-    assert_eq!(resources.resource_weight(home).capacity, capacity + 10 * crate::rules::RESOURCE_PRECISION);
-    assert!(execute(deployment, create(home, 37), 40));
-    assert_eq!(resources.resource_production(wheat).production_rate, 11);
-    assert!(
-        execute(
-            deployment,
-            Command::DestroyBuilding(
-                ChangeBuilding { structure_id: home.entity_id, coord: Coord { alt: false, x: 12, y: 9 } },
-            ),
-            40,
-        ),
-    );
-    assert_eq!(resources.resource_production(wheat).production_rate, 10);
-    assert_eq!(resources.resource_weight(home).capacity, capacity);
-    for (x, y) in array![(9_u32, 10_u32), (11, 11)] {
-        assert!(
-            execute(
-                deployment,
-                Command::DestroyBuilding(
-                    ChangeBuilding { structure_id: home.entity_id, coord: Coord { alt: false, x, y } },
-                ),
-                40,
-            ),
-        );
-    }
-    assert_eq!(structures.structure_buildings(home).population.max, 0);
-    assert_eq!(resources.resource_production(troops).production_rate, 0);
 }
 
 #[test]

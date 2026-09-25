@@ -4,6 +4,7 @@ pub mod biome;
 pub mod bitcoin;
 pub mod blitz_results;
 pub mod bridge;
+pub mod building_ring;
 pub mod buildings;
 pub mod camps;
 pub mod combat;

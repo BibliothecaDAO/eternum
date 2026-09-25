@@ -67,26 +67,18 @@ pub mod BuildingState {
             } else {
                 building.category
             };
-            let mut production_bps = 0_u32;
-            let mut capacity_bps = 0_u32;
-            let mut population = 0_u32;
-            for direction in 0_u8..6 {
-                let neighbor_coord = crate::geometry::neighbor(coord, direction);
-                if let Some(neighbor) = self.building(building_key(key, neighbor_coord)) {
-                    let neighbor_category = if neighbor_coord.x == 10 && neighbor_coord.y == 10 {
-                        0
-                    } else {
-                        neighbor.category
-                    };
-                    for bonus in board.neighbors {
-                        if *bonus.building == category && *bonus.neighbor == neighbor_category {
-                            production_bps += Into::<u16, u32>::into(*bonus.production_bps);
-                            capacity_bps += Into::<u16, u32>::into(*bonus.capacity_bps);
-                            population += Into::<u8, u32>::into(*bonus.population);
-                        }
-                    }
-                }
-            }
+            let realm_id = crate::logic::structures::record(key).metadata.realm_id;
+            let marked = crate::building_ring::is_marked_plot(realm_id, coord);
+            let multiplier: u64 = if marked {
+                2
+            } else {
+                1
+            };
+            let population = if marked {
+                self.rule(BuildingRuleKey { game_id: key.game_id, category: building.category }).capacity_grant.into()
+            } else {
+                0
+            };
             let rate = if resource_type == 0 || building.paused {
                 0
             } else if category == 25 {
@@ -105,10 +97,7 @@ pub mod BuildingState {
                 0
             };
             crate::buildings::BuildingEffect {
-                resource_type,
-                rate: (Into::<u64, u128>::into(rate) * (10000 + production_bps).into() / 10000).try_into().unwrap(),
-                capacity: capacity * (10000 + capacity_bps).into() / 10000,
-                population,
+                resource_type, rate: rate * multiplier, capacity: capacity * multiplier.into(), population,
             }
         }
         fn apply_board_effects(

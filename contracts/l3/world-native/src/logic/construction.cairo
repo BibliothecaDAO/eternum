@@ -71,7 +71,7 @@ pub mod ConstructionLogic {
             let coord = self.resolve_building_coord(game_id, base, command.directions);
             let location = crate::logic::buildings::building_key(key, coord);
             let rule = self.buildings.rule(crate::buildings::BuildingRuleKey { game_id, category: command.category });
-            let before = self.neighbor_effects(key, base, coord, context);
+            let before = self.board_effects(key, base, coord, context);
             self
                 .erect_building(
                     key,
@@ -88,7 +88,7 @@ pub mod ConstructionLogic {
             self
                 .buildings
                 .apply_board_effects(
-                    key, before, self.neighbor_effects(key, base, coord, context), context.timestamp, context,
+                    key, before, self.board_effects(key, base, coord, context), context.timestamp, context,
                 );
             let mut count = crate::buildings::category_count(
                 self.buildings.data.buildings.structure_buildings.read((game_id, command.structure_id)),
@@ -141,7 +141,7 @@ pub mod ConstructionLogic {
                 building.category != 25 || (board.is_some() && (command.coord.x != 10 || command.coord.y != 10)),
                 "cannot destroy labor building",
             );
-            let before = self.neighbor_effects(key, base, command.coord, context);
+            let before = self.board_effects(key, base, command.coord, context);
             if board.is_none() && !building.paused {
                 self
                     .change_building_production(
@@ -156,7 +156,7 @@ pub mod ConstructionLogic {
             self
                 .buildings
                 .apply_board_effects(
-                    key, before, self.neighbor_effects(key, base, command.coord, context), context.timestamp, context,
+                    key, before, self.board_effects(key, base, command.coord, context), context.timestamp, context,
                 );
             if let Some(board) = board {
                 let refund = crate::math::PercentageImpl::get(building.labor_paid, board.demolition_refund_bps.into());
@@ -456,7 +456,7 @@ pub mod ConstructionLogic {
             let resources = self.data.structures.structures.entry((key.game_id, key.entity_id)).resources_packed.read();
             assert!(crate::buildings::can_produce(category, resources), "structure cannot produce building resource");
         }
-        fn neighbor_effects(
+        fn board_effects(
             self: @ContractState,
             key: ResourceKey,
             base: StructureBase,
@@ -467,18 +467,7 @@ pub mod ConstructionLogic {
                 return array![].span();
             };
             let tier = crate::logic::structures::record(key).metadata.barracks_tier;
-            let mut effects = array![self.buildings.building_effect(key, base, coord, board, tier, game_context)];
-            for direction in 0_u8..6 {
-                effects
-                    .append(
-                        self
-                            .buildings
-                            .building_effect(
-                                key, base, crate::geometry::neighbor(coord, direction), board, tier, game_context,
-                            ),
-                    );
-            }
-            effects.span()
+            array![self.buildings.building_effect(key, base, coord, board, tier, game_context)].span()
         }
 
         fn change_building_production(
@@ -543,7 +532,7 @@ pub mod ConstructionLogic {
             let location = crate::logic::buildings::building_key(key, command.coord);
             let mut building = self.buildings.building(location).expect('missing building');
             assert!(building.paused != paused, "building already in requested state");
-            let before = self.neighbor_effects(key, base, command.coord, game_context);
+            let before = self.board_effects(key, base, command.coord, game_context);
             if self.buildings.board(game_id).is_none() {
                 self
                     .change_building_production(
@@ -555,7 +544,7 @@ pub mod ConstructionLogic {
             self
                 .buildings
                 .apply_board_effects(
-                    key, before, self.neighbor_effects(key, base, command.coord, game_context), timestamp, game_context,
+                    key, before, self.board_effects(key, base, command.coord, game_context), timestamp, game_context,
                 );
             let change = if paused {
                 crate::ownership::BuildingChange::Paused

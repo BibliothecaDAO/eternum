@@ -70,15 +70,7 @@ export const frontierPreset: NativePreset = {
     workshopRate: 200 / 3600,
     barracksIICost: 8000,
     barracksIIICost: 45000,
-    neighbors: [
-      { building: 37, neighbor: 2, productionBps: 1000, capacityBps: 0, population: 0 },
-      { building: 28, neighbor: 37, productionBps: 1000, capacityBps: 0, population: 0 },
-      { building: 28, neighbor: 0, productionBps: 1000, capacityBps: 0, population: 0 },
-      { building: 25, neighbor: 0, productionBps: 1000, capacityBps: 0, population: 0 },
-      { building: 2, neighbor: 37, productionBps: 0, capacityBps: 1000, population: 0 },
-      { building: 2, neighbor: 25, productionBps: 0, capacityBps: 1000, population: 0 },
-      { building: 1, neighbor: 0, productionBps: 0, capacityBps: 0, population: 2 },
-    ],
+    neighbors: [],
   },
   chests: { looseOneIn: 46, relicProbability: 9000, cosmeticProbability: 900, tokenCap: 1 },
   depths: [
