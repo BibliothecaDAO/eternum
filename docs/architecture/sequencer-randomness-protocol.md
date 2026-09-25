@@ -77,10 +77,12 @@ envelope's epoch and the wrapper transaction calldata, one game at a time.
 ## Admission and execution
 
 Each game has its own ordered stream, including non-random actions. Admission verifies signatures before queueing: it
-requires the actor to run the shard's configured account class, calls the actor's `is_valid_signature`, and reads the
-nonce, the game's release pin and preset commitment from node state. It checks chain, deployment and the intent's
-validity window. There is at most one pending ticket per player and a transport-peer IP request cap. An identical
-pending intent reuses its ticket; different content at that nonce conflicts.
+reads `get_admission`, which refuses an actor that is not the shard's canonical account by name (`INVALID_ACTOR` or
+`FOREIGN_GUARDIAN`, below), calls the actor's `is_valid_signature`, and reads the nonce, the game's release pin and
+preset commitment from node state. The gateway passes either refusal to the player under its name, at admission and when
+the ticket is accepted. It checks chain, deployment and the intent's validity window. There is at most one pending
+ticket per player and a transport-peer IP request cap. An identical pending intent reuses its ticket; different content
+at that nonce conflicts.
 
 Admission assigns the next order of the intent's game, the current epoch and a root in a bounded volatile queue; the
 first ticket of a game after a start takes its order from that game's recorded head. It does not guess preceding
@@ -98,8 +100,13 @@ whole batch of otherwise valid actions.
 
 Games authenticates the sequencing account as caller. The account independently verifies its v3 transaction signature
 and sender during execution, including simulation, restricts calls to recorded execution and epoch management, and
-rejects callbacks and extra account calls. Before consuming the nonce, Games requires the actor to run the configured
-account class and calls its `is_valid_signature(action_id, signature)`; a refusal or a failing call records
+rejects callbacks and extra account calls. Before it reads the signature or the nonce, Games checks that the actor is
+the shard's canonical account. The actor's class must be the shard's account class. Its address must be the one that
+class deploys from no deployer with salt `realms_id` and constructor `(realms_id, guardian_public_key)`, where
+`realms_id` comes from the account and the guardian key is the one Games stored at initialization. A different class, or
+an account that does not answer `realms_id`, records `INVALID_ACTOR`; an account under another guardian records
+`FOREIGN_GUARDIAN`. The account class and guardian are fixed per shard, so a new account class needs a new shard or
+season. Games then calls the actor's `is_valid_signature(action_id, signature)`; a refusal or a failing call records
 `INVALID_SIGNATURE`. The authenticated account is the player: settlement keys entries by it, and no client-supplied
 owner is accepted.
 
@@ -121,9 +128,9 @@ establish no ticket and consume nothing.
 
 ## Storage, events and views
 
-Each consumed action writes its actor nonce and its game's execution head. A game's head uses two slots:
-`order + timestamp * 2^64` and a running transcript commitment. A stale or unrepresentable nonce is not written. There
-is no per-order result map.
+Each consumed action writes its actor nonce and its game's execution head, and emits the actor's `ActionNonce` fact,
+`(game_id, actor) → next_nonce`. A game's head uses two slots: `order + timestamp * 2^64` and a running transcript
+commitment. A stale or unrepresentable nonce is not written. There is no per-order result map.
 
 The schema v2 `ExecutionRecorded` event separates the status class from the rejection message:
 
@@ -138,24 +145,25 @@ The schema v2 `ExecutionRecorded` event separates the status class from the reje
 | status_class    | felt: zero for applied, named class for rejected                            |
 | reason          | ByteArray: empty for applied, full domain or admission message for rejected |
 
-Herald validates the event codec and derives `ActionNonce.next_nonce = submitted nonce + 1` only when consumption is
-true. It folds every ticket in a transaction atomically and retains ticket-scoped status keyed by game and order. A
-transaction hash alone does not identify an action. Gameplay rows remain authoritative for effects.
+Herald validates the event codec and folds the contract's `ActionNonce` fact like any other row; it derives no nonce
+itself. It folds every ticket in a transaction atomically and retains ticket-scoped status keyed by game and order. An
+actor with no `ActionNonce` row after a complete actor snapshot has consumed no action in that game, so its next nonce
+is 0. A transaction hash alone does not identify an action. Gameplay rows remain authoritative for effects.
 
 The running commitment is
 `poseidon_hash_span([previous_head(game).state, binding, status, status_class, nonce_consumed, ...Serde(reason)])`. It
 commits each action, root, time and outcome without making the next envelope wait for it. `get_admission(game, actor)`
-refuses an actor without the configured account class and returns the game's pinned release ID, preset commitment, actor
-nonce, the game's next order and current block timestamp. The timestamp is an admission observation, not a previous
-ticket's acceptance time. `get_head(game)` returns the game's order, recorded timestamp and state. Outcomes come from
-receipts matched to the accepted ticket.
+refuses an actor that is not the shard's canonical account, with `INVALID_ACTOR` or `FOREIGN_GUARDIAN`, and returns the
+game's pinned release ID, preset commitment, actor nonce, the game's next order and current block timestamp. The
+timestamp is an admission observation, not a previous ticket's acceptance time. `get_head(game)` returns the game's
+order, recorded timestamp and state. Outcomes come from receipts matched to the accepted ticket.
 
-Terminal status classes include `INVALID_GAME`, `INVALID_ACTOR`, `STALE_NONCE`, `NONCE_EXHAUSTED`, `FOREIGN_CHAIN`,
-`FOREIGN_DEPLOYMENT`, `STALE_RELEASE`, `INVALID_PRESET`, `INVALID_SIGNATURE`, `INVALID_ACCEPTANCE`, `INVALID_COMMAND`,
-`GAMEPLAY_REJECTED` and `EXECUTION_FAILED`. Domain reverts roll back domain effects before recording a rejection.
-`GAMEPLAY_REJECTED` is the class; its reason is the original Cairo assertion or short-string panic message, including
-messages longer than 31 bytes. Admission rejections keep their named code as the reason. Both class and reason are
-committed by the recorded head.
+Terminal status classes include `INVALID_GAME`, `INVALID_ACTOR`, `FOREIGN_GUARDIAN`, `STALE_NONCE`, `NONCE_EXHAUSTED`,
+`FOREIGN_CHAIN`, `FOREIGN_DEPLOYMENT`, `STALE_RELEASE`, `INVALID_PRESET`, `INVALID_SIGNATURE`, `INVALID_ACCEPTANCE`,
+`INVALID_COMMAND`, `GAMEPLAY_REJECTED` and `EXECUTION_FAILED`. Domain reverts roll back domain effects before recording
+a rejection. `GAMEPLAY_REJECTED` is the class; its reason is the original Cairo assertion or short-string panic message,
+including messages longer than 31 bytes. Admission rejections keep their named code as the reason. Both class and reason
+are committed by the recorded head.
 
 Games authenticates the game's release and preset before gameplay. Each logic invocation loads the game and rules once
 into a shared local context; internal helpers reuse those values. Resource and biome calls receive only the fields they
@@ -170,9 +178,12 @@ compiled decoder is refused as `UNKNOWN_RELEASE_SCHEMA`; a hotfix with the same 
 ## Retry and restart
 
 Ordinary retries retain the same pending ticket, order, root and timestamp. Only an included revert or a deterministic
-sequencer refusal permits `reject_execution`, recording `EXECUTION_FAILED` in that ticket's order. Missing receipts,
-timeouts, disconnects, full queues and account-nonce races are not definitive failures. Reconcile against node state and
-transaction observations before retrying; an already recorded action cannot execute again.
+sequencer refusal permits `reject_execution`, recording `EXECUTION_FAILED` in that ticket's order. It authenticates the
+ticket again first: if the actor no longer authenticates (an upgraded class, a foreign guardian or a revoked key), it
+records that reason with the nonce unconsumed instead of reverting, so an account change after admission cannot strand
+the accepted order. Missing receipts, timeouts, disconnects, full queues and account-nonce races are not definitive
+failures. Reconcile against node state and transaction observations before retrying; an already recorded action cannot
+execute again.
 
 Restart may discard every unexecuted volatile assignment, including assigned orders and roots. It reveals the open
 epoch, so a lost ticket's root is never reused; only the games that lost tickets reassign those orders. The client
