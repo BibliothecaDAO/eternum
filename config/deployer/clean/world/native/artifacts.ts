@@ -16,7 +16,10 @@ export function loadNativeWorld(input: {
 }): NativeWorld {
   if (input.previous && input.previous.native?.version !== 2)
     throw new Error("Games requires a fresh deployment; the peer-contract manifest cannot be reused");
-  const previous = input.previous?.world.seed === input.seed ? input.previous : undefined;
+  // A manifest names the shard's one Games; another seed would deploy a second beside it and drop its history.
+  if (input.previous && input.previous.world.seed !== input.seed)
+    throw new Error(`The shard's Games was deployed with seed ${input.previous.world.seed}; ${input.seed} is refused`);
+  const previous = input.previous;
   assertHotfixSchema(input.release, previous);
   const schema = JSON.parse(readFileSync(input.schemaPath, "utf8")) as NativeSchema;
   if (schemaIdentity(schema) !== schema.identity) throw new Error("Native schema identity mismatch");
