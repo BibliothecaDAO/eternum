@@ -73,3 +73,23 @@ ruin's origin and +Z facing.
 At scale 1, decoded bounds are approximately X [-0.36498, 0.36499], Y [0.00154, 1.33574], Z [-0.27777, 0.28080]. The
 footprint is 0.72997 by 0.55856. First ruin contact is at uniform scale 1.39012; the recommended maximum is **1.38**.
 The tile-only limit is 2.37275. These are measured with the same verifier and placement assumptions as the Troll.
+
+## Hydra
+
+Asset ID: `beast-hydra`. Runtime path: `/models/frontier/beast-hydra.glb`.
+
+```sh
+blender --background --threads 2 --python-exit-code 1 --python apps/game/scripts/frontier/build-beast-hydra.py
+node apps/game/scripts/optimize-structure-models.mjs frontier/beast-hydra.glb
+node apps/game/scripts/optimize-structure-models.mjs --verify frontier/beast-hydra.glb
+node apps/game/scripts/frontier/verify-beast-placement.mjs beast-hydra
+```
+
+Five S-curved necks rise from staggered roots: two low heads watch the gate, one high head anchors the center, and two
+heads sweep sideways from the rear. Unequal lengths and opposing bends separate the silhouette and shadow. Dark teal
+hide and pale throat strips distinguish it from the other beasts. The pose is static; deeper Hydra encounters reuse this
+file at a larger uniform scale from the frontend's single depth table. There is no separate deep-Hydra export.
+
+At scale 1, decoded bounds are approximately X [-0.35135, 0.34541], Y [0.01752, 1.71955], Z [-0.27902, 0.34451]. The
+footprint is 0.69676 by 0.62353. First ruin contact is at uniform scale 1.71673; the recommended maximum is **1.70**.
+The tile-only limit is 2.00147. Preserve the shared ground-center origin and +Z facing; keep the ruin at scale 1.
