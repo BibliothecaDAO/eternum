@@ -21,8 +21,17 @@ const isTypingTarget = (target: EventTarget | null) =>
   target.closest('input,textarea,select,button,a,[contenteditable="true"],[role="textbox"],[role="dialog"]') !== null;
 
 /** The strip at the foot of the right column: last message and unread count. Open, a fixed-height pane rises
- *  above the strip and the details above keep whatever room is left. */
-export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+ *  above the strip and the details above keep whatever room is left. `foldToIcon` shrinks the strip to its icon and
+ *  unread count on a phone held upright, when something else needs the room. */
+export function HudChatWindow({
+  open,
+  onOpenChange,
+  foldToIcon = false,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  foldToIcon?: boolean;
+}) {
   const signedIn = useIdentitySession().status === "signed-in";
   const game = getActiveGame();
   // A game room is named by its shard's chain and the game: game ids repeat across shards.
@@ -117,10 +126,11 @@ export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenCha
           "pointer-events-auto flex h-8 w-full shrink-0 items-center gap-2 rounded-xl px-3 text-left font-sans normal-case tracking-normal",
           OVERLAY_SURFACE_BASE,
           initializer ? "hover:border-gold/50" : "cursor-default",
+          foldToIcon && "portrait:w-auto portrait:self-start",
         )}
       >
         <MessageSquare className="h-3.5 w-3.5 shrink-0 text-gold/70" />
-        <span className={cn("min-w-0 flex-1 truncate", HUD_BODY)}>{stripText}</span>
+        <span className={cn("min-w-0 flex-1 truncate", HUD_BODY, foldToIcon && "portrait:sr-only")}>{stripText}</span>
         {initializer && !open && unread > 0 && (
           <span aria-label="Unread chat messages" className="rounded-full bg-gold px-1.5 text-[10px] text-dark-brown">
             {unread}

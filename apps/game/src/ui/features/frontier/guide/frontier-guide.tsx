@@ -20,22 +20,35 @@ const PORTRAIT = { neutral: "/images/guides/ysolde-neutral.webp", pleased: "/ima
 /** The portrait leads the line in by this much, so she arrives before she speaks. */
 const LINE_DELAY_MS = 60;
 
+type GuideLine = ReturnType<typeof useGuideLine>;
+
+/**
+ * Ysolde's current line and the controls that move it on, read from the store and this viewer's seen list. The HUD
+ * holds it, so its layout knows whether she is speaking.
+ */
+export const useGuideLine = (
+  rules: NonNullable<ReturnType<typeof useExpeditionRules>>,
+  realm: NativeRows["Structure"] | null,
+) => {
+  const player = useAccountStore((state) => state.account?.address ?? null);
+  const facts = useGuideFacts(rules, realm);
+  const { seen, markSeen, skipAll } = useGuideSeen(configManager.getActiveGameId(), player);
+  const step = player && realm ? nextGuideStep(facts, seen) : null;
+  return { step, facts, seen, markSeen, skipAll };
+};
+
 /**
  * Ysolde of the Fox, speaking one line at a time in the thumb zone. Never a modal: the map stays live around her.
  * A line the player answers by playing earns her pleased face on the next one; "Show me" takes the player to the place
  * a line names, "Next" dismisses it and "Skip" ends the guide.
  */
 export const FrontierGuide = ({
-  rules,
+  line: { step, facts, seen, markSeen, skipAll },
   realm,
 }: {
-  rules: NonNullable<ReturnType<typeof useExpeditionRules>>;
+  line: GuideLine;
   realm: NativeRows["Structure"];
 }) => {
-  const player = useAccountStore((state) => state.account?.address ?? null);
-  const facts = useGuideFacts(rules, realm);
-  const { seen, markSeen, skipAll } = useGuideSeen(configManager.getActiveGameId(), player);
-  const step = player ? nextGuideStep(facts, seen) : null;
   const pleasedFor = usePleasedAfterPlay(step?.id ?? null, seen, markSeen);
   const showMeFor = useShowMe(realm);
   const reduced = useReducedMotion();

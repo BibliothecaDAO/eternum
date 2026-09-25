@@ -22,10 +22,12 @@ export const FrontierSelectionSheet = () => {
   return (
     <section
       aria-label="Selection"
+      data-selection-sheet
       className={cn(
         OVERLAY_SURFACE_BASE,
         "pointer-events-auto relative flex max-h-[45dvh] min-h-0 flex-col overflow-hidden rounded-xl",
-        "[&:not(:has(>div>*))]:hidden",
+        // A selection whose details render nothing shows no sheet; the HUD reads the same test to hold Ysolde back.
+        "[&:not(:has([data-sheet-content]>*))]:hidden",
         "landscape:order-last landscape:max-h-full landscape:w-[min(380px,42vw)]",
       )}
     >
@@ -37,7 +39,9 @@ export const FrontierSelectionSheet = () => {
       >
         <X className="h-4 w-4" />
       </button>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">{details}</div>
+      <div data-sheet-content className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
+        {details}
+      </div>
     </section>
   );
 };
