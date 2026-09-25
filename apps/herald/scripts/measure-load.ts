@@ -385,6 +385,7 @@ for (let second = 1; second <= SIMULATED_MINUTES * 60; second++) {
         minute: second / 60,
         heapMb: heapMb(),
         rssMb: Math.round(process.memoryUsage().rss / 1_048_576),
+        replay: live.hub.replayUsage(),
         foldRows: fold.retainedRowCount(),
         actions: step,
         mbSent: Math.round(bytesSent / 1_048_576),
@@ -407,6 +408,7 @@ if (FRONTIER) {
       mbSent: Math.round((bytesSent - sentBefore) / 1_048_576),
       heapMb: heapMb(),
       rssMb: Math.round(process.memoryUsage().rss / 1_048_576),
+      replay: live.hub.replayUsage(),
     }),
   );
 }

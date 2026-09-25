@@ -40,6 +40,7 @@ export interface LiveWorldInput {
 }
 
 interface GameChanges {
+  deletedRows: FoldSet[];
   del: FoldDelete[];
   set: FoldSet[];
 }
@@ -410,9 +411,14 @@ export class LiveWorld {
     for (const change of changes) {
       const gameIds = change.gameId === undefined ? this.knownGames : [change.gameId];
       for (const gameId of gameIds) {
-        const grouped = byGame.get(gameId) ?? { del: [], set: [] };
+        const grouped = byGame.get(gameId) ?? { del: [], set: [], deletedRows: [] };
         if (change.set) grouped.set.push(change.set);
-        if (change.del) grouped.del.push(change.del);
+        if (change.del) {
+          if (!change.previous)
+            throw new Error(`Deleted row lacks routing metadata: ${change.del.model}:${change.del.key}`);
+          grouped.del.push(change.del);
+          grouped.deletedRows.push(change.previous);
+        }
         byGame.set(gameId, grouped);
       }
     }
@@ -435,6 +441,7 @@ export class LiveWorld {
           ...(transactionHash ? { transaction_hash: transactionHash } : {}),
         },
         this.confirmedFold.streamKeys(gameId),
+        grouped.deletedRows,
       );
     }
   }
@@ -452,7 +459,9 @@ export class LiveWorld {
       const grouped = new Map<string, GameChanges>();
       this.groupChanges(grouped, changes);
       const gameChanges = grouped.get(gameId);
-      return gameChanges ? [{ block, transaction_hash: transactionHash, ...gameChanges }] : [];
+      return gameChanges
+        ? [{ block, transaction_hash: transactionHash, del: gameChanges.del, set: gameChanges.set }]
+        : [];
     });
   }
 

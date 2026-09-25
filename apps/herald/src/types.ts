@@ -136,6 +136,8 @@ export interface FoldChange {
   gameId?: string;
   set?: FoldSet;
   del?: FoldDelete;
+  /** Internal routing metadata: the row held before this change, never sent on the wire. */
+  previous?: FoldSet;
 }
 
 export interface SnapshotModel {

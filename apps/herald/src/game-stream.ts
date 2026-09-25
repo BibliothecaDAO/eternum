@@ -6,8 +6,9 @@ import { GameFinalizedError } from "./world-fold";
 import type { FoldSet, GameSnapshot } from "./types";
 import type { HeraldStreamMessage, ResumeRequest } from "./stream-protocol";
 
-const RING_MIN_MESSAGES = 10_000;
-const RING_MIN_AGE_MS = 10 * 60 * 1_000;
+// One budget across every game and actor, including disconnected resumable states.
+const REPLAY_BYTES = 256 * 1024 * 1024;
+const REPLAY_MAX_AGE_MS = 10 * 60 * 1_000;
 
 export interface StreamSocket {
   send(data: string): unknown;
@@ -15,6 +16,10 @@ export interface StreamSocket {
 }
 
 interface RingEntry {
+  state: GameStreamState;
+  previous?: RingEntry;
+  next?: RingEntry;
+  bytes: number;
   recordedAt: number;
   seq: number;
   serialized: string;
@@ -27,7 +32,7 @@ interface GameStreamState {
   /** The keys a published row reaches this state by; without it, every row does. */
   interest?: () => ReadonlySet<string>;
   indexed?: ReadonlySet<string>;
-  ring: RingEntry[];
+  ring: Map<number, RingEntry>;
   seq: number;
   subscribers: Set<GameStreamSession>;
   /** When the last subscriber left. A reconnect within a ring window still resumes; after it the state is dropped. */
@@ -63,6 +68,7 @@ export interface GameStreamSession {
   gameId: string;
   overlay?: SnapshotOverlayDiff[];
   snapshot?: GameSnapshot;
+  capture?: () => { snapshot: GameSnapshot; overlay: SnapshotOverlayDiff[] };
   socket: StreamSocket;
   traffic: SubscriberTraffic;
 }
@@ -92,15 +98,20 @@ interface AttachInput {
 
 /** No subscriber has been back for a ring window: nobody can resume from this ring any more. */
 const isAbandoned = (state: GameStreamState): boolean =>
-  state.idleSince !== undefined && Date.now() - state.idleSince > RING_MIN_AGE_MS;
+  state.idleSince !== undefined && Date.now() - state.idleSince > REPLAY_MAX_AGE_MS;
 
 export class GameStreamHub {
   public readonly epoch: string;
   private readonly games = new Map<string, GameStreams>();
+  private oldestReplay?: RingEntry;
+  private newestReplay?: RingEntry;
+  private replayEntries = 0;
+  private replayBytes = 0;
 
   constructor(
     epoch: string = randomUUID(),
     private readonly log: Pick<Console, "info"> = console,
+    private readonly replayByteLimit = REPLAY_BYTES,
   ) {
     this.epoch = epoch;
   }
@@ -119,8 +130,8 @@ export class GameStreamHub {
     state.subscribers.add(session);
     state.idleSince = undefined;
     try {
-      session.snapshot = input.snapshot();
-      session.overlay = input.overlay();
+      session.capture = () => ({ snapshot: input.snapshot(), overlay: input.overlay() });
+      Object.assign(session, session.capture());
     } catch (error) {
       this.leave(session);
       // A stream state this attach created serves nobody once the attach fails, so a refusal leaves nothing behind.
@@ -141,7 +152,17 @@ export class GameStreamHub {
   public resume(session: GameStreamSession, request: ResumeRequest): void {
     if (session.active) throw new Error("Stream session already resumed");
     const state = this.stateOf(session.gameId, session.actor)!;
+    this.pruneReplay();
     const canResume = this.canResume(state, request);
+    if (!canResume && !this.holdsAfter(state, session.boundary)) {
+      session.boundary = state.seq;
+      Object.assign(session, session.capture!());
+      if (!this.holdsAfter(state, session.boundary)) {
+        session.socket.close?.(1013, "snapshot_replay_expired");
+        this.leave(session);
+        return;
+      }
+    }
     const resumeFrom = canResume ? request.seq : session.boundary;
 
     if (!canResume) this.sendSnapshot(session);
@@ -150,7 +171,8 @@ export class GameStreamHub {
     // The boundary is only needed until the session is live; keeping it would hold a snapshot per subscriber.
     session.snapshot = undefined;
     session.overlay = undefined;
-    for (const entry of state.ring) {
+    session.capture = undefined;
+    for (const entry of state.ring.values()) {
       if (entry.seq > resumeFrom) this.transmit(session, entry.serialized);
     }
   }
@@ -205,15 +227,18 @@ export class GameStreamHub {
     this.logSnapshotSent(session, "scope", sent);
   }
 
-  /** With `rowKeys`, a diff reaches only the states its rows name; deletes carry no values, so they reach every state. */
+  /** Deletes route with their pre-delete rows; routing metadata never enters the wire message. */
   public publishDiff(
     gameId: string,
     input: Omit<Extract<HeraldStreamMessage, { type: "diff" }>, "epoch" | "seq" | "type">,
     rowKeys?: RowStreamKeys,
+    deletedRows: readonly FoldSet[] = [],
   ): void {
     const game = this.games.get(gameId);
     if (!game) return;
-    const named = rowKeys && input.del.length === 0 ? this.named(game, input.set, rowKeys) : undefined;
+    if (rowKeys && input.del.length !== deletedRows.length)
+      throw new Error("Deleted rows require pre-delete routing metadata");
+    const named = rowKeys ? this.named(game, [...input.set, ...deletedRows], rowKeys) : undefined;
     this.publish(gameId, { ...input, type: "diff" }, named);
   }
 
@@ -251,8 +276,7 @@ export class GameStreamHub {
       for (const projected of projections) {
         const message = { ...projected, epoch: this.streamEpoch(state.gameId, state.actor), seq: ++state.seq };
         const serialized = JSON.stringify(message);
-        state.ring.push({ recordedAt: Date.now(), seq: message.seq, serialized });
-        this.pruneRing(state);
+        this.retain(state, message.seq, serialized);
         for (const subscriber of state.subscribers) if (subscriber.active) this.transmit(subscriber, serialized);
       }
       // Projecting can move a scope, and with it the keys that reach this state.
@@ -295,6 +319,7 @@ export class GameStreamHub {
   private forget(state: GameStreamState): void {
     const game = this.games.get(state.gameId);
     if (!game) return;
+    for (const entry of state.ring.values()) this.evict(entry);
     game.states.delete(this.streamKey(state.gameId, state.actor));
     game.unindexed.delete(state);
     this.unindex(game, state);
@@ -346,7 +371,7 @@ export class GameStreamHub {
         gameId: input.gameId,
         project: input.project,
         interest: input.interest,
-        ring: [],
+        ring: new Map(),
         seq: 0,
         subscribers: new Set(),
       };
@@ -365,8 +390,12 @@ export class GameStreamHub {
     )
       return false;
     if (request.seq > state.seq) return false;
-    const oldest = state.ring[0]?.seq ?? state.seq + 1;
-    return request.seq >= oldest - 1;
+    return this.holdsAfter(state, request.seq);
+  }
+
+  private holdsAfter(state: GameStreamState, seq: number): boolean {
+    const oldest = state.ring.keys().next().value ?? state.seq + 1;
+    return seq >= oldest - 1;
   }
 
   private sendSnapshot(session: GameStreamSession): void {
@@ -421,9 +450,54 @@ export class GameStreamHub {
     );
   }
 
-  private pruneRing(state: GameStreamState): void {
-    const cutoff = Date.now() - RING_MIN_AGE_MS;
-    while (state.ring.length > RING_MIN_MESSAGES && state.ring[0]!.recordedAt < cutoff) state.ring.shift();
+  /** Charged retained bytes and entries for capacity measurements, independent of subscriber count. */
+  public replayUsage(): { bytes: number; entries: number; limit: number; oldestAgeSeconds: number | null } {
+    this.pruneReplay();
+    return {
+      bytes: this.replayBytes,
+      entries: this.replayEntries,
+      limit: this.replayByteLimit,
+      oldestAgeSeconds: this.oldestReplay ? (Date.now() - this.oldestReplay.recordedAt) / 1000 : null,
+    };
+  }
+
+  private retain(state: GameStreamState, seq: number, serialized: string): void {
+    // Charge UTF-16 storage even for one-byte strings, plus entry/index overhead. This is a retention budget,
+    // not a measurement of the runtime's heap layout; small messages still pay for their container entries.
+    const entry: RingEntry = {
+      state,
+      previous: this.newestReplay,
+      bytes: serialized.length * 2 + 256,
+      recordedAt: Date.now(),
+      seq,
+      serialized,
+    };
+    state.ring.set(seq, entry);
+    if (this.newestReplay) this.newestReplay.next = entry;
+    else this.oldestReplay = entry;
+    this.newestReplay = entry;
+    this.replayEntries++;
+    this.replayBytes += entry.bytes;
+    this.pruneReplay();
+  }
+
+  private pruneReplay(): void {
+    const cutoff = Date.now() - REPLAY_MAX_AGE_MS;
+    while (this.oldestReplay) {
+      const entry = this.oldestReplay;
+      if (this.replayBytes <= this.replayByteLimit && entry.recordedAt >= cutoff) break;
+      this.evict(entry);
+    }
+  }
+
+  private evict(entry: RingEntry): void {
+    entry.state.ring.delete(entry.seq);
+    if (entry.previous) entry.previous.next = entry.next;
+    else this.oldestReplay = entry.next;
+    if (entry.next) entry.next.previous = entry.previous;
+    else this.newestReplay = entry.previous;
+    this.replayEntries--;
+    this.replayBytes -= entry.bytes;
   }
 
   private send(session: GameStreamSession, message: HeraldStreamMessage): void {
