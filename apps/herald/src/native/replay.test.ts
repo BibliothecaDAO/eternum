@@ -13,7 +13,7 @@ import { WorldFold } from "../world-fold";
 import { createHeraldRequestHandler } from "../http";
 import type { MadaraRpc } from "../madara-rpc";
 import type { RpcEvent, RpcBlockWithReceipts } from "../types";
-import { pointsAward, receipt, schema, setup, rowEvent, shardManifest } from "./fixtures";
+import { battleEvent, pointsAward, receipt, schema, setup, rowEvent, shardManifest } from "./fixtures";
 
 function block(number: number, events: RpcEvent[]): RpcBlockWithReceipts {
   return {
@@ -367,4 +367,98 @@ it("preserves the two story identities from overlay through confirmation despite
     events.map((event) => storyEventIdentity(scope, toJsonValue(event.key) as Record<string, unknown>));
   expect(identities(after)).toEqual(identities(before));
   expect(fold.modelRows("PlayerPoints")).toHaveLength(1);
+});
+
+it("retains only one 64-block cold-replay window and no receipts, checkpointing before fetching the next", async () => {
+  const { native } = setup();
+  let saved = -1;
+  let historyThrough = -1;
+  const retained: { events: number; changes: number; receipts: number; rows: number }[] = [];
+  const replay = native.replay.bind(native);
+  // Count the actual returned objects without retaining the windows in a mock's call/result history.
+  native.replay = async (input) => {
+    expect(input.toBlock - input.fromBlock + 1).toBeLessThanOrEqual(64);
+    expect(saved).toBe(input.fromBlock - 1);
+    const result = await replay(input);
+    retained.push({
+      events: result.events.length,
+      changes: [...result.changes.values()].reduce((n, rows) => n + rows.length, 0),
+      receipts: result.transactions.length,
+      rows: input.fold.retainedRowCount(),
+    });
+    return result;
+  };
+  const outcomes = vi.spyOn(native, "executionReceipt");
+  const rpc = {
+    blockNumber: async () => 383,
+    getBlockWithReceipts: async (number: number) => {
+      expect(number - saved).toBeLessThanOrEqual(64);
+      return block(number, [setFixture.raw, battleEvent("7", "8", "1920", String(number))]);
+    },
+  } as unknown as MadaraRpc;
+  const checkpointStore = {
+    initialize: async () => {},
+    load: async () => undefined,
+    save: async (_chain: string, head: number, fold: WorldFold) => {
+      expect(historyThrough).toBe(head);
+      expect(fold.retainedRowCount()).toBe(1);
+      saved = head;
+    },
+  };
+  const history = {
+    historyProgress: async () => null,
+    appendEvents: async (events: readonly unknown[], head?: number) => {
+      expect(events.length).toBeLessThanOrEqual(64);
+      expect(head).toBeDefined();
+      historyThrough = head!;
+    },
+  };
+  const loaded = await loadNativeWorld({ chain: "madara", native, rpc, checkpointStore, history });
+  expect(retained).toHaveLength(6);
+  expect(retained.slice(1)).toEqual(
+    Array.from({ length: 5 }, () => ({ events: 128, changes: 128, receipts: 0, rows: 1 })),
+  );
+  expect(outcomes).not.toHaveBeenCalled();
+  expect(loaded.confirmedBlock).toBe(383);
+  expect(loaded.checkpointBlock).toBe(383);
+  expect(loaded.metrics.pages).toBe(374);
+  expect(loaded.metrics.decoded_events).toBe(748);
+  expect(loaded.fold.retainedRowCount()).toBe(1);
+});
+
+it("keeps a completed startup window when the next window rejects a receipt and resumes from it", async () => {
+  const { native, decoder } = setup();
+  let saved: ReturnType<WorldFold["checkpoint"]> | undefined;
+  let historyThrough = -1;
+  let broken = true;
+  const rpc = {
+    blockNumber: async () => 130,
+    getBlockWithReceipts: async (number: number) =>
+      block(number, [broken && number === 70 ? malformed.raw : setFixture.raw]),
+  } as unknown as MadaraRpc;
+  const checkpointStore = {
+    initialize: async () => {},
+    load: async () => (saved ? { confirmedBlock: 63, fold: WorldFold.restore(decoder.registry, saved) } : undefined),
+    save: async (_chain: string, head: number, fold: WorldFold) => {
+      expect(historyThrough).toBe(head);
+      saved = fold.checkpoint();
+    },
+  };
+  const history = {
+    historyProgress: async () => historyThrough,
+    appendEvents: async (_events: readonly unknown[], head?: number) => {
+      expect(head).toBeDefined();
+      historyThrough = head!;
+    },
+  };
+  const failed = await loadNativeWorld({ chain: "madara", native, rpc, checkpointStore, history });
+  expect(failed.confirmedBlock).toBe(63);
+  expect(failed.checkpointBlock).toBe(63);
+  expect(failed.fold.checkpoint()).toEqual(saved);
+  expect(native.halted?.block).toBe(70);
+  broken = false;
+  const restarted = setup().native;
+  const loaded = await loadNativeWorld({ chain: "madara", native: restarted, rpc, checkpointStore, history });
+  expect(loaded.confirmedBlock).toBe(130);
+  expect(loaded.metrics.pages).toBe(67);
 });

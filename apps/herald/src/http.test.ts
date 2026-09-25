@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { buildNativeDirectory, buildNativeLeaderboard } from "./native/read-models";
 import { createHeraldRequestHandler } from "./http";
 import { shardManifest } from "./native/fixtures";
 import type { GameSnapshot, ReplayMetrics } from "./types";
@@ -309,25 +310,76 @@ it("caches directory responses and shared row reads within one confirmed block",
   expect(modelRows).toHaveBeenCalledTimes(calls * 2);
 });
 
-it("drops the previous head's player response cache instead of accumulating entries across heads", async () => {
+it("builds one public directory per head and never caches responses by requested address", async () => {
   let block = 12;
-  const handler = createHeraldRequestHandler({ ...httpState, confirmedBlock: () => block });
+  const build = vi.fn(buildNativeDirectory);
+  const handler = createHeraldRequestHandler({
+    ...httpState,
+    confirmedBlock: () => block,
+    readModels: { directory: build, leaderboard: buildNativeLeaderboard },
+    fold: {
+      ...httpState.fold,
+      modelRows: (model) =>
+        model === "PlayerEntry"
+          ? [{ key: "1", value: { game_id: "7", player: "1" } }]
+          : httpState.fold.modelRows(model),
+    },
+  });
+  const storedResponses: unknown[] = [];
+  const set = Map.prototype.set;
+  const storing = vi.spyOn(Map.prototype, "set").mockImplementation(function (this: Map<unknown, unknown>, key, value) {
+    if (value && typeof value === "object" && "confirmed_block" in value && "games" in value)
+      storedResponses.push(value);
+    return set.call(this, key, value);
+  });
+  try {
+    for (let head = 0; head < 3; head++, block++) {
+      for (let player = 1; player <= 100; player++) {
+        const response = await handler(new Request(`http://herald/games?player=${player}`));
+        const body = await response.json();
+        expect(body.confirmed_block).toBe(block);
+        expect(body.games[0].player_state.registered).toBe(player === 1);
+      }
+      expect(build).toHaveBeenCalledTimes(head + 1);
+      const publicResponse = await handler(new Request("http://herald/games"));
+      expect((await publicResponse.json()).games[0].player_state).toBeNull();
+    }
+    expect(storedResponses).toEqual([]);
+    expect(build.mock.calls.every(([input]) => input.playerAddress === undefined)).toBe(true);
+  } finally {
+    storing.mockRestore();
+  }
+});
+
+it("caches each leaderboard once per confirmed head and drops all previous-head results", async () => {
+  let block = 12;
+  const build = vi.fn(buildNativeLeaderboard);
+  const handler = createHeraldRequestHandler({
+    ...httpState,
+    confirmedBlock: () => block,
+    readModels: { directory: buildNativeDirectory, leaderboard: build },
+    fold: {
+      ...httpState.fold,
+      modelRows: (model) =>
+        httpState.fold.modelRows(model).flatMap((row) => [row, { ...row, value: { ...row.value, game_id: "8" } }]),
+    },
+  });
   const responseCaches = new Set<Map<unknown, unknown>>();
   const clear = Map.prototype.clear;
   const clearing = vi.spyOn(Map.prototype, "clear").mockImplementation(function (this: Map<unknown, unknown>) {
-    // Observe the actual retained responses without adding a production cache-inspection API.
     const first = this.values().next().value;
-    if (first && typeof first === "object" && "confirmed_block" in first && "games" in first) responseCaches.add(this);
+    if (first && typeof first === "object" && "game_id" in first && "entries" in first) responseCaches.add(this);
     clear.call(this);
   });
   try {
-    for (let head = 0; head < 25; head++, block++) {
-      // Different players on each head would grow an uncleared cache even if responses carried fresh block numbers.
-      for (let player = 1; player <= 3; player++) {
-        const response = await handler(new Request(`http://herald/games?player=${head * 3 + player}`));
-        expect((await response.json()).confirmed_block).toBe(block);
+    for (let head = 0; head < 5; head++, block++) {
+      for (const game of ["7", "007", "8", "7", "8"]) {
+        const response = await handler(new Request(`http://herald/games/${game}/leaderboard`));
+        expect(response.status).toBe(200);
+        expect((await response.json()).game_id).toBe(BigInt(game).toString());
       }
-      for (const cache of responseCaches) expect(cache.size).toBe(3);
+      expect(build).toHaveBeenCalledTimes((head + 1) * 2);
+      for (const cache of responseCaches) expect(cache.size).toBe(2);
     }
     expect(responseCaches.size).toBe(1);
   } finally {

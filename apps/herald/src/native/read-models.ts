@@ -61,7 +61,30 @@ interface DirectoryRows {
 
 export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory {
   const rows = (model: string) => input.fold.modelRows(model);
-  const facts: DirectoryRows = {
+  const facts = directoryRows(input);
+  const games = rows("GameRegistry")
+    .map(({ value }) => directoryEntry(value, facts, input))
+    .sort((left, right) => right.game_id - left.game_id);
+  return { chain: input.chain, confirmed_block: input.confirmedBlock, games };
+}
+
+/** Add only the requesting player's state to the shared directory; never retain an address-keyed response. */
+export function directoryForPlayer(directory: HeraldGameDirectory, input: DirectoryInput): HeraldGameDirectory {
+  if (!input.playerAddress) return directory;
+  const facts = directoryRows(input);
+  const games = new Map(input.fold.modelRows("GameRegistry").map(({ value }) => [number(value.game_id), value]));
+  return {
+    ...directory,
+    games: directory.games.map((entry) => ({
+      ...entry,
+      player_state: directoryPlayerState(games.get(entry.game_id)!, facts, input),
+    })),
+  };
+}
+
+function directoryRows(input: DirectoryInput): DirectoryRows {
+  const rows = (model: string) => input.fold.modelRows(model);
+  return {
     structures: rows("Structure"),
     position: (gameId, entityId) => input.fold.structurePosition(gameId, entityId),
     rules: rows("SliceRules"),
@@ -70,10 +93,24 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
     entries: rows("PlayerEntry"),
     rosters: rows("BlitzRoster"),
   };
-  const games = rows("GameRegistry")
-    .map(({ value }) => directoryEntry(value, facts, input))
-    .sort((left, right) => right.game_id - left.game_id);
-  return { chain: input.chain, confirmed_block: input.confirmedBlock, games };
+}
+
+function directoryPlayerState(
+  game: Row,
+  facts: DirectoryRows,
+  input: DirectoryInput,
+): HeraldGameDirectoryEntry["player_state"] {
+  if (!input.playerAddress) return null;
+  const player = address(input.playerAddress);
+  const structures = gameRows(facts.structures, game.game_id).filter((row) => address(row.owner) === player);
+  const roster = (gameRows(facts.rosters, game.game_id)[0]?.players as Row[] | undefined) ?? [];
+  const settlement = required(facts.settlementRules, game.game_id, "SettlementRules");
+  return {
+    registered: gameRows(facts.entries, game.game_id).some((row) => address(row.player) === player),
+    settled: structures.some((row) => number(record(row.base).category) === 1),
+    roster_member: roster.some((row) => address(row.account) === player),
+    structures: structures.map((row) => playerStructure(row, game, settlement, facts, input.timestamp)),
+  };
 }
 
 /** Only fields visible in the directory invalidate it; troop combat and production writes do not. */
@@ -110,7 +147,7 @@ export function directoryStatus(game: Row, timestamp: number) {
 }
 
 function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput): HeraldGameDirectoryEntry {
-  const { settlementRules, progress, structures, entries, rosters } = facts;
+  const { settlementRules, progress, structures, rosters } = facts;
   const mode = nativeGameModeOf(number(game.preset_id));
   const settlement = required(settlementRules, game.game_id, "SettlementRules");
   const state = gameRows(progress, game.game_id)[0];
@@ -118,7 +155,6 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     (row) => [1, 5].includes(number(record(row.base).category)) && integer(row.owner) !== 0n,
   );
   const realms = settlements.filter((row) => number(record(row.base).category) === 1);
-  const player = input.playerAddress && address(input.playerAddress);
   const roster = (gameRows(rosters, game.game_id)[0]?.players as Row[] | undefined) ?? [];
   const clock = {
     start_settling_at: number(game.start_settling_at),
@@ -136,16 +172,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     status: directoryStatus(game, input.timestamp),
     clock,
     player_count: new Set(settlements.map((row) => address(row.owner))).size,
-    player_state: player
-      ? {
-          registered: gameRows(entries, game.game_id).some((row) => address(row.player) === player),
-          settled: realms.some((row) => address(row.owner) === player),
-          roster_member: roster.some((row) => address(row.account) === player),
-          structures: gameRows(structures, game.game_id)
-            .filter((row) => address(row.owner) === player)
-            .map((row) => playerStructure(row, game, settlement, facts, input.timestamp)),
-        }
-      : null,
+    player_state: directoryPlayerState(game, facts, input),
     roster_count: roster.length,
     registration: {
       count: state ? number(state.registered) : 0,

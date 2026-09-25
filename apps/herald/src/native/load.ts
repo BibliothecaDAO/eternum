@@ -4,7 +4,9 @@ import type { MadaraRpc } from "../madara-rpc";
 import { WorldFold } from "../world-fold";
 import { NativeReceiptRejected, type NativeIngestion } from "./ingestion";
 
-/** One replay brings the fold and the history to the chain head; history is always written before the checkpoint. */
+const REPLAY_WINDOW_BLOCKS = 64;
+
+/** Each bounded replay window commits its history before its checkpoint; startup resumes at the last complete window. */
 export async function loadNativeWorld(input: {
   chain: string;
   checkpointStore: Pick<CheckpointStore, "initialize" | "load" | "save">;
@@ -20,32 +22,44 @@ export async function loadNativeWorld(input: {
   let confirmedBlock = checkpoint?.confirmedBlock ?? 0;
   if (checkpoint && checkpoint.confirmedBlock > targetBlock) throw new Error("Native checkpoint is ahead of chain");
   const fold = checkpoint?.fold ?? new WorldFold(registry);
-  let metrics = { decoded_events: 0, event_messages: 0, store_events: 0, pages: 0 };
+  const metrics = { decoded_events: 0, event_messages: 0, store_events: 0, pages: 0 };
+  let checkpointBlock = checkpoint?.confirmedBlock;
   try {
-    const replay = await input.native.replay({
-      fold,
-      rpc: input.rpc,
-      fromBlock: checkpoint ? checkpoint.confirmedBlock + 1 : 0,
-      toBlock: targetBlock,
-    });
-    metrics = replay.metrics;
-    await input.history.appendEvents(
-      replay.events.filter((event) => event.kind === "event"),
-      targetBlock,
-    );
-    confirmedBlock = targetBlock;
-    if (!checkpoint) await input.checkpointStore.save(input.chain, confirmedBlock, fold);
+    for (let fromBlock = checkpoint ? checkpoint.confirmedBlock + 1 : 0; fromBlock <= targetBlock; ) {
+      const toBlock = Math.min(fromBlock + REPLAY_WINDOW_BLOCKS - 1, targetBlock);
+      const window = await replayWindow(input, fold, fromBlock, toBlock);
+      for (const key of Object.keys(metrics) as (keyof typeof metrics)[]) metrics[key] += window[key];
+      confirmedBlock = toBlock;
+      checkpointBlock = toBlock;
+      fromBlock = toBlock + 1;
+    }
   } catch (error) {
     // Keep the last valid checkpoint available for inspection. Restart with a corrected release to resume.
     if (!(error instanceof NativeReceiptRejected)) throw error;
   }
   return {
-    checkpointBlock: checkpoint?.confirmedBlock,
+    checkpointBlock,
     confirmedBlock,
     fold,
     metrics: { ...metrics, retained_rows: fold.retainedRowCount() },
     startupMs: Math.round(performance.now() - started),
   };
+}
+
+/** No decoded rows or receipt arrays escape a window into the startup loop. */
+async function replayWindow(
+  input: Parameters<typeof loadNativeWorld>[0],
+  fold: WorldFold,
+  fromBlock: number,
+  toBlock: number,
+) {
+  const replay = await input.native.replay({ fold, rpc: input.rpc, fromBlock, toBlock, retainTransactions: false });
+  await input.history.appendEvents(
+    replay.events.filter((event) => event.kind === "event"),
+    toBlock,
+  );
+  await input.checkpointStore.save(input.chain, toBlock, fold);
+  return replay.metrics;
 }
 
 /** A checkpoint the history does not reach would leave a gap in history, so both are rebuilt from genesis instead. */

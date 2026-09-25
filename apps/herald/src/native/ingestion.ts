@@ -123,6 +123,8 @@ export class NativeIngestion {
     rpc: Pick<MadaraRpc, "getBlockWithReceipts">;
     fromBlock: number;
     toBlock: number;
+    /** Live confirmation publishes receipt outcomes; cold replay needs only history and folded rows. */
+    retainTransactions?: boolean;
     /** The overlay's decode of a receipt it holds, reused when the confirmed receipt repeats its events. */
     preconfirmed?: (receipt: RpcReceipt) => PreconfirmedDecode | undefined;
   }) {
@@ -152,10 +154,11 @@ export class NativeIngestion {
           );
           events.push(...validated.events);
           presets.push(...validated.presets);
-          transactions.push({
-            transaction,
-            receipt: this.executionReceipt({ ...receipt, block_number: number }),
-          });
+          if (input.retainTransactions !== false)
+            transactions.push({
+              transaction,
+              receipt: this.executionReceipt({ ...receipt, block_number: number }),
+            });
         } catch (error) {
           throw this.rejectReceipt(receipt, number, error, true);
         }

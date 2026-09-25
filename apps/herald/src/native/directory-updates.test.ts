@@ -37,9 +37,18 @@ it("indexes only structure positions across moves, replacement, overlays and che
   expect(fold.structurePosition("1", "7")).toMatchObject({ col: "0x1" });
   native.applyReceipt(fold, receipt([deleted(1), occupy(6, 7), occupy(4, 10, 39)]), 12, 0);
   expect(fold.structurePosition("1", "10")).toMatchObject({ col: "0x4" });
+  // Placement can precede deletion in a replayed receipt: deleting the old tile must not erase the new reference.
+  const later = fold.overlay();
+  native.applyReceipt(later, receipt([occupy(7, 7)]), null, 0);
+  const revision = later.directoryRevision();
+  native.applyReceipt(later, receipt([deleted(6)]), null, 0);
+  expect(later.directoryRevision()).toBe(revision);
+  expect(later.structurePosition("1", "7")).toMatchObject({ col: "0x7" });
+  native.applyReceipt(fold, receipt([occupy(7, 7), deleted(6)]), 13, 0);
+  expect(fold.structurePosition("1", "7")).toMatchObject({ col: "0x7" });
   const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
-  expect(restored.structurePosition("1", "7")).toEqual(overlay.structurePosition("1", "7"));
-  native.applyReceipt(restored, receipt([deleted(6)]), 13, 0);
+  expect(restored.structurePosition("1", "7")).toEqual(later.structurePosition("1", "7"));
+  native.applyReceipt(restored, receipt([deleted(7)]), 14, 0);
   expect(restored.structurePosition("1", "7")).toBeUndefined();
 });
 

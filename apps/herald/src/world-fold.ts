@@ -171,9 +171,12 @@ export class WorldFold {
 
   public structurePosition(gameId: string, entityId: string): Record<string, unknown> | undefined {
     const key = `${BigInt(gameId)}:${BigInt(entityId)}`;
-    if (!this.structureTiles.has(key)) return this.parent?.structurePosition(gameId, entityId);
-    const tile = this.structureTiles.get(key);
+    const tile = this.structureTile(key);
     return tile ? this.currentRow("TileOccupancy", tile)?.value : undefined;
+  }
+
+  private structureTile(key: string): string | null | undefined {
+    return this.structureTiles.has(key) ? this.structureTiles.get(key) : this.parent?.structureTile(key);
   }
 
   private updateDirectoryIndex(model: string, entityId: string, before?: StoredModelRow, after?: StoredModelRow): void {
@@ -198,12 +201,14 @@ export class WorldFold {
     const previous = structure(before);
     const next = structure(after);
     if (previous === next) return;
-    if (previous) {
+    const removed = previous && this.structureTile(previous) === entityId;
+    const placed = next && this.structureTile(next) !== entityId;
+    if (removed) {
       if (this.parent) this.structureTiles.set(previous, null);
       else this.structureTiles.delete(previous);
     }
     if (next) this.structureTiles.set(next, entityId);
-    if (previous || next) this.directoryChanges++;
+    if (removed || placed) this.directoryChanges++;
   }
 
   constructor(registry: ModelRegistry, parent?: WorldFold) {

@@ -1,6 +1,11 @@
 import { parseStoryHistoryCursor } from "@bibliothecadao/eternum/game-sync";
 import { GameFinalizedError } from "./world-fold";
-import { buildNativeDirectory, buildNativeLeaderboard, directoryStatus } from "./native/read-models";
+import {
+  buildNativeDirectory,
+  buildNativeLeaderboard,
+  directoryForPlayer,
+  directoryStatus,
+} from "./native/read-models";
 import { type DirectoryInput, type GameDirectorySource } from "./game-directory";
 import { expeditionEpoch } from "@bibliothecadao/eternum/expeditions";
 import type { GameSnapshot, ReplayMetrics } from "./types";
@@ -101,6 +106,7 @@ const historyQuery = (url: URL, gameId: string): HistoryQuery => ({
 export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: Request) => Promise<Response>) => {
   const readModels = state.readModels ?? { directory: buildNativeDirectory, leaderboard: buildNativeLeaderboard };
   const directory = cachedDirectory(state, readModels.directory);
+  const leaderboard = cachedLeaderboard(state, readModels.leaderboard);
   const directoryPath = "/games";
   const snapshotPath = /^\/games\/([0-9]+)\/snapshot$/;
   const historyPath = /^\/games\/([0-9]+)\/history$/;
@@ -154,9 +160,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
         const gameId = leaderboardMatch[1];
         const timestamp = state.chainTimestamp();
         if (timestamp <= 0) return jsonResponse({ error: "chain_clock_unavailable" }, 503);
-        return jsonResponse(
-          readModels.leaderboard(state.fold.modelRows, gameId, timestamp, state.history?.activity(gameId) ?? null),
-        );
+        return jsonResponse(leaderboard(gameId, timestamp));
       } catch (error) {
         return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 503);
       }
@@ -226,13 +230,33 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
   };
 };
 
+/** Only successful known-game results enter the cache; the next head replaces the entire generation. */
+function cachedLeaderboard(state: HeraldHttpState, build: WorldReadModels["leaderboard"]) {
+  let block = -1;
+  const responses = new Map<string, ReturnType<typeof build>>();
+  return (requestedGame: string, timestamp: number) => {
+    const head = state.confirmedBlock();
+    if (block !== head) {
+      responses.clear();
+      block = head;
+    }
+    const gameId = BigInt(requestedGame).toString();
+    let response = responses.get(gameId);
+    if (!response) {
+      response = build(state.fold.modelRows, gameId, timestamp, state.history?.activity(gameId) ?? null);
+      responses.set(gameId, response);
+    }
+    return response;
+  };
+}
+
 /** One cache generation per confirmed head, shared by all readers and directory subscribers. */
 function cachedDirectory(state: HeraldHttpState, build: WorldReadModels["directory"]) {
   let block = -1;
   let revision = "";
   let timestamp = -1;
   let foldRevision = -1;
-  const responses = new Map<string, ReturnType<typeof buildNativeDirectory>>();
+  let response: ReturnType<typeof buildNativeDirectory> | undefined;
   const rows = new Map<string, ReturnType<GameDirectorySource["modelRows"]>>();
   const fold: GameDirectorySource = {
     structurePosition: (game, entity) => state.fold.structurePosition(game, entity),
@@ -253,7 +277,7 @@ function cachedDirectory(state: HeraldHttpState, build: WorldReadModels["directo
     if (block === nextBlock && timestamp === nextTimestamp && foldRevision === nextFoldRevision) return;
     if (block !== nextBlock || foldRevision !== nextFoldRevision) rows.clear();
     const nextRevision = `${nextFoldRevision}:${directoryClock({ ...state, fold })}`;
-    if (block !== nextBlock || revision !== nextRevision) responses.clear();
+    if (block !== nextBlock || revision !== nextRevision) response = undefined;
     revision = nextRevision;
     block = nextBlock;
     timestamp = nextTimestamp;
@@ -266,19 +290,21 @@ function cachedDirectory(state: HeraldHttpState, build: WorldReadModels["directo
     },
     read: (playerAddress?: string) => {
       refresh();
-      const key = playerAddress ?? "";
-      let response = responses.get(key);
       if (!response) {
         response = build({
           chain: state.chain,
           confirmedBlock: block,
           timestamp: state.chainTimestamp(),
           fold,
-          playerAddress,
         });
-        responses.set(key, response);
       }
-      return response;
+      return directoryForPlayer(response, {
+        chain: state.chain,
+        confirmedBlock: block,
+        timestamp,
+        fold,
+        playerAddress,
+      });
     },
   };
 }
