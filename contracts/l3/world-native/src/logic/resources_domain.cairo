@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod ResourcesLogic {
     use starknet::ContractAddress;
-    use starknet::storage::StoragePointerReadAccess;
+    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
     use crate::arrivals::{ArrivalKey, OffloadArrival, has_arrived};
     use crate::events::RowSet;
     use crate::logic::arrivals::ArrivalState;
@@ -48,6 +48,36 @@ pub mod ResourcesLogic {
         ProductionEvent: ProductionState::Event,
         RowSet: RowSet,
         StoryEvent: StoryEvent,
+    }
+    #[abi(embed_v0)]
+    impl LordsCommitment of crate::relics::ILordsCommitment<ContractState> {
+        fn initialize_lords_budget(ref self: ContractState, game_id: u32) {
+            crate::logic::preset_record::for_game(game_id).chest_rules.read().expect('missing chest rules');
+            assert!(
+                crate::state::read().relics.lords_committed.read(game_id).is_none(), "LORDS budget already initialized",
+            );
+            self.resources.write_lords_budget(game_id, 0);
+        }
+        fn commit_lords(
+            ref self: ContractState, game_id: u32, quality: u8, context: crate::commands::ActionContext,
+        ) -> bool {
+            let context = crate::commands::load_context(game_id, context);
+            let game = context.game.unbox();
+            crate::game::assert_playing(game, context.timestamp);
+            let rules = crate::logic::preset_record::for_game(game_id).chest_rules.read().expect('missing chest rules');
+            let season_day = crate::expeditions::season_day(
+                game.start_main_at, context.rules.unbox().epoch_seconds, context.timestamp,
+            );
+            let allowance = crate::relics::lords_allowance(rules, season_day);
+            let amount = crate::relics::lords_amount(rules.lords_amounts, quality);
+            let committed = crate::state::read().relics.lords_committed.read(game_id).expect('missing LORDS budget');
+            assert!(committed <= allowance, "LORDS budget exceeds allowance");
+            if amount > allowance - committed {
+                return false;
+            }
+            self.resources.write_lords_budget(game_id, committed + amount);
+            true
+        }
     }
     #[abi(embed_v0)]
     impl SiteRewards of crate::expeditions::ISiteRewards<ContractState> {

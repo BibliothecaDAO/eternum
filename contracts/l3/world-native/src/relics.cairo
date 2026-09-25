@@ -48,15 +48,55 @@ pub struct ChestGround {
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct ChestRules {
     pub relic_probability: u16,
-    pub cosmetic_probability: u16,
     pub token_cap: u16,
+    pub lords_amounts: LordsAmounts,
+    pub lords_pool: u128,
+    pub season_epochs: u16,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct LordsAmounts {
+    pub common: u128,
+    pub uncommon: u128,
+    pub rare: u128,
+    pub epic: u128,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct LordsBudget {
+    pub lords_committed: u128,
+}
+
+pub fn lords_amount(amounts: LordsAmounts, quality: u8) -> u128 {
+    match quality {
+        0 => amounts.common,
+        1 => amounts.uncommon,
+        2 => amounts.rare,
+        3 => amounts.epic,
+        _ => panic!("invalid chest quality"),
+    }
+}
+
+pub fn lords_allowance(rules: ChestRules, season_day: u64) -> u128 {
+    let epochs: u128 = rules.season_epochs.into();
+    assert!(epochs != 0, "zero season epochs");
+    let released: u128 = core::cmp::min(Into::<u64, u128>::into(season_day) + 1, epochs);
+    // Quotient and remainder keep the exact floor without overflowing a u128 pool.
+    (rules.lords_pool / epochs) * released + (rules.lords_pool % epochs) * released / epochs
+}
+
+#[starknet::interface]
+pub trait ILordsCommitment<T> {
+    fn initialize_lords_budget(ref self: T, game_id: u32);
+    fn commit_lords(ref self: T, game_id: u32, quality: u8, context: crate::commands::ActionContext) -> bool;
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 #[allow(starknet::store_no_default_variant)]
 pub enum ChestKind {
     Relic,
-    Cosmetic,
+    // Preserve Token=2 for recorded receipts; remove this reserved tag at the freeze re-recording.
+    Reserved,
     Token,
 }
 
@@ -68,6 +108,7 @@ pub struct ChestReward {
     pub depth: u8,
     pub kind: ChestKind,
     pub quality: u8,
+    pub lords_exhausted: bool,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -83,8 +124,6 @@ pub fn roll_chest(
     let type_roll = crate::random::range(seed, Into::<u64, u128>::into(timestamp) + 31, 10000);
     let kind = if type_roll < rules.relic_probability.into() {
         ChestKind::Relic
-    } else if type_roll < Into::<u16, u128>::into(rules.relic_probability) + rules.cosmetic_probability.into() {
-        ChestKind::Cosmetic
     } else if tokens < rules.token_cap {
         ChestKind::Token
     } else {
@@ -127,6 +166,7 @@ pub trait ICaptureRewards<T> {
 
 #[starknet::interface]
 pub trait IRelics<T> {
+    fn lords_budget(self: @T, game_id: u32) -> Option<LordsBudget>;
     fn chest_rules(self: @T, game_id: u32) -> Option<ChestRules>;
     fn chest_pity(self: @T, game_id: u32, player: ContractAddress, depth: u8) -> u16;
     fn chest_tokens(self: @T, game_id: u32, player: ContractAddress, epoch: u64) -> u16;

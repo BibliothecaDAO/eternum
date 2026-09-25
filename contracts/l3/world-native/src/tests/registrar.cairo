@@ -4,7 +4,7 @@ use snforge_std::{
     EventSpyTrait, EventsFilterTrait, start_cheat_block_timestamp_global, start_cheat_caller_address,
     stop_cheat_caller_address,
 };
-use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::combat::TroopsTrait;
 use crate::commands::{Command, CreateExplorer, Explore};
 use crate::game::{GameStatus, IGameDispatcher, IGameDispatcherTrait, status_at};
@@ -18,7 +18,7 @@ use crate::registrar::{
     CreateGameParams, IRegistrarDispatcher, IRegistrarDispatcherTrait, IRegistrarSafeDispatcher,
     IRegistrarSafeDispatcherTrait, RosterPlayer,
 };
-use crate::relics::{ChestGround, ChestRules};
+use crate::relics::{ChestGround, ChestKind, ChestRules, IRelicsDispatcher, IRelicsDispatcherTrait};
 use crate::resources::{
     IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceRule, ResourceSlot,
 };
@@ -1991,6 +1991,16 @@ fn setup_frontier_chests() -> (super::Deployment, u32, ExplorerKey) {
 fn setup_frontier_chests_with_rules(
     discovery: Option<crate::expeditions::FrontierDiscoveryRules>,
 ) -> (super::Deployment, u32, ExplorerKey) {
+    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    setup_frontier_chests_with_payout(
+        discovery,
+        ChestRules { relic_probability: 10000, ..frontier.economy.chests.unwrap() },
+        ChestGround { common: 10000, uncommon: 0, rare: 0, pity: 2 },
+    )
+}
+fn setup_frontier_chests_with_payout(
+    discovery: Option<crate::expeditions::FrontierDiscoveryRules>, chests: ChestRules, ground: ChestGround,
+) -> (super::Deployment, u32, ExplorerKey) {
     let d = setup();
     let mut preset = definition(true);
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
@@ -2055,12 +2065,12 @@ fn setup_frontier_chests_with_rules(
                     reveal_site_neighbors: false,
                     entry_stamina: 0,
                     attunement_cost: 0,
-                    chest: ChestGround { common: 10000, uncommon: 0, rare: 0, pity: 2 },
+                    chest: ground,
                 },
             );
     }
     preset.settlement.depths = depths.span();
-    preset.economy.chests = Some(ChestRules { relic_probability: 10000, cosmetic_probability: 0, token_cap: 1 });
+    preset.economy.chests = Some(chests);
     preset.economy.relics = array![].span();
     if let Some(discovery) = discovery {
         preset.economy.discovery = Some(discovery);
@@ -2670,5 +2680,158 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
                 .empty_reveals,
         ),
         1,
+    );
+}
+
+#[test]
+fn frontier_lords_commitment_and_exhaustion_are_atomic_and_keep_the_rolled_quality() {
+    let (_, preset) = super::preset_projection::current_definition("frontier");
+    let chests = ChestRules { relic_probability: 0, ..preset.economy.chests.unwrap() };
+    let allowance = crate::relics::lords_allowance(chests, 0);
+    let amount = chests.lords_amounts.rare;
+    for committed in array![0, allowance - amount, allowance - amount + 1, allowance] {
+        let exhausted = committed + amount > allowance;
+        let (d, game_id, key) = setup_frontier_chests_with_payout(
+            None, chests, ChestGround { common: 0, uncommon: 0, rare: 10000, pity: 2 },
+        );
+        let relics = IRelicsDispatcher { contract_address: d.games };
+        assert_eq!(relics.lords_budget(game_id).unwrap().lords_committed, 0);
+        let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+        let coord = crate::geometry::neighbor(army.coord, 0);
+        let tile = crate::geometry::tile_key(game_id, coord);
+        let actor = d.actor;
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                let state = crate::state::write();
+                state.relics.chest_pity.write((game_id, actor, 0), 1);
+                state.relics.lords_committed.write(game_id, Some(committed));
+                if crate::logic::map::tile(tile).is_none() {
+                    crate::logic::map::MapState::reveal(tile, 1);
+                }
+                crate::logic::map::MapState::occupy(tile, 9999, crate::map::CHEST_OCCUPIER, false);
+            },
+        );
+        let mut spy = snforge_std::spy_events();
+        let open = Command::OpenRelicChest(crate::relics::OpenChest { explorer_id: key.explorer_id, coord });
+        assert!(execute_in_game(d, game_id, open, 360, 360));
+        let expected = if exhausted {
+            committed
+        } else {
+            committed + amount
+        };
+        assert_eq!(relics.lords_budget(game_id).unwrap().lords_committed, expected);
+        assert_eq!(relics.chest_tokens(game_id, actor, 3), if exhausted {
+            0
+        } else {
+            1
+        });
+        assert_eq!(relics.chest_pity(game_id, actor, 0), 1);
+        let progress = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key));
+        if exhausted {
+            let offer = progress.pending.unwrap();
+            assert_eq!(offer.amount, 3);
+            assert_eq!(offer.source, crate::progression::OfferSource::Relic);
+        } else {
+            assert!(progress.pending.is_none());
+        }
+        assert!(!execute_in_game(d, game_id, open, 361, 361));
+        let mut rewards = 0;
+        for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
+            if event.keys.len() > 1 && *event.keys.at(1) == selector!("StoryEvent") {
+                let mut keys = event.keys.span().slice(2, event.keys.len() - 2);
+                let mut data = event.data.span();
+                let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
+                if let crate::ownership::Story::ChestReward(reward) = story.story {
+                    rewards += 1;
+                    assert_eq!(reward.quality, 2);
+                    assert_eq!(reward.lords_exhausted, exhausted);
+                    assert_eq!(reward.kind, if exhausted {
+                        ChestKind::Relic
+                    } else {
+                        ChestKind::Token
+                    });
+                }
+            }
+        }
+        assert_eq!(rewards, 1);
+        if !exhausted {
+            let capped_coord = crate::geometry::neighbor(army.coord, 1);
+            place_frontier_chest_fixture(d, game_id, capped_coord, 9998);
+            let mut cap_spy = snforge_std::spy_events();
+            assert!(
+                execute_in_game(
+                    d,
+                    game_id,
+                    Command::OpenRelicChest(
+                        crate::relics::OpenChest { explorer_id: key.explorer_id, coord: capped_coord },
+                    ),
+                    362,
+                    362,
+                ),
+            );
+            assert_eq!(relics.lords_budget(game_id).unwrap().lords_committed, expected);
+            assert_eq!(relics.chest_tokens(game_id, actor, 3), 1);
+            let mut capped_rewards = 0;
+            for (_, event) in cap_spy.get_events().emitted_by(d.games).events.span() {
+                if event.keys.len() > 1 && *event.keys.at(1) == selector!("StoryEvent") {
+                    let mut keys = event.keys.span().slice(2, event.keys.len() - 2);
+                    let mut data = event.data.span();
+                    let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
+                    if let crate::ownership::Story::ChestReward(reward) = story.story {
+                        capped_rewards += 1;
+                        assert_eq!(reward.kind, ChestKind::Relic);
+                        assert!(!reward.lords_exhausted);
+                        assert_eq!(reward.quality, 3);
+                    }
+                }
+            }
+            assert_eq!(capped_rewards, 1);
+        }
+        start_cheat_block_timestamp_global(400);
+        assert_eq!(relics.lords_budget(game_id).unwrap().lords_committed, expected);
+        assert_eq!(relics.chest_tokens(game_id, actor, 4), 0);
+        let today_id = next_entity(d, game_id);
+        assert!(
+            execute_in_game(
+                d,
+                game_id,
+                Command::CreateExplorer(
+                    CreateExplorer { structure_id: 1, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0 },
+                ),
+                400,
+                400,
+            ),
+        );
+        let today = GameState { contract_address: d.games }
+            .resolved_explorer(ExplorerKey { game_id, explorer_id: today_id })
+            .unwrap();
+        let today_chest = crate::geometry::neighbor(today.coord, 0);
+        place_frontier_chest_fixture(d, game_id, today_chest, 9997);
+        assert!(
+            execute_in_game(
+                d,
+                game_id,
+                Command::OpenRelicChest(crate::relics::OpenChest { explorer_id: today_id, coord: today_chest }),
+                401,
+                401,
+            ),
+        );
+        assert_eq!(relics.lords_budget(game_id).unwrap().lords_committed, expected + chests.lords_amounts.rare);
+        assert_eq!(relics.chest_tokens(game_id, actor, 4), 1);
+        assert_eq!(crate::relics::lords_allowance(chests, 1) - expected, 28571 - expected);
+    }
+}
+
+fn place_frontier_chest_fixture(d: super::Deployment, game_id: u32, coord: crate::troops::Coord, id: u32) {
+    let tile = crate::geometry::tile_key(game_id, coord);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            if crate::logic::map::tile(tile).is_none() {
+                crate::logic::map::MapState::reveal(tile, 1);
+            }
+            crate::logic::map::MapState::occupy(tile, id, crate::map::CHEST_OCCUPIER, false);
+        },
     );
 }

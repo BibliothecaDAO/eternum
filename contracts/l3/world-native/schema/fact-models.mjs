@@ -890,6 +890,7 @@ export function defineFactModels({ struct, model: declare }) {
       struct("expeditions::ExpeditionDiscovery"),
     ),
     model("ChestRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::ChestRules")),
+    model("LordsBudget", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::LordsBudget")),
     model(
       "ChestPity",
       "game",
@@ -1340,6 +1341,7 @@ export const syncScopes = {
       "RelicRules",
       "ChestRules",
       "ArmyProgressionRules",
+      "LordsBudget",
       "FrontierDiscoveryRules",
       "RelicDiscovery",
       "DepositRules",

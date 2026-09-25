@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-25",
+    title: "Frontier LORDS chests",
+    description:
+      "Frontier chests award relics or LORDS. When the released LORDS budget is exhausted, a chest grants a relic of the same rarity and explains why.",
+    type: "feature",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-09-25",
     title: "Army attributes and relics",
     description:
       "Your Frontier armies earn attribute choices from exploration, victories and relics. Battle increases damage, and Logistics expands the stamina bar.",

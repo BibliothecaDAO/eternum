@@ -357,9 +357,16 @@ fn write_relics(
             game_rules.epoch_seconds != 0 && crate::rules::rule_enabled(game_rules, crate::rules::DEPTH_CONTENTS),
             "chest tables require depth rules",
         );
+        assert!(value.relic_probability <= 10000, "invalid chest type probabilities");
+        assert!(value.token_cap != 0 && value.season_epochs != 0, "empty chest limits");
+        let amounts = value.lords_amounts;
         assert!(
-            Into::<u16, u32>::into(value.relic_probability) + value.cosmetic_probability.into() <= 10000,
-            "invalid chest type probabilities",
+            amounts.common != 0
+                && amounts.common <= amounts.uncommon
+                && amounts.uncommon <= amounts.rare
+                && amounts.rare <= amounts.epic
+                && amounts.epic <= value.lords_pool,
+            "invalid LORDS table",
         );
         assert!(rules.is_empty(), "attribute chests replace timed relics");
         preset.chest_rules.write(chests);

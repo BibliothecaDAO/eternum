@@ -39,7 +39,7 @@ const resourceNameMap = resources.reduce<Record<number, string>>((acc, resource)
 }, {});
 
 const CHEST_QUALITY_LABELS = ["Common", "Uncommon", "Rare", "Epic"];
-const CHEST_KIND_LABELS: Record<string, string> = { Relic: "relic", Cosmetic: "cosmetic", Token: "token claim" };
+const CHEST_KIND_LABELS: Record<string, string> = { Relic: "relic", Token: "token claim" };
 const EXPEDITION_GROUND_LABELS = ["the surface", "Ethereal I", "Ethereal II", "Ethereal III"];
 
 const formatters: Record<string, StoryFormatter> = {
@@ -72,11 +72,17 @@ const formatters: Record<string, StoryFormatter> = {
   },
   ChestReward: (event, payload, components) => {
     const quality = labelAt(CHEST_QUALITY_LABELS, payload.quality);
-    const kind = CHEST_KIND_LABELS[formatEnum(payload.kind) ?? ""] ?? "reward";
+    const rawKind = formatEnum(payload.kind);
+    if (rawKind && !(rawKind in CHEST_KIND_LABELS)) throw new Error("Invalid chest reward kind");
+    const kind = CHEST_KIND_LABELS[rawKind ?? ""] ?? "reward";
     const ground = labelAt(EXPEDITION_GROUND_LABELS, payload.depth);
     return {
       title: `Chest opened: ${quality ? `${quality} ${kind}` : kind}`,
-      description: joinPieces([describeExplorer(payload.explorer_id, components), ground ? `On ${ground}` : undefined]),
+      description: joinPieces([
+        describeExplorer(payload.explorer_id, components),
+        ground ? `On ${ground}` : undefined,
+        payload.lords_exhausted === true ? "LORDS allowance exhausted; awarded a relic of the same rarity" : undefined,
+      ]),
       icon: "prize",
     };
   },

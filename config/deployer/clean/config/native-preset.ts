@@ -269,6 +269,23 @@ function buildEconomy(
   const chests = preset.chests;
   if (chests === undefined || (chests !== null) !== (preset.epochSeconds !== 0))
     throw new Error("Explicit chest rules are required for expedition presets only");
+  if (chests !== null) {
+    const amounts = [
+      chests.lordsAmounts.common,
+      chests.lordsAmounts.uncommon,
+      chests.lordsAmounts.rare,
+      chests.lordsAmounts.epic,
+    ];
+    if (
+      ![...amounts, chests.lordsPool, chests.seasonEpochs, chests.tokenCap].every(
+        (value) => Number.isSafeInteger(value) && value > 0,
+      ) ||
+      chests.seasonEpochs > 65535 ||
+      chests.tokenCap > 65535 ||
+      amounts.some((value, index) => value > (amounts[index + 1] ?? chests.lordsPool))
+    )
+      throw new Error("Invalid LORDS chest table or limits");
+  }
   const progression = preset.progression;
   if (progression === undefined || (progression !== null) !== (preset.epochSeconds !== 0))
     throw new Error("Explicit progression rules are required for expedition presets only");
@@ -292,8 +309,12 @@ function buildEconomy(
         ? new CairoOption(CairoOptionVariant.None)
         : new CairoOption(CairoOptionVariant.Some, {
             relic_probability: chests.relicProbability,
-            cosmetic_probability: chests.cosmeticProbability,
             token_cap: chests.tokenCap,
+            lords_amounts: Object.fromEntries(
+              Object.entries(chests.lordsAmounts).map(([quality, amount]) => [quality, BigInt(amount)]),
+            ),
+            lords_pool: BigInt(chests.lordsPool),
+            season_epochs: chests.seasonEpochs,
           }),
     trade: { max_count: config.trade.maxCount },
     banks: {

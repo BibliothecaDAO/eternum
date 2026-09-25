@@ -35,6 +35,14 @@ pub mod RelicState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::relics::IRelics<ComponentState<TContractState>> {
+        fn lords_budget(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::relics::LordsBudget> {
+            self
+                .data
+                .relics
+                .lords_committed
+                .read(game_id)
+                .map(|lords_committed| crate::relics::LordsBudget { lords_committed })
+        }
         fn chest_rules(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::relics::ChestRules> {
             crate::logic::preset_record::for_game(game_id).chest_rules.read()
         }
@@ -409,13 +417,31 @@ pub mod RelicState {
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, game_id, game.seed);
             let ground = crate::logic::expeditions::depth_rules(game_id, depth).chest;
-            let roll = crate::relics::roll_chest(rules, ground, old_pity, tokens, seed, context.timestamp);
+            let mut roll = crate::relics::roll_chest(rules, ground, old_pity, tokens, seed, context.timestamp);
+            let lords_exhausted = roll.kind == crate::relics::ChestKind::Token
+                && !crate::relics::ILordsCommitmentDispatcherTrait::commit_lords(
+                    crate::relics::ILordsCommitmentLibraryDispatcher {
+                        class_hash: self.logic_classes(game_id).resources.read(),
+                    },
+                    game_id,
+                    roll.quality,
+                    crate::commands::action_context(context),
+                );
+            if lords_exhausted {
+                roll.kind = crate::relics::ChestKind::Relic;
+            }
             if roll.kind == crate::relics::ChestKind::Relic {
                 crate::logic::progression::grant_relic(explorer_key, roll.quality, context);
             }
             self.write_chest_counters(game_id, actor, depth, epoch, roll, old_pity, tokens);
             let reward = crate::relics::ChestReward {
-                player: actor, explorer_id: command.explorer_id, epoch, depth, kind: roll.kind, quality: roll.quality,
+                player: actor,
+                explorer_id: command.explorer_id,
+                epoch,
+                depth,
+                kind: roll.kind,
+                quality: roll.quality,
+                lords_exhausted,
             };
             self.record_expedition_chest(game_id, reward, context.timestamp, ref story_cursor);
         }

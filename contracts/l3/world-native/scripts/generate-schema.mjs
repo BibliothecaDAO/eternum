@@ -373,7 +373,9 @@ function factType(type) {
   }
   const definition = types.get(type);
   if (definition?.type === "enum" && definition.variants.every((variant) => variant.type === "()")) {
-    const variants = definition.variants.map((variant) => variant.name);
+    const variants = definition.variants
+      .filter((variant) => variant.name !== "Reserved")
+      .map((variant) => variant.name);
     return { ts: variants.map(JSON.stringify).join(" | "), wire: { enum: variants } };
   }
   if (definition?.type === "enum") {

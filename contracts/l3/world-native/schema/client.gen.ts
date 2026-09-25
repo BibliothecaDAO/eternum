@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "10191df77594bed8cb19b001ddec6237b3f50333c11f740f7703417a249cc01c";
+export const nativeFactSchemaIdentity = "986878e8512fdb691df7a43669c47e3e1c7eac5e72f44bc6fdb0100039c653a7";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "ATTRIBUTE_DAMAGE_PERCENT": 10,
@@ -52,10 +52,11 @@ export interface NativeRows {
   ArmyProgressionRules: { readonly game_id: number; readonly reveal_xp: number; readonly clear_xp: number; readonly level_step_xp: number };
   FrontierDiscoveryRules: { readonly game_id: number; readonly camp_bps: number; readonly rift_bps: number; readonly fallen_realm_bps: number; readonly loose_chest_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: number; readonly epoch: bigint; readonly empty_reveals: number };
-  ChestRules: { readonly game_id: number; readonly relic_probability: number; readonly cosmetic_probability: number; readonly token_cap: number };
+  ChestRules: { readonly game_id: number; readonly relic_probability: number; readonly token_cap: number; readonly lords_amounts: { readonly common: bigint; readonly uncommon: bigint; readonly rare: bigint; readonly epic: bigint }; readonly lords_pool: bigint; readonly season_epochs: number };
+  LordsBudget: { readonly game_id: number; readonly lords_committed: bigint };
   ChestPity: { readonly game_id: number; readonly player: bigint; readonly depth: number; readonly count: number };
   ChestTokens: { readonly game_id: number; readonly player: bigint; readonly epoch: bigint; readonly count: number };
-  ChestReward: { readonly game_id: number; readonly order: bigint; readonly index: number; readonly player: bigint; readonly explorer_id: number; readonly epoch: bigint; readonly depth: number; readonly kind: "Relic" | "Cosmetic" | "Token"; readonly quality: number };
+  ChestReward: { readonly game_id: number; readonly order: bigint; readonly index: number; readonly player: bigint; readonly explorer_id: number; readonly epoch: bigint; readonly depth: number; readonly kind: "Relic" | "Token"; readonly quality: number; readonly lords_exhausted: boolean };
   RelicDiscovery: { readonly game_id: number; readonly last_at: bigint };
   DepositRules: { readonly game_id: number; readonly paused: boolean; readonly realm_fee_bps: number; readonly velords_fee_bps: number; readonly season_fee_bps: number; readonly client_fee_bps: number };
   WithdrawalRules: { readonly game_id: number; readonly paused: boolean; readonly bank_fee_bps: number; readonly velords_fee_bps: number; readonly season_fee_bps: number; readonly client_fee_bps: number; readonly velords_recipient: bigint; readonly season_recipient: bigint; readonly retention: readonly ({ readonly troop_percent: number; readonly resource_percent: number })[] };
@@ -141,6 +142,7 @@ export interface NativeKeys {
   FrontierDiscoveryRules: { readonly game_id: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: number; readonly epoch: bigint };
   ChestRules: { readonly game_id: number };
+  LordsBudget: { readonly game_id: number };
   ChestPity: { readonly game_id: number; readonly player: bigint; readonly depth: number };
   ChestTokens: { readonly game_id: number; readonly player: bigint; readonly epoch: bigint };
   ChestReward: { readonly game_id: number; readonly order: bigint; readonly index: number };
@@ -436,8 +438,25 @@ export const nativeFactModels = {
     "fields": {
       "game_id": "u32",
       "relic_probability": "u16",
-      "cosmetic_probability": "u16",
-      "token_cap": "u16"
+      "token_cap": "u16",
+      "lords_amounts": {
+        "common": "u128",
+        "uncommon": "u128",
+        "rare": "u128",
+        "epic": "u128"
+      },
+      "lords_pool": "u128",
+      "season_epochs": "u16"
+    }
+  },
+  "LordsBudget": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "lords_committed": "u128"
     }
   },
   "ChestPity": {
@@ -494,11 +513,11 @@ export const nativeFactModels = {
       "kind": {
         "enum": [
           "Relic",
-          "Cosmetic",
           "Token"
         ]
       },
-      "quality": "u8"
+      "quality": "u8",
+      "lords_exhausted": "boolean"
     }
   },
   "RelicDiscovery": {
@@ -1938,6 +1957,7 @@ export const nativeSyncScopes = {
   "RelicRules": "shared",
   "ChestRules": "shared",
   "ArmyProgressionRules": "shared",
+  "LordsBudget": "shared",
   "FrontierDiscoveryRules": "shared",
   "RelicDiscovery": "shared",
   "DepositRules": "shared",

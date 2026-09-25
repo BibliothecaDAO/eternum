@@ -79,6 +79,19 @@ pub mod ResourceState {
     pub impl InternalImpl<
         TContractState, +HasComponent<TContractState>, impl Recipes: ProductionState::HasComponent<TContractState>,
     > of InternalTrait<TContractState> {
+        fn write_lords_budget(ref self: ComponentState<TContractState>, game_id: u32, lords_committed: u128) {
+            self.data.relics.lords_committed.write(game_id, Some(lords_committed));
+            self
+                .emit(
+                    crate::events::RowSet {
+                        version: 1,
+                        model: 'LordsBudget',
+                        keys: array![game_id.into()].span(),
+                        values: array![lords_committed.into()].span(),
+                    },
+                );
+        }
+
         fn burn_resource(
             ref self: ComponentState<TContractState>,
             key: ResourceKey,

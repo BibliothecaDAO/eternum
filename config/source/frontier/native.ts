@@ -64,7 +64,13 @@ export const frontierPreset: NativePreset = {
     emptyRevealLimit: 7,
   },
   progression: { revealXp: 10, clearXp: 25, levelStepXp: 20 },
-  chests: { relicProbability: 9000, cosmeticProbability: 900, tokenCap: 1 },
+  chests: {
+    relicProbability: 9000,
+    tokenCap: 1,
+    lordsAmounts: { common: 100, uncommon: 400, rare: 1500, epic: 6000 },
+    lordsPool: 1000000,
+    seasonEpochs: 70,
+  },
   depths: [
     {
       revealPercent: 10,

@@ -79,7 +79,7 @@ class SerdeReader {
     }
     if (definition?.type === "enum") {
       const variant = definition.variants[Number(this.scalar())];
-      if (!variant) throw new Error(`Invalid native enum ${type}`);
+      if (!variant || variant.name === "Reserved") throw new Error(`Invalid native enum ${type}`);
       this.read(variant.type);
       return;
     }

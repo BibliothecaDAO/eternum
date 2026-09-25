@@ -46,6 +46,20 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
+  test("Frontier owns the 90/10 chest split, whole LORDS table and seventy-day season", () => {
+    const config = loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID);
+    const preset = buildNativePreset(config, FRONTIER_PRESET_ID);
+    expect(preset.economy.chests.unwrap()).toEqual({
+      relic_probability: 9000,
+      token_cap: 1,
+      lords_amounts: { common: 100n, uncommon: 400n, rare: 1500n, epic: 6000n },
+      lords_pool: 1000000n,
+      season_epochs: 70,
+    });
+    expect(config.season.durationSeconds).toBe(70 * preset.rules.epoch_seconds);
+    expect(preset.economy.chests.unwrap()).not.toHaveProperty("cosmetic_probability");
+  });
+
   test("every preset supplies its cooldown explicitly, independent of the stamina clock", () => {
     for (const [network, id, expected] of [
       ["madara.frontier", 5, 0],

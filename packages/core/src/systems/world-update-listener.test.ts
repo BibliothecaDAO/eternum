@@ -23,13 +23,14 @@ describe("native scene updates", () => {
         order: "9007199254740993",
         index: 1,
         timestamp: 100,
-        story: { ChestReward: { explorer_id: 7, kind: "Token", quality: 0, depth: 2 } },
+        story: { ChestReward: { explorer_id: 7, kind: "Token", quality: 0, depth: 2, lords_exhausted: false } },
       },
     });
     expect(reward).toHaveBeenCalledWith({
       resultKey: ["0x1", "0x20000000000001", "0x1"],
       explorerId: 7,
       kind: "Token",
+      lordsExhausted: false,
       quality: 0,
       depth: 2,
       timestamp: 100,

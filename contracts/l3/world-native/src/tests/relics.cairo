@@ -660,7 +660,8 @@ fn chest_search_skips_the_explorers_vacated_start_tile() {
 
 #[test]
 fn chest_tables_control_type_quality_pity_and_token_cap() {
-    let rules = ChestRules { relic_probability: 9000, cosmetic_probability: 900, token_cap: 1 };
+    let (_, preset) = super::preset_projection::current_definition("frontier");
+    let rules = preset.economy.chests.unwrap();
     let grounds = array![
         ChestGround { common: 7800, uncommon: 1800, rare: 350, pity: 400 },
         ChestGround { common: 6000, uncommon: 3000, rare: 800, pity: 100 },
@@ -673,7 +674,7 @@ fn chest_tables_control_type_quality_pity_and_token_cap() {
             let rolled = roll_chest(rules, ground, 0, 0, seed.into(), 100);
             let kind: felt252 = match rolled.kind {
                 ChestKind::Relic => 0,
-                ChestKind::Cosmetic => 1,
+                ChestKind::Reserved => panic!("reserved chest kind produced"),
                 ChestKind::Token => 2,
             };
             counts.insert(kind, counts.get(kind) + 1);
@@ -681,7 +682,7 @@ fn chest_tables_control_type_quality_pity_and_token_cap() {
             counts.insert(quality, counts.get(quality) + 1);
         }
         let expected = array![
-            (0, 1800_u32), (1, 180), (2, 20), (10, Into::<u16, u32>::into(ground.common) / 5),
+            (0, 1800_u32), (2, 200), (10, Into::<u16, u32>::into(ground.common) / 5),
             (11, Into::<u16, u32>::into(ground.uncommon) / 5), (12, Into::<u16, u32>::into(ground.rare) / 5),
             (
                 13,
@@ -700,19 +701,33 @@ fn chest_tables_control_type_quality_pity_and_token_cap() {
         }
     }
     let ground = ChestGround { common: 10000, uncommon: 0, rare: 0, pity: 3 };
-    let relics = ChestRules { relic_probability: 10000, cosmetic_probability: 0, ..rules };
+    let relics = ChestRules { relic_probability: 10000, ..rules };
     let first = roll_chest(relics, ground, 0, 0, 77, 100);
     let second = roll_chest(relics, ground, first.pity, 0, 77, 101);
     let third = roll_chest(relics, ground, second.pity, 0, 77, 102);
     assert_eq!((first.quality, first.pity), (0, 1));
     assert_eq!((second.quality, second.pity), (0, 2));
     assert_eq!((third.quality, third.pity), (3, 0));
-    let tokens = ChestRules { relic_probability: 0, cosmetic_probability: 0, ..rules };
+    let tokens = ChestRules { relic_probability: 0, ..rules };
     let before_cap = roll_chest(tokens, ground, 2, 0, 77, 100);
     let capped = roll_chest(tokens, ground, 2, 1, 77, 100);
     assert_eq!((before_cap.kind, before_cap.quality, before_cap.pity), (ChestKind::Token, 0, 2));
     assert_eq!((capped.kind, capped.quality, capped.pity), (ChestKind::Relic, 3, 0));
-    let cosmetics = ChestRules { relic_probability: 0, cosmetic_probability: 10000, ..rules };
-    let cosmetic = roll_chest(cosmetics, ground, 2, 1, 77, 100);
-    assert_eq!((cosmetic.kind, cosmetic.quality, cosmetic.pity), (ChestKind::Cosmetic, 0, 2));
+}
+
+#[test]
+fn lords_amounts_and_cumulative_allowance_use_the_preset_without_overflow() {
+    let (_, preset) = super::preset_projection::current_definition("frontier");
+    let rules = preset.economy.chests.unwrap();
+    for (quality, expected) in array![(0_u8, 100_u128), (1, 400), (2, 1500), (3, 6000)] {
+        assert_eq!(crate::relics::lords_amount(rules.lords_amounts, quality), expected);
+    }
+    assert_eq!(crate::relics::lords_allowance(rules, 0), 14285);
+    assert_eq!(crate::relics::lords_allowance(rules, 20), 300000);
+    assert_eq!(crate::relics::lords_allowance(rules, 69), 1000000);
+    assert_eq!(crate::relics::lords_allowance(rules, 70), 1000000);
+    let maximum = 0xffffffffffffffffffffffffffffffff_u128;
+    let largest = ChestRules { lords_pool: maximum, ..rules };
+    assert_eq!(crate::relics::lords_allowance(largest, 69), maximum);
+    assert_eq!(crate::relics::lords_allowance(largest, 0), maximum / 70);
 }

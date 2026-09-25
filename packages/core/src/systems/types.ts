@@ -43,7 +43,8 @@ export type AttributeChosenSystemUpdate = {
 export type ChestRewardSystemUpdate = {
   resultKey: readonly [gameId: string, order: string, index: string];
   explorerId: ID;
-  kind: "Relic" | "Cosmetic" | "Token";
+  kind: "Relic" | "Token";
+  lordsExhausted: boolean;
   quality: number;
   depth: number;
   timestamp: number;

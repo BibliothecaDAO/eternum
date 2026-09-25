@@ -1,3 +1,4 @@
+import { frontierPreset } from "../../../config/source/frontier/native";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { scheduleFrontierSeason } from "./schedule";
 import { D1LaunchStore } from "./store";
@@ -95,11 +96,13 @@ test("a launch interrupted while running is resumed, not queued twice", async ()
   expect(await store.list("madara.blitz")).toHaveLength(1);
 });
 
-/** A Frontier season of seventeen weeks from this start, as the calendar would hold it. */
+/** The calendar uses the Frontier preset season length. */
 const season = (startsAt: string) => ({
   phase: "frontier" as const,
   startsAt,
-  endsAt: new Date(Date.parse(startsAt) + 17 * 7 * 86_400_000).toISOString(),
+  endsAt: new Date(
+    Date.parse(startsAt) + frontierPreset.chests!.seasonEpochs * frontierPreset.epochSeconds * 1000,
+  ).toISOString(),
 });
 
 test("one Frontier season is created once by every tick and continued like any failed run", async () => {
@@ -109,7 +112,11 @@ test("one Frontier season is created once by every tick and continued like any f
   expect(queued.name).toBe("frontier-1798761600");
   expect(await scheduleFrontierSeason(store, season(seasonStart))).toMatchObject({ id: queued.id, status: "queued" });
   const run = (await store.startNext(Date.now()))!;
-  expect(run.request).toMatchObject({ version: "5", gameStartTime: seasonStart, durationSeconds: 17 * 7 * 86_400 });
+  expect(run.request).toMatchObject({
+    version: "5",
+    gameStartTime: seasonStart,
+    durationSeconds: frontierPreset.chests!.seasonEpochs * frontierPreset.epochSeconds,
+  });
   await store.retry(run.id, "rpc down", 60_000);
   // A tick while the season waits to retry must not reset its attempts or its delay.
   expect(await scheduleFrontierSeason(store, season(seasonStart))).toMatchObject({

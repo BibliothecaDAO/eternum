@@ -12,6 +12,14 @@ import { NativeIngestion } from "./ingestion";
 import { pointsAward, schema, manifest, receipt, raw, setup, battleEvent, rowEvent } from "./fixtures";
 
 describe("native row decoder", () => {
+  it("refuses reserved chest wire tag 1 and retains Token at tag 2", () => {
+    const decoder = new NativeDecoder(manifest);
+    const values = ["17", "7", "3", "0", "1", "0", "0"];
+    expect(() => decoder.decodeRowSet("ChestReward", ["1", "2", "0"], values)).toThrow("Invalid native enum");
+    values[4] = "2";
+    expect(decoder.decodeRowSet("ChestReward", ["1", "2", "0"], values).kind).toBe("set");
+  });
+
   it("folds a known same-schema hotfix and refuses an unavailable decoder before its migration rows", () => {
     const released = structuredClone(manifest);
     released.native.releaseSchemas["2"] = schema.identity;
@@ -41,6 +49,7 @@ describe("native row decoder", () => {
         depth: 2,
         kind: new CairoCustomEnum({ Token: {} }),
         quality: 0,
+        lords_exhausted: false,
       }),
     );
     const overlay = fold.overlay();

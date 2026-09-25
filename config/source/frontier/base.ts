@@ -30,9 +30,7 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
   },
   dev: { mode: { on: false } },
   season: {
-    // The launch Worker's season calendar sets a live season's length; this is only the fallback for Frontier games
-    // created outside it (the CLI and the harness).
-    durationSeconds: 17 * 7 * 86400,
+    durationSeconds: frontierPreset.chests!.seasonEpochs * frontierPreset.epochSeconds,
     endGraceSeconds: 0,
     startSettlingAfterSeconds: 0,
     startMainAfterSeconds: 0,

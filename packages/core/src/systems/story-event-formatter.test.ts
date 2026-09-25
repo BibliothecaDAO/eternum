@@ -196,3 +196,19 @@ it("renders the site's recorded kind and payout without a current structure", ()
     ),
   ).toMatchObject({ title: "Fallen realm cleared", description: "Army · Closed chest on the tile" });
 });
+
+it("explains a LORDS budget fallback without hiding its rarity", () => {
+  const result = buildStoryEventPresentation(
+    story("ChestReward", {
+      quality: 2,
+      kind: "Relic",
+      depth: 1,
+      lords_exhausted: true,
+    }),
+  );
+  expect(result.title).toBe("Chest opened: Rare relic");
+  expect(result.description).toContain("LORDS allowance exhausted; awarded a relic of the same rarity");
+  expect(() => buildStoryEventPresentation(story("ChestReward", { kind: "Reserved" }))).toThrow(
+    "Invalid chest reward kind",
+  );
+});

@@ -2380,6 +2380,12 @@ pub mod GamesFixture {
     }
     #[starknet::embeddable]
     pub impl RelicsFixture<TContractState, +Drop<TContractState>> of crate::relics::IRelics<TContractState> {
+        fn lords_budget(self: @TContractState, game_id: u32) -> Option<crate::relics::LordsBudget> {
+            let classes = fixture_classes(game_id);
+            crate::relics::IRelicsDispatcherTrait::lords_budget(
+                crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() }, game_id,
+            )
+        }
         fn chest_rules(self: @TContractState, game_id: u32) -> Option<crate::relics::ChestRules> {
             let classes = fixture_classes(game_id);
             crate::relics::IRelicsDispatcherTrait::chest_rules(

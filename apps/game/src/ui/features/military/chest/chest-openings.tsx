@@ -4,9 +4,9 @@ import { useGame } from "@/hooks/context/game-context";
 import { useEffect } from "react";
 
 const QUALITY = ["Common", "Uncommon", "Rare", "Epic"];
-const KIND = { Relic: "relic", Cosmetic: "cosmetic", Token: "token claim" } as const;
+const KIND = { Relic: "relic", Token: "token claim" } as const;
 
-/** A captured site opens its chest where the army stands: one feed row that flies to that hex. */
+/** An opened chest posts one feed row at the army's position. */
 export const ChestOpenings = () => {
   const { setup } = useGame();
   useEffect(
@@ -16,7 +16,12 @@ export const ChestOpenings = () => {
           game_id: configManager.getActiveGameId(),
           explorer_id: reward.explorerId,
         });
-        toast.success(`Chest opened · ${QUALITY[reward.quality] ?? "Common"} ${KIND[reward.kind]}`, {
+        const quality = QUALITY[reward.quality];
+        if (!quality) throw new Error("Invalid chest quality");
+        toast.success(`Chest opened · ${quality} ${KIND[reward.kind]}`, {
+          description: reward.lordsExhausted
+            ? "LORDS allowance exhausted; awarded a relic of the same rarity"
+            : undefined,
           id: `chest:${reward.resultKey.join(":")}`,
           location: army ? entityMapPosition(setup.store, army.game_id, army.explorer_id) : undefined,
         });

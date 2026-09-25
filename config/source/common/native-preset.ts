@@ -56,8 +56,10 @@ export interface NativePreset {
   progression: null | { revealXp: number; clearXp: number; levelStepXp: number };
   chests: null | {
     relicProbability: number;
-    cosmeticProbability: number;
     tokenCap: number;
+    lordsAmounts: { common: number; uncommon: number; rare: number; epic: number };
+    lordsPool: number;
+    seasonEpochs: number;
   };
   depths: Array<{
     revealPercent: number;

@@ -203,6 +203,27 @@ describe("native fact store", () => {
     expect([...store.rows("ResourceBalance")]).toHaveLength(1);
   });
 
+  it("refuses the reserved chest tag rather than treating it as a relic", () => {
+    const store = new NativeFactStore();
+    expect(() =>
+      store.applyFacts([
+        set("0xc", "ChestReward", {
+          game_id: 1,
+          order: 1,
+          index: 0,
+          player: "0x1",
+          explorer_id: 7,
+          epoch: 3,
+          depth: 0,
+          kind: "Reserved",
+          quality: 0,
+          lords_exhausted: false,
+        }),
+      ]),
+    ).toThrow("Invalid enum");
+    expect([...store.rows("ChestReward")]).toEqual([]);
+  });
+
   it("rejects an entire transaction before changing rows or notifying readers", () => {
     const store = new NativeFactStore();
     store.applyFacts([set("0x8", "ResourceBalance", balance(7, "12"))]);

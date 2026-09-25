@@ -394,7 +394,7 @@ async function readChestHistory(client: GameClient, confirmedBlock: number) {
       };
       if (
         ![reward.epoch, reward.depth, reward.quality].every(Number.isSafeInteger) ||
-        !["Relic", "Cosmetic", "Token"].includes(reward.kind)
+        !["Relic", "Token"].includes(reward.kind)
       )
         throw new Error("Malformed chest reward history");
       rewards.push(reward);

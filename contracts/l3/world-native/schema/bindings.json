@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "10191df77594bed8cb19b001ddec6237b3f50333c11f740f7703417a249cc01c",
+  "schemaIdentity": "986878e8512fdb691df7a43669c47e3e1c7eac5e72f44bc6fdb0100039c653a7",
   "commandAbi": [
     {
       "type": "interface",
@@ -1511,6 +1511,10 @@
     },
     {
       "name": "ChestRules",
+      "scope": "game"
+    },
+    {
+      "name": "LordsBudget",
       "scope": "game"
     },
     {

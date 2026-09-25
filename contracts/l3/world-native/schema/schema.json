@@ -2826,21 +2826,55 @@
           "feltLength": 1
         },
         {
-          "name": "cosmetic_probability",
-          "type": "core::integer::u16",
-          "id": "0x636f736d657469635f70726f626162696c697479",
-          "feltLength": 1
-        },
-        {
           "name": "token_cap",
           "type": "core::integer::u16",
           "id": "0x746f6b656e5f636170",
           "feltLength": 1
+        },
+        {
+          "name": "lords_amounts",
+          "type": "world_native::relics::LordsAmounts",
+          "id": "0x6c6f7264735f616d6f756e7473",
+          "feltLength": 4
+        },
+        {
+          "name": "lords_pool",
+          "type": "core::integer::u128",
+          "id": "0x6c6f7264735f706f6f6c",
+          "feltLength": 1
+        },
+        {
+          "name": "season_epochs",
+          "type": "core::integer::u16",
+          "id": "0x736561736f6e5f65706f636873",
+          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 3,
+      "valueLength": 8,
       "derivedFrom": "preset"
+    },
+    {
+      "name": "LordsBudget",
+      "identity": "0x4c6f726473427564676574",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "lords_committed",
+          "type": "core::integer::u128",
+          "id": "0x6c6f7264735f636f6d6d6974746564",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1
     },
     {
       "name": "ChestPity",
@@ -2971,10 +3005,16 @@
           "type": "core::integer::u8",
           "id": "0x7175616c697479",
           "feltLength": 1
+        },
+        {
+          "name": "lords_exhausted",
+          "type": "core::bool",
+          "id": "0x6c6f7264735f657868617573746564",
+          "feltLength": 1
         }
       ],
       "keyLength": 3,
-      "valueLength": 6
+      "valueLength": 7
     },
     {
       "name": "RelicDiscovery",
@@ -7015,6 +7055,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::relics::LordsBudget>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::relics::LordsBudget>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::relics::LordsBudget"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::resources::ResourceAmount>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::resources::ResourceAmount>",
@@ -10682,7 +10736,7 @@
           "type": "()"
         },
         {
-          "name": "Cosmetic",
+          "name": "Reserved",
           "type": "()"
         },
         {
@@ -10740,6 +10794,10 @@
         {
           "name": "quality",
           "type": "core::integer::u8"
+        },
+        {
+          "name": "lords_exhausted",
+          "type": "core::bool"
         }
       ]
     },
@@ -10752,12 +10810,52 @@
           "type": "core::integer::u16"
         },
         {
-          "name": "cosmetic_probability",
+          "name": "token_cap",
           "type": "core::integer::u16"
         },
         {
-          "name": "token_cap",
+          "name": "lords_amounts",
+          "type": "world_native::relics::LordsAmounts"
+        },
+        {
+          "name": "lords_pool",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "season_epochs",
           "type": "core::integer::u16"
+        }
+      ]
+    },
+    "world_native::relics::LordsAmounts": {
+      "type": "struct",
+      "name": "world_native::relics::LordsAmounts",
+      "members": [
+        {
+          "name": "common",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "uncommon",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "rare",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "epic",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::relics::LordsBudget": {
+      "type": "struct",
+      "name": "world_native::relics::LordsBudget",
+      "members": [
+        {
+          "name": "lords_committed",
+          "type": "core::integer::u128"
         }
       ]
     },
@@ -12626,5 +12724,5 @@
       ]
     }
   },
-  "identity": "10191df77594bed8cb19b001ddec6237b3f50333c11f740f7703417a249cc01c"
+  "identity": "986878e8512fdb691df7a43669c47e3e1c7eac5e72f44bc6fdb0100039c653a7"
 }

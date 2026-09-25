@@ -136,8 +136,16 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
     expected: { explorer_id: 7n, offer_id: 9n, source: "Relic", attribute: "Logistics", applied: 2n, lost: 1n },
   },
   ChestReward: {
-    fields: [17, 7, 3, 2, 2, 3],
-    expected: { player: 17n, explorer_id: 7n, epoch: 3n, depth: 2n, kind: "Token", quality: 3n },
+    fields: [17, 7, 3, 2, 2, 3, 0],
+    expected: {
+      player: 17n,
+      explorer_id: 7n,
+      epoch: 3n,
+      depth: 2n,
+      kind: "Token",
+      quality: 3n,
+      lords_exhausted: false,
+    },
   },
   ExplorerCreateStory: {
     fields: [7, 3, 1, 2, 100, 4],

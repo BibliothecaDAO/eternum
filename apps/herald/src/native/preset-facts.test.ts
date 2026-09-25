@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { CallData, CairoOption, CairoOptionVariant, hash, type Abi } from "starknet";
+import { CallData, CairoCustomEnum, CairoOption, CairoOptionVariant, hash, type Abi } from "starknet";
 import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
 import { LiveWorld } from "../live-world";
@@ -62,6 +62,36 @@ function applyRegistration(world: ReturnType<typeof setup>, preset: ReturnType<t
 }
 
 describe("verified preset configuration facts", () => {
+  it("reads each Token rarity in whole LORDS from the game-pinned table", () => {
+    const world = setup();
+    const preset = registration();
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const rules = world.fold.gameRows("ChestRules", "1")[0]!.value;
+    const amounts = rules.lords_amounts as Record<string, string>;
+    const qualities = ["common", "uncommon", "rare", "epic"];
+    const events = qualities.map((_, quality) =>
+      rowEvent("ChestReward", ["1", "12", String(quality)], {
+        player: "0x111",
+        explorer_id: 7,
+        epoch: 3,
+        depth: 0,
+        kind: new CairoCustomEnum({ Token: {} }),
+        quality,
+        lords_exhausted: false,
+      }),
+    );
+    world.native.applyReceipt(world.fold, receipt(events), 12, 0);
+    const won = world.fold
+      .gameRows("ChestReward", "1")
+      .map(({ value }) => ({
+        quality: Number(value.quality),
+        amount: BigInt(amounts[qualities[Number(value.quality)]]),
+      }))
+      .sort((a, b) => a.quality - b.quality);
+    expect(won.map(({ amount }) => amount)).toEqual([100n, 400n, 1500n, 6000n]);
+  });
+
   it("derives the complete launch config, preserving the chain's overrides", () => {
     const world = setup();
     const preset = registration();
