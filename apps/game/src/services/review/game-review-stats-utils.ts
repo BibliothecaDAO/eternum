@@ -1,5 +1,5 @@
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 
 export interface GameReviewValueMetric {
   playerAddress: string;
@@ -10,7 +10,6 @@ export interface GameReviewValueMetric {
 interface GameReviewDerivedMetrics {
   timeToFirstT3Seconds: GameReviewValueMetric | null;
   timeToFirstHyperstructureSeconds: GameReviewValueMetric | null;
-  firstBlood: GameReviewValueMetric | null;
   mostTroopsKilled: GameReviewValueMetric | null;
   biggestStructuresOwned: GameReviewValueMetric | null;
 }
@@ -41,11 +40,21 @@ const number = (value: unknown): number => {
   return Number.isFinite(result) ? result : 0;
 };
 
-const scaled = (value: unknown): number => number(value) / RESOURCE_PRECISION;
-
-const bool = (value: unknown): boolean => value === true || value === 1n || value === "0x1" || value === 1;
-
 const story = (event: HeraldHistoryEvent, variant: string): Row | null => record(record(event.value.story)?.[variant]);
+
+/** A native battle's troop losses per side, as the chain records them in BattleEvent: each side's before less after. */
+export const readBattleLosses = (event: HeraldHistoryEvent) => {
+  if (event.model !== "BattleEvent") return null;
+  const attacker = record(event.value.attacker);
+  const defender = record(event.value.defender);
+  if (!attacker || !defender) return null;
+  return {
+    attacker: address(attacker.player),
+    defender: address(defender.player),
+    attackerLost: (number(attacker.before) - number(attacker.after)) / RESOURCE_PRECISION,
+    defenderLost: (number(defender.before) - number(defender.after)) / RESOURCE_PRECISION,
+  };
+};
 
 const firstMetric = (
   events: readonly HeraldHistoryEvent[],
@@ -88,37 +97,24 @@ export const buildGameReviewDerivedMetrics = (input: {
     return creation && owner && (tier === "T3" || tier === "2" || tier === "3") ? { owner, timestamp } : null;
   });
 
+  // A capture story names the new owner; the structure's category comes from its row, which a capture never changes.
+  const categories = new Map(
+    input.structures.map((structure) => [number(structure.entity_id), number(record(structure.base)?.category)]),
+  );
   const timeToFirstHyperstructureSeconds = firstMetric(input.storyEvents, input.gameStartAt, (event) => {
-    const battle = story(event, "BattleStory");
-    const defender = record(battle?.defender_structure);
-    const owner = address(battle?.attacker_owner_address);
-    const category = number(defender?.structure_category);
+    const capture = story(event, "StructureCapturedStory");
+    const owner = address(capture?.new_owner);
+    const category = categories.get(number(event.value.entity_id));
     const timestamp = number(event.value.timestamp);
-    return battle && owner && bool(defender?.structure_taken) && category === 2 ? { owner, timestamp } : null;
-  });
-
-  const firstBlood = firstMetric(input.storyEvents, input.gameStartAt, (event) => {
-    const battle = story(event, "BattleStory");
-    const defender = record(battle?.defender_structure);
-    const attacker = address(battle?.attacker_owner_address);
-    const defenderOwner = address(battle?.defender_owner_address);
-    const timestamp = number(event.value.timestamp);
-    return battle &&
-      attacker &&
-      defenderOwner &&
-      attacker !== defenderOwner &&
-      bool(defender?.structure_taken) &&
-      number(defender?.structure_category) === 1
-      ? { owner: attacker, timestamp }
-      : null;
+    return capture && owner && category === StructureType.Hyperstructure ? { owner, timestamp } : null;
   });
 
   const kills = new Map<string, number>();
   for (const event of input.storyEvents) {
-    const battle = story(event, "BattleStory");
-    if (!battle) continue;
-    increment(kills, address(battle.attacker_owner_address), scaled(battle.defender_troops_lost));
-    increment(kills, address(battle.defender_owner_address), scaled(battle.attacker_troops_lost));
+    const losses = readBattleLosses(event);
+    if (!losses) continue;
+    increment(kills, losses.attacker, losses.defenderLost);
+    increment(kills, losses.defender, losses.attackerLost);
   }
 
   const structures = new Map<string, number>();
@@ -127,7 +123,6 @@ export const buildGameReviewDerivedMetrics = (input: {
   return {
     timeToFirstT3Seconds,
     timeToFirstHyperstructureSeconds,
-    firstBlood,
     mostTroopsKilled: topMetric(kills),
     biggestStructuresOwned: topMetric(structures),
   };

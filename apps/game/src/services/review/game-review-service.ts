@@ -18,7 +18,7 @@ import {
 import type { HeraldGameSnapshot, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
-import { buildGameReviewDerivedMetrics, type GameReviewValueMetric } from "./game-review-stats-utils";
+import { buildGameReviewDerivedMetrics, readBattleLosses, type GameReviewValueMetric } from "./game-review-stats-utils";
 
 const HISTORY_PAGE_SIZE = 500;
 const MAX_MAP_SNAPSHOT_TILES = 4_200;
@@ -49,7 +49,6 @@ export interface GameReviewStats {
   totalT3TroopsCreated: number;
   timeToFirstT3Seconds: GameReviewValueMetric | null;
   timeToFirstHyperstructureSeconds: GameReviewValueMetric | null;
-  firstBlood: GameReviewValueMetric | null;
   highestExploredTiles: GameReviewValueMetric | null;
   mostTroopsKilled: GameReviewValueMetric | null;
   biggestStructuresOwned: GameReviewValueMetric | null;
@@ -186,10 +185,9 @@ const buildFinalization = (source: ReviewSource): ReviewFinalizationMeta => {
 const buildStoryStats = (events: readonly HeraldHistoryEvent[]) => {
   const totals = { totalDeadTroops: 0, totalT1TroopsCreated: 0, totalT2TroopsCreated: 0, totalT3TroopsCreated: 0 };
   for (const event of events) {
-    const battle = story(event, "BattleStory");
-    if (battle) {
-      totals.totalDeadTroops +=
-        (toNumber(battle.attacker_troops_lost) + toNumber(battle.defender_troops_lost)) / RESOURCE_PRECISION;
+    const losses = readBattleLosses(event);
+    if (losses) {
+      totals.totalDeadTroops += losses.attackerLost + losses.defenderLost;
       continue;
     }
     const creation = story(event, "ExplorerCreateStory");

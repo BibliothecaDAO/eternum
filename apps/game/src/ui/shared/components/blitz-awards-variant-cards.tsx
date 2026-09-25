@@ -1,4 +1,4 @@
-import { Hyperstructure, Swords, ChevronsUp } from "@/ui/design-system/atoms/game-icons";
+import { Hyperstructure, ChevronsUp } from "@/ui/design-system/atoms/game-icons";
 import { forwardRef, useMemo, useState, type Ref } from "react";
 import { createPortal } from "react-dom";
 
@@ -22,14 +22,13 @@ type MetricValue = {
 
 type AwardId =
   | "first-hyperstructure"
-  | "first-blood"
   | "first-t3"
   | "most-troops-killed"
   | "highest-explored-tiles"
   | "biggest-structures-owned";
 
 type AwardKind = "time" | "count";
-type OptionSixMetricIconId = "first-hyperstructure" | "first-blood" | "first-t3";
+type OptionSixMetricIconId = "first-hyperstructure" | "first-t3";
 
 type AwardsCardVariant =
   | "option-one"
@@ -140,7 +139,7 @@ const getOptionSixValueSizeClass = (value: string): string => {
 };
 
 const getOptionSixMetricIconId = (awardId: AwardId): OptionSixMetricIconId | null => {
-  if (awardId === "first-hyperstructure" || awardId === "first-blood" || awardId === "first-t3") {
+  if (awardId === "first-hyperstructure" || awardId === "first-t3") {
     return awardId;
   }
   return null;
@@ -148,7 +147,6 @@ const getOptionSixMetricIconId = (awardId: AwardId): OptionSixMetricIconId | nul
 
 const OptionSixMetricIcon = ({ iconId }: { iconId: OptionSixMetricIconId }) => {
   if (iconId === "first-hyperstructure") return <Hyperstructure />;
-  if (iconId === "first-blood") return <Swords />;
   return <ChevronsUp />;
 };
 
@@ -323,10 +321,6 @@ const OPTION_ONE_STYLES = `
     grid-row: 1 / span 2;
   }
 
-  .blitz-card-root.variant-option-one .award-first-blood {
-    grid-column: 8 / span 5;
-    grid-row: 1;
-  }
 
   .blitz-card-root.variant-option-one .award-first-t3 {
     grid-column: 8 / span 5;
@@ -350,7 +344,6 @@ const OPTION_ONE_STYLES = `
   }
 
   .blitz-card-root.variant-option-one .award-first-hyperstructure,
-  .blitz-card-root.variant-option-one .award-first-blood,
   .blitz-card-root.variant-option-one .award-first-t3 {
     border: 1px solid rgba(237, 182, 74, 0.26);
     border-radius: 14px;
@@ -400,17 +393,12 @@ const OPTION_TWO_STYLES = `
     justify-content: center;
   }
 
-  .blitz-card-root.variant-option-two .award-first-blood {
-    grid-column: 1 / span 4;
-    grid-row: 2;
-  }
 
   .blitz-card-root.variant-option-two .award-first-t3 {
     grid-column: 9 / span 4;
     grid-row: 2;
   }
 
-  .blitz-card-root.variant-option-two .award-first-blood,
   .blitz-card-root.variant-option-two .award-first-t3 {
     transform: translateY(-26px);
     border: 1px solid rgba(237, 182, 74, 0.2);
@@ -470,11 +458,6 @@ const OPTION_THREE_STYLES = `
     padding-top: 6px;
   }
 
-  .blitz-card-root.variant-option-three .award-first-blood {
-    grid-column: 8 / span 5;
-    grid-row: 1;
-    padding-top: 4px;
-  }
 
   .blitz-card-root.variant-option-three .award-first-t3 {
     grid-column: 8 / span 5;
@@ -483,7 +466,6 @@ const OPTION_THREE_STYLES = `
     margin-top: -12px;
   }
 
-  .blitz-card-root.variant-option-three .award-first-blood,
   .blitz-card-root.variant-option-three .award-first-t3 {
     padding-left: 16px;
     transform: translateX(18px);
@@ -616,12 +598,6 @@ const OPTION_FOUR_STYLES = `
     text-overflow: clip;
   }
 
-  .blitz-card-root.variant-option-four .award-first-blood {
-    grid-column: 8 / span 5;
-    grid-row: 1;
-    padding-top: 12px;
-    padding-left: 8px;
-  }
 
   .blitz-card-root.variant-option-four .award-most-troops-killed {
     grid-column: 1 / span 4;
@@ -743,11 +719,6 @@ const OPTION_FIVE_STYLES = `
     padding-left: 8px;
   }
 
-  .blitz-card-root.variant-option-five .award-first-blood {
-    grid-column: 1 / span 4;
-    grid-row: 2;
-    align-self: end;
-  }
 
   .blitz-card-root.variant-option-five .award-first-t3 {
     grid-column: 5 / span 3;
@@ -859,10 +830,6 @@ const OPTION_SIX_STYLES = `
     grid-row: 1;
   }
 
-  .blitz-card-root.variant-option-six .award-first-blood {
-    grid-column: 2;
-    grid-row: 1;
-  }
 
   .blitz-card-root.variant-option-six .award-first-t3 {
     grid-column: 3;
@@ -870,7 +837,6 @@ const OPTION_SIX_STYLES = `
   }
 
   .blitz-card-root.variant-option-six .award-first-hyperstructure,
-  .blitz-card-root.variant-option-six .award-first-blood,
   .blitz-card-root.variant-option-six .award-first-t3 {
     border: none;
     border-radius: 0;
@@ -908,9 +874,6 @@ const OPTION_SIX_STYLES = `
     color: #f5d898;
   }
 
-  .blitz-card-root.variant-option-six .award-index-first-blood {
-    color: #f0c26c;
-  }
 
   .blitz-card-root.variant-option-six .award-index-first-t3 {
     color: #e9b85c;
@@ -996,10 +959,6 @@ const OPTION_SEVEN_STYLES = `
     pointer-events: none;
   }
 
-  .blitz-card-root.variant-option-seven .award-first-blood {
-    grid-column: 1 / span 4;
-    grid-row: 1;
-  }
 
   .blitz-card-root.variant-option-seven .award-first-t3 {
     grid-column: 5 / span 4;
@@ -1012,7 +971,6 @@ const OPTION_SEVEN_STYLES = `
   }
 
   .blitz-card-root.variant-option-seven .award-first-hyperstructure,
-  .blitz-card-root.variant-option-seven .award-first-blood,
   .blitz-card-root.variant-option-seven .award-first-t3 {
     position: relative;
     border: 1px solid rgba(237, 182, 74, 0.3);
@@ -1022,7 +980,6 @@ const OPTION_SEVEN_STYLES = `
     justify-content: center;
   }
 
-  .blitz-card-root.variant-option-seven .award-first-blood::after,
   .blitz-card-root.variant-option-seven .award-first-hyperstructure::after,
   .blitz-card-root.variant-option-seven .award-first-t3::after {
     content: "";
@@ -1036,7 +993,6 @@ const OPTION_SEVEN_STYLES = `
     transform: translateX(-50%);
   }
 
-  .blitz-card-root.variant-option-seven .award-first-blood::after,
   .blitz-card-root.variant-option-seven .award-first-hyperstructure::after {
     bottom: -42px;
   }
@@ -1089,10 +1045,6 @@ const OPTION_EIGHT_STYLES = `
     grid-row: 1 / span 2;
   }
 
-  .blitz-card-root.variant-option-eight .award-first-blood {
-    grid-column: 9 / span 4;
-    grid-row: 1;
-  }
 
   .blitz-card-root.variant-option-eight .award-first-t3 {
     grid-column: 9 / span 4;
@@ -1100,7 +1052,6 @@ const OPTION_EIGHT_STYLES = `
   }
 
   .blitz-card-root.variant-option-eight .award-first-hyperstructure,
-  .blitz-card-root.variant-option-eight .award-first-blood,
   .blitz-card-root.variant-option-eight .award-first-t3 {
     border: 1px solid rgba(237, 182, 74, 0.3);
     border-radius: 20px;
@@ -1187,12 +1138,6 @@ const BlitzAwardsVariantCard = forwardRef<SVGSVGElement, BlitzAwardsVariantCardP
           metric: stats.timeToFirstHyperstructureSeconds,
         },
         {
-          id: "first-blood",
-          label: "First Blood",
-          kind: "time",
-          metric: stats.firstBlood,
-        },
-        {
           id: "first-t3",
           label: "First T3 Troops",
           kind: "time",
@@ -1219,9 +1164,7 @@ const BlitzAwardsVariantCard = forwardRef<SVGSVGElement, BlitzAwardsVariantCardP
       ];
 
       if (variant === "option-six" || variant === "option-seven" || variant === "option-eight") {
-        return baseAwards.filter(
-          (award) => award.id === "first-hyperstructure" || award.id === "first-blood" || award.id === "first-t3",
-        );
+        return baseAwards.filter((award) => award.id === "first-hyperstructure" || award.id === "first-t3");
       }
 
       if (variant === "option-four" || variant === "option-five") {
@@ -1262,11 +1205,9 @@ const BlitzAwardsVariantCard = forwardRef<SVGSVGElement, BlitzAwardsVariantCardP
             {awards.map((award, index) => {
               const winner = winnersByAward[index];
               const isEmpty = award.metric == null;
-              const isHighlightValue =
-                (award.id === "first-blood" || award.id === "first-t3" || award.id === "first-hyperstructure") &&
-                !isEmpty;
+              const isHighlightValue = (award.id === "first-t3" || award.id === "first-hyperstructure") && !isEmpty;
               const isHero = award.id === "first-hyperstructure";
-              const isSide = award.id === "first-blood" || award.id === "first-t3";
+              const isSide = award.id === "first-t3";
               const isNoT3 = award.id === "first-t3" && isEmpty;
               const rawDisplayValue = isNoT3
                 ? "None"

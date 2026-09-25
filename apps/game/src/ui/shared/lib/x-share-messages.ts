@@ -152,7 +152,6 @@ export const buildGameReviewStepShareMessage = ({
 
     return [
       `${worldLabel} Blitz Awards on @realmsgg:`,
-      `First Blood: ${resolveWinnerName(data.stats.firstBlood, formatDuration)}`,
       `First T3 Troops: ${resolveWinnerName(data.stats.timeToFirstT3Seconds, formatDuration)}`,
       `First Hyperstructure: ${resolveWinnerName(data.stats.timeToFirstHyperstructureSeconds, formatDuration)}`,
       ...(includeOnlyTimeMetrics
