@@ -82,8 +82,7 @@ pub fn climate(config: BiomeClimateConfig, coord: Coord, start: u64, seconds: u3
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct DepthRules {
-    // The wire field retains its name; its value is a reveal percentage of scaled troop strength.
-    pub supply_multiplier: u16,
+    pub reveal_percent: u16,
     pub guard_lower: u16,
     pub guard_upper: u16,
     pub mine_cap_min: u128,

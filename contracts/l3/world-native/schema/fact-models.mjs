@@ -1155,7 +1155,7 @@ const behaviouralFacts = {
   DepthRules: {
     domain: "expedition",
     fields: {
-      supplies: "supply_multiplier",
+      revealPercent: "reveal_percent",
       guardLower: "guard_lower",
       guardUpper: "guard_upper",
       mineMinimum: "mine_cap_min",

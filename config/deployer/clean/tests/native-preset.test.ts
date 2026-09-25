@@ -138,7 +138,7 @@ describe("native presets", () => {
       expect(generated.blitz.exploration.rewards).toEqual([]);
       const preset = buildNativePreset(generated, id);
       expect(preset.exploration).toEqual([]);
-      expect(preset.settlement.depths.map(({ supply_multiplier }) => supply_multiplier)).toEqual([10, 15, 20, 25]);
+      expect(preset.settlement.depths.map(({ reveal_percent }) => reveal_percent)).toEqual([10, 15, 20, 25]);
     }
     for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).exploration.length).toBeGreaterThan(0);
   });

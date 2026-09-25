@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "2724f221f7f8d598e0e316fd1316c87e43a03b9a3026f6764ff20941f007f988";
+export const nativeFactSchemaIdentity = "40bdb71c3580090632be9b14ab319640d44bf282b04c643496da9eedcd585ac0";
 export const nativeRuleConstants = {
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
@@ -109,7 +109,7 @@ export interface NativeRows {
   ResourceRule: { readonly game_id: number; readonly resource_type: number; readonly unit_weight: bigint; readonly realm_rate: bigint; readonly village_rate: bigint };
   UpgradeLimits: { readonly game_id: number; readonly realm_max: number; readonly village_max: number };
   UpgradeRecipe: { readonly game_id: number; readonly level: number; readonly costs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
-  DepthRules: { readonly game_id: number; readonly depth: number; readonly supply_multiplier: number; readonly guard_lower: number; readonly guard_upper: number; readonly mine_cap_min: bigint; readonly mine_cap_max: bigint; readonly mine_rate: bigint; readonly mine_chest: boolean; readonly reveal_site_neighbors: boolean; readonly entry_stamina: number; readonly attunement_cost: bigint; readonly chest: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly pity: number } };
+  DepthRules: { readonly game_id: number; readonly depth: number; readonly reveal_percent: number; readonly guard_lower: number; readonly guard_upper: number; readonly mine_cap_min: bigint; readonly mine_cap_max: bigint; readonly mine_rate: bigint; readonly mine_chest: boolean; readonly reveal_site_neighbors: boolean; readonly entry_stamina: number; readonly attunement_cost: bigint; readonly chest: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly pity: number } };
   GameRelease: { readonly game_id: number; readonly release_id: number; readonly preset_commitment: bigint };
   GameRegistry: { readonly game_id: number; readonly name: bigint; readonly preset_id: number; readonly creator: bigint; readonly settled: boolean; readonly ready: boolean; readonly dev_mode_on: boolean; readonly start_settling_at: bigint; readonly start_main_at: bigint; readonly end_at: bigint; readonly end_grace_seconds: number; readonly seed: bigint };
   GameOverrides: { readonly game_id: number; readonly registration_start: number; readonly biome_climate: { readonly elevation_scale_bps: number; readonly moisture_scale_bps: number; readonly elevation_bias_bps: number; readonly moisture_bias_bps: number; readonly elevation_seed: number; readonly moisture_seed: number }; readonly map: ({ readonly shards_mines_win_probability: number; readonly shards_mines_fail_probability: number; readonly camp_win_probability: number; readonly camp_fail_probability: number; readonly holysite_win_probability: number; readonly holysite_fail_probability: number; readonly bitcoin_mine_win_probability: number; readonly bitcoin_mine_fail_probability: number; readonly hyps_win_prob: number; readonly hyps_fail_prob: number; readonly hyps_fail_prob_increase_p_hex: number; readonly hyps_fail_prob_increase_p_fnd: number; readonly relic_discovery_interval_sec: number; readonly relic_hex_dist_from_center: number; readonly relic_chest_relics_per_chest: number }) | null; readonly map_center_offset: number };
@@ -1512,7 +1512,7 @@ export const nativeFactModels = {
     "fields": {
       "game_id": "u32",
       "depth": "u8",
-      "supply_multiplier": "u16",
+      "reveal_percent": "u16",
       "guard_lower": "u16",
       "guard_upper": "u16",
       "mine_cap_min": "u128",

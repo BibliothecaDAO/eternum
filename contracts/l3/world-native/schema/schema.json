@@ -5411,9 +5411,9 @@
       ],
       "members": [
         {
-          "name": "supply_multiplier",
+          "name": "reveal_percent",
           "type": "core::integer::u16",
-          "id": "0x737570706c795f6d756c7469706c696572",
+          "id": "0x72657665616c5f70657263656e74",
           "feltLength": 1
         },
         {
@@ -5482,7 +5482,7 @@
       "observation": {
         "domain": "expedition",
         "fields": {
-          "supplies": "supply_multiplier",
+          "revealPercent": "reveal_percent",
           "guardLower": "guard_lower",
           "guardUpper": "guard_upper",
           "mineMinimum": "mine_cap_min",
@@ -8093,7 +8093,7 @@
       "name": "world_native::expeditions::DepthRules",
       "members": [
         {
-          "name": "supply_multiplier",
+          "name": "reveal_percent",
           "type": "core::integer::u16"
         },
         {
@@ -11837,5 +11837,5 @@
       ]
     }
   },
-  "identity": "2724f221f7f8d598e0e316fd1316c87e43a03b9a3026f6764ff20941f007f988"
+  "identity": "40bdb71c3580090632be9b14ab319640d44bf282b04c643496da9eedcd585ac0"
 }

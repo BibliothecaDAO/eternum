@@ -311,7 +311,7 @@ fn write_depths(preset: PresetWrite, rules: crate::rules::SliceRules, depths: Sp
         );
         assert!(ground.pity != 0, "zero relic pity threshold");
         assert!(index != 0 || (value.entry_stamina == 0 && value.attunement_cost == 0), "surface needs no attunement");
-        assert!(value.supply_multiplier != 0 && value.supply_multiplier <= 100, "invalid reveal percentage");
+        assert!(value.reveal_percent != 0 && value.reveal_percent <= 100, "invalid reveal percentage");
         assert!(value.guard_lower < value.guard_upper, "invalid depth guards");
         assert!(value.mine_cap_min != 0 && value.mine_cap_min <= value.mine_cap_max, "invalid depth mine cap");
         assert!(value.mine_rate != 0, "zero depth mine rate");

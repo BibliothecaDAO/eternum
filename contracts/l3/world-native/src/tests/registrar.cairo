@@ -1437,7 +1437,7 @@ fn assert_capture_with_reveal(depth: u8, count: u128, tier: crate::troops::Troop
         depths
             .append(
                 crate::expeditions::DepthRules {
-                    supply_multiplier: 10 + index * 5,
+                    reveal_percent: 10 + index * 5,
                     guard_lower: index + 1,
                     guard_upper: index + 2,
                     mine_cap_min: if index == 0 {
@@ -1691,7 +1691,7 @@ fn depth_entry_requires_attunement_and_spends_only_the_selected_depth_stamina() 
         depths
             .append(
                 crate::expeditions::DepthRules {
-                    supply_multiplier: depth + 1,
+                    reveal_percent: depth + 1,
                     guard_lower: depth + 1,
                     guard_upper: depth + 2,
                     mine_cap_min: 100 * RESOURCE_PRECISION,
@@ -1880,7 +1880,7 @@ fn reveal_chests_pay_once_record_capped_claims_and_expire_army_relics_at_rollove
         depths
             .append(
                 crate::expeditions::DepthRules {
-                    supply_multiplier: 1,
+                    reveal_percent: 1,
                     guard_lower: 1,
                     guard_upper: 2,
                     mine_cap_min: RESOURCE_PRECISION,

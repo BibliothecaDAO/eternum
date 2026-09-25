@@ -70,6 +70,9 @@ describe("verified preset configuration facts", () => {
     expect(world.fold.gameRows("ResourceRule", "1")).toHaveLength(58);
     expect(world.fold.gameRows("ProductionRecipe", "1")).toHaveLength(58);
     expect(world.fold.gameRows("BuildingRule", "1")).toHaveLength(40);
+    const depths = world.fold.gameRows("DepthRules", "1").map(({ value }) => value);
+    expect(depths.map((row) => Number(row.reveal_percent))).toEqual([10, 15, 20, 25]);
+    expect(depths.every((row) => !Object.hasOwn(row, "supply_multiplier"))).toBe(true);
     expect(world.fold.gameRows("GameOverrides", "1")).toHaveLength(1);
     for (const scope of [undefined, {}, world.fold.subscriptionScope("1", "0x123", 1234)]) {
       const snapshot = world.fold.snapshot(1, 11, undefined, scope);

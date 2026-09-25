@@ -406,7 +406,7 @@ pub mod MapLogic {
                 crate::exploration_rewards::reveal_reward(
                     explorer.troops,
                     rules.troop_limit_config,
-                    crate::logic::expeditions::depth_rules_at(game_id, coord).supply_multiplier,
+                    crate::logic::expeditions::depth_rules_at(game_id, coord).reveal_percent,
                     seed,
                     context.timestamp,
                 )
