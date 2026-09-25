@@ -5,6 +5,7 @@ import { SecondaryMenuItems } from "@/ui/features/world";
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import { type CSSProperties, useEffect, useState } from "react";
 import { FrontierPick } from "./attributes/frontier-pick";
+import { TodayCard } from "./log/today-card";
 import { ChestMomentView } from "./chest/chest-moment-view";
 import { useChestResults } from "./chest/chest-results";
 import { SiteClearCardView } from "./sites/site-clear-card";
@@ -62,6 +63,7 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
             <LogToggle
               open={logOpen}
               onToggle={() => setLogOpen((open) => !open)}
+              header={<TodayCard rules={rules} />}
               className="size-11 justify-center rounded-full border border-gold/25 bg-black/50 lg:size-9"
             >
               <ScrollText className="size-5" />

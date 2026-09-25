@@ -48,11 +48,14 @@ export const LogToggle = ({
   open,
   onToggle,
   className,
+  header,
   children,
 }: {
   open: boolean;
   onToggle: () => void;
   className?: string;
+  /** What the log opens on above its rows. */
+  header?: React.ReactNode;
   children: React.ReactNode;
 }) => {
   const { rows } = useImportantFeed();
@@ -73,6 +76,7 @@ export const LogToggle = ({
       </button>
       {open && (
         <EventLogPanel
+          header={header}
           onDismiss={onToggle}
           isInsideAnchor={(target) => target instanceof Node && Boolean(button.current?.contains(target))}
         />
