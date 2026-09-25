@@ -10,6 +10,7 @@ export * from "./canonical-realm";
 export * from "./building-ring";
 export * from "./castle-reach";
 export * from "./combat-exchange";
+export * from "./reveal-yield";
 export * from "./combat-simulator";
 export * from "./constants";
 export * from "./entities";

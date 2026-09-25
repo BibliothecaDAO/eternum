@@ -16,6 +16,7 @@ import type { NativeFactStore } from "../client/native-fact-store";
 import { buildingCostModeOf, type BuildingCostMode } from "../utils/building-cost-mode";
 import { enabledHelpTransfers, type HelpTransfer } from "../utils/army-help";
 import { isModeRuleEnabled } from "../utils/mode-rules";
+import { tierStrength } from "../utils/tier-strength";
 import { hasEnabledProductionPath } from "../utils/production-path";
 import { troopStaminaLimits } from "./troop-stamina";
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
@@ -243,6 +244,11 @@ export class ClientConfigManager {
     const rules = this.rules();
     return (defenderAlt && isModeRuleEnabled(rules, "COMBAT_DICE_ETHEREAL")) || isModeRuleEnabled(rules, "COMBAT_DICE");
   }
+  /** Whether a new reveal pays from the army's strength and depth (Frontier's reveal supplies) rather than the drawn
+   *  exploration reward. */
+  paysRevealSupplies(): boolean {
+    return isModeRuleEnabled(this.rules(), "REVEAL_SUPPLIES");
+  }
   /** Whether terrain changes combat in this game at all; where it does not, no surface shows biome bonuses. */
   hasBiomeCombatEffects(): boolean {
     return this.rules().troop_damage_config.damage_biome_bonus_num > 0;
@@ -376,8 +382,7 @@ export class ClientConfigManager {
     return slots;
   }
   getTierStrength(tier: TroopTier): number {
-    const config = this.rules().troop_limit_config;
-    return [config.t1_tier_strength, config.t2_tier_strength, config.t3_tier_strength][troopTierIndex(tier)];
+    return tierStrength(tier, this.rules().troop_limit_config);
   }
   getMaxArmySize(level: number, tier: TroopTier): number {
     const config = this.rules().troop_limit_config;

@@ -36,6 +36,13 @@ export const readExpeditionRules = (
 export const expeditionEpoch = (rules: ExpeditionRules, nowSeconds: number): number =>
   Math.floor(nowSeconds / rules.epochSeconds) - Math.floor(rules.startMainAt / rules.epochSeconds);
 
+/** The expedition map is laid out in bands of `spacing` rows, four per day: surface, then Ethereal I to III. */
+const expeditionBand = (rules: ExpeditionRules, coord: { y: number }): number => Math.floor(coord.y / rules.spacing);
+
+/** The depth a tile of the expedition map lies at, as the contract's depth_rules_at reads it. */
+export const expeditionDepth = (rules: ExpeditionRules, coord: { y: number }): number =>
+  expeditionBand(rules, coord) % 4;
+
 /** When today's expedition ends: the next UTC epoch boundary, where the contract rolls every army and site over. */
 export const expeditionDayEndsAt = (rules: ExpeditionRules, nowSeconds: number): number =>
   (Math.floor(nowSeconds / rules.epochSeconds) + 1) * rules.epochSeconds;
@@ -51,7 +58,7 @@ export const isCurrentExpeditionArmy = (
 ): boolean =>
   !coord.alt &&
   nowSeconds >= rules.startMainAt &&
-  Math.floor(Math.floor(coord.y / rules.spacing) / 4) === expeditionEpoch(rules, nowSeconds);
+  Math.floor(expeditionBand(rules, coord) / 4) === expeditionEpoch(rules, nowSeconds);
 
 /**
  * A structure's living field armies: troops left and, in a game with expeditions, standing in today's region. An army

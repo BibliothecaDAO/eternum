@@ -1,4 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { MusterRevealYield } from "@/ui/features/frontier/frontier-reveal-yield";
 import { useOwnedMilitaryStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
@@ -155,6 +156,7 @@ export const UnifiedArmyCreationBody = ({
                 <p className="px-1 py-1 text-[11px] text-gold/70">{form.troopTrainingLine}</p>
               </>
             )}
+            <MusterRevealYield tier={form.selectedTroopCombo.tier} troopCount={form.troopCount} />
             {mode.ui.musterNotice && (
               <>
                 <div className="border-t border-gold/15" />

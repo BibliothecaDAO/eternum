@@ -52,16 +52,16 @@ describe("openSpawnDirections", () => {
 });
 
 describe("armyStrength", () => {
-  const damage = { t2_damage_multiplier: 3n << 64n, t3_damage_multiplier: 9n << 64n } as never;
+  const limits = { t1_tier_strength: 1, t2_tier_strength: 3, t3_tier_strength: 9 } as never;
   const troops = (tier: "T1" | "T2" | "T3", whole: bigint) => ({ tier, count: whole * 1_000_000_000n });
 
-  it("weighs whole troops by the tier's damage multiplier", () => {
-    expect(armyStrength(troops("T1", 1_500n), damage)).toBe(1_500);
-    expect(armyStrength(troops("T2", 500n), damage)).toBe(1_500);
-    expect(armyStrength(troops("T3", 1_000n), damage)).toBe(9_000);
+  it("weighs whole troops by the tier's strength", () => {
+    expect(armyStrength(troops("T1", 1_500n), limits)).toBe(1_500);
+    expect(armyStrength(troops("T2", 500n), limits)).toBe(1_500);
+    expect(armyStrength(troops("T3", 1_000n), limits)).toBe(9_000);
   });
 
   it("counts only whole troops, as combat does", () => {
-    expect(armyStrength({ tier: "T1", count: 1_999_999_999n }, damage)).toBe(1);
+    expect(armyStrength({ tier: "T1", count: 1_999_999_999n }, limits)).toBe(1);
   });
 });

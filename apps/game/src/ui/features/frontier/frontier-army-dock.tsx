@@ -16,6 +16,7 @@ import {
   armyStrength,
   configManager,
   entityMapPosition,
+  expeditionDepth,
   getArmyName,
   liveHomeArmies,
   Position,
@@ -24,6 +25,8 @@ import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-c
 import { useMemo } from "react";
 import { Sweep } from "@/ui/motion/sweep";
 import { formatAmount, formatClock } from "./frontier-format";
+import { useExpeditionRules } from "./frontier-home";
+import { formatRevealYield, useRevealYield } from "./frontier-reveal-yield";
 import { useMusterPointed } from "./guide/guide-pointer";
 
 const ARMY_MODELS = ["ExplorerTroops", "TileOccupancy", "EntityName"] as const;
@@ -65,7 +68,7 @@ const ArmyCard = ({ army, position }: { army: NativeRows["ExplorerTroops"]; posi
   const navigateToMapView = useNavigateToMapView();
   const selected = useUIStore((state) => state.entityActions.selectedEntityId === army.explorer_id);
   const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
-  const damage = configManager.getTroopConfig().troop_damage_config;
+  const limits = configManager.getTroopConfig().troop_limit_config;
   const snapshot = getExplorerStaminaSnapshot({
     entityId: army.explorer_id,
     currentArmiesTick,
@@ -102,12 +105,23 @@ const ArmyCard = ({ army, position }: { army: NativeRows["ExplorerTroops"]; posi
         {dockArmyName(setup.store, army.explorer_id, position)}
       </span>
       <span className="flex items-baseline gap-1">
-        <span className={cn(HUD_VALUE, "tabular-nums")}>{formatAmount(armyStrength(army.troops, damage))}</span>
+        <span className={cn(HUD_VALUE, "tabular-nums")}>{formatAmount(armyStrength(army.troops, limits))}</span>
         <span className={HUD_LABEL}>strength</span>
       </span>
       <StaminaBar stamina={stamina} />
+      <ArmyRevealYield army={army} />
     </button>
   );
+};
+
+/** What this army's next reveal sends home at the depth it stands on. */
+const ArmyRevealYield = ({ army }: { army: NativeRows["ExplorerTroops"] }) => {
+  const { setup } = useGame();
+  const rules = useExpeditionRules();
+  const coord = entityMapPosition(setup.store, configManager.getActiveGameId(), army.explorer_id);
+  const amount = useRevealYield(army.troops, rules ? expeditionDepth(rules, coord) : 0);
+  if (amount === null) return null;
+  return <span className={cn(HUD_LABEL, "tracking-normal")}>{formatRevealYield(amount)}</span>;
 };
 
 /**

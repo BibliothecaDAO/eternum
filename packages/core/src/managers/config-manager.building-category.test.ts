@@ -151,6 +151,15 @@ describe("native immutable configuration", () => {
     expect(withRules(base | nativeRuleConstants.COMBAT_DICE)).toEqual([true, true]);
   });
 
+  it("pays reveals from strength and depth only in a game with reveal supplies", () => {
+    const { manager, write } = fixture();
+    const base = preset.rules.mode_rules & ~nativeRuleConstants.REVEAL_SUPPLIES;
+    write("SliceRules", [54], { ...preset.rules, game_id: 54, mode_rules: base });
+    expect(manager.paysRevealSupplies()).toBe(false);
+    write("SliceRules", [54], { ...preset.rules, game_id: 54, mode_rules: base | nativeRuleConstants.REVEAL_SUPPLIES });
+    expect(manager.paysRevealSupplies()).toBe(true);
+  });
+
   it("reads whether terrain changes combat from the game's damage rule", () => {
     const { manager, write } = fixture();
     expect(manager.hasBiomeCombatEffects()).toBe(true);
