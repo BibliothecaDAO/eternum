@@ -251,6 +251,19 @@ class ShardTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "1 to 2000, campaign G's target"):
             shard.validate_shard_identity({**config, "player_capacity": shard.MAX_PLAYER_CAPACITY + 1})
 
+    def test_the_lock_appears_whole_names_its_holder_and_refuses_a_second_taker(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            lock = Path(temporary) / "isolated-stack.lock"
+            with shard.isolated_stack_lock("deploy staging", lock):
+                self.assertTrue(lock.read_text().startswith("deploy staging "))
+                with self.assertRaisesRegex(RuntimeError, "is held: deploy staging"):
+                    with shard.isolated_stack_lock("runner trial", lock):
+                        pass
+                self.assertTrue(lock.read_text().startswith("deploy staging "))
+            self.assertFalse(lock.exists())
+            # The holder text is drafted beside the lock and linked into place; no draft outlives either outcome.
+            self.assertEqual(list(Path(temporary).iterdir()), [])
+
     def test_docker_keeps_exactly_the_operator_token_through_sudo(self):
         # sudo resets the environment: without this the token never reaches initialization.
         preserved = [flag for flag in shard.DOCKER if flag.startswith("--preserve-env")]

@@ -196,6 +196,20 @@ would receive no operator approval, and it fails naming every way the shard diff
 staging tunnel connector of its own and fresh volumes for every shard. Hold the lock by hand for verification
 afterwards, and verify the app, launch service and every public manifest before handing staging to the other streams.
 
+### Isolated-stack lock
+
+Anything that deploys to or loads the box holds `/opt/athanor/isolated-stack.lock` while it runs. `deploy.py` and
+`shard.py` take it themselves through one helper (`shard.isolated_stack_lock`), so never hold it around them. The lock
+is taken in one atomic step: the holder and UTC time are written to a private file beside it and hard-linked into place,
+which fails when the lock exists, so it is never seen empty and a held lock is refused, never waited on or overwritten.
+It is removed when the work ends. To hold it by hand, for a check between commands, use the same step and remove it
+yourself afterwards:
+
+```sh
+printf '%s %s\n' "<holder>" "$(date -u +%FT%TZ)" > /opt/athanor/.lock.$$ &&
+  ln /opt/athanor/.lock.$$ /opt/athanor/isolated-stack.lock; rm -f /opt/athanor/.lock.$$
+```
+
 ## Native deployment
 
 Load credentials from a private, gitignored environment file under `.lab/`. The current deployment commands require
