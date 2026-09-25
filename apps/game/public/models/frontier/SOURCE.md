@@ -110,3 +110,18 @@ separate gameplay state embedded in the GLB. Frontend integration owns visibilit
 
 This is an asset handoff to the Frontier frontend lane; live placement and interaction validation belong to that
 integration. The existing C2 chest is reused unchanged. Ring-plot highlighting is frontend-owned and has no model.
+
+## Well
+
+Asset ID: `well`. Runtime path: `/models/frontier/well.glb`.
+
+```sh
+blender --background --threads 2 --python-exit-code 1 --python apps/game/scripts/frontier/build-well.py
+node apps/game/scripts/optimize-structure-models.mjs frontier/well.glb
+node apps/game/scripts/optimize-structure-models.mjs --verify frontier/well.glb
+```
+
+The open masonry basin, blue water, oak winch, rope and suspended bucket follow Direction A. The well uses the same
+ground-center origin, orientation, scale-one footprint and compression as the shrine. It is static, with no cloth,
+animation or spent variant. Research unlocks discovery; use grants 60 stamina and removes tile occupancy. The frontend
+owns that interaction and removal.
