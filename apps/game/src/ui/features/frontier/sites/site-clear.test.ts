@@ -16,17 +16,11 @@ vi.mock("@/ui/motion/moments/banked-flight", () => ({
   flyToBankedCounter: (flight: { count: number; announce?: number; delayMs?: number }) => flights.push(flight),
 }));
 
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { playSiteClear } from "./site-clear-moment";
-import { payoutSprites, readSiteClear, type SitePayoutFacts } from "./site-outcome";
+import { payoutSprites, type SiteClear } from "./site-outcome";
 
-const CAMP: SitePayoutFacts = {
-  structure_id: 100,
-  explorer_id: 201,
-  site_id: 710,
-  kind: "Camp",
-  reward: { resource_type: ResourcesIds.Labor, amount: 550n * BigInt(RESOURCE_PRECISION) },
-};
+const CAMP: SiteClear = { kind: "Camp", reward: { resourceId: ResourcesIds.Labor, amount: 550 } };
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -38,24 +32,6 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("a cleared site", () => {
-  it("pays a camp or rift its resource in whole units, and a fallen realm its chest", () => {
-    expect(readSiteClear(CAMP)).toEqual({
-      title: "Camp cleared",
-      reward: { resourceId: ResourcesIds.Labor, amount: 550 },
-      leavesChest: false,
-    });
-    expect(readSiteClear({ ...CAMP, kind: "FallenRealm", reward: null })).toEqual({
-      title: "Fallen realm cleared",
-      reward: null,
-      leavesChest: true,
-    });
-  });
-
-  it("refuses a camp that paid nothing and a fallen realm that paid a resource", () => {
-    expect(() => readSiteClear({ ...CAMP, reward: null })).toThrow("must pay");
-    expect(() => readSiteClear({ ...CAMP, kind: "FallenRealm" })).toThrow("never a resource");
-  });
-
   it("sends six to twenty icons home, more for larger payouts", () => {
     expect([10, 550, 3_000, 10_000_000].map(payoutSprites)).toEqual([6, 11, 14, 20]);
   });
@@ -67,7 +43,7 @@ describe("the site-cleared moment", () => {
     counter.dataset.flyTarget = `resource-${ResourcesIds.Labor}`;
     document.body.append(counter);
     const burst = vi.fn();
-    playSiteClear({ clear: readSiteClear(CAMP), troopsLost: 420, at: { x: 1, y: 1 }, burst });
+    playSiteClear({ clear: CAMP, troopsLost: 420, at: { x: 1, y: 1 }, burst });
     expect(plays).toEqual(["combat.victory"]);
     expect(burst).toHaveBeenCalledTimes(1);
     // The counter holds from the story's arrival; its icons leave with the card.
@@ -78,7 +54,7 @@ describe("the site-cleared moment", () => {
   });
 
   it("says it in a toast only when no counter is on screen", () => {
-    playSiteClear({ clear: readSiteClear(CAMP), troopsLost: 420, at: { x: 1, y: 1 }, burst: () => {} });
+    playSiteClear({ clear: CAMP, troopsLost: 420, at: { x: 1, y: 1 }, burst: () => {} });
     vi.advanceTimersByTime(300);
     expect(flights).toEqual([]);
     expect(toasts).toEqual(["+550 Labor"]);

@@ -31,6 +31,21 @@ export type ExplorerRewardSystemUpdate = {
   coord: { x: number; y: number };
   timestamp: number;
 };
+/**
+ * A site cleared, as its payout story and the winning exchange before it tell it (one transaction): what the site was,
+ * what it paid home in whole units (a fallen realm pays its chest instead), where it stood and what the fight cost.
+ */
+export type SitePayoutSystemUpdate = {
+  explorerId: ID;
+  siteId: ID;
+  ownerAddress: bigint | null;
+  kind: "Camp" | "Rift" | "FallenRealm";
+  reward: { resourceId: ResourcesIds; amount: number } | null;
+  /** The site's tile, in contract coordinates. */
+  coord: { x: number; y: number };
+  /** Whole troops the army lost in the winning exchange. */
+  troopsLost: number;
+};
 /** An army's answer to its attribute offer: the attribute raised, the levels it gained and any lost past the cap. */
 export type AttributeChosenSystemUpdate = {
   explorerId: ID;

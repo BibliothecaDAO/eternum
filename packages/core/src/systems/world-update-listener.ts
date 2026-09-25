@@ -10,6 +10,7 @@ import type {
   ExplorerRewardSystemUpdate,
   RelicChestOpenedSystemUpdate,
   ChestRewardSystemUpdate,
+  SitePayoutSystemUpdate,
 } from "./types";
 
 type Fields = Record<string, unknown>;
@@ -126,6 +127,55 @@ export class WorldUpdateListener {
     };
   }
 
+  get SitePayouts() {
+    return {
+      /**
+       * Each cleared site, with the exchange that won it. The contract emits the winning BattleEvent and then the
+       * SitePayout in one transaction (one `order`), so the battle's tile and the attacker's losses travel with the
+       * payout; a payout without its battle is refused.
+       */
+      onSitePayout: (callback: (value: SitePayoutSystemUpdate) => void) => {
+        let lastBattle: { order: string; defenderId: number; coord: Fields; troopsLost: number } | undefined;
+        const stopBattles = this.setup.store.subscribeEvents((event) => {
+          const battle = event.model === "BattleEvent" ? fields(event.value) : undefined;
+          if (!battle || integer(battle.game_id) !== configManager.getActiveGameId()) return;
+          const attacker = fields(battle.attacker);
+          const coord = fields(battle.coord);
+          if (!attacker || !coord) throw new Error("Malformed battle");
+          lastBattle = {
+            order: String(battle.order),
+            defenderId: integer(battle.defender_id),
+            coord,
+            troopsLost: divideByPrecision(Number(BigInt(String(attacker.before)) - BigInt(String(attacker.after)))),
+          };
+        });
+        const stopPayouts = this.onStory("SitePayout", (payload, event) => {
+          const siteId = integer(payload.site_id);
+          const battle = lastBattle;
+          if (battle?.order !== String(event.order) || battle.defenderId !== siteId)
+            throw new Error(`Site payout ${siteId} arrived without its winning battle`);
+          const kind = siteKind(payload.kind);
+          const reward = siteReward(payload.reward);
+          if ((kind === "FallenRealm") !== (reward === null))
+            throw new Error(`A cleared ${kind} pays ${kind === "FallenRealm" ? "its chest" : "a resource"}`);
+          callback({
+            explorerId: integer(payload.explorer_id),
+            siteId,
+            ownerAddress: event.owner === undefined || event.owner === null ? null : BigInt(String(event.owner)),
+            kind,
+            reward,
+            coord: { x: integer(battle.coord.x), y: integer(battle.coord.y) },
+            troopsLost: battle.troopsLost,
+          });
+        });
+        return () => {
+          stopBattles();
+          stopPayouts();
+        };
+      },
+    };
+  }
+
   get ExplorerReward() {
     return {
       onExplorerRewardEventUpdate: (callback: (value: ExplorerRewardSystemUpdate) => void) =>
@@ -183,6 +233,23 @@ export class WorldUpdateListener {
     };
   }
 }
+
+const SITE_KINDS = ["Camp", "Rift", "FallenRealm"] as const;
+const siteKind = (value: unknown): SitePayoutSystemUpdate["kind"] => {
+  const kind = typeof value === "string" ? value : Object.keys(fields(value) ?? {})[0];
+  if (!SITE_KINDS.includes(kind as SitePayoutSystemUpdate["kind"])) throw new Error("Malformed site kind");
+  return kind as SitePayoutSystemUpdate["kind"];
+};
+/** A camp or rift pays a resource; a fallen realm pays none (its closed chest waits on the tile). */
+const siteReward = (value: unknown): SitePayoutSystemUpdate["reward"] => {
+  if (value === null) return null;
+  const reward = fields(value);
+  if (!reward) throw new Error("Malformed site reward");
+  return {
+    resourceId: integer(reward.resource_type) as ResourcesIds,
+    amount: divideByPrecision(Number(reward.amount)),
+  };
+};
 
 const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Support"] as const;
 const isAttribute = (value: unknown): value is AttributeChosenSystemUpdate["attribute"] =>

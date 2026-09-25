@@ -1,27 +1,15 @@
 import { BankedHolding } from "@/ui/features/frontier/frontier-status-strip";
 import { SiteClearCardView } from "@/ui/features/frontier/sites/site-clear-card";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
-import { readSiteClear, type SitePayoutFacts } from "@/ui/features/frontier/sites/site-outcome";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import type { SiteClear } from "@/ui/features/frontier/sites/site-outcome";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { type ReactNode, useRef, useState } from "react";
 
-/** SitePayout stories exactly as the agreed shapes carry them (backend shapes v4), amounts in game precision. */
-const STORIES: Record<"camp" | "rift" | "fallen", SitePayoutFacts> = {
-  camp: {
-    structure_id: 100,
-    explorer_id: 201,
-    site_id: 710,
-    kind: "Camp",
-    reward: { resource_type: ResourcesIds.Labor, amount: 550n * BigInt(RESOURCE_PRECISION) },
-  },
-  rift: {
-    structure_id: 100,
-    explorer_id: 201,
-    site_id: 711,
-    kind: "Rift",
-    reward: { resource_type: ResourcesIds.Essence, amount: 3_000n * BigInt(RESOURCE_PRECISION) },
-  },
-  fallen: { structure_id: 100, explorer_id: 201, site_id: 712, kind: "FallenRealm", reward: null },
+/** Site payouts as the world update listener reads them from SitePayout stories, in whole units. */
+const STORIES: Record<"camp" | "rift" | "fallen", SiteClear> = {
+  camp: { kind: "Camp", reward: { resourceId: ResourcesIds.Labor, amount: 550 } },
+  rift: { kind: "Rift", reward: { resourceId: ResourcesIds.Essence, amount: 3_300 } },
+  fallen: { kind: "FallenRealm", reward: null },
 };
 const TROOPS_LOST = 420;
 
@@ -35,10 +23,9 @@ export const SiteLab = () => {
   const [counters, setCounters] = useState(true);
 
   const clear = (which: keyof typeof STORIES) => {
-    const story = STORIES[which];
+    const result = STORIES[which];
     const box = site.current?.getBoundingClientRect();
     if (!box) return;
-    const result = readSiteClear(story);
     if (result.reward) {
       const { resourceId, amount } = result.reward;
       setBalances((now) => ({ ...now, [resourceId]: (now[resourceId as keyof typeof now] ?? 0) + amount }));
@@ -67,7 +54,7 @@ export const SiteLab = () => {
       </div>
       <div className="flex flex-wrap justify-center gap-2">
         <LabButton onClick={() => clear("camp")}>Clear camp · +550 labor</LabButton>
-        <LabButton onClick={() => clear("rift")}>Clear rift · +3,000 Essence</LabButton>
+        <LabButton onClick={() => clear("rift")}>Clear rift · +3,300 Essence</LabButton>
         <LabButton onClick={() => clear("fallen")}>Clear fallen realm</LabButton>
         <LabButton onClick={() => setCounters(!counters)}>{counters ? "Hide counters" : "Show counters"}</LabButton>
       </div>

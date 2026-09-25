@@ -5,6 +5,7 @@ import { SecondaryMenuItems } from "@/ui/features/world";
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import { type CSSProperties, useEffect, useState } from "react";
 import { FrontierPick } from "./attributes/frontier-pick";
+import { SiteClearCardView } from "./sites/site-clear-card";
 import { FrontierSurfaces } from "./frontier-surfaces";
 import { FrontierArmyDock } from "./frontier-army-dock";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
@@ -68,9 +69,11 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
         {/* The dock, chat and guide keep their height; the selection sheet above scrolls to make room. */}
         <div className="flex min-h-0 shrink-0 flex-col-reverse gap-2 landscape:order-first landscape:w-48 landscape:flex-col">
           {realm && <FrontierArmyDock realm={realm} />}
-          {/* The pick deals into the thumb zone above the dock on an upright phone, and floats at the foot otherwise. */}
+          {/* The pick and a cleared site's card deal into the thumb zone above the dock on an upright phone, and float at
+              the foot otherwise. */}
           <div className="landscape:fixed landscape:bottom-4 landscape:left-1/2 landscape:w-[min(560px,60vw)] landscape:-translate-x-1/2">
             <FrontierPick />
+            <SiteClearCardView />
           </div>
           <HudChatWindow open={chatOpen} onOpenChange={setChatOpen} foldToIcon={guideLine.step !== null} />
           {/* Ysolde sits above chat on a phone held upright, and floats at the foot of the screen otherwise. While she

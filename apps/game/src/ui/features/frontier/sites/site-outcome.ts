@@ -1,48 +1,7 @@
-import { RESOURCE_PRECISION, type ResourcesIds } from "@bibliothecadao/types";
+import type { SitePayoutSystemUpdate } from "@bibliothecadao/eternum";
 
-/**
- * A cleared site's payout story as the agreed shapes carry it (backend shapes v4): the site's kind, and the resource a
- * camp or rift pays in game precision; a fallen realm pays none, leaving a closed chest instead. The sites train's
- * generated row replaces this type when it lands.
- */
-export interface SitePayoutFacts {
-  structure_id: number;
-  explorer_id: number;
-  site_id: number;
-  kind: "Camp" | "Rift" | "FallenRealm";
-  reward: { resource_type: number; amount: bigint } | null;
-}
-
-export interface SiteClear {
-  title: string;
-  /** What the site paid, in whole units; null for a fallen realm. */
-  reward: { resourceId: ResourcesIds; amount: number } | null;
-  /** A fallen realm leaves its closed chest on the tile. */
-  leavesChest: boolean;
-}
-
-const TITLES: Record<SitePayoutFacts["kind"], string> = {
-  Camp: "Camp cleared",
-  Rift: "Rift cleared",
-  FallenRealm: "Fallen realm cleared",
-};
-
-/** What clearing a site gave: a camp or rift its payout, a fallen realm its chest. Anything else is an error. */
-export const readSiteClear = (story: SitePayoutFacts): SiteClear => {
-  if (story.kind === "FallenRealm") {
-    if (story.reward) throw new Error("A fallen realm pays a chest, never a resource");
-    return { title: TITLES.FallenRealm, reward: null, leavesChest: true };
-  }
-  if (!story.reward) throw new Error(`A cleared ${story.kind} must pay a resource`);
-  return {
-    title: TITLES[story.kind],
-    reward: {
-      resourceId: story.reward.resource_type as ResourcesIds,
-      amount: Number(story.reward.amount) / RESOURCE_PRECISION,
-    },
-    leavesChest: false,
-  };
-};
+/** What the site-cleared moment shows: the site, and what it paid home; a fallen realm pays its chest instead. */
+export type SiteClear = Pick<SitePayoutSystemUpdate, "kind" | "reward">;
 
 const MIN_SPRITES = 6;
 const MAX_SPRITES = 20;

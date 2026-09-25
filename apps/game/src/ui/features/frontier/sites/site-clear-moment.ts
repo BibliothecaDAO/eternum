@@ -5,6 +5,7 @@ import { findBankedCounter, flyToBankedCounter } from "@/ui/motion/moments/banke
 import { playHaptic } from "@/ui/motion/motion-settings";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { create } from "zustand";
+import { formatAmount } from "../frontier-format";
 import { payoutSprites, type SiteClear } from "./site-outcome";
 
 /**
@@ -13,10 +14,10 @@ import { payoutSprites, type SiteClear } from "./site-outcome";
  * it cost and paid; and the payout flies home to its banked counter, whose "+N" is the toast. Only with no counter on
  * screen does a toast say it instead. The card waits 800 ms after it lands, or a tap.
  */
-export interface SiteClearCard {
+interface SiteClearCard {
   clear: SiteClear;
-  /** The army's troops lost in the fight; undefined while not known. */
-  troopsLost: number | undefined;
+  /** Whole troops the army lost in the winning exchange. */
+  troopsLost: number;
   shownAt: number;
 }
 
@@ -31,8 +32,6 @@ const CARD_HOLD_MS = 250 + 800;
 
 let closing: ReturnType<typeof setTimeout> | undefined;
 
-const amount = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
-
 export const playSiteClear = ({
   clear,
   troopsLost,
@@ -40,7 +39,7 @@ export const playSiteClear = ({
   burst,
 }: {
   clear: SiteClear;
-  troopsLost: number | undefined;
+  troopsLost: number;
   /** The site's tile on screen. */
   at: { x: number; y: number };
   /** The scene's dust burst at the site (its playBurst chokepoint). */
@@ -61,7 +60,7 @@ export const playSiteClear = ({
 
 const payHome = ({ resourceId, amount: paid }: NonNullable<SiteClear["reward"]>, from: { x: number; y: number }) => {
   const counter = findBankedCounter(resourceId);
-  const label = `+${amount.format(paid)} ${ResourcesIds[resourceId]}`;
+  const label = `+${formatAmount(paid)} ${ResourcesIds[resourceId]}`;
   if (!counter) {
     setTimeout(() => toast.success(label), GUARD_FALLS_MS);
     return;

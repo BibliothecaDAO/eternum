@@ -64,6 +64,65 @@ describe("native scene updates", () => {
     expect(() => story("Luck")).toThrow("Malformed attribute choice");
   });
 
+  it("carries a cleared site's payout with the tile and losses of the exchange that won it", () => {
+    const { store, listener } = fixture();
+    const payout = vi.fn();
+    const stop = listener.SitePayouts.onSitePayout(payout);
+    const side = (before: bigint, after: bigint) => ({ before: String(before), after: String(after) });
+    const battle = (order: string, defenderId: number) =>
+      store.applyEvent({
+        model: "BattleEvent",
+        key: `battle-${order}`,
+        value: {
+          game_id: 1,
+          order,
+          index: 0,
+          defender_id: defenderId,
+          coord: { x: 40, y: 12 },
+          attacker: side(1_498_000_000_000n, 1_078_000_000_000n),
+          defender: side(1_100_000_000_000n, 0n),
+        },
+      });
+    const story = (order: string, siteId: number, kind: unknown, reward: unknown) =>
+      store.applyEvent({
+        model: "StoryEvent",
+        key: `story-${order}`,
+        value: {
+          game_id: 1,
+          order,
+          index: 1,
+          owner: "0x111",
+          timestamp: 100,
+          story: { SitePayout: { structure_id: 3, explorer_id: 7, site_id: siteId, kind, reward } },
+        },
+      });
+
+    battle("5", 9);
+    story("5", 9, "Camp", { resource_type: 23, amount: "550000000000" });
+    battle("6", 10);
+    story("6", 10, { FallenRealm: {} }, null);
+    expect(payout.mock.calls.map(([update]) => update)).toEqual([
+      {
+        explorerId: 7,
+        siteId: 9,
+        ownerAddress: 0x111n,
+        kind: "Camp",
+        reward: { resourceId: 23, amount: 550 },
+        coord: { x: 40, y: 12 },
+        troopsLost: 420,
+      },
+      expect.objectContaining({ siteId: 10, kind: "FallenRealm", reward: null }),
+    ]);
+    // A payout whose winning battle is not the one just before it is a contract bug, never a guess.
+    expect(() => story("7", 11, "Rift", { resource_type: 29, amount: "1" })).toThrow("without its winning battle");
+    battle("7", 11);
+    expect(() => story("7", 11, "Rift", null)).toThrow("A cleared Rift pays a resource");
+    stop();
+    battle("8", 12);
+    story("8", 12, "Camp", { resource_type: 23, amount: "1" });
+    expect(payout).toHaveBeenCalledTimes(2);
+  });
+
   it("reads building additions and removals from committed facts and unsubscribes", () => {
     const { store, listener } = fixture();
     const changed = vi.fn();

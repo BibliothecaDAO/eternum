@@ -90,3 +90,12 @@ export const PersonGlyph = ({ className }: { className?: string }) => (
     <path d="M5.5 23.5a8.5 7 0 0 1 17 0z" fill={PARCHMENT} stroke={INK} strokeWidth="1.5" strokeLinejoin="round" />
   </svg>
 );
+
+/** A site taken: a pennant in the stamina green, on its art and beside the exchanges a win takes. */
+export const FlagGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 28 28" className={className} aria-hidden>
+    <path d="M7 4v21" stroke={INK} strokeWidth="3" strokeLinecap="round" />
+    <path d="M7 4v21" stroke={PARCHMENT} strokeWidth="1.4" strokeLinecap="round" />
+    <path d="M8 5h14l-3.5 4.5L22 14H8z" fill={STAMINA} stroke={INK} strokeWidth="1.5" strokeLinejoin="round" />
+  </svg>
+);

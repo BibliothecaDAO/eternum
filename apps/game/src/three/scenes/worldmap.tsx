@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import { isMapPreviewAction } from "./worldmap-action-preview-policy";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { playRevealYield } from "@/ui/motion/moments/reveal-yield";
+import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
 import { type ArmyProgressFacts, progressChange } from "@/ui/features/frontier/attributes/attributes";
 import { playArmyProgress } from "@/ui/features/frontier/attributes/progress-moment";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -1696,6 +1697,7 @@ export default class WorldmapScene extends WarpTravel {
     this.registerBattleWorldUpdateSubscriptions();
     this.registerExplorerRewardWorldUpdateSubscriptions();
     this.registerRelicChestWorldUpdateSubscriptions();
+    this.registerSitePayoutWorldUpdateSubscriptions();
     this.registerArmyProgressWorldUpdateSubscriptions();
   }
 
@@ -1733,6 +1735,30 @@ export default class WorldmapScene extends WarpTravel {
         this.playBurst(new Vector3(world.x, 0.1, world.z), "level-up", 1);
       },
     });
+  }
+
+  /**
+   * The player's own site cleared (design §3.11 §3): the guard falls with a dust burst on its tile, the card slides up
+   * and the payout flies home. The story only starts the flourish; the balance and the tile render from their facts.
+   */
+  private registerSitePayoutWorldUpdateSubscriptions(): void {
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.SitePayouts.onSitePayout((payout) => {
+        if (getActiveGameSyncRuntime()?.getStatus() !== "running") return;
+        if (payout.ownerAddress === null || !isAddressEqualToAccount(payout.ownerAddress)) return;
+        const tile = Position.fromContract(payout.coord).getNormalized();
+        const hex = { col: tile.x, row: tile.y };
+        playSiteClear({
+          clear: payout,
+          troopsLost: payout.troopsLost,
+          at: projectHexToScreen(hex, this.camera),
+          burst: () => {
+            const world = getWorldPositionForHex(hex);
+            this.playBurst(new Vector3(world.x, 0.1, world.z), "site.clear", 1);
+          },
+        });
+      }),
+    );
   }
 
   // A flourish only, for crates inside the loaded chunk: the relics themselves land in native store on the explorer,
