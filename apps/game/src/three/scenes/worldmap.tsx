@@ -1748,6 +1748,9 @@ export default class WorldmapScene extends WarpTravel {
         if (payout.ownerAddress === null || !isAddressEqualToAccount(payout.ownerAddress)) return;
         const tile = Position.fromContract(payout.coord).getNormalized();
         const hex = { col: tile.x, row: tile.y };
+        // The fallen site's tile card goes with it; the card of what it paid takes its place.
+        const selectedHex = useUIStore.getState().selectedHex;
+        if (selectedHex?.col === payout.coord.x && selectedHex.row === payout.coord.y) this.state.setSelectedHex(null);
         playSiteClear({
           clear: payout,
           troopsLost: payout.troopsLost,
@@ -2988,6 +2991,12 @@ export default class WorldmapScene extends WarpTravel {
     const targetHex = selectedPath[selectedPath.length - 1];
     const target = actorOnHex(this.getHexagonEntity(sceneHexOf(targetHex)));
     if (!target) return;
+    // A standing expedition site confirms its attack on its tile card, the HUD's sheet for the selected tile.
+    if (this.isStandingExpeditionSite(target.id)) {
+      this.selectContractHexWithoutFeedback(targetHex);
+      this.state.updateEntityActionHoveredHex(null);
+      return;
+    }
     const selected = this.getHexagonEntity(sceneHexOf(selectedPath[0]));
 
     const attackerSummary = {
@@ -3012,6 +3021,14 @@ export default class WorldmapScene extends WarpTravel {
     // selected and the action-path state machine is left intact (unlike
     // clearEntitySelection, which reset it and broke movement/exploration).
     this.state.updateEntityActionHoveredHex(null);
+  }
+
+  private isStandingExpeditionSite(entityId: ID): boolean {
+    const site = this.game.store.get("ExpeditionSite", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: Number(entityId),
+    });
+    return site !== undefined && !site.cleared;
   }
 
   private onArmySpireTravel(actionPath: ActionPath[], selectedEntityId: ID) {

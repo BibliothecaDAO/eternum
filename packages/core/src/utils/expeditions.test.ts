@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { StructureType } from "@bibliothecadao/types";
+import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import * as timestamp from "./timestamp";
 import {
   absoluteEpoch,
@@ -11,6 +11,7 @@ import {
   liveHomeArmies,
   structureMapPosition,
   structureLocalPosition,
+  siteReward,
 } from "./expeditions";
 
 const structure = (overrides: { realm_id?: number; category?: StructureType } = {}) =>
@@ -173,4 +174,21 @@ it("keys facts by absolute epoch and maps by season day with exactly the launch 
   }
   expect(absoluteEpoch(rules, 2400)).toBe(24);
   expect(seasonDay(rules, 2400)).toBe(1);
+});
+
+describe("siteReward", () => {
+  it("pays as the contract does: a camp half its first guard in labor, a rift three times it in Essence", () => {
+    const guard = 1_100n * 1_000_000_000n;
+    expect(siteReward({ kind: "Camp", initial_guard_count: guard })).toEqual({
+      resourceType: ResourcesIds.Labor,
+      amount: 550n * 1_000_000_000n,
+    });
+    expect(siteReward({ kind: "Rift", initial_guard_count: guard })).toEqual({
+      resourceType: ResourcesIds.Essence,
+      amount: 3_300n * 1_000_000_000n,
+    });
+    // An odd scaled count halves as the contract's integer division does.
+    expect(siteReward({ kind: "Camp", initial_guard_count: 3n })?.amount).toBe(1n);
+    expect(siteReward({ kind: "FallenRealm", initial_guard_count: guard })).toBeNull();
+  });
 });

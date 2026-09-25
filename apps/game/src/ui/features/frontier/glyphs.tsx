@@ -7,6 +7,22 @@ const GOLD = "#dfaa54";
 const PARCHMENT = "#eadfc8";
 const STAMINA = "#9fd06a";
 
+/** Attack, the verb on the tile card's button: a flat sword, blade parchment on an ink outline, gold hilt. */
+export const SwordGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 28 28" className={className} aria-hidden>
+    <path
+      d="M20.5 4.5 23.5 4.5 23.5 7.5 12 19 9 16z"
+      fill={PARCHMENT}
+      stroke={INK}
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
+    <path d="M6.5 15.5 12.5 21.5" stroke={GOLD} strokeWidth="3" strokeLinecap="round" />
+    <path d="M9.5 18.5 5 23" stroke={INK} strokeWidth="3.4" strokeLinecap="round" />
+    <path d="M9.5 18.5 5 23" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
 /** Stamina: the bolt in the stamina bar's green, the same everywhere a bar shows. */
 export const BoltGlyph = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 28 28" className={className} aria-hidden>

@@ -149,6 +149,58 @@ const playerRows = (clock: LabClock): WireRow[] => [
   { model: "ExplorerTroops", value: army(clock, 202, 1, 1) },
   { model: "TileOccupancy", value: armyTile(clock, 201, 2, 1) },
   { model: "TileOccupancy", value: armyTile(clock, 202, -3, 2) },
+  // A camp beside army 1, held by 1,100 T1 knights, so the tile card has a site to show.
+  ...campSite(clock, LAB_CAMP_ID, 3, 1),
+];
+
+const LAB_CAMP_ID = 710;
+
+const campSite = (clock: LabClock, entityId: number, colOffset: number, rowOffset: number): WireRow[] => [
+  {
+    model: "Structure",
+    value: {
+      ...realm(clock),
+      entity_id: entityId,
+      owner: "0x0",
+      base: { ...realm(clock).base, category: 7, troop_max_guard_count: 1, troop_max_explorer_count: 0 },
+    },
+  },
+  {
+    model: "Guard",
+    value: {
+      game_id: clock.gameId,
+      structure_id: entityId,
+      slot: 0,
+      troops: {
+        ...army(clock, 0, 1_100, 0).troops,
+        stamina: { Inline: { amount: "0", updated_tick: String(clock.currentTick) } },
+      },
+      destroyed_tick: 0,
+    },
+  },
+  {
+    model: "ExpeditionSite",
+    value: {
+      game_id: clock.gameId,
+      entity_id: entityId,
+      kind: "Camp",
+      initial_guard_count: amount(1_100),
+      cleared: false,
+    },
+  },
+  // Category 37 is a camp's occupancy.
+  {
+    model: "TileOccupancy",
+    value: {
+      game_id: clock.gameId,
+      alt: false,
+      col: clock.siteCol + colOffset,
+      row: clock.siteRow + rowOffset,
+      entity_id: entityId,
+      category: 37,
+      is_structure: true,
+    },
+  },
 ];
 
 const gameRegistry = (clock: LabClock) => ({

@@ -1,5 +1,5 @@
 import { researchedDepths } from "./realm-research";
-import { MAX_U32 } from "@bibliothecadao/types";
+import { MAX_U32, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
@@ -43,6 +43,19 @@ export const absoluteEpoch = (rules: Pick<ExpeditionRules, "epochSeconds">, time
 /** Zero-based season day; only this relative value selects a map region or allowance day. */
 export const seasonDay = (rules: Pick<ExpeditionRules, "epochSeconds" | "startMainAt">, timestamp: number): number =>
   absoluteEpoch(rules, timestamp) - absoluteEpoch(rules, rules.startMainAt);
+
+/**
+ * What clearing a site pays home, as the contract's site_reward computes it from the guard it started with: a camp
+ * half its troops in labor, a rift three times them in Essence, both in game precision; a fallen realm pays none (its
+ * closed chest instead).
+ */
+export const siteReward = (
+  site: Pick<NativeRows["ExpeditionSite"], "kind" | "initial_guard_count">,
+): { resourceType: ResourcesIds; amount: bigint } | null => {
+  if (site.kind === "Camp") return { resourceType: ResourcesIds.Labor, amount: site.initial_guard_count / 2n };
+  if (site.kind === "Rift") return { resourceType: ResourcesIds.Essence, amount: site.initial_guard_count * 3n };
+  return null;
+};
 
 /** The expedition map is laid out in bands of `spacing` rows, four per day: surface, then Ethereal I to III. */
 const expeditionBand = (rules: ExpeditionRules, coord: { y: number }): number => Math.floor(coord.y / rules.spacing);

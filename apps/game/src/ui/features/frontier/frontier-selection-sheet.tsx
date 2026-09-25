@@ -5,15 +5,17 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { useSelectedTileDetails } from "@/ui/features/world/components/bottom-right-panel";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildSheet, useOpenPlot } from "./build/build-sheet";
+import { TileCard, useSelectedSite } from "./sites/tile-card";
 
 /**
  * What the player tapped, with its actions: a sheet over the foot of a phone held upright, a panel down the right
- * edge otherwise. An open plot of the realm is the build sheet's. Nothing selected, or a selection with nothing to
- * show, no sheet.
+ * edge otherwise. An open plot of the realm is the build sheet's, a standing site the tile card's. Nothing selected,
+ * or a selection with nothing to show, no sheet.
  */
 export const FrontierSelectionSheet = ({ realm }: { realm: NativeRows["Structure"] | null }) => {
   const details = useSelectedTileDetails();
   const openPlot = useOpenPlot(realm);
+  const site = useSelectedSite();
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const close = () => {
@@ -21,6 +23,7 @@ export const FrontierSelectionSheet = ({ realm }: { realm: NativeRows["Structure
     setSelectedBuildingHex(null);
   };
   if (realm && openPlot) return <BuildSheet realm={realm} plot={openPlot} onClose={close} />;
+  if (site) return <TileCard selected={site} onClose={close} />;
   if (!details) return null;
 
   return (
