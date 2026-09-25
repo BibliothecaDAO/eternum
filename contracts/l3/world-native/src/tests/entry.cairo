@@ -24,7 +24,7 @@ fn ledger(d: Deployment) -> ISettlementEntrySafeDispatcher {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn only_authority_rotates_the_deployment_operator_and_emits_the_current_value() {
+fn only_authority_rotates_the_deployment_operator_without_emitting_metadata() {
     let d = setup(true);
     let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
     assert_eq!(operator.ledger_operator().unwrap(), 0.try_into().unwrap());
@@ -34,10 +34,7 @@ fn only_authority_rotates_the_deployment_operator_and_emits_the_current_value() 
     set_operator(d, 123.try_into().unwrap());
     assert_eq!(operator.ledger_operator().unwrap(), 123.try_into().unwrap());
     let events = spy.get_events().emitted_by(d.games);
-    assert_eq!(events.events.len(), 1);
-    let (_, event) = events.events.at(0);
-    assert_eq!(event.keys.span(), array![selector!("EntryEvent"), selector!("RowSet"), 1, 'LedgerOperator'].span());
-    assert_eq!(event.data.span(), array![1, d.games.into(), 1, 123].span());
+    assert_eq!(events.events.len(), 0);
     set_operator(d, 456.try_into().unwrap());
     assert_eq!(operator.ledger_operator().unwrap(), 456.try_into().unwrap());
     set_operator(d, 0.try_into().unwrap());

@@ -1,4 +1,3 @@
-import { waitForWorldState } from "./wait-for-world-state";
 import { nativeModelDefinition } from "./native-models";
 import { nativeSubmission, type NativeClientConnection } from "./native-submission";
 import { EternumProvider } from "@bibliothecadao/provider";
@@ -154,16 +153,7 @@ const startSync = async (
     setupResult.store,
     input.gameId,
     input.shard.worldAddress,
-    async (actor) => {
-      session.transport.selectActor(actor);
-      // Herald's actor scope always carries the nonce row, so this waits on the stream, with no deadline of its own.
-      await waitForWorldState(
-        { runtime },
-        () => setupResult.store.get("ActionNonce", { game_id: input.gameId, actor: BigInt(actor) }),
-        undefined,
-        () => "Gameplay nonce from Herald",
-      );
-    },
+    (actor) => session.transport.prepareActor(actor),
   );
   setupResult.network.provider.setNativeSubmission(submit, input.native.bindings.commandAbi, (actor) => {
     let owned: number | undefined;

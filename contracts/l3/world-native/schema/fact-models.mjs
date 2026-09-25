@@ -748,10 +748,12 @@ export function defineFactModels({ struct, model: declare }) {
       row.absence = { value: "zero", meaning: "No chests have advanced this counter." };
     if (row.name === "VillageRaid")
       row.absence = { value: "zero", meaning: "The village has not been successfully raided." };
-    if (row.name === "LedgerOperator")
+    if (row.name === "ActionNonce")
       row.absence = {
+        parent: "GameRegistry",
         value: "zero",
-        meaning: "No ledger relay is configured; non-development entry still requires an entitlement.",
+        meaning:
+          "After a complete actor snapshot, no row means no action was consumed for this player; next_nonce is zero.",
       };
     if (row.name === "Guild" || row.name === "GuildMember")
       row.absence = { value: "empty", meaning: "No guild or membership exists for this key." };
@@ -767,7 +769,6 @@ export function defineFactModels({ struct, model: declare }) {
     const observation = behaviouralFacts[row.name];
     return observation ? { ...row, observation } : row;
   };
-  const domainKey = [{ name: "address", type: "core::starknet::contract_address::ContractAddress" }];
   return [
     model(
       "Preset",
@@ -775,15 +776,7 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "preset_id", type: "core::integer::u32" }],
       [{ name: "commitment", type: "core::felt252" }],
     ),
-    model("GameSequence", "deployment", domainKey, [{ name: "next_game_id", type: "core::integer::u32" }], "address"),
     model("SpireLayout", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("spires::SpireLayout")),
-    model(
-      "LedgerOperator",
-      "deployment",
-      domainKey,
-      [{ name: "operator", type: "core::starknet::contract_address::ContractAddress" }],
-      "address",
-    ),
     model(
       "CampResources",
       "game",
@@ -921,7 +914,6 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "game_id", type: "core::integer::u32" }],
       [{ name: "players", type: "core::array::Span::<world_native::registrar::RosterPlayer>" }],
     ),
-    model("RealmCatalogue", "deployment", domainKey, struct("realms::RealmCatalogue"), "address"),
     model("RealmGrants", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("settlement::RealmGrants")),
     model(
       "HyperstructureReservations",
@@ -1041,31 +1033,30 @@ export function defineFactModels({ struct, model: declare }) {
     model("GameRegistry", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("game::GameRegistry")),
     model("GameOverrides", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("game::GameOverrides")),
     model("SliceRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("rules::SliceRules")),
-    model(
-      "EntitySequence",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "next_entity_id", type: "core::integer::u32" }],
-    ),
-    model(
-      "PlayerPoints",
-      "game",
-      [
-        { name: "game_id", type: "core::integer::u32" },
-        { name: "actor", type: "core::starknet::contract_address::ContractAddress" },
-      ].map((key) => ({
-        ...key,
-        name: key.name === "actor" ? "address" : key.name,
-      })),
-      [{ name: "points", type: "core::integer::u128" }],
-    ),
-    model(
-      "PointsTotal",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "total", type: "core::integer::u128" }],
-    ),
-    model("Authentication", "deployment", domainKey, struct("games::Authentication"), "address"),
+    {
+      ...model(
+        "PlayerPoints",
+        "game",
+        [
+          { name: "game_id", type: "core::integer::u32" },
+          { name: "actor", type: "core::starknet::contract_address::ContractAddress" },
+        ].map((key) => ({
+          ...key,
+          name: key.name === "actor" ? "address" : key.name,
+        })),
+        [{ name: "points", type: "core::integer::u128" }],
+      ),
+      eventProjection: "PointsAwarded",
+    },
+    {
+      ...model(
+        "PointsTotal",
+        "game",
+        [{ name: "game_id", type: "core::integer::u32" }],
+        [{ name: "total", type: "core::integer::u128" }],
+      ),
+      eventProjection: "PointsAwarded",
+    },
     model(
       "ActionNonce",
       "game",
@@ -1098,7 +1089,6 @@ const behaviouralFacts = {
   },
   BitcoinContribution: { domain: "bitcoin", fields: { labor: "labor", destination: "structure_id" } },
   RealmTraits: { domain: "realm/season", fields: { wonder: "wonder", order: "order", resources: "resources" } },
-  RealmCatalogue: { domain: "realm/season", fields: { initialized: "initialized" } },
   ResourceBalance: { domain: "resources", fields: { balance: "balance" } },
   ResourceProduction: {
     domain: "resources",
@@ -1283,9 +1273,7 @@ export const syncScopes = {
   ...Object.fromEntries(
     [
       "Preset",
-      "GameSequence",
       "SpireLayout",
-      "LedgerOperator",
       "CampResources",
       "ArtificerCost",
       "BlitzResult",
@@ -1306,7 +1294,6 @@ export const syncScopes = {
       "MinePool",
       "BlitzSettlementOrder",
       "BlitzRoster",
-      "RealmCatalogue",
       "RealmGrants",
       "HyperstructureReservations",
       "SettlementRules",
@@ -1325,9 +1312,7 @@ export const syncScopes = {
       "GameRegistry",
       "GameRelease",
       "SliceRules",
-      "EntitySequence",
       "PointsTotal",
-      "Authentication",
     ].map((name) => [name, shared]),
   ),
   PlayerPoints: { owners: ["address"] },

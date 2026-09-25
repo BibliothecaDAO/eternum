@@ -1,3 +1,4 @@
+import { withoutRetiredMetadata } from "./recorded-fact-adapter.test-support";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { hash, shortString } from "starknet";
@@ -89,7 +90,7 @@ describe("recorded launch configuration matches Cairo readers", () => {
     for (const name of ["blitz", "frontier"]) {
       const registration = json<RpcTransaction>(`${name}-register-preset-transaction.json`);
       const registered = json<RpcReceipt>(`${name}-register-preset-receipt.json`);
-      const created = json<RpcReceipt>(`${name}-create-game-receipt.json`);
+      const created = withoutRetiredMetadata(json<RpcReceipt>(`${name}-create-game-receipt.json`));
       const launch = json<RpcTransaction>(`${name}-create-game-transaction.json`);
       recorded.push({ receipt: registered, transaction: registration }, { receipt: created, transaction: launch });
       expect(registration.calldata!.slice(4).map(BigInt)).toEqual(felts(`${name}-register.txt`).map(BigInt));
@@ -109,7 +110,7 @@ describe("recorded launch configuration matches Cairo readers", () => {
         ["BuildingRule", 40],
       ] as const)
         expect(confirmed.gameRows(model, String(game))).toHaveLength(count);
-      expect(confirmed.snapshot(game, created.block_number!)).toEqual(overlay.snapshot(game, created.block_number!));
+      expect(confirmed.checkpoint()).toEqual(overlay.checkpoint());
       expect(BigInt(confirmed.gameRows("SettlementRules", String(game))[0]!.value.registration_limit as string)).toBe(
         name === "blitz" ? 1n : 0n,
       );
@@ -129,6 +130,6 @@ describe("recorded launch configuration matches Cairo readers", () => {
         }),
       },
     });
-    for (const game of [1, 2]) expect(replayed.snapshot(game, toBlock)).toEqual(confirmed.snapshot(game, toBlock));
+    expect(replayed.checkpoint()).toEqual(confirmed.checkpoint());
   });
 });

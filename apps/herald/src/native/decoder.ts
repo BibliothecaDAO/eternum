@@ -101,6 +101,10 @@ export class NativeDecoder {
 
     const model = schema.models.find((model) => BigInt(model.identity) === BigInt(header[1] ?? -1));
     if (!model) throw new Error("Unknown native model");
+    if (model.eventProjection)
+      throw new Error(
+        `Native model ${model.name} is projected from ${model.eventProjection}; row events are forbidden`,
+      );
     const memberEvent = layout.name === "RowMemberSet";
     if (header.length !== (memberEvent ? 3 : 2)) throw new Error("Malformed native event header");
     const frame = readFrame(event.data, layout.name !== "RowDeleted");

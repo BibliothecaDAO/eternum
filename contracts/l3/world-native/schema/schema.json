@@ -56,35 +56,6 @@
     "contract": "Games",
     "events": [
       {
-        "name": "RowSet",
-        "prefix": [
-          "0x36f16904f7734350d822ada38a59fed0c639e5205b723a7c3491c7973938c0b",
-          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "model",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          },
-          {
-            "name": "values",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
-      {
         "name": "PointsAwarded",
         "prefix": [
           "0x3c13ec798226b99ece5ff7cda6fda330a04d9f80b95a25689a4e0e66a6b4ca8"
@@ -112,6 +83,16 @@
           },
           {
             "name": "points",
+            "type": "core::integer::u128",
+            "kind": "data"
+          },
+          {
+            "name": "player_points",
+            "type": "core::integer::u128",
+            "kind": "data"
+          },
+          {
+            "name": "season_points",
             "type": "core::integer::u128",
             "kind": "data"
           }
@@ -876,35 +857,6 @@
           },
           {
             "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "RowSet",
-        "prefix": [
-          "0x3b3d5129d8af6b2490084948d4ef23b7f6b9aff257cdb1445f733cf69878558",
-          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "model",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          },
-          {
-            "name": "values",
             "type": "core::array::Span::<core::felt252>",
             "kind": "data"
           }
@@ -2391,29 +2343,6 @@
       "valueLength": 1
     },
     {
-      "name": "GameSequence",
-      "identity": "0x47616d6553657175656e6365",
-      "scope": "deployment",
-      "emitterKey": "address",
-      "keys": [
-        {
-          "name": "address",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "next_game_id",
-          "type": "core::integer::u32",
-          "id": "0x6e6578745f67616d655f6964",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1
-    },
-    {
       "name": "SpireLayout",
       "identity": "0x53706972654c61796f7574",
       "scope": "game",
@@ -2452,33 +2381,6 @@
       ],
       "keyLength": 1,
       "valueLength": 4
-    },
-    {
-      "name": "LedgerOperator",
-      "identity": "0x4c65646765724f70657261746f72",
-      "scope": "deployment",
-      "emitterKey": "address",
-      "keys": [
-        {
-          "name": "address",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "operator",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x6f70657261746f72",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1,
-      "absence": {
-        "value": "zero",
-        "meaning": "No ledger relay is configured; non-development entry still requires an entitlement."
-      }
     },
     {
       "name": "CampResources",
@@ -3807,41 +3709,6 @@
         "domain": "realm/blitz",
         "fields": {
           "players": "players"
-        }
-      }
-    },
-    {
-      "name": "RealmCatalogue",
-      "identity": "0x5265616c6d436174616c6f677565",
-      "scope": "deployment",
-      "emitterKey": "address",
-      "keys": [
-        {
-          "name": "address",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "initialized",
-          "type": "core::integer::u32",
-          "id": "0x696e697469616c697a6564",
-          "feltLength": 1
-        },
-        {
-          "name": "digest",
-          "type": "core::felt252",
-          "id": "0x646967657374",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 2,
-      "observation": {
-        "domain": "realm/season",
-        "fields": {
-          "initialized": "initialized"
         }
       }
     },
@@ -5892,28 +5759,6 @@
       "valueLength": 103
     },
     {
-      "name": "EntitySequence",
-      "identity": "0x456e7469747953657175656e6365",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "next_entity_id",
-          "type": "core::integer::u32",
-          "id": "0x6e6578745f656e746974795f6964",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 1
-    },
-    {
       "name": "PlayerPoints",
       "identity": "0x506c61796572506f696e7473",
       "scope": "game",
@@ -5944,7 +5789,8 @@
         "fields": {
           "registered": "points"
         }
-      }
+      },
+      "eventProjection": "PointsAwarded"
     },
     {
       "name": "PointsTotal",
@@ -5972,42 +5818,8 @@
         "fields": {
           "registered": "total"
         }
-      }
-    },
-    {
-      "name": "Authentication",
-      "identity": "0x41757468656e7469636174696f6e",
-      "scope": "deployment",
-      "emitterKey": "address",
-      "keys": [
-        {
-          "name": "address",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "submitter",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x7375626d6974746572",
-          "feltLength": 1
-        },
-        {
-          "name": "account_class",
-          "type": "core::starknet::class_hash::ClassHash",
-          "id": "0x6163636f756e745f636c617373",
-          "feltLength": 1
-        },
-        {
-          "name": "guardian_public_key",
-          "type": "core::felt252",
-          "id": "0x677561726469616e5f7075626c69635f6b6579",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 1,
-      "valueLength": 3
+      },
+      "eventProjection": "PointsAwarded"
     },
     {
       "name": "ActionNonce",
@@ -6034,7 +5846,12 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 1
+      "valueLength": 1,
+      "absence": {
+        "parent": "GameRegistry",
+        "value": "zero",
+        "meaning": "After a complete actor snapshot, no row means no action was consumed for this player; next_nonce is zero."
+      }
     }
   ],
   "events": [
@@ -6153,6 +5970,16 @@
           },
           {
             "name": "points",
+            "type": "core::integer::u128",
+            "kind": "data"
+          },
+          {
+            "name": "player_points",
+            "type": "core::integer::u128",
+            "kind": "data"
+          },
+          {
+            "name": "season_points",
             "type": "core::integer::u128",
             "kind": "data"
           }
@@ -11988,5 +11815,5 @@
       ]
     }
   },
-  "identity": "37aaeb29b3199f2c2187033fc8c3fd4178f2a02facb48b07bf58f3731fc42bf1"
+  "identity": "e5af7575a0eee3050f84c1cffece2374245cd7f009c50b849410de41f8dff3d6"
 }

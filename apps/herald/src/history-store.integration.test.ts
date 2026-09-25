@@ -99,7 +99,7 @@ describe("confirmed story cursor", () => {
 describe("native confirmed history", () => {
   it("rebuilds native activity, combat history and review across restart without mirroring state", async () => {
     const { createNativeHistoryCodec } = await import("./native/history");
-    const { setup, receipt, rowEvent, battleEvent, schema: nativeSchema, manifest } = await import("./native/fixtures");
+    const { setup, receipt, battleEvent, schema: nativeSchema, manifest } = await import("./native/fixtures");
     const nativeHistoryCodec = createNativeHistoryCodec(nativeSchema);
     const admin = new Pool({ connectionString: databaseUrl });
     const namespace = `native_history_${randomUUID().replaceAll("-", "")}`;
@@ -116,8 +116,11 @@ describe("native confirmed history", () => {
       const result = native.applyReceipt(
         fold,
         receipt([
-          rowEvent("PlayerPoints", ["1", "0x111"], ["5000000"]),
-          { from_address: manifest.world.address, keys: [...award.prefix, "1", "1", "0x111"], data: ["0", "5000000"] },
+          {
+            from_address: manifest.world.address,
+            keys: [...award.prefix, "1", "1", "0x111"],
+            data: ["0", "5000000", "5000000", "5000000"],
+          },
           battleEvent(),
         ]),
         10,

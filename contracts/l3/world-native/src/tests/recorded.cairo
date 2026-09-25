@@ -17,8 +17,9 @@ use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairImpl, StarkCurveSignerImpl};
 use snforge_std::signature::{KeyPairTrait, SignerTrait};
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, declare, start_cheat_account_contract_address, start_cheat_chain_id_global,
-    start_cheat_resource_bounds, start_cheat_signature, start_cheat_transaction_hash, start_cheat_transaction_version,
+    ContractClassTrait, DeclareResultTrait, EventSpyTrait, EventsFilterTrait, declare, spy_events,
+    start_cheat_account_contract_address, start_cheat_chain_id_global, start_cheat_resource_bounds,
+    start_cheat_signature, start_cheat_transaction_hash, start_cheat_transaction_version,
 };
 use starknet::storage::{
     StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
@@ -205,6 +206,7 @@ fn definitive_execution_failure_consumes_only_its_ticket_then_successor_executes
     make_intent(d.games, action).serialize(ref calldata);
     original.serialize(ref calldata);
     signed.serialize(ref calldata);
+    let mut spy = spy_events();
     ISequencingAccountDispatcher { contract_address: authority }
         .__execute__(
             array![
@@ -218,10 +220,12 @@ fn definitive_execution_failure_consumes_only_its_ticket_then_successor_executes
     assert_eq!(view.recorded_outcome(1, 1).unwrap().status_class, 'EXECUTION_FAILED');
     let season = IGamesAuthenticationDispatcher { contract_address: d.games };
     assert_eq!(season.next_nonce(1, d.actor), 1);
+    assert_nonce_facts(ref spy, d.games, 1, d.actor, array![1].span());
     assert_eq!(head(d.games, 1).order, 1);
     super::execute(d, FixtureAction { nonce: 1, ..action });
     assert_eq!(view.recorded_outcome(1, 2).unwrap().status, 1);
     assert_eq!(season.next_nonce(1, d.actor), 2);
+    assert_nonce_facts(ref spy, d.games, 1, d.actor, array![1, 2].span());
 }
 
 #[test]
@@ -268,6 +272,7 @@ fn transport_failure_after_account_upgrade_records_refusal_and_advances_without_
     super::fixtures::IAccountUpgradeDispatcherTrait::upgrade(
         super::fixtures::IAccountUpgradeDispatcher { contract_address: d.actor }, *upgraded.class_hash,
     );
+    let mut spy = spy_events();
     IRecordedExecutionFailureSafeDispatcher { contract_address: d.games }
         .reject_execution(retained_intent, retained_context, signed)
         .unwrap();
@@ -275,6 +280,7 @@ fn transport_failure_after_account_upgrade_records_refusal_and_advances_without_
     assert_eq!(outcome.status, 2);
     assert_eq!(outcome.status_class, 'INVALID_ACTOR');
     assert!(!outcome.nonce_consumed);
+    assert_nonce_facts(ref spy, d.games, 1, d.actor, array![].span());
     assert_eq!(views.get_head(1).order, admitted.order);
     assert_eq!(IGamesAuthenticationDispatcher { contract_address: d.games }.next_nonce(1, d.actor), admitted.nonce);
     assert_eq!(gameplay_snapshot(d.games), before);
@@ -312,7 +318,9 @@ fn oversized_command_is_terminal_and_the_next_ticket_executes() {
         command: Command::Move(crate::commands::Move { explorer_id: 1, directions: directions.span() }),
         ..super::intent(d, 1),
     };
+    let mut spy = spy_events();
     super::execute(d, action);
+    assert_nonce_facts(ref spy, d.games, 1, d.actor, array![1].span());
     let view = IRecordedExecutionViewsDispatcher { contract_address: d.games };
     assert_eq!(view.recorded_outcome(1, 1).unwrap().status, 2);
     assert_eq!(view.recorded_outcome(1, 1).unwrap().status_class, 'INVALID_COMMAND');
@@ -508,6 +516,7 @@ fn release_admission_uses_the_game_pin_and_refusals_preserve_nonce_and_gameplay(
         };
         let device = super::keypair(12345);
         let (r, s) = device.sign(envelope.action).unwrap();
+        let mut spy = spy_events();
         IRecordedExecutionDispatcher { contract_address: d.games }
             .execute(
                 intent,
@@ -517,6 +526,7 @@ fn release_admission_uses_the_game_pin_and_refusals_preserve_nonce_and_gameplay(
         let outcome = view.recorded_outcome(1, envelope.order).unwrap();
         assert_eq!(outcome.status_class, reason);
         assert!(!outcome.nonce_consumed);
+        assert_nonce_facts(ref spy, d.games, 1, d.actor, array![].span());
         assert_eq!(view.get_admission(1, d.actor.into()).nonce, admission.nonce);
         assert_eq!(gameplay_snapshot(d.games), before);
     }
@@ -548,6 +558,7 @@ fn transport_failure_records_a_bad_pin_and_allows_the_next_ticket() {
     let call = IRecordedExecutionFailureSafeDispatcher { contract_address: d.games };
     let views = IRecordedExecutionViewsDispatcher { contract_address: d.games };
     let before = gameplay_snapshot(d.games);
+    let mut spy = snforge_std::spy_events();
     let original = make_intent(d.games, super::intent(d, 1));
     for (release_id, preset_commitment) in array![
         (original.release_id + 1, original.preset_commitment), (original.release_id, original.preset_commitment + 1),
@@ -586,7 +597,29 @@ fn transport_failure_records_a_bad_pin_and_allows_the_next_ticket() {
         assert_eq!(head(d.games, 1).order, envelope.order);
         assert_eq!(gameplay_snapshot(d.games), before);
     }
+    assert_nonce_facts(ref spy, d.games, 1, d.actor, array![1, 2].span());
     super::execute(d, FixtureAction { nonce: 2, ..super::intent(d, 1) });
     assert_eq!(views.recorded_outcome(1, 3).unwrap().status, 1);
     assert_eq!(views.get_admission(1, d.actor.into()).nonce, 3);
+}
+
+fn assert_nonce_facts(
+    ref spy: snforge_std::EventSpy,
+    games: ContractAddress,
+    game_id: u32,
+    actor: ContractAddress,
+    expected: Span<felt252>,
+) {
+    let mut nonces = array![];
+    for (_, event) in spy.get_events().emitted_by(games).events.span() {
+        if event.keys.span() == array![selector!("RowSet"), 1, 'ActionNonce'].span() {
+            assert_eq!(event.data.len(), 5);
+            assert_eq!(*event.data.at(0), 2);
+            assert_eq!(*event.data.at(1), game_id.into());
+            assert_eq!(*event.data.at(2), actor.into());
+            assert_eq!(*event.data.at(3), 1);
+            nonces.append(*event.data.at(4));
+        }
+    }
+    assert_eq!(nonces.span(), expected);
 }

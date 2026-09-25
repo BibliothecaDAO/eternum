@@ -521,7 +521,7 @@ fn foreign_guardian_is_refused_before_signature_without_gameplay_or_nonce_consum
 
 #[test]
 #[feature("safe_dispatcher")]
-fn admission_rejects_a_non_account_and_authentication_row_keeps_its_shape() {
+fn admission_rejects_a_non_account_and_authentication_stays_in_storage() {
     let deployment = setup(true);
     assert!(recorded::admission(deployment.games, 0x999.try_into().unwrap()).is_err());
     let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
@@ -530,17 +530,11 @@ fn admission_rejects_a_non_account_and_authentication_row_keeps_its_shape() {
     let mut spy = spy_events();
     season.set_authentication(authentication.submitter, authentication.account_class);
     let events = spy.get_events().emitted_by(deployment.games);
-    assert_eq!(events.events.len(), 1);
-    let (_, event) = events.events.at(0);
-    assert_eq!(event.keys.span(), array![selector!("RowSet"), 1, 'Authentication'].span());
-    assert_eq!(
-        event.data.span(),
-        array![
-            1, deployment.games.into(), 3, authentication.submitter.into(), authentication.account_class.into(),
-            authentication.guardian_public_key,
-        ]
-            .span(),
-    );
+    assert_eq!(events.events.len(), 0);
+    let stored = season.authentication();
+    assert_eq!(stored.submitter, authentication.submitter);
+    assert_eq!(stored.account_class, authentication.account_class);
+    assert_eq!(stored.guardian_public_key, authentication.guardian_public_key);
 }
 
 

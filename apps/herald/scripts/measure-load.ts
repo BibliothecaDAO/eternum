@@ -9,7 +9,7 @@
 // Run: pnpm --dir apps/herald measure:load --shape frontier --players 2000 --minutes 3 --sample-every 1
 import { parseArgs } from "node:util";
 import { LiveWorld } from "../src/live-world";
-import { receipt, rowEvent, schema, setup, manifest } from "../src/native/fixtures";
+import { receipt, rowEvent, schema, setup, manifest, pointsAward } from "../src/native/fixtures";
 import type { StreamSocket } from "../src/game-stream";
 import type { RpcBlockWithReceipts, RpcEvent } from "../src/types";
 
@@ -78,6 +78,10 @@ const row = (model: string, keys: (string | number)[], overrides: Record<string,
 const owner = (game: number, player: number) => 0x1000 + game * 100 + player;
 const realm = (game: number, player: number) => game * 10_000 + player + 1;
 
+function initialPoints(game: number, player: number): RpcEvent {
+  return pointsAward(String(game), String(owner(game, player)), "1000000", "1000000", String((player + 1) * 1000000));
+}
+
 /** One Frontier game: each player's realm, two armies and explored tiles in its own region of today's expedition. */
 function frontierRows(game: number): RpcEvent[] {
   const startedAt = String(Math.floor(now / 1000));
@@ -92,7 +96,7 @@ function frontierRows(game: number): RpcEvent[] {
     const column = player * SPACING;
     events.push(
       row("PlayerEntry", [game, address], { player: address }),
-      row("PlayerPoints", [game, address]),
+      initialPoints(game, player),
       row("Structure", [game, structure], {
         owner: address,
         "base.category": "1",
@@ -169,7 +173,7 @@ function gameRows(game: number): RpcEvent[] {
     const structure = realm(game, player);
     events.push(
       row("PlayerEntry", [game, owner(game, player)]),
-      row("PlayerPoints", [game, owner(game, player)]),
+      initialPoints(game, player),
       row("EntityName", [game, structure]),
       row("Structure", [game, structure]),
       ...place(game, structure, player * 1000, 0, 1, true),

@@ -169,9 +169,9 @@ const standalone = {
   },
   PointsAwarded: {
     keys: ["1", "1", "17"],
-    data: ["4", "50"],
+    data: ["4", "50", "100", "200"],
     key: { game_id: 1n, player: 17n },
-    value: { activity: "Hyperstructure", points: 50n },
+    value: { activity: "Hyperstructure", points: 50n, player_points: 100n, season_points: 200n },
   },
   RaidEvent: {
     keys: ["1", "1", "42", "0", "7", "3"],

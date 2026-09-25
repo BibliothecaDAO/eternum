@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "37aaeb29b3199f2c2187033fc8c3fd4178f2a02facb48b07bf58f3731fc42bf1",
+  "schemaIdentity": "e5af7575a0eee3050f84c1cffece2374245cd7f009c50b849410de41f8dff3d6",
   "commandAbi": [
     {
       "type": "interface",
@@ -1410,16 +1410,8 @@
       "scope": "deployment"
     },
     {
-      "name": "GameSequence",
-      "scope": "deployment"
-    },
-    {
       "name": "SpireLayout",
       "scope": "game"
-    },
-    {
-      "name": "LedgerOperator",
-      "scope": "deployment"
     },
     {
       "name": "CampResources",
@@ -1560,10 +1552,6 @@
     {
       "name": "BlitzRoster",
       "scope": "game"
-    },
-    {
-      "name": "RealmCatalogue",
-      "scope": "deployment"
     },
     {
       "name": "RealmGrants",
@@ -1730,20 +1718,12 @@
       "scope": "game"
     },
     {
-      "name": "EntitySequence",
-      "scope": "game"
-    },
-    {
       "name": "PlayerPoints",
       "scope": "game"
     },
     {
       "name": "PointsTotal",
       "scope": "game"
-    },
-    {
-      "name": "Authentication",
-      "scope": "deployment"
     },
     {
       "name": "ActionNonce",

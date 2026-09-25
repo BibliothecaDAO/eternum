@@ -59,8 +59,14 @@ const streamHarness = () => {
       deliveries.push({ kind: "snapshot-model", model, facts });
       snapshotProgress.push(progress);
     },
-    onSnapshotEnd: () => deliveries.push({ kind: "snapshot-end" }),
-    onScope: (facts, expedition) => deliveries.push({ kind: "scope", facts, expedition }),
+    onSnapshotEnd: () => {
+      deliveries.push({ kind: "snapshot-end" });
+      return true;
+    },
+    onScope: (facts, expedition) => {
+      deliveries.push({ kind: "scope", facts, expedition });
+      return true;
+    },
     onFacts: (batch) => deliveries.push({ kind: "facts", ...batch }),
     onEvent: (event) => events.push(event),
     onHead: (head) => heads.push(head),
@@ -138,6 +144,75 @@ afterEach(() => {
 });
 
 describe("HeraldGameSyncTransport", () => {
+  it("waits for the complete empty actor scope to be applied before proving absence", async () => {
+    const harness = streamHarness();
+    const { socket, writer } = await attached(harness);
+    socket.receive({ epoch: "epoch-a", seq: 0, type: "snapshot_end" });
+    let applied!: () => void;
+    harness.handlers.onScope = () =>
+      new Promise<boolean>((resolve) => {
+        applied = () => resolve(true);
+      });
+    const ready = vi.fn();
+    const pending = harness.transport.prepareActor("0x111").then(ready);
+    expect(ready).not.toHaveBeenCalled();
+    socket.receive({ epoch: "epoch-a", seq: 0, type: "scope", actor: "0x111", expedition: false, set: [] });
+    await Promise.resolve();
+    expect(ready).not.toHaveBeenCalled();
+    applied();
+    await pending;
+    await harness.transport.prepareActor("0x0111");
+    writer.cancel();
+  });
+
+  it.each(["applied", "failed"])("ignores an old actor's %s application after the actor changes", async (result) => {
+    const harness = streamHarness();
+    const { socket, writer } = await attached(harness);
+    let applyFirst!: () => void;
+    harness.handlers.onScope = () =>
+      new Promise<boolean>((resolve, reject) => {
+        applyFirst = () => (result === "applied" ? resolve(true) : reject(new Error("old scope failed")));
+      });
+    const first = expect(harness.transport.prepareActor("0x111")).rejects.toThrow("actor changed");
+    socket.receive({ epoch: "epoch-a", seq: 0, type: "scope", actor: "0x111", expedition: false, set: [] });
+    const ready = vi.fn();
+    const second = harness.transport.prepareActor("0x222").then(ready);
+    await first;
+    applyFirst();
+    await Promise.resolve();
+    expect(ready).not.toHaveBeenCalled();
+    harness.handlers.onScope = () => true;
+    socket.receive({ epoch: "epoch-a", seq: 0, type: "scope", actor: "0x222", expedition: false, set: [] });
+    await second;
+    writer.cancel();
+  });
+
+  it("requires explicit application success before accepting nonce absence", async () => {
+    const harness = streamHarness();
+    const { socket, writer } = await attached(harness);
+    harness.handlers.onScope = () => false;
+    const failed = expect(harness.transport.prepareActor("0x111")).rejects.toThrow("Actor snapshot was not applied");
+    socket.receive({ epoch: "epoch-a", seq: 0, type: "scope", actor: "0x111", expedition: false, set: [] });
+    await failed;
+    writer.cancel();
+  });
+
+  it("rejects an actor snapshot whose application failed and permits a later complete scope", async () => {
+    const harness = streamHarness();
+    const { socket, writer } = await attached(harness);
+    harness.handlers.onScope = async () => {
+      throw new Error("invalid fact");
+    };
+    const failed = expect(harness.transport.prepareActor("0x111")).rejects.toThrow("invalid fact");
+    socket.receive({ epoch: "epoch-a", seq: 0, type: "scope", actor: "0x111", expedition: false, set: [] });
+    await failed;
+    const retry = harness.transport.prepareActor("0x111");
+    harness.handlers.onScope = () => true;
+    socket.receive({ epoch: "epoch-a", seq: 0, type: "scope", actor: "0x111", expedition: false, set: [] });
+    await retry;
+    writer.cancel();
+  });
+
   it("knows the chain time from Herald's hello, before the first snapshot row", async () => {
     const harness = streamHarness();
     const subscribed = harness.transport.subscribe(harness.handlers);

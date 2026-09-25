@@ -18,7 +18,6 @@ pub mod SeasonLogic {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_tx_info};
     use crate::commands::ExecutionContext as DomainContext;
-    use crate::events::RowSet;
     use crate::logic::release::ReleaseState;
     use crate::ownership::StoryResultTrait;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
@@ -34,7 +33,6 @@ pub mod SeasonLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        RowSet: RowSet,
         PointsAwarded: crate::game::PointsAwarded,
         StoryEvent: crate::ownership::StoryEvent,
         ReleaseEvent: ReleaseState::Event,
@@ -230,27 +228,20 @@ pub mod SeasonLogic {
             if amount == 0 {
                 return;
             }
-            self.emit(crate::game::PointsAwarded { version: 1, game_id, player: actor, activity, points: amount });
             let points = self.data.season.player_points.read((game_id, actor)) + amount;
             let total = self.data.season.season_points.read(game_id) + amount;
             self.data.season.player_points.write((game_id, actor), points);
             self.data.season.season_points.write(game_id, total);
             self
                 .emit(
-                    RowSet {
+                    crate::game::PointsAwarded {
                         version: 1,
-                        model: 'PlayerPoints',
-                        keys: array![game_id.into(), actor.into()].span(),
-                        values: array![points.into()].span(),
-                    },
-                );
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'PointsTotal',
-                        keys: array![game_id.into()].span(),
-                        values: array![total.into()].span(),
+                        game_id,
+                        player: actor,
+                        activity,
+                        points: amount,
+                        player_points: points,
+                        season_points: total,
                     },
                 );
         }

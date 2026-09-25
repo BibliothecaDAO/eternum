@@ -52,6 +52,21 @@ export function rowEvent(name: string, keys: string[], values: string[]): RpcEve
   };
 }
 
+export function pointsAward(
+  game: string,
+  player: string,
+  amount: string,
+  playerPoints: string,
+  seasonPoints: string,
+): RpcEvent {
+  const layout = schema.games.events.find((event) => event.name === "PointsAwarded")!;
+  return {
+    from_address: manifest.world.address,
+    keys: [...layout.prefix, "1", game, player],
+    data: ["4", amount, playerPoints, seasonPoints],
+  };
+}
+
 export function rulesEvent(gameId = "1") {
   const model = schema.models.find((model) => model.name === "SliceRules")!;
   const defaults = (type: string): string[] => {

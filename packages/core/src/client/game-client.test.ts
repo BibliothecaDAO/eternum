@@ -167,6 +167,55 @@ describe("createGameClient", () => {
     secondClient.dispose();
   });
 
+  it("submits nonce zero after a complete actor snapshot with no ActionNonce row", async () => {
+    const harness = createHarness({ actor: "0x111" });
+    const client = await bootClient(harness);
+    vi.mocked(harness.input.native.signIntent).mockResolvedValue(["0x1", "0x2"]);
+    vi.mocked(harness.input.native.submitIntent).mockResolvedValue({ transaction_hash: "0xabc", order: 1n });
+    void client.setup.network.provider
+      .submitCommand({ address: "0x111" } as AccountInterface, {
+        kind: "Explore",
+        value: { explorer_id: 9, direction: 2 },
+      })
+      .catch(() => undefined);
+    await vi.waitFor(() => expect(harness.input.native.submitIntent).toHaveBeenCalledOnce());
+    const action = vi.mocked(harness.input.native.submitIntent).mock.calls[0]![0];
+    expect(BigInt(action.intent[6]!)).toBe(0n);
+    expect(client.setup.store.get("ActionNonce", { game_id: 54, actor: 0x111n })).toBeUndefined();
+    client.dispose();
+  });
+
+  it("waits for a newly selected actor's empty scope to reach the store before signing", async () => {
+    const harness = createHarness({ actor: "0x111" });
+    const client = await bootClient(harness);
+    vi.mocked(harness.input.native.signIntent).mockResolvedValue(["0x1", "0x2"]);
+    vi.mocked(harness.input.native.submitIntent).mockResolvedValue({ transaction_hash: "0xabc", order: 1n });
+    const send = vi.spyOn(harness.sockets[0]!, "send");
+    void client.setup.network.provider
+      .submitCommand({ address: "0x222" } as AccountInterface, {
+        kind: "Explore",
+        value: { explorer_id: 9, direction: 2 },
+      })
+      .catch(() => undefined);
+    await vi.waitFor(() => expect(send).toHaveBeenCalledWith(JSON.stringify({ type: "select_actor", actor: "0x222" })));
+    expect(harness.input.native.signIntent).not.toHaveBeenCalled();
+    harness.sockets[0]!.receive({
+      type: "scope",
+      epoch: "epoch-a",
+      seq: 0,
+      actor: "0x222",
+      expedition: false,
+      set: [],
+    });
+    await flushMicrotasks();
+    expect(harness.input.native.signIntent).not.toHaveBeenCalled();
+    await harness.settle(vi.waitFor(() => expect(harness.input.native.submitIntent).toHaveBeenCalledOnce()));
+    const action = vi.mocked(harness.input.native.submitIntent).mock.calls[0]![0];
+    expect(BigInt(action.intent[5]!)).toBe(0x222n);
+    expect(BigInt(action.intent[6]!)).toBe(0n);
+    client.dispose();
+  });
+
   it("opens and submits a release-1 game when the shard's current release is 2", async () => {
     const harness = createHarness();
     harness.fetchManifest.mockResolvedValue(new Response(JSON.stringify({ ...harness.manifest, releaseId: "2" })));

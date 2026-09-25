@@ -233,7 +233,7 @@ fn one_action_numbers_two_stories_without_writing_the_entity_counter() {
     let mut points = 0_u32;
     for (_, event) in spy.get_events().emitted_by(deployment.games).events.span() {
         for key in event.keys.span() {
-            if *key == 'PlayerPoints' {
+            if *key == selector!("PointsAwarded") {
                 points += 1;
             }
         }

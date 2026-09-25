@@ -317,22 +317,10 @@ export class WorldFold {
     gameId: string | number | bigint,
     confirmedBlock: number,
     models?: readonly string[],
-    actor?: string,
     scope?: GameSyncScope,
   ): GameSnapshot {
     this.refuseEvictedModels(BigInt(gameId).toString(), models);
-    const snapshot = this.snapshotRows(gameId, confirmedBlock, models, scope);
-    if (actor === undefined) return snapshot;
-    const account = BigInt(actor);
-    if (account <= 0n || account >= (1n << 251n) - 256n) throw new Error("Invalid gameplay account");
-    const nonces = snapshot.models.find(({ model }) => model === "ActionNonce");
-    if (!nonces) throw new Error("Actor snapshot requires ActionNonce");
-    const key = nativeEntityId([gameId, account]);
-    if (!nonces.rows.some((row) => BigInt(row.key) === BigInt(key))) {
-      // Complete confirmed history establishes the initial nonce; the overlay follows this snapshot.
-      nonces.rows.push({ key, value: { game_id: BigInt(gameId).toString(), actor, next_nonce: "0" } });
-    }
-    return snapshot;
+    return this.snapshotRows(gameId, confirmedBlock, models, scope);
   }
 
   public gameRows(model: string, gameId: string): FoldRow[] {
@@ -444,13 +432,7 @@ export class WorldFold {
     scope: GameSyncScope,
     models?: readonly string[],
   ): GameSnapshot {
-    return this.snapshot(
-      gameId,
-      block,
-      models,
-      models && !models.includes("ActionNonce") ? undefined : scope.actor,
-      scope,
-    );
+    return this.snapshot(gameId, block, models, scope);
   }
 
   /**
@@ -786,11 +768,9 @@ export class WorldFold {
   }
 
   private applyEventRows(event: Extract<DecodedWorldEvent, { kind: "event" }>): FoldChange[] {
+    if (event.model.name === "PointsAwarded") return this.applyPointsAward(event);
     if (event.model.name !== "ExecutionRecorded") return [];
-    const { game_id, actor, nonce, nonce_consumed, order, status, status_class, reason } = event.value;
-    const game = BigInt(String(game_id));
-    const account = BigInt(String(actor));
-    const submitted = BigInt(String(nonce));
+    const { order, status, status_class, reason } = event.value;
     const result = BigInt(String(status));
     const code = BigInt(String(status_class));
     if (
@@ -801,25 +781,32 @@ export class WorldFold {
       )
     )
       throw new Error("Invalid native execution outcome");
-    if (!nonce_consumed) return [];
-    if (
-      game === 0n ||
-      game >= 1n << 32n ||
-      account === 0n ||
-      account >= (1n << 251n) - 256n ||
-      submitted === (1n << 64n) - 1n
-    )
-      throw new Error("Invalid consumed native nonce");
-    const codec = this.registry.persistent.find((codec) => codec.definition.name === "ActionNonce");
-    if (!codec) throw new Error("Missing native nonce schema");
-    const change = this.apply({
-      kind: "set",
-      model: codec.definition,
-      entityId: nativeEntityId([game, account]),
-      position: event.position,
-      key: { game_id: game, actor: account },
-      value: { next_nonce: submitted + 1n },
+    return [];
+  }
+
+  private applyPointsAward(event: Extract<DecodedWorldEvent, { kind: "event" }>): FoldChange[] {
+    const { game_id, player } = event.key;
+    const { player_points, season_points } = event.value;
+    return [
+      {
+        model: "PlayerPoints",
+        keys: [game_id, player],
+        key: { game_id, address: player },
+        value: { points: player_points },
+      },
+      { model: "PointsTotal", keys: [game_id], key: { game_id }, value: { total: season_points } },
+    ].flatMap(({ model, keys, key, value }) => {
+      const codec = this.registry.persistent.find(({ definition }) => definition.name === model);
+      if (!codec) throw new Error(`Missing native points schema: ${model}`);
+      const change = this.apply({
+        kind: "set",
+        model: codec.definition,
+        entityId: nativeEntityId(keys.map(String)),
+        position: event.position,
+        key,
+        value,
+      });
+      return change ? [change] : [];
     });
-    return change ? [change] : [];
   }
 }

@@ -140,6 +140,10 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private snapshotBytesReceived = 0;
   private snapshotModelsReceived = 0;
   private snapshotRowsReceived = 0;
+  private snapshotActor: string | null = null;
+  private completeActor: string | null | undefined;
+  private actorSnapshotGeneration = 0;
+  private readonly actorSnapshotWaiters = new Set<Deferred<void>>();
 
   constructor(private readonly options: HeraldGameSyncTransportOptions) {
     this.reconnectMs = options.reconnectMs ?? DEFAULT_RECONNECT_MS;
@@ -150,11 +154,52 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     const url = new URL(this.options.url);
     const address = actor === undefined ? null : `0x${BigInt(actor).toString(16)}`;
     if (url.searchParams.get("actor") === address) return;
+    this.completeActor = undefined;
+    this.actorSnapshotGeneration++;
+    this.rejectActorSnapshots(new Error("Gameplay actor changed before its snapshot completed"));
     if (address === null) url.searchParams.delete("actor");
     else url.searchParams.set("actor", address);
     this.options.url = url.toString();
     this.pendingActor = address;
     this.sendActorSelection();
+  }
+
+  /** Absence is meaningful only after this actor's complete scope has reached the store. */
+  public prepareActor(actor: string): Promise<void> {
+    this.selectActor(actor);
+    const address = `0x${BigInt(actor).toString(16)}`;
+    if (this.completeActor === address) return Promise.resolve();
+    if (this.stopped) return Promise.reject(new Error("Herald transport is not active"));
+    const waiter = deferred<void>();
+    this.actorSnapshotWaiters.add(waiter);
+    return waiter.promise;
+  }
+
+  private finishActorSnapshot(actor: string | null, applied: boolean | Promise<boolean> | undefined): void {
+    const generation = ++this.actorSnapshotGeneration;
+    const current = () => !this.stopped && generation === this.actorSnapshotGeneration;
+    const complete = (applied: boolean | undefined) => {
+      if (!current()) return;
+      if (new URL(this.options.url).searchParams.get("actor") !== actor) return;
+      if (applied !== true) {
+        this.rejectActorSnapshots(new Error("Actor snapshot was not applied"));
+        return;
+      }
+      this.completeActor = actor;
+      if (actor === null) return;
+      this.actorSnapshotWaiters.forEach((waiter) => waiter.resolve());
+      this.actorSnapshotWaiters.clear();
+    };
+    if (typeof applied === "boolean" || applied === undefined) complete(applied);
+    else
+      void applied.then(complete, (error) => {
+        if (current()) this.rejectActorSnapshots(error instanceof Error ? error : new Error(String(error)));
+      });
+  }
+
+  private rejectActorSnapshots(error: Error): void {
+    this.actorSnapshotWaiters.forEach((waiter) => waiter.reject(error));
+    this.actorSnapshotWaiters.clear();
   }
 
   private sendActorSelection(): void {
@@ -186,6 +231,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private connect(): void {
     if (this.stopped) return;
     this.resumed = false;
+    this.snapshotActor = new URL(this.options.url).searchParams.get("actor");
     const socket = this.socketFactory(this.options.url);
     this.socket = socket;
     this.helloTimer = setTimeout(() => {
@@ -216,7 +262,8 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.closeSocket();
     this.options.onConnection?.(false);
     // A snapshot cut short can only be completed by a fresh one.
-    if (this.snapshotStreaming) this.forceFreshSnapshot = true;
+    if (this.snapshotStreaming || this.completeActor === undefined) this.forceFreshSnapshot = true;
+    this.actorSnapshotGeneration++;
     this.snapshotStreaming = false;
     this.scheduleReconnect();
   }
@@ -279,7 +326,9 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   }
 
   private acceptScope(message: Extract<HeraldMessage, { type: "scope" }>): void {
-    this.handlers?.onScope(message.set.map(toFact), message.expedition);
+    this.completeActor = undefined;
+    const applied = this.handlers?.onScope(message.set.map(toFact), message.expedition);
+    this.finishActorSnapshot(message.actor === undefined ? null : `0x${BigInt(message.actor).toString(16)}`, applied);
     this.epoch = message.epoch;
     this.seq = message.seq;
     this.acceptingSnapshotOverlay = true;
@@ -287,6 +336,8 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private acceptSnapshotModel(message: Extract<HeraldMessage, { type: "snapshot" }>, bytesReceived: number): void {
     if (!this.snapshotStreaming) {
+      this.completeActor = undefined;
+      this.actorSnapshotGeneration++;
       this.snapshotStreaming = true;
       this.snapshotBytesReceived = this.snapshotModelsReceived = this.snapshotRowsReceived = 0;
       this.handlers?.onSnapshotStart();
@@ -307,10 +358,11 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   }
 
   private acceptSnapshotEnd(message: Extract<HeraldMessage, { type: "snapshot_end" }>): void {
+    this.completeActor = undefined;
     if (!this.snapshotStreaming) this.handlers?.onSnapshotStart();
     this.snapshotStreaming = false;
     this.firstSnapshotEnded = true;
-    this.handlers?.onSnapshotEnd();
+    this.finishActorSnapshot(this.snapshotActor, this.handlers?.onSnapshotEnd());
     this.epoch = message.epoch;
     this.seq = message.seq;
     this.forceFreshSnapshot = false;
@@ -429,6 +481,9 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private stop(): void {
     this.stopped = true;
+    this.completeActor = undefined;
+    this.actorSnapshotGeneration++;
+    this.rejectActorSnapshots(new Error("Herald transport stopped before the actor snapshot completed"));
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = undefined;
     this.closeSocket();

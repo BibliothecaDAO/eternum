@@ -57,9 +57,9 @@ export interface GameSyncSubscriptionHandlers {
   /** A snapshot replaces every row of every model it lists; its models follow until onSnapshotEnd. */
   onSnapshotStart: () => void;
   onSnapshotModel: (model: string, facts: GameSyncFact[], progress: GameSyncSnapshotChunkProgress) => void;
-  onSnapshotEnd: () => void;
+  onSnapshotEnd: () => boolean | Promise<boolean>;
   /** Selecting an actor replaces the rows of the actor-scoped models. */
-  onScope: (facts: GameSyncFact[], expedition: boolean) => void;
+  onScope: (facts: GameSyncFact[], expedition: boolean) => boolean | Promise<boolean>;
   onFacts: (batch: GameSyncFactBatch) => void;
   onEvent: (event: GameSyncEvent, confirmation: GameSyncEventConfirmation) => void;
   onHead: (head: GameSyncHead) => void;

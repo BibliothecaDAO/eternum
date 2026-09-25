@@ -12,11 +12,11 @@ pub fn blitz_roster(game_id: u32) -> Span<RosterPlayer> {
 }
 #[starknet::component]
 pub mod RegistrarState {
+    use starknet::get_caller_address;
     use starknet::storage::{
         StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
-    use starknet::{get_caller_address, get_contract_address};
     use crate::events::RowSet;
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternal;
@@ -151,15 +151,6 @@ pub mod RegistrarState {
         }
         fn write_next_game(ref self: ComponentState<TContractState>, next: u32) {
             self.data.registrar.next_game.write(next);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'GameSequence',
-                        keys: array![get_contract_address().into()].span(),
-                        values: array![next.into()].span(),
-                    },
-                );
         }
     }
 }

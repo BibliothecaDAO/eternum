@@ -1,3 +1,4 @@
+use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::{EventSpyTrait, EventsFilterTrait, start_cheat_caller_address, stop_cheat_caller_address};
 use crate::commands::Command;
 use crate::game::{
@@ -205,7 +206,7 @@ fn closing_includes_every_completed_hyperstructure_and_skips_foundations() {
 }
 
 #[test]
-fn point_history_keeps_each_awards_activity_and_amount_without_a_second_balance() {
+fn each_points_change_emits_one_award_with_absolute_player_and_season_totals() {
     let (deployment, _, _) = setup_with_rules(super::recorded::rules());
     let mut spy = snforge_std::spy_events();
     start_cheat_caller_address(deployment.games, deployment.games);
@@ -250,13 +251,18 @@ fn point_history_keeps_each_awards_activity_and_amount_without_a_second_balance(
     stop_cheat_caller_address(deployment.games);
     let mut awarded = 0;
     let mut activities = 0_u8;
-    for (_, event) in spy.get_events().emitted_by(deployment.games).events.span() {
+    let events = spy.get_events().emitted_by(deployment.games);
+    assert_eq!(events.events.len(), 5);
+    for (_, event) in events.events.span() {
         if event.keys.len() == 4 && *event.keys.at(0) == selector!("PointsAwarded") {
             assert_eq!(*event.keys.at(1), 1);
             assert_eq!(*event.keys.at(2), 3);
             assert_eq!(*event.keys.at(3), deployment.actor.into());
             let amount: u128 = (*event.data.at(1)).try_into().unwrap();
             awarded += amount;
+            assert_eq!(event.data.len(), 4);
+            assert_eq!(*event.data.at(2), awarded.into());
+            assert_eq!(*event.data.at(3), awarded.into());
             let variant: u8 = (*event.data.at(0)).try_into().unwrap();
             activities = activities | match variant {
                 0 => 1,
@@ -271,6 +277,18 @@ fn point_history_keeps_each_awards_activity_and_amount_without_a_second_balance(
     assert_eq!(activities, 31);
     assert_eq!(awarded, points(deployment).player_points(3, deployment.actor));
     assert_eq!(awarded, points(deployment).season_points(3));
+    let mut spy = snforge_std::spy_events();
+    let other = 456.try_into().unwrap();
+    start_cheat_caller_address(deployment.games, deployment.games);
+    points(deployment).register_hyperstructure_points(3, other, 7);
+    points(deployment).register_hyperstructure_points(3, other, 0);
+    let events = spy.get_events().emitted_by(deployment.games);
+    assert_eq!(events.events.len(), 1);
+    let (_, event) = events.events.at(0);
+    assert_eq!(*event.keys.at(3), other.into());
+    assert_eq!(event.data.span(), array![4, 7, 7, (awarded + 7).into()].span());
+    assert_eq!(points(deployment).player_points(3, other), 7);
+    assert_eq!(points(deployment).season_points(3), awarded + 7);
 }
 
 fn nine_completed_hyperstructures(threshold: u128) -> (super::Deployment, Array<crate::resources::ResourceKey>) {
@@ -517,4 +535,29 @@ fn creator_and_non_creator_final_batches_settle_the_same_points_and_game() {
     let final_points = points(helper).player_points(3, helper.actor);
     execute_batch(helper_submitter, Command::MarkGameSettled, timestamp + 2, 0);
     assert_eq!(points(helper).player_points(3, helper.actor), final_points);
+}
+
+#[test]
+fn points_awards_wire_matches_the_herald_replay_fixture() {
+    let (d, _, _) = setup_with_rules(super::recorded::rules());
+    let mut spy = snforge_std::spy_events();
+    start_cheat_caller_address(d.games, d.games);
+    let first = 273.try_into().unwrap();
+    let second = 546.try_into().unwrap();
+    points(d).register_hyperstructure_points(3, first, 9007199254740993);
+    points(d).register_hyperstructure_points(3, second, 7);
+    points(d).register_hyperstructure_points(3, first, 11);
+    let events = spy.get_events().emitted_by(d.games);
+    assert_eq!(events.events.len(), 3);
+    let mut wire = array![];
+    for (_, event) in events.events {
+        assert_eq!(event.keys.len(), 4);
+        assert_eq!(*event.keys.at(0), selector!("PointsAwarded"));
+        wire.append_span(event.keys.span().slice(1, 3));
+        wire.append_span(event.data.span());
+    }
+    assert_eq!(wire, read_txt(@FileTrait::new("tests/fixtures/gameplay-facts/points-awards.txt")));
+    assert_eq!(points(d).player_points(3, first), 9007199254741004);
+    assert_eq!(points(d).player_points(3, second), 7);
+    assert_eq!(points(d).season_points(3), 9007199254741011);
 }

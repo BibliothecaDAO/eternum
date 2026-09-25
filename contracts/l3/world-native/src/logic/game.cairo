@@ -40,7 +40,6 @@ pub fn create(game_id: u32, game: GameRegistry, overrides: GameOverrides) {
     emit_game_fact(
         RowSet { version: 1, model: 'GameOverrides', keys: array![game_id.into()].span(), values: values.span() },
     );
-    emit_counter(game_id, 1);
 }
 pub fn write_game(game_id: u32, game: GameRegistry) {
     let state = crate::state::write();
@@ -59,18 +58,7 @@ pub fn allocate_entity(game_id: u32) -> u32 {
     let id = state.games.next_entity.read(game_id);
     assert!(id != 0, "game does not exist");
     state.games.next_entity.write(game_id, id + 1);
-    emit_counter(game_id, id + 1);
     id
-}
-fn emit_counter(game_id: u32, next: u32) {
-    emit_game_fact(
-        RowSet {
-            version: 1,
-            model: 'EntitySequence',
-            keys: array![game_id.into()].span(),
-            values: array![next.into()].span(),
-        },
-    );
 }
 
 fn emit_game_fact(row: RowSet) {

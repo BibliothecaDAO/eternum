@@ -129,7 +129,7 @@ describe("native bindings in the shared game client", () => {
     expect(sent[0][9]).toBe(sent[1][9]);
   });
 
-  it("never signs with an unknown nonce and accepts an explicit initial row from Herald", async () => {
+  it("never signs before a complete actor snapshot and uses zero only for proven absence", async () => {
     const { store, write } = await fixture();
     write("GameRelease", [1n], { game_id: 1, release_id: 1, preset_commitment: "0x789" });
     const actor = { address: "0x222" } as AccountInterface;
@@ -143,12 +143,20 @@ describe("native bindings in the shared game client", () => {
     };
     await expect(nativeSubmission(connection, store, 1, "0x101")(actor, call)).rejects.toThrow("not synchronized");
     expect(signIntent).not.toHaveBeenCalled();
-    const prepare = vi.fn(async () => {
-      write("ActionNonce", [1n, 0x222n], { game_id: 1, actor: "0x222", next_nonce: "0" });
-    });
-    await nativeSubmission(connection, store, 1, "0x101", prepare)(actor, call);
-    expect(prepare).toHaveBeenCalledWith("0x222");
+    let complete!: () => void;
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          complete = resolve;
+        }),
+    );
+    const pending = nativeSubmission(connection, store, 1, "0x101", prepare)(actor, call);
+    await vi.waitFor(() => expect(prepare).toHaveBeenCalledWith("0x222"));
+    expect(signIntent).not.toHaveBeenCalled();
+    complete();
+    await pending;
     expect(signIntent).toHaveBeenCalledOnce();
+    expect(store.get("ActionNonce", { game_id: 1, actor: 0x222n })).toBeUndefined();
   });
   it("coordinates missing actor snapshots without blocking known actors or waiting for signatures", async () => {
     const { store, write } = await fixture();

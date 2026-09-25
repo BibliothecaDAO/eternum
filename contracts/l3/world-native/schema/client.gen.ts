@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "37aaeb29b3199f2c2187033fc8c3fd4178f2a02facb48b07bf58f3731fc42bf1";
+export const nativeFactSchemaIdentity = "e5af7575a0eee3050f84c1cffece2374245cd7f009c50b849410de41f8dff3d6";
 export const nativeRuleConstants = {
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
@@ -31,9 +31,7 @@ export const nativeTileOccupierConstants = {
 } as const;
 export interface NativeRows {
   Preset: { readonly preset_id: number; readonly commitment: bigint };
-  GameSequence: { readonly address: bigint; readonly next_game_id: number };
   SpireLayout: { readonly game_id: number; readonly count: number; readonly base_distance: number; readonly layer_distance: number; readonly max_layer: number };
-  LedgerOperator: { readonly address: bigint; readonly operator: bigint };
   CampResources: { readonly game_id: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   Guild: { readonly game_id: number; readonly guild_id: bigint; readonly public: boolean; readonly name: bigint };
   GuildMember: { readonly game_id: number; readonly actor: bigint; readonly guild_id: bigint };
@@ -69,7 +67,6 @@ export interface NativeRows {
   RealmTraits: { readonly realm_id: number; readonly wonder: number; readonly order: number; readonly resources: readonly (number)[] };
   BlitzSettlementOrder: { readonly game_id: number; readonly players: readonly (number)[] };
   BlitzRoster: { readonly game_id: number; readonly players: readonly ({ readonly account: bigint })[] };
-  RealmCatalogue: { readonly address: bigint; readonly initialized: number; readonly digest: bigint };
   RealmGrants: { readonly game_id: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly starting_troops: readonly ("Knight" | "Paladin" | "Crossbowman")[]; readonly realm_resources: readonly (number)[] };
   HyperstructureReservations: { readonly game_id: number; readonly placed: number };
   SettlementRules: { readonly game_id: number; readonly registration_start: number; readonly registration_limit: number; readonly mode: "Single" | "Triple" | "Duel"; readonly spacing: number };
@@ -111,17 +108,13 @@ export interface NativeRows {
   GameRegistry: { readonly game_id: number; readonly name: bigint; readonly preset_id: number; readonly creator: bigint; readonly settled: boolean; readonly ready: boolean; readonly dev_mode_on: boolean; readonly start_settling_at: bigint; readonly start_main_at: bigint; readonly end_at: bigint; readonly end_grace_seconds: number; readonly seed: bigint };
   GameOverrides: { readonly game_id: number; readonly registration_start: number; readonly biome_climate: { readonly elevation_scale_bps: number; readonly moisture_scale_bps: number; readonly elevation_bias_bps: number; readonly moisture_bias_bps: number; readonly elevation_seed: number; readonly moisture_seed: number }; readonly map: ({ readonly reward_resource_amount: number; readonly shards_mines_win_probability: number; readonly shards_mines_fail_probability: number; readonly camp_win_probability: number; readonly camp_fail_probability: number; readonly holysite_win_probability: number; readonly holysite_fail_probability: number; readonly bitcoin_mine_win_probability: number; readonly bitcoin_mine_fail_probability: number; readonly hyps_win_prob: number; readonly hyps_fail_prob: number; readonly hyps_fail_prob_increase_p_hex: number; readonly hyps_fail_prob_increase_p_fnd: number; readonly relic_discovery_interval_sec: number; readonly relic_hex_dist_from_center: number; readonly relic_chest_relics_per_chest: number }) | null; readonly map_center_offset: number };
   SliceRules: { readonly game_id: number; readonly battle_config: { readonly regular_immunity_ticks: number; readonly village_immunity_ticks: number; readonly village_raid_immunity_ticks: number }; readonly map_config: { readonly reward_resource_amount: number; readonly shards_mines_win_probability: number; readonly shards_mines_fail_probability: number; readonly camp_win_probability: number; readonly camp_fail_probability: number; readonly holysite_win_probability: number; readonly holysite_fail_probability: number; readonly bitcoin_mine_win_probability: number; readonly bitcoin_mine_fail_probability: number; readonly hyps_win_prob: number; readonly hyps_fail_prob: number; readonly hyps_fail_prob_increase_p_hex: number; readonly hyps_fail_prob_increase_p_fnd: number; readonly relic_discovery_interval_sec: number; readonly relic_hex_dist_from_center: number; readonly relic_chest_relics_per_chest: number }; readonly biome_climate_config: { readonly elevation_scale_bps: number; readonly moisture_scale_bps: number; readonly elevation_bias_bps: number; readonly moisture_bias_bps: number; readonly elevation_seed: number; readonly moisture_seed: number }; readonly tick_config: { readonly armies_tick_in_seconds: bigint; readonly delivery_tick_in_seconds: bigint; readonly bitcoin_phase_in_seconds: bigint }; readonly troop_damage_config: { readonly damage_raid_percent_num: number; readonly damage_biome_bonus_num: number; readonly damage_scaling_factor: bigint; readonly t1_damage_value: bigint; readonly t2_damage_multiplier: bigint; readonly t3_damage_multiplier: bigint }; readonly troop_stamina_config: { readonly stamina_gain_per_tick: number; readonly stamina_initial: number; readonly stamina_bonus_value: number; readonly stamina_knight_max: number; readonly stamina_paladin_max: number; readonly stamina_crossbowman_max: number; readonly stamina_attack_req: number; readonly stamina_defense_req: number; readonly stamina_explore_stamina_cost: number; readonly stamina_travel_stamina_cost: number; readonly stamina_explore_wheat_cost: number; readonly stamina_explore_fish_cost: number; readonly stamina_travel_wheat_cost: number; readonly stamina_travel_fish_cost: number; readonly damage_stamina_refund: boolean; readonly capture_stamina_refund: number }; readonly troop_limit_config: { readonly guard_resurrection_delay: number; readonly mercenaries_troop_lower_bound: number; readonly mercenaries_troop_upper_bound: number; readonly settlement_deployment_cap: number; readonly city_deployment_cap: number; readonly kingdom_deployment_cap: number; readonly empire_deployment_cap: number; readonly t1_tier_strength: number; readonly t2_tier_strength: number; readonly t3_tier_strength: number; readonly t1_tier_modifier: number; readonly t2_tier_modifier: number; readonly t3_tier_modifier: number; readonly settlement_armies: number; readonly city_armies: number; readonly kingdom_armies: number; readonly empire_armies: number; readonly settlement_guard_slots: number; readonly city_guard_slots: number; readonly kingdom_guard_slots: number; readonly empire_guard_slots: number; readonly starting_guard: number; readonly camp_armies: number }; readonly capacity_config: { readonly troop_capacity: number; readonly donkey_capacity: number; readonly storehouse_boost_capacity: number }; readonly structure_capacity_config: { readonly realm_capacity: bigint; readonly village_capacity: bigint; readonly hyperstructure_capacity: bigint; readonly fragment_mine_capacity: bigint; readonly bank_structure_capacity: bigint; readonly camp_capacity: bigint; readonly bitcoin_mine_capacity: bigint }; readonly building_config: { readonly base_population: number; readonly base_cost_percent_increase: number }; readonly bitcoin_mine_config: { readonly enabled: boolean; readonly prize_per_phase: bigint; readonly min_labor_per_contribution: bigint; readonly owner_cut_bps: number }; readonly victory_points_grant_config: { readonly hyp_points_per_second: number; readonly claim_hyperstructure_points: number; readonly claim_otherstructure_points: number; readonly explore_tiles_points: number; readonly relic_open_points: number }; readonly map_center_offset: number; readonly spire_travel_essence_cost: bigint; readonly command_mask: bigint; readonly mode_rules: number; readonly epoch_seconds: number; readonly entry_rule: number; readonly faith_enabled: boolean; readonly speed_config: { readonly donkey_sec_per_km: number; readonly donkey_sec_per_km_troops: number } };
-  EntitySequence: { readonly game_id: number; readonly next_entity_id: number };
   PlayerPoints: { readonly game_id: number; readonly address: bigint; readonly points: bigint };
   PointsTotal: { readonly game_id: number; readonly total: bigint };
-  Authentication: { readonly address: bigint; readonly submitter: bigint; readonly account_class: bigint; readonly guardian_public_key: bigint };
   ActionNonce: { readonly game_id: number; readonly actor: bigint; readonly next_nonce: bigint };
 }
 export interface NativeKeys {
   Preset: { readonly preset_id: number };
-  GameSequence: { readonly address: bigint };
   SpireLayout: { readonly game_id: number };
-  LedgerOperator: { readonly address: bigint };
   CampResources: { readonly game_id: number };
   Guild: { readonly game_id: number; readonly guild_id: bigint };
   GuildMember: { readonly game_id: number; readonly actor: bigint };
@@ -157,7 +150,6 @@ export interface NativeKeys {
   RealmTraits: { readonly realm_id: number };
   BlitzSettlementOrder: { readonly game_id: number };
   BlitzRoster: { readonly game_id: number };
-  RealmCatalogue: { readonly address: bigint };
   RealmGrants: { readonly game_id: number };
   HyperstructureReservations: { readonly game_id: number };
   SettlementRules: { readonly game_id: number };
@@ -199,10 +191,8 @@ export interface NativeKeys {
   GameRegistry: { readonly game_id: number };
   GameOverrides: { readonly game_id: number };
   SliceRules: { readonly game_id: number };
-  EntitySequence: { readonly game_id: number };
   PlayerPoints: { readonly game_id: number; readonly address: bigint };
   PointsTotal: { readonly game_id: number };
-  Authentication: { readonly address: bigint };
   ActionNonce: { readonly game_id: number; readonly actor: bigint };
 }
 export type NativeModelName = keyof NativeRows;
@@ -217,16 +207,6 @@ export const nativeFactModels = {
       "commitment": "felt"
     }
   },
-  "GameSequence": {
-    "keys": [
-      "address"
-    ],
-    "scope": "deployment",
-    "fields": {
-      "address": "felt",
-      "next_game_id": "u32"
-    }
-  },
   "SpireLayout": {
     "keys": [
       "game_id"
@@ -238,16 +218,6 @@ export const nativeFactModels = {
       "base_distance": "u8",
       "layer_distance": "u8",
       "max_layer": "u8"
-    }
-  },
-  "LedgerOperator": {
-    "keys": [
-      "address"
-    ],
-    "scope": "deployment",
-    "fields": {
-      "address": "felt",
-      "operator": "felt"
     }
   },
   "CampResources": {
@@ -789,17 +759,6 @@ export const nativeFactModels = {
           "account": "felt"
         }
       ]
-    }
-  },
-  "RealmCatalogue": {
-    "keys": [
-      "address"
-    ],
-    "scope": "deployment",
-    "fields": {
-      "address": "felt",
-      "initialized": "u32",
-      "digest": "felt"
     }
   },
   "RealmGrants": {
@@ -1703,16 +1662,6 @@ export const nativeFactModels = {
       }
     }
   },
-  "EntitySequence": {
-    "keys": [
-      "game_id"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "next_entity_id": "u32"
-    }
-  },
   "PlayerPoints": {
     "keys": [
       "game_id",
@@ -1735,18 +1684,6 @@ export const nativeFactModels = {
       "total": "u128"
     }
   },
-  "Authentication": {
-    "keys": [
-      "address"
-    ],
-    "scope": "deployment",
-    "fields": {
-      "address": "felt",
-      "submitter": "felt",
-      "account_class": "felt",
-      "guardian_public_key": "felt"
-    }
-  },
   "ActionNonce": {
     "keys": [
       "game_id",
@@ -1766,9 +1703,7 @@ export const nativeSyncScopes = {
   "ExecutionRecorded": "actor",
   "BatchProgress": "actor",
   "Preset": "shared",
-  "GameSequence": "shared",
   "SpireLayout": "shared",
-  "LedgerOperator": "shared",
   "CampResources": "shared",
   "ArtificerCost": "shared",
   "BlitzResult": "shared",
@@ -1789,7 +1724,6 @@ export const nativeSyncScopes = {
   "MinePool": "shared",
   "BlitzSettlementOrder": "shared",
   "BlitzRoster": "shared",
-  "RealmCatalogue": "shared",
   "RealmGrants": "shared",
   "HyperstructureReservations": "shared",
   "SettlementRules": "shared",
@@ -1808,9 +1742,7 @@ export const nativeSyncScopes = {
   "GameRegistry": "shared",
   "GameRelease": "shared",
   "SliceRules": "shared",
-  "EntitySequence": "shared",
   "PointsTotal": "shared",
-  "Authentication": "shared",
   "PlayerPoints": {
     "owners": [
       "address"

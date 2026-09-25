@@ -51,6 +51,8 @@ pub struct PointsAwarded {
     pub player: ContractAddress,
     pub activity: PointActivity,
     pub points: u128,
+    pub player_points: u128,
+    pub season_points: u128,
 }
 
 #[starknet::interface]

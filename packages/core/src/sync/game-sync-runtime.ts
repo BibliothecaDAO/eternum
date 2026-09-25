@@ -319,7 +319,7 @@ export class GameSyncRuntime {
           void this.ingestQueue?.enqueueFacts(facts.slice(start, start + SNAPSHOT_PIECE_FACTS));
       },
       onSnapshotEnd: () => {
-        if (!current() || !snapshot) return;
+        if (!current() || !snapshot) return false;
         const { held, retained } = snapshot;
         snapshot = null;
         const replaced = this.enqueueReplacement(generation, held ?? [], retained);
@@ -328,15 +328,16 @@ export class GameSyncRuntime {
             if (applied && current()) this.resyncListeners.forEach((listener) => listener());
           });
         firstSnapshot.resolve();
+        return replaced.then((applied) => applied && current());
       },
       onScope: (facts, expedition) => {
-        if (!current()) return;
+        if (!current()) return false;
         const retained = new Map(
           session.snapshotModels
             .filter((model) => isScopedGameSyncModel(model, expedition))
             .map((model) => [model, new Set(facts.filter((fact) => fact.model === model).map((fact) => fact.key))]),
         );
-        void this.enqueueReplacement(generation, facts, retained);
+        return this.enqueueReplacement(generation, facts, retained).then((applied) => applied && current());
       },
       onFacts: (batch) => {
         if (!current()) return;

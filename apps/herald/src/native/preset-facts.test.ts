@@ -72,7 +72,7 @@ describe("verified preset configuration facts", () => {
     expect(world.fold.gameRows("BuildingRule", "1")).toHaveLength(40);
     expect(world.fold.gameRows("GameOverrides", "1")).toHaveLength(1);
     for (const scope of [undefined, {}, world.fold.subscriptionScope("1", "0x123", 1234)]) {
-      const snapshot = world.fold.snapshot(1, 11, undefined, undefined, scope);
+      const snapshot = world.fold.snapshot(1, 11, undefined, scope);
       expect(snapshot.models.map(({ model }) => model)).not.toContain("GameOverrides");
     }
     expect(() => world.fold.snapshot(1, 11, ["GameOverrides"])).toThrow("Unknown snapshot models");

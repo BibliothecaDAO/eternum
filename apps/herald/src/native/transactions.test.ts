@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { LiveWorld } from "../live-world";
 import type { MadaraRpc } from "../madara-rpc";
 import type { RpcBlockWithReceipts } from "../types";
-import { manifest, receipt, schema, setup } from "./fixtures";
+import { manifest, receipt, rowEvent, schema, setup } from "./fixtures";
 import { transactionScopes } from "./transactions";
 
 function executionEvent(status: number, nonceConsumed = true, nonce = 0, order = 1) {
@@ -67,7 +67,7 @@ describe("native transaction receipt routing", () => {
       const { native, decoder, fold } = setup();
       const rejected = executionEvent(2, false, 0, 2);
       rejected.data[0] = "2";
-      const accepted = receipt([executionEvent(1), rejected], "0xabc");
+      const accepted = receipt([rowEvent("ActionNonce", ["1", "0x111"], ["1"]), executionEvent(1), rejected], "0xabc");
       const transaction = {
         type: "INVOKE",
         sender_address: "0x999",
@@ -243,7 +243,10 @@ describe("native transaction receipt routing", () => {
       live.resume(connection, { type: "resume", epoch: "old", seq: 0 });
       messages.length = 0;
       const result = executionEvent(2);
-      const rejected = { ...receipt([result], "0x124"), finality_status };
+      const rejected = {
+        ...receipt([rowEvent("ActionNonce", ["1", "0x111"], ["1"]), result], "0x124"),
+        finality_status,
+      };
       live.acceptReceipt(rejected);
       live.acceptTransaction({
         finality_status: "PRE_CONFIRMED",
@@ -283,7 +286,7 @@ describe("native transaction receipt routing", () => {
 
   it("preserves a successful recorded action's finality", () => {
     const { native, fold } = setup();
-    const succeeded = receipt([executionEvent(1)]);
+    const succeeded = receipt([rowEvent("ActionNonce", ["1", "0x111"], ["1"]), executionEvent(1)]);
     expect(native.actionReceipt(fold, succeeded)).toMatchObject({
       ...succeeded,
       executions: [expect.objectContaining({ order: "1", status: "SUCCEEDED" })],
@@ -339,32 +342,44 @@ describe("native transaction receipt routing", () => {
     },
   );
 
-  it("supplies an explicit initial nonce from complete history without replacing an executed nonce", () => {
+  it("keeps an unconsumed actor nonce absent and streams only chain nonce facts", () => {
     const { native, fold } = setup();
     const nonceRows = (actor: string) =>
-      fold.snapshot(1, 10, undefined, actor).models.find(({ model }) => model === "ActionNonce")!.rows;
-    expect(nonceRows("0x111")).toHaveLength(1);
-    expect(nonceRows("0x111")[0].value.next_nonce).toBe("0");
+      fold
+        .subscriptionSnapshot("1", 10, fold.subscriptionScope("1", actor, 100))
+        .models.find(({ model }) => model === "ActionNonce")!.rows;
+    expect(nonceRows("0x111")).toHaveLength(0);
     expect(fold.modelRows("ActionNonce")).toHaveLength(0);
-    native.applyReceipt(fold, receipt([executionEvent(1)]), 10, 0);
+    native.applyReceipt(fold, receipt([rowEvent("ActionNonce", ["1", "0x111"], ["1"]), executionEvent(1)]), 10, 0);
     expect(nonceRows("0x111")).toHaveLength(1);
     expect(BigInt(String(nonceRows("0x111")[0].value.next_nonce))).toBe(1n);
-    expect(nonceRows("0x222")).toHaveLength(2);
+    expect(nonceRows("0x222")).toHaveLength(0);
     expect(() => nonceRows("0x0")).toThrow("Invalid gameplay account");
     expect(() => nonceRows("0x800000000000000000000000000000000000000000000000000000000000000")).toThrow(
       "Invalid gameplay account",
     );
   });
 
+  it("never synthesizes a nonce from an execution outcome", () => {
+    const { native, fold } = setup();
+    native.applyReceipt(fold, receipt([executionEvent(1)]), 10, 0);
+    expect(fold.modelRows("ActionNonce")).toEqual([]);
+  });
+
   it("leaves the nonce row unchanged for a stale-nonce rejection and restores it from a checkpoint", () => {
     const { native, decoder, fold } = setup();
-    native.applyReceipt(fold, receipt([executionEvent(1)]), 10, 0);
+    native.applyReceipt(fold, receipt([rowEvent("ActionNonce", ["1", "0x111"], ["1"]), executionEvent(1)]), 10, 0);
     const before = fold.modelRows("ActionNonce");
     native.applyReceipt(fold, receipt([executionEvent(2, false, 0, 2)], "0x999"), 11, 0);
     expect(fold.modelRows("ActionNonce")).toEqual(before);
     const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
     expect(restored.modelRows("ActionNonce")).toEqual(before);
-    native.applyReceipt(restored, receipt([executionEvent(1, true, 1, 3)], "0x998"), 12, 0);
+    native.applyReceipt(
+      restored,
+      receipt([rowEvent("ActionNonce", ["1", "0x111"], ["2"]), executionEvent(1, true, 1, 3)], "0x998"),
+      12,
+      0,
+    );
     expect(BigInt(String(restored.modelRows("ActionNonce")[0].value.next_nonce))).toBe(2n);
   });
 

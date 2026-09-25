@@ -44,15 +44,6 @@ pub mod RealmState {
             }
             self.data.realms.catalogue_count.write(realm_id - 1);
             self.data.realms.catalogue_digest.write(digest);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'RealmCatalogue',
-                        keys: array![starknet::get_contract_address().into()].span(),
-                        values: array![(realm_id - 1).into(), digest].span(),
-                    },
-                );
         }
         fn traits(self: @ComponentState<TContractState>, realm_id: u32) -> RealmTraits {
             assert!(self.data.realms.catalogue_count.read() == CANONICAL_REALM_COUNT, "incomplete realm catalogue");

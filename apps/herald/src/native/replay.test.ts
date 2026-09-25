@@ -12,7 +12,7 @@ import { WorldFold } from "../world-fold";
 import { createHeraldRequestHandler } from "../http";
 import type { MadaraRpc } from "../madara-rpc";
 import type { RpcEvent, RpcBlockWithReceipts } from "../types";
-import { receipt, schema, setup, rowEvent, rulesEvent, shardManifest } from "./fixtures";
+import { pointsAward, receipt, schema, setup, rowEvent, rulesEvent, shardManifest } from "./fixtures";
 
 function block(number: number, events: RpcEvent[]): RpcBlockWithReceipts {
   return {
@@ -22,7 +22,7 @@ function block(number: number, events: RpcEvent[]): RpcBlockWithReceipts {
   };
 }
 function wireHistory() {
-  const events = [setFixture.raw, rowEvent("PlayerPoints", ["1", "0x111"], ["100"])];
+  const events = [setFixture.raw, pointsAward("1", "0x111", "100", "100", "100")];
   const game = rowEvent(
     "GameRegistry",
     ["1"],
@@ -155,13 +155,13 @@ it("confirms a receipt from its pre-confirmed decode at the confirmed position, 
   const { native, decoder, fold } = setup();
   const [genesis] = wireHistory();
   await native.replay({ fold, rpc: { getBlockWithReceipts: async () => genesis! }, fromBlock: 10, toBlock: 10 });
-  const pending = receipt([setFixture.raw, rowEvent("PlayerPoints", ["1", "0x111"], ["200"])], "0xb1");
+  const pending = receipt([setFixture.raw, pointsAward("1", "0x111", "200", "200", "200")], "0xb1");
   const earlier = { events: pending.events, decoded: native.applyReceipt(fold.overlay(), pending, null, 0).events };
   const confirmed: RpcBlockWithReceipts = {
     block_number: 11,
     timestamp: 2161,
     transactions: [
-      { receipt: receipt([rowEvent("PlayerPoints", ["1", "0x222"], ["5"])], "0xa1"), transaction: { type: "INVOKE" } },
+      { receipt: receipt([pointsAward("1", "0x222", "5", "5", "5")], "0xa1"), transaction: { type: "INVOKE" } },
       { receipt: pending, transaction: { type: "INVOKE" } },
     ],
   };
@@ -344,7 +344,7 @@ it("preserves the two story identities from overlay through confirmation despite
     keys: [...layout.prefix, "1", "1", "42", String(index), "0", "0x111", "0", "3", "0x55"],
     data: ["1", String(index + 1), "2160"],
   });
-  const points = rowEvent("PlayerPoints", ["1", "0x111"], ["100"]);
+  const points = pointsAward("1", "0x111", "100", "100", "100");
   const pending = receipt([story(0), points, story(1)]);
   const overlay = native.applyReceipt(fold.overlay(), pending, null, 0);
   const confirmed = block(10, [points, story(0), story(1)]);

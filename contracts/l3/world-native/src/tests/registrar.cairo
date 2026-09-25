@@ -2040,7 +2040,10 @@ fn creation_emits_release_and_overrides_without_per_game_configuration_rows() {
             assert_eq!(overrides.map_center_offset, crate::registrar::map_center_offset(game_id, params(true).seed));
             overrides_count += 1;
         }
-        for model in array!['SliceRules', 'ResourceRule', 'ProductionRecipe', 'BuildingRule', 'UpgradeRecipe'] {
+        for model in array![
+            'SliceRules', 'ResourceRule', 'ProductionRecipe', 'BuildingRule', 'UpgradeRecipe', 'GameSequence',
+            'EntitySequence',
+        ] {
             for key in event.keys.span() {
                 assert!(*key != model, "per-game configuration row emitted");
             }

@@ -203,17 +203,6 @@ pub mod GamesEntry {
             assert!(authentication.account_class.is_non_zero(), "zero account class");
             assert!(authentication.guardian_public_key.is_non_zero(), "zero guardian");
             self.authentication_state.authentication.write(authentication);
-            let mut values = array![];
-            authentication.serialize(ref values);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'Authentication',
-                        keys: array![get_contract_address().into()].span(),
-                        values: values.span(),
-                    },
-                );
         }
 
         fn approved_account(self: @ComponentState<TContractState>, actor: ContractAddress) -> Result<(), felt252> {
@@ -349,6 +338,15 @@ pub mod GamesEntry {
         fn consume_nonce(ref self: ComponentState<TContractState>, game_id: u32, actor: ContractAddress, nonce: u64) {
             let next_nonce = nonce + 1;
             self.authentication_state.nonces.write((game_id, actor), next_nonce);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'ActionNonce',
+                        keys: array![game_id.into(), actor.into()].span(),
+                        values: array![next_nonce.into()].span(),
+                    },
+                );
         }
         fn assert_authority(self: @ComponentState<TContractState>) {
             assert!(starknet::get_caller_address() == self.data.authority.read(), "only domain authority");

@@ -1,4 +1,4 @@
-use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
+use snforge_std::{ContractClassTrait, DeclareResultTrait, EventSpyTrait, EventsFilterTrait, declare, spy_events};
 use crate::realms::{RealmCatalogue, RealmTraits};
 
 #[starknet::interface]
@@ -65,12 +65,18 @@ fn catalogue_appends_once_and_commits_ordered_contents() {
     let second = 0x9000002_u32;
     assert!(safe.traits(1).is_err());
     assert!(safe.initialize(2, array![first].span()).is_err());
+    let mut spy = spy_events();
     pool.initialize(1, array![first].span());
     assert!(safe.initialize(1, array![second].span()).is_err());
     pool.initialize(2, array![second].span());
     let prefix = core::poseidon::poseidon_hash_span(array![0, 1, first.into()].span());
     let digest = core::poseidon::poseidon_hash_span(array![prefix, 2, second.into()].span());
     assert!(pool.catalogue() == RealmCatalogue { initialized: 2, digest });
+    let events = spy.get_events().emitted_by(pool.contract_address);
+    assert_eq!(events.events.len(), 2);
+    for (_, event) in events.events {
+        assert_eq!(event.keys.span(), array![selector!("RowSet"), 1, 'RealmTraits'].span());
+    }
     assert!(safe.traits(1).is_err());
 }
 

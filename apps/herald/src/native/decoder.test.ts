@@ -9,7 +9,7 @@ import { WorldFold } from "../world-fold";
 import { NativeDecoder, NativeReleaseSchemaUnavailable } from "./decoder";
 import { NativeIngestion } from "./ingestion";
 
-import { schema, manifest, receipt, raw, setup, battleEvent, rowEvent } from "./fixtures";
+import { pointsAward, schema, manifest, receipt, raw, setup, battleEvent, rowEvent } from "./fixtures";
 
 describe("native row decoder", () => {
   it("folds a known same-schema hotfix and refuses an unavailable decoder before its migration rows", () => {
@@ -116,8 +116,8 @@ describe("native row decoder", () => {
     expect(changes[0].change!.set!.key).not.toBe(changes[1].change!.set!.key);
     expect(changes[0].change!.set!.value.event_position).toEqual({ transaction_hash: "0x55", event_index: 0 });
     const confirmed = native
-      .applyReceipt(fold, receipt([rowEvent("PlayerPoints", ["1", "0x111"], ["5"]), ...battles]), 10, 0)
-      .changes.filter(({ change }) => change?.event);
+      .applyReceipt(fold, receipt([pointsAward("1", "0x111", "5", "5", "5"), ...battles]), 10, 0)
+      .changes.filter(({ change }) => change?.event && change.set?.model === "BattleEvent");
     expect(confirmed.map(({ change }) => change!.set!.key)).toEqual(changes.map(({ change }) => change!.set!.key));
     expect(confirmed[0].change!.set!.value.event_position).toEqual({ transaction_hash: "0x55", event_index: 1 });
     const later = native.applyReceipt(fold, receipt([battleEvent("7", "8", "1920", "43")], "0x56"), 11, 0).changes;
@@ -138,9 +138,9 @@ describe("native row decoder", () => {
   });
   it("folds facts from different logic classes at the Games address", () => {
     const { native, fold } = setup();
-    const points = rowEvent("PlayerPoints", ["1", "0x111"], ["42"]);
+    const points = pointsAward("1", "0x111", "42", "42", "42");
     expect(points.from_address).toBe(setFixture.raw.from_address);
-    const foreign = { ...rowEvent("PlayerPoints", ["1", "0x111"], ["999"]), from_address: "0x999" };
+    const foreign = { ...pointsAward("1", "0x111", "999", "999", "999"), from_address: "0x999" };
     native.applyReceipt(fold, receipt([setFixture.raw, points, memberFixture.raw, battleEvent(), foreign]), 10, 0);
     expect(fold.modelRows("ExplorerTroops")[0].value).toEqual({
       ...memberFixture.expected.key,
@@ -176,6 +176,14 @@ it("decodes every declared row and member shape from Games", () => {
         data: [String(keys.length), ...keys, ...(kind === "RowDeleted" ? [] : [String(values.length), ...values])],
       });
     };
+    if (model.eventProjection) {
+      for (const kind of ["RowSet", "RowMemberSet", "RowDeleted"]) {
+        expect(() =>
+          decoder.decode(frame(kind, [], kind === "RowMemberSet" ? model.members[0].id : undefined)),
+        ).toThrow(`projected from ${model.eventProjection}`);
+      }
+      continue;
+    }
     expect(
       decoder.decode(
         frame(

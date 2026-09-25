@@ -78,10 +78,6 @@ export function nativeSubmission(
   };
 }
 
-function nextNonce(store: NativeFactStore, gameId: number, actor: string): bigint {
-  return store.require("ActionNonce", { game_id: gameId, actor: BigInt(actor) }).next_nonce;
-}
-
 /** Only missing actor snapshots share a transport; signing and submission remain concurrent. */
 function createNonceReader(
   store: NativeFactStore,
@@ -93,9 +89,14 @@ function createNonceReader(
     const known = store.get("ActionNonce", { game_id: gameId, actor: BigInt(actor) });
     if (known) return known.next_nonce;
     const nonce = pendingSnapshot.then(async () => {
-      if (!store.get("ActionNonce", { game_id: gameId, actor: BigInt(actor) })) await prepareNonce?.(actor);
+      const key = { game_id: gameId, actor: BigInt(actor) };
+      const current = store.get("ActionNonce", key);
+      if (current) return current.next_nonce;
+      if (!prepareNonce) throw new Error("Gameplay actor snapshot is not synchronized");
+      await prepareNonce(actor);
       // Capture the intent's nonce before another actor can replace this snapshot.
-      return nextNonce(store, gameId, actor);
+      // A complete actor snapshot proves absence means no consumed action, as declared by ActionNonce's schema.
+      return store.get("ActionNonce", key)?.next_nonce ?? 0n;
     });
     // A failed snapshot rejects its caller without blocking other players.
     pendingSnapshot = nonce.then(

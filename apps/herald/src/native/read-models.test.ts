@@ -1,7 +1,7 @@
 import { WorldFold } from "../world-fold";
 import { describe, expect, it } from "vitest";
 import { buildNativeDirectory, buildNativeLeaderboard } from "./read-models";
-import { manifest, receipt, rowEvent, rulesEvent, schema, setup } from "./fixtures";
+import { pointsAward, manifest, receipt, rowEvent, rulesEvent, schema, setup } from "./fixtures";
 
 function gameEvent(game = "1", settled = "0", dev = "0", preset = "2") {
   return rowEvent(
@@ -93,8 +93,8 @@ describe("native directory and leaderboard", () => {
     native.applyReceipt(
       fold,
       receipt([
-        rowEvent("PlayerPoints", ["1", "0x111"], ["1000000"]),
-        rowEvent("PlayerPoints", ["2", "0x111"], ["999000000"]),
+        pointsAward("1", "0x111", "1000000", "1000000", "1000000"),
+        pointsAward("2", "0x111", "999000000", "999000000", "999000000"),
         rowEvent("HyperstructureShares", ["1", "7"], ["100", "2", "2", "0x111", "3333", "0x222", "6667"]),
       ]),
       11,
@@ -114,8 +114,8 @@ describe("native directory and leaderboard", () => {
     native.applyReceipt(
       fold,
       receipt([
-        rowEvent("PlayerPoints", ["1", "0x111"], ["67660000"]),
-        rowEvent("PlayerPoints", ["1", "0x222"], ["133340000"]),
+        pointsAward("1", "0x111", "66660000", "67660000", "67660000"),
+        pointsAward("1", "0x222", "133340000", "133340000", "201000000"),
         rowEvent("HyperstructureShares", ["1", "7"], ["200", "2", "2", "0x111", "3333", "0x222", "6667"]),
       ]),
       12,
@@ -132,8 +132,8 @@ describe("native directory and leaderboard", () => {
     native.applyReceipt(
       fold,
       receipt([
-        rowEvent("PlayerPoints", ["1", "0x111"], [String(huge)]),
-        rowEvent("PlayerPoints", ["1", "0x222"], [String(huge + 1n)]),
+        pointsAward("1", "0x111", String(huge), String(huge), String(huge)),
+        pointsAward("1", "0x222", String(huge + 1n), String(huge + 1n), String(2n * huge + 1n)),
       ]),
       11,
       0,
