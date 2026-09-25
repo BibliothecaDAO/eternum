@@ -36,7 +36,15 @@ export const Chip = ({
   </span>
 );
 
-const TIER_NUMERALS: Record<TroopTier, string> = { [TroopTier.T1]: "I", [TroopTier.T2]: "II", [TroopTier.T3]: "III" };
+const TIER_NUMERALS = ["", "I", "II", "III"] as const;
+const TROOP_TIERS: Record<TroopTier, 1 | 2 | 3> = { [TroopTier.T1]: 1, [TroopTier.T2]: 2, [TroopTier.T3]: 3 };
+
+/** A tier as its banner, I, II or III: a troop's beside its count, a building's under its medallion. */
+export const TierBanner = ({ tier, large = false }: { tier: 1 | 2 | 3; large?: boolean }) => (
+  <span aria-hidden data-tier={tier} className={cn("frontier-tier", large && "frontier-tier-lg")}>
+    {TIER_NUMERALS[tier]}
+  </span>
+);
 
 /**
  * Troops as every Frontier surface shows them: the troop's icon, how many, and its tier's badge. Strength stays hidden;
@@ -59,11 +67,7 @@ export const TroopChip = ({
     small={small}
     icon={<img src={`/images/resources/${getTroopResourceId(type, tier)}.png`} alt="" />}
     value={formatAmount(count)}
-    badge={
-      <span aria-hidden className="frontier-tier">
-        {TIER_NUMERALS[tier]}
-      </span>
-    }
+    badge={<TierBanner tier={TROOP_TIERS[tier]} />}
   />
 );
 

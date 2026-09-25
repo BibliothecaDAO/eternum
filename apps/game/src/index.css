@@ -569,7 +569,7 @@ html.frontier-type .frontier-primary .frontier-chip[data-tone="price"] {
   background: rgba(109, 67, 0, 0.28);
   border-color: rgba(109, 67, 0, 0.55);
 }
-/* A troop's tier after its count: a small silver plate with the numeral. */
+/* A tier's banner: a small silver plate with the numeral, gold at III; larger under a building's medallion. */
 html.frontier-type .frontier-tier {
   border-radius: 5px;
   border: 1px solid #6e6148;
@@ -580,6 +580,14 @@ html.frontier-type .frontier-tier {
   font-size: 11px;
   line-height: 1;
   padding: 3px 5px;
+}
+html.frontier-type .frontier-tier[data-tier="3"] {
+  border-color: #b76f00;
+  background: linear-gradient(180deg, #ffd98a, #e39001);
+}
+html.frontier-type .frontier-tier.frontier-tier-lg {
+  font-size: 14px;
+  padding: 4px 8px;
 }
 /* The dock's smaller chip (mockup 7): the same token at card scale. */
 html.frontier-type .frontier-chip.frontier-chip-sm {
