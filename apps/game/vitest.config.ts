@@ -7,10 +7,6 @@ import { ASSET_CHECK_FILES } from "./vitest.assets.files";
 export default defineConfig({
   plugins: [react(), wasm()],
   test: {
-    // Two load-sensitive files (instanced-model, game-entry-preload) time out
-    // under full-suite parallelism but pass in isolation. One CI retry turns those known flakes from an 11-minute job
-    // rerun into a few retried seconds; locally failures stay loud.
-    retry: process.env.CI ? 1 : 0,
     // The asset and CLI checks run through vitest.assets.config.ts (`pnpm verify:assets`) where the artefacts
     // they check are produced; the PR gate stays a behaviour suite.
     exclude: ["**/node_modules/**", "**/dist/**", ...ASSET_CHECK_FILES],
