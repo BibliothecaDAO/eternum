@@ -27,10 +27,9 @@ export const SpireTravelModal = ({
   });
   useNativeRevision(["TileOpt", "TileOccupancy"]);
   const position = explorer ? entityMapPosition(store, explorer.game_id, explorerId) : undefined;
-  const explorerLayer = position?.alt ?? false;
-  const destination = position ? getTileAt(store, !explorerLayer, position.x, position.y) : undefined;
-  const crossing = resolveSpireCrossing(explorerLayer, destination);
-  const sideName = crossing.toEthereal ? "the Ethereal Layer" : "the surface";
+  const destination = position ? getTileAt(store, !position.alt, position.x, position.y) : undefined;
+  const crossing = resolveSpireCrossing(position?.alt, destination);
+  const sideName = crossing.kind !== "unknown" && crossing.toEthereal ? "the Ethereal Layer" : "the surface";
 
   const handleTravel = () => {
     closeSurface();
@@ -40,7 +39,11 @@ export const SpireTravelModal = ({
   return (
     <SurfaceFrame title="Spire" icon={Sparkles} onClose={closeSurface} className="w-[560px]" bodyClassName="p-5">
       <div className="flex flex-col gap-4 text-gold/90">
-        {crossing.kind === "clear" ? (
+        {crossing.kind === "unknown" ? (
+          <p className="text-sm text-gold/70">
+            This army's position is unknown here, so the crossing cannot be checked.
+          </p>
+        ) : crossing.kind === "clear" ? (
           <div className="flex items-start gap-3 rounded border border-cyan-300/25 bg-cyan-500/10 p-3">
             <Sparkles className="mt-0.5 h-4 w-4 text-cyan-200" />
             <div className="flex flex-col gap-1">
@@ -74,7 +77,11 @@ export const SpireTravelModal = ({
         >
           <span className="inline-flex items-center gap-2">
             <ArrowRightLeft className="h-4 w-4" />
-            {crossing.toEthereal ? "Enter the Ethereal Layer" : "Return to the surface"}
+            {crossing.kind === "unknown"
+              ? "Cross the spire"
+              : crossing.toEthereal
+                ? "Enter the Ethereal Layer"
+                : "Return to the surface"}
           </span>
         </Button>
       </div>

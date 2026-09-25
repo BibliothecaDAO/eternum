@@ -10,6 +10,10 @@ describe("resolveSpireCrossing", () => {
     expect(resolveSpireCrossing(false, undefined)).toEqual({ kind: "clear", toEthereal: true });
   });
 
+  it("knows neither side for an army whose position this client cannot see", () => {
+    expect(resolveSpireCrossing(undefined, undefined)).toEqual({ kind: "unknown" });
+  });
+
   it("names what blocks the hex on the other side", () => {
     expect(resolveSpireCrossing(true, { occupier_id: 9, occupier_is_structure: false })).toEqual({
       kind: "blocked",

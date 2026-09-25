@@ -105,7 +105,11 @@ export const revealedTileData = (tile: HomeRingTile): bigint => BigInt(tile.biom
 
 /** Decodes expedition_home_ring's Span<(Coord, u8)>: a length, then (alt, x, y, biome) per tile. */
 export const decodeHomeRing = (felts: readonly string[]): HomeRingTile[] => {
-  const count = Number(BigInt(felts[0] ?? "0"));
+  const count = felts[0] === undefined ? undefined : Number(BigInt(felts[0]));
+  // An empty or short view response is a failed read, never a ring of no tiles.
+  if (count === undefined || felts.length !== 1 + count * 4) {
+    throw new Error(`expedition_home_ring returned ${felts.length} felts, not a length and its tiles`);
+  }
   return Array.from({ length: count }, (_, index) => {
     const [, x, y, biome] = felts.slice(1 + index * 4, 5 + index * 4).map((felt) => Number(BigInt(felt)));
     return { col: x!, row: y!, biome: biome! };

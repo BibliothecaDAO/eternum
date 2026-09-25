@@ -94,9 +94,13 @@ const storyEventFromValue = (
 ): StreamStoryEvent | null => {
   const variant = model === "StoryEvent" ? storyVariant(value.story) : { type: model, payload: value };
   if (!variant || !EVENT_MODELS.has(model)) return null;
-  const position = asRecord(value.event_position);
-  const transactionHash = String(position?.transaction_hash ?? value.tx_hash);
   const eventId = storyEventIdentity(scope, value);
+  // An event names its transaction by its stream position, or a StoryEvent by its own tx_hash; every model carries the
+  // chain's timestamp. Missing either is a malformed event, never "undefined" or the epoch.
+  const transactionHash = asRecord(value.event_position)?.transaction_hash ?? value.tx_hash;
+  if (typeof transactionHash !== "string" || value.timestamp === undefined || value.timestamp === null) {
+    throw new Error(`${model} arrived without its transaction or timestamp`);
+  }
   const owner = value.owner ?? value.player ?? asRecord(value.attacker)?.player;
   return {
     scopeKey: storyEventScopeKey(scope),
@@ -105,7 +109,7 @@ const storyEventFromValue = (
     entity_id: toOptionalNumber(value.entity_id ?? value.explorer_id ?? value.attacker_id),
     tx_hash: transactionHash,
     story: variant.type,
-    timestamp: String(value.timestamp ?? "0x0"),
+    timestamp: String(value.timestamp),
     event_id: eventId,
     storyPayload: variant.payload,
     rawStory: value.story,

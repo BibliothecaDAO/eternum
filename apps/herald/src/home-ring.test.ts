@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { type HomeRingTile, type HomeRingView } from "./home-ring";
+import { decodeHomeRing, type HomeRingTile, type HomeRingView } from "./home-ring";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
 import { raw, receipt, rowEvent, rulesEvent, setup } from "./native/fixtures";
@@ -96,6 +96,12 @@ const tilesIn = (messages: HeraldStreamMessage[]) =>
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe("home ring", () => {
+  it("refuses an empty or short view response instead of reading a ring of no tiles", () => {
+    expect(decodeHomeRing(["0x1", "0x0", "0x5", "0x6", "0x2"])).toEqual([{ col: 5, row: 6, biome: 2 }]);
+    expect(() => decodeHomeRing([])).toThrow("expedition_home_ring returned 0 felts");
+    expect(() => decodeHomeRing(["0x2", "0x0", "0x5", "0x6", "0x2"])).toThrow("returned 5 felts");
+  });
+
   it("keeps spires and reservations in tile scope without treating them as positioned entities", () => {
     const { native, fold } = frontierWorld();
     native.applyReceipt(

@@ -1456,14 +1456,14 @@ const ResourceInfo = ({
   const game = useGame();
   useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building"]);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-  // Empty when this game defines no recipe for the resource.
-  let cost = configManager.getRecipeInputs(resourceId, useSimpleCost) ?? [];
+  // Undefined when the recipe is unknown here: shown as "—", never as a free cost. Relics hold an empty recipe.
+  let cost = configManager.getRecipeInputs(resourceId, useSimpleCost);
 
   const structure = useNativeRow(
     "Structure",
     entityId === undefined ? undefined : { game_id: configManager.getActiveGameId(), entity_id: entityId },
   );
-  if (resourceId == ResourcesIds.Donkey && structure?.metadata.has_wonder) {
+  if (cost && resourceId == ResourcesIds.Donkey && structure?.metadata.has_wonder) {
     cost = adjustWonderLordsCost(cost);
   }
 
@@ -1534,30 +1534,37 @@ const ResourceInfo = ({
         </div>
       </div>
 
-      {Object.keys(cost).length > 0 && (
+      {cost === undefined ? (
         <>
           <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Cost</h6>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.keys(cost).map((resourceId) => {
-              const balance = getBalance(
-                entityId || 0,
-                cost[Number(resourceId)].resource,
-                currentDefaultTick,
-                game.setup.store,
-              );
-              return (
-                <ResourceCost
-                  key={resourceId}
-                  type="horizontal"
-                  resourceId={cost[Number(resourceId)].resource}
-                  amount={cost[Number(resourceId)].amount}
-                  balance={balance.balance}
-                  size="lg"
-                />
-              );
-            })}
-          </div>
+          <p className="text-gold/70">—</p>
         </>
+      ) : (
+        cost.length > 0 && (
+          <>
+            <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Cost</h6>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.keys(cost).map((resourceId) => {
+                const balance = getBalance(
+                  entityId || 0,
+                  cost[Number(resourceId)].resource,
+                  currentDefaultTick,
+                  game.setup.store,
+                );
+                return (
+                  <ResourceCost
+                    key={resourceId}
+                    type="horizontal"
+                    resourceId={cost[Number(resourceId)].resource}
+                    amount={cost[Number(resourceId)].amount}
+                    balance={balance.balance}
+                    size="lg"
+                  />
+                );
+              })}
+            </div>
+          </>
+        )
       )}
 
       {Object.keys(buildingCost).length > 0 && (

@@ -282,16 +282,16 @@ const LocalTilePanel = () => {
     return producedResource !== undefined ? (findResourceById(producedResource)?.trait ?? null) : null;
   }, [producedResource]);
 
-  const ongoingCost = useMemo<ResourceAmountEntry[]>(() => {
+  // Undefined when the recipe is unknown here: shown as "—", never as a free cost.
+  const ongoingCost = useMemo<ResourceAmountEntry[] | undefined>(() => {
     if (producedResource === undefined) return [];
-    // Empty when this game defines no recipe for the resource.
-    const costs = configManager.getRecipeInputs(producedResource, useSimpleCost) ?? [];
-    return normalizeResourceEntries(costs);
+    const costs = configManager.getRecipeInputs(producedResource, useSimpleCost);
+    return costs === undefined ? undefined : normalizeResourceEntries(costs);
   }, [producedResource, useSimpleCost]);
 
   const consumedBy = useMemo(() => {
     if (producedResource === undefined) return [];
-    return getConsumedBy(producedResource) ?? [];
+    return getConsumedBy(producedResource);
   }, [producedResource]);
 
   const populationConfig = useMemo(() => {
@@ -557,7 +557,12 @@ const LocalTilePanel = () => {
             </SectionRow>
           )}
 
-          {ongoingCost.length > 0 && (
+          {ongoingCost === undefined && (
+            <SectionRow label="Consumes / sec">
+              <span className="text-gold/70">—</span>
+            </SectionRow>
+          )}
+          {ongoingCost !== undefined && ongoingCost.length > 0 && (
             <SectionRow label="Consumes / sec">
               {ongoingCost.map((entry, index) => {
                 const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
