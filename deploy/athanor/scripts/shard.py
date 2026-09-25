@@ -287,7 +287,7 @@ def collector_image():
 
 def collector_configuration():
     # Replace node-only telemetry with admission timing and container cost in the same run directory.
-    gateway = {"job_name": "gateway", "scrape_interval": "5s", "static_configs": [{"targets": ["gateway:9950"]}]}
+    gateway = {"job_name": "gateway", "scrape_interval": "5s", "static_configs": [{"targets": ["gateway:9951"]}]}
     return {
         "receivers": {
             "otlp": {"protocols": {"grpc": {"endpoint": "0.0.0.0:4317"}}},
@@ -325,7 +325,8 @@ def write_gateway_environment(config, directory, environment, authority, world):
         "RANDOMNESS_ACCOUNT": authority, "RANDOMNESS_DEPLOYMENT": world,
         "RANDOMNESS_PRIVATE_KEY": environment["RANDOMNESS_PRIVATE_KEY"],
         "RANDOMNESS_EPOCH_SECRET": "/data/game-epoch-secret.json", "RUST_LOG": "info",
-        "GATEWAY_LISTEN": "0.0.0.0:9950", "GATEWAY_MAX_CONNECTIONS": admission_connections(config),
+        "GATEWAY_LISTEN": "0.0.0.0:9950", "GATEWAY_METRICS_LISTEN": "0.0.0.0:9951",
+        "GATEWAY_MAX_CONNECTIONS": admission_connections(config),
         "GATEWAY_PLAYER_CAPACITY": config["player_capacity"],
         "GATEWAY_AUTHORITY": json.loads((directory / "gameplay-contracts.json").read_text())["operatorAccountAddress"],
         "NODE_RPC_URL": "http://madara:9944/rpc/v0_10_2", "NODE_WS_URL": "ws://madara:9944/rpc/v0_10_2",

@@ -188,6 +188,17 @@ class ShardTest(unittest.TestCase):
             self.assertEqual(config["exporters"]["file"]["path"], "/data/metrics.jsonl")
             self.assertEqual((directory / "metrics").stat().st_mode & 0o777, 0o700)
 
+    def test_the_collector_scrapes_the_gateway_metrics_listener_not_its_admission_port(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / "gameplay-contracts.json").write_text(json.dumps({"operatorAccountAddress": "0x1"}))
+            shard.write_gateway_environment({"player_capacity": 96}, directory, {"RANDOMNESS_PRIVATE_KEY": "0x2"}, "0x3", "0x4")
+            gateway = dict(line.split("=", 1) for line in (directory / "gateway.env").read_text().splitlines())
+            [target] = shard.collector_configuration()["receivers"]["prometheus"]["config"]["scrape_configs"][0][
+                "static_configs"][0]["targets"]
+            self.assertEqual(target.split(":")[1], gateway["GATEWAY_METRICS_LISTEN"].split(":")[1])
+            self.assertNotEqual(gateway["GATEWAY_METRICS_LISTEN"], gateway["GATEWAY_LISTEN"])
+
     def test_cgroup_samples_keep_units_and_history_across_container_replacement(self):
         spec = importlib.util.spec_from_file_location("collect_cpu", shard.METRICS_CONTEXT / "collect_cpu.py")
         sampler = importlib.util.module_from_spec(spec)
