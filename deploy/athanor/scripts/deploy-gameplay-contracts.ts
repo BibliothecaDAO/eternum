@@ -68,6 +68,8 @@ function writeDeploymentResult(result: GameplayDeploymentResult): void {
 }
 
 async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
+  // Say which operator approval is missing before the chain is touched: an enrolment file or the operator token.
+  if (!readOperatorEnrolment()) operatorIdentity();
   const provider = new RpcProvider({ nodeUrl: RPC_URL });
   const manifest = readShardManifest<{ shard: ShardRecord }>(process.env.NATIVE_WORLD_MANIFEST);
   await assertProviderChain(provider, manifest, "RPC_URL");

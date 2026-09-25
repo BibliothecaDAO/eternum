@@ -146,6 +146,19 @@ class ShardTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "without a memory limit"):
                 shard.check_slice_memory(compose, slice_directory)
 
+    def test_the_rendered_shard_keeps_the_operator_token_out_of_its_files(self):
+        rendered = {"name": "athanor-smoke", "services": {
+            name: {"environment": {"OPERATOR_TOKEN": "operator-secret"}, "volumes": []}
+            for name in ("prepare", "init")
+        } | {name: {"command": [], "environment": {}} for name in ("madara", "postgres", "herald", "gateway", "rpc")}}
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(shard.subprocess, "check_output", return_value=json.dumps(rendered)):
+            compose = shard.compose_configuration(configuration(), Path(directory))
+        self.assertNotIn("operator-secret", json.dumps(compose))
+        for name in ("prepare", "init"):
+            self.assertIn("OPERATOR_TOKEN", compose["services"][name]["environment"])
+            self.assertIsNone(compose["services"][name]["environment"]["OPERATOR_TOKEN"])
+
     def test_existing_containers_or_volumes_are_never_reused(self):
         for replies in (["container"], ["", "volume"]):
             with patch.object(shard, "read", side_effect=replies), self.assertRaisesRegex(ValueError, "already owns state"):

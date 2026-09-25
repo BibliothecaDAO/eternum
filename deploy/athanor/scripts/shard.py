@@ -154,6 +154,9 @@ def compose_configuration(config, directory):
     for name in ("prepare", "init"):
         service = compose["services"][name]
         service.update({"mem_limit": "8g", "memswap_limit": "8g"})
+        # Rendering resolved the operator secret from this shell; compose.json keeps only its name, and starting the
+        # shard passes it through from the same shell again.
+        service["environment"]["OPERATOR_TOKEN"] = None
         service["environment"]["CHAIN_CONFIG"] = "/template/chain-config.yaml"
         service["volumes"].append({"type": "bind", "source": str(Path(config["chain_config"]).resolve()),
                                    "target": "/template/chain-config.yaml", "read_only": True})

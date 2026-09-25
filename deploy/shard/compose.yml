@@ -18,6 +18,10 @@ x-init: &init
     BIND_ADDRESS: ${BIND_ADDRESS:-127.0.0.1}
     HOST_UID: ${HOST_UID:?Set HOST_UID to the host user that owns data/ (id -u)}
     HOST_GID: ${HOST_GID:?Set HOST_GID to that user's group (id -g)}
+    # Our own shards' operator is approved through the identity Worker with this secret; it passes through from the
+    # shell that starts the package and is never written to a file. A community shard leaves it unset and brings
+    # data/operator-enrolment.json instead.
+    OPERATOR_TOKEN:
 
 services:
   prepare:
