@@ -37,6 +37,59 @@ export const attributeLevel = (progress: ArmyProgressFacts, attribute: Attribute
     Support: progress.support,
   })[attribute];
 
+/** The game's ArmyProgressionRules (backend shapes v6): XP per reveal and per clear, and the step each level costs. */
+export interface ProgressionRulesFacts {
+  reveal_xp: number;
+  clear_xp: number;
+  level_step_xp: number;
+}
+
+/**
+ * How far an army is into its level, where level L costs `level_step_xp × L`. While an offer waits, XP keeps banking
+ * past the threshold and the level holds, so the bar stops at full.
+ */
+export const levelProgress = (progress: Pick<ArmyProgressFacts, "level" | "xp">, rules: ProgressionRulesFacts) => {
+  const needed = rules.level_step_xp * progress.level;
+  return { into: Math.min(progress.xp, needed), needed };
+};
+
+/**
+ * The picks banked behind an army's waiting offer (backend shapes v6): that offer already spent its level's threshold,
+ * and the XP it keeps earning meanwhile buys one more level and offer per threshold it covers, each claimed after the
+ * pick before it.
+ */
+export const bankedPicks = (
+  progress: Pick<ArmyProgressFacts, "level" | "xp">,
+  rules: ProgressionRulesFacts,
+): number => {
+  let picks = 0;
+  let xp = progress.xp;
+  for (let level = progress.level; xp >= rules.level_step_xp * level; level += 1) {
+    xp -= rules.level_step_xp * level;
+    picks += 1;
+  }
+  return picks;
+};
+
+/** The XP an army earned between two readings, across however many levels it crossed; a pick alone earns none. */
+export const xpGained = (
+  before: Pick<ArmyProgressFacts, "level" | "xp">,
+  after: Pick<ArmyProgressFacts, "level" | "xp">,
+  rules: ProgressionRulesFacts,
+): number => {
+  if (after.level === before.level) return after.xp - before.xp;
+  let gained = levelProgress(before, rules).needed - before.xp + after.xp;
+  for (let level = before.level + 1; level < after.level; level += 1) gained += rules.level_step_xp * level;
+  return gained;
+};
+
+/** What changed in an army's progress between two readings: the XP it earned and the levels it gained. */
+export const progressChange = (
+  before: Pick<ArmyProgressFacts, "level" | "xp">,
+  after: Pick<ArmyProgressFacts, "level" | "xp">,
+  rules: ProgressionRulesFacts,
+) => ({ xp: xpGained(before, after, rules), levels: after.level - before.level });
+
 /** Where a chosen attribute's card lands: the army's attribute badge. */
 export const attributeBadgeTarget = (explorerId: number): string => `attributes-${explorerId}`;
 

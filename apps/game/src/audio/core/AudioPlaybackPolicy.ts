@@ -36,6 +36,8 @@ const CATEGORY_CAPS: Record<AudioCategory, number> = {
 const ASSET_COOLDOWNS_MS = new Map<string, number>([
   ["ui.hover", 120],
   ["ui.click", 90],
+  // Twelve a second at most: XP ticks come in bursts as reveals land.
+  ["xp.tick", 83],
   ["ui.slider_tick", 120],
   ["ui.msg_receive", 500],
   ["ui.msg_send", 150],

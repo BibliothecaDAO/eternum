@@ -509,6 +509,16 @@ const AUDIO_REGISTRY: Record<string, AudioAsset> = {
     volume: 0.6,
   },
   // Frontier's pick (design §3.11 §2): the owner-picked finished mixes.
+  "xp.tick": {
+    id: "xp.tick",
+    url: "/sound/frontier/xp.tick.mp3",
+    category: AudioCategory.UI,
+    priority: 3,
+    poolSize: 4,
+    spatial: false,
+    loop: false,
+    volume: 0.5,
+  },
   "card.deal": {
     id: "card.deal",
     url: "/sound/frontier/card.deal.mp3",
