@@ -11,12 +11,12 @@ import { BlockTimestampPoller } from "@/ui/shared/components/block-timestamp-pol
 import { configManager, readExpeditionRules } from "@bibliothecadao/eternum";
 import { type GameClientSetup, NativeFactStore, openShard } from "@bibliothecadao/eternum/game-client";
 import { useEffect, useState } from "react";
-import { buildLabDay, LAB_GAME_ID, LAB_PLAYER, LAB_REALM_ID, loadRecordedRules } from "./frontier-hud-lab-facts";
+import { buildLabDay, LAB_PLAYER, LAB_REALM_ID, loadGeneratedRules } from "./frontier-hud-lab-facts";
 
 type Lab = Awaited<ReturnType<typeof bootLab>>;
 
 /**
- * Dev only: Frontier's HUD over the recorded launch's facts, with no chain, identity or scene behind it. Open it at
+ * Dev only: Frontier's HUD over the current Frontier launch's facts, with no chain, identity or scene behind it. Open it at
  * /lab/frontier-hud/map for the expedition, /lab/frontier-hud/hex for the realm.
  */
 export const FrontierHudLabView = () => {
@@ -33,19 +33,19 @@ export const FrontierHudLabView = () => {
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,#2c3b2a,#0c0a08)]" />
       <BlockTimestampPoller />
       <SurfaceHost />
-      <FrontierHud rules={readExpeditionRules(lab.setup.store, LAB_GAME_ID)!} />
-      <LabPacing store={lab.setup.store} />
+      <FrontierHud rules={readExpeditionRules(lab.setup.store, lab.gameId)!} />
+      <LabPacing store={lab.setup.store} gameId={lab.gameId} />
     </GameProvider>
   );
 };
 
-/** The recording's own clock, stated so nobody reads an accelerated launch as Frontier's real pacing. */
-const LabPacing = ({ store }: { store: NativeFactStore }) => {
-  const rules = store.require("SliceRules", { game_id: LAB_GAME_ID });
+/** The launch's own clock, stated so nobody reads an accelerated launch as Frontier's real pacing. */
+const LabPacing = ({ store, gameId }: { store: NativeFactStore; gameId: number }) => {
+  const rules = store.require("SliceRules", { game_id: gameId });
   return (
     <p className="pointer-events-none fixed top-36 left-1/2 z-40 -translate-x-1/2 rounded bg-black/70 px-2 py-1 font-sans text-[10px] text-gold/80">
-      Lab · recorded launch pacing: {rules.epoch_seconds} s days, {String(rules.tick_config.armies_tick_in_seconds)} s
-      ticks, +{rules.troop_stamina_config.stamina_gain_per_tick} stamina a tick
+      Lab · launch pacing: {rules.epoch_seconds} s days, {String(rules.tick_config.armies_tick_in_seconds)} s ticks, +
+      {rules.troop_stamina_config.stamina_gain_per_tick} stamina a tick
     </p>
   );
 };
@@ -55,15 +55,15 @@ const LAB_CHAIN_ID = "0x4c4142";
 const LAB_SCHEMA = "lab";
 
 const bootLab = async () => {
-  const rules = await loadRecordedRules();
+  const rules = await loadGeneratedRules();
   if (!rules) return null;
   const day = buildLabDay(rules);
-  await openLabShard();
+  await openLabShard(day.gameId);
   const store = new NativeFactStore();
   store.applyFacts(day.facts as never);
   // The whole day is in the store, so sparse facts are declared zeros, as after Herald's completed snapshot.
-  store.setSnapshot({ gameId: LAB_GAME_ID, complete: true, actor: LAB_PLAYER, timestamp: day.nowSeconds });
-  configManager.setActiveGame(LAB_GAME_ID, 5);
+  store.setSnapshot({ gameId: day.gameId, complete: true, actor: LAB_PLAYER, timestamp: day.nowSeconds });
+  configManager.setActiveGame(day.gameId, 5);
   configManager.setStore(store);
   bindChainTime();
   useChainTimeStore.getState().anchor({ timestamp: day.nowSeconds * 1000, source: "lab" });
@@ -75,11 +75,11 @@ const bootLab = async () => {
     useUIStore.getState().setSelectedBuildingHex({ structureId: LAB_REALM_ID, innerCol: 10, innerRow: 10 });
   const refuse = () => Promise.reject(new Error("The Frontier HUD lab has no chain"));
   const systemCalls = new Proxy({}, { get: () => refuse });
-  return { setup: { store, systemCalls } as unknown as GameClientSetup, account };
+  return { setup: { store, systemCalls } as unknown as GameClientSetup, account, gameId: day.gameId };
 };
 
 /** The lab's shard answers from memory: a manifest naming the lab chain, and an empty event history. */
-const openLabShard = async () => {
+const openLabShard = async (gameId: number) => {
   const fetchNetwork = window.fetch.bind(window);
   window.fetch = async (input, init) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
@@ -99,7 +99,7 @@ const openLabShard = async () => {
     return new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } });
   };
   await openShard(LAB_SHARD_URL, LAB_SCHEMA);
-  const game = { chainId: LAB_CHAIN_ID, gameId: LAB_GAME_ID };
+  const game = { chainId: LAB_CHAIN_ID, gameId };
   saveGameProfile({ ...game, presetId: 5, name: "Frontier lab", fetchedAt: 0 });
   setActiveGame(game);
 };

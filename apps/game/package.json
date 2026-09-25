@@ -46,7 +46,7 @@
     "icons:verify": "node ./scripts/icons/verify-resource-icons.mjs --images",
     "icons:verify:manifest": "node ./scripts/icons/verify-resource-icons.mjs",
     "icons:verify:pilot": "node ./scripts/icons/verify-resource-icons.mjs --pilot --input-dir ../../.context/icon-generation/build/resources",
-    "lab:frontier": "bun ../herald/scripts/frontier-lab-facts.ts .lab/frontier-rules.json",
+    "lab:frontier": "bun scripts/frontier-lab-facts.ts .lab/frontier-rules.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "preview": "vite preview",

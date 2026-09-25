@@ -1,9 +1,8 @@
 /**
- * A Frontier day in facts: the recorded launch's rules, generated from the committed recording by `pnpm lab:frontier`
- * through Herald's own decoder, plus a hand-built player in the same shapes — one realm with its castle producing labor,
- * two of today's armies and the realm's holdings.
+ * A Frontier day in facts: the current Frontier launch's rules, projected from today's preset by `pnpm lab:frontier`
+ * through Herald's own projection, plus a hand-built player in the same shapes — one realm with its castle producing
+ * labor, two of today's armies and the realm's holdings.
  */
-export const LAB_GAME_ID = 2;
 export const LAB_PLAYER = "0x5a11ab";
 export const LAB_REALM_ID = 100;
 const REALM_TRAIT_ID = 7;
@@ -15,12 +14,15 @@ type WireRow = { model: string; value: Record<string, unknown> };
 // A glob, not an import: without a generated file the lab says how to make one instead of breaking the build.
 const generatedRules = import.meta.glob<WireRow[]>("../../../../../.lab/frontier-rules.json", { import: "default" });
 
-export const loadRecordedRules = async (): Promise<WireRow[] | null> => {
+export const loadGeneratedRules = async (): Promise<WireRow[] | null> => {
   const load = Object.values(generatedRules)[0];
   return load ? load() : null;
 };
 
-/** The lab's clock and every fact in the store's wire form: a unique key per row, each value the full row. */
+/**
+ * The lab's game, clock and every fact in the store's wire form: a unique key per row, each value the full row. The
+ * player joins whichever game the generated rules were projected for.
+ */
 export const buildLabDay = (rules: WireRow[]) => {
   const clock = readLabClock(rules);
   const facts = [...rules, ...playerRows(clock)].map((row, index) => ({
@@ -28,7 +30,7 @@ export const buildLabDay = (rules: WireRow[]) => {
     key: `0x${(index + 1).toString(16)}`,
     value: row.value,
   }));
-  return { facts, nowSeconds: clock.nowSeconds };
+  return { facts, gameId: clock.gameId, nowSeconds: clock.nowSeconds };
 };
 
 type LabClock = ReturnType<typeof readLabClock>;
@@ -36,6 +38,7 @@ type LabClock = ReturnType<typeof readLabClock>;
 /** Well into day four with a partial tick, so every countdown shows seconds. */
 const readLabClock = (rules: WireRow[]) => {
   const slice = requireRow(rules, "SliceRules") as {
+    game_id: string;
     epoch_seconds: string;
     tick_config: { armies_tick_in_seconds: string };
   };
@@ -44,6 +47,7 @@ const readLabClock = (rules: WireRow[]) => {
   const startMainAt = 20 * epochSeconds;
   const nowSeconds = startMainAt + DAY * epochSeconds + Math.floor(epochSeconds * 0.4) + 7;
   return {
+    gameId: Number(slice.game_id),
     epochSeconds,
     startMainAt,
     nowSeconds,
@@ -55,7 +59,7 @@ const readLabClock = (rules: WireRow[]) => {
 
 const requireRow = (rules: WireRow[], model: string) => {
   const row = rules.find((candidate) => candidate.model === model);
-  if (!row) throw new Error(`The recorded Frontier launch has no ${model}`);
+  if (!row) throw new Error(`The generated Frontier launch has no ${model}`);
   return row.value;
 };
 
@@ -66,16 +70,16 @@ const playerRows = (clock: LabClock): WireRow[] => [
   { model: "Structure", value: realm(clock) },
   {
     model: "ResourceWeight",
-    value: { game_id: LAB_GAME_ID, entity_id: LAB_REALM_ID, capacity: amount(100_000), weight: "0" },
+    value: { game_id: clock.gameId, entity_id: LAB_REALM_ID, capacity: amount(100_000), weight: "0" },
   },
-  { model: "ResourceBalance", value: balance(38, 150) },
-  { model: "ResourceBalance", value: balance(23, 1_250) },
-  { model: "ResourceBalance", value: balance(35, 640) },
-  { model: "ResourceBalance", value: balance(26, 420) },
+  { model: "ResourceBalance", value: balance(clock, 38, 150) },
+  { model: "ResourceBalance", value: balance(clock, 23, 1_250) },
+  { model: "ResourceBalance", value: balance(clock, 35, 640) },
+  { model: "ResourceBalance", value: balance(clock, 26, 420) },
   {
     model: "Building",
     value: {
-      game_id: LAB_GAME_ID,
+      game_id: clock.gameId,
       structure_id: LAB_REALM_ID,
       inner_col: 10,
       inner_row: 10,
@@ -87,7 +91,7 @@ const playerRows = (clock: LabClock): WireRow[] => [
   {
     model: "ResourceProduction",
     value: {
-      game_id: LAB_GAME_ID,
+      game_id: clock.gameId,
       entity_id: LAB_REALM_ID,
       resource_type: 23,
       building_count: 1,
@@ -103,7 +107,7 @@ const playerRows = (clock: LabClock): WireRow[] => [
 ];
 
 const gameRegistry = (clock: LabClock) => ({
-  game_id: LAB_GAME_ID,
+  game_id: clock.gameId,
   name: "0x4c6162",
   preset_id: 5,
   creator: "0x1",
@@ -118,7 +122,7 @@ const gameRegistry = (clock: LabClock) => ({
 });
 
 const realm = (clock: LabClock) => ({
-  game_id: LAB_GAME_ID,
+  game_id: clock.gameId,
   entity_id: LAB_REALM_ID,
   owner: LAB_PLAYER,
   base: {
@@ -141,15 +145,15 @@ const realm = (clock: LabClock) => ({
   },
 });
 
-const balance = (resourceType: number, whole: number) => ({
-  game_id: LAB_GAME_ID,
+const balance = (clock: LabClock, resourceType: number, whole: number) => ({
+  game_id: clock.gameId,
   entity_id: LAB_REALM_ID,
   resource_type: resourceType,
   balance: amount(whole),
 });
 
 const army = (clock: LabClock, explorerId: number, count: number, stamina: number, ticksAgo: number) => ({
-  game_id: LAB_GAME_ID,
+  game_id: clock.gameId,
   explorer_id: explorerId,
   owner: LAB_REALM_ID,
   troops: {
@@ -173,7 +177,7 @@ const army = (clock: LabClock, explorerId: number, count: number, stamina: numbe
 
 // Category 15 is a T1 knight explorer's occupancy.
 const armyTile = (clock: LabClock, explorerId: number, colOffset: number, rowOffset: number) => ({
-  game_id: LAB_GAME_ID,
+  game_id: clock.gameId,
   alt: false,
   col: clock.siteCol + colOffset,
   row: clock.siteRow + rowOffset,

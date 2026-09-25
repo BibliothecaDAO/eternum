@@ -1,8 +1,8 @@
 /** Writes today's generated Frontier configuration for the dev-only HUD lab. */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { toJsonValue } from "../src/model-registry";
-import { currentPresetFixture } from "../src/native/current-preset-fixture";
+import { toJsonValue } from "../../herald/src/model-registry";
+import { currentPresetFixture } from "../../herald/src/native/current-preset-fixture";
 
 const out = process.argv[2];
 if (!out) throw new Error("Usage: bun frontier-lab-facts.ts <out.json>");
