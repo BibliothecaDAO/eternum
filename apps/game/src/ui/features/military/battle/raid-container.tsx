@@ -521,7 +521,7 @@ export const RaidContainer = ({
                               <div className="text-xl font-bold text-order-giants bg-order-giants/10 rounded-md px-2 py-1">
                                 {-Math.floor(raidSimulation.defenderDamageTaken)}
                               </div>
-                              <div className="uppercase text-xs text-red-400">total troops lost</div>
+                              <div className="uppercase text-xs text-red-400">Total troops lost</div>
                             </div>
                             <div className="text-sm text-gold/70">
                               (

@@ -441,6 +441,16 @@ html.frontier-type :is(h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6, .fo
 html.frontier-type .hud-caps-button {
   text-transform: none;
 }
+/* The dyslexia rule holds on every surface Frontier reaches, including components that set caps or italics directly. */
+html.frontier-type .uppercase {
+  text-transform: none;
+}
+html.frontier-type :is(.italic, em, i, cite) {
+  font-style: normal;
+}
+html.frontier-type [class*="tracking-"] {
+  letter-spacing: normal;
+}
 html.frontier-type :is(.hud-caps, .hud-caps-tight) {
   text-transform: none;
   letter-spacing: normal;
