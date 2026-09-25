@@ -216,7 +216,9 @@ describe("Madara harness workload", () => {
       "omit --games",
     );
     expect(() => parseHarnessArgs(["--launch-url", "https://x"])).toThrow("require --slot");
-    expect(() => parseHarnessArgs(["--game-type", "unknown"])).toThrow("--game-type must be blitz, eternum or frontier");
+    expect(() => parseHarnessArgs(["--game-type", "unknown"])).toThrow(
+      "--game-type must be blitz, eternum or frontier",
+    );
     expect(() => parseHarnessArgs(["--game-type", "eternum", "--ledger"])).toThrow(
       "Unsupported harness option --ledger",
     );
@@ -283,7 +285,9 @@ describe("Madara harness workload", () => {
   });
 
   it("reports a game rule refusing a move apart from chain or driver failures", () => {
-    const rejected = new Error("Herald confirmation failed: Native action rejected: GAMEPLAY_REJECTED: not enough stamina");
+    const rejected = new Error(
+      "Herald confirmation failed: Native action rejected: GAMEPLAY_REJECTED: not enough stamina",
+    );
     expect(classifyWorkloadFailure(rejected)).toBe("gameplay_rejection");
     expect(classifyWorkloadFailure(new Error("Native action rejected: COMMAND_DISABLED"))).toBe("gameplay_rejection");
     expect(classifyWorkloadFailure(new Error("Native action rejected: INVALID_ACTOR"))).toBe("chain_or_driver");
@@ -693,8 +697,11 @@ describe("Madara harness reporting", () => {
     expect(slow).toMatchObject({ passed: true, checks: { thresholdEligibleActions: true } });
     expect(slow.latency?.overTarget).toEqual({ admissionToVisibleP95: true, heraldConfirmedLagP95: true });
     expect(
-      assessRosterRun({ functional: false, workers: [worker(40, [200]), worker(29, [200])], minimumThresholdActions: 70 })
-        .passed,
+      assessRosterRun({
+        functional: false,
+        workers: [worker(40, [200]), worker(29, [200])],
+        minimumThresholdActions: 70,
+      }).passed,
     ).toBe(false);
     // A worker's completed action without the provider's figure fails the whole run.
     const unmeasured = assessRosterRun({
@@ -709,9 +716,9 @@ describe("Madara harness reporting", () => {
       assessRosterRun({ functional: false, workers: [worker(40, [1], [])], minimumThresholdActions: 40 }).latency
         ?.overTarget.heraldConfirmedLagP95,
     ).toBe(true);
-    expect(
-      assessRosterRun({ functional: true, workers: [worker(40, [])], minimumThresholdActions: 40 }),
-    ).toMatchObject({ passed: true, checks: { thresholdEligibleActions: true }, latency: null, percentiles: null });
+    expect(assessRosterRun({ functional: true, workers: [worker(40, [])], minimumThresholdActions: 40 })).toMatchObject(
+      { passed: true, checks: { thresholdEligibleActions: true }, latency: null, percentiles: null },
+    );
   });
 
   it("uses nearest-rank percentiles", () => {
@@ -827,7 +834,13 @@ describe("Madara harness reporting", () => {
     const bucketsWith = (entries: Record<number, number>) =>
       Array.from({ length: QUEUE_WAIT_BOUNDS.length + 1 }, (_, index) => entries[index] ?? 0);
     const scrape = (time: number, gateway: GatewayScrape) => metricsRow(time, 0, 0, 1, 1, 1, gateway);
-    const before = { depth: 2, accepted: 10, executed: 0, transactions: 0, wait: { count: 0, sum: 0, buckets: bucketsWith({}) } };
+    const before = {
+      depth: 2,
+      accepted: 10,
+      executed: 0,
+      transactions: 0,
+      wait: { count: 0, sum: 0, buckets: bucketsWith({}) },
+    };
     const after = {
       depth: 6,
       accepted: 40,
@@ -858,7 +871,9 @@ describe("Madara harness reporting", () => {
                   .metrics,
                 ...["blockifier_transactions_total", "blockifier_validation_attempts_total", "blockifier_aborts_total"]
                   .concat("blockifier_commit_phase_aborts_total")
-                  .map((name) => counterMetric(name, time, name === "blockifier_transactions_total" ? transactions : 0)),
+                  .map((name) =>
+                    counterMetric(name, time, name === "blockifier_transactions_total" ? transactions : 0),
+                  ),
                 counterMetric("exec_hash_cache_calls_total", time, calls, "pedersen_pair"),
                 counterMetric("exec_hash_cache_hits_total", time, hits, "pedersen_pair"),
                 counterMetric("exec_hash_cache_misses_total", time, calls - hits, "pedersen_pair"),
@@ -869,10 +884,11 @@ describe("Madara harness reporting", () => {
         },
       ],
     });
-    const output = await readBlockStats([blockRow(10, 1, 10)], [counters(1, 100, 60, 5), counters(2, 140, 90, 9)], [
-      "--pair",
-      "hash-cache",
-    ]);
+    const output = await readBlockStats(
+      [blockRow(10, 1, 10)],
+      [counters(1, 100, 60, 5), counters(2, 140, 90, 9)],
+      ["--pair", "hash-cache"],
+    );
     expect(output.missingRequired).toEqual([]);
     expect(output.blockifier).toEqual({ transactions: 4, validationAttempts: 0, aborts: 0, commitPhaseAborts: 0 });
     expect(output.hashCache).toEqual({
@@ -963,17 +979,13 @@ describe("Madara harness CLI and concurrency", () => {
       frontierBurst: { shape: "booth", windowSeconds: 600 },
     });
     expect(
-      parseHarnessArgs([
-        "--game-type",
-        "frontier",
-        "--frontier-burst",
-        "booth",
-        "--burst-window-seconds",
-        "120",
-      ]).frontierBurst,
+      parseHarnessArgs(["--game-type", "frontier", "--frontier-burst", "booth", "--burst-window-seconds", "120"])
+        .frontierBurst,
     ).toEqual({ shape: "booth", windowSeconds: 120 });
     expect(parseHarnessArgs(["--game-type", "frontier"]).frontierBurst).toBeUndefined();
-    expect(() => parseHarnessArgs(["--frontier-burst", "booth"])).toThrow("--frontier-burst requires --game-type frontier");
+    expect(() => parseHarnessArgs(["--frontier-burst", "booth"])).toThrow(
+      "--frontier-burst requires --game-type frontier",
+    );
     expect(parseHarnessArgs(["--game-type", "frontier", "--frontier-burst", "rollover"]).frontierBurst).toEqual({
       shape: "rollover",
       windowSeconds: 120,

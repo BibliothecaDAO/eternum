@@ -305,7 +305,8 @@ const captureSubmission = (
       const confirmed = client.runtime.waitForTransaction(event.transactionHash).then((transaction) => {
         if (transaction.status === "REVERTED") throw new Error(transaction.revertReason ?? "Transaction reverted");
         const outcome = requireNativeExecutionOutcome(transaction.executions, ticket);
-        if (outcome.status === "REVERTED") throw new Error(`Native action rejected: ${outcome.statusClass}: ${outcome.reason}`);
+        if (outcome.status === "REVERTED")
+          throw new Error(`Native action rejected: ${outcome.statusClass}: ${outcome.reason}`);
       });
       resolve({
         transactionHash: event.transactionHash,
@@ -323,4 +324,3 @@ const captureSubmission = (
     });
   });
 };
-

@@ -6,7 +6,25 @@ permissions:
   contents: read
   packages: write
 jobs:
+  # A tag publishes what shards will run, so it must name a commit whose own validation run is green.
+  validated:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    steps:
+      - name: Require a green validation run of the tagged commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          runs=$(gh run list -R "$REPO" --workflow validation.yml --commit "$SHA" --status success --json databaseId --jq length)
+          if [ "$runs" -eq 0 ]; then
+            echo "::error::$SHA has no green validation run; tag only a validated head"
+            exit 1
+          fi
   images:
+    needs: validated
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:

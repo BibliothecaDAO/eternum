@@ -40,7 +40,6 @@ jobs:
           EVENT: ${{ github.event_name }}
           BRANCH: ${{ github.ref_name }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          BEFORE_SHA: ${{ github.event.before }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           BASE_SHA=$(bash .github/scripts/diff-base.sh)
@@ -48,18 +47,25 @@ jobs:
           echo "Measuring $HEAD_SHA from $BASE_SHA"
           python3 - <<'PYTHON'
           import fnmatch, json, os, subprocess
+          # The integration branch and next run every area: a hand-kept path map can miss an import, and a push
+          # measured from its predecessor would let a red area turn green on a later push that never touched it.
+          landing = os.environ["EVENT"] == "push" and os.environ["BRANCH"] in ("native-world-foundation", "next")
           files = subprocess.check_output(["git", "diff", "--name-only", "-z", os.environ["BASE_SHA"], os.environ["HEAD_SHA"]]).decode().split("\0")
           shared = [".github/workflows/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
           areas = {
               "client": [
                   "apps/game/**",
                   "packages/**",
-                  "contracts/l3/world-native/schema/**"
+                  "config/**",
+                  "contracts/l3/world-native/schema/**",
+                  "contracts/l3/world-native/fixtures/**"
               ],
               "herald": [
                   "apps/herald/**",
                   "packages/**",
-                  "contracts/l3/world-native/schema/**"
+                  "config/**",
+                  "contracts/l3/world-native/schema/**",
+                  "contracts/l3/world-native/fixtures/**"
               ],
               "services": [
                   "apps/launch-service/**",
@@ -73,6 +79,7 @@ jobs:
               "native": [
                   "apps/gateway/**",
                   "apps/herald/src/model-registry.ts",
+                  "apps/herald/src/native/schema.ts",
                   "contracts/l3/**",
                   "contracts/common/addresses/**",
                   "contracts/utils/**",
@@ -91,6 +98,8 @@ jobs:
               ],
               "runtime": [
                   "apps/agent-runner/**",
+                  "apps/launch-service/**",
+                  "contracts/l3/world-native/schema/**",
                   "deploy/athanor/**",
                   "deploy/shard/**",
                   "packages/**",
@@ -119,7 +128,7 @@ jobs:
                   "contracts/scripts-runtime/**"
               ]
           }
-          selected = {area: any(fnmatch.fnmatch(path, pattern) for path in files for pattern in shared + patterns) for area, patterns in areas.items()}
+          selected = {area: landing or any(fnmatch.fnmatch(path, pattern) for path in files for pattern in shared + patterns) for area, patterns in areas.items()}
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               for area, enabled in selected.items():
                   print(f"{area}={str(enabled).lower()}", file=output)

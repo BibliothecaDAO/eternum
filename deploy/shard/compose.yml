@@ -4,7 +4,12 @@ x-madara-image: &madara-image ghcr.io/madara-alliance/madara@sha256:efaa80035460
 
 x-init: &init
   image: ${SHARD_INIT_IMAGE:?Use the published init image digest}
-  volumes: ["${SHARD_DATA:-./data}:/data", "public-config:/public", "herald-config:/herald-config", "gateway-config:/gateway-config", "postgres-config:/postgres-config"]
+  volumes:
+    - ${SHARD_DATA:-./data}:/data
+    - public-config:/public
+    - herald-config:/herald-config
+    - gateway-config:/gateway-config
+    - postgres-config:/postgres-config
   environment:
     MADARA_IMAGE: *madara-image
     MADARA_CONTAINER: ${SHARD_NAME:?Choose a unique shard name}-madara-1
@@ -87,7 +92,8 @@ services:
       postgres: { condition: service_healthy }
   gateway:
     image: ${SHARD_GATEWAY_IMAGE:?Use the published gateway image digest}
-    entrypoint: ["/bin/sh", "-ec", "set -a; . /config/gateway.env; . /public/proxy.env; exec /usr/local/bin/realms-gateway"]
+    entrypoint:
+      ["/bin/sh", "-ec", "set -a; . /config/gateway.env; . /public/proxy.env; exec /usr/local/bin/realms-gateway"]
     volumes: ["gateway:/data", "gateway-config:/config:ro", "public-config:/public:ro"]
     ports: ["${BIND_ADDRESS:-127.0.0.1}:${ADMISSION_PORT:-8082}:9950"]
     mem_limit: 1g

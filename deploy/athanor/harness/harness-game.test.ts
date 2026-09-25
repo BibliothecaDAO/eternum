@@ -46,8 +46,24 @@ test("setup waits for the confirmed start and roster readiness in every game mod
 
 test("a mixed transaction completes only the successful bot's own ticket", async () => {
   const provider = new EventEmitter();
-  const successful = { gameId: "1", actor: "1", nonce: "2", order: "3", status: "SUCCEEDED", statusClass: "", reason: "" };
-  const rejected = { gameId: "1", actor: "2", nonce: "2", order: "4", status: "REVERTED", statusClass: "GAMEPLAY_REJECTED", reason: "not enough stamina" };
+  const successful = {
+    gameId: "1",
+    actor: "1",
+    nonce: "2",
+    order: "3",
+    status: "SUCCEEDED",
+    statusClass: "",
+    reason: "",
+  };
+  const rejected = {
+    gameId: "1",
+    actor: "2",
+    nonce: "2",
+    order: "4",
+    status: "REVERTED",
+    statusClass: "GAMEPLAY_REJECTED",
+    reason: "not enough stamina",
+  };
   const game = createHarnessGame({
     gameId: 1,
     setup: { store: {}, systemCalls: {}, network: { provider } },
@@ -57,7 +73,8 @@ test("a mixed transaction completes only the successful bot's own ticket", async
     const submission = await game.submit({ address: ticket.actor } as Account, async () => {
       provider.emit("transactionSubmitted", { signerAddress: ticket.actor, transactionHash: "0x123", ticket });
     });
-    if (ticket === rejected) await expect(submission.confirmed).rejects.toThrow("GAMEPLAY_REJECTED: not enough stamina");
+    if (ticket === rejected)
+      await expect(submission.confirmed).rejects.toThrow("GAMEPLAY_REJECTED: not enough stamina");
     else await expect(submission.confirmed).resolves.toBeUndefined();
   }
 });
@@ -104,7 +121,13 @@ const scopedClient = (actor: string, batch: Array<{ actor: string }>) => {
 test("bots settling at once each get their outcome through their own subscription", async () => {
   // One batch records both foundings, as the gateway packs concurrent tickets.
   const batch = ["0xa", "0xb"].map((actor, index) => ({
-    gameId: "1", actor, nonce: "0", order: String(index + 1), status: "SUCCEEDED", statusClass: "", reason: "",
+    gameId: "1",
+    actor,
+    nonce: "0",
+    order: String(index + 1),
+    status: "SUCCEEDED",
+    statusClass: "",
+    reason: "",
   }));
   const actorClients = new Map(
     ["0xa", "0xb"].map((actor) => [actor, { client: scopedClient(actor, batch) } as HarnessGameClient]),
@@ -126,7 +149,15 @@ test("bots settling at once each get their outcome through their own subscriptio
 
 test("a submission carries the provider's admission-to-visible time for its own transaction", async () => {
   const provider = new EventEmitter();
-  const ticket = { gameId: "1", actor: "0x1", nonce: "0", order: "1", status: "SUCCEEDED", statusClass: "", reason: "" };
+  const ticket = {
+    gameId: "1",
+    actor: "0x1",
+    nonce: "0",
+    order: "1",
+    status: "SUCCEEDED",
+    statusClass: "",
+    reason: "",
+  };
   const game = createHarnessGame({
     gameId: 1,
     setup: { store: {}, systemCalls: {}, network: { provider } },
@@ -142,7 +173,15 @@ test("a submission carries the provider's admission-to-visible time for its own 
 
 test("a confirmed action the provider reported no figure for records none and leaves no listener", async () => {
   const provider = new EventEmitter();
-  const ticket = { gameId: "1", actor: "0x1", nonce: "0", order: "1", status: "SUCCEEDED", statusClass: "", reason: "" };
+  const ticket = {
+    gameId: "1",
+    actor: "0x1",
+    nonce: "0",
+    order: "1",
+    status: "SUCCEEDED",
+    statusClass: "",
+    reason: "",
+  };
   const game = createHarnessGame({
     gameId: 1,
     setup: { store: {}, systemCalls: {}, network: { provider } },

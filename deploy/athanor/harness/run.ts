@@ -101,7 +101,8 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   if ((gameType === "frontier") !== (workload === "frontier"))
     throw new Error("Frontier requires the frontier workload");
   const functional = values.functional === "true";
-  const presetId = values.preset === undefined ? defaultPresetFor(gameType, functional) : positiveInteger(values.preset, "preset");
+  const presetId =
+    values.preset === undefined ? defaultPresetFor(gameType, functional) : positiveInteger(values.preset, "preset");
   nativePresetForId(presetId);
   if (gameType === "frontier" && functional && bots < 2)
     throw new Error("Frontier design run requires both player profiles");
@@ -116,7 +117,8 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   const slot = resolveSlotOptions(values, gameType, games);
   const frontierBurst = resolveFrontierBurst(values, gameType);
   const workers = positiveInteger(values.workers ?? "1", "workers");
-  if (workers > 1 && gameType !== "frontier") throw new Error("--workers splits a Frontier season; rosters split per account");
+  if (workers > 1 && gameType !== "frontier")
+    throw new Error("--workers splits a Frontier season; rosters split per account");
   if (workers > 1 && functional) throw new Error("A Frontier design run plays both profiles in one process");
   if (workers > bots) throw new Error("--workers cannot exceed --bots");
 
@@ -275,7 +277,12 @@ async function main(): Promise<void> {
     const gates = evidenceBefore
       ? {
           minimumThresholdActions: resolveMinimumThresholdActions(options, workload.plannedActions),
-          evidence: await finishHarnessEvidence(evidenceBefore, workload.startedAt, workload.endedAt, options.functional),
+          evidence: await finishHarnessEvidence(
+            evidenceBefore,
+            workload.startedAt,
+            workload.endedAt,
+            options.functional,
+          ),
         }
       : null;
     const report = await writeHarnessReport({
@@ -350,7 +357,8 @@ const FRONTIER_BURST_WINDOW_SECONDS = { booth: 600, rollover: 120 } as const;
 function resolveFrontierBurst(values: Record<string, string>, gameType: HarnessGameType): FrontierBurst | undefined {
   const shape = values["frontier-burst"];
   if (shape === undefined) {
-    if (values["burst-window-seconds"] !== undefined) throw new Error("--burst-window-seconds requires --frontier-burst");
+    if (values["burst-window-seconds"] !== undefined)
+      throw new Error("--burst-window-seconds requires --frontier-burst");
     return undefined;
   }
   if (gameType !== "frontier") throw new Error("--frontier-burst requires --game-type frontier");
@@ -373,7 +381,8 @@ function resolveSlotOptions(
   if (games !== undefined || values["game-name"] !== undefined)
     throw new Error("--slot lets the launch service split and name the games; omit --games and --game-name");
   const launchUrl = values["launch-url"] ?? process.env.LAUNCH_URL;
-  if (!launchUrl) throw new Error("--slot requires --launch-url or LAUNCH_URL (the app origin the launch API is served under)");
+  if (!launchUrl)
+    throw new Error("--slot requires --launch-url or LAUNCH_URL (the app origin the launch API is served under)");
   return {
     name: values.slot,
     launchUrl,
@@ -608,7 +617,10 @@ async function finishRosterEvidence(
 ): Promise<HarnessEvidence | null> {
   if (reports.length === 0) return null;
   const startedAt = reports.map(({ workload }) => workload.startedAt).sort()[0]!;
-  const endedAt = reports.map(({ workload }) => workload.endedAt).sort().at(-1)!;
+  const endedAt = reports
+    .map(({ workload }) => workload.endedAt)
+    .sort()
+    .at(-1)!;
   return finishHarnessEvidence(before, startedAt, endedAt, functional);
 }
 
@@ -639,7 +651,12 @@ function startGameWorker(options: HarnessCliOptions, game: PreparedGame, file: s
       "--workload",
       options.workload,
       ...(options.frontierBurst
-        ? ["--frontier-burst", options.frontierBurst.shape, "--burst-window-seconds", String(options.frontierBurst.windowSeconds)]
+        ? [
+            "--frontier-burst",
+            options.frontierBurst.shape,
+            "--burst-window-seconds",
+            String(options.frontierBurst.windowSeconds),
+          ]
         : []),
       "--preset",
       String(options.presetId),

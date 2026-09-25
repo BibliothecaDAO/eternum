@@ -68,16 +68,15 @@ export async function decryptPush(body: Uint8Array, keys: ReceiverKeys): Promise
   const ciphertext = body.slice(21 + keyIdLength);
   if (ciphertext.length > recordSize) throw new Error("A push body of more than one record is not supported");
 
-  const sender = await crypto.subtle.importKey("raw", senderPublicKey, { name: "ECDH", namedCurve: "P-256" }, false, []);
-  const shared = new Uint8Array(
-    await crypto.subtle.deriveBits({ name: "ECDH", public: sender }, keys.privateKey, 256),
+  const sender = await crypto.subtle.importKey(
+    "raw",
+    senderPublicKey,
+    { name: "ECDH", namedCurve: "P-256" },
+    false,
+    [],
   );
-  const ikm = await hkdf(
-    keys.authSecret,
-    shared,
-    concat(text("WebPush: info\0"), keys.publicKey, senderPublicKey),
-    32,
-  );
+  const shared = new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: sender }, keys.privateKey, 256));
+  const ikm = await hkdf(keys.authSecret, shared, concat(text("WebPush: info\0"), keys.publicKey, senderPublicKey), 32);
   const contentKey = await hkdf(salt, ikm, text("Content-Encoding: aes128gcm\0"), 16);
   const nonce = await hkdf(salt, ikm, text("Content-Encoding: nonce\0"), 12);
   const aes = await crypto.subtle.importKey("raw", contentKey, "AES-GCM", false, ["decrypt"]);
@@ -114,7 +113,9 @@ export async function receivePushes(
   const connect = () => {
     socket = new WebSocket(service);
     socket.addEventListener("open", () =>
-      socket.send(JSON.stringify({ messageType: "hello", use_webpush: true, uaid, channelIDs: uaid ? [channelID] : [] })),
+      socket.send(
+        JSON.stringify({ messageType: "hello", use_webpush: true, uaid, channelIDs: uaid ? [channelID] : [] }),
+      ),
     );
     socket.addEventListener("error", () => failed(new Error("Push service connection failed")));
     socket.addEventListener("close", () => {

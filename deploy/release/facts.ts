@@ -12,7 +12,10 @@ import { fileURLToPath } from "node:url";
 import { nativePresets } from "../../config/source/native";
 import { buildNativePreset } from "../../config/deployer/clean/config/native-preset";
 import { isDeploymentEnvironmentId } from "../../config/deployer/clean/environment";
-import { loadNativePresetConfiguration, presetRegistrationCall } from "../../config/deployer/clean/registrar/native-preset";
+import {
+  loadNativePresetConfiguration,
+  presetRegistrationCall,
+} from "../../config/deployer/clean/registrar/native-preset";
 import { readClassArtifact } from "../../config/deployer/clean/shared/declare";
 import { registrarWorldOf } from "../../config/deployer/clean/world/native/manifest";
 import { schemaIdentity, type NativeSchema } from "../../apps/herald/src/native/schema";
@@ -47,7 +50,9 @@ function releaseFacts() {
     schema: schema.identity,
     classes: {
       games: worldClass("Games"),
-      logic: Object.fromEntries(Object.entries(schema.logicClasses).map(([name, contract]) => [name, worldClass(contract)])),
+      logic: Object.fromEntries(
+        Object.entries(schema.logicClasses).map(([name, contract]) => [name, worldClass(contract)]),
+      ),
       account: classHash(ACCOUNT),
     },
     presets: Object.fromEntries(presets),

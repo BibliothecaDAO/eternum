@@ -19,15 +19,11 @@ before=$(git rev-parse HEAD)
 commit apps/game/main.ts "later TypeScript-only push"
 git push -q origin HEAD:stream
 head=$(git rev-parse HEAD)
-base_for() { EVENT=$1 BRANCH=$2 PR_BASE_SHA=${3:-} BEFORE_SHA=$4 HEAD_SHA=$head bash "$script"; }
+base_for() { EVENT=$1 PR_BASE_SHA=${2:-} HEAD_SHA=$head bash "$script"; }
 
 fail() { echo "FAIL: $1" >&2; exit 1; }
-stream_base=$(base_for push stream "" "$before")
+stream_base=$(base_for push)
 git diff --name-only "$stream_base" "$head" | grep -qx contracts/l3/world.cairo ||
   fail "a stream push dropped the earlier Cairo commit (base $stream_base)"
-[ "$(base_for push native-world-foundation "" "$before")" = "$before" ] ||
-  fail "the integration branch must measure from its previous push"
-[ "$(base_for pull_request stream "$before" "")" = "$before" ] || fail "a pull request must measure from its base"
-[ "$(base_for push stream "" 0000000000000000000000000000000000000000)" = "$stream_base" ] ||
-  fail "a new branch's first push must measure from the landing base"
+[ "$(base_for pull_request "$before")" = "$before" ] || fail "a pull request must measure from its base"
 echo "diff-base: stream pushes keep every unlanded commit in scope"

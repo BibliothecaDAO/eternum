@@ -24,7 +24,9 @@ function fakeLaunchService(behaviour: { failGame?: number } = {}) {
     kind: "game",
     status: behaviour.failGame === gameNumber ? "attention" : complete ? "complete" : "running",
     artifacts: complete ? { gameId: 40 + gameNumber, settlementTransactions: 3 } : {},
-    steps: [{ errorMessage: behaviour.failGame === gameNumber ? "Roster settlement did not make the game ready" : undefined }],
+    steps: [
+      { errorMessage: behaviour.failGame === gameNumber ? "Roster settlement did not make the game ready" : undefined },
+    ],
   });
   // Once a game is live its result run is listed first under the same name, queued until the game ends.
   const resultRuns = (live: boolean) =>
@@ -63,15 +65,25 @@ describe("slot registration", () => {
       { origin: "https://staging.example", token: "secret", fetch: service.fetch },
       { slotName: "cap-96", accounts, closesInSeconds: 90, pollMs: 1, timeoutMs: 5_000 },
     );
-    expect(games.map(({ gameNumber, gameName, gameId, settlementTransactions, accounts }) => [
-      gameNumber, gameName, gameId, settlementTransactions, accounts.length,
-    ])).toEqual([
+    expect(
+      games.map(({ gameNumber, gameName, gameId, settlementTransactions, accounts }) => [
+        gameNumber,
+        gameName,
+        gameId,
+        settlementTransactions,
+        accounts.length,
+      ]),
+    ).toEqual([
       [1, "cap-96-1", 41, 3, 15],
       [2, "cap-96-2", 42, 3, 15],
     ]);
     expect(games[0]!.accounts[0]).toBe("0x1");
     const [create, register] = service.requests;
-    expect(create).toMatchObject({ method: "POST", path: "/api/slots", headers: { origin: "https://staging.example" } });
+    expect(create).toMatchObject({
+      method: "POST",
+      path: "/api/slots",
+      headers: { origin: "https://staging.example" },
+    });
     expect(typeof create!.body).toBe("object");
     expect((create!.body as { name: string }).name).toBe("cap-96");
     expect(register).toMatchObject({ method: "POST", path: "/api/slots/cap-96/register" });
@@ -90,7 +102,10 @@ describe("slot registration", () => {
 
   it("refuses a slot name the launch service would not accept", async () => {
     await expect(
-      registerBotsThroughSlot({ origin: "https://x", token: "t" }, { slotName: "Cap 96", accounts, closesInSeconds: 1 }),
+      registerBotsThroughSlot(
+        { origin: "https://x", token: "t" },
+        { slotName: "Cap 96", accounts, closesInSeconds: 1 },
+      ),
     ).rejects.toThrow("not [a-z0-9]");
   });
 });

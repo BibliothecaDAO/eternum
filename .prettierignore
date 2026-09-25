@@ -28,7 +28,6 @@ apps/game/src/shell/generated/scroll-posts.ts
 # ignore json files
 **/*.json
 
-deploy
 
 .conductor
 .context

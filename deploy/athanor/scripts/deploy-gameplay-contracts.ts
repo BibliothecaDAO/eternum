@@ -49,7 +49,10 @@ interface GameplayDeploymentResult {
 async function declareAccountClass(account: Account, accountClassHash: string): Promise<string> {
   const artifact = readClassArtifact(
     resolve(ARTIFACT_DIRECTORY, PLAYER_ACCOUNT_ARTIFACT),
-    resolve(ARTIFACT_DIRECTORY, PLAYER_ACCOUNT_ARTIFACT.replace(".contract_class.json", ".compiled_contract_class.json")),
+    resolve(
+      ARTIFACT_DIRECTORY,
+      PLAYER_ACCOUNT_ARTIFACT.replace(".contract_class.json", ".compiled_contract_class.json"),
+    ),
   );
   if (BigInt(artifact.classHash) !== BigInt(accountClassHash)) {
     throw new Error(`RealmsAccount class ${artifact.classHash} differs from guardian class ${accountClassHash}`);
@@ -111,7 +114,13 @@ async function prepareOperator(
     });
     return { address: operator.address, label: null };
   }
-  const operator = await joinBotAccount({ provider, shard, label: DEPLOYER_ADDRESS, device, identity: operatorIdentity() });
+  const operator = await joinBotAccount({
+    provider,
+    shard,
+    label: DEPLOYER_ADDRESS,
+    device,
+    identity: operatorIdentity(),
+  });
   return { address: operator.address, label: DEPLOYER_ADDRESS };
 }
 
