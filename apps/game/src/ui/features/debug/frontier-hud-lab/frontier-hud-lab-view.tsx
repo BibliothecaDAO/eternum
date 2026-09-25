@@ -61,6 +61,8 @@ const bootLab = async () => {
   await openLabShard();
   const store = new NativeFactStore();
   store.applyFacts(day.facts as never);
+  // The whole day is in the store, so sparse facts are declared zeros, as after Herald's completed snapshot.
+  store.setSnapshot({ gameId: LAB_GAME_ID, complete: true, actor: LAB_PLAYER, timestamp: day.nowSeconds });
   configManager.setActiveGame(LAB_GAME_ID, 5);
   configManager.setStore(store);
   bindChainTime();
