@@ -176,6 +176,13 @@ it("decodes every declared row and member shape from Games", () => {
         data: [String(keys.length), ...keys, ...(kind === "RowDeleted" ? [] : [String(values.length), ...values])],
       });
     };
+    if (model.derivedFrom) {
+      for (const layout of ["RowSet", "RowDeleted", "RowMemberSet"])
+        expect(() => decoder.decode(frame(layout, [], model.members[0]?.id))).toThrow(
+          `Native model ${model.name} is derived-only from preset; row events are forbidden`,
+        );
+      continue;
+    }
     if (model.eventProjection) {
       for (const kind of ["RowSet", "RowMemberSet", "RowDeleted"]) {
         expect(() =>

@@ -13,17 +13,10 @@ function ruleEvent(name: string, keys: string[], values: string[]) {
 }
 
 describe("native structure upgrades", () => {
-  it("folds immutable limits and ordered costs together and rejects partial recipes atomically", () => {
-    const { native, fold } = setup();
-    native.applyReceipt(
-      fold,
-      receipt([
-        ruleEvent("UpgradeLimits", ["1"], ["3", "0"]),
-        ruleEvent("UpgradeRecipe", ["1", "1"], ["2", "23", "17", "38", "19"]),
-      ]),
-      10,
-      0,
-    );
+  it("folds projected limits and ordered costs and refuses configuration row events", () => {
+    const { native, fold, decoder } = setup();
+    fold.apply(decoder.decodeRowSet("UpgradeLimits", ["1"], ["3", "0"]));
+    fold.apply(decoder.decodeRowSet("UpgradeRecipe", ["1", "1"], ["2", "23", "17", "38", "19"]));
     expect(fold.modelRows("UpgradeLimits")[0].value).toEqual({ game_id: "0x1", realm_max: "0x3", village_max: "0x0" });
     expect(fold.modelRows("UpgradeRecipe")[0].value).toMatchObject({
       game_id: "0x1",
@@ -43,7 +36,7 @@ describe("native structure upgrades", () => {
         11,
         0,
       ),
-    ).toThrow();
+    ).toThrow("derived-only from preset");
     expect(fold.modelRows("UpgradeLimits")).toHaveLength(1);
     expect(fold.modelRows("UpgradeRecipe")).toHaveLength(1);
   });

@@ -13,6 +13,7 @@ export interface NativeModel {
   scope: "game" | "deployment";
   emitterKey?: string;
   eventProjection?: string;
+  derivedFrom?: "preset";
   keys: NativeMember[];
   members: NativeMember[];
   keyLength: number;

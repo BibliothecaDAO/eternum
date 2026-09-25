@@ -1,3 +1,4 @@
+import { nativeTilePackingConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import type { GameSyncScope } from "@bibliothecadao/eternum/game-sync-models";
 import type { FoldSet } from "./types";
 
@@ -98,7 +99,7 @@ interface RingDay {
 const ringKey = (gameId: string, realm: string, epoch: number) => `${gameId}:${realm}:${epoch}`;
 
 // MapState::reveal writes only terrain; the row key carries coordinates and occupancy is independent.
-const BIOME_SCALE = 0x20000000000n;
+const BIOME_SCALE = BigInt(nativeTilePackingConstants.BIOME_SCALE);
 
 /** The terrain-only TileOpt data written when the chain reveals this tile. */
 export const revealedTileData = (tile: HomeRingTile): bigint => BigInt(tile.biome) * BIOME_SCALE;

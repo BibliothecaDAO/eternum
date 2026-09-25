@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "e5af7575a0eee3050f84c1cffece2374245cd7f009c50b849410de41f8dff3d6";
+export const nativeFactSchemaIdentity = "45bfda290ef120e4ff40e5eb295d6d1ac388b5e47ace200a6bf365dff3495cde";
 export const nativeRuleConstants = {
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
@@ -28,6 +28,11 @@ export const nativeRuleConstants = {
 export const nativeTileOccupierConstants = {
   "CHEST_OCCUPIER": 34,
   "SPIRE_OCCUPIER": 35
+} as const;
+export const nativeTilePackingConstants = {
+  "BIOME_SCALE": "0x20000000000",
+  "BYTE_RANGE": "0x100",
+  "REWARD_EXTRACTED_FLAG": "0x20000000000000000000000000000"
 } as const;
 export interface NativeRows {
   Preset: { readonly preset_id: number; readonly commitment: bigint };

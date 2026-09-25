@@ -1,3 +1,5 @@
+import { getNeighborHexes } from "@bibliothecadao/types";
+import { expeditionRealmSite } from "@bibliothecadao/eternum/expeditions";
 // Herald's side of the scale campaign: does its memory level off under a steady game load, and does it keep up with
 // real time? Folds a synthetic world, attaches one actor-scoped subscriber per player, then drives it through the
 // production path for a simulated run: build-order-shaped actions arrive pre-confirmed, a block confirms each second,
@@ -8,6 +10,7 @@
 //                     after the run the day rolls over, and every subscriber's scope with it
 // Run: pnpm --dir apps/herald measure:load --shape frontier --players 2000 --minutes 3 --sample-every 1
 import { parseArgs } from "node:util";
+import { presetRegistration, presetLaunch } from "../src/native/preset-fixtures";
 import { LiveWorld } from "../src/live-world";
 import { receipt, rowEvent, schema, setup, manifest, pointsAward } from "../src/native/fixtures";
 import type { StreamSocket } from "../src/game-stream";
@@ -28,7 +31,8 @@ const GAMES = FRONTIER ? 1 : 4;
 const PLAYERS_PER_GAME = FRONTIER ? Number(flags.players) : 24;
 const SIMULATED_MINUTES = Number(flags.minutes);
 const TILES_PER_PLAYER = FRONTIER ? 50 : 300;
-const SPACING = 21;
+const preset = presetRegistration(FRONTIER ? 5 : 2);
+const SPACING = Number(preset.definition.settlement.spacing);
 const MAP_STRUCTURES_PER_GAME = 150;
 const BUILDINGS_PER_REALM = 20;
 const RESOURCES_PER_REALM = 30;
@@ -41,6 +45,7 @@ const TURNOVER = !FRONTIER && flags.turnover;
 const TURNOVER_EVERY_MINUTES = 15;
 
 let now = Date.UTC(2026, 8, 23);
+const startMainAt = Math.floor(now / 1000);
 Date.now = () => now;
 
 let counter = 1;
@@ -84,12 +89,7 @@ function initialPoints(game: number, player: number): RpcEvent {
 
 /** One Frontier game: each player's realm, two armies and explored tiles in its own region of today's expedition. */
 function frontierRows(game: number): RpcEvent[] {
-  const startedAt = String(Math.floor(now / 1000));
-  const events = [
-    row("GameRegistry", [game], { start_main_at: startedAt, ready: "1", settled: "0" }),
-    row("SliceRules", [game], { epoch_seconds: "86400", mode_rules: "0" }),
-    row("SettlementRules", [game], { spacing: String(SPACING) }),
-  ];
+  const events = presetLaunch(preset, game, Math.floor(now / 1000));
   for (let player = 0; player < PLAYERS_PER_GAME; player++) {
     const address = String(owner(game, player));
     const structure = realm(game, player);
@@ -161,14 +161,12 @@ const frontierArmy = (game: number, player: number, army: number, x: number) => 
 function gameRows(game: number): RpcEvent[] {
   if (FRONTIER) return frontierRows(game);
   // Blitz: no expedition epochs, so every subscriber sees the whole game.
-  const events = [
-    row("GameRegistry", [game], { settled: "0" }),
-    row("SliceRules", [game], { epoch_seconds: "0", mode_rules: "0" }),
-    row("SettlementRules", [game]),
-  ];
-  for (let resource = 1; resource <= 40; resource++)
-    events.push(row("ResourceRule", [game, resource]), row("ProductionRecipe", [game, resource]));
-  for (let category = 1; category <= 40; category++) events.push(row("BuildingRule", [game, category]));
+  const events = presetLaunch(
+    preset,
+    game,
+    Math.floor(now / 1000),
+    Array.from({ length: PLAYERS_PER_GAME }, (_, player) => owner(game, player)),
+  );
   for (let player = 0; player < PLAYERS_PER_GAME; player++) {
     const structure = realm(game, player);
     events.push(
@@ -246,6 +244,7 @@ const heapMb = () => {
 
 const { native, decoder, fold } = setup();
 let block = 10;
+native.applyReceipt(fold, receipt([preset.event]), block, 0, preset.calldata);
 for (let game = 1; game <= GAMES; game++) {
   const events = gameRows(game);
   for (let start = 0; start < events.length; start += 500)
@@ -282,6 +281,15 @@ const live = new LiveWorld({
   confirmedBlock: block,
   confirmedFold: fold,
   historyStore: reviews(),
+  // The campaign has no node: model its seven home-ring view results on the shared expedition grid.
+  homeRingView: async (_gameId, realmId, timestamp) => {
+    const site = expeditionRealmSite(
+      { epochSeconds: Number(preset.definition.rules.epoch_seconds), spacing: SPACING, startMainAt },
+      realmId,
+      timestamp,
+    );
+    return [site, ...getNeighborHexes(site.col, site.row)].map(({ col, row }) => ({ col, row, biome: 5 }));
+  },
   rpc: {
     getBlockWithReceipts: async (number: number | "pre_confirmed") =>
       number === "pre_confirmed" ? pendingBlock() : blocks.get(number)!,

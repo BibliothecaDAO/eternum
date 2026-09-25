@@ -22,7 +22,7 @@ import {
 } from "@bibliothecadao/eternum/game-sync-models";
 import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { toJsonValue, type ModelRegistry } from "./model-registry";
-import { FINALIZED_GAME_MODELS } from "./native/read-models";
+import { directoryFact, FINALIZED_GAME_MODELS } from "./native/read-models";
 import { nativeEntityId } from "./native/entity-id";
 import { rowStreamKeys, scopeInputKeys, scopeLookup } from "./subscription-keys";
 import type {
@@ -161,6 +161,50 @@ export class WorldFold {
   /** Finalized games whose other rows are evicted: later writes to those rows are dropped the same way. */
   private readonly evictedGames = new Set<string>();
   private invariantViolationCount = 0;
+  // References canonical occupancy rows; overlay tombstones hide the parent's old position.
+  private readonly structureTiles = new Map<string, string | null>();
+  private directoryChanges = 0;
+
+  public directoryRevision(): number {
+    return (this.parent?.directoryRevision() ?? 0) + this.directoryChanges;
+  }
+
+  public structurePosition(gameId: string, entityId: string): Record<string, unknown> | undefined {
+    const key = `${BigInt(gameId)}:${BigInt(entityId)}`;
+    if (!this.structureTiles.has(key)) return this.parent?.structurePosition(gameId, entityId);
+    const tile = this.structureTiles.get(key);
+    return tile ? this.currentRow("TileOccupancy", tile)?.value : undefined;
+  }
+
+  private updateDirectoryIndex(model: string, entityId: string, before?: StoredModelRow, after?: StoredModelRow): void {
+    const visible = (row: StoredModelRow | undefined) =>
+      toJsonValue(directoryFact(model, row && { ...row.key, ...row.value }));
+    if (model !== "TileOccupancy") {
+      if (JSON.stringify(visible(before)) !== JSON.stringify(visible(after))) this.directoryChanges++;
+      return;
+    }
+    const structure = (row: StoredModelRow | undefined) => {
+      if (
+        !row ||
+        row.value.is_structure !== true ||
+        !hasSingleTilePosition({
+          entity_id: BigInt(row.value.entity_id as bigint),
+          category: Number(row.value.category),
+        })
+      )
+        return undefined;
+      return `${BigInt(row.key.game_id as bigint)}:${BigInt(row.value.entity_id as bigint)}`;
+    };
+    const previous = structure(before);
+    const next = structure(after);
+    if (previous === next) return;
+    if (previous) {
+      if (this.parent) this.structureTiles.set(previous, null);
+      else this.structureTiles.delete(previous);
+    }
+    if (next) this.structureTiles.set(next, entityId);
+    if (previous || next) this.directoryChanges++;
+  }
 
   constructor(registry: ModelRegistry, parent?: WorldFold) {
     this.registry = registry;
@@ -187,6 +231,7 @@ export class WorldFold {
         const stored = { key: row.key, value: row.value };
         rows.set(row.entity_id, stored);
         fold.addEntityToGameIndex(model.model, row.entity_id, stored);
+        fold.updateDirectoryIndex(model.model, row.entity_id, undefined, stored);
       }
     }
     for (const preset of checkpoint.preset_preimages ?? []) {
@@ -239,6 +284,7 @@ export class WorldFold {
     }
 
     this.updateGameIndex(event.model.name, event.entityId, existing, rows.get(event.entityId) ?? undefined);
+    this.updateDirectoryIndex(event.model.name, event.entityId, existing, rows.get(event.entityId) ?? undefined);
     if (!this.parent) this.updateScopeIndex(event.model.name, event.entityId, existing, rows.get(event.entityId));
 
     if (event.kind === "delete") return { del: { key: event.entityId, model: event.model.name }, gameId };

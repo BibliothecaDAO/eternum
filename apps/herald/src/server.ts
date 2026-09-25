@@ -137,6 +137,8 @@ const main = async (): Promise<void> => {
     decodedModelCount: registry.bySelector.size,
     fold: {
       modelRows: (model) => live.modelRows(model),
+      structurePosition: (game, entity) => live.structurePosition(game, entity),
+      directoryRevision: () => live.directoryRevision(),
       snapshot: (gameId, _confirmedBlock, models, actor, owner) => live.snapshot(gameId, models, actor, owner),
     },
     history: historyStore,

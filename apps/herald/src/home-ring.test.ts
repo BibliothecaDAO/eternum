@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { decodeHomeRing, type HomeRingTile, type HomeRingView } from "./home-ring";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
-import { raw, receipt, rowEvent, rulesEvent, setup } from "./native/fixtures";
+import { seedDerivedRows, raw, receipt, rowEvent, rulesEvent, setup } from "./native/fixtures";
 import type { HeraldStreamMessage } from "./stream-protocol";
 import type { RpcBlockWithReceipts } from "./types";
 import { WorldFold } from "./world-fold";
@@ -25,7 +25,8 @@ const RING: HomeRingTile[] = [
 /** A Frontier game (days of 86,400 s, regions of 100) with realm 1 owned by 0xa and realm 2 by 0xb, and no armies. */
 const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) => {
   const { native, decoder, fold } = setup();
-  const rules = decoder.decode(raw(rulesEvent()));
+  const event = rulesEvent();
+  const rules = decoder.decodeRowSet("SliceRules", ["1"], event.data.slice(3));
   if (rules.kind !== "set") throw new Error("Expected rules row");
   rules.value.epoch_seconds = 86_400;
   fold.apply(rules);
@@ -37,26 +38,28 @@ const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) =>
     );
   native.applyReceipt(
     fold,
-    receipt([
-      rowEvent(
-        "GameRegistry",
-        ["1"],
-        [
-          "7",
-          "1",
-          "10",
-          "0",
-          "1",
-          "0",
-          String(DAY_START + 120),
-          String(DAY_START + 120),
-          String(DAY_START + 864_000),
-        ].concat(["0", "7"]),
-      ),
-      rowEvent("SettlementRules", ["1"], ["0", "0", "0", "100"]),
-      home(1),
-      home(2),
-    ]),
+    receipt(
+      seedDerivedRows(fold, decoder, [
+        rowEvent(
+          "GameRegistry",
+          ["1"],
+          [
+            "7",
+            "1",
+            "10",
+            "0",
+            "1",
+            "0",
+            String(DAY_START + 120),
+            String(DAY_START + 120),
+            String(DAY_START + 864_000),
+          ].concat(["0", "7"]),
+        ),
+        rowEvent("SettlementRules", ["1"], ["0", "0", "0", "100"]),
+        home(1),
+        home(2),
+      ]),
+    ),
     9,
     0,
   );

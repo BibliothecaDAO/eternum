@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { LiveWorld } from "./live-world";
 import type { HistoryStore } from "./history-store";
 import type { MadaraRpc } from "./madara-rpc";
-import { raw, receipt, rowEvent, rulesEvent, schema, setup } from "./native/fixtures";
+import { seedDerivedRows, receipt, rowEvent, rulesEvent, schema, setup } from "./native/fixtures";
 import type { HeraldStreamMessage } from "./stream-protocol";
 import type { RpcBlockWithReceipts } from "./types";
 
@@ -129,7 +129,8 @@ describe("native live publication", () => {
 
   it("keeps two expedition scopes isolated through depth changes, overlay reset, reconnect and rollover", async () => {
     const { native, decoder, fold } = setup();
-    const rules = decoder.decode(raw(rulesEvent()));
+    const event = rulesEvent();
+    const rules = decoder.decodeRowSet("SliceRules", ["1"], event.data.slice(3));
     if (rules.kind !== "set") throw new Error("Expected rules row");
     rules.value.epoch_seconds = 86_400;
     const dayStart = Date.parse("2026-09-22T00:00:00Z") / 1000;
@@ -154,44 +155,46 @@ describe("native live publication", () => {
     );
     native.applyReceipt(
       fold,
-      receipt([
-        rowEvent(
-          "GameRegistry",
-          ["1"],
-          [
-            "7",
-            "1",
-            "10",
-            "0",
-            "1",
-            "0",
-            String(dayStart + 120),
-            String(dayStart + 120),
-            String(dayStart + 864_000),
-            "0",
-            "7",
-          ],
-        ),
-        rowEvent("SettlementRules", ["1"], ["0", "0", "0", "100"]),
-        ...homes,
-        ...armies,
-        ...positions,
-        rowEvent("ResourceBalance", ["1", "1", "28"], ["100"]),
-        rowEvent("ResourceBalance", ["1", "2", "28"], ["200"]),
-        ...[1, 2, 10, 20].flatMap((entityId) => [
-          rowEvent("ResourceWeight", ["1", String(entityId)], ["1000", "100"]),
-          rowEvent("EntityName", ["1", String(entityId)], [String(entityId)]),
+      receipt(
+        seedDerivedRows(fold, decoder, [
+          rowEvent(
+            "GameRegistry",
+            ["1"],
+            [
+              "7",
+              "1",
+              "10",
+              "0",
+              "1",
+              "0",
+              String(dayStart + 120),
+              String(dayStart + 120),
+              String(dayStart + 864_000),
+              "0",
+              "7",
+            ],
+          ),
+          rowEvent("SettlementRules", ["1"], ["0", "0", "0", "100"]),
+          ...homes,
+          ...armies,
+          ...positions,
+          rowEvent("ResourceBalance", ["1", "1", "28"], ["100"]),
+          rowEvent("ResourceBalance", ["1", "2", "28"], ["200"]),
+          ...[1, 2, 10, 20].flatMap((entityId) => [
+            rowEvent("ResourceWeight", ["1", String(entityId)], ["1000", "100"]),
+            rowEvent("EntityName", ["1", String(entityId)], [String(entityId)]),
+          ]),
+          rowEvent("ProductionReceiver", ["1", "100", "29"], ["2", "240"]),
+          rowEvent("ResourceProduction", ["1", "100", "29"], ["1", "10", "100", "120"]),
+          rowEvent("ProductionReceiver", ["1", "99", "29"], ["1", "240"]),
+          rowEvent("ResourceProduction", ["1", "99", "29"], ["1", "10", "100", "120"]),
+          rowEvent("TileOpt", ["1", "0", "50", "50"], ["1"]),
+          rowEvent("TileOpt", ["1", "0", "150", "50"], ["1"]),
+          rowEvent("TileOpt", ["1", "0", "50", "150"], ["1"]),
+          rowEvent("TileOpt", ["1", "0", "50", "450"], ["1"]),
+          rowEvent("TileOpt", ["1", "0", "150", "450"], ["1"]),
         ]),
-        rowEvent("ProductionReceiver", ["1", "100", "29"], ["2", "240"]),
-        rowEvent("ResourceProduction", ["1", "100", "29"], ["1", "10", "100", "120"]),
-        rowEvent("ProductionReceiver", ["1", "99", "29"], ["1", "240"]),
-        rowEvent("ResourceProduction", ["1", "99", "29"], ["1", "10", "100", "120"]),
-        rowEvent("TileOpt", ["1", "0", "50", "50"], ["1"]),
-        rowEvent("TileOpt", ["1", "0", "150", "50"], ["1"]),
-        rowEvent("TileOpt", ["1", "0", "50", "150"], ["1"]),
-        rowEvent("TileOpt", ["1", "0", "50", "450"], ["1"]),
-        rowEvent("TileOpt", ["1", "0", "150", "450"], ["1"]),
-      ]),
+      ),
       9,
       0,
     );

@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
-import { receipt, rowEvent, rulesEvent, setup } from "./native/fixtures";
+import { seedDerivedRows, receipt, rowEvent, rulesEvent, setup } from "./native/fixtures";
 import type { HeraldStreamMessage } from "./stream-protocol";
 import type { RpcBlockWithReceipts } from "./types";
 
@@ -11,14 +11,16 @@ it("preserves the whole Blitz game's facts through snapshot, overlay, confirmati
   const balances = [1, 2].map((id) => rowEvent("ResourceBalance", ["1", String(id), "28"], [String(id * 100)]));
   native.applyReceipt(
     fold,
-    receipt([
-      rowEvent("GameRegistry", ["1"], ["7", "2", "10", "0", "1", "0", "120", "120", "999999", "0", "7"]),
-      rulesEvent(),
-      rowEvent("SettlementRules", ["1"], ["0", "0", "0", "100"]),
-      ...tiles,
-      ...balances,
-      rowEvent("TileOpt", ["2", "0", "250", "50"], ["1"]),
-    ]),
+    receipt(
+      seedDerivedRows(fold, decoder, [
+        rowEvent("GameRegistry", ["1"], ["7", "2", "10", "0", "1", "0", "120", "120", "999999", "0", "7"]),
+        rulesEvent(),
+        rowEvent("SettlementRules", ["1"], ["0", "0", "0", "100"]),
+        ...tiles,
+        ...balances,
+        rowEvent("TileOpt", ["2", "0", "250", "50"], ["1"]),
+      ]),
+    ),
     9,
     0,
   );

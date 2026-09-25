@@ -512,20 +512,6 @@ export const factWireTypes = [
   },
   {
     type: "struct",
-    name: "world_native::realms::RealmCatalogue",
-    members: [
-      {
-        name: "initialized",
-        type: "core::integer::u32",
-      },
-      {
-        name: "digest",
-        type: "core::felt252",
-      },
-    ],
-  },
-  {
-    type: "struct",
     name: "world_native::resources::Production",
     members: [
       {
@@ -701,6 +687,36 @@ export const factWireTypes = [
 ];
 
 // Native row declarations are shared by schema generation, behavioural observations and client bindings.
+const presetDerivedModels = new Set([
+  "SliceRules",
+  "SettlementRules",
+  "ResourceRule",
+  "ProductionRecipe",
+  "MineKindConfig",
+  "MinePool",
+  "BuildingRule",
+  "BoardRules",
+  "CampResources",
+  "FaithRules",
+  "UpgradeLimits",
+  "UpgradeRecipe",
+  "RealmGrants",
+  "VillageRules",
+  "DepthRules",
+  "SpireLayout",
+  "TradeRules",
+  "BankRules",
+  "HyperstructureRules",
+  "RelicRules",
+  "ChestRules",
+  "ArtificerCost",
+  "DepositRules",
+  "WithdrawalRules",
+  "ResourceToken",
+  "ExtractionRewards",
+  "SeasonWinThreshold",
+]);
+
 export function defineFactModels({ struct, model: declare }) {
   const model = (...arguments_) => {
     const row = declare(...arguments_);
@@ -1066,7 +1082,7 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       [{ name: "next_nonce", type: "core::integer::u64" }],
     ),
-  ];
+  ].map((fact) => (presetDerivedModels.has(fact.name) ? { ...fact, derivedFrom: "preset" } : fact));
 }
 
 // Paths describe observable values, not serialized row positions.

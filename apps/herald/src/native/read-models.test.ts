@@ -1,7 +1,7 @@
 import { WorldFold } from "../world-fold";
 import { describe, expect, it } from "vitest";
 import { buildNativeDirectory, buildNativeLeaderboard } from "./read-models";
-import { pointsAward, manifest, receipt, rowEvent, rulesEvent, schema, setup } from "./fixtures";
+import { pointsAward, manifest, seedDerivedRows, receipt, rowEvent, rulesEvent, schema, setup } from "./fixtures";
 
 function gameEvent(game = "1", settled = "0", dev = "0", preset = "2") {
   return rowEvent(
@@ -14,19 +14,21 @@ function world() {
   const state = setup();
   state.native.applyReceipt(
     state.fold,
-    receipt([
-      gameEvent(),
-      gameEvent("2"),
-      rulesEvent(),
-      rulesEvent("2"),
-      rowEvent("SettlementRules", ["1"], ["5", "96", "0", "8"]),
-      rowEvent("SettlementRules", ["2"], ["5", "2", "2", "8"]),
-      rowEvent("SettlementProgress", ["1"], ["2", "1"]),
-      rowEvent("PlayerEntry", ["1", "0xaaa"], ["0x111"]),
-      rowEvent("PlayerEntry", ["1", "0xbbb"], ["0x222"]),
-      rowEvent("PlayerEntry", ["2", "0xccc"], ["0x333"]),
-      rowEvent("BlitzRoster", ["1"], ["2", "0x111", "0x222"]),
-    ]),
+    receipt(
+      seedDerivedRows(state.fold, state.decoder, [
+        gameEvent(),
+        gameEvent("2"),
+        rulesEvent(),
+        rulesEvent("2"),
+        rowEvent("SettlementRules", ["1"], ["5", "96", "0", "8"]),
+        rowEvent("SettlementRules", ["2"], ["5", "2", "2", "8"]),
+        rowEvent("SettlementProgress", ["1"], ["2", "1"]),
+        rowEvent("PlayerEntry", ["1", "0xaaa"], ["0x111"]),
+        rowEvent("PlayerEntry", ["1", "0xbbb"], ["0x222"]),
+        rowEvent("PlayerEntry", ["2", "0xccc"], ["0x333"]),
+        rowEvent("BlitzRoster", ["1"], ["2", "0x111", "0x222"]),
+      ]),
+    ),
     10,
     0,
   );

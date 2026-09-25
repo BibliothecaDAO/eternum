@@ -62,21 +62,18 @@ export class NativeDecoder {
   owns(address: string): boolean {
     return normalizeFelt(address) === this.emitter;
   }
-  /** A model row decoded exactly as the chain's own RowSet for it would be, for a row Herald takes from a rule. */
+  /** Decode an off-chain projection with the same typed members, without accepting a chain event. */
   decodeRowSet(model: string, keys: readonly string[], values: readonly string[]): DecodedWorldEvent {
-    const definition = this.schema.models.find((candidate) => candidate.name === model);
-    if (!definition) throw new Error(`Unknown native model ${model}`);
-    const layout = this.schema.games.events.find((event) => event.name === "RowSet");
-    if (!layout) throw new Error(`Native model ${model} has no RowSet event`);
-    return this.decode({
-      from_address: this.emitter,
-      keys: [...layout.prefix, "1", definition.identity],
-      data: [String(keys.length), ...keys, String(values.length), ...values],
-      block_number: null,
-      transaction_hash: "0x0",
-      transaction_index: 0,
-      event_index: 0,
-    });
+    const row = this.schema.models.find((candidate) => candidate.name === model);
+    if (!row) throw new Error(`Unknown native model ${model}`);
+    return {
+      kind: "set",
+      model: definition(row.name, row.scope),
+      entityId: nativeEntityId(keys),
+      key: decodeMembers(this.schema, row.keys, [...keys]),
+      value: decodeMembers(this.schema, row.members, [...values]),
+      position: { blockNumber: null, transactionHash: "0x0", transactionIndex: 0, eventIndex: 0 },
+    };
   }
   decode(event: NativeRawEvent): DecodedWorldEvent {
     if (!this.owns(event.from_address)) throw new Error(`Foreign native emitter ${event.from_address}`);
@@ -101,6 +98,8 @@ export class NativeDecoder {
 
     const model = schema.models.find((model) => BigInt(model.identity) === BigInt(header[1] ?? -1));
     if (!model) throw new Error("Unknown native model");
+    if (model.derivedFrom)
+      throw new Error(`Native model ${model.name} is derived-only from ${model.derivedFrom}; row events are forbidden`);
     if (model.eventProjection)
       throw new Error(
         `Native model ${model.name} is projected from ${model.eventProjection}; row events are forbidden`,

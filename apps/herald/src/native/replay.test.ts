@@ -1,3 +1,4 @@
+import { presetRegistration, presetLaunch } from "./preset-fixtures";
 import { storyEventIdentity } from "@bibliothecadao/eternum/game-sync";
 import { toJsonValue } from "../model-registry";
 import { createNativeWorldIngestion } from "./world-ingestion";
@@ -12,7 +13,7 @@ import { WorldFold } from "../world-fold";
 import { createHeraldRequestHandler } from "../http";
 import type { MadaraRpc } from "../madara-rpc";
 import type { RpcEvent, RpcBlockWithReceipts } from "../types";
-import { pointsAward, receipt, schema, setup, rowEvent, rulesEvent, shardManifest } from "./fixtures";
+import { pointsAward, receipt, schema, setup, rowEvent, shardManifest } from "./fixtures";
 
 function block(number: number, events: RpcEvent[]): RpcBlockWithReceipts {
   return {
@@ -23,17 +24,10 @@ function block(number: number, events: RpcEvent[]): RpcBlockWithReceipts {
 }
 function wireHistory() {
   const events = [setFixture.raw, pointsAward("1", "0x111", "100", "100", "100")];
-  const game = rowEvent(
-    "GameRegistry",
-    ["1"],
-    ["0x706172697479", "1", "0x111", "0", "1", "0", "1800", "1800", "999999", "0", "1"],
-  );
-  return [
-    block(10, [game, rulesEvent(), rowEvent("SettlementRules", ["1"], ["1800", "96", "0", "6"]), ...events]),
-    block(11, [setFixture.raw]),
-    block(12, [deleted.raw]),
-    block(13, [setFixture.raw]),
-  ];
+  const preset = presetRegistration(2);
+  const launched = block(10, [preset.event, ...presetLaunch(preset, 1, 1800), ...events]);
+  launched.transactions[0]!.transaction.calldata = preset.calldata;
+  return [launched, block(11, [setFixture.raw]), block(12, [deleted.raw]), block(13, [setFixture.raw])];
 }
 const metrics = { decoded_events: 1, event_messages: 0, pages: 1, store_events: 1, retained_rows: 1 };
 
@@ -61,6 +55,8 @@ describe("native confirmed replay and transaction delivery", () => {
         decodedModelCount: decoder.registry.bySelector.size,
         fold: {
           modelRows: (name) => world.modelRows(name),
+          structurePosition: (game, entity) => world.structurePosition(game, entity),
+          directoryRevision: () => world.directoryRevision(),
           snapshot: (game, block, models) => world.snapshot(game, block, models),
         },
         metrics,
@@ -321,6 +317,8 @@ it("halts a live confirmed fold atomically while leaving the process available",
     decodedModelCount: decoder.registry.bySelector.size,
     fold: {
       modelRows: (model) => fold.modelRows(model),
+      structurePosition: (game, entity) => fold.structurePosition(game, entity),
+      directoryRevision: () => fold.directoryRevision(),
       snapshot: (game, block, models) => fold.snapshot(game, block, models),
     },
     metrics,

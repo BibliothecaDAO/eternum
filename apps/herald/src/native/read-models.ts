@@ -1,4 +1,3 @@
-import { hasSingleTilePosition } from "@bibliothecadao/eternum/game-client";
 import {
   createEmptyActivityBreakdown,
   type HeraldGameDirectory,
@@ -52,7 +51,7 @@ const required = (rows: FoldRow[], gameId: unknown, model: string): Row => {
 
 interface DirectoryRows {
   structures: FoldRow[];
-  occupancy: Map<string, Row>;
+  position: DirectoryInput["fold"]["structurePosition"];
   rules: FoldRow[];
   settlementRules: FoldRow[];
   progress: FoldRow[];
@@ -64,7 +63,7 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
   const rows = (model: string) => input.fold.modelRows(model);
   const facts: DirectoryRows = {
     structures: rows("Structure"),
-    occupancy: structurePositions(rows("TileOccupancy")),
+    position: (gameId, entityId) => input.fold.structurePosition(gameId, entityId),
     rules: rows("SliceRules"),
     settlementRules: rows("SettlementRules"),
     progress: rows("SettlementProgress"),
@@ -77,15 +76,36 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
   return { chain: input.chain, confirmed_block: input.confirmedBlock, games };
 }
 
-function structurePositions(rows: FoldRow[]): Map<string, Row> {
-  return new Map(
-    rows
-      .filter(
-        ({ value }) =>
-          value.is_structure === true &&
-          hasSingleTilePosition({ entity_id: integer(value.entity_id), category: number(value.category) }),
-      )
-      .map(({ value }) => [`${integer(value.game_id)}:${integer(value.entity_id)}`, value]),
+/** Only fields visible in the directory invalidate it; troop combat and production writes do not. */
+export function directoryFact(model: string, row: Row | undefined): unknown {
+  if (!row) return undefined;
+  switch (model) {
+    case "GameRegistry":
+      return row;
+    case "SliceRules":
+      return row.epoch_seconds;
+    case "SettlementRules":
+      return row;
+    case "SettlementProgress":
+      return row.registered;
+    case "PlayerEntry":
+      return row.player;
+    case "BlitzRoster":
+      return row.players;
+    case "Structure":
+      return [row.owner, record(row.base).category, record(row.metadata).realm_id, row.resources_packed];
+    default:
+      return undefined;
+  }
+}
+
+export function directoryStatus(game: Row, timestamp: number) {
+  if (game.ready !== true) return "Registration";
+  return resolveDirectoryStatus(
+    game.settled ? "Settled" : "Registration",
+    { start_main_at: number(game.start_main_at), end_at: number(game.end_at) },
+    game.dev_mode_on === true,
+    timestamp,
   );
 }
 
@@ -113,15 +133,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     mode,
     dev_mode_on: game.dev_mode_on === true,
     ready: game.ready === true,
-    status:
-      game.ready !== true
-        ? "Registration"
-        : resolveDirectoryStatus(
-            game.settled ? "Settled" : "Registration",
-            clock,
-            game.dev_mode_on === true,
-            input.timestamp,
-          ),
+    status: directoryStatus(game, input.timestamp),
     clock,
     player_count: new Set(settlements.map((row) => address(row.owner))).size,
     player_state: player
@@ -182,7 +194,7 @@ function structurePosition(
       timestamp,
     );
   }
-  const tile = facts.occupancy.get(`${integer(row.game_id)}:${integer(row.entity_id)}`);
+  const tile = facts.position(integer(row.game_id).toString(), integer(row.entity_id).toString());
   if (!tile) throw new Error(`Missing native position for entity ${row.game_id}:${row.entity_id}`);
   return { col: number(tile.col), row: number(tile.row) };
 }

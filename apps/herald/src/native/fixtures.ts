@@ -67,6 +67,22 @@ export function pointsAward(
   };
 }
 
+/** Unit-test projections enter the fold directly; they are never accepted as chain row events. */
+export function seedDerivedRows(fold: WorldFold, decoder: NativeDecoder, events: RpcEvent[]): RpcEvent[] {
+  return events.filter((event) => {
+    const model = schema.models.find(
+      (model) =>
+        model.derivedFrom &&
+        BigInt(model.identity) ===
+          BigInt(event.keys[schema.games.events.find(({ name }) => name === "RowSet")!.prefix.length + 1] ?? 0),
+    );
+    if (!model) return true;
+    const count = Number(event.data[0]);
+    fold.apply(decoder.decodeRowSet(model.name, event.data.slice(1, count + 1), event.data.slice(count + 2)));
+    return false;
+  });
+}
+
 export function rulesEvent(gameId = "1") {
   const model = schema.models.find((model) => model.name === "SliceRules")!;
   const defaults = (type: string): string[] => {

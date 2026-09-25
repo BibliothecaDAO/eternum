@@ -1,7 +1,9 @@
 import type { HeraldGameDirectoryEntry, HeraldGameStatus } from "@bibliothecadao/eternum/game-sync";
 import type { FoldRow } from "./types";
-interface GameDirectorySource {
+export interface GameDirectorySource {
   modelRows: (model: string) => FoldRow[];
+  structurePosition: (gameId: string, entityId: string) => Record<string, unknown> | undefined;
+  directoryRevision: () => number;
 }
 
 export interface DirectoryInput {

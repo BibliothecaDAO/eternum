@@ -30,6 +30,8 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
   chainTimestamp: () => 100,
   decodedModelCount: 50,
   fold: {
+    structurePosition: () => undefined,
+    directoryRevision: () => 0,
     modelRows: (model) => {
       if (model === "GameRegistry") {
         return [
@@ -54,7 +56,12 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
         return [
           {
             key: "0x7",
-            value: { game_id: "7", mode_rules: 0, victory_points_grant_config: { hyp_points_per_second: "1" } },
+            value: {
+              game_id: "7",
+              mode_rules: 0,
+              epoch_seconds: 0,
+              victory_points_grant_config: { hyp_points_per_second: "1" },
+            },
           },
         ];
       if (model === "SettlementRules")
@@ -179,7 +186,7 @@ it("passes a battle-only history filter to the store before pagination", async (
     chainTimestamp: () => 100,
     decodedModelCount: 0,
     metrics,
-    fold: { modelRows: () => [], snapshot: () => snapshot },
+    fold: { ...httpState.fold, modelRows: () => [], snapshot: () => snapshot },
     undecodableEventCount: () => 0,
     history: {
       queryStoryCursor: async () => ({
@@ -214,9 +221,13 @@ it("serves the bounded story cursor only when history decoding is healthy", asyn
 });
 
 it("streams directory invalidations atomically and reconnects from the current snapshot", async () => {
+  let block = 12;
+  let revision = 0;
   const listeners = new Set<(models: ReadonlySet<string>) => void>();
   const handler = createHeraldRequestHandler({
     ...httpState,
+    confirmedBlock: () => block,
+    fold: { ...httpState.fold, directoryRevision: () => revision },
     subscribeConfirmedChanges: (listener) => {
       listeners.add(listener);
       return () => {
@@ -229,7 +240,10 @@ it("streams directory invalidations atomically and reconnects from the current s
   const reader = response.body!.getReader();
   const decode = (data: Uint8Array | undefined) => new TextDecoder().decode(data);
   expect(decode((await reader.read()).value)).toBe("data: changed\n\n");
+  block++;
   for (const listener of listeners) listener(new Set(["ExplorerTroops"]));
+  block++;
+  revision++;
   for (const listener of listeners) listener(new Set(["Structure", "GameRegistry"]));
   expect(decode((await reader.read()).value)).toBe("data: changed\n\n");
   await reader.cancel();
@@ -243,7 +257,11 @@ it("streams directory invalidations atomically and reconnects from the current s
 
 it("derives directory phases from advancing chain time with no registry write", async () => {
   let timestamp = 1;
-  const handler = createHeraldRequestHandler({ ...httpState, chainTimestamp: () => timestamp });
+  const handler = createHeraldRequestHandler({
+    ...httpState,
+    confirmedBlock: () => timestamp,
+    chainTimestamp: () => timestamp,
+  });
   const status = async () => {
     const response = await handler(new Request("http://herald/games"));
     expect(response.status).toBe(200);
@@ -270,4 +288,49 @@ it("keeps an incomplete roster in registration beyond its scheduled end", async 
   const response = await handler(new Request("http://herald/games"));
   expect(response.status).toBe(200);
   expect((await response.json()).games[0]).toMatchObject({ ready: false, status: "Registration" });
+});
+
+it("caches directory responses and shared row reads within one confirmed block", async () => {
+  let block = 12;
+  const modelRows = vi.fn(httpState.fold.modelRows);
+  const handler = createHeraldRequestHandler({
+    ...httpState,
+    confirmedBlock: () => block,
+    fold: { ...httpState.fold, modelRows },
+  });
+  const read = (player = "") => handler(new Request(`http://herald/games${player ? `?player=${player}` : ""}`));
+  expect((await read()).status).toBe(200);
+  const calls = modelRows.mock.calls.length;
+  expect((await read()).status).toBe(200);
+  expect((await read("0x111")).status).toBe(200);
+  expect(modelRows).toHaveBeenCalledTimes(calls);
+  block++;
+  expect((await read()).status).toBe(200);
+  expect(modelRows).toHaveBeenCalledTimes(calls * 2);
+});
+
+it("drops the previous head's player response cache instead of accumulating entries across heads", async () => {
+  let block = 12;
+  const handler = createHeraldRequestHandler({ ...httpState, confirmedBlock: () => block });
+  const responseCaches = new Set<Map<unknown, unknown>>();
+  const clear = Map.prototype.clear;
+  const clearing = vi.spyOn(Map.prototype, "clear").mockImplementation(function (this: Map<unknown, unknown>) {
+    // Observe the actual retained responses without adding a production cache-inspection API.
+    const first = this.values().next().value;
+    if (first && typeof first === "object" && "confirmed_block" in first && "games" in first) responseCaches.add(this);
+    clear.call(this);
+  });
+  try {
+    for (let head = 0; head < 25; head++, block++) {
+      // Different players on each head would grow an uncleared cache even if responses carried fresh block numbers.
+      for (let player = 1; player <= 3; player++) {
+        const response = await handler(new Request(`http://herald/games?player=${head * 3 + player}`));
+        expect((await response.json()).confirmed_block).toBe(block);
+      }
+      for (const cache of responseCaches) expect(cache.size).toBe(3);
+    }
+    expect(responseCaches.size).toBe(1);
+  } finally {
+    clearing.mockRestore();
+  }
 });

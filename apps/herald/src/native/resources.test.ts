@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { toJsonValue } from "../model-registry";
-import { manifest, raw, receipt, schema, setup } from "./fixtures";
+import { manifest, raw, seedDerivedRows, receipt, schema, setup } from "./fixtures";
 
 function resourceEvent(name: string, keys: string[], values?: string[]) {
   const model = schema.models.find((model) => model.name === name)!;
@@ -64,13 +64,15 @@ describe("native resource facts", () => {
 
 describe("native production facts", () => {
   it("folds recipe arrays and full-width bonus end ticks without evaluating them at delivery time", () => {
-    const { native, fold } = setup();
+    const { native, fold, decoder } = setup();
     native.applyReceipt(
       fold,
-      receipt([
-        resourceEvent("ProductionRecipe", ["1", "26"], ["100", "200", "1", "23", "10", "2", "35", "20", "36", "30"]),
-        resourceEvent("ProductionBonus", ["1", "7"], ["65535", "2500", "5000", "4294967295", "31", "32"]),
-      ]),
+      receipt(
+        seedDerivedRows(fold, decoder, [
+          resourceEvent("ProductionRecipe", ["1", "26"], ["100", "200", "1", "23", "10", "2", "35", "20", "36", "30"]),
+          resourceEvent("ProductionBonus", ["1", "7"], ["65535", "2500", "5000", "4294967295", "31", "32"]),
+        ]),
+      ),
       10,
       0,
     );

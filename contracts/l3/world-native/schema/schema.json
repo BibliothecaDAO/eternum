@@ -28,6 +28,11 @@
     "CHEST_OCCUPIER": 34,
     "SPIRE_OCCUPIER": 35
   },
+  "tilePackingConstants": {
+    "BIOME_SCALE": "0x20000000000",
+    "BYTE_RANGE": "0x100",
+    "REWARD_EXTRACTED_FLAG": "0x20000000000000000000000000000"
+  },
   "logicClasses": {
     "season": "SeasonLogic",
     "map": "MapLogic",
@@ -2380,7 +2385,8 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 4
+      "valueLength": 4,
+      "derivedFrom": "preset"
     },
     {
       "name": "CampResources",
@@ -2402,7 +2408,8 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": null
+      "valueLength": null,
+      "derivedFrom": "preset"
     },
     {
       "name": "Guild",
@@ -2528,7 +2535,8 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 1
+      "valueLength": 1,
+      "derivedFrom": "preset"
     },
     {
       "name": "BlitzResult",
@@ -2606,7 +2614,8 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 4
+      "valueLength": 4,
+      "derivedFrom": "preset"
     },
     {
       "name": "SeasonWinThreshold",
@@ -2628,7 +2637,8 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 1
+      "valueLength": 1,
+      "derivedFrom": "preset"
     },
     {
       "name": "ExtractionRewards",
@@ -2650,7 +2660,8 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": null
+      "valueLength": null,
+      "derivedFrom": "preset"
     },
     {
       "name": "RelicRules",
@@ -2672,7 +2683,8 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": null
+      "valueLength": null,
+      "derivedFrom": "preset"
     },
     {
       "name": "ChestRules",
@@ -2717,7 +2729,8 @@
         "parent": "RelicRules",
         "value": "empty",
         "meaning": "This game uses interval relic chests."
-      }
+      },
+      "derivedFrom": "preset"
     },
     {
       "name": "ChestPity",
@@ -2925,7 +2938,8 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 5
+      "valueLength": 5,
+      "derivedFrom": "preset"
     },
     {
       "name": "WithdrawalRules",
@@ -2989,7 +3003,8 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": null
+      "valueLength": null,
+      "derivedFrom": "preset"
     },
     {
       "name": "ResourceToken",
@@ -3016,7 +3031,8 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 1
+      "valueLength": 1,
+      "derivedFrom": "preset"
     },
     {
       "name": "BankRules",
@@ -3056,7 +3072,8 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 4
+      "valueLength": 4,
+      "derivedFrom": "preset"
     },
     {
       "name": "BankName",
@@ -3245,7 +3262,8 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 1
+      "valueLength": 1,
+      "derivedFrom": "preset"
     },
     {
       "name": "Guard",
@@ -3584,7 +3602,8 @@
           "minimum": "cap_min",
           "steps": "cap_steps"
         }
-      }
+      },
+      "derivedFrom": "preset"
     },
     {
       "name": "MinePool",
@@ -3612,7 +3631,8 @@
         "fields": {
           "kinds": "weights"
         }
-      }
+      },
+      "derivedFrom": "preset"
     },
     {
       "name": "RealmTraits",
@@ -3752,7 +3772,8 @@
           "startingTroops": "starting_troops",
           "realmResources": "realm_resources"
         }
-      }
+      },
+      "derivedFrom": "preset"
     },
     {
       "name": "HyperstructureReservations",
@@ -3829,7 +3850,8 @@
           "mode": "mode",
           "spacing": "spacing"
         }
-      }
+      },
+      "derivedFrom": "preset"
     },
     {
       "name": "SettlementProgress",
@@ -3945,7 +3967,8 @@
           "grants": "resources",
           "resourcePool": "resource_pool"
         }
-      }
+      },
+      "derivedFrom": "preset"
     },
     {
       "name": "VillagePass",
@@ -4596,7 +4619,8 @@
           "simpleInputs": "simple_inputs",
           "complexInputs": "complex_inputs"
         }
-      }
+      },
+      "derivedFrom": "preset"
     },
     {
       "name": "ResourceWeight",
@@ -4734,7 +4758,8 @@
         "parent": "GameRelease",
         "value": "empty",
         "meaning": "The verified preset has no board section; this game uses base building rates and grants without board bonuses or demolition refunds."
-      }
+      },
+      "derivedFrom": "preset"
     },
     {
       "name": "BuildingRule",
@@ -4779,7 +4804,8 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": null
+      "valueLength": null,
+      "derivedFrom": "preset"
     },
     {
       "name": "Building",
@@ -5046,7 +5072,8 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": null
+      "valueLength": null,
+      "derivedFrom": "preset"
     },
     {
       "name": "EntityName",
@@ -5302,7 +5329,8 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 3
+      "valueLength": 3,
+      "derivedFrom": "preset"
     },
     {
       "name": "UpgradeLimits",
@@ -5337,7 +5365,8 @@
           "realmMaximum": "realm_max",
           "villageMaximum": "village_max"
         }
-      }
+      },
+      "derivedFrom": "preset"
     },
     {
       "name": "UpgradeRecipe",
@@ -5370,7 +5399,8 @@
         "fields": {
           "costs": "costs"
         }
-      }
+      },
+      "derivedFrom": "preset"
     },
     {
       "name": "DepthRules",
@@ -5470,7 +5500,8 @@
           "mineChest": "mine_chest",
           "revealSiteNeighbors": "reveal_site_neighbors"
         }
-      }
+      },
+      "derivedFrom": "preset"
     },
     {
       "name": "GameRelease",
@@ -5756,7 +5787,8 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 103
+      "valueLength": 103,
+      "derivedFrom": "preset"
     },
     {
       "name": "PlayerPoints",
@@ -11815,5 +11847,5 @@
       ]
     }
   },
-  "identity": "e5af7575a0eee3050f84c1cffece2374245cd7f009c50b849410de41f8dff3d6"
+  "identity": "45bfda290ef120e4ff40e5eb295d6d1ac388b5e47ace200a6bf365dff3495cde"
 }

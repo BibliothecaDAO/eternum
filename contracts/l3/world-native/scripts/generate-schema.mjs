@@ -147,6 +147,16 @@ const tileOccupierConstants = Object.fromEntries(
   ]),
 );
 
+const tilePackingConstants = Object.fromEntries(
+  ["BIOME_SCALE", "BYTE_RANGE", "REWARD_EXTRACTED_FLAG"].map((name) => {
+    const value = mapSource.match(
+      new RegExp(`^(?:pub\\(crate\\) )?const ${name}: u128 = (0x[0-9a-fA-F]+);$`, "m"),
+    )?.[1];
+    if (!value) throw new Error(`Missing Cairo tile packing constant ${name}`);
+    return [name, value];
+  }),
+);
+
 // Every library emits in Games' context. A prefix must identify exactly one layout.
 const gamesEvents = uniqueEventLayouts(Object.values(artifacts).flatMap(eventLayouts));
 const productionAbi = Object.values(artifacts).flat();
@@ -154,6 +164,7 @@ const productionAbi = Object.values(artifacts).flat();
 const schema = {
   ruleConstants,
   tileOccupierConstants,
+  tilePackingConstants,
   logicClasses,
   version: 2,
   cairoVersion: "2.17.0",
@@ -389,6 +400,7 @@ const declarations = [
   `export const nativeFactSchemaIdentity = ${JSON.stringify(schema.identity)};`,
   `export const nativeRuleConstants = ${JSON.stringify(ruleConstants, null, 2)} as const;`,
   `export const nativeTileOccupierConstants = ${JSON.stringify(tileOccupierConstants, null, 2)} as const;`,
+  `export const nativeTilePackingConstants = ${JSON.stringify(tilePackingConstants, null, 2)} as const;`,
   "export interface NativeRows {",
   ...factRows.map(([name, row]) => `  ${name}: ${row.ts};`),
   "}",

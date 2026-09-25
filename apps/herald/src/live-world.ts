@@ -163,6 +163,14 @@ export class LiveWorld {
     return owner === undefined ? snapshot : this.confirmedFold.ownedBy(gameId, snapshot, owner);
   }
 
+  public structurePosition(gameId: string, entityId: string) {
+    return this.confirmedFold.structurePosition(gameId, entityId);
+  }
+
+  public directoryRevision(): number {
+    return this.confirmedFold.directoryRevision();
+  }
+
   public modelRows(model: string) {
     return this.confirmedFold.modelRows(model);
   }
@@ -303,6 +311,7 @@ export class LiveWorld {
     const header = await this.input.rpc.getPreconfirmedHeader();
     if (header.timestamp <= this.lastClockTimestamp) return;
     this.lastClockTimestamp = header.timestamp;
+    for (const listener of this.changeListeners) listener(new Set());
     for (const gameId of this.knownGames) this.hub.publishHead(gameId, header.block_number, header.timestamp, true);
   }
 
@@ -360,6 +369,10 @@ export class LiveWorld {
     if (publishedChanges || violations > 0)
       this.diffLatency.record("confirmed", performance.now() - startedAt, violations);
     this.lastClockTimestamp = Math.max(this.lastClockTimestamp, head.timestamp);
+    const models = new Set(
+      [...confirmed.changes.values()].flatMap((changes) => changes.map((change) => (change.set ?? change.del)!.model)),
+    );
+    for (const listener of this.changeListeners) listener(models);
     for (const gameId of this.knownGames) this.hub.publishHead(gameId, head.block_number, head.timestamp);
     this.checkpointIfDue();
   }
@@ -367,10 +380,6 @@ export class LiveWorld {
   private broadcastConfirmedChanges(changes: FoldChange[], block: number): void {
     const published = this.overlayLedger.settleConfirmed(collapseChanges(changes));
     this.broadcastChanges(published, block, false);
-    if (this.changeListeners.size && changes.length) {
-      const models = new Set(changes.map((change) => (change.set ?? change.del)!.model));
-      for (const listener of this.changeListeners) listener(models);
-    }
   }
 
   private resetOverlay(): void {
