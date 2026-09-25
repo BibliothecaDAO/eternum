@@ -320,3 +320,31 @@ const exploredGround = (clock: LabClock): WireRow[] =>
       },
     })),
   ).flat();
+
+/**
+ * Herald's Frontier season board for the lab, in the agreed shape: sixty realms, the lab player 57th, so the board
+ * shows its top fifty plus the player's own row.
+ */
+export const labSeasonBoard = (gameId: number) => ({
+  game_id: String(gameId),
+  mode: "frontier",
+  entries: Array.from({ length: 60 }, (_, index) => {
+    const total = Math.max(0, 42 - Math.floor(index * 0.7));
+    const fallen = Math.floor(total / 8);
+    const rifts = Math.floor(total / 4);
+    return {
+      address: index === 56 ? LAB_PLAYER : `0x${(0xa000 + index).toString(16)}`,
+      structure_id: String(index === 56 ? LAB_REALM_ID : 500 + index),
+      rank: index + 1,
+      sites_cleared: { total, camps: total - rifts - fallen, rifts, fallen_realms: fallen },
+      chests_earned: Math.floor(total / 3),
+      rewards: {
+        lords: String(Math.floor(total / 3) * 400),
+        essence: `${total * 3_000}000000000`,
+        labor: `${total * 550}000000000`,
+      },
+      deepest_depth: Math.min(3, Math.floor(total / 12)),
+      order: (index % 16) + 1,
+    };
+  }),
+});

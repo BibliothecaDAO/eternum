@@ -3,6 +3,7 @@ import type { GameClient } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { disposeActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import type { AccountInterface } from "starknet";
+import { create } from "zustand";
 
 /**
  * The web client's handle on the game it booted. Bootstrap installs it once `createGameClient` resolves; the scenes
@@ -31,6 +32,34 @@ const followGameplayAccount = (client: GameClient): void => {
 const connectGameplayAccount = (client: GameClient, account: AccountInterface | null): void => {
   if (account) client.connect(account);
   else client.disconnect();
+  // Connecting an account already left the stream's visit; the intent follows it.
+  useRealmVisitStore.setState({ visit: null });
+};
+
+/** Another player's realm this client is viewing: the player Herald streams it for, and the realm to open. */
+export interface RealmVisit {
+  player: string;
+  structureId: number;
+}
+
+const useRealmVisitStore = create<{ visit: RealmVisit | null }>(() => ({ visit: null }));
+
+/**
+ * The realm visit, the one source of the intent: the stream follows it (GameClient.visit) and the HUD reads it for
+ * its banner. Read-only needs nothing here: opening a realm the player does not own already spectates it, which is
+ * what the order gate reads.
+ */
+export const useRealmVisit = (): RealmVisit | null => useRealmVisitStore((state) => state.visit);
+
+export const startRealmVisit = (visit: RealmVisit): void => {
+  requireActiveGameClient().visit(visit.player);
+  useRealmVisitStore.setState({ visit });
+};
+
+export const leaveRealmVisit = (): void => {
+  if (!useRealmVisitStore.getState().visit) return;
+  requireActiveGameClient().visit(null);
+  useRealmVisitStore.setState({ visit: null });
 };
 
 export const requireActiveGameClient = (): GameClient => {
@@ -44,6 +73,7 @@ export const getActiveGameStore = (): NativeFactStore | null => activeGameClient
 export const disposeGameSyncSession = (): void => {
   unsubscribeAccount?.();
   unsubscribeAccount = null;
+  useRealmVisitStore.setState({ visit: null });
   activeGameClient?.dispose();
   activeGameClient = null;
   // A bootstrap still inside createGameClient owns no handle yet; its runtime is the active one.

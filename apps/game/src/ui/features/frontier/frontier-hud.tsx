@@ -4,7 +4,10 @@ import { ScrollText } from "@/ui/design-system/atoms/game-icons";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import { type CSSProperties, useEffect, useState } from "react";
+import { useRealmVisit } from "@/sync/active-game-client";
 import { FrontierPick } from "./attributes/frontier-pick";
+import { RealmVisitBanner, useVisitedRealm } from "./board/realm-visit-banner";
+import { SeasonBoardChip, SeasonBoardPeek } from "./board/season-board";
 import { TodayCard } from "./log/today-card";
 import { FrontierResearch } from "./research/frontier-research";
 import { ChestMomentView } from "./chest/chest-moment-view";
@@ -27,13 +30,18 @@ const SAFE_AREA: CSSProperties = {
 
 /**
  * Frontier's own HUD, one tree for every width. Upright phones stack the status strip, the map, the selection sheet,
- * the chat strip and the army dock; sideways and on desktop the dock and chat move to the left edge and the sheet to
- * the right. Everything else opens from these: the muster and build surfaces, settings, the log.
+ * the chat strip and the army dock; sideways and on desktop the dock and chat move to the left edge, the sheet to the
+ * right and the season's leaders under the strip. Everything else opens from these: muster, build, the board,
+ * settings, the log.
  */
 export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof useExpeditionRules>> }) => {
   useFrontierType();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const realm = useFrontierRealm();
+  // On a visit the dock shows the visited realm's armies; no order renders for a realm the player does not own.
+  const visit = useRealmVisit();
+  const visited = useVisitedRealm(visit);
+  const dockRealm = visit ? visited : realm;
   const [logOpen, setLogOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const armySelected = useUIStore((state) => state.entityActions.selectedEntityId !== null);
@@ -57,9 +65,10 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
       {/* A chest's opening owns the screen while it plays, over the world where the chest opens. */}
       <ChestMomentView />
       <FrontierSurfaces realm={realm} />
+      <RealmVisitBanner home={realm} />
       <div className="flex min-h-0 flex-1 flex-col justify-end gap-2 landscape:flex-row landscape:items-stretch landscape:justify-between">
         <div className="flex max-w-[min(360px,70vw)] flex-col items-end gap-1 self-end portrait:mb-auto landscape:order-2 landscape:mb-auto landscape:ml-auto landscape:self-start">
-          {/* Under the strip: the log and settings as chips, then the feed's latest rows. */}
+          {/* Under the strip: the log, research, season rank and settings as chips, then the feed's latest rows. */}
           <div className="pointer-events-auto flex items-center gap-2">
             <LogToggle
               open={logOpen}
@@ -70,14 +79,16 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
               <ScrollText className="size-5" />
             </LogToggle>
             {realm && <FrontierResearch realm={realm} />}
+            <SeasonBoardChip />
             <SecondaryMenuItems />
           </div>
+          <SeasonBoardPeek />
           <QuickFeedRows />
         </div>
         <FrontierSelectionSheet realm={realm} />
         {/* The dock, chat and guide keep their height; the selection sheet above scrolls to make room. */}
         <div className="flex min-h-0 shrink-0 flex-col-reverse gap-2 landscape:order-first landscape:w-48 landscape:flex-col">
-          {realm && <FrontierArmyDock realm={realm} />}
+          {dockRealm && <FrontierArmyDock realm={dockRealm} />}
           {/* The pick and a cleared site's card deal into the thumb zone above the dock on an upright phone, and float at
               the foot otherwise. */}
           <div className="landscape:fixed landscape:bottom-4 landscape:left-1/2 landscape:w-[min(560px,60vw)] landscape:-translate-x-1/2">
@@ -91,7 +102,7 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
             data-guide
             className="landscape:fixed landscape:bottom-4 landscape:left-1/2 landscape:w-[min(440px,48vw)] landscape:-translate-x-1/2"
           >
-            {realm && <FrontierGuide line={guideLine} realm={realm} />}
+            {realm && !visit && <FrontierGuide line={guideLine} realm={realm} />}
           </div>
         </div>
       </div>

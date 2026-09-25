@@ -4,7 +4,9 @@ import { useBlockTimestamp, useCurrentArmiesTick } from "@/hooks/helpers/use-blo
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useQuery } from "@/hooks/helpers/use-query";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
 import type { ArmyStaminaPresentation } from "@/lib/army-stamina/types";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
@@ -56,6 +58,11 @@ export const FrontierArmyDock = ({ realm }: { realm: NativeRows["Structure"] }) 
     () => liveHomeArmies(setup.store, realm.entity_id, configManager.getActiveGameId()),
     [realm.entity_id, revision, setup.store, tick],
   );
+  const ordersAllowed = useUIStore(canIssueOrders);
+  // Only the actor's own armies are pan targets: a visited realm's army regions are not streamed, so its tile would
+  // stand alone in the void.
+  const actor = useAccountStore((state) => state.account?.address ?? null);
+  const ownArmies = actor !== null && BigInt(realm.owner) === BigInt(actor);
   const openSlots = useOpenArmySlots(realm);
   // Until every slot is known, the castle's allowance still says how many cards are open; their bars read "—".
   const openCards =
@@ -68,11 +75,10 @@ export const FrontierArmyDock = ({ realm }: { realm: NativeRows["Structure"] }) 
       className="pointer-events-auto flex gap-2 overflow-x-auto overscroll-contain landscape:flex-col landscape:overflow-y-auto landscape:overflow-x-hidden"
     >
       {armies.map((army, index) => (
-        <ArmyCard key={army.explorer_id} army={army} position={index + 1} />
+        <ArmyCard key={army.explorer_id} army={army} position={index + 1} pannable={ownArmies} />
       ))}
-      {openCards.map((slot, index) => (
-        <MusterCard key={slot?.slot ?? `open-${index}`} slot={slot} />
-      ))}
+      {/* Mustering is an order: a realm the player does not own, as on a visit, shows only its armies. */}
+      {ordersAllowed && openCards.map((slot, index) => <MusterCard key={slot?.slot ?? `open-${index}`} slot={slot} />)}
     </nav>
   );
 };
@@ -81,9 +87,18 @@ const CARD = "flex w-44 shrink-0 flex-col gap-2 rounded-2xl p-2.5 text-left land
 
 /**
  * One army as mockup 7 draws it: its portrait (XP ring and level), its troops and tier, its stamina bar, the time to
- * a full bar while it fills, and what its next reveal sends home. Its name is its label for assistive tech only.
+ * a full bar while it fills, and what its next reveal sends home. Its name is its label for assistive tech only. A
+ * visited realm's army is shown, never picked: it is no pan target and carries no pick.
  */
-const ArmyCard = ({ army, position }: { army: NativeRows["ExplorerTroops"]; position: number }) => {
+const ArmyCard = ({
+  army,
+  position,
+  pannable,
+}: {
+  army: NativeRows["ExplorerTroops"];
+  position: number;
+  pannable: boolean;
+}) => {
   const { setup } = useGame();
   const { isMapView } = useQuery();
   const navigateToMapView = useNavigateToMapView();
@@ -117,6 +132,34 @@ const ArmyCard = ({ army, position }: { army: NativeRows["ExplorerTroops"]; posi
   // Progress and its rules are required facts: until both arrive the portrait shows no level and no pick waits.
   const progress = setup.store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
   const rules = setup.store.get("ArmyProgressionRules", { game_id: army.game_id });
+  const name = dockArmyName(setup.store, army.explorer_id, position);
+
+  const card = (
+    <>
+      <span className="flex items-center gap-2">
+        <ArmyPortrait explorerId={army.explorer_id} troops={army.troops} progress={progress} rules={rules} />
+        <TroopChip
+          small
+          type={army.troops.category as TroopType}
+          tier={army.troops.tier as TroopTier}
+          count={Number(army.troops.count / BigInt(RESOURCE_PRECISION))}
+        />
+      </span>
+      <StaminaBar stamina={stamina} />
+      <span className="flex flex-wrap items-center gap-1.5">
+        {stamina && stamina.secondsUntilFull > 0 && (
+          <Chip small label="Full in" icon={<Hourglass />} value={formatShortClock(stamina.secondsUntilFull)} />
+        )}
+        <ArmyRevealYield army={army} />
+      </span>
+    </>
+  );
+  if (!pannable)
+    return (
+      <div role="group" aria-label={name} className={cn(OVERLAY_SURFACE_BASE, CARD)}>
+        {card}
+      </div>
+    );
 
   // The pick is its own button, so it sits in the card's corner rather than inside the card's button; the dock
   // scrolls, so the corner stays inside the card's bounds.
@@ -124,27 +167,12 @@ const ArmyCard = ({ army, position }: { army: NativeRows["ExplorerTroops"]; posi
     <div className="relative shrink-0">
       <button
         type="button"
-        aria-label={dockArmyName(setup.store, army.explorer_id, position)}
+        aria-label={name}
         aria-pressed={selected}
         onClick={pick}
         className={cn(OVERLAY_SURFACE_BASE, CARD, selected && OVERLAY_SURFACE_ACTIVE)}
       >
-        <span className="flex items-center gap-2">
-          <ArmyPortrait explorerId={army.explorer_id} troops={army.troops} progress={progress} rules={rules} />
-          <TroopChip
-            small
-            type={army.troops.category as TroopType}
-            tier={army.troops.tier as TroopTier}
-            count={Number(army.troops.count / BigInt(RESOURCE_PRECISION))}
-          />
-        </span>
-        <StaminaBar stamina={stamina} />
-        <span className="flex flex-wrap items-center gap-1.5">
-          {stamina && stamina.secondsUntilFull > 0 && (
-            <Chip small label="Full in" icon={<Hourglass />} value={formatShortClock(stamina.secondsUntilFull)} />
-          )}
-          <ArmyRevealYield army={army} />
-        </span>
+        {card}
       </button>
       {progress && rules && (
         <span className="absolute -right-1 -top-1">

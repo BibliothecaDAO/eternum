@@ -17,7 +17,7 @@ import { BlockTimestampPoller } from "@/ui/shared/components/block-timestamp-pol
 import { configManager, readExpeditionRules } from "@bibliothecadao/eternum";
 import { type GameClientSetup, NativeFactStore, openShard } from "@bibliothecadao/eternum/game-client";
 import { useEffect, useState } from "react";
-import { buildLabDay, LAB_PLAYER, LAB_REALM_ID, loadGeneratedRules } from "./frontier-hud-lab-facts";
+import { buildLabDay, LAB_PLAYER, LAB_REALM_ID, labSeasonBoard, loadGeneratedRules } from "./frontier-hud-lab-facts";
 
 type Lab = Awaited<ReturnType<typeof bootLab>>;
 
@@ -93,24 +93,26 @@ const bootLab = async () => {
   return { setup, account, gameId: day.gameId };
 };
 
-/** The lab's shard answers from memory: a manifest naming the lab chain, and an empty event history. */
+/** The lab's shard answers from memory: a manifest naming the lab chain, the season board and an empty history. */
 const openLabShard = async (gameId: number) => {
   const fetchNetwork = window.fetch.bind(window);
   window.fetch = async (input, init) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (!url.startsWith(LAB_SHARD_URL)) return fetchNetwork(input, init);
-    const body = url.includes("/manifest")
-      ? {
-          version: 1,
-          chainId: LAB_CHAIN_ID,
-          releaseSchemas: { "1": LAB_SCHEMA },
-          rpcUrl: LAB_SHARD_URL,
-          admissionUrl: LAB_SHARD_URL,
-          accountClassHash: "0x1",
-          guardianPublicKey: "0x1",
-          contracts: { games: "0x1" },
-        }
-      : { complete_through_block: 0, items: [], limit: 0, offset: 0, total: 0 };
+    const body = url.includes("/leaderboard")
+      ? labSeasonBoard(gameId)
+      : url.includes("/manifest")
+        ? {
+            version: 1,
+            chainId: LAB_CHAIN_ID,
+            releaseSchemas: { "1": LAB_SCHEMA },
+            rpcUrl: LAB_SHARD_URL,
+            admissionUrl: LAB_SHARD_URL,
+            accountClassHash: "0x1",
+            guardianPublicKey: "0x1",
+            contracts: { games: "0x1" },
+          }
+        : { complete_through_block: 0, items: [], limit: 0, offset: 0, total: 0 };
     return new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } });
   };
   await openShard(LAB_SHARD_URL, LAB_SCHEMA);

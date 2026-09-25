@@ -1,11 +1,11 @@
 import { TreasureChest } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { orders, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
 import { depthArt, DEPTH_ART } from "../depth-art";
 import { formatAmount } from "../frontier-format";
-import { FlagGlyph } from "../glyphs";
+import { FlagGlyph, MedalGlyph } from "../glyphs";
 import { SITE_ART } from "../sites/site-art";
 import { wholeLords, wholeResource } from "./standings";
 
@@ -15,6 +15,15 @@ const LORDS_ICON = `/images/resources/${ResourcesIds.Lords}.png`;
 const ESSENCE_ICON = `/images/resources/${ResourcesIds.Essence}.png`;
 const LABOR_ICON = `/images/resources/${ResourcesIds.Labor}.png`;
 const ICON = "size-5 shrink-0 object-contain";
+
+/** A realm's Order as its emblem, the avatar that makes a row read as a realm; an Order the game lacks is loud. */
+const orderEmblem = (order: number): { art: string; name: string } => {
+  const known = orders.find(({ orderId }) => orderId === order);
+  if (!known) throw new Error(`No Order ${order}`);
+  return { art: `/images/orders/${known.orderName.toLowerCase()}.png`, name: known.fullOrderName };
+};
+
+const isMedalPlace = (rank: number): rank is 1 | 2 | 3 => rank >= 1 && rank <= 3;
 
 /**
  * Frontier's season standings as a table, wherever they show: the in-game board and the shell's game standings. Its
@@ -57,8 +66,9 @@ const TableHeader = () => (
 );
 
 /**
- * One realm: rank, name (tap to visit the realm, read-only), sites cleared (tap for the split and what the season
- * paid), chests, LORDS and the deepest depth's portal.
+ * One realm: its place (a medal on the podium, warmly tinted), its Order's emblem and name (tap to visit the realm,
+ * read-only), sites cleared (tap for the split and what the season paid), chests, LORDS and the deepest depth's
+ * portal. The player's own row carries the selected card's gold border wherever it sits.
  */
 const TableRow = ({
   entry,
@@ -75,28 +85,38 @@ const TableRow = ({
   const [open, setOpen] = useState(false);
   const { sites_cleared: sites } = entry;
   const depth = depthArt(entry.deepest_depth);
+  const emblem = orderEmblem(entry.order);
 
   return (
     <li
       className={cn(
-        "rounded-xl border px-2 py-1 text-[15px] tabular-nums text-[#eadfc8]",
-        own ? "border-[#f6ac1d] bg-[#f6ac1d]/15" : "border-transparent",
+        "rounded-xl border-2 px-2 py-1 text-[15px] tabular-nums text-[#eadfc8]",
+        isMedalPlace(entry.rank) && "bg-[linear-gradient(90deg,rgba(246,172,29,0.16),rgba(246,172,29,0.03))]",
+        // .frontier-card's selected border, spelled out: the shell draws this table outside the Frontier scope.
+        own ? "border-[#f6ac1d] shadow-[0_0_18px_rgba(246,172,29,0.45)]" : "border-transparent",
       )}
     >
       <div className={COLUMNS}>
-        <span className="text-center font-[Lexend] font-extrabold text-[#a2926f]">{entry.rank}</span>
-        {onVisit ? (
-          <button
-            type="button"
-            aria-label={`Visit ${name}'s realm`}
-            onClick={() => onVisit(entry)}
-            className="min-h-11 min-w-0 truncate text-left font-[Lexend] font-extrabold hover:text-[#f6ac1d] lg:min-h-8"
-          >
-            {name}
-          </button>
+        {isMedalPlace(entry.rank) ? (
+          <MedalGlyph place={entry.rank} className="size-8 justify-self-center" />
         ) : (
-          <span className="min-w-0 truncate font-[Lexend] font-extrabold">{name}</span>
+          <span className="text-center font-[Lexend] font-extrabold text-[#a2926f]">{entry.rank}</span>
         )}
+        <span className="flex min-w-0 items-center gap-2">
+          <img src={emblem.art} alt={emblem.name} className="size-7 shrink-0 rounded-full object-contain" />
+          {onVisit ? (
+            <button
+              type="button"
+              aria-label={`Visit ${name}'s realm`}
+              onClick={() => onVisit(entry)}
+              className="min-h-11 min-w-0 truncate text-left font-[Lexend] font-extrabold hover:text-[#f6ac1d] lg:min-h-8"
+            >
+              {name}
+            </button>
+          ) : (
+            <span className="min-w-0 truncate font-[Lexend] font-extrabold">{name}</span>
+          )}
+        </span>
         <button
           type="button"
           aria-expanded={open}
