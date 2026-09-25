@@ -2,7 +2,6 @@ import { useUISound } from "@/audio/hooks/useUISound";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { HUD_LABEL, HUD_LABEL_BRIGHT, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -10,18 +9,12 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { knownBalance } from "@/ui/utils/utils";
-import {
-  expeditionDayEndsAt,
-  expeditionEpoch,
-  getBalance,
-  Position,
-  structureMapPosition,
-} from "@bibliothecadao/eternum";
+import { expeditionDayEndsAt, expeditionEpoch, getBalance } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 import { formatAmount, formatClock } from "./frontier-format";
-import { troopsOnHand, useExpeditionRules } from "./frontier-home";
+import { troopsOnHand, useExpeditionRules, useGoToFrontierPlace } from "./frontier-home";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
@@ -106,16 +99,14 @@ const Holding = ({ label, icon, value }: { label: string; icon: ReactNode; value
 
 /** Frontier's two places: the day's expedition on the world map, and the realm board in the local view. */
 const PlaceSwitch = ({ realm }: { realm: NativeRows["Structure"] }) => {
-  const { setup } = useGame();
   const { isMapView } = useQuery();
-  const goToStructure = useGoToStructure(setup);
+  const goToPlace = useGoToFrontierPlace(realm);
   const playClick = useUISound("ui.click");
 
   const go = (expedition: boolean) => {
     if (expedition === isMapView) return;
     playClick();
-    const position = Position.fromContract(structureMapPosition(setup.store, realm));
-    void goToStructure(realm.entity_id, position, expedition);
+    goToPlace(expedition);
   };
 
   return (

@@ -24,6 +24,12 @@ export const EASE = {
 /** The pop spring: scale in with overshoot, about 280 ms. */
 export const POP_SPRING = { type: "spring", stiffness: 500, damping: 28 } as const;
 
+/** Leaving: a 150 ms fade and short drop, so a dismissed card goes rather than vanishes. Instant under reduced motion. */
+export const leave = (reduced: boolean) =>
+  reduced
+    ? { opacity: 0, transition: { duration: 0 } }
+    : { opacity: 0, y: 12, transition: { duration: 0.15, ease: EASE.inCubic } };
+
 /** A counter's roll: 300 + 150·log10(Δ) ms, clamped to 300–1,400, shortened by the repeat speed. */
 export const tickDurationMs = (delta: number, speed: number): number => {
   const magnitude = Math.abs(delta);

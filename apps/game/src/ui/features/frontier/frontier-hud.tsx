@@ -6,6 +6,7 @@ import { FrontierArmyDock } from "./frontier-army-dock";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
 import { FrontierStatusStrip } from "./frontier-status-strip";
+import { FrontierGuide } from "./guide/frontier-guide";
 import { useFrontierType } from "./use-frontier-type";
 
 const SAFE_AREA: CSSProperties = {
@@ -45,9 +46,14 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
           <QuickFeed logOpen={logOpen} onLogToggle={() => setLogOpen((open) => !open)} />
         </div>
         <FrontierSelectionSheet />
-        <div className="flex min-h-0 flex-col-reverse gap-2 landscape:order-first landscape:w-48 landscape:flex-col">
+        {/* The dock, chat and guide keep their height; the selection sheet above scrolls to make room. */}
+        <div className="flex min-h-0 shrink-0 flex-col-reverse gap-2 landscape:order-first landscape:w-48 landscape:flex-col">
           {realm && <FrontierArmyDock realm={realm} />}
           <HudChatWindow open={chatOpen} onOpenChange={setChatOpen} />
+          {/* Ysolde sits above chat on a phone held upright, and floats at the foot of the screen otherwise. */}
+          <div className="landscape:fixed landscape:bottom-4 landscape:left-1/2 landscape:w-[min(440px,48vw)] landscape:-translate-x-1/2">
+            {realm && <FrontierGuide rules={rules} realm={realm} />}
+          </div>
         </div>
       </div>
     </div>

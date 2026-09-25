@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-25",
+    title: "Ysolde's guide",
+    description:
+      "Ysolde of the Fox walks new Lords through their first Frontier day, one line at a time. Skip her any time, or replay her from settings.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-25",
     title: "Frontier chat",
     description: "Game chat now has a strip above your Frontier armies; it folds away while you command one.",
     type: "feature",

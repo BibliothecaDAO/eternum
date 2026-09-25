@@ -22,7 +22,9 @@ import {
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useMemo } from "react";
+import { Sweep } from "@/ui/motion/sweep";
 import { formatAmount, formatClock } from "./frontier-format";
+import { useMusterPointed } from "./guide/guide-pointer";
 
 const ARMY_MODELS = ["ExplorerTroops", "TileOccupancy", "EntityName"] as const;
 
@@ -138,14 +140,17 @@ const dockArmyName = (store: NativeFactStore, explorerId: number, position: numb
 
 const MusterCard = () => {
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
+  const pointed = useMusterPointed();
   return (
-    <button
-      type="button"
-      onClick={() => setLeftNavigationView(LeftView.MilitaryView)}
-      className={cn(OVERLAY_SURFACE_BASE, CARD, "items-center justify-center border-dashed")}
-    >
-      <span className={HUD_LABEL_BRIGHT}>Muster</span>
-      <span className={HUD_LABEL}>Open slot</span>
-    </button>
+    <Sweep play={pointed} className="shrink-0 rounded-xl">
+      <button
+        type="button"
+        onClick={() => setLeftNavigationView(LeftView.MilitaryView)}
+        className={cn(OVERLAY_SURFACE_BASE, CARD, "h-full items-center justify-center border-dashed")}
+      >
+        <span className={HUD_LABEL_BRIGHT}>Muster</span>
+        <span className={HUD_LABEL}>Open slot</span>
+      </button>
+    </Sweep>
   );
 };

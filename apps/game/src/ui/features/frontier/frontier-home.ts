@@ -1,5 +1,6 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import {
   configManager,
@@ -7,7 +8,9 @@ import {
   getBalance,
   getTroopResourceId,
   isExpeditionRealm,
+  Position,
   readExpeditionRules,
+  structureMapPosition,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { type ID, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -33,6 +36,16 @@ export const useFrontierRealm = (): NativeRows["Structure"] | null => {
     const owned = setup.store.structuresOwnedBy(configManager.getActiveGameId(), BigInt(address));
     return [...owned].find((structure) => isExpeditionRealm(setup.store, structure)) ?? null;
   }, [address, revision, setup.store]);
+};
+
+/** Frontier's two places: `goToPlace(true)` opens the day's expedition map, `goToPlace(false)` the realm board. */
+export const useGoToFrontierPlace = (realm: NativeRows["Structure"]) => {
+  const { setup } = useGame();
+  const goToStructure = useGoToStructure(setup);
+  return (expedition: boolean) => {
+    const position = Position.fromContract(structureMapPosition(setup.store, realm));
+    void goToStructure(realm.entity_id, position, expedition);
+  };
 };
 
 const TROOP_RESOURCE_IDS = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin].flatMap((type) =>

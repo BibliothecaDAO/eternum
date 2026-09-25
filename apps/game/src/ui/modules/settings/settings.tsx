@@ -1,4 +1,5 @@
 import { AudioCategory, useAudio } from "@/audio";
+import { GuideSettings } from "@/ui/features/frontier/guide/guide-settings";
 import {
   identityClient,
   signOutIdentitySession,
@@ -39,6 +40,7 @@ export const SettingsPanel = () => (
   <div className="flex flex-col gap-4 p-1">
     <ProfileHeader />
     <VideoSettings />
+    <GuideSettings />
     <AudioSettings />
     <PwaInstallControl />
     <NotificationSettings />
