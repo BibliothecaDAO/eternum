@@ -178,12 +178,12 @@ compiled decoder is refused as `UNKNOWN_RELEASE_SCHEMA`; a hotfix with the same 
 ## Retry and restart
 
 Ordinary retries retain the same pending ticket, order, root and timestamp. Only an included revert or a deterministic
-sequencer refusal permits `reject_execution`, recording `EXECUTION_FAILED` in that ticket's order. It authenticates the
-ticket again first: if the actor no longer authenticates (an upgraded class, a foreign guardian or a revoked key), it
-records that reason with the nonce unconsumed instead of reverting, so an account change after admission cannot strand
-the accepted order. Missing receipts, timeouts, disconnects, full queues and account-nonce races are not definitive
-failures. Reconcile against node state and transaction observations before retrying; an already recorded action cannot
-execute again.
+sequencer refusal permits `reject_execution`. It authenticates the action, validates the game's release and preset, then
+consumes the nonce, in the same order as execution. Only a valid action with the current pin and nonce records
+`EXECUTION_FAILED` with the nonce consumed. Authentication, pin and nonce refusals record their actual reason with the
+nonce unconsumed instead of reverting, so account or release changes after admission cannot strand the accepted order.
+Missing receipts, timeouts, disconnects, full queues and account-nonce races are not definitive failures. Reconcile
+against node state and transaction observations before retrying; an already recorded action cannot execute again.
 
 Restart may discard every unexecuted volatile assignment, including assigned orders and roots. It reveals the open
 epoch, so a lost ticket's root is never reused; only the games that lost tickets reassign those orders. The client

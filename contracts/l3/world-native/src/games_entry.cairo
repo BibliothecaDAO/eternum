@@ -114,12 +114,9 @@ pub mod GamesEntry {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
             self.authenticate_ticket(@intent, @envelope, self.randomness_epoch());
             assert!(accepted_context_matches(@intent, @envelope), "invalid acceptance");
-            // Account changes after admission must not strand the accepted order or consume an unauthenticated nonce.
-            let (consumed, reason) = match self.authenticate_action(@intent, @envelope, signature) {
-                Ok(()) => match self.consume_action_nonce(@intent) {
-                    Ok(_) => (true, 'EXECUTION_FAILED'),
-                    Err(reason) => (false, reason),
-                },
+            // Account or pin changes after admission must not strand the order or consume the player's nonce.
+            let (consumed, reason) = match self.consume_authenticated_action(@intent, @envelope, signature) {
+                Ok(_) => (true, 'EXECUTION_FAILED'),
                 Err(reason) => (false, reason),
             };
             get_dep_component_mut!(ref self, Recording).record(@intent, @envelope, consumed, Err(rejection(reason)));
@@ -141,9 +138,10 @@ pub mod GamesEntry {
                 core::panic_with_felt252(reason);
             }
             let head = get_dep_component!(self, Recording).data.heads.read(game);
+            let game = crate::logic::game::game(game_id);
             Admission {
                 release_id: self.data.game_releases.read(game_id),
-                preset_commitment: crate::logic::game::preset_commitment(game_id),
+                preset_commitment: crate::logic::game::preset_commitment(game),
                 nonce: self.authentication_state.nonces.read((game_id, actor)),
                 order: head.order + 1,
                 timestamp: starknet::get_block_timestamp(),
@@ -171,13 +169,7 @@ pub mod GamesEntry {
         ) {
             let envelope = decode_envelope(context.envelope.span()).expect('malformed envelope');
             self.authenticate_ticket(@intent, @envelope, epoch);
-            let consumed = match self.authenticate_action(@intent, @envelope, signature) {
-                Ok(()) => match self.validate_game_pin(@intent) {
-                    Ok(()) => self.consume_action_nonce(@intent),
-                    Err(reason) => Err(reason),
-                },
-                Err(reason) => Err(reason),
-            };
+            let consumed = self.consume_authenticated_action(@intent, @envelope, signature);
             let outcome = match consumed {
                 Ok((game_id, actor)) => self.execute_action(@intent, @envelope, game_id, actor),
                 Err(reason) => Err(rejection(reason)),
@@ -286,6 +278,13 @@ pub mod GamesEntry {
                 .map_err(|_error| rejection('INVALID_COMMAND'))?;
             Serde::deserialize(ref result).expect('invalid gameplay result')
         }
+        fn consume_authenticated_action(
+            ref self: ComponentState<TContractState>, intent: @Intent, envelope: @Envelope, signature: Span<felt252>,
+        ) -> Result<(u32, ContractAddress), felt252> {
+            self.authenticate_action(intent, envelope, signature)?;
+            self.validate_game_pin(intent)?;
+            self.consume_action_nonce(intent)
+        }
         fn consume_action_nonce(
             ref self: ComponentState<TContractState>, intent: @Intent,
         ) -> Result<(u32, ContractAddress), felt252> {
@@ -332,7 +331,7 @@ pub mod GamesEntry {
             if *intent.release_id != self.data.game_releases.read(game_id) {
                 return Err('STALE_RELEASE');
             }
-            if *intent.preset_commitment != crate::logic::game::preset_commitment(game_id) {
+            if *intent.preset_commitment != crate::logic::game::preset_commitment(game) {
                 return Err('INVALID_PRESET');
             }
             Ok(())

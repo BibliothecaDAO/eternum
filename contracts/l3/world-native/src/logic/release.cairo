@@ -69,7 +69,7 @@ pub mod ReleaseState {
             assert!(release_id == previous_release + 1, "release must follow game pin");
             // A failed migration reverts the pin and every data write in the same transaction.
             self.data.game_releases.write(game_id, release_id);
-            crate::logic::game::emit_release(game_id, release_id, crate::logic::game::preset_commitment(game_id));
+            crate::logic::game::emit_release(game_id, release_id, crate::logic::game::preset_commitment(game));
             if target.migration.is_non_zero() {
                 IReleaseMigrationLibraryDispatcher { class_hash: target.migration }
                     .migrate(game_id, previous_release, release_id);

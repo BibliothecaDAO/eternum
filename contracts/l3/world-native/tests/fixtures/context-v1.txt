@@ -1,1 +1,0 @@
-../../../randomness-protocol/tests/fixtures/context-v1.txt

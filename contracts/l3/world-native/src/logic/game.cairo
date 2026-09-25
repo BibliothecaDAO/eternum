@@ -89,8 +89,8 @@ pub fn start_blitz(game_id: u32, context: crate::commands::ExecutionContext) {
 }
 
 /// The preset id is immutable; every game keeps the definition it launched with.
-pub fn preset_commitment(game_id: u32) -> felt252 {
-    let commitment = crate::state::read().registrar.presets.read(game(game_id).preset_id);
+pub fn preset_commitment(game: GameRegistry) -> felt252 {
+    let commitment = crate::state::read().registrar.presets.read(game.preset_id);
     assert!(commitment != 0, "game has no preset");
     commitment
 }

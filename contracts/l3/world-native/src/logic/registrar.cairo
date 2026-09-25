@@ -108,7 +108,7 @@ pub mod RegistrarState {
             let game = build_game(params, get_caller_address());
             let overrides = game_overrides(game_id, params);
             crate::logic::game::create(game_id, game, overrides);
-            crate::logic::game::emit_release(game_id, release_id, crate::logic::game::preset_commitment(game_id));
+            crate::logic::game::emit_release(game_id, release_id, crate::logic::game::preset_commitment(game));
             crate::logic::presets::initialize_gameplay(classes, game_id, rules.mode_rules);
             self.data.registrar.launch_ids.write(params.name, game_id);
             self.data.registrar.launch_commitments.write(params.name, commitment);

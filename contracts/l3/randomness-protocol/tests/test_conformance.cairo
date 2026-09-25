@@ -97,7 +97,7 @@ struct ContextVector {
 
 #[test]
 fn cross_language_context_boundaries() {
-    let input = read_txt(@FileTrait::new("tests/fixtures/context-v2.txt"));
+    let input = read_txt(@FileTrait::new("../randomness-protocol/tests/fixtures/context-v2.txt"));
     let mut fields = input.span();
     let vectors: Array<ContextVector> = Serde::deserialize(ref fields).unwrap();
     assert!(fields.is_empty(), "trailing context vector");

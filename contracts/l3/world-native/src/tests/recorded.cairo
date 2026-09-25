@@ -30,6 +30,7 @@ use crate::game::GameRegistry;
 use crate::games::{
     IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait, IGamesAuthenticationSafeDispatcher,
 };
+use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait};
 use crate::recording::ExecutionHead;
 use crate::registrar::{IRegistrarDispatcher, IRegistrarDispatcherTrait};
 use super::fixtures::{IFixtureDispatcher, IFixtureDispatcherTrait};
@@ -116,7 +117,8 @@ pub fn make_intent(season: ContractAddress, action: FixtureAction) -> Intent {
         season,
         || {
             let state = crate::state::read();
-            (state.game_releases.read(action.game_id), crate::logic::game::preset_commitment(action.game_id))
+            let game = crate::logic::game::game(action.game_id);
+            (state.game_releases.read(action.game_id), crate::logic::game::preset_commitment(game))
         },
     );
     let mut arguments = array![];
@@ -560,8 +562,9 @@ fn transport_failure_records_a_bad_pin_and_allows_the_next_ticket() {
     let before = gameplay_snapshot(d.games);
     let mut spy = snforge_std::spy_events();
     let original = make_intent(d.games, super::intent(d, 1));
-    for (release_id, preset_commitment) in array![
-        (original.release_id + 1, original.preset_commitment), (original.release_id, original.preset_commitment + 1),
+    for (release_id, preset_commitment, reason) in array![
+        (original.release_id + 1, original.preset_commitment, 'STALE_RELEASE'),
+        (original.release_id, original.preset_commitment + 1, 'INVALID_PRESET'),
     ] {
         let original = make_intent(d.games, super::intent(d, 1));
         let intent = Intent {
@@ -592,15 +595,109 @@ fn transport_failure_records_a_bad_pin_and_allows_the_next_ticket() {
                 .is_ok(),
         );
         let outcome = views.recorded_outcome(1, envelope.order).unwrap();
-        assert_eq!(outcome.status_class, 'EXECUTION_FAILED');
-        assert!(outcome.nonce_consumed);
+        assert_eq!(outcome.status_class, reason);
+        assert!(!outcome.nonce_consumed);
+        assert_eq!(views.get_admission(1, d.actor.into()).nonce, 0);
         assert_eq!(head(d.games, 1).order, envelope.order);
         assert_eq!(gameplay_snapshot(d.games), before);
     }
-    assert_nonce_facts(ref spy, d.games, 1, d.actor, array![1, 2].span());
-    super::execute(d, FixtureAction { nonce: 2, ..super::intent(d, 1) });
+    assert_nonce_facts(ref spy, d.games, 1, d.actor, array![].span());
+    super::execute(d, super::intent(d, 1));
     assert_eq!(views.recorded_outcome(1, 3).unwrap().status, 1);
-    assert_eq!(views.get_admission(1, d.actor.into()).nonce, 3);
+    assert_eq!(views.get_admission(1, d.actor.into()).nonce, 1);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn transport_failure_after_a_hotfix_preserves_the_nonce_for_the_resigned_intent() {
+    let d = super::setup(true);
+    let views = IRecordedExecutionViewsDispatcher { contract_address: d.games };
+    let admitted = views.get_admission(1, d.actor.into());
+    let intent = make_intent(d.games, super::intent(d, 1));
+    let envelope = Envelope {
+        action: action_identity(@intent),
+        order: admitted.order,
+        timestamp: 100,
+        release_id: admitted.release_id,
+        preset_commitment: admitted.preset_commitment,
+        epoch: 0,
+        root: 987654321,
+    };
+    let device = super::keypair(12345);
+    let (r, s) = device.sign(envelope.action).unwrap();
+
+    let releases = IReleasesDispatcher { contract_address: d.games };
+    snforge_std::start_cheat_caller_address(d.games, super::authority());
+    releases.register_release(2, releases.release(1));
+    releases.apply_release(1, 2);
+    snforge_std::start_cheat_caller_address(d.games, super::submitter());
+    let before = gameplay_snapshot(d.games);
+    let mut spy = spy_events();
+    assert!(
+        IRecordedExecutionFailureSafeDispatcher { contract_address: d.games }
+            .reject_execution(
+                intent,
+                ExecutionContext { envelope: encode_envelope(@envelope) },
+                array![device.public_key, r, s].span(),
+            )
+            .is_ok(),
+    );
+    let outcome = views.recorded_outcome(1, admitted.order).unwrap();
+    assert_eq!(outcome.status_class, 'STALE_RELEASE');
+    assert!(!outcome.nonce_consumed);
+    assert_eq!(head(d.games, 1).order, admitted.order);
+    assert_eq!(views.get_admission(1, d.actor.into()).nonce, admitted.nonce);
+    assert_eq!(gameplay_snapshot(d.games), before);
+    assert_nonce_facts(ref spy, d.games, 1, d.actor, array![].span());
+
+    super::execute(d, super::intent(d, 1));
+    assert_eq!(views.recorded_outcome(1, admitted.order + 1).unwrap().status, 1);
+    assert_eq!(views.get_admission(1, d.actor.into()).nonce, admitted.nonce + 1);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn transport_failure_for_an_invalid_game_records_without_consuming_a_nonce() {
+    let d = super::setup(true);
+    let views = IRecordedExecutionViewsDispatcher { contract_address: d.games };
+    let authentication = IGamesAuthenticationDispatcher { contract_address: d.games };
+    let before = gameplay_snapshot(d.games);
+    let mut spy = spy_events();
+    for game_id in array![0, 3, 0x100000000] {
+        let intent = Intent { game_id, ..make_intent(d.games, super::intent(d, 1)) };
+        let envelope = Envelope {
+            action: action_identity(@intent),
+            order: 1,
+            timestamp: 100,
+            release_id: intent.release_id,
+            preset_commitment: intent.preset_commitment,
+            epoch: 0,
+            root: 987654321,
+        };
+        let device = super::keypair(12345);
+        let (r, s) = device.sign(envelope.action).unwrap();
+        assert!(
+            IRecordedExecutionFailureSafeDispatcher { contract_address: d.games }
+                .reject_execution(
+                    intent,
+                    ExecutionContext { envelope: encode_envelope(@envelope) },
+                    array![device.public_key, r, s].span(),
+                )
+                .is_ok(),
+        );
+        let outcome = views.recorded_outcome(game_id, 1).unwrap();
+        assert_eq!(outcome.status_class, 'INVALID_GAME');
+        assert!(!outcome.nonce_consumed);
+        assert_eq!(views.get_head(game_id).order, 1);
+        if let Option::Some(id) = game_id.try_into() {
+            assert_eq!(authentication.next_nonce(id, d.actor), 0);
+        }
+        assert_eq!(views.get_admission(1, d.actor.into()).nonce, 0);
+        assert_eq!(gameplay_snapshot(d.games), before);
+    }
+    assert_nonce_facts(ref spy, d.games, 1, d.actor, array![].span());
+    super::execute(d, super::intent(d, 1));
+    assert_eq!(views.recorded_outcome(1, 1).unwrap().status, 1);
 }
 
 #[test]
