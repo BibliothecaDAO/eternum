@@ -24,6 +24,8 @@ import { ActionRunners } from "../action-runners";
 import { RelicCrateOpenings } from "../features/military/chest/relic-crate-openings";
 import { ChestOpenings } from "../features/military/chest/chest-openings";
 import { ExpeditionRollover } from "../features/world/components/expeditions/expedition-rollover";
+import { FrontierHud } from "../features/frontier/frontier-hud";
+import { useExpeditionRules } from "../features/frontier/frontier-home";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { FLIGHT_TRACE_ENABLED, traceFlightCommit } from "@/three/flight-trace";
 import { Profiler } from "react";
@@ -118,14 +120,24 @@ const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
  * - Bottom: BottomRightPanel (minimap, feed, tile inspector, chat)
  * Below `lg` the columns collapse into CompactHud: one tab bar and one sheet, laid out for the phone's orientation.
  * The Build / Logistics / Military surfaces and every other popover hang off their own trigger on both layouts.
+ * A Frontier game has its own HUD instead of these regions.
  */
 const HUD = () => {
+  const expeditionRules = useExpeditionRules();
+  return (
+    <>
+      {expeditionRules ? <FrontierHud rules={expeditionRules} /> : <ArenaHud />}
+      <ContextMenu />
+      <LeftViewSurfaces />
+    </>
+  );
+};
+
+const ArenaHud = () => {
   const lane = useCompactLane();
   return (
     <>
       <TopHeader />
-      <ContextMenu />
-      <LeftViewSurfaces />
       {lane ? (
         <CompactHud lane={lane} />
       ) : (

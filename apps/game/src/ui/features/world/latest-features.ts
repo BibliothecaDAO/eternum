@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-25",
+    title: "Frontier's own screen",
+    description:
+      "Frontier now has a HUD built for it, phone first: today's day and time left, your Essence, labor, wheat and troops at home, one card per army slot with strength and stamina, and one switch between the expedition map and your realm.",
+    type: "feature",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-09-25",
     title: "Scores respect your view",
     description:
       "Scores outside your Frontier view show a dash until known. Realm captures now record both owners in the game story.",

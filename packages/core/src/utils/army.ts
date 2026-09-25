@@ -6,6 +6,7 @@ import {
   type Direction,
   getLayerNeighborHexes,
   type ID,
+  RESOURCE_PRECISION,
   ResourcesIds,
   TickIds,
   TroopTier,
@@ -16,6 +17,25 @@ import type { NativeRows } from "../../../../contracts/l3/world-native/schema/cl
 import { configManager, divideByPrecision, getArmyName, gramToKg, nanogramToKg, getTileAt } from "..";
 import type { PlayerNameResolver } from "./entities";
 import { isViewerOwner } from "./viewer";
+
+type TroopDamageConfig = NativeRows["SliceRules"]["troop_damage_config"];
+
+/** 64.64 fixed point as the contract stores its tier multipliers. */
+const FIXED_ONE = 2 ** 64;
+
+/**
+ * An army's strength, the number Frontier prices reveals and sites by and the one combat weighs: whole troops times
+ * the tier's damage multiplier, T1 counting one.
+ */
+export const armyStrength = (
+  troops: Pick<NativeRows["ExplorerTroops"]["troops"], "tier" | "count">,
+  damage: TroopDamageConfig,
+): number => {
+  const wholeTroops = Number(troops.count / BigInt(RESOURCE_PRECISION));
+  if (troops.tier === "T1") return wholeTroops;
+  const multiplier = troops.tier === "T2" ? damage.t2_damage_multiplier : damage.t3_damage_multiplier;
+  return wholeTroops * (Number(multiplier) / FIXED_ONE);
+};
 
 export const getExplorerOwner = (store: NativeFactStore, explorer: NativeRows["ExplorerTroops"]): bigint =>
   explorer.owner === 0

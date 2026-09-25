@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { StructureType } from "@bibliothecadao/types";
 import * as timestamp from "./timestamp";
 import {
+  expeditionDayEndsAt,
   expeditionSpires,
   expeditionSpireTile,
   isAtExpeditionSpire,
@@ -143,5 +144,17 @@ describe("expedition spire", () => {
       inGame: (model: string) => (model === "Structure" ? [realm(0), realm(2)] : [])[Symbol.iterator](),
     };
     expect(expeditionSpires(store as never, 7, 86400 * 2 + 10)).toEqual([{ col: 25, row: 46 }]);
+  });
+});
+
+describe("expeditionDayEndsAt", () => {
+  const rules = { epochSeconds: 86400, spacing: 10, startMainAt: 86400 };
+
+  it("ends the day on the next epoch boundary", () => {
+    expect(expeditionDayEndsAt(rules, 86400 * 3 + 5)).toBe(86400 * 4);
+  });
+
+  it("starts a new day exactly on the boundary", () => {
+    expect(expeditionDayEndsAt(rules, 86400 * 4)).toBe(86400 * 5);
   });
 });

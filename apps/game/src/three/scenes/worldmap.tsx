@@ -246,6 +246,7 @@ import {
   recordWorldmapTerrainReadyDuration,
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
+import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-army-select-request";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
 import {
@@ -887,6 +888,12 @@ export default class WorldmapScene extends WarpTravel {
     if (!detail) return;
     this.minimapCameraMoveTarget = detail;
     this.minimapCameraMoveThrottled?.();
+  };
+  private armySelectRequestHandler = (event: Event) => {
+    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    const entityId = readArmySelectRequest(event);
+    if (entityId === null) return;
+    void this.selectRequestedArmy(entityId);
   };
   private minimapZoomHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
@@ -1757,6 +1764,7 @@ export default class WorldmapScene extends WarpTravel {
 
     window.addEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.addEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
+    window.addEventListener(ARMY_SELECT_REQUEST_EVENT, this.armySelectRequestHandler);
     this.controls.addEventListener("change", this.handleWorldmapControlsChange);
     window.addEventListener("resize", this.handleTerrainViewportResize);
     this.updateCameraTargetHexThrottled();
@@ -7993,6 +8001,7 @@ export default class WorldmapScene extends WarpTravel {
     window.removeEventListener("resize", this.handleTerrainViewportResize);
     window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
+    window.removeEventListener(ARMY_SELECT_REQUEST_EVENT, this.armySelectRequestHandler);
     this.clearCache();
 
     // Dispose hover label and selected hex managers to release Three.js resources
@@ -8062,15 +8071,7 @@ export default class WorldmapScene extends WarpTravel {
   private async selectNextArmy(): Promise<void> {
     const account = accountAddress();
     if (this.selectableArmies.length === 0 || account === null) return;
-    this.isShortcutArmySelectionInFlight = true;
-    if (this.chunkRefreshTimeout !== null || this.chunkRefreshRunning) {
-      this.pendingChunkRefreshUiReason = resolvePendingChunkRefreshUiReason({
-        currentReason: this.pendingChunkRefreshUiReason,
-        isShortcutArmySelectionInFlight: true,
-      });
-    }
-
-    try {
+    await this.runShortcutArmySelection(async () => {
       // Find the next army that can actually be selected.
       let attempts = 0;
       while (attempts < this.selectableArmies.length) {
@@ -8100,57 +8101,82 @@ export default class WorldmapScene extends WarpTravel {
           attempts++;
           continue;
         }
-        this.moveCameraToColRow(resolvedPosition.col, resolvedPosition.row, SHORTCUT_NAVIGATION_DURATION_SECONDS);
-
-        try {
-          await this.refreshChunksAfterShortcutNavigation(resolvedPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
-        } catch (error) {
-          if (import.meta.env.DEV) {
-            console.error(
-              `[WorldMap] Failed to update visible chunks while cycling armies (entityId=${army.entityId}):`,
-              error,
-            );
-          }
-        }
-
-        this.handleHexSelection(resolvedPosition, true);
-        let selectionSucceeded = this.onArmySelection(army.entityId, account, {
-          deferDuringChunkTransition: false,
-        });
-
-        if (!selectionSucceeded) {
-          try {
-            await this.updateVisibleChunks(true, {
-              reason: "shortcut",
-              triggerReason: "army_shortcut_selection_fallback",
-            });
-          } catch (error) {
-            if (import.meta.env.DEV) {
-              console.warn(
-                `[WorldMap] Forced chunk refresh failed while selecting army (entityId=${army.entityId}):`,
-                error,
-              );
-            }
-          }
-
-          selectionSucceeded = this.onArmySelection(army.entityId, account, {
-            deferDuringChunkTransition: false,
-          });
-        }
-
-        if (selectionSucceeded) {
-          this.state.setLeftNavigationView(LeftView.EntityView);
-        } else {
-          // Army not yet rendered in this chunk — queue recovery so it gets
-          // selected once the chunk finishes loading instead of skipping it.
-          this.queueArmySelectionRecovery(army.entityId, account);
-          this.state.setLeftNavigationView(LeftView.EntityView);
-        }
+        await this.focusAndSelectArmy(army.entityId, resolvedPosition, account);
         // Always stop on this army — don't skip to the next one,
         // which would cause the camera to flicker between positions.
         break;
       }
       // If all armies have pending movements, do nothing
+    });
+  }
+
+  /** The HUD's army dock picked this army: frame it and select it the way the Tab shortcut does. */
+  private async selectRequestedArmy(entityId: number): Promise<void> {
+    const account = accountAddress();
+    const position = this.getArmyDisplayPosition(entityId);
+    if (account === null || !position) return;
+    await this.runShortcutArmySelection(() => this.focusAndSelectArmy(entityId, position, account));
+  }
+
+  private async focusAndSelectArmy(
+    entityId: number,
+    resolvedPosition: { col: number; row: number },
+    account: ContractAddress,
+  ): Promise<void> {
+    this.moveCameraToColRow(resolvedPosition.col, resolvedPosition.row, SHORTCUT_NAVIGATION_DURATION_SECONDS);
+
+    try {
+      await this.refreshChunksAfterShortcutNavigation(resolvedPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error(`[WorldMap] Failed to update visible chunks while cycling armies (entityId=${entityId}):`, error);
+      }
+    }
+
+    this.handleHexSelection(resolvedPosition, true);
+    let selectionSucceeded = this.onArmySelection(entityId, account, {
+      deferDuringChunkTransition: false,
+    });
+
+    if (!selectionSucceeded) {
+      try {
+        await this.updateVisibleChunks(true, {
+          reason: "shortcut",
+          triggerReason: "army_shortcut_selection_fallback",
+        });
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn(`[WorldMap] Forced chunk refresh failed while selecting army (entityId=${entityId}):`, error);
+        }
+      }
+
+      selectionSucceeded = this.onArmySelection(entityId, account, {
+        deferDuringChunkTransition: false,
+      });
+    }
+
+    if (selectionSucceeded) {
+      this.state.setLeftNavigationView(LeftView.EntityView);
+    } else {
+      // Army not yet rendered in this chunk — queue recovery so it gets
+      // selected once the chunk finishes loading instead of skipping it.
+      this.queueArmySelectionRecovery(entityId, account);
+      this.state.setLeftNavigationView(LeftView.EntityView);
+    }
+  }
+
+  /** Shortcut selections hold chunk refreshes on the shortcut's reason until the camera and chunks settle. */
+  private async runShortcutArmySelection(select: () => Promise<void>): Promise<void> {
+    this.isShortcutArmySelectionInFlight = true;
+    if (this.chunkRefreshTimeout !== null || this.chunkRefreshRunning) {
+      this.pendingChunkRefreshUiReason = resolvePendingChunkRefreshUiReason({
+        currentReason: this.pendingChunkRefreshUiReason,
+        isShortcutArmySelectionInFlight: true,
+      });
+    }
+
+    try {
+      await select();
     } finally {
       await settleWorldmapShortcutSelectionProtection({
         awaitActiveChunkSwitch: this.globalChunkSwitchPromise

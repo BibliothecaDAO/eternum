@@ -36,6 +36,10 @@ export const readExpeditionRules = (
 export const expeditionEpoch = (rules: ExpeditionRules, nowSeconds: number): number =>
   Math.floor(nowSeconds / rules.epochSeconds) - Math.floor(rules.startMainAt / rules.epochSeconds);
 
+/** When today's expedition ends: the next UTC epoch boundary, where the contract rolls every army and site over. */
+export const expeditionDayEndsAt = (rules: ExpeditionRules, nowSeconds: number): number =>
+  (Math.floor(nowSeconds / rules.epochSeconds) + 1) * rules.epochSeconds;
+
 /**
  * An army belongs to today's expedition only while it stands in today's region, as the contract's `is_current` decides;
  * an army from an earlier day may remain a fact, but every command refuses it.
