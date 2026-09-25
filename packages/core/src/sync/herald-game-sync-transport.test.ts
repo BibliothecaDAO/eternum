@@ -74,6 +74,7 @@ const streamHarness = () => {
     onStartFailure: (error) => startFailures.push(error),
   };
   const transport = new HeraldGameSyncTransport({
+    gameId: 1,
     modelDefinition: nativeModelDefinition(bindings as unknown as NativeWorldBindings),
     onConnection: (reachable) => reachability.push(reachable),
     reconnectMs: 200,
@@ -144,6 +145,28 @@ afterEach(() => {
 });
 
 describe("HeraldGameSyncTransport", () => {
+  it("uses streamed head time for absence scope and forgets it on disposal", async () => {
+    const harness = streamHarness();
+    const { socket, writer } = await attached(harness);
+    socket.receive({ epoch: "epoch-a", seq: 0, type: "snapshot_end" });
+    expect(harness.transport.completedTimestamp()).toBeUndefined();
+    socket.receive({ type: "head", epoch: "epoch-a", seq: 1, block: 13, preconfirmed: true, timestamp: 350 });
+    expect(harness.transport.completedTimestamp()).toBe(350);
+    socket.receive({ type: "head", epoch: "epoch-a", seq: 2, block: 12, preconfirmed: false, timestamp: 340 });
+    expect(harness.transport.completedTimestamp()).toBe(350);
+    socket.receive(diff("epoch-a", 3, "0x1", 2, true));
+    expect(harness.transport.completedTimestamp()).toBeUndefined();
+    socket.receive({ type: "head", epoch: "epoch-a", seq: 4, block: 12, preconfirmed: false, timestamp: 340 });
+    expect(harness.transport.completedTimestamp()).toBe(350);
+    snapshot("epoch-b", 0, "0x1", 2).forEach((message) => socket.receive(message));
+    expect(harness.transport.completedTimestamp()).toBeUndefined();
+    socket.receive({ type: "head", epoch: "epoch-b", seq: 1, block: 1, preconfirmed: true, timestamp: 100 });
+    expect(harness.transport.completedTimestamp()).toBe(100);
+    writer.cancel();
+    expect(harness.transport.completedActor()).toBeUndefined();
+    expect(harness.transport.completedTimestamp()).toBeUndefined();
+  });
+
   it("waits for the complete empty actor scope to be applied before proving absence", async () => {
     const harness = streamHarness();
     const { socket, writer } = await attached(harness);

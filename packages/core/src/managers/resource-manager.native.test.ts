@@ -36,6 +36,7 @@ const production = {
 describe("native resource facts", () => {
   it("reads sparse resources and observes a transaction once, including deletion", () => {
     const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
     store.applyFacts([...upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 } })]);
     const manager = new ResourceManager(store, 7, 1);
     store.applyFacts([...upsert("0x1", { ResourceWeight: weight() })]);
@@ -65,6 +66,7 @@ describe("native resource facts", () => {
 
   it("scopes reads and notifications to their game, and knows no balance without a resource owner", () => {
     const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
     store.applyFacts([...upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 } })]);
     const first = new ResourceManager(store, 7, 1);
     const second = new ResourceManager(store, 7, 2);
@@ -76,13 +78,16 @@ describe("native resource facts", () => {
     expect(first.balances()).toBeUndefined();
     expect(first.getStoreCapacityKg()).toBeUndefined();
     store.applyFacts([...upsert("0x2", { ResourceWeight: weight(2), ResourceBalance: balance(2) })]);
+    store.applyFacts([...upsert("0x101", { SliceRules: { ...preset.rules, game_id: 2, mode_rules: 0 } })]);
+    store.setSnapshot({ gameId: 2, complete: true, actor: null, timestamp: 350 });
     expect(second.balance(23)).toBe(9007199254740993n);
     expect(first.hasResources()).toBe(false);
-    expect(changed).toHaveBeenCalledTimes(1);
+    expect(changed).toHaveBeenCalledTimes(2);
     expect(() => second.current(0)).toThrow("Invalid resource");
   });
   it("starts every Blitz producer at the final main clock after delayed roster preparation", () => {
     const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
     store.applyFacts([
       ...upsert("0x1", { ResourceWeight: weight(), ResourceProduction: { ...production, last_updated_at: 100 } }),
       ...upsert("0x2", {
@@ -102,6 +107,7 @@ describe("native resource facts", () => {
   });
   it("projects wheat-funded training and shared storage before allowing muster", () => {
     const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
     store.applyFacts([
       ...upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 } }),
       ...upsert("0x1", { ResourceWeight: { ...weight(), capacity: 100n, weight: 90n } }),

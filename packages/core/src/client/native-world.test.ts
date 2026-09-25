@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "./native-fact-store";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import { hash, type AccountInterface } from "starknet";
+import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json";
 import bindingsJson from "../../../../contracts/l3/world-native/schema/bindings.json";
 import { nativeSubmission } from "./native-submission";
 import type { SignedNativeIntent } from "@bibliothecadao/provider";
@@ -15,6 +16,7 @@ async function fixture() {
   const client = { store };
   const write = (model: string, keys: bigint[], value: Record<string, unknown>) =>
     store.applyFacts([{ model, key: hash.computePoseidonHashOnElements(keys), value }]);
+  write("SliceRules", [1n], { ...preset.rules, game_id: 1 });
   write("ActionNonce", [1n, 0x111n], { game_id: 1, actor: "0x111", next_nonce: "0" });
   return { client, store, write };
 }
@@ -144,6 +146,8 @@ describe("native bindings in the shared game client", () => {
     await expect(nativeSubmission(connection, store, 1, "0x101")(actor, call)).rejects.toThrow("not synchronized");
     expect(signIntent).not.toHaveBeenCalled();
     let complete!: () => void;
+    let completeActor: string | undefined;
+    store.setSnapshot({ gameId: 1, complete: true, actor: completeActor, timestamp: 350 });
     const prepare = vi.fn(
       () =>
         new Promise<void>((resolve) => {
@@ -153,6 +157,8 @@ describe("native bindings in the shared game client", () => {
     const pending = nativeSubmission(connection, store, 1, "0x101", prepare)(actor, call);
     await vi.waitFor(() => expect(prepare).toHaveBeenCalledWith("0x222"));
     expect(signIntent).not.toHaveBeenCalled();
+    completeActor = actor.address;
+    store.setSnapshot({ gameId: 1, complete: true, actor: completeActor, timestamp: 350 });
     complete();
     await pending;
     expect(signIntent).toHaveBeenCalledOnce();

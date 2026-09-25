@@ -1,5 +1,5 @@
 import { type ContractAddress, type ID } from "@bibliothecadao/types";
-import type { NativeFactStore } from "../client/native-fact-store";
+import { type NativeFactStore } from "../client/native-fact-store";
 import { getBlockTimestamp } from "../utils/timestamp";
 import { hyperstructurePointsPerSecond, sharePointCutoff, unclaimedSharePoints } from "../sync/shareholder-points";
 import { configManager } from "./config-manager";
@@ -19,14 +19,28 @@ export class LeaderboardManager {
     const points = new Map(
       [...this.store.inGame("PlayerPoints", game)].map((row) => [row.address, Number(row.points) / 1_000_000]),
     );
-    for (const share of this.readAccruedShares())
-      points.set(share.playerAddress, (points.get(share.playerAddress) ?? 0) + share.points);
+    for (const share of this.readAccruedShares()) {
+      const registered = points.get(share.playerAddress) ?? this.getPlayerRegisteredPoints(share.playerAddress);
+      if (registered !== null) points.set(share.playerAddress, registered + share.points);
+    }
     return points;
+  }
+
+  private get scoresKnown(): boolean {
+    const game = configManager.getActiveGameId();
+    const actors = new Set([
+      ...[...this.store.inGame("PlayerEntry", game)].map((row) => row.owner),
+      ...[...this.store.inGame("GuildMember", game)].map((row) => row.actor),
+      ...[...this.store.inGame("Structure", game)].map((row) => row.owner).filter((owner) => owner !== 0n),
+      ...this.readAccruedShares().map((share) => share.playerAddress),
+    ]);
+    return [...actors].every((actor) => this.getPlayerRegisteredPoints(actor) !== null);
   }
 
   get pointsPerGuild(): Map<ContractAddress, number> {
     const game = configManager.getActiveGameId();
     const points = new Map<ContractAddress, number>();
+    if (!this.scoresKnown) return points;
     for (const [actor, value] of this.pointsPerPlayer) {
       const member = this.store.get("GuildMember", { game_id: game, actor });
       if (member) points.set(member.guild_id, (points.get(member.guild_id) ?? 0) + value);
@@ -35,6 +49,7 @@ export class LeaderboardManager {
   }
 
   get playersByRank() {
+    if (!this.scoresKnown) return [];
     return [...this.pointsPerPlayer].toSorted((a, b) => b[1] - a[1]);
   }
   get guildsByRank() {
@@ -70,12 +85,17 @@ export class LeaderboardManager {
       .reduce((sum, row) => sum + row.points, 0);
   }
 
-  getPlayerRegisteredPoints(player: ContractAddress): number {
-    return (
-      Number(
-        this.store.get("PlayerPoints", { game_id: configManager.getActiveGameId(), address: player })?.points ?? 0n,
-      ) / 1_000_000
-    );
+  getPlayerRegisteredPoints(player: ContractAddress): number | null {
+    const result = this.store.requireOrAbsent("PlayerPoints", {
+      game_id: configManager.getActiveGameId(),
+      address: player,
+    });
+    return result.known ? Number(result.known.points) / 1_000_000 : null;
+  }
+
+  getPlayerPoints(player: ContractAddress): number | null {
+    const registered = this.getPlayerRegisteredPoints(player);
+    return registered === null ? null : registered + this.getPlayerHyperstructureUnregisteredShareholderPoints(player);
   }
 
   getCurrentCoOwners(entityId: ID) {

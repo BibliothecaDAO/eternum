@@ -97,7 +97,7 @@ export const PlayersPanel = ({
         const liveRank = standing?.rank ?? player.rank;
         const livePoints = standing?.points ?? player.points;
         const rank = isFinalized ? (standing?.rank ?? Number.MAX_SAFE_INTEGER) : liveRank;
-        const points = isFinalized ? (standing?.points ?? 0) : livePoints;
+        const points = isFinalized ? (standing?.points ?? null) : livePoints;
         const includesLiveShareholderPoints = isFinalized
           ? false
           : activityEntry

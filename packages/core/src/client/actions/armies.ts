@@ -98,24 +98,32 @@ export const findStructurePaths = (client: ActionClient, input: StructurePathsIn
     entity_id: input.structureId,
   });
   const home = structureMapPosition(store, structure);
+  const range = guardAttackRange(store, structure);
+  if (range === undefined) return new ActionPaths();
   return new StructureActionManager().findActionPaths(
     { col: home.x, row: home.y },
     input.armyHexes,
     input.exploredHexes,
     input.playerAddress,
-    guardAttackRange(store, structure),
+    range,
     readExpeditionRules(store, structure.game_id) !== null,
   );
 };
 
 /** The reach of the strongest-ranged guard with troops. */
-const guardAttackRange = (store: ActionClient["setup"]["store"], structure: NativeRows["Structure"]): number =>
-  Math.max(
+const guardAttackRange = (
+  store: ActionClient["setup"]["store"],
+  structure: NativeRows["Structure"],
+): number | undefined => {
+  const guards = getGuardsByStructure(structure, store);
+  if (!guards) return undefined;
+  return Math.max(
     0,
-    ...getGuardsByStructure(structure, store)
+    ...guards
       .filter((guard) => Number(guard.troops.count) > 0)
       .map((guard) => getTroopAttackRange(guard.troops.category as TroopType)),
   );
+};
 
 /** A Move path travels over explored tiles; any other path reveals its destination. Spire travel is routed by the manager. */
 export const moveArmy = async (client: ActionClient, input: MoveArmyInput): Promise<MoveArmyResult> =>

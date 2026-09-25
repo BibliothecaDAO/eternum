@@ -20,6 +20,7 @@ afterEach(() => setBlockTimestampSource(null));
 describe("native leaderboard", () => {
   it("scopes registered points and rankings by game", () => {
     const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 23, complete: true, actor: PLAYER.toString(), timestamp: 350 });
     points(store, 23, 17332n);
     points(store, 15, 5275n);
     const manager = new LeaderboardManager(store);
@@ -44,6 +45,7 @@ describe("native leaderboard", () => {
   it("replaces elapsed shares with registered points in one transaction and caps accrual at game end", () => {
     configManager.setActiveGame(23, 1);
     const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 23, complete: true, actor: PLAYER.toString(), timestamp: 350 });
     upsert(store, [23], "SliceRules", {
       ...preset.rules,
       game_id: 23,
@@ -98,5 +100,42 @@ describe("native leaderboard", () => {
       timestamp: 150,
     });
     expect(manager.getPlayerShares(PLAYER, 7)).toBe(1);
+  });
+  it("keeps an unseen Frontier player's score unknown and gives zero to in-scope owners", () => {
+    const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 23, complete: true, actor: PLAYER.toString(), timestamp: 250 });
+    upsert(store, [23], "SliceRules", { ...preset.rules, game_id: 23, epoch_seconds: 100 });
+    upsert(store, [23], "SettlementRules", {
+      game_id: 23,
+      registration_start: 1,
+      registration_limit: 2,
+      spacing: 10,
+      mode: "Single",
+    });
+    upsert(store, [23], "GameRegistry", {
+      game_id: 23,
+      preset_id: 3,
+      name: 1n,
+      creator: 1n,
+      start_settling_at: 1n,
+      start_main_at: 100n,
+      end_at: 1000n,
+      settled: false,
+      ready: true,
+      dev_mode_on: false,
+      end_grace_seconds: 0,
+      seed: 1n,
+    });
+    configManager.setActiveGame(23, 3);
+    const manager = new LeaderboardManager(store);
+    expect(manager.getPlayerRegisteredPoints(PLAYER)).toBe(0);
+    expect(manager.getPlayerRegisteredPoints(0x222n)).toBeNull();
+    upsert(store, [23, PLAYER], "PlayerPoints", { game_id: 23, address: PLAYER, points: 1_000_000n });
+    upsert(store, [23, 0x222], "GuildMember", { game_id: 23, actor: 0x222n, guild_id: 0x333n });
+    expect(manager.playersByRank).toEqual([]);
+    expect(manager.guildsByRank).toEqual([]);
+    expect(manager.pointsPerGuild.size).toBe(0);
+    upsert(store, [23, 0x222], "PlayerEntry", { game_id: 23, owner: 0x222n, player: PLAYER });
+    expect(manager.getPlayerRegisteredPoints(0x222n)).toBe(0);
   });
 });

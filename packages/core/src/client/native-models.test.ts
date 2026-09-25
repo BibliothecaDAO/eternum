@@ -15,6 +15,7 @@ describe("native event routing", () => {
       close: vi.fn(),
     };
     const transport = new HeraldGameSyncTransport({
+      gameId: 1,
       url: "ws://herald.test/madara/games/7",
       socketFactory: () => socket,
       modelDefinition: nativeModelDefinition(bindings as unknown as NativeWorldBindings),

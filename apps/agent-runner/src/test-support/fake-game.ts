@@ -42,6 +42,12 @@ export const createFakeGame = (signer: AccountInterface | null = PLAYER_SIGNER):
   // A booted client always has chain time from a confirmed head; this fake chain's clock is the test's wall clock.
   setBlockTimestampSource(() => Date.now() / 1_000);
   const store = new NativeFactStore();
+  store.setSnapshot({
+    gameId: GAME_ID,
+    complete: true,
+    actor: signer?.address ?? null,
+    timestamp: Math.floor(Date.now() / 1_000),
+  });
   writeFact(store, "SliceRules", [GAME_ID], { ...preset.rules, game_id: GAME_ID, map_center_offset: 2147483646 });
   writeFact(store, "SettlementRules", [GAME_ID], {
     game_id: GAME_ID,

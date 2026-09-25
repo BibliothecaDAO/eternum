@@ -1,8 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import rowFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import type { GameSyncFact } from "../sync/game-sync-types";
 import { NativeFactStore } from "./native-fact-store";
+import preset from "../../../../contracts/l3/world-native/fixtures/preset-3.json";
+import { setBlockTimestampSource } from "../utils/timestamp";
+
+afterEach(() => setBlockTimestampSource(null));
 
 const explorer = { ...rowFixture.expected.key, ...rowFixture.expected.value };
 const set = (key: string, model: string, value: Record<string, unknown>): GameSyncFact => ({ model, key, value });
@@ -297,5 +301,200 @@ describe("native fact store", () => {
     store.applyFacts([set("0x7", "Structure", structure("0x456"))]);
     expect(current).toHaveLength(1);
     expect(current[0].owner).toBe(0x456n);
+  });
+});
+
+describe("declared fact absence", () => {
+  it("requires the current actor snapshot for nonce and points zeroes, without storing synthetic rows", () => {
+    const store = new NativeFactStore();
+    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 0 })]);
+    let complete = false;
+    let actor: string | undefined = undefined;
+    const update = () => store.setSnapshot({ gameId: 1, complete, actor, timestamp: 350 });
+    update();
+    const nonce = { game_id: 1, actor: 0x111n };
+    const points = { game_id: 1, address: 0x111n };
+    expect(store.requireOrAbsent("ActionNonce", nonce).unknown).toContain("INCOMPLETE_SNAPSHOT");
+    complete = true;
+    update();
+    expect(store.requireOrAbsent("ActionNonce", nonce).unknown).toContain("INCOMPLETE_ACTOR_SNAPSHOT");
+    actor = "0x111";
+    update();
+    expect(store.requireOrAbsent("ActionNonce", nonce).known?.next_nonce).toBe(0n);
+    expect(store.requireOrAbsent("PlayerPoints", points).known?.points).toBe(0n);
+    expect([...store.rows("ActionNonce")]).toEqual([]);
+    expect([...store.rows("PlayerPoints")]).toEqual([]);
+    expect(store.requireOrAbsent("PlayerPoints", { ...points, address: 0x222n }).known?.points).toBe(0n);
+    expect(store.requireOrAbsent("ActionNonce", { ...nonce, actor: 0x222n }).unknown).toContain(
+      "OUTSIDE_SNAPSHOT_SCOPE",
+    );
+    expect(store.requireOrAbsent("ActionNonce", { ...nonce, game_id: 2 }).unknown).toContain("INCOMPLETE_SNAPSHOT");
+    actor = undefined;
+    update();
+    expect(store.requireOrAbsent("ActionNonce", nonce).unknown).toContain("INCOMPLETE_ACTOR_SNAPSHOT");
+    store.applyFacts([set("0x1", "ActionNonce", { ...nonce, next_nonce: "9" })]);
+    expect(store.requireOrAbsent("ActionNonce", nonce).known?.next_nonce).toBe(9n);
+    expect(store.requireOrAbsent("GameRegistry", { game_id: 1 }).unknown).toContain("UNDECLARED_ABSENCE");
+  });
+
+  it("waits for the last snapshot page, requires the parent, and forgets zero after parent deletion", () => {
+    const store = new NativeFactStore();
+    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 0 })]);
+    let complete = false;
+    const update = () => store.setSnapshot({ gameId: 1, complete, actor: null, timestamp: 350 });
+    update();
+    const key = { game_id: 1, entity_id: 7 };
+    store.applyFacts([set("0x7", "Structure", structure("0x111"))]);
+    expect(store.requireOrAbsent("ProductionBonus", key).unknown).toContain("INCOMPLETE_SNAPSHOT");
+    complete = true;
+    update();
+    expect(store.requireOrAbsent("ProductionBonus", key).known?.incr_labor_rate_percent_num).toBe(0);
+    expect(store.requireOrAbsent("VillageRaid", key).known?.last_tick).toBe(0n);
+    const guard = store.requireOrAbsent("Guard", { game_id: 1, structure_id: 7, slot: 1 });
+    expect(guard.known?.troops.count).toBe(0n);
+    expect(guard.known?.destroyed_tick).toBe(0);
+    expect(store.requireOrAbsent("ProductionBonus", { ...key, entity_id: 8 }).unknown).toContain("UNKNOWN_PARENT");
+    // A remote production row does not prove the presence of its resource owner.
+    expect(store.requireOrAbsent("ResourceBalance", { ...key, resource_type: 1 }).unknown).toContain("UNKNOWN_PARENT");
+    store.applyFacts([remove("0x7", "Structure")]);
+    expect(store.requireOrAbsent("VillageRaid", key).unknown).toContain("UNKNOWN_PARENT");
+  });
+  it("uses the declared resource, hyperstructure and settlement parents", () => {
+    const store = new NativeFactStore();
+    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 0 })]);
+    store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
+    const entity = { game_id: 1, entity_id: 7 };
+    const resource = { ...entity, resource_type: 2 };
+    store.applyFacts([
+      set("0x1", "ResourceWeight", { ...entity, capacity: "100", weight: "0" }),
+      set("0x2", "Hyperstructure", { ...entity, stage: "Construction", access: "Public", seed: "12" }),
+      set("0x3", "SettlementRules", {
+        game_id: 1,
+        registration_start: 1,
+        registration_limit: 2,
+        spacing: 10,
+        mode: "Single",
+      }),
+    ]);
+    expect(store.requireOrAbsent("ResourceBalance", resource).known?.balance).toBe(0n);
+    expect(store.requireOrAbsent("ResourceProduction", resource).known).toMatchObject({
+      building_count: 0,
+      production_rate: 0n,
+      output_amount_left: 0n,
+      last_updated_at: 0,
+    });
+    expect(store.requireOrAbsent("HyperstructureProgress", resource).known?.contributed).toBe(0n);
+    expect(store.requireOrAbsent("SettlementProgress", { game_id: 1 }).known).toEqual({
+      game_id: 1,
+      registered: 0,
+      realm_count: 0,
+    });
+    store.applyFacts([set("0x4", "ResourceBalance", { ...resource, balance: "19" })]);
+    expect(store.requireOrAbsent("ResourceBalance", resource).known?.balance).toBe(19n);
+    store.applyFacts([remove("0x4", "ResourceBalance")]);
+    expect(store.requireOrAbsent("ResourceBalance", resource).known?.balance).toBe(0n);
+  });
+
+  it("never invents a chest counter for another actor or an unobserved Frontier day", () => {
+    const store = new NativeFactStore();
+    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 0 })]);
+    store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
+    store.applyFacts([
+      set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 100 }),
+      set("0x2", "SettlementRules", {
+        game_id: 1,
+        registration_start: 1,
+        registration_limit: 2,
+        spacing: 10,
+        mode: "Single",
+      }),
+      set("0x3", "GameRegistry", {
+        game_id: 1,
+        preset_id: 3,
+        name: "1",
+        creator: "1",
+        start_settling_at: "1",
+        start_main_at: "100",
+        end_at: "1000",
+        settled: false,
+        ready: true,
+        dev_mode_on: false,
+        end_grace_seconds: 0,
+        seed: "1",
+      }),
+    ]);
+    setBlockTimestampSource(() => 350);
+    expect(store.requireOrAbsent("ChestPity", { game_id: 1, player: 0x111n, depth: 3 }).known?.count).toBe(0);
+    expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0x111n, epoch: 2n }).known?.count).toBe(0);
+    expect(store.requireOrAbsent("ChestPity", { game_id: 1, player: 0x222n, depth: 3 }).unknown).toContain(
+      "OUTSIDE_SNAPSHOT_SCOPE",
+    );
+    for (const epoch of [1n, 3n])
+      expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0x111n, epoch }).unknown).toContain(
+        "OUTSIDE_SNAPSHOT_SCOPE",
+      );
+  });
+  it("keeps incomplete scope invariants out of synchronous listeners", () => {
+    const store = new NativeFactStore();
+    const seen: (string | undefined)[] = [];
+    store.subscribe(() => seen.push(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0x111n }).unknown));
+    store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
+    store.applyFacts([
+      set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 100 }),
+      set("0x2", "SettlementRules", {
+        game_id: 1,
+        registration_start: 1,
+        registration_limit: 2,
+        spacing: 10,
+        mode: "Single",
+      }),
+      set("0x3", "GameRegistry", {
+        game_id: 1,
+        preset_id: 3,
+        name: "1",
+        creator: "1",
+        start_settling_at: "1",
+        start_main_at: "100",
+        end_at: "1000",
+        settled: false,
+        ready: true,
+        dev_mode_on: false,
+        end_grace_seconds: 0,
+        seed: "1",
+      }),
+    ]);
+    store.applyFacts([
+      set("0x7", "Structure", structure("0x111")),
+      set("0x8", "ExplorerTroops", { ...explorer, owner: 7, troops: { ...explorer.troops, count: "1" } }),
+    ]);
+    expect(seen.every((reason) => reason?.startsWith("INCOMPLETE_SNAPSHOT"))).toBe(true);
+    expect(() => store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 })).not.toThrow();
+    expect(seen.at(-1)).toContain("INCOMPLETE_SCOPE: Expected one position for scope entity");
+    expect(() =>
+      store.applyFacts([set("0x9", "ResourceWeight", { game_id: 1, entity_id: 7, capacity: "1", weight: "0" })]),
+    ).not.toThrow();
+    expect(seen.at(-1)).toContain("INCOMPLETE_SCOPE: Expected one position for scope entity");
+  });
+
+  it("notifies sparse readers when gates open, while actor nonces ignore expedition clock", () => {
+    const store = new NativeFactStore();
+    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 100 })]);
+    const state = { gameId: 1, complete: false, actor: "0x111", timestamp: undefined };
+    const values: unknown[] = [];
+    store.subscribe(() => values.push(store.requireOrAbsent("ActionNonce", { game_id: 1, actor: 0x111n })));
+    store.setSnapshot(state);
+    const revision = store.getRevision();
+    store.setSnapshot({ ...state, complete: true });
+    expect(store.getRevision()).toBe(revision + 1);
+    expect(values.at(-1)).toEqual({ known: { game_id: 1, actor: 0x111n, next_nonce: 0n } });
+    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0x111n }).unknown).toContain(
+      "INCOMPLETE_SCOPE",
+    );
+    expect(store.subscriptionScope()).toBe(store.subscriptionScope());
+    store.setSnapshot({ ...state, complete: true, actor: "0x222" });
+    expect(store.requireOrAbsent("ActionNonce", { game_id: 1, actor: 0x222n }).known?.next_nonce).toBe(0n);
+    expect(store.requireOrAbsent("ActionNonce", { game_id: 1, actor: 0x111n }).unknown).toContain(
+      "OUTSIDE_SNAPSHOT_SCOPE",
+    );
   });
 });

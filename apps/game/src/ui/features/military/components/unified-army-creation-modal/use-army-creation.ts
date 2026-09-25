@@ -199,16 +199,15 @@ export const useArmyCreation = ({
     () => liveHomeArmies(store, activeStructureId, configManager.getActiveGameId()).length,
     [store, activeStructureId, revision, currentDefaultTick],
   );
-  const currentGuardsCount =
-    guardsData?.filter(
-      (guard) => guard.troops?.count && guard.troops.count > 0n && availableGuardSlotSet.has(Number(guard.slot)),
-    ).length || 0;
+  const currentGuardsCount = guardsData?.filter(
+    (guard) => guard.troops?.count && guard.troops.count > 0n && availableGuardSlotSet.has(Number(guard.slot)),
+  ).length;
   // Undefined for a structure this client cannot see: no attack army can be created from it.
   const maxExplorers = structureBase?.troop_max_explorer_count;
 
   const canCreateAttackArmy = maxExplorers !== undefined && currentExplorersCount < maxExplorers;
-  const canCreateDefenseArmy = currentGuardsCount < resolvedMaxDefenseSlots;
-  const hasDefenseArmies = currentGuardsCount > 0;
+  const canCreateDefenseArmy = currentGuardsCount !== undefined && currentGuardsCount < resolvedMaxDefenseSlots;
+  const hasDefenseArmies = currentGuardsCount !== undefined && currentGuardsCount > 0;
   const canInteractWithDefense = canCreateDefenseArmy || hasDefenseArmies;
 
   const guardsBySlot = useMemo(() => {

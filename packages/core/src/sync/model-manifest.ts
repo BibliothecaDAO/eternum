@@ -50,6 +50,11 @@ export function isScopedGameSyncModel(model: string, expedition: boolean): boole
   return rule === "actor" || (expedition && typeof rule !== "string");
 }
 
+/** Only these model rules depend on the expedition clock and derived entity scope. */
+export function isExpeditionScopedModel(model: string): boolean {
+  return typeof syncRule(model) !== "string";
+}
+
 export function syncScalar(value: unknown): string {
   if (typeof value !== "string" && typeof value !== "number" && typeof value !== "bigint")
     throw new Error("Sync scope requires a scalar identity");
@@ -122,3 +127,5 @@ export function rowInGameSyncScope(model: string, row: Record<string, unknown>, 
   const held = gameSyncScopeKeys(scope);
   return keys.some((key) => held.has(key));
 }
+
+export { deriveGameSyncScope, scopeInputKeys, scopeLookup } from "./subscription-scope";

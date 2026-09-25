@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { HERALD_GAME_FINALIZED_CLOSE } from "@bibliothecadao/eternum/game-sync";
 import { GameStreamHub, type StreamSocket } from "./game-stream";
-import { rowStreamKeys, scopeLookup } from "./subscription-keys";
+import { scopeLookup } from "@bibliothecadao/eternum/game-sync-models";
+import { rowStreamKeys } from "./subscription-keys";
 import { setup, rowEvent, receipt, schema } from "./native/fixtures";
 import { GameFinalizedError } from "./world-fold";
 import type { GameSnapshot } from "./types";

@@ -18,7 +18,7 @@ import {
 import { hyperstructurePointsPerSecond as sharedPointsPerSecond } from "@bibliothecadao/eternum/game-sync";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeRowOrAbsent, useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ContractAddress, ID, BANDITS_NAME, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
@@ -47,7 +47,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const keys = { game_id: configManager.getActiveGameId(), entity_id: structureEntityIdNumber };
   const structure = useNativeRow("Structure", keys);
   const resources = useResourceManager(structureEntityIdNumber);
-  const productionBoostBonus = useNativeRow("ProductionBonus", keys);
+  const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", structure ? keys : undefined);
   const shares = useNativeRow("HyperstructureShares", keys);
   const revision = useNativeRevision([
     "GuildMember",
@@ -137,7 +137,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     }
   }, [structure?.base?.category, structure?.base?.level]);
 
-  const guardSlotsUsed = structure ? guards.filter((guard) => guard.troops.count > 0n).length : undefined;
+  const guardSlotsUsed = structure && guards ? guards.filter((guard) => guard.troops.count > 0n).length : undefined;
   const guardSlotsMax =
     structure?.base.troop_max_guard_count !== undefined ? Number(structure?.base?.troop_max_guard_count) : undefined;
 

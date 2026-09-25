@@ -95,8 +95,9 @@ function createNonceReader(
       if (!prepareNonce) throw new Error("Gameplay actor snapshot is not synchronized");
       await prepareNonce(actor);
       // Capture the intent's nonce before another actor can replace this snapshot.
-      // A complete actor snapshot proves absence means no consumed action, as declared by ActionNonce's schema.
-      return store.get("ActionNonce", key)?.next_nonce ?? 0n;
+      const nonce = store.requireOrAbsent("ActionNonce", key);
+      if (!nonce.known) throw new Error(`ACTION_NONCE_UNKNOWN: ${nonce.unknown}`);
+      return nonce.known.next_nonce;
     });
     // A failed snapshot rejects its caller without blocking other players.
     pendingSnapshot = nonce.then(

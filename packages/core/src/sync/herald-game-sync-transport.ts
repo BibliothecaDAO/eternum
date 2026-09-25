@@ -75,6 +75,7 @@ interface Deferred<Value> {
 }
 
 export interface HeraldGameSyncTransportOptions {
+  gameId: number;
   modelDefinition: (name: string) => GameSyncModelDefinition;
   /** Herald greeted the stream (true), or the socket was lost and is being retried (false). */
   onConnection?: (reachable: boolean) => void;
@@ -155,6 +156,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     const address = actor === undefined ? null : `0x${BigInt(actor).toString(16)}`;
     if (url.searchParams.get("actor") === address) return;
     this.completeActor = undefined;
+    this.publishSnapshotState();
     this.actorSnapshotGeneration++;
     this.rejectActorSnapshots(new Error("Gameplay actor changed before its snapshot completed"));
     if (address === null) url.searchParams.delete("actor");
@@ -175,6 +177,27 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     return waiter.promise;
   }
 
+  private scopeTimestamp: number | undefined;
+  private scopeClockCurrent = false;
+
+  public completedTimestamp(): number | undefined {
+    return this.scopeClockCurrent ? this.scopeTimestamp : undefined;
+  }
+
+  /** Undefined until the current actor's entire scope has applied; null is a completed spectator snapshot. */
+  public completedActor(): string | null | undefined {
+    return this.completeActor;
+  }
+
+  private publishSnapshotState(actor = this.completeActor): void | Promise<void> {
+    return this.handlers?.onSnapshotState?.({
+      gameId: this.options.gameId,
+      complete: actor !== undefined,
+      actor,
+      timestamp: this.completedTimestamp(),
+    });
+  }
+
   private finishActorSnapshot(actor: string | null, applied: boolean | Promise<boolean> | undefined): void {
     const generation = ++this.actorSnapshotGeneration;
     const current = () => !this.stopped && generation === this.actorSnapshotGeneration;
@@ -185,10 +208,16 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
         this.rejectActorSnapshots(new Error("Actor snapshot was not applied"));
         return;
       }
-      this.completeActor = actor;
-      if (actor === null) return;
-      this.actorSnapshotWaiters.forEach((waiter) => waiter.resolve());
-      this.actorSnapshotWaiters.clear();
+      const finish = () => {
+        if (!current()) return;
+        this.completeActor = actor;
+        if (actor === null) return;
+        this.actorSnapshotWaiters.forEach((waiter) => waiter.resolve());
+        this.actorSnapshotWaiters.clear();
+      };
+      const written = this.publishSnapshotState(actor);
+      if (written) void written.then(finish);
+      else finish();
     };
     if (typeof applied === "boolean" || applied === undefined) complete(applied);
     else
@@ -327,6 +356,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private acceptScope(message: Extract<HeraldMessage, { type: "scope" }>): void {
     this.completeActor = undefined;
+    this.publishSnapshotState();
     const applied = this.handlers?.onScope(message.set.map(toFact), message.expedition);
     this.finishActorSnapshot(message.actor === undefined ? null : `0x${BigInt(message.actor).toString(16)}`, applied);
     this.epoch = message.epoch;
@@ -336,7 +366,10 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private acceptSnapshotModel(message: Extract<HeraldMessage, { type: "snapshot" }>, bytesReceived: number): void {
     if (!this.snapshotStreaming) {
+      this.scopeTimestamp = undefined;
+      this.scopeClockCurrent = false;
       this.completeActor = undefined;
+      this.publishSnapshotState();
       this.actorSnapshotGeneration++;
       this.snapshotStreaming = true;
       this.snapshotBytesReceived = this.snapshotModelsReceived = this.snapshotRowsReceived = 0;
@@ -359,7 +392,12 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private acceptSnapshotEnd(message: Extract<HeraldMessage, { type: "snapshot_end" }>): void {
     this.completeActor = undefined;
-    if (!this.snapshotStreaming) this.handlers?.onSnapshotStart();
+    this.publishSnapshotState();
+    if (!this.snapshotStreaming) {
+      this.scopeTimestamp = undefined;
+      this.scopeClockCurrent = false;
+      this.handlers?.onSnapshotStart();
+    }
     this.snapshotStreaming = false;
     this.firstSnapshotEnded = true;
     this.finishActorSnapshot(this.snapshotActor, this.handlers?.onSnapshotEnd());
@@ -397,6 +435,9 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   /** Facts and events are split before anything is delivered, so a rejected diff delivers nothing. */
   private acceptDiff(message: Extract<HeraldMessage, { type: "diff" }>): void {
+    // A scope-changing diff can precede its clock head; absence stays unknown across that boundary.
+    this.scopeClockCurrent = false;
+    this.publishSnapshotState();
     const isEvent = (model: string) => this.options.modelDefinition(model).deletion === "event-ephemeral";
     const events = message.set.filter((row) => isEvent(row.model));
     const facts = [
@@ -442,6 +483,9 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   }
 
   private acceptHead(message: Extract<HeraldMessage, { type: "head" }>): void {
+    this.scopeTimestamp = Math.max(this.scopeTimestamp ?? 0, message.timestamp);
+    this.scopeClockCurrent = true;
+    this.publishSnapshotState();
     const head: GameSyncHead = {
       block: message.block,
       preconfirmed: message.preconfirmed === true,
@@ -481,7 +525,9 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private stop(): void {
     this.stopped = true;
+    this.scopeTimestamp = undefined;
     this.completeActor = undefined;
+    this.publishSnapshotState();
     this.actorSnapshotGeneration++;
     this.rejectActorSnapshots(new Error("Herald transport stopped before the actor snapshot completed"));
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);

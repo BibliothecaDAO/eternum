@@ -43,6 +43,29 @@ describe("FactIngestQueue", () => {
     ]);
   });
 
+  it("opens snapshot and clock gates after their preceding facts, before later diffs", async () => {
+    const scheduler = createManualGameSyncScheduler();
+    const writes: string[] = [];
+    const store: GameSyncStore = {
+      applyFacts: (facts) => {
+        writes.push(`facts:${facts[0]!.key}`);
+      },
+      applyEvent: () => {},
+      setSnapshot: (state) => {
+        writes.push(`gate:${state.timestamp}`);
+      },
+    };
+    const queue = new FactIngestQueue({ scheduler, store, now: () => 0 });
+    void queue.enqueueFacts([fact("before", 1)]);
+    const opened = queue.enqueueSnapshot({ gameId: 1, actor: "0x111", complete: true, timestamp: 350 });
+    void queue.enqueueFacts([fact("after", 2)]);
+    expect(writes).toEqual([]);
+    scheduler.flushNext();
+    await opened;
+    await queue.drain();
+    expect(writes).toEqual(["facts:before", "gate:350", "facts:after"]);
+  });
+
   it("rejects recovery drains when a native store write fails", async () => {
     const scheduler = createManualGameSyncScheduler();
     const store: GameSyncStore = {

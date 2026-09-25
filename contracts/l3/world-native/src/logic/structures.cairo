@@ -601,19 +601,15 @@ pub mod StructuresLogic {
             } else {
                 0
             };
-            if record.owner == 0.try_into().unwrap() {
-                crate::logic::stories::emit_entity_story(
-                    key,
-                    owner,
-                    Story::StructureCapturedStory(
-                        crate::ownership::StructureCapturedStory {
-                            previous_owner: record.owner, new_owner: owner, points,
-                        },
-                    ),
-                    timestamp,
-                    ref story_cursor,
-                );
-            }
+            crate::logic::stories::emit_entity_story(
+                key,
+                owner,
+                Story::StructureCapturedStory(
+                    crate::ownership::StructureCapturedStory { previous_owner: record.owner, new_owner: owner, points },
+                ),
+                timestamp,
+                ref story_cursor,
+            );
             ((), story_cursor)
         }
     }

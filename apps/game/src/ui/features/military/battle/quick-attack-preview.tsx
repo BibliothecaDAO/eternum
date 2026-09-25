@@ -152,7 +152,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: attacker.id });
     return structure
       ? getGuardsByStructure(structure, store)
-          .filter((guard) => guard.troops.count > 0n)
+          ?.filter((guard) => guard.troops.count > 0n)
           .toSorted((a, b) => a.slot - b.slot)
       : [];
   }, [attackerType, attacker.id, store, revision]);
@@ -169,7 +169,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   // When a structure is the aggressor, only guards whose attack range reaches the target can fire.
   const eligibleStructureGuards = useMemo(
-    () => structureGuards.filter((guard) => getTroopAttackRange(guard.troops.category) >= targetDistance),
+    () => structureGuards?.filter((guard) => getTroopAttackRange(guard.troops.category) >= targetDistance) ?? [],
     [structureGuards, targetDistance],
   );
 
@@ -583,6 +583,8 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       </div>
     );
   };
+
+  if (structureGuards === undefined) return <div>Loading guards…</div>;
 
   return (
     <div className="w-[280px] max-w-[85vw] px-3 py-2.5 text-gold">

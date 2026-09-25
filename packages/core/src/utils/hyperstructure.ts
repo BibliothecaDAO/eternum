@@ -43,10 +43,9 @@ export const getHyperstructureProgress = (hyperstructureId: number, store: Nativ
   const game = configManager.getActiveGameId();
   const hyperstructure = store.get("Hyperstructure", { game_id: game, entity_id: hyperstructureId });
   const completed = hyperstructure?.stage === "Complete";
-  const required = getHyperstructureTotalContributableAmounts(hyperstructureId, store).reduce(
-    (sum, row) => sum + BigInt(row.amount) * BigInt(RESOURCE_PRECISION),
-    0n,
-  );
+  if (completed) return { percentage: 100, initialized: true, completed: true };
+  const amounts = getHyperstructureTotalContributableAmounts(hyperstructureId, store);
+  const required = amounts.reduce((sum, row) => sum + BigInt(row.amount) * BigInt(RESOURCE_PRECISION), 0n);
   const current = [...store.inGame("HyperstructureProgress", game)]
     .filter((row) => row.entity_id === hyperstructureId)
     .reduce((sum, row) => sum + row.contributed, 0n);

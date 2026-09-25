@@ -1,4 +1,7 @@
+import { GameSubscription } from "./game-subscription";
 import { describe, expect, it, vi } from "vitest";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { isClientGameSyncModel } from "@bibliothecadao/eternum/game-sync-models";
 
 import { decodeHomeRing, type HomeRingTile, type HomeRingView } from "./home-ring";
 import { LiveWorld } from "./live-world";
@@ -195,5 +198,93 @@ describe("home ring", () => {
     expect(view).toHaveBeenCalledTimes(2);
     expect(tilesIn(retried)).toHaveLength(RING.length);
     error.mockRestore();
+  });
+});
+
+describe("client and Herald subscription scope parity", () => {
+  it("keeps Frontier absence unknown across actor, overlay and day boundaries", () => {
+    const { native, fold } = frontierWorld();
+    const overlay = fold.overlay();
+    const store = new NativeFactStore();
+    const guardReads: unknown[] = [];
+    store.subscribe(() => guardReads.push(store.requireOrAbsent("Guard", { game_id: 1, structure_id: 1, slot: 0 })));
+    let actor = "0xa";
+    let timestamp = MID_DAY;
+    let subscription: GameSubscription;
+    const state = (complete: boolean, clock: number | undefined = timestamp) =>
+      store.setSnapshot({ gameId: 1, actor, complete, timestamp: clock });
+    const snapshot = () => {
+      state(false);
+      subscription = new GameSubscription(
+        "1",
+        actor,
+        (preconfirmed) => (preconfirmed ? overlay : fold),
+        () => 10,
+        () => timestamp,
+      );
+      const models = subscription.snapshot().models.filter(({ model }) => isClientGameSyncModel(model));
+      store.applyFacts(
+        models.flatMap(({ model, rows }) => rows.map((row) => ({ ...row, model }))),
+        new Map(models.map(({ model, rows }) => [model, new Set(rows.map(({ key }) => key))])),
+      );
+      expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: BigInt(actor) }).unknown).toContain(
+        "INCOMPLETE_SNAPSHOT",
+      );
+      state(true);
+      expect(store.subscriptionScope().known).toEqual(fold.subscriptionScope("1", actor, timestamp));
+    };
+    snapshot();
+    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xan }).known?.points).toBe(0n);
+    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xbn }).unknown).toContain(
+      "OUTSIDE_SNAPSHOT_SCOPE",
+    );
+    actor = "0xb";
+    snapshot();
+    // Clock invalidation cannot block an applied actor snapshot's first action.
+    store.setSnapshot({ gameId: 1, actor, complete: true, timestamp: undefined });
+    expect(store.requireOrAbsent("ActionNonce", { game_id: 1, actor: 0xbn }).known?.next_nonce).toBe(0n);
+    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xbn }).unknown).toBe("UNKNOWN_SCOPE_CLOCK");
+    state(true);
+
+    const result = native.applyReceipt(overlay, receipt([rowEvent("PlayerEntry", ["1", "0xa"], ["0xb"])]), null, 0);
+    const deliver = (bodies: ReturnType<GameSubscription["project"]>) => {
+      for (const body of bodies) {
+        if (body.type === "diff") {
+          store.setSnapshot({ gameId: 1, actor, complete: true, timestamp: undefined });
+          store.applyFacts([
+            ...body.set.filter(({ model }) => isClientGameSyncModel(model)),
+            ...body.del.filter(({ model }) => isClientGameSyncModel(model)).map((row) => ({ ...row, value: null })),
+          ]);
+          expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xan }).unknown).toBe(
+            "UNKNOWN_SCOPE_CLOCK",
+          );
+        } else if (body.type === "head") state(true, timestamp);
+      }
+    };
+    deliver(
+      subscription!.project({
+        type: "diff",
+        block: null,
+        preconfirmed: true,
+        set: result.changes.flatMap(({ change }) => (change?.set ? [change.set] : [])),
+        del: [],
+      }),
+    );
+    expect(fold.subscriptionScope("1", actor, timestamp).expedition?.owners).toEqual(new Set(["11"]));
+    deliver(subscription!.project({ type: "head", block: 11, preconfirmed: true, timestamp }));
+    expect(store.subscriptionScope().known).toEqual(overlay.subscriptionScope("1", actor, timestamp));
+    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xan }).known?.points).toBe(0n);
+    expect(store.requireOrAbsent("ActionNonce", { game_id: 1, actor: 0xan }).unknown).toContain(
+      "OUTSIDE_SNAPSHOT_SCOPE",
+    );
+
+    timestamp += 86_400;
+    deliver(subscription!.project({ type: "head", block: 12, preconfirmed: true, timestamp }));
+    expect(store.subscriptionScope().known).toEqual(overlay.subscriptionScope("1", actor, timestamp));
+    expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0xbn, epoch: 0n }).unknown).toContain(
+      "OUTSIDE_SNAPSHOT_SCOPE",
+    );
+    expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0xbn, epoch: 1n }).known?.count).toBe(0);
+    expect(guardReads.some((read) => (read as { unknown?: string }).unknown === "UNKNOWN_SCOPE_CLOCK")).toBe(true);
   });
 });

@@ -57,6 +57,7 @@ const resolveStatusTone = (
   if (!capabilities.hasPopulationDetails) return null;
 
   const occupied = structure.guardCount;
+  if (occupied === undefined) return { tone: "amber", title: "Guards: —" };
   const max = structure.structure.base.troop_max_guard_count;
 
   if (max > 0 && occupied === 0) {
@@ -152,7 +153,7 @@ export const StructureStatusRow = memo(
     const explorerMax = base.troop_max_explorer_count;
     const showMilitaryStats =
       statsVariant === "military" && capabilities.hasPopulationDetails && (guardMax > 0 || explorerMax > 0);
-    const guardsLabel = showMilitaryStats && guardMax > 0 ? `${guardOccupied}/${guardMax}` : null;
+    const guardsLabel = showMilitaryStats && guardMax > 0 ? `${guardOccupied ?? "—"}/${guardMax}` : null;
     const explorersLabel = showMilitaryStats && explorerMax > 0 ? `${explorerOccupied}/${explorerMax}` : null;
     const isRealm = structure.category === StructureType.Realm;
     const isFavorite = structure.isFavorite;

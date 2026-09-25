@@ -91,7 +91,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
   const attention = useCallback((structure: StructureWithMetadata) => {
     const occupied = structure.guardCount;
     const max = structure.structure.base.troop_max_guard_count;
-    return max > 0 && occupied < max;
+    return occupied !== undefined && max > 0 && occupied < max;
   }, []);
 
   return (

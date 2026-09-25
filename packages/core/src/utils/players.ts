@@ -1,5 +1,6 @@
 import { type ContractAddress, type Player, type PlayerInfo } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
+import { LeaderboardManager } from "../managers/leaderboard-manager";
 import { configManager } from "../managers/config-manager";
 import { displayPlayerName } from "./entities";
 import { getGuild } from "./guild";
@@ -40,20 +41,18 @@ export const getPlayerInfo = (
     })
     .filter((player) => player !== undefined);
 
-  let unrankedCount = 0;
-
+  const leaderboard = LeaderboardManager.instance(store);
+  const scoresKnown = playerInfo.every((player) => leaderboard.getPlayerRegisteredPoints(player.address) !== null);
   return playerInfo.map((player) => {
     const rankIndex = playersByRank.findIndex(([address]) => address === player.address);
-    if (rankIndex === -1) unrankedCount++;
-
-    const points = rankIndex === -1 ? 0 : playersByRank[rankIndex][1];
+    const points = rankIndex === -1 ? leaderboard.getPlayerPoints(player.address) : playersByRank[rankIndex][1];
 
     return {
       entity: player.entity,
       name: player.name,
       address: player.address,
       points,
-      rank: rankIndex === -1 ? Number.MAX_SAFE_INTEGER : rankIndex + 1,
+      rank: !scoresKnown || rankIndex === -1 ? Number.MAX_SAFE_INTEGER : rankIndex + 1,
       realms: playerStructureCounts.get(player.address)?.realms ?? 0,
       mines: playerStructureCounts.get(player.address)?.mines ?? 0,
       hyperstructures: playerStructureCounts.get(player.address)?.hyperstructures ?? 0,

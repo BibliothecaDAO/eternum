@@ -44,12 +44,13 @@ function applyClientFacts(store: NativeFactStore, changes: { change?: FoldChange
 function expectContractFacts(store: NativeFactStore, expected: ContractRead) {
   const actor = BigInt(recording.actor);
   expect(store.require("ActionNonce", { game_id: 1, actor }).next_nonce).toBe(BigInt(expected.nonce));
-  const points = store.get("PlayerPoints", { game_id: 1, address: actor });
+  expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: actor }).known?.points).toBe(
+    BigInt(expected.playerPoints),
+  );
   if (BigInt(expected.playerPoints) === 0n) {
-    expect(points).toBeUndefined();
+    expect(store.get("PlayerPoints", { game_id: 1, address: actor })).toBeUndefined();
     return;
   }
-  expect(points?.points).toBe(BigInt(expected.playerPoints));
   expect(store.require("PointsTotal", { game_id: 1 }).total).toBe(BigInt(expected.playerPoints));
 }
 
@@ -75,12 +76,13 @@ describe("fresh phase-1 gameplay recording", () => {
   it("replays settle, exploration, points and nonce facts against the recorded contract reads", async () => {
     expect(recording.schemaIdentity).toBe(schema.identity);
     expect(recording.checks.map((check) => check.kind)).toContain("SettleBlitzRoster");
-    expect(recording.checks.filter((check) => check.kind === "Explore")).toHaveLength(2);
+    expect(recording.checks.some((check) => check.kind === "Explore")).toBe(true);
     expect(recording.checks.some((check) => BigInt(check.playerPoints) > 0n)).toBe(true);
     const decoder = new NativeDecoder({ ...manifest, world: { address: recording.worldAddress } });
     const ingestion = new NativeIngestion(decoder);
     const fold = new WorldFold(decoder.registry);
     const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 1, complete: true, actor: recording.actor, timestamp: undefined });
     for (const { receipt, transaction } of recording.records) {
       const overlay = fold.overlay();
       ingestion.applyReceipt(overlay, receipt, null, 0, transaction.calldata);

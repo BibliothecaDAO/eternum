@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-25",
+    title: "Scores respect your view",
+    description:
+      "Scores outside your Frontier view show a dash until known. Realm captures now record both owners in the game story.",
+    type: "fix",
+  },
+  {
     date: "2026-09-22",
     title: "One app for every game",
     description:

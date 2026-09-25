@@ -123,6 +123,7 @@ export function createHeraldGameSyncSession(
     transport: new HeraldGameSyncTransport({
       modelDefinition: input.modelDefinition,
       onConnection: observer.onConnection,
+      gameId: input.gameId,
       socketFactory: input.socketFactory,
       url: buildHeraldGameStreamUrl(input.baseUrl, input.gameId, input.actor),
     }),

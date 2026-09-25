@@ -125,3 +125,8 @@ it("notifies the acting owner of a native troop transfer only at all activity le
   expect(includesStoryNotification("all", "TroopsTransferred")).toBe(true);
   expect(storyRecipients("TroopsTransferred", "0x0003", {})).toEqual(["0x3"]);
 });
+
+it("notifies both owners for player capture, excluding the zero bandit owner", () => {
+  expect(storyRecipients("StructureCapturedStory", "0x222", { previous_owner: "0x111" })).toEqual(["0x222", "0x111"]);
+  expect(storyRecipients("StructureCapturedStory", "0x222", { previous_owner: "0x0" })).toEqual(["0x222"]);
+});

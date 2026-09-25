@@ -12,7 +12,7 @@ import {
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeRowOrAbsent, useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { STEALABLE_RESOURCES, type ID, type RelicEffectWithEndTick, type StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
@@ -85,9 +85,9 @@ export const useAttackTargetData = (
       ? { game_id: configManager.getActiveGameId(), explorer_id: attackerEntityId }
       : undefined,
   );
-  const attackerProductionBoost = useNativeRow(
+  const attackerProductionBoost = useNativeRowOrAbsent(
     "ProductionBonus",
-    attackerEntityId !== undefined
+    attackerStructure !== undefined
       ? { game_id: configManager.getActiveGameId(), entity_id: attackerEntityId }
       : undefined,
   );
@@ -103,9 +103,11 @@ export const useAttackTargetData = (
       : undefined,
   );
   const targetResource = useResourceManager(targetEntityId ?? 0);
-  const targetProductionBoost = useNativeRow(
+  const targetProductionBoost = useNativeRowOrAbsent(
     "ProductionBonus",
-    targetEntityId !== undefined ? { game_id: configManager.getActiveGameId(), entity_id: targetEntityId } : undefined,
+    targetStructure !== undefined
+      ? { game_id: configManager.getActiveGameId(), entity_id: targetStructure.entity_id }
+      : undefined,
   );
 
   const attackerRelicEffects = useMemo(() => {
@@ -113,7 +115,7 @@ export const useAttackTargetData = (
       const structureRelicEffects = attackerProductionBoost
         ? getStructureRelicEffects(attackerProductionBoost, currentArmiesTick)
         : [];
-      const structureArmyRelicEffects = getGuardsByStructure(attackerStructure, store).flatMap((guard) =>
+      const structureArmyRelicEffects = (getGuardsByStructure(attackerStructure, store) ?? []).flatMap((guard) =>
         getStructureArmyRelicEffects(guard, currentArmiesTick),
       );
 
@@ -132,9 +134,9 @@ export const useAttackTargetData = (
 
     if (targetTile.occupier_is_structure) {
       if (!targetStructure) return null;
-      const guards = getGuardsByStructure(targetStructure, store)
-        .filter((guard) => guard.troops.count > 0n)
-        .toSorted((a, b) => a.slot - b.slot);
+      const knownGuards = getGuardsByStructure(targetStructure, store);
+      if (!knownGuards) return null;
+      const guards = knownGuards.filter((guard) => guard.troops.count > 0n).toSorted((a, b) => a.slot - b.slot);
 
       return {
         info: guards.map((guard) => ({
@@ -170,7 +172,7 @@ export const useAttackTargetData = (
   const targetRelicEffects = useMemo<RelicEffectWithEndTick[]>(() => {
     if (targetTile?.occupier_is_structure) {
       if (!targetStructure) return [];
-      const structureRelicEffects = getGuardsByStructure(targetStructure, store).flatMap((guard) =>
+      const structureRelicEffects = (getGuardsByStructure(targetStructure, store) ?? []).flatMap((guard) =>
         getStructureArmyRelicEffects(guard, currentArmiesTick),
       );
       if (!targetProductionBoost) {
@@ -202,12 +204,18 @@ export const useAttackTargetData = (
     return orderResourcesByPriority(targetResource.balances() ?? []);
   }, [currentBlockTimestamp, targetResource, targetTile?.occupier_is_structure]);
 
-  const isLoading = Boolean(targetEntityId && (targetTile?.occupier_is_structure ? !targetStructure : !targetExplorer));
+  const guardsUnknown = Boolean(
+    (attackerStructure && (!getGuardsByStructure(attackerStructure, store) || !attackerProductionBoost)) ||
+    (targetStructure && (!getGuardsByStructure(targetStructure, store) || !targetProductionBoost)),
+  );
+  const isLoading =
+    guardsUnknown ||
+    Boolean(targetEntityId && (targetTile?.occupier_is_structure ? !targetStructure : !targetExplorer));
 
   return {
     attackerRelicEffects,
     targetRelicEffects,
-    target,
+    target: guardsUnknown ? null : target,
     targetResources,
     isLoading,
   };

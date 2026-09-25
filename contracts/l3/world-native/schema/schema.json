@@ -2442,11 +2442,7 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 2,
-      "absence": {
-        "value": "empty",
-        "meaning": "No guild or membership exists for this key."
-      }
+      "valueLength": 2
     },
     {
       "name": "GuildMember",
@@ -2473,11 +2469,7 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 1,
-      "absence": {
-        "value": "empty",
-        "meaning": "No guild or membership exists for this key."
-      }
+      "valueLength": 1
     },
     {
       "name": "GuildWhitelist",
@@ -2509,11 +2501,7 @@
         }
       ],
       "keyLength": 3,
-      "valueLength": 1,
-      "absence": {
-        "value": "false",
-        "meaning": "The player is not whitelisted."
-      }
+      "valueLength": 1
     },
     {
       "name": "ArtificerCost",
@@ -2570,11 +2558,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": null,
-      "absence": {
-        "value": "empty",
-        "meaning": "No result batch has been recorded for this game."
-      }
+      "valueLength": null
     },
     {
       "name": "FaithRules",
@@ -2725,11 +2709,6 @@
       ],
       "keyLength": 1,
       "valueLength": 4,
-      "absence": {
-        "parent": "RelicRules",
-        "value": "empty",
-        "meaning": "This game uses interval relic chests."
-      },
       "derivedFrom": "preset"
     },
     {
@@ -3304,6 +3283,10 @@
       "valueLength": 15,
       "absence": {
         "parent": "Structure",
+        "parentKeys": {
+          "game_id": "game_id",
+          "entity_id": "structure_id"
+        },
         "value": "zero",
         "meaning": "No troops or resurrection delay in this guard slot."
       },
@@ -3342,8 +3325,13 @@
       "keyLength": 2,
       "valueLength": 1,
       "absence": {
+        "parent": "Structure",
         "value": "zero",
-        "meaning": "The village has not been successfully raided."
+        "meaning": "The village has not been successfully raided.",
+        "parentKeys": {
+          "game_id": "game_id",
+          "entity_id": "entity_id"
+        }
       },
       "observation": {
         "domain": "combat",
@@ -3883,7 +3871,10 @@
       "absence": {
         "parent": "SettlementRules",
         "value": "zero",
-        "meaning": "No players have settled or registered realms in this game."
+        "meaning": "No players have settled or registered realms in this game.",
+        "parentKeys": {
+          "game_id": "game_id"
+        }
       },
       "observation": {
         "domain": "realm/blitz",
@@ -4375,7 +4366,11 @@
       "absence": {
         "parent": "ResourceWeight",
         "value": "zero",
-        "meaning": "Zero balance or inactive production while the resource owner exists; no resource owner after its weight row is deleted."
+        "meaning": "Zero balance or inactive production while the resource owner exists; no resource owner after its weight row is deleted.",
+        "parentKeys": {
+          "game_id": "game_id",
+          "entity_id": "entity_id"
+        }
       },
       "observation": {
         "domain": "resources",
@@ -4436,7 +4431,11 @@
       "absence": {
         "parent": "ResourceWeight",
         "value": "zero",
-        "meaning": "Zero balance or inactive production while the resource owner exists; no resource owner after its weight row is deleted."
+        "meaning": "Zero balance or inactive production while the resource owner exists; no resource owner after its weight row is deleted.",
+        "parentKeys": {
+          "game_id": "game_id",
+          "entity_id": "entity_id"
+        }
       },
       "observation": {
         "domain": "resources",
@@ -4552,8 +4551,13 @@
       "keyLength": 2,
       "valueLength": 6,
       "absence": {
+        "parent": "Structure",
         "value": "zero",
-        "meaning": "No production bonus has been granted to this structure."
+        "meaning": "No production bonus has been granted to this structure.",
+        "parentKeys": {
+          "game_id": "game_id",
+          "entity_id": "entity_id"
+        }
       },
       "observation": {
         "domain": "production",
@@ -4698,10 +4702,6 @@
       ],
       "keyLength": 4,
       "valueLength": null,
-      "absence": {
-        "value": "empty",
-        "meaning": "No resources queued for this entity, day and slot."
-      },
       "observation": {
         "domain": "resources",
         "fields": {
@@ -4754,11 +4754,6 @@
       ],
       "keyLength": 1,
       "valueLength": null,
-      "absence": {
-        "parent": "GameRelease",
-        "value": "empty",
-        "meaning": "The verified preset has no board section; this game uses base building rates and grants without board bonuses or demolition refunds."
-      },
       "derivedFrom": "preset"
     },
     {
@@ -4999,7 +4994,11 @@
       "absence": {
         "parent": "Hyperstructure",
         "value": "zero",
-        "meaning": "No resource contribution to this hyperstructure."
+        "meaning": "No resource contribution to this hyperstructure.",
+        "parentKeys": {
+          "game_id": "game_id",
+          "entity_id": "entity_id"
+        }
       }
     },
     {
@@ -5039,12 +5038,7 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": null,
-      "absence": {
-        "parent": "Hyperstructure",
-        "value": "empty",
-        "meaning": "No shareholder allocation or accrued share points."
-      }
+      "valueLength": null
     },
     {
       "name": "HyperstructureRules",
@@ -5219,10 +5213,6 @@
       ],
       "keyLength": 2,
       "valueLength": 5,
-      "absence": {
-        "value": "empty",
-        "meaning": "The structure has no faith allegiance."
-      },
       "observation": {
         "domain": "faith",
         "fields": {
@@ -5816,6 +5806,10 @@
       ],
       "keyLength": 2,
       "valueLength": 1,
+      "absence": {
+        "value": "zero",
+        "meaning": "The chain writes a player's points on their first award; no row means the player has scored nothing."
+      },
       "observation": {
         "domain": "points",
         "fields": {
@@ -5880,7 +5874,6 @@
       "keyLength": 2,
       "valueLength": 1,
       "absence": {
-        "parent": "GameRegistry",
         "value": "zero",
         "meaning": "After a complete actor snapshot, no row means no action was consumed for this player; next_nonce is zero."
       }
@@ -11843,5 +11836,5 @@
       ]
     }
   },
-  "identity": "ca4f36bd8251100d60cd1bc3ccc1f5273a9a030585ba3bc042a5f45af23e472a"
+  "identity": "edd2e3ac0474c1732f3f3321d39daa299e6c2b610b3e1e6b88fb72e369858c24"
 }

@@ -733,15 +733,10 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No resource contribution to this hyperstructure.",
       };
-    if (row.name === "HyperstructureShares")
-      row.absence = {
-        parent: "Hyperstructure",
-        value: "empty",
-        meaning: "No shareholder allocation or accrued share points.",
-      };
     if (row.name === "Guard")
       row.absence = {
         parent: "Structure",
+        parentKeys: { entity_id: "structure_id" },
         value: "zero",
         meaning: "No troops or resurrection delay in this guard slot.",
       };
@@ -751,37 +746,30 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No players have settled or registered realms in this game.",
       };
-    if (row.name === "BoardRules")
-      row.absence = {
-        parent: "GameRelease",
-        value: "empty",
-        meaning:
-          "The verified preset has no board section; this game uses base building rates and grants without board bonuses or demolition refunds.",
-      };
-    if (row.name === "ChestRules")
-      row.absence = { parent: "RelicRules", value: "empty", meaning: "This game uses interval relic chests." };
     if (row.name === "ChestPity" || row.name === "ChestTokens")
-      row.absence = { value: "zero", meaning: "No chests have advanced this counter." };
+      row.absence = {
+        value: "zero",
+        meaning: "No chests have advanced this counter.",
+      };
     if (row.name === "VillageRaid")
-      row.absence = { value: "zero", meaning: "The village has not been successfully raided." };
+      row.absence = { parent: "Structure", value: "zero", meaning: "The village has not been successfully raided." };
     if (row.name === "ActionNonce")
       row.absence = {
-        parent: "GameRegistry",
         value: "zero",
         meaning:
           "After a complete actor snapshot, no row means no action was consumed for this player; next_nonce is zero.",
       };
-    if (row.name === "Guild" || row.name === "GuildMember")
-      row.absence = { value: "empty", meaning: "No guild or membership exists for this key." };
-    if (row.name === "GuildWhitelist") row.absence = { value: "false", meaning: "The player is not whitelisted." };
-    if (row.name === "BlitzResult")
-      row.absence = { value: "empty", meaning: "No result batch has been recorded for this game." };
-    if (row.name === "FaithfulStructure")
-      row.absence = { value: "empty", meaning: "The structure has no faith allegiance." };
+    if (row.name === "PlayerPoints")
+      row.absence = {
+        value: "zero",
+        meaning: "The chain writes a player's points on their first award; no row means the player has scored nothing.",
+      };
     if (row.name === "ProductionBonus")
-      row.absence = { value: "zero", meaning: "No production bonus has been granted to this structure." };
-    if (row.name === "ResourceArrival")
-      row.absence = { value: "empty", meaning: "No resources queued for this entity, day and slot." };
+      row.absence = {
+        parent: "Structure",
+        value: "zero",
+        meaning: "No production bonus has been granted to this structure.",
+      };
     const observation = behaviouralFacts[row.name];
     return observation ? { ...row, observation } : row;
   };

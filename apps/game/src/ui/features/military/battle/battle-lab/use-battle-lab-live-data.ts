@@ -77,7 +77,9 @@ export const useBattleLabLiveData = (
 
     if (structure) {
       attackerType = "structure";
-      guards = getGuardsByStructure(structure, store)
+      const knownGuards = getGuardsByStructure(structure, store);
+      if (!knownGuards) return null;
+      guards = knownGuards
         .filter((guard) => guard.troops.count > 0n)
         .toSorted((a, b) => a.slot - b.slot)
         .map((guard) => {

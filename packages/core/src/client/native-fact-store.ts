@@ -5,7 +5,29 @@ import {
   type NativeModelName,
   type NativeRows,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
-import type { GameSyncEvent, GameSyncFact, GameSyncRetainedKeys, GameSyncStore } from "../sync/game-sync-types";
+import type {
+  GameSyncEvent,
+  GameSyncFact,
+  GameSyncRetainedKeys,
+  GameSyncSnapshotState,
+  GameSyncStore,
+} from "../sync/game-sync-types";
+import { readExpeditionRules } from "../utils/expeditions";
+import {
+  deriveGameSyncScope,
+  scopeInputKeys,
+  rowInGameSyncScope,
+  isExpeditionScopedModel,
+  type GameSyncScope,
+} from "../sync/model-manifest";
+
+export type NativeFactResult<Row> = { known: Row; unknown?: never } | { known?: never; unknown: string };
+
+interface DeclaredAbsence {
+  value: string;
+  parent?: NativeModelName;
+  parentKeys?: Readonly<Record<string, string>>;
+}
 
 type Fact = NativeRows[NativeModelName];
 type StoredFact = { readonly row: Fact; readonly wireId: string };
@@ -28,6 +50,7 @@ const definitions = nativeFactModels as Record<
     keys: readonly string[];
     scope: "game" | "deployment";
     fields: Record<string, WireType>;
+    absence?: DeclaredAbsence;
   }
 >;
 const decoders = new Map<NativeModelName, Decoder>(
@@ -39,6 +62,24 @@ const decoders = new Map<NativeModelName, Decoder>(
 
 /** Herald is the only writer. Subscribers see all rows from a transaction before its notification. */
 export class NativeFactStore implements GameSyncStore {
+  private snapshot?: GameSyncSnapshotState;
+  private scopeCache?: { revision: number; result: NativeFactResult<GameSyncScope> };
+
+  /** Empty change lists notify readers that snapshot/clock gates changed, without inventing a fact. */
+  setSnapshot(state: GameSyncSnapshotState): void {
+    const before = this.snapshot;
+    if (
+      before &&
+      before.gameId === state.gameId &&
+      before.complete === state.complete &&
+      before.actor === state.actor &&
+      before.timestamp === state.timestamp
+    )
+      return;
+    this.snapshot = { ...state };
+    this.revision++;
+    for (const listener of this.listeners) listener([]);
+  }
   private revision = 0;
   getRevision = (): number => this.revision;
 
@@ -59,6 +100,76 @@ export class NativeFactStore implements GameSyncStore {
     const row = this.get(model, keys);
     if (!row) throw new Error(`Native ${model} is not synchronized`);
     return row;
+  }
+
+  requireOrAbsent<M extends NativeModelName>(model: M, keys: NativeKeys[M]): NativeFactResult<NativeRows[M]> {
+    const present = this.get(model, keys);
+    if (present) return { known: present };
+    const definition = definitions[model];
+    const absence = definition.absence;
+    if (absence?.value !== "zero") return { unknown: `UNDECLARED_ABSENCE: ${model}` };
+    const unknown = this.absenceUnknown(model, keys, absence);
+    if (unknown) return { unknown };
+    return {
+      known: decoders.get(model)!({
+        ...Object.fromEntries(Object.entries(definition.fields).map(([field, type]) => [field, zeroValue(type)])),
+        ...keys,
+      }) as NativeRows[M],
+    };
+  }
+
+  /** Derived once per fact/gate revision, through Herald's reader and scope rule. */
+  subscriptionScope(): NativeFactResult<GameSyncScope> {
+    if (this.scopeCache?.revision === this.revision) return this.scopeCache.result;
+    const result = this.deriveSubscriptionScope();
+    this.scopeCache = { revision: this.revision, result };
+    return result;
+  }
+
+  private deriveSubscriptionScope(): NativeFactResult<GameSyncScope> {
+    const snapshot = this.snapshot;
+    if (!snapshot?.complete) return { unknown: "INCOMPLETE_SNAPSHOT" };
+    if (snapshot.actor === undefined) return { unknown: "INCOMPLETE_ACTOR_SNAPSHOT" };
+    try {
+      const rules = readExpeditionRules(this, snapshot.gameId);
+      if (rules && snapshot.timestamp === undefined) return { unknown: "UNKNOWN_SCOPE_CLOCK" };
+      return {
+        known: deriveGameSyncScope(
+          snapshot.actor ?? undefined,
+          snapshot.timestamp ?? 0,
+          rules,
+          (model, spacing, keys) => {
+            const selected = new Set(keys);
+            return [...this.inGame(model, snapshot.gameId)]
+              .filter((row) => scopeInputKeys(model, row, spacing).some((key) => selected.has(key)))
+              .map((row) => ({ value: row }));
+          },
+        ),
+      };
+    } catch (error) {
+      return { unknown: `INCOMPLETE_SCOPE: ${error instanceof Error ? error.message : String(error)}` };
+    }
+  }
+
+  private absenceUnknown(model: NativeModelName, keys: object, absence: DeclaredAbsence): string | undefined {
+    const key = keys as Record<string, number | bigint>;
+    const snapshot = this.snapshot;
+    if (!snapshot?.complete || snapshot.gameId !== key.game_id) return `INCOMPLETE_SNAPSHOT: ${model}`;
+    if (snapshot.actor === undefined) return `INCOMPLETE_ACTOR_SNAPSHOT: ${model}`;
+    // Actor/shared scopes do not use expedition time or facts.
+    const result = isExpeditionScopedModel(model)
+      ? this.subscriptionScope()
+      : { known: { actor: snapshot.actor ?? undefined } };
+    if (!result.known) return result.unknown;
+    if (!rowInGameSyncScope(model, key, result.known)) return `OUTSIDE_SNAPSHOT_SCOPE: ${model}`;
+    if (absence.parent) {
+      const parentKeys = Object.fromEntries(
+        Object.entries(absence.parentKeys!).map(([parent, child]) => [parent, key[child]]),
+      );
+      if (!this.get(absence.parent, parentKeys as NativeKeys[typeof absence.parent]))
+        return `UNKNOWN_PARENT: ${model} requires ${absence.parent}`;
+    }
+    return undefined;
   }
 
   *rows<M extends NativeModelName>(model: M): IterableIterator<NativeRows[M]> {
@@ -280,6 +391,15 @@ function factKey(model: NativeModelName, keys: object): string {
       keyParts((keys as Record<string, unknown>)[field], definitions[model].fields[field], `${model}.${field}`),
     )
     .join(":");
+}
+
+function zeroValue(type: WireType): unknown {
+  if (type === "boolean") return false;
+  if (typeof type === "string") return 0;
+  if (Array.isArray(type)) return [];
+  if ("option" in type) return null;
+  if ("enum" in type) return (type.enum as readonly string[])[0];
+  return Object.fromEntries(Object.entries(type).map(([field, member]) => [field, zeroValue(member as WireType)]));
 }
 
 function keyParts(value: unknown, type: WireType, path: string): string[] {

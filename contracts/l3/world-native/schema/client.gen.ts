@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "ca4f36bd8251100d60cd1bc3ccc1f5273a9a030585ba3bc042a5f45af23e472a";
+export const nativeFactSchemaIdentity = "edd2e3ac0474c1732f3f3321d39daa299e6c2b610b3e1e6b88fb72e369858c24";
 export const nativeRuleConstants = {
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
@@ -390,6 +390,10 @@ export const nativeFactModels = {
       "player": "felt",
       "depth": "u8",
       "count": "u16"
+    },
+    "absence": {
+      "value": "zero",
+      "meaning": "No chests have advanced this counter."
     }
   },
   "ChestTokens": {
@@ -404,6 +408,10 @@ export const nativeFactModels = {
       "player": "felt",
       "epoch": "u64",
       "count": "u16"
+    },
+    "absence": {
+      "value": "zero",
+      "meaning": "No chests have advanced this counter."
     }
   },
   "ChestReward": {
@@ -616,6 +624,15 @@ export const nativeFactModels = {
         "battle_cooldown_end": "u32"
       },
       "destroyed_tick": "u32"
+    },
+    "absence": {
+      "parent": "Structure",
+      "parentKeys": {
+        "game_id": "game_id",
+        "entity_id": "structure_id"
+      },
+      "value": "zero",
+      "meaning": "No troops or resurrection delay in this guard slot."
     }
   },
   "VillageRaid": {
@@ -628,6 +645,15 @@ export const nativeFactModels = {
       "game_id": "u32",
       "entity_id": "u32",
       "last_tick": "u64"
+    },
+    "absence": {
+      "parent": "Structure",
+      "value": "zero",
+      "meaning": "The village has not been successfully raided.",
+      "parentKeys": {
+        "game_id": "game_id",
+        "entity_id": "entity_id"
+      }
     }
   },
   "BitcoinMine": {
@@ -831,6 +857,14 @@ export const nativeFactModels = {
       "game_id": "u32",
       "registered": "u16",
       "realm_count": "u16"
+    },
+    "absence": {
+      "parent": "SettlementRules",
+      "value": "zero",
+      "meaning": "No players have settled or registered realms in this game.",
+      "parentKeys": {
+        "game_id": "game_id"
+      }
     }
   },
   "SettlementPool": {
@@ -1058,6 +1092,15 @@ export const nativeFactModels = {
       "entity_id": "u32",
       "resource_type": "u8",
       "balance": "u128"
+    },
+    "absence": {
+      "parent": "ResourceWeight",
+      "value": "zero",
+      "meaning": "Zero balance or inactive production while the resource owner exists; no resource owner after its weight row is deleted.",
+      "parentKeys": {
+        "game_id": "game_id",
+        "entity_id": "entity_id"
+      }
     }
   },
   "ResourceProduction": {
@@ -1075,6 +1118,15 @@ export const nativeFactModels = {
       "production_rate": "u64",
       "output_amount_left": "u128",
       "last_updated_at": "u32"
+    },
+    "absence": {
+      "parent": "ResourceWeight",
+      "value": "zero",
+      "meaning": "Zero balance or inactive production while the resource owner exists; no resource owner after its weight row is deleted.",
+      "parentKeys": {
+        "game_id": "game_id",
+        "entity_id": "entity_id"
+      }
     }
   },
   "ProductionReceiver": {
@@ -1107,6 +1159,15 @@ export const nativeFactModels = {
       "incr_resource_rate_end_tick": "u32",
       "incr_labor_rate_end_tick": "u32",
       "incr_troop_rate_end_tick": "u32"
+    },
+    "absence": {
+      "parent": "Structure",
+      "value": "zero",
+      "meaning": "No production bonus has been granted to this structure.",
+      "parentKeys": {
+        "game_id": "game_id",
+        "entity_id": "entity_id"
+      }
     }
   },
   "ProductionRecipe": {
@@ -1289,6 +1350,15 @@ export const nativeFactModels = {
       "entity_id": "u32",
       "resource_type": "u8",
       "contributed": "u128"
+    },
+    "absence": {
+      "parent": "Hyperstructure",
+      "value": "zero",
+      "meaning": "No resource contribution to this hyperstructure.",
+      "parentKeys": {
+        "game_id": "game_id",
+        "entity_id": "entity_id"
+      }
     }
   },
   "HyperstructureShares": {
@@ -1675,6 +1745,10 @@ export const nativeFactModels = {
       "game_id": "u32",
       "address": "felt",
       "points": "u128"
+    },
+    "absence": {
+      "value": "zero",
+      "meaning": "The chain writes a player's points on their first award; no row means the player has scored nothing."
     }
   },
   "PointsTotal": {
@@ -1697,6 +1771,10 @@ export const nativeFactModels = {
       "game_id": "u32",
       "actor": "felt",
       "next_nonce": "u64"
+    },
+    "absence": {
+      "value": "zero",
+      "meaning": "After a complete actor snapshot, no row means no action was consumed for this player; next_nonce is zero."
     }
   }
 } as const;

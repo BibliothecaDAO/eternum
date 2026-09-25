@@ -54,6 +54,7 @@ export interface GameSyncWriter {
 }
 
 export interface GameSyncSubscriptionHandlers {
+  onSnapshotState?: (state: GameSyncSnapshotState) => void | Promise<void>;
   /** A snapshot replaces every row of every model it lists; its models follow until onSnapshotEnd. */
   onSnapshotStart: () => void;
   onSnapshotModel: (model: string, facts: GameSyncFact[], progress: GameSyncSnapshotChunkProgress) => void;
@@ -94,7 +95,15 @@ export interface GameSyncTransaction {
   status: string;
 }
 
+export interface GameSyncSnapshotState {
+  gameId: number;
+  complete: boolean;
+  actor: string | null | undefined;
+  timestamp: number | undefined;
+}
+
 export interface GameSyncStore {
+  setSnapshot?: (state: GameSyncSnapshotState) => void;
   applyFacts: (facts: readonly GameSyncFact[], retain?: GameSyncRetainedKeys) => Promise<void> | void;
   applyEvent: (event: GameSyncEvent) => Promise<void> | void;
 }
