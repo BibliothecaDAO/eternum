@@ -21,7 +21,7 @@ export const Chip = ({
   value: string;
   /** The dock's card-scale chip. */
   small?: boolean;
-  tone?: "gain" | "loss" | "price";
+  tone?: "gain" | "loss" | "lit" | "price";
   /** A mark after the number, such as a troop's tier. */
   badge?: ReactNode;
 }) => (
@@ -36,12 +36,12 @@ export const Chip = ({
   </span>
 );
 
-const TIER_NUMERALS = ["", "I", "II", "III"] as const;
+const TIER_NUMERALS = ["", "I", "II", "III", "IV"] as const;
 const TROOP_TIERS: Record<TroopTier, 1 | 2 | 3> = { [TroopTier.T1]: 1, [TroopTier.T2]: 2, [TroopTier.T3]: 3 };
 
-/** A tier as its banner, I, II or III: a troop's beside its count, a building's under its medallion. */
-export const TierBanner = ({ tier, large = false }: { tier: 1 | 2 | 3; large?: boolean }) => (
-  <span aria-hidden data-tier={tier} className={cn("frontier-tier", large && "frontier-tier-lg")}>
+/** A tier as its banner, I to IV: a troop's beside its count, a building's or the castle's under its art. */
+export const TierBanner = ({ tier, large = false }: { tier: 1 | 2 | 3 | 4; large?: boolean }) => (
+  <span aria-hidden data-tier={Math.min(tier, 3)} className={cn("frontier-tier", large && "frontier-tier-lg")}>
     {TIER_NUMERALS[tier]}
   </span>
 );

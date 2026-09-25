@@ -6,16 +6,18 @@ import { useSelectedTileDetails } from "@/ui/features/world/components/bottom-ri
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildSheet, useOpenPlot } from "./build/build-sheet";
 import { TileCard, useSelectedSite } from "./sites/tile-card";
+import { CastleUpgrade, useKeepSelected } from "./upgrade/castle-upgrade";
 
 /**
  * What the player tapped, with its actions: a sheet over the foot of a phone held upright, a panel down the right
- * edge otherwise. An open plot of the realm is the build sheet's, a standing site the tile card's. Nothing selected,
- * or a selection with nothing to show, no sheet.
+ * edge otherwise. An open plot of the realm is the build sheet's, the keep the upgrade sheet's, a standing site the
+ * tile card's. Nothing selected, or a selection with nothing to show, no sheet.
  */
 export const FrontierSelectionSheet = ({ realm }: { realm: NativeRows["Structure"] | null }) => {
   const details = useSelectedTileDetails();
   const openPlot = useOpenPlot(realm);
   const site = useSelectedSite();
+  const keep = useKeepSelected(realm);
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const close = () => {
@@ -24,6 +26,7 @@ export const FrontierSelectionSheet = ({ realm }: { realm: NativeRows["Structure
   };
   if (realm && openPlot) return <BuildSheet realm={realm} plot={openPlot} onClose={close} />;
   if (site) return <TileCard selected={site} onClose={close} />;
+  if (realm && keep) return <CastleUpgrade realm={realm} onClose={close} />;
   if (!details) return null;
 
   return (

@@ -16,6 +16,7 @@ import { type ReactNode, useRef, useState } from "react";
 import { ChestLab } from "./chest-lab";
 import { PickLab } from "./pick-lab";
 import { ResearchLab } from "./research-lab";
+import { UpgradeLab } from "./upgrade-lab";
 import { SiteLab } from "./site-lab";
 
 const LORDS_BY_INTENSITY = [100, 400, 1_500, 6_000] as const;
@@ -100,6 +101,11 @@ export const MotionLabView = () => {
         <section className="sm:col-span-2 lg:col-span-3">
           <Panel title="research · tap a node, then its price">
             <ResearchLab />
+          </Panel>
+        </section>
+        <section className="sm:col-span-2 lg:col-span-3">
+          <Panel title="upgrade · a farm on the marked plot">
+            <UpgradeLab />
           </Panel>
         </section>
       </div>

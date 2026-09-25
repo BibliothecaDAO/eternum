@@ -544,7 +544,7 @@ html.frontier-type .frontier-chip-number {
   font-size: 17px;
   color: var(--frontier-parchment);
 }
-/* A number that is good or bad news (mockup 2's wheat), and the price a build or a muster pays. */
+/* A number that is good or bad news (mockup 2's wheat), the one an upgrade reaches, and the price it pays. */
 html.frontier-type .frontier-chip[data-tone="gain"] {
   border-color: var(--frontier-stamina);
 }
@@ -556,6 +556,10 @@ html.frontier-type .frontier-chip[data-tone="loss"] {
 }
 html.frontier-type .frontier-chip[data-tone="loss"] .frontier-chip-number {
   color: #ff8a73;
+}
+html.frontier-type .frontier-chip[data-tone="lit"] {
+  border-color: var(--frontier-hot);
+  box-shadow: 0 0 12px rgba(246, 172, 29, 0.35);
 }
 html.frontier-type .frontier-chip[data-tone="price"] {
   background: linear-gradient(180deg, #f7b93a, #d98a00);
