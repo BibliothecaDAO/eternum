@@ -1,57 +1,25 @@
 import { expect, it } from "vitest";
-import { readPointsRegistration } from "@bibliothecadao/eternum/game-sync";
+import { createNativeHistoryCodec } from "./native/history";
 import { PointsLeaderboard } from "./points-leaderboard";
-// Herald game 28, block 365589: captured from the public history endpoint on 2026-09-09.
-const exploration = {
-  block_number: 365589,
-  event_index: 19,
-  game_id: "28",
-  model: "StoryEvent",
-  transaction_hash: "0x36f1616130f60083ff3ec01564e7c6a9b242c04893bb4848f8bd8ba18730e0c",
-  transaction_index: 0,
-  value: {
-    id: "0x25925",
-    owner: "0x224f49ea3c0fd299a5a2163624955eb7725c030c2dd90caafd27f0db53d7f09",
-    story: {
-      PointsRegisteredStory: {
-        points: "0x4c4b40",
-        activity: "Exploration",
-        owner_address: "0x224f49ea3c0fd299a5a2163624955eb7725c030c2dd90caafd27f0db53d7f09",
-      },
-    },
-    game_id: "0x1c",
-    tx_hash: "0x36f1616130f60083ff3ec01564e7c6a9b242c04893bb4848f8bd8ba18730e0c",
-    entity_id: "0x2584a",
-    timestamp: "0x6aa11600",
-  },
-};
 
-it("folds a real history item and every contract activity into player columns", () => {
+const { readPoints } = createNativeHistoryCodec({ events: [] } as never);
+const PLAYER = "0x224f49ea3c0fd299a5a2163624955eb7725c030c2dd90caafd27f0db53d7f09";
+/** A PointsAwarded row as the chain emits it: five points for one activity. */
+const award = (activity: string) => ({ player: PLAYER, activity, points: "0x4c4b40" });
+
+it("folds every native points activity into the player's columns", () => {
   const board = new PointsLeaderboard();
-  for (const activity of [
-    "Exploration",
-    "OpenRelicChest",
-    "HyperStructureBanditsDefeat",
-    "OtherStructureBanditsDefeat",
-    "HyperstructureSharePoints",
-  ]) {
-    const value = {
-      ...exploration.value,
-      story: { PointsRegisteredStory: { ...exploration.value.story.PointsRegisteredStory, activity } },
-    };
-    board.accept(exploration.game_id, readPointsRegistration(value)!);
+  for (const activity of ["Exploration", "RelicChest", "HyperstructureCapture", "StructureCapture", "Hyperstructure"]) {
+    board.accept("28", readPoints(award(activity))!);
   }
-  const [[address, breakdown]] = [...board.activity("0x1c")];
-  expect(address).toBe(exploration.value.owner);
+  const [[address, breakdown]] = [...board.activity("28")];
+  expect(address).toBe(PLAYER);
   expect(Object.values(breakdown)).toEqual(Array.from({ length: 5 }, () => ({ count: 1, points: 5 })));
   expect(board.activity("29").size).toBe(0);
   breakdown.exploration.points = 999;
   expect(board.activity("28").get(address)?.exploration.points).toBe(5);
 });
-it("rejects unknown variants instead of dropping points", () => {
-  expect(() =>
-    readPointsRegistration({
-      story: { PointsRegisteredStory: { ...exploration.value.story.PointsRegisteredStory, activity: "NewActivity" } },
-    }),
-  ).toThrow("Unknown points activity: NewActivity");
+
+it("rejects unknown activities instead of dropping points", () => {
+  expect(() => readPoints(award("NewActivity"))).toThrow("Unknown native point activity NewActivity");
 });

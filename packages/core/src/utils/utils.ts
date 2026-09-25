@@ -10,13 +10,6 @@ export const toHexString = (num: bigint) => {
   return `0x${num.toString(16)}`;
 };
 
-export enum TimeFormat {
-  D = 1,
-  H = 2,
-  M = 4,
-  S = 8,
-}
-
 export const formatTime = (seconds: number) => {
   const days = Math.floor(seconds / (24 * 60 * 60));
   const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
@@ -57,8 +50,6 @@ export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMining
   [ResourcesIds.AncientFragment]: ResourceMiningTypes.Mine,
 };
 
-export const toInteger = (value: number): number => Math.floor(value);
-
 export const currentTickCount = (time: number) => {
   const configManager = ClientConfigManager.instance();
   const tickIntervalInSeconds = configManager.getTick(TickIds.Armies) || 1;
@@ -83,16 +74,8 @@ export const nanogramToKg = (value: number) => {
   return value / 10 ** 12;
 };
 
-export const kgToNanogram = (value: number) => {
-  return value * 10 ** 12;
-};
-
 export const gramToKg = (value: number) => {
   return value / 1000;
-};
-
-export const kgToGram = (value: number) => {
-  return value * 1000;
 };
 
 export function multiplyByPrecision(value: number): number {

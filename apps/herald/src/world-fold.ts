@@ -358,13 +358,6 @@ export class WorldFold {
       .sort(compareEntityKeys);
   }
 
-  public gameIds(): readonly string[] {
-    if (!this.rowsByModel.has("GameRegistry")) return [];
-    return [...this.materializedRows("GameRegistry").values()]
-      .map((row) => scalarGameId(row.key, "GameRegistry"))
-      .sort((left, right) => Number(left) - Number(right));
-  }
-
   public snapshot(
     gameId: string | number | bigint,
     confirmedBlock: number,

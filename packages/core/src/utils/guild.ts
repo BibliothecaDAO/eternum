@@ -46,35 +46,10 @@ export const formatGuildMembers = (
     isGuildMaster: member.actor === member.guild_id,
   }));
 
-export const getGuildMember = (
-  playerAddress: ContractAddress,
-  store: NativeFactStore,
-  playerName: PlayerNameResolver,
-): GuildMemberInfo | undefined => {
-  const member = store.get("GuildMember", { game_id: configManager.getActiveGameId(), actor: playerAddress });
-  return member ? formatGuildMembers([member], playerAddress, playerName)[0] : undefined;
-};
-
 export const getGuildFromPlayerAddress = (
   playerAddress: ContractAddress,
   store: NativeFactStore,
 ): GuildInfo | undefined => {
   const member = store.get("GuildMember", { game_id: configManager.getActiveGameId(), actor: playerAddress });
   return member ? getGuild(member.guild_id, playerAddress, store) : undefined;
-};
-
-export const getGuildMembersFromPlayerAddress = (
-  playerAddress: ContractAddress,
-  store: NativeFactStore,
-  playerName: PlayerNameResolver,
-): GuildMemberInfo[] => {
-  const game = configManager.getActiveGameId();
-  const member = store.get("GuildMember", { game_id: game, actor: playerAddress });
-  return member
-    ? formatGuildMembers(
-        [...store.inGame("GuildMember", game)].filter((row) => row.guild_id === member.guild_id),
-        playerAddress,
-        playerName,
-      )
-    : [];
 };

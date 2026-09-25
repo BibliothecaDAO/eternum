@@ -1,25 +1,5 @@
 import type { IOrder } from "../types";
 
-export const ORDER_NAME_DICT: { [key: number]: string } = {
-  0: "gods",
-  1: "giants",
-  2: "perfection",
-  3: "rage",
-  4: "fox",
-  5: "twins",
-  6: "fury",
-  7: "reflection",
-  8: "detection",
-  9: "skill",
-  10: "brilliance",
-  11: "protection",
-  12: "power",
-  13: "titans",
-  14: "vitriol",
-  15: "anger",
-  16: "enlightenment",
-};
-
 export const orders: IOrder[] = [
   {
     orderId: 0,
@@ -124,7 +104,3 @@ export const orders: IOrder[] = [
     color: "#1380FF",
   },
 ];
-
-export function getOrderName(orderId: number): string {
-  return orders[orderId - 1]?.orderName;
-}

@@ -39,20 +39,7 @@ it("accepts bounded display envelopes and rejects expired, foreign, oversized or
   }
 });
 
-it("gives mirrored battle copies one ID and separates identical battles in the same transaction", () => {
-  const base = "story:v1:madara:0x123:0x7:0xabc:";
-  const payload = { attacker_id: 11, defender_id: 22, attacker_owner_address: "0x1", defender_owner_address: "0x2" };
-  const attacker = { entity_id: 11, owner: "0x01" },
-    defender = { entity_id: 22, owner: "0x02" };
-  const first = logicalStoryIdentity(base + "0x64", "BattleStory", attacker, payload);
-  expect(logicalStoryIdentity(base + "0x65", "BattleStory", defender, payload)).toBe(first);
-  expect(logicalStoryIdentity(base + "0x66", "BattleStory", attacker, payload)).not.toBe(first);
-  expect(() => logicalStoryIdentity(base + "0x65", "BattleStory", { entity_id: 99, owner: "0x02" }, payload)).toThrow(
-    "Ambiguous",
-  );
-});
-
-it("also groups the two delayed transfer records without collapsing unrelated transfers", () => {
+it("groups the two delayed transfer records without collapsing unrelated transfers", () => {
   const payload = {
     transfer_type: { Delayed: {} },
     from_entity_id: 11,
@@ -60,9 +47,16 @@ it("also groups the two delayed transfer records without collapsing unrelated tr
     from_entity_owner_address: "0x1",
     to_entity_owner_address: "0x2",
   };
+  const first = logicalStoryIdentity("source:0x64", "ResourceTransferStory", { entity_id: 11, owner: "0x1" }, payload);
   expect(logicalStoryIdentity("source:0x65", "ResourceTransferStory", { entity_id: 22, owner: "0x2" }, payload)).toBe(
-    logicalStoryIdentity("source:0x64", "ResourceTransferStory", { entity_id: 11, owner: "0x1" }, payload),
+    first,
   );
+  expect(
+    logicalStoryIdentity("source:0x66", "ResourceTransferStory", { entity_id: 11, owner: "0x1" }, payload),
+  ).not.toBe(first);
+  expect(() =>
+    logicalStoryIdentity("source:0x65", "ResourceTransferStory", { entity_id: 99, owner: "0x2" }, payload),
+  ).toThrow("Ambiguous");
   expect(
     logicalStoryIdentity("source:0x65", "ResourceTransferStory", {}, { ...payload, transfer_type: "Instant" }),
   ).toBe("source:0x65");

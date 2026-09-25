@@ -64,23 +64,3 @@ export const buildLandingLeaderboard = (
 
 const fetchLeaderboardSource = async (world: Shard, gameId: number) =>
   buildLandingLeaderboard((await fetchHeraldGameLeaderboard(world, gameId)).entries);
-
-export const fetchLandingLeaderboard = async (
-  world: Shard,
-  gameId: number,
-  limit: number = DEFAULT_LIMIT,
-  offset = 0,
-): Promise<LandingLeaderboardEntry[]> => {
-  if (limit <= 0) return [];
-  return (await fetchLeaderboardSource(world, gameId)).slice(Math.max(0, offset), Math.max(0, offset) + limit);
-};
-
-export const fetchLandingLeaderboardEntryByAddress = async (
-  world: Shard,
-  gameId: number,
-  playerAddress: string,
-): Promise<LandingLeaderboardEntry | null> => {
-  const address = normalizeLeaderboardAddress(playerAddress);
-  if (!address) return null;
-  return (await fetchLeaderboardSource(world, gameId)).find((entry) => entry.address === address) ?? null;
-};

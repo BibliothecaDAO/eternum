@@ -59,16 +59,6 @@ export const DEFAULT_PATH_CONFIG: PathRenderConfig = {
 };
 
 /**
- * Opacity values for different display states
- */
-export const PATH_OPACITY: Record<PathDisplayState, number> = {
-  selected: 0.8,
-  hover: 0.4,
-  moving: 0.6,
-  preview: 0.3,
-};
-
-/**
  * Create path segments from an array of world positions
  */
 export function createPathSegments(positions: Vector3[]): PathSegment[] {

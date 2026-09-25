@@ -126,7 +126,7 @@ export type WorldmapForceRefreshReason =
   | "reconnect"
   | "manager_recovery";
 
-export interface WorldmapRenderDurationStats {
+interface WorldmapRenderDurationStats {
   count: number;
   totalMs: number;
   maxMs: number;

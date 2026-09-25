@@ -106,17 +106,12 @@ export const setEntityNameLocalStorage = (entityId: ID, name: string) => {
   localStorage.setItem(`entity-name-${entityId}`, name);
 };
 
-export const deleteEntityNameLocalStorage = (entityId: ID) => {
-  localStorage.removeItem(`entity-name-${entityId}`);
-};
-
-export const getEntityNameFromLocalStorage = (entityId: ID) => {
+const getEntityNameFromLocalStorage = (entityId: ID) => {
   return localStorage.getItem(`entity-name-${entityId}`);
 };
 
 /** The name registration writes when the account has no username; every reader treats it as no name. */
 export const buildFallbackPlayerName = (address: string): string => `Player-${address.slice(-6)}`;
-export const isFallbackPlayerName = (name: string): boolean => /^Player-[0-9a-fA-F]{6}$/.test(name);
 
 /** The one display rule for a player: the resolved name, else the registration fallback, never an address. */
 export const displayPlayerName = (address: ContractAddress | string, name: string | null | undefined): string =>
@@ -128,10 +123,6 @@ export const displayPlayerName = (address: ContractAddress | string, name: strin
  * shows the fallback.
  */
 export type PlayerNameResolver = (address: ContractAddress | string) => string | null;
-
-export const getAddressFromStructureEntity = (entityId: ID, store: NativeFactStore): ContractAddress | undefined => {
-  return store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.owner;
-};
 
 export const getInternalAddressName = (address: string): string | undefined => {
   const normalizedAddress = BigInt(address).toString();

@@ -12,16 +12,6 @@ import {
 import { configManager } from "../managers";
 import { divideWithPrecision } from "./utils";
 
-export class Percentage {
-  static _100() {
-    return 10_000;
-  }
-
-  static get(value: number, numerator: number) {
-    return (value * numerator) / Percentage._100();
-  }
-}
-
 export interface Army {
   stamina: number;
   troopCount: number;
@@ -43,7 +33,7 @@ export interface CombatSimulationContext {
 }
 
 /** The faces of the die each side rolls in a dice battle. */
-export const COMBAT_DIE_FACES = 20;
+const COMBAT_DIE_FACES = 20;
 
 type BattleSimulation = ReturnType<CombatSimulator["simulateBattle"]>;
 

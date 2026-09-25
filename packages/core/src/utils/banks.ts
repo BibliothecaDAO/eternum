@@ -4,7 +4,7 @@ import { configManager } from "../managers/config-manager";
 import { structureMapPosition } from "./expeditions";
 import { calculateDistance } from "./utils";
 
-export type ClosestBank = { bankId: ID; distance: number; travelTime: number };
+type ClosestBank = { bankId: ID; distance: number; travelTime: number };
 
 export const getClosestBank = (entityId: ID, store: NativeFactStore): ClosestBank | undefined => {
   const game = configManager.getActiveGameId();

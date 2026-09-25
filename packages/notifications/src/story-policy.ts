@@ -1,6 +1,6 @@
 import { NOTIFICATION_LEVELS, type NotificationLevel } from "./preferences";
 
-type RecipientSource = "owner" | "explorer" | "battle" | "transfer" | "nativeBattle" | "raid";
+type RecipientSource = "owner" | "transfer" | "nativeBattle" | "raid";
 type StoryRule = { level: Exclude<NotificationLevel, "off">; recipients: RecipientSource } | { excluded: string };
 
 // Recipient fields are emitted with the action. Never resolve them from present-day structure ownership.
@@ -24,32 +24,21 @@ const STORY_RULES = {
 
   BattleEvent: { level: "important", recipients: "nativeBattle" },
   RaidEvent: { level: "important", recipients: "raid" },
-  BattleStory: { level: "important", recipients: "battle" },
   RealmCreatedStory: { level: "standard", recipients: "owner" },
   BuildingPlacementStory: { level: "standard", recipients: "owner" },
   StructureLevelUpStory: { level: "standard", recipients: "owner" },
-  ExplorerExtractRewardStory: { level: "standard", recipients: "explorer" },
   ResourceReceiveArrivalStory: { level: "standard", recipients: "owner" },
   ProductionStory: { level: "all", recipients: "owner" },
   BuildingPaymentStory: { level: "all", recipients: "owner" },
   ResourceTransferStory: { level: "all", recipients: "transfer" },
   ResourceBurnStory: { level: "all", recipients: "owner" },
-  ExplorerMoveStory: { level: "all", recipients: "explorer" },
   ExplorerCreateStory: { level: "all", recipients: "owner" },
   ExplorerAddStory: { level: "all", recipients: "owner" },
   ExplorerDeleteStory: { level: "all", recipients: "owner" },
-  ExplorerExplorerSwapStory: { level: "all", recipients: "owner" },
-  ExplorerGuardSwapStory: { level: "all", recipients: "owner" },
-  GuardExplorerSwapStory: { level: "all", recipients: "owner" },
   GuardAddStory: { level: "all", recipients: "owner" },
   GuardDeleteStory: { level: "all", recipients: "owner" },
   TroopsTransferred: { level: "all", recipients: "owner" },
-  PointsRegisteredStory: { excluded: "Leaderboard activity" },
-  FaithPledgedStory: { excluded: "Recipient and notification UX deferred" },
-  FaithRemovedStory: { excluded: "Recipient and notification UX deferred" },
   FaithPointsClaimedStory: { excluded: "Recipient and notification UX deferred" },
-  BitcoinMineProductionStory: { excluded: "Recipient and notification UX deferred" },
-  BitcoinPhaseLotteryStory: { excluded: "Recipient and notification UX deferred" },
 } satisfies Record<string, StoryRule>;
 
 export function storyNotificationRule(story: string): StoryRule {
@@ -70,8 +59,6 @@ export function storyRecipients(story: string, owner: unknown, payload: Record<s
   if ("excluded" in rule) return [];
   const sources = {
     owner: [owner],
-    explorer: [payload.explorer_owner],
-    battle: [payload.attacker_owner_address, payload.defender_owner_address],
     nativeBattle: [
       (payload.attacker as Record<string, unknown> | undefined)?.player,
       (payload.defender as Record<string, unknown> | undefined)?.player,

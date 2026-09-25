@@ -18,6 +18,3 @@ try {
 }
 
 export { env };
-
-// Type for your validated env
-export type Env = z.infer<typeof envSchema>;

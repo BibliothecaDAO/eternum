@@ -62,7 +62,6 @@ export {
   CATEGORY_BATCH_LIMITS,
   getTransactionCategory,
   TransactionCostCategory,
-  DEFAULT_BATCH_DELAYS,
   getDelayForTransaction,
 } from "./batch-config";
 export type { BatchDelayConfig } from "./batch-config";

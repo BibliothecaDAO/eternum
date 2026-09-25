@@ -2,7 +2,6 @@ export * from "./account/realms-account";
 export * from "./account/transaction-resource-bounds";
 export * from "./data";
 export * from "./managers";
-export * from "./stores";
 export * from "./systems";
 export * from "./utils";
 export * from "./utils/map/hex";

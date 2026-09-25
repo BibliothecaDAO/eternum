@@ -5,7 +5,7 @@ import {
   type HeraldStoryHistoryPage,
 } from "@bibliothecadao/eternum/game-sync";
 import { PointsLeaderboard } from "./points-leaderboard";
-import { readPointsRegistration, type PlayerActivityBreakdown } from "@bibliothecadao/eternum/game-sync";
+import type { PlayerActivityBreakdown, PointsRegistration } from "@bibliothecadao/eternum/game-sync";
 import { Pool, type PoolClient } from "pg";
 
 import type {
@@ -21,8 +21,7 @@ import type { DecodedRecord, DecodedWorldEvent, RpcReceipt } from "./types";
 export interface HistoryCodec {
   storyModels: readonly string[];
   pointsModel: string;
-  pointsVariant?: string;
-  readPoints: typeof readPointsRegistration;
+  readPoints: (value: Record<string, unknown>) => PointsRegistration | null;
   participants?: (value: Record<string, unknown>) => { owners: string[]; entities: string[] };
 }
 
@@ -189,7 +188,7 @@ export class HistoryStore {
     if (rows.length === 0 && completeThroughBlock === undefined) return;
 
     const client = await this.pool.connect();
-    let registrations: Array<{ gameId: string; points: NonNullable<ReturnType<typeof readPointsRegistration>> }> = [];
+    let registrations: Array<{ gameId: string; points: PointsRegistration }> = [];
     try {
       await client.query("BEGIN");
       registrations = await this.insertNewHistory(client, rows);
@@ -249,9 +248,8 @@ export class HistoryStore {
   private async restorePointsLeaderboard(): Promise<void> {
     const result = await this.pool.query<{ game_id: string; value: Record<string, unknown> }>(
       `SELECT game_id::text, value FROM herald_history_events
-       WHERE chain = $1 AND world_address = $2 AND model = $3
-         AND ($4::text IS NULL OR value->'story' ? $4)`,
-      [this.chain, this.worldAddress, this.codec.pointsModel, this.codec.pointsVariant ?? null],
+       WHERE chain = $1 AND world_address = $2 AND model = $3`,
+      [this.chain, this.worldAddress, this.codec.pointsModel],
     );
     for (const row of result.rows) {
       const registration = this.codec.readPoints(row.value);

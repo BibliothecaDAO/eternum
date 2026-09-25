@@ -47,8 +47,6 @@ export function storyNotificationCopy(
   recipient?: string,
 ): NotificationCopy {
   switch (story) {
-    case "BattleStory":
-      return battleCopy(payload, value);
     case "BattleEvent":
       return nativeBattleCopy(payload, recipient);
     case "RaidEvent":
@@ -63,8 +61,6 @@ export function storyNotificationCopy(
       return buildingCopy(payload);
     case "StructureLevelUpStory":
       return structureLevelCopy(payload);
-    case "ExplorerExtractRewardStory":
-      return { title: "Your scouts struck treasure", body: "A hard-won reward is ready for the realm." };
     case "ResourceReceiveArrivalStory":
       return { title: "The caravan has arrived", body: "Fresh supplies have reached their destination." };
     case "ProductionStory":
@@ -75,10 +71,6 @@ export function storyNotificationCopy(
       return transferCopy(payload, value);
     case "ResourceBurnStory":
       return { title: "Resources committed", body: "The realm has paid its due." };
-    case "ExplorerMoveStory":
-      return payload.explore === true
-        ? { title: "Into the unknown", body: "Your army marches beyond the known map." }
-        : { title: "Your army is on the march", body: "Orders are set and banners are moving." };
     case "ExplorerCreateStory":
       return { title: "An army answers the call", body: "New troops stand ready beyond the walls." };
     case "ExplorerAddStory":
@@ -89,10 +81,6 @@ export function storyNotificationCopy(
       return { title: "The walls are reinforced", body: "Fresh defenders have taken their posts." };
     case "GuardDeleteStory":
       return { title: "A guard post is clear", body: "Those troops are ready for new orders." };
-    case "ExplorerExplorerSwapStory":
-    case "ExplorerGuardSwapStory":
-    case "GuardExplorerSwapStory":
-      return { title: "Troops redeployed", body: "Your ranks have shifted into position." };
     case "ChestReward":
       return { title: "A chest cracks open", body: "Your army's find is yours to keep." };
     case "RelicChestOpened":
@@ -101,21 +89,6 @@ export function storyNotificationCopy(
       if (process.env.NODE_ENV !== "production") throw new Error(`Unknown notification copy: ${story}`);
       return { title: "The realm is stirring", body: "New confirmed activity awaits your attention." };
   }
-}
-
-function battleCopy(payload: Record<string, unknown>, value: Record<string, unknown>): NotificationCopy {
-  const victory = battleVictory(payload, value);
-  const structureTaken =
-    record(payload.attacker_structure).structure_taken === true ||
-    record(payload.defender_structure).structure_taken === true;
-  if (victory === true && structureTaken)
-    return { title: "Victory — the stronghold is yours", body: "Your forces broke the defence and claimed the field." };
-  if (victory === true) return { title: "Victory on the field", body: "Your forces carried the day." };
-  if (victory === false && structureTaken)
-    return { title: "A stronghold has fallen", body: "The enemy broke through. Rally the realm." };
-  if (victory === false)
-    return { title: "Your forces were defeated", body: "The battle is over. Your next move awaits." };
-  return { title: "Battle lines have shifted", body: "The clash is over. Survey the field." };
 }
 
 /** A native battle names each side's player; the recipient's side tells victory from defeat. */
@@ -138,15 +111,6 @@ function raidCopy(payload: Record<string, unknown>, recipient: string | undefine
   return payload.success === true
     ? { title: "The raid succeeded", body: "Your army returns with its spoils." }
     : { title: "The raid failed", body: "The defenders held. Your army falls back." };
-}
-
-function battleVictory(payload: Record<string, unknown>, value: Record<string, unknown>): boolean | null {
-  if (compareInteger(payload.winner_id, 0) !== false) return null;
-  const attacker = compareInteger(value.entity_id, payload.attacker_id);
-  const defender = compareInteger(value.entity_id, payload.defender_id);
-  if (attacker === true) return compareInteger(payload.winner_id, payload.attacker_owner_id);
-  if (defender === true) return compareInteger(payload.winner_id, payload.defender_owner_id);
-  return null;
 }
 
 function buildingCopy(payload: Record<string, unknown>): NotificationCopy {

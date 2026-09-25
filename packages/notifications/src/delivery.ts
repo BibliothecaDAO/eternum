@@ -57,13 +57,12 @@ export function logicalStoryIdentity(
     typeof payload.transfer_type === "string"
       ? payload.transfer_type
       : Object.keys((payload.transfer_type ?? {}) as object)[0];
-  if (story !== "BattleStory" && !(story === "ResourceTransferStory" && transferType === "Delayed")) return sourceId;
-  const firstEntity = story === "BattleStory" ? payload.attacker_id : payload.from_entity_id;
-  const secondEntity = story === "BattleStory" ? payload.defender_id : payload.to_entity_id;
-  const firstOwner = story === "BattleStory" ? payload.attacker_owner_address : payload.from_entity_owner_address;
-  const secondOwner = story === "BattleStory" ? payload.defender_owner_address : payload.to_entity_owner_address;
-  const first = sameFelt(value.entity_id, firstEntity) && sameFelt(value.owner, firstOwner);
-  const second = sameFelt(value.entity_id, secondEntity) && sameFelt(value.owner, secondOwner);
+  // A delayed transfer is written once per side; both perspectives are one logical story.
+  if (!(story === "ResourceTransferStory" && transferType === "Delayed")) return sourceId;
+  const first =
+    sameFelt(value.entity_id, payload.from_entity_id) && sameFelt(value.owner, payload.from_entity_owner_address);
+  const second =
+    sameFelt(value.entity_id, payload.to_entity_id) && sameFelt(value.owner, payload.to_entity_owner_address);
   if (first === second) throw new Error("Ambiguous mirrored story perspective");
   const id = BigInt(sourceId.slice(sourceId.lastIndexOf(":") + 1));
   if (id < (second ? 1n : 0n)) throw new Error("Invalid mirrored story UUID");

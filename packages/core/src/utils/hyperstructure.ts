@@ -3,17 +3,16 @@ import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers";
 import { structureMapPosition } from "./expeditions";
-import { divideByPrecision } from "./utils";
 
 const HYPERSTRUCTURE_REALM_COUNT_TWO_PLAYER_MODE = 2;
 
-export const getHyperstructureRealmCheckRadius = () => {
+const getHyperstructureRealmCheckRadius = () => {
   const { spacing, mode } = configManager.getSettlementConfig();
   if (!Number.isSafeInteger(spacing) || spacing < 2) throw new Error("Invalid settlement spacing");
   return spacing + (mode === "Single" ? 2 : 0);
 };
 
-export const getEffectiveHyperstructureRealmCount = (realmCountWithinRadius: number): number => {
+const getEffectiveHyperstructureRealmCount = (realmCountWithinRadius: number): number => {
   const isTwoPlayerMode = configManager.getSettlementConfig().mode === "Duel";
   return isTwoPlayerMode ? HYPERSTRUCTURE_REALM_COUNT_TWO_PLAYER_MODE : realmCountWithinRadius;
 };
@@ -77,14 +76,6 @@ export const getHyperstructureTotalContributableAmounts = (
         (minimum === maximum ? 0 : Number((hyperstructure.seed / BigInt(resource_type)) % BigInt(maximum - minimum))),
     }));
 };
-
-export const getHyperstructureCurrentAmounts = (hyperstructureId: number, store: NativeFactStore) =>
-  [...store.inGame("HyperstructureProgress", configManager.getActiveGameId())]
-    .filter((row) => row.entity_id === hyperstructureId)
-    .map((row) => ({
-      resource: row.resource_type as ResourcesIds,
-      amount: divideByPrecision(Number(row.contributed)),
-    }));
 
 const hyperstructureAdjectives = [
   "Majestic",

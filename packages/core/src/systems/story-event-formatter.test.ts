@@ -57,26 +57,6 @@ const buildStore = () => {
 const story = (storyType: string, storyPayload: Record<string, unknown>, entityId: number | null = null): Event =>
   ({ storyType, storyPayload, entityId, ownerAddress: "0x123" }) as Event;
 
-it("uses the winning owner structure from Herald even when survivors format with separators", () => {
-  const presentation = buildStoryEventPresentation(
-    story("BattleStory", {
-      attacker_id: "0x25848",
-      defender_id: "0x253a4",
-      winner_id: "0x2581f",
-      attacker_owner_id: "0x2581f",
-      defender_owner_id: "0x25381",
-      attacker_owner_address: "0x123",
-      defender_owner_address: "0x456",
-      attacker_troops_before: "0x3289eee6a00",
-      attacker_troops_lost: "0x649534e00",
-      defender_troops_before: "0x174876e800",
-      defender_troops_lost: "0x174876e800",
-    }),
-  );
-  expect(presentation.description).toContain("Winner: Attacker");
-  expect(presentation.description).not.toContain("Winner: Draw");
-});
-
 describe("owner naming", () => {
   it("names owners through the injected resolver, reads the zero address as Neutral, and shortens the rest", () => {
     const resolve = (address: string) => (address === "0x70bf" ? "Lord KB" : null);
@@ -87,8 +67,16 @@ describe("owner naming", () => {
         entityId: 1,
         txHash: "0x1",
         timestamp: 0,
-        storyType: "BattleStory",
-        storyPayload: { attacker_owner_address: "0x70bf", defender_owner_address: "0x0", winner_id: 1, attacker_id: 1 },
+        storyType: "BattleEvent",
+        storyPayload: {
+          attacker_id: 1,
+          defender_id: 2,
+          attacker_owner: 1,
+          defender_owner: 2,
+          winner_id: 1,
+          attacker: { player: "0x70bf", category: "Knight", tier: "T1", before: "10", after: "10", roll: 0 },
+          defender: { player: "0x0", category: "Knight", tier: "T1", before: "10", after: "0", roll: 0 },
+        },
         rawStory: {},
       },
       undefined,
@@ -123,14 +111,6 @@ it("names a chest's quality and ground only when the story carries them", () => 
   const bare = buildStoryEventPresentation(story("ChestReward", {}));
   expect(bare.title).toBe("Chest opened: reward");
   expect(bare.description).toBe("Army");
-});
-
-it("shows the confirmed d20 bonuses and tolerates older stories without rolls", () => {
-  const event = story("BattleStory", { attacker_roll: 1, defender_roll: 20 });
-  const description = buildStoryEventPresentation(event).description;
-  expect(description).toContain("Attacker d20: 1 (+1% damage)");
-  expect(description).toContain("Defender d20: 20 (+20% damage)");
-  expect(buildStoryEventPresentation(story("BattleStory", {})).description).toBeUndefined();
 });
 
 it("formats native battle sides and positive Ethereal rolls without a legacy row projection", () => {

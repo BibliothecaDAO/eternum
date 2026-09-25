@@ -1,14 +1,4 @@
-import {
-  BuildingType,
-  ContractAddress,
-  HexPosition,
-  ID,
-  ResourcesIds,
-  StructureType,
-  TroopTier,
-  TroopType,
-} from "@bibliothecadao/types";
-import { Position } from "./position";
+import { BuildingType, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/types";
 
 export const TROOP_TIERS: Record<string, number> = {
   T1: 1,
@@ -23,119 +13,11 @@ export interface GuardArmy {
   count: number;
 }
 
-export interface ActiveProduction {
-  buildingCount: number;
-  buildingType: BuildingType;
-}
-
-// Spatial identity and live native store presentation facts consumed by map renderers.
-export type ExplorerTroopsTileSystemUpdate = {
-  entityId: ID;
-  hexCoords: HexPosition;
-  troopType: TroopType;
-  troopTier: TroopTier;
-  removed?: boolean;
-  // Live presentation facts derived from native store
-  ownerName: string;
-  guildName: string;
-  troopCount?: number | undefined;
-  ownerAddress: bigint;
-  ownerStructureId: ID | null;
-  currentStamina?: number | undefined;
-  maxStamina?: number | undefined;
-  onChainStamina?:
-    | {
-        amount: bigint;
-        updatedTick: number;
-      }
-    | undefined;
-
-  // Battle data
-  battleData?: {
-    battleCooldownEnd: number;
-    latestAttackerId: number | null;
-    latestAttackTimestamp: string | null; // hex string
-    latestDefenderId: number | null;
-    latestDefenseTimestamp: string | null; // hex string
-    latestAttackerCoordX: number | null;
-    latestAttackerCoordY: number | null;
-    latestDefenderCoordX: number | null;
-    latestDefenderCoordY: number | null;
-  };
-};
-
-// data that you can get only from the explorer troops
-export type ExplorerTroopsSystemUpdate = {
-  entityId: ID;
-  hexCoords: HexPosition;
-  troopCount: number;
-  onChainStamina: {
-    amount: bigint;
-    updatedTick: number;
-  };
-  ownerAddress: bigint;
-  ownerName: string;
-  ownerStructureId: ID | null;
-  battleCooldownEnd: number;
-};
-
-export type StructureTileSystemUpdate = {
-  entityId: ID;
-  structureName: string;
-  hexCoords: HexPosition;
-  structureType: StructureType;
-  stage: StructureProgress;
-  initialized: boolean;
-  level: number;
-  isAlly: boolean;
-  owner: { address: bigint | undefined; ownerName: string; guildName: string };
-  hasWonder: boolean;
-  // Live presentation facts derived from native store
-  guardArmies?: GuardArmy[];
-  activeProductions?: ActiveProduction[];
-  hyperstructureRealmCount?: number;
-  // Battle data
-  battleData?: {
-    battleCooldownEnd: number;
-    latestAttackerId: number | null;
-    latestAttackTimestamp: string | null; // hex string
-    latestDefenderId: number | null;
-    latestDefenseTimestamp: string | null; // hex string
-    latestAttackerCoordX: number | null;
-    latestAttackerCoordY: number | null;
-    latestDefenderCoordX: number | null;
-    latestDefenderCoordY: number | null;
-  };
-};
-
-export type StructureSystemUpdate = {
-  entityId: ID;
-  guardArmies: GuardArmy[];
-  owner: { address: bigint; ownerName: string; guildName: string };
-  hexCoords: HexPosition;
-  battleCooldownEnd: number;
-};
-
-export type StructureBuildingsSystemUpdate = {
-  entityId: ID;
-  activeProductions: ActiveProduction[];
-  hexCoords: HexPosition;
-};
-
 export type BuildingSystemUpdate = {
   buildingType: BuildingType;
   innerCol: number;
   innerRow: number;
   paused: boolean;
-};
-
-export type ExplorerMoveSystemUpdate = {
-  explorerId: ID;
-  // resourceId: ResourcesIds | 0;
-  // amount: number;
-  // rawAmount: bigint | number | string;
-  timestamp: number;
-  exploreFind: string | null;
 };
 
 export type ExplorerRewardSystemUpdate = {
@@ -164,26 +46,6 @@ export type RelicChestOpenedSystemUpdate = {
   relics: ResourcesIds[];
   timestamp: number;
 };
-
-export type RealmSystemUpdate = {
-  level: number;
-  hexCoords: HexPosition;
-};
-
-export type ChestSystemUpdate = {
-  occupierId: ID;
-  hexCoords: HexPosition;
-};
-
-export type ReservedHyperstructureTileSystemUpdate = {
-  hexCoords: HexPosition;
-  removed?: boolean;
-};
-
-export interface ChestData {
-  entityId: ID;
-  hexCoords: Position;
-}
 
 export interface SelectableArmy {
   entityId: ID;

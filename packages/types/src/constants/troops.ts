@@ -1,8 +1,6 @@
 import { TroopType } from "../types/common";
-
-export const MIN_TROOPS_BATTLE = 100_000;
-export const DEFAULT_TROOP_ATTACK_RANGE = 1;
-export const RANGED_TROOP_ATTACK_RANGE = 2;
+const DEFAULT_TROOP_ATTACK_RANGE = 1;
+const RANGED_TROOP_ATTACK_RANGE = 2;
 export const CROSSBOWMAN_RANGED_FIELD_DAMAGE_MULTIPLIER = 0.7;
 export const CROSSBOWMAN_RANGED_STRUCTURE_DAMAGE_MULTIPLIER = 0.3;
 export const KNIGHT_STRUCTURE_ASSAULT_DAMAGE_MULTIPLIER = 1.15;
@@ -18,22 +16,8 @@ export const getTroopAttackRange = (troopType: TroopCategory): number => {
   return DEFAULT_TROOP_ATTACK_RANGE;
 };
 
-const encodeAsciiFelt = (value: string): string => {
-  let hex = "";
-  for (const char of value) {
-    const code = char.charCodeAt(0);
-    if (code > 0x7f) {
-      throw new Error(`Non-ASCII mercenaries name is not supported: ${value}`);
-    }
-    hex += code.toString(16).padStart(2, "0");
-  }
-  return `0x${hex}`;
-};
-
 // Shared NPC ownership label for structures with owner address 0x0.
 export const BANDITS_NAME = "The Vanguard";
-// Short-string felt used by set_mercenaries_name_config onchain.
-export const MERCENARIES_NAME_FELT = encodeAsciiFelt(BANDITS_NAME);
 
 // Native guard IDs; each structure unlocks a contiguous prefix.
 export enum GuardSlot {

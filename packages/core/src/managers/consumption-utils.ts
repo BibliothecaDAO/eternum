@@ -5,12 +5,12 @@ import { configManager } from "./config-manager";
  * Automation percentage values for a single produced resource. The percentages are raw
  * slider values (0..maxAllocationPercent), not ratios.
  */
-export interface ResourceAutomationPercentagesInput {
+interface ResourceAutomationPercentagesInput {
   resourceToResource: number;
   laborToResource: number;
 }
 
-export interface AggregateConsumptionOptions {
+interface AggregateConsumptionOptions {
   /**
    * The upper bound for a single percentage slider. Percentages are divided by this
    * value to produce a ratio that scales the per-cycle recipe input amount. Defaults to

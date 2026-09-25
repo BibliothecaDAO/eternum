@@ -1,10 +1,8 @@
 import {
   createEmptyActivityBreakdown,
-  readPointsRegistration,
   type PlayerActivityBreakdown,
+  type PointsRegistration as Registration,
 } from "@bibliothecadao/eternum/game-sync";
-
-type Registration = NonNullable<ReturnType<typeof readPointsRegistration>>;
 
 /**
  * Each player's registered points by activity: restored from history before serving requests, then updated only by

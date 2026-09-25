@@ -1,5 +1,5 @@
 // Enums for asset types
-export enum AssetType {
+enum AssetType {
   TroopArmor = "Troop Armor",
   TroopPrimary = "Troop Primary",
   TroopSecondary = "Troop Secondary",
@@ -20,7 +20,7 @@ export enum AssetRarity {
 }
 
 // ChestAsset interface for components that display cosmetic items
-export interface ChestAsset {
+interface ChestAsset {
   id: string;
   attributesRaw: string;
   name: string;
@@ -32,7 +32,7 @@ export interface ChestAsset {
 }
 
 // Cosmetic names mapping for display purposes
-export const COSMETIC_NAMES = [
+const COSMETIC_NAMES = [
   { id: "1", name: "Legacy Keep", epoch: "Season 1", attributesRaw: "0x3040101" },
   { id: "2", name: "Legacy Guardian", epoch: "Season 1", attributesRaw: "0x107050201" },
   { id: "3", name: "Aura of the Legacy Warrior", epoch: "Season 1", attributesRaw: "0x4050301" },
@@ -89,16 +89,7 @@ const COSMETIC_MODEL_BY_ATTRIBUTES_RAW: Record<string, string | null> = {
   "0x306011601": "/models/cosmetics/low-res/0x306011601.glb", // Light Cavalry Shield
 };
 
-export const DEFAULT_COSMETIC_MODEL_PATH = "/models/cosmetics/low-res/0x8010b01.glb";
-
-/**
- * Gets the model path for a given attributesRaw hex string
- * @param attributesRaw - Hex string like "0x2030601"
- * @returns Model path or default if not found
- */
-export function getModelPathFromAttributesRaw(attributesRaw: string): string {
-  return COSMETIC_MODEL_BY_ATTRIBUTES_RAW[attributesRaw] ?? DEFAULT_COSMETIC_MODEL_PATH;
-}
+const DEFAULT_COSMETIC_MODEL_PATH = "/models/cosmetics/low-res/0x8010b01.glb";
 
 /**
  * Gets the local image path for a given attributesRaw hex string
@@ -106,7 +97,7 @@ export function getModelPathFromAttributesRaw(attributesRaw: string): string {
  * @param attributesRaw - Hex string like "0x2030601"
  * @returns Local image path
  */
-export function getLocalImageFromAttributesRaw(attributesRaw: string): string {
+function getLocalImageFromAttributesRaw(attributesRaw: string): string {
   return `${NFT_IMAGES_BASE_PATH}/${attributesRaw}.png`;
 }
 
@@ -169,58 +160,6 @@ function getCosmeticNameFromAttributesRaw(attributesRaw: string): string | undef
   return cosmetic?.name;
 }
 
-// Centralized rarity styling configuration
-export const RARITY_STYLES = {
-  common: {
-    text: "text-rarity-common",
-    bg: "bg-rarity-common",
-    border: "border-rarity-common",
-    glow: "border-2 border-rarity-common bg-rarity-common/15 shadow-[0_0_15px_rgba(132,132,132,0.4)]",
-    hex: "#848484",
-    hotHex: "#d8d8d8",
-  },
-  uncommon: {
-    text: "text-rarity-uncommon",
-    bg: "bg-rarity-uncommon",
-    border: "border-rarity-uncommon",
-    glow: "border-2 border-rarity-uncommon bg-rarity-uncommon/20 shadow-[0_0_18px_rgba(108,201,94,0.5)]",
-    hex: "#6cc95e",
-    hotHex: "#b8f2ad",
-  },
-  rare: {
-    text: "text-rarity-rare",
-    bg: "bg-rarity-rare",
-    border: "border-rarity-rare",
-    glow: "border-2 border-rarity-rare bg-rarity-rare/20 shadow-[0_0_22px_rgba(86,200,218,0.6)]",
-    hex: "#56c8da",
-    hotHex: "#94f3ff",
-  },
-  epic: {
-    text: "text-rarity-epic",
-    bg: "bg-rarity-epic",
-    border: "border-rarity-epic",
-    glow: "border-2 border-rarity-epic bg-rarity-epic/20 shadow-[0_0_28px_rgba(186,55,212,0.6)]",
-    hex: "#ba37d4",
-    hotHex: "#ff72ff",
-  },
-  legendary: {
-    text: "text-rarity-legendary",
-    bg: "bg-rarity-legendary",
-    border: "border-rarity-legendary",
-    glow: "border-2 border-rarity-legendary bg-rarity-legendary/20 shadow-[0_0_35px_rgba(233,176,98,0.7)]",
-    hex: "#e9b062",
-    hotHex: "#ffd97a",
-  },
-  mythic: {
-    text: "text-rarity-mythic",
-    bg: "bg-rarity-mythic",
-    border: "border-rarity-mythic",
-    glow: "border-2 border-rarity-mythic bg-rarity-mythic/20 shadow-[0_0_40px_rgba(255,100,150,0.8)]",
-    hex: "#ff6496",
-    hotHex: "#ff9ec0",
-  },
-} as const;
-
 // Trait type names by ID (0-4)
 const TRAIT_TYPES = ["Epoch", "Epoch Item", "Rarity", "Type", "Troop Type"] as const;
 
@@ -273,7 +212,7 @@ interface TraitAttribute {
 /**
  * Decodes an attributesRaw hex string into an array of trait attributes.
  */
-export function getTraitValuesFromAttributesRaw(attributesRaw: string): TraitAttribute[] {
+function getTraitValuesFromAttributesRaw(attributesRaw: string): TraitAttribute[] {
   const cleanHex = attributesRaw.startsWith("0x") ? attributesRaw.slice(2) : attributesRaw;
   const rawValue = BigInt("0x" + cleanHex);
 
@@ -320,7 +259,7 @@ const RARITY_VALUE_TO_ASSET_RARITY: Record<string, AssetRarity> = {
 /**
  * Creates a ChestAsset from an attributesRaw hex string
  */
-export function getChestAssetFromAttributesRaw(attributesRaw: string): ChestAsset | undefined {
+function getChestAssetFromAttributesRaw(attributesRaw: string): ChestAsset | undefined {
   const traits = getTraitValuesFromAttributesRaw(attributesRaw);
   const cosmetic = COSMETIC_NAMES.find((c) => c.attributesRaw === attributesRaw);
 
@@ -348,15 +287,6 @@ export function getChestAssetFromAttributesRaw(attributesRaw: string): ChestAsse
   };
 }
 
-/**
- * Get all chest assets as ChestAsset objects
- */
-export function getAllChestAssets(): ChestAsset[] {
-  return COSMETIC_NAMES.map((cosmetic) => getChestAssetFromAttributesRaw(cosmetic.attributesRaw)).filter(
-    (asset): asset is ChestAsset => asset !== undefined,
-  );
-}
-
 // Rarity order from lowest to highest
 const RARITY_ORDER: AssetRarity[] = [
   AssetRarity.Common,
@@ -366,20 +296,3 @@ const RARITY_ORDER: AssetRarity[] = [
   AssetRarity.Legendary,
   AssetRarity.Mythic,
 ];
-
-/**
- * Get the highest rarity from an array of chest assets.
- */
-export function getHighestRarity(assets: ChestAsset[]): AssetRarity {
-  if (assets.length === 0) return AssetRarity.Common;
-
-  let highestIndex = 0;
-  for (const asset of assets) {
-    const index = RARITY_ORDER.indexOf(asset.rarity);
-    if (index > highestIndex) {
-      highestIndex = index;
-    }
-  }
-
-  return RARITY_ORDER[highestIndex];
-}

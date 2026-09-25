@@ -69,12 +69,6 @@ export const armyHasTroops = (entityArmies: (ArmyInfo | undefined)[]) => {
   return entityArmies.some((army) => army && army.troops.count !== 0n);
 };
 
-export const armyHasTraveled = (entityArmies: ArmyInfo[], realmPosition: { x: number; y: number }) => {
-  return entityArmies.some(
-    (army) => army && realmPosition && (army.position.x !== realmPosition.x || army.position.y !== realmPosition.y),
-  );
-};
-
 export const getTroopName = (troopType: TroopType, troopTier: TroopTier): string => {
   switch (troopTier) {
     case TroopTier.T1:
@@ -165,7 +159,7 @@ export const getGuardSlotCooldownRemaining = (
   currentBlockTimestamp: number,
 ): number => (Number(guard.troops.count) > 0 ? 0 : Math.max(0, guard.cooldownEnd - currentBlockTimestamp));
 
-export const hasAdjacentOwnedStructure = (
+const hasAdjacentOwnedStructure = (
   position: { x: number; y: number; alt: boolean },
   playerAddress: ContractAddress | null,
   store: NativeFactStore,
@@ -177,7 +171,7 @@ export const hasAdjacentOwnedStructure = (
     return isViewerOwner(structure?.owner, playerAddress);
   });
 
-export const isArmyAdjacentToStructure = (
+const isArmyAdjacentToStructure = (
   armyPosition: { x: number; y: number; alt?: boolean },
   structureX: number,
   structureY: number,

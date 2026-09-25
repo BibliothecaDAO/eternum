@@ -636,18 +636,6 @@ export const RESOURCE_RARITY: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Research]: 1,
 };
 
-export enum ResourceTier {
-  Lords = 1,
-  Military,
-  Transport,
-  Food,
-  Common,
-  Uncommon,
-  Rare,
-  Unique,
-  Mythic,
-}
-
 export const getResourceTiers = (isBlitz: boolean) => {
   if (isBlitz) {
     return BLITZ_RESOURCE_TIERS;
@@ -655,7 +643,7 @@ export const getResourceTiers = (isBlitz: boolean) => {
   return ETERNUM_RESOURCE_TIERS;
 };
 
-export const BLITZ_RESOURCE_TIERS = {
+const BLITZ_RESOURCE_TIERS = {
   lords: [ResourcesIds.Lords, ResourcesIds.SAT],
   relics: [
     // Army Enhancement Relics
@@ -707,7 +695,7 @@ export const BLITZ_RESOURCE_TIERS = {
   ],
 };
 
-export const ETERNUM_RESOURCE_TIERS = {
+const ETERNUM_RESOURCE_TIERS = {
   lords: [ResourcesIds.Lords, ResourcesIds.SAT, ResourcesIds.AncientFragment],
   relics: [
     // Army Enhancement Relics

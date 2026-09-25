@@ -15,13 +15,13 @@ const MAX_MESSAGE_BATCH = 100;
 
 export const GLOBAL_CHAT_CHANNEL_ID = "world:global";
 
-export const worldChatSenderSchema = z.object({
+const worldChatSenderSchema = z.object({
   playerId: playerIdSchema,
   displayName: displayNameSchema.optional(),
   avatarUrl: z.string().url().optional(),
 });
 
-export const worldChatMessageSchema = z.object({
+const worldChatMessageSchema = z.object({
   id: entityIdSchema,
   sender: worldChatSenderSchema,
   zoneId: zoneIdSchema,
@@ -38,20 +38,12 @@ export const worldChatPublishSchema = z.object({
   metadata: metadataSchema.optional(),
 });
 
-export const worldChatHistoryQuerySchema = z.object({
+const worldChatHistoryQuerySchema = z.object({
   zoneId: zoneIdSchema,
   cursor: z.string().optional(),
   limit: z.number().int().min(1).max(MAX_MESSAGE_BATCH).optional(),
   since: timestampSchema.optional(),
 });
-
-export const worldChatAckSchema = z.object({
-  id: entityIdSchema,
-  deliveredAt: timestampSchema,
-});
-
-export interface WorldChatSender extends z.infer<typeof worldChatSenderSchema> {}
 export interface WorldChatMessage extends z.infer<typeof worldChatMessageSchema> {}
 export interface WorldChatPublishPayload extends z.infer<typeof worldChatPublishSchema> {}
 export interface WorldChatHistoryQuery extends z.infer<typeof worldChatHistoryQuerySchema> {}
-export interface WorldChatAck extends z.infer<typeof worldChatAckSchema> {}

@@ -128,47 +128,6 @@ const formatters: Record<string, StoryFormatter> = {
       icon: "building",
     };
   },
-  ExplorerMoveStory: (event, payload, components) => {
-    const homeStructureId = payload.explorer_structure_id ?? event.entityId;
-    const explorerLabel = describeExplorer(payload.explorer_id, components, homeStructureId);
-    const start = formatCoord(payload.start_coord);
-    const end = formatCoord(payload.end_coord);
-    const structureRef = describeStructureDetails(event, components, undefined, undefined, homeStructureId);
-    const path = formatDirectionSequence(payload.directions);
-    const discovery = formatExploreFind(payload.explore_find);
-    // const reward = buildRewardText(payload.reward_resource_type, payload.reward_resource_amount);
-    const explorationFlag = payload.explore === true ? "Exploration recorded" : undefined;
-    return {
-      title: `${explorerLabel} moved`,
-      description:
-        joinPieces([
-          structureRef ? `Origin: ${structureRef}` : undefined,
-          start && end ? `${start} → ${end}` : end ? `Arrived at ${end}` : start ? `Departed ${start}` : undefined,
-          path ? `Course: ${path}` : undefined,
-          explorationFlag,
-          discovery,
-          // reward,
-        ]) ?? "Explorer activity reported.",
-      icon: "travel",
-    };
-  },
-  ExplorerExtractRewardStory: (event, payload, components) => {
-    const homeStructureId = payload.explorer_structure_id ?? event.entityId;
-    const explorerLabel = describeExplorer(payload.explorer_id, components, homeStructureId);
-    const structureRef = describeStructureDetails(event, components, undefined, undefined, homeStructureId);
-    const coord = formatCoord(payload.coord);
-    const reward = buildRewardText(payload.reward_resource_type, payload.reward_resource_amount);
-    return {
-      title: `${explorerLabel} extracted reward`,
-      description:
-        joinPieces([
-          structureRef ? `Origin: ${structureRef}` : undefined,
-          coord ? `Location ${coord}` : undefined,
-          reward,
-        ]) ?? "Extraction reward recorded.",
-      icon: "resource",
-    };
-  },
   BattleEvent: (event, payload, store, resolvePlayerName) => {
     const attacker = payload.attacker as Record<string, unknown>;
     const defender = payload.defender as Record<string, unknown>;
@@ -211,72 +170,6 @@ const formatters: Record<string, StoryFormatter> = {
     description: `${getResourceName(Number(payload.resource_type))} / Lords`,
     icon: "resource",
   }),
-  BattleStory: (event, payload, components, resolvePlayerName) => {
-    const battleType = formatEnum(payload.battle_type) ?? "Battle";
-    const attacker = describeEntity(payload.attacker_id, components);
-    const defender = describeEntity(payload.defender_id, components);
-    const winnerId = formatNumber(payload.winner_id);
-    const attackerOwner = payload.attacker_owner_address ?? payload.attacker_owner_id;
-    const defenderOwner = payload.defender_owner_address ?? payload.defender_owner_id;
-    const attackerOwnerLabel = nameOwner(attackerOwner, components, resolvePlayerName);
-    const defenderOwnerLabel = nameOwner(defenderOwner, components, resolvePlayerName);
-    const attackerTroop = formatTroopDescriptor(payload.attacker_troops_type, payload.attacker_troops_tier);
-    const defenderTroop = formatTroopDescriptor(payload.defender_troops_type, payload.defender_troops_tier);
-    const attackerStrength = formatUnitAmount(payload.attacker_troops_before);
-    const defenderStrength = formatUnitAmount(payload.defender_troops_before);
-    const attackerLosses = formatResourceAmount(payload.attacker_troops_lost);
-    const defenderLosses = formatResourceAmount(payload.defender_troops_lost);
-    const attackerLeft = formatResourceAmount(
-      (payload.attacker_troops_before as unknown as number) - (payload.attacker_troops_lost as unknown as number),
-    );
-    const defenderLeft = formatResourceAmount(
-      (payload.defender_troops_before as unknown as number) - (payload.defender_troops_lost as unknown as number),
-    );
-    const stolen = formatResourceList(payload.stolen_resources ?? []);
-    let victor;
-
-    // The contract records the winning owner structure, not the explorer entity.
-    const winningOwnerId = Number(payload.winner_id);
-    if (winningOwnerId > 0 && winningOwnerId === Number(payload.attacker_owner_id)) {
-      victor = `Attacker [${attackerOwnerLabel}]`;
-    } else if (winningOwnerId > 0 && winningOwnerId === Number(payload.defender_owner_id)) {
-      victor = `Defender [${defenderOwnerLabel}]`;
-    } else if (
-      Number(payload.attacker_troops_before) === Number(payload.attacker_troops_lost) &&
-      Number(payload.defender_troops_before) === Number(payload.defender_troops_lost)
-    ) {
-      victor = "Mutual Annihilation";
-    } else {
-      victor = "Draw";
-    }
-
-    return {
-      title: `${battleType} resolved`,
-      description: joinPieces([
-        attackerOwnerLabel ? `Attacker [${attackerOwnerLabel}]:  ${attacker ?? "Army"}` : undefined,
-        defenderOwnerLabel ? `Defender [${defenderOwnerLabel}]:  ${defender ?? "Army"}` : undefined,
-        attackerTroop
-          ? `Attacker forces: ${attackerTroop}${attackerStrength ? ` [ ${attackerStrength} ]` : ""}`
-          : undefined,
-        defenderTroop
-          ? `Defender forces: ${defenderTroop}${defenderStrength ? ` [ ${defenderStrength} ]` : ""}`
-          : undefined,
-        Number(payload.attacker_roll) > 0
-          ? `Attacker d20: ${Number(payload.attacker_roll)} (+${Number(payload.attacker_roll)}% damage)`
-          : undefined,
-        Number(payload.defender_roll) > 0
-          ? `Defender d20: ${Number(payload.defender_roll)} (+${Number(payload.defender_roll)}% damage)`
-          : undefined,
-        attackerLosses ? `Attacker losses: ${attackerLosses}` : undefined,
-        defenderLosses ? `Defender losses: ${defenderLosses}` : undefined,
-        attackerLeft ? `Attacker Troops Left: ${attackerLeft} Troops` : undefined,
-        defenderLeft ? `Defender Troops Left: ${defenderLeft} Troops` : undefined,
-        winnerId ? `Winner: ${victor} ` : undefined,
-        stolen ? `Spoils: ${stolen}` : undefined,
-      ]),
-      icon: "battle",
-    };
-  },
   ResourceTransferStory: (event, payload, components, resolvePlayerName) => {
     const resourcesText = formatResourceList(payload.resources);
     const transferType = formatEnum(payload.transfer_type);
@@ -396,63 +289,6 @@ const formatters: Record<string, StoryFormatter> = {
     ]),
     icon: "troop",
   }),
-  ExplorerExplorerSwapStory: (_, payload, components) => {
-    const fromRef = describeExplorer(payload.from_explorer_id, components);
-    const toRef = describeExplorer(payload.to_explorer_id, components);
-    const count = formatResourceAmount(payload.count) ?? formatNumber(payload.count ?? null) ?? undefined;
-    const direction = formatDirection(payload.to_explorer_direction);
-    return {
-      title: "Troops reassigned",
-      description: joinPieces([
-        `Route: ${fromRef} → ${toRef}`,
-        count ? `Transferred: ${count}` : undefined,
-        direction ? `Direction: ${direction}` : undefined,
-      ]),
-      icon: "troop",
-    };
-  },
-  ExplorerGuardSwapStory: (event, payload, components) => {
-    const fromExplorer = describeExplorer(payload.from_explorer_id, components);
-    const targetStructure = describeStructureDetails(event, components, undefined, undefined, payload.to_structure_id);
-    const slotLabel = formatSlotLabel(payload.to_guard_slot);
-    const count = formatResourceAmount(payload.count) ?? formatNumber(payload.count ?? null) ?? undefined;
-    const direction = formatDirection(payload.to_structure_direction);
-    return {
-      title: "Explorer garrisons troops",
-      description: joinPieces([
-        `Explorer: ${fromExplorer}`,
-        targetStructure,
-        slotLabel ? `Assignment: ${slotLabel}` : undefined,
-        count ? `Deployed: ${count}` : undefined,
-        direction ? `Direction: ${direction}` : undefined,
-      ]),
-      icon: "troop",
-    };
-  },
-  GuardExplorerSwapStory: (event, payload, components, resolvePlayerName) => {
-    const sourceStructure = describeStructureDetails(
-      event,
-      components,
-      undefined,
-      undefined,
-      payload.from_structure_id,
-    );
-    const slotLabel = formatSlotLabel(payload.from_guard_slot);
-    const explorerRef = describeExplorer(payload.to_explorer_id, components);
-    const count = formatResourceAmount(payload.count) ?? formatNumber(payload.count ?? null) ?? undefined;
-    const direction = formatDirection(payload.to_explorer_direction);
-    return {
-      title: "Garrison deployed",
-      description: joinPieces([
-        sourceStructure,
-        slotLabel ? `From ${slotLabel}` : undefined,
-        `To ${explorerRef}`,
-        count ? `Committed: ${count}` : undefined,
-        direction ? `Direction: ${direction}` : undefined,
-      ]),
-      icon: "troop",
-    };
-  },
 };
 
 export function buildStoryEventPresentation(
@@ -636,49 +472,6 @@ function normalizeResourceEntries(value: unknown): Array<{ id: number; amount: u
 
 function getResourceName(id: number): string {
   return resourceNameMap[id] ?? `Resource ${id}`;
-}
-
-function buildRewardText(resourceType: unknown, amount: unknown): string | undefined {
-  const id = toNumber(resourceType);
-  if (id === null) return undefined;
-  const formattedAmount = formatResourceAmount(amount);
-  if (!formattedAmount) return `Reward: ${getResourceName(id)}`;
-  return `Reward: ${getResourceName(id)} +${formattedAmount}`;
-}
-
-function formatExploreFind(value: unknown): string | undefined {
-  const label = formatEnum(value);
-  if (!label || label === "None") return undefined;
-  return `Discovery: ${label}`;
-}
-
-function formatDirectionSequence(value: unknown): string | undefined {
-  if (!value) return undefined;
-  const raw = Array.isArray(value)
-    ? value
-    : typeof value === "object" && value && "values" in value
-      ? (value as { values: unknown }).values
-      : undefined;
-  if (!Array.isArray(raw) || raw.length === 0) return undefined;
-
-  const labels = raw
-    .map((entry) => extractDirectionLabel(entry))
-    .filter((direction): direction is string => Boolean(direction));
-
-  if (!labels.length) return undefined;
-  return labels.join(" → ");
-}
-
-function extractDirectionLabel(entry: unknown): string | undefined {
-  if (typeof entry === "string") return entry;
-  if (typeof entry === "object" && entry !== null) {
-    const keys = Object.keys(entry as Record<string, unknown>);
-    if (keys.length === 1) return keys[0];
-  }
-  if (process.env.NODE_ENV !== "production") {
-    throw new Error(`Unknown enum value: ${String(entry)}`);
-  }
-  return undefined;
 }
 
 function formatTroopDescriptor(type: unknown, tier: unknown): string | undefined {

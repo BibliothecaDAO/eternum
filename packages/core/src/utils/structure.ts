@@ -5,7 +5,6 @@ import {
   ContractAddress,
   ID,
   BANDITS_NAME,
-  Position,
   Structure,
   StructureType,
   TickIds,
@@ -13,20 +12,9 @@ import {
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { displayPlayerName, type PlayerNameResolver } from "./entities";
-import { getTileAt } from "./tile";
 import { configManager } from "../managers";
 import { currentTickCount } from "./utils";
 import { isViewerOwner } from "./viewer";
-
-export const getStructureAtPosition = (
-  { x, y, alt }: Position,
-  playerAddress: ContractAddress | null,
-  store: NativeFactStore,
-  playerName: PlayerNameResolver,
-): Structure | undefined => {
-  const tile = getTileAt(store, alt, x, y);
-  return tile?.occupier_is_structure ? getStructure(tile.occupier_id, playerAddress, store, playerName) : undefined;
-};
 
 export const getStructure = (
   entityId: ID,

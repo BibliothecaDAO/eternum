@@ -1,28 +1,10 @@
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { Account, AccountInterface } from "starknet";
-import {
-  BiomeType,
-  BuildingType,
-  CapacityConfig,
-  RealmLevels,
-  ResourcesIds,
-  ResourceTier,
-  StructureType,
-} from "../constants";
-
-export interface RelicEffect {
-  end_tick: number;
-  usage_left: number;
-}
+import { BuildingType, CapacityConfig, RealmLevels, ResourcesIds, StructureType } from "../constants";
 
 export enum ActorType {
   Explorer = "explorer",
   Structure = "structure",
-}
-
-export interface SelectedEntity {
-  name: string;
-  entityId: ID;
 }
 
 export enum TileOccupier {
@@ -88,17 +70,6 @@ export type ResourceArrivalInfo = {
   slot: bigint;
 };
 
-export type HyperstructureInfo = {
-  entity_id: ID;
-  hyperstructure: NativeRows["Hyperstructure"];
-  structure: NativeRows["Structure"];
-  position: Position;
-  owner: bigint;
-  ownerName: string;
-  isOwner: boolean;
-  access: string;
-};
-
 export type GameplayAccount = Account | AccountInterface;
 
 export type ArmyInfo = {
@@ -144,34 +115,12 @@ export type Tile = {
   reward_extracted: boolean;
 };
 
-export type TileOpt = {
-  alt: boolean;
-  col: number;
-  row: number;
-  data: bigint;
-};
-
-export type TroopFoodConsumption = {
-  explore_wheat_burn_amount: number;
-  explore_fish_burn_amount: number;
-  travel_wheat_burn_amount: number;
-  travel_fish_burn_amount: number;
-};
-
 export type PlayerStructure = {
   entityId: ID;
   structure: NativeRows["Structure"];
   position: Position;
   category: StructureType;
   owner: ContractAddress;
-};
-
-export type RealmWithPosition = NativeRows["Structure"] & {
-  entityId: ID;
-  position: Position;
-  name: string;
-  owner: ContractAddress;
-  resources: ResourcesIds[];
 };
 export interface Building {
   name: string;
@@ -190,13 +139,6 @@ export type HexEntityInfo = {
   owner: ContractAddress;
 };
 
-export type HexTileInfo = {
-  col: number;
-  row: number;
-  staminaCost: number;
-  biomeType: BiomeType | undefined;
-};
-
 export enum TickIds {
   Default,
   Armies,
@@ -209,21 +151,9 @@ export enum EntityType {
   STRUCTURE,
 }
 
-export enum Access {
-  Public,
-  Private,
-  GuildOnly,
-}
-
-export enum TravelTypes {
-  Explore,
-  Travel,
-}
-
 export type RelicEffectWithEndTick = { id: ResourcesIds; endTick: number };
 
 export type Troops = NativeRows["ExplorerTroops"]["troops"];
-export type TroopBoosts = Troops["boosts"];
 export type TroopTier = Troops["tier"];
 export const TroopTier = { T1: "T1", T2: "T2", T3: "T3" } as const;
 export type TroopType = Troops["category"];
@@ -246,17 +176,6 @@ export interface MarketInterface {
   makerGets: Resource[];
   ratio: number;
   perLords: number;
-}
-
-export interface Trade {
-  maker_id: ID;
-  taker_id: ID;
-  maker_order_id: ID;
-  taker_order_id: ID;
-  expires_at: number;
-  claimed_by_maker: boolean;
-  claimed_by_taker: boolean;
-  taker_needs_caravan: boolean;
 }
 
 /// RESOURCES
@@ -307,11 +226,6 @@ export function ContractAddress(address: string | bigint): ContractAddress {
 export interface ResourceCost {
   resource: ResourcesIds;
   amount: number;
-}
-export interface ResourceCostMinMax {
-  resource_tier: ResourceTier;
-  min_amount: number;
-  max_amount: number;
 }
 
 export interface ResourceMinMax {

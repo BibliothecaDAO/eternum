@@ -15,16 +15,16 @@ export type WorldPublishMessage = {
   payload: WorldChatPublishPayload;
   clientMessageId?: string;
 };
-export type DirectMessageSendMessage = {
+type DirectMessageSendMessage = {
   type: "direct:message";
   payload: DirectMessageCreatePayload;
   clientMessageId?: string;
 };
-export type DirectTypingMessage = {
+type DirectTypingMessage = {
   type: "direct:typing";
   payload: DirectMessageTyping;
 };
-export type DirectReadMessage = {
+type DirectReadMessage = {
   type: "direct:read";
   payload: DirectMessageReadReceipt;
 };
@@ -45,41 +45,41 @@ export type RealtimeClientMessage =
   | DirectReadMessage
   | { type: string; [key: string]: unknown };
 
-export type WorldBroadcastMessage = {
+type WorldBroadcastMessage = {
   type: "world:message";
   zoneId: string;
   message: WorldChatMessage;
   clientMessageId?: string;
 };
 
-export type DirectBroadcastMessage = {
+type DirectBroadcastMessage = {
   type: "direct:message";
   message: DirectMessage;
   thread: DirectMessageThread;
   clientMessageId?: string;
 };
 
-export type DirectTypingBroadcastMessage = {
+type DirectTypingBroadcastMessage = {
   type: "direct:typing";
   typing: DirectMessageTyping;
 };
 
-export type DirectReadBroadcastMessage = {
+type DirectReadBroadcastMessage = {
   type: "direct:read";
   receipt: DirectMessageReadReceipt;
 };
 
-export type PresenceSyncBroadcastMessage = {
+type PresenceSyncBroadcastMessage = {
   type: "presence:sync";
   players: PlayerPresencePayload[];
 };
 
-export type PresenceUpdateBroadcastMessage = {
+type PresenceUpdateBroadcastMessage = {
   type: "presence:update";
   player: PlayerPresencePayload;
 };
 
-export type PresenceRemoveBroadcastMessage = {
+type PresenceRemoveBroadcastMessage = {
   type: "presence:remove";
   playerId: string;
 };

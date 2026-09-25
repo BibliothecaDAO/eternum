@@ -1,5 +1,4 @@
 import {
-  RelicEffect,
   RelicEffectWithEndTick,
   RelicRecipientType,
   RelicRecipientTypeParam,
@@ -149,26 +148,6 @@ export const isRelic = (resourceId: ResourcesIds): boolean => {
   return resourceId >= 39; // Relics start from ID 39 onwards
 };
 
-export const isRelicActive = ({ end_tick, usage_left }: RelicEffect, currentTick: number): boolean => {
-  // Check if the effect is within the active time window
-  const isWithinTimeWindow = end_tick > currentTick;
-
-  // Check if there are remaining uses (if applicable)
-  const hasUsagesLeft = usage_left > 0;
-
-  return isWithinTimeWindow && hasUsagesLeft;
-};
-
 export const relicsArmiesTicksLeft = (end_tick: number, currentArmiesTick: number): number => {
   return Math.max(0, end_tick - currentArmiesTick);
-};
-
-export const relicsTimeLeft = (
-  end_tick: number,
-  currentTick: number,
-  secondsPerTick: number,
-  partialTickTimeRemaining = 0,
-): number => {
-  const remainingTicks = relicsArmiesTicksLeft(end_tick, currentTick);
-  return remainingTicks > 0 ? remainingTicks * secondsPerTick + partialTickTimeRemaining : 0;
 };

@@ -24,13 +24,13 @@ export const CATEGORY_BATCH_LIMITS: Record<TransactionCostCategory, number> = {
  * Default category for unknown transaction types.
  * Using HIGH to be conservative and avoid step limit issues.
  */
-export const DEFAULT_CATEGORY = TransactionCostCategory.HIGH;
+const DEFAULT_CATEGORY = TransactionCostCategory.HIGH;
 
 /**
  * Mapping of each transaction type to its cost category.
  * This determines how many transactions of each type can be batched together.
  */
-export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, TransactionCostCategory>> = {
+const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, TransactionCostCategory>> = {
   // ============================================
   // HIGH COST (3) - Combat, Complex Operations
   // ============================================
@@ -161,15 +161,6 @@ export interface BatchDelayConfig {
   defaultDelay?: number;
 }
 
-export const DEFAULT_BATCH_DELAYS: BatchDelayConfig = {
-  defaultDelay: 1000,
-  categoryDelays: {
-    [TransactionCostCategory.HIGH]: 0,
-    [TransactionCostCategory.MEDIUM]: 500,
-    [TransactionCostCategory.LOW]: 1000,
-  },
-};
-
 /**
  * Get the batch delay for a given transaction type, respecting type overrides,
  * category delays, and the default delay (in that priority order).
@@ -183,19 +174,4 @@ export function getDelayForTransaction(type: TransactionType | undefined, config
     return config.categoryDelays[category]!;
   }
   return config.defaultDelay ?? 1000;
-}
-
-/**
- * Get the maximum batch size for a cost category.
- */
-export function getBatchLimit(category: TransactionCostCategory): number {
-  return CATEGORY_BATCH_LIMITS[category];
-}
-
-/**
- * Get the maximum batch size for a transaction type.
- */
-export function getTransactionBatchLimit(type?: TransactionType): number {
-  const category = getTransactionCategory(type);
-  return getBatchLimit(category);
 }

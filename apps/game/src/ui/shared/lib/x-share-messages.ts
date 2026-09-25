@@ -78,11 +78,6 @@ export const buildBlitzShareMessageText = ({
   });
 };
 
-export const buildChestRevealShareMessage = (chestRarity: AssetRarity): string => {
-  const normalizedRarity = (chestRarity ?? AssetRarity.Common).toUpperCase();
-  return `${normalizedRarity} pull from a Realms Loot Chest! 🗝️\n\n${tweetFooter}`;
-};
-
 type GameReviewShareStep =
   | "finished"
   | "personal"
