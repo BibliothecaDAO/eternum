@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { CairoCustomEnum } from "starknet";
 import { absoluteEpoch } from "@bibliothecadao/eternum/expeditions";
 import { GameSubscription } from "./game-subscription";
@@ -5,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { rowInGameSyncScope, isClientGameSyncModel } from "@bibliothecadao/eternum/game-sync-models";
 
-import { decodeHomeRing, type HomeRingTile, type HomeRingView } from "./home-ring";
+import { decodeHomeRing, homeRingTileData, type HomeRingTile, type HomeRingView } from "./home-ring";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
 import { structureValue, seedDerivedRows, raw, receipt, rowEvent, rulesEvent, setup } from "./native/fixtures";
@@ -114,6 +115,30 @@ const tilesIn = (messages: HeraldStreamMessage[]) =>
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe("home ring", () => {
+  it("matches the materialized Cairo ring across three season days", () => {
+    const values = readFileSync(
+      new URL("../../../contracts/l3/world-native/tests/fixtures/frontier-home-ring-v1.txt", import.meta.url),
+      "utf8",
+    )
+      .trim()
+      .split(/\s+/)
+      .map(BigInt);
+    expect(values.slice(0, 2)).toEqual([1n, 21n]);
+    expect(values).toHaveLength(2 + 21 * 5);
+    for (let day = 0; day < 3; day++) {
+      const wire = ["7"];
+      const materialized: bigint[] = [];
+      for (let tile = 0; tile < 7; tile++) {
+        const offset = 2 + (day * 7 + tile) * 5;
+        const [timestamp, col, row, biome, data] = values.slice(offset, offset + 5);
+        expect(timestamp).toBe(350n + BigInt(day) * 100n);
+        wire.push("0", col!.toString(), row!.toString(), biome!.toString());
+        materialized.push(data!);
+      }
+      expect(decodeHomeRing(wire).map(homeRingTileData)).toEqual(materialized);
+    }
+  });
+
   it("scopes slot and chest rows by absolute epoch on a nonzero launch day", () => {
     const { fold } = frontierWorld();
     const absolute = absoluteEpoch({ epochSeconds: 86_400 }, MID_DAY);
@@ -173,7 +198,7 @@ describe("home ring", () => {
       const event = decoder.decode(
         raw(
           rowEvent("TileOpt", ["1", "0", String(tile.col), String(tile.row)], {
-            data: (BigInt(tile.biome) << 41n).toString(),
+            data: homeRingTileData(tile).toString(),
           }),
         ),
       );

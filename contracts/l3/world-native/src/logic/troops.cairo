@@ -746,8 +746,13 @@ pub mod TroopsLogic {
             };
             let coord = neighbor(origin, command.direction);
             if rules.epoch_seconds != 0 {
-                self.reveal_expedition_tile(game_id, origin, context);
-                self.reveal_expedition_tile(game_id, coord, context);
+                crate::logic::map::raise_expedition_home(
+                    tile_key(game_id, origin), crate::commands::biome_context(context),
+                );
+                let destination = crate::logic::map::tile(tile_key(game_id, coord))
+                    .expect('deployment tile unexplored');
+                let biome = destination.data / crate::map::BIOME_SCALE % crate::map::BYTE_RANGE;
+                assert!(biome > 0 && biome <= 17, "deployment tile unexplored");
             }
             assert!(
                 command.amount <= crate::troops::max_army_size(rules.troop_limit_config, home.base.level, tier).into()
@@ -898,7 +903,8 @@ pub mod troop_helpers {
                 }
             }
         }
-        fn reveal_expedition_tile(
+
+        fn reveal_depth_arrival(
             ref self: TContractState, game_id: u32, coord: Coord, game_context: crate::commands::ExecutionContext,
         ) {
             let key = tile_key(game_id, coord);

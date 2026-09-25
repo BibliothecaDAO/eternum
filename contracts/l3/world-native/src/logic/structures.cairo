@@ -406,6 +406,7 @@ pub mod StructuresLogic {
                 crate::settlement::SettlementCreation::Realm(realm) => {
                     if context.rules.unbox().epoch_seconds != 0 {
                         crate::logic::research::write(key, crate::research::RealmKnowledge { learned: 0 });
+                        self.raise_realm_home(game_id, realm.realm_id, context);
                     }
 
                     if realm.activate_economy {
@@ -836,6 +837,25 @@ pub mod StructuresLogic {
                 );
             key
         }
+        fn raise_realm_home(
+            self: @ContractState, game_id: u32, realm_id: u16, context: crate::commands::ExecutionContext,
+        ) {
+            if context.timestamp < context.game.unbox().start_main_at {
+                return;
+            }
+            let origin = crate::expeditions::site(
+                context.game.unbox().start_main_at,
+                context.rules.unbox().epoch_seconds,
+                crate::logic::settlement::rules(game_id).spacing,
+                realm_id,
+                context.timestamp,
+                0,
+            );
+            crate::logic::map::raise_expedition_home(
+                tile_key(game_id, origin), crate::commands::biome_context(context),
+            );
+        }
+
         fn prepare_settlement_tile(
             ref self: ContractState, game_id: u32, coord: Coord, game_context: crate::commands::ExecutionContext,
         ) {

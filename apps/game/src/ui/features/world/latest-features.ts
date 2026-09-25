@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-26",
+    title: "Explored Daily Realm Ring",
+    description: "Your realm's six neighbours start explored each day. Deployment waits for explored, free ground.",
+    type: "improvement",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-09-26",
     title: "Research and building tiers",
     description:
       "Research unlocks building tiers and depths. Existing buildings upgrade individually for labor; new buildings include their researched tier in the price.",

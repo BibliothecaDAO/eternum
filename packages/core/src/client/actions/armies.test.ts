@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
+import { getNeighborHexes, StructureType, BiomeType } from "@bibliothecadao/types";
 import * as timestamp from "../../utils/timestamp";
 
 // Through the barrel, as the app loads core: the managers resolve their cross-imports off it.
@@ -51,17 +51,24 @@ describe("structure paths", () => {
     vi.spyOn(configManager, "getMapCenter").mockReturnValue(0);
     vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: 86400 * 2 + 10 } as never);
 
-    const paths = createGameActions(client).structurePaths({
+    const input = {
       structureId: 42,
       armyHexes: new Map(),
-      exploredHexes: new Map(),
+      exploredHexes: new Map<number, Map<number, BiomeType>>(),
       playerAddress: 1n,
-    });
+    };
+    expect(createGameActions(client).structurePaths(input).getPaths().size).toBe(0);
+    const site = { col: 25, row: 45 };
+    for (const { col, row } of getNeighborHexes(site.col, site.row)) {
+      const column = input.exploredHexes.get(col) ?? new Map<number, BiomeType>();
+      column.set(row, 1 as BiomeType);
+      input.exploredHexes.set(col, column);
+    }
+    const paths = createGameActions(client).structurePaths(input);
 
     const musters = [...paths.getPaths().values()]
       .filter((path) => ActionPaths.getActionType(path) === ActionType.CreateArmy)
       .map((path) => path[path.length - 1].hex);
-    const site = { col: 25, row: 45 };
     expect(musters).toHaveLength(6);
     expect(musters).toEqual(
       expect.arrayContaining(getNeighborHexes(site.col, site.row).map(({ col, row }) => ({ col, row }))),

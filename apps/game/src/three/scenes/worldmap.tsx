@@ -62,7 +62,6 @@ import {
   Position,
   isOpenSpawnHex,
   isViewerOwner,
-  readExpeditionRules,
 } from "@bibliothecadao/eternum";
 import {
   requireActiveGameSyncRuntime,
@@ -3209,13 +3208,12 @@ export default class WorldmapScene extends WarpTravel {
       exploredHexes: this.buildProjectedExploredTileIndex(),
       playerAddress: viewer,
     });
-    const expedition = readExpeditionRules(this.game.store, configManager.getActiveGameId()) !== null;
 
     for (const [key, path] of actionPaths.getPaths()) {
       const destination = path[path.length - 1].hex;
       const tile = this.worldSpatialProjection.getTileAtHex({ ...destination, alt: activeMapLayer() });
       const occupierId = tile ? Number(tile.occupierId) : undefined;
-      if (ActionPaths.getActionType(path) === ActionType.CreateArmy && !isOpenSpawnHex(occupierId, expedition)) {
+      if (ActionPaths.getActionType(path) === ActionType.CreateArmy && !isOpenSpawnHex(occupierId)) {
         actionPaths.getPaths().delete(key);
       }
     }

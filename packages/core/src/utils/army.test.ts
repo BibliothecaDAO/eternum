@@ -31,16 +31,17 @@ const nothingExplored = () => undefined;
 describe("openSpawnDirections", () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it("offers all six hexes around a realm in a fresh Frontier region, which the contract reveals as it musters", () => {
+  it("disables deployment until the explored Frontier ring arrives", () => {
     vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: 86400 * 2 + 10 } as never);
     const parked = realm();
-    expect(openSpawnDirections(storeWith(frontier), parked, nothingExplored)).toHaveLength(6);
+    expect(openSpawnDirections(storeWith(frontier), parked, nothingExplored)).toEqual([]);
+    expect(openSpawnDirections(storeWith(frontier), parked, () => 0)).toHaveLength(6);
   });
 
   it("keeps an occupied explored hex closed in a Frontier region", () => {
     vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: 86400 * 2 + 10 } as never);
     const parked = realm();
-    const occupiedFirst = (hex: { col: number; row: number }) => (hex.col === 26 && hex.row === 45 ? 99 : undefined);
+    const occupiedFirst = (hex: { col: number; row: number }) => (hex.col === 26 && hex.row === 45 ? 99 : 0);
     expect(openSpawnDirections(storeWith(frontier), parked, occupiedFirst)).toHaveLength(5);
   });
 

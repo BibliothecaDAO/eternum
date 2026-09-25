@@ -15,7 +15,7 @@ import { ArmyManager } from "../../managers/army-manager";
 import { configManager } from "../../managers/config-manager";
 import { StructureActionManager } from "../../managers/structure-action-manager";
 import { getGuardsByStructure } from "../../utils/army";
-import { readExpeditionRules, structureMapPosition } from "../../utils/expeditions";
+import { structureMapPosition } from "../../utils/expeditions";
 import { type ActionPath, ActionPaths, ActionType } from "../../utils/action-paths";
 import { type ActionClient, requireSigner } from "./signer";
 
@@ -106,7 +106,6 @@ export const findStructurePaths = (client: ActionClient, input: StructurePathsIn
     input.exploredHexes,
     input.playerAddress,
     range,
-    readExpeditionRules(store, structure.game_id) !== null,
   );
 };
 

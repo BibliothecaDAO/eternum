@@ -204,6 +204,7 @@ pub fn off_map_realm_reference(realm_id: u32) -> crate::troops::Coord {
 
 #[starknet::interface]
 pub trait ITerrainDerivation<T> {
+    fn raise_expedition_home(ref self: T, key: crate::map::TileKey, context: crate::commands::BiomeContext);
     fn biome(self: @T, key: crate::map::TileKey, context: crate::commands::BiomeContext) -> u8;
     fn expedition_home_ring(self: @T, game_id: u32, realm_id: u16, timestamp: u64) -> Span<(Coord, u8)>;
 }

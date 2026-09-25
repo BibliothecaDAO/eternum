@@ -1,7 +1,7 @@
 import { NativePresetCalldataUnavailable } from "./native/preset-preimages";
 import { worldView } from "@bibliothecadao/eternum";
 import { GameSubscription } from "./game-subscription";
-import { decodeHomeRing, HomeRing, revealedTileData, type HomeRingTile, type HomeRingView } from "./home-ring";
+import { decodeHomeRing, HomeRing, homeRingTileData, type HomeRingTile, type HomeRingView } from "./home-ring";
 import { NativeReceiptRejected, type NativeIngestion, type PreconfirmedDecode } from "./native/ingestion";
 import { normalizeFelt, type ModelRegistry } from "./model-registry";
 import type { CheckpointStore } from "./checkpoint-store";
@@ -243,7 +243,7 @@ export class LiveWorld {
     const event = this.native.decoder.decodeRowSet(
       "TileOpt",
       [gameId, "0", String(tile.col), String(tile.row)],
-      [revealedTileData(tile).toString()],
+      [homeRingTileData(tile).toString()],
     );
     const change = new WorldFold(this.input.registry).apply(event);
     if (!change?.set) throw new Error(`Home ring tile ${tile.col},${tile.row} decoded to no row`);

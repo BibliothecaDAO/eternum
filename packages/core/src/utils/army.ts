@@ -1,6 +1,6 @@
 import { inlineTroops, resolveExplorerTroops } from "../managers/troop-stamina";
 import { entityMapPosition } from "./tile";
-import { readExpeditionRules, structureMapPosition } from "./expeditions";
+import { structureMapPosition } from "./expeditions";
 import {
   type ArmyInfo,
   type ContractAddress,
@@ -201,12 +201,8 @@ const isArmyAdjacentToStructure = (
     (hex) => hex.col === armyPosition.x && hex.row === armyPosition.y,
   );
 
-/**
- * Whether an army can be raised on a hex beside its home. The contract occupies the hex, so an explored one must be
- * free; in a game with expedition rules it first reveals an unexplored one, so a hex with no tile yet is free too.
- */
-export const isOpenSpawnHex = (occupierId: number | undefined, expedition: boolean): boolean =>
-  occupierId === undefined ? expedition : occupierId === 0;
+/** Deployment requires an explored, unoccupied tile; unknown terrain disables the action. */
+export const isOpenSpawnHex = (occupierId: number | undefined): boolean => occupierId === 0;
 
 /** The directions an army can be raised in from a structure, given the occupier of each explored neighbour. */
 export const openSpawnDirections = (
@@ -215,9 +211,8 @@ export const openSpawnDirections = (
   occupierAt: (hex: { col: number; row: number }) => number | undefined,
 ): Direction[] => {
   const home = structureMapPosition(store, structure);
-  const expedition = readExpeditionRules(store, structure.game_id) !== null;
   return getLayerNeighborHexes(home.x, home.y, home.alt)
-    .filter((hex) => isOpenSpawnHex(occupierAt(hex), expedition))
+    .filter((hex) => isOpenSpawnHex(occupierAt(hex)))
     .map((hex) => hex.direction);
 };
 

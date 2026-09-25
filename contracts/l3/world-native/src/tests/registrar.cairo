@@ -870,7 +870,7 @@ pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
     (game_id, preset, category)
 }
 
-fn muster_command(category: u8, direction: u8) -> Command {
+pub fn muster_command(category: u8, direction: u8) -> Command {
     Command::CreateExplorer(
         CreateExplorer { structure_id: 1, category, tier: 0, amount: RESOURCE_PRECISION, direction },
     )
@@ -1040,7 +1040,7 @@ fn yesterdays_armies_leave_todays_army_cap_free() {
 }
 
 #[test]
-fn a_home_ring_tile_reads_as_explored_and_an_explore_onto_it_moves_without_a_roll() {
+fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
     let d = setup();
     let (game_id, preset, category) = expedition_home(d);
     let spacing = preset.settlement.spacing;
@@ -1055,8 +1055,8 @@ fn a_home_ring_tile_reads_as_explored_and_an_explore_onto_it_moves_without_a_rol
     let spawn = troops.resolved_explorer(key).unwrap().coord;
     let site = crate::geometry::neighbor(spawn, 3);
 
-    // A move onto a ring tile no command has touched: it reads as explored, and storage catches up.
-    let (step, ring_tile) = unstored_ring_neighbor(map, game_id, spawn, site, spacing);
+    // All neighbours were materialized together before the first deployment.
+    let (step, ring_tile) = free_ring_neighbor(map, game_id, spawn, site, spacing);
     let move = Command::Move(crate::commands::Move { explorer_id: key.explorer_id, directions: array![step].span() });
     assert!(execute_in_game(d, game_id, move, 352, 352));
     let tile_key = crate::geometry::tile_key(game_id, ring_tile);
@@ -1076,7 +1076,7 @@ fn a_home_ring_tile_reads_as_explored_and_an_explore_onto_it_moves_without_a_rol
     );
 
     // An explore onto another ring tile moves at move cost: no discovery, no supplies.
-    let (step, target) = unstored_ring_neighbor(map, game_id, ring_tile, site, spacing);
+    let (step, target) = free_ring_neighbor(map, game_id, ring_tile, site, spacing);
     // The fixture's armies start with one move of stamina and regain it per 60 s tick, and the move above spent it in
     // this tick; rest the army by one dearest move so the explore is judged on the ring rule, not on fatigue.
     let stamina = preset.rules.troop_stamina_config;
@@ -1092,6 +1092,13 @@ fn a_home_ring_tile_reads_as_explored_and_an_explore_onto_it_moves_without_a_rol
         d.games, crate::troops::ExplorerKey { game_id: game_id.into(), explorer_id: key.explorer_id }, rested,
     );
     let before = troops.resolved_explorer(key).unwrap();
+    let progress_before = snforge_std::interact_with_state(d.games, || crate::logic::progression::read(key));
+    let discovery_key = crate::expeditions::ExpeditionDiscoveryKey {
+        game_id, structure_id: 1, epoch: crate::expeditions::absolute_epoch(preset.rules.epoch_seconds, 353),
+    };
+    let discovery_before = snforge_std::interact_with_state(
+        d.games, || crate::logic::expeditions::discovery(discovery_key),
+    );
     let mut balances = array![];
     for resource in array![23_u8, 26, 38].span() {
         balances.append(resources.resource_balance(ResourceSlot { game_id, entity_id: 1, resource_type: *resource }));
@@ -1124,6 +1131,11 @@ fn a_home_ring_tile_reads_as_explored_and_an_explore_onto_it_moves_without_a_rol
         ),
     );
     let after = troops.resolved_explorer(key).unwrap();
+    assert_eq!(progress_before, snforge_std::interact_with_state(d.games, || crate::logic::progression::read(key)));
+    assert_eq!(
+        discovery_before,
+        snforge_std::interact_with_state(d.games, || crate::logic::expeditions::discovery(discovery_key)),
+    );
     assert_eq!(after.coord, target);
     assert_eq!(before.troops.stamina.inline().amount - after.troops.stamina.inline().amount, move_cost);
     assert_eq!(map.tile(target_key).unwrap().data % 2, 0);
@@ -1137,8 +1149,8 @@ fn a_home_ring_tile_reads_as_explored_and_an_explore_onto_it_moves_without_a_rol
     }
 }
 
-// A home-ring tile next to `from` that storage has not written yet, and the direction to it.
-fn unstored_ring_neighbor(
+// A free home-ring neighbour and the direction to it.
+fn free_ring_neighbor(
     map: IMapLogicDispatcher, game_id: u32, from: crate::troops::Coord, site: crate::troops::Coord, spacing: u32,
 ) -> (u8, crate::troops::Coord) {
     let mut found = Option::None;
@@ -1147,11 +1159,12 @@ fn unstored_ring_neighbor(
         if found.is_none()
             && coord != site
             && crate::expeditions::is_home_ring(coord, spacing)
-            && map.tile(crate::geometry::tile_key(game_id, coord)).is_none() {
+            && map.tile(crate::geometry::tile_key(game_id, coord)).is_some()
+            && map.tile(crate::geometry::tile_key(game_id, coord)).unwrap().data % crate::map::BIOME_SCALE == 0 {
             found = Some((direction, coord));
         }
     }
-    found.expect('no unstored ring neighbour')
+    found.expect('no free ring neighbour')
 }
 
 #[test]

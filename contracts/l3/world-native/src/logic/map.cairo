@@ -2,6 +2,10 @@ pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
     crate::settlement::ITerrainDerivationDispatcherTrait::biome(terrain(key.game_id), key, game_context)
 }
 
+pub fn raise_expedition_home(key: TileKey, context: crate::commands::BiomeContext) {
+    crate::settlement::ITerrainDerivationDispatcherTrait::raise_expedition_home(terrain(key.game_id), key, context);
+}
+
 fn terrain(game_id: u32) -> crate::settlement::ITerrainDerivationLibraryDispatcher {
     let state = crate::state::read();
     let release = state.game_releases.read(game_id);
@@ -312,7 +316,7 @@ pub mod MapLogic {
                 ) {
                 return stored;
             }
-            crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key, game_context));
+            crate::logic::map::raise_expedition_home(key, game_context);
             crate::logic::map::tile(key)
         }
 

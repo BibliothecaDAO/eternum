@@ -22,10 +22,9 @@ interface HomeRingInput {
 }
 
 /**
- * A realm's home ring counts as explored from the day's first second by rule, but the chain writes a ring tile only when
- * a command first uses it. Herald shows connected players the ring the chain's own biome rule gives, read lazily through
- * one view call per (game, realm, day) while someone watches that realm, and kept beside the fold: the fold stays
- * chain facts only, and a chain-written row for the same key always wins.
+ * A realm's home ring counts as explored from the day's first second. The chain materializes the whole ring when the
+ * realm is raised or the ring is first used. Herald reads the same biome rule once per (game, realm, day) while someone
+ * watches that realm. The derived ring stays beside the fold, and a chain-written row for the same key always wins.
  */
 export class HomeRing {
   private readonly rings = new Map<string, FoldSet[]>();
@@ -99,11 +98,12 @@ interface RingDay {
 
 const ringKey = (gameId: string, realm: string, absoluteEpoch: number) => `${gameId}:${realm}:${absoluteEpoch}`;
 
-// MapState::reveal writes only terrain; the row key carries coordinates and occupancy is independent.
+// Raised home-ring tiles have already consumed their reveal reward; occupancy is independent.
 const BIOME_SCALE = BigInt(nativeTilePackingConstants.BIOME_SCALE);
 
-/** The terrain-only TileOpt data written when the chain reveals this tile. */
-export const revealedTileData = (tile: HomeRingTile): bigint => BigInt(tile.biome) * BIOME_SCALE;
+/** The TileOpt terrain and consumed reward marker written when Settlement raises the ring. */
+export const homeRingTileData = (tile: HomeRingTile): bigint =>
+  BigInt(tile.biome) * BIOME_SCALE + BigInt(nativeTilePackingConstants.REWARD_EXTRACTED_FLAG);
 
 /** Decodes expedition_home_ring's Span<(Coord, u8)>: a length, then (alt, x, y, biome) per tile. */
 export const decodeHomeRing = (felts: readonly string[]): HomeRingTile[] => {
