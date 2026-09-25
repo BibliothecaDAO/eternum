@@ -52,6 +52,7 @@ import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import type { TerrainCellInput } from "@/three/terrain/terrain-types";
 import {
+  type BuildingInstanceAction,
   buildingKey,
   reconcileBuildingUpdate,
   resolveBuildingInstanceAction,
@@ -1175,7 +1176,13 @@ export default class HexceptionScene extends HexagonScene {
         runWithFrameWorkOwner("scene:hexception:building", () => {
           const latestBuilding = this.buildings.find((building) => buildingKey(building) === key);
           this.updateBuildingHighlight(reconciliation.position, Boolean(latestBuilding));
-          this.reconcileBuildingInstance(reconciliation.position, latestBuilding, this.tileManager.structureType());
+          const action = this.reconcileBuildingInstance(
+            reconciliation.position,
+            latestBuilding,
+            this.tileManager.structureType(),
+          );
+          // A live update that creates a building is the building completing; the grid build never passes here.
+          if (action === "create") this.playBuildingCompleteBurst(reconciliation.position);
         }),
       isOwned: () => this.ownsRealmGeneration(realmGeneration),
       modelLoadPromises: this.modelLoadPromises,
@@ -1418,7 +1425,7 @@ export default class HexceptionScene extends HexagonScene {
     position: HexPosition,
     building: HexceptionBuilding | undefined,
     mainStructureType: StructureType | undefined,
-  ): void {
+  ): BuildingInstanceAction {
     const key = buildingKey(position);
     const selection = building ? this.resolveBuildingModelSelection(building, mainStructureType) : undefined;
     const signature = building && selection ? this.resolveBuildingRenderSignature(building, selection) : undefined;
@@ -1438,6 +1445,13 @@ export default class HexceptionScene extends HexagonScene {
     if (building) {
       this.reconcilePausedBuildingLabel(building);
     }
+    return action;
+  }
+
+  /** Design §3.11, realm board: a building completes with a dust burst of 24 at its hex. */
+  private playBuildingCompleteBurst(position: HexPosition): void {
+    const world = localHexPosition(position);
+    this.playBurst(new Vector3(world.x, 0.1, world.z), "building.complete", 1);
   }
 
   private resolveBuildingModelSelection(

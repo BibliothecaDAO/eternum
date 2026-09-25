@@ -13,14 +13,14 @@ describe("world FX gym fixture", () => {
     const second = createWorldFxGymFixture({ count: 10, scenario: "mixed", seed: 42 });
 
     expect(first.flameEmitters).toHaveLength(10);
-    expect(first.impactCues).toHaveLength(10);
+    expect(first.cues).toHaveLength(10);
     expect(first.flameEmitters).toEqual(second.flameEmitters);
-    expect(first.impactCues).toEqual(second.impactCues);
+    expect(first.cues).toEqual(second.cues);
     expect(first.positions.reduce((sum, position) => sum + position.x, 0)).toBeCloseTo(0);
   });
 
   it("keeps scenario composition explicit", () => {
-    expect(createWorldFxGymFixture({ count: 1, scenario: "flame", seed: 1 }).impactCues).toHaveLength(0);
+    expect(createWorldFxGymFixture({ count: 1, scenario: "flame", seed: 1 }).cues).toHaveLength(0);
     expect(createWorldFxGymFixture({ count: 1, scenario: "impact", seed: 1 }).flameEmitters).toHaveLength(0);
   });
 

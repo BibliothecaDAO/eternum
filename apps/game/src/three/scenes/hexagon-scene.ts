@@ -1,4 +1,7 @@
 import { RainEffect } from "@/three/effects/rain-effect";
+import { createWorldFxRuntime, type WorldFxRuntime } from "@/three/fx/world-fx-runtime";
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
+import { burstParticles, momentSpeed, type Intensity } from "@/ui/motion/motion-scale";
 import { configureWorldSunShadows } from "@/three/effects/world-sun-shadows";
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { TERRAIN_DEEP_FOG_COLOR } from "@/three/terrain/terrain-fog-style";
@@ -109,6 +112,7 @@ export abstract class HexagonScene {
 
   private weatherAtmosphereState?: WeatherState;
   private rainEffect!: RainEffect;
+  private worldFx!: WorldFxRuntime;
 
   private groundMesh!: Mesh;
   private groundMeshTexture: Texture | null = null;
@@ -229,6 +233,7 @@ export abstract class HexagonScene {
       this.hexSpace,
     );
     this.rainEffect = new RainEffect(this.scene, (x, z) => this.getTerrainSurface().sampleSurface(x, z).height);
+    this.worldFx = createWorldFxRuntime({ camera: this.camera, scene: this.scene });
     this.scene.background = new Color(this.sceneName === SceneName.WorldMap ? TERRAIN_DEEP_FOG_COLOR : 0x2a1a3e);
     this.state = useUIStore.getState();
     this.fog = new Fog(FOG_CONFIG.color, FOG_CONFIG.near, FOG_CONFIG.far);
@@ -1008,6 +1013,16 @@ export abstract class HexagonScene {
     }
   }
 
+  /**
+   * The burst primitive (design §3.11): a dust burst at a world point, sized by the moment's intensity and halved when
+   * the moment keeps repeating. Reduced motion plays no particles.
+   */
+  protected playBurst(position: Vector3, moment: string, intensity: Intensity): void {
+    if (useWorldAppearanceStore.getState().reducedMotion) return;
+    const count = burstParticles(intensity, momentSpeed(moment, intensity, Date.now()));
+    this.worldFx.emit({ kind: "burst", count, position, seed: Date.now() >>> 0 });
+  }
+
   public requestShadowContentRefresh(): void {
     this.shadowRefreshPolicy.markContentChanged();
   }
@@ -1033,6 +1048,7 @@ export abstract class HexagonScene {
     this.updateHighlightPulse();
     this.thunderBoltManager.update();
     this.rainEffect.update(deltaTime, this.controls.target, this.weatherAtmosphereState);
+    this.worldFx.update(deltaTime);
 
     if (this.shouldEnableStormEffects()) {
       this.updateStormEffects();
@@ -1182,6 +1198,7 @@ export abstract class HexagonScene {
       this.highlightHexManager.dispose();
     }
     this.rainEffect?.dispose();
+    this.worldFx?.dispose();
     if (this.thunderBoltManager) {
       this.thunderBoltManager.destroy();
     }

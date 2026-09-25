@@ -14,6 +14,10 @@ export const INTENSITY = {
   holdAmplitudeDeg: [4, 5, 6, 8],
 } as const satisfies Record<string, readonly unknown[]>;
 
+/** A world burst's particles: the intensity's count, halved when the moment is repeating. */
+export const burstParticles = (intensity: Intensity, speed: number): number =>
+  Math.round(INTENSITY.particles[intensity] * speed);
+
 /** Cubic-bezier curves: no moment moves linearly. */
 export const EASE = {
   inCubic: [0.32, 0, 0.67, 0],

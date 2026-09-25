@@ -38,6 +38,18 @@ describe("WorldFxRuntime", () => {
     runtime.dispose();
   });
 
+  it("makes a dust burst of the asked size visible at once and lets it settle", async () => {
+    const runtime = createWorldFxRuntime({ camera: new PerspectiveCamera(), scene: new Scene() });
+    const handle = runtime.emit({ kind: "burst", count: 24, position: new Vector3(2, 0.1, -1), seed: 5 });
+
+    expect(runtime.getStats()).toMatchObject({ activeAdditiveParticles: 0, activeRings: 0, activeSmokeParticles: 24 });
+
+    for (let index = 0; index < 90; index += 1) runtime.update(1 / 60);
+    await handle.promise;
+    expect(runtime.getStats().activeSmokeParticles).toBe(0);
+    runtime.dispose();
+  });
+
   it("produces the same fingerprint for the same seed and timeline", () => {
     const first = createWorldFxRuntime({ camera: new PerspectiveCamera(), scene: new Scene() });
     const second = createWorldFxRuntime({ camera: new PerspectiveCamera(), scene: new Scene() });

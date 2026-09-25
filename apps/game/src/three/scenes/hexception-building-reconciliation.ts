@@ -10,7 +10,7 @@ interface BuildingUpdateIdentity {
   innerRow?: unknown;
 }
 
-type BuildingInstanceAction = "create" | "keep" | "remove" | "replace";
+export type BuildingInstanceAction = "create" | "keep" | "remove" | "replace";
 
 export interface TargetedBuildingReconciliation<TBuilding extends PositionedBuilding> {
   buildings: TBuilding[];

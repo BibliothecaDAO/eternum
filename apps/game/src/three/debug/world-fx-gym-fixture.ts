@@ -1,16 +1,21 @@
 import { Vector3 } from "three";
 
-import type { PersistentWorldFxEmitter, WorldFxImpactCue } from "../fx/world-fx-runtime";
+import type {
+  PersistentWorldFxEmitter,
+  TransientWorldFxCue,
+  WorldFxBurstCue,
+  WorldFxImpactCue,
+} from "../fx/world-fx-runtime";
 
 const WORLD_FX_GYM_COUNTS = [1, 10, 50] as const;
-const WORLD_FX_GYM_SCENARIOS = ["flame", "impact", "mixed"] as const;
+const WORLD_FX_GYM_SCENARIOS = ["flame", "impact", "burst", "mixed"] as const;
 
 export type WorldFxGymCount = (typeof WORLD_FX_GYM_COUNTS)[number];
 export type WorldFxGymScenario = (typeof WORLD_FX_GYM_SCENARIOS)[number];
 
 export interface WorldFxGymFixture {
   flameEmitters: PersistentWorldFxEmitter[];
-  impactCues: WorldFxImpactCue[];
+  cues: TransientWorldFxCue[];
   positions: Vector3[];
   span: number;
 }
@@ -24,13 +29,18 @@ export function createWorldFxGymFixture(input: {
 }): WorldFxGymFixture {
   const positions = createCenteredGrid(input.count);
   const flameEmitters =
-    input.scenario === "impact" ? [] : positions.map((position, index) => createFlame(position, input.seed, index));
-  const impactCues =
-    input.scenario === "flame" ? [] : positions.map((position, index) => createImpact(position, input.seed, index));
+    input.scenario === "flame" || input.scenario === "mixed"
+      ? positions.map((position, index) => createFlame(position, input.seed, index))
+      : [];
+  const cues = positions.flatMap((position, index): TransientWorldFxCue[] => {
+    if (input.scenario === "flame") return [];
+    if (input.scenario === "burst") return [createBurst(position, input.seed, index)];
+    return [createImpact(position, input.seed, index)];
+  });
   const columns = Math.ceil(Math.sqrt(input.count));
   return {
     flameEmitters,
-    impactCues,
+    cues,
     positions,
     span: Math.max(3, (columns - 1) * CELL_SPACING + 3),
   };
@@ -82,6 +92,16 @@ function createImpact(position: Vector3, seed: number, index: number): WorldFxIm
     scale: 1.05 + deterministicUnit(seed, index, 29) * 0.6,
     seed: mixSeed(seed, index, 31),
     tone: index % 3 === 2 ? "arcane" : "physical",
+  };
+}
+
+/** The realm board's building-complete burst: 24 puffs at the hex. */
+function createBurst(position: Vector3, seed: number, index: number): WorldFxBurstCue {
+  return {
+    kind: "burst",
+    count: 24,
+    position: new Vector3(position.x, 0.1, position.z),
+    seed: mixSeed(seed, index, 37),
   };
 }
 
