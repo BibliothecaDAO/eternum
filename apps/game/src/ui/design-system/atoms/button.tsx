@@ -67,7 +67,8 @@ const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const playClick = useUISound("ui.click");
-  const casingClass = forceUppercase ? "uppercase" : "normal-case";
+  // hud-caps-button, not "uppercase": a mode that reads in sentence case restyles it in one place (index.css).
+  const casingClass = forceUppercase ? "hud-caps-button" : "normal-case";
 
   return (
     <button

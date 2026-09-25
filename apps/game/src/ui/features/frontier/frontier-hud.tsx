@@ -6,6 +6,7 @@ import { FrontierArmyDock } from "./frontier-army-dock";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
 import { FrontierStatusStrip } from "./frontier-status-strip";
+import { useFrontierType } from "./use-frontier-type";
 
 const SAFE_AREA: CSSProperties = {
   paddingTop: "max(env(safe-area-inset-top), 0.5rem)",
@@ -20,6 +21,7 @@ const SAFE_AREA: CSSProperties = {
  * the right. Everything else opens from these: the muster and build surfaces, settings, the log.
  */
 export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof useExpeditionRules>> }) => {
+  useFrontierType();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const realm = useFrontierRealm();
   const [logOpen, setLogOpen] = useState(false);
@@ -43,7 +45,7 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
           <QuickFeed logOpen={logOpen} onLogToggle={() => setLogOpen((open) => !open)} />
         </div>
         <FrontierSelectionSheet />
-        <div className="flex min-h-0 flex-col-reverse gap-2 landscape:order-first landscape:w-44 landscape:flex-col">
+        <div className="flex min-h-0 flex-col-reverse gap-2 landscape:order-first landscape:w-48 landscape:flex-col">
           {realm && <FrontierArmyDock realm={realm} />}
           <HudChatWindow open={chatOpen} onOpenChange={setChatOpen} />
         </div>

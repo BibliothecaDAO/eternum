@@ -55,7 +55,7 @@ export const FrontierArmyDock = ({ realm }: { realm: NativeRows["Structure"] }) 
   );
 };
 
-const CARD = "flex w-40 shrink-0 flex-col gap-1 rounded-xl px-3 py-2 text-left font-sans landscape:w-44";
+const CARD = "flex w-44 shrink-0 flex-col gap-1 rounded-xl px-3 py-2 text-left landscape:w-48";
 
 const ArmyCard = ({ army, position }: { army: NativeRows["ExplorerTroops"]; position: number }) => {
   const { setup } = useGame();
@@ -122,7 +122,7 @@ const StaminaBar = ({ stamina }: { stamina: ArmyStaminaPresentation | null }) =>
     </span>
     <span className={cn(HUD_LABEL, "flex justify-between gap-2 tabular-nums tracking-normal")}>
       <span>{stamina ? `${stamina.committedCurrent}/${stamina.committedMax}` : "—"}</span>
-      {stamina && <span>{describeFull(stamina)}</span>}
+      {stamina && <span className="whitespace-nowrap">{describeFull(stamina)}</span>}
     </span>
   </span>
 );

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Exo+2:wght@400;500;600;700&family=JetBrains+Mono:wght@400..700&family=Space+Grotesk:wght@300..700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=Cinzel:wght@400..900&family=Exo+2:wght@400;500;600;700&family=JetBrains+Mono:wght@400..700&family=Lexend:wght@500;600;700&family=Space+Grotesk:wght@300..700&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -412,6 +412,50 @@ html.scene-viewport body {
   -webkit-touch-callout: none;
   user-select: none;
 }
+/* The HUD's display choices, one class each (hud-typography.ts), so a mode restyles them in one place. */
+.hud-caps {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+.hud-caps-tight {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+.hud-muted {
+  font-style: italic;
+}
+.hud-caps-button {
+  text-transform: uppercase;
+}
+
+/* Frontier type, the owner's dyslexia rule: Atkinson Hyperlegible body, Lexend headings, sentence case, no italics,
+   larger sizes. FrontierHud sets the class on <html>, so popovers and sheets rendered outside it follow too. */
+html.frontier-type body,
+html.frontier-type button,
+html.frontier-type .font-sans {
+  font-family: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+html.frontier-type :is(h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6, .font-cinzel) {
+  font-family: "Lexend", system-ui, sans-serif;
+}
+html.frontier-type .hud-caps-button {
+  text-transform: none;
+}
+html.frontier-type :is(.hud-caps, .hud-caps-tight) {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 0.8125rem;
+}
+html.frontier-type .hud-muted {
+  font-style: normal;
+}
+html.frontier-type .hud-body {
+  font-size: 1rem;
+}
+html.frontier-type .hud-value {
+  font-size: 0.9375rem;
+}
+
 .font-grotesk {
   font-family: "Exo 2", "Space Grotesk", sans-serif;
 }
