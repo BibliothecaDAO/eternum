@@ -125,8 +125,8 @@
   "exploration": {
     "shardsMinesFailProbability": 96,
     "shardsMinesWinProbability": 4,
-    "campFindProbability": 6,
-    "campFindFailProbability": 90,
+    "campFindProbability": 4,
+    "campFindFailProbability": 92,
     "bitcoinMineWinProbability": 0,
     "bitcoinMineFailProbability": 1,
     "hyperstructureWinProbAtCenter": 0,

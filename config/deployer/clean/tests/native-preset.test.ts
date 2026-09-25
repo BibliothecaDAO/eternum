@@ -142,7 +142,7 @@ describe("native presets", () => {
     expect(design.rules.mode_rules & nativeRuleConstants.CAPTURE_CHESTS).not.toBe(0);
   });
 
-  test("Frontier's exploration finds a rift 4%, a camp 6% and a loose chest 1% of reveals, against surface guards of 1,000", () => {
+  test("Frontier's exploration finds a rift 4%, a camp 4% and a loose chest 2% of reveals, against surface guards of 1,000", () => {
     const design = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
       FRONTIER_PRESET_ID,
@@ -155,12 +155,42 @@ describe("native presets", () => {
     const chests = design.economy.chests.unwrap() as { loose_one_in: number };
     const chest = (1 - rift - camp) / chests.loose_one_in;
 
-    expect([rift, camp, chest].map((chance) => Math.round(chance * 10_000) / 100)).toEqual([4, 6, 1]);
+    expect([rift, camp, chest].map((chance) => Math.round(chance * 10_000) / 100)).toEqual([4, 4, 2]);
     expect([design.settlement.depths[0].guard_lower, design.settlement.depths[0].guard_upper]).toEqual([1000, 1600]);
     const limits = design.rules.troop_limit_config;
     expect([limits.settlement_armies, limits.city_armies, limits.kingdom_armies, limits.empire_armies]).toEqual([
       3, 4, 5, 6,
     ]);
+  });
+
+  test("Frontier's sequential discovery rates stay within 0.2 percentage points over 100,000 seeded reveals", () => {
+    const preset = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
+      FRONTIER_PRESET_ID,
+    );
+    const map = preset.rules.map_config;
+    const chest = preset.economy.chests.unwrap() as { loose_one_in: number };
+    const counts = { rift: 0, camp: 0, chest: 0 };
+    let seed = 20260925;
+    const draw = (bound: number) => {
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      return (seed >>> 0) % bound;
+    };
+    const wins = (success: number | bigint, failure: number | bigint) =>
+      draw(Number(success) + Number(failure)) < Number(success);
+
+    for (let reveal = 0; reveal < 100_000; reveal++) {
+      if (wins(map.shards_mines_win_probability, map.shards_mines_fail_probability)) counts.rift++;
+      else if (wins(map.camp_win_probability, map.camp_fail_probability)) counts.camp++;
+      else if (draw(chest.loose_one_in) === 0) counts.chest++;
+    }
+
+    for (const [kind, target] of Object.entries({ rift: 0.04, camp: 0.04, chest: 0.02 })) {
+      const actual = counts[kind as keyof typeof counts] / 100_000;
+      expect(Math.abs(actual - target)).toBeLessThanOrEqual(0.002);
+    }
   });
 
   test("Blitz and Duel carry no labor-paid production, while Frontier trains troops and Eternum keeps its labor path", () => {

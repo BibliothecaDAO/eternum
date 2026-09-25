@@ -81,7 +81,7 @@ export const frontierPreset: NativePreset = {
       { building: 1, neighbor: 0, productionBps: 0, capacityBps: 0, population: 2 },
     ],
   },
-  chests: { looseOneIn: 90, relicProbability: 9000, cosmeticProbability: 900, tokenCap: 1 },
+  chests: { looseOneIn: 46, relicProbability: 9000, cosmeticProbability: 900, tokenCap: 1 },
   depths: [
     {
       supplyMultiplier: 1,
