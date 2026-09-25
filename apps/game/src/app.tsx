@@ -19,6 +19,9 @@ import { PlayPage } from "./shell/play";
 import { PlayerPage } from "./shell/player";
 import { ResultsPage } from "./shell/results";
 
+const MotionLabView = lazy(() =>
+  import("./ui/features/debug/motion-lab/motion-lab-view").then((module) => ({ default: module.MotionLabView })),
+);
 const FrontierHudLabView = lazy(() =>
   import("./ui/features/debug/frontier-hud-lab/frontier-hud-lab-view").then((module) => ({
     default: module.FrontierHudLabView,
@@ -130,6 +133,16 @@ function App() {
               </SceneRoute>
             }
           />
+          {import.meta.env.DEV && (
+            <Route
+              path="/lab/motion"
+              element={
+                <LazyRoute>
+                  <MotionLabView />
+                </LazyRoute>
+              }
+            />
+          )}
           {import.meta.env.DEV && (
             <Route
               path="/lab/frontier-hud/*"

@@ -212,7 +212,7 @@ function SelectedOption({
 function VideoSettings() {
   const preferences = readGraphicsPreferences(localStorage);
   const renderMode = readRenderMode(localStorage);
-  const { reducedMotion, setReducedMotion } = useWorldAppearanceStore();
+  const { reducedMotion, setReducedMotion, haptics, setHaptics } = useWorldAppearanceStore();
   const changeGraphics = (change: Partial<GraphicsPreferences>) => {
     writeGraphicsPreferences(localStorage, { ...preferences, ...change });
     window.location.reload();
@@ -250,6 +250,9 @@ function VideoSettings() {
         </SelectedOption>
         <SelectedOption selected={reducedMotion} onClick={() => setReducedMotion(!reducedMotion)}>
           Reduced motion
+        </SelectedOption>
+        <SelectedOption selected={haptics} onClick={() => setHaptics(!haptics)}>
+          Haptics
         </SelectedOption>
       </div>
       <RendererDebugControl diagnostics={false} className="border-0 bg-transparent px-0 py-0 backdrop-blur-none" />
