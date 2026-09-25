@@ -1,6 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { QuickFeed } from "@/ui/features/event-feed/quick-feed";
-import { type CSSProperties, useState } from "react";
+import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
+import { type CSSProperties, useEffect, useState } from "react";
 import { FrontierArmyDock } from "./frontier-army-dock";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
@@ -14,14 +15,20 @@ const SAFE_AREA: CSSProperties = {
 };
 
 /**
- * Frontier's own HUD, one tree for every width. Upright phones stack the status strip, the map, the selection sheet
- * and the army dock; sideways and on desktop the dock moves to the left edge and the sheet to the right. Everything
- * else opens from these: the muster and build surfaces, settings, the log.
+ * Frontier's own HUD, one tree for every width. Upright phones stack the status strip, the map, the selection sheet,
+ * the chat strip and the army dock; sideways and on desktop the dock and chat move to the left edge and the sheet to
+ * the right. Everything else opens from these: the muster and build surfaces, settings, the log.
  */
 export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof useExpeditionRules>> }) => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const realm = useFrontierRealm();
   const [logOpen, setLogOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const armySelected = useUIStore((state) => state.entityActions.selectedEntityId !== null);
+  // Picking an army is the moment to play, not to read: chat folds away.
+  useEffect(() => {
+    if (armySelected) setChatOpen(false);
+  }, [armySelected]);
   if (showBlankOverlay) return null;
 
   return (
@@ -36,11 +43,10 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
           <QuickFeed logOpen={logOpen} onLogToggle={() => setLogOpen((open) => !open)} />
         </div>
         <FrontierSelectionSheet />
-        {realm && (
-          <div className="min-h-0 landscape:order-first">
-            <FrontierArmyDock realm={realm} />
-          </div>
-        )}
+        <div className="flex min-h-0 flex-col-reverse gap-2 landscape:order-first landscape:w-44 landscape:flex-col">
+          {realm && <FrontierArmyDock realm={realm} />}
+          <HudChatWindow open={chatOpen} onOpenChange={setChatOpen} />
+        </div>
       </div>
     </div>
   );

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-25",
+    title: "Frontier chat",
+    description: "Game chat now has a strip above your Frontier armies; it folds away while you command one.",
+    type: "feature",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-09-25",
     title: "Only the actions a game allows",
     description:
       "Panels no longer offer actions the game turns off: no transfer shortcut, pause switch, production refill, relic list or defense army where the game has none.",
