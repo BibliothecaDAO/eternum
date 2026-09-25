@@ -98,6 +98,29 @@ credentials from `data/harness.env` privately. Publish only the operator address
 directory and approves its launchers. Open `https://play.realms.party` to create and join a game on the listed shard.
 Anyone can host unranked games; ranked games require an approved shard.
 
+Rotate the gateway's submitter only after its key leaks: the shard's authority points Games at a new sequencing
+account, and the account class and guardian stay fixed (the contract refuses changing either). The gateway must hold
+the new key before the rotation lands, or it signs with an account Games no longer accepts. With the new key in
+`RANDOMNESS_PRIVATE_KEY` in your shell only, never in a file you publish, and `SEED=athanor-<chain id in lower case,
+_ as ->`:
+
+```sh
+docker compose run --rm --no-deps -e RANDOMNESS_PRIVATE_KEY --entrypoint /bin/sh init -ec \
+  'set -a; . /data/harness.env; NATIVE_AUTHORITY_FILE=/data/authority-rotated.json \
+   exec bun deploy/athanor/harness/native/prepare-authority.ts "'"$SEED"'" /data/native-world.json'
+docker compose stop gateway
+# Set RANDOMNESS_ACCOUNT (the address in data/authority-rotated.json) and RANDOMNESS_PRIVATE_KEY in data/gateway.env.
+docker compose run --rm --no-deps --entrypoint cp init /data/gateway.env /gateway-config/gateway.env
+docker compose run --rm --no-deps --entrypoint /bin/sh init -ec \
+  'set -a; . /data/harness.env; exec bun config/deployer/clean/cli/deploy-world.ts --seed "'"$SEED"'" \
+   --manifest /data/native-world.json --identity /data/gameplay-contracts.json \
+   --submitter NEW_ACCOUNT_ADDRESS --world-address-file /data/world-address'
+docker compose up -d gateway
+```
+
+The deploy command sees the submitter differ from the deployed one and applies it with `set_authentication` as the
+authority; any other difference stops it before a transaction.
+
 `docker compose stop` retains state. Starting the same package again audits the existing deployment. Changing the
 release is a separate operator action; never recreate genesis for an existing shard. CI publishes immutable images and
 this archive from `shard-v*` tags; it does not deploy a box or change a live hostname.

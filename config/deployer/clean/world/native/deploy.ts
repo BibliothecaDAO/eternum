@@ -27,6 +27,8 @@ export async function deployNativeWorld(
   if (deployed.blockers.length) throw new Error(deployed.blockers.join("; "));
   if (!deployed.releaseRegistered)
     await registerNativeRelease(local, account, (hash) => record("register_release", "games", hash));
+  if (deployed.submitterRotation)
+    await rotateSubmitter(local, account, (hash) => record("set_authentication", "games", hash));
   await initializeRealmCatalogue(local, account, deployed, (hash) => record("initialize_realm_traits", "games", hash));
   const after = await inspectNativeWorld(local, account);
   if (!after.synced) throw new Error("Native deployment did not converge");
@@ -56,6 +58,26 @@ async function initializeRealmCatalogue(
     submitted(result.transaction_hash);
     await waitForSuccess(account, result.transaction_hash);
   }
+}
+
+/**
+ * The emergency submitter rotation: after a gateway submitter key leaks, the authority points Games at a new
+ * sequencing account. The account class is passed unchanged; the contract refuses any other.
+ */
+async function rotateSubmitter(local: NativeWorld, account: Account, submitted: (hash: string) => void) {
+  const result = await account.execute(
+    {
+      contractAddress: local.games.address,
+      entrypoint: "set_authentication",
+      calldata: new CallData(local.games.sierra.abi).compile("set_authentication", {
+        submitter: local.authentication.submitter,
+        approved_account_class: local.authentication.account_class,
+      }),
+    },
+    { tip: 0 },
+  );
+  submitted(result.transaction_hash);
+  await waitForSuccess(account, result.transaction_hash);
 }
 
 async function deployGames(local: NativeWorld, account: Account, submitted: (hash: string) => void) {
