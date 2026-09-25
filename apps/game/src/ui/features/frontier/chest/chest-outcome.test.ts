@@ -8,7 +8,7 @@ const RULES = { lords_amounts: { common: 100n, uncommon: 400n, rare: 1_500n, epi
 describe("what a chest gave", () => {
   it("pays a Token the game's own amount for its quality", () => {
     expect(
-      [0, 1, 2, 3].map((quality) => readChestOutcome({ kind: "Token", quality, lords_exhausted: false }, RULES)),
+      [0, 1, 2, 3].map((quality) => readChestOutcome({ kind: "Token", quality, lordsExhausted: false }, RULES)),
     ).toEqual([
       { kind: "lords", intensity: 0, lords: 100 },
       { kind: "lords", intensity: 1, lords: 400 },
@@ -18,12 +18,12 @@ describe("what a chest gave", () => {
   });
 
   it("gives a relic, saying when it stands in for LORDS the season could not pay today", () => {
-    expect(readChestOutcome({ kind: "Relic", quality: 2, lords_exhausted: false }, RULES)).toEqual({
+    expect(readChestOutcome({ kind: "Relic", quality: 2, lordsExhausted: false }, RULES)).toEqual({
       kind: "relic",
       intensity: 2,
       lordsSpent: false,
     });
-    expect(readChestOutcome({ kind: "Relic", quality: 3, lords_exhausted: true }, RULES)).toEqual({
+    expect(readChestOutcome({ kind: "Relic", quality: 3, lordsExhausted: true }, RULES)).toEqual({
       kind: "relic",
       intensity: 3,
       lordsSpent: true,
@@ -31,8 +31,8 @@ describe("what a chest gave", () => {
   });
 
   it("refuses an unknown quality and a LORDS chest marked unpaid", () => {
-    expect(() => readChestOutcome({ kind: "Relic", quality: 4, lords_exhausted: false }, RULES)).toThrow("quality 4");
-    expect(() => readChestOutcome({ kind: "Token", quality: 1, lords_exhausted: true }, RULES)).toThrow("unpaid");
+    expect(() => readChestOutcome({ kind: "Relic", quality: 4, lordsExhausted: false }, RULES)).toThrow("quality 4");
+    expect(() => readChestOutcome({ kind: "Token", quality: 1, lordsExhausted: true }, RULES)).toThrow("unpaid");
   });
 });
 

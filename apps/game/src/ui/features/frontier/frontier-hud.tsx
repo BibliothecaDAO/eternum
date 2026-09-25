@@ -5,6 +5,8 @@ import { SecondaryMenuItems } from "@/ui/features/world";
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import { type CSSProperties, useEffect, useState } from "react";
 import { FrontierPick } from "./attributes/frontier-pick";
+import { ChestMomentView } from "./chest/chest-moment-view";
+import { useChestResults } from "./chest/chest-results";
 import { SiteClearCardView } from "./sites/site-clear-card";
 import { FrontierSurfaces } from "./frontier-surfaces";
 import { FrontierArmyDock } from "./frontier-army-dock";
@@ -34,6 +36,7 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
   const [chatOpen, setChatOpen] = useState(false);
   const armySelected = useUIStore((state) => state.entityActions.selectedEntityId !== null);
   const guideLine = useGuideLine(rules, realm);
+  useChestResults();
   // Picking an army is the moment to play, not to read: chat folds away.
   useEffect(() => {
     if (armySelected) setChatOpen(false);
@@ -49,6 +52,8 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
       style={SAFE_AREA}
     >
       <FrontierStatusStrip rules={rules} realm={realm} />
+      {/* A chest's opening owns the screen while it plays, over the world where the chest opens. */}
+      <ChestMomentView />
       <FrontierSurfaces realm={realm} />
       <div className="flex min-h-0 flex-1 flex-col justify-end gap-2 landscape:flex-row landscape:items-stretch landscape:justify-between">
         <div className="flex max-w-[min(360px,70vw)] flex-col items-end gap-1 self-end portrait:mb-auto landscape:order-2 landscape:mb-auto landscape:ml-auto landscape:self-start">

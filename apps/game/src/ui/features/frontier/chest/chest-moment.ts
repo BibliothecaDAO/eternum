@@ -70,16 +70,27 @@ export const isOffCentre = (at: { x: number; y: number }, view: { width: number;
 
 /**
  * The player tapped a closed chest: the hold starts and lasts until the result arrives, hiding the transaction. The
- * camera flies to the chest (the scene's `focus`, 400 ms) only when it sits off-centre.
+ * camera flies to the chest (the scene's `focus`, 400 ms) only when it sits off-centre, and the reveal then rises from
+ * the view's centre, where the chest lands.
  */
 export const beginChestOpening = (
   at: { x: number; y: number },
   { focus, now = performance.now() }: { focus?: () => void; now?: number } = {},
 ): void => {
-  if (focus && isOffCentre(at, { width: window.innerWidth, height: window.innerHeight })) focus();
+  const view = { width: window.innerWidth, height: window.innerHeight };
+  const focused = focus !== undefined && isOffCentre(at, view);
+  if (focused) focus();
   void AudioManager.getInstance().play("chest.tap");
   charge = AudioManager.getInstance().play("chest.charge");
-  set({ at, openedAt: now, phase: "anticipation", result: null, speed: 1, tellAt: null, skipped: false });
+  set({
+    at: focused ? { x: view.width / 2, y: view.height / 2 } : at,
+    openedAt: now,
+    phase: "anticipation",
+    result: null,
+    speed: 1,
+    tellAt: null,
+    skipped: false,
+  });
 };
 
 /** The result arrived (Herald's pre-confirmed chest story): the hold ends once its minimum has passed. */

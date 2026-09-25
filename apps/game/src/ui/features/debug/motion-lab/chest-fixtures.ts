@@ -1,12 +1,13 @@
 import type { ChestResult } from "@/ui/features/frontier/chest/chest-moment";
+import type { ChestRewardSystemUpdate } from "@bibliothecadao/eternum";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { readChestOutcome } from "@/ui/features/frontier/chest/chest-outcome";
 import { relicName } from "@/ui/features/frontier/chest/relic-name";
 import type { Intensity } from "@/ui/motion/motion-scale";
 
-/** ChestRules exactly as the agreed shapes carry it (backend shapes v3 with the LORDS delta). */
-const CHEST_RULES_ROW = {
+/** Frontier's ChestRules row as the preset publishes it. */
+const CHEST_RULES_ROW: NativeRows["ChestRules"] = {
   game_id: 2,
-  loose_one_in: 46,
   relic_probability: 9_000,
   token_cap: 1,
   lords_amounts: { common: 100n, uncommon: 400n, rare: 1_500n, epic: 6_000n },
@@ -19,26 +20,23 @@ const ARMY_LEVELS = { Battle: 2, Scouting: 4, Support: 1 } as const;
 
 export type ChestVariant = "lords" | "relic" | "spent";
 
-/** A ChestReward story row in the agreed shape, and what the moment is told about it. */
+/** A ChestReward story as the world update listener reads it, and what the moment is told about it. */
 export const chestResultFixture = (variant: ChestVariant, intensity: Intensity, index: number): ChestResult => {
-  const row = {
-    game_id: 2,
-    order: 4_096n,
-    index,
-    player: "0x5a11ab",
-    explorer_id: 201,
-    epoch: 20_004n,
-    depth: 1,
-    kind: variant === "lords" ? ("Token" as const) : ("Relic" as const),
+  const reward: ChestRewardSystemUpdate = {
+    resultKey: ["0x2", "0x1000", `0x${index.toString(16)}`],
+    explorerId: 201,
+    kind: variant === "lords" ? "Token" : "Relic",
+    lordsExhausted: variant === "spent",
     quality: intensity,
-    lords_exhausted: variant === "spent",
+    depth: 1,
+    timestamp: 0,
   };
-  const outcome = readChestOutcome(row, CHEST_RULES_ROW);
+  const outcome = readChestOutcome(reward, CHEST_RULES_ROW);
   if (outcome.kind === "lords") return { outcome };
   return {
     outcome,
     relic: {
-      name: relicName([String(row.game_id), String(row.order), String(row.index)]),
+      name: relicName(reward.resultKey),
       offer: {
         // A relic awards +1 to +4 by its quality, capped at 5.
         amount: intensity + 1,

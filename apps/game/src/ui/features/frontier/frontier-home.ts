@@ -62,3 +62,14 @@ export const troopsOnHand = (store: NativeFactStore, realmId: ID, tick: number):
   }
   return total;
 };
+
+/** Whether an army is the player's: its home realm is theirs. */
+export const isPlayersArmy = (
+  store: Pick<NativeFactStore, "get">,
+  army: { game_id: number; explorer_id: number },
+  player: string,
+): boolean => {
+  const explorer = store.get("ExplorerTroops", army);
+  const home = explorer && store.get("Structure", { game_id: army.game_id, entity_id: explorer.owner });
+  return home !== undefined && BigInt(home.owner) === BigInt(player);
+};

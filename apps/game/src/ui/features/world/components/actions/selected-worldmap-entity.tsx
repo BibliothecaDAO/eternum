@@ -3,7 +3,7 @@ import { SpireDepthActions } from "./spire-depth-actions";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useRelicCrateOpening } from "@/hooks/store/use-relic-crate-store";
-import { openRelicCrate } from "@/ui/features/military/chest/open-relic-crate";
+import { requestChestOpening } from "@/three/scenes/worldmap-chest-open-request";
 import { useAdjacentOwnExplorer } from "@/ui/features/military/chest/use-adjacent-own-explorer";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -31,7 +31,6 @@ import {
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { useGame } from "@/hooks/context/game-context";
 import { type ReactNode, useCallback, useMemo } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -198,16 +197,13 @@ const RelicCrateTilePanel = ({
   headerAction?: ReactNode;
   onSimulateBattle: () => void;
 }) => {
-  const {
-    setup: { systemCalls },
-  } = useGame();
   const account = useAccountStore((state) => state.account);
   const explorerId = useAdjacentOwnExplorer(selectedHex);
   const canOpen = Boolean(account) && explorerId !== null;
+  // The world map is the one opener: it plays a chest's moment where the game has one.
   const handleOpen = useCallback(() => {
-    if (!account || explorerId === null) return;
-    void openRelicCrate({ systemCalls, account, explorerId, hex: selectedHex });
-  }, [account, explorerId, selectedHex, systemCalls]);
+    if (explorerId !== null) requestChestOpening({ explorerId, hex: selectedHex });
+  }, [explorerId, selectedHex]);
   return (
     <ChestTileDetails
       crateEntityId={crateEntityId}

@@ -248,6 +248,8 @@ import {
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-army-select-request";
+import { onChestOpenRequest } from "./worldmap-chest-open-request";
+import { beginChestOpening, cancelChestOpening, readChestBeat } from "@/ui/features/frontier/chest/chest-moment";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
 import {
@@ -890,6 +892,7 @@ export default class WorldmapScene extends WarpTravel {
     this.minimapCameraMoveTarget = detail;
     this.minimapCameraMoveThrottled?.();
   };
+  private stopChestOpenRequests?: () => void;
   private armySelectRequestHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     const entityId = readArmySelectRequest(event);
@@ -1832,6 +1835,9 @@ export default class WorldmapScene extends WarpTravel {
     window.addEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.addEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
     window.addEventListener(ARMY_SELECT_REQUEST_EVENT, this.armySelectRequestHandler);
+    this.stopChestOpenRequests = onChestOpenRequest(({ explorerId, hex }) => {
+      if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) void this.openChest(explorerId, hex);
+    });
     this.controls.addEventListener("change", this.handleWorldmapControlsChange);
     window.addEventListener("resize", this.handleTerrainViewportResize);
     this.updateCameraTargetHexThrottled();
@@ -3679,12 +3685,32 @@ export default class WorldmapScene extends WarpTravel {
     })();
   }
 
-  /** Right-click on a crate with the adjacent army selected opens it; the reveal comes back as an event. */
+  /** Right-click on a chest with the adjacent army selected opens it. */
   private onChestSelection(actionPath: ActionPath[], selectedEntityId: ID) {
+    void this.openChest(selectedEntityId, actionPath[actionPath.length - 1].hex);
+  }
+
+  /**
+   * The one chest opener, for a tap here or the HUD's request: in a game of expedition chests (it has ChestRules) the
+   * chest's moment holds on the tile while the command goes out, and ends if it is refused; a relic crate only sends it.
+   * The result comes back as its story.
+   */
+  private async openChest(explorerId: ID, hex: HexPosition): Promise<void> {
     const account = useAccountStore.getState().account;
     if (!account) return;
-    const targetHex = actionPath[actionPath.length - 1].hex;
-    void openRelicCrate({ systemCalls: this.game.systemCalls, account, explorerId: selectedEntityId, hex: targetHex });
+    const expedition = this.game.store.get("ChestRules", { game_id: configManager.getActiveGameId() }) !== undefined;
+    if (expedition) this.holdExpeditionChest(hex);
+    const sent = await openRelicCrate({ systemCalls: this.game.systemCalls, account, explorerId, hex });
+    if (!sent && expedition) cancelChestOpening();
+  }
+
+  /** The chest's hold: the moment starts from the chest on screen and the world's chest plays its beats. */
+  private holdExpeditionChest(hex: HexPosition): void {
+    const tile = { col: hex.col - FELT_CENTER(), row: hex.row - FELT_CENTER() };
+    beginChestOpening(projectHexToScreen(tile, this.camera), {
+      focus: () => this.moveCameraToColRow(tile.col, tile.row, 0.4),
+    });
+    this.chestManager.holdChest(hex, readChestBeat);
   }
 
   private keepMovementDestinationSelected(targetHex: HexPosition): void {
@@ -8075,6 +8101,7 @@ export default class WorldmapScene extends WarpTravel {
     window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
     window.removeEventListener(ARMY_SELECT_REQUEST_EVENT, this.armySelectRequestHandler);
+    this.stopChestOpenRequests?.();
     this.clearCache();
 
     // Dispose hover label and selected hex managers to release Three.js resources

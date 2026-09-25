@@ -2,10 +2,10 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { configManager, WorldUpdateListener } from "@bibliothecadao/eternum";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useEffect } from "react";
 import type { Account } from "starknet";
 import type { Attribute } from "./attributes";
+import { isPlayersArmy } from "../frontier-home";
 import { closePick, onAttributeChosen, openPick, shouldAutoOpenPick, usePick } from "./pick-moment";
 import { PickPanel } from "./pick-panel";
 
@@ -67,10 +67,4 @@ const useFirstLevelUpOpensPick = (player: string | null) => {
       }
     });
   }, [player, setup.store]);
-};
-
-const isPlayersArmy = (store: NativeFactStore, army: { game_id: number; explorer_id: number }, player: string) => {
-  const explorer = store.get("ExplorerTroops", army);
-  const home = explorer && store.get("Structure", { game_id: army.game_id, entity_id: explorer.owner });
-  return home !== undefined && BigInt(home.owner) === BigInt(player);
 };
