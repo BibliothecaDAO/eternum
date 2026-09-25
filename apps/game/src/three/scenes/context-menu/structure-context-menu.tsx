@@ -93,14 +93,19 @@ export const openStructureContextMenu = ({ event, structure, hexCoords, store }:
           openArmyCreationModal(true);
         },
       },
-      {
-        id: `structure-${idString}-defense`,
-        label: "Create Defense Army",
-        icon: "/image-icons/shield.png",
-        onSelect: () => {
-          openArmyCreationModal(false);
-        },
-      },
+      // A defense army needs a guard slot, which only some games grant.
+      ...(configManager.hasGuardSlots()
+        ? [
+            {
+              id: `structure-${idString}-defense`,
+              label: "Create Defense Army",
+              icon: "/image-icons/shield.png",
+              onSelect: () => {
+                openArmyCreationModal(false);
+              },
+            },
+          ]
+        : []),
       constructionAction,
     ],
   });

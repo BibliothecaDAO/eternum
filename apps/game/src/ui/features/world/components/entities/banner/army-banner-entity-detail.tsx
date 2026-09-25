@@ -1,4 +1,5 @@
 import { Loader, Trash2, Zap as Lightning } from "@/ui/design-system/atoms/game-icons";
+import { configManager } from "@bibliothecadao/eternum";
 import { memo, type ReactNode, useMemo } from "react";
 
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -91,7 +92,9 @@ const ArmyBannerEntityDetailContent = memo(
     const combatRelicActionLimit = compact ? 4 : undefined;
     // Show every held relic — activatable ones are clickable, the rest render
     // dimmed/disabled so you can still see what the army carries.
-    const showRelicsInline = derivedData.isMine && inventoryCounts.relics > 0;
+    // Relics are only worth listing where the game lets an army apply them.
+    const showRelicsInline =
+      derivedData.isMine && inventoryCounts.relics > 0 && configManager.isCommandEnabled("ApplyRelic");
     const ownerDisplay = derivedData.addressName ?? `Army Owner`;
     const stationedDisplay = derivedData.structureOwnerName ?? "Field deployment";
     const ownerInitial = (ownerDisplay || "?").charAt(0).toUpperCase();

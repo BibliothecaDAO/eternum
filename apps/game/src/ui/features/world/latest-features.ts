@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-25",
+    title: "Only the actions a game allows",
+    description:
+      "Panels no longer offer actions the game turns off: no transfer shortcut, pause switch, production refill, relic list or defense army where the game has none.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-25",
     title: "One marked plot per ring",
     description:
       "Each ring of your Frontier realm board has one marked plot, lit and set on greener ground, where a building gives twice its output, capacity or population. Neighbour bonuses are gone.",

@@ -333,6 +333,7 @@ const LocalTilePanel = () => {
 
   const canAddProduction =
     producedResource !== undefined &&
+    configManager.canRefillProduction(producedResource) &&
     buildingCategory !== BuildingType.ResourceFish &&
     buildingCategory !== BuildingType.ResourceWheat &&
     buildingCategory !== BuildingType.WorkersHut;
@@ -666,23 +667,24 @@ const LocalTilePanel = () => {
                     </button>
                   );
                 })()}
-              {buildingCategory !== BuildingType.WorkersHut && (
-                <button
-                  type="button"
-                  onClick={handleToggleProduction}
-                  disabled={isActionLoading}
-                  className={cn(
-                    "inline-flex h-7 w-7 items-center justify-center rounded-md border text-white shadow transition disabled:cursor-not-allowed disabled:opacity-60",
-                    isPaused
-                      ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
-                      : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
-                  )}
-                  title={isPaused ? "Resume" : "Stop"}
-                  aria-label={isPaused ? "Resume" : "Stop"}
-                >
-                  {isPaused ? <Play className="h-3.5 w-3.5" /> : <PauseIcon className="h-3.5 w-3.5" />}
-                </button>
-              )}
+              {buildingCategory !== BuildingType.WorkersHut &&
+                configManager.isCommandEnabled(isPaused ? "ResumeBuildingProduction" : "PauseBuildingProduction") && (
+                  <button
+                    type="button"
+                    onClick={handleToggleProduction}
+                    disabled={isActionLoading}
+                    className={cn(
+                      "inline-flex h-7 w-7 items-center justify-center rounded-md border text-white shadow transition disabled:cursor-not-allowed disabled:opacity-60",
+                      isPaused
+                        ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
+                        : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
+                    )}
+                    title={isPaused ? "Resume" : "Stop"}
+                    aria-label={isPaused ? "Resume" : "Stop"}
+                  >
+                    {isPaused ? <Play className="h-3.5 w-3.5" /> : <PauseIcon className="h-3.5 w-3.5" />}
+                  </button>
+                )}
               <button
                 type="button"
                 onClick={handleDestroy}

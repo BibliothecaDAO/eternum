@@ -16,7 +16,7 @@ import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
 import { ID, StructureType } from "@bibliothecadao/types";
-import { formatTime, toHexString } from "@bibliothecadao/eternum";
+import { configManager, formatTime, toHexString } from "@bibliothecadao/eternum";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { LeftView } from "@/types";
 
@@ -158,6 +158,7 @@ const StructureBannerEntityDetailContent = memo(
       [StructureType.Realm, StructureType.Village].includes(Number(rawCategory) as StructureType);
     const canOpenTransferPanel =
       isMine &&
+      configManager.isCommandEnabled("SendResources") &&
       structureCategory !== undefined &&
       [StructureType.Realm, StructureType.Village, StructureType.Camp, StructureType.Mine].includes(
         structureCategory as StructureType,

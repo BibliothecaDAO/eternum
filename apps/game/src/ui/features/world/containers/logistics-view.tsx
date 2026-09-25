@@ -13,6 +13,7 @@ import { HUD_BODY_MUTED } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { configManager } from "@bibliothecadao/eternum";
 
 const TAB_KEYS = ["arrivals", "transfer", "automation", "balances"] as const;
 type LogisticsTab = (typeof TAB_KEYS)[number];
@@ -42,7 +43,7 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
 
   const mode = useGameModeConfig();
-  const showTransfer = mode.rules.allowsTransfers;
+  const showTransfer = configManager.isCommandEnabled("SendResources");
   const showAutomation = mode.ui.showAutomation;
   const tabKeys: readonly LogisticsTab[] = TAB_KEYS.filter(
     (key) => (key !== "transfer" || showTransfer) && (key !== "automation" || showAutomation),
