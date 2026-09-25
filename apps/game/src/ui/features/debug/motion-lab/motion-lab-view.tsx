@@ -12,6 +12,7 @@ import { Sweep } from "@/ui/motion/sweep";
 import { LandingCounter } from "@/ui/motion/landing-counter";
 import { TickNumber } from "@/ui/motion/tick-number";
 import { type ReactNode, useRef, useState } from "react";
+import { PickLab } from "./pick-lab";
 
 const LORDS_BY_INTENSITY = [100, 400, 1_500, 6_000] as const;
 const COIN_ICON = "/images/resources/37.png";
@@ -76,6 +77,11 @@ export const MotionLabView = () => {
         <Panel title={`burst · ${INTENSITY.particles[intensity]} particles`}>
           <p className="text-sm text-gold/70">World particles through the instanced pools: checked on staging.</p>
         </Panel>
+        <section className="sm:col-span-2 lg:col-span-3">
+          <Panel title="pick · tap a card, then Choose">
+            <PickLab />
+          </Panel>
+        </section>
       </div>
     </div>
   );

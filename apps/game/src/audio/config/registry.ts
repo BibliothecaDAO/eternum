@@ -508,6 +508,27 @@ const AUDIO_REGISTRY: Record<string, AudioAsset> = {
     loop: false,
     volume: 0.6,
   },
+  // Frontier's pick (design §3.11 §2): the owner-picked finished mixes.
+  "card.deal": {
+    id: "card.deal",
+    url: "/sound/frontier/card.deal.mp3",
+    category: AudioCategory.UI,
+    priority: 5,
+    poolSize: 2,
+    spatial: false,
+    loop: false,
+    volume: 0.8,
+  },
+  "card.pick": {
+    id: "card.pick",
+    url: "/sound/frontier/card.pick.mp3",
+    category: AudioCategory.UI,
+    priority: 5,
+    poolSize: 2,
+    spatial: false,
+    loop: false,
+    volume: 0.8,
+  },
   "resource.collect.essence": {
     id: "resource.collect.essence",
     url: "/sound/frontier/resource.collect.essence.mp3",
