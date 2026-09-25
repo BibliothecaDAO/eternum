@@ -6,13 +6,13 @@ import { arenaBaseConfig } from "../common/arena/base";
 
 const resourceIds = Array.from({ length: 58 }, (_, index) => index + 1);
 const buildingIds = Array.from({ length: 40 }, (_, index) => index + 1);
-const laborCosts: Record<number, number> = { 1: 300, 2: 1000, 25: 1000, 28: 1200, 37: 100 };
+const laborCosts: Record<number, number> = { 1: 300, 2: 1000, 25: 2000, 28: 1200, 37: 100 };
 const rates: Record<number, number> = {
   23: 100 / 3600,
   26: 100 / 3600,
-  27: 250 / 3600,
-  28: 250 / 3600,
-  35: 200 / 3600,
+  27: 100 / 3600,
+  28: 100 / 3600,
+  35: 300 / 3600,
 };
 const buildingCosts = Object.fromEntries(
   buildingIds.map((id) => [id, laborCosts[id] === undefined ? [] : [{ resource: 23, amount: laborCosts[id] }]]),
@@ -72,9 +72,9 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
   realmMaxLevel: 4,
   villageMaxLevel: 1,
   realmUpgradeCosts: {
-    1: [{ resource: 38, amount: 3000 }],
-    2: [{ resource: 38, amount: 20000 }],
-    3: [{ resource: 38, amount: 90000 }],
+    1: [{ resource: 23, amount: 4000 }],
+    2: [{ resource: 23, amount: 15000 }],
+    3: [{ resource: 23, amount: 40000 }],
   },
   troop: {
     // One troop type fights here, so terrain would only add noise: Frontier combat is biome-neutral.

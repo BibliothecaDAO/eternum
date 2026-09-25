@@ -246,14 +246,14 @@ describe("native presets", () => {
     expect(blitz.rules.troop_damage_config.damage_biome_bonus_num).toBe(3000);
   });
 
-  test("Frontier's design preset carries the owner's balance: hourly stamina, a lean grant, slower barracks and farms", () => {
+  test("Frontier's design preset carries the starting grant and farm, barracks and castle production", () => {
     const design = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
       FRONTIER_PRESET_ID,
     );
     const perHour = (resource: number) =>
-      (design.resources.resources.find(({ resource_type }) => resource_type === resource)!.realm_rate * 3600n) /
-      1_000_000_000n;
+      (Number(design.resources.resources.find(({ resource_type }) => resource_type === resource)!.realm_rate) * 3600) /
+      1_000_000_000;
 
     expect(design.rules.tick_config.armies_tick_in_seconds).toBe(3600);
     expect(design.rules.troop_stamina_config).toMatchObject({
@@ -267,9 +267,37 @@ describe("native presets", () => {
       { resource_type: 23, amount: 2_000_000_000_000n },
     ]);
     expect(design.settlement.realms.starting_troops.every((troop) => troop.activeVariant() === "Knight")).toBe(true);
-    expect([perHour(26), perHour(35), perHour(23)]).toEqual([100n, 200n, 100n]);
+    for (const [resource, expected] of [
+      [26, 100],
+      [27, 100],
+      [28, 100],
+      [35, 300],
+      [23, 100],
+    ]) {
+      expect(perHour(resource)).toBeCloseTo(expected, 5);
+    }
+    for (const resource of [26, 27, 28]) {
+      const production = design.resources.production.find(({ resource_type }) => resource_type === resource)!;
+      expect(production.recipe.simple_inputs).toEqual([{ resource_type: 35, amount: 2_000_000_000n }]);
+      expect(perHour(resource) * 2).toBeCloseTo(200, 5);
+    }
     // A Labor building a player builds costs 2 population; the castle the world places at founding costs none.
     expect(design.structures.buildings.find(({ category }) => category === 25)?.rule.population_cost).toBe(2);
+  });
+
+  test("Frontier castle upgrades and the workshop cost labor", () => {
+    const design = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
+      FRONTIER_PRESET_ID,
+    );
+    expect(design.structures.upgrades.map(({ costs }) => costs)).toEqual([
+      [{ resource_type: 23, amount: 4_000_000_000_000n }],
+      [{ resource_type: 23, amount: 15_000_000_000_000n }],
+      [{ resource_type: 23, amount: 40_000_000_000_000n }],
+    ]);
+    expect(design.structures.buildings.find(({ category }) => category === 25)?.rule.simple_cost).toEqual([
+      { resource_type: 23, amount: 2_000_000_000_000n },
+    ]);
   });
 
   test("every preset id names the mode it plays, and an unknown id fails by name", () => {
