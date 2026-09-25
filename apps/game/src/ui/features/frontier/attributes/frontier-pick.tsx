@@ -9,7 +9,7 @@ import type { Attribute } from "./attributes";
 import { closePick, onAttributeChosen, openPick, shouldAutoOpenPick, usePick } from "./pick-moment";
 import { PickPanel } from "./pick-panel";
 
-const PROGRESS_MODELS = ["ArmyProgress"] as const;
+const PROGRESS_MODELS = ["ArmyProgress", "ArmyProgressionRules"] as const;
 
 /**
  * The pick in Frontier's HUD: the open offer's panel, answered with ChooseAttribute, and the player's own
@@ -26,13 +26,14 @@ export const FrontierPick = () => {
   const progress = pick
     ? setup.store.get("ArmyProgress", { game_id: configManager.getActiveGameId(), explorer_id: pick.explorerId })
     : undefined;
+  const rules = setup.store.get("ArmyProgressionRules", { game_id: configManager.getActiveGameId() });
 
   // An army that leaves the store (dead, removed, midnight) takes its open pick with it.
   useEffect(() => {
     if (pick && !progress) closePick();
   }, [pick, progress]);
 
-  if (!pick || !progress || !account) return null;
+  if (!pick || !progress || !rules || !account) return null;
   const choose = (attribute: Attribute) =>
     setup.systemCalls
       .choose_attribute({
@@ -42,7 +43,7 @@ export const FrontierPick = () => {
         attribute,
       })
       .then(() => undefined);
-  return <PickPanel progress={progress} commit={choose} />;
+  return <PickPanel progress={progress} rules={rules} commit={choose} />;
 };
 
 /** Every AttributeChosen story reaches the pick, which lands only the one answering its own open offer. */

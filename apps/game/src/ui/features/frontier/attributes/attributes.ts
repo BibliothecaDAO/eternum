@@ -1,5 +1,4 @@
-import { Eye, Flag, Footprints, Swords } from "@/ui/design-system/atoms/game-icons";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 /** An army's progress, its pending offer and the game's XP rules, exactly as the native store carries them. */
 export type ArmyProgressFacts = NativeRows["ArmyProgress"];
@@ -7,9 +6,8 @@ export type AttributeOfferFacts = NonNullable<ArmyProgressFacts["pending"]>;
 export type Attribute = AttributeOfferFacts["choices"][number];
 export type ProgressionRulesFacts = NativeRows["ArmyProgressionRules"];
 
-export const ATTRIBUTES: readonly Attribute[] = ["Battle", "Logistics", "Scouting", "Support"];
-
-export const MAX_ATTRIBUTE_LEVEL = 5;
+/** The contract's attribute cap: levels past it are lost. */
+export const MAX_ATTRIBUTE_LEVEL = nativeRuleConstants.ATTRIBUTE_CAP;
 
 /** The army's level in one attribute. */
 export const attributeLevel = (progress: ArmyProgressFacts, attribute: Attribute): number =>
@@ -69,10 +67,33 @@ export const progressChange = (
 /** Where a chosen attribute's card lands: the army's attribute badge. */
 export const attributeBadgeTarget = (explorerId: number): string => `attributes-${explorerId}`;
 
-/** Each attribute's icon and its effect in one line (design §3.4). */
-export const ATTRIBUTE_LOOK: Record<Attribute, { icon: typeof Swords; effect: string }> = {
-  Battle: { icon: Swords, effect: "+10% damage dealt a level" },
-  Logistics: { icon: Footprints, effect: "+30 max stamina a level" },
-  Scouting: { icon: Eye, effect: "+1.5 points on camp and rift odds a level" },
-  Support: { icon: Flag, effect: "+10% realm production a level, until midnight" },
+/**
+ * Each attribute's glyph and what one level of it gives, as the contract's constants apply it: damage in percent,
+ * stamina, and camp and rift odds in points. Support has no rule on chain yet, so its gain is unknown.
+ */
+export const ATTRIBUTE_LOOK: Record<
+  Attribute,
+  { glyph: string; perLevel: { value: number; unit: "%" | "" } | undefined }
+> = {
+  Battle: {
+    glyph: "/images/frontier/attributes/battle.svg",
+    perLevel: { value: nativeRuleConstants.ATTRIBUTE_DAMAGE_PERCENT, unit: "%" },
+  },
+  Logistics: {
+    glyph: "/images/frontier/attributes/logistics.svg",
+    perLevel: { value: nativeRuleConstants.ATTRIBUTE_STAMINA, unit: "" },
+  },
+  Scouting: {
+    glyph: "/images/frontier/attributes/scouting.svg",
+    perLevel: { value: nativeRuleConstants.ATTRIBUTE_SCOUTING_BPS / 100, unit: "" },
+  },
+  Support: { glyph: "/images/frontier/attributes/support.svg", perLevel: undefined },
+};
+
+const gain = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
+
+/** What taking `levels` more of an attribute gives, "+20%" or "+1.5"; "—" where its rule is unknown. */
+export const attributeGain = (attribute: Attribute, levels: number): string => {
+  const perLevel = ATTRIBUTE_LOOK[attribute].perLevel;
+  return perLevel ? `+${gain.format(levels * perLevel.value)}${perLevel.unit}` : "—";
 };

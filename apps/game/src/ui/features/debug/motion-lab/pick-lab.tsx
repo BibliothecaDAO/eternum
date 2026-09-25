@@ -1,5 +1,4 @@
 import { ArmyPortrait } from "@/ui/features/frontier/attributes/army-portrait";
-import { AttributeBadge } from "@/ui/features/frontier/attributes/attribute-badge";
 import {
   type ArmyProgressFacts,
   type Attribute,
@@ -103,7 +102,7 @@ export const PickLab = () => {
 
   return (
     <div className="flex w-full flex-col items-center gap-4">
-      <PickPanel progress={progress} commit={commit} />
+      <PickPanel progress={progress} rules={RULES} commit={commit} />
       <div className="flex w-full max-w-md items-center gap-3 rounded-xl border border-gold/30 px-3 py-2">
         <div ref={tile} className="h-10 w-10 shrink-0 rounded-lg border border-[#8b5cf6]/60 bg-[#2a1745]" aria-hidden />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -114,7 +113,6 @@ export const PickLab = () => {
             progress={progress}
             rules={RULES}
           />
-          <AttributeBadge progress={progress} />
         </div>
         <PickChip progress={progress} rules={RULES} />
       </div>

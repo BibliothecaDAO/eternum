@@ -78,6 +78,7 @@ describe("the pick in the HUD", () => {
       set("0x3", "ExplorerTroops", army(202)),
       set("0x4", "ArmyProgress", progress(201, null)),
       set("0x5", "ArmyProgress", progress(202, levelOffer(6), 2)),
+      set("0x6", "ArmyProgressionRules", { game_id: 1, reveal_xp: 10, clear_xp: 25, level_step_xp: 20 }),
     ] as never);
     const choose = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
     const host = document.createElement("div");
@@ -98,7 +99,7 @@ describe("the pick in the HUD", () => {
 
     act(() => store.applyFacts([set("0x4", "ArmyProgress", progress(201, levelOffer(7), 2))] as never));
     expect(pick?.explorerId).toBe(201);
-    expect(host.textContent).toContain("+1 to one attribute");
+    expect(host.querySelector('[aria-label="Choose an attribute"]')).not.toBeNull();
 
     const button = (label: string) =>
       [...host.querySelectorAll("button")].find((candidate) =>

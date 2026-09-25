@@ -8,7 +8,7 @@ vi.mock("@/audio/core/AudioManager", () => ({
 }));
 vi.mock("@/ui/motion/motion-settings", () => ({ playHaptic: () => {}, useReducedMotion: () => true }));
 
-import type { ArmyProgressFacts, AttributeOfferFacts } from "./attributes";
+import type { ArmyProgressFacts, AttributeOfferFacts, ProgressionRulesFacts } from "./attributes";
 import {
   closePick,
   commitPick,
@@ -26,6 +26,7 @@ const LEVEL_OFFER: AttributeOfferFacts = {
   amount: 1,
   choices: ["Battle", "Scouting", "Support"],
 };
+const RULES: ProgressionRulesFacts = { game_id: 1, reveal_xp: 10, clear_xp: 25, level_step_xp: 20 };
 const ARMY: ArmyProgressFacts = {
   game_id: 1,
   explorer_id: 201,
@@ -93,17 +94,17 @@ describe("the pick", () => {
       root.render(
         <>
           <Probe />
-          <PickPanel progress={ARMY} commit={commit} />
+          <PickPanel progress={ARMY} rules={RULES} commit={commit} />
         </>,
       ),
     );
     await act(async () => openPick(201, LEVEL_OFFER));
-    expect(host.textContent).toContain("+1 to one attribute");
+    expect(host.querySelector('[aria-label="Choose an attribute"]')).not.toBeNull();
     await act(async () =>
       root.render(
         <>
           <Probe />
-          <PickPanel progress={{ ...ARMY, pending: null }} commit={commit} />
+          <PickPanel progress={{ ...ARMY, pending: null }} rules={RULES} commit={commit} />
         </>,
       ),
     );

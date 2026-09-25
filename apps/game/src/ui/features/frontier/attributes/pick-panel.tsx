@@ -1,5 +1,5 @@
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { Sparkles } from "@/ui/design-system/atoms/game-icons";
+import { toast } from "@/ui/features/event-feed/notify";
 import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { animate, motion } from "framer-motion";
@@ -10,7 +10,9 @@ import {
   type Attribute,
   attributeBadgeTarget,
   attributeLevel,
+  levelProgress,
   MAX_ATTRIBUTE_LEVEL,
+  type ProgressionRulesFacts,
 } from "./attributes";
 import { closePick, commitPick, liftChoice, usePick } from "./pick-moment";
 
@@ -20,16 +22,19 @@ const FLY_MS = 450;
 const FALL_MS = 200;
 
 /**
- * The pick panel: the army's three offer cards dealt into the thumb zone. Its host places it just above the army's
- * card, so the chosen card is seen flying down into the badge. A tap lifts a card, "Choose" commits it, and
- * on the result the chosen card flies into the army's attribute badge while the others fall away. A refusal shakes the
- * card back with its reason. The offer is a fact: if it leaves the army's progress, the panel closes.
+ * The pick panel (mockup 6): the army's level and its bar, then its three offer cards dealt into the thumb zone. Its
+ * host places it just above the army's card, so the chosen card is seen flying down into the army's portrait. A tap
+ * lifts a card, Choose commits it, and on the result the chosen card flies home while the others fall away. A refusal
+ * shakes the card back and says why in a toast. The handle puts the pick off. The offer is a fact: if it leaves the
+ * army's progress, the panel closes.
  */
 export const PickPanel = ({
   progress,
+  rules,
   commit,
 }: {
   progress: ArmyProgressFacts;
+  rules: ProgressionRulesFacts;
   commit: (attribute: Attribute) => Promise<void>;
 }) => {
   const pick = usePick();
@@ -41,20 +46,28 @@ export const PickPanel = ({
     if (open && !offerStands && pick?.phase !== "chosen") closePick();
   }, [offerStands, open, pick?.phase]);
 
+  useEffect(() => {
+    if (pick?.error) toast.error(pick.error);
+  }, [pick?.error]);
+
   if (!open || !pick) return null;
   const busy = pick.phase === "committing" || pick.phase === "chosen";
   return (
     <section
       aria-label="Choose an attribute"
-      className={cn(
-        OVERLAY_SURFACE_BASE,
-        "pointer-events-auto mx-auto flex w-full max-w-lg flex-col items-center gap-3 rounded-2xl p-3",
-      )}
+      className="frontier-card pointer-events-auto mx-auto flex w-full max-w-lg flex-col gap-3 p-3 font-sans"
     >
-      <h2 className="text-base font-semibold text-gold">
-        +{pick.offer.amount} to one attribute{pick.offer.source === "Relic" ? " · relic" : ""}
-      </h2>
-      <div className="flex justify-center gap-2">
+      <button
+        type="button"
+        aria-label="Later"
+        disabled={busy}
+        onClick={closePick}
+        className="-mt-1 flex h-5 justify-center"
+      >
+        <span className="frontier-handle" />
+      </button>
+      <LevelBar progress={progress} rules={rules} relic={pick.offer.source === "Relic"} />
+      <div className="grid grid-cols-3 gap-2">
         {pick.offer.choices.map((attribute, index) => (
           <DealtCard
             key={attribute}
@@ -69,26 +82,42 @@ export const PickPanel = ({
           />
         ))}
       </div>
-      {pick.error && <p className="text-sm text-gold/90">{pick.error}</p>}
-      <div className="flex gap-2">
-        <button
-          type="button"
-          disabled={!pick.lifted || busy}
-          onClick={() => commitPick(commit)}
-          className="min-h-11 rounded-lg bg-gold px-5 font-semibold text-dark-brown disabled:opacity-40"
-        >
-          {pick.phase === "committing" ? "Choosing…" : "Choose"}
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={closePick}
-          className="min-h-11 rounded-lg border border-gold/30 px-4 text-gold/80 disabled:opacity-40"
-        >
-          Later
-        </button>
-      </div>
+      <button
+        type="button"
+        disabled={!pick.lifted || busy}
+        onClick={() => commitPick(commit)}
+        className="frontier-primary w-full"
+      >
+        Choose
+      </button>
     </section>
+  );
+};
+
+/** The army's level in its ring and how far into it the army is; a relic's offer wears the relic mark. */
+const LevelBar = ({
+  progress,
+  rules,
+  relic,
+}: {
+  progress: ArmyProgressFacts;
+  rules: ProgressionRulesFacts;
+  relic: boolean;
+}) => {
+  const { into, needed } = levelProgress(progress, rules);
+  return (
+    <span className="flex items-center gap-3" aria-label={`Level ${progress.level}`}>
+      <span className="frontier-title flex size-10 shrink-0 items-center justify-center rounded-full border-2 border-[#dfaa54] tabular-nums">
+        {progress.level}
+      </span>
+      <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-[#dfaa54]/15">
+        <span
+          className="block h-full rounded-full bg-[linear-gradient(90deg,#f7c35a,#e39001)]"
+          style={{ width: `${needed > 0 ? (into / needed) * 100 : 100}%` }}
+        />
+      </span>
+      {relic && <Sparkles className="size-7" alt="Relic" />}
+    </span>
   );
 };
 
@@ -163,7 +192,7 @@ const DealtCard = ({
       // Once chosen, the flight or the fall owns the card.
       animate={phase === "chosen" ? undefined : { opacity: 1, y: lifted ? -8 : 0, scale: lifted ? 1.05 : 1 }}
       transition={{ duration: DEAL_MS / 1000, delay: (index * DEAL_STAGGER_MS) / 1000, ease: EASE.outQuart }}
-      className={cn("rounded-xl text-left", lifted && "ring-2 ring-gold")}
+      className="frontier-card"
     >
       <AttributeOfferCard attribute={attribute} level={level} amount={amount} />
     </motion.button>
