@@ -85,7 +85,7 @@ The runner creates private volumes, deploys the Realms account class (refusing o
 for) and the operator's own Realms account, deploys the native world under it, registers
 the configuration's `presets` and starts Herald. Each shard exports upstream node metrics through its own
 pinned OTLP collector into its private run directory; `harness.env` points the existing block reporter at that output.
-The collector also scrapes `gateway:9950/metrics` every 5 seconds. Its cgroup sampler replaces the Docker stats
+The collector also scrapes `gateway:9951/metrics` (a port the package never publishes) every 5 seconds. Its cgroup sampler replaces the Docker stats
 receiver: it reads each container's `cpu.stat` through a read-only `/sys/fs/cgroup` mount, with no Docker socket.
 Every 10 seconds it appends usage and throttling counters to `metrics/container-metrics.jsonl` in the existing OTLP
 JSON format, retaining the whole run across collector restarts. Container ID, cgroup name and relative cgroup path

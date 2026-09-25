@@ -1,4 +1,4 @@
-//! Admission metrics as plain counters, a gauge and a histogram, served at `/metrics` in the
+//! Admission metrics as plain counters, a gauge and a histogram, served on the metrics listener in the
 //! Prometheus text format for the shard's collector. No label names a player or a transaction.
 
 use std::{

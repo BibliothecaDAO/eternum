@@ -29,6 +29,8 @@ use std::{
 pub struct GatewayConfig {
     pub node: NodeConfig,
     pub listen: SocketAddr,
+    /// Where the collector scrapes admission metrics; never published beside the admission port.
+    pub metrics_listen: SocketAddr,
     /// The shard's admission connection budget, derived from its player capacity by the shard runner.
     pub max_connections: u32,
     /// Players the shard hosts; it bounds their pending tickets.
@@ -45,7 +47,27 @@ pub async fn run(config: GatewayConfig) -> anyhow::Result<()> {
     let node = node::Node::connect(config.node).await?;
     let api = service::GameApi::new(node, admission::AdmissionSlots::new(config.player_capacity, config.authority));
     tokio::spawn(api.clone().run_forever(config.epoch_secret));
-    serve(api, config.listen, config.max_connections, config.trusted_proxy).await
+    tokio::try_join!(
+        serve_metrics(api.clone(), config.metrics_listen),
+        serve(api, config.listen, config.max_connections, config.trusted_proxy),
+    )?;
+    Ok(())
+}
+
+/// Metrics describe every player's admission, so they stay off the listener players reach.
+async fn serve_metrics(api: service::GameApi, listen: SocketAddr) -> anyhow::Result<()> {
+    let make_service = make_service_fn(move |_: &AddrStream| {
+        let api = api.clone();
+        async move {
+            Ok::<_, std::convert::Infallible>(service_fn(move |_request: hyper::Request<hyper::Body>| {
+                let metrics = api.metrics();
+                async move { Ok::<_, std::convert::Infallible>(hyper::Response::new(hyper::Body::from(metrics))) }
+            }))
+        }
+    });
+    tracing::info!(target: "gateway", %listen, "gateway metrics listening");
+    hyper::Server::try_bind(&listen).context("bind the gateway metrics address")?.serve(make_service).await?;
+    Ok(())
 }
 
 /// One JSON-RPC module per request, so each carries its client's address for the per-address cap.
@@ -62,13 +84,9 @@ async fn serve(
         let (api, builder, stop) = (api.clone(), builder.clone(), stop.clone());
         async move {
             Ok::<_, std::io::Error>(service_fn(move |request: hyper::Request<hyper::Body>| {
-                let metrics = (request.uri().path() == "/metrics").then(|| api.metrics());
                 let module = api.rpc(client_address(peer, trusted_proxy, request.headers()));
                 let (builder, stop) = (builder.clone(), stop.clone());
                 async move {
-                    if let Some(metrics) = metrics {
-                        return Ok(hyper::Response::new(hyper::Body::from(metrics)));
-                    }
                     let mut service = builder.build(module?, stop);
                     hyper::service::Service::call(&mut service, request).await
                 }
