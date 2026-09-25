@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Position, configManager, structureMapPosition } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
@@ -9,7 +9,7 @@ import { useFactView } from "@/hooks/use-fact-view";
 import { usePlayers } from "@/hooks/use-player-profile";
 import { gameStructuresView } from "@/sync/fact-views";
 import { displayPlayerName } from "@bibliothecadao/eternum";
-import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
+import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { HUD_COLUMN_TOP, HUD_COLUMN_WIDTH } from "./hud-layout";
@@ -38,7 +38,16 @@ export function SpectatorStandingsBody() {
 }
 
 function StandingsRows() {
-  const { data, isError } = useLeaderboardActivity();
+  const { standingsByAddress } = useInGameLeaderboard();
+  const standings = useMemo(
+    () =>
+      [...standingsByAddress.entries()].map(([address, standing]) => ({
+        address,
+        rank: standing.rank,
+        totalPoints: standing.points,
+      })),
+    [standingsByAddress],
+  );
   const tick = useCurrentArmiesTick();
   const [history, setHistory] = useState<StandingsTick | null>(null);
   const structures = useFactView(gameStructuresView);
@@ -49,10 +58,10 @@ function StandingsRows() {
   const selectedId = useUIStore((state) => state.structureEntityId);
   const navigate = useNavigateToMapView();
   useEffect(() => {
-    if (data) setHistory((previous) => advanceStandingsTick(previous, tick, data));
-  }, [data, tick]);
+    setHistory((previous) => advanceStandingsTick(previous, tick, standings));
+  }, [standings, tick]);
   const selectedOwner = structures.find((structure) => structure.entity_id === selectedId)?.owner;
-  const rows = selectSpectatorStandings(data ?? [], selectedOwner, history);
+  const rows = selectSpectatorStandings(standings, selectedOwner, history);
 
   return (
     <>
@@ -92,11 +101,7 @@ function StandingsRows() {
           </button>
         );
       })}
-      {!rows.length && (
-        <p className="px-3 py-4 text-xs text-gold/60">
-          {isError ? "Standings unavailable" : data ? "No points scored yet" : "Loading standings…"}
-        </p>
-      )}
+      {!rows.length && <p className="px-3 py-4 text-xs text-gold/60">No points scored yet</p>}
     </>
   );
 }

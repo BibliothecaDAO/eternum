@@ -1,4 +1,3 @@
-import { LeaderboardActivitySync } from "./leaderboard-activity-sync";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { SentryUserSync } from "@/observability/sentry-user-sync";
 import { Leva } from "leva";
@@ -77,7 +76,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
  */
 const BackgroundSystems = () => (
   <>
-    <LeaderboardActivitySync />
     <ActionRunners />
     <RelicCrateOpenings />
     <BlockTimestampPoller />
