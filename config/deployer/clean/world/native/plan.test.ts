@@ -145,6 +145,20 @@ describe("native deployment planning", () => {
       }),
     ).toThrow("Games requires a fresh deployment");
   });
+  test("a different seed cannot deploy a second Games beside a native manifest", () => {
+    const { local } = fixture();
+    expect(() =>
+      loadNativeWorld({
+        artifacts: "missing",
+        schemaPath: "missing",
+        seed: "native-other",
+        authority: local.authority,
+        authentication,
+        release: local.release,
+        previous: local.previous,
+      }),
+    ).toThrow("seed native-test; native-other is refused");
+  });
   test("an unchanged deployment submits zero transactions", async () => {
     const { local, rpc } = fixture();
     const report = await deployNativeWorld(local, rpc as unknown as Account, () => {
