@@ -504,3 +504,49 @@ fn liquidity_changes_have_distinct_recorded_story_keys() {
     assert_eq!(ids.len(), 2);
     assert_ne!(*ids.at(0), *ids.at(1));
 }
+
+
+#[test]
+#[feature("safe_dispatcher")]
+fn the_game_creator_owns_bank_choices_and_preplay_liquidity_without_shard_authority() {
+    let (d, source, authority_source) = super::resource_commands::setup_with_preset(market_preset());
+    let games = crate::game::IGameDispatcher { contract_address: d.games };
+    let game = crate::game::IGameDispatcherTrait::game(games, 3);
+    let creator_game = crate::game::GameRegistry { creator: d.actor, start_main_at: 100, ..game };
+    super::resource_commands::set_fixture(
+        d.games, selector!("games"), selector!("games"), array![3].span(), creator_game,
+    );
+    assert!(d.actor != super::authority());
+    let authority = super::bind_authority(d);
+    assert!(!execute(authority, Command::CreateBanks(banks()), 40));
+    assert!(execute(d, Command::CreateBanks(banks()), 40));
+    let structure = crate::tests::state::StructureObservationTrait::structure(
+        crate::structures::IStructureOperationsDispatcher { contract_address: d.games },
+        ResourceKey { game_id: 3, entity_id: BANK },
+    )
+        .unwrap();
+    assert_eq!(structure.owner, d.actor);
+    grant(d, source, 2, STOCK);
+    grant(d, source, crate::resources::LORDS, STOCK);
+    snforge_std::interact_with_state(
+        d.games, || {
+            crate::logic::structures::StructureState::transfer_owner(authority_source, super::authority());
+        },
+    );
+    grant(d, authority_source, 2, STOCK);
+    grant(d, authority_source, crate::resources::LORDS, STOCK);
+    assert!(!execute(authority, add(authority_source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
+    assert!(execute(d, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
+    assert_eq!(lp(d), 1000 * RESOURCE_PRECISION);
+    // The creator privilege is separate from the normal live-game liquidity permission.
+    super::resource_commands::set_fixture(
+        d.games,
+        selector!("games"),
+        selector!("games"),
+        array![3].span(),
+        crate::game::GameRegistry { creator: super::authority(), ..creator_game },
+    );
+    assert!(!execute(d, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 50));
+    assert!(execute(d, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 100));
+    assert_eq!(lp(d), 2000 * RESOURCE_PRECISION);
+}

@@ -38,8 +38,6 @@ pub mod PlacementLogic {
             let game_context = crate::commands::load_context(
                 game_id, crate::commands::ActionContext { raw_root: 0, timestamp: starknet::get_block_timestamp() },
             );
-
-            crate::logic::release::assert_authority();
             assert!(
                 crate::rules::rule_enabled(game_context.rules.unbox(), crate::rules::SPIRES), "spires are disabled",
             );

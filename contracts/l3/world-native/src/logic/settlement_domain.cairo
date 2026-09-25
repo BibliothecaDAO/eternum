@@ -286,9 +286,6 @@ pub mod SettlementLogic {
             mut story_cursor: crate::ownership::StoryCursor,
         ) -> (u64, crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
-
-            let _ = self.release.classes(game_id);
-            assert!(actor == self.release.authority(), "only launch authority");
             let game = context.game.unbox();
             assert!(context.rules.unbox().entry_rule == crate::rules::ENTRY_ROSTER, "not a Blitz game");
             assert!(context.timestamp >= game.start_settling_at, "settling not started");

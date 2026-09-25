@@ -102,9 +102,6 @@ pub mod SeasonLogic {
             mut story_cursor: crate::ownership::StoryCursor,
         ) -> (u64, crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
-
-            assert!(actor == self.release.authority(), "only domain authority");
-
             let mut game = context.game.unbox();
             if game.settled {
                 return (0, story_cursor);

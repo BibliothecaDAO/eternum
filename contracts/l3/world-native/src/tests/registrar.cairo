@@ -305,11 +305,22 @@ fn blitz_launch_accepts_empty_construction_requirements_without_allowing_reconfi
 }
 
 #[test]
+#[feature("safe_dispatcher")]
 fn eternum_launch_initializes_spires_and_never_uses_entry_capacity() {
     let d = setup();
     let preset = definition(false);
     registry(d).register_preset(1, preset);
+    assert!(safe(d, d.actor).create_game(params(false)).is_err());
+    assert_eq!(registry(d).next_game_id(), 1);
     assert_eq!(registry(d).create_game(params(false)), 1);
+    let rules = IGameDispatcher { contract_address: d.games }.rules(1);
+    let center = 2147483646 - rules.map_center_offset;
+    for alt in array![false, true] {
+        let tile = IMapLogicDispatcher { contract_address: d.games }
+            .tile(TileKey { game_id: 1, alt, col: center, row: center })
+            .unwrap();
+        assert_eq!((tile.data / 2) % 256, 35);
+    }
     let spires = crate::spires::ISpiresDispatcher { contract_address: d.games };
     assert_eq!(crate::spires::ISpiresDispatcherTrait::spire_layout(spires, 1), preset.settlement.spires);
     let settlement = ISettlementViewsDispatcher { contract_address: d.games };
@@ -501,7 +512,7 @@ fn fixed_blitz_rosters_have_exact_spots_and_deterministic_unique_permutations() 
 
 #[test]
 #[feature("safe_dispatcher")]
-fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order() {
+fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
     let d = setup();
     let preset = definition(true);
     registry(d).register_preset(1, preset);
@@ -517,13 +528,6 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
     assert!(status_at(games.game(game_id), 99999) == GameStatus::Registration);
     start_cheat_caller_address(d.games, d.actor);
     start_cheat_caller_address(d.games, d.games);
-    assert!(
-        safe
-            .settle_blitz_roster(
-                game_id, d.actor, crate::commands::action_context(context), crate::tests::story_cursor(),
-            )
-            .is_err(),
-    );
     assert!(
         safe
             .settle_blitz_roster(
@@ -544,10 +548,15 @@ fn automatic_blitz_settlement_is_authorized_atomic_and_resumes_its_fixed_order()
             context.raw_root = 111 + batch.into();
             context.timestamp = 1000 + batch.into();
         }
+        let caller = if batch == 0 {
+            d.actor
+        } else {
+            super::authority()
+        };
         assert!(
             commands
                 .settle_blitz_roster(
-                    game_id, super::authority(), crate::commands::action_context(context), crate::tests::story_cursor(),
+                    game_id, caller, crate::commands::action_context(context), crate::tests::story_cursor(),
                 )
                 .story_result() == (1 - batch)
                 .into(),
@@ -636,7 +645,7 @@ fn recorded_roster_batches_block_early_play_and_report_ticket_progress() {
     let preset = definition(true);
     registry(d).register_preset(1, preset);
     let game_id = registry(d).create_game(CreateGameParams { roster: roster(2), ..params(true) });
-    let d = super::bind_authority(d);
+    assert!(d.actor != super::authority());
     let command = crate::commands::Command::SettleBlitzRoster;
     assert!(!super::resource_commands::execute_in_game(d, game_id, crate::commands::Command::CloseSeason, 205, 205));
     let season = IGamesAuthenticationDispatcher { contract_address: d.games };
@@ -1989,4 +1998,59 @@ fn creation_emits_release_and_overrides_without_per_game_configuration_rows() {
     }
     assert_eq!(count, 1);
     assert_eq!(overrides_count, 1);
+}
+
+#[test]
+fn creator_and_non_creator_roster_batches_produce_the_same_settlements() {
+    let creator_run = setup();
+    let (helper_account, _) = super::deploy_player(3, super::GUARDIAN);
+    let helper_run = super::Deployment { actor: helper_account, ..setup() };
+    let preset = definition(true);
+    let request = CreateGameParams { roster: roster(1), ..params(true) };
+    registry(creator_run).register_preset(1, preset);
+    registry(helper_run).register_preset(1, preset);
+    let game_id = registry(creator_run).create_game(request);
+    assert_eq!(registry(helper_run).create_game(request), game_id);
+    let creator_games = IGameDispatcher { contract_address: creator_run.games };
+    let helper_games = IGameDispatcher { contract_address: helper_run.games };
+    let game = creator_games.game(game_id);
+    // The creator is an ordinary game account, distinct from the shard administrator.
+    let game = crate::game::GameRegistry { creator: creator_run.actor, ..game };
+    for d in array![creator_run, helper_run] {
+        super::resource_commands::set_fixture(
+            d.games, selector!("games"), selector!("games"), array![game_id.into()].span(), game,
+        );
+    }
+    assert!(helper_run.actor != game.creator);
+    let creator_views = ISettlementViewsDispatcher { contract_address: creator_run.games };
+    let helper_views = ISettlementViewsDispatcher { contract_address: helper_run.games };
+    for batch in 0_u64..2 {
+        let context = crate::commands::ActionContext { raw_root: 98765, timestamp: 205 + batch };
+        let cursor = crate::ownership::StoryCursor { order: batch + 1, index: 0 };
+        start_cheat_caller_address(creator_run.games, creator_run.games);
+        let remaining = ISettlementCommandsDispatcher { contract_address: creator_run.games }
+            .settle_blitz_roster(game_id, creator_run.actor, context, cursor);
+        start_cheat_caller_address(helper_run.games, helper_run.games);
+        assert_eq!(
+            ISettlementCommandsDispatcher { contract_address: helper_run.games }
+                .settle_blitz_roster(game_id, helper_run.actor, context, cursor),
+            remaining,
+        );
+        assert_eq!(creator_views.blitz_settlement_order(game_id), helper_views.blitz_settlement_order(game_id));
+        assert_eq!(creator_views.settlement_progress(game_id), helper_views.settlement_progress(game_id));
+        assert_eq!(creator_games.game(game_id), helper_games.game(game_id));
+    }
+    let next = next_entity(creator_run, game_id);
+    assert_eq!(next, next_entity(helper_run, game_id));
+    for entity_id in 1..next {
+        let key = ResourceKey { game_id, entity_id };
+        let creator = IStructureOperationsDispatcher { contract_address: creator_run.games }.structure(key);
+        let helper = IStructureOperationsDispatcher { contract_address: helper_run.games }.structure(key);
+        assert_eq!(creator, helper);
+    }
+}
+
+
+fn next_entity(d: super::Deployment, game_id: u32) -> u32 {
+    snforge_std::interact_with_state(d.games, || crate::state::read().games.next_entity.read(game_id))
 }

@@ -98,11 +98,10 @@ fn production_initialization_places_the_same_spire_identity_on_both_layers_witho
 
 #[test]
 #[feature("safe_dispatcher")]
-fn initialization_rejects_invalid_layouts_foreign_callers_blitz_and_repeats() {
+fn initialization_rejects_invalid_layouts_blitz_and_repeats() {
     let d = deployment();
     seed_layout(d, 1, layout(1));
     let safe = ISpiresSafeDispatcher { contract_address: d.games };
-    assert!(safe.initialize_spires(1).is_err());
     start_cheat_caller_address(d.games, authority());
     assert!(safe.initialize_spires(999).is_err());
     for invalid in array![
@@ -182,4 +181,19 @@ fn eternum_preset_spires_follow_the_pinned_east_southwest_ring_order() {
         let (x, y) = *expected.at(index);
         assert_eq!(location(center, preset, index), Coord { alt: false, x, y });
     }
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn internal_spire_initialization_accepts_a_game_with_a_different_creator() {
+    let d = deployment();
+    seed_layout(d, 1, layout(1));
+    let games = IGameDispatcher { contract_address: d.games };
+    let game = crate::game::GameRegistry { creator: d.actor, ..games.game(1) };
+    super::resource_commands::set_fixture(d.games, selector!("games"), selector!("games"), array![1].span(), game);
+    assert!(d.actor != authority());
+    let safe = ISpiresSafeDispatcher { contract_address: d.games };
+    start_cheat_caller_address(d.games, authority());
+    safe.initialize_spires(1).unwrap();
+    assert!(map(d).tile(tile_key(1, center(d, 1))).is_some());
 }

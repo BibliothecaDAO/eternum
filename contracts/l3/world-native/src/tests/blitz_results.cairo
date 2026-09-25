@@ -31,7 +31,6 @@ fn setup(scores: Span<u128>) -> super::Deployment {
             ..super::recorded::rules(),
         },
     );
-    let d = super::bind_authority(d);
     set_fixture(d.games, selector!("registrar"), selector!("roster_sizes"), array![3].span(), scores.len());
     for index in 0..scores.len() {
         set_fixture(
@@ -153,19 +152,12 @@ fn the_full_roster_stays_bounded_to_eight_results_per_ticket() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn results_require_authority_and_finished_point_settlement() {
+fn results_require_finished_point_settlement_without_authority() {
     let d = setup(array![10].span());
     let safe = IBlitzResultsSafeDispatcher { contract_address: d.games };
     let command = RecordBlitzResults { start: 0, players: array![result(0, 10, 1)].span() };
     let context = ExecutionContext { timestamp: 500, raw_root: 1, ..super::context(d.games, 3) };
     start_cheat_caller_address(d.games, d.games);
-    assert!(
-        safe
-            .record_blitz_results(
-                3, player(99), command, crate::commands::action_context(context), crate::tests::story_cursor(),
-            )
-            .is_err(),
-    );
     assert!(
         safe
             .record_blitz_results(
@@ -234,4 +226,37 @@ fn final_history_is_emitted_once_and_retry_does_not_rewrite_the_result() {
     for (_, event) in retry.get_events().emitted_by(d.games).events {
         assert!(*event.keys.at(0) != selector!("BlitzEvent"), "retry re-emitted final result");
     }
+}
+
+
+#[test]
+fn result_batches_have_one_canonical_boundary_and_commitment_for_any_caller() {
+    let first = setup(array![600, 600, 400, 0].span());
+    let second = setup(array![600, 600, 400, 0].span());
+    let creator = super::bind_authority(second);
+    assert!(first.actor != games(first).game(3).creator);
+    assert_eq!(creator.actor, games(second).game(3).creator);
+    let ordered = array![result(0, 600, 1), result(1, 600, 1), result(2, 400, 3), result(3, 0, 4)].span();
+    assert!(submit(first, 0, ordered.slice(0, 1)));
+    let partial = view(first).blitz_result(3);
+    // A new batch may neither restart an equal-score group nor jump over its next account.
+    assert!(!submit(first, 1, ordered.slice(0, 1)));
+    assert!(!submit(first, 1, ordered.slice(2, 1)));
+    assert!(!submit(first, 0, ordered.slice(0, 2)));
+    assert_eq!(view(first).blitz_result(3), partial);
+    assert!(submit(first, 1, ordered.slice(1, 3)));
+    assert!(submit(creator, 0, ordered.slice(0, 3)));
+    assert!(submit(creator, 3, ordered.slice(3, 1)));
+    assert_eq!(view(first).blitz_result(3), view(second).blitz_result(3));
+    assert!(view(first).blitz_result(3).complete);
+}
+
+#[test]
+fn tied_result_accounts_cannot_skip_the_canonical_first_player() {
+    let d = setup(array![100, 100, 100].span());
+    assert!(!submit(d, 0, array![result(1, 100, 1)].span()));
+    assert!(view(d).blitz_result(3).players.is_empty());
+    assert!(submit(d, 0, array![result(0, 100, 1)].span()));
+    assert!(!submit(d, 1, array![result(2, 100, 1)].span()));
+    assert_eq!(view(d).blitz_result(3).players, array![result(0, 100, 1)].span());
 }

@@ -178,7 +178,7 @@ pub mod EconomyLogic {
         ) {
             let context = crate::commands::load_context(game_id, context);
 
-            assert!(actor == self.release.authority(), "only domain authority");
+            assert!(actor == context.game.unbox().creator, "only game creator");
             assert!(banks.len() == 6, "six regional banks required");
             for index in 0..6_u32 {
                 let bank = *banks.at(index);
@@ -224,7 +224,7 @@ pub mod EconomyLogic {
         ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
 
-            if actor != self.release.authority() {
+            if actor != context.game.unbox().creator {
                 assert_playing(context.game.unbox(), context.timestamp);
             }
             let player = self.owned_structure(game_id, command.structure_id, actor);

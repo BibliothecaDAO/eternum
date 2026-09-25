@@ -438,10 +438,11 @@ fn final_checkpoint(d: super::Deployment) -> u32 {
 #[test]
 fn game_finalization_waits_for_the_last_hyperstructure_checkpoint_batch() {
     let (deployment, keys) = nine_completed_hyperstructures(0);
-    let deployment = super::bind_authority(deployment);
+    let creator = super::bind_authority(deployment);
+    assert!(deployment.actor != games(deployment).game(3).creator);
     let game = games(deployment).game(3);
     let timestamp = game.end_at + game.end_grace_seconds.into() + 1;
-    execute_batch(deployment, Command::MarkGameSettled, timestamp, 1);
+    execute_batch(creator, Command::MarkGameSettled, timestamp, 1);
     assert!(!games(deployment).game(3).settled);
     assert_eq!(hypers(deployment).hyperstructure_shares(*keys.at(7)).start_at, game.end_at);
     assert_eq!(hypers(deployment).hyperstructure_shares(*keys.at(8)).start_at, 50);
@@ -484,4 +485,36 @@ fn a_winning_final_submitter_cannot_replace_an_ineligible_close_initiator() {
 
 fn points(deployment: super::Deployment) -> IPointsDispatcher {
     IPointsDispatcher { contract_address: deployment.games }
+}
+
+
+#[test]
+fn creator_and_non_creator_final_batches_settle_the_same_points_and_game() {
+    let (creator, creator_key, creator_home, _) = super::hyperstructures::setup();
+    super::hyperstructures::complete(creator, creator_key, creator_home);
+    let (helper, helper_key, helper_home, _) = super::hyperstructures::setup();
+    super::hyperstructures::complete(helper, helper_key, helper_home);
+    let game = crate::game::GameRegistry { creator: creator.actor, ..games(creator).game(3) };
+    for d in array![creator, helper] {
+        super::resource_commands::set_fixture(d.games, selector!("games"), selector!("games"), array![3].span(), game);
+    }
+    let (helper_account, _) = super::deploy_player(3, super::GUARDIAN);
+    let helper_submitter = super::Deployment { actor: helper_account, ..helper };
+    assert!(creator.actor != super::authority() && helper_submitter.actor != game.creator);
+    let creator_before = points(creator).player_points(3, creator.actor);
+    let helper_before = points(helper).player_points(3, helper.actor);
+    let timestamp = game.end_at + game.end_grace_seconds.into() + 1;
+    execute_batch(creator, Command::MarkGameSettled, timestamp, 0);
+    execute_batch(helper_submitter, Command::MarkGameSettled, timestamp, 0);
+    assert_eq!(games(creator).game(3), games(helper).game(3));
+    assert_eq!(
+        points(creator).player_points(3, creator.actor) - creator_before,
+        points(helper).player_points(3, helper.actor) - helper_before,
+    );
+    assert_eq!(hypers(creator).hyperstructure_shares(creator_key).start_at, game.end_at);
+    assert_eq!(hypers(helper).hyperstructure_shares(helper_key).start_at, game.end_at);
+    assert!(games(helper).game(3).settled);
+    let final_points = points(helper).player_points(3, helper.actor);
+    execute_batch(helper_submitter, Command::MarkGameSettled, timestamp + 2, 0);
+    assert_eq!(points(helper).player_points(3, helper.actor), final_points);
 }
