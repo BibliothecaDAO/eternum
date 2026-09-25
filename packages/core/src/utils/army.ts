@@ -7,7 +7,6 @@ import {
   type Direction,
   getLayerNeighborHexes,
   type ID,
-  RESOURCE_PRECISION,
   ResourcesIds,
   TickIds,
   TroopTier,
@@ -17,16 +16,7 @@ import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager, divideByPrecision, getArmyName, gramToKg, nanogramToKg, getTileAt } from "..";
 import type { PlayerNameResolver } from "./entities";
-import { tierStrength } from "./tier-strength";
 import { isViewerOwner } from "./viewer";
-
-type TroopLimitConfig = NativeRows["SliceRules"]["troop_limit_config"];
-
-/** An army's strength, the number Frontier prices reveals and sites by: whole troops times its tier's strength. */
-export const armyStrength = (
-  troops: Pick<NativeRows["ExplorerTroops"]["troops"], "tier" | "count">,
-  limits: TroopLimitConfig,
-): number => Number(troops.count / BigInt(RESOURCE_PRECISION)) * tierStrength(troops.tier, limits);
 
 export const getExplorerOwner = (store: NativeFactStore, explorer: NativeRows["ExplorerTroops"]): bigint =>
   explorer.owner === 0

@@ -11,8 +11,8 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { getNeighborHexes } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { formatAmount } from "../frontier-format";
-import { Chip, YieldChip } from "../frontier-chips";
-import { BoltGlyph, SlotBanner, SwordGlyph } from "../glyphs";
+import { Chip, TroopChip, YieldChip } from "../frontier-chips";
+import { BoltGlyph, SlotBanner } from "../glyphs";
 import {
   type MusterStack,
   musterArmy,
@@ -28,8 +28,9 @@ const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 
 /**
  * Frontier's muster (design §3.12, mockup 4): the troops the realm holds as a portrait whose ring fills as the count
- * is dragged, strength, what each reveal sends home and the starting bar as icon chips, the day's slots as banners,
- * and one Muster button. No words beyond the title and the verb; everything else is art, icons and numbers.
+ * is dragged, the troops with their tier, what each reveal sends home and the starting bar as icon chips, the day's
+ * slots as banners, and one Muster button. No words beyond the title and the verb; everything else is art, icons and
+ * numbers.
  */
 export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
   const { setup } = useGame();
@@ -110,7 +111,8 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
         </span>
       </label>
       <div className="grid grid-cols-3 gap-2">
-        <Chip label="Strength" icon={<SwordGlyph />} value={preview ? formatAmount(preview.strength) : "—"} />
+        {/* A realm with no troops has no stack to show; the hero's "—" already says so. */}
+        {stack ? <TroopChip type={stack.type} tier={stack.tier} count={preview?.count} /> : <span />}
         <YieldChip scaled={preview?.revealYield} />
         <Chip
           label="Starting stamina"

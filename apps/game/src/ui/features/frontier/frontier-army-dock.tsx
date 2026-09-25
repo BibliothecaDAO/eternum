@@ -14,7 +14,6 @@ import { Hourglass } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_ACTIVE, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import {
-  armyStrength,
   configManager,
   entityMapPosition,
   expeditionDepth,
@@ -23,11 +22,12 @@ import {
   Position,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { RESOURCE_PRECISION, type TroopTier, type TroopType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { Sweep } from "@/ui/motion/sweep";
-import { Chip, YieldChip } from "./frontier-chips";
-import { formatAmount, formatShortClock } from "./frontier-format";
-import { PlusGlyph, SlotBanner, SwordGlyph } from "./glyphs";
+import { Chip, TroopChip, YieldChip } from "./frontier-chips";
+import { formatShortClock } from "./frontier-format";
+import { PlusGlyph, SlotBanner } from "./glyphs";
 import { useExpeditionRules } from "./frontier-home";
 import { describeSlotBar, useOpenArmySlots } from "./frontier-muster-stamina";
 import { ArmyPortrait } from "./attributes/army-portrait";
@@ -45,7 +45,7 @@ const ARMY_MODELS = [
 ] as const;
 
 /**
- * One card per army slot the castle grants: today's armies with their strength and stamina, then a Muster card for
+ * One card per army slot the castle grants: today's armies with their troops and stamina, then a Muster card for
  * every open slot, saying whether its next army starts fresh or on the bar a lost army left. A row along the foot of a phone held upright; a column down the left edge otherwise.
  */
 export const FrontierArmyDock = ({ realm }: { realm: NativeRows["Structure"] }) => {
@@ -80,8 +80,8 @@ export const FrontierArmyDock = ({ realm }: { realm: NativeRows["Structure"] }) 
 const CARD = "flex w-44 shrink-0 flex-col gap-2 rounded-2xl p-2.5 text-left landscape:w-48";
 
 /**
- * One army as mockup 7 draws it: its portrait (XP ring and level), its strength, its stamina bar, the time to a full
- * bar while it fills, and what its next reveal sends home. Its name is its label for assistive tech only.
+ * One army as mockup 7 draws it: its portrait (XP ring and level), its troops and tier, its stamina bar, the time to
+ * a full bar while it fills, and what its next reveal sends home. Its name is its label for assistive tech only.
  */
 const ArmyCard = ({ army, position }: { army: NativeRows["ExplorerTroops"]; position: number }) => {
   const { setup } = useGame();
@@ -89,7 +89,6 @@ const ArmyCard = ({ army, position }: { army: NativeRows["ExplorerTroops"]; posi
   const navigateToMapView = useNavigateToMapView();
   const selected = useUIStore((state) => state.entityActions.selectedEntityId === army.explorer_id);
   const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
-  const limits = configManager.getTroopConfig().troop_limit_config;
   const snapshot = getExplorerStaminaSnapshot({
     entityId: army.explorer_id,
     currentArmiesTick,
@@ -132,7 +131,12 @@ const ArmyCard = ({ army, position }: { army: NativeRows["ExplorerTroops"]; posi
       >
         <span className="flex items-center gap-2">
           <ArmyPortrait explorerId={army.explorer_id} troops={army.troops} progress={progress} rules={rules} />
-          <Chip small label="Strength" icon={<SwordGlyph />} value={formatAmount(armyStrength(army.troops, limits))} />
+          <TroopChip
+            small
+            type={army.troops.category as TroopType}
+            tier={army.troops.tier as TroopTier}
+            count={Number(army.troops.count / BigInt(RESOURCE_PRECISION))}
+          />
         </span>
         <StaminaBar stamina={stamina} />
         <span className="flex flex-wrap items-center gap-1.5">

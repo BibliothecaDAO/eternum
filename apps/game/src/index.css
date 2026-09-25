@@ -569,6 +569,18 @@ html.frontier-type .frontier-primary .frontier-chip[data-tone="price"] {
   background: rgba(109, 67, 0, 0.28);
   border-color: rgba(109, 67, 0, 0.55);
 }
+/* A troop's tier after its count: a small silver plate with the numeral. */
+html.frontier-type .frontier-tier {
+  border-radius: 5px;
+  border: 1px solid #6e6148;
+  background: linear-gradient(180deg, #ece6d8, #a8a194);
+  color: var(--frontier-ink);
+  font-family: "Lexend", system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 5px;
+}
 /* The dock's smaller chip (mockup 7): the same token at card scale. */
 html.frontier-type .frontier-chip.frontier-chip-sm {
   gap: 4px;

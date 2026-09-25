@@ -27,7 +27,6 @@ describe("Frontier's muster", () => {
     const stack = plan.stacks[0];
     const preview = previewMuster(store, 1, plan, stack, 10_000, 3);
     expect(preview.count).toBe(musterMaximum(stack));
-    expect(preview.strength).toBeGreaterThan(0);
     expect(preview.stamina?.max).toBeGreaterThan(0);
     // No depth rules loaded: the yield is unknown, never zero.
     expect(preview.revealYield).toBeUndefined();

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { StructureType } from "@bibliothecadao/types";
 import * as timestamp from "./timestamp";
-import { armyStrength, openSpawnDirections } from "./army";
+import { openSpawnDirections } from "./army";
 
 const realm = () =>
   ({
@@ -49,20 +49,5 @@ describe("openSpawnDirections", () => {
     const home = realm();
     expect(openSpawnDirections(storeWith({ SliceRules: { epoch_seconds: 0 } }), home, nothingExplored)).toEqual([]);
     expect(openSpawnDirections(storeWith({ SliceRules: { epoch_seconds: 0 } }), home, () => 0)).toHaveLength(6);
-  });
-});
-
-describe("armyStrength", () => {
-  const limits = { t1_tier_strength: 1, t2_tier_strength: 3, t3_tier_strength: 9 } as never;
-  const troops = (tier: "T1" | "T2" | "T3", whole: bigint) => ({ tier, count: whole * 1_000_000_000n });
-
-  it("weighs whole troops by the tier's strength", () => {
-    expect(armyStrength(troops("T1", 1_500n), limits)).toBe(1_500);
-    expect(armyStrength(troops("T2", 500n), limits)).toBe(1_500);
-    expect(armyStrength(troops("T3", 1_000n), limits)).toBe(9_000);
-  });
-
-  it("counts only whole troops, as combat does", () => {
-    expect(armyStrength({ tier: "T1", count: 1_999_999_999n }, limits)).toBe(1);
   });
 });

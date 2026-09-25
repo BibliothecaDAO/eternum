@@ -1,5 +1,4 @@
 import {
-  armyStrength,
   configManager,
   type GameActions,
   getBalance,
@@ -61,7 +60,7 @@ export const readMusterPlan = (
 /** The most one army can take from a stack: what the realm holds, up to the castle's cap. */
 export const musterMaximum = (stack: MusterStack): number => Math.min(stack.available, stack.cap);
 
-/** The army a muster would make: its strength, what each reveal sends home and the bar it starts on. */
+/** The army a muster would make: its troops, what each reveal sends home and the bar it starts on. */
 export const previewMuster = (
   store: NativeFactStore,
   gameId: number,
@@ -71,7 +70,6 @@ export const previewMuster = (
   armiesTick: number,
 ): {
   count: number;
-  strength: number;
   revealYield: bigint | undefined;
   stamina: { amount: number; max: number } | null;
 } => {
@@ -82,7 +80,6 @@ export const previewMuster = (
   const percent = readRevealPercent(store, gameId, 0);
   return {
     count: whole,
-    strength: armyStrength(troops, limits),
     revealYield: percent === undefined ? undefined : revealYield(troops, limits, percent),
     stamina: plan.next
       ? musterStamina(plan.next, { category: stack.type, tier: stack.tier }, armiesTick, staminaRules)

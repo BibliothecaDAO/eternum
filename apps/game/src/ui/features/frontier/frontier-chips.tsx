@@ -1,5 +1,6 @@
 import { Eye } from "@/ui/design-system/atoms/game-icons";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { getTroopResourceId } from "@bibliothecadao/eternum";
+import { RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "./frontier-format";
@@ -13,6 +14,7 @@ export const Chip = ({
   value,
   small = false,
   tone,
+  badge,
 }: {
   label: string;
   icon: ReactNode;
@@ -20,6 +22,8 @@ export const Chip = ({
   /** The dock's card-scale chip. */
   small?: boolean;
   tone?: "gain" | "loss" | "price";
+  /** A mark after the number, such as a troop's tier. */
+  badge?: ReactNode;
 }) => (
   <span
     aria-label={`${label} ${value}`}
@@ -28,7 +32,39 @@ export const Chip = ({
   >
     {icon}
     <span className="frontier-chip-number tabular-nums">{value}</span>
+    {badge}
   </span>
+);
+
+const TIER_NUMERALS: Record<TroopTier, string> = { [TroopTier.T1]: "I", [TroopTier.T2]: "II", [TroopTier.T3]: "III" };
+
+/**
+ * Troops as every Frontier surface shows them: the troop's icon, how many, and its tier's badge. Strength stays hidden;
+ * a higher tier reads as tougher through its badge and its bigger model.
+ */
+export const TroopChip = ({
+  type,
+  tier,
+  count,
+  small = false,
+}: {
+  type: TroopType;
+  tier: TroopTier;
+  /** Whole troops; unknown shows as "—". */
+  count: number | undefined;
+  small?: boolean;
+}) => (
+  <Chip
+    label={`${type} ${tier}`}
+    small={small}
+    icon={<img src={`/images/resources/${getTroopResourceId(type, tier)}.png`} alt="" />}
+    value={formatAmount(count)}
+    badge={
+      <span aria-hidden className="frontier-tier">
+        {TIER_NUMERALS[tier]}
+      </span>
+    }
+  />
 );
 
 /** What each reveal sends home, Essence or labor; a scout's fraction of a unit shows as its eye instead. */
