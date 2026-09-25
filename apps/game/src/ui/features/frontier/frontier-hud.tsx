@@ -1,5 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { QuickFeed } from "@/ui/features/event-feed/quick-feed";
+import { LogToggle, QuickFeedRows } from "@/ui/features/event-feed/quick-feed";
+import { ScrollText } from "@/ui/design-system/atoms/game-icons";
+import { SecondaryMenuItems } from "@/ui/features/world";
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import { type CSSProperties, useEffect, useState } from "react";
 import { FrontierPick } from "./attributes/frontier-pick";
@@ -49,7 +51,18 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
       <FrontierSurfaces realm={realm} />
       <div className="flex min-h-0 flex-1 flex-col justify-end gap-2 landscape:flex-row landscape:items-stretch landscape:justify-between">
         <div className="flex max-w-[min(360px,70vw)] flex-col items-end gap-1 self-end portrait:mb-auto landscape:order-2 landscape:mb-auto landscape:ml-auto landscape:self-start">
-          <QuickFeed logOpen={logOpen} onLogToggle={() => setLogOpen((open) => !open)} />
+          {/* Under the strip: the log and settings as chips, then the feed's latest rows. */}
+          <div className="pointer-events-auto flex items-center gap-2">
+            <LogToggle
+              open={logOpen}
+              onToggle={() => setLogOpen((open) => !open)}
+              className="size-11 justify-center rounded-full border border-gold/25 bg-black/50 lg:size-9"
+            >
+              <ScrollText className="size-5" />
+            </LogToggle>
+            <SecondaryMenuItems />
+          </div>
+          <QuickFeedRows />
         </div>
         <FrontierSelectionSheet />
         {/* The dock, chat and guide keep their height; the selection sheet above scrolls to make room. */}

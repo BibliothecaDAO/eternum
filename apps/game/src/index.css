@@ -544,6 +544,18 @@ html.frontier-type .frontier-chip-number {
   font-size: 17px;
   color: var(--frontier-parchment);
 }
+/* The dock's smaller chip (mockup 7): the same token at card scale. */
+html.frontier-type .frontier-chip.frontier-chip-sm {
+  gap: 4px;
+  padding: 2px 9px 2px 3px;
+}
+html.frontier-type .frontier-chip.frontier-chip-sm > :first-child {
+  width: 20px;
+  height: 20px;
+}
+html.frontier-type .frontier-chip-sm .frontier-chip-number {
+  font-size: 14px;
+}
 html.frontier-type .frontier-primary {
   height: 60px;
   border-radius: 18px;

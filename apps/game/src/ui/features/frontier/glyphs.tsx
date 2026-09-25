@@ -36,3 +36,65 @@ export const SlotBanner = ({ used }: { used: boolean }) => (
     <path d="M2 2h18v22l-9-5-9 5z" fill={used ? GOLD : "none"} stroke={GOLD} strokeWidth="1.5" strokeLinejoin="round" />
   </svg>
 );
+
+/** The expedition: a folded map. */
+export const MapGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 28 28" className={className} aria-hidden>
+    <path
+      d="M4 7l6-2.5 8 2.5 6-2.5v16.5L18 23.5l-8-2.5-6 2.5z"
+      fill={PARCHMENT}
+      stroke={INK}
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
+    <path d="M10 4.5v16.5M18 7v16.5" stroke={INK} strokeWidth="1.4" />
+  </svg>
+);
+
+/** The realm: a castle's two towers and gate. */
+export const CastleGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 28 28" className={className} aria-hidden>
+    <path
+      d="M4 24V9h2v2h2V9h2v3h8V9h2v2h2V9h2v15h-7v-5a3 3 0 0 0-6 0v5z"
+      fill={PARCHMENT}
+      stroke={INK}
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+/** Picks waiting on an army: a fan of two cards. */
+export const CardFanGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 28 28" className={className} aria-hidden>
+    <rect
+      x="5"
+      y="6"
+      width="12"
+      height="17"
+      rx="2"
+      transform="rotate(-12 11 14)"
+      fill={PARCHMENT}
+      stroke={INK}
+      strokeWidth="1.4"
+    />
+    <rect
+      x="11"
+      y="5"
+      width="12"
+      height="17"
+      rx="2"
+      transform="rotate(10 17 13)"
+      fill={GOLD}
+      stroke={INK}
+      strokeWidth="1.4"
+    />
+  </svg>
+);
+
+/** An open slot: its banner with a plus, waiting for a muster. */
+export const PlusGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 28 28" className={className} aria-hidden>
+    <path d="M14 7v14M7 14h14" stroke={GOLD} strokeWidth="3" strokeLinecap="round" />
+  </svg>
+);

@@ -1,13 +1,6 @@
 import { useGame } from "@/hooks/context/game-context";
 import { configManager, readRevealPercent, revealYield } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, type TroopTier } from "@bibliothecadao/types";
-
-/** What each reveal sends home, in whole units; a scout's tenth of a unit reads "Under 1", never zero. */
-export const formatRevealYield = (scaled: bigint | undefined): string => {
-  if (scaled === undefined) return "—";
-  const whole = scaled / BigInt(RESOURCE_PRECISION);
-  return whole === 0n ? "Under 1 per reveal" : `${whole.toLocaleString()} per reveal`;
-};
+import type { TroopTier } from "@bibliothecadao/types";
 
 /**
  * An army's per-reveal payout at a depth, scaled, from the game's own depth rules: undefined where the depth has none,

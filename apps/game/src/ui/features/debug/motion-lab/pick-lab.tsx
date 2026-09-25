@@ -1,4 +1,4 @@
-import { ArmyLevel } from "@/ui/features/frontier/attributes/army-level";
+import { ArmyPortrait } from "@/ui/features/frontier/attributes/army-portrait";
 import { AttributeBadge } from "@/ui/features/frontier/attributes/attribute-badge";
 import {
   type ArmyProgressFacts,
@@ -108,7 +108,12 @@ export const PickLab = () => {
         <div ref={tile} className="h-10 w-10 shrink-0 rounded-lg border border-[#8b5cf6]/60 bg-[#2a1745]" aria-hidden />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="text-sm font-semibold">Army 1</span>
-          <ArmyLevel progress={progress} rules={RULES} />
+          <ArmyPortrait
+            explorerId={progress.explorer_id}
+            troops={{ category: "Knight", tier: "T1" }}
+            progress={progress}
+            rules={RULES}
+          />
           <AttributeBadge progress={progress} />
         </div>
         <PickChip progress={progress} rules={RULES} />

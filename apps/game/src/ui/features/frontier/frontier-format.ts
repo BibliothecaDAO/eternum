@@ -6,6 +6,13 @@ export const formatClock = (seconds: number): string => {
   return `${hours}:${String(minutes).padStart(2, "0")}:${String(whole % 60).padStart(2, "0")}`;
 };
 
+/** A countdown at card scale (design §3.12): "3:59" in hours and minutes, "4:07" in minutes and seconds under an hour. */
+export const formatShortClock = (seconds: number): string => {
+  const whole = Math.max(0, Math.ceil(seconds));
+  if (whole < 3600) return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+  return `${Math.floor(whole / 3600)}:${String(Math.floor((whole % 3600) / 60)).padStart(2, "0")}`;
+};
+
 const exact = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 

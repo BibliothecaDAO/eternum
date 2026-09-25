@@ -3,15 +3,15 @@ import { useCurrentArmiesTick, useCurrentDefaultTick } from "@/hooks/helpers/use
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requireActiveGameClient } from "@/sync/active-game-client";
-import { Eye } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { structureMapPosition } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { getNeighborHexes, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { getNeighborHexes } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { formatAmount } from "../frontier-format";
+import { Chip, YieldChip } from "../frontier-chips";
 import { BoltGlyph, SlotBanner, SwordGlyph } from "../glyphs";
 import {
   type MusterStack,
@@ -23,7 +23,6 @@ import {
 } from "./muster-plan";
 
 const MUSTER_MODELS = ["ArmySlot", "ResourceBalance", "ResourceProduction", "Structure", "TileOccupancy"] as const;
-const PRECISION = BigInt(RESOURCE_PRECISION);
 const RING_RADIUS = 46;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 
@@ -221,31 +220,3 @@ const StackPicker = ({
     ))}
   </div>
 );
-
-const Chip = ({ label, icon, value }: { label: string; icon: React.ReactNode; value: string }) => (
-  <span aria-label={`${label} ${value}`} className="frontier-chip justify-center">
-    {icon}
-    <span className="frontier-chip-number tabular-nums">{value}</span>
-  </span>
-);
-
-/** What each reveal sends home, Essence or labor; a scout's fraction of a unit shows as its eye instead. */
-const YieldChip = ({ scaled }: { scaled: bigint | undefined }) => {
-  const whole = scaled === undefined ? undefined : scaled / PRECISION;
-  const icons =
-    whole === 0n ? (
-      <Eye />
-    ) : (
-      <span className="flex items-center justify-center -space-x-1">
-        <img src={`/images/resources/${ResourcesIds.Essence}.png`} alt="" className="size-4" />
-        <img src={`/images/resources/${ResourcesIds.Labor}.png`} alt="" className="size-4" />
-      </span>
-    );
-  return (
-    <Chip
-      label="Each reveal"
-      icon={icons}
-      value={whole === undefined ? "—" : whole === 0n ? "" : formatAmount(Number(whole))}
-    />
-  );
-};

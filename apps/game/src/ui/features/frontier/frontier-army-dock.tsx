@@ -10,7 +10,7 @@ import type { ArmyStaminaPresentation } from "@/lib/army-stamina/types";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
 import { LeftView } from "@/types";
-import { HUD_LABEL, HUD_LABEL_BRIGHT, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
+import { Hourglass } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_ACTIVE, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import {
@@ -25,13 +25,14 @@ import {
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useMemo } from "react";
 import { Sweep } from "@/ui/motion/sweep";
-import { formatAmount, formatClock } from "./frontier-format";
+import { Chip, YieldChip } from "./frontier-chips";
+import { formatAmount, formatShortClock } from "./frontier-format";
+import { PlusGlyph, SlotBanner, SwordGlyph } from "./glyphs";
 import { useExpeditionRules } from "./frontier-home";
 import { describeSlotBar, useOpenArmySlots } from "./frontier-muster-stamina";
-import { ArmyLevel } from "./attributes/army-level";
-import { AttributeBadge } from "./attributes/attribute-badge";
+import { ArmyPortrait } from "./attributes/army-portrait";
 import { PickChip } from "./attributes/pick-chip";
-import { formatRevealYield, useRevealYield } from "./frontier-reveal-yield";
+import { useRevealYield } from "./frontier-reveal-yield";
 import { useMusterPointed } from "./guide/guide-pointer";
 
 const ARMY_MODELS = [
@@ -76,8 +77,12 @@ export const FrontierArmyDock = ({ realm }: { realm: NativeRows["Structure"] }) 
   );
 };
 
-const CARD = "flex w-44 shrink-0 flex-col gap-1 rounded-xl px-3 py-2 text-left landscape:w-48";
+const CARD = "flex w-44 shrink-0 flex-col gap-2 rounded-2xl p-2.5 text-left landscape:w-48";
 
+/**
+ * One army as mockup 7 draws it: its portrait (XP ring and level), its strength, its stamina bar, the time to a full
+ * bar while it fills, and what its next reveal sends home. Its name is its label for assistive tech only.
+ */
 const ArmyCard = ({ army, position }: { army: NativeRows["ExplorerTroops"]; position: number }) => {
   const { setup } = useGame();
   const { isMapView } = useQuery();
@@ -110,40 +115,35 @@ const ArmyCard = ({ army, position }: { army: NativeRows["ExplorerTroops"]; posi
     navigateToMapView(Position.fromContract(coord));
   };
 
-  // Progress and its rules are required facts: until both arrive the card shows no level, badge or pick.
+  // Progress and its rules are required facts: until both arrive the portrait shows no level and no pick waits.
   const progress = setup.store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
   const rules = setup.store.get("ArmyProgressionRules", { game_id: army.game_id });
 
-  // The Pick chip is its own button, so it sits in the card's corner rather than inside the card's button; the dock
+  // The pick is its own button, so it sits in the card's corner rather than inside the card's button; the dock
   // scrolls, so the corner stays inside the card's bounds.
   return (
     <div className="relative shrink-0">
       <button
         type="button"
+        aria-label={dockArmyName(setup.store, army.explorer_id, position)}
         aria-pressed={selected}
         onClick={pick}
         className={cn(OVERLAY_SURFACE_BASE, CARD, selected && OVERLAY_SURFACE_ACTIVE)}
       >
-        <span
-          className={cn(
-            HUD_LABEL_BRIGHT,
-            "truncate normal-case tracking-normal",
-            progress?.pending && "min-h-7 pr-16 leading-7",
-          )}
-        >
-          {dockArmyName(setup.store, army.explorer_id, position)}
-        </span>
-        <span className="flex items-baseline gap-1">
-          <span className={cn(HUD_VALUE, "tabular-nums")}>{formatAmount(armyStrength(army.troops, limits))}</span>
-          <span className={HUD_LABEL}>strength</span>
+        <span className="flex items-center gap-2">
+          <ArmyPortrait explorerId={army.explorer_id} troops={army.troops} progress={progress} rules={rules} />
+          <Chip small label="Strength" icon={<SwordGlyph />} value={formatAmount(armyStrength(army.troops, limits))} />
         </span>
         <StaminaBar stamina={stamina} />
-        {progress && rules && <ArmyLevel progress={progress} rules={rules} />}
-        {progress && <AttributeBadge progress={progress} />}
-        <ArmyRevealYield army={army} />
+        <span className="flex flex-wrap items-center gap-1.5">
+          {stamina && stamina.secondsUntilFull > 0 && (
+            <Chip small label="Full in" icon={<Hourglass />} value={formatShortClock(stamina.secondsUntilFull)} />
+          )}
+          <ArmyRevealYield army={army} />
+        </span>
       </button>
       {progress && rules && (
-        <span className="absolute right-2 top-1.5">
+        <span className="absolute -right-1 -top-1">
           <PickChip progress={progress} rules={rules} />
         </span>
       )}
@@ -158,30 +158,25 @@ const ArmyRevealYield = ({ army }: { army: NativeRows["ExplorerTroops"] }) => {
   const coord = entityMapPosition(setup.store, configManager.getActiveGameId(), army.explorer_id);
   const amount = useRevealYield(army.troops, rules ? expeditionDepth(rules, coord) : 0);
   if (amount === null) return null;
-  return <span className={cn(HUD_LABEL, "tracking-normal")}>{formatRevealYield(amount)}</span>;
+  return <YieldChip small scaled={amount} />;
 };
 
-/**
- * Stamina as the chain grants it at this tick, and when the bar is full, counting down every second on chain time;
- * unknown shows as "—" and an empty bar.
- */
+/** The army's stamina as a bar alone, in the stamina green; its numbers are the bar's label. Unknown is an empty bar. */
 const StaminaBar = ({ stamina }: { stamina: ArmyStaminaPresentation | null }) => (
-  <span className="flex flex-col gap-0.5" aria-label="Stamina">
-    <span className="h-1.5 overflow-hidden rounded-full bg-black/50">
-      <span
-        className="block h-full rounded-full bg-emerald-400/80"
-        style={{ width: `${(stamina?.committedRatio ?? 0) * 100}%` }}
-      />
-    </span>
-    <span className={cn(HUD_LABEL, "flex justify-between gap-2 tabular-nums tracking-normal")}>
-      <span>{stamina ? `${stamina.committedCurrent}/${stamina.committedMax}` : "—"}</span>
-      {stamina && <span className="whitespace-nowrap">{describeFull(stamina)}</span>}
-    </span>
+  <span
+    role="meter"
+    aria-label={stamina ? `Stamina ${stamina.committedCurrent} of ${stamina.committedMax}` : "Stamina unknown"}
+    aria-valuenow={stamina?.committedCurrent}
+    aria-valuemax={stamina?.committedMax}
+    title={stamina ? `${stamina.committedCurrent}/${stamina.committedMax}` : undefined}
+    className="h-2 overflow-hidden rounded-full bg-black/50"
+  >
+    <span
+      className="block h-full rounded-full bg-[#9fd06a]"
+      style={{ width: `${(stamina?.committedRatio ?? 0) * 100}%` }}
+    />
   </span>
 );
-
-const describeFull = (stamina: ArmyStaminaPresentation): string =>
-  stamina.secondsUntilFull > 0 ? `full in ${formatClock(stamina.secondsUntilFull)}` : "rested";
 
 /** The army's own name when it has one; otherwise its place in the dock, never its entity id. */
 const dockArmyName = (store: NativeFactStore, explorerId: number, position: number): string => {
@@ -189,18 +184,22 @@ const dockArmyName = (store: NativeFactStore, explorerId: number, position: numb
   return named && named.name !== 0n ? getArmyName(explorerId, store) : `Army ${position}`;
 };
 
+/** An open slot: an outline banner with a plus, dim when its last army left the slot tired. */
 const MusterCard = ({ slot }: { slot: OpenArmySlot | undefined }) => {
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const pointed = useMusterPointed();
   return (
-    <Sweep play={pointed} className="shrink-0 rounded-xl">
+    <Sweep play={pointed} className="shrink-0 rounded-2xl">
       <button
         type="button"
+        aria-label={`Muster, ${describeSlotBar(slot)}`}
         onClick={() => setLeftNavigationView(LeftView.MilitaryView)}
-        className={cn(OVERLAY_SURFACE_BASE, CARD, "h-full items-center justify-center border-dashed")}
+        className={cn(OVERLAY_SURFACE_BASE, CARD, "h-full min-h-28 items-center justify-center border-dashed")}
       >
-        <span className={HUD_LABEL_BRIGHT}>Muster</span>
-        <span className={HUD_LABEL}>Open slot · {describeSlotBar(slot)}</span>
+        <span className={cn("relative", slot?.inherited && "opacity-60")}>
+          <SlotBanner used={false} />
+          <PlusGlyph className="absolute inset-x-0 top-1 mx-auto size-4" />
+        </span>
       </button>
     </Sweep>
   );
