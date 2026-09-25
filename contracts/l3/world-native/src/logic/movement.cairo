@@ -267,7 +267,7 @@ pub mod MovementLogic {
                 assert!(data % 0x20000000000 == 0, "movement tile occupied");
                 assert!((data / 0x20000000000) % 256 != 0, "undiscovered movement tile");
                 let biome = self.map_dispatcher(game_id).biome(tile, crate::commands::biome_context(context)).into();
-                crate::troops::spend_stamina(ref explorer, rules, biome, false, context.timestamp);
+                self.pay_movement(game_id, ref explorer, rules, biome, false, context.timestamp, context);
                 explorer.coord = destination;
             }
             crate::logic::map::MapState::occupy(
@@ -276,7 +276,6 @@ pub mod MovementLogic {
                 crate::troops::explorer_occupier(explorer),
                 false,
             );
-            self.pay_food(game_id, explorer, rules, false, context.timestamp, context);
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
         }
         fn toggle_alternate(

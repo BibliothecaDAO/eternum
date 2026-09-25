@@ -505,6 +505,38 @@ fn entity_names_follow_owned_armies_and_reject_missing_or_foreign_entities() {
 }
 
 #[test]
+fn five_step_move_charges_five_times_one_step_food() {
+    let (d, home, first, _) = setup();
+    grant(d, home, 35, 1000 * RESOURCE_PRECISION);
+    grant(d, home, 36, 1000 * RESOURCE_PRECISION);
+    let mut explorer = troop(d, first).unwrap();
+    let start = explorer.coord;
+    let map = IMapLogicDispatcher { contract_address: d.games };
+    for offset in 1_u32..7 {
+        map.reveal(crate::geometry::tile_key(3, crate::troops::Coord { x: start.x + offset, ..start }), 11);
+    }
+    explorer.troops.stamina.amount = 120;
+    explorer.troops.stamina.updated_tick = 2;
+    super::resource_commands::set_explorer_fixture(d.games, ExplorerKey { game_id: 3, explorer_id: first }, explorer);
+    let wheat = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 35 };
+    let fish = ResourceSlot { resource_type: 36, ..wheat };
+    let wheat_before = resource(d).resource_balance(wheat);
+    let fish_before = resource(d).resource_balance(fish);
+    assert!(execute(d, Command::Move(Move { explorer_id: first, directions: array![0].span() }), 120));
+    let wheat_after_one = resource(d).resource_balance(wheat);
+    let fish_after_one = resource(d).resource_balance(fish);
+    let wheat_per_step = wheat_before - wheat_after_one;
+    let fish_per_step = fish_before - fish_after_one;
+    assert!(wheat_per_step > 0 && fish_per_step > 0, "fixture must charge both foods");
+    assert!(execute(d, Command::Move(Move { explorer_id: first, directions: array![0, 0, 0, 0, 0].span() }), 120));
+    assert_eq!(wheat_after_one - resource(d).resource_balance(wheat), 5 * wheat_per_step);
+    assert_eq!(fish_after_one - resource(d).resource_balance(fish), 5 * fish_per_step);
+    let after = troop(d, first).unwrap();
+    assert_eq!(after.coord.x, start.x + 6);
+    assert_eq!(after.troops.stamina.amount, 0);
+}
+
+#[test]
 fn multi_tile_move_spends_each_steps_stamina_and_rejects_a_blocked_path_atomically() {
     let (d, home, first, _) = setup();
     grant(d, home, 35, 1000 * RESOURCE_PRECISION);
@@ -540,10 +572,16 @@ fn multi_tile_move_spends_each_steps_stamina_and_rejects_a_blocked_path_atomical
         0,
     );
     let occupied = map.tile(crate::geometry::tile_key(3, after.coord)).unwrap();
+    let wheat = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 35 };
+    let fish = ResourceSlot { resource_type: 36, ..wheat };
+    let wheat_before_rejection = resource(d).resource_balance(wheat);
+    let fish_before_rejection = resource(d).resource_balance(fish);
     // Two steps can succeed, but the third enters the home realm. No partial movement survives.
     assert_terminal_rejection(d, Command::Move(Move { explorer_id: first, directions: array![3, 3, 3].span() }), 120);
     assert_eq!(troop(d, first).unwrap(), after);
     assert_eq!(map.tile(crate::geometry::tile_key(3, after.coord)).unwrap(), occupied);
+    assert_eq!(resource(d).resource_balance(wheat), wheat_before_rejection);
+    assert_eq!(resource(d).resource_balance(fish), fish_before_rejection);
 }
 
 #[test]
