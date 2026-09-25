@@ -6,8 +6,9 @@ sequencer and the admission gateway orders signed actions beside it; Herald serv
 
 ATHANOR contains the isolated box deployment and gameplay harness. `scripts/shard.py` initializes a fresh shard from
 pinned images, an explicit chain identity and the published guardian identity, then starts its compose project. See
-"Isolated node and release" below for the inputs. The staging candidate also serves the static client beside the shards;
-identity, launches and the other central services use the staging Workers. The [public shard package](../shard/README.md) runs with Docker alone; the runner renders that same Compose file.
+"Isolated node and release" below for the inputs. Clients are static builds on Cloudflare Pages; identity, the shard
+directory, launches and the other central services are the environment's Workers. The
+[public shard package](../shard/README.md) runs with Docker alone; the runner renders that same Compose file.
 
 ## Publishing the shard package
 
@@ -20,16 +21,16 @@ artifacts only and never redeploy a shard.
 
 ## Live holdovers
 
-Until the native cutover's fresh genesis, the running live stack retains its `madara-lab` compose project and container
-names, chain ID and tunnel hostnames. Source-directory changes do not rename, restart or switch that stack. Candidate projects use `athanor-<shard>` with disjoint ports and volumes. Set
-`COMPOSE_PROJECT_NAME` when starting a shard. A measured harness run reads the node's image and container from the
+Until the native cutover's fresh genesis, the live stack on the production box retains its `madara-lab` compose
+project and container names, chain ID and tunnel hostnames. Source-directory changes do not rename, restart or switch
+that stack. Native shards run on their own box, where nothing live runs, as `athanor-<shard>` projects; set
+`COMPOSE_PROJECT_NAME` when starting one. A measured harness run reads the node's image and container from the
 shard's `harness.env` (`MADARA_IMAGE`, pinned by digest, and `MADARA_CONTAINER`) and stops by name without them; a
 functional run reads neither. Set `MADARA_CONTAINER` by hand only when measuring a separately named running node. The
 three live holdovers are removed only at the approved traffic switch.
 
-Use a separate checkout, compose project, ports, volumes and Herald database for a candidate. Keep the live project and
-owner playtest running. Announce any replacement of the candidate being playtested. Passing a small smoke does not
-authorize a traffic switch or a merge into `next`.
+Give each shard its own compose project, ports, volumes and Herald database. Announce any replacement of a shard being
+playtested. Passing a small smoke does not authorize a traffic switch or a merge into `next`.
 
 ## Build tools
 
@@ -125,8 +126,9 @@ For the account-operation smoke, run `bun deploy/athanor/scripts/account-rpc-smo
 It refuses foreign account classes, guardian keys, targets, selectors and multi-calls, then joins and revokes a
 temporary device on the host operator through the public endpoint. The temporary key stays private in the run directory.
 
-The operator is a bot under the shard's guardian, so the deployment and the smoke need `OPERATOR_TOKEN`, the operator
-token of the environment `guardian_url` belongs to, in the environment. The runner derives that environment's identity
+The operator is a bot under the shard's guardian. Our shards' deployment and smoke approve it with `OPERATOR_TOKEN`,
+the operator token of the environment `guardian_url` belongs to, from the shell that starts them; it is never written to
+the run directory. A community shard brings `data/operator-enrolment.json` instead. The runner derives that environment's identity
 API from `guardian_url` (which must end in `/guardian`) and records it as `IDENTITY_URL` in `harness.env`.
 
 The harness requires explicit `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_KEY`, including for resumed runs.
@@ -156,34 +158,31 @@ persists its epoch secret in its own volume. Pending assignments are volatile ac
 duplicate gameplay effects. The node always runs with WAL and fsync enabled; never request fsync with WAL disabled
 (upstream issue #1257).
 
-### Staging candidate
+### Staging
 
-Initialize both browser-gate shards with `guardian_url=https://staging.realms.party/api/guardian`. Initialization fetches
-the guardian's public key and account class hash and records them in `shard.guardianPublicKey` and
-`shard.accountClassHash`. An unavailable endpoint or invalid identity stops initialization; candidate and release
+Staging runs on its own box and domain. Initialize each shard with `guardian_url=https://<staging origin>/api/guardian`.
+Initialization fetches the guardian's public key and account class hash and records them in `shard.guardianPublicKey`
+and `shard.accountClassHash`. An unavailable endpoint or invalid identity stops initialization; candidate and release
 configurations never supply substitute values. The deployer declares `RealmsAccount` only when its locally built class
-matches that published hash, and the game's authentication and Herald use the same manifest class. The init image builds the account with the root's declared toolchain and the game with its workspace's toolchain.
-The host does not compile contracts during initialization.
+matches that published hash, and the game's authentication and Herald use the same manifest class. The init image
+builds the account with the root's declared toolchain and the game with its workspace's toolchain. The host does not
+compile contracts during initialization.
 
-Every shard uses the pinned upstream Madara image and admission gateway described above. Set each shard's public RPC
-and admission URLs to their separate staging tunnel hostnames. Herald has the owner-approved 24 GiB memory limit and
-restarts on failure so a node restart does not leave it down.
+Every shard uses the pinned upstream Madara image and admission gateway described above, with its public RPC and
+admission URLs on their own staging tunnel hostnames. The node is limited to 24 GiB (`node_memory_mib`) and Herald to
+its [measured 6 GiB](../shard/README.md); both restart on failure, so a node restart does not leave Herald down.
 
-The app uses `staging.realms.party`, whose `/api/*` routes belong to K's staging Workers. `candidate-services.yml`
-replaces the old candidate's Vite dev server with a static client. Set both `VITE_PUBLIC_IDENTITY_RPC_URL` and
-`VITE_PUBLIC_CONTROLLER_RPC_URL` from the protected `/opt/athanor/config/client-identity-rpc-url` file in the build
-process environment. Never print the value or copy it to an environment file. Verify the served bundle has no public
-RPC fallback and exercise passkey sign-in after changing it. Build the client with
-`VITE_PUBLIC_SHARD_URL=https://staging-herald.realms.party`; launch requests use the app's own origin. The launch Worker
-reads the RPC, admission and contract addresses from `SHARD_URL=https://staging-herald.realms.party`; the box runs no launch or identity service. Configure
-its registrar credentials from the primary shard's private `harness.env` and its Frontier season start through K's
-staging deployment. The owner-approved `LAUNCHER_ALLOWLIST` is
-`0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d` only. Further launchers require the owner's word.
-The static client's checkout and Caddy image digest are explicit compose inputs.
+The client deploys by dispatching `deploy-client.yml` with the `staging` environment, whose Pages project, origin, zone
+and identity RPC secret live in that GitHub environment and never on the box. The client finds shards through its
+origin's `/api/directory`; every `/api/*` route belongs to the staging Workers. The launch Worker's shard, registrar
+account and launchers are its GitHub environment's variables ([launch service](../../apps/launch-service/README.md)).
+The owner-approved `LAUNCHER_ALLOWLIST` is `0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d` only;
+further launchers require the owner's word. After a client deploy, verify the served bundle has no public RPC fallback
+and exercise sign-in.
 
-Use a separate staging tunnel connector, disjoint ports and fresh volumes for both shards. Hold the shared
-`/opt/athanor/isolated-stack.lock` during deployment and verification. Verify the app, launch service and both public
-manifests before handing the candidate to the other streams. Leave the live stack and its tunnel connector running.
+Use a staging tunnel connector of its own and fresh volumes for every shard. Hold the shared
+`/opt/athanor/isolated-stack.lock` during deployment and verification. Verify the app, launch service and every public
+manifest before handing staging to the other streams.
 
 ## Native deployment
 

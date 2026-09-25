@@ -16,16 +16,19 @@ Deploy the guardian before the identity Worker of the same environment; the iden
 pnpm --dir apps/guardian exec wrangler deploy --env staging
 ```
 
-Generate the environment's key, store it offline (a lost key cannot approve any new device; a leaked key means a new
-account class and new accounts), then paste it at the secret prompt, which does not echo it:
+Generate the environment's key straight into a file on offline storage (a lost key cannot approve any new device; a
+leaked key means a new account class and new accounts), then feed that file to the secret. The key never reaches the
+terminal or the shell history:
 
 ```sh
+umask 077
 node -e 'const { ec } = require("./apps/guardian/node_modules/starknet");
-  console.log("0x" + Buffer.from(ec.starkCurve.utils.randomPrivateKey()).toString("hex"))'
-pnpm --dir apps/guardian exec wrangler secret put GUARDIAN_PRIVATE_KEY --env staging
+  process.stdout.write("0x" + Buffer.from(ec.starkCurve.utils.randomPrivateKey()).toString("hex"))' \
+  > /media/offline/guardian-staging.key
+pnpm --dir apps/guardian exec wrangler secret put GUARDIAN_PRIVATE_KEY --env staging < /media/offline/guardian-staging.key
 ```
 
-For production, use `--env production` in both commands.
+For production, use `--env production` and its own key file.
 
 ## Checks
 
