@@ -29,6 +29,11 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
           </label>
         )}
       </div>
+      {form.markedPlot && (
+        <p className="rounded border border-emerald-400/40 bg-emerald-900/20 px-2 py-1.5 text-xs text-emerald-200">
+          Marked plot: a building here gives twice its output, capacity or population.
+        </p>
+      )}
       {form.error && (
         <p role="status" className="text-xs">
           {form.error}
@@ -79,16 +84,6 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
                       </span>
                     ))}
                   </span>
-                  {building.neighbourHints.length > 0 && (
-                    <span className="block space-y-0.5 pb-1 text-left text-[10px] leading-tight text-gold/70">
-                      {building.neighbourHints.map((hint) => (
-                        <span key={hint.label} className={hint.present ? "block text-emerald-300" : "block"}>
-                          {hint.present ? "✓ " : ""}
-                          {hint.label}
-                        </span>
-                      ))}
-                    </span>
-                  )}
                   {building.disabled && (
                     <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/50" />
                   )}

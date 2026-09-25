@@ -3,14 +3,13 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import {
   type BuildingTiles,
-  boardBonusesFor,
   configManager,
-  describeBoardBonus,
   getRealmInfo,
+  isRealmMarkedPlot,
   resolveUseSimpleCost,
   isViewerOwner,
 } from "@bibliothecadao/eternum";
-import { BuildingType, BuildingTypeToString, getNeighborHexes, type HexPosition } from "@bibliothecadao/types";
+import { BuildingType, BuildingTypeToString, type HexPosition } from "@bibliothecadao/types";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -51,16 +50,8 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
     "Building",
   ]);
   const realm = getRealmInfo(target.entityId, store, getPlayerName);
-  const boardRules = store.get("BoardRules", { game_id: configManager.getActiveGameId() });
-  const neighbourCategories = getNeighborHexes(target.spot.col, target.spot.row).map(
-    (hex) =>
-      target.tileManager.existingBuildings().find((built) => built.col === hex.col && built.row === hex.row)?.category,
-  );
-  const neighbourHints = (type: BuildingType) =>
-    boardBonusesFor(boardRules, type).map((bonus) => ({
-      label: `Beside ${BuildingTypeToString[bonus.neighbour as BuildingType] ?? "a neighbour"}: ${describeBoardBonus(bonus)}`,
-      present: neighbourCategories.includes(bonus.neighbour),
-    }));
+  const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: target.entityId });
+  const markedPlot = structure ? isRealmMarkedPlot(store, structure, target.spot) : false;
   const isOwner = isViewerOwner(realm?.owner, viewer);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -85,7 +76,6 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
         type,
         label: BuildingTypeToString[type],
         requirements: resolveBuildingRequirements(target.entityId, store, type, useSimpleCost, currentDefaultTick),
-        neighbourHints: neighbourHints(type),
         reason: state.reason,
         disabled: !state.canSubmit || pending,
       };
@@ -118,6 +108,7 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
   };
   return {
     groups,
+    markedPlot,
     build,
     error,
     allowSimpleCost: configManager.buildingCostMode === "choice",

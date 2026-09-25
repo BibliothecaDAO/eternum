@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-25",
+    title: "One marked plot per ring",
+    description:
+      "Each ring of your Frontier realm board has one marked plot, lit and set on greener ground, where a building gives twice its output, capacity or population. Neighbour bonuses are gone.",
+    type: "feature",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-09-25",
     title: "Exact fight forecasts",
     description:
       'The attack preview now computes each exchange with the game\'s own arithmetic, so it shows exactly what a fight costs: "Wins in 2 exchanges · loses 420 · 60 stamina". Where a game rolls dice, it shows the worst and best rolls.',
