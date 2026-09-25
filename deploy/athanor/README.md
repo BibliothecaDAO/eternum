@@ -11,6 +11,17 @@ pinned images, an explicit chain identity and the published guardian identity, t
 directory, launches and the other central services are the environment's Workers. The
 [public shard package](../shard/README.md) runs with Docker alone; the runner renders that same Compose file.
 
+## Host
+
+`host/bootstrap.sh` prepares a fresh Ubuntu 24.04 box, as root with `OPERATOR` naming the account that runs shards:
+Docker and Compose, cloudflared, Node 22 with corepack and bun for the runner, a firewall that admits only SSH, time
+sync, the `/backup` disk (formatted once by hand with the label `backup`), `athanor.slice` with every CPU of the box,
+and `/opt/athanor` for the isolated-stack lock and run directories. It is safe to run again. The tunnel is remotely
+managed: the owner creates it in Cloudflare, its public hostnames map to the package's loopback ports (RPC 8080, Herald
+8081, admission 8082), and its token goes into the root-only `/etc/cloudflared/tunnel-token` that
+`host/cloudflared.service` reads. The runner's trials run inside `athanor.slice`; a package started by `deploy.py` runs
+beside it under its own per-container limits.
+
 ## Publishing the shard package
 
 Push a reviewed `shard-v*` tag to build the init, Herald and gateway images and the downloadable Compose package. Tag
