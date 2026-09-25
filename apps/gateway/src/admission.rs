@@ -1,8 +1,8 @@
 use crate::ticket::ActionStatus;
 use starknet_types_core::felt::Felt;
 use std::{
-    collections::HashMap,
-    net::IpAddr,
+    collections::{HashMap, VecDeque},
+    net::{IpAddr, Ipv6Addr},
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
@@ -126,32 +126,59 @@ impl Drop for Permit {
     }
 }
 
-// A shared IP can host a full 96-player lobby. Two requests per action at four ticks
-// per second fit this cap; actor slots prevent one player from occupying the queue.
+// A shared IP can host a full 96-player lobby. Two requests per action at four ticks per second fit this budget;
+// actor slots prevent one player from occupying the queue.
+const REQUESTS_PER_CLIENT: u16 = 1024;
+/// Clients the limiter remembers in one window. A new client is never refused for lack of room: the client seen longest
+/// ago is forgotten instead, which only restarts that client's count.
+const TRACKED_CLIENTS: usize = 4096;
+
+/// Requests per client per second. A client is an IPv4 address, or an IPv6 /64, because one IPv6 host can rotate
+/// through its whole /64.
 pub(crate) struct IpLimits {
     window: Instant,
     requests: HashMap<IpAddr, u16>,
+    /// This window's clients in the order they first arrived; the front is forgotten first.
+    arrivals: VecDeque<IpAddr>,
 }
 impl Default for IpLimits {
     fn default() -> Self {
-        Self { window: Instant::now(), requests: HashMap::new() }
+        Self { window: Instant::now(), requests: HashMap::new(), arrivals: VecDeque::new() }
     }
 }
 impl IpLimits {
     pub fn allow(&mut self, ip: IpAddr, now: Instant) -> bool {
         if now.duration_since(self.window) >= Duration::from_secs(1) {
             self.requests.clear();
+            self.arrivals.clear();
             self.window = now;
         }
-        if self.requests.len() >= 4096 && !self.requests.contains_key(&ip) {
-            return false;
+        let client = client_of(ip);
+        if !self.requests.contains_key(&client) {
+            if self.requests.len() >= TRACKED_CLIENTS {
+                if let Some(oldest) = self.arrivals.pop_front() {
+                    self.requests.remove(&oldest);
+                }
+            }
+            self.arrivals.push_back(client);
         }
-        let count = self.requests.entry(ip).or_default();
-        if *count >= 1024 {
+        let count = self.requests.entry(client).or_default();
+        if *count >= REQUESTS_PER_CLIENT {
             return false;
         }
         *count += 1;
         true
+    }
+}
+
+/// The client an address counts against: an IPv4 address, including one mapped into IPv6, or an IPv6 address's /64.
+fn client_of(ip: IpAddr) -> IpAddr {
+    match ip {
+        IpAddr::V4(_) => ip,
+        IpAddr::V6(v6) => match v6.to_ipv4_mapped() {
+            Some(v4) => IpAddr::V4(v4),
+            None => IpAddr::V6(Ipv6Addr::from(u128::from(v6) & !((1u128 << 64) - 1))),
+        },
     }
 }
 
@@ -220,6 +247,37 @@ mod tests {
         assert!(waiting.changed().await.is_err());
         assert!(matches!(slots.reserve(GAME, Felt::ONE, Felt::from(3)), Ok(Slot::New(_))));
     }
+    #[test]
+    fn a_new_client_is_admitted_however_many_others_arrived_this_second() {
+        let mut limits = IpLimits::default();
+        let now = limits.window;
+        let first: IpAddr = "10.0.0.1".parse().unwrap();
+        for _ in 0..REQUESTS_PER_CLIENT {
+            assert!(limits.allow(first, now));
+        }
+        for client in 0..(TRACKED_CLIENTS as u32 + 1_000) {
+            let address = IpAddr::V4(std::net::Ipv4Addr::from(0x0b00_0000 + client));
+            assert!(limits.allow(address, now), "client {address} refused because others were seen");
+        }
+        assert!(limits.requests.len() <= TRACKED_CLIENTS);
+        let late: IpAddr = "12.0.0.1".parse().unwrap();
+        assert!(limits.allow(late, now));
+    }
+
+    #[test]
+    fn one_ipv6_host_shares_its_slash_64_budget() {
+        let mut limits = IpLimits::default();
+        let now = limits.window;
+        for host in 0..u128::from(REQUESTS_PER_CLIENT) {
+            let address = IpAddr::V6(Ipv6Addr::from((0x2001_0db8_0000_0001u128 << 64) + host));
+            assert!(limits.allow(address, now));
+        }
+        let rotated = IpAddr::V6(Ipv6Addr::from((0x2001_0db8_0000_0001u128 << 64) + 0xffff));
+        assert!(!limits.allow(rotated, now));
+        let neighbour = IpAddr::V6(Ipv6Addr::from(0x2001_0db8_0000_0002u128 << 64));
+        assert!(limits.allow(neighbour, now));
+    }
+
     #[test]
     fn ip_limits_bound_abuse_without_sharing_a_budget_between_addresses() {
         let mut limits = IpLimits::default();

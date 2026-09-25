@@ -127,13 +127,17 @@ bun deploy/athanor/scripts/inspect-shard-roles.ts --public-rpc https://RPC_HOST/
 The check requires a working chain identity read and method-not-found rejection for unshaped submissions, both singly
 and in mixed batches; it also refuses an exposed WebSocket upgrade. Invalid-params errors fail the check. For the
 account-operation smoke, run `bun deploy/athanor/scripts/account-rpc-smoke.ts RUN_DIRECTORY PUBLIC_RPC_URL`. It refuses
-foreign account classes, guardian keys, targets, selectors and multi-calls, then joins and revokes a temporary device on
-the host operator through the public endpoint. The temporary key stays private in the run directory.
+foreign account classes, guardian keys, targets, selectors and multi-calls. It then deploys a fresh bot account with its
+first device through the public endpoint, sends one operator invoke, and checks by fee estimation that the device join
+and revoke shapes reach the node. The temporary key stays private in the run directory.
 
-The operator is a bot under the shard's guardian. Our shards' deployment and smoke approve it with `OPERATOR_TOKEN`, the
-operator token of the environment `guardian_url` belongs to, from the shell that starts them; it is never written to the
-run directory. A community shard brings `data/operator-enrolment.json` instead. The runner derives that environment's
-identity API from `guardian_url` (which must end in `/guardian`) and records it as `IDENTITY_URL` in `harness.env`.
+On staging and throwaway shards the operator is a bot under the shard's guardian. Their deployment and smoke approve it
+with `OPERATOR_TOKEN`, the operator token of the environment `guardian_url` belongs to, from the shell that starts them;
+it is never written to the run directory. A production shard's operator is the Games authority, so it enrols through its
+owner's own Realms account, as a community shard's does: `prepare`, then `enrol-operator.ts`, then `up`
+(`deploy/shard/README.md`), and the deployment uses `data/operator-enrolment.json` with no operator token. The runner
+derives that environment's identity API from `guardian_url` (which must end in `/guardian`) and records it as
+`IDENTITY_URL` in `harness.env`.
 
 The harness requires explicit `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_KEY`, including for resumed runs.
 
@@ -265,9 +269,11 @@ bun deploy/athanor/harness/run.ts \
 ```
 
 Bots are Realms accounts under the shard's own guardian, like players. Each bot's device is approved by the
-environment's identity Worker through its operator route (`POST /api/devices/bots`), which approves devices only on
-accounts whose Realms id is a bot's. `IDENTITY_URL` is the identity API of the environment whose guardian the shard's
-manifest names, and `OPERATOR_TOKEN` is that environment's operator token.
+environment's identity Worker through its operator route (`POST /api/devices/bots`), which approves only a bot account's
+first device, and only on accounts whose Realms id is a bot's. It never adds a later device or revokes one, so a leaked
+operator token cannot take over an account that already has a device, the operator included. `IDENTITY_URL` is the
+identity API of the environment whose guardian the shard's manifest names, and `OPERATOR_TOKEN` is that environment's
+operator token.
 
 The node and Herald URLs are required (`--rpc-url`/`RPC_URL`, `--herald-url`/`HERALD_URL`) and have no default. Use the
 node's internal URL on the box, as the shard's `harness.env` records it: the public RPC refuses writes and WebSockets,

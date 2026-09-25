@@ -39,8 +39,6 @@ const PLAYER_ACCOUNT_ARTIFACT = "realms_player_account_RealmsAccount.contract_cl
 
 interface GameplayDeploymentResult {
   operatorAccountAddress: string;
-  /** The bot label that names our shards' operator; null when a community operator enrolled their own Realms account. */
-  operatorLabel: string | null;
   playerAccountClassHash: string;
   rpcUrl: string;
 }
@@ -78,14 +76,13 @@ async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
   await assertProviderChain(provider, manifest, "RPC_URL");
   const account = createMadaraAccount(provider, DEPLOYER_ADDRESS, DEPLOYER_PRIVATE_KEY);
   const playerAccountClassHash = await declareAccountClass(account, manifest.shard.accountClassHash);
-  const operator = await prepareOperator(provider, {
+  const operatorAddress = await prepareOperator(provider, {
     chainId: await provider.getChainId(),
     accountClassHash: playerAccountClassHash,
     guardianPublicKey: manifest.shard.guardianPublicKey,
   });
   const result = {
-    operatorAccountAddress: addAddressPadding(operator.address),
-    operatorLabel: operator.label,
+    operatorAccountAddress: addAddressPadding(operatorAddress),
     playerAccountClassHash,
     rpcUrl: RPC_URL,
   } satisfies GameplayDeploymentResult;
@@ -98,10 +95,7 @@ async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
  * operator enrolled their own Realms account before initialization (enrol-operator.ts); our own shards' operator is the
  * bot named by the deployer address, approved through the identity Worker's operator route.
  */
-async function prepareOperator(
-  provider: RpcProvider,
-  shard: RealmsAccountShard,
-): Promise<{ address: string; label: string | null }> {
+async function prepareOperator(provider: RpcProvider, shard: RealmsAccountShard): Promise<string> {
   const device = deviceKeyOf(DEPLOYER_PRIVATE_KEY);
   const enrolment = readOperatorEnrolment();
   if (enrolment) {
@@ -112,7 +106,7 @@ async function prepareOperator(
       device,
       approve: enrolledApproval(enrolment, device),
     });
-    return { address: operator.address, label: null };
+    return operator.address;
   }
   const operator = await joinBotAccount({
     provider,
@@ -121,7 +115,7 @@ async function prepareOperator(
     device,
     identity: operatorIdentity(),
   });
-  return { address: operator.address, label: DEPLOYER_ADDRESS };
+  return operator.address;
 }
 
 function readOperatorEnrolment(): OperatorEnrolment | null {

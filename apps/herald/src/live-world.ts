@@ -91,8 +91,6 @@ export class LiveWorld {
 
   private checkpointWrite = Promise.resolve();
 
-  private readonly knownGames = new Set<string>();
-
   /** Receipts the overlay holds, with the decode that confirmation reuses; cleared at each confirmed head. */
   private readonly overlayReceipts = new Map<string, PreconfirmedDecode>();
 
@@ -191,8 +189,12 @@ export class LiveWorld {
     this.confirmedFold.evictFinalizedGames();
   }
 
+  /** Whether the shard holds this game, confirmed or pre-confirmed: a stream is only ever opened for one it does. */
+  public hasGame(gameId: string): boolean {
+    return this.overlayFold.gameRows("GameRegistry", gameId).length > 0;
+  }
+
   public attach(gameId: string, socket: StreamSocket, actor?: string): GameStreamSession {
-    this.knownGames.add(gameId);
     return this.hub.attach(this.subscription(gameId, socket, actor));
   }
 
@@ -308,12 +310,13 @@ export class LiveWorld {
   }
 
   private async publishClock(): Promise<void> {
-    if (this.knownGames.size === 0) return;
+    if (this.hub.streamedGames().length === 0) return;
     const header = await this.input.rpc.getPreconfirmedHeader();
     if (header.timestamp <= this.lastClockTimestamp) return;
     this.lastClockTimestamp = header.timestamp;
     for (const listener of this.changeListeners) listener(new Set());
-    for (const gameId of this.knownGames) this.hub.publishHead(gameId, header.block_number, header.timestamp, true);
+    for (const gameId of this.hub.streamedGames())
+      this.hub.publishHead(gameId, header.block_number, header.timestamp, true);
   }
 
   private async applySubscribedHead(head: RpcHead): Promise<void> {
@@ -374,7 +377,7 @@ export class LiveWorld {
       [...confirmed.changes.values()].flatMap((changes) => changes.map((change) => (change.set ?? change.del)!.model)),
     );
     for (const listener of this.changeListeners) listener(models);
-    for (const gameId of this.knownGames) this.hub.publishHead(gameId, head.block_number, head.timestamp);
+    for (const gameId of this.hub.streamedGames()) this.hub.publishHead(gameId, head.block_number, head.timestamp);
     this.checkpointIfDue();
   }
 
@@ -388,7 +391,7 @@ export class LiveWorld {
     this.overlayReceipts.clear();
     this.overlayTransactions.length = 0;
     this.overlayLedger.reset();
-    for (const gameId of this.knownGames) this.hub.publishOverlayReset(gameId, this.confirmedBlockValue);
+    for (const gameId of this.hub.streamedGames()) this.hub.publishOverlayReset(gameId, this.confirmedBlockValue);
   }
 
   private publishOverlayReverts(): void {
@@ -409,7 +412,7 @@ export class LiveWorld {
 
   private groupChanges(byGame: Map<string, GameChanges>, changes: FoldChange[]): void {
     for (const change of changes) {
-      const gameIds = change.gameId === undefined ? this.knownGames : [change.gameId];
+      const gameIds = change.gameId === undefined ? this.hub.streamedGames() : [change.gameId];
       for (const gameId of gameIds) {
         const grouped = byGame.get(gameId) ?? { del: [], set: [], deletedRows: [] };
         if (change.set) grouped.set.push(change.set);
@@ -607,20 +610,20 @@ export class LiveWorld {
     const status = receipt.execution_status === "REVERTED" ? "REVERTED" : receipt.finality_status;
     const scopes = this.transactionGames.get(hash) ?? [];
     for (const gameId of new Set(scopes.map((scope) => scope.gameId))) {
-      if (this.knownGames.has(gameId))
-        this.hub.publishTransaction(
-          gameId,
-          {
-            block: receipt.block_number ?? null,
-            hash,
-            revert_reason: receipt.revert_reason,
-            ...(receipt.executions !== undefined
-              ? { executions: receipt.executions.filter((outcome) => BigInt(outcome.gameId) === BigInt(gameId)) }
-              : {}),
-            status,
-          },
-          scopes.filter((scope) => scope.gameId === gameId).map((scope) => scope.actor),
-        );
+      // Only a game someone streams has states to send it to; the hub skips any other.
+      this.hub.publishTransaction(
+        gameId,
+        {
+          block: receipt.block_number ?? null,
+          hash,
+          revert_reason: receipt.revert_reason,
+          ...(receipt.executions !== undefined
+            ? { executions: receipt.executions.filter((outcome) => BigInt(outcome.gameId) === BigInt(gameId)) }
+            : {}),
+          status,
+        },
+        scopes.filter((scope) => scope.gameId === gameId).map((scope) => scope.actor),
+      );
       if (receipt.finality_status !== "PRE_CONFIRMED") this.input.historyStore?.recordTransaction(gameId, receipt);
     }
     if (receipt.finality_status !== "PRE_CONFIRMED") {

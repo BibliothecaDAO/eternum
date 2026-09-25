@@ -407,6 +407,27 @@ describe("GameStreamHub", () => {
     expect(sockets["0x1"].close).toHaveBeenCalledWith(HERALD_GAME_FINALIZED_CLOSE, "game_finalized");
     expect(sockets["0x2"].messages.at(-1)).toMatchObject({ type: "head", block: 14 });
   });
+  it("names only the games someone streams, and forgets a game with its last stream", () => {
+    vi.useFakeTimers();
+    const hub = new GameStreamHub("epoch-a", { info: vi.fn() });
+    const socket = recordingSocket();
+    const session = hub.attach({
+      actor: "0x111",
+      confirmedBlock: 12,
+      gameId: "7",
+      overlay: () => [],
+      preconfirmedBlock: 13,
+      snapshot: () => snapshot,
+      socket,
+    });
+    expect(hub.streamedGames()).toEqual(["7"]);
+    hub.detach(session);
+    vi.advanceTimersByTime(10 * 60 * 1_000 + 1);
+    hub.publishHead("7", 14, 101);
+    expect(hub.streamedGames()).toEqual([]);
+    vi.useRealTimers();
+  });
+
   it("leaves no stream state behind when an attach is refused", () => {
     const hub = new GameStreamHub("epoch-a", { info: vi.fn() });
     const project = vi.fn((body) => [body]);

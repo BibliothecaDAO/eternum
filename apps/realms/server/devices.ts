@@ -84,10 +84,12 @@ const BotDeviceRequest = Schema.Struct({
 });
 
 /**
- * POST /api/devices/bots (operator token): the guardian's approval for a device change on an operator or harness bot's
- * account, so bots enrol through the same guardian as players. The account must be the one the bot's label places on
- * every shard, and a bot's Realms id is domain-separated from every player's, so the token never approves a device on a
- * player's account. Bots are never recorded as Realms accounts: they have no name and receive no alerts.
+ * POST /api/devices/bots (operator token): the guardian's approval for a bot account's first device, so bots enrol
+ * through the same guardian as players. The account must be the one the bot's label places on every shard, and a bot's
+ * Realms id is domain-separated from every player's, so the token never approves a device on a player's account. Only
+ * the first device (ADD at counter 1) is approved, never a later ADD or a REVOKE: an account accepts a change only at
+ * its next counter, so a leaked token can neither add a device to nor remove one from any account that already has one,
+ * a shard's operator included. Bots are never recorded as Realms accounts: they have no name and receive no alerts.
  */
 export const handleBotDeviceApproval = (
   request: Request,
@@ -102,6 +104,9 @@ export const handleBotDeviceApproval = (
         Effect.flatMap(Schema.decodeUnknownEffect(BotDeviceRequest)),
         Effect.mapError(() => new DeviceRequestError({ code: "invalid_device_change", status: 400 })),
       );
+      if (requested.action !== "ADD" || requested.counter !== 1) {
+        return yield* new DeviceRequestError({ code: "bot_first_device_only", status: 403 });
+      }
       const guardianPublicKey = yield* Effect.promise(() => guardian.publicKey());
       const botAccount = realmsAccountAddress(botRealmsId(label), accountClassHash, guardianPublicKey);
       if (BigInt(requested.account) !== BigInt(botAccount)) {

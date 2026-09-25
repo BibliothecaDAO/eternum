@@ -394,7 +394,7 @@ describe("identity Worker", () => {
     expect((await kept.request("/api/devices", { body: freshKey })).status).toBe(200);
   });
 
-  it("approves a bot's device change only for the operator and only on the account the bot's label places", async () => {
+  it("approves only a bot's first device, only for the operator and only on the account its label places", async () => {
     const guardianPublicKey = ec.starkCurve.getStarkKey(GUARDIAN_KEY);
     const botAccount = realmsAccountAddress(botRealmsId("0xb07"), ACCOUNT_CLASS_HASH, guardianPublicKey);
     const change = {
@@ -412,18 +412,28 @@ describe("identity Worker", () => {
     expect((await ask(request)).status).toBe(401);
     expect((await ask(request, "not-the-operator-token")).status).toBe(401);
 
-    for (const signed of [change, { ...change, action: "REVOKE" as const, counter: 2 }]) {
-      const approval = (await (await ask({ label: "0xb07", ...signed }, OPERATOR_TOKEN)).json()) as {
-        signature: [string, string];
-      };
-      const [r, s] = approval.signature;
-      expect(
-        ec.starkCurve.verify(
-          new ec.starkCurve.Signature(BigInt(r), BigInt(s)),
-          deviceChangeHash(signed),
-          ec.starkCurve.getPublicKey(GUARDIAN_KEY),
-        ),
-      ).toBe(true);
+    const approval = (await (await ask(request, OPERATOR_TOKEN)).json()) as { signature: [string, string] };
+    const [r, s] = approval.signature;
+    expect(
+      ec.starkCurve.verify(
+        new ec.starkCurve.Signature(BigInt(r), BigInt(s)),
+        deviceChangeHash(change),
+        ec.starkCurve.getPublicKey(GUARDIAN_KEY),
+      ),
+    ).toBe(true);
+
+    // A shard's operator is the bot its deployer address labels, and the Games authority. Once it has its first device,
+    // the token can add no second device to it and revoke none: a leaked token cannot take the authority over.
+    const deployerLabel = "0x2f1a6c0de";
+    const operatorAccount = realmsAccountAddress(botRealmsId(deployerLabel), ACCOUNT_CLASS_HASH, guardianPublicKey);
+    const operatorChange = { ...request, label: deployerLabel, account: operatorAccount };
+    for (const later of [
+      { ...operatorChange, deviceKey: "0xa77ac4", counter: 2 },
+      { ...operatorChange, action: "REVOKE" as const, counter: 2 },
+    ]) {
+      const refusedLater = await ask(later, OPERATOR_TOKEN);
+      expect(refusedLater.status).toBe(403);
+      expect(await refusedLater.json()).toEqual({ error: "bot_first_device_only" });
     }
 
     // A signed-in player's account, asked for under any label, is not a bot's.

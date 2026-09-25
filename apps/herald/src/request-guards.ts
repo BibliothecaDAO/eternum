@@ -21,6 +21,19 @@ interface HeraldSocket {
 
 type StreamWorld = Pick<LiveWorld, "attach" | "detach" | "resume" | "selectActor">;
 
+/**
+ * A game stream's socket data, or a 404 when the shard holds no such game. The refusal comes before any socket is
+ * upgraded or stream state is kept, so sockets for made-up game ids cost the Herald nothing.
+ */
+export function acceptGameStream(
+  gameId: string,
+  actor: string | undefined,
+  live: Pick<LiveWorld, "hasGame">,
+): HeraldSocketData | Response {
+  if (!live.hasGame(gameId)) return Response.json({ error: "unknown_game", game_id: gameId }, { status: 404 });
+  return actor === undefined ? { gameId } : { gameId, actor };
+}
+
 /** The stream socket's entries, each guarded: open attaches, a message resumes or selects an actor, close detaches. */
 export function createStreamSocketHandlers(live: StreamWorld) {
   return {

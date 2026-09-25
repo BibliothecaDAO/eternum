@@ -1,6 +1,6 @@
 import { HERALD_GAME_FINALIZED_CLOSE } from "@bibliothecadao/eternum/game-sync";
 import { describe, expect, it, vi } from "vitest";
-import { answerSafely, createStreamSocketHandlers, type HeraldSocketData } from "./request-guards";
+import { acceptGameStream, answerSafely, createStreamSocketHandlers, type HeraldSocketData } from "./request-guards";
 import { GameFinalizedError } from "./world-fold";
 
 const socket = (data: HeraldSocketData) => ({ data, send: vi.fn(), close: vi.fn() });
@@ -32,6 +32,16 @@ describe("request guards", () => {
       throw new Error("detach failed");
     });
     expect(() => handlers.close({ ...failing, data: { gameId: "8", session: {} as never } })).not.toThrow();
+  });
+
+  it("refuses a stream for a game the shard does not hold, before any socket or stream state exists", async () => {
+    const live = { hasGame: vi.fn((gameId: string) => gameId === "7") };
+    const refused = acceptGameStream("99999999", "0x1", live);
+    expect(refused).toBeInstanceOf(Response);
+    expect((refused as Response).status).toBe(404);
+    expect(await (refused as Response).json()).toEqual({ error: "unknown_game", game_id: "99999999" });
+    expect(acceptGameStream("7", "0x1", live)).toEqual({ gameId: "7", actor: "0x1" });
+    expect(acceptGameStream("7", undefined, live)).toEqual({ gameId: "7" });
   });
 
   it("answers a failed request with a named status, whether it throws or rejects", async () => {

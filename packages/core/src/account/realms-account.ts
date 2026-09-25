@@ -45,9 +45,9 @@ export interface OperatorIdentity {
 
 /**
  * A bot (the shard's operator, a harness player) enrols through the environment's guardian like any player: the
- * identity Worker's operator route approves its device changes, and only on the account the bot's label places.
+ * identity Worker's operator route approves its first device, and only on the account the bot's label places.
  */
-export const approveBotDevice =
+const approveBotDevice =
   (identity: OperatorIdentity, label: string): GuardianApproval =>
   async (change) => {
     const response = await fetch(`${identity.url}/devices/bots`, {

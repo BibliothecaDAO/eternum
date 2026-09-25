@@ -7,7 +7,7 @@ import { CheckpointStore } from "./checkpoint-store";
 import { createHeraldRequestHandler } from "./http";
 import { MadaraRpc } from "./madara-rpc";
 import { MadaraSubscriptions } from "./madara-subscriptions";
-import { answerSafely, createStreamSocketHandlers, type HeraldSocketData } from "./request-guards";
+import { acceptGameStream, answerSafely, createStreamSocketHandlers, type HeraldSocketData } from "./request-guards";
 import { HistoryStore } from "./history-store";
 import { assertShardChain, buildShardManifest, readShardDocument } from "./shard-manifest";
 
@@ -162,7 +162,11 @@ const main = async (): Promise<void> => {
           (!/^0x[0-9a-f]{1,64}$/i.test(actor) || BigInt(actor) === 0n || BigInt(actor) >= (1n << 251n) - 256n)
         )
           return new Response("Invalid gameplay account", { status: 400 });
-        if (gameId && bunServer.upgrade(request, { data: { gameId, actor } })) return;
+        if (gameId) {
+          const stream = acceptGameStream(gameId, actor, live);
+          if (stream instanceof Response) return stream;
+          if (bunServer.upgrade(request, { data: stream })) return;
+        }
         return http(request);
       }),
     websocket: createStreamSocketHandlers(live),

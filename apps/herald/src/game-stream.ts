@@ -177,6 +177,11 @@ export class GameStreamHub {
     }
   }
 
+  /** The games with a stream state; a game leaves once its last state is forgotten. */
+  public streamedGames(): string[] {
+    return [...this.games.keys()];
+  }
+
   public detach(session: GameStreamSession): void {
     this.leave(session);
     const { attachedAt, ...traffic } = session.traffic;
