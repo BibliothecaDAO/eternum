@@ -37,7 +37,7 @@ class ShardTest(unittest.TestCase):
                                      allowed)
         for key, value in (
             ("chain_id", ""), ("chain_id", "a" * 32), ("chain_id", "a\nb"),
-            ("port_base", 5050), ("cpuset", "0-23"), ("node_memory_mib", 65536), ("player_capacity", 0),
+            ("port_base", 5050), ("cpuset", "0-23"), ("node_memory_mib", 512), ("player_capacity", 0),
             ("madara_image", NODE_IMAGE), ("gateway_image", "gateway:latest"), ("shard", "../live"),
             ("trusted_proxy", "cloudflared"), ("presets", []), ("presets", ["2"]),
             ("guardian_url", "https://identity.test/api"),
@@ -232,6 +232,24 @@ class ShardTest(unittest.TestCase):
             })
             self.assertEqual(config["exporters"]["file"]["path"], "/data/metrics.jsonl")
             self.assertEqual((directory / "metrics").stat().st_mode & 0o777, 0o700)
+
+    def test_a_matrix_workload_runs_any_harness_shape(self):
+        frontier = shard.workload_command({"game_type": "frontier", "bots": 2000, "frontier_burst": "booth",
+                                           "preset": 101, "minutes": 30})
+        self.assertEqual(frontier[2:], ["--game-type", "frontier", "--bots", "2000", "--frontier-burst", "booth",
+                                        "--preset", "101", "--minutes", "30"])
+        slot = shard.workload_command({"game_type": "blitz", "slot": "evening", "functional": True})
+        self.assertEqual(slot[2:], ["--game-type", "blitz", "--slot", "evening", "--functional"])
+        with self.assertRaisesRegex(ValueError, "must name the harness run"):
+            shard.workload_command({})
+
+    def test_player_capacity_stops_at_campaign_g_target(self):
+        config = {"chain_id": "REALMS_TEST", "guardian_url": "https://id.test/api/guardian",
+                  "public_rpc_url": "https://rpc.test", "public_admission_url": "https://admission.test"}
+        shard.validate_shard_identity({**config, "player_capacity": 2000})
+        shard.validate_shard_identity({**config, "player_capacity": shard.MAX_PLAYER_CAPACITY})
+        with self.assertRaisesRegex(ValueError, "1 to 2000, campaign G's target"):
+            shard.validate_shard_identity({**config, "player_capacity": shard.MAX_PLAYER_CAPACITY + 1})
 
     def test_docker_keeps_exactly_the_operator_token_through_sudo(self):
         # sudo resets the environment: without this the token never reaches initialization.
