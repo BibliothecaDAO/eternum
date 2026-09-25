@@ -22,8 +22,9 @@ export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvid
     blockers.push("Games is immutable; the deployed class differs from this release");
   let realmCatalogue: NativePlan["realmCatalogue"];
   let releaseRegistered = false;
+  let submitterRotation: NativePlan["submitterRotation"];
   if (deployedClassHash && blockers.length === 0) {
-    await inspectGamesConfiguration(local, provider, blockNumber, blockers);
+    submitterRotation = await inspectGamesConfiguration(local, provider, blockNumber, blockers);
     releaseRegistered = await inspectRelease(local, provider, blockNumber, blockers);
     realmCatalogue = await inspectRealmCatalogue(local, provider, blockNumber, blockers);
   }
@@ -34,9 +35,11 @@ export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvid
     deployedClassHash,
     realmCatalogue,
     releaseRegistered,
+    submitterRotation,
     blockers,
     synced:
       blockers.length === 0 &&
+      submitterRotation === undefined &&
       classes.every(({ declared }) => declared) &&
       deployedClassHash !== null &&
       releaseRegistered &&
@@ -58,13 +61,20 @@ async function inspectGamesConfiguration(local: NativeWorld, provider: RpcProvid
         block,
       ),
     );
-  const authentication = (await read("authentication")) as Record<string, bigint>;
-  if (!Object.entries(local.authentication).every(([name, value]) => authentication[name] === BigInt(value)))
-    blockers.push("Games authentication mismatch");
+  // The account class and guardian fix every player address, so the contract refuses changing them. The submitter
+  // is the one rotatable part: a different one is a rotation for the authority to apply, not a blocker.
+  const authentication = (await read("authentication")) as Record<keyof NativeWorld["authentication"], bigint>;
+  if (
+    authentication.account_class !== BigInt(local.authentication.account_class) ||
+    authentication.guardian_public_key !== BigInt(local.authentication.guardian_public_key)
+  )
+    blockers.push("Games authentication mismatch: the account class and guardian are fixed");
   const configuration = (await read("deployment_configuration")) as {
     authority: bigint;
   };
   if (configuration.authority !== BigInt(local.authority)) blockers.push("Games authority mismatch");
+  if (authentication.submitter === BigInt(local.authentication.submitter)) return undefined;
+  return { from: `0x${authentication.submitter.toString(16)}`, to: local.authentication.submitter };
 }
 
 async function inspectRelease(

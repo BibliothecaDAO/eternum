@@ -63,11 +63,19 @@ export interface NativePlan {
   deployedClassHash: string | null;
   realmCatalogue?: { initialized: number; digest: string };
   releaseRegistered: boolean;
+  /** The deployed submitter differs from the one asked for: the authority rotates it (set_authentication). */
+  submitterRotation?: { from: string; to: string };
   blockers: string[];
   synced: boolean;
 }
 export interface NativeTransaction {
-  action: "declare" | "deploy" | "initialize_realm_traits" | "register_release" | "apply_release";
+  action:
+    | "declare"
+    | "deploy"
+    | "initialize_realm_traits"
+    | "register_release"
+    | "apply_release"
+    | "set_authentication";
   domain: string;
   hash: string;
 }

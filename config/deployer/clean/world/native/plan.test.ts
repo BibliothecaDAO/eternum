@@ -57,6 +57,7 @@ function fixture() {
       [8, 1],
     ]),
     declared: new Set(["0x123"]),
+    authentication: { ...authentication },
     applied: [] as Array<[number, number]>,
     operations: [] as string[],
   };
@@ -81,7 +82,12 @@ function fixture() {
         return [...Object.keys(schemaJson.logicClasses).map((name) => release.classes[name]), release.migration];
       }
       if (entrypoint === "realm_catalogue") return [String(catalogue.initialized), catalogue.digest];
-      if (entrypoint === "authentication") return Object.values(authentication);
+      if (entrypoint === "authentication")
+        return [
+          state.authentication.submitter,
+          state.authentication.account_class,
+          state.authentication.guardian_public_key,
+        ];
       throw new Error(`Unexpected view ${entrypoint}`);
     },
     declare: async ({ classHash }: { classHash: string }) => {
@@ -100,6 +106,10 @@ function fixture() {
           migration: calldata[Object.keys(schemaJson.logicClasses).length + 1],
         });
         state.releaseId = id;
+      } else if (entrypoint === "set_authentication") {
+        if (BigInt(calldata[1]) !== BigInt(state.authentication.account_class))
+          throw new Error("immutable account class");
+        state.authentication.submitter = calldata[0];
       } else if (entrypoint === "apply_release") {
         const gameId = Number(calldata[0]);
         const releaseId = Number(calldata[1]);
@@ -173,6 +183,30 @@ describe("native deployment planning", () => {
     expect(plan.blockers).toContain("Games authority mismatch");
     expect(plan.blockers).toContain("Release is immutable; registered contents differ from release facts");
     await expect(deployNativeWorld(local, rpc as unknown as Account, () => {})).rejects.toThrow("mismatch");
+  });
+
+  test("a new submitter is rotated by the authority, while the account class and guardian stay fixed", async () => {
+    const { local, rpc, state } = fixture();
+    local.authentication = { ...authentication, submitter: "0x55" };
+    const plan = await inspectNativeWorld(local, rpc as unknown as RpcProvider);
+    expect(plan.blockers).toEqual([]);
+    expect(plan.submitterRotation).toEqual({ from: "0x99", to: "0x55" });
+    expect(plan.synced).toBe(false);
+    const transactions: string[] = [];
+    const report = await deployNativeWorld(local, rpc as unknown as Account, ({ action }) => transactions.push(action));
+    expect(transactions).toEqual(["set_authentication"]);
+    expect(BigInt(state.authentication.submitter)).toBe(0x55n);
+    expect(report.after.synced).toBe(true);
+    expect(report.after.worldAddress).toBe("0x1");
+
+    for (const fixed of [{ account_class: "0x66" }, { guardian_public_key: "0x66" }]) {
+      local.authentication = { ...authentication, submitter: "0x55", ...fixed };
+      await expect(
+        deployNativeWorld(local, rpc as unknown as Account, () => {
+          throw new Error("unexpected transaction");
+        }),
+      ).rejects.toThrow("the account class and guardian are fixed");
+    }
   });
 
   test("a different Games class cannot replace the immutable deployment", async () => {
