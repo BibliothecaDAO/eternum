@@ -6,6 +6,7 @@ import { saveGameProfile, setActiveGame } from "@/runtime/world/store";
 import { bindChainTime } from "@/sync/chain-time-binding";
 import { SurfaceHost } from "@/ui/design-system/molecules/popover";
 import { FrontierHud } from "@/ui/features/frontier/frontier-hud";
+import { MotionLayer } from "@/ui/motion/motion-layer";
 import { useBootDocumentState } from "@/ui/modules/boot-loader/boot-loader-state";
 import { BlockTimestampPoller } from "@/ui/shared/components/block-timestamp-poller";
 import { configManager, readExpeditionRules } from "@bibliothecadao/eternum";
@@ -34,6 +35,7 @@ export const FrontierHudLabView = () => {
       <BlockTimestampPoller />
       <SurfaceHost />
       <FrontierHud rules={readExpeditionRules(lab.setup.store, lab.gameId)!} />
+      <MotionLayer />
       <LabPacing store={lab.setup.store} gameId={lab.gameId} />
     </GameProvider>
   );

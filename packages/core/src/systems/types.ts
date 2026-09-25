@@ -27,6 +27,8 @@ export type ExplorerRewardSystemUpdate = {
   resourceId: ResourcesIds | 0;
   amount: number;
   rawAmount: bigint | number | string | null;
+  /** The revealed tile the reward came from, in contract coordinates. */
+  coord: { x: number; y: number };
   timestamp: number;
 };
 /** A Frontier chest opened on capture: what the army found and how deep it stood. */

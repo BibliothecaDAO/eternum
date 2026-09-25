@@ -6,6 +6,7 @@ import { activeMapLayer } from "@/three/map-layer";
 import type { ReactNode } from "react";
 import { isMapPreviewAction } from "./worldmap-action-preview-policy";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
+import { playRevealYield } from "@/ui/motion/moments/reveal-yield";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { openArmyDeploymentPicker } from "@/ui/features/military/utils/open-army-deployment-picker";
 import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
@@ -50,7 +51,6 @@ import { CAMERA_CONFIG } from "@/three/constants";
 import { type SceneSetupContext } from "@/three/scenes/hexagon-scene";
 import { type RenderVisualProfile } from "@/three/render-profile";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
-import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import {
   configManager,
@@ -115,12 +115,10 @@ import {
   BiomeType,
   ContractAddress,
   Direction,
-  findResourceById,
   getDirectionBetweenAdjacentHexes,
   HexEntityInfo,
   HexPosition,
   ID,
-  ResourcesIds,
   Structure,
   StructureType,
 } from "@bibliothecadao/types";
@@ -2157,34 +2155,21 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
+  /**
+   * A reveal that paid one of this player's armies shows its yield leaving the revealed tile for the banked counter
+   * (design §3.11 §4). The event only starts the flourish; the counter rolls to the balance fact.
+   */
   private handleExplorerRewardEvent(update: ExplorerRewardSystemUpdate): void {
     if (this.isRewardDebugEnabled()) {
       console.debug("[ExplorerRewardEvent] update", update);
     }
 
-    const { explorerId, resourceId, amount } = update;
-    if (!resourceId) {
-      return;
-    }
-
-    setTimeout(() => {
-      const armyPosition = this.getArmyDisplayPosition(explorerId);
-      if (!armyPosition) {
-        console.warn("ExplorerRewardEvent missing position for reward display", { explorerId, update });
-        return;
-      }
-
-      const resource = findResourceById(resourceId);
-      const text = resource?.trait ? `${resource.trait} found` : undefined;
-      const ownerAddress = this.getEntityOwnerAddress(explorerId);
-      const isOwnArmy = ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress);
-
-      if (isOwnArmy) {
-        playResourceSound(resourceId as ResourcesIds);
-      }
-
-      void this.displayResourceGain(resourceId, amount, armyPosition.col, armyPosition.row, text);
-    }, 500);
+    const { explorerId, resourceId, coord } = update;
+    if (!resourceId) return;
+    const ownerAddress = this.getEntityOwnerAddress(explorerId);
+    if (ownerAddress === undefined || !isAddressEqualToAccount(ownerAddress)) return;
+    const tile = Position.fromContract(coord).getNormalized();
+    playRevealYield({ resourceId, from: projectHexToScreen({ col: tile.x, row: tile.y }, this.camera) });
   }
 
   private isRewardDebugEnabled(): boolean {
@@ -8034,38 +8019,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     this.isUrlChangedListenerAttached = listenerDecision.nextIsUrlChangedListenerAttached;
-  }
-
-  /**
-   * Display a resource gain/loss effect at a hex position
-   * @param resourceId The resource ID from ResourcesIds
-   * @param amount Amount of resource (positive for gain, negative for loss)
-   * @param col Hex column
-   * @param row Hex row
-   * @param text Optional text to display below the resource
-   */
-  public displayResourceGain(
-    resourceId: number,
-    amount: number,
-    col: number,
-    row: number,
-    text?: string,
-  ): Promise<void> {
-    return this.resourceFXManager.playResourceFx(resourceId, amount, col, row, text, { duration: 3.0 });
-  }
-
-  /**
-   * Display multiple resource changes in sequence
-   * @param resources Array of resource changes to display
-   * @param col Hex column
-   * @param row Hex row
-   */
-  public displayMultipleResources(
-    resources: Array<{ resourceId: number; amount: number; text?: string }>,
-    col: number,
-    row: number,
-  ): Promise<void> {
-    return this.resourceFXManager.playMultipleResourceFx(resources, col, row);
   }
 
   private async selectNextArmy(): Promise<void> {

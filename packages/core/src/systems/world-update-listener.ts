@@ -121,6 +121,7 @@ export class WorldUpdateListener {
             resourceId: integer(payload.resource_type) as ResourcesIds,
             rawAmount: BigInt(String(payload.amount)),
             amount: divideByPrecision(Number(payload.amount)),
+            coord: { x: integer(fields(payload.coord)?.x), y: integer(fields(payload.coord)?.y) },
             timestamp: integer(event.timestamp),
           });
         }),

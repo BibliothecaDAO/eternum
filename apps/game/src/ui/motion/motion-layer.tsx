@@ -19,6 +19,8 @@ interface Flight {
   icon: string;
   count: number;
   speed?: number;
+  /** A pop at the start point before the arc: the reward shows where it was found, then leaves. */
+  popMs?: number;
   /** Each sprite's landing, in order: the counter starts its roll on the first and pulses on the rest. */
   onArrive?: (index: number) => void;
 }
@@ -33,10 +35,11 @@ const centreOf = (target: Point | Element): Point => {
 };
 
 /**
- * Sprites arc from a point to a HUD counter as a stream, 500 ms each, ease-in, 18 ms apart; `onArrive` runs as each one
- * lands (the counter's roll starts on the first). Reduced motion, or no free sprite, lands the first at once.
+ * Sprites arc from a point to a HUD counter as a stream, 500 ms each, ease-in, 18 ms apart, after an optional pop where
+ * they start; `onArrive` runs as each one lands (the counter's roll starts on the first). Reduced motion, or no free
+ * sprite, lands the first at once.
  */
-export const flySprites = ({ from, to, icon, count, speed = 1, onArrive }: Flight): void => {
+export const flySprites = ({ from, to, icon, count, speed = 1, popMs = 0, onArrive }: Flight): void => {
   const free = pool.filter((sprite) => !busy.has(sprite)).slice(0, count);
   if (useWorldAppearanceStore.getState().reducedMotion || free.length === 0) {
     onArrive?.(0);
@@ -50,21 +53,49 @@ export const flySprites = ({ from, to, icon, count, speed = 1, onArrive }: Fligh
     const jitter = (index % 5) * 6 - 12;
     const start = { x: from.x - SPRITE_PX / 2 + jitter, y: from.y - SPRITE_PX / 2 };
     const finish = { x: end.x - SPRITE_PX / 2, y: end.y - SPRITE_PX / 2 };
-    void animate(
-      sprite,
-      {
-        x: [start.x, (start.x + finish.x) / 2, finish.x],
-        y: [start.y, Math.min(start.y, finish.y) - lift, finish.y],
-        opacity: [0, 1, 1],
-        scale: [0.6, 1, 0.7],
-      },
-      { duration: (FLIGHT_MS * speed) / 1000, delay: (index * STAGGER_MS * speed) / 1000, ease: EASE.inCubic },
-    ).then(async () => {
+    const { keyframes, times, ease } = flightPath(start, finish, lift, popMs / (popMs + FLIGHT_MS));
+    void animate(sprite, keyframes, {
+      duration: ((popMs + FLIGHT_MS) * speed) / 1000,
+      delay: (index * STAGGER_MS * speed) / 1000,
+      times,
+      ease,
+    }).then(async () => {
       onArrive?.(index);
       await animate(sprite, { opacity: 0 }, { duration: 0.08 });
       busy.delete(sprite);
     });
   });
+};
+
+/**
+ * The arc from start to finish, rising by `lift` but staying on screen. With a pop share, the sprite first scales in with overshoot where it
+ * starts for that share of the time, then takes the arc.
+ */
+const flightPath = (start: Point, finish: Point, lift: number, popShare: number) => {
+  // The apex never leaves the screen, however close to the top edge the counter sits.
+  const middle = { x: (start.x + finish.x) / 2, y: Math.max(0, Math.min(start.y, finish.y) - lift) };
+  if (popShare === 0) {
+    return {
+      keyframes: {
+        x: [start.x, middle.x, finish.x],
+        y: [start.y, middle.y, finish.y],
+        opacity: [0, 1, 1],
+        scale: [0.6, 1, 0.7],
+      },
+      times: undefined,
+      ease: EASE.inCubic,
+    };
+  }
+  return {
+    keyframes: {
+      x: [start.x, start.x, middle.x, finish.x],
+      y: [start.y, start.y, middle.y, finish.y],
+      opacity: [0, 1, 1, 1],
+      scale: [0.6, 1.15, 1, 0.7],
+    },
+    times: [0, popShare, popShare + (1 - popShare) / 2, 1],
+    ease: [EASE.outQuart, EASE.inCubic, EASE.inCubic],
+  };
 };
 
 export const MotionLayer = () => {

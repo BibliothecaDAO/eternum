@@ -29,6 +29,7 @@ import { useExpeditionRules } from "../features/frontier/frontier-home";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { FLIGHT_TRACE_ENABLED, traceFlightCommit } from "@/three/flight-trace";
 import { Profiler } from "react";
+import { MotionLayer } from "@/ui/motion/motion-layer";
 import { PlayOverlayManager } from "./play-overlay-manager";
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
@@ -127,6 +128,8 @@ const HUD = () => {
   return (
     <>
       {expeditionRules ? <FrontierHud rules={expeditionRules} /> : <ArenaHud />}
+      {/* Every mode's moments fly their sprites on this one layer. */}
+      <MotionLayer />
       <ContextMenu />
       <LeftViewSurfaces />
     </>

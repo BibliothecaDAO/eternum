@@ -31,6 +31,8 @@ export interface AudioPlayOptions {
   position?: Vector3;
   fadeInMs?: number;
   fadeOutMs?: number;
+  /** Pitch shift in cents: 100 is a semitone. */
+  detuneCents?: number;
   loop?: boolean;
   priority?: number;
   onComplete?: () => void;

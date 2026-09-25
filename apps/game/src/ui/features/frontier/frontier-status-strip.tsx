@@ -13,6 +13,9 @@ import { expeditionDayEndsAt, expeditionEpoch, getBalance } from "@bibliothecada
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
+import { useLandedValue } from "@/ui/motion/landing-hold";
+import { bankedCounterTarget } from "@/ui/motion/moments/reveal-yield";
+import { TickNumber } from "@/ui/motion/tick-number";
 import { formatAmount, formatClock } from "./frontier-format";
 import { troopsOnHand, useExpeditionRules, useGoToFrontierPlace } from "./frontier-home";
 
@@ -73,12 +76,7 @@ const RealmHoldings = ({ realm }: { realm: NativeRows["Structure"] }) => {
   return (
     <dl className="flex items-center gap-3" aria-label="Realm holdings">
       {STRIP_RESOURCES.map((resourceId) => (
-        <Holding
-          key={resourceId}
-          label={ResourcesIds[resourceId]}
-          icon={<ResourceIcon resource={ResourcesIds[resourceId]} size="sm" withTooltip={false} />}
-          value={formatAmount(balance(resourceId))}
-        />
+        <BankedHolding key={resourceId} resourceId={resourceId} amount={balance(resourceId)} />
       ))}
       <Holding
         label="Troops at home"
@@ -96,6 +94,25 @@ const Holding = ({ label, icon, value }: { label: string; icon: ReactNode; value
     <dd className={cn(HUD_VALUE, "tabular-nums")}>{value}</dd>
   </div>
 );
+
+/**
+ * A banked resource: its icon is where earned resources land, and the amount rolls to the balance fact when they do.
+ */
+const BankedHolding = ({ resourceId, amount }: { resourceId: ResourcesIds; amount: number | undefined }) => {
+  const target = bankedCounterTarget(resourceId);
+  const shown = useLandedValue(target, amount);
+  return (
+    <div className="flex items-center gap-1" title={ResourcesIds[resourceId]}>
+      <dt className="sr-only">{ResourcesIds[resourceId]}</dt>
+      <span data-fly-target={target} className="inline-flex">
+        <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" withTooltip={false} />
+      </span>
+      <dd className={cn(HUD_VALUE, "tabular-nums")}>
+        {shown === undefined ? "—" : <TickNumber value={shown} format={formatAmount} />}
+      </dd>
+    </div>
+  );
+};
 
 /** Frontier's two places: the day's expedition on the world map, and the realm board in the local view. */
 const PlaceSwitch = ({ realm }: { realm: NativeRows["Structure"] }) => {

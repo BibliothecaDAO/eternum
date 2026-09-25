@@ -97,7 +97,13 @@ describe("native scene updates", () => {
       },
     });
     expect(reward).toHaveBeenCalledWith(
-      expect.objectContaining({ explorerId: 7, explorerOwnerAddress: 0xabcn, amount: 1, rawAmount: 1000000000n }),
+      expect.objectContaining({
+        explorerId: 7,
+        explorerOwnerAddress: 0xabcn,
+        amount: 1,
+        rawAmount: 1000000000n,
+        coord: { x: 10, y: 20 },
+      }),
     );
     store.applyEvent({ model: "StoryEvent", key: "0x3", value: { ...opening, game_id: "0x2" } });
     expect(chest).toHaveBeenCalledTimes(1);
