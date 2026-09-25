@@ -3,49 +3,38 @@ import { HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
-import { useMemo } from "react";
 
 interface RawResourcesPanelProps {
-  selectedResource: number;
+  /** Each input per unit of output; undefined when the recipe is unknown here. */
+  inputs: { resource: number; amount: number }[] | undefined;
   productionAmount: number;
   setProductionAmount: (value: number) => void;
   resourceBalances: Record<number, number>;
   isSelected: boolean;
   onSelect: () => void;
-  outputResourceAmount: number;
 }
 
 export const RawResourcesPanel = ({
-  selectedResource,
+  inputs,
   productionAmount,
   setProductionAmount,
   resourceBalances,
   isSelected,
   onSelect,
-  outputResourceAmount,
 }: RawResourcesPanelProps) => {
-  const rawInputResources = useMemo(() => {
-    // Empty when this game defines no recipe for the resource: nothing can be produced from inputs.
-    return (configManager.getRecipeInputs(selectedResource, false) ?? []).map((resource) => ({
-      ...resource,
-      amount: resource.amount / outputResourceAmount,
-    }));
-  }, [selectedResource, outputResourceAmount]);
-
   const handleInputChange = (value: number, inputResource: number) => {
-    const resourceConfig = rawInputResources.find((r) => r.resource === inputResource);
+    const resourceConfig = inputs?.find((r) => r.resource === inputResource);
     if (!resourceConfig) return;
     const newAmount = value / resourceConfig.amount;
     setProductionAmount(newAmount);
   };
 
   const calculateMaxProduction = () => {
-    if (!rawInputResources || !resourceBalances) return 1;
+    if (!inputs || !resourceBalances) return 1;
 
     let minCycle = 1 << 30;
-    rawInputResources.forEach((input) => {
+    inputs.forEach((input) => {
       const balance = resourceBalances[input.resource] || 0;
       const count = Math.floor(balance / input.amount);
       if (count < minCycle) {
@@ -63,7 +52,8 @@ export const RawResourcesPanel = ({
   return (
     <div className="cursor-pointer space-y-1" onClick={onSelect}>
       <div className={HUD_LABEL}>Resources required</div>
-      {rawInputResources?.map((input) => {
+      {inputs === undefined && <div className={HUD_VALUE}>—</div>}
+      {inputs?.map((input) => {
         const balance = resourceBalances[input.resource] || 0;
         const isShort = balance < input.amount * productionAmount;
         return (

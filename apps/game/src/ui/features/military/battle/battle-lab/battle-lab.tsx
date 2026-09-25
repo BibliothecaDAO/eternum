@@ -41,7 +41,7 @@ interface EntityRef {
   type: ActorType;
   id: ID;
   hex: { x: number; y: number };
-  alt?: boolean;
+  alt: boolean;
 }
 
 interface BattleLabProps {
@@ -91,6 +91,7 @@ export const BattleLab = ({
 
   const { state, dispatch, isEdited } = useBattleLabState(mode, initialBiome);
   const { snapshot, target, targetResources, attackerRelicEffects, targetRelicEffects, isLoading } =
+    // Sim mode has no target: the live read is disabled, so its placeholder hex and layer are never read.
     useBattleLabLiveData(mode === "live", attackerEntityId, targetHex, targetRef?.alt ?? false);
 
   const [parameters, setParameters] = useState<CombatParameters>(() => configManager.getCombatConfig());
@@ -124,12 +125,12 @@ export const BattleLab = ({
   // and structure-guard flags drive the ranged structure reduction / Knight modifiers. In sim mode
   // there is no map distance, so it falls back to adjacent (range 1).
   const liveAttackDistance = useMemo(() => {
-    if (mode !== "live" || !selectedHex || !target) return 1;
+    if (mode !== "live" || !selectedHex || !target || !selected || !targetRef) return 1;
     return getLayeredAttackDistance(
-      { ...selectedHex, alt: selected?.alt ?? false },
-      { col: target.hex.x, row: target.hex.y, alt: snapshot?.defenderAlt ?? false },
+      { ...selectedHex, alt: selected.alt },
+      { col: target.hex.x, row: target.hex.y, alt: targetRef.alt },
     );
-  }, [mode, selectedHex, selected?.alt, snapshot?.defenderAlt, target]);
+  }, [mode, selectedHex, selected, targetRef, target]);
 
   const combatContext = useMemo(
     () => ({

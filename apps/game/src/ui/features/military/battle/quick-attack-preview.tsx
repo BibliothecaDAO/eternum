@@ -16,7 +16,6 @@ import { getTierStyle } from "@/ui/utils/tier-styles";
 import {
   CombatSimulator,
   configManager,
-  DEFAULT_COORD_ALT,
   formatTime,
   getGuardsByStructure,
   getTroopResourceId,
@@ -54,7 +53,8 @@ interface ActorSummary {
   type: ActorType;
   id: ID;
   hex: { x: number; y: number };
-  alt?: boolean;
+  /** The map layer the actor stands on; every caller knows it, so a preview never guesses the surface. */
+  alt: boolean;
 }
 
 interface QuickAttackPreviewProps {
@@ -130,10 +130,10 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     target: targetData,
     targetResources,
     isLoading,
-  } = useAttackTargetData(attacker.id, target.hex, target.alt ?? DEFAULT_COORD_ALT);
+  } = useAttackTargetData(attacker.id, target.hex, target.alt);
 
   const combatConfig = useMemo(() => configManager.getCombatConfig(), []);
-  const ethereal = target.alt ?? false;
+  const ethereal = target.alt;
   const surfaceBiome = useStoredBiome(target.hex.x, target.hex.y) ?? BiomeType.None;
   const biome = ethereal ? BiomeType.Underground : surfaceBiome;
   const combatSimulator = useMemo(() => new CombatSimulator(combatConfig), [combatConfig]);
@@ -162,8 +162,8 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const targetDistance = useMemo(() => {
     if (!selectedHex) return Infinity;
     return getLayeredAttackDistance(
-      { ...selectedHex, alt: attacker.alt ?? false },
-      { col: target.hex.x, row: target.hex.y, alt: target.alt ?? false },
+      { ...selectedHex, alt: attacker.alt },
+      { col: target.hex.x, row: target.hex.y, alt: target.alt },
     );
   }, [selectedHex, attacker.alt, target.alt, target.hex.x, target.hex.y]);
 
@@ -255,7 +255,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // ranged stamina/cooldown model rather than always simulating an adjacent melee.
   const combatSimulationContext = useMemo(
     () => ({
-      defenderAlt: target.alt ?? false,
+      defenderAlt: target.alt,
       attackDistance: targetDistance,
       attackerIsStructureGuard: attackerType === AttackerType.Structure,
       defenderIsStructureGuard: isStructureTarget,

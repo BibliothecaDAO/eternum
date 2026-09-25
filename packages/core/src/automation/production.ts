@@ -117,10 +117,6 @@ type AutomationEntityType = RealmAutomationConfig["entityType"];
  * other two), so when every remaining resource waits on another, the smallest one by planning order goes next and its
  * dependants follow; the acyclic edges (troops after Copper) still hold.
  */
-/** A recipe's inputs for planning; the plan asks only for producible resources, and one it cannot read plans nothing. */
-const planInputs = (resourceId: ResourcesIds, simple: boolean) =>
-  configManager.getRecipeInputs(resourceId, simple) ?? [];
-
 export const buildResourceDependencyOrder = (
   resourceIds: ResourcesIds[],
   entityType: AutomationEntityType,
@@ -145,7 +141,7 @@ export const buildResourceDependencyOrder = (
 
   // A resource depends on the inputs of both its recipes: resource-to-resource and labor.
   const collectInputs = (resourceId: ResourcesIds): ResourcesIds[] =>
-    [...planInputs(resourceId, false), ...planInputs(resourceId, true)]
+    [...configManager.requireRecipeInputs(resourceId, false), ...configManager.requireRecipeInputs(resourceId, true)]
       .map((input) => input.resource)
       .filter((input) => !isAutomationResourceBlocked(input, entityType, "input"));
 
@@ -402,7 +398,7 @@ export const buildRealmProductionPlan = ({
     resourcesToTrack.add(resourceId);
 
     if (resourceToResource > 0) {
-      const inputs = planInputs(resourceId, false);
+      const inputs = configManager.requireRecipeInputs(resourceId, false);
       inputs.forEach((input) => {
         if (!isAutomationResourceBlocked(input.resource, entityType, "input")) {
           resourcesToTrack.add(input.resource);
@@ -411,7 +407,7 @@ export const buildRealmProductionPlan = ({
     }
 
     if (laborToResource > 0) {
-      const inputs = planInputs(resourceId, true);
+      const inputs = configManager.requireRecipeInputs(resourceId, true);
       inputs.forEach((input) => {
         if (!isAutomationResourceBlocked(input.resource, entityType, "input")) {
           resourcesToTrack.add(input.resource);
@@ -449,7 +445,7 @@ export const buildRealmProductionPlan = ({
     if (!definition.hasActiveProduction) continue;
     const { resourceId, percentages } = definition;
     if (percentages.resourceToResource > 0) {
-      const inputs = planInputs(resourceId, false);
+      const inputs = configManager.requireRecipeInputs(resourceId, false);
       for (const input of inputs) {
         if (input.amount <= 0) continue;
         if (isAutomationResourceBlocked(input.resource, entityType, "input")) continue;
@@ -513,7 +509,7 @@ export const buildRealmProductionPlan = ({
 
     // Resource -> Resource (complex recipe)
     if (resourceToResource > 0) {
-      const recipeInputs = planInputs(resourceId, false);
+      const recipeInputs = configManager.requireRecipeInputs(resourceId, false);
       const outputPerCycle = configManager.getRecipeOutput(resourceId, false);
 
       if (!recipeInputs.length || outputPerCycle === undefined || outputPerCycle <= 0) {

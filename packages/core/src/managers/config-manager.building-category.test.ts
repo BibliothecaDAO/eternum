@@ -87,6 +87,20 @@ describe("native immutable configuration", () => {
     }
   });
 
+  it("refuses a producible recipe it cannot read in every environment, and an unknown biome by name", () => {
+    const { manager } = fixture();
+    vi.stubEnv("NODE_ENV", "production");
+    try {
+      expect(() => manager.requireRecipeInputs(23, false)).toThrow("Producible resource 23 has no readable recipe");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+    expect(manager.getBiomeCombatBonus(TroopType.Knight, BiomeType.Underground)).toBe(1);
+    expect(() => manager.getBiomeCombatBonus(TroopType.Knight, "Swamp" as BiomeType)).toThrow(
+      "No biome combat modifier for Knight on Swamp",
+    );
+  });
+
   it("reads tick and capacity values directly from the native rules", () => {
     const { manager } = fixture();
     expect(manager.getTick(TickIds.Armies)).toBe(Number(preset.rules.tick_config.armies_tick_in_seconds));

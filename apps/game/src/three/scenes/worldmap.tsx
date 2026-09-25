@@ -2930,6 +2930,7 @@ export default class WorldmapScene extends WarpTravel {
       type: selected.army ? ActorType.Explorer : ActorType.Structure,
       id: selectedEntityId,
       hex: Position.fromContract({ x: selectedPath[0].col, y: selectedPath[0].row }).getContract(),
+      alt: activeMapLayer(),
     };
     const targetSummary = {
       ...target,
@@ -2971,6 +2972,7 @@ export default class WorldmapScene extends WarpTravel {
         type: selected.army ? ActorType.Explorer : ActorType.Structure,
         id: selectedEntityId,
         hex: Position.fromContract({ x: selectedHex.col, y: selectedHex.row }).getContract(),
+        alt: activeMapLayer(),
       };
       const targetSummary = {
         type: ActorType.Explorer,

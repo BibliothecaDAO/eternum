@@ -246,13 +246,13 @@ export const getAutomationOverallocation = (
     const percentages = configManager.isCommandEnabled("BurnLaborForResourceProduction")
       ? stored
       : { ...stored, laborToResource: 0 };
-    const rawComplexInputs = configManager.getRecipeInputs(resourceId, false) ?? [];
+    const rawComplexInputs = configManager.requireRecipeInputs(resourceId, false);
     const complexInputs = rawComplexInputs.filter(
       (input: { resource: ResourcesIds }) =>
         !isAutomationResourceBlocked(input.resource, entityType, "input") && input.resource !== ResourcesIds.Wheat,
     );
 
-    const rawSimpleInputs = configManager.getRecipeInputs(resourceId, true) ?? [];
+    const rawSimpleInputs = configManager.requireRecipeInputs(resourceId, true);
     const simpleInputs = rawSimpleInputs.filter(
       (input: { resource: ResourcesIds }) =>
         !isAutomationResourceBlocked(input.resource, entityType, "input") && input.resource !== ResourcesIds.Wheat,

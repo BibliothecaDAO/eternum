@@ -139,12 +139,15 @@ export const ResourceProductionControls = ({
     setTicks(Math.floor(productionAmount / outputResourceAmountWithBonus));
   }, [productionAmount, outputResourceAmountWithBonus, bonus]);
 
-  const rawCurrentInputs = useMemo(() => {
-    return (recipeInputs ?? []).map(({ resource, amount }) => ({
-      resource,
-      amount: amount / outputResourceAmountWithBonus,
-    }));
-  }, [recipeInputs, outputResourceAmountWithBonus]);
+  // Each input per unit of output; undefined when the recipe is unknown here, which the panel shows as "—".
+  const rawCurrentInputs = useMemo(
+    () =>
+      recipeInputs?.map(({ resource, amount }) => ({
+        resource,
+        amount: amount / outputResourceAmountWithBonus,
+      })),
+    [recipeInputs, outputResourceAmountWithBonus],
+  );
 
   const laborCurrentInputs = useMemo(() => {
     return (
@@ -170,8 +173,10 @@ export const ResourceProductionControls = ({
     return useRawResources ? rawCurrentInputs : laborCurrentInputs;
   }, [useRawResources, rawCurrentInputs, laborCurrentInputs]);
 
+  // An unknown recipe covers nothing, so production stays disabled.
   const isOverBalance = useMemo(() => {
-    return Object.values(currentInputs).some(({ resource, amount }) => {
+    if (currentInputs === undefined) return true;
+    return currentInputs.some(({ resource, amount }) => {
       const balance = resourceBalances[Number(resource)];
       return balance === undefined || amount * productionAmount > balance;
     });
@@ -211,13 +216,12 @@ export const ResourceProductionControls = ({
       label: "Resource Production",
       component: (
         <RawResourcesPanel
-          selectedResource={selectedResource}
+          inputs={rawCurrentInputs}
           productionAmount={productionAmount}
           setProductionAmount={setProductionAmount}
           resourceBalances={resourceBalances}
           isSelected={useRawResources}
           onSelect={() => setUseRawResources(true)}
-          outputResourceAmount={outputResourceAmountWithBonus}
         />
       ),
       canSelect: true,
@@ -231,7 +235,7 @@ export const ResourceProductionControls = ({
     selectableTabs.findIndex((tab) => tab.isRaw === useRawResources),
   );
 
-  if (rawCurrentInputs.length === 0 && laborCurrentInputs.length === 0) return null;
+  if (rawCurrentInputs?.length === 0 && laborCurrentInputs.length === 0) return null;
 
   if (compact)
     return (
@@ -261,16 +265,23 @@ export const ResourceProductionControls = ({
           <NumberInput value={Math.round(productionAmount)} onChange={setProductionAmount} min={1} arrows={false} />
         </label>
         <p>
-          {currentInputs
-            .map(
-              (input) =>
-                `${Math.ceil(input.amount * productionAmount).toLocaleString()} ${ResourcesIds[input.resource]}`,
-            )
-            .join(" · ")}
+          {currentInputs === undefined
+            ? "—"
+            : currentInputs
+                .map(
+                  (input) =>
+                    `${Math.ceil(input.amount * productionAmount).toLocaleString()} ${ResourcesIds[input.resource]}`,
+                )
+                .join(" · ")}
         </p>
         {(error || isDisabled) && (
           <p role="status">
-            {error ?? (isOverBalance ? "Not enough resources." : "Enter at least one production cycle.")}
+            {error ??
+              (currentInputs === undefined
+                ? "This recipe is unknown here."
+                : isOverBalance
+                  ? "Not enough resources."
+                  : "Enter at least one production cycle.")}
           </p>
         )}
         <Button
@@ -328,13 +339,12 @@ export const ResourceProductionControls = ({
         ) : (
           <div className="flex flex-col gap-2">
             <RawResourcesPanel
-              selectedResource={selectedResource}
+              inputs={rawCurrentInputs}
               productionAmount={productionAmount}
               setProductionAmount={setProductionAmount}
               resourceBalances={resourceBalances}
               isSelected={true}
               onSelect={() => setUseRawResources(true)}
-              outputResourceAmount={outputResourceAmountWithBonus}
             />
             <p className={HUD_BODY_MUTED}>Only standard production is available for this resource.</p>
           </div>

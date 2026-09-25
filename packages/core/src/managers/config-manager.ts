@@ -107,6 +107,15 @@ export class ClientConfigManager {
     if (!recipe) return missingRule(`production recipe for resource ${resourceId}`);
     return displayAmounts(simple ? recipe.simple_inputs : recipe.complex_inputs);
   }
+  /**
+   * A producible resource's recipe inputs, for callers that plan production. Producible means a recipe row with an
+   * output, so the row exists; a miss is a bug in every environment, never a recipe of no inputs.
+   */
+  requireRecipeInputs(resourceId: ResourcesIds, simple: boolean) {
+    const inputs = this.getRecipeInputs(resourceId, simple);
+    if (inputs === undefined) throw new Error(`Producible resource ${resourceId} has no readable recipe`);
+    return inputs;
+  }
   getRecipeOutput(resourceId: ResourcesIds, simple: boolean) {
     const recipe = this.facts().get("ProductionRecipe", { game_id: this.gameId, resource_type: resourceId });
     if (!recipe) return missingRule(`production recipe for resource ${resourceId}`);
@@ -326,7 +335,9 @@ export class ClientConfigManager {
       },
     };
 
-    return 1 + (biomeModifiers[biome]?.[troopType] ?? 0);
+    const modifier = biomeModifiers[biome]?.[troopType];
+    if (modifier === undefined) throw new Error(`No biome combat modifier for ${troopType} on ${biome}`);
+    return 1 + modifier;
   }
 
   getExploreStaminaCost() {
