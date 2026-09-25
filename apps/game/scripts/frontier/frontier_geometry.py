@@ -17,7 +17,7 @@ from settlement_geometry import (
     material,
     mesh,
 )
-from stone_textures import bake_limestone
+from stone_textures import apply_baked_textures, bake_material_textures, configure_limestone
 
 
 def clear_scene():
@@ -26,13 +26,23 @@ def clear_scene():
 
 
 def create_stone():
-    stone = material("Frontier limestone", (0.53, 0.455, 0.325))
-    with tempfile.TemporaryDirectory(prefix="frontier-stone-") as directory:
-        bake_limestone(stone, Path(directory), pale=False)
-        for node in stone.node_tree.nodes:
+    return create_grained_surface("Weathered limestone")
+
+
+def create_grained_surface(name, colors=None):
+    surface = material(name, (0.53, 0.455, 0.325))
+    configure_limestone(surface, pale=False)
+    if colors:
+        ramp = next(node for node in surface.node_tree.nodes if node.type == "VALTORGB")
+        for element, color in zip(ramp.color_ramp.elements, colors):
+            element.color = (*color, 1)
+    with tempfile.TemporaryDirectory(prefix="frontier-surface-") as directory:
+        textures = bake_material_textures(surface, Path(directory), "surface", 512, plane_size=2)
+        apply_baked_textures(surface, textures, 0.88)
+        for node in surface.node_tree.nodes:
             if node.type == "TEX_IMAGE":
                 node.image.pack()
-    return stone
+    return surface
 
 
 def arch_stone(name, center, inner, outer, start, end, depth, stone):
