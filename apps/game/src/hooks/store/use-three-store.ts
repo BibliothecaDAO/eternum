@@ -137,7 +137,8 @@ export const createThreeStoreSlice = (
     if (get().entityActions.selectedEntityId === selectedEntityId) return;
     set((state) => ({ entityActions: { ...state.entityActions, selectedEntityId } }));
   },
-  selectedHex: { col: 0, row: 0 },
+  // Nothing is selected until the player selects something: no stand-in hex at the origin.
+  selectedHex: null,
   setSelectedHex: (hex: HexPosition | null) => {
     if (areHexesEqual(get().selectedHex, hex)) return;
     set({ selectedHex: hex });

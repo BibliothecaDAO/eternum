@@ -172,19 +172,9 @@ const MapTilePanel = () => {
     return "Army Tile";
   }, [tile, hasOccupier, isSpire, isReservedHyperstructure, isStructure, isChest]);
 
-  const panelTitle = selectedHex ? formatTilePanelTitle(tileTypeLabel, selectedHex) : "No Tile Selected";
-
-  return (
-    <>
-      {selectedHex ? (
-        <SelectedWorldmapEntity coordsLabel={panelTitle} />
-      ) : (
-        <div className={cn("pointer-events-auto rounded-xl px-4 py-6 text-center", OVERLAY_SURFACE_BASE)}>
-          <p className={HUD_BODY}>Tap any tile on the world map to view its occupants and resources.</p>
-        </div>
-      )}
-    </>
-  );
+  // Only shown for a selected hex: with none, useSelectedTileDetails shows no panel at all.
+  if (!selectedHex) return null;
+  return <SelectedWorldmapEntity coordsLabel={formatTilePanelTitle(tileTypeLabel, selectedHex)} />;
 };
 
 const LocalTilePanel = () => {
