@@ -49,9 +49,9 @@ export const SeasonTable = ({
   </>
 );
 
-// Desktop widens the sites column for the camp / rift / fallen split beside the total.
+// The sites column holds the total; its camp / rift / fallen split opens on a tap, at every width.
 const COLUMNS =
-  "grid grid-cols-[2rem_1fr_3rem_2.5rem_3.5rem_2rem] items-center gap-1.5 lg:grid-cols-[2rem_1fr_6rem_2.5rem_4rem_2rem]";
+  "grid grid-cols-[2rem_1fr_3rem_2.5rem_3.5rem_2rem] items-center gap-1.5 lg:grid-cols-[2rem_1fr_3.5rem_3rem_4rem_2rem]";
 
 /** The columns as mockup 8's icons: sites cleared, chests, LORDS won, deepest depth. */
 const TableHeader = () => (
@@ -125,10 +125,6 @@ const TableRow = ({
           className="min-h-11 text-right font-bold underline decoration-[#46351c] underline-offset-4 lg:min-h-8"
         >
           {sites.total}
-          <span className="hidden text-[13px] text-[#a2926f] lg:inline">
-            {" "}
-            {sites.camps}·{sites.rifts}·{sites.fallen_realms}
-          </span>
         </button>
         <span className="text-right" aria-label={`${entry.chests_earned} chests`}>
           {entry.chests_earned}
