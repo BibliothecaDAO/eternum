@@ -6,10 +6,12 @@ import { buildPlayHref, parsePlayRoute } from "@/play/navigation/play-route";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { Position } from "@bibliothecadao/eternum";
 import { usePlayerStructures } from "@/hooks/helpers/use-structures";
+import { useFactView } from "@/hooks/use-fact-view";
+import { gameStructuresView } from "@/sync/fact-views";
 import { useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { resolveHexHandoffTarget } from "./scene-handoff-target";
+import { resolveHexHandoff } from "./scene-handoff-target";
 
 export const PlaySceneHandoff = () => {
   const snapshot = usePlayRouteBootSnapshot();
@@ -19,6 +21,7 @@ export const PlaySceneHandoff = () => {
   const isSpectating = useUIStore((state) => state.isSpectating);
   const returnPosition = useUIStore((state) => state.worldMapReturnPosition);
   const playerStructures = usePlayerStructures();
+  const gameStructures = useFactView(gameStructuresView);
   const navigate = useNavigate();
   const location = useLocation();
   const worldmapReadyMilestoneRef = useRef(false);
@@ -26,48 +29,29 @@ export const PlaySceneHandoff = () => {
   const overlayDismissedRef = useRef(false);
 
   const playRoute = useMemo(() => parsePlayRoute(location), [location.pathname, location.search]);
-  const fallbackWorldPosition = useMemo(() => {
-    if (playerStructures.length === 0) {
-      return null;
-    }
-
-    const first = playerStructures[0];
-    const normalized = Position.fromContract({
-      x: first.position.x,
-      y: first.position.y,
-    }).getNormalized();
-
-    return {
-      col: normalized.x,
-      row: normalized.y,
-    };
-  }, [playerStructures]);
-
+  // A player's route with no hex opens the map on their first structure's site.
   useEffect(() => {
     if (playRoute == null || snapshot.resolvedRequest == null || snapshot.resolvedRequest.entryMode !== "player") {
       return;
     }
 
-    if (
-      playRoute.scene !== "map" ||
-      playRoute.col !== null ||
-      playRoute.row !== null ||
-      fallbackWorldPosition == null
-    ) {
+    const first = playerStructures[0];
+    if (playRoute.scene !== "map" || playRoute.col !== null || playRoute.row !== null || first === undefined) {
       return;
     }
 
+    const site = Position.fromContract({ x: first.position.x, y: first.position.y }).getNormalized();
     navigate(
       buildMapResumeHref({
         route: playRoute,
         resumeScene: playRoute.resumeScene ?? null,
-        col: fallbackWorldPosition.col,
-        row: fallbackWorldPosition.row,
+        col: site.x,
+        row: site.y,
       }),
       { replace: true },
     );
     window.dispatchEvent(new Event("urlChanged"));
-  }, [fallbackWorldPosition, navigate, playRoute, snapshot.resolvedRequest]);
+  }, [navigate, playRoute, playerStructures, snapshot.resolvedRequest]);
 
   useEffect(() => {
     if (!readiness.worldmapReady || worldmapReadyMilestoneRef.current) {
@@ -82,7 +66,7 @@ export const PlaySceneHandoff = () => {
   useEffect(() => {
     if (
       playRoute == null ||
-      snapshot.resolvedRequest?.resumeScene == null ||
+      snapshot.resolvedRequest?.resumeScene !== "hex" ||
       !readiness.worldmapConverged ||
       handoffStartedRef.current
     ) {
@@ -93,26 +77,32 @@ export const PlaySceneHandoff = () => {
       return;
     }
 
-    // The local view opens on a realm; until the entry knows which, the map waits rather than hand off to a bare hex.
-    const target = resolveHexHandoffTarget({
+    // The local view opens on a realm: the map waits until the entry knows which, and keeps the entry when there is
+    // none to open.
+    const handoff = resolveHexHandoff({
       entryMode: snapshot.resolvedRequest.entryMode,
       structureEntityId,
       isSpectating,
       returnPosition,
+      openableStructures:
+        snapshot.resolvedRequest.entryMode === "player" ? playerStructures.length : gameStructures.length,
     });
-    if (snapshot.resolvedRequest.resumeScene === "hex" && target === null) {
-      return;
-    }
+    if (handoff.kind === "wait") return;
 
     handoffStartedRef.current = true;
+    if (handoff.kind === "stay-on-map") {
+      navigate(buildPlayHref({ ...playRoute, bootMode: "direct", resumeScene: null }), { replace: true });
+      window.dispatchEvent(new Event("urlChanged"));
+      return;
+    }
     markGameEntryMilestone("worldmap-navigation-started");
     navigate(
       buildPlayHref({
         ...playRoute,
-        ...target,
-        scene: snapshot.resolvedRequest.resumeScene,
+        ...handoff.hex,
+        scene: "hex",
         bootMode: "map-first",
-        resumeScene: snapshot.resolvedRequest.resumeScene,
+        resumeScene: "hex",
       }),
       { replace: true },
     );
@@ -125,6 +115,8 @@ export const PlaySceneHandoff = () => {
     structureEntityId,
     isSpectating,
     returnPosition,
+    playerStructures.length,
+    gameStructures.length,
   ]);
 
   useEffect(() => {
