@@ -1,20 +1,19 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 
-import { ReactComponent as RealmsLogo } from "@/assets/icons/rw-logo.svg";
-import { PwaInstallControl } from "@/pwa/pwa-install-control";
-import { useBootDocumentState } from "@/ui/modules/boot-loader";
-import { env } from "../../env";
-
-import { useDirectory } from "./herald";
-import { IdentityChip } from "./identity-chip";
+import { Trophy } from "@/ui/design-system/atoms/game-icons";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { PersonGlyph, PlayGlyph } from "@/ui/features/frontier/glyphs";
 import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
+import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { useOutsidePlaySession } from "@/utils/spectator-session";
 
-const NAV = [
-  { to: "/", label: "Home", end: true },
-  { to: "/play", label: "Play", end: false },
-  { to: "/results", label: "Results", end: false },
-  { to: "/account", label: "Account", end: false },
+import { IdentityChip } from "./identity-chip";
+
+/** The player app's three places: play (home and the games), results, and the player's profile and account. */
+const TABS = [
+  { to: "/", label: "Play", icon: PlayGlyph, matches: ["/", "/play"] },
+  { to: "/results", label: "Results", icon: Trophy, matches: ["/results"] },
+  { to: "/account", label: "Profile", icon: PersonGlyph, matches: ["/account", "/p/"] },
 ] as const;
 
 const FOOTER_LINKS = [
@@ -23,14 +22,17 @@ const FOOTER_LINKS = [
   { to: "/privacy", label: "Privacy" },
 ] as const;
 
-const shardsSummary = (shards: readonly { available: boolean }[]): string => {
-  const unavailable = shards.filter((shard) => !shard.available).length;
-  return `${shards.length} listed${unavailable ? `, ${unavailable} unavailable` : ""}`;
+const useActiveTab = (): string | undefined => {
+  const { pathname } = useLocation();
+  return TABS.find(({ matches }) =>
+    matches.some((match) => (match === "/" ? pathname === "/" : pathname.startsWith(match))),
+  )?.to;
 };
 
 /**
- * The app shell: every screen outside a game. It carries no three.js and no game asset; a game loads only under
- * `/g/:chain/:game`.
+ * The app shell: every screen outside a game, in the player app's one visual system. A header with the wordmark and
+ * the player's portrait (or Sign in); the three tabs as a top nav on desktop and a tab bar on a phone. It carries no
+ * three.js and no game asset; a game loads only under `/g/:chain/:game`.
  */
 export const AppShell = () => {
   useBootDocumentState("app-ready");
@@ -38,60 +40,76 @@ export const AppShell = () => {
   useOutsidePlaySession();
   // The shell wears the player app's one visual system, the same as Frontier's HUD.
   useFrontierType();
-  const directory = useDirectory();
+  const active = useActiveTab();
 
   return (
-    <div className="flex min-h-screen flex-col bg-brown text-gold">
-      <header className="sticky top-0 z-30 border-b border-gold/20 bg-brown/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-          <NavLink to="/" className="flex items-center" aria-label="Realms home">
-            <RealmsLogo className="h-8 w-8 text-gold" />
+    <div className="flex min-h-screen flex-col bg-[#0c0a08] font-sans text-[#eadfc8]">
+      <header className="sticky top-0 z-30 bg-gradient-to-b from-[#0c0a08] to-[#0c0a08]/70 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-6xl items-center gap-8 px-4">
+          <NavLink to="/" className="font-[Lexend] text-[22px] font-extrabold tracking-wide text-[#f3d08a]">
+            REALMS
           </NavLink>
-          <nav aria-label="Main navigation" className="order-3 flex w-full gap-1 sm:order-none sm:w-auto sm:flex-1">
-            {NAV.map((item) => (
+          <nav aria-label="Main navigation" className="hidden gap-6 lg:flex">
+            {TABS.map((tab) => (
               <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  `rounded-lg px-3 py-2 font-cinzel text-[12px] font-semibold uppercase tracking-[0.14em] ${
-                    isActive ? "bg-gold/15 text-gold" : "text-gold/60 hover:text-gold"
-                  }`
-                }
+                key={tab.to}
+                to={tab.to}
+                aria-current={active === tab.to ? "page" : undefined}
+                className={cn(
+                  "border-b-2 pb-1 font-[Lexend] text-[17px] font-extrabold",
+                  active === tab.to ? "border-[#f6ac1d] text-[#f3d08a]" : "border-transparent text-[#a2926f]",
+                )}
               >
-                {item.label}
+                {tab.label}
               </NavLink>
             ))}
           </nav>
-          <div className="ml-auto flex items-center gap-2">
-            <PwaInstallControl />
+          <div className="ml-auto">
             <IdentityChip />
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-6">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-3 pb-28 pt-2 lg:px-4 lg:pb-16">
         <Outlet />
       </main>
 
-      <footer className="flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-gold/10 px-4 py-2 font-mono text-[10.5px] tracking-[0.05em] text-gold/50">
-        <span>
-          <span className={directory.isSuccess ? "text-green" : "text-danger"}>●</span> Shards
-          {directory.isSuccess
-            ? ` · ${shardsSummary(directory.data.shards)}`
-            : directory.isError
-              ? " · unreachable"
-              : ""}
-        </span>
-        <nav aria-label="About" className="flex gap-4">
-          {FOOTER_LINKS.map((item) => (
-            <NavLink key={item.to} to={item.to} className="hover:text-gold">
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-        <span className="ml-auto">{env.VITE_PUBLIC_GAME_VERSION || "dev"}</span>
+      <footer className="mx-auto flex w-full max-w-6xl gap-4 px-4 pb-24 text-[13px] text-[#6e6148] lg:pb-4">
+        {FOOTER_LINKS.map((item) => (
+          <NavLink key={item.to} to={item.to} className="hover:text-[#a2926f]">
+            {item.label}
+          </NavLink>
+        ))}
       </footer>
+
+      <TabBar active={active} />
     </div>
   );
 };
+
+/** On a phone the three places sit in a bar at the foot, in thumb reach. */
+const TabBar = ({ active }: { active: string | undefined }) => (
+  <nav
+    aria-label="Tabs"
+    className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-[#46351c] bg-[#0c0a08]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+  >
+    {TABS.map((tab) => {
+      const Icon = tab.icon;
+      const current = active === tab.to;
+      return (
+        <NavLink
+          key={tab.to}
+          to={tab.to}
+          aria-current={current ? "page" : undefined}
+          className={cn(
+            "flex flex-col items-center gap-1 py-2.5 font-[Lexend] text-[13px] font-extrabold",
+            current ? "text-[#f3d08a]" : "text-[#6e6148]",
+          )}
+        >
+          <Icon className={cn("size-7", current ? "drop-shadow-[0_0_8px_rgba(246,172,29,0.6)]" : "opacity-60")} />
+          {tab.label}
+        </NavLink>
+      );
+    })}
+  </nav>
+);

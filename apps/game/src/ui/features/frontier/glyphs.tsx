@@ -99,6 +99,13 @@ export const PlusGlyph = ({ className }: { className?: string }) => (
   </svg>
 );
 
+/** Play: a flat gold arrowhead, the verb of the app's first tab. */
+export const PlayGlyph = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 28 28" className={className} aria-hidden>
+    <path d="M8 5.5v17l14-8.5z" fill={GOLD} stroke={INK} strokeWidth="1.5" strokeLinejoin="round" />
+  </svg>
+);
+
 /** Population: a figure's head and shoulders in parchment. */
 export const PersonGlyph = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 28 28" className={className} aria-hidden>

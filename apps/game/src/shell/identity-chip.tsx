@@ -61,23 +61,34 @@ export const IdentityChip = () => {
 
   return (
     <div className="relative">
-      <button
-        type="button"
-        aria-expanded={isOpen}
-        aria-haspopup="dialog"
-        onClick={toggle}
-        className="flex h-10 min-w-[128px] items-center justify-center gap-2 rounded-lg border border-gold/40 bg-black/50 px-4 font-cinzel text-[12px] font-semibold uppercase tracking-[0.12em] text-gold hover:bg-gold/10"
-      >
-        {session && status === "signed-in" ? (
-          <img src={portraitUrl(session.user.image ?? null)} alt="" className="h-6 w-6 rounded object-cover" />
-        ) : null}
-        {chipLabel(status, session)}
-      </button>
+      {session && status === "signed-in" ? (
+        <button
+          type="button"
+          aria-expanded={isOpen}
+          aria-haspopup="dialog"
+          aria-label={displayName(session)}
+          onClick={toggle}
+          className="block size-11 overflow-hidden rounded-full border-2 border-[#dfaa54] shadow-[0_0_12px_rgba(246,172,29,0.35)]"
+        >
+          <img src={portraitUrl(session.user.image ?? null)} alt="" className="size-full object-cover" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          aria-expanded={isOpen}
+          aria-haspopup="dialog"
+          onClick={toggle}
+          disabled={status === "loading"}
+          className="frontier-chip h-11 px-5 font-[Lexend] text-[17px] font-extrabold text-[#eadfc8] disabled:opacity-50"
+        >
+          {chipLabel(status, session)}
+        </button>
+      )}
       {isOpen ? (
         <div
           role="dialog"
           aria-label="Identity"
-          className="absolute right-0 top-full z-50 mt-2 w-72 rounded-xl border border-gold/30 bg-brown p-4 shadow-xl"
+          className="frontier-card absolute right-0 top-full z-50 mt-2 w-72 p-4 shadow-xl"
         >
           <div ref={setElement} className="min-h-[3rem] text-gold">
             {needsRuntime ? null : <p className="text-sm text-gold/70">Loading…</p>}
