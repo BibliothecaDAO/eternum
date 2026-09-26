@@ -3,6 +3,7 @@ import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
 import { followArmyLayerChange } from "./worldmap-layer-follow";
 import { TileOccupier } from "@bibliothecadao/types";
 import { SpireManager, type RuleSpires } from "../managers/spire-manager";
+import { MapSiteManager } from "../managers/map-site-manager";
 import { activeMapLayer } from "@/three/map-layer";
 import type { ReactNode } from "react";
 import { isMapPreviewAction } from "./worldmap-action-preview-policy";
@@ -991,6 +992,7 @@ export default class WorldmapScene extends WarpTravel {
   private chestLabelsGroup!: Group;
   private reservedHyperstructureManager!: ReservedHyperstructureManager;
   private spireManager!: SpireManager;
+  private mapSiteManager!: MapSiteManager;
   private spireLabelsGroup!: Group;
 
   private renderedMapLayer?: boolean;
@@ -1242,6 +1244,7 @@ export default class WorldmapScene extends WarpTravel {
       this.markLabelsDirty,
       this.createRuleSpires(),
     );
+    this.mapSiteManager = new MapSiteManager(this.scene, this.worldSpatialProjection, this.getTerrainSurface());
     this.chestManager = new ChestManager(
       this.scene,
       this.renderChunkSize,
@@ -1657,6 +1660,7 @@ export default class WorldmapScene extends WarpTravel {
     this.combatPresentation?.setVisible(ladder.fx);
     this.reservedHyperstructureManager.setModelVisible(ladder.structureModels);
     this.spireManager.setModelVisible(ladder.structureModels);
+    this.mapSiteManager.setModelVisible(ladder.structureModels);
     this.strategicMarkers.setVisible(ladder.band === CameraView.Far);
     this.commitStrategicMarkers();
     this.refreshLabelPriorityContext();
@@ -5852,6 +5856,7 @@ export default class WorldmapScene extends WarpTravel {
   private regroundTerrainPlacements(): void {
     this.structureManager.refreshTerrainPlacement();
     this.spireManager.refreshTerrainPlacement();
+    this.mapSiteManager.refreshTerrainPlacement();
     this.reservedHyperstructureManager.refreshTerrainPlacement();
     this.chestManager.refreshTerrainPlacement();
     this.armyManager.refreshTerrainPlacement();
@@ -8088,6 +8093,7 @@ export default class WorldmapScene extends WarpTravel {
       structureManager: this.structureManager,
       reservedHyperstructureManager: this.reservedHyperstructureManager,
       spireManager: this.spireManager,
+      mapSiteManager: this.mapSiteManager,
       chestManager: this.chestManager,
       fxManager: this.fxManager,
       resourceFXManager: this.resourceFXManager,
@@ -8434,6 +8440,7 @@ export default class WorldmapScene extends WarpTravel {
     this.structureManager.resetLayer();
     this.chestManager.resetLayer();
     this.reservedHyperstructureManager.resetLayer();
+    this.mapSiteManager.resetLayer();
     this.strategicMarkers.clear();
   }
 
