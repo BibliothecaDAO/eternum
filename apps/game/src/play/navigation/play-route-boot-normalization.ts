@@ -45,14 +45,22 @@ const buildCanonicalPlayerBootHref = ({
   );
 };
 
-export const normalizePlayBootLocation = (location: LocationLike): string | null => {
+/**
+ * The canonical boot href for a play location, or null when it already is one. A hex route boots map-first. A hex route
+ * that already says map-first is the handoff in progress, which only a boot whose world map is ready is making; the
+ * same route loaded afresh (a reload, a shared link) has no world map yet and boots from the map again.
+ */
+export const normalizePlayBootLocation = (
+  location: LocationLike,
+  { worldmapReady }: { worldmapReady: boolean },
+): string | null => {
   const route = parsePlayRoute(location);
   const spectate = resolveSpectateIntent(location);
   if (!route || !shouldBootMapFirst(route)) {
     return null;
   }
 
-  if (route.bootMode === "map-first") {
+  if (route.bootMode === "map-first" && worldmapReady) {
     return null;
   }
 

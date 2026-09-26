@@ -4,6 +4,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-
 import { env } from "../env";
 import { loadGameRouteForPlayEntry } from "./game-entry-preload";
 import { resolveEntryContextFromEntryRoute } from "./game-entry/context";
+import { usePlayRouteReadinessStore } from "./game-entry/play-route-readiness-store";
 import { GameplayAccountSync } from "./hooks/context/gameplay-account-sync";
 import { useUIStore } from "./hooks/store/use-ui-store";
 import { normalizePlayBootLocation } from "./play/navigation/play-route-boot-normalization";
@@ -67,8 +68,9 @@ const GameEntryRoute = () => {
 const GameRouteShell = ({ backgroundImage }: { backgroundImage: string }) => {
   const location = useLocation();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+  const worldmapReady = usePlayRouteReadinessStore((state) => state.worldmapReady);
 
-  const normalizedBootHref = showBlankOverlay ? normalizePlayBootLocation(location) : null;
+  const normalizedBootHref = showBlankOverlay ? normalizePlayBootLocation(location, { worldmapReady }) : null;
   if (normalizedBootHref) {
     return <Navigate to={normalizedBootHref} replace />;
   }
