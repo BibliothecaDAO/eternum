@@ -20,7 +20,6 @@ interface Options {
   actor: string;
   output: string;
   fromBlock: number;
-  toBlock?: number;
 }
 
 interface RecordingRecord {
@@ -32,11 +31,13 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../.
 
 export function parseOptions(args: string[]): Options {
   const values = new Map<string, string>();
+  const allowed = new Set(["--rpc-url", "--herald-url", "--game-id", "--actor", "--output", "--from-block"]);
   for (let index = 0; index < args.length; index += 2) {
     const flag = args[index];
     const value = args[index + 1];
     if (!flag?.startsWith("--") || !value || value.startsWith("--"))
       throw new Error(`Invalid arguments near ${flag ?? "end"}`);
+    if (!allowed.has(flag)) throw new Error(`Unknown option ${flag}`);
     if (values.has(flag)) throw new Error(`${flag} may be supplied only once`);
     values.set(flag, value);
   }
@@ -59,8 +60,13 @@ export function parseOptions(args: string[]): Options {
     actor: normalizeFelt(required("--actor")),
     output: required("--output"),
     fromBlock: nonNegativeInteger("--from-block", 0),
-    toBlock: values.has("--to-block") ? nonNegativeInteger("--to-block") : undefined,
   };
+}
+
+export function snapshotBlock(snapshot: GameSnapshot): number {
+  const block = snapshot.confirmed_block;
+  if (!Number.isSafeInteger(block) || block < 0) throw new Error("Herald snapshot has an invalid confirmed block");
+  return block;
 }
 
 export function hasRecordingFacts(
@@ -124,14 +130,10 @@ export function buildRecording(input: {
 }
 
 async function run(options: Options): Promise<void> {
-  const startHead = await rpcRequest<number>(options.rpcUrl, "starknet_blockNumber", []);
-  const toBlock = options.toBlock ?? startHead;
-  if (toBlock > startHead) throw new Error(`--to-block ${toBlock} is ahead of confirmed head ${startHead}`);
   const finalSnapshot = (await getJson(
     `${options.heraldUrl}/games/${options.gameId}/snapshot?actor=${encodeURIComponent(options.actor)}`,
   )) as GameSnapshot;
-  if (finalSnapshot.confirmed_block !== toBlock)
-    throw new Error(`Herald snapshot is at block ${finalSnapshot.confirmed_block}; requested block is ${toBlock}`);
+  const toBlock = snapshotBlock(finalSnapshot);
   const gameRegistry = findSnapshotRow(
     finalSnapshot,
     "GameRegistry",

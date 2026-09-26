@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertSnapshotMatches, buildRecording, hasRecordingFacts, parseOptions } from "./record-phase1";
+import { assertSnapshotMatches, buildRecording, hasRecordingFacts, parseOptions, snapshotBlock } from "./record-phase1";
 import type { GameSnapshot } from "../src/types";
 
 const snapshot: GameSnapshot = {
@@ -67,7 +67,7 @@ describe("phase-1 recording generator", () => {
     ).toThrow("Replay snapshot mismatch: Structure row 2:9 differs");
   });
 
-  it("requires explicit endpoints and supports a bounded final block", () => {
+  it("requires explicit endpoints and rejects a guessed final block", () => {
     expect(
       parseOptions([
         "--rpc-url",
@@ -78,11 +78,30 @@ describe("phase-1 recording generator", () => {
         "2",
         "--actor",
         "0x0a",
+        "--output",
+        "/tmp/phase1.json",
+      ]),
+    ).toMatchObject({ gameId: "2", actor: "0xa", fromBlock: 0 });
+    expect(() =>
+      parseOptions([
+        "--rpc-url",
+        "rpc",
+        "--herald-url",
+        "herald",
+        "--game-id",
+        "2",
+        "--actor",
+        "0xa",
         "--to-block",
         "99",
         "--output",
         "/tmp/phase1.json",
       ]),
-    ).toMatchObject({ gameId: "2", actor: "0xa", fromBlock: 0, toBlock: 99 });
+    ).toThrow("Unknown option --to-block");
+  });
+
+  it("pins the scan cutoff to the snapshot confirmed block", () => {
+    expect(snapshotBlock(snapshot)).toBe(20);
+    expect(() => snapshotBlock({ ...snapshot, confirmed_block: -1 })).toThrow("invalid confirmed block");
   });
 });
