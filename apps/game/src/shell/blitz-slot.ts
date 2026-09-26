@@ -1,10 +1,12 @@
-import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { useIdentitySession } from "@/hooks/context/identity-session";
 import {
   fetchPlaytestSlots,
   registerPlaytestSlot,
   type PlaytestSlot,
 } from "@/ui/features/factory-v2/api/factory-worker";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { useRequestSignIn } from "./sign-in/sign-in-route";
 
 /** A Blitz game's roster: registrations past it fill the slot's next game. */
 export const BLITZ_SEATS = 24;
@@ -37,7 +39,7 @@ export const seatsFilling = (slot: PlaytestSlot): number => {
 /** Joining a slot as the signed-in player, or asking them to sign in first. */
 export const useJoinSlot = () => {
   const { status, session } = useIdentitySession();
-  const requestSignIn = useIdentitySessionStore((state) => state.requestSignIn);
+  const requestSignIn = useRequestSignIn();
   const client = useQueryClient();
   const register = useMutation({
     mutationFn: registerPlaytestSlot,

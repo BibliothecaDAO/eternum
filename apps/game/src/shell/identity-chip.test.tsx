@@ -1,54 +1,45 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 
 // The identity client binds fetch when its module loads, and the chip's first session load asks it: nobody is signed in.
 vi.hoisted(() => vi.stubGlobal("fetch", async () => new Response(null, { status: 401 })));
 
-vi.mock("./account-runtime", () => ({
-  default: () => <p data-testid="sign-in-view">Sign in with your Starknet wallet.</p>,
-}));
-
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
-import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { IdentityChip } from "./identity-chip";
 
-afterEach(() => {
-  useIdentitySessionStore.setState({ status: "anonymous", session: null, signInRequest: null });
-  usePopoverStore.getState().close();
-});
+afterEach(() => useIdentitySessionStore.setState({ status: "anonymous", session: null }));
 
-async function mount() {
-  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+const Where = () => {
+  const { pathname, search } = useLocation();
+  return <p data-testid="where">{`${pathname}${search}`}</p>;
+};
+
+it("sends a signed-out player who clicks the chip to the sign-in flow, to come back to this page", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  useIdentitySessionStore.setState({ status: "anonymous", session: null });
   const container = document.createElement("div");
   const root = createRoot(container);
   await act(async () =>
     root.render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={["/results?game=2"]}>
         <IdentityChip />
+        <Routes>
+          <Route path="*" element={<Where />} />
+        </Routes>
       </MemoryRouter>,
     ),
   );
-  return {
-    container,
-    click: () => act(async () => container.querySelector("button")!.click()),
-    close: () => act(async () => root.unmount()),
-  };
-}
-
-it("opens the sign-in view for a signed-out player who clicks the chip", async () => {
-  useIdentitySessionStore.setState({ status: "anonymous", session: null, signInRequest: null });
-  const ui = await mount();
   try {
-    expect(ui.container.querySelector("button")?.textContent).toBe("Sign in");
-    await ui.click();
-    await act(async () => {});
-    expect(ui.container.querySelector("[role='dialog']")).not.toBeNull();
-    expect(ui.container.textContent).not.toContain("Loading…");
-    expect(ui.container.querySelector("[data-testid='sign-in-view']")).not.toBeNull();
-    expect(useIdentitySessionStore.getState().signInRequest).toEqual({});
+    const chip = container.querySelector("button")!;
+    expect(chip.textContent).toBe("Sign in");
+    await act(async () => chip.click());
+    expect(container.querySelector("[data-testid='where']")?.textContent).toBe(
+      `/sign-in?next=${encodeURIComponent("/results?game=2")}`,
+    );
+    expect(container.querySelector("[role='dialog']")).toBeNull();
   } finally {
-    await ui.close();
+    await act(async () => root.unmount());
   }
 });

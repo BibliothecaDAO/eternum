@@ -3,6 +3,7 @@ import { identityUsername, IDENTITY_POPOVER_ID, useIdentitySession } from "@/hoo
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
 import { AccountStatePrompt } from "@/shell/account-state";
+import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { usePlayers } from "@/hooks/use-player-profile";
@@ -17,7 +18,6 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Popover, SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
-import { IdentityLogin } from "@/ui/modules/identity/identity-login";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { ContractAddress } from "@bibliothecadao/types";
 import { Eye as EyeIcon, Trophy, Loader2 as LoaderIcon } from "@/ui/design-system/atoms/game-icons";
@@ -213,12 +213,18 @@ const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { 
   }
 };
 
-const SignInSurface = ({ children }: { children: React.ReactNode }) => (
-  <div className="flex flex-col gap-3">
-    <span className={HUD_BODY}>{children}</span>
-    <IdentityLogin className="items-start" />
-  </div>
-);
+/** Signing in leaves the game for the one sign-in flow, which brings the player back to this game and view. */
+const SignInSurface = ({ children }: { children: React.ReactNode }) => {
+  const requestSignIn = useRequestSignIn();
+  return (
+    <div className="flex flex-col gap-3">
+      <span className={HUD_BODY}>{children}</span>
+      <Button className="w-full px-4 py-2" onClick={() => requestSignIn()}>
+        Sign in
+      </Button>
+    </div>
+  );
+};
 
 const SpectatingPanel = ({ state }: { state: Extract<IdentityChipState, { kind: "spectating" }> }) => {
   const enterAsPlayer = useEnterActiveGameAsPlayer();

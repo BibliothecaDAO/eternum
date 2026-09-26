@@ -4,7 +4,6 @@ import { createPortal } from "react-dom";
 import { IDENTITY_POPOVER_ID, signOutIdentitySession, useIdentitySession } from "@/hooks/context/identity-session";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { GameplayAccountSync } from "@/hooks/context/gameplay-account-sync";
-import { IdentityLogin } from "@/ui/modules/identity/identity-login";
 import type { Session } from "@realms-world/identity";
 
 import { displayName, useIdentityPanelSlot } from "./identity-chip";
@@ -12,8 +11,8 @@ import { AccountStatePrompt } from "./account-state";
 import { shortAddress } from "./format";
 
 /**
- * The shell's account runtime: the gameplay account sync and the identity panel. It is one lazy chunk, mounted by
- * the identity chip when a session exists or is being requested; it loads no wallet.
+ * The shell's account runtime: the gameplay account sync and the signed-in player's panel. It is one lazy chunk,
+ * mounted by the identity chip once a session exists; it loads no wallet.
  */
 export default function AccountRuntime() {
   return (
@@ -27,7 +26,8 @@ function IdentityPanelPortal() {
   const slot = useIdentityPanelSlot((state) => state.element);
   const { status, session } = useIdentitySession();
   if (!slot) return null;
-  return createPortal(status === "signed-in" && session ? <SignedInPanel session={session} /> : <SignInPanel />, slot);
+  if (status !== "signed-in" || !session) return null;
+  return createPortal(<SignedInPanel session={session} />, slot);
 }
 
 function SignedInPanel({ session }: { session: Session }) {
@@ -71,13 +71,3 @@ function SignedInPanel({ session }: { session: Session }) {
     </div>
   );
 }
-
-const SignInPanel = () => (
-  <div className="flex flex-col gap-3">
-    <p className="text-sm text-gold/85">
-      Sign in with Discord or your email; your first sign-in creates your Realms account. Your gameplay account is
-      prepared automatically when you play.
-    </p>
-    <IdentityLogin className="items-start" />
-  </div>
-);

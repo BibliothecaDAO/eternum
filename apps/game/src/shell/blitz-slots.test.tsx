@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 
 vi.hoisted(() => vi.stubGlobal("fetch", async () => new Response(null, { status: 401 })));
@@ -23,9 +24,11 @@ it("renders a failed slots read as a named state with a retry, never the service
   const root = createRoot(container);
   await act(async () =>
     root.render(
-      <QueryClientProvider client={client}>
-        <BlitzSlots />
-      </QueryClientProvider>,
+      <MemoryRouter>
+        <QueryClientProvider client={client}>
+          <BlitzSlots />
+        </QueryClientProvider>
+      </MemoryRouter>,
     ),
   );
   for (let tick = 0; tick < 5 && !container.querySelector("[role='alert']"); tick += 1) await act(async () => {});

@@ -1,21 +1,16 @@
-import { lazy, Suspense, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { create } from "zustand";
 
-import {
-  IDENTITY_POPOVER_ID,
-  identityUsername,
-  useIdentitySession,
-  useIdentitySessionStore,
-} from "@/hooks/context/identity-session";
+import { IDENTITY_POPOVER_ID, identityUsername, useIdentitySession } from "@/hooks/context/identity-session";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import type { Session } from "@realms-world/identity";
 
 import { shortAddress } from "./format";
+import { useRequestSignIn } from "./sign-in/sign-in-route";
 
 /**
- * Where the account runtime renders its sign-in and sign-out panel. The runtime (Starknet wallets, the gameplay
- * account) loads only once a player signs in or asks to, so an anonymous visit never downloads it.
+ * Where the account runtime renders the signed-in player's panel. The runtime (Starknet wallets, the gameplay account)
+ * loads only once a player signs in, so an anonymous visit never downloads it.
  */
 export const useIdentityPanelSlot = create<{
   element: HTMLElement | null;
@@ -26,76 +21,52 @@ const AccountRuntime = lazy(() => import("./account-runtime"));
 
 export const displayName = (session: Session): string => identityUsername(session) ?? shortAddress(session.user.id);
 
-const chipLabel = (status: "loading" | "anonymous" | "signed-in", session: Session | null): string => {
-  if (status === "loading") return "…";
-  if (status === "signed-in" && session) return displayName(session);
-  return "Sign in";
-};
-
 export const IdentityChip = () => {
   const { status, session } = useIdentitySession();
-  const signInRequest = useIdentitySessionStore((state) => state.signInRequest);
-  const requestSignIn = useIdentitySessionStore((state) => state.requestSignIn);
-  const clearSignInRequest = useIdentitySessionStore((state) => state.clearSignInRequest);
+  const requestSignIn = useRequestSignIn();
   const isOpen = usePopoverStore((state) => state.openId === IDENTITY_POPOVER_ID);
   const setElement = useIdentityPanelSlot((state) => state.setElement);
-  const navigate = useNavigate();
-  const needsRuntime = status === "signed-in" || signInRequest !== null;
+  const signedIn = status === "signed-in" ? session : null;
 
-  // Once the session lands, the request is done; a surface that asked for a redirect gets it replayed.
-  useEffect(() => {
-    if (status !== "signed-in" || !signInRequest) return;
-    clearSignInRequest();
-    usePopoverStore.getState().close(IDENTITY_POPOVER_ID);
-    if (signInRequest.redirectTo) {
-      navigate(signInRequest.redirectTo, { replace: true, state: signInRequest.redirectState });
-    }
-  }, [clearSignInRequest, navigate, signInRequest, status]);
-
-  const toggle = () => {
+  const togglePanel = () => {
     const popover = usePopoverStore.getState();
     if (isOpen) popover.close(IDENTITY_POPOVER_ID);
-    else if (status === "signed-in") popover.open(IDENTITY_POPOVER_ID);
-    else requestSignIn();
+    else popover.open(IDENTITY_POPOVER_ID);
   };
 
   return (
     <div className="relative">
-      {session && status === "signed-in" ? (
+      {signedIn ? (
         <button
           type="button"
           aria-expanded={isOpen}
           aria-haspopup="dialog"
-          aria-label={displayName(session)}
-          onClick={toggle}
+          aria-label={displayName(signedIn)}
+          onClick={togglePanel}
           className="block size-11 overflow-hidden rounded-full border-2 border-[#dfaa54] shadow-[0_0_12px_rgba(246,172,29,0.35)]"
         >
-          <img src={portraitUrl(session.user.image ?? null)} alt="" className="size-full object-cover" />
+          <img src={portraitUrl(signedIn.user.image ?? null)} alt="" className="size-full object-cover" />
         </button>
       ) : (
         <button
           type="button"
-          aria-expanded={isOpen}
-          aria-haspopup="dialog"
-          onClick={toggle}
+          onClick={() => requestSignIn()}
           disabled={status === "loading"}
           className="frontier-chip h-11 px-5 font-[Lexend] text-[17px] font-extrabold text-[#eadfc8] disabled:opacity-50"
         >
-          {chipLabel(status, session)}
+          {status === "loading" ? "…" : "Sign in"}
         </button>
       )}
-      {isOpen ? (
+      {signedIn && isOpen ? (
         <div
           role="dialog"
           aria-label="Identity"
           className="frontier-card absolute right-0 top-full z-50 mt-2 w-72 p-4 shadow-xl"
         >
-          <div ref={setElement} className="min-h-[3rem] text-gold">
-            {needsRuntime ? null : <p className="text-sm text-gold/70">Loading…</p>}
-          </div>
+          <div ref={setElement} className="min-h-[3rem] text-gold" />
         </div>
       ) : null}
-      {needsRuntime ? (
+      {signedIn ? (
         <Suspense fallback={null}>
           <AccountRuntime />
         </Suspense>

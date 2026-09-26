@@ -58,7 +58,7 @@ export const NameClaim = ({
 };
 
 /** The server names why a name was refused (NAME_TAKEN, NAME_INVALID:<rule>); the player reads one sentence. */
-const nameRefusal = (cause: unknown): string => {
+export const nameRefusal = (cause: unknown): string => {
   const reason = cause instanceof Error ? cause.message : "";
   if (reason === "NAME_TAKEN") return "That name is taken. Try another.";
   if (reason.startsWith("NAME_INVALID:")) return `Names use ${reason.slice("NAME_INVALID:".length)}.`;

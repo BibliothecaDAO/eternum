@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
 
 import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
-import { identityClient, useIdentitySessionStore, useSignInAndReturn } from "@/hooks/context/identity-session";
+import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { forgetDeviceKey } from "@bibliothecadao/eternum";
+
+import { useRequestSignIn } from "./sign-in/sign-in-route";
 
 const buttonClass =
   "rounded-lg border border-gold/40 px-3 py-2 font-cinzel text-[12px] uppercase tracking-[0.1em] text-gold hover:bg-gold/10 disabled:opacity-50";
@@ -13,8 +14,7 @@ const buttonClass =
 export const AccountStatePrompt = () => {
   const state = useAccountStore((store) => store.provisioningError);
   const applySession = useIdentitySessionStore((store) => store.applySession);
-  const signInAndReturn = useSignInAndReturn();
-  const location = useLocation();
+  const requestSignIn = useRequestSignIn();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (!isAccountStatePrompt(state)) return null;
@@ -36,7 +36,7 @@ export const AccountStatePrompt = () => {
       forgetDeviceKey(localStorage);
       await identityClient.signOut();
       applySession(null);
-      signInAndReturn(`${location.pathname}${location.search}`);
+      requestSignIn();
     });
 
   return (

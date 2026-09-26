@@ -8,7 +8,6 @@ import { SceneRoute } from "./scene-route";
 import { PwaInstallRuntime } from "./pwa/pwa-install-control";
 import { appQueryClient } from "./runtime/query-client";
 import { AccountPage } from "./shell/account";
-import { FirstNamePrompt } from "./shell/first-name-prompt";
 import { AppShell } from "./shell/app-shell";
 import { FactoryPage } from "./shell/factory";
 import { HomePage } from "./shell/home";
@@ -18,6 +17,8 @@ import { NotFoundPage } from "./shell/not-found";
 import { PlayPage } from "./shell/play";
 import { PlayerPage } from "./shell/player";
 import { ResultsPage } from "./shell/results";
+import { SignInPage } from "./shell/sign-in/sign-in-page";
+import { SIGN_IN_PATH } from "./shell/sign-in/sign-in-route";
 
 const MotionLabView = lazy(() =>
   import("./ui/features/debug/motion-lab/motion-lab-view").then((module) => ({ default: module.MotionLabView })),
@@ -80,7 +81,6 @@ function App() {
       <QueryClientProvider client={appQueryClient}>
         <PwaUpdatePrompt />
         <PwaInstallRuntime />
-        <FirstNamePrompt />
         <Routes>
           <Route element={<AppShell />}>
             <Route index element={<HomePage />} />
@@ -125,6 +125,7 @@ function App() {
             <Route path="factory" element={<FactoryPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
+          <Route path={SIGN_IN_PATH} element={<SignInPage />} />
           <Route
             path="/g/:chain/:game/*"
             element={

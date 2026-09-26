@@ -20,14 +20,15 @@ import {
   TreasureChest,
 } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { resolveEntryContextFromLandingSelection } from "@/game-entry/context";
 import { RealmNumberPicker } from "./realm-number-picker";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
-import { identityUsername, useIdentitySessionStore, useSignInAndReturn } from "@/hooks/context/identity-session";
+import { identityUsername, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import { resolvePlayerNameFelt } from "@/services/identity/player-name";
@@ -354,8 +355,7 @@ const AccountPhase = ({ onSpectate }: { onSpectate: () => void }) => (
 const AccountPhaseState = () => {
   const sessionStatus = useIdentitySessionStore((state) => state.status);
   const provisioningError = useAccountStore((state) => state.provisioningError);
-  const signInAndReturn = useSignInAndReturn();
-  const location = useLocation();
+  const requestSignIn = useRequestSignIn();
 
   if (sessionStatus === "anonymous") {
     return (
@@ -364,7 +364,7 @@ const AccountPhaseState = () => {
           Sign in to play. Your account is set up the first time you enter a game.
         </p>
         <Button
-          onClick={() => signInAndReturn(`${location.pathname}${location.search}`)}
+          onClick={() => requestSignIn()}
           className="w-full h-11 !text-brown !bg-gold rounded-md"
           forceUppercase={false}
         >

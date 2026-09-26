@@ -17,6 +17,7 @@ import { AccountStatePrompt } from "./account-state";
 import { displayName, portraitUrl } from "./identity-chip";
 import { GhostButton, GoldButton, Loading, Panel, PanelTitle } from "./kit";
 import { NameClaim } from "./name-claim";
+import { useRequestSignIn } from "./sign-in/sign-in-route";
 
 const WalletLink = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletLink })),
@@ -207,7 +208,7 @@ const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () =
 export const AccountPage = () => {
   const { session, status } = useIdentitySession();
   const refresh = useIdentitySessionStore((state) => state.refresh);
-  const requestSignIn = useIdentitySessionStore((state) => state.requestSignIn);
+  const requestSignIn = useRequestSignIn();
   if (status === "loading") return <Loading />;
   if (!session) {
     return (
@@ -217,7 +218,7 @@ export const AccountPage = () => {
           Sign in with Discord or your email; your first sign-in creates your Realms account. Then claim your name, and
           link a wallet to claim prizes.
         </p>
-        <GoldButton onClick={() => requestSignIn({ redirectTo: "/account" })}>Sign in</GoldButton>
+        <GoldButton onClick={() => requestSignIn("/account")}>Sign in</GoldButton>
       </Panel>
     );
   }

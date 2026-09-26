@@ -1,4 +1,5 @@
-import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { useIdentitySession } from "@/hooks/context/identity-session";
+import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import {
@@ -19,7 +20,7 @@ const RUN_ENVIRONMENTS = ["madara.blitz", "madara.eternum", "madara.frontier"] a
 
 export const FactoryV2Content = () => {
   const { status } = useIdentitySession();
-  const signIn = useIdentitySessionStore((state) => state.requestSignIn);
+  const signIn = useRequestSignIn();
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [time, setTime] = useState("");
