@@ -7,5 +7,5 @@ export const MODE_ART = {
   eternum: "/images/covers/09.png",
 } as const;
 
-/** The realm on its card: the castle render on the field it stands on. */
-export const REALM_ART = "/images/buildings/construction/castleTwo.png";
+/** The realm card's ground: a rendered still of the board's field (public/images/realm-card/SOURCE.md). */
+export const REALM_GROUND = "/images/realm-card/ground.webp";

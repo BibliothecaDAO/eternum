@@ -11,15 +11,16 @@ import { normalizeLeaderboardAddress } from "@/services/leaderboard/landing-lead
 import { entryHref } from "./game-links";
 import { type DirectoryGame, useLeaderboard, useRealmsPlayer } from "./herald";
 import { PrimaryLink } from "./live-chips";
-import { REALM_ART } from "./mode-art";
+import { REALM_GROUND } from "./mode-art";
 
 /** The player's realm in the season: the structure the directory lists for them, if they have founded one. */
 export const seasonRealm = (season: DirectoryGame) =>
   season.player_state?.structures.find((structure) => isRealmCategory(structure.category));
 
 /**
- * The player's realm (design o2, o10): its castle on its field, its name under its Order's emblem, today's rank and
- * sites cleared from the season board, and Resume into it. The day's dial joins once the directory carries the day.
+ * The player's realm (design o2, o10): its name under its Order's emblem on the board's ground, today's rank and sites
+ * cleared from the season board, and Resume into it. Its tier's castle joins once the directory carries the realm's
+ * level, and the day's dial once it carries the day.
  */
 export const RealmCard = ({ season, className }: { season: DirectoryGame; className?: string }) => {
   const player = useRealmsPlayer();
@@ -38,22 +39,19 @@ export const RealmCard = ({ season, className }: { season: DirectoryGame; classN
     <article
       aria-label={getRealmNameById(realm.realm_id)}
       className={cn(
-        "relative isolate flex flex-col gap-3 overflow-hidden rounded-2xl border border-[#46351c] p-3 lg:p-4",
-        "bg-[radial-gradient(circle_at_40%_35%,#5a7a34,#2c3b1c_60%,#15100a)]",
+        "relative isolate flex min-h-60 flex-col justify-between gap-3 overflow-hidden rounded-2xl border",
+        "border-[#46351c] p-3 lg:min-h-64 lg:p-4",
         className,
       )}
     >
+      <img src={REALM_GROUND} alt="" className="absolute inset-0 -z-10 size-full object-cover" />
+      <span className="absolute inset-0 -z-10 bg-gradient-to-t from-[#0c0a08] via-[#0c0a08]/50 to-transparent" />
       <header className="flex items-center gap-2">
         {emblem ? <img src={emblem.art} alt={emblem.name} className="size-8 object-contain" /> : null}
         <h2 className="font-[Lexend] text-[22px] font-extrabold text-[#fff3c4] drop-shadow-[0_2px_0_#1b1207]">
           {getRealmNameById(realm.realm_id)}
         </h2>
       </header>
-      <img
-        src={REALM_ART}
-        alt=""
-        className="mx-auto h-40 object-contain drop-shadow-[0_12px_18px_rgba(0,0,0,0.6)] lg:mx-0 lg:h-28"
-      />
       {/* A phone stacks the numbers over Resume; a wide card sets them side by side, Resume at the right. */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2">
