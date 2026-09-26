@@ -46,6 +46,8 @@ export interface GameModeConfig {
     showBuildMenus: boolean;
     /** Shown on the army muster when the mode spends committed troops for good. */
     musterNotice: string | null;
+    /** Where a player's session opens once through the doorway: the world map, or their realm's board. */
+    entryScene: "map" | "hex";
   };
   resources: {
     getTiers: () => ReturnType<typeof getResourceTiers>;
@@ -131,6 +133,7 @@ const blitzConfig: GameModeConfig = {
     showAutomation: true,
     showBuildMenus: true,
     musterNotice: null,
+    entryScene: "map",
   },
   resources: {
     getTiers: () => getResourceTiers(true),
@@ -172,6 +175,7 @@ const eternumConfig: GameModeConfig = {
     showAutomation: true,
     showBuildMenus: true,
     musterNotice: null,
+    entryScene: "map",
   },
   resources: {
     getTiers: () => getResourceTiers(false),
@@ -203,6 +207,8 @@ const frontierConfig: GameModeConfig = {
     showAutomation: false,
     showBuildMenus: false,
     musterNotice: "Committed troops do not return. What you send today is spent today, win or lose.",
+    // A Frontier session opens on the realm, where the day's first build and deploy happen.
+    entryScene: "hex",
   },
   resources: {
     getTiers: blitzConfig.resources.getTiers,
@@ -225,6 +231,9 @@ const GAME_MODE_CONFIGS: Record<GameModeId, GameModeConfig> = {
   eternum: eternumConfig,
   duel: duelConfig,
 };
+
+/** A mode's config by its id, for surfaces that know the mode (the directory's row) before the game's config syncs. */
+export const gameModeConfigOf = (id: GameModeId): GameModeConfig => GAME_MODE_CONFIGS[id];
 
 export function getGameModeConfig(presetId = configManager.getPresetId()): GameModeConfig {
   return GAME_MODE_CONFIGS[nativeGameModeOf(presetId)];

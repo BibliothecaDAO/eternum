@@ -11,6 +11,8 @@ type ResolveGameEntryTargetInput = GameRef & {
   structureEntityId: number;
   worldMapReturnPosition: WorldMapPosition | null;
   isSpectateMode: boolean;
+  /** The mode's first view for a player with a realm: the map, or the realm's board. */
+  entryScene: "map" | "hex";
 };
 
 type ResolvedGameEntryTarget = {
@@ -22,21 +24,24 @@ type ResolvedGameEntryTarget = {
 
 const isFiniteCoordinate = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 
+/** The map boots first either way; a realm-first mode then hands off to the realm's board. */
 const buildCanonicalGameEntryUrl = ({
   chainId,
   gameId,
   isSpectateMode,
   worldMapPosition,
+  realmFirst,
 }: GameRef & {
   isSpectateMode: boolean;
   worldMapPosition: WorldMapPosition | null;
+  realmFirst: boolean;
 }) => {
   return buildPlayHref({
-    bootMode: "direct",
+    bootMode: realmFirst ? "map-first" : "direct",
     chainId,
     gameId,
     col: worldMapPosition?.col ?? null,
-    resumeScene: null,
+    resumeScene: realmFirst ? "hex" : null,
     row: worldMapPosition?.row ?? null,
     scene: "map",
     spectate: isSpectateMode,
@@ -74,6 +79,8 @@ const buildWorldMapEntryTargetFromBootstrappedSelection = (
       gameId: input.gameId,
       worldMapPosition: target.worldMapPosition,
       isSpectateMode: input.isSpectateMode,
+      // Only a player entering their own realm opens on it; a spectator starts on the map.
+      realmFirst: input.entryScene === "hex" && !input.isSpectateMode,
     }),
     worldMapPosition: target.worldMapPosition,
   };
@@ -88,6 +95,7 @@ const buildFallbackGameEntryTarget = (input: ResolveGameEntryTargetInput): Resol
       gameId: input.gameId,
       worldMapPosition: null,
       isSpectateMode: input.isSpectateMode,
+      realmFirst: false,
     }),
     worldMapPosition: null,
   };
@@ -99,6 +107,7 @@ export const resolveGameEntryTarget = ({
   structureEntityId,
   worldMapReturnPosition,
   isSpectateMode,
+  entryScene,
 }: ResolveGameEntryTargetInput): ResolvedGameEntryTarget => {
   const input = {
     chainId,
@@ -106,6 +115,7 @@ export const resolveGameEntryTarget = ({
     structureEntityId,
     worldMapReturnPosition,
     isSpectateMode,
+    entryScene,
   };
   const bootstrappedWorldMapTarget = resolveBootstrappedWorldMapTarget(input);
 

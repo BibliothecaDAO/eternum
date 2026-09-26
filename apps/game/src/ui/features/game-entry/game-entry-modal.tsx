@@ -53,6 +53,7 @@ import {
   type GameEntryModalPhase as ModalPhase,
 } from "./game-entry-phase";
 
+import { gameModeConfigOf } from "@/config/game-modes";
 import { resolveGameEntryTarget } from "./game-entry-navigation";
 import { isSelectedWorldEntityWaitAborted, waitForSelectedWorldEntityState } from "./selected-world-entity-wait";
 
@@ -749,6 +750,8 @@ export const GameEntryModal = ({
     setPreflightRetryNonce((current) => current + 1);
   }, [resetBootstrapDependentState]);
 
+  // The mode decides the first view; a game whose row names no mode opens on the map, the scene every mode has.
+  const entryScene = worldMeta?.mode ? gameModeConfigOf(worldMeta.mode).ui.entryScene : "map";
   const enterGame = useCallback(
     (spectate: boolean) => {
       if (!navigationEntryContext) {
@@ -763,12 +766,13 @@ export const GameEntryModal = ({
         structureEntityId: useUIStore.getState().structureEntityId,
         worldMapReturnPosition: useUIStore.getState().worldMapReturnPosition,
         isSpectateMode: spectate,
+        entryScene,
       });
 
       navigate(entryTarget.url);
       window.dispatchEvent(new Event("urlChanged"));
     },
-    [navigate, navigationEntryContext],
+    [entryScene, navigate, navigationEntryContext],
   );
   const handleEnterGame = useCallback(
     () => enterGame(navigationEntryContext?.intent === "spectate"),
