@@ -200,6 +200,12 @@ would receive no operator approval, and it fails naming every way the shard diff
 staging tunnel connector of its own and fresh volumes for every shard. Hold the lock by hand for verification
 afterwards, and verify the app, launch service and every public manifest before handing staging to the other streams.
 
+A headless playtest signs in as the staging playtest account through `scripts/playtest_sign_in_link.py`, installed
+root-owned as `/usr/local/bin/playtest-sign-in-link` on the staging box. It reads the staging operator token from its
+root-only file and prints only a single-use, five-minute sign-in link; the playtest runs it over SSH with `sudo -n`,
+keeps the link in its own process and opens it there, so neither the link nor the token reaches a chat, a log or a file.
+The identity Worker serves the route only in staging with `TEST_SIGN_IN=on`.
+
 ### Isolated-stack lock
 
 Anything that deploys to or loads the box holds `/opt/athanor/isolated-stack.lock` while it runs. `deploy.py` and
