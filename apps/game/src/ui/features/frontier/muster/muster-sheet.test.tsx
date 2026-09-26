@@ -129,6 +129,8 @@ describe("the muster sheet", () => {
     ring.explored = false;
     render();
     expect(tiles().every((tile) => tile.disabled)).toBe(true);
+    // Unexplored wears the map's fog "?"; a taken tile does not.
+    expect(tiles().every((tile) => tile.textContent === "?")).toBe(true);
     act(() => root.unmount());
   });
 });

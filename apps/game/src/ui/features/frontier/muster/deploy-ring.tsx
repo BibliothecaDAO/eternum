@@ -26,14 +26,15 @@ const HEX = "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)";
 
 /**
  * The six tiles around the realm as a small ring, the realm at its heart: the player taps the tile the army deploys
- * onto. Occupied or unexplored tiles are dimmed and cannot be picked; the chosen one is lit.
+ * onto. A taken tile is dark and an unexplored one wears the map's fog and "?"; neither can be picked. The chosen
+ * one is lit.
  */
 export const DeployRing = ({
   ring,
   chosen,
   onChoose,
 }: {
-  ring: readonly { direction: Direction; open: boolean }[];
+  ring: readonly { direction: Direction; open: boolean; explored: boolean }[];
   chosen: Direction | null;
   onChoose: (direction: Direction) => void;
 }) => (
@@ -59,14 +60,22 @@ export const DeployRing = ({
             clipPath: HEX,
           }}
           className={cn(
-            "absolute size-11 -translate-x-1/2 -translate-y-1/2",
+            "absolute flex size-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center",
             selected
               ? "bg-[linear-gradient(180deg,#ffc24a,#e39001)]"
               : tile.open
                 ? "bg-[#5a7a34] hover:bg-[#6f9442]"
-                : "bg-[#2a2013] opacity-60",
+                : tile.explored
+                  ? "bg-[#2a2013] opacity-60"
+                  : "bg-[#3a4148]",
           )}
-        />
+        >
+          {!tile.explored && (
+            <span aria-hidden className="font-[Lexend] text-[15px] font-extrabold text-[#a8b0b8]">
+              ?
+            </span>
+          )}
+        </button>
       );
     })}
   </div>
