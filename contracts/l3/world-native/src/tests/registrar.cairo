@@ -2637,7 +2637,9 @@ fn choose_pending_attribute(d: super::Deployment, game_id: u32, explorer_id: u32
 
 #[test]
 fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_resets_at_midnight() {
-    let discovery = super::preset_projection::frontier_discovery_rules();
+    let discovery = crate::expeditions::FrontierDiscoveryRules {
+        shrine_bps: 0, well_bps: 0, ..super::preset_projection::frontier_discovery_rules(),
+    };
     let (d, game_id, first) = setup_frontier_chests_with_rules(Some(discovery));
     assert!(
         execute_in_game(
