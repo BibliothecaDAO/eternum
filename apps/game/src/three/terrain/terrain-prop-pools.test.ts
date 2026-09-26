@@ -2,7 +2,8 @@ import { BufferAttribute, InstancedMesh, Matrix4, Mesh } from "three";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { TERRAIN_PROP_ARCHETYPE_IDS, type TerrainPropArchetypeId } from "./terrain-prop-catalog";
-import { TERRAIN_PROP_PAGE_SLOT_CAPACITY, TERRAIN_PROP_POOL_PAGE_SLOTS, TerrainPropPools } from "./terrain-prop-pools";
+import { TERRAIN_PROP_PAGE_SLOT_CAPACITY } from "./terrain-prop-catalog";
+import { TERRAIN_PROP_POOL_PAGE_SLOTS, TerrainPropPools } from "./terrain-prop-pools";
 import type { TerrainPropInstance } from "./terrain-types";
 
 vi.mock("./terrain-prop-asset-cache", async () => {

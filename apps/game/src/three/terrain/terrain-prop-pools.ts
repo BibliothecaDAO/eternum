@@ -41,6 +41,7 @@ import {
   getTerrainPropMeshName,
   isTerrainGroundCover,
   isTerrainPropVisibleAtLod,
+  TERRAIN_PROP_PAGE_SLOT_CAPACITY,
   type TerrainPropArchetypeId,
   type TerrainPropLod,
 } from "./terrain-prop-catalog";
@@ -48,30 +49,6 @@ import type { TerrainPropInstance } from "./terrain-types";
 
 /** Every pool holds bounded page ownership; live instances are packed into its drawn prefix. */
 export const TERRAIN_PROP_POOL_PAGE_SLOTS = WORLD_CHUNK_CONFIG.visualPresentation.maxCompositePages;
-
-/**
- * Instances one 24×24 page may hold per archetype: 1.5× the measured per-page maximum, rounded up to a multiple of
- * 16. Measured 2026-09-07 at production density over the balanced benchmark fixture (144 pages), homogeneous
- * 3×3-page blocks of every biome, and eight climate seed pairs; `terrain-prop-pool-capacity.test.ts` re-measures
- * the fixtures against this table, so a density retune shows up there rather than as a live overflow.
- */
-export const TERRAIN_PROP_PAGE_SLOT_CAPACITY: Readonly<Record<TerrainPropArchetypeId, number>> = Object.freeze({
-  birch: 112, // measured 65
-  boulder: 144, // measured 88
-  broadleaf: 208, // measured 135
-  cactus: 112, // measured 73
-  conifer: 320, // measured 209
-  "dead-tree": 48, // measured 25
-  "fallen-log": 64, // measured 33
-  fern: 208, // measured 136
-  "grass-tuft": 160, // measured 103
-  palm: 176, // measured 109
-  cycad: 96, // measured 55
-  shrub: 176, // measured 111
-  mushroom: 32, // measured 17
-  wildflower: 96, // measured 63
-  "rainforest-canopy": 144, // measured 87
-});
 
 const TERRAIN_PROP_ECOLOGY_ATTRIBUTE = "terrainPropEcology";
 const MATRIX_FLOATS = 16;
