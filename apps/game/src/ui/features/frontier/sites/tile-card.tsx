@@ -3,21 +3,20 @@ import { useGame } from "@/hooks/context/game-context";
 import { useCurrentArmiesTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
-import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { Skull, TreasureChest } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { toast } from "@/ui/features/event-feed/notify";
-import { canIssueOrders } from "@/utils/can-issue-orders";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import { biomeTypeOf, configManager, entityMapPosition, isViewerOwner } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { biomeTypeOf, configManager } from "@bibliothecadao/eternum";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { type ReactNode, useMemo, useState } from "react";
 import { Chip, TroopChip } from "../frontier-chips";
 import { formatAmount } from "../frontier-format";
 import { BoltGlyph, FlagGlyph, SwordGlyph } from "../glyphs";
+import { useSelectedOwnArmy } from "./selected-army";
 import { readSiteCard, type SiteAttack, type SiteCardPlan } from "./site-card-plan";
 
 const SITE_MODELS = ["ExpeditionSite", "ExplorerTroops", "ArmySlot", "Guard", "Structure", "TileOccupancy"] as const;
@@ -51,7 +50,7 @@ export const useSelectedSite = (): SelectedSite | null => {
  */
 export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClose: () => void }) => {
   const { setup, account } = useGame();
-  const attack = useSiteAttack(setup.store, selected.tile);
+  const attack = useSiteAttack(selected.tile);
   const revision = useNativeRevision(SITE_MODELS);
   const siteTile = selected.tile.hexCoords;
   const plan = useMemo(
@@ -115,28 +114,12 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
   );
 };
 
-/** The army the player has selected, standing where it stands, if it is theirs and orders are allowed. */
-const useSiteAttack = (store: NativeFactStore, siteTile: TileSpatialRenderable): SiteAttack | null => {
-  const viewer = useAccountAddress();
-  const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
-  const ordersAllowed = useUIStore(canIssueOrders);
+/** The selected army's attack on this site: where it stands, on the site's biome, at the current clocks. */
+const useSiteAttack = (siteTile: TileSpatialRenderable): SiteAttack | null => {
+  const selected = useSelectedOwnArmy();
   const timestamp = useNowSeconds();
   const armiesTick = useCurrentArmiesTick();
-  useNativeRevision(SITE_MODELS);
-  if (!ordersAllowed || selectedId === null) return null;
-  const gameId = configManager.getActiveGameId();
-  const army = store.get("ExplorerTroops", { game_id: gameId, explorer_id: Number(selectedId) });
-  if (!army) return null;
-  const home = store.get("Structure", { game_id: gameId, entity_id: army.owner });
-  if (!home || !isViewerOwner(home.owner, viewer)) return null;
-  const position = entityMapPosition(store, gameId, army.explorer_id);
-  return {
-    army,
-    armyTile: { col: position.x, row: position.y, alt: position.alt },
-    biome: biomeTypeOf(siteTile.biome),
-    timestamp,
-    armiesTick,
-  };
+  return selected && { ...selected, biome: biomeTypeOf(siteTile.biome), timestamp, armiesTick };
 };
 
 const GuardChip = ({ guard }: { guard: SiteCardPlan["guard"] }) =>

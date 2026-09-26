@@ -5,6 +5,7 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { useSelectedTileDetails } from "@/ui/features/world/components/bottom-right-panel";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildSheet, useOpenPlot } from "./build/build-sheet";
+import { MapSiteCard, useSelectedMapSite } from "./sites/map-site-card";
 import { TileCard, useSelectedSite } from "./sites/tile-card";
 import { BuildingUpgrade, useSelectedBuilding } from "./upgrade/building-upgrade";
 import { CastleUpgrade, useKeepSelected } from "./upgrade/castle-upgrade";
@@ -12,12 +13,13 @@ import { CastleUpgrade, useKeepSelected } from "./upgrade/castle-upgrade";
 /**
  * What the player tapped, with its actions: a sheet over the foot of a phone held upright, a panel down the right
  * edge otherwise. An open plot of the realm is the build sheet's, the keep or a building the upgrade sheet's, a
- * standing site the tile card's. Nothing selected, or a selection with nothing to show, no sheet.
+ * standing site the tile card's, a Shrine or Well its own card's. Nothing selected, or a selection with nothing to show, no sheet.
  */
 export const FrontierSelectionSheet = ({ realm }: { realm: NativeRows["Structure"] | null }) => {
   const details = useSelectedTileDetails();
   const openPlot = useOpenPlot(realm);
   const site = useSelectedSite();
+  const mapSite = useSelectedMapSite();
   const keep = useKeepSelected(realm);
   const building = useSelectedBuilding(realm);
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
@@ -28,6 +30,7 @@ export const FrontierSelectionSheet = ({ realm }: { realm: NativeRows["Structure
   };
   if (realm && openPlot) return <BuildSheet realm={realm} plot={openPlot} onClose={close} />;
   if (site) return <TileCard selected={site} onClose={close} />;
+  if (mapSite) return <MapSiteCard selected={mapSite} onClose={close} />;
   if (realm && keep) return <CastleUpgrade realm={realm} onClose={close} />;
   if (realm && building) return <BuildingUpgrade realm={realm} selected={building} onClose={close} />;
   if (!details) return null;

@@ -1,3 +1,4 @@
+import { nativeTileOccupierConstants } from "@bibliothecadao/eternum/game-client";
 import { absoluteEpoch } from "@bibliothecadao/eternum/expeditions";
 /**
  * A Frontier day in facts: the current Frontier launch's rules, projected from today's preset by `pnpm lab:frontier`
@@ -151,6 +152,9 @@ const playerRows = (clock: LabClock): WireRow[] => [
   { model: "TileOccupancy", value: armyTile(clock, 202, -3, 2) },
   // A camp beside army 1, held by 1,100 T1 knights, so the tile card has a site to show.
   ...campSite(clock, LAB_CAMP_ID, 3, 1),
+  // A Well beside army 1 and a Shrine beside army 2, whose pick is not waiting: single-use sites to use.
+  { model: "TileOccupancy", value: mapSiteTile(clock, 811, 1, 1, nativeTileOccupierConstants.WELL_OCCUPIER) },
+  { model: "TileOccupancy", value: mapSiteTile(clock, 812, -2, 2, nativeTileOccupierConstants.SHRINE_OCCUPIER) },
 ];
 
 const LAB_CAMP_ID = 710;
@@ -290,6 +294,16 @@ const armySlot = (clock: LabClock, explorerId: number, slot: number, stamina: nu
   slot,
   explorer_id: explorerId,
   stamina: { amount: String(stamina), updated_tick: String(clock.currentTick) },
+});
+
+const mapSiteTile = (clock: LabClock, entityId: number, colOffset: number, rowOffset: number, category: number) => ({
+  game_id: clock.gameId,
+  alt: false,
+  col: clock.siteCol + colOffset,
+  row: clock.siteRow + rowOffset,
+  entity_id: entityId,
+  category,
+  is_structure: false,
 });
 
 // Category 15 is a T1 knight explorer's occupancy.

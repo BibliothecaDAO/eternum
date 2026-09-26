@@ -9,6 +9,13 @@ export type ProgressionRulesFacts = NativeRows["ArmyProgressionRules"];
 /** The contract's attribute cap: levels past it are lost. */
 export const MAX_ATTRIBUTE_LEVEL = nativeRuleConstants.ATTRIBUTE_CAP;
 
+/** Whether an army can take a new offer, as the contract checks: none waiting, and an attribute below the cap. */
+export const canReceiveOffer = (progress: ArmyProgressFacts): boolean =>
+  progress.pending === null &&
+  [progress.battle, progress.logistics, progress.scouting, progress.support].some(
+    (level) => level < MAX_ATTRIBUTE_LEVEL,
+  );
+
 /** The army's level in one attribute. */
 export const attributeLevel = (progress: ArmyProgressFacts, attribute: Attribute): number =>
   ({

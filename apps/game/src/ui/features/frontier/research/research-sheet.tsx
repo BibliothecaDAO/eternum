@@ -5,6 +5,7 @@ import { ResourcesIds } from "@bibliothecadao/types";
 import { Fragment, useState } from "react";
 import { FRONTIER_BUILDING_NAMES } from "../build/building-names";
 import { DEPTH_ART } from "../depth-art";
+import { MAP_SITE_ART } from "../sites/site-art";
 import { Chip, TierBanner } from "../frontier-chips";
 import { formatAmount } from "../frontier-format";
 import { useWorkspaceTakesScreen } from "../use-workspace-takes-screen";
@@ -19,7 +20,6 @@ import {
 } from "./research-plan";
 
 const ESSENCE_ICON = `/images/resources/${ResourcesIds.Essence}.png`;
-const SITE_ART = { Shrine: "/images/frontier/sites/shrine.svg", Well: "/images/frontier/sites/well.svg" } as const;
 const NUMERALS = ["", "I", "II", "III"] as const;
 
 /**
@@ -91,8 +91,8 @@ export const ResearchSheet = ({
         </div>
         <hr className="my-4 border-[#46351c]" />
         <div className="flex justify-center gap-6">
-          {medallion(siteNode(plan, "Shrine"), SITE_ART.Shrine, "Shrine")}
-          {medallion(siteNode(plan, "Well"), SITE_ART.Well, "Well")}
+          {medallion(siteNode(plan, "Shrine"), MAP_SITE_ART.Shrine, "Shrine")}
+          {medallion(siteNode(plan, "Well"), MAP_SITE_ART.Well, "Well")}
         </div>
         <div className="mt-5 flex items-start justify-center">
           {([1, 2, 3] as const).map((depth) => (
@@ -261,5 +261,5 @@ export const nodeArt = ({ effect }: ResearchNodeView): string =>
   effect.kind === "tier"
     ? BUILDING_IMAGES_PATH[effect.category as keyof typeof BUILDING_IMAGES_PATH]
     : effect.kind === "site"
-      ? SITE_ART[effect.site]
+      ? MAP_SITE_ART[effect.site]
       : DEPTH_ART[effect.depth];
