@@ -14,7 +14,9 @@ import {
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, StructureType, type TroopTier, type TroopType } from "@bibliothecadao/types";
+import { BuildingType, StructureType, TileOccupier, type TroopTier, type TroopType } from "@bibliothecadao/types";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { knownBalance } from "@/ui/utils/utils";
 import { useMemo } from "react";
 import { troopsOnHand, type useExpeditionRules } from "../frontier-home";
@@ -31,20 +33,29 @@ const GUIDE_MODELS = [
   "Guard",
   "ResourceBalance",
   "ResourceProduction",
+  "ArmyProgress",
+  "ExpeditionSite",
 ] as const;
 
-/** What the guide answers to, read from the store at chain time; it never listens for events. */
+/**
+ * What the guide answers to, read from the store at chain time, and from the player's chest history for the one first
+ * no current fact keeps; it never listens for events.
+ */
 export const useGuideFacts = (rules: ExpeditionRules, realm: NativeRows["Structure"] | null): GuideFacts => {
   const { setup } = useGame();
+  const player = useAccountStore((state) => state.account?.address ?? null);
+  // A LORDS roll the day could not pay leaves only its story; no row keeps it.
+  const { data: chests } = useStoryEvents(100, "ChestReward", player ?? ZERO_ADDRESS);
+  const lordsSpent = player !== null && chests.some(({ storyPayload }) => storyPayload?.lords_exhausted === true);
   const revision = useNativeRevision(GUIDE_MODELS);
   const now = useNowSeconds();
   const tick = useCurrentDefaultTick();
   const armiesTick = useCurrentArmiesTick();
   const { isMapView } = useQuery();
   return useMemo(
-    () => readGuideFacts(setup.store, rules, realm, { now, tick, armiesTick, onMap: isMapView }),
+    () => ({ ...readGuideFacts(setup.store, rules, realm, { now, tick, armiesTick, onMap: isMapView }), lordsSpent }),
     // The revision is the recompute signal for store writes; the clocks for time passing.
-    [setup.store, rules, realm, now, tick, armiesTick, isMapView, revision],
+    [setup.store, rules, realm, now, tick, armiesTick, isMapView, revision, lordsSpent],
   );
 };
 
@@ -53,7 +64,7 @@ const readGuideFacts = (
   rules: ExpeditionRules,
   realm: NativeRows["Structure"] | null,
   clock: { now: number; tick: number; armiesTick: number; onMap: boolean },
-): GuideFacts => {
+): Omit<GuideFacts, "lordsSpent"> => {
   if (!realm) return { ...NO_REALM, onMap: clock.onMap };
   const armies = liveHomeArmies(store, realm.entity_id, realm.game_id);
   const stamina = armies.flatMap((army) => {
@@ -83,10 +94,26 @@ const readGuideFacts = (
     onMap: clock.onMap,
     armiesTired:
       stamina.length === armies.length && stamina.length > 0 && stamina.every((bar) => bar.current < exploreCost),
+    pickWaiting: armies.some(
+      (army) => store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id })?.pending,
+    ),
+    ...readSiteFirsts(store, realm.game_id),
   };
 };
 
-const NO_REALM: GuideFacts = {
+/** The expedition's sites and chests as the guide's firsts read them. */
+const readSiteFirsts = (store: NativeFactStore, gameId: number) => {
+  const sites = [...store.inGame("ExpeditionSite", gameId)];
+  return {
+    siteCleared: sites.some((site) => site.cleared),
+    fallenRealm: sites.some((site) => site.kind === "FallenRealm" && !site.cleared),
+    closedChest: [...store.inGame("TileOccupancy", gameId)].some((tile) => tile.category === TileOccupier.Chest),
+  };
+};
+
+const ZERO_ADDRESS = "0x0";
+
+const NO_REALM: Omit<GuideFacts, "lordsSpent"> = {
   realm: false,
   barracks: false,
   troopsAtHome: undefined,
@@ -96,6 +123,10 @@ const NO_REALM: GuideFacts = {
   castleAffordable: false,
   onMap: false,
   armiesTired: false,
+  pickWaiting: false,
+  siteCleared: false,
+  closedChest: false,
+  fallenRealm: false,
 };
 
 const guardedCampToday = (

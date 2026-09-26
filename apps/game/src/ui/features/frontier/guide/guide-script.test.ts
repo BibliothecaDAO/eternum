@@ -11,6 +11,11 @@ const facts = (overrides: Partial<GuideFacts> = {}): GuideFacts => ({
   castleAffordable: false,
   onMap: true,
   armiesTired: false,
+  pickWaiting: false,
+  siteCleared: false,
+  closedChest: false,
+  fallenRealm: false,
+  lordsSpent: false,
   ...overrides,
 });
 
@@ -35,6 +40,21 @@ describe("nextGuideStep", () => {
     expect(nextGuideStep(facts({ armies: 3, armiesTired: true }), seen(...early, "first-reveal", "a-site"))?.id).toBe(
       "rest",
     );
+  });
+
+  it("speaks on each first as its state holds: a pick, a clear, a chest, a fallen realm, spent LORDS", () => {
+    const played = seen("arrival", "build-on-the-mark", "muster", "first-reveal");
+    const ready = { barracks: true, armies: 2 };
+    expect(nextGuideStep(facts({ ...ready, pickWaiting: true }), played)?.id).toBe("first-pick");
+    expect(nextGuideStep(facts({ ...ready, siteCleared: true }), played)).toMatchObject({
+      id: "first-clear",
+      mood: "pleased",
+    });
+    expect(nextGuideStep(facts({ ...ready, closedChest: true }), played)?.id).toBe("closed-chest");
+    expect(nextGuideStep(facts({ ...ready, fallenRealm: true }), played)?.id).toBe("first-fallen-realm");
+    expect(nextGuideStep(facts({ ...ready, lordsSpent: true }), played)?.id).toBe("first-lords-spent");
+    // A first already seen is never spoken again.
+    expect(nextGuideStep(facts({ ...ready, lordsSpent: true }), seen(...played, "first-lords-spent"))).toBeNull();
   });
 
   it("never mentions troops it does not know about, and is silent when all is seen", () => {
