@@ -20,19 +20,16 @@ const snapshot: GameSnapshot = {
 };
 
 describe("phase-1 recording generator", () => {
-  it("classifies decoded game rows and the registered preset, excluding unrelated game rows", () => {
-    expect(hasRecordingFacts([{ model: { name: "Structure", scope: "game" }, key: { game_id: 2 } }], "2", "5")).toBe(
+  it("keeps every world-scoped row and only this game's game-scoped rows", () => {
+    expect(hasRecordingFacts([{ model: { name: "Structure", scope: "game" }, key: { game_id: "0x2" } }], "2")).toBe(
       true,
     );
     expect(
-      hasRecordingFacts([{ model: { name: "Preset", scope: "deployment" }, key: { preset_id: 5 } }], "2", "5"),
+      hasRecordingFacts([{ model: { name: "Preset", scope: "deployment" }, key: { preset_id: "0x67" } }], "2"),
     ).toBe(true);
-    expect(hasRecordingFacts([{ model: { name: "Structure", scope: "game" }, key: { game_id: 1 } }], "2", "5")).toBe(
+    expect(hasRecordingFacts([{ model: { name: "Structure", scope: "game" }, key: { game_id: "0x1" } }], "2")).toBe(
       false,
     );
-    expect(
-      hasRecordingFacts([{ model: { name: "Preset", scope: "deployment" }, key: { preset_id: 4 } }], "2", "5"),
-    ).toBe(false);
   });
 
   it("finds configuration rows when felt fields use Herald's hexadecimal wire form", () => {

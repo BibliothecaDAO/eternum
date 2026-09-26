@@ -72,10 +72,9 @@ export function snapshotBlock(snapshot: GameSnapshot): number {
 export function hasRecordingFacts(
   events: readonly { model: { name: string; scope: string }; key: Record<string, unknown> }[],
   gameId: string,
-  presetId: string,
 ): boolean {
   return events.some(({ model, key }) => {
-    if (model.name === "Preset") return feltEquals(key.preset_id, presetId);
+    if (model.scope === "deployment") return true;
     return model.scope === "game" && key.game_id !== undefined && feltEquals(key.game_id, gameId);
   });
 }
@@ -139,8 +138,6 @@ async function run(options: Options): Promise<void> {
     `${options.heraldUrl}/games/${options.gameId}/snapshot?actor=${encodeURIComponent(options.actor)}`,
   )) as GameSnapshot;
   const toBlock = snapshotBlock(finalSnapshot);
-  const gameRegistry = findSnapshotRow(finalSnapshot, "GameRegistry", { game_id: options.gameId });
-  const presetId = feltDecimal(gameRegistry.preset_id);
   const gameRelease = findSnapshotRow(finalSnapshot, "GameRelease", { game_id: options.gameId });
   const releaseId = feltDecimal(gameRelease.release_id);
 
@@ -173,7 +170,7 @@ async function run(options: Options): Promise<void> {
           }),
         ];
       });
-      if (!hasRecordingFacts(decoded, options.gameId, presetId)) continue;
+      if (!hasRecordingFacts(decoded, options.gameId)) continue;
       ingestion.applyReceipt(fold, receipt, block.block_number, transactionIndex, transaction.calldata);
       records.push({ transaction, receipt: { ...receipt, block_number: block.block_number } });
     }
