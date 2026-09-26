@@ -1,23 +1,18 @@
 <!doctype html>
 <!--
   The realm card's stills (public/images/realm-card/SOURCE.md). Served by the game's dev server, it draws the board's
-  ground and, given ?tier=, that tier's settlement model through the game's own loader, then offers the still as WebP.
+  ground, then offers the still as WebP. The tier stills are captures of the realm view itself (SOURCE.md).
 -->
 <html>
   <body style="margin: 0; background: #15100a">
     <a id="still" download hidden>Save still</a>
     <script type="module">
       import * as THREE from "three";
-      import { configureGltfTextureSupport, gltfLoader } from "@/three/utils/gltf-loader";
-      import { REALM_MODEL_PATHS } from "@/three/constants/scene-constants";
 
       const WIDTH = 1200;
       const HEIGHT = 900;
       const SPAN = 30;
       const DISTANCE = 8.2;
-      const tier = new URLSearchParams(location.search).get("tier");
-      const modelPath = tier === null ? null : REALM_MODEL_PATHS[tier];
-      if (tier !== null && !modelPath) throw new Error(`Unknown realm tier ${tier}`);
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
       renderer.setSize(WIDTH, HEIGHT);
@@ -25,7 +20,6 @@
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.shadowMap.enabled = true;
-      configureGltfTextureSupport(renderer);
       document.body.prepend(renderer.domElement);
 
       const scene = new THREE.Scene();
@@ -66,8 +60,8 @@
         };
       };
 
-      // The board's grass, worn to earth where a castle stands, as the terrain disturbs a settlement's hex.
-      const groundTexture = (worn) => {
+      // The board's grass.
+      const groundTexture = () => {
         const size = 2048;
         const canvas = Object.assign(document.createElement("canvas"), { width: size, height: size });
         const context = canvas.getContext("2d");
@@ -80,12 +74,9 @@
               n = noise.at(u, v),
               blade = noise.random() * 0.12,
               lush = Math.min(1, Math.max(0, (n - 0.5) * 1.5 + 0.5));
-            const radius = Math.hypot(u - 0.5, v - 0.5) * SPAN;
-            const wear = worn ? Math.min(1, Math.max(0, (1.15 - radius) / 0.3 + (n - 0.5) * 2.2)) * 0.85 : 0;
             const grass = [30 + lush * 62 + blade * 40, 46 + lush * 74 + blade * 50, 18 + lush * 26];
-            const earth = [88 + n * 34, 72 + n * 26, 46 + n * 16];
             const i = (y * size + x) * 4;
-            for (let c = 0; c < 3; c++) pixels.data[i + c] = grass[c] * (1 - wear) + earth[c] * wear;
+            for (let c = 0; c < 3; c++) pixels.data[i + c] = grass[c];
             pixels.data[i + 3] = 255;
           }
         }
@@ -98,21 +89,13 @@
 
       const ground = new THREE.Mesh(
         new THREE.PlaneGeometry(SPAN, SPAN),
-        new THREE.MeshStandardMaterial({ map: groundTexture(modelPath !== null), roughness: 1 }),
+        new THREE.MeshStandardMaterial({ map: groundTexture(), roughness: 1 }),
       );
       ground.rotation.x = -Math.PI / 2;
       ground.receiveShadow = true;
       scene.add(ground);
 
-      if (modelPath) {
-        const model = (await gltfLoader.loadAsync(modelPath)).scene;
-        model.traverse((node) => {
-          if (node.isMesh) node.castShadow = node.receiveShadow = true;
-        });
-        scene.add(model);
-      }
-
-      // One camera for every tier: the footprint holds still and an upgrade reads as the castle growing on its ground.
+      // The three-quarter angle the realm card has always shown its ground from.
       const camera = new THREE.PerspectiveCamera(24, WIDTH / HEIGHT, 0.01, 100);
       const aim = new THREE.Vector3(0, 0.9, 0);
       camera.position.copy(aim).addScaledVector(new THREE.Vector3(0.55, 0.62, 1).normalize(), DISTANCE);
@@ -121,7 +104,7 @@
 
       const link = document.getElementById("still");
       link.href = renderer.domElement.toDataURL("image/webp", 0.86);
-      link.download = `${(tier ?? "ground").toLowerCase()}.webp`;
+      link.download = "ground.webp";
       link.hidden = false;
     </script>
   </body>

@@ -1,12 +1,32 @@
-# Realm card stills
+# Realm stills
 
-`ground.webp` is the realm card's backdrop on the home screen: the board's grass field from the three-quarter angle
-every still shares, 1200 × 900 WebP. It makes no biome claim. The realm's tier castle joins it on the same field once
-the directory carries the realm's level.
+A realm drawn outside the game (the doorway, the home realm card) shows the still for its castle level, and the board's
+bare ground while the level is not known.
 
-The editable source is `apps/game/scripts/realm-card/render-still.html`. It seeds its ground noise, so every render is
-the same field. With `?tier=Settlement|City|Kingdom|Empire` it also loads that tier's model from
-`public/models/settlements/` through the game's own loader and wears the ground to earth where the castle stands.
+## Tier stills
 
-To render a still, start the game's dev server (`pnpm dev` in `apps/game`), open `/scripts/realm-card/render-still.html`
-(add `?tier=` for a castle), and use "Save still". Put the file here under the name the link gives it.
+`settlement.webp`, `city.webp`, `kingdom.webp` and `empire.webp` are the castle levels 0 to 3 (Tier I to IV), each 1200
+× 900 WebP. They are captures of the realm view itself, so the castle, the board's ground and its plot outlines are the
+ones the game renders. All four share one camera, one light and one crop, so an upgrade reads as the castle growing on
+the same board.
+
+To capture them, run the game's dev server (`pnpm dev` in `apps/game`). Open a Frontier game's realm view as a
+spectator, `/g/<chain>/<game>/map?spectate=true`, in a browser whose local storage holds `eternum:dev-mode` = `1`, with
+a 1600 × 1200 viewport at device scale 1.5. Then, in that page only:
+
+1. From `getActiveGameStore()` in `/src/sync/active-game-client.ts`, remove the shown realm's `Building` rows, all but
+   its centre `10:10`. Rewrite its `Structure` row with `base.level` set to the level to capture and `metadata.order`
+   set to `0`, so the banners carry no player's Order.
+2. In the dev GUI, check "Override Time" and set "Day Progress" to 42. Uncheck "Evolving weather" and force "sunny".
+3. Set the local zoom to 9, with `useCameraZoomStore.getState().setLocalDistance(9)` from
+   `/src/hooks/store/use-camera-zoom-store.ts`.
+4. For each level, wait for the board to redraw, then screenshot the 800 × 600 CSS pixels at (400, 190). Save the
+   screenshot here as quality 86 WebP.
+
+The edits live in the capture page's own store; nothing is written anywhere else.
+
+## Ground still
+
+`ground.webp` is the board's grass field from the realm card's three-quarter angle, 1200 × 900 WebP. It makes no biome
+claim. Its editable source is `apps/game/scripts/realm-card/render-still.html`, which seeds its noise, so every render
+is the same field. To render it, open that page on the dev server and use "Save still".

@@ -9,19 +9,15 @@ import { TransactionAudioCues } from "@/ui/shared/components/transaction-audio-c
 import { useEffect } from "react";
 import { PlaySceneHandoff } from "./game-entry/play-scene-handoff";
 import { markGameEntryMilestone } from "./ui/layouts/game-entry-timeline";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
-import { getShard } from "@bibliothecadao/eternum/game-client";
-import { useConnectionStore } from "./hooks/store/use-connection-store";
+import { Navigate } from "react-router-dom";
 import type { Account, AccountInterface } from "starknet";
 import { usePlayRouteBootController } from "./game-entry/play-route-boot";
 import { GameProvider } from "./hooks/context/game-context";
 import { useTransactionListener } from "./hooks/use-transaction-listener";
 import type { SetupResult } from "./init/bootstrap";
-import { PlayRouteBootstrapErrorScreen } from "./ui/layouts/play-route-bootstrap-error-screen";
-import { PlayRouteReconnectScreen } from "./ui/layouts/play-route-reconnect-screen";
 import { NewsHeadlineBridge } from "./ui/features/news-headlines";
 import { StoryEventAudioCues } from "./ui/features/story-events";
-import { LoadingScreen } from "./ui/modules/loading-screen";
+import { PlayRouteDoorway } from "./ui/features/game-entry/doorway/play-route-doorway";
 import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { World } from "./ui/layouts/world";
 import { resolveGameRouteView } from "./game-route.utils";
@@ -74,31 +70,10 @@ const resolveCurrentTaskLabel = ({
   return activeTask?.label ?? currentTask ?? phase;
 };
 
-/** While Herald's stream is lost and retrying, the loading screen names the shard it cannot reach. */
-const useUnreachableShard = (): string | null => {
-  const { chain } = useParams();
-  const retrying = useConnectionStore((state) => state.globalStatus === "reconnecting");
-  const url = retrying ? getShard(chain)?.url : undefined;
-  return url ? new URL(url).host : null;
-};
-
 const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
-  const navigate = useNavigate();
-  const unreachableShard = useUnreachableShard();
   const state = usePlayRouteBootController();
-  const {
-    phase,
-    progress,
-    setupResult,
-    account,
-    error,
-    retry,
-    isReconnectRequired,
-    currentTask,
-    tasks,
-    bootToken,
-    reconnectError,
-  } = state;
+  const { phase, setupResult, account, retry, isReconnectRequired, currentTask, tasks, bootToken, reconnectError } =
+    state;
   const hasActiveBoot = bootToken > 0;
   const routeView = resolveGameRouteView({
     phase,
@@ -121,28 +96,16 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     return <Navigate to="/" replace />;
   }
 
-  if (routeView === "error") {
-    return <PlayRouteBootstrapErrorScreen error={error} onRetry={retry} onReturnToDashboard={() => navigate("/")} />;
-  }
-
-  if (routeView === "reconnect") {
-    return <PlayRouteReconnectScreen onReturnToDashboard={() => navigate("/")} reconnectError={reconnectError} />;
-  }
-
   const hasGameContext = routeView === "ready" && setupResult !== null && account !== null;
   return (
     <>
       {phase !== "ready" && (
-        <LoadingScreen
-          title="Entering the World"
-          subtitle={
-            unreachableShard
-              ? `Can't reach ${unreachableShard}, retrying…`
-              : hasGameContext
-                ? "Preparing your view…"
-                : "Connecting to the world…"
-          }
-          progress={progress > 0 ? progress : undefined}
+        <PlayRouteDoorway
+          phase={phase}
+          audience={state.resolvedRequest?.entryMode === "spectator" ? "spectator" : "player"}
+          setup={hasGameContext ? setupResult : null}
+          accountError={reconnectError}
+          retry={retry}
           currentTaskLabel={currentTaskLabel}
         />
       )}

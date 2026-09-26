@@ -631,6 +631,17 @@ html.frontier-type .frontier-title {
   font-size: 22px;
   color: var(--frontier-parchment);
 }
+/* The doorway's realm rising as it is founded or entered (design o5). */
+@keyframes doorway-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 html.frontier-type .frontier-hero {
   font-size: 34px;
   color: #fff3c4;
