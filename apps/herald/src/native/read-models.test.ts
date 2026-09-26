@@ -1,7 +1,7 @@
 import { CairoCustomEnum } from "starknet";
 import { WorldFold } from "../world-fold";
 import { describe, expect, it } from "vitest";
-import { buildNativeDirectory, buildNativeLeaderboard } from "./read-models";
+import { buildNativeDirectory, buildNativeLeaderboard, directoryFact } from "./read-models";
 import {
   structureValue,
   pointsAward,
@@ -63,8 +63,12 @@ function world() {
   );
   return state;
 }
-function structure(id: string, category: string, owner: string) {
-  return rowEvent("Structure", ["1", id], { ...structureValue, owner, base: { ...structureValue.base, category } });
+function structure(id: string, category: string, owner: string, level = "0") {
+  return rowEvent("Structure", ["1", id], {
+    ...structureValue,
+    owner,
+    base: { ...structureValue.base, category, level },
+  });
 }
 
 describe("native directory and leaderboard", () => {
@@ -92,6 +96,7 @@ describe("native directory and leaderboard", () => {
     expect(entry).toMatchObject({
       name: "Blitz",
       mode: "blitz",
+      expedition: null,
       status: "Live",
       player_count: 1,
       player_state: {
@@ -99,8 +104,8 @@ describe("native directory and leaderboard", () => {
         settled: true,
         roster_member: true,
         structures: [
-          { entity_id: 7, category: 1, realm_id: 0, coord_x: 7, coord_y: 0, resources_packed: "0" },
-          { entity_id: 8, category: 5, realm_id: 0, coord_x: 8, coord_y: 0, resources_packed: "0" },
+          { entity_id: 7, category: 1, level: 0, realm_id: 0, coord_x: 7, coord_y: 0, resources_packed: "0" },
+          { entity_id: 8, category: 5, level: 0, realm_id: 0, coord_x: 8, coord_y: 0, resources_packed: "0" },
         ],
       },
       roster_count: 2,
@@ -119,6 +124,71 @@ describe("native directory and leaderboard", () => {
     expect(models).toContain("ResourceProduction");
     native.applyReceipt(fold, receipt([gameEvent("1", "1", "0", "1")]), 13, 0);
     expect(buildNativeDirectory(input).games.find((game) => game.game_id === 1)?.mode).toBe("frontier");
+  });
+
+  it("publishes each expedition's pinned epoch duration and null for Blitz", () => {
+    const { fold, native, decoder } = world();
+    const derived = seedDerivedRows(fold, decoder, [
+      gameEvent("1", "0", "0", "103"),
+      gameEvent("2", "0", "0", "5"),
+      gameEvent("3", "0", "0", "2"),
+      rulesEvent("1", "3600"),
+      rulesEvent("2", "86400"),
+      rulesEvent("3", "0"),
+      rowEvent("SettlementRules", ["3"], {
+        registration_start: 5n,
+        registration_limit: 96n,
+        mode: new CairoCustomEnum({ Single: {} }),
+        spacing: 8n,
+      }),
+    ]);
+    native.applyReceipt(fold, receipt(derived), 12, 0);
+
+    const games = buildNativeDirectory({ chain: "madara", confirmedBlock: 12, timestamp: 30, fold }).games;
+    expect(games.find(({ game_id }) => game_id === 1)).toMatchObject({
+      preset_id: 103,
+      mode: "frontier",
+      expedition: { epoch_seconds: 3600 },
+    });
+    expect(games.find(({ game_id }) => game_id === 2)).toMatchObject({
+      preset_id: 5,
+      mode: "frontier",
+      expedition: { epoch_seconds: 86400 },
+    });
+    expect(games.find(({ game_id }) => game_id === 3)).toMatchObject({
+      preset_id: 2,
+      mode: "blitz",
+      expedition: null,
+    });
+  });
+
+  it("publishes a structure level-up and invalidates the directory fact", () => {
+    const { fold, native } = world();
+    native.applyReceipt(
+      fold,
+      receipt([
+        structure("7", "1", "0x111", "1"),
+        rowEvent("TileOccupancy", ["1", "0", "7", "0"], {
+          entity_id: "7",
+          category: "1",
+          is_structure: true,
+        }),
+      ]),
+      11,
+      0,
+    );
+    const input = { chain: "madara", confirmedBlock: 11, timestamp: 30, fold, playerAddress: "0x111" };
+    const before = buildNativeDirectory(input).games.find(({ game_id }) => game_id === 1)!.player_state!.structures[0]!;
+    const beforeFact = directoryFact("Structure", fold.modelRows("Structure")[0]!.value);
+
+    native.applyReceipt(fold, receipt([structure("7", "1", "0x111", "2")]), 12, 0);
+
+    const after = buildNativeDirectory({ ...input, confirmedBlock: 12 }).games.find(({ game_id }) => game_id === 1)!
+      .player_state!.structures[0]!;
+    const afterFact = directoryFact("Structure", fold.modelRows("Structure")[0]!.value);
+    expect(before.level).toBe(1);
+    expect(after.level).toBe(2);
+    expect(afterFact).not.toEqual(beforeFact);
   });
 
   it("adds unsettled shares with contract rounding, caps at game end, and never double counts checkpointed points", () => {

@@ -113,7 +113,13 @@ export function directoryFact(model: string, row: Row | undefined): unknown {
     case "BlitzRoster":
       return row.players;
     case "Structure":
-      return [row.owner, record(row.base).category, record(row.metadata).realm_id, row.resources_packed];
+      return [
+        row.owner,
+        record(row.base).category,
+        record(row.base).level,
+        record(row.metadata).realm_id,
+        row.resources_packed,
+      ];
     default:
       return undefined;
   }
@@ -133,6 +139,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
   const { settlementRules, progress, structures, rosters } = facts;
   const mode = nativeGameModeOf(number(game.preset_id));
   const settlement = required(settlementRules, game.game_id, "SettlementRules");
+  const epochSeconds = number(required(facts.rules, game.game_id, "SliceRules").epoch_seconds);
   const state = gameRows(progress, game.game_id)[0];
   const settlements = gameRows(structures, game.game_id).filter(
     (row) => [1, 5].includes(number(record(row.base).category)) && integer(row.owner) !== 0n,
@@ -150,6 +157,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     name: shortString(game.name),
     preset_id: number(game.preset_id),
     mode,
+    expedition: epochSeconds === 0 ? null : { epoch_seconds: epochSeconds },
     dev_mode_on: game.dev_mode_on === true,
     ready: game.ready === true,
     status: directoryStatus(game, input.timestamp),
@@ -181,6 +189,7 @@ function playerStructure(
   return {
     entity_id: number(row.entity_id),
     category: number(base.category),
+    level: number(base.level),
     realm_id: number(record(row.metadata).realm_id),
     coord_x: position.col,
     coord_y: position.row,

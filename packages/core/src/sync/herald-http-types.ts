@@ -32,6 +32,8 @@ export interface HeraldGameSettlementConfig {
 export interface HeraldPlayerStructure {
   entity_id: number;
   category: number;
+  /** Structure progression level; the original model is tier I. */
+  level: number;
   realm_id: number;
   coord_x: number;
   coord_y: number;
@@ -50,6 +52,7 @@ export interface HeraldGameDirectoryEntry {
   ready: boolean;
   clock: HeraldGameClock;
   dev_mode_on: boolean;
+  expedition: { epoch_seconds: number } | null;
   game_id: number;
   mode: "blitz" | "eternum" | "frontier" | "duel" | null;
   name: string;

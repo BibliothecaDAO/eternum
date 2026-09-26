@@ -133,7 +133,7 @@ export function seedDerivedRows(fold: WorldFold, decoder: NativeDecoder, events:
   });
 }
 
-export function rulesEvent(gameId = "1") {
+export function rulesEvent(gameId = "1", epochSeconds = "0") {
   const model = schema.models.find((model) => model.name === "SliceRules")!;
   const defaults = (type: string): string[] => {
     const definition = schema.types[type];
@@ -152,7 +152,9 @@ export function rulesEvent(gameId = "1") {
     }
     return defaults(member.type);
   });
-  return rowEvent("SliceRules", [gameId], decodeMembers(schema, model.members, values));
+  const decoded = decodeMembers(schema, model.members, values);
+  decoded.epoch_seconds = BigInt(epochSeconds);
+  return rowEvent("SliceRules", [gameId], decoded);
 }
 
 export function battleEvent(attacker = "7", defender = "8", timestamp = "1920", order = "42", index = "0"): RpcEvent {
