@@ -344,11 +344,13 @@ function watchSyncHandlers(
 
   const onFacts = handlers.onFacts;
   handlers.onFacts = (batch) => {
+    const structureFacts = describeStructureBatch(batch.facts, client.setup.store.entries("Structure"));
     input.append({
       kind: "live-fact-batch",
       confirmation: batch.preconfirmed ? "preconfirmed" : "confirmed",
       factCount: batch.facts.length,
       factsByModel: countFactsByModel(batch.facts),
+      structures: structureFacts,
       realmStructureKeyPresent: batch.facts.some((fact) => isRealmStructureFact(fact, input.gameId, input.realmId())),
       transactionHash: batch.transactionHash,
     });
@@ -360,6 +362,25 @@ function countFactsByModel(facts: readonly GameSyncFact[]): Record<string, numbe
   const counts: Record<string, number> = {};
   for (const fact of facts) counts[fact.model] = (counts[fact.model] ?? 0) + 1;
   return counts;
+}
+
+export function describeStructureBatch(
+  facts: readonly GameSyncFact[],
+  currentRows: Iterable<readonly [string, NativeRows["Structure"]]>,
+): { set: Array<{ key: string; owner: string | null }>; del: Array<{ key: string; owner: string | null }> } {
+  const owners = new Map([...currentRows].map(([key, row]) => [key, String(row.owner)]));
+  const structures = facts.filter((fact) => fact.model === "Structure");
+  return {
+    set: structures
+      .filter((fact) => fact.value !== null)
+      .map((fact) => ({
+        key: fact.key,
+        owner: fact.value?.owner === undefined ? null : String(fact.value.owner),
+      })),
+    del: structures
+      .filter((fact) => fact.value === null)
+      .map((fact) => ({ key: fact.key, owner: owners.get(fact.key) ?? null })),
+  };
 }
 
 function isRealmStructureFact(fact: GameSyncFact, gameId: number, realmId: number | undefined): boolean {
