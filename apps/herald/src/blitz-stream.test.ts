@@ -1,3 +1,4 @@
+import { CairoCustomEnum } from "starknet";
 import { expect, it } from "vitest";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
@@ -7,18 +8,37 @@ import type { RpcBlockWithReceipts } from "./types";
 
 it("preserves the whole Blitz game's facts through snapshot, overlay, confirmation and reconnect", async () => {
   const { native, decoder, fold } = setup();
-  const tiles = [50, 150].map((col) => rowEvent("TileOpt", ["1", "0", String(col), "50"], ["1"]));
-  const balances = [1, 2].map((id) => rowEvent("ResourceBalance", ["1", String(id), "28"], [String(id * 100)]));
+  const tiles = [50, 150].map((col) => rowEvent("TileOpt", ["1", "0", String(col), "50"], { data: 1n }));
+  const balances = [1, 2].map((id) =>
+    rowEvent("ResourceBalance", ["1", String(id), "28"], { balance: String(id * 100) }),
+  );
   native.applyReceipt(
     fold,
     receipt(
       seedDerivedRows(fold, decoder, [
-        rowEvent("GameRegistry", ["1"], ["7", "2", "10", "0", "1", "0", "120", "120", "999999", "0", "7"]),
+        rowEvent("GameRegistry", ["1"], {
+          name: 7n,
+          preset_id: 2n,
+          creator: 10n,
+          settled: false,
+          ready: true,
+          dev_mode_on: false,
+          start_settling_at: 120n,
+          start_main_at: 120n,
+          end_at: 999999n,
+          end_grace_seconds: 0n,
+          seed: 7n,
+        }),
         rulesEvent(),
-        rowEvent("SettlementRules", ["1"], ["0", "0", "0", "100"]),
+        rowEvent("SettlementRules", ["1"], {
+          registration_start: 0n,
+          registration_limit: 0n,
+          mode: new CairoCustomEnum({ Single: {} }),
+          spacing: 100n,
+        }),
         ...tiles,
         ...balances,
-        rowEvent("TileOpt", ["2", "0", "250", "50"], ["1"]),
+        rowEvent("TileOpt", ["2", "0", "250", "50"], { data: 1n }),
       ]),
     ),
     9,
@@ -62,10 +82,10 @@ it("preserves the whole Blitz game's facts through snapshot, overlay, confirmati
   }
   const update = receipt(
     [
-      rowEvent("TileOpt", ["1", "0", "50", "50"], ["2"]),
-      rowEvent("TileOpt", ["1", "0", "150", "50"], ["3"]),
-      rowEvent("ResourceBalance", ["1", "1", "28"], ["80"]),
-      rowEvent("ResourceBalance", ["1", "2", "28"], ["180"]),
+      rowEvent("TileOpt", ["1", "0", "50", "50"], { data: 2n }),
+      rowEvent("TileOpt", ["1", "0", "150", "50"], { data: 3n }),
+      rowEvent("ResourceBalance", ["1", "1", "28"], { balance: 80n }),
+      rowEvent("ResourceBalance", ["1", "2", "28"], { balance: 180n }),
     ],
     "0x71",
   );

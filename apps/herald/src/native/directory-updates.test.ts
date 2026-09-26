@@ -10,7 +10,11 @@ import { manifest, receipt, rowEvent, schema, setup, shardManifest } from "./fix
 it("indexes only structure positions across moves, replacement, overlays and checkpoint restore", () => {
   const { native, fold, decoder } = setup();
   const occupy = (col: number, entity: number, category = 1, structure = true) =>
-    rowEvent("TileOccupancy", ["1", "0", String(col), "9"], [String(entity), String(category), structure ? "1" : "0"]);
+    rowEvent("TileOccupancy", ["1", "0", String(col), "9"], {
+      entity_id: String(entity),
+      category: String(category),
+      is_structure: BigInt(structure ? "1" : "0") !== 0n,
+    });
   const deleted = (col: number) => ({
     from_address: manifest.world.address,
     keys: [
@@ -57,8 +61,12 @@ it("an army move does not notify directory clients; structure moves and empty-bl
   const preset = presetRegistration(2);
   native.applyReceipt(fold, receipt([preset.event]), 10, 0, preset.calldata);
   native.applyReceipt(fold, receipt(presetLaunch(preset, 1, 100)), 10, 0);
-  const structure = rowEvent("TileOccupancy", ["1", "0", "1", "1"], ["7", "1", "1"]);
-  const army = rowEvent("TileOccupancy", ["1", "0", "5", "5"], ["8", "15", "0"]);
+  const structure = rowEvent("TileOccupancy", ["1", "0", "1", "1"], {
+    entity_id: 7n,
+    category: 1n,
+    is_structure: true,
+  });
+  const army = rowEvent("TileOccupancy", ["1", "0", "5", "5"], { entity_id: 8n, category: 15n, is_structure: false });
   native.applyReceipt(fold, receipt([structure, army]), 10, 0);
   const blocks = new Map<number, RpcBlockWithReceipts>();
   const live = new LiveWorld({

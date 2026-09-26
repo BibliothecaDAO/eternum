@@ -1,3 +1,4 @@
+import { CairoCustomEnum } from "starknet";
 import { describe, expect, it, vi } from "vitest";
 import { LiveWorld } from "./live-world";
 import type { HistoryStore } from "./history-store";
@@ -17,7 +18,7 @@ import type { RpcBlockWithReceipts } from "./types";
 
 function fixture(historyStore?: HistoryStore) {
   const { native, fold, decoder } = setup();
-  const tile = (value: string) => rowEvent("TileOpt", ["1", "0", "12", "34"], [value]);
+  const tile = (value: string) => rowEvent("TileOpt", ["1", "0", "12", "34"], { data: value });
   const confirmed: RpcBlockWithReceipts = { block_number: 10, timestamp: 100, transactions: [] };
   const pending: RpcBlockWithReceipts = { block_number: 11, timestamp: 101, transactions: [] };
   const rpc = {
@@ -168,49 +169,64 @@ describe("native live publication", () => {
       rowEvent("ExplorerTroops", ["1", String(id * 10)], explorerValue(String(id), 1000n, 120n, 1n)),
     );
     const positions = [1, 2].map((id) =>
-      rowEvent("TileOccupancy", ["1", "0", String(id * 100 - 50), "50"], [String(id * 10), "15", "0"]),
+      rowEvent("TileOccupancy", ["1", "0", String(id * 100 - 50), "50"], {
+        entity_id: String(id * 10),
+        category: "15",
+        is_structure: false,
+      }),
     );
     native.applyReceipt(
       fold,
       receipt(
         seedDerivedRows(fold, decoder, [
-          rowEvent(
-            "GameRegistry",
-            ["1"],
-            [
-              "7",
-              "1",
-              "10",
-              "0",
-              "1",
-              "0",
-              String(dayStart + 120),
-              String(dayStart + 120),
-              String(dayStart + 864_000),
-              "0",
-              "7",
-            ],
-          ),
-          rowEvent("SettlementRules", ["1"], ["0", "0", "0", "100"]),
+          rowEvent("GameRegistry", ["1"], {
+            name: "7",
+            preset_id: "1",
+            creator: "10",
+            settled: false,
+            ready: true,
+            dev_mode_on: false,
+            start_settling_at: String(dayStart + 120),
+            start_main_at: String(dayStart + 120),
+            end_at: String(dayStart + 864_000),
+            end_grace_seconds: "0",
+            seed: "7",
+          }),
+          rowEvent("SettlementRules", ["1"], {
+            registration_start: 0n,
+            registration_limit: 0n,
+            mode: new CairoCustomEnum({ Single: {} }),
+            spacing: 100n,
+          }),
           ...homes,
           ...armies,
           ...positions,
           rowEvent("ExpeditionDiscovery", ["1", "1", String(Math.floor(dayStart / 86400))], { empty_reveals: 7 }),
           rowEvent("ExpeditionDiscovery", ["1", "2", String(Math.floor(dayStart / 86400))], { empty_reveals: 3 }),
           rowEvent("TileOccupancy", ["1", "0", "51", "50"], { entity_id: 300, category: 34, is_structure: false }),
-          rowEvent("ResourceBalance", ["1", "1", "28"], ["100"]),
-          rowEvent("ResourceBalance", ["1", "2", "28"], ["200"]),
+          rowEvent("ResourceBalance", ["1", "1", "28"], { balance: 100n }),
+          rowEvent("ResourceBalance", ["1", "2", "28"], { balance: 200n }),
           ...[1, 2, 10, 20].flatMap((entityId) => [
-            rowEvent("ResourceWeight", ["1", String(entityId)], ["1000", "100"]),
-            rowEvent("EntityName", ["1", String(entityId)], [String(entityId)]),
+            rowEvent("ResourceWeight", ["1", String(entityId)], { capacity: 1000n, weight: 100n }),
+            rowEvent("EntityName", ["1", String(entityId)], { name: String(entityId) }),
           ]),
-          rowEvent("ResourceProduction", ["1", "100", "29"], ["1", "10", "100", "120"]),
-          rowEvent("ResourceProduction", ["1", "99", "29"], ["1", "10", "100", "120"]),
-          rowEvent("TileOpt", ["1", "0", "50", "50"], ["1"]),
-          rowEvent("TileOpt", ["1", "0", "150", "50"], ["1"]),
-          rowEvent("TileOpt", ["1", "0", "50", "150"], ["1"]),
-          rowEvent("TileOpt", ["1", "0", "50", "450"], ["1"]),
-          rowEvent("TileOpt", ["1", "0", "150", "450"], ["1"]),
+          rowEvent("ResourceProduction", ["1", "100", "29"], {
+            building_count: 1n,
+            production_rate: 10n,
+            output_amount_left: 100n,
+            last_updated_at: 120n,
+          }),
+          rowEvent("ResourceProduction", ["1", "99", "29"], {
+            building_count: 1n,
+            production_rate: 10n,
+            output_amount_left: 100n,
+            last_updated_at: 120n,
+          }),
+          rowEvent("TileOpt", ["1", "0", "50", "50"], { data: 1n }),
+          rowEvent("TileOpt", ["1", "0", "150", "50"], { data: 1n }),
+          rowEvent("TileOpt", ["1", "0", "50", "150"], { data: 1n }),
+          rowEvent("TileOpt", ["1", "0", "50", "450"], { data: 1n }),
+          rowEvent("TileOpt", ["1", "0", "150", "450"], { data: 1n }),
         ]),
       ),
       9,
@@ -277,7 +293,10 @@ describe("native live publication", () => {
     });
     live.acceptReceipt({
       ...receipt(
-        [rowEvent("TileOpt", ["1", "0", "150", "50"], ["2"]), rowEvent("ResourceBalance", ["1", "2", "28"], ["180"])],
+        [
+          rowEvent("TileOpt", ["1", "0", "150", "50"], { data: 2n }),
+          rowEvent("ResourceBalance", ["1", "2", "28"], { balance: 180n }),
+        ],
         "0x70",
       ),
       finality_status: "PRE_CONFIRMED",
@@ -293,7 +312,11 @@ describe("native live publication", () => {
     messages.forEach((stream) => {
       stream.length = 0;
     });
-    const descended = rowEvent("TileOccupancy", ["1", "0", "50", "150"], ["10", "15", "0"]);
+    const descended = rowEvent("TileOccupancy", ["1", "0", "50", "150"], {
+      entity_id: 10n,
+      category: 15n,
+      is_structure: false,
+    });
     const removedPosition = {
       ...positions[0],
       keys: [
@@ -304,7 +327,7 @@ describe("native live publication", () => {
       data: ["4", "1", "0", "50", "50"],
     };
     live.acceptReceipt({
-      ...receipt([removedPosition, descended, rowEvent("ResourceBalance", ["1", "1", "28"], ["80"])], "0x71"),
+      ...receipt([removedPosition, descended, rowEvent("ResourceBalance", ["1", "1", "28"], { balance: 80n })], "0x71"),
       finality_status: "PRE_CONFIRMED",
     });
     const depthDiffs = messages[0].filter((message) => message.type === "diff");

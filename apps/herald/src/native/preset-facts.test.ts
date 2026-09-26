@@ -7,7 +7,6 @@ import type { MadaraRpc } from "../madara-rpc";
 import { WorldFold } from "../world-fold";
 import type { RpcEvent } from "../types";
 import { manifest, receipt, rowEvent, schema, setup } from "./fixtures";
-import { encodeMembers } from "./serde";
 import { presetPreimageCommitment } from "./preset-preimages";
 
 const codec = new CallData([...Object.values(schema.types), ...schema.games.entrypoints] as Abi);
@@ -29,7 +28,7 @@ function registration(presetId = 5) {
     definition,
     commitment,
     accountCalldata,
-    event: rowEvent("Preset", [String(presetId)], [commitment]),
+    event: rowEvent("Preset", [String(presetId)], { commitment: commitment }),
   };
 }
 
@@ -43,17 +42,26 @@ function launch(preset: ReturnType<typeof registration>, gameId = 1, rosterSize 
     }),
     map_center_offset: 4321,
   };
-  const members = schema.models.find(({ name }) => name === "GameOverrides")!.members;
   const roster = Array.from({ length: rosterSize }, (_, index) => [String(0x100 + index)]);
   return [
-    ...(rosterSize ? [rowEvent("BlitzRoster", [String(gameId)], [String(rosterSize), ...roster.flat()])] : []),
-    rowEvent(
-      "GameRegistry",
-      [String(gameId)],
-      ["0x123", String(preset.presetId), "0x111", "0", "1", "0", "1800", "1800", "999999", "0", "1"],
-    ),
-    rowEvent("GameOverrides", [String(gameId)], encodeMembers(schema, members, overrides)),
-    rowEvent("GameRelease", [String(gameId)], ["1", preset.commitment]),
+    ...(rosterSize
+      ? [rowEvent("BlitzRoster", [String(gameId)], { players: roster.map(([account]) => ({ account })) })]
+      : []),
+    rowEvent("GameRegistry", [String(gameId)], {
+      name: "0x123",
+      preset_id: String(preset.presetId),
+      creator: "0x111",
+      settled: false,
+      ready: true,
+      dev_mode_on: false,
+      start_settling_at: "1800",
+      start_main_at: "1800",
+      end_at: "999999",
+      end_grace_seconds: "0",
+      seed: "1",
+    }),
+    rowEvent("GameOverrides", [String(gameId)], overrides),
+    rowEvent("GameRelease", [String(gameId)], { release_id: "1", preset_commitment: preset.commitment }),
   ];
 }
 
@@ -296,7 +304,7 @@ describe("verified preset configuration facts", () => {
     applyRegistration(world, preset);
     const registered = world.fold.checkpoint();
     const invalid = launch(preset);
-    invalid[invalid.length - 1] = rowEvent("GameRelease", ["1"], ["1", "999"]);
+    invalid[invalid.length - 1] = rowEvent("GameRelease", ["1"], { release_id: 1n, preset_commitment: 999n });
     expect(() => world.native.applyReceipt(world.fold, receipt(invalid), 11, 0)).toThrow(
       "differs from registered preset",
     );

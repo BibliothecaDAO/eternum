@@ -18,7 +18,7 @@ it("restores a PostgreSQL checkpoint, replays later facts and rejects retired mo
     await admin.query(`CREATE SCHEMA ${namespace}`);
     await store.initialize();
     const { native, decoder, fold } = setup();
-    native.applyReceipt(fold, receipt([rowEvent("ResourceBalance", ["1", "7", "28"], ["100"])]), 10, 0);
+    native.applyReceipt(fold, receipt([rowEvent("ResourceBalance", ["1", "7", "28"], { balance: 100n })]), 10, 0);
     await store.save("madara", 10, fold);
     await store.close();
     store = new CheckpointStore(url.toString());
@@ -35,7 +35,7 @@ it("restores a PostgreSQL checkpoint, replays later facts and rejects retired mo
           timestamp: 121,
           transactions: [
             {
-              receipt: receipt([rowEvent("ResourceBalance", ["1", "7", "28"], ["80"])]),
+              receipt: receipt([rowEvent("ResourceBalance", ["1", "7", "28"], { balance: 80n })]),
               transaction: { type: "INVOKE" },
             },
           ],

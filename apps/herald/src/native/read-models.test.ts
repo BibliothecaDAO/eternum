@@ -1,3 +1,4 @@
+import { CairoCustomEnum } from "starknet";
 import { WorldFold } from "../world-fold";
 import { describe, expect, it } from "vitest";
 import { buildNativeDirectory, buildNativeLeaderboard } from "./read-models";
@@ -14,11 +15,19 @@ import {
 } from "./fixtures";
 
 function gameEvent(game = "1", settled = "0", dev = "0", preset = "2") {
-  return rowEvent(
-    "GameRegistry",
-    [game],
-    ["0x426c69747a", preset, "0x111", settled, "1", dev, "10", "20", "200", "10", "42"],
-  );
+  return rowEvent("GameRegistry", [game], {
+    name: "0x426c69747a",
+    preset_id: preset,
+    creator: "0x111",
+    settled: BigInt(settled) !== 0n,
+    ready: true,
+    dev_mode_on: BigInt(dev) !== 0n,
+    start_settling_at: "10",
+    start_main_at: "20",
+    end_at: "200",
+    end_grace_seconds: "10",
+    seed: "42",
+  });
 }
 function world() {
   const state = setup();
@@ -30,13 +39,23 @@ function world() {
         gameEvent("2"),
         rulesEvent(),
         rulesEvent("2"),
-        rowEvent("SettlementRules", ["1"], ["5", "96", "0", "8"]),
-        rowEvent("SettlementRules", ["2"], ["5", "2", "2", "8"]),
-        rowEvent("SettlementProgress", ["1"], ["2", "1"]),
-        rowEvent("PlayerEntry", ["1", "0xaaa"], ["0x111"]),
-        rowEvent("PlayerEntry", ["1", "0xbbb"], ["0x222"]),
-        rowEvent("PlayerEntry", ["2", "0xccc"], ["0x333"]),
-        rowEvent("BlitzRoster", ["1"], ["2", "0x111", "0x222"]),
+        rowEvent("SettlementRules", ["1"], {
+          registration_start: 5n,
+          registration_limit: 96n,
+          mode: new CairoCustomEnum({ Single: {} }),
+          spacing: 8n,
+        }),
+        rowEvent("SettlementRules", ["2"], {
+          registration_start: 5n,
+          registration_limit: 2n,
+          mode: new CairoCustomEnum({ Duel: {} }),
+          spacing: 8n,
+        }),
+        rowEvent("SettlementProgress", ["1"], { registered: 2n, realm_count: 1n }),
+        rowEvent("PlayerEntry", ["1", "0xaaa"], { player: 273n }),
+        rowEvent("PlayerEntry", ["1", "0xbbb"], { player: 546n }),
+        rowEvent("PlayerEntry", ["2", "0xccc"], { player: 819n }),
+        rowEvent("BlitzRoster", ["1"], { players: [{ account: 273n }, { account: 546n }] }),
       ]),
     ),
     10,
@@ -57,7 +76,13 @@ describe("native directory and leaderboard", () => {
         structure("7", "1", "0x111"),
         structure("8", "5", "0x111"),
         structure("9", "3", "0x222"),
-        ...[7, 8, 9].map((id) => rowEvent("TileOccupancy", ["1", "0", String(id), "0"], [String(id), "1", "1"])),
+        ...[7, 8, 9].map((id) =>
+          rowEvent("TileOccupancy", ["1", "0", String(id), "0"], {
+            entity_id: String(id),
+            category: "1",
+            is_structure: true,
+          }),
+        ),
       ]),
       11,
       0,
@@ -103,7 +128,14 @@ describe("native directory and leaderboard", () => {
       receipt([
         pointsAward("1", "0x111", "1000000", "1000000", "1000000"),
         pointsAward("2", "0x111", "999000000", "999000000", "999000000"),
-        rowEvent("HyperstructureShares", ["1", "7"], ["100", "2", "2", "0x111", "3333", "0x222", "6667"]),
+        rowEvent("HyperstructureShares", ["1", "7"], {
+          start_at: 100n,
+          multiplier: 2n,
+          shareholders: [
+            { player: 273n, bps: 3333n },
+            { player: 546n, bps: 6667n },
+          ],
+        }),
       ]),
       11,
       0,
@@ -124,7 +156,14 @@ describe("native directory and leaderboard", () => {
       receipt([
         pointsAward("1", "0x111", "66660000", "67660000", "67660000"),
         pointsAward("1", "0x222", "133340000", "133340000", "201000000"),
-        rowEvent("HyperstructureShares", ["1", "7"], ["200", "2", "2", "0x111", "3333", "0x222", "6667"]),
+        rowEvent("HyperstructureShares", ["1", "7"], {
+          start_at: 200n,
+          multiplier: 2n,
+          shareholders: [
+            { player: 273n, bps: 3333n },
+            { player: 546n, bps: 6667n },
+          ],
+        }),
       ]),
       12,
       0,
@@ -171,11 +210,31 @@ it("waits for the complete result before freezing and restores tied standings fr
   const { fold, native, decoder } = world();
   native.applyReceipt(fold, receipt([gameEvent("1", "1")]), 12, 0);
   expect(fold.finalizedGameIds()).not.toContain("1");
-  native.applyReceipt(fold, receipt([rowEvent("BlitzResult", ["1"], ["1", "0x111", "9500000", "1", "0", "0"])]), 13, 0);
+  native.applyReceipt(
+    fold,
+    receipt([
+      rowEvent("BlitzResult", ["1"], {
+        players: [{ player: 273n, points: 9500000n, rank: 1n }],
+        complete: false,
+        commitment: 0n,
+      }),
+    ]),
+    13,
+    0,
+  );
   expect(fold.finalizedGameIds()).not.toContain("1");
   native.applyReceipt(
     fold,
-    receipt([rowEvent("BlitzResult", ["1"], ["2", "0x111", "9500000", "1", "0x222", "9500000", "1", "1", "123"])]),
+    receipt([
+      rowEvent("BlitzResult", ["1"], {
+        players: [
+          { player: 273n, points: 9500000n, rank: 1n },
+          { player: 546n, points: 9500000n, rank: 1n },
+        ],
+        complete: true,
+        commitment: 123n,
+      }),
+    ]),
     14,
     0,
   );
@@ -201,12 +260,19 @@ it("evicts a finalized game to its directory and standings, the same way live an
   };
   const finalized = [
     structure("7", "1", "0x111"),
-    rowEvent("TileOccupancy", ["1", "0", "7", "0"], ["7", "1", "1"]),
-    rowEvent("TileOpt", ["1", "0", "5", "5"], ["1"]),
-    rowEvent("TileOpt", ["2", "0", "5", "5"], ["1"]),
+    rowEvent("TileOccupancy", ["1", "0", "7", "0"], { entity_id: 7n, category: 1n, is_structure: true }),
+    rowEvent("TileOpt", ["1", "0", "5", "5"], { data: 1n }),
+    rowEvent("TileOpt", ["2", "0", "5", "5"], { data: 1n }),
     gameEvent("2", "0", "0", "1"),
     gameEvent("1", "1"),
-    rowEvent("BlitzResult", ["1"], ["2", "0x111", "9500000", "1", "0x222", "9000000", "2", "1", "123"]),
+    rowEvent("BlitzResult", ["1"], {
+      players: [
+        { player: 273n, points: 9500000n, rank: 1n },
+        { player: 546n, points: 9000000n, rank: 2n },
+      ],
+      complete: true,
+      commitment: 123n,
+    }),
   ];
   const readModels = (fold: WorldFold) => ({
     directory: buildNativeDirectory({

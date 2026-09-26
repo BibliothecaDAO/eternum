@@ -1,15 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { toJsonValue } from "../model-registry";
-import { manifest, raw, seedDerivedRows, receipt, schema, setup } from "./fixtures";
+import { manifest, raw, seedDerivedRows, receipt, schema, setup, rowEvent } from "./fixtures";
 
-function resourceEvent(name: string, keys: string[], values?: string[]) {
+function resourceEvent(name: string, keys: string[], values?: Record<string, unknown>) {
+  if (values) return rowEvent(name, keys, values);
   const model = schema.models.find((model) => model.name === name)!;
   const kind = values ? "RowSet" : "RowDeleted";
   const event = schema.games.events.find((event) => event.name === kind)!;
   return {
     from_address: manifest.world.address,
     keys: [...event.prefix, "1", model.identity],
-    data: [String(keys.length), ...keys, ...(values ? [String(values.length), ...values] : [])],
+    data: [String(keys.length), ...keys],
   };
 }
 
@@ -19,9 +20,14 @@ describe("native resource facts", () => {
     native.applyReceipt(
       fold,
       receipt([
-        resourceEvent("ResourceArrival", ["1", "7", "0", "1"], ["2", "2", "10", "3", "20"]),
-        resourceEvent("ResourceArrival", ["1", "7", "0", "2"], ["1", "2", "30"]),
-        resourceEvent("ResourceBalance", ["2", "7", "2"], ["99"]),
+        resourceEvent("ResourceArrival", ["1", "7", "0", "1"], {
+          resources: [
+            { resource_type: 2n, amount: 10n },
+            { resource_type: 3n, amount: 20n },
+          ],
+        }),
+        resourceEvent("ResourceArrival", ["1", "7", "0", "2"], { resources: [{ resource_type: 2n, amount: 30n }] }),
+        resourceEvent("ResourceBalance", ["2", "7", "2"], { balance: 99n }),
       ]),
       10,
       0,
@@ -29,8 +35,8 @@ describe("native resource facts", () => {
     native.applyReceipt(
       fold,
       receipt([
-        resourceEvent("ResourceBalance", ["1", "7", "2"], ["10"]),
-        resourceEvent("ResourceArrival", ["1", "7", "0", "1"], ["1", "3", "20"]),
+        resourceEvent("ResourceBalance", ["1", "7", "2"], { balance: 10n }),
+        resourceEvent("ResourceArrival", ["1", "7", "0", "1"], { resources: [{ resource_type: 3n, amount: 20n }] }),
       ]),
       11,
       0,
@@ -41,7 +47,7 @@ describe("native resource facts", () => {
     native.applyReceipt(
       fold,
       receipt([
-        resourceEvent("ResourceBalance", ["1", "7", "3"], ["20"]),
+        resourceEvent("ResourceBalance", ["1", "7", "3"], { balance: 20n }),
         resourceEvent("ResourceArrival", ["1", "7", "0", "1"]),
       ]),
       12,
@@ -54,8 +60,10 @@ describe("native resource facts", () => {
 
   it("rejects malformed arrivals without exposing a partial resource mutation", () => {
     const { native, fold } = setup();
-    const balance = resourceEvent("ResourceBalance", ["1", "7", "2"], ["10"]);
-    const arrival = resourceEvent("ResourceArrival", ["1", "7", "0", "1"], ["1", "2", "10"]);
+    const balance = resourceEvent("ResourceBalance", ["1", "7", "2"], { balance: 10n });
+    const arrival = resourceEvent("ResourceArrival", ["1", "7", "0", "1"], {
+      resources: [{ resource_type: 2n, amount: 10n }],
+    });
     const invalid = { ...arrival, data: ["4", "1", "7", "0", "1", "3", "2", "2", "10"] };
     expect(() => native.applyReceipt(fold, receipt([balance, invalid]), 10, 0)).toThrow();
     expect(fold.retainedRowCount()).toBe(0);
@@ -69,8 +77,23 @@ describe("native production facts", () => {
       fold,
       receipt(
         seedDerivedRows(fold, decoder, [
-          resourceEvent("ProductionRecipe", ["1", "26"], ["100", "200", "1", "23", "10", "2", "35", "20", "36", "30"]),
-          resourceEvent("ProductionBonus", ["1", "7"], ["65535", "2500", "5000", "4294967295", "31", "32"]),
+          resourceEvent("ProductionRecipe", ["1", "26"], {
+            simple_output: 100n,
+            complex_output: 200n,
+            simple_inputs: [{ resource_type: 23n, amount: 10n }],
+            complex_inputs: [
+              { resource_type: 35n, amount: 20n },
+              { resource_type: 36n, amount: 30n },
+            ],
+          }),
+          resourceEvent("ProductionBonus", ["1", "7"], {
+            incr_resource_rate_percent_num: 65535n,
+            incr_labor_rate_percent_num: 2500n,
+            incr_troop_rate_percent_num: 5000n,
+            incr_resource_rate_end_tick: 4294967295n,
+            incr_labor_rate_end_tick: 31n,
+            incr_troop_rate_end_tick: 32n,
+          }),
         ]),
       ),
       10,
@@ -97,14 +120,29 @@ describe("native production facts", () => {
 
   it("rejects a truncated production recipe atomically with its accompanying balance", () => {
     const { native, fold } = setup();
+    const recipe = rowEvent("ProductionRecipe", ["1", "26"], {
+      simple_output: 100,
+      complex_output: 200,
+      simple_inputs: [{ resource_type: 23, amount: 10 }],
+      complex_inputs: [{ resource_type: 35, amount: 20 }],
+    });
+    const bonus = rowEvent("ProductionBonus", ["1", "7"], {
+      incr_resource_rate_percent_num: 0,
+      incr_labor_rate_percent_num: 0,
+      incr_troop_rate_percent_num: 1,
+      incr_resource_rate_end_tick: 0,
+      incr_labor_rate_end_tick: 0,
+      incr_troop_rate_end_tick: 31,
+    });
+    const invalidBonus = bonus.data.map((felt, index) => (index === bonus.data.length - 4 ? "65536" : felt));
     for (const invalid of [
-      resourceEvent("ProductionRecipe", ["1", "26"], ["100", "200", "1", "23", "10", "1", "35"]),
-      resourceEvent("ProductionBonus", ["1", "7"], ["0", "0", "65536", "0", "0", "31"]),
+      { ...recipe, data: recipe.data.slice(0, -1) },
+      { ...bonus, data: invalidBonus },
     ]) {
       expect(() =>
         native.applyReceipt(
           fold,
-          receipt([resourceEvent("ResourceBalance", ["1", "7", "23"], ["90"]), invalid]),
+          receipt([resourceEvent("ResourceBalance", ["1", "7", "23"], { balance: 90n }), invalid]),
           10,
           0,
         ),
@@ -168,20 +206,14 @@ describe("native building facts", () => {
     expect(fold.retainedRowCount()).toBe(0);
   });
   const keys = ["1", "7", "11", "10"];
-  function buildingEvent(values?: string[]) {
-    const model = schema.models.find((model) => model.name === "Building")!;
-    const event = schema.games.events.find((event) => event.name === (values ? "RowSet" : "RowDeleted"))!;
-    return {
-      from_address: manifest.world.address,
-      keys: [...event.prefix, "1", model.identity],
-      data: [String(keys.length), ...keys, ...(values ? [String(values.length), ...values] : [])],
-    };
-  }
   it("folds building placement, pause and deletion with resource changes in one receipt", () => {
     const { native, fold } = setup();
     native.applyReceipt(
       fold,
-      receipt([buildingEvent(["37", "0", "0"]), resourceEvent("ResourceBalance", ["1", "7", "23"], ["90"])]),
+      receipt([
+        rowEvent("Building", keys, { category: 37, paused: false, labor_paid: 0n, tier: 1 }),
+        resourceEvent("ResourceBalance", ["1", "7", "23"], { balance: 90n }),
+      ]),
       10,
       0,
     );
@@ -194,14 +226,17 @@ describe("native building facts", () => {
     expect(fold.modelRows("Building")[0].value).not.toHaveProperty("bonus_percent");
     native.applyReceipt(
       fold,
-      receipt([buildingEvent(["37", "1", "0"]), resourceEvent("ResourceBalance", ["1", "7", "35"], ["60"])]),
+      receipt([
+        rowEvent("Building", keys, { category: 37, paused: true, labor_paid: 0n, tier: 1 }),
+        resourceEvent("ResourceBalance", ["1", "7", "35"], { balance: 60n }),
+      ]),
       11,
       0,
     );
     expect(fold.modelRows("Building")[0].value.paused).toBe(true);
     native.applyReceipt(
       fold,
-      receipt([buildingEvent(), resourceEvent("ResourceBalance", ["1", "7", "35"], ["120"])]),
+      receipt([resourceEvent("Building", keys), resourceEvent("ResourceBalance", ["1", "7", "35"], { balance: 120n })]),
       12,
       0,
     );
@@ -212,10 +247,14 @@ describe("native building facts", () => {
   });
   it("rejects a malformed building without publishing the accompanying balance", () => {
     const { native, fold } = setup();
+    const building = rowEvent("Building", keys, { category: 37, paused: false, labor_paid: 0, tier: 1 });
     expect(() =>
       native.applyReceipt(
         fold,
-        receipt([resourceEvent("ResourceBalance", ["1", "7", "23"], ["90"]), buildingEvent(["37", "2", "0"])]),
+        receipt([
+          resourceEvent("ResourceBalance", ["1", "7", "23"], { balance: 90n }),
+          { ...building, data: building.data.slice(0, -1) },
+        ]),
         10,
         0,
       ),

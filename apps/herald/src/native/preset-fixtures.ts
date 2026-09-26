@@ -2,7 +2,6 @@ import { CallData, CairoOption, CairoOptionVariant, hash, type Abi } from "stark
 import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
 import { manifest, rowEvent, schema } from "./fixtures";
-import { encodeMembers } from "./serde";
 import { presetPreimageCommitment } from "./preset-preimages";
 
 /** Successful direct registration input for replay tests and the load campaign. */
@@ -23,7 +22,7 @@ export function presetRegistration(presetId: 2 | 5) {
       String(calldata.length),
       ...calldata,
     ],
-    event: rowEvent("Preset", [String(presetId)], [commitment]),
+    event: rowEvent("Preset", [String(presetId)], { commitment }),
   };
 }
 
@@ -41,29 +40,21 @@ export function presetLaunch(
     map_center_offset: 0,
   };
   return [
-    ...(roster.length ? [rowEvent("BlitzRoster", [game], [String(roster.length), ...roster.map(String)])] : []),
-    rowEvent(
-      "GameRegistry",
-      [game],
-      [
-        "0x706172697479",
-        String(preset.presetId),
-        "0x111",
-        "0",
-        "1",
-        "0",
-        String(timestamp),
-        String(timestamp),
-        String(timestamp + 864000),
-        "0",
-        "1",
-      ],
-    ),
-    rowEvent(
-      "GameOverrides",
-      [game],
-      encodeMembers(schema, schema.models.find(({ name }) => name === "GameOverrides")!.members, overrides),
-    ),
-    rowEvent("GameRelease", [game], ["1", preset.commitment]),
+    ...(roster.length ? [rowEvent("BlitzRoster", [game], { players: roster.map((account) => ({ account })) })] : []),
+    rowEvent("GameRegistry", [game], {
+      name: "0x706172697479",
+      preset_id: preset.presetId,
+      creator: "0x111",
+      settled: false,
+      ready: true,
+      dev_mode_on: false,
+      start_settling_at: timestamp,
+      start_main_at: timestamp,
+      end_at: timestamp + 864000,
+      end_grace_seconds: 0,
+      seed: 1,
+    }),
+    rowEvent("GameOverrides", [game], overrides),
+    rowEvent("GameRelease", [game], { release_id: 1, preset_commitment: preset.commitment }),
   ];
 }

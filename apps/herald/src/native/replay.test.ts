@@ -104,7 +104,7 @@ describe("native confirmed replay and transaction delivery", () => {
     const connection = live.attach("1", { send: (text) => messages.push(JSON.parse(text)) });
     live.resume(connection, { epoch: "previous", seq: 0, type: "resume" });
     messages.length = 0;
-    const map = rowEvent("TileOpt", ["1", "0", "12", "34"], ["0"]);
+    const map = rowEvent("TileOpt", ["1", "0", "12", "34"], { data: 0n });
     live.detach(connection);
     const reconnect = live.attach("1", { send: (text) => messages.push(JSON.parse(text)) });
     live.resume(reconnect, { epoch: "previous", seq: 0, type: "resume" });

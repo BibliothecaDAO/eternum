@@ -3,7 +3,7 @@ import setFixture from "../../../../contracts/l3/world-native/schema/fixtures/ro
 import { WorldFold } from "../world-fold";
 import type { DecodedRecord, RpcEvent, RpcReceipt } from "../types";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { encodeMembers } from "./serde";
+import { decodeMembers, encodeMembers } from "./serde";
 import { CairoCustomEnum } from "starknet";
 import { NativeDecoder } from "./decoder";
 import { NativeIngestion } from "./ingestion";
@@ -46,10 +46,10 @@ export const setup = () => {
   return { decoder, fold: new WorldFold(decoder.registry), native: new NativeIngestion(decoder) };
 };
 
-export function rowEvent(name: string, keys: string[], values: string[] | DecodedRecord): RpcEvent {
+export function rowEvent(name: string, keys: string[], values: DecodedRecord): RpcEvent {
   const model = schema.models.find((model) => model.name === name)!;
   const layout = schema.games.events.find((event) => event.name === "RowSet")!;
-  const felts = Array.isArray(values) ? values : encodeMembers(schema, model.members, values);
+  const felts = encodeMembers(schema, model.members, values);
   return {
     from_address: manifest.world.address,
     keys: [...layout.prefix, "1", model.identity],
@@ -152,7 +152,7 @@ export function rulesEvent(gameId = "1") {
     }
     return defaults(member.type);
   });
-  return rowEvent("SliceRules", [gameId], values);
+  return rowEvent("SliceRules", [gameId], decodeMembers(schema, model.members, values));
 }
 
 export function battleEvent(attacker = "7", defender = "8", timestamp = "1920", order = "42", index = "0"): RpcEvent {

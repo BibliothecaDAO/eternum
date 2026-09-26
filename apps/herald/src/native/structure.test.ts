@@ -1,22 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { toJsonValue } from "../model-registry";
-import { manifest, raw, receipt, schema, setup } from "./fixtures";
-
-function ruleEvent(name: string, keys: string[], values: string[]) {
-  const model = schema.models.find((model) => model.name === name)!;
-  const event = schema.games.events.find((event) => event.name === "RowSet")!;
-  return {
-    from_address: manifest.world.address,
-    keys: [...event.prefix, "1", model.identity],
-    data: [String(keys.length), ...keys, String(values.length), ...values],
-  };
-}
+import { manifest, raw, receipt, schema, setup, rowEvent, seedDerivedRows } from "./fixtures";
 
 describe("native structure upgrades", () => {
   it("folds projected limits and ordered costs and refuses configuration row events", () => {
     const { native, fold, decoder } = setup();
-    fold.apply(decoder.decodeRowSet("UpgradeLimits", ["1"], ["3", "0"]));
-    fold.apply(decoder.decodeRowSet("UpgradeRecipe", ["1", "1"], ["2", "23", "17", "38", "19"]));
+    seedDerivedRows(fold, decoder, [rowEvent("UpgradeLimits", ["1"], { realm_max: 3, village_max: 0 })]);
+    seedDerivedRows(fold, decoder, [
+      rowEvent("UpgradeRecipe", ["1", "1"], {
+        costs: [
+          { resource_type: 23, amount: 17 },
+          { resource_type: 38, amount: 19 },
+        ],
+      }),
+    ]);
     expect(fold.modelRows("UpgradeLimits")[0].value).toEqual({ game_id: "0x1", realm_max: "0x3", village_max: "0x0" });
     expect(fold.modelRows("UpgradeRecipe")[0].value).toMatchObject({
       game_id: "0x1",
@@ -30,8 +27,8 @@ describe("native structure upgrades", () => {
       native.applyReceipt(
         fold,
         receipt([
-          ruleEvent("UpgradeLimits", ["2"], ["1", "0"]),
-          ruleEvent("UpgradeRecipe", ["2", "1"], ["2", "23", "17"]),
+          rowEvent("UpgradeLimits", ["2"], { realm_max: 1n, village_max: 0n }),
+          rowEvent("UpgradeRecipe", ["2", "1"], { costs: [{ resource_type: 23, amount: 17 }] }),
         ]),
         11,
         0,

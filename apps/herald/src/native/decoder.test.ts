@@ -14,10 +14,22 @@ import { pointsAward, schema, manifest, receipt, raw, setup, battleEvent, rowEve
 describe("native row decoder", () => {
   it("refuses reserved chest wire tag 1 and retains Token at tag 2", () => {
     const decoder = new NativeDecoder(manifest);
-    const values = ["17", "7", "3", "0", "1", "0", "0"];
-    expect(() => decoder.decodeRowSet("ChestReward", ["1", "2", "0"], values)).toThrow("Invalid native enum");
-    values[4] = "2";
-    expect(decoder.decodeRowSet("ChestReward", ["1", "2", "0"], values).kind).toBe("set");
+    const reward = (kind: "Reserved" | "Token") =>
+      rowEvent("ChestReward", ["1", "2", "0"], {
+        player: 17,
+        explorer_id: 7,
+        epoch: 3,
+        depth: 0,
+        kind: new CairoCustomEnum({ [kind]: {} }),
+        quality: 0,
+        lords_exhausted: false,
+      });
+    expect(() => decoder.decode(raw(reward("Reserved")))).toThrow("Invalid native enum");
+    expect(decoder.decode(raw(reward("Token"))).kind).toBe("set");
+    const model = schema.models.find(({ name }) => name === "ChestReward")!;
+    const kind = schema.types[model.members.find(({ name }) => name === "kind")!.type];
+    if (kind.type !== "enum") throw new Error("Expected chest kind enum");
+    expect(kind.variants.map(({ name }) => name)).toEqual(["Relic", "Reserved", "Token"]);
   });
 
   it("folds a known same-schema hotfix and refuses an unavailable decoder before its migration rows", () => {
@@ -26,17 +38,37 @@ describe("native row decoder", () => {
     const decoder = new NativeDecoder(released);
     const ingestion = new NativeIngestion(decoder);
     const fold = new WorldFold(decoder.registry);
-    ingestion.applyReceipt(fold, receipt([rowEvent("GameRelease", ["1"], ["1", "42"]), setFixture.raw]), 10, 0);
-    ingestion.applyReceipt(fold, receipt([rowEvent("GameRelease", ["1"], ["2", "42"]), memberFixture.raw]), 11, 0);
+    ingestion.applyReceipt(
+      fold,
+      receipt([rowEvent("GameRelease", ["1"], { release_id: 1n, preset_commitment: 42n }), setFixture.raw]),
+      10,
+      0,
+    );
+    ingestion.applyReceipt(
+      fold,
+      receipt([rowEvent("GameRelease", ["1"], { release_id: 2n, preset_commitment: 42n }), memberFixture.raw]),
+      11,
+      0,
+    );
     expect(BigInt(fold.modelRows("GameRelease")[0].value.release_id as string)).toBe(2n);
     const before = fold.checkpoint();
     expect(() =>
-      ingestion.applyReceipt(fold, receipt([rowEvent("GameRelease", ["1"], ["3", "42"]), deleteFixture.raw]), 12, 0),
+      ingestion.applyReceipt(
+        fold,
+        receipt([rowEvent("GameRelease", ["1"], { release_id: 3n, preset_commitment: 42n }), deleteFixture.raw]),
+        12,
+        0,
+      ),
     ).toThrow(NativeReleaseSchemaUnavailable);
     expect(fold.checkpoint()).toEqual(before);
     released.native.releaseSchemas["3"] = "unavailable-schema";
     expect(() =>
-      ingestion.applyReceipt(fold, receipt([rowEvent("GameRelease", ["1"], ["3", "42"]), deleteFixture.raw]), 12, 0),
+      ingestion.applyReceipt(
+        fold,
+        receipt([rowEvent("GameRelease", ["1"], { release_id: 3n, preset_commitment: 42n }), deleteFixture.raw]),
+        12,
+        0,
+      ),
     ).toThrow("unavailable-schema");
   });
   it("keys chest results by game, recorded action and story index in both overlays", () => {

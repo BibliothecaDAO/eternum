@@ -254,7 +254,11 @@ describe("GameStreamHub", () => {
   });
   it("routes an army move's deletion by its old tile and army, including after the fold removed it", () => {
     const { fold, native } = setup();
-    const placed = rowEvent("TileOccupancy", ["7", "0", "3", "3"], ["70", "15", "0"]);
+    const placed = rowEvent("TileOccupancy", ["7", "0", "3", "3"], {
+      entity_id: 70n,
+      category: 15n,
+      is_structure: false,
+    });
     native.applyReceipt(fold, receipt([placed]), 10, 0);
     const removed = {
       ...placed,

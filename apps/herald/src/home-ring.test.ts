@@ -1,3 +1,4 @@
+import { CairoCustomEnum } from "starknet";
 import { absoluteEpoch } from "@bibliothecadao/eternum/expeditions";
 import { GameSubscription } from "./game-subscription";
 import { describe, expect, it, vi } from "vitest";
@@ -51,22 +52,25 @@ const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) =>
     fold,
     receipt(
       seedDerivedRows(fold, decoder, [
-        rowEvent(
-          "GameRegistry",
-          ["1"],
-          [
-            "7",
-            "1",
-            "10",
-            "0",
-            "1",
-            "0",
-            String(DAY_START + 120),
-            String(DAY_START + 120),
-            String(DAY_START + 864_000),
-          ].concat(["0", "7"]),
-        ),
-        rowEvent("SettlementRules", ["1"], ["0", "0", "0", "100"]),
+        rowEvent("GameRegistry", ["1"], {
+          name: "7",
+          preset_id: "1",
+          creator: "10",
+          settled: false,
+          ready: true,
+          dev_mode_on: false,
+          start_settling_at: String(DAY_START + 120),
+          start_main_at: String(DAY_START + 120),
+          end_at: String(DAY_START + 864_000),
+          end_grace_seconds: "0",
+          seed: "7",
+        }),
+        rowEvent("SettlementRules", ["1"], {
+          registration_start: 0n,
+          registration_limit: 0n,
+          mode: new CairoCustomEnum({ Single: {} }),
+          spacing: 100n,
+        }),
         home(1),
         home(2),
       ]),
@@ -141,9 +145,9 @@ describe("home ring", () => {
     native.applyReceipt(
       fold,
       receipt([
-        rowEvent("TileOccupancy", ["1", "0", "50", "50"], ["999", "35", "1"]),
-        rowEvent("TileOccupancy", ["1", "1", "50", "50"], ["999", "35", "1"]),
-        rowEvent("TileOccupancy", ["1", "0", "51", "50"], ["0", "39", "1"]),
+        rowEvent("TileOccupancy", ["1", "0", "50", "50"], { entity_id: 999n, category: 35n, is_structure: true }),
+        rowEvent("TileOccupancy", ["1", "1", "50", "50"], { entity_id: 999n, category: 35n, is_structure: true }),
+        rowEvent("TileOccupancy", ["1", "0", "51", "50"], { entity_id: 0n, category: 39n, is_structure: true }),
       ]),
       10,
       0,
@@ -168,7 +172,9 @@ describe("home ring", () => {
     const chainRows = RING.map((tile) => {
       const event = decoder.decode(
         raw(
-          rowEvent("TileOpt", ["1", "0", String(tile.col), String(tile.row)], [(BigInt(tile.biome) << 41n).toString()]),
+          rowEvent("TileOpt", ["1", "0", String(tile.col), String(tile.row)], {
+            data: (BigInt(tile.biome) << 41n).toString(),
+          }),
         ),
       );
       const { set } = new WorldFold(decoder.registry).apply(event)!;
@@ -274,7 +280,12 @@ describe("client and Herald subscription scope parity", () => {
     expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xbn }).unknown).toBe("UNKNOWN_SCOPE_CLOCK");
     state(true);
 
-    const result = native.applyReceipt(overlay, receipt([rowEvent("PlayerEntry", ["1", "0xa"], ["0xb"])]), null, 0);
+    const result = native.applyReceipt(
+      overlay,
+      receipt([rowEvent("PlayerEntry", ["1", "0xa"], { player: 11n })]),
+      null,
+      0,
+    );
     const deliver = (bodies: ReturnType<GameSubscription["project"]>) => {
       for (const body of bodies) {
         if (body.type === "diff") {
