@@ -75,9 +75,14 @@ export function hasRecordingFacts(
   presetId: string,
 ): boolean {
   return events.some(({ model, key }) => {
-    if (model.name === "Preset") return BigInt(String(key.preset_id)) === BigInt(presetId);
-    return model.scope === "game" && key.game_id !== undefined && BigInt(String(key.game_id)) === BigInt(gameId);
+    if (model.name === "Preset") return feltEquals(key.preset_id, presetId);
+    return model.scope === "game" && key.game_id !== undefined && feltEquals(key.game_id, gameId);
   });
+}
+
+function feltEquals(left: unknown, right: string | number | bigint): boolean {
+  if (left === undefined || left === null) return false;
+  return BigInt(String(left)) === BigInt(right);
 }
 
 export function assertSnapshotMatches(expected: GameSnapshot, actual: GameSnapshot): void {
@@ -115,7 +120,7 @@ export function buildRecording(input: {
   if (input.records.length === 0) throw new Error("A phase-1 recording must contain transactions");
   if (input.checks.length === 0) throw new Error("A phase-1 recording must contain contract-read checks");
   if (!/^[0-9a-f]{40}$/i.test(input.sourceHead)) throw new Error("sourceHead must be an exact commit hash");
-  if (input.finalSnapshot.game_id !== input.gameId)
+  if (!feltEquals(input.finalSnapshot.game_id, input.gameId))
     throw new Error("Final snapshot game id does not match the recording");
   return {
     sourceHead: input.sourceHead,
@@ -134,18 +139,10 @@ async function run(options: Options): Promise<void> {
     `${options.heraldUrl}/games/${options.gameId}/snapshot?actor=${encodeURIComponent(options.actor)}`,
   )) as GameSnapshot;
   const toBlock = snapshotBlock(finalSnapshot);
-  const gameRegistry = findSnapshotRow(
-    finalSnapshot,
-    "GameRegistry",
-    (value) => String(value.game_id) === options.gameId,
-  );
-  const presetId = String(gameRegistry.preset_id);
-  const gameRelease = findSnapshotRow(
-    finalSnapshot,
-    "GameRelease",
-    (value) => String(value.game_id) === options.gameId,
-  );
-  const releaseId = String(gameRelease.release_id);
+  const gameRegistry = findSnapshotRow(finalSnapshot, "GameRegistry", { game_id: options.gameId });
+  const presetId = feltDecimal(gameRegistry.preset_id);
+  const gameRelease = findSnapshotRow(finalSnapshot, "GameRelease", { game_id: options.gameId });
+  const releaseId = feltDecimal(gameRelease.release_id);
 
   const shardManifest = asRecord(await getJson(`${options.heraldUrl}/manifest`), "Herald manifest");
   const releaseSchemas = asRecord(shardManifest.releaseSchemas, "manifest releaseSchemas");
@@ -292,15 +289,18 @@ async function rpcRequest<Result>(rpcUrl: string, method: string, params: unknow
   return payload.result as Result;
 }
 
-function findSnapshotRow(
-  snapshot: GameSnapshot,
-  modelName: string,
-  matches: (value: Record<string, unknown>) => boolean,
-) {
+export function findSnapshotRow(snapshot: GameSnapshot, modelName: string, feltFields: Record<string, string>) {
   const model = snapshot.models.find(({ model }) => model === modelName);
-  const row = model?.rows.find(({ value }) => matches(value));
+  const row = model?.rows.find(({ value }) =>
+    Object.entries(feltFields).every(([field, expected]) => feltEquals(value[field], expected)),
+  );
   if (!row) throw new Error(`Herald snapshot is missing ${modelName}`);
   return row.value;
+}
+
+function feltDecimal(value: unknown): string {
+  if (value === undefined || value === null) throw new Error("Expected a felt value in Herald snapshot");
+  return BigInt(String(value)).toString();
 }
 
 function asRecord(value: unknown, description: string): JsonRecord {

@@ -1,11 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { assertSnapshotMatches, buildRecording, hasRecordingFacts, parseOptions, snapshotBlock } from "./record-phase1";
+import {
+  assertSnapshotMatches,
+  buildRecording,
+  findSnapshotRow,
+  hasRecordingFacts,
+  parseOptions,
+  snapshotBlock,
+} from "./record-phase1";
 import type { GameSnapshot } from "../src/types";
 
 const snapshot: GameSnapshot = {
-  game_id: "2",
+  game_id: "0x2",
   confirmed_block: 20,
-  models: [{ model: "Structure", rows: [{ key: "2:9", value: { game_id: "2", entity_id: "9", owner: "0xa" } }] }],
+  models: [
+    { model: "GameRegistry", rows: [{ key: "2", value: { game_id: "0x2", preset_id: "0x5" } }] },
+    { model: "GameRelease", rows: [{ key: "2", value: { game_id: "0x2", release_id: "0x3" } }] },
+    { model: "Structure", rows: [{ key: "2:9", value: { game_id: "0x2", entity_id: "0x9", owner: "0xa" } }] },
+  ],
 };
 
 describe("phase-1 recording generator", () => {
@@ -22,6 +33,17 @@ describe("phase-1 recording generator", () => {
     expect(
       hasRecordingFacts([{ model: { name: "Preset", scope: "deployment" }, key: { preset_id: 4 } }], "2", "5"),
     ).toBe(false);
+  });
+
+  it("finds configuration rows when felt fields use Herald's hexadecimal wire form", () => {
+    expect(findSnapshotRow(snapshot, "GameRegistry", { game_id: "2" })).toEqual({
+      game_id: "0x2",
+      preset_id: "0x5",
+    });
+    expect(findSnapshotRow(snapshot, "GameRelease", { game_id: "0x2" })).toEqual({
+      game_id: "0x2",
+      release_id: "0x3",
+    });
   });
 
   it("keeps the replay fixture shape and rejects a missing or changed snapshot row loudly", () => {
@@ -56,13 +78,16 @@ describe("phase-1 recording generator", () => {
       "finalSnapshot",
     ]);
     expect(recording.records).toEqual([record]);
-    expect(() => assertSnapshotMatches(snapshot, { ...snapshot, models: [] })).toThrow(
+    expect(() => assertSnapshotMatches(snapshot, { ...snapshot, models: snapshot.models.slice(0, 2) })).toThrow(
       "Replay snapshot mismatch: missing model Structure",
     );
     expect(() =>
       assertSnapshotMatches(snapshot, {
         ...snapshot,
-        models: [{ model: "Structure", rows: [{ key: "2:9", value: { game_id: "2", entity_id: "9", owner: "0xb" } }] }],
+        models: [
+          ...snapshot.models.slice(0, 2),
+          { model: "Structure", rows: [{ key: "2:9", value: { game_id: "0x2", entity_id: "0x9", owner: "0xb" } }] },
+        ],
       }),
     ).toThrow("Replay snapshot mismatch: Structure row 2:9 differs");
   });
