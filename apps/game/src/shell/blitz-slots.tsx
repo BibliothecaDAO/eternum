@@ -1,30 +1,12 @@
-import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  fetchPlaytestSlots,
-  registerPlaytestSlot,
-  type PlaytestSlot,
-} from "@/ui/features/factory-v2/api/factory-worker";
+import { useIdentitySession } from "@/hooks/context/identity-session";
 
+import { registrationFor, useJoinSlot, usePlaytestSlots } from "./blitz-slot";
 import { ErrorPanel } from "./kit";
-
-/** A slot's players are Realms accounts, so the signed-in account finds itself by its Realms id. */
-function registrationFor(slot: PlaytestSlot, realmsId: string | undefined) {
-  if (!realmsId) return undefined;
-  return slot.registrations.find(
-    (registration) => registration.realmsId !== null && BigInt(registration.realmsId) === BigInt(realmsId),
-  );
-}
 
 export const BlitzSlots = () => {
   const { status, session } = useIdentitySession();
-  const signIn = useIdentitySessionStore((state) => state.requestSignIn);
-  const client = useQueryClient();
-  const slots = useQuery({ queryKey: ["playtestSlots"], queryFn: fetchPlaytestSlots, refetchInterval: 3_000 });
-  const register = useMutation({
-    mutationFn: registerPlaytestSlot,
-    onSuccess: () => client.invalidateQueries({ queryKey: ["playtestSlots"] }),
-  });
+  const slots = usePlaytestSlots();
+  const { register, join } = useJoinSlot();
   const visible = slots.data?.slots.filter((slot) => !slot.frozenAt || registrationFor(slot, session?.user.realmsId));
   if (!visible?.length && !slots.isError && !register.isError) return null;
   return (
@@ -74,7 +56,7 @@ export const BlitzSlots = () => {
               <button
                 disabled={register.isPending}
                 className="rounded border border-gold/40 px-4 py-2 disabled:opacity-40 hover:bg-gold/10"
-                onClick={() => (status === "signed-in" ? register.mutate(slot.name) : signIn())}
+                onClick={() => join(slot)}
               >
                 {status === "signed-in"
                   ? register.isPending

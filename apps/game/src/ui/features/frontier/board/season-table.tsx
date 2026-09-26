@@ -1,12 +1,13 @@
 import { TreasureChest } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
-import { orders, ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
 import { depthArt, DEPTH_ART } from "../depth-art";
 import { formatAmount } from "../frontier-format";
 import { FlagGlyph, MedalGlyph } from "../glyphs";
 import { SITE_ART } from "../sites/site-art";
+import { orderEmblem } from "./order-emblem";
 import { wholeLords, wholeResource } from "./standings";
 
 type Entry = HeraldFrontierLeaderboardEntry;
@@ -15,13 +16,6 @@ const LORDS_ICON = `/images/resources/${ResourcesIds.Lords}.png`;
 const ESSENCE_ICON = `/images/resources/${ResourcesIds.Essence}.png`;
 const LABOR_ICON = `/images/resources/${ResourcesIds.Labor}.png`;
 const ICON = "size-5 shrink-0 object-contain";
-
-/** A realm's Order as its emblem, the avatar that makes a row read as a realm; an Order the game lacks is loud. */
-const orderEmblem = (order: number): { art: string; name: string } => {
-  const known = orders.find(({ orderId }) => orderId === order);
-  if (!known) throw new Error(`No Order ${order}`);
-  return { art: `/images/orders/${known.orderName.toLowerCase()}.png`, name: known.fullOrderName };
-};
 
 const isMedalPlace = (rank: number): rank is 1 | 2 | 3 => rank >= 1 && rank <= 3;
 

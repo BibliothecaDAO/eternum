@@ -1,134 +1,22 @@
-import { Link } from "react-router-dom";
-
 import { useIdentitySession } from "@/hooks/context/identity-session";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { isGameOver } from "@/runtime/world/directory";
 
-import { formatCountdown } from "./format";
-import { EnterLink, GameClock, GameRow, SpectateLink, modeLabel } from "./game-links";
-import { canEnterGame, isMember } from "@/runtime/world/directory";
-
-import { type DirectoryGame, nextOpenGame, useDirectory, useRealmsPlayer, useRecentResults } from "./herald";
-import { ErrorPanel, Loading, Panel, PanelTitle, Pill } from "./kit";
+import { entryHref } from "./game-links";
+import { type DirectoryGame, useDirectory, useRealmsPlayer } from "./herald";
+import { ErrorPanel, Loading } from "./kit";
+import { PrimaryLink } from "./live-chips";
+import { HERO_ART } from "./mode-art";
+import { BlitzCard, EternumCard, FrontierCard } from "./mode-cards";
+import { RealmCard, seasonRealm } from "./realm-card";
+import { SeasonPodium } from "./season-podium";
 import { useNowSeconds } from "./use-now";
-import { Standings } from "./standings";
 
-const CTA =
-  "inline-flex items-center justify-center rounded-lg px-6 py-3 font-cinzel text-[13px] font-semibold uppercase tracking-[0.1em]";
-
-const Landing = ({ next, now }: { next: DirectoryGame | undefined; now: number }) => (
-  <div className="relative overflow-hidden rounded-2xl border border-gold/20">
-    <img
-      src="/images/covers/shell-home.webp"
-      alt=""
-      className="absolute inset-0 h-full w-full object-cover object-[70%_28%]"
-    />
-    <div className="absolute inset-0 bg-gradient-to-r from-brown via-brown/80 to-brown/30" />
-    <div className="relative max-w-[640px] px-6 py-12 sm:px-10 sm:py-16">
-      <p className="font-serif text-[15px] italic text-gold/70">One realm rises. The rest are written into history.</p>
-      <h1 className="my-3 font-cinzel text-4xl font-bold uppercase leading-tight tracking-wide text-gold sm:text-6xl">
-        Conquer the Realms
-      </h1>
-      <p className="mb-6 max-w-[54ch] text-[15px] text-gold/85">
-        Fully onchain strategy. Raise a realm in the Frontier, or take the field against up to twenty-three rivals in a
-        one-hour Blitz. Every march and every crown is on the chain, forever.
-      </p>
-      <div className="flex flex-wrap gap-3">
-        {next && canEnterGame(next) ? (
-          <EnterLink game={next} />
-        ) : (
-          <Link to="/play" className={`${CTA} border border-gold/60 bg-gold text-brown hover:brightness-110`}>
-            {next ? `Next game in ${formatCountdown(next.clock.start_main_at - now)}` : "See the games"}
-          </Link>
-        )}
-        <Link to="/results" className={`${CTA} border border-gold/40 text-gold hover:bg-gold/10`}>
-          Results
-        </Link>
-      </div>
-    </div>
-  </div>
-);
-
-const MyGames = ({ games, now }: { games: DirectoryGame[]; now: number }) => (
-  <Panel>
-    <PanelTitle>Your games</PanelTitle>
-    {games.length === 0 ? (
-      <p className="text-sm text-gold/70">
-        You are not in a game yet.{" "}
-        <Link to="/play" className="underline">
-          Register for the next one.
-        </Link>
-      </p>
-    ) : (
-      games.map((game) => (
-        <div
-          key={`${game.chainId}:${game.game_id}`}
-          className="flex flex-wrap items-center justify-between gap-3 border-t border-gold/10 py-3 first:border-t-0"
-        >
-          <div>
-            <div className="font-semibold text-gold">{game.name}</div>
-            <div className="text-[12px] text-gold/60">
-              {modeLabel(game)} · <GameClock game={game} now={now} />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            {canEnterGame(game) ? <EnterLink game={game} /> : <SpectateLink game={game} />}
-          </div>
-        </div>
-      ))
-    )}
-  </Panel>
-);
-
-const Dashboard = ({ games, now }: { games: DirectoryGame[]; now: number }) => {
-  const next = nextOpenGame(games);
-  // A game the player can enter now has no start to count down to: it offers the way in.
-  const enterable = next !== undefined && canEnterGame(next);
-  const mine = games.filter(isMember);
-  const latest = useRecentResults(1).data?.games[0];
-  return (
-    <div className="space-y-4">
-      <Panel className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.24em] text-gold/60">
-            {next ? `${enterable ? "Now" : "Next game"} · ${modeLabel(next)}` : "No game open"}
-          </div>
-          <h1 className="my-1 font-cinzel text-3xl font-bold uppercase tracking-wide text-gold sm:text-5xl">
-            {next ? next.name : "The realms rest"}
-          </h1>
-          {enterable ? (
-            <div className="mt-2">
-              <EnterLink game={next} />
-            </div>
-          ) : (
-            <Link to="/play" className={`${CTA} mt-2 border border-gold/60 bg-gold text-brown hover:brightness-110`}>
-              {next ? "View lobby" : "Open the lobby"}
-            </Link>
-          )}
-        </div>
-        {next && !enterable ? (
-          <div className="text-right">
-            <span className="font-mono text-[32px] font-semibold tabular-nums text-gold">
-              {formatCountdown(next.clock.start_main_at - now)}
-            </span>
-            <small className="block font-mono text-[9.5px] tracking-[0.2em] text-gold/60">
-              UNTIL START · {next.registration?.count ?? next.player_count}/{next.registration?.max ?? "—"} SEATED
-            </small>
-          </div>
-        ) : null}
-      </Panel>
-      <MyGames games={mine} now={now} />
-      {latest ? (
-        <Panel>
-          <PanelTitle>Latest result</PanelTitle>
-          <div className="mb-2 flex items-center gap-3">
-            <GameRow game={latest} selected={false} onSelect={() => {}} />
-          </div>
-          <Standings game={{ chainId: latest.chainId, gameId: latest.game_id }} />
-        </Panel>
-      ) : null}
-    </div>
-  );
-};
-
+/**
+ * Home, the Play tab (design o1, o2, o10). A first visit meets the painted hero with one Play free into the live
+ * season; a player with a realm meets their realm card and Resume. Below, the modes as live cards and the season's
+ * podium. On desktop the painting is the page and the modes stand in a row beneath it.
+ */
 export const HomePage = () => {
   const { status } = useIdentitySession();
   const player = useRealmsPlayer();
@@ -145,38 +33,57 @@ export const HomePage = () => {
     );
   if (directory.isPending || status === "loading") return <Loading />;
   const games = directory.data.games;
-  if (status === "signed-in") return <Dashboard games={games} now={now} />;
+  // The player's own season first, where their realm stands; else the first live one.
+  const seasons = games.filter((game) => game.mode === "frontier" && !isGameOver(game));
+  const season = (status === "signed-in" ? seasons.find((game) => seasonRealm(game)) : undefined) ?? seasons[0];
+  const realm = status === "signed-in" && season ? seasonRealm(season) : undefined;
+
   return (
-    <div className="space-y-4">
-      <Landing next={nextOpenGame(games)} now={now} />
-      <Panel>
-        <PanelTitle>Modes</PanelTitle>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <ModeCard
-            title="Frontier"
-            pill="free · season"
-            text="A season-long expedition. Every day, a fresh region for your realm."
-          />
-          <ModeCard
-            title="Blitz"
-            pill="free · one hour"
-            text="Up to 24 players. Registration opens daily at 11:00 and 20:00 UTC."
-          />
-        </div>
-      </Panel>
+    // Isolated, so the paintings behind the page stay above the shell's own background.
+    <div className="relative isolate flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,34rem)_1fr_minmax(0,24rem)] lg:items-start lg:gap-x-3 lg:gap-y-20 lg:pt-24">
+      <HeroBackdrop />
+      <div className="lg:col-start-1 lg:row-start-1">
+        {realm && season ? <RealmCard season={season} /> : <Pitch season={season} />}
+      </div>
+      {season && (
+        <SeasonPodium
+          season={season}
+          className={cn("order-last lg:order-none lg:col-start-3 lg:row-start-1", realm && "hidden lg:flex")}
+        />
+      )}
+      <div
+        className={cn("grid gap-3 lg:col-span-3 lg:row-start-2 lg:grid-cols-3", realm ? "grid-cols-1" : "grid-cols-2")}
+      >
+        {season && <FrontierCard season={season} className="hidden h-64 lg:block" />}
+        <BlitzCard games={games} now={now} className={realm ? "h-28 lg:h-64" : "h-32 lg:h-64"} />
+        <EternumCard games={games} now={now} className={realm ? "h-24 lg:h-64" : "h-32 lg:h-64"} />
+      </div>
     </div>
   );
 };
 
-const ModeCard = ({ title, pill, text }: { title: string; pill: string; text: string }) => (
-  <Link
-    to="/play"
-    className="flex flex-col gap-2 rounded-lg border border-gold/20 bg-black/40 p-4 hover:border-gold/50"
+/** The painting behind the page on desktop; on a phone the pitch carries its own. */
+const HeroBackdrop = () => (
+  <div
+    aria-hidden
+    className="pointer-events-none absolute left-1/2 top-[-4.5rem] -z-10 hidden h-[44rem] w-screen -translate-x-1/2 lg:block"
   >
-    <div className="flex items-center justify-between">
-      <b className="font-cinzel text-xl uppercase tracking-wide text-gold">{title}</b>
-      <Pill tone="open">{pill.toUpperCase()}</Pill>
+    <img src={HERO_ART} alt="" className="size-full object-cover object-[50%_30%]" />
+    <span className="absolute inset-0 bg-gradient-to-b from-[#0c0a08]/20 via-[#0c0a08]/40 to-[#0c0a08]" />
+  </div>
+);
+
+/** The first visit's pitch: the headline, one line, and Play free into the live season. */
+const Pitch = ({ season }: { season: DirectoryGame | undefined }) => (
+  <section className="relative isolate -mx-3 -mt-[4.5rem] flex min-h-[27rem] flex-col justify-end gap-3 overflow-hidden px-4 pb-5 lg:mx-0 lg:mt-0 lg:min-h-0 lg:p-0">
+    <img src={HERO_ART} alt="" className="absolute inset-0 -z-10 size-full object-cover object-[50%_20%] lg:hidden" />
+    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-[#0c0a08]/30 to-[#0c0a08] lg:hidden" />
+    <h1 className="font-[Lexend] text-[34px] font-extrabold leading-[1.1] text-[#fff3c4] drop-shadow-[0_3px_0_#1b1207] lg:text-[52px]">
+      Found a realm. Explore the Mist.
+    </h1>
+    <p className="text-[17px] text-[#eadfc8] lg:text-[19px]">A new map every day. Your realm keeps what it earns.</p>
+    <div className="lg:w-80">
+      <PrimaryLink to={season ? entryHref(season, "play") : "/play"}>Play free</PrimaryLink>
     </div>
-    <small className="text-[12.5px] text-gold/70">{text}</small>
-  </Link>
+  </section>
 );

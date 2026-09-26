@@ -4,7 +4,6 @@ import { buildEntryHref } from "@/play/navigation/play-route";
 import { isGameOver } from "@/runtime/world/directory";
 
 import type { DirectoryGame } from "./herald";
-import { formatCountdown, formatLocalTime } from "./format";
 import { Pill, type PillTone } from "./kit";
 
 export const statusPill = (game: DirectoryGame): { tone: PillTone; label: string } => {
@@ -34,7 +33,7 @@ export const modeLabel = (game: DirectoryGame): string => {
   }
 };
 
-const entryHref = (game: DirectoryGame, intent: "play" | "spectate"): string =>
+export const entryHref = (game: DirectoryGame, intent: "play" | "spectate"): string =>
   buildEntryHref({ chainId: game.chainId, gameId: game.game_id, intent, autoSettle: false });
 
 const LINK =
@@ -54,17 +53,6 @@ export const SpectateLink = ({ game }: { game: DirectoryGame }) => (
     {isGameOver(game) ? "Review" : "Spectate"}
   </Link>
 );
-
-/** One line of when a game starts or ends, relative to now. */
-export const GameClock = ({ game, now }: { game: DirectoryGame; now: number }) => {
-  if (isGameOver(game)) return <span>Ended {formatLocalTime(game.clock.end_at)}</span>;
-  const at = game.status === "Live" ? game.clock.end_at : game.clock.start_main_at;
-  return (
-    <span>
-      {game.status === "Live" ? "Ends" : "Starts"} {formatLocalTime(at)} · {formatCountdown(at - now)}
-    </span>
-  );
-};
 
 export const GameRow = ({
   game,

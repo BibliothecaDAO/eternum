@@ -13,6 +13,10 @@ export const formatShortClock = (seconds: number): string => {
   return `${Math.floor(whole / 3600)}:${String(Math.floor((whole % 3600) / 60)).padStart(2, "0")}`;
 };
 
+/** Time left on a countdown chip: whole days once it is two days or more away ("12d"), the clock under that. */
+export const formatTimeLeft = (seconds: number): string =>
+  seconds >= 2 * 86_400 ? `${Math.floor(seconds / 86_400)}d` : formatShortClock(seconds);
+
 const exact = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 
