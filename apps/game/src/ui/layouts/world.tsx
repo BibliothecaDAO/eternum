@@ -27,6 +27,7 @@ import { ExpeditionRollover } from "../features/world/components/expeditions/exp
 import { FrontierHud } from "../features/frontier/frontier-hud";
 import { useExpeditionRules } from "../features/frontier/frontier-home";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { hudFor } from "./hud-for";
 import { FLIGHT_TRACE_ENABLED, traceFlightCommit } from "@/three/flight-trace";
 import { Profiler } from "react";
 import { MotionLayer } from "@/ui/motion/motion-layer";
@@ -126,17 +127,18 @@ const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
  */
 const HUD = () => {
   const expeditionRules = useExpeditionRules();
+  const hud = hudFor(useGameModeConfig().id, expeditionRules !== null);
   return (
     <>
-      {/* A Frontier game opens its own surfaces (muster, build) from its HUD; the other modes share these. */}
-      {expeditionRules ? (
+      {/* A Frontier game opens its own surfaces (deploy, build) from its HUD; the other modes share these. */}
+      {hud === "frontier" && expeditionRules ? (
         <FrontierHud rules={expeditionRules} />
-      ) : (
+      ) : hud === "shared" ? (
         <>
           <ArenaHud />
           <LeftViewSurfaces />
         </>
-      )}
+      ) : null}
       {/* Every mode's moments fly their sprites on this one layer. */}
       <MotionLayer />
       <ContextMenu />

@@ -16,15 +16,6 @@ type BottomPanelTabId = "tile" | "minimap";
 export type LeftListFilter = StructureType | "all";
 export type LeftListSort = "favorites" | "level" | "population" | "name";
 
-type ArmyCreationPopupConfig = {
-  structureId?: number;
-  maxDefenseSlots?: number;
-  isExplorer?: boolean;
-  direction?: Direction;
-  initialGuardSlot?: number;
-  followSelectedStructure?: boolean;
-};
-
 /**
  * Right-click "Create Defense/Attack Army" no longer opens the legacy popup —
  * it primes the merged Military modal with the target realm + intent. The
@@ -103,7 +94,6 @@ interface UIStore {
   // pass this into derivation memos so renames propagate without remounting.
   structureNameVersion: number;
   bumpStructureNameVersion: () => void;
-  openArmyCreationPopup: (config: ArmyCreationPopupConfig) => void;
   pendingMilitaryAction: PendingMilitaryAction | null;
   setPendingMilitaryAction: (action: PendingMilitaryAction | null) => void;
   /** A suggestion's selection intent, consumed when the world map is ready. */
@@ -253,24 +243,6 @@ export const useUIStore = create(
     structureNameVersion: 0,
     bumpStructureNameVersion: () =>
       set((state: AppStore) => ({ structureNameVersion: state.structureNameVersion + 1 })),
-    openArmyCreationPopup: (config: ArmyCreationPopupConfig) =>
-      set((state: AppStore) => {
-        const structureId = Number(config.structureId ?? state.structureEntityId);
-        if (!Number.isFinite(structureId) || structureId <= 0) {
-          return {};
-        }
-
-        return {
-          leftNavigationView: LeftView.MilitaryView,
-          pendingMilitaryAction: {
-            structureId,
-            isExplorer: config.isExplorer ?? true,
-            direction: config.direction,
-            initialGuardSlot: config.initialGuardSlot,
-          },
-          tooltip: null,
-        };
-      }),
     pendingMilitaryAction: null,
     setPendingMilitaryAction: (action: PendingMilitaryAction | null) => set({ pendingMilitaryAction: action }),
     suggestedArmyDeploymentStructureId: null,
