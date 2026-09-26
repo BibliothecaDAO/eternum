@@ -1,8 +1,11 @@
+use starknet::storage::StorageMapWriteAccess;
 use crate::progression::{
     ArmyProgress, ArmyProgressionRules, Attribute, AttributeOffer, ChooseAttribute, OfferSource, ProgressPacking,
 };
+use crate::resources::IResourceOperationsDispatcherTrait;
 use crate::stamina::StaminaSourceTrait;
 use crate::tests::state::TroopObservationTrait;
+use crate::troops::IBattleResolutionDispatcherTrait;
 
 fn rules() -> ArmyProgressionRules {
     super::preset_projection::frontier_progression_rules()
@@ -268,4 +271,90 @@ fn every_relic_quality_persists_its_attribute_amount_and_logistics_updates_the_s
     let troops = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops;
     assert_eq!(troops.boosts.incr_damage_dealt_percent_num, 20);
     assert_eq!(troops.boosts.incr_damage_dealt_end_tick, 0);
+}
+
+
+#[test]
+fn chosen_support_is_the_days_max_survives_death_and_stops_at_midnight() {
+    let d = super::registrar::setup();
+    let (game_id, _, category) = super::registrar::expedition_home(d);
+    let (first, second) = super::registrar::expedition_armies(d, game_id, category);
+    let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
+    let before = snforge_std::interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::write();
+            state
+                .resources
+                .productions
+                .write(
+                    (game_id, 1, crate::resources::LABOR),
+                    crate::resources::Production {
+                        building_count: 1,
+                        production_rate: 100,
+                        last_updated_at: 350,
+                        output_amount_left: crate::resources::UNLIMITED_OUTPUT,
+                    },
+                );
+            crate::logic::resources::balance(home, crate::resources::LABOR)
+        },
+    );
+    for (key, quality) in array![(first, 1_u8), (second, 0_u8)] {
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                crate::logic::progression::write(
+                    key, ArmyProgress { battle: 5, logistics: 5, scouting: 5, ..crate::progression::initial() },
+                );
+                let context = crate::commands::load_context(
+                    game_id, crate::commands::ActionContext { raw_root: 123, timestamp: 360 },
+                );
+                crate::logic::progression::grant_relic(key, quality, context);
+            },
+        );
+        assert!(execute_choice(d, key, read_progress(d, key).pending.unwrap()));
+    }
+    let support_key = crate::production::RealmSupportKey { game_id, structure_id: 1, epoch: 3 };
+    assert_eq!(
+        snforge_std::interact_with_state(d.games, || crate::logic::production::realm_support(support_key))
+            .unwrap()
+            .level,
+        3,
+    );
+    let troops = super::state::GameState { contract_address: d.games };
+    let mut defeated = troops.resolved_explorer(first).unwrap();
+    let count = defeated.troops.count;
+    defeated.troops.count = 0;
+    let defeated = defeated;
+    let troop_class = super::declare_logic("TroopsLogic");
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::troops::IBattleResolutionLibraryDispatcher { class_hash: troop_class }
+                .finish_battle(first, defeated, count, crate::commands::ActionContext { raw_root: 1, timestamp: 361 });
+        },
+    );
+    assert!(troops.explorer(first).is_none());
+    assert_eq!(
+        snforge_std::interact_with_state(d.games, || crate::logic::production::realm_support(support_key))
+            .unwrap()
+            .level,
+        3,
+    );
+    let resource_class = super::declare_logic("ResourcesLogic");
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let context = crate::commands::load_context(
+                game_id, crate::commands::ActionContext { raw_root: 1, timestamp: 410 },
+            );
+            crate::resources::IResourceOperationsLibraryDispatcher { class_hash: resource_class }
+                .grant_resource(home, crate::resources::LABOR, 0, 410, crate::commands::resource_context(context));
+            assert_eq!(crate::logic::resources::balance(home, crate::resources::LABOR) - before, 6800);
+            assert!(
+                crate::logic::production::realm_support(crate::production::RealmSupportKey { epoch: 4, ..support_key })
+                    .is_none(),
+            );
+        },
+    );
 }

@@ -117,3 +117,39 @@ pub struct RecipeTerms {
     pub simple_count: u8,
     pub complex_count: u8,
 }
+
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct RealmSupportKey {
+    pub game_id: u32,
+    pub structure_id: u32,
+    pub epoch: u64,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct RealmSupport {
+    pub level: u8,
+}
+
+#[starknet::interface]
+pub trait IRealmSupport<T> {
+    fn realm_support(self: @T, key: RealmSupportKey) -> Option<RealmSupport>;
+    fn raise_realm_support(
+        ref self: T, key: crate::resources::ResourceKey, level: u8, context: crate::commands::ActionContext,
+    );
+}
+
+pub fn support_bonus(rate: u64, since: u32, now: u32, epoch_seconds: u32, level: u8) -> u128 {
+    if level <= 1 || now <= since {
+        return 0;
+    }
+    assert!(level <= crate::rules::ATTRIBUTE_CAP && epoch_seconds != 0, "invalid realm Support");
+    let epoch_end: u64 = (Into::<u32, u64>::into(since) / epoch_seconds.into() + 1) * epoch_seconds.into();
+    let through = core::cmp::min(Into::<u32, u64>::into(now), epoch_end);
+    let elapsed = through - since.into();
+    Into::<u64, u128>::into(elapsed)
+        * rate.into()
+        * Into::<u8, u128>::into(level - 1)
+        * crate::rules::ATTRIBUTE_SUPPORT_PERCENT.into()
+        / 100
+}

@@ -109,14 +109,20 @@ pub(crate) fn has_production(resource_type: u8) -> bool {
 }
 
 pub fn settle(
-    resource_type: u8, ref balance: u128, ref production: Production, ref weight: Weight, unit_weight: u128, now: u32,
+    resource_type: u8,
+    ref balance: u128,
+    ref production: Production,
+    ref weight: Weight,
+    unit_weight: u128,
+    now: u32,
+    support_bonus: u128,
 ) {
     let start_at = production.last_updated_at;
     production.last_updated_at = now;
     if resource_type == LORDS || production.building_count == 0 {
         return;
     }
-    let mut produced = (now - start_at).into() * production.production_rate.into();
+    let mut produced = (now - start_at).into() * production.production_rate.into() + support_bonus;
     if resource_type != 35 && resource_type != 36 {
         produced = core::cmp::min(produced, production.output_amount_left);
         production.output_amount_left -= produced;

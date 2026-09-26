@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "d8ee99c7d886395e70c82eb2a0649508c370eb50a5b4bc7e20b306277ddc0401",
+  "schemaIdentity": "5739fc5ba2a2bdee00d83851672c7134b9d01639de4490348a794e2cad1486a1",
   "commandAbi": [
     {
       "type": "interface",
@@ -1497,6 +1497,10 @@
     },
     {
       "name": "ExpeditionDiscovery",
+      "scope": "game"
+    },
+    {
+      "name": "RealmSupport",
       "scope": "game"
     },
     {

@@ -120,6 +120,7 @@ export const useArmyCreation = ({
   const revision = useNativeRevision([
     "ResourceBalance",
     "ResourceProduction",
+    "RealmSupport",
     "ResourceWeight",
     "Guard",
     "ExplorerTroops",
@@ -399,8 +400,16 @@ export const useArmyCreation = ({
   }, [maxAffordable]);
 
   const troopSupply = useMemo(
-    () => readTroopSupply(store, activeStructureId, selectedTroopCombo, selectedAvailable, troopCapacityLimit),
-    [store, activeStructureId, selectedTroopCombo, selectedAvailable, troopCapacityLimit, revision],
+    () =>
+      readTroopSupply(
+        store,
+        activeStructureId,
+        selectedTroopCombo,
+        selectedAvailable,
+        troopCapacityLimit,
+        currentDefaultTick,
+      ),
+    [store, activeStructureId, selectedTroopCombo, selectedAvailable, troopCapacityLimit, revision, currentDefaultTick],
   );
   const troopAvailabilityReason = resolveTroopAvailabilityReason({
     capacityRemaining: capacityRemainingForSelector,
@@ -536,12 +545,15 @@ function readTroopSupply(
   troop: SelectedTroopCombo,
   available: number,
   fullArmy: number | null,
+  timestamp: number,
 ): TroopSupply {
   const resourceId = getTroopResourceId(troop.type, troop.tier);
   const name = BuildingTypeToString[getBuildingFromResource(resourceId)];
   const manager = new ResourceManager(store, structureId);
-  const production = manager.isActive(resourceId) ? manager.current(resourceId)?.production : undefined;
-  const perSecond = production ? divideByPrecision(Number(production.production_rate), false) : 0;
+  const production = manager.isActive(resourceId) ? manager.current(resourceId) : undefined;
+  const perSecond = production
+    ? ResourceManager.calculateResourceProductionData(resourceId, production, timestamp).productionPerSecond
+    : 0;
   const secondsToFullArmy = perSecond > 0 && fullArmy !== null ? Math.max(0, (fullArmy - available) / perSecond) : null;
   return { name, perHour: Math.floor(perSecond * 3600), secondsToFullArmy };
 }

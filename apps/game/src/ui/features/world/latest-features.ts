@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-26",
+    title: "Support feeds your realm",
+    description:
+      "Your best Support army boosts realm production until midnight. The bonus survives its death, and income displays include it.",
+    type: "feature",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-09-26",
     title: "Explored Daily Realm Ring",
     description: "Your realm's six neighbours start explored each day. Deployment waits for explored, free ground.",
     type: "improvement",

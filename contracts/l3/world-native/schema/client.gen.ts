@@ -1,8 +1,9 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "d8ee99c7d886395e70c82eb2a0649508c370eb50a5b4bc7e20b306277ddc0401";
+export const nativeFactSchemaIdentity = "5739fc5ba2a2bdee00d83851672c7134b9d01639de4490348a794e2cad1486a1";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "ATTRIBUTE_DAMAGE_PERCENT": 10,
+  "ATTRIBUTE_SUPPORT_PERCENT": 10,
   "ATTRIBUTE_STAMINA": 30,
   "ATTRIBUTE_SCOUTING_BPS": 150,
   "ENTRY_ENTITLEMENT": 0,
@@ -88,6 +89,7 @@ export interface NativeRows {
   ArmyProgressionRules: { readonly game_id: number; readonly reveal_xp: number; readonly clear_xp: number; readonly level_step_xp: number };
   FrontierDiscoveryRules: { readonly game_id: number; readonly camp_bps: number; readonly rift_bps: number; readonly fallen_realm_bps: number; readonly loose_chest_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: number; readonly epoch: bigint; readonly empty_reveals: number };
+  RealmSupport: { readonly game_id: number; readonly structure_id: number; readonly epoch: bigint; readonly level: number };
   ChestRules: { readonly game_id: number; readonly relic_probability: number; readonly token_cap: number; readonly lords_amounts: { readonly common: bigint; readonly uncommon: bigint; readonly rare: bigint; readonly epic: bigint }; readonly lords_pool: bigint; readonly season_epochs: number };
   LordsBudget: { readonly game_id: number; readonly lords_committed: bigint };
   ChestPity: { readonly game_id: number; readonly player: bigint; readonly depth: number; readonly count: number };
@@ -180,6 +182,7 @@ export interface NativeKeys {
   ArmyProgressionRules: { readonly game_id: number };
   FrontierDiscoveryRules: { readonly game_id: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: number; readonly epoch: bigint };
+  RealmSupport: { readonly game_id: number; readonly structure_id: number; readonly epoch: bigint };
   ChestRules: { readonly game_id: number };
   LordsBudget: { readonly game_id: number };
   ChestPity: { readonly game_id: number; readonly player: bigint; readonly depth: number };
@@ -470,6 +473,29 @@ export const nativeFactModels = {
       },
       "value": "zero",
       "meaning": "No empty player reveals in this expedition yet."
+    }
+  },
+  "RealmSupport": {
+    "keys": [
+      "game_id",
+      "structure_id",
+      "epoch"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "structure_id": "u32",
+      "epoch": "u64",
+      "level": "u8"
+    },
+    "absence": {
+      "parent": "Structure",
+      "parentKeys": {
+        "game_id": "game_id",
+        "entity_id": "structure_id"
+      },
+      "value": "zero",
+      "meaning": "No Support boost earned for this realm in this absolute epoch."
     }
   },
   "ChestRules": {
@@ -2226,6 +2252,11 @@ export const nativeSyncScopes = {
       "structure_id"
     ],
     "epoch": "epoch"
+  },
+  "RealmSupport": {
+    "realms": [
+      "structure_id"
+    ]
   },
   "ArmySlot": {
     "realms": [

@@ -1,3 +1,5 @@
+import { absoluteEpoch } from "../utils/expeditions";
+import { productionOutput, type ProductionSupport } from "../utils/production-output";
 import { isModeRuleEnabled } from "../utils/mode-rules";
 import { BuildingType, ID, ResourcesIds, RESOURCE_PRECISION, type Resource } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
@@ -12,6 +14,7 @@ type Production = Pick<
 interface ResourceState {
   balance: bigint;
   production: Production;
+  support: ProductionSupport | null;
 }
 
 export interface ResourceProductionData {
@@ -21,17 +24,11 @@ export interface ResourceProductionData {
   timeRemainingSeconds: number;
 }
 
-// A scheduled production start is not a chain-clock observation.
 /**
  * u128::MAX, the value the world writes for a budget that never runs out: a producer's output (FR8's unfunded board
  * buildings) or a store's capacity. It is a sentinel, not an amount, and is never formatted as a number or duration.
  */
 const UNLIMITED_U128 = (1n << 128n) - 1n;
-
-const elapsedProductionTicks = (lastUpdatedAt: number, currentTick: number): number => {
-  if (!Number.isFinite(lastUpdatedAt) || !Number.isFinite(currentTick)) throw new Error("Invalid production clock");
-  return Math.max(0, Math.floor(currentTick - lastUpdatedAt));
-};
 
 export class ResourceManager {
   entityId: ID;
@@ -50,6 +47,10 @@ export class ResourceManager {
         changes.length === 0 ||
         changes.some((change) => {
           if (change.model === "GameRegistry") return (change.current ?? change.previous)?.game_id === this.gameId;
+          if (change.model === "RealmSupport") {
+            const row = change.current ?? change.previous;
+            return row?.game_id === this.gameId && row.structure_id === this.entityId;
+          }
           if (
             change.model !== "ResourceBalance" &&
             change.model !== "ResourceProduction" &&
@@ -77,7 +78,23 @@ export class ResourceManager {
     const production = this.store.requireOrAbsent("ResourceProduction", keys);
     const balance = this.store.requireOrAbsent("ResourceBalance", keys);
     if (!production.known || !balance.known) return undefined;
-    return { balance: balance.known.balance, production: this.productionForGameClock(production.known) };
+    const adjusted = this.productionForGameClock(production.known);
+    const support = this.productionSupport(adjusted);
+    if (support === undefined) return undefined;
+    return { balance: balance.known.balance, production: adjusted, support };
+  }
+
+  private productionSupport(production: Production): ProductionSupport | null | undefined {
+    if (production.building_count === 0 || production.production_rate === 0n) return null;
+    const rules = this.store.require("SliceRules", { game_id: this.gameId });
+    if (rules.epoch_seconds === 0) return null;
+    const clock = { epochSeconds: rules.epoch_seconds };
+    const support = this.store.requireOrAbsent("RealmSupport", {
+      game_id: this.gameId,
+      structure_id: this.entityId,
+      epoch: BigInt(absoluteEpoch(clock, production.last_updated_at)),
+    });
+    return support.known ? { ...clock, level: support.known.level } : undefined;
   }
 
   private productionForGameClock(production: Production): Production {
@@ -153,8 +170,9 @@ export class ResourceManager {
     if (!production)
       return { balance: Number(balance), hasReachedMaxCapacity: false, amountProduced: 0n, amountProducedLimited: 0n };
     const training = this.projectTraining(currentTick, resourceId);
-    if (training) return training;
-    const amountProduced = ResourceManager._amountProducedStatic(production, currentTick, resourceId);
+    if (training === undefined) return undefined;
+    if (training !== null) return training;
+    const amountProduced = ResourceManager._amountProducedStatic(production, currentTick, resourceId, resource.support);
     const amountProducedLimited = this._limitProductionByStoreCapacity(amountProduced, resourceId);
     return {
       balance: Number(balance + amountProducedLimited),
@@ -166,7 +184,7 @@ export class ResourceManager {
 
   /** Whether barracks here train troops from wheat, which they take before anything else can spend it. */
   public trainsFromWheat(): boolean {
-    return this.trainers().length > 0;
+    return (this.trainers()?.length ?? 0) > 0;
   }
 
   /**
@@ -191,23 +209,30 @@ export class ResourceManager {
   private trainers() {
     // An entity without a resource store has no barracks to train from.
     if (!this.hasResources()) return [];
-    return Array.from({ length: 9 }, (_, index) => (26 + index) as ResourcesIds)
-      .flatMap((id) => {
-        const state = this.current(id);
-        return state ? [{ id, state }] : [];
-      })
-      .filter(
-        ({ state }) => state.production.building_count > 0 && state.production.output_amount_left === UNLIMITED_U128,
-      );
+    const trainers: { id: ResourcesIds; state: ResourceState }[] = [];
+    for (let id = 26; id <= 34; id++) {
+      const state = this.current(id);
+      if (!state) return undefined;
+      if (state.production.building_count > 0 && state.production.output_amount_left === UNLIMITED_U128)
+        trainers.push({ id, state });
+    }
+    return trainers;
   }
 
   private projectTraining(currentTick: number, resourceId: ResourcesIds) {
-    if (resourceId !== 35 && (resourceId < 26 || resourceId > 34)) return;
-    const trainers = this.trainers().filter(({ state }) => state.production.last_updated_at < currentTick);
-    if (!trainers.length) return;
+    if (resourceId !== 35 && (resourceId < 26 || resourceId > 34)) return null;
+    const knownTrainers = this.trainers();
+    if (!knownTrainers) return undefined;
+    const trainers = knownTrainers.filter(({ state }) => state.production.last_updated_at < currentTick);
+    if (!trainers.length) return null;
     const wheat = this.current(ResourcesIds.Wheat);
     if (!wheat) return;
-    const farmOutput = ResourceManager._amountProducedStatic(wheat.production, currentTick, ResourcesIds.Wheat);
+    const farmOutput = ResourceManager._amountProducedStatic(
+      wheat.production,
+      currentTick,
+      ResourcesIds.Wheat,
+      wheat.support,
+    );
     let available = wheat.balance + farmOutput;
     const outputs = trainers.map(({ id, state }) => {
       const recipe = this.store.require("ProductionRecipe", { game_id: this.gameId, resource_type: id });
@@ -219,7 +244,7 @@ export class ResourceManager {
         input.amount === 0n
       )
         throw new Error("Unlimited training requires a wheat recipe");
-      const expected = ResourceManager._amountProducedStatic(state.production, currentTick, id);
+      const expected = ResourceManager._amountProducedStatic(state.production, currentTick, id, state.support);
       const funded = (available * recipe.simple_output) / input.amount;
       const trained = expected < funded ? expected : funded;
       available -= (trained * input.amount + recipe.simple_output - 1n) / recipe.simple_output;
@@ -254,6 +279,7 @@ export class ResourceManager {
           hasReachedMaxCapacity: stored < trained,
         };
     }
+    return null;
   }
 
   public timeUntilValueReached(currentTick: number, resourceId: ResourcesIds): number {
@@ -341,12 +367,12 @@ export class ResourceManager {
     },
     currentTick: number,
     resourceId: ResourcesIds,
+    support: ProductionSupport | null,
   ): bigint {
     if (!production || production.building_count === 0) return 0n;
     if (production.production_rate === 0n) return 0n;
 
-    const ticksSinceLastUpdate = elapsedProductionTicks(production.last_updated_at, currentTick);
-    let totalAmountProduced = BigInt(ticksSinceLastUpdate) * production.production_rate;
+    let totalAmountProduced = productionOutput(production, currentTick, support);
 
     const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
     if (!isContinuousProductionResource && totalAmountProduced > production.output_amount_left) {
@@ -402,7 +428,13 @@ export class ResourceManager {
     productionInfo: ResourceState,
     currentTick: number,
   ): ResourceProductionData {
-    const productionPerSecond = divideByPrecision(Number(productionInfo.production.production_rate || 0), false);
+    const productionPerSecond = divideByPrecision(
+      Number(
+        productionOutput(productionInfo.production, currentTick + 1, productionInfo.support) -
+          productionOutput(productionInfo.production, currentTick, productionInfo.support),
+      ),
+      false,
+    );
 
     const { production } = productionInfo;
     const isProducing = production.building_count > 0 && production.production_rate !== 0n;
@@ -416,8 +448,7 @@ export class ResourceManager {
       };
     }
 
-    const ticksSinceLastUpdate = elapsedProductionTicks(production.last_updated_at, currentTick);
-    const totalAmountProduced = BigInt(ticksSinceLastUpdate) * production.production_rate;
+    const totalAmountProduced = productionOutput(production, currentTick, productionInfo.support);
     const remainingOutput =
       production.output_amount_left > totalAmountProduced ? production.output_amount_left - totalAmountProduced : 0n;
     const outputRemainingNumber = Number(remainingOutput) / RESOURCE_PRECISION;

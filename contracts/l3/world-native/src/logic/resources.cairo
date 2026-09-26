@@ -302,8 +302,17 @@ pub mod ResourceState {
                 .production
                 .last_updated_at = core::cmp::max(resource.production.last_updated_at, core::cmp::min(now, start_at));
             if resource.production.last_updated_at != now {
+                let bonus = crate::logic::production::support_bonus(
+                    key, resource.production.production_rate, resource.production.last_updated_at, now,
+                );
                 settle(
-                    resource_type, ref resource.balance, ref resource.production, ref resource.weight, unit_weight, now,
+                    resource_type,
+                    ref resource.balance,
+                    ref resource.production,
+                    ref resource.weight,
+                    unit_weight,
+                    now,
+                    bonus,
                 );
             }
             resource
@@ -329,7 +338,8 @@ pub mod ResourceState {
             let mut available = stored_wheat;
             if wheat.building_count != 0 {
                 let since = core::cmp::max(wheat.last_updated_at, core::cmp::min(now, start_at));
-                available += Into::<u32, u128>::into(now - since) * wheat.production_rate.into();
+                available += Into::<u32, u128>::into(now - since) * wheat.production_rate.into()
+                    + crate::logic::production::support_bonus(key, wheat.production_rate, since, now);
             }
             wheat.last_updated_at = now;
             let mut outputs = array![];
@@ -340,7 +350,8 @@ pub mod ResourceState {
                 let input = *recipe.simple_inputs.at(0);
                 assert!(input.resource_type == 35 && input.amount != 0, "training requires wheat");
                 let since = core::cmp::max(production.last_updated_at, core::cmp::min(now, start_at));
-                let expected = Into::<u32, u128>::into(now - since) * production.production_rate.into();
+                let expected = Into::<u32, u128>::into(now - since) * production.production_rate.into()
+                    + crate::logic::production::support_bonus(key, production.production_rate, since, now);
                 let per_cycle: u128 = recipe.simple_output.into();
                 let trained = core::cmp::min(expected, available * per_cycle / input.amount);
                 available -= (trained * input.amount + per_cycle - 1) / per_cycle;

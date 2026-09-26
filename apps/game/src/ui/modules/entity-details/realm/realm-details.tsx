@@ -16,7 +16,6 @@ import { Castle } from "@/ui/modules/entity-details/realm/castle";
 import { describeCastleLevel } from "./castle-level";
 import { copyPlayerAddressToClipboard, displayAddress } from "@/ui/utils/utils";
 import {
-  divideByPrecision,
   formatTime,
   getStructure,
   getStructureImmunityTimer,
@@ -142,14 +141,18 @@ const RealmVillageDetails = () => {
   );
 };
 
-const PRODUCTION_MODELS = ["ResourceProduction", "ResourceWeight"] as const;
+const PRODUCTION_MODELS = ["ResourceProduction", "ResourceWeight", "RealmSupport"] as const;
 
 /** The realm's labor income as the chain produces it, the castle's and every workshop's together, per hour. */
 const LaborRateRow = ({ structureId }: { structureId: ID }) => {
   const { setup } = useGame();
   useNativeRevision(PRODUCTION_MODELS);
   const labor = new ResourceManager(setup.store, structureId).current(ResourcesIds.Labor);
-  const perHour = labor ? divideByPrecision(Number(labor.production.production_rate), false) * 3600 : undefined;
+  const timestamp = useCurrentBlockTimestamp();
+  const perHour =
+    labor && timestamp > 0
+      ? ResourceManager.calculateResourceProductionData(ResourcesIds.Labor, labor, timestamp).productionPerSecond * 3600
+      : undefined;
   return (
     <SectionRow label="Labor / h">
       <span className={CHIP_BASE} title="Labor production">

@@ -759,6 +759,13 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No empty player reveals in this expedition yet.",
       };
+    if (row.name === "RealmSupport")
+      row.absence = {
+        parent: "Structure",
+        parentKeys: { entity_id: "structure_id" },
+        value: "zero",
+        meaning: "No Support boost earned for this realm in this absolute epoch.",
+      };
     if (row.name === "ArmySlot")
       row.absence = {
         parent: "Structure",
@@ -888,6 +895,7 @@ export function defineFactModels({ struct, model: declare }) {
       struct("expeditions::ExpeditionDiscoveryKey"),
       struct("expeditions::ExpeditionDiscovery"),
     ),
+    model("RealmSupport", "game", struct("production::RealmSupportKey"), struct("production::RealmSupport")),
     model("ChestRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::ChestRules")),
     model("LordsBudget", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::LordsBudget")),
     model(
@@ -1420,6 +1428,7 @@ export const syncScopes = {
   ExpeditionSite: { entities: ["entity_id"] },
   ArmyProgress: { entities: ["explorer_id"] },
   ExpeditionDiscovery: { realms: ["structure_id"], epoch: "epoch" },
+  RealmSupport: { realms: ["structure_id"] },
   ArmySlot: { realms: ["structure_id"], epoch: "epoch" },
   ExplorerTroops: { entities: ["explorer_id"] },
   Guard: { entities: ["structure_id"] },

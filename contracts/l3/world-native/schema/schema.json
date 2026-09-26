@@ -2,6 +2,7 @@
   "ruleConstants": {
     "ATTRIBUTE_CAP": 5,
     "ATTRIBUTE_DAMAGE_PERCENT": 10,
+    "ATTRIBUTE_SUPPORT_PERCENT": 10,
     "ATTRIBUTE_STAMINA": 30,
     "ATTRIBUTE_SCOUTING_BPS": 150,
     "ENTRY_ENTITLEMENT": 0,
@@ -2805,6 +2806,47 @@
         },
         "value": "zero",
         "meaning": "No empty player reveals in this expedition yet."
+      }
+    },
+    {
+      "name": "RealmSupport",
+      "identity": "0x5265616c6d537570706f7274",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "level",
+          "type": "core::integer::u8",
+          "id": "0x6c6576656c",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 1,
+      "absence": {
+        "parent": "Structure",
+        "parentKeys": {
+          "game_id": "game_id",
+          "entity_id": "structure_id"
+        },
+        "value": "zero",
+        "meaning": "No Support boost earned for this realm in this absolute epoch."
       }
     },
     {
@@ -7107,6 +7149,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::production::RealmSupport>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::production::RealmSupport>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::production::RealmSupport"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::progression::ArmyProgress>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::progression::ArmyProgress>",
@@ -10473,6 +10529,34 @@
         }
       ]
     },
+    "world_native::production::RealmSupport": {
+      "type": "struct",
+      "name": "world_native::production::RealmSupport",
+      "members": [
+        {
+          "name": "level",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::production::RealmSupportKey": {
+      "type": "struct",
+      "name": "world_native::production::RealmSupportKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
     "world_native::production::RecipeConfig": {
       "type": "struct",
       "name": "world_native::production::RecipeConfig",
@@ -12938,5 +13022,5 @@
       ]
     }
   },
-  "identity": "d8ee99c7d886395e70c82eb2a0649508c370eb50a5b4bc7e20b306277ddc0401"
+  "identity": "5739fc5ba2a2bdee00d83851672c7134b9d01639de4490348a794e2cad1486a1"
 }

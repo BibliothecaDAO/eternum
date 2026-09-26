@@ -1,3 +1,4 @@
+import { productionOutput } from "@bibliothecadao/eternum";
 import { readFileSync } from "node:fs";
 import { CairoCustomEnum } from "starknet";
 import { absoluteEpoch } from "@bibliothecadao/eternum/expeditions";
@@ -166,6 +167,45 @@ describe("home ring", () => {
       expect(rowInGameSyncScope(model, { ...key, epoch: String(absolute + 1) }, next)).toBe(true);
     }
     expect(fold.subscriptionScope("1", "0xa", DAY_START).expedition?.absoluteEpoch).toBe(-1);
+  });
+
+  it("retains Support accrual inputs across midnight, visit and refreshed snapshots", () => {
+    const { native, fold } = frontierWorld();
+    const midnight = DAY_START + 86_400;
+    const epoch = absoluteEpoch({ epochSeconds: 86400 }, midnight - 10);
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("RealmSupport", ["1", "1", String(epoch)], { level: 3 }),
+        rowEvent("RealmSupport", ["1", "2", String(epoch)], { level: 2 }),
+        rowEvent("ResourceWeight", ["1", "1"], { capacity: 100000, weight: 0 }),
+        rowEvent("ResourceProduction", ["1", "1", "35"], {
+          building_count: 1,
+          production_rate: 100,
+          output_amount_left: (1n << 128n) - 1n,
+          last_updated_at: midnight - 10,
+        }),
+      ]),
+      11,
+      0,
+    );
+    const visited = fold.subscriptionSnapshot("1", 11, fold.subscriptionScope("1", "0xa", midnight + 10, "0xb"));
+    expect(visited.models.find((m) => m.model === "RealmSupport")!.rows).toHaveLength(2);
+    const snapshot = fold.subscriptionSnapshot("1", 11, fold.subscriptionScope("1", "0xa", midnight + 10));
+    expect(snapshot.models.find((m) => m.model === "RealmSupport")!.rows).toHaveLength(1);
+    for (let refresh = 0; refresh < 2; refresh++) {
+      const store = new NativeFactStore();
+      store.applyFacts(snapshot.models.flatMap(({ model, rows }) => rows.map((row) => ({ model, ...row }))));
+      store.setSnapshot({ gameId: 1, complete: true, actor: "0xa", timestamp: midnight + 10 });
+      const production = store.require("ResourceProduction", { game_id: 1, entity_id: 1, resource_type: 35 });
+      const support = store.requireOrAbsent("RealmSupport", { game_id: 1, structure_id: 1, epoch: BigInt(epoch) });
+      expect(productionOutput(production, midnight + 10, { epochSeconds: 86400, level: support.known!.level })).toBe(
+        2200n,
+      );
+      expect(
+        store.requireOrAbsent("RealmSupport", { game_id: 1, structure_id: 1, epoch: BigInt(epoch + 1) }).known?.level,
+      ).toBe(0);
+    }
   });
 
   it("refuses an empty or short view response instead of reading a ring of no tiles", () => {

@@ -167,3 +167,81 @@ describe("native resource facts", () => {
     expect(manager.balanceWithProduction(111, 35).balance).toBe(0);
   });
 });
+
+it("integrates yesterday's Support for wheat and training after refresh, and uses declared absence for an unboosted realm", () => {
+  const facts: GameSyncFact[] = [
+    ...upsert("rules", { SliceRules: { ...preset.rules, game_id: 1, epoch_seconds: 100, mode_rules: 0 } }),
+    ...upsert("game", { GameRegistry: { ...game, ready: true, start_main_at: 0n } }),
+    ...upsert("settlement", {
+      SettlementRules: { game_id: 1, registration_start: 0, registration_limit: 0, mode: "Single", spacing: 100 },
+    }),
+    ...upsert("realm", {
+      Structure: {
+        game_id: 1,
+        entity_id: 7,
+        owner: "0xa",
+        resources_packed: 0n,
+        base: {
+          category: 1,
+          level: 0,
+          created_at: 0n,
+          troop_max_guard_count: 0,
+          troop_max_explorer_count: 0,
+          starting_troops_granted: false,
+        },
+        metadata: { realm_id: 1, village_realm: 0, mine_kind: 0, deepest_depth: 0, has_wonder: false, order: 0 },
+      },
+    }),
+    ...upsert("weight", { ResourceWeight: { ...weight(), capacity: 100000n } }),
+    ...upsert("support", { RealmSupport: { game_id: 1, structure_id: 7, epoch: 0n, level: 3 } }),
+    ...[35, 26].flatMap((resourceId) =>
+      upsert(`resource-${resourceId}`, {
+        ResourceProduction: {
+          ...production,
+          resource_type: resourceId,
+          production_rate: resourceId === 35 ? 100n : 10n,
+          output_amount_left: (1n << 128n) - 1n,
+          last_updated_at: 90,
+        },
+        ResourceRule: { game_id: 1, resource_type: resourceId, unit_weight: 1n, realm_rate: 0n, village_rate: 0n },
+      }),
+    ),
+    ...upsert("recipe", {
+      ProductionRecipe: {
+        game_id: 1,
+        resource_type: 26,
+        simple_output: 1n,
+        simple_inputs: [{ resource_type: 35, amount: 2n }],
+        complex_output: 0n,
+        complex_inputs: [],
+      },
+    }),
+  ];
+  const refresh = (rows: GameSyncFact[]) => {
+    const store = new NativeFactStore();
+    store.applyFacts(rows.map((row, index) => ({ ...row, key: `0x${index + 1}` })));
+    store.setSnapshot({ gameId: 1, complete: true, actor: "0xa", timestamp: 110 });
+    return { store, manager: new ResourceManager(store, 7, 1) };
+  };
+  for (let refreshCount = 0; refreshCount < 2; refreshCount++) {
+    const { store, manager } = refresh(facts);
+    expect(manager.balanceWithProduction(110, 26)?.balance).toBe(220);
+    expect(manager.balanceWithProduction(110, 35)?.balance).toBe(1760);
+    expect(ResourceManager.calculateResourceProductionData(35, manager.current(35)!, 110).productionPerSecond).toBe(
+      100 / 1e9,
+    );
+    expect(store.requireOrAbsent("RealmSupport", { game_id: 1, structure_id: 7, epoch: 1n }).known?.level).toBe(0);
+    const readCurrent = manager.current.bind(manager);
+    const unknownTrainer = vi
+      .spyOn(manager, "current")
+      .mockImplementation((id) => (id === 26 ? undefined : readCurrent(id)));
+    expect(manager.current(35)).toBeDefined();
+    expect(manager.balanceWithProduction(110, 35)).toBeUndefined();
+    unknownTrainer.mockRestore();
+    store.setSnapshot({ gameId: 1, complete: false, actor: "0xa", timestamp: 110 });
+    expect(manager.balanceWithProduction(110, 35)).toBeUndefined();
+  }
+  const unboosted = refresh(facts.filter((row) => row.model !== "RealmSupport"));
+  expect(unboosted.manager.balanceWithProduction(110, 26)?.balance).toBe(200);
+  expect(unboosted.manager.balanceWithProduction(110, 35)?.balance).toBe(1600);
+});

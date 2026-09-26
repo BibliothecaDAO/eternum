@@ -6,6 +6,7 @@ use crate::rules::RESOURCE_PRECISION;
 #[starknet::interface]
 trait IResourceFixture<T> {
     fn initialize(ref self: T, key: ResourceKey, capacity: u128);
+    fn configure_support_training(ref self: T, key: ResourceKey);
     fn grant(ref self: T, key: ResourceKey, amount: u128);
     fn spend(ref self: T, key: ResourceKey, amount: u128);
     fn start(ref self: T, key: ResourceKey);
@@ -22,6 +23,7 @@ trait IResourceFixture<T> {
 
 #[starknet::contract]
 mod ResourceFixture {
+    use starknet::storage::{StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
     use crate::logic::resources::ResourceState;
     use crate::resources::{Production, ResourceKey, Weight};
     component!(path: ResourceState, storage: resources, event: ResourceEvent);
@@ -45,7 +47,31 @@ mod ResourceFixture {
     #[abi(embed_v0)]
     impl Fixture of super::IResourceFixture<ContractState> {
         fn initialize(ref self: ContractState, key: ResourceKey, capacity: u128) {
+            let state = crate::state::write();
+            state.games.games.entry(key.game_id).preset_id.write(1);
+            state.registrar.presets.write(1, 1);
+            state.presets.entry(1).rules.epoch_seconds.write(0);
             self.resources.initialize(key, capacity);
+        }
+        fn configure_support_training(ref self: ContractState, key: ResourceKey) {
+            let state = crate::state::write();
+            let preset = state.presets.entry(1);
+            preset.rules.epoch_seconds.write(100);
+            state.production.realm_support.write((key.game_id, key.entity_id, 0), 3);
+            for resource in array![26_u8, 35] {
+                preset.resource_rules.write(resource, (1, 0));
+            }
+            preset
+                .production_terms
+                .write(
+                    26,
+                    crate::production::RecipeTerms {
+                        simple_output: 1, complex_output: 0, simple_count: 1, complex_count: 0,
+                    },
+                );
+            preset
+                .production_inputs
+                .write((26, false, 0), crate::resources::ResourceAmount { resource_type: 35, amount: 2 });
         }
         fn grant(ref self: ContractState, key: ResourceKey, amount: u128) {
             self.resources.grant_resource(key, 23, amount, 1, 10, 0);
@@ -289,4 +315,25 @@ fn inactive_resources_have_no_clock_and_activation_starts_at_the_recorded_time()
     assert_eq!(weight.weight, 18);
     assert_eq!(production.output_amount_left, 90);
     assert_eq!(production.last_updated_at, 205);
+}
+
+
+#[test]
+fn support_boosts_wheat_and_training_through_midnight_using_the_same_integral() {
+    let resources = fixture();
+    let key = ResourceKey { game_id: 1, entity_id: 7 };
+    resources.initialize(key, 100000);
+    resources.configure_support_training(key);
+    resources.start_at(key, 35, 100, crate::resources::UNLIMITED_OUTPUT, 90);
+    resources.start_at(key, 26, 10, crate::resources::UNLIMITED_OUTPUT, 90);
+    resources.spend_at(key, 26, 0, 1, 110);
+    let (troops, _, _) = resources.read_slot(key, 26);
+    let (wheat, _, _) = resources.read_slot(key, 35);
+    assert_eq!(troops, 220);
+    assert_eq!(wheat, 1760);
+    resources.spend_at(key, 26, 0, 1, 120);
+    let (troops, _, _) = resources.read_slot(key, 26);
+    let (wheat, _, _) = resources.read_slot(key, 35);
+    assert_eq!(troops, 320);
+    assert_eq!(wheat, 2560);
 }

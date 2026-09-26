@@ -1,5 +1,6 @@
 pub const ATTRIBUTE_CAP: u8 = 5;
 pub const ATTRIBUTE_DAMAGE_PERCENT: u8 = 10;
+pub const ATTRIBUTE_SUPPORT_PERCENT: u8 = 10;
 pub const ATTRIBUTE_STAMINA: u8 = 30;
 pub const ATTRIBUTE_SCOUTING_BPS: u8 = 150;
 

@@ -251,3 +251,13 @@ fn blitz_rejects_labor_recipes_but_accepts_resource_production() {
     assert!(execute_recorded_at(deployment, Command::BurnResourceForResourceProduction(refill), 60, 1000));
     assert_eq!(resources.resource_balance(slot), 90);
 }
+
+
+#[test]
+fn support_integral_clips_yesterdays_bonus_at_midnight() {
+    let day = 86400_u32;
+    assert_eq!(crate::production::support_bonus(100, day - 10, day + 10, day, 3), 200);
+    assert_eq!(crate::production::support_bonus(100, day - 10, day + day, day, 3), 200);
+    assert_eq!(crate::production::support_bonus(100, day + 10, day + 20, day, 0), 0);
+    assert_eq!(crate::production::support_bonus(3, day - 1, day, day, 5), 1);
+}

@@ -6,6 +6,7 @@ const RATE = 1_000_000n; // one unit per tick at resource precision
 
 const productionInfo = (outputAmountLeft: bigint) => ({
   balance: 0n,
+  support: null,
   production: { building_count: 2, production_rate: RATE, output_amount_left: outputAmountLeft, last_updated_at: 100 },
 });
 

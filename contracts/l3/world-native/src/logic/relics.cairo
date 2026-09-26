@@ -176,6 +176,16 @@ pub mod RelicState {
             if choice.attribute == crate::progression::Attribute::Logistics {
                 crate::logic::army_slots::grant_logistics(key, explorer.troops.stamina, choice.applied);
             }
+            if choice.attribute == crate::progression::Attribute::Support {
+                crate::production::IRealmSupportDispatcherTrait::raise_realm_support(
+                    crate::production::IRealmSupportLibraryDispatcher {
+                        class_hash: get_dep_component!(@self, Life).classes(game_id).resources.read(),
+                    },
+                    ResourceKey { game_id, entity_id: explorer.owner },
+                    progress.support,
+                    crate::commands::action_context(context),
+                );
+            }
             crate::logic::progression::offer_earned_level(key, ref progress, context);
             crate::logic::progression::write(key, progress);
             let index = crate::ownership::StoryCursorTrait::next(ref story_cursor);
