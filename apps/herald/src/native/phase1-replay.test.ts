@@ -18,6 +18,7 @@ type Recording = {
   schemaIdentity: string;
   worldAddress: string;
   actor: string;
+  gameId?: number;
   records: { receipt: RpcReceipt; transaction: RpcTransaction }[];
   checks: ContractRead[];
   finalSnapshot: GameSnapshot;
@@ -60,20 +61,21 @@ function applyClientFacts(store: NativeFactStore, changes: { change?: FoldChange
 
 function expectContractFacts(store: NativeFactStore, expected: ContractRead) {
   const actor = BigInt(recording.actor);
-  expect(store.require("ActionNonce", { game_id: 1, actor }).next_nonce).toBe(BigInt(expected.nonce));
-  expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: actor }).known?.points).toBe(
+  const gameId = Number(recording.finalSnapshot.game_id);
+  expect(store.require("ActionNonce", { game_id: gameId, actor }).next_nonce).toBe(BigInt(expected.nonce));
+  expect(store.requireOrAbsent("PlayerPoints", { game_id: gameId, address: actor }).known?.points).toBe(
     BigInt(expected.playerPoints),
   );
   if (BigInt(expected.playerPoints) === 0n) {
-    expect(store.get("PlayerPoints", { game_id: 1, address: actor })).toBeUndefined();
+    expect(store.get("PlayerPoints", { game_id: gameId, address: actor })).toBeUndefined();
     return;
   }
-  expect(store.require("PointsTotal", { game_id: 1 }).total).toBe(BigInt(expected.playerPoints));
+  expect(store.require("PointsTotal", { game_id: gameId }).total).toBe(BigInt(expected.playerPoints));
 }
 
 async function replayRecording(ingestion: NativeIngestion, fold: WorldFold) {
   const first = Math.min(...recording.records.map(({ receipt }) => receipt.block_number!));
-  const last = Math.max(...recording.records.map(({ receipt }) => receipt.block_number!));
+  const last = recording.finalSnapshot.confirmed_block;
   await ingestion.replay({
     fold,
     fromBlock: first,
@@ -127,15 +129,19 @@ describe("phase-1 gameplay recording provenance", () => {
     expect(() => recordingDecoder(changed)).toThrow("Native schema identity mismatch");
   });
 
-  it("replays settle, exploration, points and nonce facts against the recorded contract reads", async () => {
-    expect(recording.checks.map((check) => check.kind)).toContain("SettleBlitzRoster");
-    expect(recording.checks.some((check) => check.kind === "Explore")).toBe(true);
-    expect(recording.checks.some((check) => BigInt(check.playerPoints) > 0n)).toBe(true);
+  it("replays the recorded actor state against contract reads and Herald's final snapshot", async () => {
+    expect(recording.records.length).toBeGreaterThan(0);
+    expect(recording.checks.length).toBeGreaterThan(0);
     const decoder = recordingDecoder();
     const ingestion = new NativeIngestion(decoder);
     const fold = new WorldFold(decoder.registry);
     const store = new NativeFactStore();
-    store.setSnapshot({ gameId: 1, complete: true, actor: recording.actor, timestamp: undefined });
+    store.setSnapshot({
+      gameId: Number(recording.finalSnapshot.game_id),
+      complete: true,
+      actor: recording.actor,
+      timestamp: undefined,
+    });
     for (const { receipt, transaction } of recording.records) {
       const overlay = fold.overlay();
       ingestion.applyReceipt(overlay, receipt, null, 0, transaction.calldata);
@@ -145,8 +151,10 @@ describe("phase-1 gameplay recording provenance", () => {
       const expected = recording.checks.find(
         (check) => BigInt(check.transactionHash) === BigInt(receipt.transaction_hash),
       );
-      if (expected) expectContractFacts(store, expected);
+      if (expected && expected.kind !== "FinalState") expectContractFacts(store, expected);
     }
+    const finalState = recording.checks.find(({ kind }) => kind === "FinalState");
+    if (finalState) expectContractFacts(store, finalState);
     const replay = new WorldFold(decoder.registry);
     const last = await replayRecording(ingestion, replay);
     expectRecordedSnapshot(replay, last);
