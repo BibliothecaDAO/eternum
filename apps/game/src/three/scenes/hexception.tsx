@@ -753,13 +753,6 @@ export default class HexceptionScene extends HexagonScene {
       count: 4, // Moderate number of bolts for hex view
     });
 
-    // Select the center of this structure's building board.
-    this.state.setSelectedBuildingHex({
-      structureId: structure.entity_id,
-      innerCol: BUILDINGS_CENTER[0],
-      innerRow: BUILDINGS_CENTER[1],
-    });
-
     this.isInitialized = true;
     this.lastRealmKey = realmKey;
     if (realmChanged) this.prepareLocalPresentation();
