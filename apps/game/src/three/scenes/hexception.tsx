@@ -9,6 +9,8 @@ import {
 import { VILLAGE_MODEL_PATH, isSettlementModelPath } from "../constants/scene-constants";
 import { isAddressEqualToAccount } from "../utils/utils";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
+import { flySprites } from "@/ui/motion/motion-layer";
+import { onUnlockFlight } from "./hexception-unlock-request";
 import { PlotConstructionPicker } from "@/ui/features/settlement/construction/plot-construction-picker";
 import { createHexceptionTerrainRequest, getLocalHexDisk, getLocalTerrainRegions } from "./hexception-terrain";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
@@ -200,6 +202,7 @@ export default class HexceptionScene extends HexagonScene {
   private buildingPreview: BuildingPreview | null = null;
   /** The plot a build sheet chose: its ghost stands there instead of following the pointer, and a tap selects. */
   private pinnedPlot: HexPosition | null = null;
+  private stopUnlockFlights?: () => void;
   /** The radius of the ring a castle upgrade just opened, until the grid lights it. */
   private newRingRadius: number | null = null;
   private newRingTimer: number | undefined;
@@ -345,6 +348,15 @@ export default class HexceptionScene extends HexagonScene {
     this.storeUnsubscribes.push(
       watchFactView(game.store, playerStructuresView, (structures) => this.updatePlayerStructures(structures)),
     );
+
+    // A research unlock lands on the buildings it improves, on this board.
+    this.stopUnlockFlights = onUnlockFlight((flight) => {
+      if (this.sceneManager.getCurrentScene() !== SceneName.Hexception) return;
+      for (const building of this.buildings) {
+        if (building.category !== flight.category) continue;
+        flySprites({ from: flight.from, to: projectHexToScreen(building, this.camera), icon: flight.icon, count: 3 });
+      }
+    });
 
     this.storeUnsubscribes.push(
       useUIStore.subscribe(
@@ -761,6 +773,7 @@ export default class HexceptionScene extends HexagonScene {
 
   destroy() {
     window.clearTimeout(this.newRingTimer);
+    this.stopUnlockFlights?.();
     usePopoverStore.getState().close("plot-construction");
     this.advanceRealmGeneration();
     this.clearHoverLabel();

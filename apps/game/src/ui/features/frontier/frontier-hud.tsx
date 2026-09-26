@@ -6,6 +6,7 @@ import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import { type CSSProperties, useEffect, useState } from "react";
 import { FrontierPick } from "./attributes/frontier-pick";
 import { TodayCard } from "./log/today-card";
+import { FrontierResearch } from "./research/frontier-research";
 import { ChestMomentView } from "./chest/chest-moment-view";
 import { useChestResults } from "./chest/chest-results";
 import { SiteClearCardView } from "./sites/site-clear-card";
@@ -68,6 +69,7 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
             >
               <ScrollText className="size-5" />
             </LogToggle>
+            {realm && <FrontierResearch realm={realm} />}
             <SecondaryMenuItems />
           </div>
           <QuickFeedRows />

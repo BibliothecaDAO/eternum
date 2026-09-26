@@ -17,10 +17,11 @@ import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automat
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BUILDINGS_CENTER, BuildingType, getHexDistance, type HexPosition, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
-import { Chip } from "../frontier-chips";
+import { Chip, TierBanner } from "../frontier-chips";
 import { formatAmount } from "../frontier-format";
 import { PersonGlyph } from "../glyphs";
 import { type BuildOption, readBuildOptions } from "./build-options";
+import { FRONTIER_BUILDING_NAMES } from "./building-names";
 
 const BUILD_MODELS = [
   "Building",
@@ -34,15 +35,6 @@ const BUILD_MODELS = [
   "ResearchNode",
   "BuildingTierRule",
 ] as const;
-
-/** Frontier's names for its five buildings: proper names, the only words on a card. */
-const BUILDING_NAMES: Partial<Record<BuildingType, string>> = {
-  [BuildingType.ResourceWheat]: "Farm",
-  [BuildingType.ResourceKnightT1]: "Barracks",
-  [BuildingType.ResourceLabor]: "Workshop",
-  [BuildingType.Storehouse]: "Storehouse",
-  [BuildingType.WorkersHut]: "Hut",
-};
 
 /**
  * The plot of the player's realm they tapped, when a building could rise there: in the realm view, empty, and inside
@@ -194,7 +186,7 @@ const BuildCard = ({
   <button
     type="button"
     aria-pressed={selected}
-    aria-label={BUILDING_NAMES[option.category]}
+    aria-label={FRONTIER_BUILDING_NAMES[option.category]}
     onClick={onChoose}
     className={cn(
       "frontier-card relative flex w-[136px] shrink-0 snap-start flex-col items-center gap-1.5 px-2 pb-3 pt-2 transition-transform",
@@ -215,7 +207,11 @@ const BuildCard = ({
       className="h-16 w-full object-contain"
     />
     <span className="flex items-center gap-1.5">
-      <span className="font-[Lexend] text-[15px] font-extrabold text-[#eadfc8]">{BUILDING_NAMES[option.category]}</span>
+      <span className="font-[Lexend] text-[15px] font-extrabold text-[#eadfc8]">
+        {FRONTIER_BUILDING_NAMES[option.category]}
+      </span>
+      {/* It rises at the realm's researched tier; the base tier carries no banner. */}
+      {option.tier > 1 && <TierBanner tier={option.tier} />}
     </span>
     <EffectChip option={option} />
     <Chip label="Population" icon={<PersonGlyph />} value={formatAmount(option.populationCost)} />

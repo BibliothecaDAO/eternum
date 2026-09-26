@@ -31,14 +31,6 @@ export const TREE_BUILDINGS = [
   BuildingType.ResourceKnightT1,
 ] as const;
 
-/** Frontier's names for its buildings: proper names, shown only for the chosen node. */
-export const RESEARCH_BUILDING_NAMES: Record<(typeof TREE_BUILDINGS)[number], string> = {
-  [BuildingType.ResourceWheat]: "Farm",
-  [BuildingType.WorkersHut]: "Hut",
-  [BuildingType.Storehouse]: "Storehouse",
-  [BuildingType.ResourceKnightT1]: "Barracks",
-};
-
 export const tierNode = (plan: ResearchPlan, category: BuildingType, tier: 2 | 3) =>
   plan.nodes.find(({ effect }) => effect.kind === "tier" && effect.category === category && effect.tier === tier);
 

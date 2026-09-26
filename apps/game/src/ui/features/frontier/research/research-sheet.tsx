@@ -3,12 +3,12 @@ import { Check, Lock } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { Fragment, useState } from "react";
+import { FRONTIER_BUILDING_NAMES } from "../build/building-names";
 import { Chip, TierBanner } from "../frontier-chips";
 import { formatAmount } from "../frontier-format";
 import {
   depthNode,
   firstOpenNode,
-  RESEARCH_BUILDING_NAMES,
   type ResearchNodeView,
   type ResearchPlan,
   siteNode,
@@ -158,6 +158,7 @@ const Medallion = ({
     type="button"
     aria-pressed={chosen}
     aria-label={`${nodeTitle(node)}, ${node.state}`}
+    data-research-node={node.node}
     onClick={onChoose}
     className="flex flex-col items-center gap-1"
   >
@@ -254,12 +255,12 @@ const ChosenNode = ({
 
 const nodeTitle = ({ effect }: ResearchNodeView): string =>
   effect.kind === "tier"
-    ? RESEARCH_BUILDING_NAMES[effect.category as keyof typeof RESEARCH_BUILDING_NAMES]
+    ? (FRONTIER_BUILDING_NAMES[effect.category] ?? "")
     : effect.kind === "site"
       ? effect.site
       : NUMERALS[effect.depth];
 
-const nodeArt = ({ effect }: ResearchNodeView): string =>
+export const nodeArt = ({ effect }: ResearchNodeView): string =>
   effect.kind === "tier"
     ? BUILDING_IMAGES_PATH[effect.category as keyof typeof BUILDING_IMAGES_PATH]
     : effect.kind === "site"

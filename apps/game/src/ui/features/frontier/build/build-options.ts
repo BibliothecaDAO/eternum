@@ -20,7 +20,7 @@ const TROOP_RESOURCES = new Set<number>([ResourcesIds.Knight, ResourcesIds.Cross
 /** Every troop a barracks can train, T1 to T3 of each kind. */
 const TRAINED_TROOPS = new Set<number>(Array.from({ length: 9 }, (_, index) => ResourcesIds.Knight + index));
 
-type BuildEffect =
+export type BuildEffect =
   | { kind: "produces"; resource: ResourcesIds; perHour: number }
   | { kind: "capacity"; amount: number }
   | { kind: "population"; amount: number };
@@ -52,7 +52,7 @@ export const readBuildOptions = (
     const cost = getBuildingCosts(realm.entity_id, store, category, useSimpleCost);
     if (tier === undefined || cost === undefined) return undefined;
     const rule = store.require("BuildingRule", { game_id: realm.game_id, category });
-    const effect = buildingEffect(store, realm, rule, tier as BuildOption["tier"], doubled ? 2 : 1);
+    const effect = readBuildingEffect(store, realm, category, tier as BuildOption["tier"], doubled ? 2 : 1);
     const change = wheatChange(store, realm, effect);
     options.push({
       category,
@@ -67,15 +67,18 @@ export const readBuildOptions = (
   return options;
 };
 
-/** What a building gives at the realm, as the contract's building_effect computes it at its tier and on its plot. */
-const buildingEffect = (
+/**
+ * What a building gives at the realm, as the contract's building_effect computes it at its tier and on its plot (×2 on
+ * the marked one): the one reading of it, for the build sheet, the upgrade sheet and research's gains.
+ */
+export const readBuildingEffect = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
-  rule: NativeRows["BuildingRule"],
+  category: BuildingType,
   tier: BuildOption["tier"],
   multiplier: number,
 ): BuildEffect => {
-  const category = rule.category as BuildingType;
+  const rule = store.require("BuildingRule", { game_id: realm.game_id, category });
   // Tier I has no rule of its own: it is the base building.
   const tierRule = tier > 1 ? store.require("BuildingTierRule", { game_id: realm.game_id, category, tier }) : undefined;
   const scaled = (value: number, bps: number | undefined) => ((value * (bps ?? 10_000)) / 10_000) * multiplier;
