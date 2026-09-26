@@ -195,7 +195,9 @@ export class ResourceManager {
     const wheat = this.current(ResourcesIds.Wheat);
     if (!wheat) return undefined;
     const perHour = (perSecond: bigint) => (Number(perSecond) / RESOURCE_PRECISION) * 3600;
-    const consumed = this.trainers().reduce((total, { id, state }) => {
+    const trainers = this.trainers();
+    if (!trainers) return undefined;
+    const consumed = trainers.reduce((total, { id, state }) => {
       const recipe = this.store.require("ProductionRecipe", { game_id: this.gameId, resource_type: id });
       const input = recipe.simple_inputs[0];
       if (recipe.simple_output === 0n || input?.resource_type !== ResourcesIds.Wheat)

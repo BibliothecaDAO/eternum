@@ -166,6 +166,20 @@ describe("native resource facts", () => {
     expect(manager.balanceWithProduction(111, 26).balance).toBe(34);
     expect(manager.balanceWithProduction(111, 35).balance).toBe(0);
   });
+  it("leaves the wheat rate unknown while the barracks snapshot is incomplete", () => {
+    const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 1, complete: false, actor: null, timestamp: 350 });
+    store.applyFacts([
+      ...upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 } }),
+      ...upsert("0x1", { ResourceWeight: weight() }),
+      ...upsert("0x2", {
+        ResourceBalance: { ...balance(), resource_type: 35 },
+        ResourceProduction: { ...production, resource_type: 35 },
+      }),
+    ]);
+
+    expect(new ResourceManager(store, 7, 1).wheatPerHour()).toBeUndefined();
+  });
 });
 
 it("integrates yesterday's Support for wheat and training after refresh, and uses declared absence for an unboosted realm", () => {
