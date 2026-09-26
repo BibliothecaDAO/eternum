@@ -6,11 +6,8 @@ import { WorldFold } from "../world-fold";
 import type { FoldChange, GameSnapshot, RpcReceipt, RpcTransaction } from "../types";
 import { NativeDecoder } from "./decoder";
 import { NativeIngestion } from "./ingestion";
-import { manifest } from "./fixtures";
+import { manifest, schema as currentSchema } from "./fixtures";
 import type { NativeSchema } from "./schema";
-import recordedSchemaJson from "../../../../contracts/l3/world-native/tests/fixtures/gameplay-facts/phase1-schema.json";
-
-const recordedSchema = recordedSchemaJson as unknown as NativeSchema;
 
 type ContractRead = { kind: string; transactionHash: string; nonce: string; playerPoints: string };
 type Recording = {
@@ -33,16 +30,16 @@ const recording: Recording = JSON.parse(
   ),
 );
 
-function recordingDecoder(provenance: NativeSchema = recordedSchema) {
+function recordingDecoder(provenance: NativeSchema = currentSchema) {
   expect(recording.schemaIdentity).toBe(provenance.identity);
   return new NativeDecoder({
     ...manifest,
     world: { address: recording.worldAddress },
     native: {
       ...manifest.native,
-      activeSchema: recordedSchema.identity,
-      releaseSchemas: { "1": recordedSchema.identity },
-      schemas: { [recordedSchema.identity]: provenance },
+      activeSchema: currentSchema.identity,
+      releaseSchemas: { "1": currentSchema.identity },
+      schemas: { [currentSchema.identity]: provenance },
     },
   });
 }
@@ -91,38 +88,32 @@ async function replayRecording(ingestion: NativeIngestion, fold: WorldFold) {
   return last;
 }
 
-// The recording pins its model selection; current subscription rules describe today's client only.
+// The snapshot is actor-scoped; replay may also contain valid rows outside that actor's scope.
 function expectRecordedSnapshot(fold: WorldFold, confirmedBlock: number) {
   expect(confirmedBlock).toBe(recording.finalSnapshot.confirmed_block);
   for (const { model, rows } of recording.finalSnapshot.models) {
-    const definition = recordedSchema.models.find(({ name }) => name === model);
-    if (!definition) throw new Error(`Recorded snapshot model has no provenance: ${model}`);
-    const actual = fold
-      .modelRows(model)
-      .filter(
-        ({ value }) =>
-          definition.scope === "deployment" ||
-          BigInt(value.game_id as string) === BigInt(recording.finalSnapshot.game_id),
-      );
-    expect(actual, model).toEqual(rows);
+    const definition = currentSchema.models.find(({ name }) => name === model);
+    if (!definition) throw new Error(`Recorded snapshot model is absent from the current schema: ${model}`);
+    const actualByKey = new Map(fold.modelRows(model).map(({ key, value }) => [key, value]));
+    for (const row of rows) expect(actualByKey.get(row.key), `${model} ${row.key}`).toEqual(row.value);
   }
 }
 
 describe("phase-1 gameplay recording provenance", () => {
   it("rejects a changed recorded model layout", () => {
-    const changed = structuredClone(recordedSchema);
+    const changed = structuredClone(currentSchema);
     changed.models.find(({ name }) => name === "PlayerPoints")!.members[0].type = "core::integer::u64";
     expect(() => recordingDecoder(changed)).toThrow("Native schema identity mismatch");
   });
 
   it("rejects a changed recorded event layout", () => {
-    const changed = structuredClone(recordedSchema);
+    const changed = structuredClone(currentSchema);
     changed.games.events.find(({ name }) => name === "PointsAwarded")!.members[0].kind = "data";
     expect(() => recordingDecoder(changed)).toThrow("Native schema identity mismatch");
   });
 
   it("rejects a changed nested type used by a recorded model", () => {
-    const changed = structuredClone(recordedSchema);
+    const changed = structuredClone(currentSchema);
     const battle = changed.types["world_native::rules::BattleConfig"];
     if (battle.type !== "struct") throw new Error("Expected a BattleConfig struct");
     battle.members.push({ name: "extra_field", type: "core::integer::u32" });
@@ -133,6 +124,7 @@ describe("phase-1 gameplay recording provenance", () => {
     expect(recording.records.length).toBeGreaterThan(0);
     expect(recording.checks.length).toBeGreaterThan(0);
     expect(recording.checks.filter(({ kind }) => kind !== "FinalState").length).toBeGreaterThanOrEqual(3);
+    expect(recording.checks.filter(({ kind }) => kind === "FinalState")).toHaveLength(1);
     const decoder = recordingDecoder();
     const ingestion = new NativeIngestion(decoder);
     const fold = new WorldFold(decoder.registry);
@@ -155,7 +147,8 @@ describe("phase-1 gameplay recording provenance", () => {
       if (expected && expected.kind !== "FinalState") expectContractFacts(store, expected);
     }
     const finalState = recording.checks.find(({ kind }) => kind === "FinalState");
-    if (finalState) expectContractFacts(store, finalState);
+    if (!finalState) throw new Error("Phase-1 recording has no final-state contract read");
+    expectContractFacts(store, finalState);
     const replay = new WorldFold(decoder.registry);
     const last = await replayRecording(ingestion, replay);
     expectRecordedSnapshot(replay, last);
