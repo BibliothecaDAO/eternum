@@ -30,9 +30,12 @@ export const PlayPage = () => {
 
   return (
     <div className="grid gap-3 pt-2 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:items-start lg:gap-4 lg:pt-8">
-      {season && <FrontierCard season={season} className="h-44 lg:row-span-2 lg:h-[32rem]" />}
-      <BlitzLobbyCard games={games} now={now} />
-      <EternumCard games={games} now={now} className="h-32 lg:h-40" />
+      {season && <FrontierCard season={season} className="h-44 lg:h-[32rem]" />}
+      {/* Blitz and Eternum stack from the top of their column, whatever Frontier's height beside them. */}
+      <div className="flex flex-col gap-3 lg:gap-4">
+        <BlitzLobbyCard games={games} now={now} />
+        <EternumCard games={games} now={now} className="h-32 lg:h-40" />
+      </div>
     </div>
   );
 };
