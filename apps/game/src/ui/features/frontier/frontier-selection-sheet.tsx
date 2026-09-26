@@ -4,6 +4,9 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { useSelectedTileDetails } from "@/ui/features/world/components/bottom-right-panel";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { useQuery } from "@/hooks/helpers/use-query";
+import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
+import { useMemo } from "react";
 import { BuildSheet, useOpenPlot } from "./build/build-sheet";
 import { MapSiteCard, useSelectedMapSite } from "./sites/map-site-card";
 import { TileCard, useSelectedSite } from "./sites/tile-card";
@@ -17,6 +20,7 @@ import { CastleUpgrade, useKeepSelected } from "./upgrade/castle-upgrade";
  */
 export const FrontierSelectionSheet = ({ realm }: { realm: NativeRows["Structure"] | null }) => {
   const details = useSelectedTileDetails();
+  const emptyTile = useEmptyMapTileSelected();
   const openPlot = useOpenPlot(realm);
   const site = useSelectedSite();
   const mapSite = useSelectedMapSite();
@@ -33,7 +37,8 @@ export const FrontierSelectionSheet = ({ realm }: { realm: NativeRows["Structure
   if (mapSite) return <MapSiteCard selected={mapSite} onClose={close} />;
   if (realm && keep) return <CastleUpgrade realm={realm} onClose={close} />;
   if (realm && building) return <BuildingUpgrade realm={realm} selected={building} onClose={close} />;
-  if (!details) return null;
+  // An empty or unexplored map tile holds nothing to act on: Frontier shows no sheet for it, not the old inspector.
+  if (emptyTile || !details) return null;
 
   return (
     <section
@@ -60,4 +65,13 @@ export const FrontierSelectionSheet = ({ realm }: { realm: NativeRows["Structure
       </div>
     </section>
   );
+};
+
+/** A tapped map tile with nothing on it, or one the map has not revealed. */
+const useEmptyMapTileSelected = (): boolean => {
+  const { isMapView } = useQuery();
+  const selectedHex = useUIStore((state) => state.selectedHex);
+  const hexes = useMemo(() => (selectedHex ? [selectedHex] : []), [selectedHex]);
+  const [tile] = useWorldSpatialTiles(hexes);
+  return isMapView && selectedHex !== null && (tile === undefined || tile.occupierId === 0);
 };
