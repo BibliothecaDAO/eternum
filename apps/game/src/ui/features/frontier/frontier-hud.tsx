@@ -59,9 +59,9 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
   return (
     <div
       aria-label="Frontier HUD"
-      // The session happens on the map: while the selection sheet shows something, Ysolde waits out of the way (her
-      // line stays unseen) instead of stacking on it, by the same test the sheet uses to show itself.
-      className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-2 [&:has([data-selection-sheet]_[data-sheet-content]>*)_[data-guide]]:hidden [&:has([data-frontier-sheet])_[data-guide]]:hidden"
+      // The session happens on the map: while any sheet is open, Ysolde waits out of the way (her line stays unseen)
+      // instead of stacking on it.
+      className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-2 [&:has([data-frontier-sheet])_[data-guide]]:hidden"
       style={SAFE_AREA}
     >
       <FrontierStatusStrip rules={rules} realm={realm ?? visited} />
