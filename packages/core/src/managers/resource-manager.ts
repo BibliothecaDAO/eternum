@@ -188,23 +188,26 @@ export class ResourceManager {
   }
 
   /**
-   * The realm's wheat each hour at its current rates, in whole units: what its farms grow, and what its barracks eat to
-   * train from wheat (a troop's rate times its recipe's wheat per troop). Undefined where the entity holds no wheat.
+   * The realm's wheat each hour at the rates running at `currentTick`, in whole units: what its farms grow, and what its
+   * barracks eat to train from wheat (a troop's rate times its recipe's wheat per troop). Rates come from the one
+   * production integral, so a day's Support boost counts until its midnight. Undefined where the entity holds no wheat
+   * or its barracks roster is unknown.
    */
-  public wheatPerHour(): { produced: number; consumed: number } | undefined {
+  public wheatPerHour(currentTick: number): { produced: number; consumed: number } | undefined {
     const wheat = this.current(ResourcesIds.Wheat);
     if (!wheat) return undefined;
-    const perHour = (perSecond: bigint) => (Number(perSecond) / RESOURCE_PRECISION) * 3600;
     const trainers = this.trainers();
     if (!trainers) return undefined;
+    const perHour = (resourceId: ResourcesIds, state: ResourceState) =>
+      ResourceManager.calculateResourceProductionData(resourceId, state, currentTick).productionPerSecond * 3600;
     const consumed = trainers.reduce((total, { id, state }) => {
       const recipe = this.store.require("ProductionRecipe", { game_id: this.gameId, resource_type: id });
       const input = recipe.simple_inputs[0];
       if (recipe.simple_output === 0n || input?.resource_type !== ResourcesIds.Wheat)
         throw new Error("Unlimited training requires a wheat recipe");
-      return total + (state.production.production_rate * input.amount) / recipe.simple_output;
-    }, 0n);
-    return { produced: perHour(wheat.production.production_rate), consumed: perHour(consumed) };
+      return total + (perHour(id, state) * Number(input.amount)) / Number(recipe.simple_output);
+    }, 0);
+    return { produced: perHour(ResourcesIds.Wheat, wheat), consumed };
   }
 
   /** The troop productions that train from wheat without end: a barracks with no output cap. */

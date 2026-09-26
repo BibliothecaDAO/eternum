@@ -13,7 +13,7 @@ describe("Frontier's build options", () => {
     const marked = markedPlot(1, 1);
     const plain = { col: marked.col === 10 ? 11 : 10, row: marked.row === 9 ? 11 : 9 };
     const byCategory = (plot: { col: number; row: number }) =>
-      new Map(readBuildOptions(store, realm, plot, true)!.map((option) => [option.category, option]));
+      new Map(readBuildOptions(store, realm, plot, true, 350)!.map((option) => [option.category, option]));
     const onPlain = byCategory(plain);
     const onMarked = byCategory(marked);
 
@@ -48,7 +48,7 @@ describe("Frontier's build options", () => {
   it("forecasts the realm's wheat once a building stands: a farm adds, a barracks eats its troops' recipe wheat", () => {
     const { store, realm } = realmBoard();
     const options = new Map(
-      readBuildOptions(store, realm, { col: 11, row: 11 }, true)!.map((option) => [option.category, option]),
+      readBuildOptions(store, realm, { col: 11, row: 11 }, true, 350)!.map((option) => [option.category, option]),
     );
     const farm = options.get(BuildingType.ResourceWheat)!;
     const barracks = options.get(BuildingType.ResourceKnightT1)!;
@@ -63,7 +63,7 @@ describe("Frontier's build options", () => {
   it("raises a building at the realm's researched tier: its tier's output and labor, recomputed when research lands", () => {
     const { store, realm } = realmBoard();
     const farm = () =>
-      readBuildOptions(store, realm, { col: 11, row: 11 }, true)!.find(
+      readBuildOptions(store, realm, { col: 11, row: 11 }, true, 350)!.find(
         ({ category }) => category === BuildingType.ResourceWheat,
       )!;
     const before = farm();
@@ -85,6 +85,6 @@ describe("Frontier's build options", () => {
   it("knows no option while the realm's research is unknown", () => {
     const { store, realm } = realmBoard();
     store.applyFacts([{ model: "RealmKnowledge", key: "0x77", value: null }] as never);
-    expect(readBuildOptions(store, realm, { col: 11, row: 11 }, true)).toBeUndefined();
+    expect(readBuildOptions(store, realm, { col: 11, row: 11 }, true, 350)).toBeUndefined();
   });
 });

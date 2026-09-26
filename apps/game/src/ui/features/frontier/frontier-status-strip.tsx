@@ -23,7 +23,8 @@ import { troopsOnHand, useExpeditionRules, useGoToFrontierPlace } from "./fronti
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
-const BALANCE_MODELS = ["ResourceBalance", "ResourceProduction"] as const;
+// A day's Support boosts production, so the holdings move with it too.
+const BALANCE_MODELS = ["RealmSupport", "ResourceBalance", "ResourceProduction"] as const;
 const STRIP_RESOURCES = [ResourcesIds.Essence, ResourcesIds.Labor, ResourcesIds.Wheat] as const;
 
 /**

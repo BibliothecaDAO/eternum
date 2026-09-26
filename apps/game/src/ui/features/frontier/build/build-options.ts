@@ -43,9 +43,10 @@ export const readBuildOptions = (
   realm: NativeRows["Structure"],
   plot: { col: number; row: number },
   useSimpleCost: boolean,
+  tick: number,
 ): BuildOption[] | undefined => {
   const doubled = isRealmMarkedPlot(store, realm, plot);
-  const wheat = new ResourceManager(store, realm.entity_id).wheatPerHour();
+  const wheat = new ResourceManager(store, realm.entity_id).wheatPerHour(tick);
   const options: BuildOption[] = [];
   for (const category of FRONTIER_BUILDINGS) {
     const tier = researchedBuildingTier(store, realm.game_id, realm.entity_id, category);

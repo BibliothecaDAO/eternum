@@ -145,8 +145,8 @@ describe("native resource facts", () => {
     expect(manager.trainsFromWheat()).toBe(true);
     expect(new ResourceManager(store, 8, 1).trainsFromWheat()).toBe(false);
     // Farms grow 100 a second; the barracks trains 10 a second at 2 wheat each (rates in game precision).
-    expect(manager.wheatPerHour()).toEqual({ produced: (100 / 1e9) * 3600, consumed: (20 / 1e9) * 3600 });
-    expect(new ResourceManager(store, 8, 1).wheatPerHour()).toBeUndefined();
+    expect(manager.wheatPerHour(101)).toEqual({ produced: (100 / 1e9) * 3600, consumed: (20 / 1e9) * 3600 });
+    expect(new ResourceManager(store, 8, 1).wheatPerHour(101)).toBeUndefined();
     expect(manager.balanceWithProduction(101, 26).balance).toBe(30);
     expect(manager.balanceWithProduction(101, 35).balance).toBe(70);
     expect(manager.balance(35)).toBe(60n);
@@ -179,7 +179,7 @@ describe("native resource facts", () => {
       }),
     ]);
 
-    expect(new ResourceManager(store, 7, 1).wheatPerHour()).toBeUndefined();
+    expect(new ResourceManager(store, 7, 1).wheatPerHour(101)).toBeUndefined();
   });
 });
 
@@ -246,6 +246,9 @@ it("integrates yesterday's Support for wheat and training after refresh, and use
       100 / 1e9,
     );
     expect(store.requireOrAbsent("RealmSupport", { game_id: 1, structure_id: 7, epoch: 1n }).known?.level).toBe(0);
+    // The day's wheat runs 20% faster, both ways, until its midnight at 100; then the base rates.
+    expect(manager.wheatPerHour(95)).toEqual({ produced: (120 / 1e9) * 3600, consumed: (24 / 1e9) * 3600 });
+    expect(manager.wheatPerHour(150)).toEqual({ produced: (100 / 1e9) * 3600, consumed: (20 / 1e9) * 3600 });
     // Today's boost: the day's earned level past the first, none on a day that earned nothing.
     expect(realmSupportPercent(store, 1, 7, 90)).toEqual({ known: 20 });
     expect(realmSupportPercent(store, 1, 7, 150)).toEqual({ known: 0 });

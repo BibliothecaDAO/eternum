@@ -1,6 +1,7 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -28,6 +29,8 @@ const BUILD_MODELS = [
   "ResourceBalance",
   "ResourceProduction",
   "ResourceWeight",
+  // A day's Support boosts the wheat the realm grows and its barracks eat.
+  "RealmSupport",
   "Structure",
   "StructureBuildings",
   // What the realm has researched sets each building's tier, its price and what it gives.
@@ -78,9 +81,10 @@ export const BuildSheet = ({
   const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
   const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
   const revision = useNativeRevision(BUILD_MODELS);
+  const tick = useCurrentDefaultTick();
   const options = useMemo(
-    () => readBuildOptions(setup.store, realm, plot, useSimpleCost),
-    [plot.col, plot.row, realm, revision, setup.store, useSimpleCost],
+    () => readBuildOptions(setup.store, realm, plot, useSimpleCost, tick),
+    [plot.col, plot.row, realm, revision, setup.store, tick, useSimpleCost],
   );
   const realmInfo = useMemo(
     () => getRealmInfo(realm.entity_id, setup.store, getPlayerName),

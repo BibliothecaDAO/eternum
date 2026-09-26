@@ -23,7 +23,15 @@ import {
   readMusterPlan,
 } from "./muster-plan";
 
-const MUSTER_MODELS = ["ArmySlot", "ResourceBalance", "ResourceProduction", "Structure", "TileOccupancy"] as const;
+const MUSTER_MODELS = [
+  "ArmySlot",
+  // Troops on hand are trained through the production integral, which a day's Support boosts.
+  "RealmSupport",
+  "ResourceBalance",
+  "ResourceProduction",
+  "Structure",
+  "TileOccupancy",
+] as const;
 const RING_RADIUS = 46;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 
