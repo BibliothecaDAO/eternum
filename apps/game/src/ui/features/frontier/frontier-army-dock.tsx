@@ -1,6 +1,6 @@
 import { type OpenArmySlot, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useGame } from "@/hooks/context/game-context";
-import { useBlockTimestamp, useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
+import { useBlockTimestamp, useCurrentArmiesTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useQuery } from "@/hooks/helpers/use-query";
@@ -22,6 +22,7 @@ import {
   getArmyName,
   liveHomeArmies,
   Position,
+  realmSupportPercent,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, type TroopTier, type TroopType } from "@bibliothecadao/types";
@@ -34,6 +35,7 @@ import { useExpeditionRules } from "./frontier-home";
 import { describeSlotBar, useOpenArmySlots } from "./frontier-muster-stamina";
 import { ArmyPortrait } from "./attributes/army-portrait";
 import { PickChip } from "./attributes/pick-chip";
+import { ATTRIBUTE_LOOK } from "./attributes/attributes";
 import { useRevealYield } from "./frontier-reveal-yield";
 import { useWellRefill } from "./sites/well-refill";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
@@ -49,8 +51,9 @@ const ARMY_MODELS = [
 ] as const;
 
 /**
- * One card per army slot the castle grants: today's armies with their troops and stamina, then a Muster card for
- * every open slot, saying whether its next army starts fresh or on the bar a lost army left. A row along the foot of a phone held upright; a column down the left edge otherwise.
+ * The realm's Support boost today, then one card per army slot the castle grants: today's armies with their troops
+ * and stamina, then a Muster card for every open slot, saying whether its next army starts fresh or on the bar a lost
+ * army left. A row along the foot of a phone held upright; a column down the left edge otherwise.
  */
 export const FrontierArmyDock = ({ realm }: { realm: NativeRows["Structure"] }) => {
   const { setup } = useGame();
@@ -76,6 +79,7 @@ export const FrontierArmyDock = ({ realm }: { realm: NativeRows["Structure"] }) 
       aria-label="Armies"
       className="pointer-events-auto flex gap-2 overflow-x-auto overscroll-contain landscape:flex-col landscape:overflow-y-auto landscape:overflow-x-hidden"
     >
+      <SupportToday realm={realm} />
       {armies.map((army, index) => (
         <ArmyCard key={army.explorer_id} army={army} position={index + 1} pannable={ownArmies} />
       ))}
@@ -184,6 +188,31 @@ const ArmyCard = ({
     </div>
   );
 };
+
+/**
+ * The realm's Support boost today, at the head of the dock: its glyph and "+N%" of production, from the day's earned
+ * maximum. "—" while unknown; nothing on a day that earned none.
+ */
+const SupportToday = ({ realm }: { realm: NativeRows["Structure"] }) => {
+  const { setup } = useGame();
+  const now = useNowSeconds();
+  useNativeRevision(SUPPORT_MODELS);
+  const percent = realmSupportPercent(setup.store, realm.game_id, realm.entity_id, now);
+  if (percent.known === 0) return null;
+  return (
+    <span className="flex shrink-0 items-center self-center landscape:self-start">
+      <Chip
+        small
+        tone="gain"
+        label="Support today"
+        icon={<img src={ATTRIBUTE_LOOK.Support.glyph} alt="" />}
+        value={percent.known === undefined ? "—" : `+${percent.known}%`}
+      />
+    </span>
+  );
+};
+
+const SUPPORT_MODELS = ["RealmSupport", "SliceRules"] as const;
 
 /** What this army's next reveal sends home at the depth it stands on. */
 const ArmyRevealYield = ({ army }: { army: NativeRows["ExplorerTroops"] }) => {

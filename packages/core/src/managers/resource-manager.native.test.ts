@@ -3,6 +3,7 @@ import preset from "../../../../contracts/l3/world-native/tests/fixtures/current
 import { describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import { ResourceManager } from "./resource-manager";
+import { realmSupportPercent } from "../utils/realm-support";
 import type { GameSyncFact } from "../sync/game-sync-types";
 
 const upsert = (key: string, models: Record<string, Record<string, unknown>>): GameSyncFact[] =>
@@ -245,6 +246,9 @@ it("integrates yesterday's Support for wheat and training after refresh, and use
       100 / 1e9,
     );
     expect(store.requireOrAbsent("RealmSupport", { game_id: 1, structure_id: 7, epoch: 1n }).known?.level).toBe(0);
+    // Today's boost: the day's earned level past the first, none on a day that earned nothing.
+    expect(realmSupportPercent(store, 1, 7, 90)).toEqual({ known: 20 });
+    expect(realmSupportPercent(store, 1, 7, 150)).toEqual({ known: 0 });
     const readCurrent = manager.current.bind(manager);
     const unknownTrainer = vi
       .spyOn(manager, "current")
@@ -254,6 +258,8 @@ it("integrates yesterday's Support for wheat and training after refresh, and use
     unknownTrainer.mockRestore();
     store.setSnapshot({ gameId: 1, complete: false, actor: "0xa", timestamp: 110 });
     expect(manager.balanceWithProduction(110, 35)).toBeUndefined();
+    // An incomplete scope cannot vouch for a day without a row.
+    expect(realmSupportPercent(store, 1, 7, 150).unknown).toBeDefined();
   }
   const unboosted = refresh(facts.filter((row) => row.model !== "RealmSupport"));
   expect(unboosted.manager.balanceWithProduction(110, 26)?.balance).toBe(200);
