@@ -1,7 +1,7 @@
 /**
  * Ysolde's first-session script (lore draft approved 25 Sep 2026). Each step names the game state it answers; the guide
  * shows the first step not yet seen whose state holds, so a reload lands on the same line and a player who is ahead
- * never waits on an old one. The first research and the first Ethereal depth join when research lands.
+ * never waits on an old one.
  */
 export interface GuideFacts {
   /** The player's Frontier realm exists. */
@@ -32,6 +32,10 @@ export interface GuideFacts {
   fallenRealm: boolean;
   /** One of the player's chests paid a relic because the day's LORDS were spent. */
   lordsSpent: boolean;
+  /** The realm has learned nothing yet and holds the Essence for its cheapest research. */
+  firstResearchAffordable: boolean;
+  /** An army of today stands at Ethereal I or deeper. */
+  armyBelowSurface: boolean;
 }
 
 export type GuidePlace = "realm" | "muster" | "camp";
@@ -100,6 +104,11 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
     when: (facts) => facts.castleAffordable && facts.onMap,
   },
   {
+    id: "first-research",
+    line: "Essence buys knowing. Learn Farm II first: your barracks eats more than one farm grows.",
+    when: (facts) => facts.firstResearchAffordable,
+  },
+  {
     id: "rest",
     mood: "pleased",
     line: "They are tired and the fog is patient. Come back when the bars fill. Tomorrow it is all new land.",
@@ -110,6 +119,11 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
     id: "first-fallen-realm",
     line: "A realm the Mist took. Something lives in it now. There is a chest inside, if you are strong enough to ask for it.",
     when: (facts) => facts.fallenRealm,
+  },
+  {
+    id: "first-ethereal-depth",
+    line: "Below the surface the Mist is older. Bigger guards, better chests. Your reveals pay a little more.",
+    when: (facts) => facts.armyBelowSurface,
   },
   {
     id: "first-lords-spent",

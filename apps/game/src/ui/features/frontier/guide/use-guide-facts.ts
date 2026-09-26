@@ -5,6 +5,9 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import {
   configManager,
+  entityMapPosition,
+  expeditionDepth,
+  learnedResearchNodes,
   getBalance,
   getBuildingQuantity,
   getGuardsByStructure,
@@ -14,7 +17,15 @@ import {
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, StructureType, TileOccupier, type TroopTier, type TroopType } from "@bibliothecadao/types";
+import {
+  BuildingType,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  StructureType,
+  TileOccupier,
+  type TroopTier,
+  type TroopType,
+} from "@bibliothecadao/types";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { knownBalance } from "@/ui/utils/utils";
@@ -35,6 +46,8 @@ const GUIDE_MODELS = [
   "ResourceProduction",
   "ArmyProgress",
   "ExpeditionSite",
+  "RealmKnowledge",
+  "ResearchNode",
 ] as const;
 
 /**
@@ -98,7 +111,22 @@ const readGuideFacts = (
       (army) => store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id })?.pending,
     ),
     ...readSiteFirsts(store, realm.game_id),
+    firstResearchAffordable: canAffordFirstResearch(store, realm, clock.tick),
+    armyBelowSurface: armies.some(
+      (army) => expeditionDepth(rules, { y: entityMapPosition(store, army.game_id, army.explorer_id).y }) >= 1,
+    ),
   };
+};
+
+/** Nothing learned yet, and the realm's Essence covers the cheapest node on the table. */
+const canAffordFirstResearch = (store: NativeFactStore, realm: NativeRows["Structure"], tick: number): boolean => {
+  const learned = learnedResearchNodes(store, realm.game_id, realm.entity_id);
+  if (learned === undefined || learned.length > 0) return false;
+  const prices = [...store.inGame("ResearchNode", realm.game_id)].map(
+    ({ essence_cost }) => Number(essence_cost) / RESOURCE_PRECISION,
+  );
+  const essence = knownBalance(getBalance(realm.entity_id, ResourcesIds.Essence, tick, store).balance);
+  return prices.length > 0 && essence !== undefined && essence >= Math.min(...prices);
 };
 
 /** The expedition's sites and chests as the guide's firsts read them. */
@@ -127,6 +155,8 @@ const NO_REALM: Omit<GuideFacts, "lordsSpent"> = {
   siteCleared: false,
   closedChest: false,
   fallenRealm: false,
+  firstResearchAffordable: false,
+  armyBelowSurface: false,
 };
 
 const guardedCampToday = (

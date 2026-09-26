@@ -16,6 +16,8 @@ const facts = (overrides: Partial<GuideFacts> = {}): GuideFacts => ({
   closedChest: false,
   fallenRealm: false,
   lordsSpent: false,
+  firstResearchAffordable: false,
+  armyBelowSurface: false,
   ...overrides,
 });
 
@@ -42,7 +44,7 @@ describe("nextGuideStep", () => {
     );
   });
 
-  it("speaks on each first as its state holds: a pick, a clear, a chest, a fallen realm, spent LORDS", () => {
+  it("speaks on each first as its state holds: a pick, a clear, a chest, research, a depth, a fallen realm, spent LORDS", () => {
     const played = seen("arrival", "build-on-the-mark", "muster", "first-reveal");
     const ready = { barracks: true, armies: 2 };
     expect(nextGuideStep(facts({ ...ready, pickWaiting: true }), played)?.id).toBe("first-pick");
@@ -53,6 +55,8 @@ describe("nextGuideStep", () => {
     expect(nextGuideStep(facts({ ...ready, closedChest: true }), played)?.id).toBe("closed-chest");
     expect(nextGuideStep(facts({ ...ready, fallenRealm: true }), played)?.id).toBe("first-fallen-realm");
     expect(nextGuideStep(facts({ ...ready, lordsSpent: true }), played)?.id).toBe("first-lords-spent");
+    expect(nextGuideStep(facts({ ...ready, firstResearchAffordable: true }), played)?.id).toBe("first-research");
+    expect(nextGuideStep(facts({ ...ready, armyBelowSurface: true }), played)?.id).toBe("first-ethereal-depth");
     // A first already seen is never spoken again.
     expect(nextGuideStep(facts({ ...ready, lordsSpent: true }), seen(...played, "first-lords-spent"))).toBeNull();
   });
