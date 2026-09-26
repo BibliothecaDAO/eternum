@@ -444,8 +444,11 @@ async function settleFrontierPlayer(
       ),
   });
   if (transaction.outcome !== "completed") return { transaction };
-  const realmId = own.settlementStructureIds(identity.address)?.[0];
-  if (realmId === undefined) throw new Error("Settlement did not publish the home realm");
+  const realmId = await own.waitFor(
+    () => own.settlementStructureIds(identity.address)?.[0],
+    30_000,
+    () => `Frontier settlement for bot ${identity.botId} in game ${game.gameId}`,
+  );
   return {
     transaction,
     player: {
