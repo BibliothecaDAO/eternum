@@ -90,6 +90,72 @@ describe("GameSubscription", () => {
     expect(subscriptionScope).toHaveBeenCalledTimes(4);
   });
 
+  it("rebases once per lane scope change while confirmed and preconfirmed scopes alternate", () => {
+    const initial = expeditionScope();
+    const mustered = { ...initial, expedition: { ...initial.expedition!, entities: new Set(["7", "70", "80"]) } };
+    const laneScopes = new Map<boolean, GameSyncScope>([
+      [false, initial],
+      [true, initial],
+    ]);
+    const structure = { key: "2:9", value: { game_id: "2", entity_id: "9" } };
+    const subscriptionSnapshot = vi.fn(() => ({
+      confirmed_block: 1,
+      game_id: "2",
+      models: [{ model: "Structure", rows: [structure] }],
+    }));
+    const folds = new Map<boolean, WorldFold>(
+      [false, true].map((preconfirmed) => [
+        preconfirmed,
+        {
+          subscriptionScope: () => laneScopes.get(preconfirmed)!,
+          scopeValidUntil: () => 86_400,
+          subscriptionSnapshot,
+          currentRow: () => undefined,
+        } as unknown as WorldFold,
+      ]),
+    );
+    const subscription = new GameSubscription(
+      "2",
+      "0x111",
+      (preconfirmed) => {
+        return folds.get(preconfirmed)!;
+      },
+      () => 1,
+      () => 100,
+    );
+    subscription.snapshot();
+    const published = [] as ReturnType<GameSubscription["project"]>;
+    const rebase = (preconfirmed: boolean) => {
+      published.push(
+        ...subscription.project({
+          type: "diff",
+          block: 2,
+          preconfirmed,
+          set: [{ model: "SliceRules", key: "rules", value: {} }],
+          del: [],
+        }),
+      );
+    };
+
+    laneScopes.set(true, mustered);
+    rebase(true);
+    rebase(true); // same lane, same scope: ordinary diff only
+    laneScopes.set(false, mustered);
+    rebase(false);
+    rebase(true);
+    rebase(false);
+
+    // Only the initial snapshot and the two actual lane transitions rebuild a full scope snapshot.
+    expect(subscriptionSnapshot).toHaveBeenCalledTimes(3);
+    const diffs = published.filter((body) => body.type === "diff");
+    expect(diffs.flatMap((body) => (body.type === "diff" ? body.del : []))).toEqual([]);
+    expect(
+      diffs.some(
+        (body) => body.type === "diff" && body.set.some(({ model, key }) => model === "Structure" && key === "2:9"),
+      ),
+    ).toBe(true);
+  });
+
   it("shows a home-ring tile once, and the chain writing the same tile changes nothing until it differs", () => {
     const tile = (data: string) => ({
       model: "TileOpt",

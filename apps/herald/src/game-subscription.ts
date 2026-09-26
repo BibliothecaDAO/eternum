@@ -12,8 +12,7 @@ const scopeIdentity = (scope: GameSyncScope) =>
 /** Replaces game-wide delivery; retains membership keys, never a second copy of current facts. */
 export class GameSubscription {
   private visible = new Map<string, FoldDelete>();
-  private scopeKey = "";
-  private rememberedScope?: GameSyncScope;
+  private readonly publishedScopeKeys = new Map<boolean, string>();
   /**
    * The scope per fold (confirmed, pre-confirmed) with the scope-input keys it was taken from, kept until a published
    * change reaches one of those keys or the day's expedition rolls over.
@@ -37,7 +36,9 @@ export class GameSubscription {
   public snapshot(): GameSnapshot {
     const scope = this.scope(false);
     const snapshot = this.scopeSnapshot(false, scope);
-    this.remember(snapshot, scope);
+    this.remember(snapshot, scope, false);
+    // The confirmed snapshot is also the starting point for the overlay lane until it publishes a different scope.
+    this.publishedScopeKeys.set(true, scopeIdentity(scope));
     return snapshot;
   }
 
@@ -72,7 +73,7 @@ export class GameSubscription {
     }
     const preconfirmed = body.type === "head" || body.preconfirmed;
     const scope = this.scope(preconfirmed);
-    if (scope !== this.rememberedScope && scopeIdentity(scope) !== this.scopeKey)
+    if (this.publishedScopeKeys.get(preconfirmed) !== scopeIdentity(scope))
       return this.replaceScope(body, scope, preconfirmed);
     if (body.type === "head") return [body];
     const set = body.set.filter(
@@ -129,7 +130,7 @@ export class GameSubscription {
     if (body.type === "diff")
       for (const row of body.set)
         if (!next.has(identity(row)) && rowInGameSyncScope(row.model, row.value, scope)) set.push(row);
-    this.remember(snapshot, scope);
+    this.remember(snapshot, scope, preconfirmed);
     const diff: PublishedBody = {
       type: "diff",
       block: body.block,
@@ -141,12 +142,11 @@ export class GameSubscription {
     return body.type === "head" ? [diff, body] : [diff];
   }
 
-  private remember(snapshot: GameSnapshot, scope: GameSyncScope): void {
+  private remember(snapshot: GameSnapshot, scope: GameSyncScope, preconfirmed: boolean): void {
     this.visible.clear();
     for (const { model, rows } of snapshot.models)
       for (const row of rows) this.visible.set(identity({ model, key: row.key }), { model, key: row.key });
-    this.scopeKey = scopeIdentity(scope);
-    this.rememberedScope = scope;
+    this.publishedScopeKeys.set(preconfirmed, scopeIdentity(scope));
   }
 
   private track(set: FoldSet[], del: FoldDelete[]): void {
