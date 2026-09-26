@@ -35,6 +35,8 @@ export interface IdentityEnv extends Schema.Schema.Type<typeof IdentityVars> {
   DB: D1Database;
   /** The guardian Worker, reached by service binding only. */
   GUARDIAN: Guardian;
+  /** The launch Worker, reached by service binding only. */
+  LAUNCH: { fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> };
   PUBLIC_RATE_LIMIT: RateLimit;
   /** Sign-in codes sent to one email address. */
   SIGN_IN_CODE_RATE_LIMIT: RateLimit;
@@ -53,6 +55,7 @@ export const decodeIdentityEnv = (raw: Record<string, unknown>): IdentityEnv => 
   ...decodeIdentityVars(raw),
   DB: raw.DB as D1Database,
   GUARDIAN: raw.GUARDIAN as Guardian,
+  LAUNCH: raw.LAUNCH as IdentityEnv["LAUNCH"],
   PUBLIC_RATE_LIMIT: raw.PUBLIC_RATE_LIMIT as RateLimit,
   SIGN_IN_CODE_RATE_LIMIT: raw.SIGN_IN_CODE_RATE_LIMIT as RateLimit,
   VERSION: raw.VERSION as WorkerVersionMetadata,

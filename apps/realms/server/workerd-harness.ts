@@ -27,6 +27,7 @@ export const startWorker = async (options: {
   storage: string;
   vapid: { publicKey: string; privateKey: string };
   outbound: (request: Request) => Response | Promise<Response>;
+  launchDirectory?: (request: Request) => Response | Promise<Response>;
   /** The shard notifiers' poll interval; tests poll fast so their waits stay short. */
   notifierPollMs?: number;
 }) => {
@@ -62,6 +63,9 @@ export const startWorker = async (options: {
       WEB_PUSH_VAPID_PRIVATE_KEY: options.vapid.privateKey,
       WEB_PUSH_VAPID_SUBJECT: "mailto:ops@realms.party",
       SHARD_NOTIFIER_POLL_MS: String(options.notifierPollMs ?? 3_000),
+    },
+    serviceBindings: {
+      LAUNCH: (request: Request) => options.launchDirectory?.(request) ?? Response.json({ chains: [] }),
     },
     outboundService: async (request: Request) => {
       if (request.url !== EMAIL_PROVIDER) return options.outbound(request);

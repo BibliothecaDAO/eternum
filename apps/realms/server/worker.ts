@@ -13,7 +13,7 @@ export default {
     return routeIdentityRequest(request, env, identityAuthOf(rawEnv, env), {
       cache: caches.default,
       fetchShard: fetch,
-      readLaunchDirectory: () => fetchLaunchDirectory(env.BASE_URL),
+      readLaunchDirectory: () => fetchLaunchDirectory(env.LAUNCH),
     });
   },
   async scheduled(_controller: ScheduledController, rawEnv: Record<string, unknown>): Promise<void> {
@@ -22,9 +22,9 @@ export default {
   },
 };
 
-/** Reads completed game ids from the launch service beside this Worker on the same app origin. */
-const fetchLaunchDirectory = async (baseUrl: string) => {
-  const response = await fetch(new URL("/api/factory/directory-games", baseUrl), {
+/** Reads completed game ids from the launch Worker through its service binding. */
+const fetchLaunchDirectory = async (launch: IdentityEnv["LAUNCH"]) => {
+  const response = await launch.fetch("https://launch/api/factory/directory-games", {
     signal: AbortSignal.timeout(5_000),
     redirect: "manual",
   });

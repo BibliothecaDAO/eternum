@@ -92,6 +92,7 @@ beforeAll(async () => {
     CHAT_INBOX: {} as IdentityEnv["CHAT_INBOX"],
     DB: proxy.env.DB,
     GUARDIAN: createGuardian(GUARDIAN_KEY),
+    LAUNCH: { fetch: vi.fn(async () => Response.json({ chains: [] })) },
     PUBLIC_RATE_LIMIT: { limit: async () => ({ success: true }) },
     SIGN_IN_CODE_RATE_LIMIT: { limit: async ({ key }) => ({ success: countSignInCode(key) <= 3 }) },
     VERSION: { id: "test", tag: "", timestamp: "" },
