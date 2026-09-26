@@ -185,11 +185,13 @@ describe("createGameClient", () => {
     client.dispose();
   });
 
-  it("visits a realm only for a connected player, and connecting again leaves the visit", async () => {
+  it("visits a realm for a spectator or a connected player, and connecting again leaves the visit", async () => {
     const harness = createHarness({ actor: "0x111" });
     const client = await bootClient(harness);
     const send = vi.spyOn(harness.sockets[0]!, "send");
-    expect(() => client.visit("0x222")).toThrow("requires a connected player");
+    // A spectator watches a realm: the stream carries it alone, with no actor.
+    client.visit("0x222");
+    expect(send).toHaveBeenLastCalledWith(JSON.stringify({ type: "select_actor", actor: null, visit: "0x222" }));
     client.connect({ address: "0x111" } as AccountInterface);
     client.visit("0x222");
     expect(send).toHaveBeenLastCalledWith(JSON.stringify({ type: "select_actor", actor: "0x111", visit: "0x222" }));

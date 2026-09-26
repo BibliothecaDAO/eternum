@@ -25,7 +25,7 @@ const PEEK_LENGTH = 5;
  * Frontier's season board from Herald's read model: sites cleared, then deepest depth, then who reached the count
  * first. Herald ranks; the client only reads, and an unknown board shows as "—".
  */
-const useSeasonBoard = () => {
+export const useSeasonBoard = () => {
   const shard = requireShard(getActiveGame()?.chainId);
   const gameId = configManager.getActiveGameId();
   return useQuery({
@@ -125,11 +125,7 @@ const SeasonBoardSheet = ({ rank }: { rank: string }) => {
         <Chip label="Season rank" icon={<Trophy />} value={rank} />
       </header>
       {board.data ? (
-        <SeasonTable
-          rows={boardRows(board.data, viewer, LIST_LENGTH)}
-          useName={usePlayerDisplayName}
-          onVisit={viewer === null ? undefined : visit}
-        />
+        <SeasonTable rows={boardRows(board.data, viewer, LIST_LENGTH)} useName={usePlayerDisplayName} onVisit={visit} />
       ) : (
         <p className="frontier-hero text-center">—</p>
       )}

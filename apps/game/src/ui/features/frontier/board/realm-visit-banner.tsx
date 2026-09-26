@@ -61,9 +61,12 @@ export const RealmVisitBanner = ({ home }: { home: NativeRows["Structure"] | nul
       >
         {name}
       </span>
-      <button type="button" onClick={leave} className="frontier-primary !h-10 !rounded-xl px-4 !text-base">
-        Leave
-      </button>
+      {/* A spectator has no realm to return to; they switch whom they watch from the season board. */}
+      {home && (
+        <button type="button" onClick={leave} className="frontier-primary !h-10 !rounded-xl px-4 !text-base">
+          Leave
+        </button>
+      )}
     </div>
   );
 };

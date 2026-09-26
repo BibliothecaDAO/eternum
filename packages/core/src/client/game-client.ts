@@ -75,8 +75,9 @@ export interface GameClient {
   /** Back to spectating: the next action throws until a signer connects again. */
   disconnect(): void;
   /**
-   * Streams another player's realm alongside the connected player's own scope, read-only; null leaves the visit.
-   * Connecting a signer leaves any visit, and a visit never changes who signs.
+   * Streams another player's realm, read-only: alongside the connected player's own scope, or alone for a spectator,
+   * who watches a realm this way. Null leaves the visit. Connecting a signer leaves any visit, and a visit never
+   * changes who signs.
    */
   visit(player: string | null): void;
   /** Reconnect through the same convergent subscribe → snapshot → replay routine used at boot. */
@@ -231,10 +232,7 @@ const buildGameClient = (
       signer = null;
       views = null;
     },
-    visit: (player) => {
-      if (!signer) throw new Error("Visiting a realm requires a connected player");
-      transport.selectActor(signer.address, player ?? undefined);
-    },
+    visit: (player) => transport.selectActor(signer?.address, player ?? undefined),
     recover: () => runtime.recover(),
     dispose: () => disposeRuntime(runtime),
   };

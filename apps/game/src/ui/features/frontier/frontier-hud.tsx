@@ -8,6 +8,7 @@ import { useRealmVisit } from "@/sync/active-game-client";
 import { FrontierPick } from "./attributes/frontier-pick";
 import { RealmVisitBanner, useVisitedRealm } from "./board/realm-visit-banner";
 import { SeasonBoardChip, SeasonBoardPeek } from "./board/season-board";
+import { useSpectatorWatchesTheLeader } from "./board/spectator-watch";
 import { TodayCard } from "./log/today-card";
 import { FrontierResearch } from "./research/frontier-research";
 import { ChestMomentView } from "./chest/chest-moment-view";
@@ -42,6 +43,8 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
   const visit = useRealmVisit();
   const visited = useVisitedRealm(visit);
   const dockRealm = visit ? visited : realm;
+  // A spectator has no realm of their own: they watch the season's leader, and the strip reads the watched realm.
+  useSpectatorWatchesTheLeader();
   const [logOpen, setLogOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const armySelected = useUIStore((state) => state.entityActions.selectedEntityId !== null);
@@ -61,7 +64,7 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
       className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-2 [&:has([data-selection-sheet]_[data-sheet-content]>*)_[data-guide]]:hidden [&:has([data-frontier-sheet])_[data-guide]]:hidden"
       style={SAFE_AREA}
     >
-      <FrontierStatusStrip rules={rules} realm={realm} />
+      <FrontierStatusStrip rules={rules} realm={realm ?? visited} />
       {/* A chest's opening owns the screen while it plays, over the world where the chest opens. */}
       <ChestMomentView />
       <FrontierSurfaces realm={realm} />
