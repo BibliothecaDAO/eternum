@@ -7,6 +7,7 @@ import { env } from "../../env";
 
 import { useDirectory } from "./herald";
 import { IdentityChip } from "./identity-chip";
+import { useOutsidePlaySession } from "@/utils/spectator-session";
 
 const NAV = [
   { to: "/", label: "Home", end: true },
@@ -32,6 +33,8 @@ const shardsSummary = (shards: readonly { available: boolean }[]): string => {
  */
 export const AppShell = () => {
   useBootDocumentState("app-ready");
+  // Back from a spectated game, the signed-in player is no spectator here.
+  useOutsidePlaySession();
   const directory = useDirectory();
 
   return (
