@@ -76,12 +76,9 @@ export const attributeBadgeTarget = (explorerId: number): string => `attributes-
 
 /**
  * Each attribute's glyph and what one level of it gives, as the contract's constants apply it: damage in percent,
- * stamina, and camp and rift odds in points. Support has no rule on chain yet, so its gain is unknown.
+ * stamina, camp and rift odds in points, and the home realm's production in percent for the day.
  */
-export const ATTRIBUTE_LOOK: Record<
-  Attribute,
-  { glyph: string; perLevel: { value: number; unit: "%" | "" } | undefined }
-> = {
+export const ATTRIBUTE_LOOK: Record<Attribute, { glyph: string; perLevel: { value: number; unit: "%" | "" } }> = {
   Battle: {
     glyph: "/images/frontier/attributes/battle.svg",
     perLevel: { value: nativeRuleConstants.ATTRIBUTE_DAMAGE_PERCENT, unit: "%" },
@@ -94,13 +91,16 @@ export const ATTRIBUTE_LOOK: Record<
     glyph: "/images/frontier/attributes/scouting.svg",
     perLevel: { value: nativeRuleConstants.ATTRIBUTE_SCOUTING_BPS / 100, unit: "" },
   },
-  Support: { glyph: "/images/frontier/attributes/support.svg", perLevel: undefined },
+  Support: {
+    glyph: "/images/frontier/attributes/support.svg",
+    perLevel: { value: nativeRuleConstants.ATTRIBUTE_SUPPORT_PERCENT, unit: "%" },
+  },
 };
 
 const gain = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 
-/** What taking `levels` more of an attribute gives, "+20%" or "+1.5"; "—" where its rule is unknown. */
+/** What taking `levels` more of an attribute gives, "+20%" or "+1.5". */
 export const attributeGain = (attribute: Attribute, levels: number): string => {
-  const perLevel = ATTRIBUTE_LOOK[attribute].perLevel;
-  return perLevel ? `+${gain.format(levels * perLevel.value)}${perLevel.unit}` : "—";
+  const { perLevel } = ATTRIBUTE_LOOK[attribute];
+  return `+${gain.format(levels * perLevel.value)}${perLevel.unit}`;
 };

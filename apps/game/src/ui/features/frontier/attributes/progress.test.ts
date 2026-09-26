@@ -7,7 +7,7 @@ vi.mock("@/audio/core/AudioManager", () => ({
 vi.mock("@/ui/motion/motion-layer", () => ({ riseSprite: ({ label }: { label: string }) => rises.push(label) }));
 vi.mock("@/ui/motion/motion-settings", () => ({ playHaptic: () => {} }));
 
-import { bankedPicks, levelProgress, progressChange, xpGained } from "./attributes";
+import { attributeGain, bankedPicks, levelProgress, progressChange, xpGained } from "./attributes";
 import { playArmyProgress } from "./progress-moment";
 
 const RULES = { game_id: 1, reveal_xp: 10, clear_xp: 25, level_step_xp: 20 };
@@ -36,6 +36,15 @@ describe("an army's progress", () => {
     expect(xpGained({ level: 3, xp: 40 }, { level: 3, xp: 50 }, RULES)).toBe(10);
     expect(xpGained({ level: 3, xp: 75 }, { level: 4, xp: 15 }, RULES)).toBe(0);
     expect(progressChange({ level: 3, xp: 75 }, { level: 4, xp: 15 }, RULES)).toEqual({ xp: 0, levels: 1 });
+  });
+});
+
+describe("an attribute's gain", () => {
+  it("reads each attribute's rule, Support's production percent included", () => {
+    expect(attributeGain("Battle", 1)).toBe("+10%");
+    expect(attributeGain("Logistics", 2)).toBe("+60");
+    expect(attributeGain("Scouting", 1)).toBe("+1.5");
+    expect(attributeGain("Support", 2)).toBe("+20%");
   });
 });
 
