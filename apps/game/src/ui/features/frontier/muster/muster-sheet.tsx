@@ -6,9 +6,9 @@ import { requireActiveGameClient } from "@/sync/active-game-client";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import { structureMapPosition } from "@bibliothecadao/eternum";
+import { spawnRing, structureMapPosition } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { getNeighborHexes } from "@bibliothecadao/types";
+import { type Direction, getNeighborHexes } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { formatAmount } from "../frontier-format";
 import { Chip, TroopChip, YieldChip } from "../frontier-chips";
@@ -16,12 +16,13 @@ import { BoltGlyph, SlotBanner } from "../glyphs";
 import {
   type MusterStack,
   musterArmy,
-  musterDirection,
+  deployDirection,
   musterMaximum,
   previewMuster,
   readMusterPlan,
 } from "./muster-plan";
 import { FrontierSheet } from "../frontier-sheet";
+import { DeployRing } from "./deploy-ring";
 
 const MUSTER_MODELS = [
   "ArmySlot",
@@ -53,7 +54,9 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   const [chosen, setChosen] = useState(0);
   const stack = plan?.stacks[chosen] ?? plan?.stacks[0];
   const [count, setCount] = useState(0);
-  const direction = useMusterDirection(realm);
+  const ring = useDeployRing(realm);
+  const [picked, setPicked] = useState<Direction | null>(null);
+  const direction = deployDirection(ring, picked);
   const [pending, setPending] = useState(false);
 
   // The sheet opens, or a new stack is chosen, at the most the realm can field. Keyed on the stack's identity: its
@@ -107,6 +110,7 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
           <span>{formatAmount(maximum)}</span>
         </span>
       </label>
+      <DeployRing ring={ring} chosen={direction} onChoose={setPicked} />
       <div className="grid grid-cols-3 gap-2">
         {/* A realm with no troops has no stack to show; the hero's "—" already says so. */}
         {stack ? <TroopChip type={stack.type} tier={stack.tier} count={preview?.count} /> : <span />}
@@ -124,13 +128,13 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   );
 };
 
-/** Where the new army steps out: the first free hex around the realm, from the map's own tiles. */
-const useMusterDirection = (realm: NativeRows["Structure"]) => {
+/** The six tiles around the realm, each open when the map shows it explored and free (spawnRing). */
+const useDeployRing = (realm: NativeRows["Structure"]) => {
   const { setup } = useGame();
   const home = structureMapPosition(setup.store, realm);
   const neighbors = useMemo(() => getNeighborHexes(home.x, home.y), [home.x, home.y]);
   const tiles = useWorldSpatialTiles(neighbors);
-  return musterDirection(setup.store, realm, (hex) => {
+  return spawnRing(setup.store, realm, (hex) => {
     const tile = tiles.find(({ hexCoords }) => hexCoords.col === hex.col && hexCoords.row === hex.row);
     return tile ? Number(tile.occupierId) : undefined;
   });

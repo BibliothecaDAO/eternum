@@ -3,7 +3,6 @@ import {
   type GameActions,
   getBalance,
   getTroopResourceId,
-  openSpawnDirections,
   readRevealPercent,
   revealYield,
 } from "@bibliothecadao/eternum";
@@ -87,12 +86,17 @@ export const previewMuster = (
   };
 };
 
-/** Where the army steps out: the first explored, open hex around the realm, or null when none is known to be. */
-export const musterDirection = (
-  store: NativeFactStore,
-  realm: NativeRows["Structure"],
-  occupierAt: (hex: { col: number; row: number }) => number | undefined,
-): Direction | null => openSpawnDirections(store, realm, occupierAt)[0] ?? null;
+/**
+ * The tile the army deploys onto: the one the player picked while it stays open, else the first open tile of the
+ * ring; none while no tile is known to be open.
+ */
+export const deployDirection = (
+  ring: readonly { direction: Direction; open: boolean }[],
+  picked: Direction | null,
+): Direction | null =>
+  ring.find((tile) => tile.open && tile.direction === picked)?.direction ??
+  ring.find((tile) => tile.open)?.direction ??
+  null;
 
 /** The Muster command: the chosen stack and count, stepping out where the realm has room. */
 export const musterArmy = (

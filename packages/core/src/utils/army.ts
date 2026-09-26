@@ -194,17 +194,28 @@ const isArmyAdjacentToStructure = (
 /** Deployment requires an explored, unoccupied tile; unknown terrain disables the action. */
 export const isOpenSpawnHex = (occupierId: number | undefined): boolean => occupierId === 0;
 
+/** The six tiles around a structure in ring order, each open when an army can be raised onto it. */
+export const spawnRing = (
+  store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
+  structure: NativeRows["Structure"],
+  occupierAt: (hex: { col: number; row: number }) => number | undefined,
+): { direction: Direction; open: boolean }[] => {
+  const home = structureMapPosition(store, structure);
+  return getLayerNeighborHexes(home.x, home.y, home.alt).map((hex) => ({
+    direction: hex.direction,
+    open: isOpenSpawnHex(occupierAt(hex)),
+  }));
+};
+
 /** The directions an army can be raised in from a structure, given the occupier of each explored neighbour. */
 export const openSpawnDirections = (
   store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
   structure: NativeRows["Structure"],
   occupierAt: (hex: { col: number; row: number }) => number | undefined,
-): Direction[] => {
-  const home = structureMapPosition(store, structure);
-  return getLayerNeighborHexes(home.x, home.y, home.alt)
-    .filter((hex) => isOpenSpawnHex(occupierAt(hex)))
-    .map((hex) => hex.direction);
-};
+): Direction[] =>
+  spawnRing(store, structure, occupierAt)
+    .filter((tile) => tile.open)
+    .map((tile) => tile.direction);
 
 export const getRemainingCapacityInKg = (weight: NativeRows["ResourceWeight"]) =>
   nanogramToKg(Number(weight.capacity - weight.weight));

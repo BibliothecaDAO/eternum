@@ -2,7 +2,8 @@ import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { frontierDay } from "./muster-fixture";
-import { musterArmy, musterDirection, musterMaximum, previewMuster, readMusterPlan } from "./muster-plan";
+import { spawnRing } from "@bibliothecadao/eternum";
+import { deployDirection, musterArmy, musterMaximum, previewMuster, readMusterPlan } from "./muster-plan";
 
 afterEach(() => {
   setBlockTimestampSource(null);
@@ -32,11 +33,29 @@ describe("Frontier's muster", () => {
     expect(preview.revealYield).toBeUndefined();
   });
 
-  it("steps out on the first explored open hex around the realm, and nowhere while the ring is unknown or taken", () => {
+  it("deploys onto the picked tile while it stays open, else the first open one, never onto unknown or taken ground", () => {
     const { store, row } = frontierDay();
-    expect(musterDirection(store, row, () => 0)).not.toBeNull();
-    expect(musterDirection(store, row, () => undefined)).toBeNull();
-    expect(musterDirection(store, row, () => 1)).toBeNull();
+    const ring = (occupier: (col: number) => number | undefined) => spawnRing(store, row, (hex) => occupier(hex.col));
+    const open = ring(() => 0);
+    expect(open).toHaveLength(6);
+    expect(deployDirection(open, null)).toBe(open[0].direction);
+    expect(deployDirection(open, open[3].direction)).toBe(open[3].direction);
+    // The picked tile is taken: the army falls back to the first open tile.
+    const taken = open.map((tile, index) => (index === 3 ? { ...tile, open: false } : tile));
+    expect(deployDirection(taken, open[3].direction)).toBe(open[0].direction);
+    // Unknown ground (an unexplored ring) and a ring all taken give no tile.
+    expect(
+      deployDirection(
+        ring(() => undefined),
+        null,
+      ),
+    ).toBeNull();
+    expect(
+      deployDirection(
+        ring(() => 1),
+        null,
+      ),
+    ).toBeNull();
   });
 
   it("musters the chosen stack and count in the given direction", async () => {
