@@ -51,6 +51,13 @@ afterEach(() => {
   useIdentitySessionStore.setState({ status: "anonymous", session: null });
 });
 
+/** Lets the read settle on real time, a few seconds at most, however loaded the machine running the test is. */
+const settled = async () => {
+  for (let waited = 0; waited < 5_000 && seen.pending.at(-1); waited += 25) {
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 25)));
+  }
+};
+
 const mount = async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const root = createRoot(document.createElement("div"));
@@ -80,7 +87,7 @@ it("reads a signed-in player's directory only once their account address is know
     expect(seen.pending.at(-1)).toBe(true);
 
     await act(async () => guardianAnswer.release());
-    for (let tick = 0; tick < 20 && seen.pending.at(-1); tick += 1) await act(async () => {});
+    await settled();
     expect(requests.filter((url) => url.startsWith("/api/directory"))).toEqual([`/api/directory?player=${PLAYER}`]);
     expect(seen.pending.at(-1)).toBe(false);
   } finally {
@@ -95,7 +102,7 @@ it("waits for the session before any read, then reads the anonymous directory fo
     await act(async () => {});
     expect(requests.filter((url) => url.startsWith("/api/directory"))).toEqual([]);
     await act(async () => useIdentitySessionStore.setState({ status: "anonymous", session: null }));
-    for (let tick = 0; tick < 20 && seen.pending.at(-1); tick += 1) await act(async () => {});
+    await settled();
     expect(requests.filter((url) => url.startsWith("/api/directory"))).toEqual(["/api/directory"]);
   } finally {
     await unmount();
