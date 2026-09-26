@@ -54,7 +54,6 @@ describe("the muster sheet", () => {
     const slider = host.querySelector<HTMLInputElement>("input[type=range]")!;
     expect(slider.value).toBe(slider.max);
     expect(host.querySelector('[aria-label^="Knight T1"] .frontier-tier')?.textContent).toBe("I");
-    expect(host.querySelector('[aria-label="1 of 3 armies today"]')).not.toBeNull();
 
     act(() => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(slider, "120");

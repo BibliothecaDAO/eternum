@@ -12,7 +12,7 @@ import { type Direction, getNeighborHexes } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { formatAmount } from "../frontier-format";
 import { Chip, TierBanner, TroopChip, YieldChip } from "../frontier-chips";
-import { BoltGlyph, SlotBanner } from "../glyphs";
+import { BoltGlyph } from "../glyphs";
 import {
   type MusterStack,
   musterArmy,
@@ -86,7 +86,6 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
     <FrontierSheet label="Deploy" onClose={onClose} workspace width="lg">
       <header className="flex items-center justify-between">
         <h2 className="frontier-title">Deploy</h2>
-        {plan && <SlotBanners used={plan.slots.used} allowed={plan.slots.allowed} />}
       </header>
       {/* One plan, two layouts: a phone stacks the portrait over the numbers; a wide screen reads as the deploy
           modal, the realm's stacks as cards beside the count, the tile ring and the army's numbers. */}
@@ -158,15 +157,6 @@ const useDeployRing = (realm: NativeRows["Structure"]) => {
     return tile ? Number(tile.occupierId) : undefined;
   });
 };
-
-/** The day's army slots as banners: a filled banner holds an army, an empty one waits for this muster. */
-const SlotBanners = ({ used, allowed }: { used: number; allowed: number }) => (
-  <span className="flex gap-1.5" aria-label={`${used} of ${allowed} armies today`}>
-    {Array.from({ length: allowed }, (_, index) => (
-      <SlotBanner key={index} used={index < used} />
-    ))}
-  </span>
-);
 
 /** The slider's track: amber up to the thumb, the faint gold of the unfilled ring beyond it. */
 const sliderTrack = (share: number) =>
