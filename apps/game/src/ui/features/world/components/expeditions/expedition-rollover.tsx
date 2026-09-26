@@ -18,13 +18,17 @@ import { useEffect, useRef } from "react";
 
 /**
  * The one place a Frontier day turns over: the realm moves to its new region, the map is re-projected, and the
- * player is told. Herald's scope delivers the new day's rows; this only reacts to the clock.
+ * player is told. Herald's scope delivers the new day's rows; this only reacts to the clock. Two clocks are read on
+ * purpose: the announcement runs on chain time, which leads the last block, but the map is re-projected when the
+ * block clock turns, since a realm's site (structureMapPosition) is read from the block clock. Re-projecting on chain
+ * time placed every realm on the day that was ending and left it there all day.
  */
 export const ExpeditionRollover = () => {
   const { setup } = useGame();
   const address = useAccountStore((state) => state.account?.address ?? null);
   const navigateToMapView = useNavigateToMapView();
   const seasonDayRef = useRef<number | null>(null);
+  const projectedDayRef = useRef<number | null>(null);
 
   useEffect(() => {
     const gameId = configManager.getActiveGameId();
@@ -32,6 +36,10 @@ export const ExpeditionRollover = () => {
       const rules = readExpeditionRules(setup.store, gameId);
       if (!rules) return;
       const now = useChainTimeStore.getState().getNowSeconds();
+      const projectedDay = seasonDay(rules, getBlockTimestamp().currentBlockTimestamp);
+      if (projectedDayRef.current !== null && projectedDay !== projectedDayRef.current)
+        getActiveGameSyncRuntime()?.getWorldSpatialProjection()?.rebuild();
+      projectedDayRef.current = projectedDay;
       const day = seasonDay(rules, now);
       if (seasonDayRef.current === null) {
         seasonDayRef.current = day;
@@ -39,7 +47,6 @@ export const ExpeditionRollover = () => {
       }
       if (day === seasonDayRef.current) return;
       seasonDayRef.current = day;
-      getActiveGameSyncRuntime()?.getWorldSpatialProjection()?.rebuild();
       const realm = address
         ? [...setup.store.structuresOwnedBy(gameId, BigInt(address))].find((structure) =>
             isExpeditionRealm(setup.store, structure),

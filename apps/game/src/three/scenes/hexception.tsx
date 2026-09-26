@@ -81,11 +81,14 @@ import {
   NEUTRAL_BIOME_CLIMATE,
   StructureProgress,
   getBlockTimestamp,
+  isExpeditionRealm,
   Position,
   resolveUseSimpleCost,
+  structureMapPosition,
 } from "@bibliothecadao/eternum";
 
 import { HexceptionAmbienceSystem } from "@/three/systems/hexception-ambience-system";
+import { pickLocalRealm } from "./local-realm";
 import { IS_FLAT_MODE } from "@/ui/config";
 
 import { ProductionModal } from "@/ui/features/settlement";
@@ -677,11 +680,11 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     this.startLocalAssets();
-    const structure = this.selectRouteStructure(contractPosition);
+    const { structure, position: realmPosition } = this.selectRouteStructure(contractPosition);
     this.isEntered = true;
     this.bootstrapSceneOwnership();
 
-    const realmKey = `${contractPosition.col},${contractPosition.row}`;
+    const realmKey = `${realmPosition.col},${realmPosition.row}`;
     const realmChanged = !this.isInitialized || this.lastRealmKey !== realmKey;
 
     if (realmChanged) {
@@ -699,7 +702,7 @@ export default class HexceptionScene extends HexagonScene {
 
     if (realmChanged) {
       const realmGeneration = this.advanceRealmGeneration();
-      this.centerColRow = [contractPosition.col, contractPosition.row];
+      this.centerColRow = [realmPosition.col, realmPosition.row];
       this.tileManager = requireActiveGameClient().views.buildingTiles(useUIStore.getState().structureEntityId);
 
       // remove all previous building instances
@@ -1169,19 +1172,29 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   /** The projection knows what stands on a hex, including a Frontier realm raised on a site with no tile of its own. */
-  private selectRouteStructure(position: HexPosition): NativeRows["Structure"] {
+  /** The route's realm (pickLocalRealm) and where it stands today, which is where the view centres. */
+  private selectRouteStructure(position: HexPosition): { structure: NativeRows["Structure"]; position: HexPosition } {
+    const gameId = configManager.getActiveGameId();
     const standing = requireActiveGameSyncRuntime()
       .requireWorldSpatialProjection()
       .getStructuresAtHex({ alt: DEFAULT_COORD_ALT, col: position.col, row: position.row })
       .find((entry) => entry.entityId !== null);
-    const structure = standing?.entityId
-      ? this.game.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: standing.entityId })
-      : undefined;
-    if (!structure) throw new Error(`No structure is available at local route ${position.col},${position.row}`);
-    useUIStore.getState().setStructureEntityId(structure.entity_id, {
-      worldMapPosition: Position.fromContract({ x: position.col, y: position.row }),
+    const structure = pickLocalRealm({
+      atRoute: standing?.entityId
+        ? this.game.store.get("Structure", { game_id: gameId, entity_id: standing.entityId })
+        : undefined,
+      selected: this.game.store.get("Structure", {
+        game_id: gameId,
+        entity_id: useUIStore.getState().structureEntityId,
+      }),
+      followsTheDay: (candidate) => isExpeditionRealm(this.game.store, candidate),
     });
-    return structure;
+    if (!structure) throw new Error(`No structure is available at local route ${position.col},${position.row}`);
+    const site = structureMapPosition(this.game.store, structure);
+    useUIStore.getState().setStructureEntityId(structure.entity_id, {
+      worldMapPosition: Position.fromContract({ x: site.x, y: site.y }),
+    });
+    return { structure, position: { col: site.x, row: site.y } };
   }
 
   private applyAmbienceAppearance(): void {
