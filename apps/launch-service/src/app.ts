@@ -102,6 +102,15 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
     }
   });
 
+  app.get("/api/factory/directory-games", async (context) => {
+    try {
+      return context.json({ chains: [await dependencies.store.playerDirectoryGames()] });
+    } catch (error) {
+      console.error("factory_directory_games_failed", error);
+      return context.json({ error: "Launch directory is unavailable" }, 503);
+    }
+  });
+
   app.get("/api/factory/runs", async (context) => {
     try {
       const environment = readEnvironment(context.req.query("environment"));

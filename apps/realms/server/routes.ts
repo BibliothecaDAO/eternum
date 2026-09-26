@@ -14,6 +14,7 @@ import { handlePushSubscriptions } from "./push-notifications";
 interface WorkerPlatform {
   cache: Cache;
   fetchShard: typeof fetch;
+  readLaunchDirectory: () => Promise<{ chains: { chainId: string; gameIds: number[] }[] }>;
 }
 
 /** Every /api route: identity under /api/auth, then devices, profiles, chat, notification settings and the directory. */

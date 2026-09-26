@@ -35,6 +35,7 @@ const createApp = (
   playerAccount = vi.fn(async (_realmsId: string) => PLAYER_ACCOUNT),
 ) => {
   const store = new D1LaunchStore(database.db, testChain());
+  const calendar = new D1CalendarStore(database.db);
   return {
     app: createLaunchApp({
       config: {
@@ -46,13 +47,14 @@ const createApp = (
       identity: resolver,
       store,
       slots,
-      calendar: new D1CalendarStore(database.db),
+      calendar,
       // The registrar runs in workerd (worker.test.ts); here a queued run only needs somewhere to arm.
       registrar: { armFor: async () => {} },
       playerAccount,
     }),
     store,
     slots,
+    calendar,
     playerAccount,
   };
 };
@@ -161,6 +163,62 @@ describe("launcher rosters and off-timetable slots", () => {
     expect((await player.app.request(put(season, { cookie: "session=valid" }))).status).toBe(403);
     const read = await player.app.request("https://play.realms.party/api/factory/calendar");
     expect(await read.json()).toEqual({ phases: [{ phase: "frontier", ...season }] });
+  });
+
+  test("publishes game ids only after calendar and Blitz roster launches complete", async () => {
+    const { app, calendar, slots, store } = createApp(signedOut);
+    const now = Math.ceil(Date.now() / 1_000) * 1_000;
+    const season = {
+      phase: "frontier" as const,
+      startsAt: new Date(now + 60_000).toISOString(),
+      endsAt: new Date(now + 7 * 24 * 60 * 60_000).toISOString(),
+    };
+    await calendar.set(season, now);
+    await scheduleFrontierSeason(store, season);
+    const frontier = (await store.startNext(Date.now() + 1_000))!;
+    await store.complete(frontier.id, {
+      environment: "madara.frontier",
+      chain: "madara",
+      gameType: "frontier",
+      gameName: frontier.name,
+      startTime: Math.floor(Date.parse(season.startsAt) / 1_000),
+      startTimeIso: season.startsAt,
+      rpcUrl: "http://rpc.test",
+      gameId: 11,
+      configMode: "batched",
+      configSteps: [],
+      dryRun: false,
+    });
+
+    const closeAt = new Date(now + 60_000).toISOString();
+    await slots.create("directory-blitz", closeAt);
+    await slots.register("directory-blitz", [{ realmsId: null, account: "0xb07" }]);
+    await database.db
+      .prepare("UPDATE playtest_slots SET closes_at = ?")
+      .bind(Date.now() - 1_000)
+      .run();
+    await slots.freeze("directory-blitz");
+    const blitz = (await store.startNext(Date.now() + 1_000))!;
+    await store.complete(blitz.id, {
+      environment: "madara.blitz",
+      chain: "madara",
+      gameType: "blitz",
+      gameName: blitz.name,
+      startTime: Math.floor(now / 1_000),
+      startTimeIso: new Date(now).toISOString(),
+      rpcUrl: "http://rpc.test",
+      gameId: 12,
+      finalizeAt: Math.floor(now / 1_000) + 3_600,
+      configMode: "batched",
+      configSteps: [],
+      dryRun: false,
+    });
+
+    const directory = await app.request("https://play.realms.party/api/factory/directory-games");
+    expect(directory.status).toBe(200);
+    expect(await directory.json()).toEqual({
+      chains: [{ chainId: frontier.chainId, gameIds: [11, 12] }],
+    });
   });
 
   test("the operator token acts as a launcher, and nobody else registers accounts or creates slots", async () => {

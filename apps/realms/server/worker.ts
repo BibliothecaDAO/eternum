@@ -13,12 +13,23 @@ export default {
     return routeIdentityRequest(request, env, identityAuthOf(rawEnv, env), {
       cache: caches.default,
       fetchShard: fetch,
+      readLaunchDirectory: () => fetchLaunchDirectory(env.BASE_URL),
     });
   },
   async scheduled(_controller: ScheduledController, rawEnv: Record<string, unknown>): Promise<void> {
     const env = decodeIdentityEnv(rawEnv);
     await superviseNotifiers(env.DB, env.SHARD_NOTIFIER);
   },
+};
+
+/** Reads completed game ids from the launch service beside this Worker on the same app origin. */
+const fetchLaunchDirectory = async (baseUrl: string) => {
+  const response = await fetch(new URL("/api/factory/directory-games", baseUrl), {
+    signal: AbortSignal.timeout(5_000),
+    redirect: "manual",
+  });
+  if (!response.ok) throw new Error(`Launch directory answered ${response.status}`);
+  return (await response.json()) as { chains: { chainId: string; gameIds: number[] }[] };
 };
 
 export { ChatInbox } from "./chat/chat-inbox";

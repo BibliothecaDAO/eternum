@@ -22,6 +22,7 @@ const OPERATOR_TOKEN = "operator-test-token";
 
 /** The Heralds this test's shards answer from, by URL; a missing entry answers 503. */
 const heralds = new Map<string, unknown>();
+let launchDirectory: { chains: { chainId: string; gameIds: number[] }[] } = { chains: [] };
 const fetchShard = (async (input: RequestInfo | URL) => {
   const body = heralds.get(new URL(input instanceof Request ? input.url : input).href);
   return body === undefined ? new Response("unavailable", { status: 503 }) : Response.json(body);
@@ -130,7 +131,11 @@ const createBrowser = (parentDomainCookies: string[] = []) => {
       }),
       env,
       auth,
-      { cache: proxy.caches.default as unknown as Cache, fetchShard },
+      {
+        cache: proxy.caches.default as unknown as Cache,
+        fetchShard,
+        readLaunchDirectory: async () => launchDirectory,
+      },
     );
     for (const header of response.headers.getSetCookie()) {
       const [pair = ""] = header.split(";");
@@ -454,6 +459,7 @@ describe("identity Worker", () => {
       routeIdentityRequest(new Request(url, init), env, auth, {
         cache: proxy.caches.default as unknown as Cache,
         fetchShard,
+        readLaunchDirectory: async () => launchDirectory,
       });
 
     const enrolment = await enrolOperator({
@@ -548,8 +554,12 @@ describe("identity Worker", () => {
   it("lists each shard's live games under that shard, settled ones in a paged history, with a player's standing when asked, names a shard it cannot read, and refuses a listed chain id or another guardian's shard", async () => {
     const operator = createBrowser();
     const game = (gameId: number, name: string) => ({ game_id: gameId, name, status: "Running" });
+    launchDirectory = { chains: [{ chainId: "0xa", gameIds: [1, 3] }] };
     heralds.set("https://shard-a.test/manifest", shardManifest("0xa"));
-    heralds.set("https://shard-a.test/games", { chain: "0xa", games: [game(1, "frontier-a")] });
+    heralds.set("https://shard-a.test/games", {
+      chain: "0xa",
+      games: [game(1, "calendar-season"), game(2, "harness-game"), game(3, "blitz-slot")],
+    });
     heralds.set("https://shard-b.test/manifest", shardManifest("0xb"));
     heralds.set("https://shard-c.test/manifest", shardManifest("0x0a"));
 
@@ -576,13 +586,24 @@ describe("identity Worker", () => {
     const list = async (query = "") =>
       ((await (await createBrowser().request(`/api/directory${query}`)).json()) as { shards: unknown[] }).shards;
     expect(await list()).toEqual([
-      { url: "https://shard-a.test", chainId: "0xa", status: "active", games: [game(1, "frontier-a")] },
+      {
+        url: "https://shard-a.test",
+        chainId: "0xa",
+        status: "active",
+        games: [game(1, "calendar-season"), game(3, "blitz-slot")],
+      },
       { url: "https://shard-b.test", chainId: "0xb", status: "active", games: null, error: "unavailable" },
     ]);
 
     heralds.set("https://shard-b.test/games", { chain: "0xb", games: [game(1, "blitz-b")] });
+    launchDirectory.chains.push({ chainId: "0xb", gameIds: [1] });
     const listed = [
-      { url: "https://shard-a.test", chainId: "0xa", status: "active", games: [game(1, "frontier-a")] },
+      {
+        url: "https://shard-a.test",
+        chainId: "0xa",
+        status: "active",
+        games: [game(1, "calendar-season"), game(3, "blitz-slot")],
+      },
       { url: "https://shard-b.test", chainId: "0xb", status: "active", games: [game(1, "blitz-b")] },
     ];
     expect(await list()).toEqual(listed);
@@ -591,10 +612,20 @@ describe("identity Worker", () => {
     const standing = { registered: true, settled: false, roster_member: false, structures: [] };
     heralds.set("https://shard-a.test/games?player=0xabc", {
       chain: "0xa",
-      games: [{ ...game(1, "frontier-a"), player_state: standing }],
+      games: [
+        { ...game(1, "calendar-season"), player_state: standing },
+        { ...game(2, "harness-game"), player_state: standing },
+        { ...game(3, "blitz-slot"), player_state: standing },
+      ],
     });
     expect(await list("?player=0xabc")).toEqual([
-      { ...listed[0], games: [{ ...game(1, "frontier-a"), player_state: standing }] },
+      {
+        ...listed[0],
+        games: [
+          { ...game(1, "calendar-season"), player_state: standing },
+          { ...game(3, "blitz-slot"), player_state: standing },
+        ],
+      },
       { url: "https://shard-b.test", chainId: "0xb", status: "active", games: null, error: "unavailable" },
     ]);
     expect(await list()).toEqual(listed);
@@ -619,6 +650,7 @@ describe("identity Worker", () => {
         201,
       );
     }
+    launchDirectory.chains.push({ chainId: "0xd", gameIds: [1, 2] }, { chainId: "0xe", gameIds: [1, 2] });
     expect(await list()).toEqual([
       ...listed,
       { url: "https://shard-d.test", chainId: "0xd", status: "active", games: [live] },
@@ -670,6 +702,7 @@ describe("identity Worker", () => {
     const relisted = await admitE();
     expect(relisted.status).toBe(201);
     expect(await relisted.json()).toEqual({ url: "https://shard-e.test", chainId: "0xee" });
+    launchDirectory.chains.push({ chainId: "0xee", gameIds: [1] });
     expect((await list()).at(-1)).toEqual({
       url: "https://shard-e.test",
       chainId: "0xee",

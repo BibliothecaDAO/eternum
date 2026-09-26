@@ -24,6 +24,11 @@ interface DirectoryDependencies {
   db: D1Database;
   cache: Cache;
   fetchShard: typeof fetch;
+  readLaunchDirectory: () => Promise<LaunchDirectory>;
+}
+
+interface LaunchDirectory {
+  chains: { chainId: string; gameIds: number[] }[];
 }
 
 /**
@@ -35,10 +40,19 @@ interface DirectoryDependencies {
 export const handleDirectory = async (request: Request, dependencies: DirectoryDependencies) => {
   const player = playerOf(request);
   if (player === INVALID) return json({ error: "invalid_player" }, 400);
+  const launchDirectory = await readLaunchDirectoryRecords(dependencies);
+  if (!launchDirectory) return json({ error: "launch_directory_unavailable" }, 503);
   const listings = await listShards(dependencies, player);
   return json({
     shards: listings.map((listing) =>
-      listing.games === null ? listing : { ...listing, games: listing.games.filter((game) => !isSettled(game)) },
+      listing.games === null
+        ? listing
+        : {
+            ...listing,
+            games: listing.games.filter(
+              (game) => isPlayerGame(game, listing.chainId, launchDirectory) && !isSettled(game),
+            ),
+          },
     ),
   });
 };
@@ -55,11 +69,18 @@ export const handleDirectoryHistory = async (request: Request, dependencies: Dir
   if (player === INVALID) return json({ error: "invalid_player" }, 400);
   if (!Number.isInteger(limit) || limit < 1 || limit > HISTORY_PAGE_MAX) return json({ error: "invalid_limit" }, 400);
   if (cursor !== null && !HISTORY_CURSOR.test(cursor)) return json({ error: "invalid_cursor" }, 400);
+  const launchDirectory = await readLaunchDirectoryRecords(dependencies);
+  if (!launchDirectory) return json({ error: "launch_directory_unavailable" }, 503);
   const listings = await listShards(dependencies, player);
   const settled = listings
     .flatMap((listing) =>
       (listing.games ?? [])
-        .filter((game) => isSettled(game) && (player === null || game.player_state?.registered === true))
+        .filter(
+          (game) =>
+            isPlayerGame(game, listing.chainId, launchDirectory) &&
+            isSettled(game) &&
+            (player === null || game.player_state?.registered === true),
+        )
         .map((game) => ({ ...game, chainId: listing.chainId, shardUrl: listing.url })),
     )
     .sort((a, b) => historyPosition(b).localeCompare(historyPosition(a)));
@@ -100,6 +121,42 @@ const listShards = async (dependencies: DirectoryDependencies, player: string | 
 };
 
 const isSettled = (game: HeraldGameDirectoryEntry) => game.status === "Settled";
+
+/** Only a completed launch-service run makes a game a player season. Chain id prevents numeric game-id collisions. */
+const isPlayerGame = (game: HeraldGameDirectoryEntry, shardChainId: string, directory: LaunchDirectory) =>
+  directory.chains.some(
+    ({ chainId, gameIds }) => BigInt(chainId) === BigInt(shardChainId) && gameIds.includes(game.game_id),
+  );
+
+const readLaunchDirectoryRecords = async ({ readLaunchDirectory }: DirectoryDependencies) => {
+  try {
+    const directory = await readLaunchDirectory();
+    if (
+      !Array.isArray(directory.chains) ||
+      directory.chains.some(
+        ({ chainId, gameIds }) =>
+          typeof chainId !== "string" ||
+          !isFelt(chainId) ||
+          !Array.isArray(gameIds) ||
+          gameIds.some((gameId) => !Number.isSafeInteger(gameId) || gameId < 0),
+      )
+    ) {
+      throw new Error("Launch directory has an invalid shape");
+    }
+    return directory;
+  } catch (error) {
+    console.error("directory_launch_records_unavailable", error);
+    return null;
+  }
+};
+
+const isFelt = (value: string) => {
+  try {
+    return BigInt(value) >= 0n;
+  } catch {
+    return false;
+  }
+};
 
 /** Newest end first, then chain and game, as one sortable string; a cursor names the last game of a page. */
 const historyPosition = ({

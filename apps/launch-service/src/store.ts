@@ -29,6 +29,8 @@ export interface LaunchServiceStore extends LaunchRunStore {
   /** Creates a run once; whatever run already has that name is handed back untouched. */
   schedule(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
   list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]>;
+  /** Completed game ids registered by this launch service on its configured shard. */
+  playerDirectoryGames(): Promise<{ chainId: string; gameIds: number[] }>;
   /** Every run that failed and waits for a launcher to continue it, in any environment. */
   failed(): Promise<LaunchRun[]>;
   find(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<LaunchRun | null>;
@@ -123,6 +125,31 @@ export class D1LaunchStore implements LaunchServiceStore {
           .prepare("SELECT * FROM launch_runs WHERE chain_id = ? AND environment = ? ORDER BY updated_at DESC, id")
           .bind(chain, environment);
     return (await statement.all<LaunchRunRow>()).results.map(toRun);
+  }
+
+  async playerDirectoryGames(): Promise<{ chainId: string; gameIds: number[] }> {
+    const chainId = await this.chainId();
+    const { results } = await this.db
+      .prepare("SELECT summary FROM launch_runs WHERE chain_id = ? AND kind = 'game' AND status = 'complete'")
+      .bind(chainId)
+      .all<{ summary: string | null }>();
+    const gameIds = results.flatMap(({ summary }) => {
+      if (!summary)
+        throw new DatabaseFailure({
+          operation: "read completed game launches",
+          cause: new Error("A completed game launch has no summary"),
+        });
+      const decoded = JSON.parse(summary) as { gameId?: unknown; dryRun?: unknown };
+      if (decoded.dryRun === true || decoded.gameId === undefined) return [];
+      if (!Number.isSafeInteger(decoded.gameId) || Number(decoded.gameId) < 0) {
+        throw new DatabaseFailure({
+          operation: "read completed game launches",
+          cause: new Error("A completed game launch has an invalid game id"),
+        });
+      }
+      return [Number(decoded.gameId)];
+    });
+    return { chainId, gameIds: [...new Set(gameIds)].sort((a, b) => a - b) };
   }
 
   async failed(): Promise<LaunchRun[]> {
