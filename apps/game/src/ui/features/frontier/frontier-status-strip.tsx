@@ -7,7 +7,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { knownBalance } from "@/ui/utils/utils";
-import { expeditionDayEndsAt, seasonDay, getBalance } from "@bibliothecadao/eternum";
+import { getBalance } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
@@ -17,7 +17,8 @@ import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { AnimatePresence, motion } from "framer-motion";
 import { bankedCounterTarget } from "@/ui/motion/moments/banked-flight";
 import { TickNumber } from "@/ui/motion/tick-number";
-import { formatAmount, formatClock } from "./frontier-format";
+import { DayDial } from "./day-dial";
+import { formatAmount } from "./frontier-format";
 import { CastleGlyph, MapGlyph } from "./glyphs";
 import { troopsOnHand, useExpeditionRules, useGoToFrontierPlace } from "./frontier-home";
 
@@ -46,7 +47,7 @@ export const FrontierStatusStrip = ({
       "pointer-events-auto flex items-center gap-1.5 rounded-2xl px-2 py-1.5 lg:gap-2",
     )}
   >
-    <DayDial rules={rules} />
+    <GameDayDial rules={rules} />
     {realm && <RealmHoldings realm={realm} />}
     {realm && <PlaceSwitch realm={realm} />}
   </header>
@@ -56,43 +57,6 @@ export const FrontierStatusStrip = ({
 const STRIP_NUMBER = "text-[15px] leading-none text-[#eadfc8] tabular-nums lg:text-base";
 /** The strip's resource icons at the mockup's scale. */
 const STRIP_ICON = "!size-5 lg:!size-6";
-
-const DIAL_RADIUS = 16;
-const DIAL_LENGTH = 2 * Math.PI * DIAL_RADIUS;
-
-/** The expedition day: its number in a ring that drains as the day runs out; the time left is its label. */
-const DayDial = ({ rules }: { rules: ExpeditionRules }) => {
-  const now = useNowSeconds();
-  const day = seasonDay(rules, now) + 1;
-  const left = expeditionDayEndsAt(rules, now) - now;
-  const share = Math.min(1, Math.max(0, left / rules.epochSeconds));
-  return (
-    <div
-      role="timer"
-      aria-label={`Day ${day}, ${formatClock(left)} left`}
-      title={formatClock(left)}
-      className="relative size-9 shrink-0 lg:size-10"
-    >
-      <svg viewBox="0 0 40 40" className="absolute inset-0 -rotate-90" aria-hidden>
-        <circle cx="20" cy="20" r={DIAL_RADIUS} fill="none" stroke="rgba(223,170,84,0.18)" strokeWidth="3.5" />
-        <circle
-          cx="20"
-          cy="20"
-          r={DIAL_RADIUS}
-          fill="none"
-          stroke="#e39001"
-          strokeWidth="3.5"
-          strokeLinecap="round"
-          strokeDasharray={DIAL_LENGTH}
-          strokeDashoffset={DIAL_LENGTH * (1 - share)}
-        />
-      </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-[13px] text-[#f3d08a] tabular-nums">
-        D{day}
-      </span>
-    </div>
-  );
-};
 
 const RealmHoldings = ({ realm }: { realm: NativeRows["Structure"] }) => {
   const { setup } = useGame();
@@ -176,6 +140,9 @@ const LandingDelta = ({ target }: { target: string }) => {
     </AnimatePresence>
   );
 };
+
+/** The day dial on the game's own block clock. */
+const GameDayDial = ({ rules }: { rules: ExpeditionRules }) => <DayDial rules={rules} now={useNowSeconds()} />;
 
 /** Frontier's two places, as glyphs: the day's expedition on the world map, and the realm board in the local view. */
 const PlaceSwitch = ({ realm }: { realm: NativeRows["Structure"] }) => {
