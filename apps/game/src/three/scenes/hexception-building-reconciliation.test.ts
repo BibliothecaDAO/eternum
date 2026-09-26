@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   buildingKey,
+  isTierChange,
   reconcileBuildingUpdate,
   resolveBuildingInstanceAction,
   runOwnedBuildingWorkAfterModelsLoad,
@@ -226,5 +227,16 @@ describe("owned building work after model loading", () => {
     await harness.completion;
 
     expect(harness.apply).toHaveBeenCalledOnce();
+  });
+});
+
+describe("a building's tier change", () => {
+  it("is an upgrade when only the tier differs, and a new building otherwise", () => {
+    const farm = (tier: number, pending = "ready") => `buildings:37:35:${pending}:tier${tier}`;
+    expect(isTierChange(farm(1), farm(2))).toBe(true);
+    expect(isTierChange(farm(2), farm(2))).toBe(false);
+    expect(isTierChange(farm(1, "pending"), farm(2))).toBe(false);
+    expect(isTierChange("buildings:28:26:ready:tier1", farm(2))).toBe(false);
+    expect(isTierChange(undefined, farm(1))).toBe(false);
   });
 });

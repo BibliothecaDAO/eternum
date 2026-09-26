@@ -11,6 +11,7 @@ import { isAddressEqualToAccount } from "../utils/utils";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { flySprites } from "@/ui/motion/motion-layer";
 import { onUnlockFlight } from "./hexception-unlock-request";
+import { buildingTierModelPath } from "../structures/building-tiers";
 import { PlotConstructionPicker } from "@/ui/features/settlement/construction/plot-construction-picker";
 import { createHexceptionTerrainRequest, getLocalHexDisk, getLocalTerrainRegions } from "./hexception-terrain";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
@@ -57,6 +58,7 @@ import {
   type BuildingInstanceAction,
   buildingKey,
   reconcileBuildingUpdate,
+  isTierChange,
   resolveBuildingInstanceAction,
   runOwnedBuildingWorkAfterModelsLoad,
   type TargetedBuildingReconciliation,
@@ -155,11 +157,15 @@ interface HexceptionBuilding {
   resource?: ResourcesIds;
   row: number;
   structureType?: StructureType | null;
+  /** The building's tier; past I it draws its tier's model. */
+  tier?: number;
 }
 
 interface BuildingModelSelection {
   group: BUILDINGS_GROUPS;
   type: BUILDINGS_CATEGORIES_TYPES;
+  /** The tier's own model, for a building upgraded past tier I. */
+  tierPath?: string;
 }
 
 const generateHexPositions = (center: HexPosition, radius: number) =>
@@ -176,6 +182,9 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private hexceptionRadius = 4;
+  /** Tier models by path, loaded only when a building upgraded past tier I needs one. */
+  private readonly tierModels = new Map<string, { model: Group; animations: AnimationClip[] }>();
+  private readonly tierModelLoads = new Set<string>();
   private buildingModels: Map<
     BUILDINGS_GROUPS,
     Map<BUILDINGS_CATEGORIES_TYPES, { model: Group; animations: AnimationClip[] }>
@@ -1486,6 +1495,11 @@ export default class HexceptionScene extends HexagonScene {
   ): BuildingInstanceAction {
     const key = buildingKey(position);
     const selection = building ? this.resolveBuildingModelSelection(building, mainStructureType) : undefined;
+    // A tier's model loads the first time a building needs it; until then the building keeps what it shows.
+    if (selection?.tierPath && !this.tierModels.has(selection.tierPath)) {
+      this.loadTierModel(selection.tierPath);
+      return "keep";
+    }
     const signature = building && selection ? this.resolveBuildingRenderSignature(building, selection) : undefined;
     const currentInstance = this.buildingInstances.get(key);
     const currentSignature =
@@ -1493,6 +1507,10 @@ export default class HexceptionScene extends HexagonScene {
       (this.wonderInstances.has(`${key}_wonder`) ? "wonder-only" : undefined);
     const action = resolveBuildingInstanceAction(currentSignature, signature);
 
+    if (building && selection && signature && currentInstance && isTierChange(currentSignature, signature)) {
+      this.playTierSwap(currentInstance, building, selection, signature);
+      return action;
+    }
     if (action === "remove" || action === "replace") {
       this.removeBuilding(position.col, position.row);
     }
@@ -1543,19 +1561,27 @@ export default class HexceptionScene extends HexagonScene {
       type = hyperstructureStageToModel[this.structureStage as StructureProgress];
     }
 
-    return { group, type };
+    const tierPath =
+      group === BUILDINGS_GROUPS.BUILDINGS ? buildingTierModelPath(type as BuildingType, building.tier) : undefined;
+    return { group, type, tierPath };
   }
 
   private resolveBuildingRenderSignature(building: HexceptionBuilding, selection: BuildingModelSelection): string {
-    return [selection.group, selection.type, building.resource ?? "none", building.pending ? "pending" : "ready"].join(
-      ":",
-    );
+    // The tier comes last, so a tier change alone reads as one (isTierChange).
+    return [
+      selection.group,
+      selection.type,
+      building.resource ?? "none",
+      building.pending ? "pending" : "ready",
+      `tier${building.tier ?? 1}`,
+    ].join(":");
   }
 
   private addBuildingInstance(
     building: HexceptionBuilding,
     selection: BuildingModelSelection,
     signature: string,
+    entrance: "grow" | "overshoot" = "grow",
   ): void {
     const key = buildingKey(building);
     if (selection.group === BUILDINGS_GROUPS.HYPERSTRUCTURE) {
@@ -1570,9 +1596,9 @@ export default class HexceptionScene extends HexagonScene {
     }
     this.addWonderInstance(building, key);
 
-    const buildingData = this.buildingModels
-      .get(selection.group)
-      ?.get(selection.type.toString() as BUILDINGS_CATEGORIES_TYPES);
+    const buildingData = selection.tierPath
+      ? this.tierModels.get(selection.tierPath)
+      : this.buildingModels.get(selection.group)?.get(selection.type.toString() as BUILDINGS_CATEGORIES_TYPES);
     if (!buildingData) return;
 
     const instance = buildingData.model.clone();
@@ -1592,8 +1618,50 @@ export default class HexceptionScene extends HexagonScene {
 
     this.scene.add(instance);
     this.buildingInstances.set(key, instance);
-    this.animateBuildingScale(instance);
+    if (entrance === "overshoot") this.overshootIn(instance);
+    else this.animateBuildingScale(instance);
     this.startBuildingAnimations(key, instance, buildingData.animations);
+  }
+
+  /** Loads one tier's model once, then lets every building waiting on it draw it. */
+  private loadTierModel(path: string): void {
+    if (this.tierModelLoads.has(path)) return;
+    this.tierModelLoads.add(path);
+    void this.loadBuildingModel(path).then((model) => {
+      if (!this.isEntered) return;
+      this.tierModels.set(path, model);
+      this.reconcileAllBuildingInstances(this.tileManager.structureType());
+    });
+  }
+
+  /**
+   * Design §3.11, an upgrade: the old model squashes down, the new tier's model takes its place and springs up past its
+   * size before it settles.
+   */
+  private playTierSwap(
+    current: Group,
+    building: HexceptionBuilding,
+    selection: BuildingModelSelection,
+    signature: string,
+  ): void {
+    // The swap is under way: a reconcile before it lands must not start another.
+    current.userData[BUILDING_RENDER_SIGNATURE] = signature;
+    gsap.to(current.scale, {
+      x: current.scale.x * 1.08,
+      y: current.scale.y * 0.7,
+      z: current.scale.z * 1.08,
+      duration: 0.12,
+      ease: "power2.in",
+      onComplete: () => {
+        this.removeBuilding(building.col, building.row);
+        this.addBuildingInstance(building, selection, signature, "overshoot");
+      },
+    });
+  }
+
+  private overshootIn(instance: Group): void {
+    instance.scale.set(0.8, 0.8, 0.8);
+    gsap.to(instance.scale, { x: 1, y: 1, z: 1, duration: 0.35, ease: "back.out(3)" });
   }
 
   private syncHyperstructureConstruction(): void {

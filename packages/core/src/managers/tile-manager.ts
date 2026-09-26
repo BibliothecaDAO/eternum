@@ -84,6 +84,7 @@ export class TileManager {
           category,
           resource: getProducedResource(category),
           paused: value.paused,
+          tier: Number(value.tier),
           structureType: null,
           pending: false,
         },
