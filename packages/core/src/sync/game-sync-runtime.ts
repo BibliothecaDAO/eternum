@@ -104,7 +104,6 @@ export class GameSyncRuntime {
   private snapshotAppliedOperations = 0;
   private snapshotExpectedOperations = 0;
   private snapshotStreaming = false;
-  private readonly sliceAppliedListeners = new Set<() => void>();
   private readonly resyncListeners = new Set<() => void>();
   private transactionWaiters = new Map<
     string,
@@ -211,15 +210,6 @@ export class GameSyncRuntime {
   }
 
   /**
-   * Fires once per applied ingest slice, after the spatial projection flushed. Store bridges derive from native store here,
-   * so a slice that touched a thousand rows costs the overlay one recompute, not a thousand.
-   */
-  public subscribeSliceApplied(listener: () => void): () => void {
-    this.sliceAppliedListeners.add(listener);
-    return () => this.sliceAppliedListeners.delete(listener);
-  }
-
-  /**
    * Fires once a reconnect's fresh snapshot has replaced the store. Herald streams a transaction's status only once, so
    * a status it sent before the reconnect, or a transaction it recorded while it was down, will never arrive; waits for
    * one must settle from the store after this.
@@ -236,7 +226,6 @@ export class GameSyncRuntime {
     // A subscribe that never resolved has no writer to cancel; only the transport can stop its reconnects.
     this.session?.transport.dispose?.();
     this.session?.onDispose?.();
-    this.sliceAppliedListeners.clear();
     this.resyncListeners.clear();
     this.disposeWorldSpatialProjection();
     this.ingestQueue?.dispose();
@@ -480,7 +469,6 @@ export class GameSyncRuntime {
       }
     }
     this.worldSpatialProjection?.flush();
-    this.sliceAppliedListeners.forEach((listener) => listener());
     this.publishMetrics();
   }
 

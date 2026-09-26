@@ -2,6 +2,7 @@ import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schem
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
+import { waitForWorldState } from "../client/wait-for-world-state";
 import { ResourceManager } from "./resource-manager";
 import { realmSupportPercent } from "../utils/realm-support";
 import type { GameSyncFact } from "../sync/game-sync-types";
@@ -66,7 +67,7 @@ describe("native resource facts", () => {
     expect(changed).toHaveBeenCalledTimes(4);
   });
 
-  it("resolves a fresh realm's absent Essence only after its scoped snapshot is complete", () => {
+  it("resolves a fresh realm's absent Essence only after its scoped snapshot is complete", async () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: false, actor: "0xaaa", timestamp: 350 });
     store.applyFacts([
@@ -109,6 +110,13 @@ describe("native resource facts", () => {
     expect(manager.current(ResourcesIds.Essence)).toBeUndefined();
     expect(manager.balance(ResourcesIds.Essence)).toBeUndefined();
 
+    const completeBalance = waitForWorldState(
+      store,
+      () => manager.current(ResourcesIds.Essence)?.balance,
+      1_000,
+      () => "Complete fresh-realm Essence snapshot",
+    );
+
     store.setSnapshot({ gameId: 1, complete: true, actor: "0xaaa", timestamp: 350 });
 
     const scope = store.subscriptionScope();
@@ -118,6 +126,16 @@ describe("native resource facts", () => {
     expect(
       Boolean(scope.known?.expedition?.realms.has(String(7))) && manager.current(ResourcesIds.Essence) !== undefined,
     ).toBe(true);
+
+    await expect(completeBalance).resolves.toBe(0n);
+    await expect(
+      waitForWorldState(
+        store,
+        () => manager.current(ResourcesIds.Essence)?.balance,
+        1_000,
+        () => "Already complete fresh-realm Essence snapshot",
+      ),
+    ).resolves.toBe(0n);
   });
 
   it("scopes reads and notifications to their game, and knows no balance without a resource owner", () => {

@@ -15,6 +15,7 @@ import {
   liveHomeArmies,
   ResourceManager,
   type GameClient,
+  waitForWorldState,
 } from "@bibliothecadao/eternum";
 import { generateBuildablePositions } from "@bibliothecadao/eternum/automation";
 import { BUILDINGS_CENTER, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, TroopTier } from "@bibliothecadao/types";
@@ -196,7 +197,7 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
   await game.waitUntilPlaying();
   if (options.burst?.shape === "booth") return runBoothBurst(options, epochSeconds);
   const players = await settleFrontierPlayers(options, accounts);
-  await Promise.all(players.map((player) => waitForRealmResources(player.client, player.game, player)));
+  await Promise.all(players.map((player) => waitForRealmResources(player.client, player)));
   if (options.burst?.shape === "rollover") return runRolloverBurst(options, players, epochSeconds);
   for (const player of players) observeDay(player);
   await options.onReady?.();
@@ -208,7 +209,7 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
   while (Date.now() < deadline && !failed) {
     await Promise.all(
       players.map(async (player) => {
-        await waitForRealmResources(player.client, player.game, player);
+        await waitForRealmResources(player.client, player);
         observeDay(player);
         if (now() < player.nextActionAt || !inSession(player.client, player)) return;
         const action = chooseAction(player.client, player.game, player);
@@ -304,7 +305,8 @@ async function playRollover(
   if (!muster) return [];
   const mustered = await playAction(options, player, muster, scheduledAtMs);
   if (mustered.outcome !== "completed") return [mustered];
-  const move = await player.game.waitFor(
+  const move = await waitForWorldState(
+    player.client.setup.store,
     () => planExpedition(player.client, player.game, player),
     30_000,
     () => `bot ${player.identity.botId} has no move for its fresh army`,
@@ -554,8 +556,9 @@ function balance(client: GameClient, player: Player, resource: ResourcesIds): bi
   throw new Error(`Resource ${resource} for realm ${player.realmId} has an unknown balance projection`);
 }
 
-async function waitForRealmResources(client: GameClient, game: HarnessGame, player: Player): Promise<void> {
-  await game.waitFor(
+async function waitForRealmResources(client: GameClient, player: Player): Promise<void> {
+  await waitForWorldState(
+    client.setup.store,
     () => {
       const essence = new ResourceManager(client.setup.store, player.realmId, client.gameId).current(
         ResourcesIds.Essence,

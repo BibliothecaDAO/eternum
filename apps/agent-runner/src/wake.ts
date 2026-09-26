@@ -88,7 +88,7 @@ export const createWakeSources = (input: WakeSourcesInput): WakeSources => {
   heartbeat.restart();
 
   // A window, not a debounce: a chain that never goes quiet must still wake the loop once per window.
-  const unsubscribeSlices = input.game.client.runtime.subscribeSliceApplied(quiet.startIfIdle);
+  const unsubscribeStore = input.game.client.setup.store.subscribe(quiet.startIfIdle);
   const unsubscribeSync = input.game.onSyncFailed(() => requestStop("sync-failed"));
   const onAbort = (): void => requestStop("interrupted");
   input.signal?.addEventListener("abort", onAbort, { once: true });
@@ -123,7 +123,7 @@ export const createWakeSources = (input: WakeSourcesInput): WakeSources => {
       listening = false;
       quiet.cancel();
       heartbeat.cancel();
-      unsubscribeSlices();
+      unsubscribeStore();
       unsubscribeSync();
       input.signal?.removeEventListener("abort", onAbort);
       input.directions.close();

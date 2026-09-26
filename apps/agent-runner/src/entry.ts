@@ -59,7 +59,7 @@ const ensureSettlement = async (game: RunnerGame, signer: AccountInterface): Pro
   const settled = settledStructureIds(game.client, signer.address);
   if (settled) return settled;
   return waitForWorldState(
-    game.client,
+    game.client.setup.store,
     () => settledStructureIds(game.client, signer.address),
     MODEL_UPDATE_TIMEOUT_MS,
     () => `Settlement for ${signer.address} in game ${game.client.gameId}`,
@@ -133,7 +133,7 @@ const startingTroopType = (client: GameClient, structureId: ID): TroopType | und
 
 const waitForStructureSpawns = (client: GameClient, structures: ID[]): Promise<StructureSpawn[]> =>
   waitForWorldState(
-    client,
+    client.setup.store,
     () =>
       collectAll(structures, (structureId) => {
         const coord = structureCoord(client, structureId);
@@ -145,7 +145,7 @@ const waitForStructureSpawns = (client: GameClient, structures: ID[]): Promise<S
 
 const waitForStartingTroopTypes = async (client: GameClient, structures: ID[]): Promise<Map<ID, TroopType>> => {
   const troopTypes = await waitForWorldState(
-    client,
+    client.setup.store,
     () => collectAll(structures, (structureId) => startingTroopType(client, structureId)),
     MODEL_UPDATE_TIMEOUT_MS,
     () => `Starting troops of structures ${structures.join(", ")}`,
@@ -155,7 +155,7 @@ const waitForStartingTroopTypes = async (client: GameClient, structures: ID[]): 
 
 const waitForExplorers = (client: GameClient, structures: ID[]): Promise<ID[]> =>
   waitForWorldState(
-    client,
+    client.setup.store,
     () => collectAll(structures, (structureId) => client.views.explorers(structureId)[0]?.entityId),
     MODEL_UPDATE_TIMEOUT_MS,
     () => `Explorers of structures ${structures.join(", ")}`,

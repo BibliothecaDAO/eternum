@@ -145,7 +145,7 @@ describe("runAgentLoop", () => {
     await loop.agent.waitForIdle();
     expect(loop.calls).toHaveLength(1);
 
-    loop.game.applySlice();
+    loop.game.advanceSnapshot();
     await loop.clock.advance(QUIET_WINDOW_MS);
     await loop.untilTicks(2);
 
@@ -159,13 +159,13 @@ describe("runAgentLoop", () => {
     await expect(loop.done).resolves.toBe("interrupted");
   });
 
-  it("folds a burst of slices into one wake at the end of the window that the first slice opened", async () => {
+  it("folds a burst of store updates into one wake at the end of the window that the first slice opened", async () => {
     const loop = await startLoop({});
     await loop.agent.waitForIdle();
 
-    loop.game.applySlice();
+    loop.game.advanceSnapshot();
     await loop.clock.advance(QUIET_WINDOW_MS / 2);
-    loop.game.applySlice();
+    loop.game.advanceSnapshot();
     expect(loop.tickLines()).toHaveLength(1);
 
     await loop.clock.advance(QUIET_WINDOW_MS / 2);
@@ -189,14 +189,14 @@ describe("runAgentLoop", () => {
     ]);
 
     seedExplorer(loop.game.store, { explorerId: 201, owner: 13, x: HOME.x + 2, y: HOME.y + 1 });
-    loop.game.applySlice();
+    loop.game.advanceSnapshot();
     await loop.clock.advance(QUIET_WINDOW_MS);
     await loop.untilTicks(3);
     expect(steer).toHaveBeenCalledTimes(1);
     expect(loop.tickLines().at(-1)).toMatchObject({ reason: "world-delta", actionable: true, delivery: "steered" });
 
     seedExplorer(loop.game.store, { explorerId: 201, owner: 13, x: HOME.x + 1, y: HOME.y + 1 });
-    loop.game.applySlice();
+    loop.game.advanceSnapshot();
     await loop.clock.advance(QUIET_WINDOW_MS);
     await loop.untilTicks(4);
     expect(steer).toHaveBeenCalledTimes(1);
@@ -234,7 +234,7 @@ describe("runAgentLoop", () => {
     await loop.agent.waitForIdle();
 
     seedGameRegistry(loop.game.store, { status: "Ended", startMainAt: 0, endAt: 0 });
-    loop.game.applySlice();
+    loop.game.advanceSnapshot();
     await loop.clock.advance(QUIET_WINDOW_MS);
 
     await expect(loop.done).resolves.toBe("game-ended");

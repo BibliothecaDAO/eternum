@@ -1,14 +1,13 @@
-import type { GameSyncRuntime } from "../sync/game-sync-runtime";
+import type { NativeFactStore } from "./native-fact-store";
 
-type SliceSource = { runtime: Pick<GameSyncRuntime, "subscribeSliceApplied"> };
+type StoreSource = Pick<NativeFactStore, "subscribe">;
 
 /**
- * Resolves once `read` returns a value, re-reading after every applied sync slice. This is how a headless caller
- * waits for the native store row an action produces: the row is the fact, the slice is only the moment to look again.
+ * Resolves once `read` returns a value, re-reading after every fact or snapshot-gate change in the store it reads.
  * A tool that must give up names its deadline; the game client waits on the fact alone.
  */
 export const waitForWorldState = <T>(
-  client: SliceSource,
+  store: StoreSource,
   read: () => T | undefined,
   timeoutMs: number | undefined,
   describe: () => string,
@@ -35,6 +34,6 @@ export const waitForWorldState = <T>(
         reject(error);
       }
     };
-    unsubscribe = client.runtime.subscribeSliceApplied(check);
+    unsubscribe = store.subscribe(check);
     check();
   });

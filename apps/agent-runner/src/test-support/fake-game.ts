@@ -26,8 +26,8 @@ interface FakeGame extends RunnerGame {
   actions: { [Key in keyof GameActions]: ReturnType<typeof vi.fn> };
   /** Announce a submitted hash the way the provider does after an action signs. */
   announceSubmitted(transactionHash: string): void;
-  /** Tell slice subscribers a batch of rows landed, the way the runtime does after each applied slice. */
-  applySlice(): void;
+  /** Advance the snapshot clock to trigger the same store notification as a gate-only update. */
+  advanceSnapshot(): void;
   /** Report the live stream as broken, the way the observer's onLiveApplyFailed does. */
   failSync(error: Error): void;
   events: RecentStoryEvent[];
@@ -48,6 +48,7 @@ export const createFakeGame = (signer: AccountInterface | null = PLAYER_SIGNER):
     actor: signer?.address ?? null,
     timestamp: Math.floor(Date.now() / 1_000),
   });
+  let snapshotTimestamp = Math.floor(Date.now() / 1_000);
   writeFact(store, "SliceRules", [GAME_ID], { ...preset.rules, game_id: GAME_ID, map_center_offset: 2147483646 });
   writeFact(store, "SettlementRules", [GAME_ID], {
     game_id: GAME_ID,
@@ -69,14 +70,9 @@ export const createFakeGame = (signer: AccountInterface | null = PLAYER_SIGNER):
   const actions = Object.fromEntries(
     Object.keys(createGameActions({ setup: { store } } as GameClient)).map((name) => [name, vi.fn()]),
   ) as FakeGame["actions"];
-  const sliceListeners = new Set<() => void>();
   const syncFailureListeners = new Set<(error: Error) => void>();
   const runtime = {
     waitForTransaction: vi.fn(async (hash: string) => ({ hash, status: "ACCEPTED_ON_L2", block: 7 })),
-    subscribeSliceApplied: (listener: () => void) => {
-      sliceListeners.add(listener);
-      return () => sliceListeners.delete(listener);
-    },
   };
   const client = {
     gameId: GAME_ID,
@@ -105,7 +101,13 @@ export const createFakeGame = (signer: AccountInterface | null = PLAYER_SIGNER):
       return () => syncFailureListeners.delete(listener);
     },
     announceSubmitted: (transactionHash) => listeners.forEach((listener) => listener({ transactionHash })),
-    applySlice: () => sliceListeners.forEach((listener) => listener()),
+    advanceSnapshot: () =>
+      store.setSnapshot({
+        gameId: GAME_ID,
+        complete: true,
+        actor: signer?.address ?? null,
+        timestamp: ++snapshotTimestamp,
+      }),
     failSync: (error) => syncFailureListeners.forEach((listener) => listener(error)),
   };
 };

@@ -39,7 +39,7 @@ const settledGame = (provisioned: boolean, troops: bigint, hasExplorer: boolean)
   if (hasExplorer) spawn();
   game.actions.createExplorerArmy.mockImplementation(async () => {
     spawn();
-    game.applySlice();
+    game.advanceSnapshot();
   });
   const signer = { address: "0xabc", execute: vi.fn(async () => ({ transaction_hash: "0x123" })) };
   return { game, signer };
@@ -64,7 +64,7 @@ describe("settlement provisioning", () => {
     await Promise.resolve();
     expect(game.actions.createExplorerArmy).not.toHaveBeenCalled();
     writeFact(game.store, "GameRegistry", [28], { ...row, ready: true });
-    game.applySlice();
+    game.advanceSnapshot();
     await pending;
     expect(game.actions.createExplorerArmy).toHaveBeenCalledOnce();
   });

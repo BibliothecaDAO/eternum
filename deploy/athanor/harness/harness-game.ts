@@ -231,7 +231,7 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
       });
     },
     submit: (signer, act) => captureSubmission(client, heraldConfirmations, awaitingHash, signer.address, act),
-    waitFor: (read, timeoutMs, describe) => waitForWorldState(client, read, timeoutMs, describe),
+    waitFor: (read, timeoutMs, describe) => waitForWorldState(store, read, timeoutMs, describe),
   };
   return game;
 }
