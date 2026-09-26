@@ -6,6 +6,7 @@ import { Fragment, useState } from "react";
 import { FRONTIER_BUILDING_NAMES } from "../build/building-names";
 import { Chip, TierBanner } from "../frontier-chips";
 import { formatAmount } from "../frontier-format";
+import { useWorkspaceTakesScreen } from "../use-workspace-takes-screen";
 import {
   depthNode,
   firstOpenNode,
@@ -44,6 +45,7 @@ export const ResearchSheet = ({
   const [chosenId, setChosenId] = useState(() => firstOpenNode(plan)?.node);
   const chosen = plan.nodes.find(({ node }) => node === chosenId);
   const [pending, setPending] = useState(false);
+  useWorkspaceTakesScreen();
   const affordable = chosen !== undefined && plan.essence !== undefined && plan.essence >= chosen.price;
   const canResearch = !pending && chosen?.state === "open" && affordable;
 

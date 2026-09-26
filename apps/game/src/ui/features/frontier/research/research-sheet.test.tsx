@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { realmBoard } from "../build/build-fixture";
 import { readResearchPlan } from "./research-reader";
 import { ResearchSheet } from "./research-sheet";
@@ -77,11 +78,14 @@ describe("research from the realm's facts", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, realm } = researchBoard(0);
     const research = vi.fn(() => Promise.resolve());
+    useUIStore.getState().setSelectedBuildingHex({ structureId: 7, innerCol: 10, innerRow: 10 });
     const host = document.createElement("div");
     const root = createRoot(host);
     act(() =>
       root.render(<ResearchSheet plan={readResearchPlan(store, realm, 3)!} research={research} onClose={() => {}} />),
     );
+    // The workspace takes the screen: the plot the player had tapped is let go.
+    expect(useUIStore.getState().selectedBuildingHex).toBeNull();
     const node = (label: string) => host.querySelector<HTMLButtonElement>(`[aria-label^="${label}"]`)!;
     const buy = () => host.querySelector<HTMLButtonElement>('button[aria-label="Research"]')!;
     expect(node("Farm, open").getAttribute("aria-pressed")).toBe("true");

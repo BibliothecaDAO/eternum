@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { formatAmount } from "../frontier-format";
 import { Chip, TroopChip, YieldChip } from "../frontier-chips";
 import { BoltGlyph, SlotBanner } from "../glyphs";
+import { useWorkspaceTakesScreen } from "../use-workspace-takes-screen";
 import {
   type MusterStack,
   musterArmy,
@@ -46,6 +47,7 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   const [count, setCount] = useState(0);
   const direction = useMusterDirection(realm);
   const [pending, setPending] = useState(false);
+  useWorkspaceTakesScreen();
 
   // The sheet opens, or a new stack is chosen, at the most the realm can field. Keyed on the stack's identity: its
   // object is rebuilt on every fact revision, which must not reset a count being dragged.
