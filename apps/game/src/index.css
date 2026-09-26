@@ -434,11 +434,14 @@ html.scene-viewport body {
   --overlay-surface-to: #101c23;
 }
 
-/* Frontier type, the owner's dyslexia rule: Atkinson Hyperlegible body, Lexend headings, sentence case, no italics,
-   larger sizes. FrontierHud sets the class on <html>, so popovers and sheets rendered outside it follow too. */
+/* The player app's type, the owner's dyslexia rule: Atkinson Hyperlegible body, Lexend headings, sentence case, no
+   italics, no monospace, larger sizes. The shell (every page outside a game) and FrontierHud set the class on <html>,
+   so popovers and sheets rendered outside them follow too. Blitz and Eternum in-game surfaces keep their own type
+   until they are next touched. */
 html.frontier-type body,
 html.frontier-type button,
-html.frontier-type .font-sans {
+html.frontier-type .font-sans,
+html.frontier-type :is(.font-mono, .font-jetbrains, code, kbd, samp) {
   font-family: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
 }
 html.frontier-type :is(h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6, .font-cinzel) {

@@ -7,6 +7,7 @@ import { env } from "../../env";
 
 import { useDirectory } from "./herald";
 import { IdentityChip } from "./identity-chip";
+import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 import { useOutsidePlaySession } from "@/utils/spectator-session";
 
 const NAV = [
@@ -35,6 +36,8 @@ export const AppShell = () => {
   useBootDocumentState("app-ready");
   // Back from a spectated game, the signed-in player is no spectator here.
   useOutsidePlaySession();
+  // The shell wears the player app's one visual system, the same as Frontier's HUD.
+  useFrontierType();
   const directory = useDirectory();
 
   return (
