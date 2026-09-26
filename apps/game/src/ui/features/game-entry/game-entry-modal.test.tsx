@@ -48,13 +48,13 @@ it("renders spectator entry before any head without reading the chain clock", as
     root.render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
-          <GameEntryModal isOpen onClose={() => undefined} game={GAME} isSpectateMode />
+          <GameEntryModal isOpen game={GAME} isSpectateMode />
         </MemoryRouter>
       </QueryClientProvider>,
     ),
   );
   try {
-    expect(container.textContent).toContain("frontier-staging");
+    expect(container.querySelector("[aria-label='Entering the game']")).not.toBeNull();
     expect(useChainTimeStore.getState().nowMs).toBeNull();
     expect(() => getBlockTimestamp()).toThrow("Chain time is not known yet");
   } finally {

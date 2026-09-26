@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from "react";
-import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { env } from "../env";
 import { loadGameRouteForPlayEntry } from "./game-entry-preload";
@@ -43,7 +43,6 @@ export const GameClientApp = () => {
 /** The doorway: settle or wait until the game is ready, then hand off to its scene. */
 const GameEntryRoute = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const entryContext = resolveEntryContextFromEntryRoute(location);
   useBootDocumentState("app-ready");
 
@@ -52,10 +51,9 @@ const GameEntryRoute = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#0c0a08]">
       <GameEntryModal
         isOpen
-        onClose={() => navigate("/play", { replace: true })}
         game={{ chainId: entryContext.chainId, gameId: entryContext.gameId }}
         isSpectateMode={entryContext.intent === "spectate"}
         autoSettleEnabled={entryContext.autoSettle}
