@@ -1,16 +1,14 @@
 import { resolveDeploymentEnvironment } from "../../../config/deployer/clean/environment";
 import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
-import { nativePresetForId, nativePresetIdFor } from "../../../config/source/native";
+import { nativePresetIdFor, nativePresets } from "../../../config/source/native";
 import { Schema } from "effect";
 
 const NonEmptyString = Schema.NonEmptyString;
 const OptionalNumberRecord = Schema.optional(Schema.Record(Schema.String, Schema.Number));
 
 const SharedOptions = {
-  // Frontier is never created through the API: the season schedule owns it.
-  environment: Schema.Literals(["madara.blitz", "madara.eternum"]),
-  // One preset id per game mode; Duel (4) is registered but has no launch flow.
-  version: Schema.optional(Schema.Literals(["2", "3"])),
+  environment: Schema.Literals(["madara.blitz", "madara.eternum", "madara.frontier"]),
+  version: Schema.optional(Schema.String),
   devModeOn: Schema.optional(Schema.Boolean),
   singleRealmMode: Schema.optional(Schema.Boolean),
   durationSeconds: Schema.optional(Schema.Number),
@@ -24,11 +22,17 @@ export const CreateGameRequestSchema = Schema.Struct({
   gameName: NonEmptyString,
   rosterAccounts: Schema.optional(Schema.Array(Schema.String.pipe(Schema.check(Schema.isPattern(/^0x[0-9a-fA-F]+$/))))),
   gameStartTime: Schema.optional(NonEmptyString),
-});
+}).check(
+  Schema.makeFilter((request) =>
+    request.version === undefined || isRegisteredPresetForEnvironment(request.environment, request.version)
+      ? undefined
+      : { path: ["version"], issue: "Preset is not registered for the requested game format" },
+  ),
+);
 
 interface SharedLaunchOptions {
   environment: "madara.blitz" | "madara.eternum" | "madara.frontier";
-  version?: "5" | "2" | "3";
+  version?: string;
   devModeOn?: boolean;
   singleRealmMode?: boolean;
   durationSeconds?: number;
@@ -70,6 +74,12 @@ export const frontierSeasonRequest = (season: { startsAt: string; endsAt: string
   };
 };
 
+const isRegisteredPresetForEnvironment = (environment: CreateGameRequest["environment"], version: string): boolean => {
+  if (!/^(0|[1-9]\d*)$/.test(version)) return false;
+  const preset = nativePresets[Number(version)];
+  return preset !== undefined && preset.gameType === resolveDeploymentEnvironment(environment).gameType;
+};
+
 export function applyDurableLaunchDefaults(kind: "game", request: CreateGameRequest, now?: number): CreateGameRequest;
 export function applyDurableLaunchDefaults(
   kind: "result",
@@ -86,8 +96,7 @@ export function applyDurableLaunchDefaults(
   if (!("gameName" in request) || "gameId" in request) throw new Error("Invalid game request");
   const version =
     request.version ?? (defaultPresetForEnvironment(request.environment) as NonNullable<CreateGameRequest["version"]>);
-  const preset = nativePresetForId(Number(version));
-  if (preset.environmentGameType !== resolveDeploymentEnvironment(request.environment).gameType) {
+  if (!isRegisteredPresetForEnvironment(request.environment, version)) {
     throw new Error("Preset does not match the requested game format");
   }
   return {
