@@ -14,6 +14,8 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
+import { presentedMineKind } from "@bibliothecadao/eternum";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 interface PlayerStructureView {
   entity_id: number;
@@ -104,7 +106,7 @@ export const PlayerId = ({
     }
 
     // For other structure types, use the type name with entity ID
-    return `${mode.structure.getTypeName(structure.category as StructureType, store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structure.entity_id })?.metadata.mine_kind) ?? "Structure"} ${structure.entity_id}`;
+    return `${mode.structure.getTypeName(structure.category as StructureType, mineKindOf(store, structure.entity_id)) ?? "Structure"} ${structure.entity_id}`;
   };
 
   return (
@@ -244,4 +246,10 @@ const AvatarImage = ({ address }: { address: string }) => {
       <img className="h-full w-full object-cover" src={avatarUrl} alt="Player avatar" />
     </div>
   );
+};
+
+/** The mine kind a structure is drawn as, when the game's facts hold it. */
+const mineKindOf = (store: NativeFactStore, entityId: number) => {
+  const row = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
+  return row ? presentedMineKind(store, row) : undefined;
 };

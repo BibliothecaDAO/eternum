@@ -217,7 +217,7 @@ const AutoProvisionRealms = () => {
           return [
             {
               entityId: Number(structure.entityId),
-              name: getStructureName(structure.structure, getIsBlitz()).name,
+              name: getStructureName(store, structure.structure, getIsBlitz()).name,
               provisioned: getBuildingCount(BuildingType.ResourceLabor, packedCounts) > 0,
               location: structureMapPosition(store, structure.structure),
             },

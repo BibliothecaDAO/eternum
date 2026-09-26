@@ -485,7 +485,7 @@ function describeStructureDetails(
   const structure = readStructure(targetId, components);
   if (!structure) return describeFallbackStructure(fallbackCategory, fallbackCoord);
 
-  const name = getStructureName(structure, getIsBlitz()).name;
+  const name = getStructureName(components, structure, getIsBlitz()).name;
   const level = toNumber(structure.base?.level);
   const coord = formatCoord(structureMapPosition(components, structure));
 
@@ -520,11 +520,11 @@ function readExplorer(explorerId: unknown, components?: NativeFactStore) {
 /** The structure's name alone, undefined when native store has no row: a story never prints a raw entity id. */
 function describeStructureName(structureId: unknown, components?: NativeFactStore): string | undefined {
   const structure = readStructure(structureId, components);
-  return structure ? structureDisplayName(structure) : undefined;
+  return structure && components ? structureDisplayName(components, structure) : undefined;
 }
 
-function structureDisplayName(structure: StructureRow): string {
-  return getStructureName(structure, getIsBlitz()).name;
+function structureDisplayName(components: NativeFactStore, structure: StructureRow): string {
+  return getStructureName(components, structure, getIsBlitz()).name;
 }
 
 /**

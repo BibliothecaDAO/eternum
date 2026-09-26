@@ -23,6 +23,7 @@ import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ContractAddress, ID, BANDITS_NAME, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
+import { presentedMineKind } from "@bibliothecadao/eternum";
 
 interface UseStructureEntityDetailOptions {
   structureEntityId: ID;
@@ -101,8 +102,8 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
 
   const typeLabel = useMemo(() => {
     if (!structure?.base?.category) return undefined;
-    return mode.structure.getTypeName(structure.base.category as StructureType, structure.metadata.mine_kind);
-  }, [mode, structure?.base?.category, structure?.metadata.mine_kind]);
+    return mode.structure.getTypeName(structure.base.category as StructureType, presentedMineKind(store, structure));
+  }, [mode, store, structure]);
 
   const backgroundImage = useMemo(() => {
     if (!structure?.base?.category) return undefined;

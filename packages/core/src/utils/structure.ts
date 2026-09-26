@@ -2,6 +2,7 @@ import { structureMapPosition } from "./expeditions";
 import {
   StructureTypeToNameMapping,
   getMinePresentation,
+  ESSENCE_RIFT_MINE_KIND,
   ContractAddress,
   ID,
   BANDITS_NAME,
@@ -58,6 +59,22 @@ export const getStructureImmunityTimer = (
 
   if (!currentBlockTimestamp) return 0;
   return immunityEndTimestamp - currentBlockTimestamp!;
+};
+
+/**
+ * The mine kind a structure is drawn as. Frontier writes a discovered site as a Mine with no mine kind and records what
+ * it is in its ExpeditionSite row (place_discovery skips the mine draw), so a Rift is drawn as the Essence Rift; a mine
+ * with no site row is drawn by its own kind. Any other structure has no mine kind to draw.
+ */
+export const presentedMineKind = (
+  store: Pick<NativeFactStore, "get">,
+  structure: Pick<NativeRows["Structure"], "game_id" | "entity_id" | "base" | "metadata">,
+): number | undefined => {
+  if (structure.base.category !== StructureType.Mine) return undefined;
+  const site = store.get("ExpeditionSite", { game_id: structure.game_id, entity_id: structure.entity_id });
+  if (!site) return Number(structure.metadata.mine_kind);
+  if (site.kind === "Rift") return ESSENCE_RIFT_MINE_KIND;
+  throw new Error(`Mine ${structure.entity_id} is a ${site.kind} site, which is not drawn as a mine`);
 };
 
 export const getStructureTypeName = (structureType: StructureType, mineKind?: number) => {

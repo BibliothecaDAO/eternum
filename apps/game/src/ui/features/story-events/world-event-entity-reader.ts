@@ -55,7 +55,7 @@ export const createWorldEventEntityReader = (
       coordY: spatial.hexCoords.row,
       ownerAddress,
       ownerName: getPlayerName(ownerAddress),
-      structureName: getStructureName(structure, getIsBlitz()).name,
+      structureName: getStructureName(store, structure, getIsBlitz()).name,
       structureType: structure.base.category as StructureType,
     };
   };

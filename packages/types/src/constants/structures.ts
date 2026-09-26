@@ -18,6 +18,9 @@ export const MineKinds = {
   2: { name: "Fragment Mine", icon: "/images/labels/fragment_mine.png", model: "/models/new-buildings-opt/mine.glb" },
 } as const;
 
+/** The kind a Frontier Rift is drawn as: it has no mine kind of its own. */
+export const ESSENCE_RIFT_MINE_KIND = 1;
+
 export function getMinePresentation(kind: number) {
   const presentation = MineKinds[kind as keyof typeof MineKinds];
   if (!presentation) throw new Error(`Unknown mine kind ${kind}`);

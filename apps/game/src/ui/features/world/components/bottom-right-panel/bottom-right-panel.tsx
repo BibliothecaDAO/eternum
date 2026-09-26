@@ -56,6 +56,8 @@ import { requireActiveGameClient } from "@/sync/active-game-client";
 
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, MINIMAP_SIZE } from "./constants";
 import { HexMinimap, readMinimapTiles, type MinimapTile } from "./hex-minimap";
+import { presentedMineKind } from "@bibliothecadao/eternum";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 const compactResourceFormatter = new Intl.NumberFormat("en-US", {
   notation: "compact",
@@ -255,7 +257,7 @@ const LocalTilePanel = () => {
       if (selectedStructureCategory === StructureType.Realm) return "Castle";
       if (isVillageLikeStructureCategory(selectedStructureCategory)) return mode.labels.village;
       if (selectedStructureCategory === StructureType.Mine)
-        return getMinePresentation(liveStructure!.metadata.mine_kind).name;
+        return getMinePresentation(presentedMineKind(setup.store, liveStructure!)!).name;
       if (selectedStructureCategory === StructureType.Hyperstructure) return "Hyperstructure";
       if (selectedStructureCategory === StructureType.Bank) return "Bank";
       return "Structure";
@@ -764,12 +766,7 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
           <HexMinimap
             tiles={tiles.map((tile) => ({
               ...tile,
-              mineKind: tile.occupier_id
-                ? store.get("Structure", {
-                    game_id: configManager.getActiveGameId(),
-                    entity_id: Number(tile.occupier_id),
-                  })?.metadata.mine_kind
-                : undefined,
+              mineKind: mineKindOnTile(store, tile.occupier_id),
             }))}
             selectedHex={focusSelectedHex}
             navigationTarget={navigationTarget}
@@ -832,3 +829,10 @@ export const BottomRightPanel = memo(() => {
 });
 
 BottomRightPanel.displayName = "BottomRightPanel";
+
+/** The mine kind a minimap tile's occupier is drawn as, when it is a mine. */
+const mineKindOnTile = (store: NativeFactStore, occupierId: number | string | bigint | null | undefined) => {
+  if (!occupierId) return undefined;
+  const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: Number(occupierId) });
+  return structure ? presentedMineKind(store, structure) : undefined;
+};

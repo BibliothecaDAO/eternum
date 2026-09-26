@@ -8,7 +8,7 @@ import knownAddressesJSONData from "../data/known-addresses.json";
 import { configManager } from "../managers/config-manager";
 import { getHyperstructureName } from "./hyperstructure";
 import { getRealmNameById } from "./realm";
-import { getStructureTypeName } from "./structure";
+import { getStructureTypeName, presentedMineKind } from "./structure";
 import { isViewerOwner } from "./viewer";
 
 const knownAddressesJSON: Record<string, string> = knownAddressesJSONData;
@@ -33,7 +33,7 @@ export const getEntityInfo = (
     };
   } else {
     if (structure) {
-      name = getStructureName(structure, isBlitz);
+      name = getStructureName(store, structure, isBlitz);
     }
   }
 
@@ -85,7 +85,11 @@ const getRealmName = (structure: NativeRows["Structure"]) => {
   return structure.metadata.has_wonder ? `WONDER - ${baseName}` : baseName;
 };
 
-export const getStructureName = (structure: NativeRows["Structure"], isBlitz: boolean) => {
+export const getStructureName = (
+  store: Pick<NativeFactStore, "get">,
+  structure: NativeRows["Structure"],
+  isBlitz: boolean,
+) => {
   const cachedName = getEntityNameFromLocalStorage(structure.entity_id);
   let originalName = undefined;
 
@@ -95,7 +99,8 @@ export const getStructureName = (structure: NativeRows["Structure"], isBlitz: bo
     originalName = getHyperstructureName(structure);
   } else {
     const structureTypeName =
-      getStructureTypeName(structure.base.category as StructureType, structure.metadata.mine_kind) || "Structure";
+      getStructureTypeName(structure.base.category as StructureType, presentedMineKind(store, structure)) ||
+      "Structure";
     originalName = `${structureTypeName} ${structure.entity_id}`;
   }
 

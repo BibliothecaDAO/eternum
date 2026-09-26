@@ -58,6 +58,7 @@ import {
   TIER_DISPLAY_NAMES,
 } from "./utils";
 import { knownBalance } from "@/ui/utils/utils";
+import { presentedMineKind } from "@bibliothecadao/eternum";
 
 interface StructureColumn {
   entityId: number;
@@ -187,7 +188,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
           ? getRealmNameById(realmId) || `Realm #${realmId}`
           : mode.structure.getTypeName(
               structure.structure.base.category as StructureType,
-              structure.structure.metadata.mine_kind,
+              presentedMineKind(store, structure.structure),
             ) || "Structure";
 
         return {

@@ -78,6 +78,7 @@ import { getBattleTimerLeft } from "../utils/combat-directions";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
+import { presentedMineKind } from "@bibliothecadao/eternum";
 import { FXManager } from "./fx-manager";
 import type { HoverLabelShowResult } from "./hover-label-show-result";
 import {
@@ -587,9 +588,10 @@ export class StructureManager {
 
     return {
       entityId: renderable.entityId,
-      structureName: structureComponent
-        ? getStructureName(structureComponent, getIsBlitz()).name
-        : `${StructureType[renderInfo.type] ?? "Structure"} ${renderable.entityId}`,
+      structureName:
+        structureComponent && this.store
+          ? getStructureName(this.store, structureComponent, getIsBlitz()).name
+          : `${StructureType[renderInfo.type] ?? "Structure"} ${renderable.entityId}`,
       hexCoords: {
         col: renderable.hexCoords.col - FELT_CENTER(),
         row: renderable.hexCoords.row - FELT_CENTER(),
@@ -601,7 +603,7 @@ export class StructureManager {
       isAlly: arePlayersAllied(this.store, accountAddress(), ownerAddress),
       owner: { address: ownerAddress, ownerName, guildName: "" },
       structureType: renderInfo.type,
-      mineKind: structureComponent?.metadata.mine_kind,
+      mineKind: structureComponent && this.store ? presentedMineKind(this.store, structureComponent) : undefined,
       hasWonder: renderInfo.hasWonder,
       fallenRealm: this.store
         ? readStandingFallenRealm(

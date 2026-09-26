@@ -70,6 +70,13 @@ export const requireActiveGameClient = (): GameClient => {
 /** The store of the game this client plays, or null before a game boots; names read as unregistered until then. */
 export const getActiveGameStore = (): NativeFactStore | null => activeGameClient?.setup.store ?? null;
 
+/** The active game's facts, for a reader that only runs inside a game. */
+export const requireActiveGameStore = (): NativeFactStore => {
+  const store = getActiveGameStore();
+  if (!store) throw new Error("No game is active to read its facts");
+  return store;
+};
+
 export const disposeGameSyncSession = (): void => {
   unsubscribeAccount?.();
   unsubscribeAccount = null;
