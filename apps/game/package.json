@@ -29,6 +29,8 @@
     "optimize:reward-tiles": "node ./scripts/reward-tiles/optimize-reward-tiles.mjs",
     "optimize:fleet": "node ./scripts/fleet/optimize-fleet.mjs",
     "verify:reward-tiles": "node ./scripts/reward-tiles/verify-reward-tiles.mjs",
+    "build:building-tiers": "node ./scripts/frontier/build-building-tiers.mjs",
+    "verify:building-tiers": "node ./scripts/frontier/verify-building-tiers.mjs",
     "verify:fallen-realm": "node ./scripts/optimize-structure-models.mjs --verify frontier/fallen-realm-ruin.glb frontier/beast-troll.glb frontier/beast-wyvern.glb frontier/beast-hydra.glb && node ./scripts/frontier/verify-beast-placement.mjs beast-troll && node ./scripts/frontier/verify-beast-placement.mjs beast-wyvern && node ./scripts/frontier/verify-beast-placement.mjs beast-hydra",
     "dev": "vite",
     "dev:webgpu": "VITE_PUBLIC_RENDERER_BUILD_MODE=webgpu-auto vite",
