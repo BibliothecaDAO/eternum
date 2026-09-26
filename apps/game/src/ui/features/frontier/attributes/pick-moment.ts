@@ -30,8 +30,12 @@ const set = (pick: Pick | null) => usePickStore.setState({ pick });
 
 let autoOpened = false;
 
-/** The session's first level-up opens the panel on its own; every later offer waits on its army's chip. */
+/**
+ * A Shrine's offer opens the panel at once, every time: the player used the Shrine to pick. The session's first
+ * level-up opens it too; every other offer waits on its army's chip.
+ */
 export const shouldAutoOpenPick = (offer: AttributeOfferFacts): boolean => {
+  if (offer.source === "Shrine") return true;
   if (autoOpened || offer.source !== "Level") return false;
   autoOpened = true;
   return true;

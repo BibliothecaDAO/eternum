@@ -52,10 +52,13 @@ beforeEach(() => {
 });
 
 describe("the pick", () => {
-  it("opens on its own only for the session's first level-up", () => {
+  it("opens on its own for the session's first level-up and for every Shrine offer", () => {
     expect(shouldAutoOpenPick({ ...LEVEL_OFFER, source: "Relic" })).toBe(false);
     expect(shouldAutoOpenPick(LEVEL_OFFER)).toBe(true);
     expect(shouldAutoOpenPick({ ...LEVEL_OFFER, id: 8 })).toBe(false);
+    // Every Shrine offer opens it: the player used the Shrine to pick.
+    expect(shouldAutoOpenPick({ ...LEVEL_OFFER, id: 9, source: "Shrine" })).toBe(true);
+    expect(shouldAutoOpenPick({ ...LEVEL_OFFER, id: 10, source: "Shrine" })).toBe(true);
   });
 
   it("takes two taps, keeps the offer with its reason on a refusal, and flies home only on its own story", async () => {

@@ -22,7 +22,7 @@ export const FrontierPick = () => {
   const pick = usePick();
   useNativeRevision(PROGRESS_MODELS);
   useAttributeChoices();
-  useFirstLevelUpOpensPick(account?.address ?? null);
+  useNewOfferOpensPick(account?.address ?? null);
   const progress = pick
     ? setup.store.get("ArmyProgress", { game_id: configManager.getActiveGameId(), explorer_id: pick.explorerId })
     : undefined;
@@ -52,8 +52,8 @@ const useAttributeChoices = () => {
   useEffect(() => new WorldUpdateListener(setup).Attributes.onAttributeChosen(onAttributeChosen), [setup]);
 };
 
-/** A new Level offer on one of the player's armies, while the session plays; offers loaded with the game are not new. */
-const useFirstLevelUpOpensPick = (player: string | null) => {
+/** A new offer on one of the player's armies that opens the pick, while the session plays; offers loaded with the game are not new. */
+const useNewOfferOpensPick = (player: string | null) => {
   const { setup } = useGame();
   useEffect(() => {
     if (!player) return;
