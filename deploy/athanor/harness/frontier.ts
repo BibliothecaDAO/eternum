@@ -17,13 +17,7 @@ import {
   type GameClient,
 } from "@bibliothecadao/eternum";
 import { generateBuildablePositions } from "@bibliothecadao/eternum/automation";
-import {
-  BUILDINGS_CENTER,
-  getNeighborHexes,
-  RESOURCE_PRECISION,
-  TroopTier,
-  type ResourcesIds,
-} from "@bibliothecadao/types";
+import { BUILDINGS_CENTER, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 import type { NativeCommand } from "../../../contracts/l3/world-native/schema/commands.gen";
 import type { NativeRows } from "../../../contracts/l3/world-native/schema/client.gen";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
@@ -202,6 +196,7 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
   await game.waitUntilPlaying();
   if (options.burst?.shape === "booth") return runBoothBurst(options, epochSeconds);
   const players = await settleFrontierPlayers(options, accounts);
+  await Promise.all(players.map((player) => waitForRealmResources(player.client, player.game, player)));
   if (options.burst?.shape === "rollover") return runRolloverBurst(options, players, epochSeconds);
   for (const player of players) observeDay(player);
   await options.onReady?.();
@@ -213,6 +208,7 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
   while (Date.now() < deadline && !failed) {
     await Promise.all(
       players.map(async (player) => {
+        await waitForRealmResources(player.client, player.game, player);
         observeDay(player);
         if (now() < player.nextActionAt || !inSession(player.client, player)) return;
         const action = chooseAction(player.client, player.game, player);
@@ -491,16 +487,15 @@ function observeDay(player: Player) {
   const previous = currentDay(player);
   if (previous) {
     previous.endedAt = now();
-    const resources = new ResourceManager(client.setup.store, player.realmId, game.gameId);
     const rollover = {
       epoch,
       at: now(),
       realmId: player.realmId,
       previousArmies: previous.armyIds,
       currentArmies: [] as number[],
-      labor: known(resources.balance(23), player.realmId, "labor balance").toString(),
-      wheat: known(resources.balance(35), player.realmId, "wheat balance").toString(),
-      essence: known(resources.balance(38), player.realmId, "essence balance").toString(),
+      labor: storedBalance(client, player, ResourcesIds.Labor).toString(),
+      wheat: storedBalance(client, player, ResourcesIds.Wheat).toString(),
+      essence: storedBalance(client, player, ResourcesIds.Essence).toString(),
       production: [...client.setup.store.inGame("ResourceProduction", game.gameId)]
         .filter((row) => row.entity_id === player.realmId)
         .map((row) => ({ resource: row.resource_type, rate: row.production_rate.toString() })),
@@ -555,7 +550,40 @@ function chooseAction(client: GameClient, game: HarnessGame, player: Player): Ac
 function balance(client: GameClient, player: Player, resource: ResourcesIds): bigint {
   const manager = new ResourceManager(client.setup.store, player.realmId, client.gameId);
   const current = manager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, resource);
-  return BigInt(known(current, player.realmId, `balance of resource ${resource}`).balance);
+  if (current) return BigInt(current.balance);
+  throw new Error(`Resource ${resource} for realm ${player.realmId} has an unknown balance projection`);
+}
+
+async function waitForRealmResources(client: GameClient, game: HarnessGame, player: Player): Promise<void> {
+  await game.waitFor(
+    () => {
+      const essence = new ResourceManager(client.setup.store, player.realmId, client.gameId).current(
+        ResourcesIds.Essence,
+      );
+      return essence === undefined ? undefined : true;
+    },
+    30_000,
+    () => resourceSnapshotState(client, player),
+  );
+}
+
+function resourceSnapshotState(client: GameClient, player: Player): string {
+  const store = client.setup.store;
+  const scope = store.subscriptionScope();
+  const resource = new ResourceManager(store, player.realmId, client.gameId);
+  const inRealmScope = scope.known?.expedition?.realms.has(String(player.realmId));
+  const balance = resource.current(ResourcesIds.Essence);
+  return (
+    `Frontier resource snapshot for realm ${player.realmId} in game ${client.gameId} ` +
+    `(scope=${scope.known ? "known" : scope.unknown}, inRealmScope=${inRealmScope ?? "unknown"}, ` +
+    `resourceOwner=${resource.hasResources()}, essence=${balance?.balance ?? "unknown"})`
+  );
+}
+
+function storedBalance(client: GameClient, player: Player, resource: ResourcesIds): bigint {
+  const result = new ResourceManager(client.setup.store, player.realmId, client.gameId).balance(resource);
+  if (result !== undefined) return result;
+  throw new Error(`Resource ${resource} for realm ${player.realmId} has an unknown balance`);
 }
 function planUpgrade(client: GameClient, player: Player): Action | undefined {
   const realm = home(client, player);

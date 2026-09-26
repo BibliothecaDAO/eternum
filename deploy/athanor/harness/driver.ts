@@ -708,7 +708,11 @@ async function runProductionAction({
 }: Omit<ExecuteBotActionOptions, "chainTicks" | "kind" | "pathReservations">): Promise<TrackedTransaction> {
   const structure = bot.structures[bot.nextProductionStructure % bot.structures.length]!;
   bot.nextProductionStructure += 1;
-  const before = requireProduction(game, structure.structureId);
+  const before = await game.waitFor(
+    () => game.production(structure.structureId),
+    MODEL_UPDATE_TIMEOUT_MS,
+    () => `Resource ${structure.structureId} labor and wood output snapshot`,
+  );
 
   const transaction = await trackTransaction({
     actionIndex,
@@ -1225,12 +1229,6 @@ function requireExplorer(game: HarnessGame, explorerId: ID): ExplorerRow {
   const explorer = game.explorer(explorerId);
   if (!explorer) throw new Error(`Explorer ${explorerId} is not synchronized`);
   return explorer;
-}
-
-function requireProduction(game: HarnessGame, structureId: ID): ProductionState {
-  const production = game.production(structureId);
-  if (!production) throw new Error(`Resource ${structureId} is not synchronized`);
-  return production;
 }
 
 const changedExplorer = (before: ExplorerRow, current: ExplorerRow | undefined): ExplorerRow | undefined =>

@@ -5,6 +5,7 @@ import { NativeFactStore } from "../client/native-fact-store";
 import { ResourceManager } from "./resource-manager";
 import { realmSupportPercent } from "../utils/realm-support";
 import type { GameSyncFact } from "../sync/game-sync-types";
+import { ResourcesIds } from "@bibliothecadao/types";
 
 const upsert = (key: string, models: Record<string, Record<string, unknown>>): GameSyncFact[] =>
   Object.entries(models).map(([model, value]) => ({ model, key, value }));
@@ -63,6 +64,60 @@ describe("native resource facts", () => {
     unsubscribe();
     store.applyFacts([...upsert("0x1", { ResourceWeight: weight() })]);
     expect(changed).toHaveBeenCalledTimes(4);
+  });
+
+  it("resolves a fresh realm's absent Essence only after its scoped snapshot is complete", () => {
+    const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 1, complete: false, actor: "0xaaa", timestamp: 350 });
+    store.applyFacts([
+      ...upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, epoch_seconds: 100, mode_rules: 0 } }),
+      ...upsert("0x101", { GameRegistry: { ...game, ready: true } }),
+      ...upsert("0x102", {
+        SettlementRules: {
+          game_id: 1,
+          registration_start: 1,
+          registration_limit: 0,
+          spacing: 100,
+          mode: "Single",
+        },
+      }),
+      ...upsert("0x103", { PlayerEntry: { game_id: 1, owner: 0x111n, player: 0xaaan } }),
+      ...upsert("0x104", {
+        Structure: {
+          game_id: 1,
+          entity_id: 7,
+          owner: 0x111n,
+          base: {
+            category: 1,
+            level: 0,
+            created_at: 0n,
+            troop_max_guard_count: 0,
+            troop_max_explorer_count: 0,
+            starting_troops_granted: false,
+          },
+          resources_packed: 0n,
+          metadata: { realm_id: 1, village_realm: 0, mine_kind: 0, deepest_depth: 0, has_wonder: false, order: 0 },
+        },
+      }),
+      ...upsert("0x105", { ResourceWeight: weight() }),
+      ...[23, 26, 35].flatMap((resource_type, index) =>
+        upsert(`0x${106 + index}`, { ResourceBalance: { ...balance(), resource_type, balance: 10n } }),
+      ),
+    ]);
+
+    const manager = new ResourceManager(store, 7, 1);
+    expect(manager.current(ResourcesIds.Essence)).toBeUndefined();
+    expect(manager.balance(ResourcesIds.Essence)).toBeUndefined();
+
+    store.setSnapshot({ gameId: 1, complete: true, actor: "0xaaa", timestamp: 350 });
+
+    const scope = store.subscriptionScope();
+    expect(scope.known?.expedition?.realms.has(String(7))).toBe(true);
+    expect(manager.current(ResourcesIds.Essence)?.balance).toBe(0n);
+    expect(manager.balance(ResourcesIds.Essence)).toBe(0n);
+    expect(
+      Boolean(scope.known?.expedition?.realms.has(String(7))) && manager.current(ResourcesIds.Essence) !== undefined,
+    ).toBe(true);
   });
 
   it("scopes reads and notifications to their game, and knows no balance without a resource owner", () => {

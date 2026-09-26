@@ -21,7 +21,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { shortString, type Account } from "starknet";
 import { ResourcesIds, StructureType, TroopType, type ID, type NativeTicketIdentity } from "@bibliothecadao/types";
-import { known } from "./known";
 
 export interface Coord {
   x: number;
@@ -205,9 +204,12 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
       kind === "explore" ? configManager.getExploreStaminaCost() : configManager.getMinTravelStaminaCost(),
     production: (structureId) => {
       const resource = new ResourceManager(store, structureId);
+      const labor = resource.balance(ResourcesIds.Labor);
+      const wood = resource.current(ResourcesIds.Wood);
+      if (labor === undefined || wood === undefined) return undefined;
       return {
-        laborBalance: known(resource.balance(ResourcesIds.Labor), structureId, "labor balance"),
-        woodOutput: resource.current(ResourcesIds.Wood)?.production?.output_amount_left ?? 0n,
+        laborBalance: labor,
+        woodOutput: wood.production.output_amount_left,
       };
     },
     armyPathIndexes: () => buildArmyPathIndexes(client),
