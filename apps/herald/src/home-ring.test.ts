@@ -6,6 +6,7 @@ import { GameSubscription } from "./game-subscription";
 import { describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { rowInGameSyncScope, isClientGameSyncModel } from "@bibliothecadao/eternum/game-sync-models";
+import { GameSyncRuntime, type GameSyncSubscriptionHandlers } from "@bibliothecadao/eternum/game-sync";
 
 import { decodeHomeRing, homeRingTileData, type HomeRingTile, type HomeRingView } from "./home-ring";
 import { LiveWorld } from "./live-world";
@@ -348,6 +349,151 @@ describe("home ring", () => {
 });
 
 describe("client and Herald subscription scope parity", () => {
+  it("keeps the actor's home rows when muster rebases the expedition scope", async () => {
+    const { native, fold } = frontierWorld();
+    native.applyReceipt(
+      fold,
+      receipt(
+        [
+          rowEvent("PlayerEntry", ["1", "10"], { player: 10n }),
+          rowEvent("ResourceWeight", ["1", "1"], { capacity: 100_000n, weight: 2_000n }),
+          rowEvent("ResourceBalance", ["1", "1", "23"], { resource_type: 23, balance: 4_000n }),
+          rowEvent("ResourceBalance", ["1", "1", "35"], { resource_type: 35, balance: 8_000n }),
+          rowEvent("StructureBuildings", ["1", "1"], {
+            packed_counts_1: 1n,
+            packed_counts_2: 0n,
+            packed_counts_3: 0n,
+            population: { current: 1, max: 50 },
+          }),
+          rowEvent("Building", ["1", "1", "10", "10"], {
+            category: 28,
+            paused: false,
+            labor_paid: 200_000_000_000n,
+            tier: 1,
+          }),
+        ],
+        "0x56",
+      ),
+      10,
+      0,
+    );
+
+    const overlay = fold.overlay();
+    const subscription = new GameSubscription(
+      "1",
+      "0xa",
+      (preconfirmed) => (preconfirmed ? overlay : fold),
+      () => 10,
+      () => MID_DAY,
+    );
+    const beforeScope = fold.subscriptionScope("1", "0xa", MID_DAY);
+    const beforeMuster = subscription.snapshot();
+    const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 1, actor: "0xa", complete: false, timestamp: MID_DAY });
+    const snapshotModels = beforeMuster.models.map(({ model }) => model);
+    let runtimeHandlers: GameSyncSubscriptionHandlers | undefined;
+    let appliedMuster!: () => void;
+    const musterApplied = new Promise<void>((resolve) => (appliedMuster = resolve));
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession({
+      store,
+      snapshotModels,
+      onTransactionEntitiesApplied: (hash) => {
+        if (hash === "0x57") appliedMuster();
+      },
+      transport: {
+        async subscribe(handlers) {
+          runtimeHandlers = handlers;
+          handlers.onSnapshotState?.({ gameId: 1, actor: "0xa", complete: false, timestamp: MID_DAY });
+          handlers.onSnapshotStart();
+          beforeMuster.models.forEach(({ model, rows }, index) =>
+            handlers.onSnapshotModel(
+              model,
+              rows.map((row) => ({ ...row, model })),
+              { bytesReceived: 0, model, modelsReceived: index + 1, rowsReceived: rows.length },
+            ),
+          );
+          await handlers.onSnapshotEnd();
+          handlers.onSnapshotState?.({ gameId: 1, actor: "0xa", complete: true, timestamp: MID_DAY });
+          handlers.onHead({ block: 10, preconfirmed: false, timestamp: MID_DAY });
+          return { cancel: () => undefined };
+        },
+      },
+    });
+    store.setSnapshot({ gameId: 1, actor: "0xa", complete: true, timestamp: MID_DAY });
+    expect(store.require("Structure", { game_id: 1, entity_id: 1 }).owner).toBe(10n);
+    expect(store.require("ResourceWeight", { game_id: 1, entity_id: 1 }).weight).toBe(2_000n);
+    expect(store.require("ResourceBalance", { game_id: 1, entity_id: 1, resource_type: 23 }).balance).toBe(4_000n);
+    expect(store.require("ResourceBalance", { game_id: 1, entity_id: 1, resource_type: 35 }).balance).toBe(8_000n);
+    expect(store.require("StructureBuildings", { game_id: 1, entity_id: 1 }).packed_counts_1).toBe(1n);
+    expect(store.require("Building", { game_id: 1, structure_id: 1, inner_col: 10, inner_row: 10 }).category).toBe(28);
+
+    const army = explorerValue("1", 10_000_000_000n);
+    const troops = army.troops as Record<string, unknown>;
+    const muster = native.applyReceipt(
+      fold,
+      receipt(
+        [
+          rowEvent("ArmySlot", ["1", "1", String(absoluteEpoch({ epochSeconds: 86_400 }, MID_DAY)), "0"], {
+            epoch: absoluteEpoch({ epochSeconds: 86_400 }, MID_DAY),
+            explorer_id: 20,
+            stamina: { amount: 30, updated_tick: 1 },
+          }),
+          rowEvent("ExplorerTroops", ["1", "20"], {
+            ...army,
+            troops: { ...troops, stamina: new CairoCustomEnum({ Slot: 0 }) },
+          }),
+          rowEvent("TileOccupancy", ["1", "0", "51", "50"], {
+            entity_id: 20,
+            category: 15,
+            is_structure: false,
+          }),
+        ],
+        "0x57",
+      ),
+      11,
+      0,
+    );
+    const rebase = subscription.project({
+      type: "diff",
+      block: 11,
+      preconfirmed: false,
+      transaction_hash: "0x57",
+      set: muster.changes.flatMap(({ change }) => (change?.set ? [change.set] : [])),
+      del: [],
+    });
+    const afterScope = fold.subscriptionScope("1", "0xa", MID_DAY);
+    expect(afterScope.expedition?.entities.has("20")).toBe(true);
+    expect(afterScope.expedition?.entities).not.toEqual(beforeScope.expedition?.entities);
+    expect(rebase).toHaveLength(1);
+    expect(rebase[0]?.type).toBe("diff");
+    if (rebase[0]?.type !== "diff") throw new Error("Muster did not produce a scope rebase");
+    for (const row of rebase[0].set) {
+      expect(rowInGameSyncScope(row.model, row.value, afterScope)).toBe(true);
+    }
+    for (const model of ["Structure", "ResourceWeight", "ResourceBalance", "StructureBuildings", "Building"] as const) {
+      expect(rebase[0].set.some((row) => row.model === model)).toBe(true);
+    }
+
+    if (!runtimeHandlers) throw new Error("Game sync did not subscribe");
+    runtimeHandlers.onFacts({
+      facts: [...rebase[0].set, ...rebase[0].del.map((row) => ({ ...row, value: null }))],
+      preconfirmed: false,
+      transactionHash: "0x57",
+    });
+    await musterApplied;
+
+    expect(await runtimeHandlers.onScope(rebase[0].set, true)).toBe(true);
+
+    expect(store.require("Structure", { game_id: 1, entity_id: 1 }).owner).toBe(10n);
+    expect(store.require("ResourceWeight", { game_id: 1, entity_id: 1 }).weight).toBe(2_000n);
+    expect(store.require("ResourceBalance", { game_id: 1, entity_id: 1, resource_type: 23 }).balance).toBe(4_000n);
+    expect(store.require("ResourceBalance", { game_id: 1, entity_id: 1, resource_type: 35 }).balance).toBe(8_000n);
+    expect(store.require("StructureBuildings", { game_id: 1, entity_id: 1 }).packed_counts_1).toBe(1n);
+    expect(store.require("Building", { game_id: 1, structure_id: 1, inner_col: 10, inner_row: 10 }).category).toBe(28);
+    runtime.dispose();
+  });
+
   it("keeps Frontier absence unknown across actor, overlay and day boundaries", () => {
     const { native, fold } = frontierWorld();
     const overlay = fold.overlay();
