@@ -10,9 +10,12 @@ interface PlayRouteReadinessState {
   hexCoordinates: SceneCoordinates | null;
   hexReady: boolean;
   markHexReady: (token: number, coords?: SceneCoordinates | null) => void;
+  /** A scene the boot waits on failed to set up: the boot ends in its error state instead of waiting on. */
+  markSceneFailed: (token: number, error: Error) => void;
   markWorldmapConverged: (token: number) => void;
   markWorldmapReady: (token: number) => void;
   reset: (token: number) => void;
+  sceneFailure: Error | null;
   worldmapConverged: boolean;
   worldmapReady: boolean;
 }
@@ -32,6 +35,7 @@ export const usePlayRouteReadinessStore = create<PlayRouteReadinessState>((set) 
         hexReady: true,
       };
     }),
+  markSceneFailed: (token, error) => set((state) => (token === state.bootToken ? { sceneFailure: error } : state)),
   markWorldmapReady: (token) =>
     set((state) => {
       if (token !== state.bootToken) {
@@ -57,9 +61,11 @@ export const usePlayRouteReadinessStore = create<PlayRouteReadinessState>((set) 
       bootToken: token,
       hexCoordinates: null,
       hexReady: false,
+      sceneFailure: null,
       worldmapConverged: false,
       worldmapReady: false,
     }),
+  sceneFailure: null,
   worldmapConverged: false,
   worldmapReady: false,
 }));

@@ -152,7 +152,7 @@ const usePlayRouteBootStore = create<PlayRouteBootSnapshot>(() => ({
   tasks: createPendingTasks(),
 }));
 
-const resolveBootPhase = ({
+export const resolveBootPhase = ({
   bootstrapError,
   bootstrapStatus,
   hasResolvedAccount,
@@ -189,12 +189,14 @@ const resolveBootPhase = ({
     return "setup_game";
   }
 
+  // A scene the boot waits on that failed to set up ends the wait in the error state; once ready, a later
+  // failure leaves the running game as it is.
   if (!readiness.worldmapReady) {
-    return "wait_worldmap_ready";
+    return readiness.sceneFailure ? "error" : "wait_worldmap_ready";
   }
 
   if (resolvedRequest.resumeScene === "hex" && !readiness.hexReady) {
-    return "handoff_scene";
+    return readiness.sceneFailure ? "error" : "handoff_scene";
   }
 
   return "ready";
@@ -355,7 +357,7 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
       account: resolvedAccount,
       bootToken,
       currentTask: bootstrap.currentTask,
-      error: bootstrap.error,
+      error: bootstrap.error ?? (phase === "error" ? readiness.sceneFailure : null),
       phase,
       progress: resolveBootProgress({
         bootstrapProgress: bootstrap.progress,
@@ -374,6 +376,7 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
       bootstrap.progress,
       bootstrap.setupResult,
       phase,
+      readiness.sceneFailure,
       reconnectError,
       reconnectStatus,
       resolvedAccount,
@@ -389,6 +392,7 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
   return {
     ...snapshot,
     isReconnectRequired,
-    retry: bootstrap.retry,
+    // A scene that did not open retries the whole entry; the boot's own failures retry the bootstrap.
+    retry: bootstrap.error === null && readiness.sceneFailure ? () => window.location.reload() : bootstrap.retry,
   };
 };
