@@ -3,6 +3,7 @@ import { Trophy } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Chip } from "@/ui/features/frontier/frontier-chips";
 import { formatAmount } from "@/ui/features/frontier/frontier-format";
+import { DayDial } from "@/ui/features/frontier/day-dial";
 import { FlagGlyph } from "@/ui/features/frontier/glyphs";
 import { orderEmblem } from "@/ui/features/frontier/board/order-emblem";
 import { normalizeLeaderboardAddress } from "@/services/leaderboard/landing-leaderboard-service";
@@ -10,19 +11,21 @@ import { normalizeLeaderboardAddress } from "@/services/leaderboard/landing-lead
 import { entryHref } from "./game-links";
 import { type DirectoryGame, useLeaderboard, useRealmsPlayer } from "./herald";
 import { PrimaryLink } from "./live-chips";
-import { REALM_GROUND } from "./mode-art";
+import { realmStill } from "./mode-art";
 import { seasonRealm } from "./season";
+import { useNowSeconds } from "./use-now";
 
 /**
- * The player's realm (design o2, o10): its name under its Order's emblem on the board's ground, today's rank and sites
- * cleared from the season board, and Resume into it. Its tier's castle joins once the directory carries the realm's
- * level, and the day's dial once it carries the day.
+ * The player's realm (design o2, o10): its castle at its tier on its board, its name under its Order's emblem, the
+ * expedition day's dial, today's rank and sites cleared from the season board, and Resume into it.
  */
 export const RealmCard = ({ season, className }: { season: DirectoryGame; className?: string }) => {
   const player = useRealmsPlayer();
   const realm = seasonRealm(season);
   const board = useLeaderboard({ chainId: season.chainId, gameId: season.game_id });
+  const now = useNowSeconds();
   if (!realm) return null;
+  const still = realmStill(realm.level);
   const own =
     board.data?.mode === "frontier"
       ? board.data.entries.find(
@@ -40,13 +43,20 @@ export const RealmCard = ({ season, className }: { season: DirectoryGame; classN
         className,
       )}
     >
-      <img src={REALM_GROUND} alt="" className="absolute inset-0 -z-10 size-full object-cover" />
+      {still && <img src={still} alt="" className="absolute inset-0 -z-10 size-full object-cover object-[45%_55%]" />}
       <span className="absolute inset-0 -z-10 bg-gradient-to-t from-[#0c0a08] via-[#0c0a08]/50 to-transparent" />
       <header className="flex items-center gap-2">
         {emblem ? <img src={emblem.art} alt={emblem.name} className="size-8 object-contain" /> : null}
         <h2 className="font-[Lexend] text-[22px] font-extrabold text-[#fff3c4] drop-shadow-[0_2px_0_#1b1207]">
           {getRealmNameById(realm.realm_id)}
         </h2>
+        {season.expedition && (
+          <DayDial
+            rules={{ epochSeconds: season.expedition.epoch_seconds, startMainAt: season.clock.start_main_at }}
+            now={now}
+            className="ml-auto"
+          />
+        )}
       </header>
       {/* A phone stacks the numbers over Resume; a wide card sets them side by side, Resume at the right. */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

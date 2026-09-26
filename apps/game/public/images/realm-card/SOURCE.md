@@ -1,7 +1,6 @@
 # Realm stills
 
-A realm drawn outside the game (the doorway, the home realm card) shows the still for its castle level, and the board's
-bare ground while the level is not known.
+A realm drawn outside the game (the doorway, the home realm card) shows the still for its castle level.
 
 ## Tier stills
 
@@ -24,9 +23,3 @@ a 1600 × 1200 viewport at device scale 1.5. Then, in that page only:
    screenshot here as quality 86 WebP.
 
 The edits live in the capture page's own store; nothing is written anywhere else.
-
-## Ground still
-
-`ground.webp` is the board's grass field from the realm card's three-quarter angle, 1200 × 900 WebP. It makes no biome
-claim. Its editable source is `apps/game/scripts/realm-card/render-still.html`, which seeds its noise, so every render
-is the same field. To render it, open that page on the dev server and use "Save still".

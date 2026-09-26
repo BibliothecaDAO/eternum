@@ -7,9 +7,6 @@ export const MODE_ART = {
   eternum: "/images/covers/09.png",
 } as const;
 
-/** The realm card's ground: a rendered still of the board's field (public/images/realm-card/SOURCE.md). */
-export const REALM_GROUND = "/images/realm-card/ground.webp";
-
 const REALM_STILLS = ["settlement", "city", "kingdom", "empire"] as const;
 
 /**
