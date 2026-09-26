@@ -35,6 +35,8 @@ import { describeSlotBar, useOpenArmySlots } from "./frontier-muster-stamina";
 import { ArmyPortrait } from "./attributes/army-portrait";
 import { PickChip } from "./attributes/pick-chip";
 import { useRevealYield } from "./frontier-reveal-yield";
+import { useWellRefill } from "./sites/well-refill";
+import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { useMusterPointed } from "./guide/guide-pointer";
 
 const ARMY_MODELS = [
@@ -145,7 +147,7 @@ const ArmyCard = ({
           count={Number(army.troops.count / BigInt(RESOURCE_PRECISION))}
         />
       </span>
-      <StaminaBar stamina={stamina} />
+      <StaminaBar explorerId={army.explorer_id} stamina={stamina} />
       <span className="flex flex-wrap items-center gap-1.5">
         {stamina && stamina.secondsUntilFull > 0 && (
           <Chip small label="Full in" icon={<Hourglass />} value={formatShortClock(stamina.secondsUntilFull)} />
@@ -193,22 +195,37 @@ const ArmyRevealYield = ({ army }: { army: NativeRows["ExplorerTroops"] }) => {
   return <YieldChip small scaled={amount} />;
 };
 
-/** The army's stamina as a bar alone, in the stamina green; its numbers are the bar's label. Unknown is an empty bar. */
-const StaminaBar = ({ stamina }: { stamina: ArmyStaminaPresentation | null }) => (
-  <span
-    role="meter"
-    aria-label={stamina ? `Stamina ${stamina.committedCurrent} of ${stamina.committedMax}` : "Stamina unknown"}
-    aria-valuenow={stamina?.committedCurrent}
-    aria-valuemax={stamina?.committedMax}
-    title={stamina ? `${stamina.committedCurrent}/${stamina.committedMax}` : undefined}
-    className="h-2 overflow-hidden rounded-full bg-black/50"
-  >
+/**
+ * The army's stamina as a bar alone, in the stamina green; its numbers are the bar's label. Unknown is an empty bar.
+ * A Well's refill sweeps the fill up and lights the bar.
+ */
+const StaminaBar = ({ explorerId, stamina }: { explorerId: number; stamina: ArmyStaminaPresentation | null }) => {
+  const { refilling, shown } = useWellRefill(explorerId, stamina?.committedRatio ?? 0);
+  const reduced = useReducedMotion();
+  return (
     <span
-      className="block h-full rounded-full bg-[#9fd06a]"
-      style={{ width: `${(stamina?.committedRatio ?? 0) * 100}%` }}
-    />
-  </span>
-);
+      role="meter"
+      aria-label={stamina ? `Stamina ${stamina.committedCurrent} of ${stamina.committedMax}` : "Stamina unknown"}
+      aria-valuenow={stamina?.committedCurrent}
+      aria-valuemax={stamina?.committedMax}
+      title={stamina ? `${stamina.committedCurrent}/${stamina.committedMax}` : undefined}
+      data-refilling={refilling || undefined}
+      className={cn(
+        "h-2 overflow-hidden rounded-full bg-black/50 transition-shadow duration-300",
+        refilling && "shadow-[0_0_12px_rgba(159,208,106,0.85)]",
+      )}
+    >
+      <span
+        className={cn(
+          "block h-full rounded-full bg-[#9fd06a]",
+          refilling && !reduced && "transition-[width] duration-[900ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]",
+          refilling && "bg-[#c6f09a]",
+        )}
+        style={{ width: `${shown * 100}%` }}
+      />
+    </span>
+  );
+};
 
 /** The army's own name when it has one; otherwise its place in the dock, never its entity id. */
 const dockArmyName = (store: NativeFactStore, explorerId: number, position: number): string => {

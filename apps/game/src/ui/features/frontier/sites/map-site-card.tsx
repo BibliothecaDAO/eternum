@@ -14,6 +14,7 @@ import { Chip } from "../frontier-chips";
 import { BoltGlyph, CardFanGlyph } from "../glyphs";
 import { type MapSiteKind, mapSiteKind, readMapSite } from "./map-site-plan";
 import { useSelectedOwnArmy } from "./selected-army";
+import { armWellRefill } from "./well-refill";
 
 const MAP_SITE_MODELS = ["ArmyProgress", "ExplorerTroops", "TileOccupancy"] as const;
 
@@ -59,6 +60,7 @@ export const MapSiteCard = ({
         explorer_id: user.army.explorer_id,
         coord: { alt: siteTile.alt, x: siteTile.col, y: siteTile.row },
       });
+      if (plan.kind === "Well") armWellRefill(user.army.explorer_id);
     } catch (error) {
       toast.error(extractReadableErrorMessage(error, `The ${plan.kind} could not be used.`));
     } finally {
