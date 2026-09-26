@@ -6,7 +6,6 @@ import type { HarnessProvider } from "./provider";
 import { afterAll, afterEach, beforeAll, describe, expect, it, mock, spyOn } from "bun:test";
 import { ActionPaths, ActionType, configManager, type GameActions } from "@bibliothecadao/eternum";
 import type { Account } from "starknet";
-import type { NativeRows } from "../../../contracts/l3/world-native/schema/client.gen";
 import { mapWithConcurrency, type HarnessAccount } from "./account-factory";
 import {
   chooseOutwardDirection,
@@ -53,7 +52,7 @@ const labelled = (workers: EventEmitter[]) =>
     label: `1-${index}`,
     worker: Object.assign(worker, { postMessage: () => {}, terminate: async () => 0 }) as unknown as Worker,
   }));
-import { describeStructureBatch, holdsForSite } from "./frontier";
+import { holdsForSite } from "./frontier";
 
 const TEST_ENDPOINTS = { RPC_URL: "http://127.0.0.1:28310/rpc/v0_10_2", HERALD_URL: "http://127.0.0.1:28311" };
 const savedEndpoints = { RPC_URL: process.env.RPC_URL, HERALD_URL: process.env.HERALD_URL };
@@ -66,22 +65,6 @@ afterAll(() => {
 });
 
 describe("Madara harness workload", () => {
-  it("records raw Structure keys and owners for writes and erasures", () => {
-    const structure = { owner: 273n } as NativeRows["Structure"];
-    expect(
-      describeStructureBatch(
-        [
-          { model: "Structure", key: "2:9", value: { owner: "0xabc" } },
-          { model: "Structure", key: "2:10", value: null },
-        ],
-        [["2:10", structure]],
-      ),
-    ).toEqual({
-      set: [{ key: "2:9", owner: "0xabc" }],
-      del: [{ key: "2:10", owner: "273" }],
-    });
-  });
-
   it("refuses missing host credentials before contacting a shard, and records why in its output", async () => {
     for (const missing of ["DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY"]) {
       const output = await mkdtemp(join(tmpdir(), "harness-failure-"));

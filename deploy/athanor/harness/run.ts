@@ -832,19 +832,7 @@ https://staging.realms.party/api) and OPERATOR_TOKEN are required unless --prepa
 
 // A failure is recorded in the run's own output directory, so its stack survives whatever the caller does with stderr.
 async function recordFailure(error: unknown): Promise<{ error: string; stack?: string }> {
-  const failure =
-    error instanceof Error
-      ? {
-          error: error.message,
-          stack: error.stack,
-          ...(Object.hasOwn(error, "frontierStructureDiagnostic")
-            ? {
-                frontierStructureDiagnostic: (error as Error & { frontierStructureDiagnostic: unknown })
-                  .frontierStructureDiagnostic,
-              }
-            : {}),
-        }
-      : { error: String(error) };
+  const failure = error instanceof Error ? { error: error.message, stack: error.stack } : { error: String(error) };
   await mkdir(HARNESS_OUTPUT_DIRECTORY, { recursive: true, mode: 0o700 });
   await writeFile(path.join(HARNESS_OUTPUT_DIRECTORY, "failure.json"), JSON.stringify(failure, null, 2) + "\n");
   return failure;

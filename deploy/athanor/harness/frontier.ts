@@ -21,8 +21,6 @@ import { generateBuildablePositions } from "@bibliothecadao/eternum/automation";
 import { BUILDINGS_CENTER, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 import type { NativeCommand } from "../../../contracts/l3/world-native/schema/commands.gen";
 import type { NativeRows } from "../../../contracts/l3/world-native/schema/client.gen";
-import type { NativeFactChange } from "@bibliothecadao/eternum/game-client";
-import type { GameSyncFact, GameSyncSubscriptionHandlers } from "@bibliothecadao/eternum/game-sync";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { nativePresetForId } from "../../../config/source/native";
 import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
@@ -150,250 +148,6 @@ interface Player {
   captures: Array<{ epoch: number; siteId: number; category: number; exchanges: number; at: number }>;
   siteExchanges: Map<number, number>;
   nextActionAt: number;
-}
-
-interface StructureStoreDiagnostic {
-  readonly changes: Array<Record<string, unknown>>;
-  readonly sync: Array<Record<string, unknown>>;
-  setRealm(realmId: number): void;
-  snapshot(): Record<string, unknown>;
-}
-
-const structureDiagnostics = new WeakMap<object, StructureStoreDiagnostic>();
-const STRUCTURE_DIAGNOSTIC_LIMIT = 24;
-const SYNC_DIAGNOSTIC_LIMIT = 32;
-
-function watchStructureStore(client: GameClient, owner: string): (realmId: number) => void {
-  const store = client.setup.store;
-  const existing = structureDiagnostics.get(store);
-  if (existing) return existing.setRealm;
-
-  const changes: Array<Record<string, unknown>> = [];
-  const sync: Array<Record<string, unknown>> = [];
-  const replacementPaths = new WeakMap<readonly GameSyncFact[], string>();
-  let realmId: number | undefined;
-  let writePath = "outside-store-write";
-  let snapshotState = (store as unknown as { snapshot?: unknown }).snapshot;
-  const appendTo = (ring: Array<Record<string, unknown>>, limit: number, entry: Record<string, unknown>) => {
-    ring.push({ timestamp: new Date().toISOString(), revision: store.getRevision(), ...entry });
-    if (ring.length > limit) ring.shift();
-  };
-  const describeChanges = (rows: readonly NativeFactChange[]) => {
-    for (const change of rows) {
-      if (change.model !== "Structure" || !isDiagnosticRealmChange(change, realmId)) continue;
-      appendTo(changes, STRUCTURE_DIAGNOSTIC_LIMIT, {
-        kind: change.current ? "written" : "removed",
-        path: writePath,
-        key: change.key,
-      });
-    }
-  };
-  store.subscribe(describeChanges);
-
-  const applyFacts = store.applyFacts.bind(store);
-  store.applyFacts = (facts, retain) => {
-    const previousPath = writePath;
-    const replacementPath = replacementPaths.get(facts);
-    if (replacementPath) replacementPaths.delete(facts);
-    if (retain) writePath = replacementPath ?? "retain replacement";
-    else
-      writePath = facts.some((fact) => fact.model === "Structure" && fact.value === null)
-        ? "plain facts (RowErased)"
-        : "plain facts";
-    try {
-      return applyFacts(facts, retain);
-    } finally {
-      writePath = previousPath;
-    }
-  };
-
-  const setSnapshot = store.setSnapshot?.bind(store);
-  if (setSnapshot) {
-    store.setSnapshot = (state) => {
-      snapshotState = { ...state };
-      const result = setSnapshot(state);
-      appendTo(changes, STRUCTURE_DIAGNOSTIC_LIMIT, {
-        kind: "snapshot-state",
-        path: "setSnapshot",
-        structureChange: null,
-      });
-      return result;
-    };
-  }
-
-  watchSyncHandlers(client, {
-    append: (entry) => appendTo(sync, SYNC_DIAGNOSTIC_LIMIT, entry),
-    replacementPaths,
-    realmId: () => realmId,
-    gameId: client.gameId,
-  });
-
-  const diagnostic: StructureStoreDiagnostic = {
-    changes,
-    sync,
-    setRealm: (value) => {
-      realmId = value;
-    },
-    snapshot: () => {
-      const scope = store.subscriptionScope();
-      const structures = [...store.rows("Structure")].filter((row) => row.game_id === client.gameId);
-      const ownerValue = BigInt(owner);
-      const knownScope = "known" in scope ? scope.known : undefined;
-      return {
-        snapshot: snapshotState ?? null,
-        subscriptionScope: knownScope ? "known" : { unknown: scope.unknown },
-        realmInExpeditionRealms: knownScope?.expedition?.realms.has(String(realmId)) ?? false,
-        realmInExpeditionEntities: knownScope?.expedition?.entities.has(String(realmId)) ?? false,
-        structureRows: {
-          game: structures.length,
-          owner: structures.filter((row) => row.owner === ownerValue).length,
-        },
-        structureChanges: [...changes],
-        syncChanges: [...sync],
-      };
-    },
-  };
-  structureDiagnostics.set(store, diagnostic);
-  return diagnostic.setRealm;
-}
-
-function watchSyncHandlers(
-  client: GameClient,
-  input: {
-    append: (entry: Record<string, unknown>) => void;
-    replacementPaths: WeakMap<readonly GameSyncFact[], string>;
-    realmId: () => number | undefined;
-    gameId: number;
-  },
-): void {
-  const runtime = client.runtime as unknown as {
-    session?: {
-      transport?: { handlers?: GameSyncSubscriptionHandlers };
-    };
-  };
-  const handlers = runtime.session?.transport?.handlers;
-  if (!handlers) throw new Error("Frontier store diagnostic could not access the actor sync handlers");
-
-  const runtimeInternals = client.runtime as unknown as {
-    enqueueReplacement?: (
-      generation: number,
-      facts: GameSyncFact[],
-      retained: Map<string, Set<string>>,
-    ) => Promise<boolean>;
-  };
-  if (!runtimeInternals.enqueueReplacement)
-    throw new Error("Frontier store diagnostic could not access sync replacements");
-  let replacementOrigin = "snapshot replacement";
-  const enqueueReplacement = runtimeInternals.enqueueReplacement.bind(client.runtime);
-  runtimeInternals.enqueueReplacement = (generation, facts, retained) => {
-    input.replacementPaths.set(facts, replacementOrigin);
-    return enqueueReplacement(generation, facts, retained);
-  };
-
-  const onScope = handlers.onScope;
-  handlers.onScope = (facts, expedition) => {
-    const realmId = input.realmId();
-    const metadata = {
-      kind: "onScope-replacement",
-      expedition,
-      factsByModel: countFactsByModel(facts),
-      realmStructureKeyPresent: facts.some((fact) => isRealmStructureFact(fact, input.gameId, realmId)),
-      realmStructureKeys: facts
-        .filter((fact) => isRealmStructureFact(fact, input.gameId, realmId))
-        .map((fact) => fact.key),
-    };
-    input.append(metadata);
-    const previousOrigin = replacementOrigin;
-    replacementOrigin = "retain replacement via onScope";
-    let result: boolean | Promise<boolean>;
-    try {
-      result = onScope(facts, expedition);
-    } finally {
-      replacementOrigin = previousOrigin;
-    }
-    if (typeof result === "boolean") {
-      input.append({ kind: "onScope-applied", applied: result, expedition });
-      return result;
-    }
-    return result.then(
-      (applied) => {
-        input.append({ kind: "onScope-applied", applied, expedition });
-        return applied;
-      },
-      (error: unknown) => {
-        input.append({
-          kind: "onScope-failed",
-          expedition,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        throw error;
-      },
-    );
-  };
-
-  const onSnapshotEnd = handlers.onSnapshotEnd;
-  handlers.onSnapshotEnd = () => {
-    const previousOrigin = replacementOrigin;
-    replacementOrigin = "snapshot replacement";
-    try {
-      return onSnapshotEnd();
-    } finally {
-      replacementOrigin = previousOrigin;
-    }
-  };
-
-  const onFacts = handlers.onFacts;
-  handlers.onFacts = (batch) => {
-    const structureFacts = describeStructureBatch(batch.facts, client.setup.store.entries("Structure"));
-    input.append({
-      kind: "live-fact-batch",
-      confirmation: batch.preconfirmed ? "preconfirmed" : "confirmed",
-      factCount: batch.facts.length,
-      factsByModel: countFactsByModel(batch.facts),
-      structures: structureFacts,
-      realmStructureKeyPresent: batch.facts.some((fact) => isRealmStructureFact(fact, input.gameId, input.realmId())),
-      transactionHash: batch.transactionHash,
-    });
-    return onFacts(batch);
-  };
-}
-
-function countFactsByModel(facts: readonly GameSyncFact[]): Record<string, number> {
-  const counts: Record<string, number> = {};
-  for (const fact of facts) counts[fact.model] = (counts[fact.model] ?? 0) + 1;
-  return counts;
-}
-
-export function describeStructureBatch(
-  facts: readonly GameSyncFact[],
-  currentRows: Iterable<readonly [string, NativeRows["Structure"]]>,
-): { set: Array<{ key: string; owner: string | null }>; del: Array<{ key: string; owner: string | null }> } {
-  const owners = new Map([...currentRows].map(([key, row]) => [key, String(row.owner)]));
-  const structures = facts.filter((fact) => fact.model === "Structure");
-  return {
-    set: structures
-      .filter((fact) => fact.value !== null)
-      .map((fact) => ({
-        key: fact.key,
-        owner: fact.value?.owner === undefined ? null : String(fact.value.owner),
-      })),
-    del: structures
-      .filter((fact) => fact.value === null)
-      .map((fact) => ({ key: fact.key, owner: owners.get(fact.key) ?? null })),
-  };
-}
-
-function isRealmStructureFact(fact: GameSyncFact, gameId: number, realmId: number | undefined): boolean {
-  if (fact.model !== "Structure" || !fact.value || realmId === undefined) return false;
-  return Number(fact.value.game_id) === gameId && Number(fact.value.entity_id) === realmId;
-}
-
-function isDiagnosticRealmChange(change: NativeFactChange, realmId: number | undefined): boolean {
-  return (
-    change.model === "Structure" &&
-    realmId !== undefined &&
-    (change.previous?.entity_id === realmId || change.current?.entity_id === realmId)
-  );
 }
 /**
  * A campaign burst on the Frontier shape: the booth, where every bot founds its realm inside the window, or the
@@ -675,7 +429,6 @@ async function settleFrontierPlayer(
   const own = game.forActor(identity.address);
   const client = actorClients.get(actorKey(identity.address))?.client;
   if (!client) throw new Error(`Bot ${identity.botId} has no client of its own`);
-  const setDiagnosticRealm = watchStructureStore(client, identity.owner);
   const transaction = await trackTransaction({
     botId: identity.botId,
     gameId: game.gameId,
@@ -694,7 +447,6 @@ async function settleFrontierPlayer(
     30_000,
     () => `Frontier settlement for bot ${identity.botId} in game ${game.gameId}`,
   );
-  setDiagnosticRealm(realmId);
   return {
     transaction,
     player: {
@@ -717,14 +469,7 @@ async function settleFrontierPlayer(
 const now = () => getBlockTimestamp().currentBlockTimestamp;
 const currentDay = (player: Player) => player.days[player.days.length - 1]!;
 function home(client: GameClient, player: Player): Home {
-  try {
-    return client.setup.store.require("Structure", { game_id: client.gameId, entity_id: player.realmId });
-  } catch (error) {
-    const diagnostic = structureDiagnostics.get(client.setup.store);
-    if (diagnostic && error instanceof Error)
-      Object.assign(error, { frontierStructureDiagnostic: diagnostic.snapshot() });
-    throw error;
-  }
+  return client.setup.store.require("Structure", { game_id: client.gameId, entity_id: player.realmId });
 }
 function activeArmies(client: GameClient, player: Player): Army[] {
   return liveHomeArmies(client.setup.store, player.realmId, client.gameId);
