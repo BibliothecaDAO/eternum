@@ -27,6 +27,11 @@ interface RecordingRecord {
   receipt: RpcReceipt;
 }
 
+interface ActionCheckpoint {
+  transactionHash: string;
+  blockNumber: number;
+}
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
 export function parseOptions(args: string[]): Options {
@@ -77,6 +82,25 @@ export function hasRecordingFacts(
     if (model.scope === "deployment") return true;
     return model.scope === "game" && key.game_id !== undefined && feltEquals(key.game_id, gameId);
   });
+}
+
+export function hasActorNonceWrite(
+  events: readonly { model: { name: string; scope: string }; key: Record<string, unknown> }[],
+  gameId: string,
+  actor: string,
+): boolean {
+  return events.some(
+    ({ model, key }) =>
+      model.name === "ActionNonce" &&
+      model.scope === "game" &&
+      feltEquals(key.game_id, gameId) &&
+      feltEquals(key.actor, actor),
+  );
+}
+
+export function assertActionCheckpointCoverage(checkpoints: readonly ActionCheckpoint[]): void {
+  if (checkpoints.length < 3)
+    throw new Error(`Found ${checkpoints.length} actor action contract-read checkpoints; expected at least 3`);
 }
 
 function feltEquals(left: unknown, right: string | number | bigint): boolean {
@@ -152,6 +176,7 @@ async function run(options: Options): Promise<void> {
   const fold = new WorldFold(decoder.registry);
   const allBlocks = await readBlocks(options.rpcUrl, options.fromBlock, toBlock);
   const records: RecordingRecord[] = [];
+  const actionCheckpoints: ActionCheckpoint[] = [];
   let finalTimestamp: number | undefined;
   for (const block of allBlocks) {
     if (block.block_number === toBlock) finalTimestamp = block.timestamp;
@@ -173,6 +198,8 @@ async function run(options: Options): Promise<void> {
       if (!hasRecordingFacts(decoded, options.gameId)) continue;
       ingestion.applyReceipt(fold, receipt, block.block_number, transactionIndex, transaction.calldata);
       records.push({ transaction, receipt: { ...receipt, block_number: block.block_number } });
+      if (hasActorNonceWrite(decoded, options.gameId, options.actor))
+        actionCheckpoints.push({ transactionHash: receipt.transaction_hash, blockNumber: block.block_number });
     }
   }
   if (finalTimestamp === undefined) throw new Error(`Block ${toBlock} was not read from RPC`);
@@ -180,17 +207,22 @@ async function run(options: Options): Promise<void> {
   const replaySnapshot = fold.subscriptionSnapshot(options.gameId, toBlock, actorScope);
   assertSnapshotMatches(finalSnapshot, replaySnapshot);
 
-  const nonce = await callFelt(options.rpcUrl, worldAddress, "next_nonce", [options.gameId, options.actor], toBlock);
-  const playerPoints = await callFelt(
-    options.rpcUrl,
-    worldAddress,
-    "player_points",
-    [options.gameId, options.actor],
-    toBlock,
-  );
   const last = records.at(-1);
   if (!last) throw new Error("No matching game or preset transactions found in the requested range");
-  const checks = [{ kind: "FinalState", transactionHash: last.receipt.transaction_hash, nonce, playerPoints }];
+  assertActionCheckpointCoverage(actionCheckpoints);
+  const actionChecks = await Promise.all(
+    actionCheckpoints.map(({ transactionHash, blockNumber }) =>
+      contractReadCheck(options, worldAddress, transactionHash, "ActionState", blockNumber),
+    ),
+  );
+  const finalCheck = await contractReadCheck(
+    options,
+    worldAddress,
+    last.receipt.transaction_hash,
+    "FinalState",
+    toBlock,
+  );
+  const checks = [...actionChecks, finalCheck];
   const sourceHead = execFileSync("git", ["-C", repositoryRoot, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   const recording = buildRecording({
     sourceHead,
@@ -203,7 +235,7 @@ async function run(options: Options): Promise<void> {
     finalSnapshot,
   });
   await mkdir(dirname(resolve(options.output)), { recursive: true });
-  await writeFile(resolve(options.output), `${JSON.stringify(recording, null, 2)}\n`);
+  await writeFile(resolve(options.output), `${JSON.stringify(recording)}\n`);
   console.log(
     JSON.stringify({
       event: "phase1_recording_written",
@@ -215,6 +247,20 @@ async function run(options: Options): Promise<void> {
       schemaIdentity,
     }),
   );
+}
+
+async function contractReadCheck(
+  options: Options,
+  worldAddress: string,
+  transactionHash: string,
+  kind: string,
+  blockNumber: number,
+) {
+  const [nonce, playerPoints] = await Promise.all([
+    callFelt(options.rpcUrl, worldAddress, "next_nonce", [options.gameId, options.actor], blockNumber),
+    callFelt(options.rpcUrl, worldAddress, "player_points", [options.gameId, options.actor], blockNumber),
+  ]);
+  return { kind, transactionHash, nonce, playerPoints };
 }
 
 async function readBlocks(rpcUrl: string, fromBlock: number, toBlock: number): Promise<RpcBlockWithReceipts[]> {

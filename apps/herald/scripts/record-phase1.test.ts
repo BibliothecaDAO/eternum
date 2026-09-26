@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  assertActionCheckpointCoverage,
   assertSnapshotMatches,
   buildRecording,
   findSnapshotRow,
+  hasActorNonceWrite,
   hasRecordingFacts,
   parseOptions,
   snapshotBlock,
@@ -30,6 +32,30 @@ describe("phase-1 recording generator", () => {
     expect(hasRecordingFacts([{ model: { name: "Structure", scope: "game" }, key: { game_id: "0x1" } }], "2")).toBe(
       false,
     );
+  });
+
+  it("recognizes nonce checkpoints only for the recorded actor and game", () => {
+    const nonce = { model: { name: "ActionNonce", scope: "game" }, key: { game_id: "0x2", actor: "0xa" } };
+    expect(hasActorNonceWrite([nonce], "2", "0xa")).toBe(true);
+    expect(hasActorNonceWrite([nonce], "1", "0xa")).toBe(false);
+    expect(hasActorNonceWrite([nonce], "2", "0xb")).toBe(false);
+  });
+
+  it("requires at least three transaction-level contract-read checkpoints", () => {
+    expect(() => assertActionCheckpointCoverage([])).toThrow("expected at least 3");
+    expect(() =>
+      assertActionCheckpointCoverage([
+        { transactionHash: "0x1", blockNumber: 1 },
+        { transactionHash: "0x2", blockNumber: 2 },
+      ]),
+    ).toThrow("expected at least 3");
+    expect(
+      assertActionCheckpointCoverage([
+        { transactionHash: "0x1", blockNumber: 1 },
+        { transactionHash: "0x2", blockNumber: 2 },
+        { transactionHash: "0x3", blockNumber: 3 },
+      ]),
+    ).toBeUndefined();
   });
 
   it("finds configuration rows when felt fields use Herald's hexadecimal wire form", () => {

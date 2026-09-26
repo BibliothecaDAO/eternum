@@ -132,6 +132,7 @@ describe("phase-1 gameplay recording provenance", () => {
   it("replays the recorded actor state against contract reads and Herald's final snapshot", async () => {
     expect(recording.records.length).toBeGreaterThan(0);
     expect(recording.checks.length).toBeGreaterThan(0);
+    expect(recording.checks.filter(({ kind }) => kind !== "FinalState").length).toBeGreaterThanOrEqual(3);
     const decoder = recordingDecoder();
     const ingestion = new NativeIngestion(decoder);
     const fold = new WorldFold(decoder.registry);
