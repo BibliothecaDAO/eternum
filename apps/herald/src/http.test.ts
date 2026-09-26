@@ -414,7 +414,7 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
             entity_id: "1",
             owner: "10",
             base: { category: 1 },
-            metadata: { deepest_depth: depth },
+            metadata: { deepest_depth: depth, order: 5 },
           },
         },
       ];

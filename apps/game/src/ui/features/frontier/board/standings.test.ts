@@ -11,6 +11,7 @@ const entry = (rank: number, address = `0x${(0xa00 + rank).toString(16)}`): Hera
   chests_earned: 0,
   rewards: { lords: "0", essence: "0", labor: "0" },
   deepest_depth: 0,
+  order: 1,
 });
 
 describe("the season standings", () => {

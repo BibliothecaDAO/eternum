@@ -52,6 +52,7 @@ function settledPlayers(structures: Row[]): Map<string, Standing> {
         chests_earned: 0,
         rewards: { lords: "0", essence: "0", labor: "0" },
         deepest_depth: number(record(structure.metadata).deepest_depth),
+        order: number(record(structure.metadata).order),
       },
     });
   }

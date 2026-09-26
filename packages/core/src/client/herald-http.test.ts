@@ -110,6 +110,7 @@ describe("Herald leaderboards", () => {
           chests_earned: 4,
           rewards: { lords: "400", essence: "9000000000000", labor: "1500000000000" },
           deepest_depth: 2,
+          order: 7,
         },
       ],
     };

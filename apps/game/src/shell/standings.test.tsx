@@ -16,6 +16,7 @@ const season = (address: string, rank: number) => ({
   chests_earned: 2,
   rewards: { lords: "400", essence: "0", labor: "0" },
   deepest_depth: 1,
+  order: 4,
 });
 
 describe("a game's standings", () => {

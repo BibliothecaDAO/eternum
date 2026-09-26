@@ -14,7 +14,12 @@ function facts(depths = [2], committed = 0) {
   add("ChestRules", { lords_amounts: amounts, lords_pool: 1_000_000, season_epochs: 70 });
   add("LordsBudget", { lords_committed: committed });
   depths.forEach((depth, i) =>
-    add("Structure", { entity_id: i + 1, owner: i + 10, base: { category: 1 }, metadata: { deepest_depth: depth } }),
+    add("Structure", {
+      entity_id: i + 1,
+      owner: i + 10,
+      base: { category: 1 },
+      metadata: { deepest_depth: depth, order: i + 3 },
+    }),
   );
   return { rows, read: (model: string) => rows[model] ?? [] };
 }
@@ -74,6 +79,7 @@ describe("Frontier season standings", () => {
     expect(board.entries[0]).toMatchObject({
       structure_id: "1",
       deepest_depth: 2,
+      order: 3,
       sites_cleared: { total: 5, camps: 3, rifts: 1, fallen_realms: 1 },
       rewards: { lords: "0", labor: "1500000000000", essence: "9000000000000" },
     });

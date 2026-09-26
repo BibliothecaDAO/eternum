@@ -270,7 +270,7 @@ describe("Frontier confirmed season history", () => {
       const values: Record<string, Record<string, unknown>> = {
         GameRegistry: {},
         ChestRules: { lords_amounts: { common: 100, uncommon: 400, rare: 1500, epic: 6000 } },
-        Structure: { entity_id: 1, owner: 10, base: { category: 1 }, metadata: { deepest_depth: 2 } },
+        Structure: { entity_id: 1, owner: 10, base: { category: 1 }, metadata: { deepest_depth: 2, order: 5 } },
       };
       const read = (model: string) => [{ key: "1", value: { game_id: "1", ...values[model] } }];
       const board = buildFrontierLeaderboard(read, "1", history);

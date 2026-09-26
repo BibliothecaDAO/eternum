@@ -142,6 +142,8 @@ export interface HeraldFrontierLeaderboardEntry {
   chests_earned: number;
   rewards: { lords: string; essence: string; labor: string };
   deepest_depth: number;
+  /** The realm's Order, 1 to 16: its emblem on the board. */
+  order: number;
 }
 
 export interface HeraldFrontierLeaderboard {
