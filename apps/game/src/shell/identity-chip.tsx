@@ -104,6 +104,4 @@ export const IdentityChip = () => {
   );
 };
 
-export const PORTRAITS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
-
 export const portraitUrl = (portrait: string | null): string => `/images/avatars/${portrait ?? "01"}.png`;

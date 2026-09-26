@@ -1,6 +1,6 @@
 /**
  * Name uniqueness is case-insensitive; the unique index on lower(name) is the race-proof guarantee and this pre-check
- * only shapes the error. Format rules live in name-rules.ts.
+ * only shapes the error. Format rules live in @realms-world/identity (account-rules.ts).
  */
 export const isNameTaken = async (db: D1Database, name: string, excludeUserId?: string): Promise<boolean> => {
   const { results } = await db

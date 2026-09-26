@@ -1,18 +1,22 @@
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { emailOTP } from "better-auth/plugins";
+import {
+  IDENTITY_PORTRAITS,
+  nameRuleViolation,
+  SIGN_IN_CODE_LENGTH,
+  SIGN_IN_CODE_SECONDS,
+  suggestedNameOf,
+} from "@realms-world/identity";
 import { RpcProvider, verifyMessageInStarknet } from "starknet";
 
 import type { IdentityEnv } from "./env";
-import { nameRuleViolation, suggestedNameOf } from "./name-rules";
 import { isNameTaken } from "./names";
 import { realmsIdOf } from "./realms-id";
 import { resendSignInCodes, type SendSignInCode } from "./sign-in-codes";
 import { siws, type VerifyWalletSignature } from "./siws-plugin";
 
-const PORTRAIT_PATTERN = /^(0[1-9]|1[0-2])$/;
 const DAY_SECONDS = 24 * 60 * 60;
-const SIGN_IN_CODE_SECONDS = 5 * 60;
 
 /** What the identity service reaches outside its database: mainnet for wallet signatures, and the email provider. */
 interface IdentityServices {
@@ -114,7 +118,7 @@ export const createIdentityAuth = (
                 throw new APIError("UNPROCESSABLE_ENTITY", { message: "NAME_TAKEN" });
               }
             }
-            if (typeof data.image === "string" && !PORTRAIT_PATTERN.test(data.image)) {
+            if (typeof data.image === "string" && !(IDENTITY_PORTRAITS as readonly string[]).includes(data.image)) {
               throw new APIError("UNPROCESSABLE_ENTITY", { message: "PORTRAIT_INVALID" });
             }
             return { data };
@@ -125,7 +129,7 @@ export const createIdentityAuth = (
     plugins: [
       // A sign-in code for an email signs in its account, and creates it on the email's first sign-in.
       emailOTP({
-        otpLength: 6,
+        otpLength: SIGN_IN_CODE_LENGTH,
         expiresIn: SIGN_IN_CODE_SECONDS,
         allowedAttempts: 3,
         storeOTP: "hashed",

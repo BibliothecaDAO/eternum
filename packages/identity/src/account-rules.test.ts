@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { nameRuleViolation } from "./name-rules";
+import { nameRuleViolation } from "./account-rules";
 
 describe("nameRuleViolation", () => {
   it("accepts names within the rules", () => {

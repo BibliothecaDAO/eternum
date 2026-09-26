@@ -9,12 +9,12 @@ import {
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
 import { NotificationSettings } from "@/ui/modules/settings/notification-settings";
-import type { Session } from "@realms-world/identity";
+import { IDENTITY_PORTRAITS, type Session } from "@realms-world/identity";
 
 import { DevicesPanel } from "./devices";
 import { shortAddress } from "./format";
 import { AccountStatePrompt } from "./account-state";
-import { displayName, PORTRAITS, portraitUrl } from "./identity-chip";
+import { displayName, portraitUrl } from "./identity-chip";
 import { GhostButton, GoldButton, Loading, Panel, PanelTitle } from "./kit";
 import { NameClaim } from "./name-claim";
 
@@ -36,7 +36,7 @@ const PortraitPicker = ({ current, onDone }: { current: string | null; onDone: (
   return (
     <div>
       <div className="grid grid-cols-6 gap-2">
-        {PORTRAITS.map((portrait) => (
+        {IDENTITY_PORTRAITS.map((portrait) => (
           <button
             key={portrait}
             type="button"
