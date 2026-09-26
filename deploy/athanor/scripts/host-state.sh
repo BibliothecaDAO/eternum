@@ -6,7 +6,8 @@
 #   deploy/athanor/scripts/host-state.sh
 #   deploy/athanor/scripts/host-state.sh | jq .
 #
-# No sudo, no mutation. Missing inputs (a governor file on a VM, a stopped container) come back null, never fail.
+# No mutation. The node is read through the same `sudo -n docker` as shard.py. Missing inputs (a governor file on a
+# VM, a stopped container, docker the caller may not use) come back null, never fail.
 # No pipefail: this is best-effort extraction, and `… | head -1` SIGPIPEs the writer (exit 141) on a many-core
 # host where /proc/cpuinfo is large — pipefail would turn that expected SIGPIPE into a hard failure.
 set -eu
@@ -15,6 +16,7 @@ LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="${CHAIN_CONFIG_PATH:-$LAB_DIR/chain-config.yaml}"
 [[ -f "$CONFIG" ]] || { echo "Missing chain configuration: $CONFIG" >&2; exit 1; }
 CONTAINER="${MADARA_CONTAINER:?MADARA_CONTAINER is required: the shard harness.env names its node container}"
+DOCKER=(sudo -n docker)
 
 read -r load1 load5 load15 _ < /proc/loadavg
 
@@ -28,16 +30,17 @@ mem_avail_kb=$(awk '/^MemAvailable:/{print $2}' /proc/meminfo)
 swap_total_kb=$(awk '/^SwapTotal:/{print $2}' /proc/meminfo)
 swap_free_kb=$(awk '/^SwapFree:/{print $2}' /proc/meminfo)
 
-# Madara container: cpu%, mem, and the running image digest / native-execution flag it was started with.
-madara_cpu=null; madara_mem_mib=null; image=null; native=null; native_classes=null
-if docker inspect "$CONTAINER" >/dev/null 2>&1; then
-  read -r madara_cpu madara_mem_bytes < <(docker stats --no-stream --format '{{.CPUPerc}} {{.MemUsage}}' "$CONTAINER" \
+# Madara container: cpu%, mem, and the running image digest / native-execution flag it was started with. Empty means
+# unknown: the report turns it into null.
+madara_cpu=""; madara_mem_mib=""; image=""; native=""; native_classes=""
+if "${DOCKER[@]}" inspect "$CONTAINER" >/dev/null 2>&1; then
+  read -r madara_cpu madara_mem_bytes < <("${DOCKER[@]}" stats --no-stream --format '{{.CPUPerc}} {{.MemUsage}}' "$CONTAINER" \
     | awk '{gsub(/%/,"",$1); print $1, $2}')
   madara_mem_mib=$(numfmt --from=iec-i --suffix=B "$madara_mem_bytes" | awk '{printf "%.3f", $1 / 1048576}')
-  image=$(docker inspect "$CONTAINER" --format '{{index .Config.Image}}')
-  native=$(docker inspect "$CONTAINER" --format '{{range .Args}}{{println .}}{{end}}' \
+  image=$("${DOCKER[@]}" inspect "$CONTAINER" --format '{{index .Config.Image}}')
+  native=$("${DOCKER[@]}" inspect "$CONTAINER" --format '{{range .Args}}{{println .}}{{end}}' \
     | sed -n 's/^--enable-native-execution=//p' | head -1)
-  native_classes=$(docker exec "$CONTAINER" sh -c 'ls /data/native_classes 2>/dev/null | wc -l' 2>/dev/null || echo "")
+  native_classes=$("${DOCKER[@]}" exec "$CONTAINER" sh -c 'ls /data/native_classes 2>/dev/null | wc -l' 2>/dev/null || echo "")
 fi
 
 # Chain-config knobs that change every measurement if touched.
