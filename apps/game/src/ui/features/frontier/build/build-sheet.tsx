@@ -23,6 +23,7 @@ import { formatAmount } from "../frontier-format";
 import { PersonGlyph } from "../glyphs";
 import { type BuildOption, readBuildOptions } from "./build-options";
 import { FRONTIER_BUILDING_NAMES } from "./building-names";
+import { FrontierSheet } from "../frontier-sheet";
 
 const BUILD_MODELS = [
   "Building",
@@ -128,17 +129,7 @@ export const BuildSheet = ({
   };
 
   return (
-    <section
-      aria-label="Build"
-      data-frontier-sheet
-      className={cn(
-        "frontier-sheet pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex flex-col gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] font-sans",
-        "landscape:inset-x-auto landscape:bottom-4 landscape:left-1/2 landscape:w-[min(760px,80vw)] landscape:-translate-x-1/2",
-      )}
-    >
-      <button type="button" aria-label="Close" onClick={onClose} className="-mt-2 flex h-6 justify-center">
-        <span className="frontier-handle mt-1" />
-      </button>
+    <FrontierSheet label="Build" onClose={onClose} width="lg">
       {/* The chosen card lifts; the row's top padding keeps it inside the scroller. */}
       <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 pt-3">
         {options.map((candidate, index) => (
@@ -162,7 +153,7 @@ export const BuildSheet = ({
           <PriceChip key={cost.resource} cost={cost} />
         ))}
       </button>
-    </section>
+    </FrontierSheet>
   );
 };
 

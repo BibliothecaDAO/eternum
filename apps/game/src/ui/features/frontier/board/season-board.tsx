@@ -11,9 +11,9 @@ import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/gam
 import { useQuery } from "@tanstack/react-query";
 import { Chip } from "../frontier-chips";
 import { FlagGlyph } from "../glyphs";
-import { useWorkspaceTakesScreen } from "../use-workspace-takes-screen";
 import { SeasonTable } from "./season-table";
 import { boardRows, ownRank } from "./standings";
+import { FrontierSheet } from "../frontier-sheet";
 
 // The board shares the popover store's one-open rule, so opening any other surface closes it.
 const BOARD_ID = "frontier-season-board";
@@ -100,27 +100,13 @@ const SeasonBoardSheet = ({ rank }: { rank: string }) => {
   const board = useSeasonBoard();
   const viewer = useViewer();
   const close = usePopoverStore((state) => state.close);
-  useWorkspaceTakesScreen();
   const visit = (entry: HeraldFrontierLeaderboardEntry) => {
     startRealmVisit({ player: entry.address, structureId: Number(entry.structure_id) });
     close(BOARD_ID);
   };
 
   return (
-    <section
-      aria-label="Season board"
-      data-frontier-sheet
-      className="frontier-sheet pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex max-h-[80dvh] flex-col gap-2 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] font-sans landscape:inset-x-auto landscape:left-1/2 landscape:w-[min(560px,70vw)] landscape:-translate-x-1/2"
-    >
-      {/* The sheet's handle closes it, as a swipe down would. */}
-      <button
-        type="button"
-        aria-label="Close"
-        onClick={() => close(BOARD_ID)}
-        className="-mt-2 flex h-6 justify-center"
-      >
-        <span className="frontier-handle mt-1" />
-      </button>
+    <FrontierSheet label="Season board" onClose={() => close(BOARD_ID)} workspace>
       <header className="flex justify-center">
         <Chip label="Season rank" icon={<Trophy />} value={rank} />
       </header>
@@ -129,7 +115,7 @@ const SeasonBoardSheet = ({ rank }: { rank: string }) => {
       ) : (
         <p className="frontier-hero text-center">—</p>
       )}
-    </section>
+    </FrontierSheet>
   );
 };
 

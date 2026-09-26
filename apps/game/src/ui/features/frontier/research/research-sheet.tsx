@@ -8,7 +8,6 @@ import { DEPTH_ART } from "../depth-art";
 import { MAP_SITE_ART } from "../sites/site-art";
 import { Chip, TierBanner } from "../frontier-chips";
 import { formatAmount } from "../frontier-format";
-import { useWorkspaceTakesScreen } from "../use-workspace-takes-screen";
 import {
   depthNode,
   firstOpenNode,
@@ -18,6 +17,7 @@ import {
   TREE_BUILDINGS,
   tierNode,
 } from "./research-plan";
+import { FrontierSheet } from "../frontier-sheet";
 
 const ESSENCE_ICON = `/images/resources/${ResourcesIds.Essence}.png`;
 const NUMERALS = ["", "I", "II", "III"] as const;
@@ -40,7 +40,6 @@ export const ResearchSheet = ({
   const [chosenId, setChosenId] = useState(() => firstOpenNode(plan)?.node);
   const chosen = plan.nodes.find(({ node }) => node === chosenId);
   const [pending, setPending] = useState(false);
-  useWorkspaceTakesScreen();
   const affordable = chosen !== undefined && plan.essence !== undefined && plan.essence >= chosen.price;
   const canResearch = !pending && chosen?.state === "open" && affordable;
 
@@ -67,15 +66,9 @@ export const ResearchSheet = ({
     );
 
   return (
-    <section
-      aria-label="Research"
-      data-frontier-sheet
-      className="frontier-sheet pointer-events-auto fixed inset-0 z-40 flex flex-col font-sans landscape:inset-x-auto landscape:left-1/2 landscape:w-[min(560px,70vw)] landscape:-translate-x-1/2"
-    >
-      <header className="flex items-center justify-between p-4 pb-2">
-        <button type="button" aria-label="Close" onClick={onClose} className="frontier-title">
-          Research
-        </button>
+    <FrontierSheet label="Research" onClose={onClose} workspace bodyClassName="gap-0 overflow-hidden px-0 pb-0">
+      <header className="flex items-center justify-between px-4 pb-2">
+        <h2 className="frontier-title">Research</h2>
         <Chip label="Essence" icon={<img src={ESSENCE_ICON} alt="" />} value={formatAmount(plan.essence)} />
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
@@ -104,7 +97,7 @@ export const ResearchSheet = ({
         </div>
       </div>
       {chosen && <ChosenNode node={chosen} canResearch={canResearch} onResearch={() => void buy()} />}
-    </section>
+    </FrontierSheet>
   );
 };
 

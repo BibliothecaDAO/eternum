@@ -13,7 +13,6 @@ import { useEffect, useMemo, useState } from "react";
 import { formatAmount } from "../frontier-format";
 import { Chip, TroopChip, YieldChip } from "../frontier-chips";
 import { BoltGlyph, SlotBanner } from "../glyphs";
-import { useWorkspaceTakesScreen } from "../use-workspace-takes-screen";
 import {
   type MusterStack,
   musterArmy,
@@ -22,6 +21,7 @@ import {
   previewMuster,
   readMusterPlan,
 } from "./muster-plan";
+import { FrontierSheet } from "../frontier-sheet";
 
 const MUSTER_MODELS = [
   "ArmySlot",
@@ -55,7 +55,6 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   const [count, setCount] = useState(0);
   const direction = useMusterDirection(realm);
   const [pending, setPending] = useState(false);
-  useWorkspaceTakesScreen();
 
   // The sheet opens, or a new stack is chosen, at the most the realm can field. Keyed on the stack's identity: its
   // object is rebuilt on every fact revision, which must not reset a count being dragged.
@@ -81,19 +80,7 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   };
 
   return (
-    <section
-      aria-label="Muster"
-      data-frontier-sheet
-      // A bottom sheet over the dock on a phone held upright; at the foot of the screen otherwise.
-      className={cn(
-        "frontier-sheet pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex flex-col gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] font-sans",
-        "landscape:inset-x-auto landscape:bottom-4 landscape:left-1/2 landscape:w-[min(520px,60vw)] landscape:-translate-x-1/2",
-      )}
-    >
-      {/* The sheet's handle closes it, as a swipe down would. */}
-      <button type="button" aria-label="Close" onClick={onClose} className="-mt-2 flex h-6 justify-center">
-        <span className="frontier-handle mt-1" />
-      </button>
+    <FrontierSheet label="Muster" onClose={onClose} workspace>
       <header className="flex items-center justify-between">
         <h2 className="frontier-title">Muster</h2>
         {plan && <SlotBanners used={plan.slots.used} allowed={plan.slots.allowed} />}
@@ -133,7 +120,7 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
       <button type="button" disabled={!canMuster} onClick={() => void muster()} className="frontier-primary">
         Muster
       </button>
-    </section>
+    </FrontierSheet>
   );
 };
 

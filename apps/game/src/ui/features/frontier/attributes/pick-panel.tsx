@@ -14,6 +14,7 @@ import {
   MAX_ATTRIBUTE_LEVEL,
   type ProgressionRulesFacts,
 } from "./attributes";
+import { SheetClose, useEscapeCloses } from "../frontier-sheet";
 import { closePick, commitPick, liftChoice, usePick } from "./pick-moment";
 
 const DEAL_MS = 280;
@@ -50,6 +51,7 @@ export const PickPanel = ({
     if (pick?.error) toast.error(pick.error);
   }, [pick?.error]);
 
+  useEscapeCloses(closePick);
   if (!open || !pick) return null;
   const busy = pick.phase === "committing" || pick.phase === "chosen";
   return (
@@ -57,15 +59,9 @@ export const PickPanel = ({
       aria-label="Choose an attribute"
       className="frontier-card pointer-events-auto mx-auto flex w-full max-w-lg flex-col gap-3 p-3 font-sans"
     >
-      <button
-        type="button"
-        aria-label="Later"
-        disabled={busy}
-        onClick={closePick}
-        className="-mt-1 flex h-5 justify-center"
-      >
-        <span className="frontier-handle" />
-      </button>
+      <div className="-mb-2 flex justify-end">
+        <SheetClose label="Later" disabled={busy} onClose={closePick} />
+      </div>
       <LevelBar progress={progress} rules={rules} relic={pick.offer.source === "Relic"} />
       <div className="grid grid-cols-3 gap-2">
         {pick.offer.choices.map((attribute, index) => (

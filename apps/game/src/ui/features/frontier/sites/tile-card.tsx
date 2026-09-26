@@ -6,7 +6,6 @@ import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { Skull, TreasureChest } from "@/ui/design-system/atoms/game-icons";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { biomeTypeOf, configManager } from "@bibliothecadao/eternum";
@@ -18,6 +17,7 @@ import { formatAmount } from "../frontier-format";
 import { BoltGlyph, FlagGlyph, SwordGlyph } from "../glyphs";
 import { useSelectedOwnArmy } from "./selected-army";
 import { readSiteCard, type SiteAttack, type SiteCardPlan } from "./site-card-plan";
+import { FrontierSheet } from "../frontier-sheet";
 
 const SITE_MODELS = ["ExpeditionSite", "ExplorerTroops", "ArmySlot", "Guard", "Structure", "TileOccupancy"] as const;
 
@@ -78,17 +78,7 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
   };
 
   return (
-    <section
-      aria-label={plan.name}
-      data-frontier-sheet
-      className={cn(
-        "frontier-sheet pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex flex-col gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] font-sans",
-        "landscape:inset-x-auto landscape:bottom-4 landscape:left-1/2 landscape:w-[min(520px,60vw)] landscape:-translate-x-1/2",
-      )}
-    >
-      <button type="button" aria-label="Close" onClick={onClose} className="-mt-2 flex h-6 justify-center">
-        <span className="frontier-handle mt-1" />
-      </button>
+    <FrontierSheet label={plan.name} onClose={onClose}>
       <header className="flex items-center gap-3">
         <img src={plan.art} alt="" className="size-24 shrink-0 rounded-xl bg-black/50 object-cover" />
         <span className="flex flex-col items-start gap-2">
@@ -110,7 +100,7 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
         Attack
         <Chip small tone="price" label="Stamina" icon={<BoltGlyph />} value={formatAmount(plan.attackStamina)} />
       </button>
-    </section>
+    </FrontierSheet>
   );
 };
 

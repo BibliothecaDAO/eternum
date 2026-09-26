@@ -4,7 +4,6 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { configManager } from "@bibliothecadao/eternum";
@@ -15,6 +14,7 @@ import { BoltGlyph, CardFanGlyph } from "../glyphs";
 import { type MapSiteKind, mapSiteKind, readMapSite } from "./map-site-plan";
 import { useSelectedOwnArmy } from "./selected-army";
 import { armWellRefill } from "./well-refill";
+import { FrontierSheet } from "../frontier-sheet";
 
 const MAP_SITE_MODELS = ["ArmyProgress", "ExplorerTroops", "TileOccupancy"] as const;
 
@@ -69,17 +69,7 @@ export const MapSiteCard = ({
   };
 
   return (
-    <section
-      aria-label={plan.kind}
-      data-frontier-sheet
-      className={cn(
-        "frontier-sheet pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex flex-col gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] font-sans",
-        "landscape:inset-x-auto landscape:bottom-4 landscape:left-1/2 landscape:w-[min(520px,60vw)] landscape:-translate-x-1/2",
-      )}
-    >
-      <button type="button" aria-label="Close" onClick={onClose} className="-mt-2 flex h-6 justify-center">
-        <span className="frontier-handle mt-1" />
-      </button>
+    <FrontierSheet label={plan.kind} onClose={onClose}>
       <header className="flex items-center gap-3">
         <img src={plan.art} alt="" className="size-24 shrink-0 rounded-xl bg-black/50 object-contain p-2" />
         <span className="flex flex-col items-start gap-2">
@@ -99,6 +89,6 @@ export const MapSiteCard = ({
       >
         Use
       </button>
-    </section>
+    </FrontierSheet>
   );
 };

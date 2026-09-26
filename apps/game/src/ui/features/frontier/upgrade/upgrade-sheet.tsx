@@ -4,6 +4,7 @@ import { Chip, TierBanner } from "../frontier-chips";
 import { formatAmount } from "../frontier-format";
 import { PersonGlyph } from "../glyphs";
 import type { UpgradePlan, UpgradeStep } from "./upgrade-plan";
+import { FrontierSheet } from "../frontier-sheet";
 
 /**
  * Frontier's upgrade sheet (design §3.12, mockup 1), on a building or on the keep: its name with the marked plot's ×2,
@@ -30,17 +31,7 @@ export const UpgradeSheet = ({
     }
   };
   return (
-    <section
-      aria-label={plan.name}
-      data-frontier-sheet
-      className={cn(
-        "frontier-sheet pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex flex-col gap-4 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] font-sans",
-        "landscape:inset-x-auto landscape:bottom-4 landscape:left-1/2 landscape:w-[min(520px,60vw)] landscape:-translate-x-1/2",
-      )}
-    >
-      <button type="button" aria-label="Close" onClick={onClose} className="-mt-2 flex h-6 justify-center">
-        <span className="frontier-handle mt-1" />
-      </button>
+    <FrontierSheet label={plan.name} onClose={onClose} bodyClassName="gap-4">
       <header className="flex items-center gap-2">
         <h2 className="frontier-title">{plan.name}</h2>
         {plan.doubled && <DoubledBadge />}
@@ -79,7 +70,7 @@ export const UpgradeSheet = ({
           ))}
         </button>
       )}
-    </section>
+    </FrontierSheet>
   );
 };
 
