@@ -9,10 +9,15 @@ import { usePlayerStructures } from "@/hooks/helpers/use-structures";
 import { useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { resolveHexHandoffTarget } from "./scene-handoff-target";
+
 export const PlaySceneHandoff = () => {
   const snapshot = usePlayRouteBootSnapshot();
   const readiness = usePlayRouteReadinessStore();
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const isSpectating = useUIStore((state) => state.isSpectating);
+  const returnPosition = useUIStore((state) => state.worldMapReturnPosition);
   const playerStructures = usePlayerStructures();
   const navigate = useNavigate();
   const location = useLocation();
@@ -88,11 +93,23 @@ export const PlaySceneHandoff = () => {
       return;
     }
 
+    // The local view opens on a realm; until the entry knows which, the map waits rather than hand off to a bare hex.
+    const target = resolveHexHandoffTarget({
+      entryMode: snapshot.resolvedRequest.entryMode,
+      structureEntityId,
+      isSpectating,
+      returnPosition,
+    });
+    if (snapshot.resolvedRequest.resumeScene === "hex" && target === null) {
+      return;
+    }
+
     handoffStartedRef.current = true;
     markGameEntryMilestone("worldmap-navigation-started");
     navigate(
       buildPlayHref({
         ...playRoute,
+        ...target,
         scene: snapshot.resolvedRequest.resumeScene,
         bootMode: "map-first",
         resumeScene: snapshot.resolvedRequest.resumeScene,
@@ -100,7 +117,15 @@ export const PlaySceneHandoff = () => {
       { replace: true },
     );
     window.dispatchEvent(new Event("urlChanged"));
-  }, [readiness.worldmapConverged, navigate, playRoute, snapshot.resolvedRequest]);
+  }, [
+    readiness.worldmapConverged,
+    navigate,
+    playRoute,
+    snapshot.resolvedRequest,
+    structureEntityId,
+    isSpectating,
+    returnPosition,
+  ]);
 
   useEffect(() => {
     if (snapshot.phase !== "ready" || overlayDismissedRef.current) return;
