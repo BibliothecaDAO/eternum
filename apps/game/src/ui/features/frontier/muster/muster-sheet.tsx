@@ -11,7 +11,7 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { type Direction, getNeighborHexes } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { formatAmount } from "../frontier-format";
-import { Chip, TroopChip, YieldChip } from "../frontier-chips";
+import { Chip, TierBanner, TroopChip, YieldChip } from "../frontier-chips";
 import { BoltGlyph, SlotBanner } from "../glyphs";
 import {
   type MusterStack,
@@ -83,43 +83,62 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   };
 
   return (
-    <FrontierSheet label="Deploy" onClose={onClose} workspace>
+    <FrontierSheet label="Deploy" onClose={onClose} workspace width="lg">
       <header className="flex items-center justify-between">
         <h2 className="frontier-title">Deploy</h2>
         {plan && <SlotBanners used={plan.slots.used} allowed={plan.slots.allowed} />}
       </header>
-      {plan && plan.stacks.length > 1 && <StackPicker stacks={plan.stacks} chosen={chosen} onChoose={setChosen} />}
-      <PortraitRing stack={stack} share={maximum > 0 ? count / maximum : 0} />
-      <p className="frontier-hero text-center tabular-nums" aria-label="Troops">
-        {stack ? formatAmount(preview?.count ?? 0) : "—"}
-      </p>
-      <label className="flex flex-col gap-1">
-        <span className="sr-only">Troops</span>
-        <input
-          type="range"
-          min={0}
-          max={maximum}
-          value={Math.min(count, maximum)}
-          disabled={!stack}
-          onChange={(event) => setCount(Number(event.target.value))}
-          style={{ background: sliderTrack(maximum > 0 ? Math.min(count, maximum) / maximum : 0) }}
-          className="h-3 w-full cursor-pointer appearance-none rounded-full [&::-moz-range-thumb]:size-7 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[radial-gradient(circle_at_35%_35%,#fbe3a3,#e39001)] [&::-webkit-slider-thumb]:size-7 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[radial-gradient(circle_at_35%_35%,#fbe3a3,#e39001)] [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(227,144,1,0.6)]"
-        />
-        <span className="frontier-scale-end flex justify-between tabular-nums">
-          <span>0</span>
-          <span>{formatAmount(maximum)}</span>
-        </span>
-      </label>
-      <DeployRing ring={ring} chosen={direction} onChoose={setPicked} />
-      <div className="grid grid-cols-3 gap-2">
-        {/* A realm with no troops has no stack to show; the hero's "—" already says so. */}
-        {stack ? <TroopChip type={stack.type} tier={stack.tier} count={preview?.count} /> : <span />}
-        <YieldChip scaled={preview?.revealYield} />
-        <Chip
-          label="Starting stamina"
-          icon={<BoltGlyph />}
-          value={preview?.stamina ? formatAmount(preview.stamina.amount) : "—"}
-        />
+      {/* One plan, two layouts: a phone stacks the portrait over the numbers; a wide screen reads as the deploy
+          modal, the realm's stacks as cards beside the count, the tile ring and the army's numbers. */}
+      <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5">
+        <div className="flex flex-col gap-3">
+          {plan && plan.stacks.length > 1 && (
+            <div className="lg:hidden">
+              <StackPicker stacks={plan.stacks} chosen={chosen} onChoose={setChosen} />
+            </div>
+          )}
+          {plan && <StackGrid stacks={plan.stacks} chosen={chosen} onChoose={setChosen} />}
+          <div className="lg:hidden">
+            <PortraitRing stack={stack} share={maximum > 0 ? count / maximum : 0} />
+          </div>
+        </div>
+        <div className="flex flex-col gap-3">
+          <p className="frontier-hero text-center tabular-nums" aria-label="Troops">
+            {stack ? formatAmount(preview?.count ?? 0) : "—"}
+          </p>
+          <CountStepper
+            disabled={!stack}
+            onStep={(step) => setCount(step === "max" ? maximum : Math.min(maximum, Math.min(count, maximum) + step))}
+          />
+          <label className="flex flex-col gap-1">
+            <span className="sr-only">Troops</span>
+            <input
+              type="range"
+              min={0}
+              max={maximum}
+              value={Math.min(count, maximum)}
+              disabled={!stack}
+              onChange={(event) => setCount(Number(event.target.value))}
+              style={{ background: sliderTrack(maximum > 0 ? Math.min(count, maximum) / maximum : 0) }}
+              className="h-3 w-full cursor-pointer appearance-none rounded-full [&::-moz-range-thumb]:size-7 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[radial-gradient(circle_at_35%_35%,#fbe3a3,#e39001)] [&::-webkit-slider-thumb]:size-7 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[radial-gradient(circle_at_35%_35%,#fbe3a3,#e39001)] [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(227,144,1,0.6)]"
+            />
+            <span className="frontier-scale-end flex justify-between tabular-nums">
+              <span>0</span>
+              <span>{formatAmount(maximum)}</span>
+            </span>
+          </label>
+          <DeployRing ring={ring} chosen={direction} onChoose={setPicked} />
+          <div className="grid grid-cols-3 gap-2">
+            {/* A realm with no troops has no stack to show; the hero's "—" already says so. */}
+            {stack ? <TroopChip type={stack.type} tier={stack.tier} count={preview?.count} /> : <span />}
+            <YieldChip scaled={preview?.revealYield} />
+            <Chip
+              label="Starting stamina"
+              icon={<BoltGlyph />}
+              value={preview?.stamina ? formatAmount(preview.stamina.amount) : "—"}
+            />
+          </div>
+        </div>
       </div>
       <button type="button" disabled={!canMuster} onClick={() => void muster()} className="frontier-primary">
         Deploy
@@ -195,6 +214,59 @@ const PortraitRing = ({ stack, share }: { stack: MusterStack | undefined; share:
 );
 
 /** Several stacks at the realm: their portraits in a row, the chosen one ringed. */
+/** A wide screen's stacks as the deploy modal draws them: a card per stack, its troops' art, tier and count. */
+const StackGrid = ({
+  stacks,
+  chosen,
+  onChoose,
+}: {
+  stacks: MusterStack[];
+  chosen: number;
+  onChoose: (index: number) => void;
+}) => (
+  <div className="hidden grid-cols-3 gap-2 lg:grid" role="radiogroup" aria-label="Troop stacks">
+    {stacks.map((stack, index) => (
+      <button
+        key={`${stack.type}-${stack.tier}`}
+        type="button"
+        role="radio"
+        aria-checked={index === chosen}
+        aria-label={`${stack.type} ${stack.tier}, ${stack.available}`}
+        onClick={() => onChoose(index)}
+        className={cn(
+          "frontier-card flex flex-col items-center gap-1 p-2",
+          index === chosen && "!border-2 !border-[#f6ac1d] shadow-[0_0_14px_rgba(246,172,29,0.45)]",
+        )}
+      >
+        <img src={troopArt(stack)} alt="" className="h-20 w-full object-contain" />
+        <span className="flex items-center gap-1.5">
+          <span className="frontier-chip-number tabular-nums">{formatAmount(stack.available)}</span>
+          <TierBanner tier={TIER_NUMBER[stack.tier]} />
+        </span>
+      </button>
+    ))}
+  </div>
+);
+
+const TIER_NUMBER: Record<MusterStack["tier"], 1 | 2 | 3> = { T1: 1, T2: 2, T3: 3 };
+
+/** The deploy modal's quick steps: a hundred more, five hundred more, or the most this army can take. */
+const CountStepper = ({ disabled, onStep }: { disabled: boolean; onStep: (step: 100 | 500 | "max") => void }) => (
+  <div className="flex justify-center gap-2">
+    {([100, 500, "max"] as const).map((step) => (
+      <button
+        key={step}
+        type="button"
+        disabled={disabled}
+        onClick={() => onStep(step)}
+        className="frontier-chip h-10 justify-center px-4 font-[Lexend] text-[15px] font-extrabold text-[#eadfc8] disabled:opacity-40"
+      >
+        {step === "max" ? "Max" : `+${step}`}
+      </button>
+    ))}
+  </div>
+);
+
 const StackPicker = ({
   stacks,
   chosen,

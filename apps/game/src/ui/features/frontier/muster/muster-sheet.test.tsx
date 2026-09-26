@@ -115,7 +115,7 @@ describe("the muster sheet", () => {
         ),
       );
     render();
-    const tiles = () => [...host.querySelectorAll<HTMLButtonElement>('[role="radio"]')];
+    const tiles = () => [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Deploy tile"] [role="radio"]')];
     expect(tiles()).toHaveLength(6);
     // The taken tile cannot be picked; the first open one is chosen until the player picks.
     expect(tiles()[0].disabled).toBe(true);
