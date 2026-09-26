@@ -13,6 +13,7 @@ import { parseArgs } from "node:util";
 import { presetRegistration, presetLaunch } from "../src/native/preset-fixtures";
 import { LiveWorld } from "../src/live-world";
 import { receipt, rowEvent, schema, setup, manifest, pointsAward } from "../src/native/fixtures";
+import { decodeMembers } from "../src/native/serde";
 import type { StreamSocket } from "../src/game-stream";
 import type { RpcBlockWithReceipts, RpcEvent } from "../src/types";
 
@@ -79,7 +80,11 @@ const row = (model: string, keys: (string | number)[], overrides: Record<string,
   return rowEvent(
     model,
     keys.map(String),
-    definition.members.flatMap((member) => values(member.type, overrides, member.name)),
+    decodeMembers(
+      schema,
+      definition.members,
+      definition.members.flatMap((member) => values(member.type, overrides, member.name)),
+    ),
   );
 };
 

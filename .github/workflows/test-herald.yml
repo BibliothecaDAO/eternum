@@ -37,7 +37,7 @@ jobs:
         run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Build shared packages
         run: pnpm run build:packages
-      - name: Typecheck Herald
+      - name: Typecheck Herald server and scripts
         run: pnpm --dir apps/herald typecheck
       - name: Test history recovery and stream protocols
         run: pnpm --dir apps/herald test
