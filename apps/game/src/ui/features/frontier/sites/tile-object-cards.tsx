@@ -11,6 +11,7 @@ import { DEPTH_ART } from "../depth-art";
 import { FrontierSheet } from "../frontier-sheet";
 
 const CHEST_ART = "/image-icons/ui-chest.png";
+const ARMY_ART = "/images/armies/knightT1.png";
 
 /** The map tile the player tapped, when it holds a loose chest or a spire. */
 export const useSelectedTileObject = (): { kind: "chest" | "spire"; tile: TileSpatialRenderable } | null => {
@@ -39,9 +40,25 @@ export const ChestCard = ({ tile, onClose }: { tile: TileSpatialRenderable; onCl
         <img src={CHEST_ART} alt="" className="size-24 shrink-0 object-contain" />
         <h2 className="frontier-title">Chest</h2>
       </header>
-      <button type="button" disabled={explorerId === null} onClick={open} className="frontier-primary">
-        Open
-      </button>
+      {explorerId === null ? (
+        // No army beside it yet: the way to open it drawn, an army stepping onto a tile next to the chest.
+        <span role="img" aria-label="Bring an army beside the chest" className="flex items-center justify-center gap-3">
+          <img src={ARMY_ART} alt="" className="size-14 object-contain" />
+          <span aria-hidden className="text-[22px] font-extrabold text-[#a2926f]">
+            →
+          </span>
+          <span
+            aria-hidden
+            className="size-10 border-2 border-dashed border-[#6b5230]"
+            style={{ clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)" }}
+          />
+          <img src={CHEST_ART} alt="" className="size-10 object-contain" />
+        </span>
+      ) : (
+        <button type="button" onClick={open} className="frontier-primary">
+          Open
+        </button>
+      )}
     </FrontierSheet>
   );
 };
