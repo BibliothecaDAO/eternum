@@ -24,12 +24,6 @@ export function registrationFor(slot: PlaytestSlot, realmsId: string | undefined
   );
 }
 
-/** The slot a player joins next: the soonest still taking registrations. */
-export const nextOpenSlot = (slots: readonly PlaytestSlot[]): PlaytestSlot | undefined =>
-  slots
-    .filter((slot) => !slot.closed && !slot.frozenAt)
-    .toSorted((a, b) => Date.parse(a.closesAt) - Date.parse(b.closesAt))[0];
-
 /** The seats taken in the game the slot is filling now: a full roster starts the next game's. */
 export const seatsFilling = (slot: PlaytestSlot): number => {
   const registered = slot.registrations.length;

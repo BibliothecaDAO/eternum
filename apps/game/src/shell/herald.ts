@@ -176,6 +176,3 @@ export const nextOpenGame = (games: readonly DirectoryGame[]): DirectoryGame | u
 
 /** A settled game has its recorded result and belongs to the history, not the game list. */
 const isSettled = (game: DirectoryGame): boolean => game.status === "Settled";
-
-export const sameGame = (left: GameRef, right: GameRef): boolean =>
-  left.chainId === right.chainId && left.gameId === right.gameId;

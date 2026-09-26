@@ -12,12 +12,12 @@ vi.mock("@/ui/features/factory-v2/api/factory-worker", () => ({
   registerPlaytestSlot: async () => undefined,
 }));
 
-import { BlitzSlots } from "./blitz-slots";
+import { BlitzLobbyCard } from "./mode-cards";
 
 const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
 afterEach(() => consoleError.mockClear());
 
-it("renders a failed slots read as a named state with a retry, never the service's code", async () => {
+it("draws a failed slots read on the lobby's Blitz card as a named state with a retry, never the service's code", async () => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const container = document.createElement("div");
@@ -26,7 +26,7 @@ it("renders a failed slots read as a named state with a retry, never the service
     root.render(
       <MemoryRouter>
         <QueryClientProvider client={client}>
-          <BlitzSlots />
+          <BlitzLobbyCard games={[]} now={0} />
         </QueryClientProvider>
       </MemoryRouter>,
     ),

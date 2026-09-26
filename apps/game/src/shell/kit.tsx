@@ -82,18 +82,6 @@ export function Pill({ tone, children }: { tone: PillTone; children: ReactNode }
   );
 }
 
-export function StatBlock({ label, value, sub }: { label: string; value: ReactNode; sub?: ReactNode }) {
-  return (
-    <div className="rounded-lg border border-gold/20 border-t-2 border-t-gold/60 bg-black/40 px-4 pb-3 pt-3">
-      <span className="mb-2 block font-mono text-[9.5px] font-semibold uppercase tracking-[0.18em] text-gold/50">
-        {label}
-      </span>
-      <span className="font-mono text-2xl font-semibold tabular-nums text-gold">{value}</span>
-      {sub ? <span className="mt-1 block text-[11px] text-gold/60">{sub}</span> : null}
-    </div>
-  );
-}
-
 export function Loading({ label = "Loading…" }: { label?: string }) {
   return (
     <div role="status" className="px-1 py-6 text-center font-mono text-[11px] uppercase tracking-[0.2em] text-gold/50">

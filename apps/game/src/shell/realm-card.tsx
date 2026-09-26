@@ -1,4 +1,3 @@
-import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 import { getRealmNameById } from "@bibliothecadao/eternum";
 import { Trophy } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -12,10 +11,7 @@ import { entryHref } from "./game-links";
 import { type DirectoryGame, useLeaderboard, useRealmsPlayer } from "./herald";
 import { PrimaryLink } from "./live-chips";
 import { REALM_GROUND } from "./mode-art";
-
-/** The player's realm in the season: the structure the directory lists for them, if they have founded one. */
-export const seasonRealm = (season: DirectoryGame) =>
-  season.player_state?.structures.find((structure) => isRealmCategory(structure.category));
+import { seasonRealm } from "./season";
 
 /**
  * The player's realm (design o2, o10): its name under its Order's emblem on the board's ground, today's rank and sites

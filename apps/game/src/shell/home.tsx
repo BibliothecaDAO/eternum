@@ -1,6 +1,5 @@
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { isGameOver } from "@/runtime/world/directory";
 
 import { entryHref } from "./game-links";
 import { type DirectoryGame, useDirectory } from "./herald";
@@ -8,7 +7,8 @@ import { ErrorPanel, Loading } from "./kit";
 import { PrimaryLink } from "./live-chips";
 import { HERO_ART } from "./mode-art";
 import { BlitzCard, EternumCard, FrontierCard } from "./mode-cards";
-import { RealmCard, seasonRealm } from "./realm-card";
+import { RealmCard } from "./realm-card";
+import { chooseSeason, seasonRealm } from "./season";
 import { SeasonPodium } from "./season-podium";
 import { useNowSeconds } from "./use-now";
 
@@ -32,9 +32,7 @@ export const HomePage = () => {
     );
   if (directory.isPending || status === "loading") return <Loading />;
   const games = directory.data.games;
-  // The player's own season first, where their realm stands; else the first live one.
-  const seasons = games.filter((game) => game.mode === "frontier" && !isGameOver(game));
-  const season = (status === "signed-in" ? seasons.find((game) => seasonRealm(game)) : undefined) ?? seasons[0];
+  const season = chooseSeason(games, status === "signed-in");
   const realm = status === "signed-in" && season ? seasonRealm(season) : undefined;
 
   return (
@@ -53,9 +51,9 @@ export const HomePage = () => {
       <div
         className={cn("grid gap-3 lg:col-span-3 lg:row-start-2 lg:grid-cols-3", realm ? "grid-cols-1" : "grid-cols-2")}
       >
-        {season && <FrontierCard season={season} className="hidden h-64 lg:block" />}
+        {season && <FrontierCard season={season} to="/play" className="hidden h-64 lg:block" />}
         <BlitzCard games={games} now={now} className={realm ? "h-28 lg:h-64" : "h-32 lg:h-64"} />
-        <EternumCard games={games} now={now} className={realm ? "h-24 lg:h-64" : "h-32 lg:h-64"} />
+        <EternumCard games={games} now={now} to="/play" className={realm ? "h-24 lg:h-64" : "h-32 lg:h-64"} />
       </div>
     </div>
   );
