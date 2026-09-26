@@ -125,6 +125,44 @@ const tilesIn = (messages: HeraldStreamMessage[]) =>
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe("home ring", () => {
+  it("includes a post-start settlement in a watched snapshot without exposing actor-only or unwatched rows", () => {
+    const { live, native, fold } = frontierWorld();
+    const player = "0xbb";
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("PlayerEntry", ["1", "30"], { player: BigInt(player) }),
+        rowEvent("Structure", ["1", "3"], {
+          ...structureValue,
+          owner: "30",
+          base: { ...structureValue.base, category: 1 },
+          metadata: { ...structureValue.metadata, realm_id: 3 },
+        }),
+        rowEvent("Building", ["1", "3", "10", "10"], {
+          category: 28,
+          paused: false,
+          labor_paid: 0n,
+          tier: 1,
+        }),
+        rowEvent("ActionNonce", ["1", "30"], { next_nonce: 1n }),
+      ]),
+      11,
+      0,
+    );
+
+    expect(live.confirmedBlock).toBe(9);
+    const scope = fold.subscriptionScope("1", undefined, MID_DAY, player);
+    const snapshot = fold.subscriptionSnapshot("1", 11, scope, ["PlayerEntry", "Structure", "Building", "ActionNonce"]);
+    const rows = (model: string) => snapshot.models.find((entry) => entry.model === model)!.rows;
+    expect(rows("PlayerEntry").some(({ value }) => value.owner === "0x1e")).toBe(true);
+    expect(rows("Structure").map(({ value }) => value.entity_id)).toEqual(["0x3"]);
+    expect(rows("Building").some(({ value }) => value.structure_id === "0x3")).toBe(true);
+    expect(rows("ActionNonce")).toEqual([]);
+    const emptyScope = fold.subscriptionScope("1", undefined, MID_DAY);
+    const emptySnapshot = fold.subscriptionSnapshot("1", 11, emptyScope, ["Structure"]);
+    expect(emptySnapshot.models[0]!.rows).toEqual([]);
+  });
+
   it("matches the materialized Cairo ring across three season days", () => {
     const values = readFileSync(
       new URL("../../../contracts/l3/world-native/tests/fixtures/frontier-home-ring-v1.txt", import.meta.url),
