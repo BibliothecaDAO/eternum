@@ -314,12 +314,7 @@ describe("home ring", () => {
     const messages = connect(live, "0xa");
     await settle();
     // The shard's own schema names the entrypoint, so a view only a logic class has would be refused before the call.
-    expect(call).toHaveBeenCalledWith(
-      decoder.registry.worldAddress,
-      "expedition_home_ring",
-      ["1", "1", String(MID_DAY)],
-      10,
-    );
+    expect(call).toHaveBeenCalledWith(decoder.registry.worldAddress, "expedition_home_ring", ["1", 1, MID_DAY], 10);
     expect(tilesIn(messages)).toHaveLength(RING.length);
   });
 

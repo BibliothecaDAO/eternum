@@ -236,7 +236,7 @@ export class LiveWorld {
     const felts = await this.input.rpc.call(
       this.input.registry.worldAddress,
       worldView(native.schemas[native.activeSchema]!, "expedition_home_ring"),
-      [gameId, String(realmId), String(timestamp)],
+      [gameId, realmId, timestamp],
       this.confirmedBlockValue,
     );
     return decodeHomeRing(felts);

@@ -1,4 +1,4 @@
-import { hash } from "starknet";
+import { hash, num, type BigNumberish } from "starknet";
 import type { RpcBlockWithReceipts, RpcHead } from "./types";
 
 interface JsonRpcSuccess<Result> {
@@ -38,9 +38,13 @@ export class MadaraRpc {
   }
 
   /** A read-only contract call at a confirmed block, returning its serialized result. */
-  public call(contractAddress: string, entrypoint: string, calldata: string[], block: number): Promise<string[]> {
+  public call(contractAddress: string, entrypoint: string, calldata: BigNumberish[], block: number): Promise<string[]> {
     return this.request<string[]>("starknet_call", [
-      { contract_address: contractAddress, entry_point_selector: hash.getSelectorFromName(entrypoint), calldata },
+      {
+        contract_address: contractAddress,
+        entry_point_selector: hash.getSelectorFromName(entrypoint),
+        calldata: calldata.map((value) => num.toHex(value)),
+      },
       { block_number: block },
     ]);
   }
