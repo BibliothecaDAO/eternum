@@ -1,12 +1,17 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 
-import { IDENTITY_POPOVER_ID, signOutIdentitySession, useIdentitySession } from "@/hooks/context/identity-session";
+import {
+  IDENTITY_POPOVER_ID,
+  identityUsername,
+  signOutIdentitySession,
+  useIdentitySession,
+} from "@/hooks/context/identity-session";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { GameplayAccountSync } from "@/hooks/context/gameplay-account-sync";
 import type { Session } from "@realms-world/identity";
 
-import { displayName, useIdentityPanelSlot } from "./identity-chip";
+import { useIdentityPanelSlot } from "./identity-chip";
 import { AccountStatePrompt } from "./account-state";
 import { shortAddress } from "./format";
 
@@ -53,7 +58,7 @@ function SignedInPanel({ session }: { session: Session }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
-        <span className="text-sm font-semibold text-gold">{displayName(session)}</span>
+        <span className="text-sm font-semibold text-gold">{identityUsername(session)}</span>
         {session.user.address ? (
           <span className="font-mono text-xs text-gold/60">{shortAddress(session.user.address)}</span>
         ) : null}

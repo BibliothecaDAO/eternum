@@ -115,6 +115,17 @@ describe("the sign-in flow", () => {
     }
   });
 
+  it("opens on the name step for a session that has no name yet", async () => {
+    useIdentitySessionStore.setState({ status: "signed-in", session: sessionOf({ image: "04" }) });
+    const ui = await mount("/sign-in?next=%2Fplay");
+    try {
+      expect(ui.query<HTMLInputElement>('input[autocomplete="nickname"]')?.value).toBe("Ysolde");
+      expect(ui.query('[role="radio"][aria-checked="true"]')?.getAttribute("aria-label")).toBe("Portrait 04");
+    } finally {
+      await ui.unmount();
+    }
+  });
+
   it("sends a player who already has a name straight back, and never off the site", async () => {
     useIdentitySessionStore.setState({ status: "signed-in", session: sessionOf({ name: "Ysolde", image: "04" }) });
     const back = await mount("/sign-in?next=%2Fresults");

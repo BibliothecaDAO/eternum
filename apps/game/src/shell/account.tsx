@@ -1,12 +1,12 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 
 import {
-  IDENTITY_POPOVER_ID,
   identityClient,
+  identityUsername,
+  signOutIdentitySession,
   useIdentitySession,
   useIdentitySessionStore,
 } from "@/hooks/context/identity-session";
-import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
 import { NotificationSettings } from "@/ui/modules/settings/notification-settings";
 import { IDENTITY_PORTRAITS, type Session } from "@realms-world/identity";
@@ -14,7 +14,7 @@ import { IDENTITY_PORTRAITS, type Session } from "@realms-world/identity";
 import { DevicesPanel } from "./devices";
 import { shortAddress } from "./format";
 import { AccountStatePrompt } from "./account-state";
-import { displayName, portraitUrl } from "./identity-chip";
+import { portraitUrl } from "./identity-chip";
 import { GhostButton, GoldButton, Loading, Panel, PanelTitle } from "./kit";
 import { NameClaim } from "./name-claim";
 import { useRequestSignIn } from "./sign-in/sign-in-route";
@@ -139,7 +139,7 @@ const WalletRow = ({ session, refresh }: { session: Session; refresh: () => void
 
 const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () => void }) => {
   const [editingPortrait, setEditingPortrait] = useState(false);
-  const hasName = displayName(session) !== shortAddress(session.user.id);
+  const name = identityUsername(session);
   return (
     <div className="grid items-start gap-4 lg:grid-cols-2">
       <Panel>
@@ -151,9 +151,7 @@ const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () =
             className="h-[72px] w-[72px] rounded-lg border border-gold/40 object-cover"
           />
           <div>
-            <div className="font-cinzel text-[22px] font-bold tracking-wide text-gold">
-              {hasName ? displayName(session) : "Unnamed lord"}
-            </div>
+            <div className="font-cinzel text-[22px] font-bold tracking-wide text-gold">{name ?? "Unnamed lord"}</div>
             <button
               type="button"
               onClick={() => setEditingPortrait((value) => !value)}
@@ -180,18 +178,16 @@ const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () =
           <WalletRow session={session} refresh={refresh} />
           <details className="rounded-lg border border-gold/20 bg-black/40 px-3 py-2.5">
             <summary className="cursor-pointer text-[13px] text-gold/60">
-              {hasName ? "Change name" : "Choose your name"}
+              {name ? "Change name" : "Choose your name"}
             </summary>
             <div className="pt-2.5">
-              <NameClaim
-                currentName={hasName ? displayName(session) : null}
-                suggestion={session.user.suggestedName ?? null}
-                onDone={refresh}
-              />
+              <NameClaim currentName={name} suggestion={session.user.suggestedName ?? null} onDone={refresh} />
             </div>
           </details>
           <div className="pt-1">
-            <GhostButton onClick={() => usePopoverStore.getState().open(IDENTITY_POPOVER_ID)}>Sign out</GhostButton>
+            <GhostButton onClick={() => void signOutIdentitySession().catch(reportSignOutFailure)}>
+              Sign out
+            </GhostButton>
           </div>
         </div>
       </Panel>
@@ -224,3 +220,6 @@ export const AccountPage = () => {
   }
   return <SignedInAccount session={session} refresh={() => void refresh()} />;
 };
+
+const reportSignOutFailure = (cause: unknown) =>
+  console.error("identity_sign_out_failed", { error: cause instanceof Error ? cause.message : cause });

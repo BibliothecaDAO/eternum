@@ -99,12 +99,16 @@ describe("resolveIdentityChipState", () => {
     });
   });
 
-  it("names the player from the players slice, then the session username before the chain row exists, else the short address", () => {
+  it("names the player from the players slice, then the session username before the chain row exists", () => {
     expect(resolveIdentityChipState(signedInPlayer({ playerName: "Redbeard" }))).toMatchObject({ name: "Redbeard" });
     expect(resolveIdentityChipState(signedInPlayer({ playerName: null }))).toMatchObject({ name: "raschel" });
-    expect(
-      resolveIdentityChipState(signedInPlayer({ playerName: null, identity: { status: "signed-in", name: null } })),
-    ).toMatchObject({ name: "0x1234…cdef" });
+  });
+
+  it("asks a session without a chosen name for one, never naming it by its address, spectating or not", () => {
+    const unnamed = { identity: { status: "signed-in" as const, name: null } };
+    expect(resolveIdentityChipState(signedInPlayer({ ...unnamed, playerName: null }))).toEqual({ kind: "unnamed" });
+    enterPlaySession("?spectate=true");
+    expect(resolveIdentityChipState(signedInPlayer(unnamed))).toEqual({ kind: "unnamed" });
   });
 });
 

@@ -1,11 +1,15 @@
 import { lazy, Suspense } from "react";
 import { create } from "zustand";
 
-import { IDENTITY_POPOVER_ID, identityUsername, useIdentitySession } from "@/hooks/context/identity-session";
+import {
+  IDENTITY_POPOVER_ID,
+  identityUsername,
+  type IdentitySessionStatus,
+  useIdentitySession,
+} from "@/hooks/context/identity-session";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import type { Session } from "@realms-world/identity";
 
-import { shortAddress } from "./format";
 import { useRequestSignIn } from "./sign-in/sign-in-route";
 
 /**
@@ -19,7 +23,11 @@ export const useIdentityPanelSlot = create<{
 
 const AccountRuntime = lazy(() => import("./account-runtime"));
 
-export const displayName = (session: Session): string => identityUsername(session) ?? shortAddress(session.user.id);
+/** A session without a chosen name is asked for one; the flow opens on its name step. */
+const chipLabel = (status: IdentitySessionStatus, session: Session | null): string => {
+  if (status === "loading") return "…";
+  return session ? "Choose a name" : "Sign in";
+};
 
 export const IdentityChip = () => {
   const { status, session } = useIdentitySession();
@@ -27,6 +35,7 @@ export const IdentityChip = () => {
   const isOpen = usePopoverStore((state) => state.openId === IDENTITY_POPOVER_ID);
   const setElement = useIdentityPanelSlot((state) => state.setElement);
   const signedIn = status === "signed-in" ? session : null;
+  const name = signedIn ? identityUsername(signedIn) : null;
 
   const togglePanel = () => {
     const popover = usePopoverStore.getState();
@@ -36,12 +45,12 @@ export const IdentityChip = () => {
 
   return (
     <div className="relative">
-      {signedIn ? (
+      {signedIn && name !== null ? (
         <button
           type="button"
           aria-expanded={isOpen}
           aria-haspopup="dialog"
-          aria-label={displayName(signedIn)}
+          aria-label={name}
           onClick={togglePanel}
           className="block size-11 overflow-hidden rounded-full border-2 border-[#dfaa54] shadow-[0_0_12px_rgba(246,172,29,0.35)]"
         >
@@ -54,7 +63,7 @@ export const IdentityChip = () => {
           disabled={status === "loading"}
           className="frontier-chip h-11 px-5 font-[Lexend] text-[17px] font-extrabold text-[#eadfc8] disabled:opacity-50"
         >
-          {status === "loading" ? "…" : "Sign in"}
+          {chipLabel(status, signedIn)}
         </button>
       )}
       {signedIn && isOpen ? (

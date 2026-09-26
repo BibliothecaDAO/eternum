@@ -1,4 +1,5 @@
 import { useIdentitySession } from "@/hooks/context/identity-session";
+import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
 import { resolveChatSenderName } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY } from "@/ui/design-system/atoms/hud-typography";
@@ -32,7 +33,9 @@ export function HudChatWindow({
   onOpenChange: (open: boolean) => void;
   foldToIcon?: boolean;
 }) {
-  const signedIn = useIdentitySession().status === "signed-in";
+  const { status } = useIdentitySession();
+  const signedIn = status === "signed-in";
+  const requestSignIn = useRequestSignIn();
   const game = getActiveGame();
   // A game room is named by its shard's chain and the game: game ids repeat across shards.
   const gameZoneId = game ? `game:0x${BigInt(game.chainId).toString(16)}:${configManager.getActiveGameId()}` : "";
@@ -120,12 +123,13 @@ export function HudChatWindow({
         type="button"
         aria-label="Chat strip"
         aria-expanded={open}
-        disabled={!initializer}
-        onClick={() => onOpenChange(!open)}
+        disabled={status === "loading"}
+        // A signed-out spectator's strip is their way into the sign-in flow, which brings them back to this game.
+        onClick={() => (initializer ? onOpenChange(!open) : requestSignIn())}
         className={cn(
           "pointer-events-auto flex h-8 w-full shrink-0 items-center gap-2 rounded-xl px-3 text-left font-sans normal-case tracking-normal",
           OVERLAY_SURFACE_BASE,
-          initializer ? "hover:border-gold/50" : "cursor-default",
+          "hover:border-gold/50",
           foldToIcon && "portrait:w-auto portrait:self-start",
         )}
       >
