@@ -123,13 +123,21 @@ export const structureMapPosition = (
   return entityMapPosition(store, structure.game_id, structure.entity_id);
 };
 
-/** The stable reference used to seed a realm's local terrain, independent of its daily map site. */
+/** How many hexes the local view reads around its centre: its terrain disk's radius. */
+export const LOCAL_VIEW_REACH = 2;
+
+/**
+ * The stable reference used to seed a realm's local terrain, independent of its daily map site. A Frontier realm's sits
+ * off the map near the top of the tile key's range, far enough inside it that every hex the local view reads around it
+ * is still a hex the store can key.
+ */
 export function structureLocalPosition(
   store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
   structure: NativeRows["Structure"],
 ): { x: number; y: number; alt: boolean } {
   if (isExpeditionRealm(store, structure)) {
-    return { x: Number(MAX_U32) - structure.metadata.realm_id, y: Number(MAX_U32), alt: false };
+    const edge = Number(MAX_U32) - LOCAL_VIEW_REACH;
+    return { x: edge - structure.metadata.realm_id, y: edge, alt: false };
   }
   return entityMapPosition(store, structure.game_id, structure.entity_id);
 }

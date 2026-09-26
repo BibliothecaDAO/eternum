@@ -12,6 +12,7 @@ import {
   structureMapPosition,
   structureLocalPosition,
   siteReward,
+  LOCAL_VIEW_REACH,
 } from "./expeditions";
 
 const structure = (overrides: { realm_id?: number; category?: StructureType } = {}) =>
@@ -59,10 +60,19 @@ describe("structureMapPosition", () => {
     for (const day of [2, 3]) {
       vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: 86400 * day } as never);
       expect(structureLocalPosition(store, structure({ realm_id: 3 }))).toEqual({
-        x: 4294967292,
-        y: 4294967295,
+        x: 4294967290,
+        y: 4294967293,
         alt: false,
       });
+    }
+  });
+
+  it("keeps every hex the local view reads around a Frontier realm inside the tile key's range", () => {
+    vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: 86400 * 2 } as never);
+    const store = storeWith(expeditionRules);
+    for (const realmId of [1, 3098, 8000]) {
+      const { x, y } = structureLocalPosition(store, structure({ realm_id: realmId }));
+      for (const edge of [x + LOCAL_VIEW_REACH, y + LOCAL_VIEW_REACH]) expect(edge).toBeLessThanOrEqual(2 ** 32 - 1);
     }
   });
 
