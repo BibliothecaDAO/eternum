@@ -4,7 +4,7 @@ import { shortString } from "starknet";
 import { nativeSyncScopes } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { WorldFold } from "../world-fold";
 import type { RpcEvent } from "../types";
-import { manifest, receipt, schema, setup, raw } from "./fixtures";
+import { manifest, receipt, schema, setup, raw, rowEvent, structureValue } from "./fixtures";
 const retiredMetadataModels = [
   "RealmCatalogue",
   "Authentication",
@@ -38,6 +38,28 @@ const balances = (fold: WorldFold) => ({
 });
 
 describe("gameplay-only native facts", () => {
+  it("uses the same canonical row identity for a receipt and its confirmed fold", () => {
+    const { native, decoder, fold } = setup();
+    const overlay = fold.overlay();
+    const event = rowEvent("Structure", ["1", "9"], {
+      ...structureValue,
+      owner: "10",
+      metadata: { ...structureValue.metadata, realm_id: 9 },
+    });
+    const decoded = decoder.decode(raw(event));
+    if (decoded.kind !== "set") throw new Error("Expected a Structure row set");
+
+    const pending = native.applyReceipt(overlay, receipt([event]), null, 0);
+    const confirmed = native.applyReceipt(fold, receipt([event]), 10, 0);
+    const pendingKey = pending.changes.find(({ change }) => change?.set?.model === "Structure")?.change?.set?.key;
+
+    expect(pendingKey).toBe(decoded.entityId);
+    expect(fold.currentRow("Structure", decoded.entityId)?.key).toBe(pendingKey);
+    expect(confirmed.changes.find(({ change }) => change?.set?.model === "Structure")?.change?.set?.key).toBe(
+      pendingKey,
+    );
+  });
+
   it("projects Cairo-checked absolute points identically in the overlay, confirmation and checkpoint replay", async () => {
     const { native, decoder, fold } = setup();
     const overlay = fold.overlay();
