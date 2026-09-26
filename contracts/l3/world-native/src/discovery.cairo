@@ -11,6 +11,8 @@ pub enum Discovery {
     Camp,
     FallenRealm,
     Chest,
+    Shrine,
+    Well,
 }
 
 pub fn surface(
@@ -76,10 +78,12 @@ pub fn frontier(
     let camp: u128 = rules.camp_bps.into() + bonus;
     let rift: u128 = rules.rift_bps.into() + bonus;
     let fallen: u128 = rules.fallen_realm_bps.into();
+    let shrine: u128 = rules.shrine_bps.into();
+    let well: u128 = rules.well_bps.into();
     let floor = empty_reveals >= rules.empty_reveal_limit;
     let mut draw = crate::random::range(
         seed, Into::<u64, u128>::into(timestamp) + 29, if floor {
-            camp + rift + fallen
+            camp + rift + fallen + shrine + well
         } else {
             10000
         },
@@ -100,5 +104,20 @@ pub fn frontier(
     if draw < camp + rift + fallen {
         return Discovery::FallenRealm;
     }
+    if draw < camp + rift + fallen + shrine {
+        return Discovery::Shrine;
+    }
+    if draw < camp + rift + fallen + shrine + well {
+        return Discovery::Well;
+    }
     Discovery::None
+}
+
+pub fn tile_occupier(discovery: Discovery) -> Option<u8> {
+    match discovery {
+        Discovery::Chest => Some(crate::map::CHEST_OCCUPIER),
+        Discovery::Shrine => Some(crate::map::SHRINE_OCCUPIER),
+        Discovery::Well => Some(crate::map::WELL_OCCUPIER),
+        _ => None,
+    }
 }

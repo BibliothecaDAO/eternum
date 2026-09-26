@@ -510,6 +510,11 @@ export interface StructureBurnProps extends SystemSigner {
   resources: Resource[];
 }
 
+export interface InteractSiteProps extends SystemSigner {
+  explorer_id: BigNumberish;
+  coord: { alt: boolean; x: BigNumberish; y: BigNumberish };
+}
+
 export interface OpenChestProps extends SystemSigner {
   explorer_id: BigNumberish;
   chest_coord: {

@@ -90,6 +90,14 @@ describe("native presets", () => {
       ).trim(),
     );
     expect(preset.rules.command_mask).toBe(mask);
+    expect(mask & BigInt(nativeCommandBits.InteractSite)).not.toBe(0n);
+    for (const [network, id] of [
+      ["madara.blitz", 2],
+      ["madara.eternum", 3],
+    ] as const) {
+      const legacy = buildNativePreset(loadNativePresetConfiguration(network, id), id);
+      expect(legacy.rules.command_mask & BigInt(nativeCommandBits.InteractSite)).toBe(0n);
+    }
     for (const command of [
       "CreateTradeOrder",
       "AcceptTradeOrder",

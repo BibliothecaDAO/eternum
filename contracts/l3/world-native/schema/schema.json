@@ -25,11 +25,14 @@
     "DEV_VILLAGE_ENTRY": 8192,
     "OWNER_ONLY_SHARES": 16384,
     "HYPERSTRUCTURE_MULTIPLIERS": 32768,
-    "PRODUCTION_START": 131072
+    "PRODUCTION_START": 131072,
+    "WELL_STAMINA": 60
   },
   "tileOccupierConstants": {
     "CHEST_OCCUPIER": 34,
-    "SPIRE_OCCUPIER": 35
+    "SPIRE_OCCUPIER": 35,
+    "SHRINE_OCCUPIER": 40,
+    "WELL_OCCUPIER": 41
   },
   "tilePackingConstants": {
     "BIOME_SCALE": "0x20000000000",
@@ -8532,6 +8535,10 @@
         {
           "name": "UpgradeBuilding",
           "type": "world_native::buildings::ChangeBuilding"
+        },
+        {
+          "name": "InteractSite",
+          "type": "world_native::relics::InteractSite"
         }
       ]
     },
@@ -8669,6 +8676,14 @@
         },
         {
           "name": "Chest",
+          "type": "()"
+        },
+        {
+          "name": "Shrine",
+          "type": "()"
+        },
+        {
+          "name": "Well",
           "type": "()"
         }
       ]
@@ -11029,6 +11044,20 @@
         }
       ]
     },
+    "world_native::relics::InteractSite": {
+      "type": "struct",
+      "name": "world_native::relics::InteractSite",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        }
+      ]
+    },
     "world_native::relics::LordsAmounts": {
       "type": "struct",
       "name": "world_native::relics::LordsAmounts",
@@ -13022,5 +13051,5 @@
       ]
     }
   },
-  "identity": "5739fc5ba2a2bdee00d83851672c7134b9d01639de4490348a794e2cad1486a1"
+  "identity": "89ae3058803481cf8d766403189e1c7ead5586381db5b49e79109a6c9f89895b"
 }

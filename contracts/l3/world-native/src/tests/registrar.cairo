@@ -34,7 +34,9 @@ use crate::tests::StoryResultTestTrait;
 use crate::tests::state::{
     GameState, MapObservationTrait, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait,
 };
-use crate::troops::{ExplorerKey, IBattleResolutionDispatcherTrait, IBattleResolutionLibraryDispatcher};
+use crate::troops::{
+    ExplorerKey, ExplorerRecordTrait, IBattleResolutionDispatcherTrait, IBattleResolutionLibraryDispatcher,
+};
 use super::recorded_receipts::RecordedReceiptsTrait;
 use super::resource_commands::execute_in_game;
 
@@ -2933,5 +2935,181 @@ fn frontier_sites_store_the_seeded_category_and_depth_tier_with_the_count_basis(
             assert_eq!(site.initial_guard_count, expected.count);
             assert_eq!(site.kind, kind);
         }
+    }
+}
+
+#[test]
+fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() {
+    let d = setup();
+    let (game_id, _, category) = expedition_home(d);
+    let (key, _) = expedition_armies(d, game_id, category);
+    let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    let coord = crate::geometry::neighbor(army.coord, 0);
+    let tile = crate::geometry::tile_key(game_id, coord);
+    let command = Command::InteractSite(crate::relics::InteractSite { explorer_id: key.explorer_id, coord });
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::logic::progression::write(
+                key, crate::progression::ArmyProgress { xp: 7, ..crate::progression::initial() },
+            );
+            crate::logic::map::MapState::reveal(tile, 1);
+            crate::logic::map::MapState::occupy(tile, 900, crate::map::SHRINE_OCCUPIER, false);
+        },
+    );
+    let closed = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap());
+    start_cheat_block_timestamp_global(360);
+    assert_eq!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap()), closed);
+    assert!(execute_in_game(d, game_id, command, 360, 360));
+    let progress = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key));
+    assert_eq!(progress.level, 2);
+    assert_eq!(progress.xp, 7);
+    assert_eq!(progress.pending.unwrap().source, crate::progression::OfferSource::Shrine);
+    assert_eq!(progress.pending.unwrap().amount, 1);
+    assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
+    assert!(!execute_in_game(d, game_id, command, 360, 360));
+    snforge_std::interact_with_state(
+        d.games, || crate::logic::map::MapState::occupy(tile, 901, crate::map::SHRINE_OCCUPIER, false),
+    );
+    assert!(!execute_in_game(d, game_id, command, 360, 360));
+    assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_some());
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::logic::progression::write(
+                key,
+                crate::progression::ArmyProgress {
+                    pending: None, battle: 5, logistics: 5, scouting: 5, support: 5, ..progress,
+                },
+            );
+        },
+    );
+    assert!(!execute_in_game(d, game_id, command, 360, 360));
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::logic::map::MapState::vacate(tile, 901);
+            crate::logic::map::MapState::occupy(tile, 902, crate::map::WELL_OCCUPIER, false);
+            crate::logic::progression::write(key, crate::progression::ArmyProgress { logistics: 3, ..progress });
+            let mut army = crate::logic::troops::active_explorer(
+                key,
+                360,
+                crate::commands::load_context(game_id, crate::commands::ActionContext { raw_root: 0, timestamp: 360 }),
+            );
+            army.troops.stamina.set_amount(10);
+            crate::logic::troops::TroopState::save(key, army.into_record());
+        },
+    );
+    // Wells may be used while a pick is pending, and persist into the same occupied slot.
+    assert!(execute_in_game(d, game_id, command, 360, 360));
+    let filled = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    assert_eq!(filled.troops.stamina.inline().amount, 70);
+    assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
+    assert!(!execute_in_game(d, game_id, command, 360, 360));
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::logic::map::MapState::occupy(tile, 903, crate::map::WELL_OCCUPIER, false);
+            let mut army = crate::logic::troops::active_explorer(
+                key,
+                360,
+                crate::commands::load_context(game_id, crate::commands::ActionContext { raw_root: 0, timestamp: 360 }),
+            );
+            let maximum = crate::progression::stamina_max(
+                crate::logic::progression::require(key),
+                army.troops.category,
+                crate::commands::load_context(game_id, crate::commands::ActionContext { raw_root: 0, timestamp: 360 })
+                    .rules
+                    .unbox()
+                    .troop_stamina_config,
+            );
+            army.troops.stamina.set_amount(maximum - 5);
+            crate::logic::troops::TroopState::save(key, army.into_record());
+        },
+    );
+    let before = GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops.stamina.inline().amount;
+    assert!(execute_in_game(d, game_id, command, 360, 360));
+    assert_eq!(
+        GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops.stamina.inline().amount,
+        before + 5,
+    );
+}
+
+#[test]
+fn frontier_site_discovery_reads_home_knowledge_and_places_only_tile_occupancy() {
+    let d = setup();
+    let (game_id, _, category) = expedition_home(d);
+    let (key, _) = expedition_armies(d, game_id, category);
+    let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    let home = ResourceKey { game_id, entity_id: army.owner };
+    let rules = super::preset_projection::frontier_discovery_rules();
+    let map = crate::expeditions::IFrontierDiscoveryLibraryDispatcher { class_hash: super::declare_logic("MapLogic") };
+    for (expected, node, category) in array![
+        (crate::discovery::Discovery::Shrine, 8_u8, crate::map::SHRINE_OCCUPIER),
+        (crate::discovery::Discovery::Well, 9_u8, crate::map::WELL_OCCUPIER),
+    ] {
+        let enabled = crate::expeditions::FrontierDiscoveryRules {
+            shrine_bps: if node == 8 {
+                rules.shrine_bps
+            } else {
+                0
+            },
+            well_bps: if node == 9 {
+                rules.well_bps
+            } else {
+                0
+            },
+            ..rules,
+        };
+        let mut seed = 0_u256;
+        while crate::discovery::frontier(enabled, 1, 0, seed, 360) != expected {
+            seed += 1;
+        }
+        let seed = seed;
+        let coord = crate::geometry::neighbor(army.coord, 0);
+        let tile = crate::geometry::tile_key(game_id, coord);
+        let context = crate::commands::ActionContext { raw_root: 0, timestamp: 360 };
+        start_cheat_caller_address(d.games, d.games);
+        let locked = snforge_std::interact_with_state(
+            d.games,
+            || crate::expeditions::IFrontierDiscoveryDispatcherTrait::discover_frontier_tile(
+                map, tile, key.explorer_id, seed, context,
+            ),
+        );
+        assert!(locked != crate::discovery::Discovery::Shrine && locked != crate::discovery::Discovery::Well);
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                crate::logic::research::write(
+                    home, crate::research::RealmKnowledge { learned: crate::research::node_bit(node) },
+                );
+                crate::logic::expeditions::record_discovery(
+                    crate::expeditions::ExpeditionDiscoveryKey { game_id, structure_id: army.owner, epoch: 3 },
+                    crate::discovery::Discovery::Chest,
+                );
+            },
+        );
+        let found = snforge_std::interact_with_state(
+            d.games,
+            || crate::expeditions::IFrontierDiscoveryDispatcherTrait::discover_frontier_tile(
+                map, tile, key.explorer_id, seed, context,
+            ),
+        );
+        assert_eq!(found, expected);
+        stop_cheat_caller_address(d.games);
+        let occupancy = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap());
+        assert_eq!(occupancy.category, category);
+        assert!(!occupancy.is_structure);
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                assert!(
+                    crate::logic::structures::structure(ResourceKey { game_id, entity_id: occupancy.entity_id })
+                        .is_none(),
+                );
+                crate::logic::map::MapState::vacate(tile, occupancy.entity_id);
+                crate::logic::research::write(home, crate::research::RealmKnowledge { learned: 0 });
+            },
+        );
     }
 }

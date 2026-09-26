@@ -41,4 +41,5 @@ export const arenaCommandMask = commandMask([
   "EnterDepth",
   "Research",
   "UpgradeBuilding",
+  "InteractSite",
 ]);

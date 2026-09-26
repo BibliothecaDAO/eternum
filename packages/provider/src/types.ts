@@ -152,6 +152,7 @@ export enum TransactionType {
 
   // Chests & Relics
   OPEN_CHEST = "open_chest",
+  INTERACT_SITE = "interact_site",
   BURN_RESEARCH_FOR_RELIC = "burn_research_for_relic",
 
   // Config (Admin)

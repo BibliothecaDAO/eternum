@@ -768,7 +768,8 @@ pub mod StructuresLogic {
                     }
                 },
                 Discovery::FallenRealm => { assert!(rules.epoch_seconds != 0, "fallen realm requires expeditions"); },
-                Discovery::None | Discovery::Chest => panic!("discovery is not a structure"),
+                Discovery::None | Discovery::Chest | Discovery::Shrine |
+                Discovery::Well => panic!("discovery is not a structure"),
             }
             crate::logic::structures::StructureState::create(key, record);
             crate::logic::map::MapState::occupy(tile_key(game_id, coord), id, occupier, true);

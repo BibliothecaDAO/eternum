@@ -115,7 +115,8 @@ pub mod MovementLogic {
                                 crate::commands::action_context(context),
                             )
                     };
-                if discovery != crate::discovery::Discovery::None && discovery != crate::discovery::Discovery::Chest {
+                if discovery != crate::discovery::Discovery::None
+                    && crate::discovery::tile_occupier(discovery).is_none() {
                     self
                         .structures_dispatcher(game_id)
                         .create_discovery(

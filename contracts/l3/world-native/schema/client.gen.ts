@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "5739fc5ba2a2bdee00d83851672c7134b9d01639de4490348a794e2cad1486a1";
+export const nativeFactSchemaIdentity = "89ae3058803481cf8d766403189e1c7ead5586381db5b49e79109a6c9f89895b";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "ATTRIBUTE_DAMAGE_PERCENT": 10,
@@ -26,11 +26,14 @@ export const nativeRuleConstants = {
   "DEV_VILLAGE_ENTRY": 8192,
   "OWNER_ONLY_SHARES": 16384,
   "HYPERSTRUCTURE_MULTIPLIERS": 32768,
-  "PRODUCTION_START": 131072
+  "PRODUCTION_START": 131072,
+  "WELL_STAMINA": 60
 } as const;
 export const nativeTileOccupierConstants = {
   "CHEST_OCCUPIER": 34,
-  "SPIRE_OCCUPIER": 35
+  "SPIRE_OCCUPIER": 35,
+  "SHRINE_OCCUPIER": 40,
+  "WELL_OCCUPIER": 41
 } as const;
 export const nativeTilePackingConstants = {
   "BIOME_SCALE": "0x20000000000",

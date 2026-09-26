@@ -206,6 +206,46 @@ pub mod RelicState {
             ((), story_cursor)
         }
     }
+    #[embeddable_as(FrontierSitesImpl)]
+    pub impl FrontierSites<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl Life: ReleaseState::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of crate::relics::IFrontierSites<ComponentState<TContractState>> {
+        fn interact_site(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::relics::InteractSite,
+            context: crate::commands::ActionContext,
+            story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
+            let context = crate::commands::load_context(game_id, context);
+            self.assert_command(game_id, context.timestamp, context);
+            assert!(context.rules.unbox().epoch_seconds != 0, "site requires expedition");
+            let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
+            let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+            assert!(explorer.troops.count != 0, "explorer is dead");
+            crate::expeditions::assert_same_region(
+                explorer.coord, command.coord, crate::logic::settlement::rules(game_id).spacing,
+            );
+            assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to site");
+            let category = crate::expeditions::IFrontierDiscoveryDispatcherTrait::consume_frontier_site(
+                crate::expeditions::IFrontierDiscoveryLibraryDispatcher {
+                    class_hash: self.logic_classes(game_id).map.read(),
+                },
+                crate::geometry::tile_key(game_id, command.coord),
+            );
+            if category == crate::map::SHRINE_OCCUPIER {
+                crate::logic::progression::grant_shrine(key, context);
+            } else {
+                self.grant_well(key, explorer, context);
+            }
+            ((), story_cursor)
+        }
+    }
+
     #[embeddable_as(ArmySlotStaminaImpl)]
     pub impl ArmySlotStamina<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
@@ -345,6 +385,27 @@ pub mod RelicState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
+        fn grant_well(
+            self: @ComponentState<TContractState>,
+            key: ExplorerKey,
+            explorer: crate::troops::ExplorerTroops,
+            context: ExecutionContext,
+        ) {
+            let progress = crate::logic::progression::require(key);
+            let maximum = crate::progression::stamina_max(
+                progress, explorer.troops.category, context.rules.unbox().troop_stamina_config,
+            );
+            let mut stamina = explorer.troops.stamina.inline();
+            stamina.amount = core::cmp::min(maximum, stamina.amount + crate::rules::WELL_STAMINA.into());
+            crate::troops::IArmySlotStaminaDispatcherTrait::army_slot_stamina(
+                crate::troops::IArmySlotStaminaLibraryDispatcher {
+                    class_hash: self.logic_classes(key.game_id).relics.read(),
+                },
+                key,
+                crate::troops::ArmySlotAction::Persist(crate::troops::StaminaSource::Inline(stamina)),
+            );
+        }
+
         fn refund_capture_stamina(
             self: @ComponentState<TContractState>,
             key: ExplorerKey,

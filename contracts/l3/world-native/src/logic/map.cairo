@@ -335,6 +335,17 @@ pub mod MapLogic {
         ) -> Option<crate::expeditions::FrontierDiscoveryRules> {
             crate::logic::preset_record::for_game(game_id).discovery_rules.read()
         }
+        fn consume_frontier_site(ref self: ContractState, key: TileKey) -> u8 {
+            let occupied = crate::logic::map::occupancy(key).expect('missing site');
+            assert!(
+                !occupied.is_structure
+                    && (occupied.category == crate::map::SHRINE_OCCUPIER
+                        || occupied.category == crate::map::WELL_OCCUPIER),
+                "tile is not a shrine or well",
+            );
+            crate::logic::map::MapState::vacate(key, occupied.entity_id);
+            occupied.category
+        }
         fn expedition_discovery(
             self: @ContractState, key: crate::expeditions::ExpeditionDiscoveryKey,
         ) -> Option<crate::expeditions::ExpeditionDiscovery> {
@@ -348,11 +359,21 @@ pub mod MapLogic {
             context: crate::commands::ActionContext,
         ) -> crate::discovery::Discovery {
             let context = crate::commands::load_context(key.game_id, context);
-            let rules = self.frontier_discovery_rules(key.game_id).expect('missing discovery rules');
+            let mut rules = self.frontier_discovery_rules(key.game_id).expect('missing discovery rules');
             let explorer_key = crate::troops::ExplorerKey { game_id: key.game_id, explorer_id };
             let home = crate::state::read().troops.explorers.entry((key.game_id, explorer_id)).owner.read();
             assert!(home != 0, "missing exploring army");
             let progress = crate::logic::progression::require(explorer_key);
+            let home_key = crate::resources::ResourceKey { game_id: key.game_id, entity_id: home };
+            use crate::research::{MapContentKind, ResearchEffect};
+            if rules.shrine_bps != 0
+                && !crate::logic::research::has_effect(home_key, ResearchEffect::MapContent(MapContentKind::Shrine)) {
+                rules.shrine_bps = 0;
+            }
+            if rules.well_bps != 0
+                && !crate::logic::research::has_effect(home_key, ResearchEffect::MapContent(MapContentKind::Well)) {
+                rules.well_bps = 0;
+            }
             let counter = crate::expeditions::ExpeditionDiscoveryKey {
                 game_id: key.game_id,
                 structure_id: home,
@@ -361,9 +382,9 @@ pub mod MapLogic {
             let empty = crate::logic::expeditions::discovery(counter).map(|row| row.empty_reveals).unwrap_or(0);
             let result = crate::discovery::frontier(rules, progress.scouting, empty, seed, context.timestamp);
             crate::logic::expeditions::record_discovery(counter, result);
-            if result == crate::discovery::Discovery::Chest {
+            if let Some(category) = crate::discovery::tile_occupier(result) {
                 crate::logic::map::MapState::occupy(
-                    key, crate::logic::game::allocate_entity(key.game_id), crate::map::CHEST_OCCUPIER, false,
+                    key, crate::logic::game::allocate_entity(key.game_id), category, false,
                 );
             }
             result

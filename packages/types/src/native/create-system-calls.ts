@@ -334,6 +334,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.structure_burn(props);
   };
 
+  const interact_site = (props: SystemProps.InteractSiteProps) => provider.interact_site(props);
+
   const open_chest = async (props: SystemProps.OpenChestProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.open_chest(props);
   };
@@ -433,6 +435,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     transfer_structure_ownership: withAuth(transfer_structure_ownership),
     structure_burn: withAuth(structure_burn),
     open_chest: withAuth(open_chest),
+    interact_site: withAuth(interact_site),
     burn_research_for_relic: withAuth(burn_research_for_relic),
     apply_relic: withAuth(apply_relic),
   };

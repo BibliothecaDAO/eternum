@@ -515,3 +515,5 @@ pub struct SpeedConfig {
     pub donkey_sec_per_km: u16,
     pub donkey_sec_per_km_troops: u16,
 }
+
+pub const WELL_STAMINA: u8 = 60;

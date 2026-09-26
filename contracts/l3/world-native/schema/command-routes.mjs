@@ -94,4 +94,5 @@ export const commandRoutes = [
   { name: "Research", logic: "construction", entrypoint: "research" },
   { name: "ChooseAttribute", logic: "relics", entrypoint: "choose_attribute" },
   { name: "UpgradeBuilding", logic: "construction", entrypoint: "upgrade_building" },
+  { name: "InteractSite", logic: "relics", entrypoint: "interact_site" },
 ];

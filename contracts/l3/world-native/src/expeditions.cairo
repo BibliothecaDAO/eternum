@@ -173,6 +173,7 @@ pub struct ExpeditionDiscovery {
 }
 #[starknet::interface]
 pub trait IFrontierDiscovery<T> {
+    fn consume_frontier_site(ref self: T, key: crate::map::TileKey) -> u8;
     fn frontier_discovery_rules(self: @T, game_id: u32) -> Option<FrontierDiscoveryRules>;
     fn expedition_discovery(self: @T, key: ExpeditionDiscoveryKey) -> Option<ExpeditionDiscovery>;
     fn discover_frontier_tile(

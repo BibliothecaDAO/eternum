@@ -1120,6 +1120,14 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
+  public async interact_site(props: SystemProps.InteractSiteProps) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "InteractSite", value: { explorer_id: props.explorer_id, coord: props.coord } },
+      TransactionType.INTERACT_SITE,
+    );
+  }
+
   public async open_chest(props: SystemProps.OpenChestProps) {
     return this.submitCommand(
       props.signer,

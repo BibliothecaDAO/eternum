@@ -3,7 +3,7 @@ use crate::discovery::{Discovery, frontier};
 use crate::expeditions::{ExpeditionDiscoveryKey, FrontierDiscoveryRules};
 
 fn rules() -> FrontierDiscoveryRules {
-    super::preset_projection::frontier_discovery_rules()
+    FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..super::preset_projection::frontier_discovery_rules() }
 }
 fn bucket(result: Discovery) -> felt252 {
     match result {
@@ -123,4 +123,38 @@ fn fallen_and_loose_chests_use_the_same_depth_quality_table_over_10k_opens() {
             assert!(difference * difference <= 16 * variance + 1, "depth quality outside four sigma");
         }
     }
+}
+
+#[test]
+fn shrine_well_odds_are_three_percent_without_moving_the_chest_interval() {
+    let unlocked = super::preset_projection::frontier_discovery_rules();
+    let locked = rules();
+    let mut shrines = 0_u32;
+    let mut wells = 0_u32;
+    let mut floor_shrines = 0_u32;
+    let mut floor_wells = 0_u32;
+    for timestamp in 0_u64..100000 {
+        let draw = frontier(unlocked, 1, 0, 0x5349544553, timestamp);
+        let without = frontier(locked, 1, 0, 0x5349544553, timestamp);
+        assert!(without != Discovery::Shrine && without != Discovery::Well);
+        assert_eq!(draw == Discovery::Chest, without == Discovery::Chest);
+        if draw == Discovery::Shrine {
+            shrines += 1;
+        }
+        if draw == Discovery::Well {
+            wells += 1;
+        }
+        let floored = frontier(unlocked, 1, 7, 0x5349544553, timestamp);
+        assert!(floored != Discovery::None && floored != Discovery::Chest);
+        if floored == Discovery::Shrine {
+            floor_shrines += 1;
+        }
+        if floored == Discovery::Well {
+            floor_wells += 1;
+        }
+    }
+    assert!(shrines >= 2800 && shrines <= 3200);
+    assert!(wells >= 2800 && wells <= 3200);
+    assert!(floor_shrines != 0 && floor_wells != 0);
+    println!("Shrine {} Well {} floor Shrine {} Well {}", shrines, wells, floor_shrines, floor_wells);
 }

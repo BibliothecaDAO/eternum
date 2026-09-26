@@ -330,3 +330,21 @@ pub fn boost_production(ref bonus: crate::production::ProductionBonus, id: u8, r
         _ => panic!("invalid production relic"),
     }
 }
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct InteractSite {
+    pub explorer_id: u32,
+    pub coord: crate::troops::Coord,
+}
+
+#[starknet::interface]
+pub trait IFrontierSites<T> {
+    fn interact_site(
+        ref self: T,
+        game_id: u32,
+        actor: starknet::ContractAddress,
+        command: InteractSite,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
+}

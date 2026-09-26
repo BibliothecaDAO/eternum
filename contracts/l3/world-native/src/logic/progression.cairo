@@ -99,3 +99,10 @@ pub fn grant_relic(key: ExplorerKey, quality: u8, context: crate::commands::Exec
     issue_offer(key, ref progress, OfferSource::Relic, crate::progression::relic_levels(quality), context);
     write(key, progress);
 }
+
+pub fn grant_shrine(key: ExplorerKey, context: crate::commands::ExecutionContext) {
+    let mut progress = require(key);
+    issue_offer(key, ref progress, OfferSource::Shrine, 1, context);
+    progress.level += 1;
+    write(key, progress);
+}

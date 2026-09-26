@@ -150,7 +150,8 @@ pub(crate) fn discovered_structure(
         Discovery::FallenRealm => (
             crate::camps::CAMP_CATEGORY, crate::camps::CAMP_OCCUPIER, 0, capacities.camp_capacity,
         ),
-        Discovery::None | Discovery::Chest => panic!("discovery is not a structure"),
+        Discovery::None | Discovery::Chest | Discovery::Shrine |
+        Discovery::Well => panic!("discovery is not a structure"),
     };
     assert!(
         discovery == Discovery::Mine || coord.alt == (discovery == Discovery::BitcoinMine), "invalid discovery layer",

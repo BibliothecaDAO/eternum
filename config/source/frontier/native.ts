@@ -42,6 +42,7 @@ export const frontierPreset: NativePreset = {
       "EnterDepth",
       "ChooseAttribute",
       "OpenRelicChest",
+      "InteractSite",
       "SetEntityName",
       "MarkGameSettled",
     ] satisfies Array<keyof typeof nativeCommandBits>
