@@ -79,6 +79,7 @@ import { createStructureLabel, updateStructureLabel } from "../utils/labels/labe
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { presentedMineKind } from "@bibliothecadao/eternum";
+import { presentOrSkip } from "@/utils/presentation-miss";
 import { FXManager } from "./fx-manager";
 import type { HoverLabelShowResult } from "./hover-label-show-result";
 import {
@@ -316,6 +317,7 @@ export class StructureManager {
   private readonly pendingHyperstructureBuilds = new Set<ID>();
   // Per-entity StructureInfo; a Structure, StructureBuildings, Hyperstructure, or projection change deletes the entry.
   private readonly structureInfoCache = new Map<ID, StructureInfo>();
+  private readonly unpresentableStructures = new Set<ID>();
   private readonly metrics: StructureManagerMetrics = {
     structureInfoCacheHits: 0,
     structureInfoCacheMisses: 0,
@@ -549,8 +551,16 @@ export class StructureManager {
       return cached;
     }
 
+    // A structure the client could not present stays out, reported once, until its facts change.
+    if (this.unpresentableStructures.has(renderable.entityId)) return undefined;
     this.metrics.structureInfoCacheMisses += 1;
-    const structure = this.buildStructureInfo(renderable);
+    // A structure the client cannot present is left out, loudly, and the rest of the world still draws.
+    const structure = presentOrSkip(
+      "Structure",
+      Number(renderable.entityId),
+      () => this.buildStructureInfo(renderable),
+      () => this.unpresentableStructures.add(renderable.entityId),
+    );
     if (structure) {
       this.structureInfoCache.set(renderable.entityId, structure);
       // battleTimerLeft and incomingTroopArrivals are time-derived; the timed label loop keeps them
@@ -562,7 +572,9 @@ export class StructureManager {
 
   private invalidateStructureInfo(entityId: ID | null | undefined): void {
     const normalizedEntityId = normalizeEntityId(entityId);
-    if (normalizedEntityId !== undefined) this.structureInfoCache.delete(normalizedEntityId);
+    if (normalizedEntityId === undefined) return;
+    this.structureInfoCache.delete(normalizedEntityId);
+    this.unpresentableStructures.delete(normalizedEntityId);
   }
 
   private buildStructureInfo(renderable: EntityStructureRenderable): StructureInfo | undefined {
