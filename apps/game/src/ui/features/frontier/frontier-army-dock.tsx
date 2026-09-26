@@ -270,7 +270,7 @@ const MusterCard = ({ slot }: { slot: OpenArmySlot | undefined }) => {
     <Sweep play={pointed} className="shrink-0 rounded-2xl">
       <button
         type="button"
-        aria-label={`Muster, ${describeSlotBar(slot)}`}
+        aria-label={`Deploy, ${describeSlotBar(slot)}`}
         onClick={() => setLeftNavigationView(LeftView.MilitaryView)}
         className={cn(OVERLAY_SURFACE_BASE, CARD, "h-full min-h-28 items-center justify-center border-dashed")}
       >

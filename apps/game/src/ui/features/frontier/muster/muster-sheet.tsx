@@ -73,16 +73,16 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
       await musterArmy(requireActiveGameClient().actions, realm, stack, preview.count, direction);
       onClose();
     } catch (error) {
-      toast.error(extractReadableErrorMessage(error, "The army could not muster."));
+      toast.error(extractReadableErrorMessage(error, "The army could not deploy."));
     } finally {
       setPending(false);
     }
   };
 
   return (
-    <FrontierSheet label="Muster" onClose={onClose} workspace>
+    <FrontierSheet label="Deploy" onClose={onClose} workspace>
       <header className="flex items-center justify-between">
-        <h2 className="frontier-title">Muster</h2>
+        <h2 className="frontier-title">Deploy</h2>
         {plan && <SlotBanners used={plan.slots.used} allowed={plan.slots.allowed} />}
       </header>
       {plan && plan.stacks.length > 1 && <StackPicker stacks={plan.stacks} chosen={chosen} onChoose={setChosen} />}
@@ -118,7 +118,7 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
         />
       </div>
       <button type="button" disabled={!canMuster} onClick={() => void muster()} className="frontier-primary">
-        Muster
+        Deploy
       </button>
     </FrontierSheet>
   );

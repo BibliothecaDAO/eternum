@@ -79,6 +79,6 @@ export const ExpeditionRollover = () => {
 export const describeNewExpedition = (troops: number | undefined): string => {
   if (troops === undefined) return "Fresh fog around your realm. Yesterday's armies are spent.";
   return troops >= 1
-    ? "Fresh fog around your realm. Yesterday's armies are spent; today's muster is open."
+    ? "Fresh fog around your realm. Yesterday's armies are spent; today's armies are ready to deploy."
     : "Fresh fog around your realm. Yesterday's armies are spent and no troops are on hand: a barracks on the realm board trains them.";
 };

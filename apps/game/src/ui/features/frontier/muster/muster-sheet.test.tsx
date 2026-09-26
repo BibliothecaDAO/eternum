@@ -59,7 +59,7 @@ describe("the muster sheet", () => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(slider, "120");
       slider.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    const muster = [...host.querySelectorAll("button")].find((button) => button.textContent === "Muster")!;
+    const muster = [...host.querySelectorAll("button")].find((button) => button.textContent === "Deploy")!;
     await act(async () => muster.click());
     expect(createExplorerArmy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -87,7 +87,7 @@ describe("the muster sheet", () => {
         </GameProvider>,
       ),
     );
-    const muster = [...host.querySelectorAll("button")].find((button) => button.textContent === "Muster")!;
+    const muster = [...host.querySelectorAll("button")].find((button) => button.textContent === "Deploy")!;
     expect(muster.disabled).toBe(true);
     act(() => root.unmount());
   });
