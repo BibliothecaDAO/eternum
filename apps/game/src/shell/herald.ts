@@ -1,7 +1,7 @@
 import { fetchHeraldLeaderboard, type GameRef } from "@bibliothecadao/eternum/shard";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import { realmsAccountAddress } from "@realms-world/identity/account";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 
@@ -99,25 +99,32 @@ const fetchGuardian = async (): Promise<GuardianIdentity> => {
 export const realmsPlayerOf = (realmsId: string | undefined, guardian: GuardianIdentity | undefined): string | null =>
   realmsId && guardian ? realmsAccountAddress(realmsId, guardian.accountClassHash, guardian.publicKey) : null;
 
+const GUARDIAN_QUERY = { queryKey: ["shell", "guardian"], queryFn: fetchGuardian, staleTime: Infinity } as const;
+
 export const useRealmsPlayer = (): string | null => {
   const { session } = useIdentitySession();
-  const guardian = useQuery({
-    queryKey: ["shell", "guardian"],
-    queryFn: fetchGuardian,
-    staleTime: Infinity,
-    enabled: session !== null,
-  });
+  const guardian = useQuery({ ...GUARDIAN_QUERY, enabled: session !== null });
   return realmsPlayerOf(session?.user.realmsId, guardian.data);
 };
 
-/** Every listed and pasted shard's games; with a player, each game says whether that account is in it. */
-export const useDirectory = (player: string | null = null) =>
-  useQuery({
-    queryKey: [...DIRECTORY_QUERY_KEY, player],
-    queryFn: () => fetchDirectories(player),
+/**
+ * Every listed and pasted shard's games, for the signed-in player when there is one: each game then says whether the
+ * player is in it. The read waits for the session, and a signed-in player's waits for their account address, so no
+ * screen of theirs ever reads the anonymous directory in between and mistakes it for their own.
+ */
+export const useDirectory = () => {
+  const { status, session } = useIdentitySession();
+  const client = useQueryClient();
+  const realmsId = session?.user.realmsId ?? null;
+  return useQuery({
+    queryKey: [...DIRECTORY_QUERY_KEY, realmsId],
+    queryFn: async () =>
+      fetchDirectories(realmsId ? realmsPlayerOf(realmsId, await client.fetchQuery(GUARDIAN_QUERY)) : null),
+    enabled: status !== "loading",
     refetchInterval: 15_000,
     retry: 1,
   });
+};
 
 const HISTORY_PAGE_SIZE = 20;
 

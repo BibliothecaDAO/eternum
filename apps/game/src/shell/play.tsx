@@ -87,7 +87,7 @@ export const PlayPage = () => {
   const [search, setSearch] = useSearchParams();
   const now = useNowSeconds();
   const player = useRealmsPlayer();
-  const directory = useDirectory(player);
+  const directory = useDirectory();
   const games = directory.data?.games ?? [];
   const requested = { chainId: search.get("chain") ?? "", gameId: Number(search.get("game")) };
   const selected = games.find((game) => sameGame(gameRef(game), requested)) ?? nextOpenGame(games) ?? games[0];

@@ -3,7 +3,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { isGameOver } from "@/runtime/world/directory";
 
 import { entryHref } from "./game-links";
-import { type DirectoryGame, useDirectory, useRealmsPlayer } from "./herald";
+import { type DirectoryGame, useDirectory } from "./herald";
 import { ErrorPanel, Loading } from "./kit";
 import { PrimaryLink } from "./live-chips";
 import { HERO_ART } from "./mode-art";
@@ -19,9 +19,8 @@ import { useNowSeconds } from "./use-now";
  */
 export const HomePage = () => {
   const { status } = useIdentitySession();
-  const player = useRealmsPlayer();
   const now = useNowSeconds();
-  const directory = useDirectory(player);
+  const directory = useDirectory();
 
   if (directory.isError)
     return (
