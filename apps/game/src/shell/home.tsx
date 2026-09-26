@@ -4,7 +4,7 @@ import { useIdentitySession } from "@/hooks/context/identity-session";
 
 import { formatCountdown } from "./format";
 import { EnterLink, GameClock, GameRow, SpectateLink, modeLabel } from "./game-links";
-import { isMember } from "@/runtime/world/directory";
+import { canEnterGame, isMember } from "@/runtime/world/directory";
 
 import { type DirectoryGame, nextOpenGame, useDirectory, useRealmsPlayer, useRecentResults } from "./herald";
 import { ErrorPanel, Loading, Panel, PanelTitle, Pill } from "./kit";
@@ -32,9 +32,13 @@ const Landing = ({ next, now }: { next: DirectoryGame | undefined; now: number }
         one-hour Blitz. Every march and every crown is on the chain, forever.
       </p>
       <div className="flex flex-wrap gap-3">
-        <Link to="/play" className={`${CTA} border border-gold/60 bg-gold text-brown hover:brightness-110`}>
-          {next ? `Next game in ${formatCountdown(next.clock.start_main_at - now)}` : "See the games"}
-        </Link>
+        {next && canEnterGame(next) ? (
+          <EnterLink game={next} />
+        ) : (
+          <Link to="/play" className={`${CTA} border border-gold/60 bg-gold text-brown hover:brightness-110`}>
+            {next ? `Next game in ${formatCountdown(next.clock.start_main_at - now)}` : "See the games"}
+          </Link>
+        )}
         <Link to="/results" className={`${CTA} border border-gold/40 text-gold hover:bg-gold/10`}>
           Results
         </Link>
@@ -66,7 +70,7 @@ const MyGames = ({ games, now }: { games: DirectoryGame[]; now: number }) => (
             </div>
           </div>
           <div className="flex gap-2">
-            {game.status === "Live" && game.ready ? <EnterLink game={game} /> : <SpectateLink game={game} />}
+            {canEnterGame(game) ? <EnterLink game={game} /> : <SpectateLink game={game} />}
           </div>
         </div>
       ))
@@ -76,6 +80,8 @@ const MyGames = ({ games, now }: { games: DirectoryGame[]; now: number }) => (
 
 const Dashboard = ({ games, now }: { games: DirectoryGame[]; now: number }) => {
   const next = nextOpenGame(games);
+  // A game the player can enter now has no start to count down to: it offers the way in.
+  const enterable = next !== undefined && canEnterGame(next);
   const mine = games.filter(isMember);
   const latest = useRecentResults(1).data?.games[0];
   return (
@@ -83,16 +89,22 @@ const Dashboard = ({ games, now }: { games: DirectoryGame[]; now: number }) => {
       <Panel className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.24em] text-gold/60">
-            {next ? `Next game · ${modeLabel(next)}` : "No game open"}
+            {next ? `${enterable ? "Now" : "Next game"} · ${modeLabel(next)}` : "No game open"}
           </div>
           <h1 className="my-1 font-cinzel text-3xl font-bold uppercase tracking-wide text-gold sm:text-5xl">
             {next ? next.name : "The realms rest"}
           </h1>
-          <Link to="/play" className={`${CTA} mt-2 border border-gold/60 bg-gold text-brown hover:brightness-110`}>
-            {next ? "View lobby" : "Open the lobby"}
-          </Link>
+          {enterable ? (
+            <div className="mt-2">
+              <EnterLink game={next} />
+            </div>
+          ) : (
+            <Link to="/play" className={`${CTA} mt-2 border border-gold/60 bg-gold text-brown hover:brightness-110`}>
+              {next ? "View lobby" : "Open the lobby"}
+            </Link>
+          )}
         </div>
-        {next ? (
+        {next && !enterable ? (
           <div className="text-right">
             <span className="font-mono text-[32px] font-semibold tabular-nums text-gold">
               {formatCountdown(next.clock.start_main_at - now)}

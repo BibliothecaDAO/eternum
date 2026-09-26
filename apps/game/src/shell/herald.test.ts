@@ -21,7 +21,7 @@ vi.mock("@bibliothecadao/eternum/shard", async (importOriginal) => ({
   }),
 }));
 
-import { fetchDirectories, realmsPlayerOf } from "./herald";
+import { type DirectoryGame, fetchDirectories, nextOpenGame, realmsPlayerOf } from "./herald";
 
 const requests: string[] = [];
 vi.stubGlobal("fetch", async (input: string) => {
@@ -71,4 +71,37 @@ it("keeps a pasted shard's settled games out of the live list and offers them ap
   } finally {
     pasted.shards = [];
   }
+});
+
+it("points the player at a game they can enter now, a live Frontier season first, else the soonest still registering", () => {
+  const game = (overrides: Partial<DirectoryGame>) =>
+    ({
+      chainId: "0xa",
+      game_id: 1,
+      mode: "blitz",
+      status: "Registration",
+      ready: false,
+      clock: { start_main_at: 500 },
+      ...overrides,
+    }) as DirectoryGame;
+  const registering = game({ game_id: 2, clock: { start_main_at: 400 } } as Partial<DirectoryGame>);
+  const season = game({
+    game_id: 3,
+    mode: "frontier",
+    status: "Live",
+    ready: true,
+    clock: { start_main_at: 100 },
+  } as Partial<DirectoryGame>);
+  // A live Blitz without the player on its roster is theirs to watch, not to enter.
+  const othersBlitz = game({
+    game_id: 4,
+    status: "Live",
+    ready: true,
+    clock: { start_main_at: 50 },
+  } as Partial<DirectoryGame>);
+  expect(nextOpenGame([registering, othersBlitz, season])?.game_id).toBe(3);
+  expect(nextOpenGame([registering, othersBlitz])?.game_id).toBe(2);
+  // A season still being prepared cannot be entered yet.
+  expect(nextOpenGame([{ ...season, ready: false }, registering])?.game_id).toBe(2);
+  expect(nextOpenGame([othersBlitz])).toBeUndefined();
 });

@@ -1,6 +1,6 @@
 import { useSearchParams } from "react-router-dom";
 
-import { isGameOver, isMember } from "@/runtime/world/directory";
+import { canEnterGame, isGameOver, isMember } from "@/runtime/world/directory";
 
 import { BlitzSlots } from "./blitz-slots";
 import { ShardUrlForm } from "./shard-url-form";
@@ -25,7 +25,7 @@ const FrontierSeason = ({ games }: { games: DirectoryGame[] }) => {
         <div className="font-cinzel text-2xl font-bold uppercase tracking-wide text-gold">{season.name}</div>
         <p className="text-sm text-gold/70">Free and open all season. A new expedition every day at 00:00 UTC.</p>
       </div>
-      {season.ready ? <EnterLink game={season} /> : <Pill tone="open">OPENS SOON</Pill>}
+      {canEnterGame(season) ? <EnterLink game={season} /> : <Pill tone="open">OPENS SOON</Pill>}
     </Panel>
   );
 };
@@ -34,7 +34,6 @@ const GameDetail = ({ game, now, player }: { game: DirectoryGame; now: number; p
   const pill = statusPill(game);
   const ended = isGameOver(game);
   const member = isMember(game);
-  const canEnter = !ended && game.ready && (member || game.mode === "frontier");
   return (
     <Panel>
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -71,7 +70,7 @@ const GameDetail = ({ game, now, player }: { game: DirectoryGame; now: number; p
         </p>
       ) : null}
       <div className="mb-4 flex flex-wrap gap-3">
-        {canEnter ? <EnterLink game={game} /> : null}
+        {canEnterGame(game) ? <EnterLink game={game} /> : null}
         <SpectateLink game={game} />
       </div>
       {game.status !== "Created" && game.status !== "Registration" ? (

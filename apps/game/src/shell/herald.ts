@@ -5,7 +5,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 
-import { fetchDirectory, fetchDirectoryHistory, type DirectoryShard } from "@/runtime/world/directory";
+import { canEnterGame, fetchDirectory, fetchDirectoryHistory, type DirectoryShard } from "@/runtime/world/directory";
 import { readShardDirectory } from "@/runtime/world/shard-directory";
 import { listPastedShards, openPastedShards, requireOpenShard } from "@/runtime/world/shards";
 
@@ -157,11 +157,15 @@ export const useLeaderboard = (game: GameRef | null) =>
 
 const OPEN_STATUSES = new Set(["Created", "Registration"]);
 
-/** The soonest game still taking players. */
+const soonest = (games: readonly DirectoryGame[]): DirectoryGame | undefined =>
+  games.toSorted((a, b) => a.clock.start_main_at - b.clock.start_main_at)[0];
+
+/**
+ * The game to point the player at: one they can enter now, such as a live Frontier season, else the soonest still
+ * taking players.
+ */
 export const nextOpenGame = (games: readonly DirectoryGame[]): DirectoryGame | undefined =>
-  games
-    .filter((game) => OPEN_STATUSES.has(game.status))
-    .toSorted((a, b) => a.clock.start_main_at - b.clock.start_main_at)[0];
+  soonest(games.filter(canEnterGame)) ?? soonest(games.filter((game) => OPEN_STATUSES.has(game.status)));
 
 /** A settled game has its recorded result and belongs to the history, not the game list. */
 const isSettled = (game: DirectoryGame): boolean => game.status === "Settled";
