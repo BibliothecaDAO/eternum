@@ -26,6 +26,7 @@ interface RingEntry {
 }
 
 interface GameStreamState {
+  epoch: string;
   actor?: string;
   visit?: string;
   gameId: string;
@@ -105,6 +106,7 @@ const isAbandoned = (state: GameStreamState): boolean =>
 
 export class GameStreamHub {
   public readonly epoch: string;
+  private nextIncarnation = 0;
   private readonly games = new Map<string, GameStreams>();
   private oldestReplay?: RingEntry;
   private newestReplay?: RingEntry;
@@ -145,7 +147,7 @@ export class GameStreamHub {
     this.send(session, {
       confirmed_block: input.confirmedBlock,
       confirmed_timestamp: input.confirmedTimestamp ?? null,
-      epoch: this.streamEpoch(input.gameId, input.actor, input.visit),
+      epoch: state.epoch,
       preconfirmed_block: input.preconfirmedBlock,
       seq: session.boundary,
       type: "hello",
@@ -219,7 +221,7 @@ export class GameStreamHub {
     const sent = this.measure(session);
     this.send(session, {
       type: "scope",
-      epoch: this.streamEpoch(input.gameId, input.actor, input.visit),
+      epoch: state.epoch,
       seq: state.seq,
       actor: input.actor,
       visit: input.visit,
@@ -233,7 +235,7 @@ export class GameStreamHub {
         ...diff,
         type: "diff",
         preconfirmed: true,
-        epoch: this.streamEpoch(input.gameId, input.actor, input.visit),
+        epoch: state.epoch,
         seq: state.seq,
       });
     this.logSnapshotSent(session, "scope", sent);
@@ -291,7 +293,7 @@ export class GameStreamHub {
       for (const projected of projections) {
         const message = {
           ...projected,
-          epoch: this.streamEpoch(state.gameId, state.actor, state.visit),
+          epoch: state.epoch,
           seq: ++state.seq,
         };
         const serialized = JSON.stringify(message);
@@ -371,10 +373,6 @@ export class GameStreamHub {
     return this.games.get(gameId)?.states.get(this.streamKey(gameId, actor, visit));
   }
 
-  private streamEpoch(gameId: string, actor?: string, visit?: string): string {
-    return `${this.epoch}:${this.streamKey(gameId, actor, visit)}`;
-  }
-
   private streamKey(gameId: string, actor?: string, visit?: string): string {
     const acting = `${gameId}:${actor === undefined ? "" : BigInt(actor).toString()}`;
     return visit === undefined ? acting : `${acting}:${BigInt(visit).toString()}`;
@@ -387,6 +385,7 @@ export class GameStreamHub {
     let state = game.states.get(key);
     if (!state) {
       state = {
+        epoch: `${this.epoch}:${key}:${++this.nextIncarnation}`,
         actor: input.actor,
         visit: input.visit,
         gameId: input.gameId,
@@ -404,12 +403,7 @@ export class GameStreamHub {
   }
 
   private canResume(state: GameStreamState, request: ResumeRequest): boolean {
-    if (
-      request.epoch !== this.streamEpoch(state.gameId, state.actor, state.visit) ||
-      !Number.isSafeInteger(request.seq) ||
-      request.seq < 0
-    )
-      return false;
+    if (request.epoch !== state.epoch || !Number.isSafeInteger(request.seq) || request.seq < 0) return false;
     if (request.seq > state.seq) return false;
     return this.holdsAfter(state, request.seq);
   }
@@ -421,10 +415,11 @@ export class GameStreamHub {
 
   private sendSnapshot(session: GameStreamSession): void {
     if (!session.snapshot) throw new Error("Stream session has no snapshot boundary");
+    const state = this.stateOf(session.gameId, session.actor, session.visit)!;
     const sent = this.measure(session);
     for (const model of session.snapshot.models) {
       this.send(session, {
-        epoch: this.streamEpoch(session.gameId, session.actor, session.visit),
+        epoch: state.epoch,
         model: model.model,
         rows: model.rows,
         seq: session.boundary,
@@ -432,14 +427,14 @@ export class GameStreamHub {
       });
     }
     this.send(session, {
-      epoch: this.streamEpoch(session.gameId, session.actor, session.visit),
+      epoch: state.epoch,
       seq: session.boundary,
       type: "snapshot_end",
     });
     for (const overlay of session.overlay ?? []) {
       this.send(session, {
         ...overlay,
-        epoch: this.streamEpoch(session.gameId, session.actor, session.visit),
+        epoch: state.epoch,
         preconfirmed: true,
         seq: session.boundary,
         type: "diff",

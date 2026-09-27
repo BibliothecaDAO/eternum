@@ -78,7 +78,7 @@ describe("GameStreamHub", () => {
       ["snapshot_end", 0],
       ["head", 1],
     ]);
-    expect(socket.messages.every(({ epoch }) => epoch === "epoch-a:7:")).toBe(true);
+    expect(socket.messages.every(({ epoch }) => epoch === socket.messages[0].epoch)).toBe(true);
   });
 
   it("names the last confirmed head's chain time in hello, and null before Herald has one", () => {
@@ -171,6 +171,43 @@ describe("GameStreamHub", () => {
     vi.useRealTimers();
   });
 
+  it("snapshots a stale cursor after an abandoned stream is recreated and passes its old sequence", () => {
+    vi.useFakeTimers();
+    try {
+      const hub = new GameStreamHub("epoch-a", { info: vi.fn() });
+      const attach = () => {
+        const socket = recordingSocket();
+        const session = hub.attach({
+          actor: "0x111",
+          gameId: "7",
+          socket,
+          confirmedBlock: 12,
+          preconfirmedBlock: null,
+          snapshot: () => snapshot,
+          overlay: () => [],
+        });
+        return { socket, session };
+      };
+      const laptop = attach();
+      hub.resume(laptop.session, { type: "resume", epoch: "", seq: 0 });
+      for (let block = 13; block <= 15; block++) hub.publishHead("7", block, block);
+      const cursor = laptop.socket.messages.at(-1)!;
+      hub.detach(laptop.session);
+      vi.advanceTimersByTime(11 * 60 * 1000);
+      hub.publishHead("7", 16, 16);
+      expect(hub.streamedGames()).toEqual([]);
+      const phone = attach();
+      hub.resume(phone.session, { type: "resume", epoch: "", seq: 0 });
+      for (let block = 17; block <= 21; block++) hub.publishHead("7", block, block);
+      const waking = attach();
+      hub.resume(waking.session, { type: "resume", epoch: String(cursor.epoch), seq: Number(cursor.seq) });
+      expect(waking.socket.messages.map(({ type }) => type)).toEqual(["hello", "snapshot", "snapshot_end"]);
+      expect(waking.socket.messages[0].epoch).not.toBe(cursor.epoch);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("resumes a killed socket by sequence and snapshots after an epoch change", () => {
     const hub = new GameStreamHub("epoch-a");
     const firstSocket = recordingSocket();
@@ -196,7 +233,7 @@ describe("GameStreamHub", () => {
       snapshot: () => snapshot,
       socket: resumedSocket,
     });
-    hub.resume(resumed, { epoch: "epoch-a:7:", seq: 1, type: "resume" });
+    hub.resume(resumed, { epoch: String(firstSocket.messages[0].epoch), seq: 1, type: "resume" });
     expect(resumedSocket.messages.map(({ type, seq }) => [type, seq])).toEqual([
       ["hello", 2],
       ["diff", 2],
@@ -212,9 +249,9 @@ describe("GameStreamHub", () => {
       snapshot: () => snapshot,
       socket: restartedSocket,
     });
-    restartedHub.resume(restarted, { epoch: "epoch-a:7:", seq: 2, type: "resume" });
+    restartedHub.resume(restarted, { epoch: String(firstSocket.messages[0].epoch), seq: 2, type: "resume" });
     expect(restartedSocket.messages.map(({ type }) => type)).toEqual(["hello", "snapshot", "snapshot_end"]);
-    expect(restartedSocket.messages.every(({ epoch }) => epoch === "epoch-b:7:")).toBe(true);
+    expect(restartedSocket.messages.every(({ epoch }) => epoch === restartedSocket.messages[0].epoch)).toBe(true);
   });
 
   it("sends the confirmed snapshot before transaction-grouped overlay diffs at the same boundary", () => {
@@ -357,10 +394,10 @@ describe("GameStreamHub", () => {
       expect(hub.replayUsage().entries).toBeLessThan(256);
     }
     const evicted = attach("1");
-    hub.resume(evicted.session, { epoch: "epoch-a:7:1", seq: 1, type: "resume" });
+    hub.resume(evicted.session, { epoch: String(evicted.socket.messages[0].epoch), seq: 1, type: "resume" });
     expect(evicted.socket.messages.map(({ type }) => type)).toEqual(["hello", "snapshot", "snapshot_end"]);
     const recent = attach("2000", "8");
-    hub.resume(recent.session, { epoch: "epoch-a:8:2000", seq: 9, type: "resume" });
+    hub.resume(recent.session, { epoch: String(recent.socket.messages[0].epoch), seq: 9, type: "resume" });
     expect(recent.socket.messages.map(({ type }) => type)).toEqual(["hello", "head"]);
   });
 
