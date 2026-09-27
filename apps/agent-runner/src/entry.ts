@@ -115,7 +115,7 @@ const settledStructureIds = (client: GameClient, player: string): ID[] | undefin
 
 const structureCoord = (client: GameClient, structureId: ID): Coord | undefined => {
   const structure = client.setup.store.get("Structure", { game_id: client.gameId, entity_id: structureId });
-  return structure ? structureMapPosition(client.setup.store, structure) : undefined;
+  return structure ? (structureMapPosition(client.setup.store, structure) ?? undefined) : undefined;
 };
 
 /** The T1 troop type the structure holds enough of to field one explorer. */

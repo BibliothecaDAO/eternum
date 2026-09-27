@@ -129,7 +129,9 @@ const simulateRaid = (client: GameClient, attackerId: ID, structureId: ID): stri
   const guards = knownGuards
     .filter((guard) => Number(guard.troops.count) > 0)
     .map((guard) => troopsToArmy(guard.troops));
-  const biome = biomeAt(client, structureMapPosition(client.setup.store, structure));
+  const site = structureMapPosition(client.setup.store, structure);
+  if (!site) return `Structure ${structureId} has no map site yet.`;
+  const biome = biomeAt(client, site);
   const result = new RaidSimulator(configManager.getCombatConfig()).simulateRaid(raider.army, guards, biome);
   return [
     `Raid on structure #${structureId} (${biome}) by ${describeArmy(raider.army)} against ${guards.length} guard slot(s).`,
@@ -187,10 +189,11 @@ const strongestGuard = (client: GameClient, structureId: ID): Combatant | undefi
   const guard = getGuardsByStructure(structure, client.setup.store)
     ?.filter((candidate) => Number(candidate.troops.count) > 0)
     .sort((left, right) => Number(right.troops.count - left.troops.count))[0];
-  if (!guard) return undefined;
+  const site = structureMapPosition(client.setup.store, structure);
+  if (!guard || !site) return undefined;
   return {
     army: troopsToArmy(guard.troops),
-    hex: structureMapPosition(client.setup.store, structure),
+    hex: site,
     isStructureGuard: true,
   };
 };

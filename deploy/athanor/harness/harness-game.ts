@@ -164,7 +164,7 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
     },
     structureCoord: (structureId) => {
       const structure = store.get("Structure", { game_id, entity_id: structureId });
-      return structure ? structureMapPosition(store, structure) : undefined;
+      return structure ? (structureMapPosition(store, structure) ?? undefined) : undefined;
     },
     startingTroopType: (structureId) => {
       const resource = new ResourceManager(store, structureId);
