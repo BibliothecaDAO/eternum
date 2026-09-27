@@ -40,6 +40,7 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
   if (home.owner !== BigInt(account.address) || !unlocked?.length) return null;
 
   const spire = expeditionSpireTile(rules, home, getBlockTimestamp().currentBlockTimestamp);
+  if (!spire) return null;
   const besideSpire = isAtExpeditionSpire(spire, entityMapPosition(store, gameId, armyEntityId));
   const troops = resolveExplorerTroops(store, explorer);
   const stamina = troops

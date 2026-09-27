@@ -41,8 +41,11 @@ export const absoluteEpoch = (rules: Pick<ExpeditionRules, "epochSeconds">, time
 };
 
 /** Zero-based season day; only this relative value selects a map region or allowance day. */
-export const seasonDay = (rules: Pick<ExpeditionRules, "epochSeconds" | "startMainAt">, timestamp: number): number =>
-  absoluteEpoch(rules, timestamp) - absoluteEpoch(rules, rules.startMainAt);
+export const seasonDay = (
+  rules: Pick<ExpeditionRules, "epochSeconds" | "startMainAt">,
+  timestamp: number,
+): number | null =>
+  timestamp < rules.startMainAt ? null : absoluteEpoch(rules, timestamp) - absoluteEpoch(rules, rules.startMainAt);
 
 /**
  * What clearing a site pays home, as the contract's site_reward computes it from the guard it started with: a camp
@@ -114,11 +117,11 @@ export const isExpeditionRealm = (
 export const structureMapPosition = (
   store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
   structure: NativeRows["Structure"],
-): { x: number; y: number; alt: boolean } => {
+): { x: number; y: number; alt: boolean } | null => {
   const rules = readExpeditionRules(store, structure.game_id);
   if (rules && isRealmCategory(structure.base.category)) {
     const site = expeditionRealmSite(rules, structure.metadata.realm_id, getBlockTimestamp().currentBlockTimestamp);
-    return { x: site.col, y: site.row, alt: false };
+    return site ? { x: site.col, y: site.row, alt: false } : null;
   }
   return entityMapPosition(store, structure.game_id, structure.entity_id);
 };
@@ -147,9 +150,10 @@ export const expeditionRealmSite = (
   rules: ExpeditionRules,
   realmId: number,
   nowSeconds: number,
-): { col: number; row: number } => {
+): { col: number; row: number } | null => {
   const half = Math.floor(rules.spacing / 2);
   const day = seasonDay(rules, nowSeconds);
+  if (day === null) return null;
   return {
     col: (realmId - 1) * rules.spacing + half,
     row: day * 4 * rules.spacing + half,
@@ -164,9 +168,11 @@ export const expeditionSpireTile = (
   rules: ExpeditionRules,
   structure: NativeRows["Structure"],
   nowSeconds: number,
-): { col: number; row: number } => {
+): { col: number; row: number } | null => {
   const site = expeditionRealmSite(rules, structure.metadata.realm_id, nowSeconds);
-  const direction = seasonDay(rules, nowSeconds) % 6;
+  const day = seasonDay(rules, nowSeconds);
+  if (!site || day === null) return null;
+  const direction = day % 6;
   const spire = getNeighborHexes(site.col, site.row).find((hex) => hex.direction === direction);
   if (!spire) throw new Error(`No hex in direction ${direction} around the expedition site`);
   return { col: spire.col, row: spire.row };
@@ -191,5 +197,8 @@ export const expeditionSpires = (
         isExpeditionRealm(store, structure) &&
         (researchedDepths(store, structure.game_id, structure.entity_id)?.length ?? 0) > 0,
     )
-    .map((structure) => expeditionSpireTile(rules, structure, nowSeconds));
+    .flatMap((structure) => {
+      const spire = expeditionSpireTile(rules, structure, nowSeconds);
+      return spire ? [spire] : [];
+    });
 };

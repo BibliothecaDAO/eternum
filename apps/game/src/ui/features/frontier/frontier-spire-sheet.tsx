@@ -34,6 +34,7 @@ export const FrontierSpireSheet = ({ realm, onClose }: { realm: NativeRows["Stru
     return null;
   if (!researchedDepths(store, realm.game_id, realm.entity_id)?.length) return null;
   const spire = expeditionSpireTile(rules, realm, now);
+  if (!spire) return null;
   const spireSelected = selected?.col === spire.col && selected?.row === spire.row;
   const army = liveHomeArmies(store, realm.entity_id, realm.game_id).find(
     (army) =>

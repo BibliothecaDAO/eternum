@@ -35,8 +35,8 @@ export interface HeraldPlayerStructure {
   /** Structure progression level; the original model is tier I. */
   level: number;
   realm_id: number;
-  coord_x: number;
-  coord_y: number;
+  coord_x: number | null;
+  coord_y: number | null;
   resources_packed: string;
 }
 

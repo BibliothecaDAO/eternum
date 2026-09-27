@@ -60,6 +60,7 @@ function AttentionCycle() {
     const target = structures.find((structure) => structure.entityId === next.realmId);
     if (!target) return;
     const position = structureMapPosition(setup.store, target.structure);
+    if (!position) return;
     if (next.suggestionId) {
       usePopoverStore.getState().openSurface({
         id: "suggestions",

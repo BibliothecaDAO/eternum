@@ -87,10 +87,9 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     const distances: Record<number, number> = {};
     if (!selectedStructure) return distances;
     playerStructuresFiltered.forEach((structure) => {
-      distances[structure.structure.entity_id] = calculateDistance(
-        structureMapPosition(store, structure.structure),
-        structureMapPosition(store, selectedStructure),
-      );
+      const from = structureMapPosition(store, structure.structure);
+      const to = structureMapPosition(store, selectedStructure);
+      if (from && to) distances[structure.structure.entity_id] = calculateDistance(from, to);
     });
     return distances;
   }, [playerStructuresFiltered, selectedStructure, store]);

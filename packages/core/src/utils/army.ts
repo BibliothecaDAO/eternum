@@ -53,7 +53,7 @@ export const formatArmies = (
         explorer,
         isMine: isViewerOwner(owner, playerAddress),
         isMercenary: owner === 0n,
-        isHome: home !== undefined && isArmyAdjacentToStructure(position, home.x, home.y, home.alt),
+        isHome: home != null && isArmyAdjacentToStructure(position, home.x, home.y, home.alt),
         name: getArmyName(explorer.explorer_id, store),
         hasAdjacentStructure: hasAdjacentOwnedStructure(position, playerAddress, store),
       },
@@ -204,6 +204,7 @@ export const spawnRing = (
   occupierAt: (hex: { col: number; row: number }) => number | undefined,
 ): { direction: Direction; open: boolean; explored: boolean }[] => {
   const home = structureMapPosition(store, structure);
+  if (!home) return [];
   return getLayerNeighborHexes(home.x, home.y, home.alt).map((hex) => {
     const occupier = occupierAt(hex);
     return { direction: hex.direction, open: isOpenSpawnHex(occupier), explored: occupier !== undefined };

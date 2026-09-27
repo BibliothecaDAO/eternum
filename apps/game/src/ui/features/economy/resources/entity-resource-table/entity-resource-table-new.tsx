@@ -323,7 +323,9 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       // Get structure position and navigate based on current view mode
       const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structureId });
       if (structure) {
-        const position = Position.fromContract(structureMapPosition(store, structure));
+        const site = structureMapPosition(store, structure);
+        if (!site) return;
+        const position = Position.fromContract(site);
         // Use goToStructure which handles both map view and hex view
         void goToStructure(structureId as ID, position, isMapView);
       }

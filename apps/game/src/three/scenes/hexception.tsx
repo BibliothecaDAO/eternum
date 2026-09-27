@@ -1184,6 +1184,7 @@ export default class HexceptionScene extends HexagonScene {
     });
     if (!structure) throw new Error(`No structure is available at local route ${position.col},${position.row}`);
     const site = structureMapPosition(this.game.store, structure);
+    if (!site) throw new Error("The expedition has not started");
     useUIStore.getState().setStructureEntityId(structure.entity_id, {
       worldMapPosition: Position.fromContract({ x: site.x, y: site.y }),
     });

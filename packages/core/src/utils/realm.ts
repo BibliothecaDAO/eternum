@@ -23,7 +23,8 @@ export function getRealmInfo(
     entity_id: entity,
   });
 
-  if (structure) {
+  const position = structure && structureMapPosition(store, structure);
+  if (structure && position) {
     const realm_id = structure.metadata.realm_id;
     const order = structure.metadata.order;
     const level = structure.base.level;
@@ -42,7 +43,7 @@ export function getRealmInfo(
       resources,
       order,
       storehouses: resourceManager.getStoreCapacityKg(),
-      position: structureMapPosition(store, structure),
+      position,
       population: structureBuildings?.population.current,
       capacity: structureBuildings?.population.max,
       hasCapacity:

@@ -98,7 +98,8 @@ function useFeedRowTarget(row: ImportantFeedRow): Position | null {
   }
   if (row.kind === "story") return resolveStoryEventPosition(row.event, store);
   if (row.kind === "arrival") {
-    return structure ? Position.fromContract(structureMapPosition(store, structure)) : null;
+    const site = structure && structureMapPosition(store, structure);
+    return site ? Position.fromContract(site) : null;
   }
   if (row.kind === "notice") return row.notice.location ? Position.fromContract(row.notice.location) : null;
   return null;

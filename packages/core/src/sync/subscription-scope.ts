@@ -62,7 +62,7 @@ export function deriveGameSyncScope(
         Number((value.metadata as Record<string, unknown>).realm_id),
         timestamp,
       );
-      regions.add(gameSyncRegion({ alt: false, x: site.col, y: site.row }, spacing)!);
+      if (site) regions.add(gameSyncRegion({ alt: false, x: site.col, y: site.row }, spacing)!);
     }
   for (const { value } of actingArmies) {
     const region = gameSyncRegion(position(value.explorer_id), spacing);

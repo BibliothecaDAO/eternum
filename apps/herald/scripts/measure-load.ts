@@ -319,6 +319,7 @@ const live = new LiveWorld({
       realmId,
       timestamp,
     );
+    if (!site) return [];
     return [site, ...getNeighborHexes(site.col, site.row)].map(({ col, row }) => ({ col, row, biome: 5 }));
   },
   rpc: {

@@ -25,11 +25,13 @@ export const getStructure = (
 ): Structure | undefined => {
   const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
   if (!structure) return undefined;
+  const position = structureMapPosition(store, structure);
+  if (!position) return undefined;
   return {
     entityId,
     structure,
     owner: structure.owner,
-    position: structureMapPosition(store, structure),
+    position,
     isMine: isViewerOwner(structure.owner, playerAddress),
     isMercenary: structure.owner === 0n,
     ownerName: structure.owner === 0n ? BANDITS_NAME : displayPlayerName(structure.owner, playerName(structure.owner)),

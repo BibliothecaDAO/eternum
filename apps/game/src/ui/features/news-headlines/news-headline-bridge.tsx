@@ -112,6 +112,7 @@ export function NewsHeadlineBridge() {
         const structureName = entityReader.getStructure(current.entity_id)?.structureName ?? `#${current.entity_id}`;
         const captor = entityReader.getPlayerName(ContractAddress(current.owner).toString());
         const previousOwner = entityReader.getPlayerName(ContractAddress(previous.owner).toString());
+        const site = structureMapPosition(setup.store, current);
         enqueue({
           id: `capture:${current.entity_id}:${previous.owner}:${current.owner}:${Date.now()}`,
           type: isHyperstructure ? "hyper-capture" : "realm-fall",
@@ -122,7 +123,7 @@ export function NewsHeadlineBridge() {
             isViewerOwner(previous.owner, player),
           ),
           description: `${captor} took ${structureName} from ${previousOwner}`,
-          location: { ...structureMapPosition(setup.store, current), entityId: current.entity_id },
+          location: site ? { ...site, entityId: current.entity_id } : undefined,
           timestamp: Date.now(),
         });
       }

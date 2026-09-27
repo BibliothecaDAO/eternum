@@ -39,8 +39,8 @@ function buildAllowanceWarning(
   const game = required(modelRows("GameRegistry"), gameId, "GameRegistry");
   const rules = required(modelRows("SliceRules"), gameId, "SliceRules");
   const clock = { epochSeconds: number(rules.epoch_seconds), startMainAt: number(game.start_main_at) };
-  if (timestamp < clock.startMainAt) return;
   const day = seasonDay(clock, timestamp);
+  if (day === null) return;
   const chests = required(modelRows("ChestRules"), gameId, "ChestRules");
   const duration = integer(chests.season_epochs);
   const pool = integer(chests.lords_pool);

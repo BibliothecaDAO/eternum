@@ -150,7 +150,7 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
 const useDeployRing = (realm: NativeRows["Structure"]) => {
   const { setup } = useGame();
   const home = structureMapPosition(setup.store, realm);
-  const neighbors = useMemo(() => getNeighborHexes(home.x, home.y), [home.x, home.y]);
+  const neighbors = useMemo(() => (home ? getNeighborHexes(home.x, home.y) : []), [home?.x, home?.y]);
   const tiles = useWorldSpatialTiles(neighbors);
   return spawnRing(setup.store, realm, (hex) => {
     const tile = tiles.find(({ hexCoords }) => hexCoords.col === hex.col && hexCoords.row === hex.row);

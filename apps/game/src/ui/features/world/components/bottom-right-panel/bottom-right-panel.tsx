@@ -466,7 +466,7 @@ const LocalTilePanel = () => {
     if (!structureEntityId || !selectedStructure) return false;
     return resolveRealmHasAvailableBuildingTile({
       entityId: structureEntityId,
-      realmPosition: liveStructure ? structureMapPosition(setup.store, liveStructure) : undefined,
+      realmPosition: liveStructure ? (structureMapPosition(setup.store, liveStructure) ?? undefined) : undefined,
     });
   })();
 
@@ -730,6 +730,7 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
     const active = playerStructures.find((entry) => entry.entityId === structureEntityId);
     if (!active?.structure) return null;
     const position = structureMapPosition(store, active.structure);
+    if (!position) return;
     return { col: position.x, row: position.y };
   }, [isMapView, playerStructures, store, structureEntityId]);
 

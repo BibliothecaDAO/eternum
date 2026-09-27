@@ -51,6 +51,7 @@ export const PlayerId = ({
         if (structure.owner !== selectedPlayer) return [];
 
         const position = structureMapPosition(store, structure);
+        if (!position) return [];
         return [
           {
             entity_id: Number(structure.entity_id),

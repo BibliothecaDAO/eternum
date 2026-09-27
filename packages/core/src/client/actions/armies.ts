@@ -99,7 +99,7 @@ export const findStructurePaths = (client: ActionClient, input: StructurePathsIn
   });
   const home = structureMapPosition(store, structure);
   const range = guardAttackRange(store, structure);
-  if (range === undefined) return new ActionPaths();
+  if (!home || range === undefined) return new ActionPaths();
   return new StructureActionManager().findActionPaths(
     { col: home.x, row: home.y },
     input.armyHexes,

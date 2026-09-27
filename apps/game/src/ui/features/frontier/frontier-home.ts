@@ -43,7 +43,9 @@ export const useGoToFrontierPlace = (realm: NativeRows["Structure"]) => {
   const { setup } = useGame();
   const goToStructure = useGoToStructure(setup);
   return (expedition: boolean) => {
-    const position = Position.fromContract(structureMapPosition(setup.store, realm));
+    const site = structureMapPosition(setup.store, realm);
+    if (!site) return;
+    const position = Position.fromContract(site);
     void goToStructure(realm.entity_id, position, expedition);
   };
 };

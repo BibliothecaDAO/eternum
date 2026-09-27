@@ -33,3 +33,9 @@ describe("the season a screen shows", () => {
     expect(chooseSeason([season(9, 100, true), season(8, 200, false)], false)?.game_id).toBe(8);
   });
 });
+
+it("prefers a live season over a future one, even with realms in both", () => {
+  const live = season(1, 100, true);
+  const future = { ...season(2, 200, true), status: "Registration" } as DirectoryGame;
+  for (const signedIn of [false, true]) expect(chooseSeason([future, live], signedIn)?.game_id).toBe(1);
+});

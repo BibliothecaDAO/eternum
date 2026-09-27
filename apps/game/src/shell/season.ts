@@ -15,5 +15,7 @@ export const chooseSeason = (games: readonly DirectoryGame[], signedIn: boolean)
   const seasons = games
     .filter((game) => game.mode === "frontier" && !isGameOver(game))
     .toSorted((a, b) => b.clock.start_main_at - a.clock.start_main_at || a.game_id - b.game_id);
-  return (signedIn ? seasons.find((game) => seasonRealm(game)) : undefined) ?? seasons[0];
+  const live = seasons.filter((game) => game.status === "Live");
+  const available = live.length > 0 ? live : seasons;
+  return (signedIn ? available.find((game) => seasonRealm(game)) : undefined) ?? available[0];
 };

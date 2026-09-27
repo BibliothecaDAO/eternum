@@ -168,6 +168,7 @@ const guardedCampToday = (
   for (const structure of store.inGame("Structure", realm.game_id)) {
     if (structure.base.category !== StructureType.Camp || structure.owner === realm.owner) continue;
     const position = structureMapPosition(store, structure);
+    if (!position) continue;
     if (isCurrentExpeditionArmy(rules, position, now) && isGuarded(structure, store)) return position;
   }
   return null;

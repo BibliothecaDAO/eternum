@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-27",
+    title: "Frontier starts on time",
+    description:
+      "Upcoming seasons count down to their start. Resume prefers a live season, and expedition sites appear only once play begins.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
     title: "Enter Frontier depths",
     description: "Select your army beside its spire to enter an unlocked Ethereal depth and see its stamina cost.",
     type: "fix",

@@ -215,6 +215,7 @@ const resolveExpeditionRealmRenderable = (
 ): StructureSpatialRenderable | undefined => {
   if (!structure || !isExpeditionRealm(store, structure)) return undefined;
   const position = structureMapPosition(store, structure);
+  if (!position) return undefined;
   const site = { col: position.x, row: position.y };
   const level = Math.min(3, Math.max(0, structure.base.level));
   const occupierType =

@@ -191,8 +191,8 @@ function playerStructure(
     category: number(base.category),
     level: number(base.level),
     realm_id: number(record(row.metadata).realm_id),
-    coord_x: position.col,
-    coord_y: position.row,
+    coord_x: position?.col ?? null,
+    coord_y: position?.row ?? null,
     resources_packed: integer(row.resources_packed).toString(),
   };
 }
@@ -203,7 +203,7 @@ function structurePosition(
   settlement: Row,
   facts: DirectoryRows,
   timestamp: number,
-): { col: number; row: number } {
+): { col: number; row: number } | null {
   const rules = required(facts.rules, game.game_id, "SliceRules");
   const epochSeconds = number(rules.epoch_seconds);
   if (epochSeconds !== 0 && isRealmCategory(number(record(row.base).category))) {

@@ -185,7 +185,8 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
 
   const handleViewStructure = useCallback(() => {
     if (!structure) return;
-    goToStructure(structureEntityId, Position.fromContract(structureMapPosition(store, structure)), false);
+    const site = structureMapPosition(store, structure);
+    if (site) goToStructure(structureEntityId, Position.fromContract(site), false);
   }, [goToStructure, store, structure, structureEntityId]);
 
   return {

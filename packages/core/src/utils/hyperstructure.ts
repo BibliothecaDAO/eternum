@@ -27,8 +27,10 @@ export const getRealmCountPerHyperstructure = (store: NativeFactStore): Map<ID, 
     .filter((structure) => structure.base.category === StructureType.Hyperstructure)
     .forEach((hyperstructure) => {
       const center = structureMapPosition(store, hyperstructure);
+      if (!center) return;
       const count = realms.filter((realm) => {
         const position = structureMapPosition(store, realm);
+        if (!position) return false;
         const colDistance = position.x - center.x;
         const rowDistance = position.y - center.y;
         return colDistance ** 2 + rowDistance ** 2 <= radiusSquared;

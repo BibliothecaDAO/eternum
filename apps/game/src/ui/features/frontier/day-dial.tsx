@@ -20,13 +20,13 @@ export const DayDial = ({
   now: number;
   className?: string;
 }) => {
-  const day = seasonDay(rules, now) + 1;
-  const left = expeditionDayEndsAt(rules, now) - now;
+  const day = seasonDay(rules, now);
+  const left = (day === null ? rules.startMainAt : expeditionDayEndsAt(rules, now)) - now;
   const share = Math.min(1, Math.max(0, left / rules.epochSeconds));
   return (
     <div
       role="timer"
-      aria-label={`Day ${day}, ${formatClock(left)} left`}
+      aria-label={day === null ? `Starts in ${formatClock(left)}` : `Day ${day + 1}, ${formatClock(left)} left`}
       title={formatClock(left)}
       className={cn("relative size-9 shrink-0 lg:size-10", className)}
     >
@@ -45,7 +45,7 @@ export const DayDial = ({
         />
       </svg>
       <span className="absolute inset-0 flex items-center justify-center text-[13px] text-[#f3d08a] tabular-nums">
-        D{day}
+        {day === null ? "Soon" : `D${day + 1}`}
       </span>
     </div>
   );

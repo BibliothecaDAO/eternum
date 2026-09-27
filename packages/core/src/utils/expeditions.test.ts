@@ -5,6 +5,7 @@ import {
   absoluteEpoch,
   seasonDay,
   expeditionDayEndsAt,
+  expeditionRealmSite,
   expeditionSpires,
   expeditionSpireTile,
   isAtExpeditionSpire,
@@ -180,7 +181,7 @@ describe("expeditionDayEndsAt", () => {
 it("keys facts by absolute epoch and maps by season day with exactly the launch offset", () => {
   const rules = { epochSeconds: 100, startMainAt: 2350 };
   for (const timestamp of [2350, 2399, 2400, 9999]) {
-    expect(absoluteEpoch(rules, timestamp) - seasonDay(rules, timestamp)).toBe(23);
+    expect(absoluteEpoch(rules, timestamp) - seasonDay(rules, timestamp)!).toBe(23);
   }
   expect(absoluteEpoch(rules, 2400)).toBe(24);
   expect(seasonDay(rules, 2400)).toBe(1);
@@ -201,4 +202,23 @@ describe("siteReward", () => {
     expect(siteReward({ kind: "Camp", initial_guard_count: 3n })?.amount).toBe(1n);
     expect(siteReward({ kind: "FallenRealm", initial_guard_count: guard })).toBeNull();
   });
+});
+
+it("has no season day or map site before the exact start, including the start day's midnight", () => {
+  const rules = { epochSeconds: 86400, spacing: 10, startMainAt: 86400 + 3600 };
+  for (const now of [0, 86400, rules.startMainAt - 1]) {
+    expect(seasonDay(rules, now)).toBeNull();
+    expect(expeditionRealmSite(rules, 1, now)).toBeNull();
+    expect(expeditionSpireTile(rules, structure(), now)).toBeNull();
+    vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: now } as never);
+    expect(
+      structureMapPosition(
+        storeWith({ ...expeditionRules, GameRegistry: { start_main_at: BigInt(rules.startMainAt) } }),
+        structure(),
+      ),
+    ).toBeNull();
+  }
+  expect(seasonDay(rules, rules.startMainAt)).toBe(0);
+  expect(expeditionRealmSite(rules, 1, rules.startMainAt)).toEqual({ col: 5, row: 5 });
+  vi.restoreAllMocks();
 });

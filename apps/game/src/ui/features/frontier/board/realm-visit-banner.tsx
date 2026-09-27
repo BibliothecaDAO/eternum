@@ -30,10 +30,10 @@ export const RealmVisitBanner = ({ home }: { home: NativeRows["Structure"] | nul
   const visited = useVisitedRealm(visit);
   const name = usePlayerDisplayName(visit?.player) ?? "—";
   const goToStructure = useGoToStructure(setup);
-  const openRealm = (realm: NativeRows["Structure"], spectator: boolean) =>
-    void goToStructure(realm.entity_id, Position.fromContract(structureMapPosition(setup.store, realm)), false, {
-      spectator,
-    });
+  const openRealm = (realm: NativeRows["Structure"], spectator: boolean) => {
+    const site = structureMapPosition(setup.store, realm);
+    if (site) void goToStructure(realm.entity_id, Position.fromContract(site), false, { spectator });
+  };
 
   useEffect(() => {
     if (visited) openRealm(visited, true);

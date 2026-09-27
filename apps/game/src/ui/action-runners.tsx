@@ -210,7 +210,8 @@ const AutoProvisionRealms = () => {
             game_id: configManager.getActiveGameId(),
             entity_id: structure.entityId,
           });
-          if (!buildings) return [];
+          const location = structureMapPosition(store, structure.structure);
+          if (!buildings || !location) return [];
           const packedCounts = [buildings.packed_counts_1, buildings.packed_counts_2, buildings.packed_counts_3].map(
             (count) => BigInt(count ?? 0),
           );
@@ -219,7 +220,7 @@ const AutoProvisionRealms = () => {
               entityId: Number(structure.entityId),
               name: getStructureName(store, structure.structure, getIsBlitz()).name,
               provisioned: getBuildingCount(BuildingType.ResourceLabor, packedCounts) > 0,
-              location: structureMapPosition(store, structure.structure),
+              location,
             },
           ];
         });

@@ -18,14 +18,17 @@ const readInitialSelectableStructures = (setup: SetupResult, owner?: bigint): In
   const structures =
     owner === undefined ? setup.store.inGame("Structure", gameId) : setup.store.structuresOwnedBy(gameId, owner);
   return [...structures]
-    .map((structure) => {
+    .flatMap((structure) => {
       const position = structureMapPosition(setup.store, structure);
-      return {
-        entity_id: structure.entity_id,
-        coord_x: position.x,
-        coord_y: position.y,
-        category: structure.base.category,
-      };
+      if (!position) return [];
+      return [
+        {
+          entity_id: structure.entity_id,
+          coord_x: position.x,
+          coord_y: position.y,
+          category: structure.base.category,
+        },
+      ];
     })
     .sort((left, right) => left.entity_id - right.entity_id);
 };

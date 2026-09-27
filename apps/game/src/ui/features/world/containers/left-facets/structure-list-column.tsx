@@ -68,6 +68,7 @@ export const StructureListColumn = memo(() => {
       const target = playerStructures.find((structure) => structure.entityId === entityId);
       if (target?.structure) {
         const position = structureMapPosition(store, target.structure);
+        if (!position) return;
         setSelectedHex({ col: position.x, row: position.y });
         void goToStructure(entityId, Position.fromContract(position), isMapView);
       } else {

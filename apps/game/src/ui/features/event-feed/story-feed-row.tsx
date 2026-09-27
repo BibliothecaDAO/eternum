@@ -24,7 +24,8 @@ export function resolveStoryEventPosition(event: ProcessedStoryEvent, store: Nat
     if (id == null) continue;
     const key = { game_id: configManager.getActiveGameId(), entity_id: Number(id) };
     const structure = store.get("Structure", key);
-    if (structure) return Position.fromContract(structureMapPosition(store, structure));
+    const site = structure && structureMapPosition(store, structure);
+    if (site) return Position.fromContract(site);
     const army = store.get("ExplorerTroops", { game_id: key.game_id, explorer_id: key.entity_id });
     if (army) return Position.fromContract(entityMapPosition(store, army.game_id, army.explorer_id));
   }

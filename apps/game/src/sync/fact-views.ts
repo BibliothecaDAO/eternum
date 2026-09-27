@@ -95,6 +95,7 @@ const readPlayerRelics = (store: NativeFactStore, viewer: ContractAddress | null
     const relics = readRelicsOf(store, structure.entityId);
     if (relics.length === 0) return [];
     const position = structureMapPosition(store, structure.structure);
+    if (!position) return [];
     return [
       {
         entityId: structure.entityId,

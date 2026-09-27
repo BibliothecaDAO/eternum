@@ -156,11 +156,12 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
   const handleBuyArmy = async (isExplorer: boolean, troopType: TroopType, troopTier: TroopTier, troopCount: number) => {
     setIsLoading(true);
     try {
+      const home = army?.structure && structureMapPosition(store, army.structure);
       const homeDirection =
-        army?.position && army?.structure
+        army?.position && home
           ? getDirectionBetweenAdjacentHexes(
               { col: army.position.x, row: army.position.y },
-              (({ x, y }) => ({ col: x, row: y }))(structureMapPosition(store, army.structure)),
+              { col: home.x, row: home.y },
             )
           : null;
 

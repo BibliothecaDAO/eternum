@@ -27,8 +27,8 @@ export const ExpeditionRollover = () => {
   const { setup } = useGame();
   const address = useAccountStore((state) => state.account?.address ?? null);
   const navigateToMapView = useNavigateToMapView();
-  const seasonDayRef = useRef<number | null>(null);
-  const projectedDayRef = useRef<number | null>(null);
+  const seasonDayRef = useRef<number | null | undefined>(undefined);
+  const projectedDayRef = useRef<number | null | undefined>(undefined);
 
   useEffect(() => {
     const gameId = configManager.getActiveGameId();
@@ -37,16 +37,17 @@ export const ExpeditionRollover = () => {
       if (!rules) return;
       const now = useChainTimeStore.getState().getNowSeconds();
       const projectedDay = seasonDay(rules, getBlockTimestamp().currentBlockTimestamp);
-      if (projectedDayRef.current !== null && projectedDay !== projectedDayRef.current)
+      if (projectedDayRef.current !== undefined && projectedDay !== projectedDayRef.current)
         getActiveGameSyncRuntime()?.getWorldSpatialProjection()?.rebuild();
       projectedDayRef.current = projectedDay;
       const day = seasonDay(rules, now);
-      if (seasonDayRef.current === null) {
+      if (seasonDayRef.current === undefined) {
         seasonDayRef.current = day;
         return;
       }
       if (day === seasonDayRef.current) return;
       seasonDayRef.current = day;
+      if (day === null) return;
       const realm = address
         ? [...setup.store.structuresOwnedBy(gameId, BigInt(address))].find((structure) =>
             isExpeditionRealm(setup.store, structure),
@@ -56,6 +57,7 @@ export const ExpeditionRollover = () => {
       // The rollover fires on chain time, which runs ahead of the last block's timestamp, so the announced site is
       // computed for the day that is beginning rather than read through structureMapPosition's block clock.
       const site = expeditionRealmSite(rules, realm.metadata.realm_id, now);
+      if (!site) return;
       toast.info("A new expedition has begun", {
         description: describeNewExpedition(
           troopsOnHand(setup.store, realm.entity_id, getBlockTimestamp().currentDefaultTick),
