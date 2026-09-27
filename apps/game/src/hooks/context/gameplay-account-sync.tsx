@@ -7,6 +7,7 @@ import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import { DeviceRemovedError, getOrCreateDeviceKey, joinRealmsAccount } from "@bibliothecadao/eternum";
 import type { Shard } from "@bibliothecadao/eternum/game-client";
+import { IdentityRequestError } from "@realms-world/identity";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
@@ -97,4 +98,19 @@ export const isAccountStatePrompt = (provisioningError: string | null): boolean 
 // detail (an RPC dump, a transaction's params) goes to the console only.
 const ACCOUNT_SETUP_FAILED = "Your account could not be set up for this game. Try again in a moment.";
 
-const accountStateOf = (error: unknown): string | null => (error instanceof DeviceRemovedError ? DEVICE_REMOVED : null);
+const ACCOUNT_REFUSALS: Record<string, string> = {
+  device_revoked: DEVICE_REMOVED,
+  account_not_secured: "Secure your account by signing in with Discord or an email code.",
+  not_your_account: "This game account does not belong to your sign-in. Sign in to the account that owns it.",
+  device_limit: "Your account has reached its device limit. Remove an old device from Account > Devices.",
+};
+
+const accountStateOf = (error: unknown): string | null => {
+  const code =
+    error instanceof DeviceRemovedError
+      ? "device_revoked"
+      : error instanceof IdentityRequestError
+        ? error.code
+        : undefined;
+  return code ? (ACCOUNT_REFUSALS[code] ?? null) : null;
+};

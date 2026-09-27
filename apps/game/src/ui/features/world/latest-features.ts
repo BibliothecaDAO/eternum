@@ -34,6 +34,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-27",
+    title: "Clear Account Recovery Steps",
+    description: "Removed devices and account sign-in problems now explain the steps needed to play again.",
+    type: "fix",
+  },
+  {
     date: "2026-09-26",
     title: "Support feeds your realm",
     description:
