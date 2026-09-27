@@ -155,80 +155,12 @@ pub mod FaithState {
         }
     }
     #[generate_trait]
-    pub impl PrizeSettlement<
-        TContractState,
-        +HasComponent<TContractState>,
-        impl Life: ReleaseState::HasComponent<TContractState>,
-        +Drop<TContractState>,
-    > of PrizeSettlementTrait<TContractState> {
-        fn settle_faith_wonders(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-            ref story_cursor: crate::ownership::StoryCursor,
-        ) -> u32 {
-            let game = self.authorize_prizes(game_id, timestamp, game_context);
-            let (start, mut high_score, mut winners) = self.data.faith.prize_checkpoint.read(game_id);
-            let count = self.data.faith.faith_wonder_count.read(game_id);
-            let end = start + core::cmp::min(8, count - start);
-            for index in start..end {
-                let id = self.data.faith.faith_wonder_ids.read((game_id, index));
-                let mut wonder = self.data.faith.faith_wonders.read((game_id, id));
-                self.settle_wonder(game_id, id, ref wonder, game.end_at, game.end_at, ref story_cursor);
-                self.write_wonder(game_id, id, wonder);
-                if wonder.claimed_points > high_score {
-                    high_score = wonder.claimed_points;
-                    winners = 1;
-                } else if wonder.claimed_points == high_score && high_score != 0 {
-                    winners += 1;
-                }
-            }
-            self.data.faith.prize_checkpoint.write(game_id, (end, high_score, winners));
-            count - end
-        }
-        fn faith_winner_count(self: @ComponentState<TContractState>, game_id: u32, wonder_id: u32) -> u32 {
-            let (cursor, high_score, winners) = self.data.faith.prize_checkpoint.read(game_id);
-            assert!(cursor == self.data.faith.faith_wonder_count.read(game_id), "faith settlement incomplete");
-            if high_score != 0
-                && self.data.faith.faith_wonders.read((game_id, wonder_id)).claimed_points == high_score {
-                winners
-            } else {
-                0
-            }
-        }
-        fn settle_player_faith(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            player: ContractAddress,
-            wonder_id: u32,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) {
-            let game = self.authorize_prizes(game_id, timestamp, game_context);
-            assert!(player != 0.try_into().unwrap(), "invalid player");
-            self.wonder(game_id, wonder_id);
-            self.update_rates(game_id, player, wonder_id, true, 0, 0, timestamp, game.end_at);
-        }
-    }
-    #[generate_trait]
     pub impl InternalImpl<
         TContractState,
         +HasComponent<TContractState>,
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        fn authorize_prizes(
-            self: @ComponentState<TContractState>,
-            game_id: u32,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) -> crate::game::GameRegistry {
-            let game = self.authorize(game_id, timestamp, game_context);
-            self.require_started(game, timestamp);
-            assert!(game.end_at != 0 && timestamp >= game.end_at, "game not ended");
-            game
-        }
         #[inline(never)]
         fn authorize(
             self: @ComponentState<TContractState>,

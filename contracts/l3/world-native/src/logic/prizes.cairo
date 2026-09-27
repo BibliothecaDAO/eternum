@@ -20,7 +20,6 @@ pub mod PrizesLogic {
     impl FaithInternal = FaithState::InternalImpl<ContractState>;
     #[abi(embed_v0)]
     impl Faith = FaithState::FaithImpl<ContractState>;
-    impl FaithSettlement = FaithState::PrizeSettlement<ContractState>;
     component!(path: BlitzResultState, storage: blitz, event: BlitzEvent);
     #[abi(embed_v0)]
     impl BlitzResults = BlitzResultState::BlitzResultsImpl<ContractState>;

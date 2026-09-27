@@ -8,5 +8,4 @@ pub struct FaithStateStorage<TWonderFaith, TFaithfulStructure, TPlayerFaithPoint
     pub faith_players: Map<(u32, ContractAddress, u32), TPlayerFaithPoints>,
     pub faith_wonder_count: Map<u32, u32>,
     pub faith_wonder_ids: Map<(u32, u32), u32>,
-    pub prize_checkpoint: Map<u32, (u32, u128, u32)>,
 }
