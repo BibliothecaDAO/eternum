@@ -93,6 +93,7 @@ beforeAll(async () => {
     DB: proxy.env.DB,
     GUARDIAN: createGuardian(GUARDIAN_KEY),
     LAUNCH: { fetch: vi.fn(async () => Response.json({ chains: [] })) },
+    DIRECTORY_RATE_LIMIT: { limit: async () => ({ success: true }) },
     PUBLIC_RATE_LIMIT: { limit: async () => ({ success: true }) },
     SIGN_IN_CODE_RATE_LIMIT: { limit: async ({ key }) => ({ success: countSignInCode(key) <= 3 }) },
     VERSION: { id: "test", tag: "", timestamp: "" },

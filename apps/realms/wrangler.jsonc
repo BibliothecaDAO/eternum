@@ -26,6 +26,8 @@
       },
       "d1_databases": [{ "binding": "DB", "database_name": "realms-identity-staging", "migrations_dir": "migrations" }],
       "ratelimits": [
+        // 100 viewers sharing one IP, each making four polls and two history reads per minute.
+        { "name": "DIRECTORY_RATE_LIMIT", "namespace_id": "1005", "simple": { "limit": 600, "period": 60 } },
         { "name": "PUBLIC_RATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
         { "name": "SIGN_IN_CODE_RATE_LIMIT", "namespace_id": "1003", "simple": { "limit": 3, "period": 60 } },
       ],
@@ -57,6 +59,8 @@
         { "binding": "DB", "database_name": "realms-identity-production", "migrations_dir": "migrations" },
       ],
       "ratelimits": [
+        // 100 viewers sharing one IP, each making four polls and two history reads per minute.
+        { "name": "DIRECTORY_RATE_LIMIT", "namespace_id": "1006", "simple": { "limit": 600, "period": 60 } },
         { "name": "PUBLIC_RATE_LIMIT", "namespace_id": "1002", "simple": { "limit": 30, "period": 60 } },
         { "name": "SIGN_IN_CODE_RATE_LIMIT", "namespace_id": "1004", "simple": { "limit": 3, "period": 60 } },
       ],

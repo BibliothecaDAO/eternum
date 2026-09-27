@@ -86,7 +86,8 @@ export const routeIdentityRequest = async (
 /** Unauthenticated routes share one per-client budget, counted per route. */
 const withinPublicBudget = async (env: IdentityEnv, route: string, request: Request) => {
   const client = request.headers.get("cf-connecting-ip") ?? "unknown";
-  return (await env.PUBLIC_RATE_LIMIT.limit({ key: `${route}:${client}` })).success;
+  const budget = route === "directory" ? env.DIRECTORY_RATE_LIMIT : env.PUBLIC_RATE_LIMIT;
+  return (await budget.limit({ key: `${route}:${client}` })).success;
 };
 
 /** A sign-in code costs an email: each client and each address gets a few a minute. */

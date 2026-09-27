@@ -38,6 +38,8 @@ export interface IdentityEnv extends Schema.Schema.Type<typeof IdentityVars> {
   /** The launch Worker, reached by service binding only. */
   LAUNCH: { fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> };
   PUBLIC_RATE_LIMIT: RateLimit;
+  /** 100 viewers behind one NAT: four polls and two history reads each per minute. */
+  DIRECTORY_RATE_LIMIT: RateLimit;
   /** Sign-in codes sent to one email address. */
   SIGN_IN_CODE_RATE_LIMIT: RateLimit;
   /** The deployed version, so a deploy can tell its own answers from its predecessor's. */
@@ -57,6 +59,7 @@ export const decodeIdentityEnv = (raw: Record<string, unknown>): IdentityEnv => 
   GUARDIAN: raw.GUARDIAN as Guardian,
   LAUNCH: raw.LAUNCH as IdentityEnv["LAUNCH"],
   PUBLIC_RATE_LIMIT: raw.PUBLIC_RATE_LIMIT as RateLimit,
+  DIRECTORY_RATE_LIMIT: raw.DIRECTORY_RATE_LIMIT as RateLimit,
   SIGN_IN_CODE_RATE_LIMIT: raw.SIGN_IN_CODE_RATE_LIMIT as RateLimit,
   VERSION: raw.VERSION as WorkerVersionMetadata,
   SHARD_NOTIFIER: raw.SHARD_NOTIFIER as IdentityEnv["SHARD_NOTIFIER"],

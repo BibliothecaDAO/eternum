@@ -46,6 +46,7 @@ export const startWorker = async (options: {
     },
     durableObjectsPersist: join(options.storage, "do"),
     ratelimits: {
+      DIRECTORY_RATE_LIMIT: { namespace_id: "1005", simple: { limit: 600, period: 60 } },
       PUBLIC_RATE_LIMIT: { namespace_id: "1001", simple: { limit: 1000, period: 60 } },
       SIGN_IN_CODE_RATE_LIMIT: { namespace_id: "1003", simple: { limit: 1000, period: 60 } },
     },
