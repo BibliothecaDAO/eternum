@@ -19,6 +19,7 @@ import {
   receipt,
   rowEvent,
   rulesEvent,
+  schema,
   setup,
 } from "./native/fixtures";
 import type { HeraldStreamMessage } from "./stream-protocol";
@@ -91,6 +92,7 @@ const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) =>
     0,
   );
   const confirmed: RpcBlockWithReceipts = { block_number: 10, timestamp: MID_DAY, transactions: [] };
+  const pending: RpcBlockWithReceipts = { block_number: 11, timestamp: MID_DAY, transactions: [] };
   const live = new LiveWorld({
     native,
     registry: decoder.registry,
@@ -101,12 +103,12 @@ const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) =>
     confirmedFold: fold,
     homeRingView,
     rpc: {
-      getPreconfirmedHeader: async () => ({ ...confirmed, block_number: 11 }),
-      getBlockWithReceipts: async () => confirmed,
+      getPreconfirmedHeader: async () => pending,
+      getBlockWithReceipts: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
       call,
     } as unknown as MadaraRpc,
   });
-  return { live, native, decoder, fold };
+  return { live, native, decoder, fold, confirmed, pending };
 };
 
 const connect = (live: LiveWorld, actor: string) => {
@@ -126,6 +128,79 @@ const tilesIn = (messages: HeraldStreamMessage[]) =>
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe("home ring", () => {
+  it.each([false, true])(
+    "keeps only the pending position after consecutive moves (muster during stream: %s)",
+    async (musterDuringStream) => {
+      const { live, native, fold, confirmed, pending } = frontierWorld(async () => []);
+      await live.acceptSubscribedHead({ block_number: 10, timestamp: MID_DAY });
+      const occupancy = (col: number) =>
+        rowEvent("TileOccupancy", ["1", "0", String(col), "50"], {
+          entity_id: 20,
+          category: 15,
+          is_structure: false,
+        });
+      const remove = (col: number) => ({
+        ...occupancy(col),
+        keys: [
+          ...schema.games.events.find(({ name }) => name === "RowDeleted")!.prefix,
+          "1",
+          schema.models.find(({ name }) => name === "TileOccupancy")!.identity,
+        ],
+        data: ["4", "1", "0", String(col), "50"],
+      });
+      const army = (stamina: bigint) => rowEvent("ExplorerTroops", ["1", "20"], explorerValue("1", 1000n, stamina, 1n));
+      const balance = (amount: bigint) => rowEvent("ResourceBalance", ["1", "1", "23"], { balance: amount });
+      const muster = receipt([army(30n), occupancy(51), balance(10n)], "0x71");
+      if (!musterDuringStream) native.applyReceipt(fold, muster, 10, 0);
+      const messages = connect(live, "0xa");
+      const store = new NativeFactStore();
+      store.setSnapshot({ gameId: 1, actor: "0xa", complete: true, timestamp: MID_DAY });
+      let consumed = 0;
+      const applyFrames = () => {
+        for (const message of messages.slice(consumed)) {
+          if (message.type === "snapshot")
+            store.applyFacts(message.rows.map((row) => ({ ...row, model: message.model })));
+          if (message.type === "diff")
+            store.applyFacts([...message.set, ...message.del.map((row) => ({ ...row, value: null }))]);
+        }
+        consumed = messages.length;
+      };
+      if (musterDuringStream) live.acceptReceipt({ ...muster, finality_status: "PRE_CONFIRMED" });
+      const firstMove = receipt([remove(51), occupancy(52), army(20n)], "0x72");
+      const secondMove = receipt([remove(52), occupancy(53), army(10n), balance(5n)], "0x73");
+      live.acceptReceipt({ ...firstMove, finality_status: "PRE_CONFIRMED" });
+      live.acceptReceipt({ ...secondMove, finality_status: "PRE_CONFIRMED" });
+      applyFrames();
+      const assertPendingFacts = () => {
+        const positions = [...store.rows("TileOccupancy")].filter((row) => row.entity_id === 20);
+        expect(positions.map((row) => row.col)).toEqual([53]);
+        expect(store.require("ResourceBalance", { game_id: 1, entity_id: 1, resource_type: 23 }).balance).toBe(5n);
+        expect(store.require("ExplorerTroops", { game_id: 1, explorer_id: 20 }).troops.stamina).toEqual({
+          Inline: { amount: 10n, updated_tick: 1n },
+        });
+        expect(store.subscriptionScope().unknown).toBeUndefined();
+      };
+      assertPendingFacts();
+      confirmed.block_number = 11;
+      confirmed.transactions = (musterDuringStream ? [muster, firstMove] : [firstMove]).map((receipt) => ({
+        receipt,
+        transaction: { type: "INVOKE" },
+      }));
+      pending.block_number = 12;
+      pending.transactions = [{ receipt: secondMove, transaction: { type: "INVOKE" } }];
+      await live.acceptSubscribedHead({ block_number: 11, timestamp: MID_DAY });
+      applyFrames();
+      assertPendingFacts();
+      confirmed.block_number = 12;
+      confirmed.transactions = pending.transactions;
+      pending.block_number = 13;
+      pending.transactions = [];
+      await live.acceptSubscribedHead({ block_number: 12, timestamp: MID_DAY });
+      applyFrames();
+      assertPendingFacts();
+    },
+  );
+
   it("includes a post-start settlement in a watched snapshot without exposing actor-only or unwatched rows", () => {
     const { live, native, fold } = frontierWorld();
     const player = "0xbb";
@@ -380,6 +455,7 @@ describe("client and Herald subscription scope parity", () => {
       (preconfirmed) => (preconfirmed ? overlay : fold),
       () => 10,
       () => MID_DAY,
+      native.decoder.registry,
     );
     const beforeScope = fold.subscriptionScope("1", "0xa", MID_DAY);
     const beforeMuster = subscription.snapshot();
@@ -508,6 +584,7 @@ describe("client and Herald subscription scope parity", () => {
         (preconfirmed) => (preconfirmed ? overlay : fold),
         () => 10,
         () => timestamp,
+        native.decoder.registry,
       );
       const models = subscription.snapshot().models.filter(({ model }) => isClientGameSyncModel(model));
       store.applyFacts(

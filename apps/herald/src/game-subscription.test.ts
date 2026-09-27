@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { GameSyncScope } from "@bibliothecadao/eternum/game-sync-models";
 
+import { setup } from "./native/fixtures";
+
 import { GameSubscription } from "./game-subscription";
 import type { WorldFold } from "./world-fold";
 
@@ -38,12 +40,13 @@ describe("GameSubscription", () => {
       () => fold,
       () => 1,
       () => 100,
+      setup().decoder.registry,
       undefined,
       "0xbbb",
     );
     subscription.snapshot();
     subscription.project({ type: "head", block: 2, preconfirmed: true, timestamp: 100 });
-    expect(subscriptionScope).toHaveBeenCalledTimes(2);
+    expect(subscriptionScope).toHaveBeenCalledTimes(1);
     subscription.project({
       type: "diff",
       block: 2,
@@ -51,7 +54,7 @@ describe("GameSubscription", () => {
       del: [],
       set: [{ model: "PlayerEntry", key: "entry", value: { game_id: "1", player: "3003", owner: "11" } }],
     });
-    expect(subscriptionScope).toHaveBeenCalledTimes(3);
+    expect(subscriptionScope).toHaveBeenCalledTimes(2);
     expect(subscriptionScope).toHaveBeenLastCalledWith("1", "0x111", 100, "0xbbb");
   });
 
@@ -70,27 +73,28 @@ describe("GameSubscription", () => {
       () => fold,
       () => 1,
       () => now,
+      setup().decoder.registry,
     );
     subscription.snapshot();
     const head = { type: "head" as const, block: 2, preconfirmed: true, timestamp: now };
     for (let index = 0; index < 5; index++) subscription.project(head);
-    expect(subscriptionScope).toHaveBeenCalledTimes(2);
+    expect(subscriptionScope).toHaveBeenCalledTimes(1);
 
     const diff = (row: ReturnType<typeof army>) =>
       subscription.project({ type: "diff", block: 2, preconfirmed: true, set: [row], del: [] });
     diff(army("8", "80"));
     subscription.project(head);
-    expect(subscriptionScope).toHaveBeenCalledTimes(2);
+    expect(subscriptionScope).toHaveBeenCalledTimes(1);
 
     diff(army("7", "70"));
-    expect(subscriptionScope).toHaveBeenCalledTimes(3);
+    expect(subscriptionScope).toHaveBeenCalledTimes(2);
 
     now = 86_400;
     subscription.project(head);
-    expect(subscriptionScope).toHaveBeenCalledTimes(4);
+    expect(subscriptionScope).toHaveBeenCalledTimes(3);
   });
 
-  it("rebases once per lane scope change while confirmed and preconfirmed scopes alternate", () => {
+  it("rebases once while confirmed and preconfirmed scopes alternate", () => {
     const initial = expeditionScope();
     const mustered = { ...initial, expedition: { ...initial.expedition!, entities: new Set(["7", "70", "80"]) } };
     const laneScopes = new Map<boolean, GameSyncScope>([
@@ -122,6 +126,7 @@ describe("GameSubscription", () => {
       },
       () => 1,
       () => 100,
+      setup().decoder.registry,
     );
     subscription.snapshot();
     const published = [] as ReturnType<GameSubscription["project"]>;
@@ -145,8 +150,8 @@ describe("GameSubscription", () => {
     rebase(true);
     rebase(false);
 
-    // Only the initial snapshot and the two actual lane transitions rebuild a full scope snapshot.
-    expect(subscriptionSnapshot).toHaveBeenCalledTimes(3);
+    // Confirmation does not rebase a scope the overlay already published.
+    expect(subscriptionSnapshot).toHaveBeenCalledTimes(2);
     const diffs = published.filter((body) => body.type === "diff");
     expect(diffs.flatMap((body) => (body.type === "diff" ? body.del : []))).toEqual([]);
     expect(
@@ -176,6 +181,7 @@ describe("GameSubscription", () => {
       () => fold,
       () => 1,
       () => 100,
+      setup().decoder.registry,
       ring,
     );
     const snapshot = subscription.snapshot();

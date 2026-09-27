@@ -211,6 +211,7 @@ export class LiveWorld {
       (preconfirmed) => (preconfirmed ? this.overlayFold : this.confirmedFold),
       () => this.confirmedBlockValue,
       () => this.lastClockTimestamp,
+      this.input.registry,
       this.homeRing,
       visit,
     );
