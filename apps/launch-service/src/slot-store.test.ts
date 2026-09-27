@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { afterEach, beforeEach, expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { nextBlitzSlot, runLaunchSchedule } from "./schedule";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
@@ -139,4 +139,34 @@ test("the schedule freezes zero and single-player slots without inventing player
   expect(solo!.frozenAt).not.toBeNull();
   expect(solo!.registrations).toMatchObject([{ ...player("0x123"), gameNumber: 1 }]);
   expect((await launches.list("madara.blitz", "game")).map(({ name }) => name)).toEqual(["solo-1"]);
+});
+
+test("D1 rejects a late registration even when its worker clock is before the deadline", async () => {
+  const launches = new D1LaunchStore(database.db, testChain());
+  const slots = new D1SlotStore(database.db, launches);
+  await slots.create("late-write", new Date(Date.now() + 60_000).toISOString());
+  await slots.register("late-write", [player(1)]);
+  await closeSlots();
+  const realNow = Date.now();
+  const clock = vi.spyOn(Date, "now").mockReturnValue(realNow - 60_000);
+  try {
+    await expect(slots.register("late-write", [player(2)])).rejects.toThrow("closed");
+    await slots.freezeNextDue();
+    expect((await slots.list())[0]?.registrations).toMatchObject([{ ...player(1), gameNumber: 1 }]);
+  } finally {
+    clock.mockRestore();
+  }
+});
+
+test("a worker clock ahead of D1 cannot freeze an open roster", async () => {
+  const slots = new D1SlotStore(database.db, new D1LaunchStore(database.db, testChain()));
+  await slots.create("still-open", new Date(Date.now() + 60_000).toISOString());
+  const clock = vi.spyOn(Date, "now").mockReturnValue(Date.now() + 120_000);
+  try {
+    await slots.freezeNextDue();
+    await expect(slots.freeze("still-open")).rejects.toThrow("still open");
+    expect((await slots.list())[0]?.frozenAt).toBeNull();
+  } finally {
+    clock.mockRestore();
+  }
 });

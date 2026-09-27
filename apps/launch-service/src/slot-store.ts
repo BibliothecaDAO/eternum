@@ -12,10 +12,14 @@ import {
   type SlotStore,
 } from "./slots";
 
+const DATABASE_NOW = "CAST(unixepoch('subsec') * 1000 AS INTEGER)";
+const SELECT_SLOTS = `SELECT *, ${DATABASE_NOW} AS observed_at FROM playtest_slots`;
+
 interface SlotRow {
   name: string;
   closes_at: number;
   frozen_at: number | null;
+  observed_at: number;
 }
 
 interface RegistrationRow {
@@ -40,8 +44,10 @@ export class D1SlotStore implements SlotStore {
   async create(name: string, closesAt: string): Promise<PlaytestSlot> {
     const closes = Date.parse(closesAt);
     await this.db
-      .prepare("INSERT INTO playtest_slots (name, closes_at) SELECT ?1, ?2 WHERE ?2 > ?3 ON CONFLICT (name) DO NOTHING")
-      .bind(name, closes, Date.now())
+      .prepare(
+        `INSERT INTO playtest_slots (name, closes_at) SELECT ?1, ?2 WHERE ?2 > ${DATABASE_NOW} ON CONFLICT (name) DO NOTHING`,
+      )
+      .bind(name, closes)
       .run();
     const slot = await this.readSlot(name).catch((error: unknown) => {
       if (error instanceof SlotNotFound) throw new SlotConflict("Registration deadline has passed");
@@ -53,11 +59,11 @@ export class D1SlotStore implements SlotStore {
 
   async list(): Promise<PlaytestSlot[]> {
     const [slots, registrations] = await this.db.batch<SlotRow | RegistrationRow>([
-      this.db.prepare("SELECT * FROM playtest_slots ORDER BY closes_at, name"),
+      this.db.prepare(`${SELECT_SLOTS} ORDER BY closes_at, name`),
       this.db.prepare("SELECT * FROM playtest_registrations ORDER BY position"),
     ]);
     const rosters = rosterBySlot(registrations!.results as RegistrationRow[]);
-    return (slots!.results as SlotRow[]).map((row) => toSlot(row, rosters.get(row.name) ?? [], Date.now()));
+    return (slots!.results as SlotRow[]).map((row) => toSlot(row, rosters.get(row.name) ?? []));
   }
 
   async register(name: string, players: readonly SlotPlayer[]): Promise<PlaytestSlot> {
@@ -67,28 +73,27 @@ export class D1SlotStore implements SlotStore {
     }));
     if (entries.some(({ account }) => BigInt(account) === 0n)) throw new SlotConflict("Invalid roster account");
     // One round trip: the inserts (each written only while the slot is open) and the slot as they left it.
-    const now = Date.now();
     const results = await this.db.batch<SlotRow | RegistrationRow>([
-      ...entries.map((entry) => this.registration(name, entry, now)),
+      ...entries.map((entry) => this.registration(name, entry)),
       ...this.slotReads(name),
     ]);
-    const slot = slotFrom(results.slice(-2), now);
+    const slot = slotFrom(results.slice(-2));
     const registered = new Set(slot.registrations.map(({ account }) => account));
-    if (!isOpen(slot, now) || !entries.every(({ account }) => registered.has(account)))
+    if (slot.frozenAt || slot.closed || !entries.every(({ account }) => registered.has(account)))
       throw new SlotConflict("Registration is closed");
     return slot;
   }
 
   /** One registration, written only while the slot is open, after every earlier one; a repeat changes nothing. */
-  private registration(name: string, { realmsId, account }: SlotPlayer, now: number) {
+  private registration(name: string, { realmsId, account }: SlotPlayer) {
     return this.db
       .prepare(
         `INSERT INTO playtest_registrations (slot_name, realms_id, account, position)
          SELECT ?1, ?2, ?3, COALESCE((SELECT MAX(position) FROM playtest_registrations WHERE slot_name = ?1), 0) + 1
-         WHERE EXISTS (SELECT 1 FROM playtest_slots WHERE name = ?1 AND frozen_at IS NULL AND closes_at > ?4)
+         WHERE EXISTS (SELECT 1 FROM playtest_slots WHERE name = ?1 AND frozen_at IS NULL AND closes_at > ${DATABASE_NOW})
          ON CONFLICT DO NOTHING`,
       )
-      .bind(name, realmsId, account, now);
+      .bind(name, realmsId, account);
   }
 
   async freeze(name: string): Promise<PlaytestSlot> {
@@ -112,9 +117,8 @@ export class D1SlotStore implements SlotStore {
   async freezeNextDue(): Promise<void> {
     const due = await this.db
       .prepare(
-        "SELECT name FROM playtest_slots WHERE frozen_at IS NULL AND closes_at <= ? ORDER BY closes_at, name LIMIT 1",
+        `SELECT name FROM playtest_slots WHERE frozen_at IS NULL AND closes_at <= ${DATABASE_NOW} ORDER BY closes_at, name LIMIT 1`,
       )
-      .bind(Date.now())
       .first<{ name: string }>();
     if (due) await this.freeze(due.name);
   }
@@ -141,25 +145,23 @@ export class D1SlotStore implements SlotStore {
   }
 
   private async readSlot(name: string): Promise<PlaytestSlot> {
-    return slotFrom(await this.db.batch<SlotRow | RegistrationRow>(this.slotReads(name)), Date.now());
+    return slotFrom(await this.db.batch<SlotRow | RegistrationRow>(this.slotReads(name)));
   }
 
   private slotReads(name: string) {
     return [
-      this.db.prepare("SELECT * FROM playtest_slots WHERE name = ?").bind(name),
+      this.db.prepare(`${SELECT_SLOTS} WHERE name = ?`).bind(name),
       this.db.prepare("SELECT * FROM playtest_registrations WHERE slot_name = ? ORDER BY position").bind(name),
     ];
   }
 }
 
 /** A slot from the two reads of slotReads, in order. */
-const slotFrom = (results: D1Result<SlotRow | RegistrationRow>[], now: number): PlaytestSlot => {
+const slotFrom = (results: D1Result<SlotRow | RegistrationRow>[]): PlaytestSlot => {
   const row = results[0]!.results[0] as SlotRow | undefined;
   if (!row) throw new SlotNotFound("Playtest slot not found");
-  return toSlot(row, (results[1]!.results as RegistrationRow[]).map(toRegistration), now);
+  return toSlot(row, (results[1]!.results as RegistrationRow[]).map(toRegistration));
 };
-
-const isOpen = (slot: PlaytestSlot, now: number) => !slot.frozenAt && Date.parse(slot.closesAt) > now;
 
 const toRegistration = (row: RegistrationRow): SlotRegistration => ({
   realmsId: row.realms_id,
@@ -174,10 +176,10 @@ const rosterBySlot = (rows: RegistrationRow[]) => {
   return rosters;
 };
 
-const toSlot = (row: SlotRow, registrations: SlotRegistration[], now: number): PlaytestSlot => ({
+const toSlot = (row: SlotRow, registrations: SlotRegistration[]): PlaytestSlot => ({
   name: row.name,
   closesAt: new Date(row.closes_at).toISOString(),
   frozenAt: row.frozen_at === null ? null : new Date(row.frozen_at).toISOString(),
-  closed: row.closes_at <= now,
+  closed: row.closes_at <= row.observed_at,
   registrations,
 });
