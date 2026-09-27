@@ -455,9 +455,23 @@ async fn rotate_epoch(node: &impl AssignmentNode, path: &Path) -> anyhow::Result
             epoch_command(node, "reveal_randomness_epoch", secret.reveal().to_vec()).await?;
         }
     }
-    let secret = EpochSecret::create(id + 1)?;
-    secret.save(path)?;
+    let secret = next_epoch_secret(path, id)?;
     epoch_command(node, "open_randomness_epoch", vec![secret.commitment()]).await?;
+    Ok(secret)
+}
+
+/// An open may remain in the mempool after its caller times out. Keep its persisted
+/// input until the chain has advanced, including when the retry itself is refused.
+fn next_epoch_secret(path: &Path, current: u64) -> anyhow::Result<EpochSecret> {
+    if path.try_exists()? {
+        let secret = EpochSecret::load(path)?;
+        ensure!(secret.epoch <= current + 1, "epoch secret is ahead of chain");
+        if secret.epoch == current + 1 {
+            return Ok(secret);
+        }
+    }
+    let secret = EpochSecret::create(current + 1)?;
+    secret.save(path)?;
     Ok(secret)
 }
 
@@ -496,6 +510,7 @@ mod tests {
         unlandable: HashSet<Felt>,
         /// Epoch commands never land.
         stuck_epochs: bool,
+        pending_open: Option<Felt>,
         /// Actors the Games contract refuses at admission, with the reason it panics with.
         refused: HashMap<Felt, &'static str>,
     }
@@ -572,11 +587,22 @@ mod tests {
             })
         }
         async fn account_command(&self, name: &'static str, payload: Vec<Felt>) -> anyhow::Result<()> {
-            if self.0.lock().unwrap().stuck_epochs {
+            let stuck = {
+                let mut chain = self.0.lock().unwrap();
+                if chain.stuck_epochs && name == "open_randomness_epoch" {
+                    chain.pending_open.get_or_insert(payload[0]);
+                }
+                chain.stuck_epochs
+            };
+            if stuck {
                 return futures::future::pending().await;
             }
             let mut chain = self.0.lock().unwrap();
             if name == "open_randomness_epoch" {
+                if let Some(commitment) = chain.pending_open.take() {
+                    (chain.epoch, chain.commitment, chain.revealed) = (chain.epoch + 1, commitment, false);
+                    anyhow::bail!("previous epoch is unrevealed");
+                }
                 (chain.epoch, chain.commitment, chain.revealed) = (chain.epoch + 1, payload[0], false);
             } else {
                 chain.revealed = true;
@@ -918,6 +944,24 @@ mod tests {
 
     fn assigned(record: &RecordedTicket) -> (Felt, u64, u64) {
         (record.intent.game, record.envelope.order, record.envelope.epoch)
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_late_open_after_restart_keeps_the_secret_needed_to_reveal_it() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("epoch.json");
+        let chain = TestChain::default();
+        chain.0.lock().unwrap().stuck_epochs = true;
+        assert!(rotate_epoch(&chain, &path).await.is_err());
+        let original = EpochSecret::load(&path).unwrap().commitment();
+
+        // The first open lands during the restart's retry, which the chain refuses.
+        chain.0.lock().unwrap().stuck_epochs = false;
+        assert!(rotate_epoch(&chain, &path).await.is_err());
+        assert_eq!(chain.0.lock().unwrap().commitment, original);
+        assert_eq!(EpochSecret::load(&path).unwrap().commitment(), original);
+        let next = rotate_epoch(&chain, &path).await.unwrap();
+        assert_eq!(next.epoch, 2);
     }
 
     #[tokio::test]
