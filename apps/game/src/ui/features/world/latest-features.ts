@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-27",
+    title: "Retry Device List Errors",
+    description: "The Devices panel shows account lookup errors and offers a retry when it cannot load your devices.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
     title: "Clear Account Recovery Steps",
     description: "Removed devices and account sign-in problems now explain the steps needed to play again.",
     type: "fix",

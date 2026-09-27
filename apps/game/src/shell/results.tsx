@@ -25,7 +25,7 @@ const reviewedGame = (game: DirectoryGame): ReviewedGame => ({
 
 /** Recorded results, newest first: rank and victory points as the chain settled them. */
 export const ResultsPage = () => {
-  const player = useRealmsPlayer();
+  const { data: player } = useRealmsPlayer();
   const [filter, setFilter] = useState<Filter>("all");
   const mine = filter === "mine" && player !== null;
   const history = useHistory(mine ? player : null);

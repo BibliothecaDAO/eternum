@@ -120,10 +120,10 @@ export const realmsPlayerOf = (realmsId: string | undefined, guardian: GuardianI
 
 const GUARDIAN_QUERY = { queryKey: ["shell", "guardian"], queryFn: fetchGuardian, staleTime: Infinity } as const;
 
-export const useRealmsPlayer = (): string | null => {
+export const useRealmsPlayer = () => {
   const { session } = useIdentitySession();
   const guardian = useQuery({ ...GUARDIAN_QUERY, enabled: session !== null });
-  return realmsPlayerOf(session?.user.realmsId, guardian.data);
+  return { ...guardian, data: realmsPlayerOf(session?.user.realmsId, guardian.data) };
 };
 
 /**

@@ -20,7 +20,7 @@ import { useNowSeconds } from "./use-now";
  * expedition day's dial, today's rank and sites cleared from the season board, and Resume into it.
  */
 export const RealmCard = ({ season, className }: { season: DirectoryGame; className?: string }) => {
-  const player = useRealmsPlayer();
+  const { data: player } = useRealmsPlayer();
   const realm = seasonRealm(season);
   const board = useLeaderboard({ chainId: season.chainId, gameId: season.game_id });
   const now = useNowSeconds();

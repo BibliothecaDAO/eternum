@@ -46,7 +46,8 @@ const describeFailures = (verb: string, failures: DeviceShardFailure[]) =>
 
 export const DevicesPanel = ({ realmsId }: { realmsId: string }) => {
   const thisDevice = getOrCreateDeviceKey(localStorage).publicKey;
-  const address = useRealmsPlayer();
+  const player = useRealmsPlayer();
+  const address = player.data;
   const [devices, setDevices] = useState<Device[] | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
@@ -79,10 +80,12 @@ export const DevicesPanel = ({ realmsId }: { realmsId: string }) => {
     load(describeFailures("Not removed", failures));
   };
 
+  const readErrors = player.error ? ["Your account could not be read. Try again.", ...errors] : errors;
+
   return (
     <div>
       <PanelTitle>Devices</PanelTitle>
-      {devices === null && errors.length === 0 ? (
+      {devices === null && readErrors.length === 0 ? (
         <div className="text-[13px] text-gold/60">Reading devices…</div>
       ) : null}
       <div className="space-y-2">
@@ -105,7 +108,8 @@ export const DevicesPanel = ({ realmsId }: { realmsId: string }) => {
           </div>
         ))}
       </div>
-      {errors.map((message) => (
+      {player.isError ? <GhostButton onClick={() => void player.refetch()}>Retry</GhostButton> : null}
+      {readErrors.map((message) => (
         <div key={message} className="mt-2 text-[12.5px] text-danger">
           {message}
         </div>

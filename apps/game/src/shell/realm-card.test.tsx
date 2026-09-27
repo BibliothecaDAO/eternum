@@ -5,7 +5,7 @@ import { afterEach, expect, it, vi } from "vitest";
 
 vi.mock("./herald", () => ({
   useLeaderboard: () => ({ data: undefined }),
-  useRealmsPlayer: () => null,
+  useRealmsPlayer: () => ({ data: null }),
 }));
 
 import type { DirectoryGame } from "./herald";
