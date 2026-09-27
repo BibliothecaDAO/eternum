@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-27",
+    title: "Realm visits return home",
+    description:
+      "Returning to your realm clears the visit banner and army dock together. Account changes also leave the visited view.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
     title: "Chest opening recovery",
     description:
       "Confirmed chest openings recover pending relic choices after a reconnect, and clear the opening effect when its result is unavailable.",

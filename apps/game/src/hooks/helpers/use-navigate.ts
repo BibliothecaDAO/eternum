@@ -1,6 +1,8 @@
 import { useCallback } from "react";
 
-import { Position } from "@bibliothecadao/eternum";
+import { leaveRealmVisit } from "@/sync/active-game-client";
+import { useAccountStore } from "../store/use-account-store";
+import { configManager, Position } from "@bibliothecadao/eternum";
 
 import { buildPlayHref, mapRouteHex, parsePlayRoute, type PlayScene } from "@/play/navigation/play-route";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
@@ -75,6 +77,12 @@ export const useGoToStructure = (setupResult: GameClientSetup | null) => {
     isMapView: boolean,
     options?: { spectator?: boolean },
   ) => {
+    const owner = setupResult?.store.get("Structure", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: structureEntityId,
+    })?.owner;
+    const address = useAccountStore.getState().account?.address;
+    if (address && owner === BigInt(address)) leaveRealmVisit();
     setStructureEntityId(structureEntityId, {
       spectator: options?.spectator ?? false,
       worldMapPosition: targetPosition,

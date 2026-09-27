@@ -7,7 +7,8 @@ import { Eye } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager, Position, structureMapPosition } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { useEffect } from "react";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useEffect, useRef } from "react";
 
 /** The visited realm's row, once the visit's scope has brought it into the store. */
 export const useVisitedRealm = (visit: RealmVisit | null): NativeRows["Structure"] | null => {
@@ -27,6 +28,7 @@ export const useVisitedRealm = (visit: RealmVisit | null): NativeRows["Structure
 export const RealmVisitBanner = ({ home }: { home: NativeRows["Structure"] | null }) => {
   const { setup } = useGame();
   const visit = useRealmVisit();
+  const previousVisit = useRef(visit);
   const visited = useVisitedRealm(visit);
   const name = usePlayerDisplayName(visit?.player) ?? "—";
   const goToStructure = useGoToStructure(setup);
@@ -40,11 +42,23 @@ export const RealmVisitBanner = ({ home }: { home: NativeRows["Structure"] | nul
     // Once per arrival: the realm opens when its row first reaches the store.
   }, [visited?.entity_id]);
 
+  useEffect(() => {
+    if (visit) {
+      previousVisit.current = visit;
+      return;
+    }
+    if (!previousVisit.current) return;
+    if (!useUIStore.getState().isSpectating) {
+      previousVisit.current = null;
+      return;
+    }
+    if (home) {
+      previousVisit.current = null;
+      openRealm(home, false);
+    }
+  }, [visit, home]);
+
   if (!visit) return null;
-  const leave = () => {
-    leaveRealmVisit();
-    if (home) openRealm(home, false);
-  };
 
   return (
     <div
@@ -63,7 +77,7 @@ export const RealmVisitBanner = ({ home }: { home: NativeRows["Structure"] | nul
       </span>
       {/* A spectator has no realm to return to; they switch whom they watch from the season board. */}
       {home && (
-        <button type="button" onClick={leave} className="frontier-primary !h-10 !rounded-xl px-4 !text-base">
+        <button type="button" onClick={leaveRealmVisit} className="frontier-primary !h-10 !rounded-xl px-4 !text-base">
           Leave
         </button>
       )}
