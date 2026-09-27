@@ -11,6 +11,9 @@ const NAMED_REFUSALS: Record<string, string> = {
   TOO_MANY_ATTEMPTS: "Too many tries with that code. Ask for a new one.",
   too_many_codes: "Too many codes for this address. Wait a minute and ask again.",
   WALLET_LINKED_ELSEWHERE: "This wallet is linked to another Realms account.",
+  email_not_verified: "Your Discord email is not verified. Verify it in Discord, or sign in with an email code.",
+  email_not_found: "Your Discord account has no email. Add one in Discord, or sign in with an email code.",
+  account_not_linked: "This email already has a Realms account. Sign in with an email code.",
 };
 
 const FALLBACK: Record<IdentityAction, string> = {

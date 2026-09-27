@@ -1,3 +1,4 @@
+import { IdentityRequestError } from "@realms-world/identity";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
@@ -164,5 +165,6 @@ const ProgressDots = ({ step }: { step: Step }) => (
 
 const discordReturnError = (search: string): string | null => {
   const returned = new URLSearchParams(search).get("error");
-  return returned ? failureSentence("discord", new Error(returned)) : null;
+  // Discord's return carries the service's refusal code, so a refusal a retry cannot fix is named as such.
+  return returned ? failureSentence("discord", new IdentityRequestError(400, returned)) : null;
 };
