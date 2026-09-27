@@ -88,7 +88,7 @@ services:
     memswap_limit: ${HERALD_MEMORY:-6g}
     restart: on-failure
     depends_on:
-      init: { condition: service_completed_successfully }
+      init: { condition: service_completed_successfully, restart: true }
       postgres: { condition: service_healthy }
   gateway:
     image: ${SHARD_GATEWAY_IMAGE:?Use the published gateway image digest}
@@ -100,7 +100,7 @@ services:
     memswap_limit: 1g
     restart: on-failure
     depends_on:
-      init: { condition: service_completed_successfully }
+      init: { condition: service_completed_successfully, restart: true }
   rpc:
     image: ${SHARD_HERALD_IMAGE:?Use the published Herald image digest}
     entrypoint: ["/bin/sh", "-ec", "set -a; . /config/proxy.env; exec bun /app/read-rpc.js"]
@@ -114,7 +114,7 @@ services:
     memswap_limit: 256m
     restart: on-failure
     depends_on:
-      init: { condition: service_completed_successfully }
+      init: { condition: service_completed_successfully, restart: true }
 
 volumes:
   chain:

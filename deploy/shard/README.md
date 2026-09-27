@@ -111,20 +111,23 @@ docker compose run --rm --no-deps -e NEW_SEQUENCING_KEY --entrypoint /bin/sh ini
    NATIVE_AUTHORITY_FILE=/data/authority-rotated.json \
    exec bun deploy/athanor/harness/native/prepare-authority.ts "'"$SEED"'" /data/native-world.json'
 docker compose stop gateway
-# Set RANDOMNESS_ACCOUNT (the address in data/authority-rotated.json) and RANDOMNESS_PRIVATE_KEY in data/gateway.env.
-docker compose run --rm --no-deps --entrypoint cp init /data/gateway.env /gateway-config/gateway.env
 docker compose run --rm --no-deps --entrypoint /bin/sh init -ec \
   'set -a; . /data/harness.env; exec bun config/deployer/clean/cli/deploy-world.ts --seed "'"$SEED"'" \
    --manifest /data/native-world.json --identity /data/gameplay-contracts.json \
-   --submitter NEW_ACCOUNT_ADDRESS --world-address-file /data/world-address'
-docker compose up -d gateway
+   --submitter $(bun -e "console.log(require(\"/data/authority-rotated.json\").address)") \
+   --world-address-file /data/world-address'
+mv data/authority.json data/authority-leaked.json
+mv data/authority-rotated.json data/authority.json
+docker compose run --rm --no-deps init
+docker compose up -d --no-deps gateway
 ```
 
 The new key and the host deployer, the authority's administrator as at initialization, are assigned after `harness.env`
 is sourced, so nothing a shard file carries can replace them, and prepare-authority refuses a key equal to the one
 `data/authority.json` records: a rotation that keeps the leaked key stops before any transaction. The deploy command
 sees the submitter differ from the deployed one and applies it with `set_authentication` as the authority; any other
-difference stops it before a transaction.
+difference stops it before a transaction. `data/authority.json` is the shard's one record of its submitter: once it
+names the new account, initialization renders the gateway's configuration from it on this and every later start.
 
 `docker compose stop` retains state. Starting the same package again audits the existing deployment. Changing the
 release is a separate operator action; never recreate genesis for an existing shard. CI publishes immutable images and
@@ -159,7 +162,9 @@ only once its restore test passes.
 A restored chain resumes at the captured head, and blocks sealed after the capture are lost, so recovery from a backup
 is the last resort after the node's own restart. To recover, stop the package, extract `chain.tar.zst` and
 `gateway.tar.zst` into its `chain` and `gateway` volumes and `data.tar.zst` into `data/`, extract `base.tar` into its
-`postgres` volume owned by the image's `postgres` user, and start the package with the images `capture.json` names.
+`postgres` volume owned by the image's `postgres` user, and start the package with the images `capture.json` names. The
+configuration volumes need nothing: every start renders each service's configuration from `data/` and publishes it
+again, so a new host with fresh volumes starts the same as the old one.
 
 ## Operations: register a preset
 
@@ -205,9 +210,8 @@ hotfix() {
 # 1. Register once and write the release-to-schema map. Existing games keep their pins.
 hotfix
 
-# 2. Update Herald with that manifest BEFORE applying to any game.
-docker compose run --rm --no-deps --entrypoint /bin/sh init -ec \
-  'cp /data/native-world.json /public/native-world.json; chmod 0644 /public/native-world.json'
+# 2. Update Herald with that manifest BEFORE applying to any game: initialization publishes it from data/.
+docker compose run --rm --no-deps init
 docker compose up -d --no-deps --force-recreate herald
 curl --fail https://herald.example.org/health
 curl --fail https://herald.example.org/manifest

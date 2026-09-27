@@ -1,3 +1,4 @@
+from contextlib import redirect_stdout
 import io
 import importlib.util
 import json
@@ -27,6 +28,14 @@ def configuration():
     }
 
 
+def load_package_script(name):
+    """A script the shard package ships in deploy/shard, loaded as a module."""
+    spec = importlib.util.spec_from_file_location(f"shard_{name}", shard.ROOT / f"deploy/shard/{name}.py")
+    script = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(script)
+    return script
+
+
 class ShardTest(unittest.TestCase):
     def test_resource_and_target_validation_precedes_deployment(self):
         config = configuration()
@@ -49,9 +58,7 @@ class ShardTest(unittest.TestCase):
                 shard.validate_configuration({**config, key: value}, allowed)
 
     def test_package_init_retains_the_actual_node_evidence(self):
-        spec = importlib.util.spec_from_file_location("shard_init", shard.ROOT / "deploy/shard/init.py")
-        package = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(package)
+        package = load_package_script("init")
         config = configuration()
         values = {
             "CHAIN_ID": "COMMUNITY", "GUARDIAN_URL": config["guardian_url"],
@@ -72,9 +79,7 @@ class ShardTest(unittest.TestCase):
             self.assertEqual(saved["MADARA_CONTAINER"], "community-madara-1")
 
     def test_package_init_refuses_a_preset_outside_the_release_catalogue(self):
-        spec = importlib.util.spec_from_file_location("shard_init", shard.ROOT / "deploy/shard/init.py")
-        package = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(package)
+        package = load_package_script("init")
         facts = {"presets": {"2": "0x2", "3": "0x3", "5": "0x5", "101": "0x65"}}
         self.assertEqual(package.requested_presets({"PRESETS": "2,5"}, facts), {2: "0x2", 5: "0x5"})
         with self.assertRaisesRegex(ValueError, r"Presets \[1\] are not in this release's catalogue"):
@@ -83,17 +88,13 @@ class ShardTest(unittest.TestCase):
             package.requested_presets({"PRESETS": ""}, facts)
 
     def test_package_init_refuses_a_preset_whose_chain_commitment_is_not_the_release(self):
-        spec = importlib.util.spec_from_file_location("shard_init", shard.ROOT / "deploy/shard/init.py")
-        package = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(package)
+        package = load_package_script("init")
         self.assertEqual(package.chain_commitment(2, "0x02", "0x2"), "0x02")
         with self.assertRaisesRegex(ValueError, "Preset 2 commits to 0x3 on chain; this release's facts say 0x2"):
             package.chain_commitment(2, "0x3", "0x2")
 
     def test_package_backup_restores_the_node_without_its_collector_and_names_missing_tables(self):
-        spec = importlib.util.spec_from_file_location("shard_backup", shard.ROOT / "deploy/shard/backup.py")
-        backup = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(backup)
+        backup = load_package_script("backup")
         args = ["--base-path=/data", "--otel-collector-endpoint=http://metrics:4317", "--otel-export-metrics=true",
                 "--db-fsync"]
         self.assertEqual(backup.restored_node_args(args), ["--base-path=/data", "--db-fsync"])
@@ -102,9 +103,7 @@ class ShardTest(unittest.TestCase):
         self.assertEqual(backup.missing_tables(live, {"public.games": 5}), ["public.heads"])
 
     def test_package_backup_refuses_a_file_that_changed_after_capture(self):
-        spec = importlib.util.spec_from_file_location("shard_backup", shard.ROOT / "deploy/shard/backup.py")
-        backup = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(backup)
+        backup = load_package_script("backup")
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             (directory / "herald.dump").write_bytes(b"dump")
@@ -115,9 +114,7 @@ class ShardTest(unittest.TestCase):
                 backup.verify_checksums(directory)
 
     def test_package_init_derives_the_trusted_proxy_only_behind_loopback_bindings(self):
-        spec = importlib.util.spec_from_file_location("shard_init", shard.ROOT / "deploy/shard/init.py")
-        package = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(package)
+        package = load_package_script("init")
         routes = ("Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\n"
                   "eth0\t00000000\t0170A8C0\t0003\t0\t0\t0\t00000000\n"
                   "eth0\t0070A8C0\t00000000\t0001\t0\t0\t0\t00F0FFFF\n")
@@ -274,7 +271,9 @@ class ShardTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             (directory / "gameplay-contracts.json").write_text(json.dumps({"operatorAccountAddress": "0x1"}))
-            shard.write_gateway_environment({"player_capacity": 96}, directory, {"RANDOMNESS_PRIVATE_KEY": "0x2"}, "0x3", "0x4")
+            (directory / "authority.json").write_text(json.dumps({"address": "0x3", "signingKey": "0x2"}))
+            (directory / "native-world.json").write_text(json.dumps({"world": {"address": "0x4"}}))
+            shard.write_gateway_environment({"player_capacity": 96}, directory)
             gateway = dict(line.split("=", 1) for line in (directory / "gateway.env").read_text().splitlines())
             [target] = shard.collector_configuration()["receivers"]["prometheus"]["config"]["scrape_configs"][0][
                 "static_configs"][0]["targets"]
@@ -356,6 +355,92 @@ class ShardTest(unittest.TestCase):
                         self.assertEqual(call.args[0][-2:], [str(output / name / "compose.json"), "stop"])
                         result = json.loads((output / name / "matrix-result.json").read_text())
                         self.assertEqual(result["passed"], failure is None)
+
+
+class PackageStartTest(unittest.TestCase):
+    """An initialized shard's data/ started on configuration volumes that hold nothing: a backup restored on a new
+    host."""
+
+    def setUp(self):
+        self.package = load_package_script("init")
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        self.data = root / "data"
+        self.volumes = {name: root / name for name in ("PUBLIC", "HERALD_CONFIG", "GATEWAY_CONFIG", "POSTGRES_CONFIG")}
+        for volume in self.volumes.values():
+            volume.mkdir()
+        self.write_initialized_data()
+        self.environ = {
+            "CHAIN_ID": "COMMUNITY", "GUARDIAN_URL": "https://identity.test/api/guardian",
+            "PUBLIC_RPC_URL": "https://rpc.test/rpc/v0_10_2", "PUBLIC_ADMISSION_URL": "https://admission.test",
+            "PLAYER_CAPACITY": "16", "MADARA_IMAGE": NODE_IMAGE, "MADARA_CONTAINER": "community-madara-1",
+            "TRUSTED_PROXY": "172.18.0.1",
+        }
+        for name, volume in self.volumes.items():
+            self.enterContext(patch.object(self.package, name, volume))
+        self.enterContext(patch.object(self.package, "DATA", self.data))
+        self.enterContext(patch.object(shard, "wait_for_endpoint"))
+        self.enterContext(patch.object(shard, "run"))
+
+    def write_initialized_data(self):
+        self.data.mkdir(mode=0o700)
+        files = {
+            "host-keys.json": {"deployerAddress": "0x789", "deployerPrivateKey": "0xabc", "sequencingPrivateKey": "0xdef"},
+            "native-world.json": {"shard": {"chainId": "0x1"}, "world": {"address": "0x4"}},
+            "gameplay-contracts.json": {"operatorAccountAddress": "0x1"},
+            "authority.json": {"address": "0x3", "signingKey": "0xdef"},
+            "initialized.json": {"chainId": "0x1", "world": "0x4"},
+            # A record written before init kept only identity: operational settings beside it are ignored.
+            "init-configuration.json": {"shard": "community", "chain_id": "COMMUNITY", "port_base": 0,
+                                        "guardian_url": "https://identity.test/api/guardian", "player_capacity": 16,
+                                        "madara_image": NODE_IMAGE, "public_rpc_url": "https://rpc.test/rpc/v0_10_2"},
+        }
+        for name, value in files.items():
+            (self.data / name).write_text(json.dumps(value))
+        (self.data / "chain-config.yaml").write_text('chain_id: "COMMUNITY"\n')
+        shard.write_private_environment(self.data / "postgres.env", {
+            "POSTGRES_USER": "herald", "POSTGRES_DB": "herald", "POSTGRES_PASSWORD": "restored-password",
+        })
+
+    def start(self, **settings):
+        with patch.dict(shard.os.environ, {**self.environ, **settings}), redirect_stdout(io.StringIO()):
+            config = self.package.configuration()
+            self.package.prepare(config)
+            self.package.deploy(config, {})
+
+    def published(self, volume, name):
+        return self.volumes[volume] / name
+
+    def test_every_service_configuration_is_published_from_data_on_fresh_volumes(self):
+        self.start()
+        for volume, name in (("PUBLIC", "chain-config.yaml"), ("PUBLIC", "collector.json"), ("PUBLIC", "proxy.env"),
+                             ("PUBLIC", "native-world.json"), ("PUBLIC", "gameplay-contracts.json"),
+                             ("HERALD_CONFIG", "herald.env"), ("GATEWAY_CONFIG", "gateway.env")):
+            with self.subTest(name=name):
+                self.assertTrue(self.published(volume, name).exists())
+        self.assertEqual(self.published("POSTGRES_CONFIG", "postgres-password").read_text(), "restored-password")
+        herald = shard.read_private_environment(self.published("HERALD_CONFIG", "herald.env"))
+        self.assertIn(":restored-password@", herald["DATABASE_URL"])
+
+    def test_operational_settings_change_on_restart_and_identity_never_does(self):
+        self.start()
+        self.start(PLAYER_CAPACITY="200", MADARA_IMAGE="ghcr.io/madara-alliance/madara@sha256:" + "e" * 64,
+                   PUBLIC_RPC_URL="https://rpc.moved.test/rpc/v0_10_2")
+        gateway = shard.read_private_environment(self.published("GATEWAY_CONFIG", "gateway.env"))
+        self.assertEqual(gateway["GATEWAY_PLAYER_CAPACITY"], "200")
+        herald = shard.read_private_environment(self.published("HERALD_CONFIG", "herald.env"))
+        self.assertEqual(herald["HERALD_PUBLIC_RPC_URL"], "https://rpc.moved.test/rpc/v0_10_2")
+        for settings in ({"CHAIN_ID": "OTHER"}, {"GUARDIAN_URL": "https://other.test/api/guardian"}):
+            with self.subTest(settings=settings), self.assertRaisesRegex(ValueError, "never reinitialize"):
+                self.start(**settings)
+
+    def test_the_gateway_signs_as_the_submitter_authority_json_records(self):
+        self.start()
+        (self.data / "authority.json").write_text(json.dumps({"address": "0x7", "signingKey": "0x8"}))
+        self.start()
+        gateway = shard.read_private_environment(self.published("GATEWAY_CONFIG", "gateway.env"))
+        self.assertEqual((gateway["RANDOMNESS_ACCOUNT"], gateway["RANDOMNESS_PRIVATE_KEY"]), ("0x7", "0x8"))
 
 
 if __name__ == "__main__":

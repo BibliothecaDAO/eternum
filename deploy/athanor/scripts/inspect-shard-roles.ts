@@ -16,10 +16,11 @@ const [directory, rpcUrl] = process.argv.slice(2);
 if (!directory || !rpcUrl) throw new Error("Usage: bun inspect-shard-roles.ts RUN_DIRECTORY RPC_URL");
 const provider = new RpcProvider({ nodeUrl: rpcUrl });
 const manifest = readShardManifest<NativeWorldManifest>(resolve(directory, "native-world.json"));
-const host: { deployer: { address: string; publicKey: string; classHash: string }; sequencingPublicKey: string } =
-  readJson("host-accounts.json");
+const host: { deployer: { address: string; publicKey: string; classHash: string } } = readJson("host-accounts.json");
 const identity: { operatorAccountAddress: string } = readJson("gameplay-contracts.json");
-const authority: { address: string } = readJson("authority.json");
+// The shard's current submitter: the genesis sequencing account, or the one a rotation replaced it with.
+const authority: { address: string; signingKey: string } = readJson("authority.json");
+const sequencingPublicKey = ec.starkCurve.getStarkKey(authority.signingKey);
 
 await assertProviderChain(provider, manifest, "RPC_URL");
 await assertGenesisHasNoAccounts();
@@ -71,7 +72,7 @@ async function assertHostKeys(): Promise<void> {
     },
     "latest",
   );
-  equal(sequencingKey, host.sequencingPublicKey, "sequencing key");
+  equal(sequencingKey, sequencingPublicKey, "sequencing key");
   const operator = identity.operatorAccountAddress;
   equal(await provider.getClassHashAt(operator, "latest"), manifest.shard.accountClassHash, "operator class");
   equal(await storage(operator, "guardian_public_key"), manifest.shard.guardianPublicKey, "operator guardian");
@@ -85,7 +86,7 @@ async function assertHostKeys(): Promise<void> {
   );
   equal(device, "0x1", "operator device");
   if (
-    [host.deployer.publicKey, host.sequencingPublicKey].some(
+    [host.deployer.publicKey, sequencingPublicKey].some(
       (key) => BigInt(key) === BigInt(manifest.shard.guardianPublicKey),
     )
   ) {

@@ -118,6 +118,10 @@ def write_json(path, value):
     path.write_text(json.dumps(value, indent=2) + "\n")
 
 
+def read_private_environment(path):
+    return dict(line.split("=", 1) for line in path.read_text().splitlines())
+
+
 def write_private_environment(path, values):
     if any("\n" in str(value) for value in values.values()):
         raise ValueError("environment values must occupy one line")
@@ -259,7 +263,6 @@ def deploy_world(config, directory, environment):
     bun(prepare, seed, environment["NATIVE_WORLD_MANIFEST"], name="authority-bind")
     bun("config/deployer/clean/cli/deploy-world.ts", *command, "--inspect", name="world-inspect")
     environment["DEPLOYER_ACCOUNT_ADDRESS"] = identity["operatorAccountAddress"]
-    return authority
 
 
 def deployment_environment(config, directory):
@@ -311,13 +314,16 @@ def collector_configuration():
     }
 
 
+# Rendered on every start from the shard's settings; the database password is the one secret made here, once.
 def prepare_runtime_files(directory, environment):
     (directory / "metrics").mkdir(mode=0o700, exist_ok=True)
     write_json(directory / "collector.json", collector_configuration())
-    password = secrets.token_hex(24)
-    write_private_environment(directory / "postgres.env", {
-        "POSTGRES_USER": "herald", "POSTGRES_DB": "herald", "POSTGRES_PASSWORD": password,
-    })
+    database = directory / "postgres.env"
+    if not database.exists():
+        write_private_environment(database, {
+            "POSTGRES_USER": "herald", "POSTGRES_DB": "herald", "POSTGRES_PASSWORD": secrets.token_hex(24),
+        })
+    password = read_private_environment(database)["POSTGRES_PASSWORD"]
     write_private_environment(directory / "herald.env", {
         "PORT": "3003", "HERALD_RPC_URL": "http://madara:9944/rpc/v0_10_2",
         "HERALD_PUBLIC_RPC_URL": environment["HERALD_PUBLIC_RPC_URL"],
@@ -327,12 +333,14 @@ def prepare_runtime_files(directory, environment):
     })
 
 
-# The gateway starts once the world exists: it signs as the sequencing account for that world, and
-# reserves the operator's administrative work beside the players' capacity.
-def write_gateway_environment(config, directory, environment, authority, world):
+# The gateway starts once the world exists: it signs as the sequencing account authority.json records for that
+# world, and reserves the operator's administrative work beside the players' capacity.
+def write_gateway_environment(config, directory):
+    authority = json.loads((directory / "authority.json").read_text())
+    world = json.loads((directory / "native-world.json").read_text())["world"]["address"]
     write_private_environment(directory / "gateway.env", {
-        "RANDOMNESS_ACCOUNT": authority, "RANDOMNESS_DEPLOYMENT": world,
-        "RANDOMNESS_PRIVATE_KEY": environment["RANDOMNESS_PRIVATE_KEY"],
+        "RANDOMNESS_ACCOUNT": authority["address"], "RANDOMNESS_DEPLOYMENT": world,
+        "RANDOMNESS_PRIVATE_KEY": authority["signingKey"],
         "RANDOMNESS_EPOCH_SECRET": "/data/game-epoch-secret.json", "RUST_LOG": "info",
         "GATEWAY_LISTEN": "0.0.0.0:9950", "GATEWAY_METRICS_LISTEN": "0.0.0.0:9951",
         "GATEWAY_MAX_CONNECTIONS": admission_connections(config),
@@ -521,7 +529,7 @@ def run_matrix(matrix, directory):
         result = {"passed": False}
         try:
             start_shard(config, target)
-            private = dict(line.split("=", 1) for line in (target / "harness.env").read_text().splitlines())
+            private = read_private_environment(target / "harness.env")
             environment = {**os.environ, **private, "HARNESS_OUTPUT_DIRECTORY": str(target / "workload")}
             capture_hosts(target, environment, matrix["live"], "start")
             run_workload(command, target, environment, budget)

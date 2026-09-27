@@ -14,6 +14,13 @@ sys.path.insert(0, str(ROOT / "deploy/athanor/scripts"))
 import shard
 
 DATA = Path("/data")
+# Each service's config volume. It holds only copies of files in DATA, republished on every start, so a backup of
+# DATA restores onto fresh volumes on a new host.
+PUBLIC, HERALD_CONFIG = Path("/public"), Path("/herald-config")
+GATEWAY_CONFIG, POSTGRES_CONFIG = Path("/gateway-config"), Path("/postgres-config")
+# The settings that fix the shard's identity. The rest (node image, capacity, public URLs) are operational and are
+# rendered again on every start.
+IDENTITY = ("shard", "chain_id", "guardian_url")
 # The release this image deploys, baked at build by deploy/release/facts.ts.
 RELEASE_FACTS = Path("/release/release-facts.json")
 
@@ -67,7 +74,7 @@ def trusted_proxy(environ, route_table):
 # gateway.
 def publish_trusted_proxy():
     proxy = trusted_proxy(os.environ, Path("/proc/net/route").read_text())
-    target = Path("/public/proxy.env")
+    target = PUBLIC / "proxy.env"
     target.write_text(f"GATEWAY_TRUSTED_PROXY={proxy}\nRPC_TRUSTED_PROXY={proxy}\n" if proxy else "")
     target.chmod(0o644)
 
@@ -83,27 +90,48 @@ def prepare(config):
     DATA.chmod(0o700)
     record = DATA / "init-configuration.json"
     if record.exists():
-        if json.loads(record.read_text()) != config:
-            raise ValueError("Existing shard configuration differs; never reinitialize its identity")
-        return
+        refuse_changed_identity(json.loads(record.read_text()), config)
+    else:
+        initialize_identity(config)
+    publish_prepared_config(config)
+    shard.write_json(record, identity(config))
+
+
+def identity(config):
+    return {key: config[key] for key in IDENTITY}
+
+
+def refuse_changed_identity(recorded, config):
+    if identity(recorded) != identity(config):
+        raise ValueError("Existing shard configuration differs; never reinitialize its identity")
+
+
+def initialize_identity(config):
     if (DATA / "host-keys.json").exists():
         raise ValueError("Incomplete initialization: inspect the data directory before retrying")
     shard.run(["bun", "deploy/athanor/scripts/host-accounts.ts", "initialize", str(DATA)], DATA, "host-accounts-initialize")
-    env = environment(config)
-    shard.initialize_shard_identity(config, DATA, env["DEPLOYER_ACCOUNT_ADDRESS"])
-    shard.prepare_runtime_files(DATA, env)
-    values = dict(line.split("=", 1) for line in (DATA / "postgres.env").read_text().splitlines())
-    password = Path("/postgres-config/postgres-password")
-    password.write_text(values["POSTGRES_PASSWORD"])
+    shard.initialize_shard_identity(config, DATA, environment(config)["DEPLOYER_ACCOUNT_ADDRESS"])
+
+
+def publish_prepared_config(config):
+    shard.prepare_runtime_files(DATA, environment(config))
+    password = POSTGRES_CONFIG / "postgres-password"
+    password.write_text(shard.read_private_environment(DATA / "postgres.env")["POSTGRES_PASSWORD"])
     password.chmod(0o644)
-    publish("chain-config.yaml", "/public")
-    publish("collector.json", "/public")
-    publish("herald.env", "/herald-config")
-    shard.write_json(record, config)
+    publish("chain-config.yaml", PUBLIC)
+    publish("collector.json", PUBLIC)
+    publish("herald.env", HERALD_CONFIG)
+
+
+def publish_deployed_config(config):
+    shard.write_gateway_environment(config, DATA)
+    publish("gateway.env", GATEWAY_CONFIG)
+    publish("native-world.json", PUBLIC)
+    publish("gameplay-contracts.json", PUBLIC)
 
 
 def publish(name, destination):
-    target = Path(destination) / name
+    target = destination / name
     shutil.copyfile(DATA / name, target)
     target.chmod(0o644)
 
@@ -114,10 +142,10 @@ def deploy(config, presets):
     complete = DATA / "initialized.json"
     if complete.exists():
         shard.run(["bun", "deploy/athanor/scripts/inspect-shard-roles.ts", str(DATA), env["RPC_URL"]], DATA, "shard-roles", env)
-        publish("gameplay-contracts.json", "/public")
         record = json.loads(complete.read_text())
     else:
         record = deploy_world_once(config, env)
+    publish_deployed_config(config)
     record["presets"] = register_presets(env, presets)
     shard.write_json(complete, record)
     print(complete.read_text())
@@ -125,14 +153,10 @@ def deploy(config, presets):
 
 def deploy_world_once(config, env):
     shard.run(["bun", "deploy/athanor/scripts/host-accounts.ts", "deploy", str(DATA)], DATA, "host-account-deploy", env)
-    authority = shard.deploy_world(config, DATA, env)
+    shard.deploy_world(config, DATA, env)
     shard.run(["bun", "deploy/athanor/scripts/inspect-shard-roles.ts", str(DATA), env["RPC_URL"]], DATA, "shard-roles", env)
-    manifest = json.loads((DATA / "native-world.json").read_text())
-    shard.write_gateway_environment(config, DATA, env, authority, manifest["world"]["address"])
-    publish("gateway.env", "/gateway-config")
-    publish("native-world.json", "/public")
-    publish("gameplay-contracts.json", "/public")
     shard.save_harness_environment(DATA, env)
+    manifest = json.loads((DATA / "native-world.json").read_text())
     return {"chainId": manifest["shard"]["chainId"], "world": manifest["world"]["address"]}
 
 
