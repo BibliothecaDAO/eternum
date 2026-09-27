@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
-import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { signOutIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { forgetDeviceKey } from "@bibliothecadao/eternum";
 
@@ -13,7 +13,6 @@ const buttonClass =
 /** A device removed from the account signs in again, as a new device with a fresh key. */
 export const AccountStatePrompt = () => {
   const state = useAccountStore((store) => store.provisioningError);
-  const applySession = useIdentitySessionStore((store) => store.applySession);
   const requestSignIn = useRequestSignIn();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,8 +33,7 @@ export const AccountStatePrompt = () => {
   const signInAgain = () =>
     run(async () => {
       forgetDeviceKey(localStorage);
-      await identityClient.signOut();
-      applySession(null);
+      await signOutIdentitySession();
       requestSignIn();
     });
 

@@ -3,7 +3,8 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 
-const { joinRealmsAccount } = vi.hoisted(() => ({
+const { identity, joinRealmsAccount } = vi.hoisted(() => ({
+  identity: { session: { user: { realmsId: "0xabc" } } as { user: { realmsId: string } } | null },
   joinRealmsAccount: vi.fn(async (_input: { shard: { chainId: string }; realmsId: string }) => ({ address: "0xacc" })),
 }));
 vi.mock("@bibliothecadao/eternum", () => ({
@@ -16,12 +17,14 @@ vi.mock("@bibliothecadao/eternum/game-client", () => ({
 }));
 vi.mock("@/hooks/context/identity-session", () => ({
   identityClient: { approveDeviceChange: vi.fn() },
-  useIdentitySession: () => ({ session: { user: { realmsId: "0xabc" } } }),
+  useIdentitySession: () => identity,
 }));
 vi.mock("@/runtime/world/shards", () => ({
   requireOpenShard: async (chainId: string) => ({ chainId, rpcUrl: "https://rpc.test", accountClassHash: "0x3" }),
 }));
 vi.mock("@/utils/cached-rpc-provider", () => ({ getCachedRpcProvider: () => ({}) }));
+
+import { useAccountStore } from "@/hooks/store/use-account-store";
 
 import { GameplayAccountSync } from "./gameplay-account-sync";
 
@@ -42,6 +45,7 @@ async function openAt(path: string) {
 
 afterEach(() => {
   joinRealmsAccount.mockClear();
+  identity.session = { user: { realmsId: "0xabc" } };
   window.history.pushState({}, "", "/");
 });
 
@@ -55,4 +59,12 @@ it("joins the game's shard when the player enters it to play", async () => {
   await openAt("/g/0xa1/1");
   expect(joinRealmsAccount).toHaveBeenCalledOnce();
   expect(joinRealmsAccount.mock.calls[0][0]).toMatchObject({ shard: { chainId: "0xa1" }, realmsId: "0xabc" });
+});
+
+it("clears the gameplay signer when the identity session is absent", async () => {
+  await openAt("/g/0xa1/1");
+  expect(useAccountStore.getState().account).not.toBeNull();
+  identity.session = null;
+  await openAt("/");
+  expect(useAccountStore.getState()).toMatchObject({ account: null, owner: null });
 });

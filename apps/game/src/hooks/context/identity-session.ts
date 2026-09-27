@@ -1,3 +1,4 @@
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { createIdentityClient, profileOfIdentityUser, type Session } from "@realms-world/identity";
 import { useEffect } from "react";
 import { create } from "zustand";
@@ -34,7 +35,10 @@ export const identityUsername = (session: Session | null): string | null =>
 export const useIdentitySessionStore = create<IdentitySessionStore>()((set) => ({
   status: "loading",
   session: null,
-  applySession: (session) => set({ session, status: resolveStatus(session) }),
+  applySession: (session) => {
+    if (!session) useAccountStore.getState().setGameplayAccount(null, null);
+    set({ session, status: resolveStatus(session) });
+  },
   refresh: async () => {
     try {
       const session = await identityClient.getSession();

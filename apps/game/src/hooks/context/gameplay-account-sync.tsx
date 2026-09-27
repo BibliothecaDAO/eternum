@@ -56,7 +56,11 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const realmsId = session?.user.realmsId;
-    if (!realmsId || !shard) return;
+    if (!realmsId) {
+      setGameplayAccount(null, null);
+      return;
+    }
+    if (!shard) return;
     let active = true;
     setGameplayAccount(null, null);
     joinRealmsAccount({
