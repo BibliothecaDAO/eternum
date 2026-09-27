@@ -581,6 +581,7 @@ export const GameEntryModal = ({
     audience: isSpectateMode ? "spectator" : "player",
     signedIn: sessionStatus === "signed-in",
     foundingFailed: settleStage === "error",
+    blitzEntry,
   });
 
   return (

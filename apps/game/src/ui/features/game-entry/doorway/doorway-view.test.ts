@@ -75,7 +75,7 @@ describe("the doorway", () => {
 
   it("offers watching when a Blitz has no seat for the player", () => {
     expect(
-      doorwayView({ source: "entry", phase: "spectate", audience: "player", signedIn: true }).offersSpectating,
-    ).toBe(true);
+      doorwayView({ source: "entry", phase: "spectate", audience: "player", signedIn: true }).spectating?.label,
+    ).toBe("Watch");
   });
 });

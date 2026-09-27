@@ -54,15 +54,18 @@ export const DoorwayScreen = ({
         <Track view={view} />
         {view.blocker ? (
           <Blocker blocker={view.blocker} onRetry={onRetry} onSignIn={onSignIn} />
-        ) : view.offersSpectating && onSpectate ? (
-          <button
-            type="button"
-            onClick={onSpectate}
-            className="frontier-primary flex w-full items-center justify-center gap-2"
-          >
-            <Eye className="size-7" />
-            Watch
-          </button>
+        ) : view.spectating && onSpectate ? (
+          <div className="flex w-full flex-col gap-3">
+            <p className="text-center text-sm">{view.spectating.sentence}</p>
+            <button
+              type="button"
+              onClick={onSpectate}
+              className="frontier-primary flex w-full items-center justify-center gap-2"
+            >
+              <Eye className="size-7" />
+              {view.spectating.label}
+            </button>
+          </div>
         ) : null}
         {children}
       </div>

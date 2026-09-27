@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-27",
+    title: "Clear Blitz watch entry",
+    description:
+      "The doorway explains when you are outside the roster or a game has ended, and offers Review for finished games.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
     title: "Castle visible during entry",
     description:
       "The doorway shows your realm's castle from the start, using the level already known in the game directory.",

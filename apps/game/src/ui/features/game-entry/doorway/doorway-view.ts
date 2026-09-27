@@ -1,6 +1,6 @@
 import type { PlayRouteBootPhase } from "@/game-entry/play-route-boot";
 
-import type { GameEntryModalPhase } from "../game-entry-phase";
+import type { BlitzEntry, GameEntryModalPhase } from "../game-entry-phase";
 
 /** The doorway's track (design o5): the player's account, their realm, the world map, then play. */
 export type DoorwayStep = "account" | "realm" | "map" | "play";
@@ -16,7 +16,7 @@ export interface DoorwayView {
   steps: { step: DoorwayStep; state: StepState }[];
   blocker: DoorwayBlocker | null;
   /** A Blitz the player is not on offers watching instead of a track to follow. */
-  offersSpectating: boolean;
+  spectating: { label: "Watch" | "Review"; sentence: string } | null;
 }
 
 /** The entry's side of the doorway: before the game's route, while the account and the realm come to be. */
@@ -27,6 +27,7 @@ interface EntrySide {
   signedIn: boolean;
   /** Founding the realm failed; its detail is in the console. */
   foundingFailed?: boolean;
+  blitzEntry?: BlitzEntry | null;
 }
 
 /** The play route's side: the world map booting, then the hand-off to play. */
@@ -58,7 +59,7 @@ export const doorwayView = (side: EntrySide | BootSide): DoorwayView => {
   return {
     steps: steps.map((step) => ({ step, state: stepState(step, at.step, at.done) })),
     blocker: at.blocker,
-    offersSpectating: at.offersSpectating,
+    spectating: at.spectating,
   };
 };
 
@@ -66,18 +67,18 @@ interface Place {
   step: DoorwayStep;
   done: boolean;
   blocker: DoorwayBlocker | null;
-  offersSpectating: boolean;
+  spectating: { label: "Watch" | "Review"; sentence: string } | null;
 }
 
 const place = (step: DoorwayStep, overrides: Partial<Place> = {}): Place => ({
   step,
   done: false,
   blocker: null,
-  offersSpectating: false,
+  spectating: null,
   ...overrides,
 });
 
-const entryPlace = ({ phase, signedIn, foundingFailed = false }: EntrySide): Place => {
+const entryPlace = ({ phase, signedIn, foundingFailed = false, blitzEntry }: EntrySide): Place => {
   switch (phase) {
     case "loading":
       return place("account");
@@ -88,7 +89,13 @@ const entryPlace = ({ phase, signedIn, foundingFailed = false }: EntrySide): Pla
     case "settlement":
       return place("realm", { blocker: foundingFailed ? REALM_NOT_FOUNDED : null });
     case "spectate":
-      return place("account", { offersSpectating: true });
+      return place("account", {
+        done: true,
+        spectating:
+          blitzEntry === "review"
+            ? { label: "Review", sentence: "This game has ended. Its results are final." }
+            : { label: "Watch", sentence: "You are not on this game’s roster. You can watch." },
+      });
     case "ready":
       // The realm stands; the entry now hands over to the game's route, where the map boots.
       return place("map");
