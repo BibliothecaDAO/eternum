@@ -113,3 +113,25 @@ describe("the registrar's launch step", () => {
     });
   });
 });
+
+test("three interrupted attempts fail before execution and release the queue", async () => {
+  const stuck = await store.enqueue("game", request);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    expect(await store.startNext(Date.now())).toMatchObject({ id: stuck.id, attempts: attempt });
+  }
+  const next = await store.enqueue("game", { ...request, gameName: "bltz-next" });
+  let executions = 0;
+  const services = Layer.mergeAll(
+    databaseLayer(store),
+    Layer.succeed(LaunchExecutor, {
+      execute: (run) => {
+        executions++;
+        return Effect.fail(new LaunchExecutionFailure({ runId: run.id, cause: new Error("should not execute") }));
+      },
+    }),
+  );
+  await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(services)));
+  expect(executions).toBe(0);
+  expect(await store.failed()).toMatchObject([{ id: stuck.id, errorMessage: "Launch interrupted after 3 attempts" }]);
+  expect(await store.startNext(Date.now())).toMatchObject({ id: next.id, attempts: 1 });
+});

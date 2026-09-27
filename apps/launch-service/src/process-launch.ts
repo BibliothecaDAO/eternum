@@ -13,6 +13,12 @@ export const processNextLaunch = (now: number) =>
     const executor = yield* LaunchExecutor;
     const run = yield* databaseOperation("start launch", () => store.startNext(now));
     if (!run) return false;
+    if (run.attempts > MAX_ATTEMPTS) {
+      const message = `Launch interrupted after ${run.attempts - 1} attempts`;
+      yield* databaseOperation("fail interrupted launch", () => store.fail(run.id, message));
+      yield* Effect.logError("launch_failed", { runId: run.id, error: message });
+      return true;
+    }
 
     yield* Effect.logInfo("launch_started", { runId: run.id, kind: run.kind, name: run.name, attempt: run.attempts });
 
