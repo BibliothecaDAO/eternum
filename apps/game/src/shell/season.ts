@@ -4,7 +4,7 @@ import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 import type { DirectoryGame } from "./herald";
 
 /** The player's realm in the season: the structure the directory lists for them, if they have founded one. */
-export const seasonRealm = (season: DirectoryGame) =>
+export const seasonRealm = (season: Pick<DirectoryGame, "player_state">) =>
   season.player_state?.structures.find((structure) => isRealmCategory(structure.category));
 
 /**

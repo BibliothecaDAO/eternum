@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-27",
+    title: "Castle visible during entry",
+    description:
+      "The doorway shows your realm's castle from the start, using the level already known in the game directory.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
     title: "Consistent player portraits",
     description:
       "Players without a chosen portrait show the same stock portrait in the game, profiles, standings, and podium.",

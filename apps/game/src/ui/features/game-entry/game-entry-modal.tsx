@@ -24,7 +24,8 @@ import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { BlitzPreparing } from "@/shell/blitz-preparing";
 import { TimeLeftChip } from "@/shell/live-chips";
 import { getRealmNameById } from "@bibliothecadao/eternum";
-import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
+import { seasonRealm } from "@/shell/season";
+import { realmStill } from "@/shell/mode-art";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import { type DoorwayRealm, DoorwayScreen } from "./doorway/doorway-screen";
 import { doorwayView } from "./doorway/doorway-view";
@@ -625,6 +626,6 @@ export const GameEntryModal = ({
 
 /** The player's realm on the entry side, from the game's directory row: its name, before the game's store has it. */
 const entryRealm = (game: HeraldGameDirectoryEntry | null): DoorwayRealm | null => {
-  const realm = game?.player_state?.structures.find((structure) => isRealmCategory(structure.category));
-  return realm ? { name: getRealmNameById(realm.realm_id), emblem: null, still: null } : null;
+  const realm = game ? seasonRealm(game) : undefined;
+  return realm ? { name: getRealmNameById(realm.realm_id), emblem: null, still: realmStill(realm.level) } : null;
 };

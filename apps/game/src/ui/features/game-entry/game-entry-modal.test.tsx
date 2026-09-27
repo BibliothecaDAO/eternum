@@ -18,6 +18,7 @@ vi.mock("@/hooks/use-game-entry", () => ({
       name: "frontier-staging",
       mode: "frontier",
       dev_mode_on: false,
+      player_state: { structures: [{ entity_id: 7, category: 1, realm_id: 3098, level: 2 }] },
       clock: { start_settling_at: now - 60, start_main_at: now - 60, end_at: now + 3_600 },
     };
     return { data: entry, error: null };
@@ -27,6 +28,7 @@ vi.mock("@/runtime/world/herald-pre-session-reader", () => ({
   fetchSettlementSnapshot: async () => null,
 }));
 
+import { realmStill } from "@/shell/mode-art";
 import { GameEntryModal } from "./game-entry-modal";
 
 afterEach(() => vi.restoreAllMocks());
@@ -55,6 +57,7 @@ it("renders spectator entry before any head without reading the chain clock", as
   );
   try {
     expect(container.querySelector("[aria-label='Entering the game']")).not.toBeNull();
+    expect(container.querySelector(`img[src="${realmStill(2)}"]`)).not.toBeNull();
     expect(useChainTimeStore.getState().nowMs).toBeNull();
     expect(() => getBlockTimestamp()).toThrow("Chain time is not known yet");
   } finally {
