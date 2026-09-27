@@ -49,6 +49,7 @@ jobs:
           import fnmatch, json, os, subprocess
           # The integration branch and next run every area: a hand-kept path map can miss an import, and a push
           # measured from its predecessor would let a red area turn green on a later push that never touched it.
+          # .github/scripts/landing-run.sh lets a publish path trust only these runs.
           landing = os.environ["EVENT"] == "push" and os.environ["BRANCH"] in ("native-world-foundation", "next")
           files = subprocess.check_output(["git", "diff", "--name-only", "-z", os.environ["BASE_SHA"], os.environ["HEAD_SHA"]]).decode().split("\0")
           shared = [".github/workflows/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]

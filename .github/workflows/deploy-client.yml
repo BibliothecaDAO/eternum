@@ -26,7 +26,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Production serves players, so it publishes only a commit whose landing validation run is green.
+  validated:
+    if: inputs.environment == 'production'
+    uses: ./.github/workflows/landing-validated.yml
+    permissions:
+      actions: read
+      contents: read
+
   deploy:
+    needs: validated
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: ${{ inputs.environment }}

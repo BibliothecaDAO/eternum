@@ -30,6 +30,9 @@ jobs:
       - name: Check the diff base keeps every unlanded commit in scope
         run: bash .github/scripts/diff-base.test.sh
 
+      - name: Check that only a landing validation run validates a publish
+        run: bash .github/scripts/landing-run.test.sh
+
       - name: Check committed env files name no third-party RPC
         run: |
           node --test scripts/check-committed-env-rpc.test.mjs
