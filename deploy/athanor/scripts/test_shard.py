@@ -113,6 +113,28 @@ class ShardTest(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "herald.dump does not match its checksum"):
                 backup.verify_checksums(directory)
 
+    def test_package_backup_stops_no_node_while_another_command_holds_the_box_lock(self):
+        backup = load_package_script("backup")
+        with tempfile.TemporaryDirectory() as temporary:
+            lock = Path(temporary) / "isolated-stack.lock"
+            holders = []
+
+            def capture(*_):
+                holders.append(lock.read_text().split()[:3])
+                return {}
+
+            command = ["capture", "athanor-smoke", temporary, f"{temporary}/backup"]
+            with patch.object(backup, "LOCK", lock), patch.object(backup, "capture", side_effect=capture), \
+                 patch.object(backup.os, "geteuid", return_value=0), patch.object(backup.os, "umask"), \
+                 redirect_stdout(io.StringIO()):
+                with shard.isolated_stack_lock("deploy staging", lock):
+                    with self.assertRaisesRegex(RuntimeError, "is held: deploy staging"):
+                        backup.main(command)
+                self.assertEqual(holders, [])
+                backup.main(command)
+            self.assertEqual(holders, [["backup", "capture", "athanor-smoke"]])
+            self.assertFalse(lock.exists())
+
     def test_package_init_derives_the_trusted_proxy_only_behind_loopback_bindings(self):
         package = load_package_script("init")
         routes = ("Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\n"

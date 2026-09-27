@@ -7,13 +7,15 @@ from decimal import Decimal
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import time
 from urllib.request import Request, urlopen
 
 
 LIVE_BUDGET_PATH = Path(__file__).resolve().parents[1] / "live-budget.json"
 SLICE = Path("/sys/fs/cgroup/athanor.slice")
-LOCK = Path("/opt/athanor/isolated-stack.lock")
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "deploy/shard"))
+from stack_lock import LOCK
 
 
 def read_json(url, payload=None):

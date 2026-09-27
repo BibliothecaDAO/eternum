@@ -135,7 +135,8 @@ this archive from `shard-v*` tags; it does not deploy a box or change a live hos
 
 ## Operations: back up and restore
 
-`backup.py` ships beside this file. Run it as root on the host, naming the package's compose project and data directory:
+`backup.py` ships beside this file with the `stack_lock.py` it imports. Run it as root on the host, naming the package's
+compose project and data directory; on a host with `/opt/athanor` it holds the isolated-stack lock while it runs:
 
 ```sh
 sudo python3 backup.py capture "$COMPOSE_PROJECT_NAME" ./data /backup/<shard>-<utc time>
