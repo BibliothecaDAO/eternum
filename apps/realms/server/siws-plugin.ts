@@ -2,12 +2,10 @@ import type { AuthContext, BetterAuthPlugin, Session, User } from "better-auth";
 import { APIError, createAuthEndpoint, sessionMiddleware } from "better-auth/api";
 import { z } from "zod";
 
-import { normalizeStarknetAddress, parseSiwsTypedData, type SiwsTypedData } from "@realms-world/identity";
+import { normalizeStarknetAddress, parseSiwsTypedData } from "@realms-world/identity";
 
 import { authorizeSiwsNonce, SiwsVerificationError } from "./siws-verification";
-
-/** Checks a wallet's signature over the typed message; on mainnet this is the wallet contract's own check. */
-export type VerifyWalletSignature = (message: SiwsTypedData, signature: string[], address: string) => Promise<boolean>;
+import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-signature";
 
 interface SiwsPluginOptions {
   /** The app's origin: a signed message must name its host. */
@@ -60,6 +58,8 @@ export const siws = (options: SiwsPluginOptions) => {
           })) === 1,
       });
     } catch (error) {
+      if (error instanceof WalletNotDeployedError)
+        throw new APIError("BAD_REQUEST", { code: "WALLET_NOT_DEPLOYED", message: "WALLET_NOT_DEPLOYED" });
       if (error instanceof SiwsVerificationError) throw unauthorized(error.message);
       throw unauthorized("Something went wrong. Please try again later.");
     }

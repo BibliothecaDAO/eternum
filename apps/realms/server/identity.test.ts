@@ -7,7 +7,7 @@ import { getPlatformProxy } from "wrangler";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { createIdentityAuth } from "./auth";
-import type { VerifyWalletSignature } from "./siws-plugin";
+import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-signature";
 import type { IdentityEnv } from "./env";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
@@ -50,7 +50,7 @@ const createWallet = (): string => {
   return address;
 };
 // The wallet contract's own check runs on mainnet; this one checks the same signature over the same message hash.
-const verifyAsMainnet: VerifyWalletSignature = async (message, signature, address) => {
+const verifyAsMainnet = vi.fn<VerifyWalletSignature>(async (message, signature, address) => {
   const privateKey = walletKeys.get(BigInt(address).toString(16));
   if (!privateKey || signature.length !== 2) return false;
   const hash = typedData.getMessageHash(message as unknown as TypedData, address);
@@ -59,7 +59,7 @@ const verifyAsMainnet: VerifyWalletSignature = async (message, signature, addres
     hash,
     ec.starkCurve.getPublicKey(privateKey),
   );
-};
+});
 
 beforeAll(async () => {
   proxy = await getPlatformProxy<{ DB: D1Database }>({ environment: "staging", persist: false });
@@ -771,6 +771,22 @@ describe("identity Worker", () => {
       "SELECT count(*) AS count FROM verification WHERE identifier LIKE 'siws_%'",
     ).first<{ count: number }>();
     expect(after!.count).toBe(before!.count + 1);
+  });
+
+  it("names an undeployed wallet without linking it or consuming its nonce", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "undeployed-wallet@realms.test");
+    const address = createWallet();
+    verifyAsMainnet.mockRejectedValueOnce(new WalletNotDeployedError("Wallet is not deployed"));
+    const refused = await proveWallet(browser, address, "link");
+    expect(refused.status).toBe(400);
+    expect(await refused.json()).toMatchObject({ code: "WALLET_NOT_DEPLOYED" });
+    expect((await browser.session())!.user.address).toBeNull();
+    expect(
+      await env.DB.prepare("SELECT count(*) AS count FROM verification WHERE identifier = ?")
+        .bind(`siws_0x${BigInt(address).toString(16)}`)
+        .first<number>("count"),
+    ).toBe(1);
   });
 
   it("refuses to link a wallet that already belongs to another Realms account", async () => {

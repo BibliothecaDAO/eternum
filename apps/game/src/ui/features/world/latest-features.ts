@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-27",
+    title: "Wallet Deployment Guidance",
+    description: "Linking an undeployed wallet explains how to deploy it on Starknet mainnet before trying again.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
     title: "Blitz Stays In View",
     description:
       "Your registered slot stays visible while its game launches. Ended games remain available to watch until their results are recorded.",

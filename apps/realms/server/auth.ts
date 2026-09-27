@@ -8,13 +8,13 @@ import {
   SIGN_IN_CODE_SECONDS,
   suggestedNameOf,
 } from "@realms-world/identity";
-import { RpcProvider, verifyMessageInStarknet } from "starknet";
 
 import type { IdentityEnv } from "./env";
 import { isNameTaken } from "./names";
 import { realmsIdOf } from "./realms-id";
 import { resendSignInCodes, type SendSignInCode } from "./sign-in-codes";
-import { siws, type VerifyWalletSignature } from "./siws-plugin";
+import { siws } from "./siws-plugin";
+import { verifyWalletOnMainnet, type VerifyWalletSignature } from "./wallet-signature";
 
 const DAY_SECONDS = 24 * 60 * 60;
 
@@ -25,20 +25,9 @@ interface IdentityServices {
 }
 
 const identityServicesOf = (env: Pick<IdentityEnv, "IDENTITY_RPC_URL" | "RESEND_API_KEY">): IdentityServices => ({
-  verifyWalletSignature: verifyOnMainnet(env.IDENTITY_RPC_URL),
+  verifyWalletSignature: verifyWalletOnMainnet(env.IDENTITY_RPC_URL),
   sendSignInCode: resendSignInCodes(env.RESEND_API_KEY),
 });
-
-/** Mainnet wallets verify their own signatures; the identity RPC asks the wallet contract. */
-const verifyOnMainnet =
-  (rpcUrl: string): VerifyWalletSignature =>
-  (message, signature, address) =>
-    verifyMessageInStarknet(
-      new RpcProvider({ nodeUrl: rpcUrl }),
-      message as unknown as Parameters<typeof verifyMessageInStarknet>[1],
-      signature,
-      address,
-    );
 
 /**
  * A new user's id is fixed here and never changes: the Realms id derives from it and places the player's account on

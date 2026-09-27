@@ -10,6 +10,8 @@ const NAMED_REFUSALS: Record<string, string> = {
   OTP_EXPIRED: "That code has expired. Ask for a new one.",
   TOO_MANY_ATTEMPTS: "Too many tries with that code. Ask for a new one.",
   too_many_codes: "Too many codes for this address. Wait a minute and ask again.",
+  WALLET_NOT_DEPLOYED:
+    "This wallet is not deployed on Starknet mainnet. Deploy it in your wallet app, then link it again.",
   WALLET_LINKED_ELSEWHERE: "This wallet is linked to another Realms account.",
   email_not_verified: "Your Discord email is not verified. Verify it in Discord, or sign in with an email code.",
   email_not_found: "Your Discord account has no email. Add one in Discord, or sign in with an email code.",
