@@ -1,4 +1,4 @@
-import { fetchHeraldLeaderboard, type GameRef } from "@bibliothecadao/eternum/shard";
+import { fetchHeraldLeaderboard, type GameRef, type Shard } from "@bibliothecadao/eternum/shard";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -45,12 +45,7 @@ export const fetchDirectories = async (player: string | null): Promise<ShardDire
     (shard): shard is DirectoryShard & { status: "active" | "draining" } => shard.status !== "retired",
   );
   const pasted = listPastedShards().filter((shard) => !listed.some((entry) => entry.url === shard.url));
-  const pastedDirectories = await Promise.all(
-    pasted.map((shard) => readShardDirectory(shard.chainId, player).then((directory) => ({ shard, directory }))),
-  );
-  const pastedGames = pastedDirectories.flatMap(({ shard, directory }) =>
-    directory.games.map((game) => ({ ...game, chainId: shard.chainId })),
-  );
+  const { games: pastedGames, failures: readFailures } = await readPastedDirectories(pasted, player);
   return {
     games: [
       ...listed.flatMap((shard) => (shard.games ?? []).map((game) => ({ ...game, chainId: shard.chainId }))),
@@ -68,7 +63,7 @@ export const fetchDirectories = async (player: string | null): Promise<ShardDire
         url: shard.url,
         chainId: shard.chainId,
         status: "pasted" as const,
-        available: true,
+        available: !readFailures.some((failure) => failure.url === shard.url),
       })),
     ],
     failures: [
@@ -76,8 +71,32 @@ export const fetchDirectories = async (player: string | null): Promise<ShardDire
         .filter((shard) => shard.games === null)
         .map((shard) => ({ url: shard.url, error: new Error("unavailable right now") })),
       ...pastedFailures,
+      ...readFailures,
     ],
   };
+};
+
+/** One unreadable pasted Herald contributes a failure, while every healthy sibling still contributes its games. */
+const readPastedDirectories = async (pasted: readonly Shard[], player: string | null) => {
+  const pastedDirectories = await Promise.allSettled(
+    pasted.map((shard) => readShardDirectory(shard.chainId, player).then((directory) => ({ shard, directory }))),
+  );
+  const readFailures = pastedDirectories.flatMap((result, index) =>
+    result.status === "rejected"
+      ? [
+          {
+            url: pasted[index].url,
+            error: result.reason instanceof Error ? result.reason : new Error(String(result.reason)),
+          },
+        ]
+      : [],
+  );
+  const pastedGames = pastedDirectories.flatMap((result) =>
+    result.status === "fulfilled"
+      ? result.value.directory.games.map((game) => ({ ...game, chainId: result.value.shard.chainId }))
+      : [],
+  );
+  return { games: pastedGames, failures: readFailures };
 };
 
 interface GuardianIdentity {

@@ -10,15 +10,18 @@ vi.mock("@/runtime/world/shards", () => ({
 vi.mock("@bibliothecadao/eternum/shard", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum/shard")>()),
   // A pasted shard's own Herald answers with every game it has, finished ones included.
-  fetchHeraldGameDirectory: async () => ({
-    chain: "0xc",
-    confirmed_block: 1,
-    games: [
-      { game_id: 7, status: "Live", clock: { end_at: 900 } },
-      { game_id: 5, status: "Settled", clock: { end_at: 500 } },
-      { game_id: 6, status: "Settled", clock: { end_at: 600 } },
-    ],
-  }),
+  fetchHeraldGameDirectory: async (shard: { chainId: string }) => {
+    if (shard.chainId === "0xdead") throw new Error("Herald answered 503");
+    return {
+      chain: "0xc",
+      confirmed_block: 1,
+      games: [
+        { game_id: 7, status: "Live", clock: { end_at: 900 } },
+        { game_id: 5, status: "Settled", clock: { end_at: 500 } },
+        { game_id: 6, status: "Settled", clock: { end_at: 600 } },
+      ],
+    };
+  },
 }));
 
 import { type DirectoryGame, fetchDirectories, nextOpenGame, realmsPlayerOf } from "./herald";
@@ -104,4 +107,19 @@ it("points the player at a game they can enter now, a live Frontier season first
   // A season still being prepared cannot be entered yet.
   expect(nextOpenGame([{ ...season, ready: false }, registering])?.game_id).toBe(2);
   expect(nextOpenGame([othersBlitz])).toBeUndefined();
+});
+
+it("keeps listed games and healthy pasted games when one pasted directory fails", async () => {
+  pasted.shards = [
+    { url: "https://pasted.test", chainId: "0xc" },
+    { url: "https://down.test", chainId: "0xdead" },
+  ];
+  try {
+    const directory = await fetchDirectories(null);
+    expect(directory.games.map((game) => game.chainId)).toEqual(["0xa", "0xc"]);
+    expect(directory.failures).toMatchObject([{ url: "https://down.test", error: new Error("Herald answered 503") }]);
+    expect(directory.shards.find((shard) => shard.chainId === "0xdead")?.available).toBe(false);
+  } finally {
+    pasted.shards = [];
+  }
 });
