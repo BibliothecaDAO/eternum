@@ -52,7 +52,7 @@ describe("runner config", () => {
     [["--game-id", "1", "--signer", "none"], {}, "--shard-url (or SHARD_URL"],
     [["--signer", "none"], FULL_ENV, "Missing --game-id or --game-name"],
     [["--game-id", "1"], FULL_ENV, "Missing --signer"],
-    [["--game-id", "1", "--signer", "key"], FULL_ENV, "--gameplay-private-key (or GAMEPLAY_PRIVATE_KEY"],
+    [["--game-id", "1", "--signer", "key"], FULL_ENV, "Missing GAMEPLAY_PRIVATE_KEY"],
     [
       ["--game-id", "1", "--signer", "key"],
       { ...FULL_ENV, GAMEPLAY_PRIVATE_KEY: "0x9" },
@@ -75,16 +75,10 @@ describe("runner config", () => {
       IDENTITY_URL: "https://identity.example/api",
       OPERATOR_TOKEN: "operator",
     });
-    const key = resolve([
-      "--game-id",
-      "1",
-      "--signer",
-      "key",
-      "--gameplay-private-key",
-      "0xb",
-      "--gameplay-account-address",
-      "0xc",
-    ]);
+    const key = resolve(["--game-id", "1", "--signer", "key", "--gameplay-account-address", "0xc"], {
+      ...FULL_ENV,
+      GAMEPLAY_PRIVATE_KEY: "0xb",
+    });
 
     expect(bot.signer).toEqual({ mode: "bot", identityUrl: "https://identity.example/api", operatorToken: "operator" });
     expect(() =>
@@ -92,4 +86,16 @@ describe("runner config", () => {
     ).toThrow("Missing OPERATOR_TOKEN");
     expect(key.signer).toEqual({ mode: "key", gameplayPrivateKey: "0xb", gameplayAccountAddress: "0xc" });
   });
+});
+
+it("rejects gameplay secrets in argv even when an environment key is available", () => {
+  expect(() =>
+    resolve(
+      ["--game-id", "1", "--signer", "key", "--gameplay-private-key", "0xb", "--gameplay-account-address", "0xc"],
+      {
+        ...FULL_ENV,
+        GAMEPLAY_PRIVATE_KEY: "0xd",
+      },
+    ),
+  ).toThrow();
 });

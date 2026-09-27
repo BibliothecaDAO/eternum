@@ -47,7 +47,6 @@ const FLAGS = {
   "game-name": { type: "string" },
   signer: { type: "string" },
   "identity-url": { type: "string" },
-  "gameplay-private-key": { type: "string" },
   "gameplay-account-address": { type: "string" },
   "data-dir": { type: "string" },
   "model-profile": { type: "string" },
@@ -120,10 +119,7 @@ const resolveSigner = (args: RunnerArgs, env: Env): RunnerSigner => {
     case "key":
       return {
         mode,
-        gameplayPrivateKey: requireValue(args, env, {
-          flag: "gameplay-private-key",
-          envVars: ["GAMEPLAY_PRIVATE_KEY"],
-        }),
+        gameplayPrivateKey: requireEnvironment(env, "GAMEPLAY_PRIVATE_KEY"),
         gameplayAccountAddress: requireValue(args, env, {
           flag: "gameplay-account-address",
           envVars: ["GAMEPLAY_ACCOUNT_ADDRESS"],

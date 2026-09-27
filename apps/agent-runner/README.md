@@ -35,13 +35,14 @@ to be ready; it does not register or settle a player itself.
 A live run streams from OpenRouter and needs `OPENROUTER_API_KEY`; `--model-profile cheap|balanced|strong` picks the
 model (`src/model-profiles.ts`). Flags win over environment variables; every flag is listed in `src/config.ts`.
 
-| Environment variable                               | Flag                                                   | Meaning                                         |
-| -------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------- |
-| `SHARD_URL`                                        | `--shard-url`                                          | The shard's Herald; its manifest names the rest |
-| `GAMEPLAY_PRIVATE_KEY`, `GAMEPLAY_ACCOUNT_ADDRESS` | `--gameplay-private-key`, `--gameplay-account-address` | Key mode                                        |
-| `OPENROUTER_API_KEY`                               |                                                        | Live model calls (read by pi-ai)                |
-| `MODEL_PROFILE`                                    | `--model-profile`                                      | `cheap`, `balanced` (default), or `strong`      |
-| `AGENT_DATA_DIR`                                   | `--data-dir`                                           | Agent files; default `./.agent-data/<game id>`  |
+| Environment variable       | Flag                         | Meaning                                         |
+| -------------------------- | ---------------------------- | ----------------------------------------------- |
+| `SHARD_URL`                | `--shard-url`                | The shard's Herald; its manifest names the rest |
+| `GAMEPLAY_PRIVATE_KEY`     | —                            | Key mode; environment only                      |
+| `GAMEPLAY_ACCOUNT_ADDRESS` | `--gameplay-account-address` | Key mode                                        |
+| `OPENROUTER_API_KEY`       |                              | Live model calls (read by pi-ai)                |
+| `MODEL_PROFILE`            | `--model-profile`            | `cheap`, `balanced` (default), or `strong`      |
+| `AGENT_DATA_DIR`           | `--data-dir`                 | Agent files; default `./.agent-data/<game id>`  |
 
 The data dir holds `soul.md` and `skills/` (seeded from `templates/`), `memory/notes.md`, `reports.jsonl`, `directions/`
 (drop a `*.md` to direct the agent), `debug/tool-responses.log`, and `runs/<run id>.json`, the manifest.
