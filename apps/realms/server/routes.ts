@@ -33,6 +33,9 @@ export const routeIdentityRequest = async (
     return json({ error: sendsCode ? "too_many_codes" : "too_many_attempts" }, 429);
   }
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
+  if (requiresSameOrigin(request, pathname) && request.headers.get("origin") !== new URL(env.BASE_URL).origin) {
+    return json({ error: "invalid_origin" }, 403);
+  }
   if (pathname === "/api/devices" && request.method === "POST") {
     return handleDeviceChange(request, {
       auth,
@@ -104,3 +107,15 @@ const withinSignInBudget = async (env: IdentityEnv, request: Request, sendsCode:
 };
 
 const isOperator = (env: IdentityEnv, request: Request) => presentsOperatorToken(request, env.OPERATOR_TOKEN);
+
+/** Cookie authority is accepted only from the app itself; operator endpoints authenticate a bearer token below. */
+const requiresSameOrigin = (request: Request, pathname: string): boolean => {
+  const operatorRoute = ["/api/devices/bots", "/api/directory/shards", "/api/directory/shards/status"].includes(
+    pathname,
+  );
+  if (operatorRoute) return false;
+  return (
+    !["GET", "HEAD", "OPTIONS"].includes(request.method) ||
+    request.headers.get("upgrade")?.toLowerCase() === "websocket"
+  );
+};
