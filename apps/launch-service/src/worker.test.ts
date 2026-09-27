@@ -78,7 +78,7 @@ it("opens a Blitz window, ticks the schedule, queues an authorized launch and re
   const window = {
     // A second ahead: a phase cannot start in the past, and the next slot must close after the window opens.
     startsAt: new Date(Math.ceil(Date.now() / 1_000) * 1_000 + 1_000).toISOString(),
-    endsAt: new Date(Date.now() + 3 * 86_400_000).toISOString(),
+    endsAt: new Date(Math.ceil(Date.now() / 1_000) * 1_000 + 3 * 86_400_000).toISOString(),
   };
   const opened = await mf.dispatchFetch(`${ORIGIN}/api/factory/calendar/blitz`, {
     method: "PUT",

@@ -21,9 +21,12 @@ export default {
   async scheduled(_controller: ScheduledController, rawEnv: Record<string, unknown>): Promise<void> {
     const env = decodeLaunchEnv(rawEnv);
     const { launches, slots, calendar } = launchStoresOf(env);
-    await Effect.runPromise(runLaunchSchedule(launches, slots, calendar, new Date()));
-    // The backstop: whatever a tick queued, and anything due that no queueing path armed, runs now.
-    await registrarOf(env).armFor(Date.now());
+    try {
+      await Effect.runPromise(runLaunchSchedule(launches, slots, calendar, new Date()));
+    } finally {
+      // Wake queued work even when a schedule step or its calendar read failed.
+      await registrarOf(env).armFor(Date.now());
+    }
   },
 };
 

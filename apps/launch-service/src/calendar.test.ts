@@ -83,3 +83,29 @@ test("a phase moves until it starts; a started Frontier season keeps its start a
   const next = { phase: "frontier" as const, startsAt: "2027-04-01T00:00:00.000Z", endsAt: "2027-08-01T00:00:00.000Z" };
   expect(await calendar.set(next, Date.parse("2027-03-02T00:00:00Z"))).toEqual(next);
 });
+
+test("a malformed stored Frontier season cannot stop Blitz creation or freezing", async () => {
+  const { launches, slots, calendar, tick } = stores();
+  await calendar.set(
+    { phase: "frontier", startsAt: "2027-01-01T00:00:00.500Z", endsAt: "2027-02-01T00:00:00Z" },
+    Date.now(),
+  );
+  await calendar.set({ phase: "blitz", startsAt: "2027-01-01T00:00:00Z", endsAt: "2027-02-01T00:00:00Z" }, Date.now());
+  await slots.create("due", new Date(Date.now() + 60_000).toISOString());
+  await slots.register("due", [{ realmsId: null, account: "0x123" }]);
+  await database.db.prepare("UPDATE playtest_slots SET closes_at = 0").run();
+  await tick(at("2027-01-02T00:00:00Z"));
+  expect((await slots.list()).map(({ name }) => name)).toContain("blitz-20270102-1100");
+  expect((await launches.list("madara.blitz")).map(({ name }) => name)).toContain("due-1");
+});
+
+test("a conflicting timetable slot cannot stop a due roster from freezing", async () => {
+  const { launches, slots, calendar, tick } = stores();
+  await calendar.set({ phase: "blitz", startsAt: "2027-01-01T00:00:00Z", endsAt: "2027-02-01T00:00:00Z" }, Date.now());
+  await slots.create("due", new Date(Date.now() + 60_000).toISOString());
+  await slots.register("due", [{ realmsId: null, account: "0x123" }]);
+  await database.db.prepare("UPDATE playtest_slots SET closes_at = 0").run();
+  await slots.create("blitz-20270102-1100", "2027-01-02T10:00:00Z");
+  await tick(at("2027-01-02T00:00:00Z"));
+  expect((await launches.list("madara.blitz")).map(({ name }) => name)).toContain("due-1");
+});

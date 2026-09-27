@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Result } from "effect";
 import { isRunning, type CalendarStore, type SeasonPhase } from "./calendar";
 import { frontierSeasonRequest } from "./schemas";
 import type { SlotStore } from "./slots";
@@ -12,15 +12,25 @@ import { databaseOperation, type LaunchServiceStore } from "./store";
  */
 export const runLaunchSchedule = (store: LaunchServiceStore, slots: SlotStore, calendar: CalendarStore, now: Date) =>
   Effect.gen(function* () {
-    const phases = yield* databaseOperation("read the season calendar", () => calendar.list());
-    const frontier = phases.find(({ phase }) => phase === "frontier");
-    if (frontier && isRunning(frontier, now.getTime()))
-      yield* databaseOperation("schedule frontier season", () => scheduleFrontierSeason(store, frontier));
-    const blitz = phases.find(({ phase }) => phase === "blitz");
-    const slot = nextBlitzSlot(now);
-    if (blitz && closesInside(blitz, slot.closesAt))
-      yield* databaseOperation("schedule blitz slot", () => slots.create(slot.name, slot.closesAt));
-    yield* databaseOperation("freeze playtest roster", () => slots.freezeNextDue());
+    const calendarResult = yield* Effect.result(databaseOperation("read the season calendar", () => calendar.list()));
+    if (Result.isSuccess(calendarResult)) {
+      const frontier = calendarResult.success.find(({ phase }) => phase === "frontier");
+      if (frontier && isRunning(frontier, now.getTime()))
+        yield* runScheduleStep("schedule frontier season", () => scheduleFrontierSeason(store, frontier));
+      const blitz = calendarResult.success.find(({ phase }) => phase === "blitz");
+      const slot = nextBlitzSlot(now);
+      if (blitz && closesInside(blitz, slot.closesAt))
+        yield* runScheduleStep("schedule blitz slot", () => slots.create(slot.name, slot.closesAt));
+    } else {
+      yield* Effect.logError("launch_schedule_step_failed", calendarResult.failure);
+    }
+    yield* runScheduleStep("freeze playtest roster", () => slots.freezeNextDue());
+  });
+
+const runScheduleStep = <A>(operation: string, task: () => Promise<A>) =>
+  Effect.gen(function* () {
+    const result = yield* Effect.result(databaseOperation(operation, task));
+    if (Result.isFailure(result)) yield* Effect.logError("launch_schedule_step_failed", result.failure);
   });
 
 /** A slot belongs to the Blitz window when its games start inside it: when its registration closes. */

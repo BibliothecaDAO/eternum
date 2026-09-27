@@ -4,7 +4,9 @@ import type { LaunchAppEnv } from "./auth";
 import { CalendarConflict, type CalendarStore } from "./calendar";
 
 const Instant = Schema.String.pipe(
-  Schema.check(Schema.makeFilter((value: string) => Number.isFinite(Date.parse(value)))),
+  Schema.check(
+    Schema.makeFilter((value: string) => Number.isFinite(Date.parse(value)) && Date.parse(value) % 1_000 === 0),
+  ),
 );
 const PhaseRequest = Schema.Struct({ startsAt: Instant, endsAt: Instant });
 const PHASES = new Set(["frontier", "blitz"]);
@@ -23,7 +25,7 @@ export function createCalendarRoutes(calendar: CalendarStore) {
     try {
       dates = Schema.decodeUnknownSync(PhaseRequest)(await context.req.json());
     } catch {
-      return context.json({ error: "A phase needs a start and an end" }, 400);
+      return context.json({ error: "A phase needs a start and an end on whole seconds" }, 400);
     }
     try {
       return context.json(await calendar.set({ phase: phase as "frontier" | "blitz", ...dates }, Date.now()));
