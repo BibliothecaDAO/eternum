@@ -26,24 +26,24 @@ export const blitzRows = (
   realmsId: string | undefined,
   now: number,
 ): BlitzRow[] => {
-  const running = games.filter((game) => game.mode === "blitz" && !isGameOver(game));
+  const running = games.filter((game) => game.mode === "blitz" && game.status !== "Settled");
   const live = running.filter((game) => game.status === "Live");
   const starting = running
     .filter((game) => game.status !== "Live")
     .toSorted((a, b) => a.clock.start_main_at - b.clock.start_main_at);
   const filling = slots
-    .filter((slot) => isFilling(slot) || awaitsItsGame(slot, realmsId))
+    .filter((slot) => isFilling(slot) || awaitsItsGame(slot, realmsId, games))
     .toSorted((a, b) => Date.parse(a.closesAt) - Date.parse(b.closesAt));
   return [
     ...live.map((game) => gameRow(game, null)),
-    ...starting.map((game) => gameRow(game, game.clock.start_main_at - now)),
+    ...starting.map((game) => gameRow(game, isGameOver(game) ? null : game.clock.start_main_at - now)),
     ...filling.map((slot) => slotRow(slot, realmsId, now)),
   ];
 };
 
 /** The row a card with room for one shows: the player's own game to enter, else the next slot to join. */
 export const leadBlitzRow = (rows: readonly BlitzRow[]): BlitzRow | undefined =>
-  rows.find((row) => row.action === "enter") ?? rows.find((row) => row.kind === "slot");
+  rows.find((row) => row.action === "enter") ?? rows.find((row) => row.kind === "slot") ?? rows[0];
 
 const gameRow = (game: DirectoryGame, secondsLeft: number | null): BlitzRow => ({
   kind: "game",
@@ -51,7 +51,7 @@ const gameRow = (game: DirectoryGame, secondsLeft: number | null): BlitzRow => (
   game,
   secondsLeft: secondsLeft === null ? null : Math.max(0, secondsLeft),
   seats: { filled: game.player_count, total: game.roster_count || BLITZ_SEATS },
-  action: canEnterGame(game) ? "enter" : isMember(game) ? "registered" : "spectate",
+  action: isGameOver(game) ? "spectate" : canEnterGame(game) ? "enter" : isMember(game) ? "registered" : "spectate",
 });
 
 const slotRow = (slot: PlaytestSlot, realmsId: string | undefined, now: number): BlitzRow => ({
@@ -65,6 +65,11 @@ const slotRow = (slot: PlaytestSlot, realmsId: string | undefined, now: number):
 
 const isFilling = (slot: PlaytestSlot): boolean => !slot.closed && !slot.frozenAt;
 
-/** A slot that closed with the player on it, before their game is assigned: their check stays until the game lists. */
-const awaitsItsGame = (slot: PlaytestSlot, realmsId: string | undefined): boolean =>
-  registrationFor(slot, realmsId)?.gameNumber === null;
+/** Keep a registered player's slot until their assigned game actually reaches the directory. */
+const awaitsItsGame = (slot: PlaytestSlot, realmsId: string | undefined, games: readonly DirectoryGame[]): boolean => {
+  const registration = registrationFor(slot, realmsId);
+  if (!registration) return false;
+  return (
+    registration.gameNumber === null || !games.some((game) => game.name === `${slot.name}-${registration.gameNumber}`)
+  );
+};

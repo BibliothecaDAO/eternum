@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-27",
+    title: "Blitz Stays In View",
+    description:
+      "Your registered slot stays visible while its game launches. Ended games remain available to watch until their results are recorded.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
     title: "Retry Device List Errors",
     description: "The Devices panel shows account lookup errors and offers a retry when it cannot load your devices.",
     type: "fix",

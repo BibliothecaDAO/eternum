@@ -82,7 +82,15 @@ describe("the lobby's Blitz rows", () => {
       ["slot:closed", 0, "registered"],
     ]);
     const assigned = { ...closed, frozenAt: "x", registrations: [{ ...mine, gameNumber: 1 }] };
-    expect(blitzRows([], [assigned], ME, NOW)).toEqual([]);
+    expect(blitzRows([], [assigned], ME, NOW).map((row) => row.key)).toEqual(["slot:closed"]);
+    const anotherGame = blitz(2, { name: "closed-2" });
+    expect(blitzRows([anotherGame], [assigned], ME, NOW).map((row) => row.key)).toContain("slot:closed");
+    const ownGame = blitz(1, { name: "closed-1" });
+    expect(blitzRows([anotherGame, ownGame], [assigned], ME, NOW).map((row) => row.key)).toEqual([
+      "game:0xa:2",
+      "game:0xa:1",
+    ]);
+    expect(blitzRows([], [assigned], "0x999", NOW)).toEqual([]);
   });
 
   it("leads a one-row card with the player's own game to enter, else the next slot", () => {
@@ -99,4 +107,15 @@ describe("the lobby's Blitz rows", () => {
     );
     expect(leadBlitzRow(playing)?.key).toBe("game:0xa:2");
   });
+});
+
+it("keeps ended Blitz games available to watch until their settled result lists", () => {
+  const ended = blitz(7, {
+    status: "Ended",
+    player_state: { registered: true, settled: true, roster_member: true, structures: [] },
+  });
+  const rows = blitzRows([ended], [], ME, NOW);
+  expect(rows).toMatchObject([{ key: "game:0xa:7", action: "spectate", secondsLeft: null }]);
+  expect(leadBlitzRow(rows)?.key).toBe("game:0xa:7");
+  expect(blitzRows([{ ...ended, status: "Settled" }], [], ME, NOW)).toEqual([]);
 });

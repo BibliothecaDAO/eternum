@@ -176,7 +176,9 @@ export const BlitzLobbyCard = ({
 /** A row's state: the live dot, or the time until it starts or its slot closes; then its seats. */
 const BlitzRowState = ({ row }: { row: BlitzRow }) => (
   <span className="flex min-w-0 items-center gap-3">
-    {row.secondsLeft === null ? (
+    {row.kind === "game" && row.game.status === "Ended" ? (
+      <span className="font-[Lexend] text-[15px] font-extrabold text-[#eadfc8]">Ended</span>
+    ) : row.secondsLeft === null ? (
       <span className="flex items-center gap-2 font-[Lexend] text-[15px] font-extrabold text-[#eadfc8]">
         <span aria-hidden className="size-2.5 rounded-full bg-[#9fd06a] shadow-[0_0_8px_#9fd06a]" />
         Live
