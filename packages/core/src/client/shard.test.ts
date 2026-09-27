@@ -45,3 +45,14 @@ it("resolves the game's release and leaves the shared shard registry unchanged o
   await expect(refreshShardRelease(opened.url, "9", schemaHash)).rejects.toThrow("release 9");
   await expect(refreshShardRelease(opened.url, "10", schemaHash)).rejects.toThrow("release 10");
 });
+
+it("validates shard authority before inserting a manifest into the registry", async () => {
+  serve(manifest("0xc"));
+  await expect(
+    openShard("https://untrusted.test", schemaHash, () => {
+      throw new Error("reserved chain");
+    }),
+  ).rejects.toThrow("reserved chain");
+  expect(() => requireShard("0xc")).toThrow("not open");
+  await expect(openShard("https://trusted.test", schemaHash)).resolves.toMatchObject({ chainId: "0xc" });
+});

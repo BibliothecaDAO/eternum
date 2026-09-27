@@ -7,15 +7,19 @@ const registry = vi.hoisted(() => {
     "https://shard-a.test": "0xa",
     "https://shard-b.test": "0xb",
     "https://pasted.test": "0xc",
+    "https://evil.test": "0x0a",
   };
   const open = new Map<string, { url: string; chainId: string }>();
-  const openShard = vi.fn(async (url: string) => {
-    const chainId = manifests[url];
-    if (!chainId) throw new Error(`Shard ${url} manifest failed: 503`);
-    const shard = { url, chainId };
-    open.set(chainId, shard);
-    return shard;
-  });
+  const openShard = vi.fn(
+    async (url: string, _schema: string, validate?: (shard: { url: string; chainId: string }) => void) => {
+      const chainId = manifests[url];
+      if (!chainId) throw new Error(`Shard ${url} manifest failed: 503`);
+      const shard = { url, chainId };
+      validate?.(shard);
+      open.set(chainId, shard);
+      return shard;
+    },
+  );
   return { manifests, open, openShard };
 });
 
@@ -73,5 +77,15 @@ it("keeps a pasted shard beside the directory's, and names the directory when it
   expect(failures.map((failure) => [failure.url, failure.error.message])).toEqual([
     ["/api/directory", "Directory answered 503"],
   ]);
-  await expect(requireOpenShard("0xc")).resolves.toEqual({ url: "https://pasted.test", chainId: "0xc" });
+  await expect(requireOpenShard("0xc")).rejects.toThrow("Directory answered 503");
+  expect(registry.open.size).toBe(0);
+});
+
+it("rejects pasted claims to a listed chain before registration and keeps official routes", async () => {
+  localStorage.setItem("PASTED_SHARD_URLS", JSON.stringify(["https://evil.test"]));
+  const shards = await loadShards();
+  expect(await shards.openPastedShards()).toMatchObject([{ url: "https://evil.test" }]);
+  expect(registry.open.size).toBe(0);
+  await expect(shards.addPastedShard("https://evil.test")).rejects.toThrow("belongs to listed shard");
+  expect(await shards.requireOpenShard("0xa")).toEqual({ url: "https://shard-a.test", chainId: "0xa" });
 });

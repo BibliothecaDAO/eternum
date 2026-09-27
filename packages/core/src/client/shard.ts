@@ -46,10 +46,11 @@ const shards = new Map<string, Shard>();
 const normalizeChainId = (chainId: string | bigint): string => `0x${BigInt(chainId).toString(16)}`;
 
 /** Read the manifest once; individual games resolve their own pins against its release catalogue. */
-export async function openShard(url: string, schemaHash: string): Promise<Shard> {
+export async function openShard(url: string, schemaHash: string, validate?: (shard: Shard) => void): Promise<Shard> {
   const shard = await readShard(url);
   if (!Object.values(shard.releaseSchemas).includes(schemaHash))
     throw new ShardReleaseMismatchError(shard.url, Object.keys(shard.releaseSchemas).join(", "));
+  validate?.(shard);
   return registerShard(shard);
 }
 

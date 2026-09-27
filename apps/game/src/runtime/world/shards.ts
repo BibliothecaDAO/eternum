@@ -20,35 +20,50 @@ const directoryListing = (): Promise<DirectoryShard[]> =>
     throw error;
   }));
 
-const openedShard = (chainId: string): Shard | undefined => getShards().find((shard) => shard.chainId === chainId);
+const openedShard = (chainId: string): Shard | undefined =>
+  getShards().find((shard) => BigInt(shard.chainId) === BigInt(chainId));
 
 /**
  * A game route names only a chain id. Its shard is found in our directory and opened alone, so entering a game talks
  * to that game's Herald and no other; a shard the player pasted is opened when the chain is not ours.
  */
 export const requireOpenShard = async (chainId: string): Promise<Shard> => {
+  const directory = await directoryListing();
+  const listed = directory.find((shard) => BigInt(shard.chainId) === BigInt(chainId));
+  if (listed) {
+    const open = openedShard(chainId);
+    return open && new URL(open.url).href === new URL(listed.url).href
+      ? open
+      : openDirectoryShard(listed.url, directory);
+  }
   const open = openedShard(chainId);
   if (open) return open;
-  const listed = listedShards(await directoryListing()).find((shard) => BigInt(shard.chainId) === BigInt(chainId));
-  if (listed) return openShard(listed.url, nativeFactSchemaIdentity);
   await openPastedShards();
   return requireShard(chainId);
 };
 
 /** Every shard this client knows, opened: our directory's and the player's pasted ones; failures by URL, never hidden. */
 export const openKnownShards = async (): Promise<ShardOpenFailure[]> => {
-  const failures: ShardOpenFailure[] = [];
-  let listed: string[] = [];
+  let directory: DirectoryShard[];
   try {
-    listed = listedShards(await directoryListing()).map((shard) => shard.url);
+    directory = await directoryListing();
   } catch (error) {
-    failures.push({ url: DIRECTORY_URL, error: toError(error) });
+    return [{ url: DIRECTORY_URL, error: toError(error) }];
   }
-  return [...failures, ...(await openShardUrls([...new Set([...listed, ...readPastedShardUrls()])]))];
+  const urls = [...new Set([...listedShards(directory).map((shard) => shard.url), ...readPastedShardUrls()])];
+  return openShardUrls(urls, directory);
 };
 
-/** The player's pasted shards, opened; a mistyped or dead one is reported by URL. */
-export const openPastedShards = (): Promise<ShardOpenFailure[]> => openShardUrls(readPastedShardUrls());
+/** Pasted shards cannot claim a chain reserved by the directory, including retired chains. */
+export const openPastedShards = async (): Promise<ShardOpenFailure[]> => {
+  const urls = readPastedShardUrls();
+  if (urls.length === 0) return [];
+  try {
+    return await openShardUrls(urls, await directoryListing());
+  } catch (error) {
+    return [{ url: DIRECTORY_URL, error: toError(error) }];
+  }
+};
 
 export const listOpenShards = (): Shard[] => getShards();
 
@@ -60,18 +75,29 @@ export const listPastedShards = (): Shard[] => {
 
 /** A pasted shard is remembered only once it opened, so a mistyped URL never persists. */
 export const addPastedShard = async (url: string): Promise<Shard> => {
-  const shard = await openShard(url, nativeFactSchemaIdentity);
+  const shard = await openDirectoryShard(url, await directoryListing());
   writePastedShardUrls([...new Set([...readPastedShardUrls(), shard.url])]);
   return shard;
 };
 
-const openShardUrls = async (urls: string[]): Promise<ShardOpenFailure[]> => {
+const openShardUrls = async (urls: string[], directory: DirectoryShard[]): Promise<ShardOpenFailure[]> => {
   const unopened = urls.filter((url) => !getShards().some((shard) => shard.url === url));
-  const results = await Promise.allSettled(unopened.map((url) => openShard(url, nativeFactSchemaIdentity)));
+  const results = await Promise.allSettled(unopened.map((url) => openDirectoryShard(url, directory)));
   return results.flatMap((result, index) =>
     result.status === "rejected" ? [{ url: unopened[index], error: toError(result.reason) }] : [],
   );
 };
+
+/** Validate before registry insertion: a rejected manifest must never own a route. */
+const openDirectoryShard = (url: string, directory: DirectoryShard[]): Promise<Shard> =>
+  openShard(url, nativeFactSchemaIdentity, (shard) => {
+    const owner = directory.find((entry) => BigInt(entry.chainId) === BigInt(shard.chainId));
+    if (owner && new URL(owner.url).href !== new URL(shard.url).href)
+      throw new Error(`Chain ${shard.chainId} belongs to listed shard ${owner.url}`);
+    const listed = directory.find((entry) => new URL(entry.url).href === new URL(shard.url).href);
+    if (listed && BigInt(listed.chainId) !== BigInt(shard.chainId))
+      throw new Error(`Shard ${shard.url} does not serve its listed chain ${listed.chainId}`);
+  });
 
 const toError = (reason: unknown): Error => (reason instanceof Error ? reason : new Error(String(reason)));
 
