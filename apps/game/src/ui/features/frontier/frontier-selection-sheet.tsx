@@ -1,3 +1,4 @@
+import { FrontierSpireSheet } from "./frontier-spire-sheet";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildSheet, useOpenPlot } from "./build/build-sheet";
@@ -32,5 +33,5 @@ export const FrontierSelectionSheet = ({ realm }: { realm: NativeRows["Structure
   if (tileObject?.kind === "spire") return <SpireCard onClose={close} />;
   if (realm && keep) return <CastleUpgrade realm={realm} onClose={close} />;
   if (realm && building) return <BuildingUpgrade realm={realm} selected={building} onClose={close} />;
-  return null;
+  return realm ? <FrontierSpireSheet realm={realm} onClose={close} /> : null;
 };

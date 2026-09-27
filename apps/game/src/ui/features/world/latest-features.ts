@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-27",
+    title: "Enter Frontier depths",
+    description: "Select your army beside its spire to enter an unlocked Ethereal depth and see its stamina cost.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
     title: "Wallet Deployment Guidance",
     description: "Linking an undeployed wallet explains how to deploy it on Starknet mainnet before trying again.",
     type: "fix",

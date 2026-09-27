@@ -17,6 +17,9 @@ vi.mock("./sites/tile-card", () => ({ TileCard: () => null, useSelectedSite: () 
 vi.mock("./upgrade/building-upgrade", () => ({ BuildingUpgrade: () => null, useSelectedBuilding: () => null }));
 vi.mock("./upgrade/castle-upgrade", () => ({ CastleUpgrade: () => null, useKeepSelected: () => null }));
 
+import { GameProvider } from "@/hooks/context/game-context";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { campBeside } from "./sites/site-fixture";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { TileOccupier } from "@bibliothecadao/types";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
@@ -63,4 +66,70 @@ describe("Frontier's selection sheet", () => {
     adjacent.army = 201;
     useUIStore.getState().setSelectedHex(null);
   });
+});
+
+it("offers depth entry from Frontier for an own army at the computed spire", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const { store } = campBeside();
+  store.applyFacts([
+    { model: "RealmKnowledge", key: "0x901", value: { game_id: 1, structure_id: 7, learned: 1 } },
+    {
+      model: "ResearchNode",
+      key: "0x902",
+      value: { game_id: 1, node: 0, prerequisites: 0, essence_cost: "1", effect: { Depth: 1 } },
+    },
+    {
+      model: "DepthRules",
+      key: "0x903",
+      value: {
+        game_id: 1,
+        depth: 1,
+        entry_stamina: 20,
+        reveal_percent: 100,
+        guard_lower: 1,
+        guard_upper: 2,
+        reveal_site_neighbors: false,
+        chest: { common: 1, uncommon: 0, rare: 0, pity: 0 },
+        fallen_guard_lower: 1,
+        fallen_guard_upper: 2,
+        guard_step: 1,
+        fallen_guard_tier: "T1",
+      },
+    },
+    {
+      model: "TileOccupancy",
+      key: "0x904",
+      value: { game_id: 1, alt: false, col: 5, row: 85, entity_id: 201, category: 15, is_structure: false },
+    },
+  ] as never);
+  useAccountStore.setState({ account: { address: "0x111" } as never });
+  useUIStore.getState().updateEntityActionSelectedEntityId(201);
+  useUIStore.getState().setSelectedHex({ col: 5, row: 85 });
+  tiles.current = [];
+  const enter = vi.fn().mockResolvedValue(undefined);
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  act(() =>
+    root.render(
+      <GameProvider
+        value={{ store, systemCalls: { enter_depth: enter } } as never}
+        account={{ address: "0x111" } as never}
+      >
+        <FrontierSelectionSheet realm={store.require("Structure", { game_id: 1, entity_id: 7 })} />
+      </GameProvider>,
+    ),
+  );
+  try {
+    const button = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Ethereal I · 20 stamina",
+    );
+    expect(button).toBeDefined();
+    expect(button!.disabled).toBe(false);
+    await act(async () => button!.click());
+    expect(enter).toHaveBeenCalledWith(expect.objectContaining({ explorerId: 201, depth: 1 }));
+  } finally {
+    act(() => root.unmount());
+    useUIStore.getState().updateEntityActionSelectedEntityId(null);
+    useUIStore.getState().setSelectedHex(null);
+  }
 });
