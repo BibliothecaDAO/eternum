@@ -46,90 +46,15 @@ jobs:
           export BASE_SHA
           echo "Measuring $HEAD_SHA from $BASE_SHA"
           python3 - <<'PYTHON'
-          import fnmatch, json, os, subprocess
+          import json, os, subprocess, sys
+          sys.path.insert(0, ".github/scripts")
+          from validation_areas import selected_areas
           # The integration branch and next run every area: a hand-kept path map can miss an import, and a push
           # measured from its predecessor would let a red area turn green on a later push that never touched it.
           # .github/scripts/landing-run.sh lets a publish path trust only these runs.
           landing = os.environ["EVENT"] == "push" and os.environ["BRANCH"] in ("native-world-foundation", "next")
           files = subprocess.check_output(["git", "diff", "--name-only", "-z", os.environ["BASE_SHA"], os.environ["HEAD_SHA"]]).decode().split("\0")
-          shared = [".github/workflows/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
-          areas = {
-              "client": [
-                  "apps/game/**",
-                  "packages/**",
-                  "config/**",
-                  "contracts/l3/world-native/schema/**",
-                  "contracts/l3/world-native/fixtures/**"
-              ],
-              "herald": [
-                  "apps/herald/**",
-                  "packages/**",
-                  "config/**",
-                  "contracts/l3/world-native/schema/**",
-                  "contracts/l3/world-native/fixtures/**"
-              ],
-              "services": [
-                  "apps/launch-service/**",
-                  "apps/realms/**",
-                  "apps/guardian/**",
-                  "apps/web/**",
-                  "packages/**",
-                  "config/**",
-                  "contracts/l3/world-native/schema/**"
-              ],
-              "native": [
-                  "apps/gateway/**",
-                  "apps/herald/src/model-registry.ts",
-                  "apps/herald/src/native/schema.ts",
-                  "contracts/l3/**",
-                  "contracts/common/addresses/**",
-                  "contracts/utils/**",
-                  "packages/**",
-                  "config/**",
-                  "deploy/athanor/**",
-                  "deploy/release/**",
-                  "deploy/shard/**",
-                  "scripts/generate-realm-metadata.py"
-              ],
-              # The native-world contract suite inside the native area: its build, tests and schema generation read
-              # the L3 contracts and one Herald module, never the app, core packages, config or deploy tooling.
-              "native_world": [
-                  "contracts/l3/**",
-                  "apps/herald/src/model-registry.ts"
-              ],
-              "runtime": [
-                  "apps/agent-runner/**",
-                  "apps/launch-service/**",
-                  "contracts/l3/world-native/schema/**",
-                  "deploy/athanor/**",
-                  "deploy/shard/**",
-                  "packages/**",
-                  "config/**"
-              ],
-              "terrain": [
-                  "apps/game/src/three/**",
-                  "apps/game/scripts/**",
-                  "apps/game/public/**",
-                  "apps/game/vitest.assets.*",
-                  "packages/core/src/utils/biome/**"
-              ],
-              "amm": [
-                  "contracts/l2/ammv2/**"
-              ],
-              "collectibles": [
-                  "contracts/l2/collectibles/**"
-              ],
-              "mmr": [
-                  "contracts/l2/mmr/**"
-              ],
-              "season_pass": [
-                  "contracts/l2/season_pass/**"
-              ],
-              "contract_scripts": [
-                  "contracts/scripts-runtime/**"
-              ]
-          }
-          selected = {area: landing or any(fnmatch.fnmatch(path, pattern) for path in files for pattern in shared + patterns) for area, patterns in areas.items()}
+          selected = selected_areas(files, landing)
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               for area, enabled in selected.items():
                   print(f"{area}={str(enabled).lower()}", file=output)
