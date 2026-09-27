@@ -30,26 +30,7 @@ pub fn tile_key(game_id: u32, coord: Coord) -> TileKey {
 }
 
 pub fn neighbor(coord: Coord, direction: u8) -> Coord {
-    let stride: u32 = if coord.alt {
-        15
-    } else {
-        1
-    };
-    let east = if coord.y % 2 == 0 {
-        stride
-    } else {
-        0
-    };
-    let west = stride - east;
-    match direction {
-        0 => Coord { x: coord.x + stride, ..coord },
-        1 => Coord { x: coord.x + east, y: coord.y + stride, ..coord },
-        2 => Coord { x: coord.x - west, y: coord.y + stride, ..coord },
-        3 => Coord { x: coord.x - stride, ..coord },
-        4 => Coord { x: coord.x - west, y: coord.y - stride, ..coord },
-        5 => Coord { x: coord.x + east, y: coord.y - stride, ..coord },
-        _ => panic!("invalid direction"),
-    }
+    checked_neighbor_at_distance(coord, direction, 1).expect('coordinate outside map')
 }
 
 pub fn spire_neighbor(coord: Coord, direction: u8) -> Coord {
