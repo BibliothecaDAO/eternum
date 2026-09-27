@@ -29,8 +29,10 @@ export interface LaunchServiceStore extends LaunchRunStore {
   /** Creates a run once; whatever run already has that name is handed back untouched. */
   schedule(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
   list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]>;
-  /** Completed game ids registered by this launch service on its configured shard. */
-  playerDirectoryGames(): Promise<{ chainId: string; gameIds: number[] }>;
+  /** Completed game ids registered by this launch service, including draining shards. */
+  playerDirectoryGames(): Promise<{ chainId: string; gameIds: number[] }[]>;
+  /** Unfinished work stranded by a change to the configured shard. */
+  pendingOtherChains(): Promise<LaunchRun[]>;
   /** Every run that failed and waits for a launcher to continue it, in any environment. */
   failed(): Promise<LaunchRun[]>;
   find(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<LaunchRun | null>;
@@ -72,12 +74,33 @@ const storedSummary = <S extends LaunchSummary>(runId: string, summary: S): S =>
   outputPath: `${launchRunPath(runId)}/summary`,
 });
 
+const completedGameId = (summary: string | null): number | null => {
+  if (!summary) throw new Error("A completed game launch has no summary");
+  const decoded = JSON.parse(summary) as { gameId?: unknown; dryRun?: unknown };
+  if (decoded.dryRun === true || decoded.gameId === undefined) return null;
+  if (!Number.isSafeInteger(decoded.gameId) || Number(decoded.gameId) < 0)
+    throw new Error("A completed game launch has an invalid game id");
+  return Number(decoded.gameId);
+};
+
+const groupCompletedGames = (rows: { chain_id: string; summary: string | null }[]) => {
+  const chains = new Map<string, Set<number>>();
+  for (const { chain_id, summary } of rows) {
+    const gameId = completedGameId(summary);
+    if (gameId === null) continue;
+    const games = chains.get(chain_id) ?? new Set<number>();
+    games.add(gameId);
+    chains.set(chain_id, games);
+  }
+  return [...chains].map(([chainId, gameIds]) => ({ chainId, gameIds: [...gameIds].sort((a, b) => a - b) }));
+};
+
 const SELECT_RUN = "SELECT * FROM launch_runs WHERE chain_id = ? AND kind = ? AND environment = ? AND name = ?";
 const SCHEDULE_ONCE = "ON CONFLICT (chain_id, kind, environment, name) DO NOTHING";
 
 /**
  * The launch runs of one chain. The chain comes from the shard's /manifest, read once per store, so pointing SHARD_URL
- * at another shard never hands back, schedules or executes the previous chain's runs.
+ * at another shard refuses new work until earlier queues drain. Directory reads retain games from every chain.
  */
 export class D1LaunchStore implements LaunchServiceStore {
   private chain?: Promise<string>;
@@ -127,29 +150,34 @@ export class D1LaunchStore implements LaunchServiceStore {
     return (await statement.all<LaunchRunRow>()).results.map(toRun);
   }
 
-  async playerDirectoryGames(): Promise<{ chainId: string; gameIds: number[] }> {
-    const chainId = await this.chainId();
+  async playerDirectoryGames(): Promise<{ chainId: string; gameIds: number[] }[]> {
     const { results } = await this.db
-      .prepare("SELECT summary FROM launch_runs WHERE chain_id = ? AND kind = 'game' AND status = 'complete'")
-      .bind(chainId)
-      .all<{ summary: string | null }>();
-    const gameIds = results.flatMap(({ summary }) => {
-      if (!summary)
-        throw new DatabaseFailure({
-          operation: "read completed game launches",
-          cause: new Error("A completed game launch has no summary"),
-        });
-      const decoded = JSON.parse(summary) as { gameId?: unknown; dryRun?: unknown };
-      if (decoded.dryRun === true || decoded.gameId === undefined) return [];
-      if (!Number.isSafeInteger(decoded.gameId) || Number(decoded.gameId) < 0) {
-        throw new DatabaseFailure({
-          operation: "read completed game launches",
-          cause: new Error("A completed game launch has an invalid game id"),
-        });
-      }
-      return [Number(decoded.gameId)];
-    });
-    return { chainId, gameIds: [...new Set(gameIds)].sort((a, b) => a - b) };
+      .prepare(
+        "SELECT chain_id, summary FROM launch_runs WHERE chain_id <> '' AND kind = 'game' AND status = 'complete' ORDER BY chain_id",
+      )
+      .all<{ chain_id: string; summary: string | null }>();
+    return groupCompletedGames(results);
+  }
+
+  // Migration 0005 archives pre-chain runs under an empty id; those have no shard to drain.
+  async pendingOtherChains(): Promise<LaunchRun[]> {
+    const { results } = await this.db
+      .prepare(
+        "SELECT * FROM launch_runs WHERE chain_id <> '' AND chain_id <> ? AND status IN ('queued', 'running') ORDER BY chain_id, created_at, id",
+      )
+      .bind(await this.chainId())
+      .all<LaunchRunRow>();
+    return results.map(toRun);
+  }
+
+  private async requireDrainedPreviousShard(): Promise<void> {
+    const stranded = await this.pendingOtherChains();
+    if (stranded.length) {
+      const chains = [...new Set(stranded.map(({ chainId }) => chainId))].join(", ");
+      throw new Error(
+        `Drain queued or running launches on ${chains} before changing SHARD_URL; restore the previous shard to finish them`,
+      );
+    }
   }
 
   async failed(): Promise<LaunchRun[]> {
@@ -169,6 +197,7 @@ export class D1LaunchStore implements LaunchServiceStore {
   }
 
   async startNext(now: number): Promise<LaunchRun | null> {
+    await this.requireDrainedPreviousShard();
     const chain = await this.chainId();
     const interrupted = await this.db
       .prepare(
@@ -300,10 +329,12 @@ export class D1LaunchStore implements LaunchServiceStore {
    * queues its games with the roster). This store stays the only writer of launch runs.
    */
   async scheduleStatement(kind: LaunchKind, request: LaunchJobRequest): Promise<D1PreparedStatement> {
+    await this.requireDrainedPreviousShard();
     return this.insertStatement(await this.chainId(), kind, applyDurableLaunchDefaults(kind, request), SCHEDULE_ONCE);
   }
 
   private async insertRun(kind: LaunchKind, request: LaunchJobRequest, conflict: string): Promise<LaunchRun> {
+    await this.requireDrainedPreviousShard();
     const durableRequest = applyDurableLaunchDefaults(kind, request);
     const chain = await this.chainId();
     const [, selected] = await this.db.batch<LaunchRunRow>([

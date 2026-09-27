@@ -83,6 +83,14 @@ const failedRunReport = (run: LaunchRun) => ({
   failedAt: run.updatedAt,
 });
 
+const strandedRunReport = ({ chainId, kind, environment, name, status }: LaunchRun) => ({
+  chainId,
+  kind,
+  environment,
+  name,
+  status,
+});
+
 export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   const app = new Hono<LaunchAppEnv>();
   app.use("*", logger());
@@ -95,8 +103,19 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   // season once and never requeues it. Health names every failed run so that wait is never silent.
   app.get("/api/factory/health", async (context) => {
     try {
-      const failed = await dependencies.store.failed();
-      return context.json({ service: "launch", ...dependencies.deployment, failedRuns: failed.map(failedRunReport) });
+      const [failed, stranded] = await Promise.all([
+        dependencies.store.failed(),
+        dependencies.store.pendingOtherChains(),
+      ]);
+      return context.json(
+        {
+          service: "launch",
+          ...dependencies.deployment,
+          failedRuns: failed.map(failedRunReport),
+          strandedRuns: stranded.map(strandedRunReport),
+        },
+        stranded.length ? 503 : 200,
+      );
     } catch {
       return context.json({ status: "unavailable" }, 503);
     }
@@ -104,7 +123,7 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
 
   app.get("/api/factory/directory-games", async (context) => {
     try {
-      return context.json({ chains: [await dependencies.store.playerDirectoryGames()] });
+      return context.json({ chains: await dependencies.store.playerDirectoryGames() });
     } catch (error) {
       console.error("factory_directory_games_failed", error);
       return context.json({ error: "Launch directory is unavailable" }, 503);

@@ -143,7 +143,7 @@ test("one Frontier season is created once by every tick and continued like any f
   expect((await store.startNext(Date.now()))?.id).toBe(next.id);
 });
 
-test("a store on another chain sees none of the previous chain's runs and schedules its own season", async () => {
+test("a shard cutover preserves directory games and refuses new work until the old queue drains", async () => {
   const seasonStart = "2027-01-01T00:00:00.000Z";
   const oldChain = new D1LaunchStore(database.db, testChain("0x1"));
   const launched = await oldChain.enqueue("game", { environment: "madara.blitz", gameName: "bltz-7" });
@@ -159,9 +159,48 @@ test("a store on another chain sees none of the previous chain's runs and schedu
 
   // SHARD_URL now points at a new chain behind the same D1.
   const newChain = new D1LaunchStore(database.db, testChain("0x2"));
-  expect(await newChain.startNext(Date.now())).toBeNull(); // the old chain's due result never runs here
+  expect(await newChain.playerDirectoryGames()).toEqual([{ chainId: "0x1", gameIds: [7] }]);
+  await expect(newChain.startNext(Date.now())).rejects.toThrow("Drain queued or running launches");
+  await expect(scheduleFrontierSeason(newChain, season(seasonStart))).rejects.toThrow(
+    "Drain queued or running launches",
+  );
+  await expect(newChain.scheduleStatement("game", oldSeason.request)).rejects.toThrow(
+    "Drain queued or running launches",
+  );
+  expect((await newChain.pendingOtherChains()).map(({ chainId }) => chainId)).toEqual(["0x1", "0x1"]);
+  const result = (await oldChain.startNext(Date.now()))!;
+  await oldChain.complete(result.id, {
+    environment: "madara.blitz",
+    gameName: launched.name,
+    gameId: 7,
+    resultCommitment: "0x1",
+  });
+  const frontier = (await oldChain.startNext(Date.now()))!;
+  await oldChain.complete(frontier.id, frontierSummary(oldSeason.name, seasonStart));
+  expect(await newChain.pendingOtherChains()).toEqual([]);
   expect(await newChain.list("madara.blitz")).toEqual([]);
   const newSeason = await scheduleFrontierSeason(newChain, season(seasonStart));
   expect(newSeason).toMatchObject({ name: oldSeason.name, chainId: "0x2", status: "queued" });
   expect(newSeason.id).not.toBe(oldSeason.id);
+  const next = (await newChain.startNext(Date.now()))!;
+  await newChain.complete(next.id, { ...frontierSummary(newSeason.name, seasonStart), gameId: 7 });
+  expect(await newChain.playerDirectoryGames()).toEqual([
+    { chainId: "0x1", gameIds: [7, 9] },
+    { chainId: "0x2", gameIds: [7] },
+  ]);
+});
+
+test("pre-chain migration archives neither block a cutover nor enter the directory", async () => {
+  const store = new D1LaunchStore(database.db, testChain());
+  const archived = await store.enqueue("game", { environment: "madara.blitz", gameName: "archive" });
+  await database.db.prepare("UPDATE launch_runs SET chain_id = '' WHERE id = ?").bind(archived.id).run();
+  expect(await store.pendingOtherChains()).toEqual([]);
+  expect(await store.enqueue("game", { environment: "madara.blitz", gameName: "new" })).toMatchObject({
+    status: "queued",
+  });
+  await database.db
+    .prepare("UPDATE launch_runs SET status = 'complete', summary = ? WHERE id = ?")
+    .bind(JSON.stringify({ gameId: 7 }), archived.id)
+    .run();
+  expect(await store.playerDirectoryGames()).toEqual([]);
 });

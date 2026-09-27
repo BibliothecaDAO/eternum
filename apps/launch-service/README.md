@@ -46,3 +46,8 @@ and hyperstructure settlement before recording results, which resume from the ch
 
 Production deploys only at the cutover, once the box's launch service has stopped: two schedulers would freeze the same
 slots.
+
+Before changing `SHARD_URL`, close registration and let all queued and running launches and result jobs finish on the
+old shard. Completed games remain in the player directory across chains. If unfinished work remains after a change, new
+launches and execution are refused, and `/api/factory/health` returns 503 with `strandedRuns` naming the affected chains
+and runs. Restore the previous `SHARD_URL` and drain that work before retrying the cutover.

@@ -368,3 +368,14 @@ describe("launch service authorization", () => {
     expect(await failedRuns()).toEqual([]);
   });
 });
+
+test("health warns about queued and running work left on another chain", async () => {
+  const { app, store } = createApp(signedOut);
+  const run = await store.enqueue("game", { environment: "madara.blitz", gameName: "old-chain" });
+  await database.db.prepare("UPDATE launch_runs SET chain_id = '0xdead' WHERE id = ?").bind(run.id).run();
+  const response = await app.request("https://play.realms.party/api/factory/health");
+  expect(response.status).toBe(503);
+  expect(await response.json()).toMatchObject({
+    strandedRuns: [{ chainId: "0xdead", name: "old-chain", status: "queued" }],
+  });
+});
