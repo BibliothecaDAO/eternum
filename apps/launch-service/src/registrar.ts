@@ -17,10 +17,12 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
    */
   async armFor(dueAt: number): Promise<void> {
     const alarm = await this.ctx.storage.getAlarm();
-    if (alarm === null || alarm > dueAt) await this.ctx.storage.setAlarm(dueAt);
+    // Written every time, never trusted: an alarm left at a moment that has passed without firing is armed again.
+    await this.ctx.storage.setAlarm(alarm === null ? dueAt : Math.min(alarm, dueAt));
   }
 
   override async alarm(): Promise<void> {
+    console.log("registrar_alarm", { at: new Date().toISOString() });
     const env = decodeLaunchEnv(this.env);
     const store = new D1LaunchStore(env.DB, shardChainOf(env));
     const services = Layer.mergeAll(databaseLayer(store), launchExecutorLayer(launchTargetOf(env)));
