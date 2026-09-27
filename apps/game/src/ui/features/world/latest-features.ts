@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-27",
+    title: "One entry after founding",
+    description: "Founding a realm enters the game once, keeping Back navigation and the doorway handoff consistent.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
     title: "Realm visits return home",
     description:
       "Returning to your realm clears the visit banner and army dock together. Account changes also leave the visited view.",

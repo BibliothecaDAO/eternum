@@ -175,8 +175,8 @@ export const GameEntryModal = ({
 
   const navigationEntryContext = entryContext;
   useEffect(() => {
-    if (!isOpen) hasEnteredGameRef.current = false;
-  }, [isOpen]);
+    hasEnteredGameRef.current = false;
+  }, [isOpen, chainId, gameId]);
 
   const resetBootstrapDependentState = useCallback(() => {
     setPreflightError(null);
@@ -421,10 +421,11 @@ export const GameEntryModal = ({
   const entryScene = worldMeta?.mode ? gameModeConfigOf(worldMeta.mode).ui.entryScene : "map";
   const enterGame = useCallback(
     (spectate: boolean) => {
-      if (!navigationEntryContext) {
+      if (!navigationEntryContext || hasEnteredGameRef.current) {
         return;
       }
 
+      hasEnteredGameRef.current = true;
       markGameEntryMilestone("enter-game-started");
 
       const entryTarget = resolveGameEntryTarget({
@@ -453,11 +454,7 @@ export const GameEntryModal = ({
     if (autoSettleEnabled && autoSettleEntryKey) {
       markCompleted(autoSettleEntryKey);
     }
-
-    setTimeout(() => {
-      handleEnterGame();
-    }, 1000);
-  }, [autoSettleEnabled, autoSettleEntryKey, handleEnterGame, markCompleted]);
+  }, [autoSettleEnabled, autoSettleEntryKey, markCompleted]);
 
   const finalizeFailedSettlement = useCallback(
     (error: Error) => {
@@ -568,11 +565,11 @@ export const GameEntryModal = ({
   }, [foundsOnItsOwn, handleSettle, isSettling, phase]);
   // Auto-enter game when ready (spectate mode or already settled players)
   useEffect(() => {
-    const shouldAutoEnter = phase === "ready" && entryIntent === "play";
+    const shouldAutoEnter = isOpen && phase === "ready" && (entryIntent === "play" || settleStage === "done");
     if (shouldAutoEnter) {
       handleEnterGame();
     }
-  }, [phase, handleEnterGame, entryIntent]);
+  }, [isOpen, phase, handleEnterGame, entryIntent, settleStage]);
 
   if (!isOpen) return null;
 
