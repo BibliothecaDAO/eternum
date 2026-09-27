@@ -91,7 +91,7 @@ export const siws = (options: SiwsPluginOptions) => {
     endpoints: {
       nonce: createAuthEndpoint(
         "/siws/nonce",
-        { method: "POST", body: z.object({ address: z.string() }) },
+        { method: "POST", body: z.object({ address: z.string() }), use: [sessionMiddleware] },
         async (ctx) => {
           const nonce = [...crypto.getRandomValues(new Uint8Array(32))]
             .map((byte) => byte.toString(16).padStart(2, "0"))

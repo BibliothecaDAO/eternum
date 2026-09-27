@@ -758,6 +758,21 @@ describe("identity Worker", () => {
     });
   });
 
+  it("requires a signed-in account before writing a wallet-link nonce", async () => {
+    const address = createWallet();
+    const browser = createBrowser();
+    expect((await browser.request("/api/auth/siws/nonce", { body: { address } })).status).toBe(401);
+    const before = await env.DB.prepare(
+      "SELECT count(*) AS count FROM verification WHERE identifier LIKE 'siws_%'",
+    ).first<{ count: number }>();
+    await signInWithCode(browser, "nonce-owner@realms.test");
+    expect((await browser.request("/api/auth/siws/nonce", { body: { address } })).status).toBe(200);
+    const after = await env.DB.prepare(
+      "SELECT count(*) AS count FROM verification WHERE identifier LIKE 'siws_%'",
+    ).first<{ count: number }>();
+    expect(after!.count).toBe(before!.count + 1);
+  });
+
   it("refuses to link a wallet that already belongs to another Realms account", async () => {
     const { wallet } = await playerWithWallet("holder@realms.test");
 
