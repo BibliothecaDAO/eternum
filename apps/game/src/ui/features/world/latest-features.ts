@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-27",
+    title: "Consistent player portraits",
+    description:
+      "Players without a chosen portrait show the same stock portrait in the game, profiles, standings, and podium.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
     title: "One entry after founding",
     description: "Founding a realm enters the game once, keeping Back navigation and the doorway handoff consistent.",
     type: "fix",

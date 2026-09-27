@@ -1,3 +1,4 @@
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { getPlayerDisplayName, identityProfiles, readPlayerProfile } from "@/services/identity/player-profiles";
@@ -12,7 +13,6 @@ import { useMemo, useSyncExternalStore } from "react";
 type PlayerProfile = Pick<Player, "name" | "portrait">;
 
 const NO_PROFILE: PlayerProfile = { name: null, portrait: null };
-const PORTRAIT_COUNT = 12;
 const PLAYER_FACTS = ["PlayerEntry"] as const;
 
 const toAddress = (address: string | bigint): ContractAddress => BigInt(address);
@@ -64,13 +64,7 @@ export const usePlayerDisplayName = (address: string | bigint | null | undefined
 export const playerAvatarUrl = (
   address: string | bigint,
   profile: PlayerProfile = readPlayerProfile(address),
-): string => `/images/avatars/${profile.portrait ?? stockPortrait(address)}.png`;
-
-const stockPortrait = (address: string | bigint): string => {
-  const key = toAddress(address).toString();
-  const hash = Array.from(key).reduce((current, character) => (current * 31 + character.charCodeAt(0)) >>> 0, 0);
-  return String((hash % PORTRAIT_COUNT) + 1).padStart(2, "0");
-};
+): string => playerPortraitUrl(address, profile.portrait);
 
 const isStarknetAddress = (value: string): boolean => /^0x[0-9a-fA-F]+$/.test(value);
 

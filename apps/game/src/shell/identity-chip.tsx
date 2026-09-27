@@ -1,3 +1,5 @@
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { lazy, Suspense } from "react";
 import { create } from "zustand";
 
@@ -31,6 +33,7 @@ const chipLabel = (status: IdentitySessionStatus, session: Session | null): stri
 
 export const IdentityChip = () => {
   const { status, session } = useIdentitySession();
+  const address = useAccountStore((state) => state.account?.address);
   const requestSignIn = useRequestSignIn();
   const isOpen = usePopoverStore((state) => state.openId === IDENTITY_POPOVER_ID);
   const setElement = useIdentityPanelSlot((state) => state.setElement);
@@ -54,7 +57,7 @@ export const IdentityChip = () => {
           onClick={togglePanel}
           className="block size-11 overflow-hidden rounded-full border-2 border-[#dfaa54] shadow-[0_0_12px_rgba(246,172,29,0.35)]"
         >
-          <img src={portraitUrl(signedIn.user.image ?? null)} alt="" className="size-full object-cover" />
+          <img src={playerPortraitUrl(address, signedIn.user.image)} alt="" className="size-full object-cover" />
         </button>
       ) : (
         <button
@@ -83,5 +86,3 @@ export const IdentityChip = () => {
     </div>
   );
 };
-
-export const portraitUrl = (portrait: string | null): string => `/images/avatars/${portrait ?? "01"}.png`;

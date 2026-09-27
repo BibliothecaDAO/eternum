@@ -1,6 +1,6 @@
 import { PrimaryLink } from "../live-chips";
 import { HERO_ART } from "../mode-art";
-import { portraitUrl } from "../identity-chip";
+import { portraitUrl } from "@/services/identity/player-portrait";
 import type { ChosenProfile } from "./profile-step";
 
 /**

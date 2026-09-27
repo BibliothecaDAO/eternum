@@ -6,7 +6,7 @@ import { formatPoints, ordinal, sameAddress } from "./format";
 import { useLeaderboard } from "./herald";
 import { ErrorPanel, Loading } from "./kit";
 import { useProfiles } from "./profiles";
-import { portraitUrl } from "./identity-chip";
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { SeasonTable } from "@/ui/features/frontier/board/season-table";
 import { boardRows } from "@/ui/features/frontier/board/standings";
 
@@ -51,7 +51,11 @@ export const Standings = ({ game, highlight, limit }: { game: GameRef; highlight
             <span className="w-10 font-mono text-[11px] font-semibold text-gold/70">
               {ordinal(entry.rank).toUpperCase()}
             </span>
-            <img src={portraitUrl(profile?.portrait ?? null)} alt="" className="h-7 w-7 rounded object-cover" />
+            <img
+              src={playerPortraitUrl(entry.address, profile?.portrait)}
+              alt=""
+              className="h-7 w-7 rounded object-cover"
+            />
             <Link to={`/p/${entry.address}`} className="min-w-0 flex-1 truncate font-semibold hover:text-gold">
               {displayPlayerName(entry.address, profile?.name)}
             </Link>

@@ -5,7 +5,7 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { Check } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { portraitUrl } from "../identity-chip";
+import { portraitUrl } from "@/services/identity/player-portrait";
 import { nameRefusal } from "../name-claim";
 
 /** The name and portrait a new player chose, as the account now holds them. */

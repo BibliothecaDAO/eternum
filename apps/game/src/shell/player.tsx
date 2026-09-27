@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { formatDate, ordinal, sameAddress, shortAddress } from "./format";
 import { modeLabel } from "./game-links";
 import { type DirectoryGame, useLeaderboard, useRecentResults } from "./herald";
-import { portraitUrl } from "./identity-chip";
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { ErrorPanel, Loading, Panel, PanelTitle } from "./kit";
 import { NotFoundPage } from "./not-found";
 import { useProfiles } from "./profiles";
@@ -57,7 +57,7 @@ export const PlayerPage = () => {
         <PanelTitle>Lord</PanelTitle>
         <div className="flex items-start gap-3.5">
           <img
-            src={portraitUrl(profile?.portrait ?? null)}
+            src={playerPortraitUrl(address, profile?.portrait)}
             alt=""
             className="h-16 w-16 rounded-lg border border-gold/40 object-cover"
           />

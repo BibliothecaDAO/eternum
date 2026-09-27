@@ -7,7 +7,7 @@ import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/gam
 
 import type { DirectoryGame } from "./herald";
 import { useLeaderboard } from "./herald";
-import { portraitUrl } from "./identity-chip";
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { useProfiles } from "./profiles";
 
 /** The podium's plinths left to right, second, first, third, as a podium stands. */
@@ -62,7 +62,7 @@ const Leader = ({
     <li className="flex flex-col items-center gap-1" aria-label={`Place ${place}`}>
       {entry ? (
         <img
-          src={portraitUrl(portrait(entry.address))}
+          src={playerPortraitUrl(entry.address, portrait(entry.address))}
           alt=""
           className={cn(
             "size-12 rounded-full border-2 object-cover",

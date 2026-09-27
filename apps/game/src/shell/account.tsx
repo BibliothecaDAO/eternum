@@ -14,7 +14,8 @@ import { IDENTITY_PORTRAITS, type Session } from "@realms-world/identity";
 import { DevicesPanel } from "./devices";
 import { shortAddress } from "./format";
 import { AccountStatePrompt } from "./account-state";
-import { portraitUrl } from "./identity-chip";
+import { playerPortraitUrl, portraitUrl } from "@/services/identity/player-portrait";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { GhostButton, GoldButton, Loading, Panel, PanelTitle } from "./kit";
 import { NameClaim } from "./name-claim";
 import { useRequestSignIn } from "./sign-in/sign-in-route";
@@ -138,6 +139,7 @@ const WalletRow = ({ session, refresh }: { session: Session; refresh: () => void
 };
 
 const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () => void }) => {
+  const address = useAccountStore((state) => state.account?.address);
   const [editingPortrait, setEditingPortrait] = useState(false);
   const name = identityUsername(session);
   return (
@@ -146,7 +148,7 @@ const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () =
         <PanelTitle>Identity</PanelTitle>
         <div className="mb-3 flex items-start gap-4">
           <img
-            src={portraitUrl(session.user.image ?? null)}
+            src={playerPortraitUrl(address, session.user.image)}
             alt=""
             className="h-[72px] w-[72px] rounded-lg border border-gold/40 object-cover"
           />
