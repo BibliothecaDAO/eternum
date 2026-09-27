@@ -42,6 +42,9 @@ export class D1SlotStore implements SlotStore {
   ) {}
 
   async create(name: string, closesAt: string): Promise<PlaytestSlot> {
+    if (await this.launches.find("game", "madara.blitz", `${name}-1`)) {
+      throw new SlotConflict("Slot name was already used for a launch");
+    }
     const closes = Date.parse(closesAt);
     await this.db
       .prepare(

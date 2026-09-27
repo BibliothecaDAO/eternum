@@ -170,3 +170,18 @@ test("a worker clock ahead of D1 cannot freeze an open roster", async () => {
     clock.mockRestore();
   }
 });
+
+test("a pruned slot name cannot be reused while its launch runs still exist", async () => {
+  const launches = new D1LaunchStore(database.db, testChain());
+  const slots = new D1SlotStore(database.db, launches);
+  const future = () => new Date(Date.now() + 60_000).toISOString();
+  await slots.create("reused", future());
+  await slots.register("reused", [player(1)]);
+  await closeSlots();
+  await slots.freeze("reused");
+  await slots.create("next", future());
+  await closeSlots();
+  await slots.freeze("next");
+  await expect(slots.create("reused", future())).rejects.toThrow("already used");
+  expect((await slots.list()).map(({ name }) => name)).not.toContain("reused");
+});
