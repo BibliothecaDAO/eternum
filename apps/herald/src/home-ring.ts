@@ -30,6 +30,7 @@ export class HomeRing {
   private readonly rings = new Map<string, FoldSet[]>();
   private readonly byKey = new Map<string, FoldSet>();
   private readonly fetching = new Set<string>();
+  private readonly failed = new Map<string, { day: RingDay; timestamp: number }>();
 
   constructor(private readonly input: HomeRingInput) {}
 
@@ -51,6 +52,15 @@ export class HomeRing {
     return this.byKey.get(key);
   }
 
+  /** Failed reads recover on the next head while their game still has a stream. */
+  public retry(streamedGames: readonly string[]): void {
+    const games = new Set(streamedGames);
+    for (const [ring, { day, timestamp }] of this.failed) {
+      if (games.has(day.gameId)) this.fetch(ring, day, timestamp);
+      else this.failed.delete(ring);
+    }
+  }
+
   private fetch(ring: string, day: RingDay, timestamp: number): void {
     const { gameId, realmId } = day;
     if (this.fetching.has(ring)) return;
@@ -59,13 +69,14 @@ export class HomeRing {
       .view(gameId, realmId, timestamp)
       .then((tiles) => {
         const rows = tiles.map((tile) => this.input.rowOf(gameId, tile));
+        this.failed.delete(ring);
         this.forgetEarlierDays(day);
         this.rings.set(ring, rows);
         for (const row of rows) this.byKey.set(row.key, row);
         this.input.onReady(gameId, rows);
       })
-      .catch((error: unknown) =>
-        // The next scope build asks again; a missing ring only delays the explored ground, never the stream.
+      .catch((error: unknown) => {
+        this.failed.set(ring, { day, timestamp });
         (this.input.log ?? console).error(
           JSON.stringify({
             event: "herald_home_ring_failed",
@@ -73,8 +84,8 @@ export class HomeRing {
             realmId,
             error: error instanceof Error ? error.message : String(error),
           }),
-        ),
-      )
+        );
+      })
       .finally(() => this.fetching.delete(ring));
   }
 

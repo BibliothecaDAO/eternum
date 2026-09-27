@@ -402,6 +402,38 @@ describe("home ring", () => {
     expect(view.mock.calls.map(([, realmId]) => realmId)).toEqual([1]);
   });
 
+  it.each(["confirmed", "clock"])(
+    "retries a failed home-ring read on the next %s head without a scope change",
+    async (head) => {
+      const view = vi.fn<HomeRingView>().mockRejectedValueOnce(new Error("timeout")).mockResolvedValue(RING);
+      const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      try {
+        const { live, confirmed, pending } = frontierWorld(view);
+        await live.acceptSubscribedHead({ block_number: 10, timestamp: MID_DAY });
+        const messages = connect(live, "0xa");
+        await settle();
+        expect(view).toHaveBeenCalledTimes(1);
+        expect(tilesIn(messages)).toEqual([]);
+        const snapshots = messages.filter(({ type }) => type === "snapshot").length;
+        if (head === "confirmed") {
+          confirmed.block_number = 11;
+          pending.block_number = 12;
+          await live.acceptSubscribedHead({ block_number: 11, timestamp: MID_DAY + 1 });
+        } else {
+          pending.timestamp++;
+          await live.publishChainClock();
+        }
+        await settle();
+        expect(view).toHaveBeenCalledTimes(2);
+        expect(tilesIn(messages)).toHaveLength(RING.length);
+        expect(messages.filter(({ type }) => type === "snapshot")).toHaveLength(snapshots);
+        expect(messages.some(({ type }) => type === "head")).toBe(true);
+      } finally {
+        log.mockRestore();
+      }
+    },
+  );
+
   it("asks again on the next connect after a failed read, without breaking the stream", async () => {
     const view = vi.fn<HomeRingView>().mockRejectedValueOnce(new Error("node down")).mockResolvedValue(RING);
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);

@@ -322,6 +322,7 @@ export class LiveWorld {
     for (const listener of this.changeListeners) listener(new Set());
     for (const gameId of this.hub.streamedGames())
       this.hub.publishHead(gameId, header.block_number, header.timestamp, true);
+    this.homeRing.retry(this.hub.streamedGames());
   }
 
   private async applySubscribedHead(head: RpcHead): Promise<void> {
@@ -384,6 +385,7 @@ export class LiveWorld {
     );
     for (const listener of this.changeListeners) listener(models);
     for (const gameId of this.hub.streamedGames()) this.hub.publishHead(gameId, head.block_number, head.timestamp);
+    this.homeRing.retry(this.hub.streamedGames());
     this.checkpointIfDue();
   }
 
