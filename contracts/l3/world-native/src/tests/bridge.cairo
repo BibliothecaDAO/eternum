@@ -18,6 +18,11 @@ fn deposit_rules(paused: bool) -> DepositRules {
     DepositRules { paused, realm_fee_bps: 500, velords_fee_bps: 100, season_fee_bps: 200, client_fee_bps: 300 }
 }
 fn setup(village: bool, paused: bool) -> (super::Deployment, ResourceKey, ResourceKey, ContractAddress) {
+    setup_with_platform_fees(village, paused, 100, 200, 300)
+}
+fn setup_with_platform_fees(
+    village: bool, paused: bool, velords: u16, season: u16, client: u16,
+) -> (super::Deployment, ResourceKey, ResourceKey, ContractAddress) {
     let mut rules = super::recorded::rules();
     rules.mode_rules = super::recorded::ETERNUM_RULES;
     rules.command_mask = super::recorded::ETERNUM_COMMAND_MASK;
@@ -27,7 +32,14 @@ fn setup(village: bool, paused: bool) -> (super::Deployment, ResourceKey, Resour
     rules.capacity_config.donkey_capacity = 100;
     let d = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
     let (mut withdrawals, token, _) = super::market::wallet_preset(d, paused);
-    withdrawals.deposits = deposit_rules(paused);
+    withdrawals
+        .deposits =
+            DepositRules {
+                velords_fee_bps: velords, season_fee_bps: season, client_fee_bps: client, ..deposit_rules(paused),
+            };
+    withdrawals.rules.velords_fee_bps = velords;
+    withdrawals.rules.season_fee_bps = season;
+    withdrawals.rules.client_fee_bps = client;
     let mut preset = super::resource_commands::fixture_preset(rules);
     preset.economy.withdrawals = Some(withdrawals);
     let (d, realm, target) = super::resource_commands::setup_in_deployment(d, preset);
@@ -331,4 +343,23 @@ fn bridge_rejects_troop_deposits_to_villages_and_small_platform_fees() {
     );
     assert_eq!(tokens(token, d.actor), TOKENS);
     assert!(arrival(d, target, 0).is_empty());
+}
+
+#[test]
+fn audit_regression_zero_platform_rates_allow_deposits_and_withdrawals() {
+    for (velords, season, client) in array![(0_u16, 200_u16, 300_u16), (100, 0, 300), (100, 200, 0), (0, 0, 0)] {
+        let net: u128 = 250000000000 * (10000_u128 - velords.into() - season.into() - client.into()) / 10000;
+        for withdrawal in array![false, true] {
+            let (d, _, target, token) = setup_with_platform_fees(false, false, velords, season, client);
+            if withdrawal {
+                assert!(execute(d, withdraw(target, d.actor), 40));
+                assert_eq!(tokens(token, d.actor), TOKENS + net.into() * 1000000000);
+                assert_eq!(balance(d, target, 2), 0);
+            } else {
+                assert!(execute(d, deposit(target), 40));
+                assert_eq!(arrival(d, target, 0), amount(net));
+                assert_eq!(tokens(token, d.actor), 0);
+            }
+        }
+    }
 }

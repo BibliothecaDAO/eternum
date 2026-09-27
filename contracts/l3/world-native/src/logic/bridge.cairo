@@ -229,7 +229,12 @@ pub mod BridgeState {
             let velords_fee = amount * velords.into() / 10000;
             let season_fee = amount * season.into() / 10000;
             let client_fee = amount * client.into() / 10000;
-            assert!(velords_fee != 0 && season_fee != 0 && client_fee != 0, "amount too small to pay platform fees");
+            assert!(
+                (velords == 0 || velords_fee != 0)
+                    && (season == 0 || season_fee != 0)
+                    && (client == 0 || client_fee != 0),
+                "amount too small to pay platform fees",
+            );
             transfer_or_mint(token, rules.velords_recipient, velords_fee);
             transfer_or_mint(token, rules.season_recipient, season_fee);
             transfer_or_mint(
