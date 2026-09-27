@@ -95,7 +95,7 @@ pub trait ILordsCommitment<T> {
 #[allow(starknet::store_no_default_variant)]
 pub enum ChestKind {
     Relic,
-    // Preserve Token=2 for recorded receipts; remove this reserved tag at the freeze re-recording.
+    // Permanently reserve tag 1 so Token stays 2 in stored rewards and recorded receipts.
     Reserved,
     Token,
 }

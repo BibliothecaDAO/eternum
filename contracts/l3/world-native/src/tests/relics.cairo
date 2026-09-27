@@ -731,3 +731,15 @@ fn lords_amounts_and_cumulative_allowance_use_the_preset_without_overflow() {
     assert_eq!(crate::relics::lords_allowance(largest, 69), maximum);
     assert_eq!(crate::relics::lords_allowance(largest, 0), maximum / 70);
 }
+
+#[test]
+fn chest_kind_tags_preserve_recorded_rewards() {
+    let mut relic = array![];
+    ChestKind::Relic.serialize(ref relic);
+    assert_eq!(relic.span(), array![0].span());
+    let mut token = array![];
+    ChestKind::Token.serialize(ref token);
+    assert_eq!(token.span(), array![2].span());
+    let mut recorded = array![2].span();
+    assert_eq!(Serde::<ChestKind>::deserialize(ref recorded), Some(ChestKind::Token));
+}
