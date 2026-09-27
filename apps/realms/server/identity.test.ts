@@ -298,6 +298,27 @@ describe("identity Worker", () => {
     expect((await ask("quiet@realms.test")).status).toBe(200);
   });
 
+  it("shares a daily budget between sends and guesses across resends and address casing", async () => {
+    const browser = createBrowser();
+    const email = "daily-budget@realms.test";
+    const send = () =>
+      browser.request("/api/auth/email-otp/send-verification-otp", { body: { email, type: "sign-in" } });
+    expect((await send()).status).toBe(200);
+    for (let attempt = 0; attempt < 28; attempt += 1) {
+      const response = await browser.request("/api/auth/sign-in/email-otp", {
+        body: { email: email.toUpperCase(), otp: "wrong" },
+      });
+      expect(response.status).not.toBe(429);
+    }
+    expect((await send()).status).toBe(200);
+    const denied = await browser.request("/api/auth/sign-in/email-otp", { body: { email, otp: sentCodes.get(email) } });
+    expect(denied.status).toBe(429);
+    expect((await send()).status).toBe(429);
+    await env.DB.prepare("UPDATE sign_in_budget SET expires_at = 0 WHERE email = ?").bind(email).run();
+    codesRequested.delete(email);
+    expect((await send()).status).toBe(200);
+  }, 30_000);
+
   it("creates an account on a Discord user's first sign-in, and signs the same account in after", async () => {
     const discord = fakeDiscord();
     try {

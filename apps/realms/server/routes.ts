@@ -6,6 +6,7 @@ import { handleBotDeviceApproval, handleDeviceChange } from "./devices";
 import { handleAdmitShard, handleDirectory, handleDirectoryHistory, handleShardStatus } from "./directory";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
+import { consumeSignInBudget } from "./sign-in-budget";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleProfile, handleProfiles } from "./profiles";
 import { handlePushSubscriptions } from "./push-notifications";
@@ -25,8 +26,11 @@ export const routeIdentityRequest = async (
   platform: WorkerPlatform,
 ) => {
   const { pathname } = new URL(request.url);
-  if (pathname === "/api/auth/email-otp/send-verification-otp" && !(await withinSignInCodeBudget(env, request))) {
-    return json({ error: "too_many_codes" }, 429);
+  const sendsCode = pathname === "/api/auth/email-otp/send-verification-otp";
+  const verifiesCode = pathname === "/api/auth/sign-in/email-otp";
+  const requestsCodeAccess = request.method === "POST" && (sendsCode || verifiesCode);
+  if (requestsCodeAccess && !(await withinSignInBudget(env, request, sendsCode))) {
+    return json({ error: sendsCode ? "too_many_codes" : "too_many_attempts" }, 429);
   }
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
   if (pathname === "/api/devices" && request.method === "POST") {
@@ -86,14 +90,16 @@ const withinPublicBudget = async (env: IdentityEnv, route: string, request: Requ
 };
 
 /** A sign-in code costs an email: each client and each address gets a few a minute. */
-const withinSignInCodeBudget = async (env: IdentityEnv, request: Request) => {
+const withinSignInBudget = async (env: IdentityEnv, request: Request, sendsCode: boolean) => {
   if (!(await withinPublicBudget(env, "sign-in-code", request))) return false;
   const { email } = (await request
     .clone()
     .json()
     .catch(() => ({}))) as { email?: unknown };
   const address = typeof email === "string" ? email.trim().toLowerCase() : "";
-  return (await env.SIGN_IN_CODE_RATE_LIMIT.limit({ key: address })).success;
+  if (!address) return true; // The auth handler rejects malformed requests without sending or verifying a code.
+  if (sendsCode && !(await env.SIGN_IN_CODE_RATE_LIMIT.limit({ key: address })).success) return false;
+  return consumeSignInBudget(env.DB, address);
 };
 
 const isOperator = (env: IdentityEnv, request: Request) => presentsOperatorToken(request, env.OPERATOR_TOKEN);
