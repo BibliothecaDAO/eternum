@@ -30,7 +30,19 @@ pub fn tile_key(game_id: u32, coord: Coord) -> TileKey {
 }
 
 pub fn neighbor(coord: Coord, direction: u8) -> Coord {
-    checked_neighbor_at_distance(coord, direction, 1).expect('coordinate outside map')
+    let stride = layer_stride(coord.alt);
+    // Project an axial step into offset coordinates. Both strides are odd, so diagonals flip row parity.
+    let east = (stride + 1) / 2 - coord.y % 2;
+    let west = stride - east;
+    match direction {
+        0 => Coord { x: coord.x + stride, ..coord },
+        1 => Coord { x: coord.x + east, y: coord.y + stride, ..coord },
+        2 => Coord { x: coord.x - west, y: coord.y + stride, ..coord },
+        3 => Coord { x: coord.x - stride, ..coord },
+        4 => Coord { x: coord.x - west, y: coord.y - stride, ..coord },
+        5 => Coord { x: coord.x + east, y: coord.y - stride, ..coord },
+        _ => panic!("invalid direction"),
+    }
 }
 
 pub fn spire_neighbor(coord: Coord, direction: u8) -> Coord {
@@ -43,11 +55,7 @@ pub fn neighbor_at_distance(coord: Coord, direction: u8, distance: u32) -> Coord
 }
 
 pub fn checked_neighbor_at_distance(coord: Coord, direction: u8, distance: u32) -> Option<Coord> {
-    let distance: i128 = distance.into() * if coord.alt {
-        15
-    } else {
-        1
-    };
+    let distance: i128 = distance.into() * layer_stride(coord.alt).into();
     let row: i128 = coord.y.into();
     let column: i128 = coord.x.into() - (row + row % 2) / 2;
     let (column, row) = match direction {
@@ -63,11 +71,7 @@ pub fn checked_neighbor_at_distance(coord: Coord, direction: u8, distance: u32) 
 }
 
 pub fn adjacent(left: Coord, right: Coord) -> bool {
-    left.alt == right.alt && distance(left, right) == if left.alt {
-        15
-    } else {
-        1
-    }
+    left.alt == right.alt && distance(left, right) == layer_stride(left.alt).into()
 }
 
 pub fn distance(left: Coord, right: Coord) -> u128 {
@@ -78,6 +82,14 @@ pub fn distance(left: Coord, right: Coord) -> u128 {
     let dq = left_q - right_q;
     let dr = left_row - right_row;
     core::cmp::max(core::cmp::max(abs(dq), abs(dr)), abs(dq + dr)).try_into().unwrap()
+}
+
+fn layer_stride(alt: bool) -> u32 {
+    if alt {
+        15
+    } else {
+        1
+    }
 }
 
 fn abs(value: i128) -> i128 {
