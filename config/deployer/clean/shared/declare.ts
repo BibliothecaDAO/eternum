@@ -21,10 +21,24 @@ export function readClassArtifact(sierraPath: string, casmPath: string): ClassAr
   };
 }
 
-export function rpcErrorCode(error: unknown): number | undefined {
+function rpcErrorCode(error: unknown): number | undefined {
   if (typeof error !== "object" || error === null) return undefined;
   const value = error as { code?: unknown; baseError?: unknown; error?: unknown };
   return typeof value.code === "number" ? value.code : rpcErrorCode(value.baseError ?? value.error);
+}
+
+/** The class deployed at an address, or null when nothing is: a deploy step checks this to resume safely. */
+export async function deployedClass(
+  provider: RpcProvider,
+  address: string,
+  block: number | "latest" = "latest",
+): Promise<string | null> {
+  try {
+    return await provider.getClassHashAt(address, block);
+  } catch (error) {
+    if (rpcErrorCode(error) === 20) return null;
+    throw error;
+  }
 }
 
 export async function isClassDeclared(provider: RpcProvider, classHash: string, block: number | "latest" = "latest") {

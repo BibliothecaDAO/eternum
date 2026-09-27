@@ -4,7 +4,7 @@ import { ec, hash, RpcProvider } from "starknet";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { createMadaraAccount } from "../../../config/deployer/clean/shared/madara-account";
-import { waitForSuccess } from "../../../config/deployer/clean/shared/declare";
+import { deployedClass, waitForSuccess } from "../../../config/deployer/clean/shared/declare";
 
 // AccountUpgradeable declared by the pinned upstream Madara 802086d genesis, including with zero accounts.
 const ACCOUNT_CLASS_HASH = "0xe2eb8f5672af4e6a4e8a8f1b44989685e668489b0a25437733756c5a34a1d6";
@@ -47,6 +47,14 @@ async function deployHostAccount(directory: string): Promise<void> {
   if (!rpcUrl) throw new Error("RPC_URL is required");
   const provider = new RpcProvider({ nodeUrl: rpcUrl });
   await assertProviderChain(provider, readShardManifest(process.env.NATIVE_WORLD_MANIFEST), "RPC_URL");
+  // A first initialization that stopped after this step reruns it: the deployed account is kept, never redeployed.
+  const deployed = await deployedClass(provider, keys.deployerAddress);
+  if (deployed !== null) {
+    if (BigInt(deployed) !== BigInt(ACCOUNT_CLASS_HASH))
+      throw new Error("The host deployer address holds another class");
+    console.log(JSON.stringify({ event: "host_account_present", address: keys.deployerAddress }));
+    return;
+  }
   const account = createMadaraAccount(provider, keys.deployerAddress, keys.deployerPrivateKey);
   const result = await account.deployAccount(
     {

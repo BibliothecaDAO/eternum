@@ -8,8 +8,8 @@ import { ec, hash, RpcProvider } from "starknet";
 import { createMadaraAccount } from "../../../../config/deployer/clean/shared/madara-account";
 import {
   declareClass,
+  deployedClass,
   readClassArtifact,
-  rpcErrorCode,
   waitForSuccess,
 } from "../../../../config/deployer/clean/shared/declare";
 
@@ -56,12 +56,10 @@ function refuseRecordedKey(recorded: string) {
 
 async function prepareAccount() {
   await declareClass(admin, artifact, (transaction) => transactions.push(transaction));
-  try {
-    const actual = await provider.getClassHashAt(address, "latest");
+  const actual = await deployedClass(provider, address);
+  if (actual !== null) {
     if (BigInt(actual) !== BigInt(artifact.classHash)) throw new Error("Authority class differs");
     return;
-  } catch (error) {
-    if (rpcErrorCode(error) !== 20) throw error;
   }
   const transaction = await admin.deployContract(
     { classHash: artifact.classHash, salt, constructorCalldata, unique: false },

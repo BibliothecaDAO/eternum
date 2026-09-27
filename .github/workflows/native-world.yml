@@ -259,6 +259,8 @@ jobs:
         run: bun test deploy/athanor/scripts/read-rpc.test.ts
       - name: Check that deployment targets are explicit
         run: bun test deploy/athanor/scripts/native-target.test.ts
+      - name: Resume an interrupted first initialization
+        run: bun test deploy/athanor/scripts/host-accounts.test.ts
       - name: Test fail-closed deployment paths
         run: |
           python3 -m unittest discover -s deploy/athanor/scripts -p "test_*.py" -v

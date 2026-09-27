@@ -1,6 +1,6 @@
 import { assertHotfixSchema } from "./artifacts";
 import { CallData, type RpcProvider } from "starknet";
-import { isClassDeclared, rpcErrorCode } from "../../shared/declare";
+import { deployedClass, isClassDeclared } from "../../shared/declare";
 import { canonicalRealmTraits, realmCatalogueDigest } from "./realm-catalogue";
 import type { NativePlan, NativeWorld } from "./types";
 
@@ -123,13 +123,4 @@ async function inspectRealmCatalogue(local: NativeWorld, provider: RpcProvider, 
   else if (BigInt(realmCatalogueDigest(Number(catalogue.initialized))) !== catalogue.digest)
     blockers.push("Games realm catalogue content mismatch");
   return { initialized: Number(catalogue.initialized), digest: `0x${catalogue.digest.toString(16)}` };
-}
-
-async function deployedClass(provider: RpcProvider, address: string, block: number): Promise<string | null> {
-  try {
-    return await provider.getClassHashAt(address, block);
-  } catch (error) {
-    if (rpcErrorCode(error) === 20) return null;
-    throw error;
-  }
 }
