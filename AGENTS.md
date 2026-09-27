@@ -219,6 +219,21 @@ Stage explicit paths only — never `git add -A` or `git add .`; parallel agents
 sweeps in work that is not yours. Never use `reset --hard`, `checkout .`, `clean -fd`, `stash`, or `--no-verify`. Commit
 only what you changed.
 
+## Parallel Lanes
+
+Parallel work runs as lanes in one herdr workspace, one pane per lane, each started from a checkout of the integration
+branch so every lane reads this file as it stands there. Coordinate lanes through the `herdr` CLI, not through separate
+terminals or workspaces:
+
+- `herdr agent list` shows every lane, its pane and whether it is idle, working or blocked.
+- Start a lane beside yours with `herdr pane split --current --direction right --cwd <checkout> --no-focus`, then
+  `herdr agent start <lane> --kind <kind> --pane <new pane>`.
+- Hand an idle lane its brief with `herdr agent prompt <lane> "<brief>" --wait`, and read its answer with
+  `herdr agent read <lane> --source recent-unwrapped`. Never type into a lane that is working.
+- A lane shown as `blocked` is waiting for the owner's approval in its own pane. Tell the owner; never answer it for
+  them.
+- Close a lane's pane once its work has landed.
+
 ## Non-Negotiable Rule
 
 Do not leave sloppy code behind because it "works".
