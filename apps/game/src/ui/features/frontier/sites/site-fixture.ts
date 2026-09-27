@@ -24,7 +24,13 @@ export const campBeside = (kind: "Camp" | "Rift" | "FallenRealm" = "Camp", guard
   const noDice =
     preset.rules.mode_rules & ~(nativeRuleConstants.COMBAT_DICE | nativeRuleConstants.COMBAT_DICE_ETHEREAL);
   store.applyFacts([
-    set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 100, mode_rules: noDice }),
+    set("0x100", "SliceRules", {
+      ...preset.rules,
+      game_id: 1,
+      epoch_seconds: 100,
+      mode_rules: noDice,
+      battle_config: { ...preset.rules.battle_config, cooldown_seconds: 0 },
+    }),
     set("0x71", "Structure", {
       ...store.require("Structure", { game_id: 1, entity_id: 7 }),
       entity_id: SITE,

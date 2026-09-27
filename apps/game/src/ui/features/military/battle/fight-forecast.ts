@@ -17,5 +17,6 @@ export const describeFight = (forecast: FightForecast): string | null => {
   if (forecast.outcome === "wins") return `Wins in ${exchanges(forecast.exchanges)} · loses ${lost} · ${cost}`;
   if (forecast.outcome === "loses") return `Falls in ${exchanges(forecast.exchanges)} · ${cost}`;
   const standing = wholeTroops(forecast.defender.count).toLocaleString();
+  if (forecast.stoppedBy === "cooldown") return `This attack · ${standing} still defend · loses ${lost} · ${cost}`;
   return `Out of stamina after ${exchanges(forecast.exchanges)} · ${standing} still defend · loses ${lost}`;
 };

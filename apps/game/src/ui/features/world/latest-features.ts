@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-27",
+    title: "Blitz attack preview accuracy",
+    description:
+      "Attack previews stop at the battle cooldown, showing what this attack can do before another order is allowed.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
     title: "Frontier starts on time",
     description:
       "Upcoming seasons count down to their start. Resume prefers a live season, and expedition sites appear only once play begins.",

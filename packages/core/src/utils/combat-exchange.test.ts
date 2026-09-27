@@ -35,6 +35,7 @@ const readRules = (felts: bigint[]): CombatRules => {
   const [raid, biomeBonus, scaling, t1, t2, t3, ...stamina] = felts;
   const flags = stamina.map(Number);
   return {
+    cooldownSeconds: 0,
     damage: {
       damage_raid_percent_num: Number(raid),
       damage_biome_bonus_num: Number(biomeBonus),
@@ -158,4 +159,34 @@ describe("an exchange resolves as the contract resolves it", () => {
     expect(forecast.defenderLoss).toBeGreaterThanOrEqual(recorded.expected.defenderLoss);
     expect(forecast.staminaSpent).toBe(BigInt(forecast.exchanges * rules.stamina.stamina_attack_req));
   });
+});
+
+it("stops a Blitz forecast at the cooldown after this attack", () => {
+  const { rules, cases } = readFixture();
+  const recorded = cases.find(
+    (c) =>
+      c.context.attackDistance === 1 &&
+      c.expected.defenderLoss < c.defender.count &&
+      c.expected.attackerLoss < c.attacker.count,
+  )!;
+  const blitz = { ...rules, cooldownSeconds: 60 };
+  const result = resolveExchange(recorded.attacker, recorded.defender, recorded.context, blitz);
+  expect(result.ok).toBe(true);
+  if (!result.ok) return;
+  expect(result.attacker.battle_cooldown_end).toBeGreaterThan(recorded.context.timestamp);
+  expect(result.defender.battle_cooldown_end).toBeGreaterThan(recorded.context.timestamp);
+  expect(forecastFight(recorded.attacker, recorded.defender, recorded.context, blitz)).toMatchObject({
+    outcome: "stalls",
+    exchanges: 1,
+    stoppedBy: "cooldown",
+    attackerLoss: result.attackerLoss,
+    defenderLoss: result.defenderLoss,
+  });
+  const ranged = resolveExchange(
+    recorded.attacker,
+    recorded.defender,
+    { ...recorded.context, attackDistance: 2 },
+    blitz,
+  );
+  expect(ranged.ok && ranged.attacker.battle_cooldown_end).toBe(recorded.context.timestamp + 30);
 });

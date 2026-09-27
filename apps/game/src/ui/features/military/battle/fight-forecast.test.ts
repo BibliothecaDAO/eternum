@@ -42,3 +42,9 @@ describe("describeFight", () => {
     expect(wholeTroops(1_999_999_999n)).toBe(1);
   });
 });
+
+it("describes a cooldown stop as this attack, without claiming stamina ran out", () => {
+  expect(describeFight(fight({ outcome: "stalls", exchanges: 1, stoppedBy: "cooldown", defender: troops(300) }))).toBe(
+    "This attack · 300 still defend · loses 420 · 60 stamina",
+  );
+});

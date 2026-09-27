@@ -30,14 +30,19 @@ export type TroopDamageConfig = NativeRows["SliceRules"]["troop_damage_config"];
 export type TroopStaminaConfig = NativeRows["SliceRules"]["troop_stamina_config"];
 
 export interface CombatRules {
+  cooldownSeconds: number;
   damage: TroopDamageConfig;
   stamina: TroopStaminaConfig;
 }
 
 /** The active game's combat rules, as its SliceRules carries them. */
 export const activeCombatRules = (): CombatRules => {
-  const { troop_damage_config, troop_stamina_config } = configManager.getTroopConfig();
-  return { damage: troop_damage_config, stamina: troop_stamina_config };
+  const { battle_config, troop_damage_config, troop_stamina_config } = configManager.getTroopConfig();
+  return {
+    cooldownSeconds: battle_config.cooldown_seconds,
+    damage: troop_damage_config,
+    stamina: troop_stamina_config,
+  };
 };
 
 interface ExchangeContext {
@@ -124,16 +129,39 @@ export const resolveExchange = (
     ok: true,
     attackerLoss,
     defenderLoss,
-    attacker: afterExchange(attacker, attackerLoss, attackerStamina - attackerStaminaLoss, context.currentTick),
-    defender: afterExchange(defender, defenderLoss, defenderStamina - defenderStaminaLoss, context.currentTick),
+    attacker: afterExchange(
+      attacker,
+      attackerLoss,
+      attackerStamina - attackerStaminaLoss,
+      context.currentTick,
+      attackerCooldownEnd + exchangeCooldown(rules.cooldownSeconds, ranged, damage.attacker, damage.defender),
+    ),
+    defender: afterExchange(
+      defender,
+      defenderLoss,
+      defenderStamina - defenderStaminaLoss,
+      context.currentTick,
+      defenderCooldownEnd + exchangeCooldown(rules.cooldownSeconds, ranged, damage.defender, damage.attacker),
+    ),
   };
 };
 
-const afterExchange = (troops: ExchangeTroops, loss: bigint, stamina: bigint, tick: number): ExchangeTroops => ({
+const afterExchange = (
+  troops: ExchangeTroops,
+  loss: bigint,
+  stamina: bigint,
+  tick: number,
+  cooldownEnd: number,
+): ExchangeTroops => ({
   ...troops,
   count: troops.count - loss,
+  battle_cooldown_end: cooldownEnd,
   stamina: { amount: stamina, updated_tick: BigInt(tick) },
 });
+
+/** Ranged attacks add half the timer; melee refunds the timer by the same damage ratio as the contract. */
+const exchangeCooldown = (seconds: number, ranged: boolean, dealt: Fixed, taken: Fixed): number =>
+  ranged ? Math.floor(seconds / 2) : Number(toWhole(mul(unscaled(seconds), sub(ONE, refundMultiplier(dealt, taken)))));
 
 /** Both sides' damage in fixed point, before rounding, in the contract's order of operations. */
 const exchangeDamage = (
@@ -275,6 +303,7 @@ export type FightForecast =
   | {
       outcome: "wins" | "loses" | "stalls";
       exchanges: number;
+      stoppedBy?: ExchangeRefusal;
       attackerLoss: bigint;
       defenderLoss: bigint;
       staminaSpent: bigint;
@@ -298,11 +327,15 @@ export const forecastFight = (
   const startingStamina = staminaAt(attacker, context.currentTick, rules.stamina).amount;
   let state = first;
   let exchanges = 1;
+  let stoppedBy: ExchangeRefusal | undefined;
   let attackerLoss = first.attackerLoss;
   let defenderLoss = first.defenderLoss;
   while (state.attacker.count > 0n && state.defender.count > 0n) {
     const next = resolveExchange(state.attacker, state.defender, context, rules);
-    if (!next.ok) break;
+    if (!next.ok) {
+      stoppedBy = next.refusal;
+      break;
+    }
     state = next;
     exchanges += 1;
     attackerLoss += next.attackerLoss;
@@ -312,6 +345,7 @@ export const forecastFight = (
   return {
     outcome,
     exchanges,
+    stoppedBy,
     attackerLoss,
     defenderLoss,
     staminaSpent: startingStamina - state.attacker.stamina.amount,

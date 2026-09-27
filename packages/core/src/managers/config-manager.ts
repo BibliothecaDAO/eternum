@@ -356,6 +356,7 @@ export class ClientConfigManager {
   getTroopConfig() {
     const rules = this.rules();
     return {
+      battle_config: rules.battle_config,
       troop_damage_config: rules.troop_damage_config,
       troop_stamina_config: rules.troop_stamina_config,
       troop_limit_config: { ...rules.troop_limit_config, troops_per_military_building: 1, max_defense_armies: 4 },
