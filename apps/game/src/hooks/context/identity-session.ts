@@ -32,20 +32,35 @@ export const notificationOwnerOf = (session: Session | null): string | null => s
 export const identityUsername = (session: Session | null): string | null =>
   session ? profileOfIdentityUser(session.user).name : null;
 
-export const useIdentitySessionStore = create<IdentitySessionStore>()((set) => ({
+let sessionRevision = 0;
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
+let initialLoad: Promise<void> | null = null;
+
+export const useIdentitySessionStore = create<IdentitySessionStore>()((set, get) => ({
   status: "loading",
   session: null,
   applySession: (session) => {
+    sessionRevision += 1;
+    if (retryTimer) clearTimeout(retryTimer);
+    retryTimer = null;
     if (!session) useAccountStore.getState().setGameplayAccount(null, null);
     set({ session, status: resolveStatus(session) });
   },
   refresh: async () => {
+    const revision = ++sessionRevision;
     try {
       const session = await identityClient.getSession();
-      set({ session, status: resolveStatus(session) });
+      if (revision === sessionRevision) get().applySession(session);
     } catch (error) {
+      if (revision !== sessionRevision) return;
       console.error("identity_session_load_failed", error);
-      set({ session: null, status: "anonymous" });
+      initialLoad = null;
+      // An unreadable session is unknown, never evidence of sign-out. Keep the last known fact and retry.
+      if (!retryTimer)
+        retryTimer = setTimeout(() => {
+          retryTimer = null;
+          void loadIdentitySessionOnce();
+        }, 5_000);
     }
   },
 }));
@@ -55,8 +70,6 @@ export async function signOutIdentitySession(): Promise<void> {
   await identityClient.signOut();
   useIdentitySessionStore.getState().applySession(null);
 }
-
-let initialLoad: Promise<void> | null = null;
 
 const loadIdentitySessionOnce = (): Promise<void> => (initialLoad ??= useIdentitySessionStore.getState().refresh());
 
