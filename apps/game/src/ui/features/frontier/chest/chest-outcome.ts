@@ -4,7 +4,7 @@ import type { Intensity } from "@/ui/motion/motion-scale";
 
 export type ChestOutcome =
   | { kind: "lords"; intensity: Intensity; lords: number }
-  | { kind: "relic"; intensity: Intensity; lordsSpent: boolean };
+  | { kind: "relic"; intensity: Intensity; lordsSpent?: boolean };
 
 const TIERS = ["common", "uncommon", "rare", "epic"] as const;
 

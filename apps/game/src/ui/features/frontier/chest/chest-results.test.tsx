@@ -11,7 +11,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { configManager } from "@bibliothecadao/eternum";
 import { type GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
-import { beginChestOpening, closeChestMoment, useChestMoment } from "./chest-moment";
+import { beginChestOpening, confirmChestOpening, closeChestMoment, useChestMoment } from "./chest-moment";
 import { useChestResults } from "./chest-results";
 
 const PLAYER = "0x111";
@@ -128,3 +128,74 @@ describe("a chest's result", () => {
     act(() => root.unmount());
   });
 });
+
+it.each(["relic", "missing", "story"] as const)(
+  "recovers facts while preserving same-batch stories (%s)",
+  async (result) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+    useAccountStore.setState({ account: { address: PLAYER } as never });
+    const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 1, actor: PLAYER, complete: true, timestamp: 100 });
+    store.applyFacts([
+      set("0x1", "Structure", home),
+      set("0x2", "ExplorerTroops", { ...rowFixture.expected.value, game_id: 1, explorer_id: 201, owner: 100 }),
+      set("0x3", "ArmyProgress", progress(null)),
+      set("0x4", "ChestRules", {
+        game_id: 1,
+        relic_probability: 9000,
+        token_cap: 1,
+        lords_amounts: { common: "100", uncommon: "400", rare: "1500", epic: "6000" },
+        lords_pool: "1000000",
+        season_epochs: 70,
+      }),
+      set("0x5", "TileOccupancy", {
+        game_id: 1,
+        col: 4,
+        row: 5,
+        alt: false,
+        entity_id: 99,
+        category: 34,
+        is_structure: false,
+      }),
+    ] as never);
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: PLAYER } as never}>
+          <Probe />
+        </GameProvider>,
+      ),
+    );
+    const opening = { gameId: 1, explorerId: 201, hex: { col: 4, row: 5, alt: false } };
+    await act(async () => {
+      beginChestOpening({ x: 10, y: 10 }, { opening });
+      confirmChestOpening(opening);
+    });
+    expect(seen.moment?.result).toBeNull();
+    await act(async () => {
+      store.applyFacts([
+        set("0x5", "TileOccupancy", null),
+        set(
+          "0x3",
+          "ArmyProgress",
+          progress(
+            result === "relic"
+              ? { id: 5, source: "Relic", amount: 2, choices: ["Battle", "Scouting", "Support"] }
+              : null,
+          ),
+        ),
+      ] as never);
+      if (result === "story") store.applyEvent(chestStory(1, "Token", 3));
+    });
+    if (result === "relic")
+      expect(seen.moment?.result).toMatchObject({
+        outcome: { kind: "relic", intensity: 1 },
+        relic: { offer: { amount: 2 } },
+      });
+    else if (result === "story") expect(seen.moment?.result).toMatchObject({ outcome: { kind: "lords", lords: 6000 } });
+    else expect(seen.moment).toBeNull();
+    act(() => root.unmount());
+  },
+);

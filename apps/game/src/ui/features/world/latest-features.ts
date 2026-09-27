@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-27",
+    title: "Chest opening recovery",
+    description:
+      "Confirmed chest openings recover pending relic choices after a reconnect, and clear the opening effect when its result is unavailable.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
     title: "Blitz attack preview accuracy",
     description:
       "Attack previews stop at the battle cooldown, showing what this attack can do before another order is allowed.",

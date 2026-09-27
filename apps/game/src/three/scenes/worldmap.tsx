@@ -250,7 +250,13 @@ import {
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-army-select-request";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
-import { beginChestOpening, cancelChestOpening, readChestBeat } from "@/ui/features/frontier/chest/chest-moment";
+import {
+  beginChestOpening,
+  cancelChestOpening,
+  confirmChestOpening,
+  type ChestOpening,
+  readChestBeat,
+} from "@/ui/features/frontier/chest/chest-moment";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
 import {
@@ -3703,15 +3709,25 @@ export default class WorldmapScene extends WarpTravel {
     const account = useAccountStore.getState().account;
     if (!account) return;
     const expedition = this.game.store.get("ChestRules", { game_id: configManager.getActiveGameId() }) !== undefined;
-    if (expedition) this.holdExpeditionChest(hex);
+    const opening = {
+      gameId: configManager.getActiveGameId(),
+      explorerId,
+      hex: { ...hex, alt: useUIStore.getState().mapLayer },
+    };
+    if (expedition) this.holdExpeditionChest(opening);
     const sent = await openRelicCrate({ systemCalls: this.game.systemCalls, account, explorerId, hex });
-    if (!sent && expedition) cancelChestOpening();
+    if (expedition) {
+      if (sent) confirmChestOpening(opening);
+      else cancelChestOpening(opening);
+    }
   }
 
   /** The chest's hold: the moment starts from the chest on screen and the world's chest plays its beats. */
-  private holdExpeditionChest(hex: HexPosition): void {
+  private holdExpeditionChest(opening: ChestOpening): void {
+    const { hex } = opening;
     const tile = { col: hex.col - FELT_CENTER(), row: hex.row - FELT_CENTER() };
     beginChestOpening(projectHexToScreen(tile, this.camera), {
+      opening,
       focus: () => this.moveCameraToColRow(tile.col, tile.row, 0.4),
     });
     this.chestManager.holdChest(hex, readChestBeat);

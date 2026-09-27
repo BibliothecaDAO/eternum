@@ -23,7 +23,15 @@ export type ChestResult =
   | { outcome: Extract<ChestOutcome, { kind: "lords" }> }
   | { outcome: Extract<ChestOutcome, { kind: "relic" }>; relic: { name: string; offer: RelicOffer } };
 
+export interface ChestOpening {
+  gameId: number;
+  explorerId: number;
+  hex: { col: number; row: number; alt: boolean };
+}
+
 interface ChestMoment {
+  opening?: ChestOpening;
+  confirmed: boolean;
   /** The chest on screen, where the tap landed and the reveal rises from. */
   at: { x: number; y: number };
   openedAt: number;
@@ -75,7 +83,7 @@ export const isOffCentre = (at: { x: number; y: number }, view: { width: number;
  */
 export const beginChestOpening = (
   at: { x: number; y: number },
-  { focus, now = performance.now() }: { focus?: () => void; now?: number } = {},
+  { focus, now = performance.now(), opening }: { focus?: () => void; now?: number; opening?: ChestOpening } = {},
 ): void => {
   const view = { width: window.innerWidth, height: window.innerHeight };
   const focused = focus !== undefined && isOffCentre(at, view);
@@ -84,6 +92,8 @@ export const beginChestOpening = (
   charge = AudioManager.getInstance().play("chest.charge");
   set({
     at: focused ? { x: view.width / 2, y: view.height / 2 } : at,
+    opening,
+    confirmed: false,
     openedAt: now,
     phase: "anticipation",
     result: null,
@@ -93,6 +103,12 @@ export const beginChestOpening = (
   });
 };
 
+/** Receipt confirmation enables recovery from the synchronized chest and army facts. */
+export const confirmChestOpening = (opening: ChestOpening): void => {
+  const moment = current();
+  if (moment?.opening === opening) set({ ...moment, confirmed: true });
+};
+
 /** The result arrived (Herald's pre-confirmed chest story): the hold ends once its minimum has passed. */
 export const resolveChestOpening = (result: ChestResult, now = performance.now()): void => {
   const moment = current();
@@ -100,8 +116,17 @@ export const resolveChestOpening = (result: ChestResult, now = performance.now()
   set({ ...moment, result, speed: momentSpeed("chest", result.outcome.intensity, now) });
 };
 
+/** Facts can finish an unresolved opening, but must not replace a story delivered in the same update. */
+export const recoverChestOpening = (opening: ChestOpening, result: ChestResult | null): void => {
+  const moment = current();
+  if (moment?.opening !== opening || moment.result) return;
+  if (result) resolveChestOpening(result);
+  else cancelChestOpening(opening);
+};
+
 /** The opening failed: the hold ends where it is, and the caller says why. */
-export const cancelChestOpening = (): void => {
+export const cancelChestOpening = (opening?: ChestOpening): void => {
+  if (opening && current()?.opening !== opening) return;
   stopCharge();
   set(null);
 };
