@@ -85,6 +85,20 @@ describe("resolveGameEntryTarget", () => {
     });
   });
 
+  it("keeps a realm-first player's handoff when the entry runs before the realm is selected", () => {
+    const enter = (isSpectateMode: boolean) =>
+      resolveGameEntryTarget({
+        chainId: "0xa1",
+        gameId: 3,
+        structureEntityId: 0,
+        worldMapReturnPosition: null,
+        isSpectateMode,
+        entryScene: "hex",
+      }).url;
+    expect(enter(false)).toBe("/g/0xa1/3/map?boot=map-first&resumeScene=hex");
+    expect(enter(true)).toBe("/g/0xa1/3/map?spectate=true");
+  });
+
   it("falls back to a canonical spectator map route when no structure target is available", () => {
     expect(
       resolveGameEntryTarget({

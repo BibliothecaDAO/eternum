@@ -95,7 +95,8 @@ const buildFallbackGameEntryTarget = (input: ResolveGameEntryTargetInput): Resol
       gameId: input.gameId,
       worldMapPosition: null,
       isSpectateMode: input.isSpectateMode,
-      realmFirst: false,
+      // Entered before the realm is selected, the handoff still waits for it rather than settling on the map.
+      realmFirst: input.entryScene === "hex" && !input.isSpectateMode,
     }),
     worldMapPosition: null,
   };
