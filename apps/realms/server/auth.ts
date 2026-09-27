@@ -45,8 +45,12 @@ const verifyOnMainnet =
  * every shard. A new user starts with its id as its name, which reads as "not chosen" until they pick one, offered
  * their Discord name or their email's local part as a suggestion, and with no portrait: a sign-in provider's avatar is
  * not one of ours.
+ *
+ * An account is keyed by its email, and a later email-code sign-in for that address opens it, so no account is created
+ * on an email its provider has not verified: an email code proves the address, and Discord passes its own verified flag.
  */
 const assignRealmsIdentity = async (user: Record<string, unknown>) => {
+  if (user.emailVerified !== true) throw new APIError("FORBIDDEN", { message: "email_not_verified" });
   const id = crypto.randomUUID().replaceAll("-", "");
   const providerName = typeof user.name === "string" ? user.name : "";
   const emailName = typeof user.email === "string" ? (user.email.split("@")[0] ?? "") : "";
@@ -55,17 +59,11 @@ const assignRealmsIdentity = async (user: Record<string, unknown>) => {
 };
 
 /**
- * An account a player signed in to through Discord or an email code they received. Only such an account approves a
- * device; an account from before those were the only ways in does not.
+ * An account whose email is verified, by an email code or by Discord's own check. Only such an account approves a
+ * device; a Discord sign-in alone proves nothing about the email the account is keyed by.
  */
 export const hasVerifiedSignIn = async (db: D1Database, userId: string): Promise<boolean> =>
-  (await db
-    .prepare(
-      `SELECT 1 FROM "user" WHERE "id" = ?1 AND "emailVerified" = 1
-       UNION SELECT 1 FROM "account" WHERE "userId" = ?1 AND "providerId" = 'discord' LIMIT 1`,
-    )
-    .bind(userId)
-    .first()) !== null;
+  (await db.prepare(`SELECT 1 FROM "user" WHERE "id" = ?1 AND "emailVerified" = 1`).bind(userId).first()) !== null;
 
 /**
  * The identity service: sign-in with Discord or an emailed code, the first of which creates the account, and wallets

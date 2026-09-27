@@ -319,6 +319,30 @@ describe("identity Worker", () => {
     }
   });
 
+  it("creates no account from a Discord email Discord has not verified, so that email's owner signs in to their own", async () => {
+    const discord = fakeDiscord();
+    try {
+      const before = await userCount();
+      const squatter = { id: "80351110224678999", username: "squat", email: "owner@realms.test", verified: false };
+      const refused = await signInWithDiscord(createBrowser(), squatter);
+      expect(refused.status).toBe(302);
+      expect(refused.headers.get("location")).toContain("error=email_not_verified");
+      expect(await userCount()).toBe(before);
+
+      const owner = createBrowser();
+      expect((await signInWithCode(owner, "owner@realms.test")).status).toBe(200);
+      const account = (await owner.session())!.user;
+      const discordRows = await proxy.env.DB.prepare(
+        `SELECT count(*) AS n FROM "account" WHERE "userId" = ? AND "providerId" = 'discord'`,
+      )
+        .bind(account.id)
+        .first<{ n: number }>();
+      expect(discordRows?.n).toBe(0);
+    } finally {
+      discord.mockRestore();
+    }
+  });
+
   it("refuses a device approval without a session", async () => {
     const response = await createBrowser().request("/api/devices", { body: deviceChangeFor(realmsIdOf("anyone")) });
     expect(response.status).toBe(401);
