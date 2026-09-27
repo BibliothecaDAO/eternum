@@ -212,6 +212,7 @@ class ShardTest(unittest.TestCase):
             values = dict(line.split("=", 1) for line in output.read_text().splitlines())
             self.assertEqual(output.stat().st_mode & 0o777, 0o600)
             self.assertNotIn("UNRELATED_SECRET", values)
+            self.assertNotIn("RANDOMNESS_PRIVATE_KEY", values)
             self.assertEqual(values["DEPLOYER_ACCOUNT_ADDRESS"], "0x789")
             self.assertEqual(values["DEPLOYER_PRIVATE_KEY"], "0xabc")
             self.assertEqual(values["RPC_URL"], "http://127.0.0.1:28050/rpc/v0_10_2")

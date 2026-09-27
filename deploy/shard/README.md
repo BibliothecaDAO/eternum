@@ -101,13 +101,14 @@ Anyone can host unranked games; ranked games require an approved shard.
 
 Rotate the gateway's submitter only after its key leaks: the shard's authority points Games at a new sequencing account,
 and the account class and guardian stay fixed (the contract refuses changing either). The gateway must hold the new key
-before the rotation lands, or it signs with an account Games no longer accepts. With the new key in
-`RANDOMNESS_PRIVATE_KEY` in your shell only, never in a file you publish, and
-`SEED=athanor-<chain id in lower case, _ as ->`:
+before the rotation lands, or it signs with an account Games no longer accepts. With the new key in `NEW_SEQUENCING_KEY`
+in your shell only, never in a file you publish, and `SEED=athanor-<chain id in lower case, _ as ->`:
 
 ```sh
-docker compose run --rm --no-deps -e RANDOMNESS_PRIVATE_KEY --entrypoint /bin/sh init -ec \
-  'set -a; . /data/harness.env; NATIVE_AUTHORITY_FILE=/data/authority-rotated.json \
+docker compose run --rm --no-deps -e NEW_SEQUENCING_KEY --entrypoint /bin/sh init -ec \
+  'set -a; . /data/harness.env; RANDOMNESS_PRIVATE_KEY=$NEW_SEQUENCING_KEY \
+   DEPLOYER_ACCOUNT_ADDRESS=$(bun -e "console.log(require(\"/data/host-keys.json\").deployerAddress)") \
+   NATIVE_AUTHORITY_FILE=/data/authority-rotated.json \
    exec bun deploy/athanor/harness/native/prepare-authority.ts "'"$SEED"'" /data/native-world.json'
 docker compose stop gateway
 # Set RANDOMNESS_ACCOUNT (the address in data/authority-rotated.json) and RANDOMNESS_PRIVATE_KEY in data/gateway.env.
@@ -119,8 +120,11 @@ docker compose run --rm --no-deps --entrypoint /bin/sh init -ec \
 docker compose up -d gateway
 ```
 
-The deploy command sees the submitter differ from the deployed one and applies it with `set_authentication` as the
-authority; any other difference stops it before a transaction.
+The new key and the host deployer, the authority's administrator as at initialization, are assigned after `harness.env`
+is sourced, so nothing a shard file carries can replace them, and prepare-authority refuses a key equal to the one
+`data/authority.json` records: a rotation that keeps the leaked key stops before any transaction. The deploy command
+sees the submitter differ from the deployed one and applies it with `set_authentication` as the authority; any other
+difference stops it before a transaction.
 
 `docker compose stop` retains state. Starting the same package again audits the existing deployment. Changing the
 release is a separate operator action; never recreate genesis for an existing shard. CI publishes immutable images and

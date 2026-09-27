@@ -342,10 +342,11 @@ def write_gateway_environment(config, directory, environment, authority, world):
     })
 
 
+# The sequencing key stays out: only the gateway signs with it, and a key in this file would overwrite the one an
+# operator passes to any command that sources it, such as a rotation.
 def save_harness_environment(directory, environment):
     keys = (
         "DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY", "RPC_URL", "ADMISSION_URL", "HERALD_URL", "IDENTITY_URL",
-        "RANDOMNESS_PRIVATE_KEY",
         "SHARD_HOST_ACCOUNTS",
         "NATIVE_AUTHORITY_FILE", "NATIVE_WORLD_MANIFEST", "GAMEPLAY_CONTRACTS_PATH",
         "MADARA_METRICS_FILE", "MADARA_IMAGE", "MADARA_CONTAINER",

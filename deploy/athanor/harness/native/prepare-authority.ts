@@ -1,8 +1,9 @@
 import type { NativeWorldManifest } from "../../../../config/deployer/clean/world/native/types";
 import { assertProviderChain } from "../../../../packages/chain/chain-guard.js";
 import { readShardManifest } from "../../../../packages/chain/shard-manifest.js";
+import { existsSync, readFileSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { ec, hash, RpcProvider } from "starknet";
 import { createMadaraAccount } from "../../../../config/deployer/clean/shared/madara-account";
 import {
@@ -19,6 +20,7 @@ if (!SIGNING_KEY || !rpcUrl || !authorityFile)
   throw new Error("RANDOMNESS_PRIVATE_KEY, RPC_URL and NATIVE_AUTHORITY_FILE are required");
 const root = resolve(import.meta.dir, "../../../..");
 const output = resolve(authorityFile);
+refuseRecordedKey(resolve(dirname(output), "authority.json"));
 const provider = new RpcProvider({ nodeUrl: rpcUrl });
 const adminAddress = process.env.DEPLOYER_ACCOUNT_ADDRESS;
 const adminKey = process.env.DEPLOYER_PRIVATE_KEY;
@@ -42,6 +44,15 @@ await writeFile(
   { mode: 0o600 },
 );
 console.log(JSON.stringify({ event: "native_lab_authority", address, transactions, output }));
+
+// A new authority record under the shard's recorded key rotates nothing: Games would accept an account the leaked key
+// still signs for. Refuse it before any transaction.
+function refuseRecordedKey(recorded: string) {
+  if (recorded === output || !existsSync(recorded)) return;
+  const { signingKey } = JSON.parse(readFileSync(recorded, "utf8")) as { signingKey: string };
+  if (BigInt(signingKey) === BigInt(SIGNING_KEY!))
+    throw new Error(`RANDOMNESS_PRIVATE_KEY is the key ${recorded} records; a rotation needs a new key`);
+}
 
 async function prepareAccount() {
   await declareClass(admin, artifact, (transaction) => transactions.push(transaction));
