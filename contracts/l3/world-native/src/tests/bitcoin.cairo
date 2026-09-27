@@ -8,11 +8,12 @@ use crate::bitcoin::{
     IBitcoinViewsDispatcherTrait, PhaseKey, PhaseStatus,
 };
 use crate::commands::{Command, ExecutionContext};
+use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 use crate::resources::{IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceSlot};
 use crate::tests::StoryResultTestTrait;
 use crate::tests::state::ResourceObservationTrait;
 use crate::troops::Coord;
-use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, setup_with_rules};
+use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant};
 
 fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
     let mut rules = super::recorded::rules();
@@ -21,7 +22,9 @@ fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
     rules.troop_stamina_config.stamina_initial = 120;
     rules.bitcoin_mine_config.min_labor_per_contribution = 10;
     rules.bitcoin_mine_config.prize_per_phase = 1000;
-    let (deployment, first, second) = setup_with_rules(rules);
+    let mut preset = super::resource_commands::fixture_preset(rules);
+    preset.season_win_points = 1;
+    let (deployment, first, second) = super::resource_commands::setup_with_preset(preset);
     grant(deployment, first, 23, 1000);
     grant(deployment, second, 23, 1000);
     (deployment, first, second)
@@ -1061,4 +1064,53 @@ fn capture_at_the_inclusive_phase_end_carries_that_closed_phase() {
     assert_eq!(view.bitcoin_mine(mine).next_phase, 5);
     assert!(execute(d, claim(4, array![mine.entity_id].span()), 49));
     assert_eq!(sat(d, home) + sat(d, mine), 0);
+}
+
+#[test]
+fn audit_regression_early_season_close_preserves_the_open_bitcoin_phase() {
+    let (deployment, home, _) = setup();
+    let mine = mine(deployment, 2000100);
+    capture(deployment, mine, deployment.actor, 30);
+    assert!(execute(deployment, contribute(home, 100), 41));
+    super::resource_commands::set_fixture(
+        deployment.games,
+        selector!("season"),
+        selector!("player_points"),
+        array![3, deployment.actor.into()].span(),
+        1_u128,
+    );
+    assert!(execute(deployment, Command::CloseSeason, 42));
+    assert_eq!(IGameDispatcher { contract_address: deployment.games }.game(3).end_at, 42);
+    assert_terminal_rejection(deployment, contribute(home, 10), 43);
+    assert_terminal_rejection(deployment, Command::CloseBitcoinPhase(4), 48);
+    close_and_bind(deployment, 4);
+    assert!(execute(deployment, claim(4, array![mine.entity_id].span()), 50));
+    assert_eq!(sat(deployment, home), 800);
+    assert_eq!(sat(deployment, mine), 200);
+    assert_eq!(balance(deployment, home), 900);
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
+    assert_eq!(view.bitcoin_mine(mine).next_phase, 5);
+    assert_terminal_rejection(deployment, Command::CloseBitcoinPhase(5), 59);
+}
+
+#[test]
+fn audit_regression_contributions_and_settlement_share_the_final_partial_phase() {
+    let (deployment, home, _) = setup();
+    let game = IGameDispatcher { contract_address: deployment.games }.game(3);
+    super::resource_commands::set_fixture(
+        deployment.games,
+        selector!("games"),
+        selector!("games"),
+        array![3].span(),
+        crate::game::GameRegistry { end_at: 35, ..game },
+    );
+    assert!(execute(deployment, contribute(home, 100), 30));
+    assert_terminal_rejection(deployment, contribute(home, 10), 35);
+    assert_terminal_rejection(deployment, Command::CloseBitcoinPhase(3), 38);
+    close_and_bind(deployment, 3);
+    let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
+    let phase = view.bitcoin_phase(PhaseKey { game_id: 3, phase: 3 });
+    assert_eq!(phase.state, PhaseStatus::Bound);
+    assert_eq!(phase.total_labor, 100);
+    assert_terminal_rejection(deployment, Command::CloseBitcoinPhase(4), 49);
 }

@@ -196,9 +196,8 @@ pub mod PrizesLogic {
             assert_playing(game, context.timestamp);
             let rules = context.rules.unbox();
             let phase = context.timestamp / rules.tick_config.bitcoin_phase_in_seconds;
-            let end = crate::bitcoin::phase_end(phase, rules.tick_config.bitcoin_phase_in_seconds);
+            let end = self.bitcoin_phase_end_in_game(phase, context);
             assert!(context.timestamp < end, "Bitcoin contribution window is closed");
-            assert!(game.end_at == 0 || end <= game.end_at, "Bitcoin phase ends after game");
             assert!(
                 command.amount != 0 && command.amount >= rules.bitcoin_mine_config.min_labor_per_contribution,
                 "Bitcoin labor below minimum",
@@ -399,6 +398,19 @@ pub mod PrizesLogic {
         ) {
             assert!(game_context.rules.unbox().bitcoin_mine_config.enabled, "Bitcoin mining disabled");
         }
+        fn bitcoin_phase_end_in_game(
+            self: @ContractState, phase: u64, game_context: crate::commands::ExecutionContext,
+        ) -> u64 {
+            let interval = game_context.rules.unbox().tick_config.bitcoin_phase_in_seconds;
+            let end = crate::bitcoin::phase_end(phase, interval);
+            let game = game_context.game.unbox();
+            // A phase that started before season closure keeps its original settlement window.
+            assert!(
+                end >= game.start_main_at && (game.end_at == 0 || phase * interval < game.end_at),
+                "Bitcoin phase outside game",
+            );
+            end
+        }
         fn assert_bitcoin_phase_closed(
             self: @ContractState,
             game_id: u32,
@@ -407,11 +419,7 @@ pub mod PrizesLogic {
             game_context: crate::commands::ExecutionContext,
         ) {
             self.assert_bitcoin_command(game_id, timestamp, game_context);
-            let end = crate::bitcoin::phase_end(phase, game_context.rules.unbox().tick_config.bitcoin_phase_in_seconds);
-            let game = game_context.game.unbox();
-            assert!(
-                end >= game.start_main_at && (game.end_at == 0 || end <= game.end_at), "Bitcoin phase outside game",
-            );
+            let end = self.bitcoin_phase_end_in_game(phase, game_context);
             assert!(timestamp >= end, "Bitcoin phase is still open");
         }
     }
