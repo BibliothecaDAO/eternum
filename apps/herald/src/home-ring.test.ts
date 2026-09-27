@@ -127,6 +127,14 @@ const tilesIn = (messages: HeraldStreamMessage[]) =>
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+const applyMessages = (store: NativeFactStore, messages: HeraldStreamMessage[]) => {
+  for (const message of messages) {
+    if (message.type === "snapshot") store.applyFacts(message.rows.map((row) => ({ ...row, model: message.model })));
+    if (message.type === "diff")
+      store.applyFacts([...message.set, ...message.del.map((row) => ({ ...row, value: null }))]);
+  }
+};
+
 describe("home ring", () => {
   it.each([false, true])(
     "keeps only the pending position after consecutive moves (muster during stream: %s)",
@@ -157,12 +165,7 @@ describe("home ring", () => {
       store.setSnapshot({ gameId: 1, actor: "0xa", complete: true, timestamp: MID_DAY });
       let consumed = 0;
       const applyFrames = () => {
-        for (const message of messages.slice(consumed)) {
-          if (message.type === "snapshot")
-            store.applyFacts(message.rows.map((row) => ({ ...row, model: message.model })));
-          if (message.type === "diff")
-            store.applyFacts([...message.set, ...message.del.map((row) => ({ ...row, value: null }))]);
-        }
+        applyMessages(store, messages.slice(consumed));
         consumed = messages.length;
       };
       if (musterDuringStream) live.acceptReceipt({ ...muster, finality_status: "PRE_CONFIRMED" });
@@ -171,16 +174,27 @@ describe("home ring", () => {
       live.acceptReceipt({ ...firstMove, finality_status: "PRE_CONFIRMED" });
       live.acceptReceipt({ ...secondMove, finality_status: "PRE_CONFIRMED" });
       applyFrames();
-      const assertPendingFacts = () => {
-        const positions = [...store.rows("TileOccupancy")].filter((row) => row.entity_id === 20);
+      const assertPendingFacts = (facts = store) => {
+        const positions = [...facts.rows("TileOccupancy")].filter((row) => row.entity_id === 20);
         expect(positions.map((row) => row.col)).toEqual([53]);
-        expect(store.require("ResourceBalance", { game_id: 1, entity_id: 1, resource_type: 23 }).balance).toBe(5n);
-        expect(store.require("ExplorerTroops", { game_id: 1, explorer_id: 20 }).troops.stamina).toEqual({
+        expect(facts.require("ResourceBalance", { game_id: 1, entity_id: 1, resource_type: 23 }).balance).toBe(5n);
+        expect(facts.require("ExplorerTroops", { game_id: 1, explorer_id: 20 }).troops.stamina).toEqual({
           Inline: { amount: 10n, updated_tick: 1n },
         });
-        expect(store.subscriptionScope().unknown).toBeUndefined();
+        expect(facts.subscriptionScope().unknown).toBeUndefined();
+      };
+      const assertSnapshotReplay = () => {
+        const fresh = new NativeFactStore();
+        fresh.setSnapshot({ gameId: 1, actor: "0xa", complete: true, timestamp: MID_DAY });
+        const frames = connect(live, "0xa");
+        const end = frames.findIndex(({ type }) => type === "snapshot_end");
+        expect(end).toBeGreaterThan(0);
+        expect(frames.slice(end + 1).some((frame) => frame.type === "diff" && frame.preconfirmed)).toBe(true);
+        applyMessages(fresh, frames);
+        assertPendingFacts(fresh);
       };
       assertPendingFacts();
+      assertSnapshotReplay();
       confirmed.block_number = 11;
       confirmed.transactions = (musterDuringStream ? [muster, firstMove] : [firstMove]).map((receipt) => ({
         receipt,
@@ -191,6 +205,7 @@ describe("home ring", () => {
       await live.acceptSubscribedHead({ block_number: 11, timestamp: MID_DAY });
       applyFrames();
       assertPendingFacts();
+      assertSnapshotReplay();
       confirmed.block_number = 12;
       confirmed.transactions = pending.transactions;
       pending.block_number = 13;
