@@ -24,6 +24,20 @@ const track = (confirmed: Promise<unknown> | undefined, provider = accepted) =>
   });
 
 describe("transaction confirmation deadline", () => {
+  it("fails an action whose submission is never announced instead of waiting for it", async () => {
+    const result = await trackTransaction({
+      botId: 3,
+      gameId: 2,
+      kind: "upgrade",
+      stage: "workload",
+      provider: accepted,
+      confirmationTimeoutMs: 20,
+      send: () => never as Promise<never>,
+    });
+    expect(result).toMatchObject({ botId: 3, kind: "upgrade", outcome: "submit_failed" });
+    expect(result.error).toContain("No submission was announced within 20 ms");
+  });
+
   it("records the provider's admission-to-visible time, the figure the client reports", async () => {
     let clock = 1_000;
     const now = spyOn(Date, "now").mockImplementation(() => clock);

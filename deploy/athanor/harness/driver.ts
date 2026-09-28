@@ -977,7 +977,10 @@ export async function trackTransaction(options: TrackTransactionOptions): Promis
   try {
     const submitStartedAtMs = Date.now();
     record.submitStartedAt = toIso(submitStartedAtMs);
-    submission = await options.send();
+    submission = await announcedWithin(
+      options.send(),
+      options.confirmationTimeoutMs ?? transactionTimeoutMs(options.stage),
+    );
     const submittedAtMs = Date.now();
     transactionHash = normalizeTransactionHash(submission.transactionHash);
     record.transactionHash = transactionHash;
@@ -996,6 +999,22 @@ export async function trackTransaction(options: TrackTransactionOptions): Promis
   );
   record.rpc = snapshotRpcMetrics(rpc);
   return record;
+}
+
+/**
+ * Every action waits here for its submission, so a submission never announced fails its action, naming it, instead of
+ * holding its bot's queue and the whole run open with no report.
+ */
+async function announcedWithin(send: Promise<HarnessSubmission>, timeoutMs: number): Promise<HarnessSubmission> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`No submission was announced within ${timeoutMs} ms`)), timeoutMs);
+  });
+  try {
+    return await Promise.race([send, deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /** Receipt measurements and the Herald state barrier share one deadline, including stalled RPC requests. */
