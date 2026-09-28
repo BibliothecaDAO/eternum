@@ -1,6 +1,9 @@
+import json
+from pathlib import Path
+import subprocess
 import tempfile
 import unittest
-from pathlib import Path
+from unittest.mock import patch
 
 import deploy
 
@@ -50,6 +53,34 @@ class DeployTest(unittest.TestCase):
         self.assertIn("CHAIN_ID=REALMS_STAGING_D\n", rendered)
         self.assertIn("NODE_MEMORY=8g\n", rendered)
         self.assertIn("HERALD_MEMORY=6g\n", rendered)
+
+
+class InputsTest(unittest.TestCase):
+    INPUTS = {key: 1 for key in deploy.INPUTS}
+
+    def test_only_committed_unchanged_inputs_deploy(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+
+            def git(*command):
+                subprocess.run(["git", *command], cwd=root, check=True, capture_output=True)
+
+            git("init", "-q")
+            environments = root / "deploy/release"
+            environments.mkdir(parents=True)
+            inputs = environments / "staging.json"
+            with patch.object(deploy.shard, "ROOT", root), patch.object(deploy, "ENVIRONMENTS", environments):
+                with self.assertRaisesRegex(ValueError, "deploy/release/staging.json is not committed"):
+                    deploy.load_inputs("staging")
+                inputs.write_text(json.dumps(self.INPUTS))
+                with self.assertRaisesRegex(ValueError, "is not committed"):
+                    deploy.load_inputs("staging")
+                git("add", "deploy/release/staging.json")
+                git("-c", "user.name=ci", "-c", "user.email=ci@example.test", "commit", "-q", "-m", "staging inputs")
+                self.assertEqual(deploy.load_inputs("staging"), self.INPUTS)
+                inputs.write_text(json.dumps({**self.INPUTS, "presets": [9]}))
+                with self.assertRaisesRegex(ValueError, "is not committed"):
+                    deploy.load_inputs("staging")
 
 
 class EnrolmentTest(unittest.TestCase):

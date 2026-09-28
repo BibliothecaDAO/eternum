@@ -4,8 +4,9 @@
     OPERATOR_TOKEN=... python3 deploy/athanor/scripts/deploy.py ENVIRONMENT DIRECTORY
 
 ENVIRONMENT names deploy/release/ENVIRONMENT.json, the deployment's inputs: the shard-v* package tag, the shard's
-identity and public endpoints, its size and the presets it registers. That checked-in file is the environment's only
-preset set; nothing else passes PRESETS. DIRECTORY holds the package and the shard's data/ across runs. The command
+identity and public endpoints, its size and the presets it registers. That committed file is the environment's only
+preset set; nothing else passes PRESETS, and a file git does not track unchanged is refused. No environment has one
+yet: the first is committed with the first shard this command creates. DIRECTORY holds the package and the shard's data/ across runs. The command
 takes the isolated-stack lock, fetches the tag's shard.tar.gz, renders the package's .env from the inputs, checks that
 initialization will receive an operator approval, starts the package, waits for initialization, then compares the
 deployed shard with the release.json CI published beside it: release id, schema, every class, the migration and every
@@ -45,11 +46,22 @@ def main(environment, directory):
 
 
 def load_inputs(environment):
-    inputs = json.loads((ENVIRONMENTS / f"{environment}.json").read_text())
+    path = ENVIRONMENTS / f"{environment}.json"
+    if not committed(path):
+        raise ValueError(f"{path.relative_to(shard.ROOT)} is not committed: an environment's inputs are reviewed in the "
+                         "repository before they deploy")
+    inputs = json.loads(path.read_text())
     missing = [key for key in INPUTS if key not in inputs]
     if missing:
         raise ValueError(f"{environment}.json lacks {', '.join(missing)}")
     return inputs
+
+
+def committed(path):
+    """Tracked by git and unchanged from HEAD."""
+    def succeeds(*command):
+        return subprocess.run(["git", *command], cwd=shard.ROOT, capture_output=True).returncode == 0
+    return succeeds("ls-files", "--error-unmatch", str(path)) and succeeds("diff", "--quiet", "HEAD", "--", str(path))
 
 
 def fetch_package(tag, directory):
