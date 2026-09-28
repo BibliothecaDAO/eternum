@@ -1,5 +1,5 @@
 import { frontierPreset } from "../../../config/source/frontier/native";
-import { afterEach, beforeEach, expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { scheduleFrontierSeason } from "./schedule";
 import { D1LaunchStore } from "./store";
 import { createLaunchTestDatabase, testChain } from "./test-database";
@@ -203,4 +203,37 @@ test("pre-chain migration archives neither block a cutover nor enter the directo
     .bind(JSON.stringify({ gameId: 7 }), archived.id)
     .run();
   expect(await store.playerDirectoryGames()).toEqual([]);
+});
+
+test("directory reads retain both chains and log invalid summaries without reading a manifest", async () => {
+  const malformed = [null, "{", "null", "[]", "{}", '{"gameId":-1}', '{"gameId":"7"}'];
+  const rows = [
+    { id: "first", chainId: "0x1", summary: '{"gameId":7}' },
+    { id: "second", chainId: "0x2", summary: '{"gameId":9}' },
+    { id: "dry", chainId: "0x1", summary: '{"dryRun":true}' },
+    ...malformed.map((summary, index) => ({ id: `bad-${index}`, chainId: "0x1", summary })),
+  ];
+  await database.db.batch(
+    rows.map(({ id, chainId, summary }) =>
+      database.db
+        .prepare(
+          "INSERT INTO launch_runs (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at, summary) VALUES (?, ?, 'game', 'madara.blitz', ?, '{}', 'complete', 0, 0, 0, ?)",
+        )
+        .bind(id, chainId, id, summary),
+    ),
+  );
+  const chainOf = vi.fn(async () => {
+    throw new Error("manifest unavailable");
+  });
+  const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  try {
+    expect(await new D1LaunchStore(database.db, chainOf).playerDirectoryGames()).toEqual([
+      { chainId: "0x1", gameIds: [7] },
+      { chainId: "0x2", gameIds: [9] },
+    ]);
+    expect(chainOf).not.toHaveBeenCalled();
+    expect(log.mock.calls.map(([, details]) => details.runId)).toEqual(malformed.map((_, index) => `bad-${index}`));
+  } finally {
+    log.mockRestore();
+  }
 });

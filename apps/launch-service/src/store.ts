@@ -74,23 +74,30 @@ const storedSummary = <S extends LaunchSummary>(runId: string, summary: S): S =>
   outputPath: `${launchRunPath(runId)}/summary`,
 });
 
-const completedGameId = (summary: string | null): number | null => {
-  if (!summary) throw new Error("A completed game launch has no summary");
-  const decoded = JSON.parse(summary) as { gameId?: unknown; dryRun?: unknown };
-  if (decoded.dryRun === true || decoded.gameId === undefined) return null;
-  if (!Number.isSafeInteger(decoded.gameId) || Number(decoded.gameId) < 0)
-    throw new Error("A completed game launch has an invalid game id");
-  return Number(decoded.gameId);
+type CompletedGameRow = Pick<LaunchRunRow, "id" | "chain_id" | "summary">;
+
+const completedGameId = ({ id, summary }: CompletedGameRow): number | null => {
+  try {
+    if (!summary) throw new Error("A completed game launch has no summary");
+    const decoded = JSON.parse(summary) as { gameId?: unknown; dryRun?: unknown } | null;
+    if (decoded?.dryRun === true) return null;
+    if (!Number.isSafeInteger(decoded?.gameId) || Number(decoded?.gameId) < 0)
+      throw new Error("A completed game launch has an invalid game id");
+    return Number(decoded?.gameId);
+  } catch (error) {
+    console.error("launch_directory_invalid_summary", { runId: id, error });
+    return null;
+  }
 };
 
-const groupCompletedGames = (rows: { chain_id: string; summary: string | null }[]) => {
+const groupCompletedGames = (rows: CompletedGameRow[]) => {
   const chains = new Map<string, Set<number>>();
-  for (const { chain_id, summary } of rows) {
-    const gameId = completedGameId(summary);
+  for (const row of rows) {
+    const gameId = completedGameId(row);
     if (gameId === null) continue;
-    const games = chains.get(chain_id) ?? new Set<number>();
+    const games = chains.get(row.chain_id) ?? new Set<number>();
     games.add(gameId);
-    chains.set(chain_id, games);
+    chains.set(row.chain_id, games);
   }
   return [...chains].map(([chainId, gameIds]) => ({ chainId, gameIds: [...gameIds].sort((a, b) => a - b) }));
 };
@@ -153,9 +160,9 @@ export class D1LaunchStore implements LaunchServiceStore {
   async playerDirectoryGames(): Promise<{ chainId: string; gameIds: number[] }[]> {
     const { results } = await this.db
       .prepare(
-        "SELECT chain_id, summary FROM launch_runs WHERE chain_id <> '' AND kind = 'game' AND status = 'complete' ORDER BY chain_id",
+        "SELECT id, chain_id, summary FROM launch_runs WHERE chain_id <> '' AND kind = 'game' AND status = 'complete' ORDER BY chain_id",
       )
-      .all<{ chain_id: string; summary: string | null }>();
+      .all<CompletedGameRow>();
     return groupCompletedGames(results);
   }
 
