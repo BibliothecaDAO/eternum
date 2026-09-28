@@ -275,7 +275,9 @@ describe("Madara harness workload", () => {
   });
 
   it("separates game-rule exhaustion from harness pathing", () => {
-    expect(classifyWorkloadFailure(new Error("No explorer has 30 stamina for explore"))).toBe("game_rule_limit");
+    expect(classifyWorkloadFailure(new Error("insufficient stamina, you need: 30, and have: 12"))).toBe(
+      "game_rule_limit",
+    );
     expect(classifyWorkloadFailure(new Error("one of the tiles in path is occupied"))).toBe("harness_pathing");
     expect(classifyWorkloadFailure(new Error("one of the tiles in path is not explored"))).toBe("harness_pathing");
     expect(classifyWorkloadFailure(new Error("production completed without a labor or wood output delta"))).toBe(
@@ -572,8 +574,20 @@ describe("Madara harness workload", () => {
   it("classifies revert reasons without treating human tile contention as a threshold failure", () => {
     expect(classifyWorkloadRevertReason("one of the tiles in path is occupied")).toBe("tile_contention");
     expect(classifyWorkloadRevertReason("insufficient stamina")).toBe("stamina");
-    expect(classifyWorkloadRevertReason("not enough labor")).toBe("labor");
+    expect(classifyWorkloadRevertReason("not enough labor")).toBe("resource_shortfall");
     expect(classifyWorkloadRevertReason("unexpected revert")).toBe("other");
+    // The native world's own texts for the same answers.
+    expect(
+      classifyWorkloadRevertReason(
+        "Native action rejected: GAMEPLAY_REJECTED: insufficient stamina, you need: 30, and have: 12",
+      ),
+    ).toBe("stamina");
+    expect(classifyWorkloadRevertReason("Native action rejected: GAMEPLAY_REJECTED: destination occupied")).toBe(
+      "tile_contention",
+    );
+    expect(
+      classifyWorkloadRevertReason("Native action rejected: GAMEPLAY_REJECTED: insufficient resource balance"),
+    ).toBe("resource_shortfall");
     expect(classifyWorkloadRevertReason("Native action rejected: GAMEPLAY_REJECTED: missing explorer")).toBe(
       "explorer_fell",
     );
@@ -588,7 +602,7 @@ describe("Madara harness workload", () => {
       tileContention: 1,
       explorerFell: 1,
       stamina: 1,
-      labor: 0,
+      resourceShortfall: 0,
       other: 0,
     });
   });

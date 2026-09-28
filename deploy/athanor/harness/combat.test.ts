@@ -38,6 +38,8 @@ describe("battle outcome", () => {
   it("counts the game's legal refusals by reason", () => {
     const refusals: Array<[string, string]> = [
       ["insufficient stamina, you need: 30, and have: 12", "stamina"],
+      ["you have 12 stamina, but need 30 to launch attack", "stamina"],
+      ["explorers are not adjacent", "out_of_range"],
       ["you need to wait 14 seconds before you can attack", "cooldown"],
       ["missing explorer", "combatant_gone"],
       ["dead combatant", "combatant_gone"],
@@ -54,6 +56,7 @@ describe("battle outcome", () => {
 
   it("fails a battle the bot caused or that never reached the game", () => {
     expect(classifyBattleOutcome(rejected("actor owns defender"))).toEqual({ result: "failed" });
+    expect(classifyBattleOutcome(rejected("realm pool index out of range"))).toEqual({ result: "failed" });
     expect(classifyBattleOutcome({ outcome: "submit_failed", error: "fetch failed" })).toEqual({ result: "failed" });
     expect(classifyBattleOutcome({ outcome: "confirmation_timeout", error: "no receipt" })).toEqual({
       result: "failed",

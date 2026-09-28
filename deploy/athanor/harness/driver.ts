@@ -29,7 +29,7 @@ export type WorkloadFailureClass =
   | "gameplay_rejection"
   | "gameplay_race"
   | "chain_or_driver";
-export type WorkloadRevertReason = "tile_contention" | "explorer_fell" | "stamina" | "labor" | "other";
+export type WorkloadRevertReason = "tile_contention" | "explorer_fell" | "stamina" | "resource_shortfall" | "other";
 export type TransactionOutcome =
   | "completed"
   | "reverted"
@@ -1410,24 +1410,16 @@ function isGameplayRejection(error: unknown): boolean {
 export function classifyWorkloadFailure(error: unknown): WorkloadFailureClass {
   if (error instanceof HarnessPathingError) return "harness_pathing";
   if (isGameplayRejection(error)) return "gameplay_rejection";
-  const message = errorMessage(error);
-  if (
-    /(?:insufficient|not enough|requires?).*stamina|no explorer has \d+ stamina|stamina.*(?:depleted|required)/i.test(
-      message,
-    ) ||
-    /(?:insufficient|not enough).*labor|labor.*(?:depleted|required)/i.test(message)
-  ) {
-    return "game_rule_limit";
-  }
-  if (/occupied|collision|no .*path|no .*route|path.*not explored|unoccupied exploration direction/i.test(message)) {
-    return "harness_pathing";
-  }
+  const rejection = rejectionOf(errorMessage(error));
+  if (rejection === "stamina" || rejection === "resource_shortfall") return "game_rule_limit";
+  if (rejection === "tile_contention" || rejection === "unrevealed_tile") return "harness_pathing";
   return "chain_or_driver";
 }
 
 export function classifyWorkloadRevertReason(error: unknown): WorkloadRevertReason {
   const rejection = rejectionOf(errorMessage(error));
-  if (rejection === "tile_contention" || rejection === "stamina" || rejection === "labor") return rejection;
+  if (rejection === "tile_contention" || rejection === "stamina" || rejection === "resource_shortfall")
+    return rejection;
   // Another player's battle took the explorer between the plan and the chain running it.
   if (rejection === "attacker_gone" || rejection === "combatant_gone") return "explorer_fell";
   return "other";

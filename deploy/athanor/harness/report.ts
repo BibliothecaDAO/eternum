@@ -588,12 +588,12 @@ export function summarizeFailureClasses(actions: readonly Pick<TrackedTransactio
 }
 
 export function summarizeRevertReasons(actions: readonly Pick<TrackedTransaction, "revertReason">[]) {
-  const counts = { tileContention: 0, explorerFell: 0, stamina: 0, labor: 0, other: 0 };
+  const counts = { tileContention: 0, explorerFell: 0, stamina: 0, resourceShortfall: 0, other: 0 };
   for (const action of actions) {
     if (action.revertReason === "tile_contention") counts.tileContention += 1;
     else if (action.revertReason === "explorer_fell") counts.explorerFell += 1;
     else if (action.revertReason === "stamina") counts.stamina += 1;
-    else if (action.revertReason === "labor") counts.labor += 1;
+    else if (action.revertReason === "resource_shortfall") counts.resourceShortfall += 1;
     else counts.other += 1;
   }
   return counts;
