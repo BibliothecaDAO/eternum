@@ -12,7 +12,7 @@ import { CallData, CairoOption, CairoOptionVariant, hash, shortString, type Acco
 import type { Config } from "@bibliothecadao/types";
 import { worldView } from "@bibliothecadao/eternum";
 import { buildCreateGameParams, type CreateGamePayloadInput } from "./preset";
-import { buildNativePreset } from "../config/native-preset";
+import { buildNativePreset, clockScaled } from "../config/native-preset";
 import { waitForSuccess } from "../shared/declare";
 import type { NativeWorldManifest, RegistrarWorld } from "../world/native/types";
 import { nativeGamesAbi, nativeWorldSchema } from "../world/native/manifest";
@@ -123,5 +123,9 @@ export function loadNativePresetConfiguration(environment: DeploymentEnvironment
   const stored = target.chain === "madara" ? NATIVE_CONFIGURATIONS[preset.gameType] : undefined;
   if (preset.environmentGameType !== target.gameType || !stored)
     throw new Error(`No native preset definition for ${environment} preset ${presetId}`);
-  return configurationOf(structuredClone(stored), `config/generated/${preset.gameType}.madara.json`);
+  const config = configurationOf(structuredClone(stored), `config/generated/${preset.gameType}.madara.json`);
+  // A scaled preset's season lasts as many of its shorter days as its mode's: the length scales with the epoch.
+  if (preset.clockScale)
+    config.season.durationSeconds = clockScaled(config.season.durationSeconds, preset.clockScale, "season duration");
+  return config;
 }

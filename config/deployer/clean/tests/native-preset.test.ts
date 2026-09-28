@@ -7,6 +7,7 @@ import { CallData, type Account, type RpcProvider } from "starknet";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
+import { applyDeploymentConfigOverrides } from "../config/config-loader";
 import { buildNativePreset } from "../config/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
@@ -575,5 +576,27 @@ describe("fixed Regular Blitz rosters", () => {
     const provider = { callContract } as unknown as RpcProvider;
     expect(await findRegistrarGame(provider, "free-slot-1", target as never)).toEqual({ gameId: 7 });
     expect(callContract.mock.calls).toHaveLength(1);
+  });
+});
+
+describe("scaled Frontier presets", () => {
+  const launchedSeconds = (presetId: number) =>
+    applyDeploymentConfigOverrides(loadNativePresetConfiguration("madara.frontier", presetId), {
+      startMainAt: 1_800_000_000,
+      factoryAddress: "",
+    }).season.durationSeconds;
+  const epochSeconds = (presetId: number) =>
+    buildNativePreset(loadNativePresetConfiguration("madara.frontier", presetId), presetId).rules.epoch_seconds;
+
+  test("a playtest launch lasts seventy one-hour days, not seventy calendar days", () => {
+    expect(epochSeconds(FRONTIER_PLAYTEST_PRESET_ID)).toBe(3_600);
+    expect(launchedSeconds(FRONTIER_PLAYTEST_PRESET_ID)).toBe(70 * 3_600);
+    expect(launchedSeconds(FRONTIER_PRESET_ID)).toBe(70 * 86_400);
+  });
+
+  test("every scaled preset keeps its mode's season length in epochs", () => {
+    const epochs = launchedSeconds(FRONTIER_PRESET_ID) / epochSeconds(FRONTIER_PRESET_ID);
+    for (const presetId of [FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_PLAYTEST_PRESET_ID])
+      expect(launchedSeconds(presetId) / epochSeconds(presetId)).toBe(epochs);
   });
 });

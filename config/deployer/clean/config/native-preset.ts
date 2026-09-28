@@ -393,10 +393,12 @@ export function buildNativePreset(config: Config, presetId: number) {
 
 /** A fixture preset plays its mode's season this many times faster: a shorter day, faster army ticks, more output. */
 function scaleSeasonClocks(definition: ReturnType<typeof buildNativePreset>, scale: number): void {
-  requireWholeDivision(definition.rules.epoch_seconds, scale, "epoch_seconds");
-  requireWholeDivision(definition.rules.tick_config.armies_tick_in_seconds, scale, "armies_tick_in_seconds");
-  definition.rules.epoch_seconds /= scale;
-  definition.rules.tick_config.armies_tick_in_seconds /= scale;
+  definition.rules.epoch_seconds = clockScaled(definition.rules.epoch_seconds, scale, "epoch_seconds");
+  definition.rules.tick_config.armies_tick_in_seconds = clockScaled(
+    definition.rules.tick_config.armies_tick_in_seconds,
+    scale,
+    "armies_tick_in_seconds",
+  );
   for (const resource of definition.resources.resources) {
     resource.realm_rate *= BigInt(scale);
     resource.village_rate *= BigInt(scale);
@@ -408,8 +410,10 @@ function scaleSeasonClocks(definition: ReturnType<typeof buildNativePreset>, sca
   for (const mine of definition.resources.mine_kinds) mine.config.production_rate *= BigInt(scale);
 }
 
-function requireWholeDivision(value: number, scale: number, name: string): void {
-  if (!Number.isInteger(value / scale)) throw new Error(`${name} ${value} does not divide by clock scale ${scale}`);
+/** A span of a scaled preset's season, in seconds: its mode's span divided by the clock scale, never rounded. */
+export function clockScaled(seconds: number, scale: number, name: string): number {
+  if (!Number.isInteger(seconds / scale)) throw new Error(`${name} ${seconds} does not divide by clock scale ${scale}`);
+  return seconds / scale;
 }
 
 function validateMineConfig(config: Config): void {
