@@ -41,7 +41,6 @@ export const handleDirectory = async (request: Request, dependencies: DirectoryD
   const player = playerOf(request);
   if (player === INVALID) return json({ error: "invalid_player" }, 400);
   const launchDirectory = await readLaunchDirectoryRecords(dependencies);
-  if (!launchDirectory) return json({ error: "launch_directory_unavailable" }, 503);
   const listings = await listShards(dependencies, player);
   return json({
     shards: listings.map((listing) =>
@@ -49,9 +48,7 @@ export const handleDirectory = async (request: Request, dependencies: DirectoryD
         ? listing
         : {
             ...listing,
-            games: listing.games.filter(
-              (game) => isPlayerGame(game, listing.chainId, launchDirectory) && !isSettled(game),
-            ),
+            games: playerGames(listing, launchDirectory).filter((game) => !isSettled(game)),
           },
     ),
   });
@@ -70,17 +67,11 @@ export const handleDirectoryHistory = async (request: Request, dependencies: Dir
   if (!Number.isInteger(limit) || limit < 1 || limit > HISTORY_PAGE_MAX) return json({ error: "invalid_limit" }, 400);
   if (cursor !== null && !HISTORY_CURSOR.test(cursor)) return json({ error: "invalid_cursor" }, 400);
   const launchDirectory = await readLaunchDirectoryRecords(dependencies);
-  if (!launchDirectory) return json({ error: "launch_directory_unavailable" }, 503);
   const listings = await listShards(dependencies, player);
   const settled = listings
     .flatMap((listing) =>
-      (listing.games ?? [])
-        .filter(
-          (game) =>
-            isPlayerGame(game, listing.chainId, launchDirectory) &&
-            isSettled(game) &&
-            (player === null || game.player_state?.registered === true),
-        )
+      playerGames(listing, launchDirectory)
+        .filter((game) => isSettled(game) && (player === null || game.player_state?.registered === true))
         .map((game) => ({ ...game, chainId: listing.chainId, shardUrl: listing.url })),
     )
     .sort((a, b) => historyPosition(b).localeCompare(historyPosition(a)));
@@ -121,6 +112,14 @@ const listShards = async (dependencies: DirectoryDependencies, player: string | 
 };
 
 const isSettled = (game: HeraldGameDirectoryEntry) => game.status === "Settled";
+
+/** An unreadable launch list leaves shard games visible, with entry unavailable until it recovers. */
+const playerGames = (listing: ShardListing, directory: LaunchDirectory | null) => {
+  const games = listing.games ?? [];
+  return directory === null
+    ? games.map((game) => ({ ...game, error: "unavailable" as const }))
+    : games.filter((game) => isPlayerGame(game, listing.chainId, directory));
+};
 
 /** Only a completed launch-service run makes a game a player season. Chain id prevents numeric game-id collisions. */
 const isPlayerGame = (game: HeraldGameDirectoryEntry, shardChainId: string, directory: LaunchDirectory) =>

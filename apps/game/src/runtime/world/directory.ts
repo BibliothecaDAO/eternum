@@ -1,5 +1,10 @@
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 
+/** A shard game whose launch records may temporarily be unavailable. */
+export interface DirectoryEntry extends HeraldGameDirectoryEntry {
+  error?: "unavailable";
+}
+
 export type DirectoryShardStatus = "active" | "draining" | "retired";
 
 /** One shard as our directory lists it; `games` is null when the Worker could not read that shard. */
@@ -7,7 +12,7 @@ export interface DirectoryShard {
   url: string;
   chainId: string;
   status: DirectoryShardStatus;
-  games: HeraldGameDirectoryEntry[] | null;
+  games: DirectoryEntry[] | null;
   error?: "unavailable";
 }
 
@@ -34,15 +39,15 @@ export const isGameOver = (game: HeraldGameDirectoryEntry): boolean =>
   game.status === "Ended" || game.status === "Settled";
 
 /** Whether the player can enter the game now: ready, not over, and theirs to play; a Frontier season is open to all. */
-export const canEnterGame = (game: HeraldGameDirectoryEntry): boolean =>
-  game.ready && !isGameOver(game) && (isMember(game) || game.mode === "frontier");
+export const canEnterGame = (game: DirectoryEntry): boolean =>
+  !game.error && game.ready && !isGameOver(game) && (isMember(game) || game.mode === "frontier");
 
 /** The shards the directory still serves: retired ones are history. */
 export const listedShards = (shards: readonly DirectoryShard[]): DirectoryShard[] =>
   shards.filter((shard) => shard.status !== "retired");
 
 /** A finished game in our history, with the shard it lives on. */
-interface HistoryGame extends HeraldGameDirectoryEntry {
+interface HistoryGame extends DirectoryEntry {
   chainId: string;
   shardUrl: string;
 }

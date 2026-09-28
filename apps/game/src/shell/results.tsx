@@ -132,6 +132,7 @@ const ResultRow = ({
   >
     <summary className="flex cursor-pointer flex-wrap items-center gap-3 text-[13.5px]">
       <b className="text-gold">{game.name}</b>
+      {game.error && <span>Unavailable</span>}
       <span className="text-gold/60">
         {modeLabel(game)} · {game.player_count} players · {formatDate(game.clock.end_at)}
       </span>

@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-28",
+    title: "Games Stay Visible During Outages",
+    description:
+      "Games remain listed when launch records cannot be read, with an unavailable label until entry recovers.",
+    type: "fix",
+  },
+  {
     date: "2026-09-27",
     title: "Clear Blitz watch entry",
     description:

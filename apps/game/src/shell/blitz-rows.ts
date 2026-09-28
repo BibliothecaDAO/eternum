@@ -16,7 +16,7 @@ export type BlitzRow = {
   key: string;
   secondsLeft: number | null;
   seats: { filled: number; total: number };
-  action: BlitzAction;
+  action: BlitzAction | null;
 } & ({ kind: "game"; game: DirectoryGame } | { kind: "slot"; slot: PlaytestSlot });
 
 /** Live games first, then games about to start, then the slots still filling, each soonest first. */
@@ -51,8 +51,15 @@ const gameRow = (game: DirectoryGame, secondsLeft: number | null): BlitzRow => (
   game,
   secondsLeft: secondsLeft === null ? null : Math.max(0, secondsLeft),
   seats: { filled: game.player_count, total: game.roster_count || BLITZ_SEATS },
-  action: isGameOver(game) ? "spectate" : canEnterGame(game) ? "enter" : isMember(game) ? "registered" : "spectate",
+  action: gameAction(game),
 });
+
+const gameAction = (game: DirectoryGame): BlitzAction | null => {
+  if (game.error) return null;
+  if (isGameOver(game)) return "spectate";
+  if (canEnterGame(game)) return "enter";
+  return isMember(game) ? "registered" : "spectate";
+};
 
 const slotRow = (slot: PlaytestSlot, realmsId: string | undefined, now: number): BlitzRow => ({
   kind: "slot",

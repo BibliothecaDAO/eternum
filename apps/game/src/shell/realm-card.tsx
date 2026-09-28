@@ -1,3 +1,4 @@
+import { canEnterGame } from "@/runtime/world/directory";
 import { getRealmNameById } from "@bibliothecadao/eternum";
 import { Trophy } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -70,7 +71,11 @@ export const RealmCard = ({ season, className }: { season: DirectoryGame; classN
           />
         </div>
         <div className="lg:w-56">
-          <PrimaryLink to={entryHref(season, "play")}>Resume</PrimaryLink>
+          {season.error ? (
+            <span>Unavailable</span>
+          ) : (
+            canEnterGame(season) && <PrimaryLink to={entryHref(season, "play")}>Resume</PrimaryLink>
+          )}
         </div>
       </div>
     </article>

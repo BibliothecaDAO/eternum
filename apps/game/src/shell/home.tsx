@@ -1,4 +1,5 @@
 import { useIdentitySession } from "@/hooks/context/identity-session";
+import { canEnterGame } from "@/runtime/world/directory";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { entryHref } from "./game-links";
@@ -80,7 +81,11 @@ const Pitch = ({ season }: { season: DirectoryGame | undefined }) => (
     </h1>
     <p className="text-[17px] text-[#eadfc8] lg:text-[19px]">A new map every day. Your realm keeps what it earns.</p>
     <div className="lg:w-80">
-      <PrimaryLink to={season ? entryHref(season, "play") : "/play"}>Play free</PrimaryLink>
+      {season?.error ? (
+        <span>Unavailable</span>
+      ) : (
+        <PrimaryLink to={season && canEnterGame(season) ? entryHref(season, "play") : "/play"}>Play free</PrimaryLink>
+      )}
     </div>
   </section>
 );

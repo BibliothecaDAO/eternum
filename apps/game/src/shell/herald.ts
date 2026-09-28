@@ -1,16 +1,21 @@
 import { fetchHeraldLeaderboard, type GameRef, type Shard } from "@bibliothecadao/eternum/shard";
-import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 
-import { canEnterGame, fetchDirectory, fetchDirectoryHistory, type DirectoryShard } from "@/runtime/world/directory";
+import {
+  canEnterGame,
+  fetchDirectory,
+  fetchDirectoryHistory,
+  type DirectoryShard,
+  type DirectoryEntry,
+} from "@/runtime/world/directory";
 import { readShardDirectory } from "@/runtime/world/shard-directory";
 import { listPastedShards, openPastedShards, requireOpenShard } from "@/runtime/world/shards";
 
 /** A directory entry with the shard it came from, so the shell can address the game as (chain id, game id). */
-export interface DirectoryGame extends HeraldGameDirectoryEntry {
+export interface DirectoryGame extends DirectoryEntry {
   chainId: string;
 }
 
@@ -191,7 +196,7 @@ const soonest = (games: readonly DirectoryGame[]): DirectoryGame | undefined =>
  * taking players.
  */
 export const nextOpenGame = (games: readonly DirectoryGame[]): DirectoryGame | undefined =>
-  soonest(games.filter(canEnterGame)) ?? soonest(games.filter((game) => OPEN_STATUSES.has(game.status)));
+  soonest(games.filter(canEnterGame)) ?? soonest(games.filter((game) => !game.error && OPEN_STATUSES.has(game.status)));
 
 /** A settled game has its recorded result and belongs to the history, not the game list. */
 const isSettled = (game: DirectoryGame): boolean => game.status === "Settled";

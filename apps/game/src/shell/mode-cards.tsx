@@ -82,7 +82,7 @@ export const FrontierCard = ({ season, to, className }: { season: DirectoryGame;
     name="Frontier"
     to={to}
     className={className}
-    state={<PlayersChip count={season.player_count} />}
+    state={season.error ? <span>Unavailable</span> : <PlayersChip count={season.player_count} />}
     action={
       canEnterGame(season) && (
         <PrimaryLink small to={entryHref(season, "play")}>
@@ -176,7 +176,9 @@ export const BlitzLobbyCard = ({
 /** A row's state: the live dot, or the time until it starts or its slot closes; then its seats. */
 const BlitzRowState = ({ row }: { row: BlitzRow }) => (
   <span className="flex min-w-0 items-center gap-3">
-    {row.kind === "game" && row.game.status === "Ended" ? (
+    {row.kind === "game" && row.game.error ? (
+      <span>Unavailable</span>
+    ) : row.kind === "game" && row.game.status === "Ended" ? (
       <span className="font-[Lexend] text-[15px] font-extrabold text-[#eadfc8]">Ended</span>
     ) : row.secondsLeft === null ? (
       <span className="flex items-center gap-2 font-[Lexend] text-[15px] font-extrabold text-[#eadfc8]">
@@ -259,7 +261,11 @@ export const EternumCard = ({
       to={to}
       className={className}
       state={
-        next && !open && next.clock.start_main_at > now && <TimeLeftChip seconds={next.clock.start_main_at - now} />
+        next?.error ? (
+          <span>Unavailable</span>
+        ) : (
+          next && !open && next.clock.start_main_at > now && <TimeLeftChip seconds={next.clock.start_main_at - now} />
+        )
       }
       action={
         open && (
