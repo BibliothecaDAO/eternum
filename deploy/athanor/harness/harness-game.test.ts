@@ -194,3 +194,14 @@ test("a confirmed action the provider reported no figure for records none and le
   await expect(submission.admissionToVisibleMs).resolves.toBeUndefined();
   expect(provider.listenerCount("transactionComplete")).toBe(0);
 });
+
+test("a signer with its own client acts through it, where its submissions are announced", () => {
+  const shared = { gameId: 5, setup: { store: {}, systemCalls: {} } } as unknown as GameClient;
+  const own = { gameId: 5, setup: { store: {}, systemCalls: {} } } as unknown as GameClient;
+  const signer = { address: "0x0abc" } as unknown as Account;
+  const actorClients = new Map([["0xabc", { client: own } as unknown as HarnessGameClient]]);
+  const game = createHarnessGame(shared, undefined, actorClients);
+  expect(game.clientFor(signer)).toBe(own);
+  expect(createHarnessGame(shared).clientFor(signer)).toBe(shared);
+  expect(() => game.clientFor({ address: "0xdef" } as unknown as Account)).toThrow("has no client of its own");
+});

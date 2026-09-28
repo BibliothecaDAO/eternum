@@ -206,7 +206,7 @@ function chooseEtherealExplore(arrival: Coord, tiles: readonly Tile[]) {
 async function toggleLayer(context: RoundTripContext, kind: "enter" | "exit", direction: number) {
   const expected = { ...positionOf(context.explorer), alt: kind === "enter" };
   await submitStep(context, kind, () =>
-    context.client.setup.systemCalls.toggle_alternate({
+    context.game.clientFor(context.bot.account).setup.systemCalls.toggle_alternate({
       signer: context.bot.account,
       explorer_id: Number(context.explorer.explorerId),
       spire_direction: direction,
@@ -226,12 +226,12 @@ async function moveExplorer(
   await waitForStamina(context);
   await submitStep(context, kind, () =>
     explore
-      ? context.client.setup.systemCalls.explorer_explore({
+      ? context.game.clientFor(context.bot.account).setup.systemCalls.explorer_explore({
           signer: context.bot.account,
           explorer_id: Number(context.explorer.explorerId),
           directions: [direction],
         })
-      : context.client.setup.systemCalls.explorer_travel({
+      : context.game.clientFor(context.bot.account).setup.systemCalls.explorer_travel({
           signer: context.bot.account,
           explorer_id: Number(context.explorer.explorerId),
           directions: [direction],

@@ -132,6 +132,38 @@ function fixture(
     botId: 1,
     explorers: [{ explorerId: 9 }],
   } as unknown as HarnessBot;
+  const client = {
+    gameId: 7,
+    setup: {
+      store: {
+        get: (model: string, keys: Record<string, unknown>) =>
+          rows(model).find((row) => Object.entries(keys).every(([key, value]) => row[key] === value)),
+        entityOccupancy: (_gameId: number, entityId: number) =>
+          rows("TileOccupancy").find((row) => row.entity_id === entityId),
+        inGame: (model: string) => rows(model),
+      },
+      systemCalls: {
+        toggle_alternate: ({ explorer_id, spire_direction }: { explorer_id: number; spire_direction: number }) =>
+          account.execute({
+            contractAddress: "0xa2",
+            entrypoint: "toggle_alternate",
+            calldata: ["7", String(explorer_id), String(spire_direction)],
+          }),
+        explorer_travel: ({ explorer_id, directions }: { explorer_id: number; directions: number[] }) =>
+          account.execute({
+            contractAddress: "0xa1",
+            entrypoint: "explorer_travel",
+            calldata: ["7", String(explorer_id), String(directions.length), ...directions.map(String)],
+          }),
+        explorer_explore: ({ explorer_id, directions }: { explorer_id: number; directions: number[] }) =>
+          account.execute({
+            contractAddress: "0xa1",
+            entrypoint: "explorer_explore",
+            calldata: ["7", String(explorer_id), String(directions[0])],
+          }),
+      },
+    },
+  } as never;
   return {
     server: { stop: (_force: boolean) => {} },
     calls,
@@ -140,39 +172,9 @@ function fixture(
         bots: [bot],
         gameId: 7,
         provider,
-        client: {
-          gameId: 7,
-          setup: {
-            store: {
-              get: (model: string, keys: Record<string, unknown>) =>
-                rows(model).find((row) => Object.entries(keys).every(([key, value]) => row[key] === value)),
-              entityOccupancy: (_gameId: number, entityId: number) =>
-                rows("TileOccupancy").find((row) => row.entity_id === entityId),
-              inGame: (model: string) => rows(model),
-            },
-            systemCalls: {
-              toggle_alternate: ({ explorer_id, spire_direction }: { explorer_id: number; spire_direction: number }) =>
-                account.execute({
-                  contractAddress: "0xa2",
-                  entrypoint: "toggle_alternate",
-                  calldata: ["7", String(explorer_id), String(spire_direction)],
-                }),
-              explorer_travel: ({ explorer_id, directions }: { explorer_id: number; directions: number[] }) =>
-                account.execute({
-                  contractAddress: "0xa1",
-                  entrypoint: "explorer_travel",
-                  calldata: ["7", String(explorer_id), String(directions.length), ...directions.map(String)],
-                }),
-              explorer_explore: ({ explorer_id, directions }: { explorer_id: number; directions: number[] }) =>
-                account.execute({
-                  contractAddress: "0xa1",
-                  entrypoint: "explorer_explore",
-                  calldata: ["7", String(explorer_id), String(directions[0])],
-                }),
-            },
-          },
-        } as never,
+        client,
         game: {
+          clientFor: () => client,
           submit: async (_signer: unknown, act: () => Promise<{ transaction_hash: string }>) => ({
             transactionHash: (await act()).transaction_hash,
             confirmed: Promise.resolve(),

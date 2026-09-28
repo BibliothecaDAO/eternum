@@ -22,12 +22,15 @@ export interface BuildOrderWorkload {
   explorers(realmId: ID): ID[];
 }
 
-/** The same build recommendations and Smart production planner used by the player's Attention panel. */
-export function createBuildOrderWorkload(client: GameClient, game: HarnessGame): BuildOrderWorkload {
+/**
+ * The same build recommendations and Smart production planner used by the player's Attention panel. Each step reads
+ * and acts through the signer's own client, the one `game.submit` hears its submission announced on.
+ */
+export function createBuildOrderWorkload(game: HarnessGame): BuildOrderWorkload {
   return {
-    build: (signer, realmId) => nextBuildOrderAction(client, game, signer, realmId),
-    automate: (signer, realmId) => nextProductionAction(client, signer, realmId),
-    explorers: (realmId) => client.views.explorers(realmId).map((army) => army.entityId),
+    build: (signer, realmId) => nextBuildOrderAction(game.clientFor(signer), game, signer, realmId),
+    automate: (signer, realmId) => nextProductionAction(game.clientFor(signer), signer, realmId),
+    explorers: (realmId) => game.explorersOf(realmId),
   };
 }
 

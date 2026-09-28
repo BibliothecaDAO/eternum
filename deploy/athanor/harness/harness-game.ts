@@ -75,6 +75,8 @@ export interface HarnessGame {
   waitUntilPlaying(): Promise<void>;
   /** Actions signed by this bot; every bot gets its own facade over the shared world. */
   actionsFor(signer: Account): GameActions;
+  /** The client a signer acts through, its own when it has one: `submit` waits for announcements on it alone. */
+  clientFor(signer: Account): GameClient;
   currentTicks(): ChainTicks;
   mapCenter(): Coord;
   settlementStructureIds(player: string): ID[] | undefined;
@@ -135,6 +137,7 @@ export function createHarnessGame(
     ...game,
     forActor,
     actionsFor: (signer) => forActor(signer.address).actionsFor(signer),
+    clientFor: (signer) => forActor(signer.address).clientFor(signer),
     settle: (signer, owner, name, gameType) => forActor(signer.address).settle(signer, owner, name, gameType),
     produceWood: (signer, structureId) => forActor(signer.address).produceWood(signer, structureId),
     submit: (signer, act) => forActor(signer.address).submit(signer, act),
@@ -151,6 +154,7 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
     forActor: () => game,
     waitUntilPlaying: () => waitUntilPlaying(client),
     actionsFor: (signer) => createGameActions(client, { signer }),
+    clientFor: () => client,
     currentTicks: () => {
       const timestamp = getBlockTimestamp();
       return { armies: timestamp.currentArmiesTick, default: timestamp.currentDefaultTick };

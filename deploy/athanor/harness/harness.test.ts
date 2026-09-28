@@ -1106,6 +1106,9 @@ function fakeWorld(extraExplorer?: [number, ExplorerRow]): FakeWorld {
     gameId: 1,
     forActor: () => game,
     actionsFor: () => actions,
+    clientFor: () => {
+      throw new Error("This fake acts only through actionsFor");
+    },
     currentTicks: () => ({ armies: 1, default: 60 }),
     mapCenter: () => ({ x: 0, y: 0 }),
     settlementStructureIds: () => undefined,

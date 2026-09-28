@@ -231,7 +231,7 @@ async function main(): Promise<void> {
           })
         : await runWorkload({
             bots,
-            buildOrder: options.workload === "build-order" ? createBuildOrderWorkload(client, harnessGame) : undefined,
+            buildOrder: options.workload === "build-order" ? createBuildOrderWorkload(harnessGame) : undefined,
             burst: options.workload === "burst",
             game: harnessGame,
             intervalSeconds: options.intervalSeconds,
