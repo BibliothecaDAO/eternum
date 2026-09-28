@@ -30,16 +30,18 @@ struct Routes {
 }
 
 /// Notifications for one subscription. The stream ends when the socket closes; dropping it
-/// unsubscribes, since the node keeps an L3 transaction's status subscription open indefinitely.
+/// removes its route and unsubscribes, since the node keeps status subscriptions open indefinitely.
 pub(crate) struct Notifications<T> {
     receiver: mpsc::UnboundedReceiver<Value>,
     subscription: String,
+    state: Arc<Mutex<Routes>>,
     outgoing: mpsc::UnboundedSender<Message>,
     _type: std::marker::PhantomData<T>,
 }
 
 impl<T> Drop for Notifications<T> {
     fn drop(&mut self) {
+        self.state.lock().expect("socket routes poisoned").subscriptions.remove(&self.subscription);
         // Id 0 is never pending, so the node's reply is discarded.
         let request = json!({ "jsonrpc": "2.0", "id": 0, "method": "starknet_unsubscribe",
             "params": { "subscription_id": self.subscription } });
@@ -109,7 +111,13 @@ impl NodeSocket {
         let request = json!({ "jsonrpc": "2.0", "id": id, "method": method, "params": params });
         self.outgoing.send(Message::text(request.to_string())).context("node WebSocket closed")?;
         let subscription = answer.await.context("node WebSocket closed before the subscription was confirmed")??;
-        Ok(Notifications { receiver, subscription, outgoing: self.outgoing.clone(), _type: std::marker::PhantomData })
+        Ok(Notifications {
+            receiver,
+            subscription,
+            state: self.state.clone(),
+            outgoing: self.outgoing.clone(),
+            _type: std::marker::PhantomData,
+        })
     }
 }
 
@@ -131,6 +139,7 @@ fn route(routes: &Mutex<Routes>, value: Value) {
     } else if let Some(params) = value.get("params") {
         let Some(subscription) = params.get("subscription_id").and_then(subscription_id) else { return };
         if let (Some(sender), Some(result)) = (routes.subscriptions.get(&subscription), params.get("result")) {
+            // A subscribe call can be cancelled before it receives its Notifications owner.
             if sender.send(result.clone()).is_err() {
                 routes.subscriptions.remove(&subscription);
             }
@@ -149,6 +158,29 @@ fn subscription_id(value: &Value) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn dropping_notifications_removes_the_route_without_another_node_frame() {
+        let (outgoing, mut queued) = mpsc::unbounded_channel();
+        let socket =
+            NodeSocket { outgoing, state: Arc::new(Mutex::new(Routes::default())), next_id: AtomicU64::new(1) };
+        let (notifications, ()) =
+            tokio::join!(socket.subscribe::<Value>("starknet_subscribeNewHeads", json!({})), async {
+                let request = queued.recv().await.unwrap();
+                let request: Value = serde_json::from_str(request.to_text().unwrap()).unwrap();
+                route(&socket.state, json!({ "jsonrpc": "2.0", "id": request["id"], "result": "42" }));
+            });
+        let notifications = notifications.unwrap();
+        assert!(socket.state.lock().unwrap().subscriptions.contains_key("42"));
+
+        drop(notifications);
+
+        assert!(socket.state.lock().unwrap().subscriptions.is_empty());
+        let unsubscribe = queued.try_recv().unwrap();
+        let unsubscribe: Value = serde_json::from_str(unsubscribe.to_text().unwrap()).unwrap();
+        assert_eq!(unsubscribe["method"], "starknet_unsubscribe");
+        assert_eq!(unsubscribe["params"]["subscription_id"], "42");
+    }
 
     #[test]
     fn notifications_follow_their_subscription_id_and_ignore_strangers() {
