@@ -209,7 +209,6 @@ const ACTION_READINESS_TIMEOUT_MS = 360_000;
 const ACTION_READINESS_POLL_INTERVAL_MS = 1_000;
 const DEFAULT_SETUP_CONCURRENCY = 6;
 
-class GameRuleLimitError extends Error {}
 class HarnessPathingError extends Error {}
 
 /** Where bots intend to be: the shared store knows where they are, this knows which tiles are spoken for by an in-flight move. */
@@ -418,6 +417,7 @@ async function prepareExplorerRoute(
       stage: "setup",
       tick: 0,
     });
+    if (!transaction) continue;
     setupTransactions.push(transaction);
     assertCompleted(transaction);
   }
@@ -684,7 +684,10 @@ interface RunBotActionOptions {
 
 type ExecuteBotActionOptions = RunBotActionOptions & { chainTicks: ChainTicks };
 
-/** The bot's action for this tick, or none when it has no explorer left to act with: combat can take them all. */
+/**
+ * The bot's action for this tick, or none when it has nothing to act with: combat can take every explorer, or leave none
+ * with the stamina the step costs.
+ */
 async function runBotAction(options: RunBotActionOptions): Promise<TrackedTransaction | undefined> {
   try {
     const chainTicks = options.game.currentTicks();
@@ -844,8 +847,11 @@ async function runExplorerAction({
   scheduledAtMs,
   tick,
   stage = "workload",
-}: ExecuteBotActionOptions & { kind: "move" | "explore"; stage?: TransactionStage }): Promise<TrackedTransaction> {
+}: ExecuteBotActionOptions & { kind: "move" | "explore"; stage?: TransactionStage }): Promise<
+  TrackedTransaction | undefined
+> {
   const plan = planExplorerAction(bot, kind, chainTicks, game, pathReservations);
+  if (!plan) return undefined;
   const selectedExplorer = plan.explorer;
   selectedExplorer.lastUsedAt = actionIndex;
   const reservation = pathReservations.reserve(selectedExplorer.explorerId, plan.from, plan.target);
@@ -947,7 +953,7 @@ function planExplorerAction(
   chainTicks: ChainTicks,
   game: HarnessGame,
   pathReservations: PathReservations,
-): ExplorerActionPlan {
+): ExplorerActionPlan | undefined {
   const indexes = game.armyPathIndexes();
   const wantedActionType = kind === "explore" ? ActionType.Explore : ActionType.Move;
   const remaining = [...bot.explorers];
@@ -975,11 +981,8 @@ function planExplorerAction(
     }
   }
 
-  if (staminaShort) {
-    throw new GameRuleLimitError(
-      `No explorer has enough stamina for ${kind}; the cheapest ${kind} costs ${game.minimumStaminaFor(kind)}`,
-    );
-  }
+  // No explorer can pay for the step, as after a battle: the bot has nothing to send this tick, and nothing failed.
+  if (staminaShort) return undefined;
   const routeState = bot.explorers
     .map((explorer) => {
       const at = coordKey(requireExplorer(game, explorer.explorerId).coord);
@@ -1405,7 +1408,6 @@ function isGameplayRejection(error: unknown): boolean {
 }
 
 export function classifyWorkloadFailure(error: unknown): WorkloadFailureClass {
-  if (error instanceof GameRuleLimitError) return "game_rule_limit";
   if (error instanceof HarnessPathingError) return "harness_pathing";
   if (isGameplayRejection(error)) return "gameplay_rejection";
   const message = errorMessage(error);

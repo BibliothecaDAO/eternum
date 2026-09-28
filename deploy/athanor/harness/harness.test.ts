@@ -456,6 +456,24 @@ describe("Madara harness workload", () => {
     expect(workload.actions[0].outcome).toBe("completed");
   });
 
+  it("skips an explorer tick no explorer can afford instead of recording a failure", async () => {
+    spyOn(configManager, "getMapCenter").mockReturnValue(0);
+    const world = fakeWorld();
+    const bot = readyHarnessBot(world);
+    let reads = 0;
+    // Full for the readiness wait, then spent below both an explore (30) and a move (10), as after a battle.
+    world.game.explorerStamina = () => (++reads === 1 ? 120 : 5);
+    world.actions.armyPaths = () => new ActionPaths();
+    const workload = await runWorkload({
+      bots: [bot],
+      game: world.game,
+      intervalSeconds: 0.01,
+      minutes: 0.001,
+      provider: confirmingProvider(),
+    });
+    expect(workload.actions.map(({ kind, outcome }) => `${kind}:${outcome}`)).toEqual(["produce:completed"]);
+  });
+
   it("plays every explorer step through the bot's client actions and reads the result from the shared store", async () => {
     spyOn(configManager, "getMapCenter").mockReturnValue(0);
     const world = fakeWorld();
