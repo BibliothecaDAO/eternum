@@ -556,13 +556,19 @@ describe("Madara harness workload", () => {
     expect(classifyWorkloadRevertReason("insufficient stamina")).toBe("stamina");
     expect(classifyWorkloadRevertReason("not enough labor")).toBe("labor");
     expect(classifyWorkloadRevertReason("unexpected revert")).toBe("other");
+    expect(classifyWorkloadRevertReason("Native action rejected: GAMEPLAY_REJECTED: missing explorer")).toBe(
+      "explorer_fell",
+    );
 
     const contention = { outcome: "reverted", revertReason: "tile_contention" } as const;
+    const fell = { outcome: "rejected", revertReason: "explorer_fell" } as const;
     const stamina = { outcome: "reverted", revertReason: "stamina" } as const;
     expect(isThresholdBlockingFailure(contention)).toBe(false);
+    expect(isThresholdBlockingFailure(fell)).toBe(false);
     expect(isThresholdBlockingFailure(stamina)).toBe(true);
-    expect(summarizeRevertReasons([contention, stamina])).toEqual({
+    expect(summarizeRevertReasons([contention, fell, stamina])).toEqual({
       tileContention: 1,
+      explorerFell: 1,
       stamina: 1,
       labor: 0,
       other: 0,
@@ -670,6 +676,7 @@ describe("Madara harness reporting", () => {
       admissionToVisibleMs,
       admissionToVisibleMissing: 0,
       heraldConfirmedLagMs,
+      battles: { attempted: 0, succeeded: 0, refused: {}, failed: 0 },
     });
     // One bot short of its own plan does not fail the run while the total clears the bar.
     const passing = assessRosterRun({

@@ -1,6 +1,8 @@
 import type { FrontierEvidence } from "./frontier";
 import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import type { BuildOrderWorkload } from "./build-order";
+import { classifyBattleOutcome, pickBattle, type BattleCandidate, type BattleOutcome } from "./combat";
+import { rejectionOf } from "./rejections";
 import { setTimeout as sleep } from "node:timers/promises";
 import { type Account } from "starknet";
 import type { HarnessProvider } from "./provider";
@@ -27,7 +29,7 @@ export type WorkloadFailureClass =
   | "gameplay_rejection"
   | "gameplay_race"
   | "chain_or_driver";
-export type WorkloadRevertReason = "tile_contention" | "stamina" | "labor" | "other";
+export type WorkloadRevertReason = "tile_contention" | "explorer_fell" | "stamina" | "labor" | "other";
 export type TransactionOutcome =
   | "completed"
   | "reverted"
@@ -56,6 +58,8 @@ export interface TrackedTransaction {
   acceptedOnL2Ms?: number;
   admissionToVisibleMs?: number;
   actionIndex?: number;
+  /** An attack's target and how the game answered it. */
+  battle?: BattleCandidate & BattleOutcome;
   botId: number;
   error?: string;
   exploreRequested?: boolean;
@@ -477,7 +481,7 @@ export async function runWorkload({
             scheduledAtMs,
             tick,
           });
-          actions.push(action);
+          if (action) actions.push(action);
         }),
       );
     }
@@ -680,11 +684,12 @@ interface RunBotActionOptions {
 
 type ExecuteBotActionOptions = RunBotActionOptions & { chainTicks: ChainTicks };
 
-async function runBotAction(options: RunBotActionOptions): Promise<TrackedTransaction> {
+/** The bot's action for this tick, or none when it has no explorer left to act with: combat can take them all. */
+async function runBotAction(options: RunBotActionOptions): Promise<TrackedTransaction | undefined> {
   try {
     const chainTicks = options.game.currentTicks();
     const transaction = await executeBotAction({ ...options, chainTicks });
-    classifyTransactionFailure(transaction);
+    if (transaction) classifyTransactionFailure(transaction);
     return transaction;
   } catch (error) {
     const { actionIndex, bot, kind, rpc, scheduledAtMs, tick } = options;
@@ -692,9 +697,86 @@ async function runBotAction(options: RunBotActionOptions): Promise<TrackedTransa
   }
 }
 
-async function executeBotAction(options: ExecuteBotActionOptions): Promise<TrackedTransaction> {
+async function executeBotAction(options: ExecuteBotActionOptions): Promise<TrackedTransaction | undefined> {
   if (options.kind === "produce") return runProductionAction(options);
+  forgetFallenExplorers(options.bot, options.game);
+  if (options.bot.explorers.length === 0) return undefined;
+  const battle = pickBattle(battleCandidates(options.bot, options.chainTicks, options.game));
+  if (battle) return runBattleAction(options, battle);
   return runExplorerAction({ ...options, kind: options.kind });
+}
+
+/** An explorer that lost its last troops is gone from the facts; the bot stops planning with it. */
+function forgetFallenExplorers(bot: HarnessBot, game: HarnessGame): void {
+  bot.explorers = bot.explorers.filter((explorer) => game.explorer(explorer.explorerId) !== undefined);
+}
+
+/** Every hostile the client offers one of the bot's explorers an attack on, from the same paths a player is shown. */
+function battleCandidates(bot: HarnessBot, chainTicks: ChainTicks, game: HarnessGame): BattleCandidate[] {
+  const indexes = game.armyPathIndexes();
+  const center = game.mapCenter();
+  const candidates: BattleCandidate[] = [];
+  for (const explorer of bot.explorers) {
+    const from = requireExplorer(game, explorer.explorerId).coord;
+    const paths = bot.actions.armyPaths({
+      explorerId: explorer.explorerId,
+      ...indexes,
+      currentDefaultTick: chainTicks.default,
+      currentArmiesTick: chainTicks.armies,
+      playerAddress: ContractAddress(bot.address),
+    });
+    for (const path of paths.values()) {
+      if (ActionPaths.getActionType(path) !== ActionType.Attack) continue;
+      const { col, row } = path[path.length - 1]!.hex;
+      const army = indexes.armyHexes.get(col - center.x)?.get(row - center.y);
+      const structure = indexes.structureHexes.get(col - center.x)?.get(row - center.y);
+      const target = army ?? structure;
+      if (!target) continue;
+      candidates.push({
+        explorerId: explorer.explorerId,
+        targetId: target.id,
+        target: army ? "explorer" : "structure",
+        distance: cubeDistance(from, { x: col, y: row }),
+      });
+    }
+  }
+  return candidates;
+}
+
+/** Sends the attack a player would, through the bot's own client, and records how the game answered it. */
+async function runBattleAction(
+  { actionIndex, bot, game, provider, rpc, scheduledAtMs, tick }: ExecuteBotActionOptions,
+  battle: BattleCandidate,
+): Promise<TrackedTransaction> {
+  const { systemCalls } = game.clientFor(bot.account).setup;
+  const transaction = await trackTransaction({
+    actionIndex,
+    botId: bot.botId,
+    gameId: bot.gameId,
+    kind: "attack",
+    provider,
+    rpc,
+    scheduledAtMs,
+    send: () =>
+      game.submit(bot.account, () =>
+        battle.target === "explorer"
+          ? systemCalls.attack_explorer_vs_explorer({
+              signer: bot.account,
+              aggressor_id: battle.explorerId,
+              defender_id: battle.targetId,
+              steal_resources: [],
+            })
+          : systemCalls.attack_explorer_vs_guard({
+              signer: bot.account,
+              explorer_id: battle.explorerId,
+              structure_id: battle.targetId,
+            }),
+      ),
+    stage: "workload",
+    tick,
+  });
+  transaction.battle = { ...battle, ...classifyBattleOutcome(transaction) };
+  return transaction;
 }
 
 async function runProductionAction({
@@ -1342,10 +1424,10 @@ export function classifyWorkloadFailure(error: unknown): WorkloadFailureClass {
 }
 
 export function classifyWorkloadRevertReason(error: unknown): WorkloadRevertReason {
-  const message = errorMessage(error);
-  if (/one of the tiles in path is occupied|tile.*occupied/i.test(message)) return "tile_contention";
-  if (/stamina/i.test(message)) return "stamina";
-  if (/labor/i.test(message)) return "labor";
+  const rejection = rejectionOf(errorMessage(error));
+  if (rejection === "tile_contention" || rejection === "stamina" || rejection === "labor") return rejection;
+  // Another player's battle took the explorer between the plan and the chain running it.
+  if (rejection === "attacker_gone" || rejection === "combatant_gone") return "explorer_fell";
   return "other";
 }
 

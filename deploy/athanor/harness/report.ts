@@ -1,3 +1,4 @@
+import { addBattleSummaries, summarizeBattles, type BattleSummary } from "./combat";
 import { summarizeFrontierDesign, type FrontierEvidence } from "./frontier";
 import type { HarnessRpcRequests } from "./provider";
 import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
@@ -130,6 +131,7 @@ export interface WorkerWorkloadSummary {
   /** Completed actions the provider reported no admission-to-visible figure for. */
   admissionToVisibleMissing: number;
   heraldConfirmedLagMs: number[];
+  battles: BattleSummary;
 }
 
 export interface HarnessReportInput {
@@ -240,6 +242,7 @@ function summarizeWorkerWorkload(
     admissionToVisibleMs: latencies("admissionToVisibleMs"),
     admissionToVisibleMissing: unmeasuredAdmissions(analysis.completedActions),
     heraldConfirmedLagMs: latencies("heraldConfirmedLagMs"),
+    battles: analysis.battles,
   };
 }
 
@@ -276,6 +279,7 @@ export function assessRosterRun(input: {
     percentiles: input.functional ? null : percentiles,
     plannedActions,
     thresholdEligibleActions,
+    battles: addBattleSummaries(input.workers.map((worker) => worker.battles)),
     releaseSpreadMs: releaseSpread(input.workers),
   };
 }
@@ -359,6 +363,7 @@ export function analyzeHarnessResult(input: HarnessReportInput) {
   const requestedMix = summarizeRequestedMix(actions);
   const actualMix = summarizeCompletedMix(actions);
   const failureClasses = summarizeFailureClasses(failedActions);
+  const battles = summarizeBattles(actions);
   const revertReasons = summarizeRevertReasons(reverts);
   const rpc = summarizeRpcLoad(input.setupTransactions, actions, input.workload.overheadRpc);
 
@@ -391,6 +396,7 @@ export function analyzeHarnessResult(input: HarnessReportInput) {
     checks,
     completedActions,
     failedActions,
+    battles,
     failureClasses,
     latency: measuredRun
       ? latencyAgainstTargets(
@@ -482,6 +488,7 @@ function buildHarnessManifest(
       failedActions: analysis.failedActions.length,
       blockingFailures: analysis.blockingFailures.length,
       failureClasses: analysis.failureClasses,
+      battles: analysis.battles,
       reverts: analysis.reverts.length,
       blockingReverts: analysis.blockingReverts.length,
       revertReasons: analysis.revertReasons,
@@ -554,6 +561,7 @@ function summarizeGameWorkload(
     failedActions: failed.length,
     blockingFailures: failed.filter(isThresholdBlockingFailure).length,
     failureClasses: summarizeFailureClasses(failed),
+    battles: summarizeBattles(gameActions),
     reverts: reverts.length,
     blockingReverts: reverts.filter(isThresholdBlockingFailure).length,
     revertReasons: summarizeRevertReasons(reverts),
@@ -574,9 +582,10 @@ export function summarizeFailureClasses(actions: readonly Pick<TrackedTransactio
 }
 
 export function summarizeRevertReasons(actions: readonly Pick<TrackedTransaction, "revertReason">[]) {
-  const counts = { tileContention: 0, stamina: 0, labor: 0, other: 0 };
+  const counts = { tileContention: 0, explorerFell: 0, stamina: 0, labor: 0, other: 0 };
   for (const action of actions) {
     if (action.revertReason === "tile_contention") counts.tileContention += 1;
+    else if (action.revertReason === "explorer_fell") counts.explorerFell += 1;
     else if (action.revertReason === "stamina") counts.stamina += 1;
     else if (action.revertReason === "labor") counts.labor += 1;
     else counts.other += 1;
@@ -584,10 +593,15 @@ export function summarizeRevertReasons(actions: readonly Pick<TrackedTransaction
   return counts;
 }
 
-export function isThresholdBlockingFailure(action: Pick<TrackedTransaction, "outcome" | "revertReason">): boolean {
+export function isThresholdBlockingFailure(
+  action: Pick<TrackedTransaction, "outcome" | "revertReason" | "battle">,
+): boolean {
   if (action.outcome === "completed") return false;
+  // The game's legal answer to an attack (out of stamina, the target moved or fell) is counted, never blocking.
+  if (action.battle?.result === "refused") return false;
   const isRevert = action.outcome === "reverted" || action.outcome === "rejected";
-  return !isRevert || action.revertReason !== "tile_contention";
+  // Another player's action won the race: the tile was taken or the explorer fell in battle first.
+  return !isRevert || (action.revertReason !== "tile_contention" && action.revertReason !== "explorer_fell");
 }
 
 export function percentile(values: readonly number[], percentileValue: number): number | null {
