@@ -11,9 +11,9 @@ recomputing the entire plan from those percentages every loop.
 **Key Features:**
 
 - **Every minute**: the client starts up production plans for any owned entity with a valid setup.
-- **Per-resource percentages**: Each tracked resource has sliders for complex and simple recipes.
-- **Presets**: “Labor”, “Resource”, “Custom”, and “Idle” presets instantly distribute percentages across every resource
-  with active buildings, respecting entity type and recipe availability.
+- **Per-resource percentages**: Each tracked resource has a slider for resource recipes.
+- **Presets**: “Resource” and “Idle” presets instantly distribute percentages across every resource with active
+  buildings, respecting entity type and recipe availability.
 - **Supply margins**: Inputs are capped at 90% of the live balance.
 - **Local persistence**: Configurations are saved per game in your browser so refreshes keep the latest sliders and
   last-run summaries.
@@ -26,7 +26,7 @@ Production automation runs a global loop that goes through every owned realm and
 2. **Resource scan**: Any resource with buildings or an active recipe is auto-added to bootstrap production, even if you
    never touch the sliders.
 3. **Budgeting**: Each resource receives 90% of its current balance as a budget. Sliders dictate how much of that budget
-   the loop can spend on complex vs. simple recipes.
+   the loop can spend on resource recipes.
 4. **Plan generation**: Recipes reserve inputs according to your percentages and their per-cycle requirements. Recipes
    without enough inputs are skipped and reported in the summary.
 5. **Execution**: If at least one recipe has non-zero cycles, the automation is submitted for that entity.
@@ -40,29 +40,20 @@ Production automation runs a global loop that goes through every owned realm and
 
 ## Production Types
 
-There are still two production paths, now governed by slider percentages:
-
-1. **Complex (Resource → Resource)**:
-   - Burns existing resources to craft another according to the `Resource → Resource` slider.
-   - Example: Spend Wood + Coal to produce Copper.
-2. **Simple (Labor → Resource)**:
-   - Spends Labor to produce a resource using the `Labor → Resource` slider.
-   - Example: Spending Labor to produce Coal.
+Blitz automation uses the `Resource → Resource` slider to spend existing resources according to each recipe. For
+example, spend Wood + Coal to produce Copper.
 
 ## Allocation & Execution Rules
 
 - **Percentages replace orders**: Every loop recomputes usage based on sliders, entity type, and building activity.
-- **Per-resource budgets**: Complex and labor sliders consume independent portions of the 90% resource budget; zeroing a
-  slider skips that recipe.
+- **Per-resource budgets**: Resource sliders allocate the 90% resource budget; zeroing a slider skips that recipe.
 - **5% increments & clamping**: Sliders move in 5% increments and stay within the 0–90% range.
 - **Auto-managed lists**: Any resource with active production is auto-added so presets work the moment new buildings are
   created. Removing the building later prunes the entry automatically.
 
 ## Presets
 
-- `Labor:` Spreads up to 10% labor burn across eligible outputs while respecting shared inputs.
-- `Resource:` Pushes complex crafting to the ceiling.
-- `Custom:` Combines resource + labor preset.
+- `Resource:` Sets resource production to the maximum allocation.
 - `Idle:` Drops every slider to 0%, effectively pausing production for that entity.
 
 ## Managing Automation Orders (UI)
@@ -73,9 +64,7 @@ There are still two production paths, now governed by slider percentages:
 2. **Click modify** to open up the production setup.
 3. **Adjust percentages**:
    - `Resource → Resource`: How much of that resource’s complex inputs to burn per loop.
-   - `Labor → Resource`: How much labor-based production to run (disabled for Donkeys and military-only recipes).
-4. **Apply presets** (optional): Labor, Resource, Custom, and Idle presets instantly redistribute sliders across the
-   entity.
+4. **Apply presets** (optional): Resource and Idle presets instantly redistribute sliders across the entity.
 5. **Repeat for other entities**. Changes save instantly and feed into the next global loop.
 
 #### Auto-balancing & Maintenance
@@ -88,7 +77,7 @@ There are still two production paths, now governed by slider percentages:
 
 You can pause production at different levels:
 
-1. **Individual Resource**: Set both sliders to 0% for a single resource.
+1. **Individual Resource**: Set the slider to 0% for a single resource.
 2. **Entity-wide**: Apply the Idle preset to drop all sliders to 0% until you are ready to resume.
 
 ## Execution Summaries
@@ -97,10 +86,10 @@ After each loop the realm panel shows:
 
 - **Timestamp** of the last run.
 - **Produced/Consumed totals** grouped by resource so you can see net flows.
-- **Skipped recipes** plus reasons (missing inputs, missing labor recipe, etc.).
-- **Total cycles** executed across complex and simple recipes.
+- **Skipped recipes** plus reasons (missing inputs, missing recipe, etc.).
+- **Total cycles** executed across resource recipes.
 
-Use this view to verify slider settings or debug why a resource isn’t running (e.g., depleted labor inputs).
+Use this view to verify slider settings or debug why a resource isn’t running (e.g., depleted resource inputs).
 
 ## Important Considerations
 
@@ -119,5 +108,4 @@ Use this view to verify slider settings or debug why a resource isn’t running 
 
 1. **Start conservative**: Begin with low percentages to watch how inputs drain.
 2. **Monitor early loops**: Use execution summaries after the first few runs to confirm cycle counts and skips.
-3. **Lean on presets**: Labor/Resource/Idle presets are the fastest way to reorient an entity without endless slider
-   drags.
+3. **Lean on presets**: Resource/Idle presets are the fastest way to reorient an entity without endless slider drags.

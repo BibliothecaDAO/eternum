@@ -1,33 +1,17 @@
 import {
   BlitzDonkeyProduction,
   BlitzStandardTroopProduction,
-  BlitzSimpleTroopProduction,
-  BlitzSimpleResourceProduction,
   BlitzStandardResourceProduction,
-  BlitzLaborProduction,
 } from "@/components/blitz-components/ResourceProduction";
 
 # Production
 
-## Resource Mode vs. Labor Mode
+## Resource Production
 
-As is the case for building construction, Lords can choose between resource-based and labor-based production systems
-when deciding how they wish to produce their materials. This can be done by selecting the appropriate panel when making
-an order in the production screen.
+Blitz uses resource recipes for resource and troop production. Producing resources or troops from Labor is disabled.
 
-_Note: Lords must commit the full material requirements to the production order upfront. The output is then produced at
-a given rate per second._
-
-### Resource Mode
-
-The classic production system—every resource and troop production order requires food and a combination of other
-resources as inputs. As with buildings, resource mode is the more complex but efficient way to produce materials.
-
-### Labor Mode
-
-Labor mode reduces the requirements for a production order to food and labor. This is, once again, less efficient in
-both time and resources—but it allows Lords to produce resources on their Realm even if they haven't yet acquired the
-input resources required for resource mode production.
+Lords must commit the full material requirements to the production order upfront. The output is then produced at a given
+rate per second.
 
 ## Materials Production
 
@@ -39,20 +23,17 @@ produce food indefinitely. Each Farm produces 6 Wheat per second.
 ### Resources
 
 The 9 resources found in Blitz are the backbone of the economy. Producing one resource requires the input of two other
-resources (resource mode), or labor (labor mode). Resources are also the main components in building construction and
-troop production - so mastery of these assets is key to success and security.
+resources. Resources are also the main components in building construction and troop production - so mastery of these
+assets is key to success and security.
 
 ![Produce from building](/gifs/produce-from-building-click.gif)
-
-<BlitzSimpleResourceProduction />
 
 <BlitzStandardResourceProduction />
 
 ### Labor
 
-Labor is the primary input for construction and production in simple mode, but is also required in resource mode for
-building construction and Realm upgrades. It is produced automatically by the Keep, creating a steady stream at a fixed
-rate of 2 labor per second.
+Labor is used for building construction and Realm upgrades. It is produced automatically by the Keep, creating a steady
+stream at a fixed rate of 2 labor per second.
 
 ### Troops
 
@@ -60,10 +41,6 @@ Troops are essential for exploration, defending your lands and conquering your e
 produce troops to ensure they remain a relevant force throughout the game. Three troop tiers are available, each
 requiring a combination of food, rare resources, and troops of the previous tier as input for production.
 
-_Note: Only T1 troops can be produced in both resource and labor mode. T2 and T3 troops can only be produced in resource
-mode._
-
-<BlitzSimpleTroopProduction />
 <BlitzStandardTroopProduction />
 
 ### Donkeys
