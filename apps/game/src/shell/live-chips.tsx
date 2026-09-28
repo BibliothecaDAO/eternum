@@ -24,6 +24,9 @@ export const PlayersChip = ({ count }: { count: number }) => (
   <Chip small label="Players" icon={<PersonGlyph />} value={formatAmount(count)} />
 );
 
+/** A game stays visible while its launch records cannot be read. */
+export const UnavailableChip = () => <Chip small label="Game" icon={<Hourglass />} value="Unavailable" />;
+
 /** The one verb of a screen or card, on the primary token: large on a hero, card scale on a card. */
 export const PrimaryLink = ({ to, children, small = false }: { to: string; children: ReactNode; small?: boolean }) => (
   <Link

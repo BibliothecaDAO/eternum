@@ -6,6 +6,7 @@ import { formatDate } from "./format";
 import { modeLabel } from "./game-links";
 import { type DirectoryGame, useDirectory, useHistory, useRealmsPlayer } from "./herald";
 import { ErrorPanel, GhostButton, Loading, Panel, PanelTitle } from "./kit";
+import { UnavailableChip } from "./live-chips";
 import { Standings } from "./standings";
 
 /** The post-game review with its award and share cards; heavy, so it loads only when a player opens a score. */
@@ -132,7 +133,7 @@ const ResultRow = ({
   >
     <summary className="flex cursor-pointer flex-wrap items-center gap-3 text-[13.5px]">
       <b className="text-gold">{game.name}</b>
-      {game.error && <span>Unavailable</span>}
+      {game.error && <UnavailableChip />}
       <span className="text-gold/60">
         {modeLabel(game)} · {game.player_count} players · {formatDate(game.clock.end_at)}
       </span>

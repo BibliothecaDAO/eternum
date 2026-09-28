@@ -1,11 +1,10 @@
 import { useIdentitySession } from "@/hooks/context/identity-session";
-import { canEnterGame } from "@/runtime/world/directory";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { entryHref } from "./game-links";
 import { type DirectoryGame, useDirectory } from "./herald";
 import { ErrorPanel, Loading } from "./kit";
-import { PrimaryLink } from "./live-chips";
+import { PrimaryLink, UnavailableChip } from "./live-chips";
 import { HERO_ART } from "./mode-art";
 import { BlitzCard, EternumCard, FrontierCard } from "./mode-cards";
 import { RealmCard } from "./realm-card";
@@ -82,9 +81,9 @@ const Pitch = ({ season }: { season: DirectoryGame | undefined }) => (
     <p className="text-[17px] text-[#eadfc8] lg:text-[19px]">A new map every day. Your realm keeps what it earns.</p>
     <div className="lg:w-80">
       {season?.error ? (
-        <span>Unavailable</span>
+        <UnavailableChip />
       ) : (
-        <PrimaryLink to={season && canEnterGame(season) ? entryHref(season, "play") : "/play"}>Play free</PrimaryLink>
+        <PrimaryLink to={season ? entryHref(season, "play") : "/play"}>Play free</PrimaryLink>
       )}
     </div>
   </section>

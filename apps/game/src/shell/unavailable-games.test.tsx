@@ -58,7 +58,9 @@ it.each(["frontier", "blitz", "eternum", "realm"])(
       expect(container.querySelector("article")).not.toBeNull();
       expect(container.textContent).toContain("Unavailable");
       expect(container.querySelector("a,button")).toBeNull();
-      await act(async () => root.render(<MemoryRouter>{card({ ...match, error: undefined })}</MemoryRouter>));
+      await act(async () =>
+        root.render(<MemoryRouter>{card({ ...match, error: undefined, ready: mode !== "realm" })}</MemoryRouter>),
+      );
       expect(container.textContent).not.toContain("Unavailable");
       expect(container.querySelector("a")?.textContent).toBe(mode === "realm" ? "Resume" : "Enter");
     } finally {

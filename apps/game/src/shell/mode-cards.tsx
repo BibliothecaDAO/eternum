@@ -9,7 +9,7 @@ import { useJoinSlot, usePlaytestSlots } from "./blitz-slot";
 import { entryHref } from "./game-links";
 import type { DirectoryGame } from "./herald";
 import { ErrorPanel } from "./kit";
-import { PlayersChip, PrimaryLink, SeatBar, TimeLeftChip } from "./live-chips";
+import { PlayersChip, PrimaryLink, SeatBar, TimeLeftChip, UnavailableChip } from "./live-chips";
 import { MODE_ART } from "./mode-art";
 
 /**
@@ -82,7 +82,7 @@ export const FrontierCard = ({ season, to, className }: { season: DirectoryGame;
     name="Frontier"
     to={to}
     className={className}
-    state={season.error ? <span>Unavailable</span> : <PlayersChip count={season.player_count} />}
+    state={season.error ? <UnavailableChip /> : <PlayersChip count={season.player_count} />}
     action={
       canEnterGame(season) && (
         <PrimaryLink small to={entryHref(season, "play")}>
@@ -177,7 +177,7 @@ export const BlitzLobbyCard = ({
 const BlitzRowState = ({ row }: { row: BlitzRow }) => (
   <span className="flex min-w-0 items-center gap-3">
     {row.kind === "game" && row.game.error ? (
-      <span>Unavailable</span>
+      <UnavailableChip />
     ) : row.kind === "game" && row.game.status === "Ended" ? (
       <span className="font-[Lexend] text-[15px] font-extrabold text-[#eadfc8]">Ended</span>
     ) : row.secondsLeft === null ? (
@@ -262,7 +262,7 @@ export const EternumCard = ({
       className={className}
       state={
         next?.error ? (
-          <span>Unavailable</span>
+          <UnavailableChip />
         ) : (
           next && !open && next.clock.start_main_at > now && <TimeLeftChip seconds={next.clock.start_main_at - now} />
         )

@@ -1,4 +1,3 @@
-import { canEnterGame } from "@/runtime/world/directory";
 import { getRealmNameById } from "@bibliothecadao/eternum";
 import { Trophy } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -11,7 +10,7 @@ import { normalizeLeaderboardAddress } from "@/services/leaderboard/landing-lead
 
 import { entryHref } from "./game-links";
 import { type DirectoryGame, useLeaderboard, useRealmsPlayer } from "./herald";
-import { PrimaryLink } from "./live-chips";
+import { PrimaryLink, UnavailableChip } from "./live-chips";
 import { realmStill } from "./mode-art";
 import { seasonRealm } from "./season";
 import { useNowSeconds } from "./use-now";
@@ -71,11 +70,7 @@ export const RealmCard = ({ season, className }: { season: DirectoryGame; classN
           />
         </div>
         <div className="lg:w-56">
-          {season.error ? (
-            <span>Unavailable</span>
-          ) : (
-            canEnterGame(season) && <PrimaryLink to={entryHref(season, "play")}>Resume</PrimaryLink>
-          )}
+          {season.error ? <UnavailableChip /> : <PrimaryLink to={entryHref(season, "play")}>Resume</PrimaryLink>}
         </div>
       </div>
     </article>
