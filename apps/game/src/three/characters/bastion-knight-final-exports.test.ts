@@ -16,9 +16,9 @@ import { validateKnightGear } from "./melee/procedural-melee-weapon-library";
 import { parseTextureFreeGlb } from "./procedural-unit-test-glb";
 
 const PREFIX = "/models/characters/t1-knight-default/";
-const R2_CANDIDATE_HASHES = {
-  "near/skin.glb": "104ac57b3f73b6c620d4d9fa7379f3a182a41662a75026715f7914e436d82b82",
-  "mid/skin.glb": "f91ceb8144a29b9f7927d41f99bfeac96a6028d6ccb269691fccbc8d57b18453",
+const R3_V19E_HASHES = {
+  "near/skin.glb": "0d8023826f21db81462b8e995f1eb3d79c61d9150d2ec61cc01f75e50df5fb58",
+  "mid/skin.glb": "3d10d724589122729cb686f7d7a6dbd95ee872b0d4e9e855e3d1b65b196bf5ba",
   "near/sword.glb": "d89fd42c8fccfd42cac8fa5b4a02773b4d8ab8233685c3ab864b5c6719c48676",
   "near/shield.glb": "5c19d48a1cbe2a1aa4fe707c47e88253cfababd72d8ed09064201524b6db9f1a",
 } as const;
@@ -28,9 +28,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("T1 Knight R2 candidate exports", () => {
+describe("T1 Knight R3 v19e exports", () => {
   it("pins the four public GLBs", () => {
-    for (const [relativePath, expected] of Object.entries(R2_CANDIDATE_HASHES)) {
+    for (const [relativePath, expected] of Object.entries(R3_V19E_HASHES)) {
       const bytes = readFileSync(resolve(process.cwd(), `public${PREFIX}${relativePath}`));
       expect(createHash("sha256").update(bytes).digest("hex")).toBe(expected);
     }
