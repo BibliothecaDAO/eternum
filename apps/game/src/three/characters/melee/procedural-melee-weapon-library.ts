@@ -1,6 +1,9 @@
 import { getCosmeticAsset, loadCosmeticAsset } from "@/three/cosmetics/asset-cache";
 import { findCosmeticById } from "@/three/cosmetics/registry";
-import { Box3, Group, Mesh, Vector3 } from "three";
+import { Box3, Group, Mesh, SkinnedMesh, Vector3 } from "three";
+import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
+
+import { disposeSkinnedSceneTemplates } from "../skinned-asset-resources";
 
 import {
   resolveProceduralMeleeOffhand,
@@ -19,6 +22,11 @@ export interface ProceduralMeleeAssetInstance {
 
 const scratchBounds = new Box3();
 const scratchSize = new Vector3();
+const DIRECT_KNIGHT_GEAR = {
+  "t1-knight-bastion-sword": "/models/characters/t1-knight-default/near/sword.glb",
+  "t1-knight-bastion-shield": "/models/characters/t1-knight-default/near/shield.glb",
+} as const;
+type DirectKnightGearId = keyof typeof DIRECT_KNIGHT_GEAR;
 
 /**
  * Preloads registered cosmetic equipment once, then returns shallow scene
@@ -26,22 +34,55 @@ const scratchSize = new Vector3();
  * asset cache; actors own only their clone hierarchy.
  */
 export class ProceduralMeleeWeaponLibrary {
-  private constructor() {}
+  private disposed = false;
 
-  public static async create(): Promise<ProceduralMeleeWeaponLibrary> {
-    return new ProceduralMeleeWeaponLibrary();
+  private constructor(private readonly directTemplates: ReadonlyMap<DirectKnightGearId, GLTF>) {}
+
+  public static async create(options: { includeBastionKnight?: boolean } = {}): Promise<ProceduralMeleeWeaponLibrary> {
+    const directTemplates = new Map<DirectKnightGearId, GLTF>();
+    try {
+      if (options.includeBastionKnight) {
+        for (const [id, url] of Object.entries(DIRECT_KNIGHT_GEAR) as [DirectKnightGearId, string][]) {
+          directTemplates.set(id, await loadKnightGear(url, id));
+        }
+      }
+      return new ProceduralMeleeWeaponLibrary(directTemplates);
+    } catch (error) {
+      disposeSkinnedSceneTemplates([...directTemplates.values()].map(({ scene }) => scene));
+      throw error;
+    }
   }
 
   public isWeaponReady(id: ProceduralMeleeWeaponId): boolean {
+    this.assertActive();
+    if (isDirectKnightGearId(id)) return this.directTemplates.has(id);
     return isRegisteredAssetReady(resolveProceduralMeleeWeapon(id).registryEntryId);
   }
 
   public isOffhandReady(id: ProceduralMeleeOffhandId): boolean {
+    this.assertActive();
+    if (isDirectKnightGearId(id)) return this.directTemplates.has(id);
     return isRegisteredAssetReady(resolveProceduralMeleeOffhand(id).registryEntryId);
   }
 
+  public assertDirectLoadoutAvailable(loadout: {
+    detailedEquipment: boolean;
+    offhandId: ProceduralMeleeOffhandId;
+    weaponId: ProceduralMeleeWeaponId;
+  }): void {
+    this.assertActive();
+    if (!loadout.detailedEquipment) return;
+    for (const id of [loadout.weaponId, loadout.offhandId]) {
+      if (isDirectKnightGearId(id) && !this.directTemplates.has(id)) {
+        throw new Error(`Knight gear ${id} was not loaded`);
+      }
+    }
+  }
+
   public instantiateWeapon(id: ProceduralMeleeWeaponId): ProceduralMeleeAssetInstance | undefined {
+    this.assertActive();
     const definition = resolveProceduralMeleeWeapon(id);
+    if (isDirectKnightGearId(id)) return this.instantiateDirect(id, `melee-weapon:${id}`, definition.assetAlignment);
     return instantiateRegisteredAsset(
       definition.registryEntryId,
       definition.visualLength,
@@ -51,7 +92,9 @@ export class ProceduralMeleeWeaponLibrary {
   }
 
   public instantiateOffhand(id: ProceduralMeleeOffhandId): ProceduralMeleeAssetInstance | undefined {
+    this.assertActive();
     const definition = resolveProceduralMeleeOffhand(id);
+    if (isDirectKnightGearId(id)) return this.instantiateDirect(id, `melee-offhand:${id}`, definition.assetAlignment);
     return instantiateRegisteredAsset(
       definition.registryEntryId,
       definition.visualDiameter,
@@ -59,6 +102,61 @@ export class ProceduralMeleeWeaponLibrary {
       definition.assetAlignment,
     );
   }
+
+  public dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    disposeSkinnedSceneTemplates([...this.directTemplates.values()].map(({ scene }) => scene));
+  }
+
+  private instantiateDirect(
+    id: DirectKnightGearId,
+    name: string,
+    alignment: ProceduralMeleeAssetAlignment | undefined,
+  ): ProceduralMeleeAssetInstance {
+    const template = this.directTemplates.get(id);
+    if (!template) throw new Error(`Knight gear ${id} was not loaded`);
+    const clone = template.scene.clone(true);
+    setEquipmentShadows(clone);
+    const wrapper = new Group();
+    wrapper.name = name;
+    const aligned = new Group();
+    if (alignment?.rotation) aligned.rotation.fromArray([...alignment.rotation]);
+    aligned.add(clone);
+    wrapper.add(aligned);
+    return { object: wrapper, source: "asset" };
+  }
+
+  private assertActive(): void {
+    if (this.disposed) throw new Error("Cannot use a disposed procedural melee weapon library");
+  }
+}
+
+async function loadKnightGear(url: string, id: DirectKnightGearId): Promise<GLTF> {
+  const gltf = await new GLTFLoader().loadAsync(url);
+  try {
+    validateKnightGear(gltf, id);
+    return gltf;
+  } catch (error) {
+    disposeSkinnedSceneTemplates([gltf.scene]);
+    throw error;
+  }
+}
+
+export function validateKnightGear(gltf: Pick<GLTF, "animations" | "scene">, id: DirectKnightGearId): void {
+  if (gltf.animations.length > 0) throw new Error(`${id} must be clip-free`);
+  let meshCount = 0;
+  let skinnedMeshCount = 0;
+  gltf.scene.traverse((object) => {
+    if (object instanceof SkinnedMesh) skinnedMeshCount += 1;
+    if (object instanceof Mesh) meshCount += 1;
+  });
+  if (meshCount === 0) throw new Error(`${id} has no mesh`);
+  if (skinnedMeshCount > 0) throw new Error(`${id} must be rigid, not skinned`);
+}
+
+function isDirectKnightGearId(id: string): id is DirectKnightGearId {
+  return Object.hasOwn(DIRECT_KNIGHT_GEAR, id);
 }
 
 function instantiateRegisteredAsset(
@@ -89,11 +187,7 @@ function instantiateRegisteredAsset(
   clone.position.sub(pivot);
   aligned.scale.setScalar(scale);
   if (alignment?.rotation) aligned.rotation.fromArray([...alignment.rotation]);
-  clone.traverse((object) => {
-    if (!(object instanceof Mesh)) return;
-    object.castShadow = true;
-    object.receiveShadow = true;
-  });
+  setEquipmentShadows(clone);
   aligned.add(clone);
   wrapper.add(aligned);
   return { object: wrapper, source: "asset" };
@@ -106,9 +200,18 @@ function isRegisteredAssetReady(registryEntryId: string | undefined): boolean {
 }
 
 function resolveAssetPivot(bounds: Box3, alignment: ProceduralMeleeAssetAlignment | undefined): Vector3 {
+  if (alignment?.pivot === "authored") return new Vector3();
   const center = bounds.getCenter(new Vector3());
   if (!alignment || alignment.pivot === "center") return center;
   const axis = alignment.axis ?? "y";
   center[axis] = alignment.pivot === "axis-max" ? bounds.max[axis] : bounds.min[axis];
   return center;
+}
+
+function setEquipmentShadows(scene: Group): void {
+  scene.traverse((object) => {
+    if (!(object instanceof Mesh)) return;
+    object.castShadow = true;
+    object.receiveShadow = true;
+  });
 }

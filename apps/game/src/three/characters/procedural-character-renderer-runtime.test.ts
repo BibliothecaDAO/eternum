@@ -49,7 +49,10 @@ describe("procedural character renderer initialization", () => {
     expect(runtimeMocks.initializeRenderer).toHaveBeenCalledWith(
       expect.objectContaining({ pixelRatio: 1.5, search: "?rendererMode=webgpu-auto" }),
     );
-    expect(runtimeMocks.createUnitRuntime).toHaveBeenCalledWith({ preloadPhysics: true });
+    expect(runtimeMocks.createUnitRuntime).toHaveBeenCalledWith({
+      includeBastionKnight: false,
+      preloadPhysics: true,
+    });
   });
 
   it("disposes a loaded character runtime when renderer initialization fails", async () => {

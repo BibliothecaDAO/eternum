@@ -11,9 +11,10 @@ import type {
 import { disposeSkinnedSceneTemplates } from "./skinned-asset-resources";
 
 export type QuaterniusCharacterAssetDefinition = ProceduralCharacterAssetDefinition;
+type QuaterniusCharacterAssetId = Extract<ProceduralCharacterAssetId, "base" | "peasant" | "ranger">;
 
 export const QUATERNIUS_CHARACTER_ASSETS: Readonly<
-  Record<ProceduralCharacterAssetId, QuaterniusCharacterAssetDefinition>
+  Record<QuaterniusCharacterAssetId, QuaterniusCharacterAssetDefinition>
 > = {
   base: {
     adapterId: "quaternius-universal",
@@ -78,7 +79,7 @@ function disposeQuaterniusCharacterAssetTemplates(assets: readonly LoadedProcedu
   disposeSkinnedSceneTemplates(assets.map(({ gltf }) => gltf.scene));
 }
 
-export function resolveQuaterniusCharacterAsset(id: ProceduralCharacterAssetId): QuaterniusCharacterAssetDefinition {
+export function resolveQuaterniusCharacterAsset(id: QuaterniusCharacterAssetId): QuaterniusCharacterAssetDefinition {
   return QUATERNIUS_CHARACTER_ASSETS[id];
 }
 

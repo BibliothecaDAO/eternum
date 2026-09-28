@@ -9,7 +9,8 @@ import {
   type ProceduralCharacterAssetId,
   type ProceduralCharacterMaterialProfile,
 } from "./procedural-character-appearance";
-import type { ProceduralCharacterTier } from "./procedural-character-config";
+import type { ProceduralCharacterRenderDetail, ProceduralCharacterTier } from "./procedural-character-config";
+import { loadBastionKnightCharacterAssetTemplates } from "./bastion-knight-character-assets";
 import { loadQuaterniusCharacterAssetTemplates } from "./quaternius-character-assets";
 import { disposeSkinnedSceneTemplates, instantiateSkinnedScene } from "./skinned-asset-resources";
 
@@ -53,10 +54,11 @@ export class ProceduralCharacterLibrary {
   public instantiate(
     appearanceId: ProceduralCharacterAppearanceId,
     tier: ProceduralCharacterTier,
+    renderDetail: ProceduralCharacterRenderDetail = "hero",
   ): LoadedProceduralCharacterAsset {
     if (this.disposed) throw new Error("Cannot instantiate a disposed procedural character library");
     const appearance = resolveProceduralCharacterAppearance(appearanceId);
-    const assetId = resolveProceduralCharacterAppearanceAssetId(appearanceId, tier);
+    const assetId = resolveProceduralCharacterAppearanceAssetId(appearanceId, tier, renderDetail);
     const template = this.templates.get(assetId);
     if (!template) throw new Error(`Appearance ${appearance.label} requires missing character asset "${assetId}"`);
     if (template.adapterId !== appearance.rigAdapterId) {
@@ -83,6 +85,16 @@ export class ProceduralCharacterLibrary {
   }
 }
 
-export async function loadProceduralCharacterLibrary(): Promise<ProceduralCharacterLibrary> {
-  return new ProceduralCharacterLibrary(await loadQuaterniusCharacterAssetTemplates());
+export async function loadProceduralCharacterLibrary(
+  options: { includeBastionKnight?: boolean } = {},
+): Promise<ProceduralCharacterLibrary> {
+  const base = await loadQuaterniusCharacterAssetTemplates();
+  const optional: LoadedProceduralCharacterAssetTemplate[] = [];
+  try {
+    if (options.includeBastionKnight) optional.push(...(await loadBastionKnightCharacterAssetTemplates()));
+    return new ProceduralCharacterLibrary([...base, ...optional]);
+  } catch (error) {
+    disposeSkinnedSceneTemplates([...base, ...optional].map(({ gltf }) => gltf.scene));
+    throw error;
+  }
 }

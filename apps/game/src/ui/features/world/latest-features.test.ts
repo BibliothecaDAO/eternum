@@ -22,4 +22,8 @@ describe("latestFeatures landing feed", () => {
       featureMetadata.every((feature) => feature.readMore === undefined || typeof feature.readMore === "string"),
     ).toBe(true);
   });
+
+  it("omits opt-in art review entries from the default player feed", () => {
+    expect(latestFeatures.some(({ title }) => title === "T1 Knight Art Review")).toBe(false);
+  });
 });

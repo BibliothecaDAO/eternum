@@ -1,4 +1,4 @@
-import { Group, Vector3 } from "three";
+import { Group, Quaternion, Vector3 } from "three";
 import { ProceduralPlantController } from "./procedural-plant-controller";
 import {
   advanceProceduralCharacterGaitPhase,
@@ -16,8 +16,71 @@ import { ProceduralCharacterLibrary } from "./procedural-character-assets";
 import { createDefaultProceduralCharacterConfig } from "./procedural-character-config";
 import { resolveCharacterRig } from "./procedural-character-rig";
 import { resolveProceduralCharacterPose } from "./procedural-character-pose";
+import type { HumanoidRigAdapter } from "./humanoid-rig-adapter";
+import { validateHumanoidRigAdapter } from "./humanoid-rig-adapter";
 
 describe("procedural avatar replay", () => {
+  it("poses a minimal hand rig and applies socket orientation", async () => {
+    vi.stubGlobal("ProgressEvent", class extends Event {});
+    const library = await loadTextureFreeBaseModel();
+    const config = {
+      ...createDefaultProceduralCharacterConfig(),
+      appearanceId: "universal-base" as const,
+      tier: 1 as const,
+    };
+    const rig = resolveCharacterRig(config);
+    const asset = library.instantiate("universal-base", 1);
+    const adapter = makeMinimalHandAdapter(asset.adapter);
+    expect(validateHumanoidRigAdapter(adapter)).toEqual([]);
+    asset.adapter = adapter;
+    asset.gltf.scene.traverse((object) => {
+      if (/^(index|middle|ring|pinky|thumb)_/.test(object.name)) object.name = `unavailable_${object.name}`;
+    });
+    const avatar = new ProceduralCharacterAvatar(asset, rig, config);
+    try {
+      avatar.applyPose(resolveProceduralCharacterPose(rig, config, 0));
+      expect(avatar.getStats().leftGripProfile).toBe("open");
+      expect(avatar.writeSocketWorldTransform("forearmLeft", new Vector3(), new Quaternion())).toBe(false);
+      const hand = new Quaternion();
+      const grip = new Quaternion();
+      expect(avatar.writeSocketWorldTransform("handRight", new Vector3(), hand)).toBe(true);
+      expect(avatar.writeSocketWorldTransform("gripRight", new Vector3(), grip)).toBe(true);
+      const expected = hand.clone().multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2));
+      expect(Math.abs(grip.dot(expected))).toBeCloseTo(1, 6);
+    } finally {
+      avatar.dispose();
+      library.dispose();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("measures source body proportions only for opted-in adapters", async () => {
+    vi.stubGlobal("ProgressEvent", class extends Event {});
+    const library = await loadTextureFreeBaseModel();
+    const config = {
+      ...createDefaultProceduralCharacterConfig(),
+      appearanceId: "universal-base" as const,
+      tier: 1 as const,
+    };
+    const rig = resolveCharacterRig(config);
+    const asset = library.instantiate("universal-base", 1);
+    asset.adapter = { ...asset.adapter, sourceBodyMorphology: true, authoredUniformScale: 4.5 };
+    const avatar = new ProceduralCharacterAvatar(asset, rig, config);
+    try {
+      expect(avatar.group.children[0].scale.x).toBeCloseTo(4.5);
+      const measured = avatar.measureActiveLimbLengths();
+      expect(measured.body?.shoulderWidth).toBeGreaterThan(0);
+      expect(measured.body?.hipWidth).toBeGreaterThan(0);
+      expect(applyCharacterRigLimbLengths(rig, measured).morphology.shoulderWidth).toBeCloseTo(
+        measured.body!.shoulderWidth,
+      );
+    } finally {
+      avatar.dispose();
+      library.dispose();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("keeps the rendered supporting landmark on the floor across multiple walking strides", async () => {
     vi.stubGlobal("ProgressEvent", class extends Event {});
     const library = await loadTextureFreeBaseModel();
@@ -120,4 +183,34 @@ async function loadTextureFreeBaseModel() {
       gltf,
     },
   ]);
+}
+
+function makeMinimalHandAdapter(base: HumanoidRigAdapter): HumanoidRigAdapter {
+  return {
+    ...base,
+    hands: {
+      left: {
+        kind: "minimal",
+        hand: "hand_l",
+        rollCorrection: [0, 0, 0, 1],
+        palm: { index: [0.04, 0, 0.02], middle: [0, 0, 0.08], pinky: [-0.04, 0, 0.02], normalSign: 1 },
+      },
+      right: {
+        kind: "minimal",
+        hand: "hand_r",
+        rollCorrection: [0, 0, 0, 1],
+        palm: { index: [0.04, 0, 0.02], middle: [0, 0, 0.08], pinky: [-0.04, 0, 0.02], normalSign: 1 },
+      },
+    },
+    sockets: {
+      ...base.sockets,
+      drawRight: { bone: "hand_r", offset: { kind: "fixed", value: [0, 0, 0] } },
+      gripLeft: { bone: "hand_l", offset: { kind: "fixed", value: [0, 0, 0] } },
+      gripRight: {
+        bone: "hand_r",
+        offset: { kind: "fixed", value: [0, 0, 0] },
+        rotationOffset: [0, Math.SQRT1_2, 0, Math.SQRT1_2],
+      },
+    },
+  };
 }
