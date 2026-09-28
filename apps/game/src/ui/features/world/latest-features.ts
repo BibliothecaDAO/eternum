@@ -1,3 +1,5 @@
+import { resolveActiveProceduralCharacterReviewCapability } from "@/three/characters/procedural-character-review-capability";
+
 export type FeatureType = "feature" | "improvement" | "balance" | "fix";
 
 interface LatestFeature {
@@ -29,10 +31,19 @@ const compareLatestFeatureDatesDescending = (left: LatestFeature, right: LatestF
 const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
   features.toSorted(compareLatestFeatureDatesDescending).slice(0, MAX_LATEST_FEATURES);
 
+const bastionKnightReviewFeature: LatestFeature = {
+  date: "2026-09-28",
+  title: "T1 Knight Art Review",
+  description:
+    "Added an opt-in T1 Knight art review path with authored armour, sword, shield, and near- and mid-detail models.",
+  type: "feature",
+};
+
 // Curated, deduplicated news feed. Same-day iteration churn and dev-only entries
 // are collapsed into single player-facing items; only the latest MAX_LATEST_FEATURES
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
+  ...(resolveActiveProceduralCharacterReviewCapability().includeBastionKnight ? [bastionKnightReviewFeature] : []),
   {
     date: "2026-09-20",
     title: "Ethereal Basalt and Neon Borders",

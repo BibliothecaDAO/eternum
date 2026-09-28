@@ -1,23 +1,28 @@
 import type { ProceduralUnitKind } from "../procedural-unit-config";
+import type { CharacterSocketId } from "../procedural-character-sockets";
+
+type ProceduralMeleeOffhandAttachmentSocket = Extract<CharacterSocketId, "gripLeft" | "forearmLeft">;
 
 export type ProceduralMeleeWeaponId =
   | "iron-longsword"
   | "runic-warhammer"
   | "winter-broadaxe"
-  | "winter-rider-battleaxe";
+  | "winter-rider-battleaxe"
+  | "t1-knight-bastion-sword";
 
 export type ProceduralMeleeOffhandId =
   | "none"
   | "round-shield"
   | "winter-rider-shield"
   | "winter-targe"
-  | "light-cavalry-shield";
+  | "light-cavalry-shield"
+  | "t1-knight-bastion-shield";
 
 export type ProceduralMeleeAttackStyle = "chop" | "slash" | "smash";
 
 export interface ProceduralMeleeAssetAlignment {
   axis?: "x" | "y" | "z";
-  pivot: "axis-max" | "axis-min" | "center";
+  pivot: "axis-max" | "axis-min" | "center" | "authored";
   rotation?: readonly [number, number, number];
 }
 
@@ -32,6 +37,7 @@ export interface ProceduralMeleeWeaponDefinition {
 }
 
 export interface ProceduralMeleeOffhandDefinition {
+  attachmentSocket?: ProceduralMeleeOffhandAttachmentSocket;
   assetAlignment?: ProceduralMeleeAssetAlignment;
   compatibleKinds: readonly Extract<ProceduralUnitKind, "knight" | "paladin">[];
   gripToCenter: readonly [number, number, number];
@@ -44,6 +50,14 @@ export interface ProceduralMeleeOffhandDefinition {
 const MELEE_KINDS = ["knight", "paladin"] as const;
 
 export const PROCEDURAL_MELEE_WEAPONS: readonly ProceduralMeleeWeaponDefinition[] = [
+  {
+    attackStyle: "slash",
+    assetAlignment: { pivot: "authored" },
+    compatibleKinds: ["knight"],
+    id: "t1-knight-bastion-sword",
+    label: "T1 Knight default Sword",
+    visualLength: 0.294878065586,
+  },
   {
     attackStyle: "slash",
     compatibleKinds: MELEE_KINDS,
@@ -79,6 +93,15 @@ export const PROCEDURAL_MELEE_WEAPONS: readonly ProceduralMeleeWeaponDefinition[
 ] as const;
 
 export const PROCEDURAL_MELEE_OFFHANDS: readonly ProceduralMeleeOffhandDefinition[] = [
+  {
+    attachmentSocket: "forearmLeft",
+    assetAlignment: { pivot: "authored" },
+    compatibleKinds: ["knight"],
+    gripToCenter: [0, 0, 0],
+    id: "t1-knight-bastion-shield",
+    label: "T1 Knight default Shield",
+    visualDiameter: 0.22,
+  },
   {
     compatibleKinds: MELEE_KINDS,
     gripToCenter: [0, 0, 0],

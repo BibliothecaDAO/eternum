@@ -23,12 +23,9 @@ import {
   type ProceduralCharacterMode,
   type ProceduralCharacterRuntimeOptions,
 } from "./procedural-character-runtime";
-import {
-  applyProceduralUnitConfigPatch,
-  type ProceduralUnitConfig,
-  type ProceduralUnitKind,
-} from "./procedural-unit-config";
+import { type ProceduralUnitConfig, type ProceduralUnitKind } from "./procedural-unit-config";
 import { ProceduralUnitEquipment } from "./procedural-unit-equipment";
+import { prepareProceduralUnitAssembly } from "./procedural-unit-assembly";
 import {
   resolveProceduralUnitPoseDiagnostics,
   type ProceduralUnitPoseDiagnostics,
@@ -148,7 +145,7 @@ export class ProceduralUnitRuntime {
       ProceduralHorseRuntime.create(physicsWorld),
       ProceduralDragonRuntime.create(),
       ProceduralBoatRuntime.create(),
-      ProceduralMeleeWeaponLibrary.create(),
+      ProceduralMeleeWeaponLibrary.create({ includeBastionKnight: options.includeBastionKnight }),
     ] as const);
     const [characterResult, horseResult, dragonResult, boatResult, meleeResult] = results;
     if (
@@ -162,6 +159,7 @@ export class ProceduralUnitRuntime {
       if (horseResult.status === "fulfilled") horseResult.value.dispose();
       if (dragonResult.status === "fulfilled") dragonResult.value.dispose();
       if (boatResult.status === "fulfilled") boatResult.value.dispose();
+      if (meleeResult.status === "fulfilled") meleeResult.value.dispose();
       physicsWorld.dispose();
       if (characterResult.status === "rejected") throw characterResult.reason;
       if (horseResult.status === "rejected") throw horseResult.reason;
@@ -182,7 +180,8 @@ export class ProceduralUnitRuntime {
 
   public createActor(config: ProceduralUnitConfig): ProceduralUnitActor {
     if (this.disposed) throw new Error("Cannot create a unit from a disposed procedural unit runtime");
-    const normalized = applyProceduralUnitConfigPatch(config, {});
+    const normalized = prepareProceduralUnitAssembly(config);
+    assertProceduralUnitAssetsAvailable(normalized, this.meleeLibrary);
     const release = (actor: ProceduralUnitActor) => {
       this.animationScheduler.delete(actor);
       this.actors.delete(actor);
@@ -221,7 +220,8 @@ export class ProceduralUnitRuntime {
 
   public updateActorConfig(actor: ProceduralUnitActor, config: ProceduralUnitConfig): void {
     if (this.disposed || !this.actors.has(actor)) return;
-    const normalized = applyProceduralUnitConfigPatch(config, {});
+    const normalized = prepareProceduralUnitAssembly(config);
+    assertProceduralUnitAssetsAvailable(normalized, this.meleeLibrary);
     actor.updateConfig(normalized);
   }
 
@@ -250,8 +250,17 @@ export class ProceduralUnitRuntime {
     this.horseRuntime.dispose();
     this.dragonRuntime.dispose();
     this.boatRuntime.dispose();
+    this.meleeLibrary.dispose();
     this.physicsWorld.dispose();
   }
+}
+
+function assertProceduralUnitAssetsAvailable(
+  config: ProceduralUnitConfig,
+  meleeLibrary: ProceduralMeleeWeaponLibrary,
+): void {
+  if (config.kind !== "knight" && config.kind !== "paladin") return;
+  meleeLibrary.assertDirectLoadoutAvailable(config.melee);
 }
 
 function createUnitActor(

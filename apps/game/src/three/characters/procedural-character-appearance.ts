@@ -1,11 +1,20 @@
+import type { ProceduralCharacterRenderDetail } from "./procedural-character-config";
 import type { HumanoidRigAdapterId } from "./humanoid-rig-adapters";
+import type { ProceduralUnitKind } from "./procedural-unit-config";
 
-export type ProceduralCharacterAppearanceId = "modular-fantasy" | "universal-base";
-export type ProceduralCharacterAssetId = "base" | "peasant" | "ranger";
+export type ProceduralCharacterAppearanceId = "modular-fantasy" | "universal-base" | "t1-knight-bastion-default";
+export type ProceduralCharacterAssetId =
+  | "base"
+  | "peasant"
+  | "ranger"
+  | "t1-knight-bastion-near"
+  | "t1-knight-bastion-mid";
 type ProceduralCharacterAppearanceTier = 1 | 2 | 3;
 
 export interface ProceduralCharacterAppearanceDefinition {
   assetByTier: Readonly<Record<ProceduralCharacterAppearanceTier, ProceduralCharacterAssetId>>;
+  crowdAssetId?: ProceduralCharacterAssetId;
+  compatibleKinds?: readonly Extract<ProceduralUnitKind, "knight">[];
   id: ProceduralCharacterAppearanceId;
   label: string;
   materials: ProceduralCharacterMaterialProfile;
@@ -17,6 +26,8 @@ export interface ProceduralCharacterMaterialProfile {
   crowdHiddenMesh: RegExp;
   mergeableOutfit: RegExp;
   outfit: RegExp;
+  /** Authored palette and surface settings are retained as exported. */
+  authoredSource?: boolean;
 }
 
 const QUATERNIUS_MATERIAL_PROFILE: ProceduralCharacterMaterialProfile = {
@@ -29,6 +40,21 @@ const QUATERNIUS_MATERIAL_PROFILE: ProceduralCharacterMaterialProfile = {
 export const DEFAULT_PROCEDURAL_CHARACTER_APPEARANCE_ID: ProceduralCharacterAppearanceId = "modular-fantasy";
 
 export const PROCEDURAL_CHARACTER_APPEARANCES: readonly ProceduralCharacterAppearanceDefinition[] = [
+  {
+    assetByTier: { 1: "t1-knight-bastion-near", 2: "t1-knight-bastion-near", 3: "t1-knight-bastion-near" },
+    crowdAssetId: "t1-knight-bastion-mid",
+    compatibleKinds: ["knight"],
+    id: "t1-knight-bastion-default",
+    label: "T1 Knight — default",
+    materials: {
+      body: /$a/,
+      crowdHiddenMesh: /$a/,
+      mergeableOutfit: /$a/,
+      outfit: /$a/,
+      authoredSource: true,
+    },
+    rigAdapterId: "t1-knight-bastion-v1",
+  },
   {
     assetByTier: { 1: "base", 2: "peasant", 3: "ranger" },
     id: "modular-fantasy",
@@ -70,6 +96,20 @@ export function resolveProceduralCharacterAppearance(
 export function resolveProceduralCharacterAppearanceAssetId(
   id: ProceduralCharacterAppearanceId,
   tier: ProceduralCharacterAppearanceTier,
+  renderDetail: ProceduralCharacterRenderDetail = "hero",
 ): ProceduralCharacterAssetId {
-  return resolveProceduralCharacterAppearance(id).assetByTier[tier];
+  const appearance = resolveProceduralCharacterAppearance(id);
+  return renderDetail === "crowd" && appearance.crowdAssetId ? appearance.crowdAssetId : appearance.assetByTier[tier];
+}
+
+export function doesProceduralCharacterRenderDetailChangeAsset(
+  id: ProceduralCharacterAppearanceId,
+  tier: ProceduralCharacterAppearanceTier,
+  current: ProceduralCharacterRenderDetail,
+  next: ProceduralCharacterRenderDetail,
+): boolean {
+  return (
+    resolveProceduralCharacterAppearanceAssetId(id, tier, current) !==
+    resolveProceduralCharacterAppearanceAssetId(id, tier, next)
+  );
 }

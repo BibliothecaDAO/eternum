@@ -23,4 +23,28 @@ describe("procedural character rig", () => {
     expect(calibrated.morphology.thighLength / calibrated.morphology.shinLength).toBeCloseTo(0.52 / 0.56, 8);
     expect(base.morphology.forearmLength).not.toBe(0.31);
   });
+
+  it("fits positive source-body dimensions and rejects invalid measurements", () => {
+    const base = resolveCharacterRig(createDefaultProceduralCharacterConfig());
+    const measured = {
+      foot: base.morphology.foot,
+      forearmLength: 0.08,
+      shinLength: 0.147,
+      thighLength: 0.134,
+      upperArmLength: 0.09,
+      body: { shoulderWidth: 0.151, hipWidth: 0.084, pelvisToChest: 0.158, chestToNeck: 0.023 },
+    };
+    const fitted = applyCharacterRigLimbLengths(base, measured);
+    expect(fitted.morphology.shoulderWidth).toBeCloseTo(measured.body.shoulderWidth);
+    expect(fitted.morphology.thighLength).toBeCloseTo(measured.thighLength);
+    expect(fitted.parts.chest.halfExtents?.[1]).toBeCloseTo(measured.body.chestToNeck);
+    for (const body of [
+      { ...measured.body, hipWidth: 0 },
+      { ...measured.body, chestToNeck: -0.01 },
+      { ...measured.body, shoulderWidth: Number.NaN },
+      { ...measured.body, pelvisToChest: Number.POSITIVE_INFINITY },
+    ]) {
+      expect(() => applyCharacterRigLimbLengths(base, { ...measured, body })).toThrow("Invalid source body morphology");
+    }
+  });
 });
