@@ -1,4 +1,5 @@
 import { addBattleSummaries, summarizeBattles, type BattleSummary } from "./combat";
+import type { InvalidFrame, UncaughtFailure } from "./worker-boundary";
 import { summarizeFrontierDesign, type FrontierEvidence } from "./frontier";
 import type { HarnessRpcRequests } from "./provider";
 import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
@@ -154,6 +155,8 @@ export interface HarnessReportInput {
   seasonFinalizations?: SeasonFinalizationEvidence[];
   layerRoundTrips?: LayerRoundTripEvidence[];
   transportRequests?: HarnessRpcRequests;
+  /** What escaped every caller in this worker, and the frames no library could parse. */
+  workerBoundary?: { uncaughtFailures: UncaughtFailure[]; invalidFrames: InvalidFrame[] };
 }
 
 interface PercentileSummary {
@@ -385,6 +388,7 @@ export function analyzeHarnessResult(input: HarnessReportInput) {
     layerRoundTrips: input.layerRoundTrips?.every((result) => result.status === "passed") ?? true,
     seasonsClosed: input.seasonFinalizations?.every((result) => result.status === "closed") ?? true,
     zeroBlockingFailures: blockingFailures.length === 0,
+    noUncaughtFailures: (input.workerBoundary?.uncaughtFailures.length ?? 0) === 0,
     zeroBlockingReverts: blockingReverts.length === 0,
   };
 
@@ -489,6 +493,8 @@ function buildHarnessManifest(
       blockingFailures: analysis.blockingFailures.length,
       failureClasses: analysis.failureClasses,
       battles: analysis.battles,
+      uncaughtFailures: input.workerBoundary?.uncaughtFailures ?? [],
+      invalidFrames: input.workerBoundary?.invalidFrames ?? [],
       reverts: analysis.reverts.length,
       blockingReverts: analysis.blockingReverts.length,
       revertReasons: analysis.revertReasons,

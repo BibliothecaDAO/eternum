@@ -1,4 +1,5 @@
 import { BlockTag, config, RpcProvider, WebSocketChannel } from "starknet";
+import { frameCheckingSocket } from "./worker-boundary";
 
 /** One socket per run; the SDK restores subscriptions and the node sends their current canonical status. */
 export class HarnessProvider extends RpcProvider {
@@ -10,7 +11,11 @@ export class HarnessProvider extends RpcProvider {
 
   async subscribeTransactionStatus(transactionHash: string) {
     if (!this.observations) {
-      const channel = new WebSocketChannel({ nodeUrl: this.rpcUrl.replace(/^http/, "ws"), autoReconnect: true });
+      const channel = new WebSocketChannel({
+        nodeUrl: this.rpcUrl.replace(/^http/, "ws"),
+        autoReconnect: true,
+        websocket: frameCheckingSocket(config.get("websocket") ?? globalThis.WebSocket),
+      });
       this.observations = { channel, ready: channel.waitForConnection() };
     }
     await this.observations.ready;

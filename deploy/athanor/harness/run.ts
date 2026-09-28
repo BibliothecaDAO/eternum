@@ -2,6 +2,7 @@
 import { launchFrontierSeason, runFrontierWorkload, type FrontierBurst } from "./frontier";
 import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { createBuildOrderWorkload } from "./build-order";
+import { catchUncaughtFailures, workerBoundaryEvidence } from "./worker-boundary";
 import { runLayerRoundTrip } from "./layer-round-trip";
 import { closeHarnessSeason } from "./season-lifecycle";
 import { nativePresetForId, nativePresetIdFor } from "../../../config/source/native";
@@ -303,6 +304,7 @@ async function main(): Promise<void> {
       seasonFinalizations,
       layerRoundTrips,
       transportRequests,
+      workerBoundary: workerBoundaryEvidence(),
     });
 
     parentPort?.postMessage({ type: "result", ...report, pid: process.pid, threadId });
@@ -839,6 +841,7 @@ async function recordFailure(error: unknown): Promise<{ error: string; stack?: s
 }
 
 if (import.meta.main || (!isMainThread && workerData?.harness)) {
+  catchUncaughtFailures();
   await main().catch(async (error: unknown) => {
     const failure = await recordFailure(error);
     parentPort?.postMessage({ type: "failure", ...failure });
