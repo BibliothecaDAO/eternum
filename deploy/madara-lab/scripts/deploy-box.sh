@@ -2,7 +2,7 @@
 # Redeploy the box's host services (herald, identity, launch, chat) from the deploy branch.
 #
 # This is the one redeploy recipe: the systemd units and the README point here instead of each
-# carrying its own. `.github/workflows/deploy-box.yml` runs it on every push to `next` that
+# carrying its own. `.github/workflows/deploy-box.yml` runs it on every push to `live-dojo` that
 # touches a service; it can also be run by hand on the box as root:
 #
 #   sudo bash deploy/madara-lab/scripts/deploy-box.sh
@@ -13,7 +13,7 @@
 set -euo pipefail
 
 REPO_DIR=/opt/realms/eternum
-DEPLOY_BRANCH="${DEPLOY_BRANCH:-next}"
+DEPLOY_BRANCH="${DEPLOY_BRANCH:-live-dojo}"
 REALMS_PATH=/home/realms/.bun/bin:/usr/local/bin:/usr/bin:/bin
 HEALTH_TIMEOUT_SECONDS=120
 DEPLOY_STEP=startup

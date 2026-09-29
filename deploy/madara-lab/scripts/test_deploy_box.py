@@ -27,7 +27,7 @@ class DeployBoxTest(unittest.TestCase):
         self.pnpm_calls = self.root / "pnpm.log"
         self.bin = self.root / "bin"
         self.install_fake_pnpm()
-        self.git("init", "-b", "next")
+        self.git("init", "-b", "live-dojo")
         self.git("config", "user.name", "Deploy test")
         self.git("config", "user.email", "deploy-test@example.invalid")
         (self.repo / "package.json").write_text("{}\n")
@@ -56,7 +56,7 @@ class DeployBoxTest(unittest.TestCase):
         self.git("remote", "add", "origin", str(self.root / "remote"))
         self.git("update-ref", REF, self.base)
         self.target = self.commit_change("apps/realtime-server/change.txt")
-        self.git("push", "-u", "origin", "next")
+        self.git("push", "-u", "origin", "live-dojo")
         self.git("checkout", "--detach", self.base)
 
     def install_fake_pnpm(self):
@@ -156,15 +156,15 @@ main
         self.assertEqual(self.git("rev-parse", REF), self.base)
 
     def test_shared_package_inputs_restart_chat_too(self):
-        self.git("checkout", "next")
+        self.git("checkout", "live-dojo")
         self.target = self.commit_change("packages/types/change.txt")
-        self.git("push", "origin", "next")
+        self.git("push", "origin", "live-dojo")
         result, payload = self.deploy()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(set(payload["restarted"]), SERVICES)
 
     def test_game_only_lock_change_skips_host_restarts(self):
-        self.git("checkout", "next")
+        self.git("checkout", "live-dojo")
         self.git("update-ref", REF, self.target)
         self.lock["importers"]["apps/game"]["dependencies"]["three"]["version"] = "2.0.0"
         self.lock["snapshots"]["three@2.0.0"] = {}
@@ -172,29 +172,29 @@ main
         self.write_lock()
         self.git("add", "pnpm-lock.yaml")
         self.git("commit", "-m", "Game-only dependency update")
-        self.git("push", "origin", "next")
+        self.git("push", "origin", "live-dojo")
         result, payload = self.deploy(TEST_INSTALL_FAIL="1")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(payload["restarted"], [])
         self.assertFalse(self.restarts.exists())
 
     def test_launch_config_restarts_only_launch(self):
-        self.git("checkout", "next")
+        self.git("checkout", "live-dojo")
         self.git("update-ref", REF, self.target)
         self.commit_change("config/deployer/runner.ts")
-        self.git("push", "origin", "next")
+        self.git("push", "origin", "live-dojo")
         result, payload = self.deploy()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(payload["restarted"], ["realms-launch"])
 
     def test_transitive_dependency_change_restarts_only_its_consumer(self):
-        self.git("checkout", "next")
+        self.git("checkout", "live-dojo")
         self.git("update-ref", REF, self.target)
         self.lock["packages"]["@service/transport@1.0.0"]["resolution"]["integrity"] = "updated"
         self.write_lock()
         self.git("add", "pnpm-lock.yaml")
         self.git("commit", "-m", "Update aliased transitive dependency")
-        self.git("push", "origin", "next")
+        self.git("push", "origin", "live-dojo")
         result, payload = self.deploy()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(payload["restarted"], ["realms-chat"])

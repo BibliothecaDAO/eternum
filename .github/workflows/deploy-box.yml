@@ -1,13 +1,14 @@
 name: Deploy Box
 
-# Keeps the lab box's host services (herald, identity, launch, chat) on `next`. Every push to `next`
-# that touches one of them runs deploy/madara-lab/scripts/deploy-box.sh over SSH; the script decides
-# which units to restart and prints one JSON result line, surfaced in the step summary.
+# Keeps the lab box's host services (herald, identity, launch, chat) on `live-dojo`, the live Dojo
+# stack's branch; `next` carries the native tree. Every push to `live-dojo` that touches one of them
+# runs deploy/madara-lab/scripts/deploy-box.sh over SSH; the script decides which units to restart
+# and prints one JSON result line, surfaced in the step summary.
 # Needs: secret BOX_SSH_PRIVATE_KEY (a key in ubuntu's authorized_keys on the box) and variables
 # BOX_SSH_HOST (the box IP) and BOX_SSH_HOST_KEY (its `ssh-keyscan -t ed25519` line).
 on:
   push:
-    branches: [next]
+    branches: [live-dojo]
     paths:
       - "apps/herald/**"
       - "apps/realms/**"
@@ -52,7 +53,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: next
+          ref: live-dojo
 
       - name: Set up Bun for deployment checks
         uses: oven-sh/setup-bun@v2
@@ -73,11 +74,11 @@ jobs:
 
       # The script is copied from this checkout rather than run from the box's own tree, so a box
       # sitting on an old branch still runs the current recipe on its first deploy.
-      - name: Redeploy host services from next
+      - name: Redeploy host services from live-dojo
         run: |
           set -o pipefail
           scp -i ~/.ssh/box -o BatchMode=yes deploy/madara-lab/scripts/deploy-box.sh "ubuntu@$BOX_SSH_HOST:/tmp/deploy-box.sh"
-          ssh -i ~/.ssh/box -o BatchMode=yes "ubuntu@$BOX_SSH_HOST" "sudo DEPLOY_BRANCH=next bash /tmp/deploy-box.sh" 2>&1 | tee deploy-box.log
+          ssh -i ~/.ssh/box -o BatchMode=yes "ubuntu@$BOX_SSH_HOST" "sudo DEPLOY_BRANCH=live-dojo bash /tmp/deploy-box.sh" 2>&1 | tee deploy-box.log
 
       - name: Publish deploy result
         if: always()
