@@ -51,6 +51,9 @@ services:
       - --enable-native-execution=true
       - --native-compilation-mode=async
     volumes: ["chain:/data", "public-config:/config:ro"]
+    environment:
+      # glibc keeps freed compaction and native-execution buffers in its arenas; mapping large ones returns them on free.
+      MALLOC_MMAP_THRESHOLD_: "131072"
     mem_limit: ${NODE_MEMORY:-24g}
     memswap_limit: ${NODE_MEMORY:-24g}
     restart: on-failure
