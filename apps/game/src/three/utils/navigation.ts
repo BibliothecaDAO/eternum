@@ -1,30 +1,19 @@
 import { traceFlightMark } from "../flight-trace";
 import { Position } from "@bibliothecadao/eternum";
-import { buildPlayHref, parsePlayRoute } from "@/play/navigation/play-route";
+import { buildPlayHref, mapRouteHex, parsePlayRoute } from "@/play/navigation/play-route";
 
 import { Structure } from "@bibliothecadao/types";
 import { resolveNavigationSceneTarget } from "../scene-navigation-boundary";
 import { SceneName } from "../types";
 
-function buildSceneLocationUrl(col: number, row: number, targetScene: SceneName): string {
-  const position = new Position({ x: col, y: row });
+function buildSceneLocationUrl(position: Position, targetScene: SceneName): string {
+  return buildPlayHref({ ...requirePlayRoute(), scene: targetScene, ...mapRouteHex(position) });
+}
+
+function requirePlayRoute() {
   const playRoute = parsePlayRoute(window.location);
-
-  if (playRoute) {
-    const normalized = position.getNormalized();
-    return buildPlayHref({
-      ...playRoute,
-      scene: targetScene,
-      col: normalized.x,
-      row: normalized.y,
-    });
-  }
-
-  if (targetScene === SceneName.Hexception) {
-    return `/play/hex?col=${col}&row=${row}`;
-  }
-
-  return `/play/map?col=${col}&row=${row}`;
+  if (!playRoute) throw new Error(`Cannot navigate scenes outside a game route: ${window.location.pathname}`);
+  return playRoute;
 }
 
 function dispatchSceneNavigation(navigationUrl: string): void {
@@ -41,13 +30,13 @@ function dispatchSceneNavigation(navigationUrl: string): void {
  * @param structure - The structure to navigate to
  * @param scene - Optional scene to navigate to ('hex' or 'map'). Defaults to current scene.
  */
-export function navigateToStructure(col: number, row: number, scene?: "hex" | "map") {
+export function navigateToStructure(position: Position, scene?: "hex" | "map") {
   const targetScene = resolveNavigationSceneTarget({
     requestedScene: scene === "hex" ? SceneName.Hexception : scene === "map" ? SceneName.WorldMap : undefined,
     currentPath: window.location.pathname,
   });
 
-  dispatchSceneNavigation(buildSceneLocationUrl(col, row, targetScene));
+  dispatchSceneNavigation(buildSceneLocationUrl(position, targetScene));
 }
 
 /**
@@ -68,7 +57,7 @@ export function selectNextStructure(
   const nextIndex = (currentIndex + 1) % playerStructures.length;
   const structure = playerStructures[nextIndex];
 
-  navigateToStructure(structure.position.x, structure.position.y, scene);
+  navigateToStructure(Position.fromContract(structure.position), scene);
 
   return nextIndex;
 }
@@ -78,49 +67,11 @@ export function selectNextStructure(
  * Changes /map?col=X&row=Y to /hex?col=X&row=Y and vice versa
  */
 export function toggleMapHexView() {
-  const currentUrl = new URL(window.location.href);
-  const currentPath = currentUrl.pathname;
-  const playRoute = parsePlayRoute(window.location);
-
-  // Get current coordinates from URL params
-  const col = currentUrl.searchParams.get("col");
-  const row = currentUrl.searchParams.get("row");
-
-  if (!col || !row) {
+  const playRoute = requirePlayRoute();
+  if (playRoute.col === null || playRoute.row === null) {
     console.warn("No coordinates found in URL, cannot toggle view");
     return;
   }
 
-  // Determine new path based on current path
-  let newPath: string;
-  if (currentPath.includes("/hex")) {
-    newPath = "/map";
-  } else if (currentPath.includes("/map")) {
-    newPath = "/hex";
-  } else {
-    console.warn("Current path is neither /hex nor /map, cannot toggle");
-    return;
-  }
-
-  if (playRoute) {
-    const nextUrl = buildPlayHref({
-      ...playRoute,
-      scene: currentPath.includes("/hex") ? "map" : "hex",
-      col: Number(col),
-      row: Number(row),
-    });
-
-    window.history.pushState({}, "", nextUrl);
-    window.dispatchEvent(new Event("urlChanged"));
-    return;
-  }
-
-  // Construct new URL with same coordinates
-  const newUrl = `${newPath}?col=${col}&row=${row}`;
-
-  // Update browser URL
-  window.history.pushState({}, "", newUrl);
-
-  // Dispatch URL changed event to trigger scene updates
-  window.dispatchEvent(new Event("urlChanged"));
+  dispatchSceneNavigation(buildPlayHref({ ...playRoute, scene: playRoute.scene === "hex" ? "map" : "hex" }));
 }

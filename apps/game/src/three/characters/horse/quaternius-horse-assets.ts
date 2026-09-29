@@ -6,7 +6,7 @@ import { resolveHorseRigRequiredBoneNames } from "./horse-rig-adapter";
 import type { LoadedProceduralHorseAssetTemplate, ProceduralHorseAssetDefinition } from "./procedural-horse-assets";
 import { QUATERNIUS_HORSE_RIG_ADAPTER } from "./quaternius-horse-rig-adapter";
 
-export const QUATERNIUS_HORSE_ASSET = {
+const QUATERNIUS_HORSE_ASSET = {
   adapterId: QUATERNIUS_HORSE_RIG_ADAPTER.id,
   id: "quaternius-horse",
   label: "Quaternius horse",
@@ -14,7 +14,7 @@ export const QUATERNIUS_HORSE_ASSET = {
   url: "/models/characters/quaternius-horse/horse.glb",
 } as const satisfies ProceduralHorseAssetDefinition;
 
-export const QUATERNIUS_HORSE_REFERENCE_CLIPS = [
+const QUATERNIUS_HORSE_REFERENCE_CLIPS = [
   "Attack_Headbutt",
   "Attack_Kick",
   "Death",

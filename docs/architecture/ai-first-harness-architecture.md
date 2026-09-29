@@ -124,7 +124,7 @@ The repo should expose five clear layers:
 ### Product Surfaces
 
 - `apps/game`
-- `apps/realtime-server`
+- `apps/realms` (the identity, notification, directory and chat Worker)
 
 These are user-facing or operator-facing products.
 

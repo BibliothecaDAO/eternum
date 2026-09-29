@@ -38,16 +38,15 @@ function createArmyLabelData(overrides: Partial<ArmyLabelContentFields> = {}): A
 }
 
 describe("army label data keys", () => {
-  it("separates layout fields from stamina fields", () => {
-    expect(buildArmyLabelLayoutDataKey(createArmyLabelData())).toBe("10-8-true-Alice-45-90");
-    expect(buildArmyLabelStaminaDataKey(createArmyLabelData())).toBe("9-100");
+  it("re-renders the label when food starts or stops keeping the army still", () => {
+    const fed = buildArmyLabelLayoutDataKey(createArmyLabelData({ foodBlocked: false }));
+    const starved = buildArmyLabelLayoutDataKey(createArmyLabelData({ foodBlocked: true }));
+    expect(starved).not.toBe(fed);
   });
 
-  it("ignores projected-only stamina changes so computed labels do not rerender every second", () => {
-    const initialKey = buildArmyLabelStaminaDataKey(createArmyLabelData({ displayStaminaRatio: 0.4 }));
-    const nextKey = buildArmyLabelStaminaDataKey(createArmyLabelData({ displayStaminaRatio: 0.4002 }));
-
-    expect(nextKey).toBe(initialKey);
+  it("separates layout fields from stamina fields", () => {
+    expect(buildArmyLabelLayoutDataKey(createArmyLabelData())).toBe("10-8-true-Alice-45-90-false");
+    expect(buildArmyLabelStaminaDataKey(createArmyLabelData())).toBe("9-100");
   });
 });
 
@@ -105,31 +104,10 @@ describe("syncArmyLabelContentState", () => {
       renderStamina,
     });
 
-    expect(label.userData.lastDataKey).toBe("22-8-true-Alice-45-90|9-100");
-    expect(label.userData.lastLayoutDataKey).toBe("22-8-true-Alice-45-90");
+    expect(label.userData.lastDataKey).toBe("22-8-true-Alice-45-90-false|9-100");
+    expect(label.userData.lastLayoutDataKey).toBe("22-8-true-Alice-45-90-false");
     expect(label.userData.lastStaminaDataKey).toBe("9-100");
     expect(renderLabel).toHaveBeenCalledTimes(1);
-    expect(renderStamina).not.toHaveBeenCalled();
-  });
-
-  it("skips rendering when only projected stamina changes", () => {
-    const label = createArmyLabelStub();
-    const initialArmy = createArmyLabelData();
-    label.userData.lastLayoutDataKey = buildArmyLabelLayoutDataKey(initialArmy);
-    label.userData.lastStaminaDataKey = buildArmyLabelStaminaDataKey(initialArmy);
-    const renderLabel = vi.fn();
-    const renderStamina = vi.fn();
-
-    syncArmyLabelContentState({
-      label: label as never,
-      layoutDataKey: buildArmyLabelLayoutDataKey(createArmyLabelData({ displayStaminaRatio: 0.4002 })),
-      staminaDataKey: buildArmyLabelStaminaDataKey(createArmyLabelData({ displayStaminaRatio: 0.4002 })),
-      labelsAttachedToScene: true,
-      renderLabel,
-      renderStamina,
-    });
-
-    expect(renderLabel).not.toHaveBeenCalled();
     expect(renderStamina).not.toHaveBeenCalled();
   });
 
@@ -150,8 +128,8 @@ describe("syncArmyLabelContentState", () => {
       renderStamina,
     });
 
-    expect(label.userData.lastDataKey).toBe("10-8-true-Alice-45-90|10-100");
-    expect(label.userData.lastLayoutDataKey).toBe("10-8-true-Alice-45-90");
+    expect(label.userData.lastDataKey).toBe("10-8-true-Alice-45-90-false|10-100");
+    expect(label.userData.lastLayoutDataKey).toBe("10-8-true-Alice-45-90-false");
     expect(label.userData.lastStaminaDataKey).toBe("10-100");
     expect(renderLabel).not.toHaveBeenCalled();
     expect(renderStamina).toHaveBeenCalledTimes(1);

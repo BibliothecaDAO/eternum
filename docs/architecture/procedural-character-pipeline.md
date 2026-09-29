@@ -233,8 +233,8 @@ To promote a new family:
    actor is ready.
 4. Keep equipment on semantic sockets. Extend cosmetic-to-loadout mapping rather than adding transforms at game call
    sites.
-5. Keep combat authoritative: animation release/contact callbacks trigger presentation only; RECS/game events decide
-   health, death, and removal.
+5. Keep combat authoritative: animation release/contact callbacks trigger presentation only; native store/game events
+   decide health, death, and removal.
 6. Cover mapping, creation/update/disposal, fallback visibility, selection/raycasting, attacks, defeat, ragdoll, and
    respawn in the army-layer and representation tests.
 

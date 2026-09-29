@@ -1,46 +1,21 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-
+import { configManager } from "@bibliothecadao/eternum";
+import { TroopTier, TroopType } from "@bibliothecadao/types";
+import { afterEach, expect, it, vi } from "vitest";
 import { getGuardStaminaSnapshot } from "./guard-stamina";
 
-const { getMaxStaminaMock, getStaminaMock } = vi.hoisted(() => ({
-  getMaxStaminaMock: vi.fn(),
-  getStaminaMock: vi.fn(),
-}));
+afterEach(() => vi.restoreAllMocks());
 
-vi.mock("@bibliothecadao/eternum", () => ({
-  StaminaManager: {
-    getMaxStamina: getMaxStaminaMock,
-    getStamina: getStaminaMock,
-  },
-}));
-
-describe("getGuardStaminaSnapshot", () => {
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("recomputes stamina from the current tick even when boost fields are missing", () => {
-    getMaxStaminaMock.mockReturnValue(120);
-    getStaminaMock.mockReturnValue({
-      amount: 60n,
-      updated_tick: 5n,
-    });
-
-    const snapshot = getGuardStaminaSnapshot(
-      {
-        category: 1,
-        tier: 1,
-        stamina: {
-          amount: 40n,
-          updated_tick: 3n,
-        },
-      },
-      5,
-    );
-
-    expect(snapshot).toEqual({
-      current: 60,
-      max: 120,
-    });
-  });
+it("keeps the resolved Frontier guard cap through refill and display, while legacy guards retain their tier bonus", () => {
+  vi.spyOn(configManager, "getTroopStaminaRules").mockReturnValue({
+    stamina_initial: 120,
+    stamina_knight_max: 120,
+    stamina_gain_per_tick: 20,
+  } as ReturnType<typeof configManager.getTroopStaminaRules>);
+  const guard = {
+    category: TroopType.Knight,
+    tier: TroopTier.T3,
+    stamina: { amount: 100n, updated_tick: 10n },
+  };
+  expect(getGuardStaminaSnapshot({ ...guard, staminaMax: 120 }, 20)).toEqual({ current: 120, max: 120 });
+  expect(getGuardStaminaSnapshot(guard, 20)).toEqual({ current: 160, max: 160 });
 });

@@ -126,7 +126,6 @@ export default function ResourceTable() {
                 <th style={table.headerCell}>Weight (kg)</th>
                 <th style={table.headerCell}>Output (p/s)</th>
                 <th style={table.headerCell}>Inputs</th>
-                <th style={table.headerCell}>Labor Value</th>
               </tr>
             </thead>
             <tbody>
@@ -154,7 +153,6 @@ export default function ResourceTable() {
                         ))}
                       </div>
                     </td>
-                    <td style={table.cell}>{formatAmount(config.resources.laborOutputPerResource[id])}</td>
                   </tr>
                 );
               })}

@@ -23,10 +23,22 @@ describe("createGameSyncObserver", () => {
   it("records confirmed heads even when provisional row evidence has advanced the clock", () => {
     const observer = createGameSyncObserver();
     withStoreSnapshot(() => {
-      useChainTimeStore.setState({ lastHeartbeat: { timestamp: 200_000, source: "row-evidence" } });
+      observer.onHead?.({ block: 12, preconfirmed: false, timestamp: 90 });
+      useChainTimeStore.getState().setHeartbeat({ timestamp: 200_000, source: "row-evidence" });
       observer.onHead?.({ block: 13, preconfirmed: false, timestamp: 100 });
       expect(useConnectionStore.getState().lastConfirmedBlock).toBe(13);
       expect(useChainTimeStore.getState().lastHeartbeat?.timestamp).toBe(200_000);
+    });
+  });
+
+  it("keeps the previous game's clock readable during a switch, then anchors the new game's at its first head", () => {
+    withStoreSnapshot(() => {
+      createGameSyncObserver().onHead?.({ block: 900, preconfirmed: false, timestamp: 2_000 });
+
+      const nextGame = createGameSyncObserver();
+      expect(useChainTimeStore.getState().getNowSeconds()).toBeGreaterThanOrEqual(2_000);
+      nextGame.onHead?.({ block: 5, preconfirmed: false, timestamp: 1_000 });
+      expect(Math.floor((useChainTimeStore.getState().nowMs ?? 0) / 1_000)).toBe(1_000);
     });
   });
 

@@ -1,9 +1,6 @@
-import type { ModelRegistry } from "./model-registry";
-import type { RpcHead, RpcReceipt, RpcSubscribedEvent, RpcSubscribedTransaction } from "./types";
-import { WORLD_EVENT_SELECTORS } from "./world-event-decoder";
+import type { RpcHead, RpcReceipt, RpcSubscribedTransaction } from "./types";
 
 interface SubscriptionHandlers {
-  onEvent: (event: RpcSubscribedEvent) => Promise<void> | void;
   onFatal: (error: Error) => void;
   onHead: (head: RpcHead) => Promise<void> | void;
   onReady: () => Promise<void> | void;
@@ -19,7 +16,6 @@ interface JsonRpcMessage {
   result?: unknown;
 }
 
-const SUBSCRIPTION_COUNT = 4;
 const RECONNECT_MS = 200;
 
 export class MadaraSubscriptions {
@@ -34,7 +30,6 @@ export class MadaraSubscriptions {
 
   constructor(
     private readonly url: string,
-    private readonly registry: ModelRegistry,
     private readonly handlers: SubscriptionHandlers,
   ) {}
 
@@ -66,7 +61,7 @@ export class MadaraSubscriptions {
         const payload = JSON.parse(String(message.data)) as JsonRpcMessage;
         if (payload.id !== undefined) {
           this.acceptSubscription(payload, ready);
-          if (ready.size === SUBSCRIPTION_COUNT && !subscriptionsReady) {
+          if (ready.size === 3 && !subscriptionsReady) {
             subscriptionsReady = true;
             this.enqueue(async () => {
               await this.handlers.onReady();
@@ -98,11 +93,6 @@ export class MadaraSubscriptions {
 
   private subscribe(socket: WebSocket): void {
     this.send(socket, 1, "starknet_subscribeNewHeads", {});
-    this.send(socket, 2, "starknet_subscribeEvents", {
-      from_address: this.registry.worldAddress,
-      finality_status: "PRE_CONFIRMED",
-      keys: [Object.values(WORLD_EVENT_SELECTORS), [...this.registry.bySelector.keys()]],
-    });
     this.send(socket, 3, "starknet_subscribeNewTransactionReceipts", {
       finality_status: ["PRE_CONFIRMED", "ACCEPTED_ON_L2"],
     });
@@ -127,10 +117,6 @@ export class MadaraSubscriptions {
     if (!result) throw new Error(`Madara sent ${payload.method ?? "an unnamed notification"} without a result`);
     if (payload.method === "starknet_subscriptionNewHeads") {
       this.enqueue(() => this.handlers.onHead(result as RpcHead));
-      return;
-    }
-    if (payload.method === "starknet_subscriptionEvents") {
-      this.enqueue(() => this.handlers.onEvent(result as RpcSubscribedEvent));
       return;
     }
     if (payload.method === "starknet_subscriptionNewTransactionReceipts") {

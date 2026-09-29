@@ -238,9 +238,9 @@ seven-scenario collision/Jolt smoke all pass with no browser errors.
 Evaluation date: 2026-08-23. Walking characters now use a deterministic, fixed-step XZ presentation solver with a
 spatial hash. Foot units use one circular proxy; horses and mounted Paladins use two proxies along the body axis. Mass,
 restitution, tangent damping, return half-life, maximum visual offset, neighbor count, and resolved-pair count are
-bounded profiles rather than Jolt bodies. ArmyModel and RECS continue to own authoritative position and death state; the
-solver may offset the rendered root by at most 0.18–0.20 character-scale metres and springs that offset back to the
-authoritative anchor.
+bounded profiles rather than Jolt bodies. ArmyModel and native store continue to own authoritative position and death
+state; the solver may offset the rendered root by at most 0.18–0.20 character-scale metres and springs that offset back
+to the authoritative anchor.
 
 A contact edge adds a short pelvis/chest or horse-barrel response. It never starts a ragdoll and never changes gameplay
 state. Jolt remains dormant until an authoritative defeat. Arrows remain pooled and body-free while flying, use a

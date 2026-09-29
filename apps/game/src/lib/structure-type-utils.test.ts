@@ -22,6 +22,6 @@ describe("structure-type-utils", () => {
   it("treats camps as realm-adjacent detail structures", () => {
     expect(isRealmOrVillageLikeStructureCategory(StructureType.Realm)).toBe(true);
     expect(isRealmOrVillageLikeStructureCategory(StructureType.Camp)).toBe(true);
-    expect(isRealmOrVillageLikeStructureCategory(StructureType.FragmentMine)).toBe(false);
+    expect(isRealmOrVillageLikeStructureCategory(StructureType.Mine)).toBe(false);
   });
 });

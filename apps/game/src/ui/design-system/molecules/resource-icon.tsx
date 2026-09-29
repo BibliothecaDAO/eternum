@@ -18,6 +18,14 @@ type Resource = {
 };
 
 const Components: { [key: string]: Resource } = Object.freeze({
+  SAT: {
+    component: (
+      <span aria-label="SAT" className="font-bold text-orange-400">
+        ₿
+      </span>
+    ),
+    name: "SAT",
+  },
   Wood: { component: <img src={`/images/resources/${ResourcesIds.Wood}.png`} />, name: "Wood" },
   Stone: { component: <img src={`/images/resources/${ResourcesIds.Stone}.png`} />, name: "Stone" },
   Coal: { component: <img src={`/images/resources/${ResourcesIds.Coal}.png`} />, name: "Coal" },

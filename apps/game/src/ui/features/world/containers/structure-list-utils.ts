@@ -1,8 +1,8 @@
+import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
+import { Castle, Crown, Pickaxe, Sparkles, Tent } from "@/ui/design-system/atoms/game-icons";
 import type { LeftListFilter, LeftListSort } from "@/hooks/store/use-ui-store";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { type ID, StructureType } from "@bibliothecadao/types";
-import { Castle, Crown, Pickaxe, Hyperstructure, Tent } from "@/ui/design-system/atoms/game-icons";
-import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
 
 /**
  * Returns structures matching `filter`. `"all"` keeps everything (only used
@@ -75,8 +75,8 @@ export const CATEGORY_FILTER_OPTIONS: Array<{
   { value: StructureType.Realm, label: "Realms", icon: Crown },
   { value: StructureType.Village, label: "Villages", icon: Castle },
   { value: StructureType.Camp, label: "Camps", icon: Tent },
-  { value: StructureType.FragmentMine, label: "Mines", icon: Pickaxe },
-  { value: StructureType.Hyperstructure, label: "Hyperstructures", icon: Hyperstructure },
+  { value: StructureType.Mine, label: "Mines", icon: Pickaxe },
+  { value: StructureType.Hyperstructure, label: "Hyperstructures", icon: Sparkles },
 ];
 
 const SORT_OPTIONS: Array<{ value: LeftListSort; label: string }> = [

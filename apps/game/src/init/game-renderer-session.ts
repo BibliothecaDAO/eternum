@@ -1,4 +1,4 @@
-import type { SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 
 import GameRenderer from "../three/game-renderer";
 

@@ -9,6 +9,7 @@ import { TroopSelectionGrid } from "./unified-army-creation-modal/troop-selectio
 import { useArmyCreation } from "./unified-army-creation-modal/use-army-creation";
 import { DISPLAYED_SLOT_NUMBER_MAP, type GuardSlot } from "@bibliothecadao/types";
 import type { ArmyDeploymentTarget } from "../utils/open-army-deployment-picker";
+import { GuardDismissal } from "./guard-dismissal";
 
 export const ArmyDeploymentPicker = (target: ArmyDeploymentTarget) => {
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -48,20 +49,17 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
         bare
         compact
       />
-      {form.blockedReason && (
-        <p className="px-1 text-xs" role="status">
-          {form.blockedReason}
-        </p>
-      )}
       <TroopCountSelector
         troopCount={form.troopCount}
         maxAffordable={form.maxAffordable}
         onChange={form.handleTroopCountChange}
         capacityRemaining={form.capacityRemainingForSelector}
         troopMaxSize={form.troopCapacityLimit}
+        unavailableReason={form.troopAvailabilityReason}
         embedded
         compact
       />
+      {form.troopTrainingLine && <p className="px-1 text-xs text-gold/70">{form.troopTrainingLine}</p>}
       <p className="px-1 text-xs">
         Uses {form.troopCount.toLocaleString()} of {form.selectedAvailable.toLocaleString()}{" "}
         {form.selectedTroopCombo.tier} {form.selectedTroopCombo.type}
@@ -71,9 +69,18 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
         label="Deploy"
         isLoading={form.isLoading}
         isDisabled={form.isActionDisabled}
+        blockedReason={form.submitBlockedReason}
         onSubmit={form.handleCreate}
         embedded
       />
+      {!target.isExplorer && target.initialGuardSlot !== undefined && (
+        <GuardDismissal
+          structureId={target.structureId}
+          slot={target.initialGuardSlot}
+          disabled={form.isLoading}
+          onDismissed={() => usePopoverStore.getState().close("army-deployment")}
+        />
+      )}
     </div>
   );
 };

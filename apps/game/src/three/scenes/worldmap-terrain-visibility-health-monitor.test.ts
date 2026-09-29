@@ -14,7 +14,7 @@ function createHarness(
   let now = 100_000; // start past any cooldown window, as a real performance.now() clock always is
   const deps: WorldmapTerrainVisibilityHealthMonitorDeps = {
     isBoxVisible: vi.fn(() => true),
-    getVisibleCellCount: vi.fn(() => 500),
+    getPresentedCellCount: vi.fn(() => 500),
     requestChunkRefresh: vi.fn(() => 1),
     // Never settles: the recovery-in-flight guard stays raised until reset() lowers it.
     waitForRequestedChunkRefresh: vi.fn(() => new Promise<void>(() => {})),
@@ -71,7 +71,7 @@ describe("WorldmapTerrainVisibilityHealthMonitor", () => {
   it("forces a refresh once retained terrain reads empty past the threshold", () => {
     const { deps, tick } = createHarness(
       { zeroTerrainFrameThreshold: 3 },
-      { isBoxVisible: vi.fn(() => true), getVisibleCellCount: vi.fn(() => 0) },
+      { isBoxVisible: vi.fn(() => true), getPresentedCellCount: vi.fn(() => 0) },
     );
 
     // Tick 1 seeds the reference chunk; ticks 2-4 accumulate zero-terrain frames to the threshold.

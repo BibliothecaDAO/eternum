@@ -1,225 +1,256 @@
-import type { SetupResult } from "@bibliothecadao/dojo";
-import { BuildingType, type ContractAddress, type HexPosition, type ID, ResourcesIds } from "@bibliothecadao/types";
-import { type Component, defineComponentSystem, defineQuery, HasValue, isComponentUpdate } from "@dojoengine/recs";
-import { divideByPrecision } from "../utils";
+import { BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/types";
+import type { GameClientSetup } from "../client/game-client";
+import { configManager } from "../managers/config-manager";
+import { divideByPrecision } from "../utils/utils";
+import { storyEventKeys } from "../sync/story-event-identity";
 import type {
   BattleEventSystemUpdate,
   BuildingSystemUpdate,
+  AttributeChosenSystemUpdate,
   ExplorerRewardSystemUpdate,
   RelicChestOpenedSystemUpdate,
+  ChestRewardSystemUpdate,
+  SitePayoutSystemUpdate,
 } from "./types";
 
-interface SubscriptionHandle {
-  unsubscribe(): void;
-}
+type Fields = Record<string, unknown>;
+const fields = (value: unknown): Fields | undefined =>
+  value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Fields) : undefined;
+const integer = (value: unknown): number => {
+  if (typeof value !== "number" && typeof value !== "string" && typeof value !== "bigint")
+    throw new Error("Invalid native event integer");
+  const result = Number(value);
+  if (!Number.isSafeInteger(result)) throw new Error("Invalid native event integer");
+  return result;
+};
 
-/** Translates the few scene-local RECS effects that do not belong to the spatial projection. */
+/** Current facts drive scene updates; deduplicated runtime events drive transient effects. */
 export class WorldUpdateListener {
-  constructor(private readonly setup: SetupResult) {}
+  constructor(private readonly setup: GameClientSetup) {}
 
-  private setupSystem<T>(
-    component: Component,
-    callback: (value: T) => void,
-    resolveUpdate: (update: any) => T | undefined | Promise<T | undefined>,
-    runOnInit = true,
-  ): () => void {
-    let active = true;
-    const handleUpdate = async (update: any) => {
-      if (!active) return;
-      const value = await resolveUpdate(update);
-      if (value && active) callback(value);
-    };
-
-    defineComponentSystem(this.setup.network.world, component, handleUpdate, { runOnInit });
-    return () => {
-      active = false;
-    };
-  }
-
-  public get Buildings() {
+  get Buildings() {
     return {
-      onBuildingUpdate: (hexCoords: HexPosition, callback: (value: BuildingSystemUpdate) => void): (() => void) =>
-        this.setupSystem(
-          this.setup.components.Building,
-          callback,
-          (update: any) => this.resolveBuildingUpdate(hexCoords, update),
-          false,
-        ),
+      onBuildingUpdate: (structureId: ID, callback: (value: BuildingSystemUpdate) => void): (() => void) =>
+        this.setup.store.subscribe((changes) => {
+          for (const change of changes) {
+            if (change.model !== "Building") continue;
+            const row = change.current ?? change.previous;
+            if (!row || row.game_id !== configManager.getActiveGameId() || row.structure_id !== structureId) continue;
+            callback({
+              buildingType: change.current?.category ?? BuildingType.None,
+              innerCol: row.inner_col,
+              innerRow: row.inner_row,
+              paused: change.current?.paused ?? false,
+            });
+          }
+        }),
     };
   }
 
-  private resolveBuildingUpdate(hexCoords: HexPosition, update: any): BuildingSystemUpdate | undefined {
-    if (!isComponentUpdate(update, this.setup.components.Building)) return;
-
-    const [current, previous] = update.value;
-    const building = current ?? previous;
-    if (!building || building.outer_col !== hexCoords.col || building.outer_row !== hexCoords.row) return;
-
-    if (!current || current.category === BuildingType.None) {
-      return {
-        buildingType: BuildingType.None,
-        innerCol: building.inner_col,
-        innerRow: building.inner_row,
-        paused: false,
-      };
-    }
-
+  get StructureEntityListener() {
     return {
-      buildingType: current.category,
-      innerCol: current.inner_col,
-      innerRow: current.inner_row,
-      paused: current.paused,
+      onLevelUpdate: (entityId: ID, callback: (update: { entityId: ID; level: number }) => void) => ({
+        unsubscribe: this.setup.store.subscribe((changes) => {
+          for (const change of changes) {
+            if (
+              change.model === "Structure" &&
+              change.current?.game_id === configManager.getActiveGameId() &&
+              change.current.entity_id === entityId
+            )
+              callback({ entityId, level: change.current.base.level });
+          }
+        }),
+      }),
     };
   }
 
-  public get StructureEntityListener(): {
-    onLevelUpdate(entityId: ID, callback: (update: { entityId: ID; level: number }) => void): SubscriptionHandle;
-  } {
-    return {
-      onLevelUpdate: (entityId: ID, callback: (update: { entityId: ID; level: number }) => void) => {
-        const query = defineQuery([HasValue(this.setup.components.Structure, { entity_id: entityId })], {
-          runOnInit: false,
-        });
-
-        return query.update$.subscribe((update) => {
-          if (!isComponentUpdate(update, this.setup.components.Structure)) return;
-          const [current] = update.value;
-          if (current) callback({ entityId, level: current.base.level });
-        });
-      },
-    };
+  private onStory(name: string, callback: (payload: Fields, event: Fields) => void): () => void {
+    return this.setup.store.subscribeEvents((event) => {
+      const story = event.model === "StoryEvent" ? fields(event.value) : undefined;
+      if (!story || integer(story.game_id) !== configManager.getActiveGameId()) return;
+      const payload = fields(fields(story.story)?.[name]);
+      if (payload) callback(payload, story);
+    });
   }
 
-  public get ExplorerReward() {
-    return {
-      onExplorerRewardEventUpdate: (callback: (value: ExplorerRewardSystemUpdate) => void) => {
-        const component = this.setup.components.events?.ExplorerRewardEvent;
-        if (!component) {
-          console.warn("ExplorerRewardEvent component is not registered on setup.components.events");
-          return;
-        }
-
-        return this.setupSystem(
-          component,
-          callback,
-          (update: any) => {
-            if (!isComponentUpdate(update, component)) return;
-            const [current] = update.value;
-            return current ? this.parseExplorerRewardEvent(current) : undefined;
-          },
-          false,
-        );
-      },
-    };
-  }
-
-  public get RelicChest() {
+  get RelicChest() {
     return {
       onRelicChestOpened: (callback: (value: RelicChestOpenedSystemUpdate) => void) =>
-        this.setupSystem(
-          this.setup.components.events.OpenRelicChestEvent,
-          callback,
-          (update: any) => {
-            if (!isComponentUpdate(update, this.setup.components.events.OpenRelicChestEvent)) return;
-            const [current] = update.value;
-            return current ? this.parseRelicChestOpenedEvent(current) : undefined;
-          },
-          false,
-        ),
+        this.onStory("RelicChestOpened", (payload, event) => {
+          const coord = fields(payload.coord);
+          if (!coord || !Array.isArray(payload.relics)) throw new Error("Malformed chest opening");
+          callback({
+            explorerId: integer(payload.explorer_id),
+            hex: { x: integer(coord.x), y: integer(coord.y) },
+            relics: payload.relics.map(integer) as ResourcesIds[],
+            timestamp: integer(event.timestamp),
+          });
+        }),
     };
   }
 
-  private parseRelicChestOpenedEvent(current: any): RelicChestOpenedSystemUpdate | undefined {
-    const explorerId = this.toNumber(current?.explorer_id);
-    const x = this.toNumber(current?.chest_coord?.x);
-    const y = this.toNumber(current?.chest_coord?.y);
-    if (explorerId === null || x === null || y === null || !Array.isArray(current?.relics)) return;
-    const relics = current.relics
-      .map((relic: unknown) => this.toNumber(relic))
-      .filter((relic: number | null): relic is number => relic !== null) as ResourcesIds[];
-    return { explorerId, hex: { x, y }, relics, timestamp: this.toNumber(current?.timestamp) ?? 0 };
-  }
-
-  public get BattleEvent() {
+  get Attributes() {
     return {
-      onBattleUpdate: (callback: (value: BattleEventSystemUpdate) => void) =>
-        this.setupSystem(
-          this.setup.components.events.BattleEvent,
-          callback,
-          (update: any) => this.resolveBattleEventUpdate(update),
-          false,
-        ),
+      onAttributeChosen: (callback: (value: AttributeChosenSystemUpdate) => void) =>
+        this.onStory("AttributeChosen", (payload) => {
+          const attribute =
+            typeof payload.attribute === "string" ? payload.attribute : Object.keys(fields(payload.attribute) ?? {})[0];
+          if (!isAttribute(attribute)) throw new Error("Malformed attribute choice");
+          callback({
+            explorerId: integer(payload.explorer_id),
+            offerId: integer(payload.offer_id),
+            attribute,
+            applied: integer(payload.applied),
+            lost: integer(payload.lost),
+          });
+        }),
     };
   }
 
-  private resolveBattleEventUpdate(update: any): BattleEventSystemUpdate | undefined {
-    const component = this.setup.components.events.BattleEvent;
-    if (!isComponentUpdate(update, component)) return;
-
-    const [current] = update.value;
-    if (!current) return;
-
-    const entityId = current.winner_id === current.attacker_owner ? current.attacker_id : current.defender_id;
-    if (entityId === undefined || entityId === null) return;
-
-    const maxReward = Array.isArray(current.max_reward)
-      ? current.max_reward.flatMap((reward: unknown) => {
-          if (!Array.isArray(reward) || reward.length !== 2) return [];
-          return [{ resourceType: Number(reward[0]), amount: divideByPrecision(Number(reward[1])) }];
-        })
-      : [];
-
+  get ChestRewards() {
     return {
-      entityId,
-      battleData: {
-        attackerId: current.attacker_id,
-        defenderId: current.defender_id,
-        attackerOwner: current.attacker_owner,
-        defenderOwner: current.defender_owner,
-        winnerId: current.winner_id,
-        maxReward,
-        timestamp: Number(current.timestamp),
+      onChestReward: (callback: (value: ChestRewardSystemUpdate) => void) =>
+        this.onStory("ChestReward", (payload, event) => {
+          const kind = typeof payload.kind === "string" ? payload.kind : Object.keys(fields(payload.kind) ?? {})[0];
+          if (kind !== "Relic" && kind !== "Token") throw new Error("Invalid chest reward kind");
+          if (typeof payload.lords_exhausted !== "boolean") throw new Error("Missing chest budget result");
+          callback({
+            resultKey: storyEventKeys(event),
+            explorerId: integer(payload.explorer_id),
+            kind,
+            lordsExhausted: payload.lords_exhausted,
+            quality: integer(payload.quality),
+            depth: integer(payload.depth),
+            timestamp: integer(event.timestamp),
+          });
+        }),
+    };
+  }
+
+  get SitePayouts() {
+    return {
+      /**
+       * Each cleared site, with the exchange that won it. The contract emits the winning BattleEvent and then the
+       * SitePayout in one transaction (one `order`), so the battle's tile and the attacker's losses travel with the
+       * payout; a payout without its battle is refused.
+       */
+      onSitePayout: (callback: (value: SitePayoutSystemUpdate) => void) => {
+        let lastBattle: { order: string; defenderId: number; coord: Fields; troopsLost: number } | undefined;
+        const stopBattles = this.setup.store.subscribeEvents((event) => {
+          const battle = event.model === "BattleEvent" ? fields(event.value) : undefined;
+          if (!battle || integer(battle.game_id) !== configManager.getActiveGameId()) return;
+          const attacker = fields(battle.attacker);
+          const coord = fields(battle.coord);
+          if (!attacker || !coord) throw new Error("Malformed battle");
+          lastBattle = {
+            order: String(battle.order),
+            defenderId: integer(battle.defender_id),
+            coord,
+            troopsLost: divideByPrecision(Number(BigInt(String(attacker.before)) - BigInt(String(attacker.after)))),
+          };
+        });
+        const stopPayouts = this.onStory("SitePayout", (payload, event) => {
+          const siteId = integer(payload.site_id);
+          const battle = lastBattle;
+          if (battle?.order !== String(event.order) || battle.defenderId !== siteId)
+            throw new Error(`Site payout ${siteId} arrived without its winning battle`);
+          const kind = siteKind(payload.kind);
+          const reward = siteReward(payload.reward);
+          if ((kind === "FallenRealm") !== (reward === null))
+            throw new Error(`A cleared ${kind} pays ${kind === "FallenRealm" ? "its chest" : "a resource"}`);
+          callback({
+            explorerId: integer(payload.explorer_id),
+            siteId,
+            ownerAddress: event.owner === undefined || event.owner === null ? null : BigInt(String(event.owner)),
+            kind,
+            reward,
+            coord: { x: integer(battle.coord.x), y: integer(battle.coord.y) },
+            troopsLost: battle.troopsLost,
+          });
+        });
+        return () => {
+          stopBattles();
+          stopPayouts();
+        };
       },
     };
   }
 
-  private parseExplorerRewardEvent(current: any): ExplorerRewardSystemUpdate | undefined {
-    const explorerId = this.toNumber(current?.explorer_id);
-    if (explorerId === null) return;
-
-    const rawAmount = current?.reward_resource_amount ?? null;
-    const normalizedAmount = this.toNumber(rawAmount);
+  get ExplorerReward() {
     return {
-      explorerId,
-      explorerStructureId: this.toNumber(current?.explorer_structure_id) ?? 0,
-      explorerOwnerAddress: this.toContractAddress(current?.explorer_owner_address),
-      resourceId: (this.toNumber(current?.reward_resource_id) ?? 0) as ResourcesIds | 0,
-      amount: normalizedAmount === null ? 0 : divideByPrecision(normalizedAmount),
-      rawAmount,
-      timestamp: this.toNumber(current?.timestamp) ?? 0,
+      onExplorerRewardEventUpdate: (callback: (value: ExplorerRewardSystemUpdate) => void) =>
+        this.onStory("ExplorationReward", (payload, event) => {
+          const explorerId = integer(payload.explorer_id);
+          const explorer = this.setup.store.get("ExplorerTroops", {
+            game_id: configManager.getActiveGameId(),
+            explorer_id: explorerId,
+          });
+          const owner = event.owner;
+          callback({
+            explorerId,
+            explorerStructureId: explorer?.owner ?? 0,
+            explorerOwnerAddress: owner === undefined || owner === null ? null : BigInt(String(owner)),
+            resourceId: integer(payload.resource_type) as ResourcesIds,
+            rawAmount: BigInt(String(payload.amount)),
+            amount: divideByPrecision(Number(payload.amount)),
+            coord: { x: integer(fields(payload.coord)?.x), y: integer(fields(payload.coord)?.y) },
+            timestamp: integer(event.timestamp),
+          });
+        }),
     };
   }
 
-  private toNumber(value: unknown): number | null {
-    if (typeof value === "number") return Number.isFinite(value) ? value : null;
-    if (typeof value === "bigint") return Number(value);
-    if (typeof value !== "string" || value.length === 0) return null;
-
-    try {
-      const parsed = value.startsWith("0x") ? Number(BigInt(value)) : Number(value);
-      return Number.isFinite(parsed) ? parsed : null;
-    } catch {
-      return null;
-    }
-  }
-
-  private toContractAddress(value: unknown): ContractAddress | null {
-    if (value === undefined || value === null || value === "" || value === "0" || value === "0x0") return null;
-    try {
-      const address = typeof value === "number" ? BigInt(Math.trunc(value)) : BigInt(value as bigint | string);
-      return address === 0n ? null : address;
-    } catch {
-      return null;
-    }
+  get BattleEvent() {
+    return {
+      onBattleUpdate: (callback: (value: BattleEventSystemUpdate) => void) =>
+        this.setup.store.subscribeEvents((event) => {
+          const battle = event.model === "BattleEvent" ? fields(event.value) : undefined;
+          if (!battle || integer(battle.game_id) !== configManager.getActiveGameId()) return;
+          const attackerId = integer(battle.attacker_id);
+          const defenderId = integer(battle.defender_id);
+          const attackerOwner = integer(battle.attacker_owner);
+          const defenderOwner = integer(battle.defender_owner);
+          const winnerId = integer(battle.winner_id);
+          if (!Array.isArray(battle.max_reward)) throw new Error("Malformed battle rewards");
+          const maxReward = battle.max_reward.map((value) => {
+            const row = fields(value);
+            if (!row) throw new Error("Malformed battle reward");
+            return { resourceType: integer(row.resource_type), amount: divideByPrecision(Number(row.amount)) };
+          });
+          callback({
+            entityId: winnerId === attackerOwner ? attackerId : defenderId,
+            battleData: {
+              attackerId,
+              defenderId,
+              attackerOwner,
+              defenderOwner,
+              winnerId,
+              maxReward,
+              timestamp: integer(battle.timestamp),
+            },
+          });
+        }),
+    };
   }
 }
+
+const SITE_KINDS = ["Camp", "Rift", "FallenRealm"] as const;
+const siteKind = (value: unknown): SitePayoutSystemUpdate["kind"] => {
+  const kind = typeof value === "string" ? value : Object.keys(fields(value) ?? {})[0];
+  if (!SITE_KINDS.includes(kind as SitePayoutSystemUpdate["kind"])) throw new Error("Malformed site kind");
+  return kind as SitePayoutSystemUpdate["kind"];
+};
+/** A camp or rift pays a resource; a fallen realm pays none (its closed chest waits on the tile). */
+const siteReward = (value: unknown): SitePayoutSystemUpdate["reward"] => {
+  if (value === null) return null;
+  const reward = fields(value);
+  if (!reward) throw new Error("Malformed site reward");
+  return {
+    resourceId: integer(reward.resource_type) as ResourcesIds,
+    amount: divideByPrecision(Number(reward.amount)),
+  };
+};
+
+const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Support"] as const;
+const isAttribute = (value: unknown): value is AttributeChosenSystemUpdate["attribute"] =>
+  ATTRIBUTES.includes(value as AttributeChosenSystemUpdate["attribute"]);

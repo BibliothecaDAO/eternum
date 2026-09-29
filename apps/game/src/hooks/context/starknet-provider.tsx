@@ -1,4 +1,3 @@
-import { GameplayAccountSync } from "@/hooks/context/gameplay-account-sync";
 import { ControllerConnector } from "@cartridge/connector";
 import { resolveEndpoint } from "@realms-world/chain";
 import { mainnet } from "@starknet-react/chains";
@@ -13,8 +12,8 @@ const identityRpcUrl = resolveEndpoint(env.VITE_PUBLIC_IDENTITY_RPC_URL, {
   name: "VITE_PUBLIC_IDENTITY_RPC_URL",
   browserFacing: true,
 });
-// Controller is an identity wallet option only (owner decision, brief "Decisions taken"): it signs the one
-// SIWS message on mainnet. No session policies, no paymaster, no game-transaction signing.
+// Controller is a wallet a player links to their Realms account from the account page: it signs
+// the one SIWS message on mainnet. No session policies, no paymaster, no game-transaction signing.
 // The connector package keeps the first instance and ignores later options — own exactly one.
 // `lazyload`: the keychain iframe (Cartridge's hosted keychain, an authed gRPC client of its own) is created on the first
 // wallet action, not at module load — an anonymous spectator never starts a vendor client that needs a session.
@@ -23,9 +22,7 @@ const controller = new ControllerConnector({
   webauthnPopup: true,
   lazyload: true,
   // Identity is always mainnet. Pass that fact through so Controller does not synchronously probe an RPC at boot.
-  chains: [
-    { rpcUrl: env.VITE_PUBLIC_CONTROLLER_RPC_URL || identityRpcUrl, chainId: constants.StarknetChainId.SN_MAIN },
-  ],
+  chains: [{ rpcUrl: identityRpcUrl, chainId: constants.StarknetChainId.SN_MAIN }],
   defaultChainId: constants.StarknetChainId.SN_MAIN,
 });
 const identityConnectors = [controller, ready(), braavos()];
@@ -50,10 +47,9 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
       provider={jsonRpcProvider({ rpc })}
       connectors={identityConnectors}
       explorer={voyager}
-      autoConnect
       queryClient={queryClient}
     >
-      <GameplayAccountSync>{children}</GameplayAccountSync>
+      {children}
     </StarknetConfig>
   );
 }

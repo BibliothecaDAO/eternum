@@ -15,7 +15,7 @@ import {
   Scene,
   Vector3,
 } from "three";
-import { getWorldPositionForHex } from "../utils";
+import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { resolveHighlightLayerPalette } from "./worldmap-interaction-palette";
 import { resolveHighlightViewTuning } from "./worldmap-highlight-view-policy";
 
@@ -83,7 +83,11 @@ export class HighlightHexManager {
     ease: "power2.out",
   };
 
-  constructor(private scene: Scene) {
+  constructor(
+    private scene: Scene,
+    /** The owning scene's hex space: the world map's floating origin, or the local realm scene's own lattice. */
+    private readonly space: HexSpace = WORLD_HEX_SPACE,
+  ) {
     this.hexGeometryPool = HexGeometryPool.getInstance();
 
     const hexagonGeometry = this.hexGeometryPool.getGeometry("highlight");
@@ -228,7 +232,7 @@ export class HighlightHexManager {
 
     for (let i = 0; i < count; i++) {
       const descriptor = descriptors[i];
-      const position = getWorldPositionForHex(descriptor.hex);
+      const position = this.space.positionForHex(descriptor.hex);
       tempPosition.set(position.x, layer.baseY + this.yOffset, position.z);
 
       const animState: InstanceAnimationState = {

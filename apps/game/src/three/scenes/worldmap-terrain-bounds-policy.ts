@@ -1,3 +1,4 @@
+import { worldHexToWorld } from "../world-origin";
 import { Box3, Sphere, Vector3 } from "three";
 
 import { getRenderBounds } from "../utils/chunk-geometry";
@@ -26,15 +27,9 @@ interface TerrainPresentationBounds {
 
 const DEFAULT_HEX_PADDING = 2;
 const DEFAULT_HEIGHT_RANGE: [number, number] = [-1, 10];
-const HEX_RADIUS = 1;
-
 function getTerrainWorldPosition(col: number, row: number): Vector3 {
-  const hexHeight = HEX_RADIUS * 2;
-  const hexWidth = Math.sqrt(3) * HEX_RADIUS;
-  const vertDist = hexHeight * 0.75;
-  const rowOffset = ((row % 2) * Math.sign(row) * hexWidth) / 2;
-
-  return new Vector3(col * hexWidth - rowOffset, 0, row * vertDist);
+  const world = worldHexToWorld(col, row);
+  return new Vector3(world.x, 0, world.z);
 }
 
 /**

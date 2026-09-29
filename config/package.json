@@ -1,19 +1,14 @@
 {
   "name": "eternum-config-deploy",
   "scripts": {
-    "sync:madara:blitz": "bun run ./scripts/run-sync.ts madara blitz",
-    "sync:appchain": "bun run ./scripts/run-sync.ts appchain",
-    "sync:appchain:blitz": "bun run ./scripts/run-sync.ts appchain blitz",
-    "sync:appchain:eternum": "bun run ./scripts/run-sync.ts appchain eternum",
+    "config:generate": "bun run ./scripts/generate.ts",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "sync:madara:eternum": "bun run ./scripts/run-sync.ts madara eternum"
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@bibliothecadao/eternum": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
-    "@dojoengine/core": "catalog:game",
     "@realms-world/chain": "workspace:*",
     "chalk": "^5.4.1",
     "viem": "catalog:game",

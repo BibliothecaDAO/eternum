@@ -1,0 +1,38 @@
+import { useRef } from "react";
+import { create } from "zustand";
+
+/**
+ * Counters a sprite is flying to. A held counter keeps the number it showed until the sprite lands, so its roll starts
+ * on the landing, never before it. A counter is named by its `data-fly-target`.
+ */
+const useHolds = create<Record<string, number>>(() => ({}));
+
+/** Holds a counter until the returned release runs; releasing twice is harmless. */
+export const holdUntilLanding = (target: string): (() => void) => {
+  useHolds.setState((holds) => ({ [target]: (holds[target] ?? 0) + 1 }));
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    useHolds.setState((holds) => ({ [target]: Math.max(0, (holds[target] ?? 0) - 1) }));
+  };
+};
+
+/** What a counter shows: its live value, or while a sprite is on its way, the value it showed before the flight. */
+export const useLandedValue = <T>(target: string, value: T): T => {
+  const held = useHolds((holds) => (holds[target] ?? 0) > 0);
+  const shown = useRef(value);
+  if (!held) shown.current = value;
+  return shown.current;
+};
+
+/**
+ * What a landing brought, for the counter's "+N" label: announced by a flight that says so (a site's payout), never by
+ * the balance rising on its own, so production ticks never pop a label.
+ */
+const useDeltas = create<Record<string, { amount: number; at: number }>>(() => ({}));
+
+export const announceLanding = (target: string, amount: number): void =>
+  useDeltas.setState({ [target]: { amount, at: performance.now() } });
+
+export const useLandingDelta = (target: string) => useDeltas((deltas) => deltas[target] ?? null);

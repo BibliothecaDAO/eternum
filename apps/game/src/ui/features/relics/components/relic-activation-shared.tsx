@@ -45,8 +45,9 @@ export const RelicSummary = ({
 
 interface RelicEssenceRequirementProps {
   essenceCost: number;
-  essenceBalance: number;
-  missingEssence?: number;
+  /** Undefined while the balance is unknown. */
+  essenceBalance: number | undefined;
+  shortfall: string;
   hasEnoughEssence: boolean;
   className?: string;
   costLabel?: string;
@@ -57,7 +58,7 @@ interface RelicEssenceRequirementProps {
 export const RelicEssenceRequirement = ({
   essenceCost,
   essenceBalance,
-  missingEssence = Math.max(0, essenceCost - essenceBalance),
+  shortfall,
   hasEnoughEssence,
   className,
   costLabel = "Activation Cost",
@@ -78,13 +79,13 @@ export const RelicEssenceRequirement = ({
         <div className="flex items-center gap-2">
           <ResourceIcon resource={ResourcesIds[ResourcesIds.Essence]} size="sm" withTooltip={false} />
           <span className={`text-sm font-bold ${hasEnoughEssence ? "text-emerald-300" : "text-red-400"}`}>
-            {essenceBalance.toLocaleString()}
+            {essenceBalance?.toLocaleString() ?? "—"}
           </span>
         </div>
       </div>
       {showWarning && !hasEnoughEssence && (
         <div className="mt-2 rounded border border-red-600/40 bg-red-900/30 p-2 text-center text-xs font-semibold text-red-300">
-          Need {missingEssence.toLocaleString()} more essence
+          {shortfall}
         </div>
       )}
     </div>

@@ -1,5 +1,8 @@
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { latticeHexAt, latticeHexBoundsForWorldRect, latticeToWorld } from "@/three/utils/hex-lattice";
+import { fromRenderHex, toRenderHex } from "@/three/world-origin";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView, selectableArmiesView } from "@/sync/fact-views";
 import { FELT_CENTER } from "@/ui/config";
 import { requireBiomeColor, resolveBiomeTypeFromId } from "@/three/managers/biome-colors";
 import {
@@ -9,8 +12,9 @@ import {
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { HexPosition, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { HexPosition, StructureType, TileOccupier, getMinePresentation } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
+import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 
 export interface MinimapTile {
   col: number;
@@ -19,9 +23,11 @@ export interface MinimapTile {
   occupier_id?: string;
   occupier_type?: number;
   occupier_is_structure?: boolean;
+  mineKind?: number;
 }
 
-export const normalizeMinimapTile = (tile: MinimapTile): MinimapTile => ({
+const normalizeMinimapTile = (tile: MinimapTile): MinimapTile => ({
+  mineKind: tile.mineKind,
   col: Number(tile.col),
   row: Number(tile.row),
   biome: tile.biome !== undefined ? Number(tile.biome) : undefined,
@@ -29,6 +35,38 @@ export const normalizeMinimapTile = (tile: MinimapTile): MinimapTile => ({
   occupier_type: tile.occupier_type !== undefined ? Number(tile.occupier_type) : undefined,
   occupier_is_structure: Boolean(tile.occupier_is_structure),
 });
+
+/**
+ * Tiles give the minimap its biomes; what stands on a hex comes from the projection's structure index, which also
+ * places a Frontier realm on the site it is raised on, where no tile carries it.
+ */
+export const readMinimapTiles = (
+  projection: Pick<WorldSpatialProjection, "getTiles" | "getStructures">,
+  alt: boolean,
+): MinimapTile[] => {
+  const tilesByHex = new Map<string, MinimapTile>();
+  for (const tile of projection.getTiles(alt)) {
+    tilesByHex.set(`${tile.hexCoords.col}:${tile.hexCoords.row}`, {
+      col: tile.hexCoords.col,
+      row: tile.hexCoords.row,
+      biome: tile.biome,
+      occupier_id: tile.occupierId.toString(),
+      occupier_type: tile.occupierType,
+      occupier_is_structure: tile.occupierIsStructure,
+    });
+  }
+  for (const structure of projection.getStructures(alt)) {
+    if (structure.entityId === null) continue;
+    const key = `${structure.hexCoords.col}:${structure.hexCoords.row}`;
+    tilesByHex.set(key, {
+      ...(tilesByHex.get(key) ?? { col: structure.hexCoords.col, row: structure.hexCoords.row }),
+      occupier_id: structure.entityId.toString(),
+      occupier_type: structure.occupierType,
+      occupier_is_structure: true,
+    });
+  }
+  return [...tilesByHex.values()].map(normalizeMinimapTile);
+};
 
 const normalizeEntityId = (value: unknown): string | null => {
   if (value === null || value === undefined) return null;
@@ -44,7 +82,6 @@ const normalizeEntityId = (value: unknown): string | null => {
 };
 
 const HEX_SIZE = 7;
-const SQRT3 = Math.sqrt(3);
 const CAMERA_CIRCLE_SCREEN_RADIUS_PX = 60;
 const WORLD_CAMERA_DISTANCE_REFERENCE = 20;
 const TILE_WINDOW_STEP = HEX_SIZE * 8;
@@ -67,28 +104,19 @@ const LABEL_ICONS = {
   chest: "/images/labels/chest.png",
 } as const;
 
-const getGridMetrics = () => {
-  const hexHeight = HEX_SIZE * 2;
-  const hexWidth = SQRT3 * HEX_SIZE;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
-  return { vertDist, horizDist };
-};
-
+/**
+ * Minimap pixels for a normalized hex: the world map's lattice at minimap scale, drawn relative to the floating world
+ * origin so SVG coordinates stay small wherever the map is looked at.
+ */
 const offsetToPixel = (col: number, row: number) => {
-  const { vertDist, horizDist } = getGridMetrics();
-  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
-  const x = col * horizDist - rowOffset;
-  const y = row * vertDist;
-  return { x, y };
+  const render = toRenderHex(col, row);
+  const { x, z } = latticeToWorld(render.col, render.row);
+  return { x: x * HEX_SIZE, y: z * HEX_SIZE };
 };
 
 const pixelToOffset = (x: number, y: number) => {
-  const { vertDist, horizDist } = getGridMetrics();
-  const row = Math.round(y / vertDist);
-  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
-  const col = Math.round((x + rowOffset) / horizDist);
-  return { col, row };
+  const render = latticeHexAt(x / HEX_SIZE, y / HEX_SIZE);
+  return fromRenderHex(render.col, render.row);
 };
 
 const hexCorners = (center: { x: number; y: number }) => {
@@ -208,10 +236,9 @@ interface HexMinimapProps {
 export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetHex }: HexMinimapProps) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 800, height: 600 });
-  const playerStructures = useUIStore((state) => state.playerStructures);
-  const selectableArmies = useUIStore((state) => state.selectableArmies);
+  const playerStructures = useFactView(playerStructuresView);
+  const selectableArmies = useFactView(selectableArmiesView);
   const cameraDistance = useUIStore((state) => state.cameraDistance);
-  const mode = useGameModeConfig();
 
   const ownedStructureIds = useMemo(() => {
     return new Set(
@@ -401,20 +428,15 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
   const visibleTiles = useMemo(() => {
     if (!tiles.length) return [] as CenteredTileEntry[];
 
-    const { vertDist, horizDist } = getGridMetrics();
-    const minRow = Math.floor(minY / vertDist) - 2;
-    const maxRow = Math.ceil(maxY / vertDist) + 2;
-
-    const rowOffsetMin = 0;
-    const rowOffsetMax = horizDist / 2;
-    const colCandidates = [
-      (minX + rowOffsetMin) / horizDist,
-      (minX + rowOffsetMax) / horizDist,
-      (maxX + rowOffsetMin) / horizDist,
-      (maxX + rowOffsetMax) / horizDist,
-    ];
-    const minCol = Math.floor(Math.min(...colCandidates)) - 2;
-    const maxCol = Math.ceil(Math.max(...colCandidates)) + 2;
+    // The window is in minimap pixels relative to the world origin; tiles are indexed by normalized hex.
+    const window = latticeHexBoundsForWorldRect({
+      minX: minX / HEX_SIZE,
+      minZ: minY / HEX_SIZE,
+      maxX: maxX / HEX_SIZE,
+      maxZ: maxY / HEX_SIZE,
+    });
+    const { col: minCol, row: minRow } = fromRenderHex(window.minCol - 1, window.minRow - 1);
+    const { col: maxCol, row: maxRow } = fromRenderHex(window.maxCol + 1, window.maxRow + 1);
 
     const result: CenteredTileEntry[] = [];
     for (let col = minCol; col <= maxCol; col += 1) {
@@ -451,11 +473,12 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
         if (!info) return null;
 
         switch (info.type) {
-          case StructureType.FragmentMine:
+          case StructureType.Mine:
+            return tile.mineKind === undefined
+              ? null
+              : ({ iconSrc: getMinePresentation(tile.mineKind).icon } satisfies TileMarker);
           case StructureType.BitcoinMine:
-            return {
-              iconSrc: mode.assets.labels.fragmentMine,
-            } satisfies TileMarker;
+            return { iconSrc: LABEL_ICONS.fragmentMine } satisfies TileMarker;
           case StructureType.Village:
           case StructureType.Camp:
             return {
@@ -490,7 +513,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
       return null;
     },
-    [ownedStructureIds, ownedExplorerIds, mode],
+    [ownedStructureIds, ownedExplorerIds],
   );
 
   const tileElements = useMemo(

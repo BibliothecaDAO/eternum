@@ -111,7 +111,7 @@ const decodeHexToAscii = (value: string): string | null => {
 };
 
 const extractSpecificReasonFromMessage = (message: string): string | null => {
-  // Katana / RPC-0.8+ shape: "Execution failed. Failure reason: 0x… ('panic text')."
+  // RPC failure shape: "Execution failed. Failure reason: 0x… ('panic text')."
   // Nested calls repeat the header, and the LAST frame is the innermost assert —
   // the message the contract actually panicked with.
   const failureReasonFrames = [...message.matchAll(/Failure reason:\s*0x[0-9a-f]+\s*\('([^']+)'\)/gi)];

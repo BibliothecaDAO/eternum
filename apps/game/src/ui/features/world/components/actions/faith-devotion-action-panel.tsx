@@ -14,7 +14,7 @@ import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
 import { REQUIREMENT_CHIP } from "@/ui/design-system/molecules/requirement-chips";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { displayAddress } from "@/ui/utils/utils";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { ID, StructureType } from "@bibliothecadao/types";
 import { Loader, Sparkles } from "@/ui/design-system/atoms/game-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -295,7 +295,7 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
   const {
     account: { account },
     setup: { systemCalls },
-  } = useDojo();
+  } = useGame();
   const faithSystemCalls = systemCalls as unknown as FaithSystemCallSet;
 
   const [isSubmitting, setIsSubmitting] = useState(false);

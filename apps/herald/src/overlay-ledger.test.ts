@@ -40,7 +40,21 @@ describe("OverlayLedger", () => {
 
     expect(ledger.delta([set("0xabc", "0x1"), set("0xdef", "0x2")], noConfirmedRow)).toHaveLength(2);
     expect(ledger.delta([set("0xabc", "0x1"), set("0xdef", "0x3")], noConfirmedRow)).toEqual([set("0xdef", "0x3")]);
-    expect(ledger.delta([del("0xabc"), del("0xabc")], noConfirmedRow)).toEqual([del("0xabc")]);
+    expect(ledger.delta([del("0xabc"), del("0xabc")], noConfirmedRow)).toEqual([
+      { ...del("0xabc"), previous: row("0xabc", "0x1") },
+    ]);
+  });
+
+  it("keeps the pre-transaction scope through collapse and uses the held overlay scope on confirmation", () => {
+    const old = row("0xabc", "old-scope");
+    const moved = row("0xabc", "new-scope");
+    const deletion = { ...del("0xabc"), previous: moved };
+    expect(collapseChanges([{ gameId: "7", set: moved, previous: old }, deletion])).toEqual([
+      { ...deletion, previous: old },
+    ]);
+    const ledger = new OverlayLedger();
+    ledger.delta([{ gameId: "7", set: moved }], () => old);
+    expect(ledger.settleConfirmed([{ ...deletion, previous: old }])).toEqual([deletion]);
   });
 
   it("compares row values structurally regardless of key order", () => {
@@ -62,7 +76,7 @@ describe("OverlayLedger", () => {
     expect(ledger.delta([set("0xabc", "0x2"), set("0xdef", "0x3")], confirmedRow)).toEqual([set("0xdef", "0x3")]);
 
     ledger.reset();
-    expect(ledger.settleReverts(confirmedRow)).toEqual([del("0xdef")]);
+    expect(ledger.settleReverts(confirmedRow)).toEqual([{ ...del("0xdef"), previous: row("0xdef", "0x3") }]);
   });
 
   it("reverts rows the rebuilt overlay did not touch to confirmed state", () => {
@@ -83,7 +97,7 @@ describe("OverlayLedger", () => {
     ledger.delta([set("0xdef", "0x4")], noConfirmedRow);
 
     ledger.reset();
-    expect(ledger.settleReverts(noConfirmedRow)).toEqual([del("0xdef")]);
+    expect(ledger.settleReverts(noConfirmedRow)).toEqual([{ ...del("0xdef"), previous: row("0xdef", "0x4") }]);
   });
 
   it("keeps a confirmed row off the wire when subscribers already hold its value", () => {

@@ -1,82 +1,33 @@
 import { createEmptyActivityBreakdown } from "@bibliothecadao/eternum/game-sync";
-import type { HeraldGameSnapshot } from "@bibliothecadao/eternum/game-sync";
 import { describe, expect, it } from "vitest";
-
 import { buildLandingLeaderboard } from "./landing-leaderboard-service";
 
-const snapshot: HeraldGameSnapshot = {
-  confirmed_block: 12,
-  game_id: "7",
-  models: [
-    { model: "AddressName", rows: [] },
-    {
-      model: "PlayerRegisteredPoints",
-      rows: [
-        {
-          key: "0x1",
-          value: { address: "0xa", registered_points: "0x5f5e100" },
-        },
-      ],
-    },
-    {
-      model: "GameRegistry",
-      rows: [{ key: "0x2", value: { end_at: "0xc8", game_id: "0x7", preset_id: "0x1" } }],
-    },
-    {
-      model: "PresetConfig",
-      rows: [
-        {
-          key: "0x3",
-          value: {
-            preset_id: "0x1",
-            victory_points_grant_config: { hyp_points_per_second: "0xf4240" },
-          },
-        },
-      ],
-    },
-    {
-      model: "Hyperstructure",
-      rows: [
-        {
-          key: "0x4",
-          value: { game_id: "0x7", hyperstructure_id: "0x2a", points_multiplier: "0x2" },
-        },
-      ],
-    },
-    {
-      model: "HyperstructureShareholders",
-      rows: [
-        {
-          key: "0x5",
-          value: {
-            game_id: "0x7",
-            hyperstructure_id: "0x2a",
-            shareholders: [["0xa", "0x1388"]],
-            start_at: "0x64",
-          },
-        },
-      ],
-    },
-  ],
-};
-
-describe("buildLandingLeaderboard", () => {
-  it("combines registered points with the live shareholder term", () => {
-    expect(buildLandingLeaderboard(snapshot, [])).toEqual([
-      expect.objectContaining({ address: "0xa", points: 200, registeredPoints: 100, unregisteredPoints: 100 }),
+describe("native landing leaderboard", () => {
+  it("preserves Herald's competition ranks, fractional VP and zero-point players", () => {
+    const entries = [
+      { address: "0xa", rank: 1, totalPoints: 200.5 },
+      { address: "0xb", rank: 1, totalPoints: 200.5 },
+      { address: "0xc", rank: 3, totalPoints: 0 },
+      { address: "0xd", rank: 3, totalPoints: 0 },
+    ].map((entry) => ({
+      ...entry,
+      activityBreakdown: createEmptyActivityBreakdown(),
+    }));
+    expect(buildLandingLeaderboard(entries).map(({ address, rank, points }) => ({ address, rank, points }))).toEqual([
+      { address: "0xa", rank: 1, points: 200.5 },
+      { address: "0xb", rank: 1, points: 200.5 },
+      { address: "0xc", rank: 3, points: 0 },
+      { address: "0xd", rank: 3, points: 0 },
     ]);
   });
-});
-
-it("uses Herald’s complete breakdown instead of a page of stories", () => {
-  const activityBreakdown = createEmptyActivityBreakdown();
-  activityBreakdown.exploration = { count: 166, points: 830 };
-  activityBreakdown.openRelicChest = { count: 3, points: 750 };
-  const [entry] = buildLandingLeaderboard(snapshot, [
-    { address: "0xa", rank: 1, totalPoints: 1580, activityBreakdown },
-  ]);
-  expect(entry.exploredTiles).toBe(166);
-  expect(entry.exploredTilePoints).toBe(830);
-  expect(entry.relicCratesOpened).toBe(3);
-  expect(entry.relicCratePoints).toBe(750);
+  it("uses Herald’s complete breakdown instead of a page of stories", () => {
+    const activityBreakdown = createEmptyActivityBreakdown();
+    activityBreakdown.exploration = { count: 166, points: 830 };
+    activityBreakdown.openRelicChest = { count: 3, points: 750 };
+    const [entry] = buildLandingLeaderboard([{ address: "0xa", rank: 1, totalPoints: 1580, activityBreakdown }]);
+    expect(entry.exploredTiles).toBe(166);
+    expect(entry.exploredTilePoints).toBe(830);
+    expect(entry.relicCratesOpened).toBe(3);
+    expect(entry.relicCratePoints).toBe(750);
+  });
 });

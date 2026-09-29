@@ -1,5 +1,7 @@
+import { MusicRouterProvider } from "@/audio";
+import { getGameModeId } from "@/config/game-modes";
 /**
- * Game route module - lazy loaded to avoid pulling heavy deps (World, Dojo, Three.js, etc.)
+ * Game route module - lazy loaded to avoid pulling heavy deps (World, native contracts, Three.js, etc.)
  * into the landing page bundle.
  */
 import { ChunkTransitionIndicator, ErrorBoundary, WorldLoading } from "@/ui/shared";
@@ -7,21 +9,21 @@ import { TransactionAudioCues } from "@/ui/shared/components/transaction-audio-c
 import { useEffect } from "react";
 import { PlaySceneHandoff } from "./game-entry/play-scene-handoff";
 import { markGameEntryMilestone } from "./ui/layouts/game-entry-timeline";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import type { Account, AccountInterface } from "starknet";
 import { usePlayRouteBootController } from "./game-entry/play-route-boot";
-import { DojoProvider } from "./hooks/context/dojo-context";
+import { GameProvider } from "./hooks/context/game-context";
 import { useTransactionListener } from "./hooks/use-transaction-listener";
 import type { SetupResult } from "./init/bootstrap";
-import { PlayRouteBootstrapErrorScreen } from "./ui/layouts/play-route-bootstrap-error-screen";
-import { PlayRouteReconnectScreen } from "./ui/layouts/play-route-reconnect-screen";
 import { NewsHeadlineBridge } from "./ui/features/news-headlines";
 import { StoryEventAudioCues } from "./ui/features/story-events";
-import { LoadingScreen } from "./ui/modules/loading-screen";
+import { PlayRouteDoorway } from "./ui/features/game-entry/doorway/play-route-doorway";
 import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { World } from "./ui/layouts/world";
 import { resolveGameRouteView } from "./game-route.utils";
 import type { BootstrapTask } from "./game-entry/bootstrap-controller";
+
+if (import.meta.env.DEV) void import("./hooks/store/transaction-debug");
 
 type ReadyAppProps = {
   backgroundImage: string;
@@ -36,18 +38,20 @@ const TransactionListenerBridge = () => {
 
 const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
   return (
-    <DojoProvider value={setupResult} account={account}>
-      <ErrorBoundary>
-        <PlaySceneHandoff />
-        <StoryEventAudioCues />
-        <NewsHeadlineBridge />
-        <TransactionListenerBridge />
-        <TransactionAudioCues />
-        <World backgroundImage={backgroundImage} />
-        <ChunkTransitionIndicator />
-        <WorldLoading />
-      </ErrorBoundary>
-    </DojoProvider>
+    <GameProvider value={setupResult} account={account}>
+      <MusicRouterProvider modeId={getGameModeId()}>
+        <ErrorBoundary>
+          <PlaySceneHandoff />
+          <StoryEventAudioCues />
+          <NewsHeadlineBridge />
+          <TransactionListenerBridge />
+          <TransactionAudioCues />
+          <World backgroundImage={backgroundImage} />
+          <ChunkTransitionIndicator />
+          <WorldLoading />
+        </ErrorBoundary>
+      </MusicRouterProvider>
+    </GameProvider>
   );
 };
 
@@ -67,21 +71,9 @@ const resolveCurrentTaskLabel = ({
 };
 
 const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
-  const navigate = useNavigate();
   const state = usePlayRouteBootController();
-  const {
-    phase,
-    progress,
-    setupResult,
-    account,
-    error,
-    retry,
-    isReconnectRequired,
-    currentTask,
-    tasks,
-    bootToken,
-    reconnectError,
-  } = state;
+  const { phase, setupResult, account, retry, isReconnectRequired, currentTask, tasks, bootToken, reconnectError } =
+    state;
   const hasActiveBoot = bootToken > 0;
   const routeView = resolveGameRouteView({
     phase,
@@ -104,22 +96,16 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     return <Navigate to="/" replace />;
   }
 
-  if (routeView === "error") {
-    return <PlayRouteBootstrapErrorScreen error={error} onRetry={retry} onReturnToDashboard={() => navigate("/")} />;
-  }
-
-  if (routeView === "reconnect") {
-    return <PlayRouteReconnectScreen onReturnToDashboard={() => navigate("/")} reconnectError={reconnectError} />;
-  }
-
   const hasGameContext = routeView === "ready" && setupResult !== null && account !== null;
   return (
     <>
       {phase !== "ready" && (
-        <LoadingScreen
-          title="Entering the World"
-          subtitle={hasGameContext ? "Preparing your view…" : "Connecting to the world…"}
-          progress={progress > 0 ? progress : undefined}
+        <PlayRouteDoorway
+          phase={phase}
+          audience={state.resolvedRequest?.entryMode === "spectator" ? "spectator" : "player"}
+          setup={hasGameContext ? setupResult : null}
+          accountError={reconnectError}
+          retry={retry}
           currentTaskLabel={currentTaskLabel}
         />
       )}

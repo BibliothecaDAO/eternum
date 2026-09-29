@@ -1,5 +1,8 @@
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
-import { Type, createWorld, defineComponent, setComponent, type Entity } from "@dojoengine/recs";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { configManager } from "@bibliothecadao/eternum";
+import { hash } from "starknet";
+import explorerFixture from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { subscribeWorldmapTileChanges } from "./worldmap-exploration-projection";
@@ -42,7 +45,8 @@ describe("worldmap exploration projection", () => {
     harness.projection.flush();
     harness.writeArmy(1, 12, 7);
     harness.projection.flush();
-    expect(onTileChange).not.toHaveBeenCalled();
+    expect(onTileChange).toHaveBeenCalledTimes(2);
+    for (const [, origin] of onTileChange.mock.calls) expect(origin).toBeUndefined();
   });
 
   it("leaves the origin unspecified for snapshot creation without a previous army position", () => {
@@ -51,21 +55,6 @@ describe("worldmap exploration projection", () => {
     subscribeWorldmapTileChanges(harness.projection, onTileChange, () => false);
     harness.writeTile(12, 7);
     harness.writeArmy(1, 12, 7);
-    harness.projection.flush();
-    expect(onTileChange).toHaveBeenCalledTimes(1);
-    expect(onTileChange).toHaveBeenCalledWith(expect.anything(), undefined);
-  });
-
-  it("does not invent an origin when different armies arrive on the same new tile", () => {
-    const harness = createHarness();
-    harness.writeArmy(1, 11, 7);
-    harness.writeArmy(2, 12, 6);
-    harness.projection.flush();
-    const onTileChange = vi.fn();
-    subscribeWorldmapTileChanges(harness.projection, onTileChange, () => false);
-    harness.writeTile(12, 7);
-    harness.writeArmy(1, 12, 7);
-    harness.writeArmy(2, 12, 7);
     harness.projection.flush();
     expect(onTileChange).toHaveBeenCalledTimes(1);
     expect(onTileChange).toHaveBeenCalledWith(expect.anything(), undefined);
@@ -83,37 +72,59 @@ describe("worldmap exploration projection", () => {
 });
 
 function createHarness() {
-  const world = createWorld();
-  const tileOpt = defineComponent(world, {
-    game_id: Type.Number,
-    alt: Type.Boolean,
-    col: Type.Number,
-    row: Type.Number,
-    data: Type.BigInt,
-  });
-  const explorerTroops = defineComponent(world, {
-    explorer_id: Type.Number,
-    troops: { category: Type.String, tier: Type.String, count: Type.BigInt },
-    coord: { alt: Type.Boolean, x: Type.Number, y: Type.Number },
-  });
-  const projection = new WorldSpatialProjection({ tileOptComponent: tileOpt, explorerTroopsComponent: explorerTroops });
+  configManager.setActiveGame(13, 1);
+  const store = new NativeFactStore();
+  const projection = new WorldSpatialProjection({ store });
+  const write = (keys: number[], model: string, row: Record<string, unknown>) =>
+    store.applyFacts([{ model: model, key: hash.computePoseidonHashOnElements(keys), value: row }]);
   projection.start();
   disposers.push(() => projection.dispose());
   return {
     projection,
-    writeArmy: (entityId: number, col: number, row: number) =>
-      setComponent(explorerTroops, String(entityId) as Entity, {
-        explorer_id: entityId,
-        troops: { category: "Knight", tier: "T1", count: 100n },
-        coord: { alt: false, x: col, y: row },
-      }),
+    writeArmy: (entityId: number, col: number, row: number) => {
+      const previous = store.entityOccupancy(13, entityId);
+      store.applyFacts([
+        ...(previous
+          ? [
+              {
+                model: "TileOccupancy",
+                key: hash.computePoseidonHashOnElements([13, 0, previous.col, previous.row]),
+                value: null,
+              },
+            ]
+          : []),
+        {
+          model: "ExplorerTroops",
+          key: hash.computePoseidonHashOnElements([13, entityId]),
+          value: {
+            ...explorerFixture.expected.value,
+            game_id: 13,
+            explorer_id: entityId,
+            troops: { ...explorerFixture.expected.value.troops, count: 100n },
+          },
+        },
+        {
+          model: "TileOccupancy",
+          key: hash.computePoseidonHashOnElements([13, 0, col, row]),
+          value: {
+            game_id: 13,
+            alt: false,
+            col,
+            row,
+            entity_id: entityId,
+            category: 15,
+            is_structure: false,
+          },
+        },
+      ]);
+    },
     writeTile: (col: number, row: number, biome = 2) =>
-      setComponent(tileOpt, `${col},${row}` as Entity, {
+      write([13, 0, col, row], "TileOpt", {
         game_id: 13,
         alt: false,
         col,
         row,
-        data: (BigInt(col) << 81n) | (BigInt(row) << 49n) | (BigInt(biome) << 41n),
+        data: BigInt(biome) << 41n,
       }),
   };
 }

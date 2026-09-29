@@ -1,6 +1,6 @@
 import type { RealmAutomationConfig } from "@/hooks/store/use-automation-store";
 import type { ExecuteRealmProductionPlanProps } from "@bibliothecadao/types";
-import type { RealmProductionPlan } from "./automation-processor";
+import type { RealmProductionPlan } from "@bibliothecadao/eternum/automation";
 
 const REALM_EXECUTION_TIMEOUT_MS = 30_000;
 

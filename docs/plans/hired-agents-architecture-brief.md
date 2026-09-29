@@ -154,10 +154,6 @@ React boundary and does not move.
 
 ### Gate for this layer (Phase 0)
 
-- The deleted headless smoke (`git show f5f226cd282^:apps/game/scripts/run-game-sync-headless-smoke.mjs`) comes back as
-  `packages/core/scripts/run-game-client-headless.mjs`, using `HeraldGameSyncTransport` and
-  `createMicrotaskGameSyncScheduler`, and runs in CI against the committed parity fixture
-  (`recs-game-sync-store.parity.json`) and, nightly, against a live lab game.
 - `deploy/madara-lab/harness/driver.ts` replaces its raw `CallData` construction and Herald HTTP polling with
   `client.actions` and `client.views`. The 96-bot acceptance run (`--bots 96 --minutes 10`, ≥3,500 of 3,840 actions)
   passes at the same bar. **Deletion:** `HeraldObserver`, the harness's hand-rolled path planning that duplicates

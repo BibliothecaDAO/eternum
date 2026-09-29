@@ -12,7 +12,7 @@ import {
   normalizeRendererDiagnosticsSnapshot,
   normalizeSceneList,
   resolveAgentBrowserWorkingDirectory,
-  resolveSceneSmokeWorldName,
+  resolveSceneSmokeGame,
 } from "./run-renderer-scene-smoke.mjs";
 
 afterEach(() => {
@@ -42,39 +42,26 @@ describe("normalizeSceneList", () => {
 });
 
 describe("buildSceneSmokeUrl", () => {
-  it("builds the worldmap spectate url on the default appchain chain with renderer mode overrides", () => {
+  it("builds a canonical spectator route for the game's chain id and game id with renderer mode overrides", () => {
     expect(
       buildSceneSmokeUrl({
         baseUrl: "https://127.0.0.1:4173",
-        rendererMode: "webgpu-auto",
-        scene: "map",
-        worldName: "blitzplay1",
+        chainId: "0xa1",
+        gameId: 702,
+        rendererMode: "webgpu-force-webgl",
+        scene: "hex",
       }),
-    ).toBe("https://127.0.0.1:4173/play/appchain/blitzplay1/map?col=0&row=0&spectate=true&rendererMode=webgpu-auto");
+    ).toBe("https://127.0.0.1:4173/g/0xa1/702/hex?col=0&row=0&spectate=true&rendererMode=webgpu-force-webgl");
   });
 
-  it("requires a world name instead of guessing a stale default", () => {
+  it("requires a game instead of guessing a stale default", () => {
     expect(() =>
       buildSceneSmokeUrl({
         baseUrl: "https://127.0.0.1:4173",
         rendererMode: "webgpu-auto",
         scene: "map",
       }),
-    ).toThrow(/worldName/);
-  });
-
-  it("builds the hexception url as a canonical spectator route", () => {
-    expect(
-      buildSceneSmokeUrl({
-        chain: "madara",
-        baseUrl: "https://127.0.0.1:4173",
-        rendererMode: "webgpu-force-webgl",
-        scene: "hex",
-        worldName: "etrn-dawn",
-      }),
-    ).toBe(
-      "https://127.0.0.1:4173/play/madara/etrn-dawn/hex?col=0&row=0&spectate=true&rendererMode=webgpu-force-webgl",
-    );
+    ).toThrow(/chainId and a gameId/);
   });
 });
 
@@ -86,91 +73,60 @@ describe("decodePaddedWorldName", () => {
   });
 });
 
-describe("resolveSceneSmokeWorldName", () => {
-  it("honors an explicit world override without querying discovery backends", async () => {
+describe("resolveSceneSmokeGame", () => {
+  it("honors an explicit game without querying the shard", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
 
-    await expect(
-      resolveSceneSmokeWorldName({
-        chain: "appchain",
-        requestedWorldName: "bltz-manual-101",
-      }),
-    ).resolves.toBe("bltz-manual-101");
+    await expect(resolveSceneSmokeGame({ requestedChainId: "0xa1", requestedGameId: 101 })).resolves.toEqual({
+      chainId: "0xa1",
+      gameId: 101,
+    });
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("uses the newest indexed Madara game without probing per-world hosts", async () => {
-    vi.stubEnv("HERALD_URL", "https://herald.example.test");
+  it("uses the newest game in the shard's directory", async () => {
+    vi.stubEnv("SHARD_URL", "https://shard.example.test");
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(
         JSON.stringify({
+          chain: "0xa1",
           games: [
-            { game_id: 702, name: "bltz-spark-702" },
             { game_id: 701, name: "bltz-older-701" },
+            { game_id: 702, name: "bltz-spark-702" },
           ],
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       ),
     );
 
-    await expect(
-      resolveSceneSmokeWorldName({
-        chain: "madara",
-        requestedWorldName: "",
-      }),
-    ).resolves.toBe("bltz-spark-702");
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    await expect(resolveSceneSmokeGame({ requestedChainId: "", requestedGameId: 0 })).resolves.toEqual({
+      chainId: "0xa1",
+      gameId: 702,
+    });
+    expect(new URL(String(fetchSpy.mock.calls[0][0])).pathname).toBe("/games");
   });
 
-  it("discovers the newest configured game from the appchain GameRegistry", async () => {
-    vi.stubEnv("HERALD_URL", "https://herald.example.test");
+  it("fails loudly when no shard is configured", async () => {
+    vi.stubEnv("SHARD_URL", "");
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
 
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      new Response(JSON.stringify({ games: [{ game_id: 702, name: "bltz-spark-702" }] }), {
+    await expect(resolveSceneSmokeGame({ requestedChainId: "", requestedGameId: 0 })).rejects.toThrow(/SHARD_URL/);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("fails loudly instead of falling back to a stale game when no game is indexed", async () => {
+    vi.stubEnv("SHARD_URL", "https://shard.example.test");
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ chain: "0xa1", games: [] }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       }),
     );
 
-    await expect(
-      resolveSceneSmokeWorldName({
-        chain: "appchain",
-        requestedWorldName: "",
-      }),
-    ).resolves.toBe("bltz-spark-702");
-
-    const discoveryUrl = new URL(String(fetchSpy.mock.calls[0][0]));
-    expect(discoveryUrl.host).toBe("herald.example.test");
-    expect(discoveryUrl.pathname).toBe("/appchain/games");
-  });
-
-  it("fails loudly when Herald is not configured", async () => {
-    vi.stubEnv("HERALD_URL", "");
-    vi.stubEnv("VITE_PUBLIC_HERALD_URL", "");
-    const fetchSpy = vi.spyOn(globalThis, "fetch");
-
-    await expect(
-      resolveSceneSmokeWorldName({
-        chain: "appchain",
-        requestedWorldName: "",
-      }),
-    ).rejects.toThrow(/HERALD_URL or VITE_PUBLIC_HERALD_URL/);
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
-  it("fails loudly instead of falling back to a stale world name when no game is indexed", async () => {
-    vi.stubEnv("HERALD_URL", "https://herald.example.test");
-
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      new Response(JSON.stringify({ games: [] }), { status: 200, headers: { "Content-Type": "application/json" } }),
+    await expect(resolveSceneSmokeGame({ requestedChainId: "", requestedGameId: 0 })).rejects.toThrow(
+      /No indexed game found/,
     );
-
-    await expect(
-      resolveSceneSmokeWorldName({
-        chain: "appchain",
-        requestedWorldName: "",
-      }),
-    ).rejects.toThrow(/No indexed game found/);
   });
 });
 
@@ -255,8 +211,8 @@ describe("evaluateSceneSmokeResult", () => {
       evaluateSceneSmokeResult({
         canvasExists: true,
         errors: [],
-        expectedPathname: "/play/map",
-        openedUrl: "https://127.0.0.1:4173/play/map?col=0&row=0&spectate=true",
+        expectedPathname: "/g/0xa1/1/map",
+        openedUrl: "https://127.0.0.1:4173/g/0xa1/1/map?col=0&row=0&spectate=true",
         unableToStartCount: 0,
       }),
     ).toEqual({
@@ -270,8 +226,8 @@ describe("evaluateSceneSmokeResult", () => {
       evaluateSceneSmokeResult({
         canvasExists: false,
         errors: ["Error creating WebGL context"],
-        expectedPathname: "/play/hex",
-        openedUrl: "https://127.0.0.1:4173/play/map?col=0&row=0",
+        expectedPathname: "/g/0xa1/1/hex",
+        openedUrl: "https://127.0.0.1:4173/g/0xa1/1/map?col=0&row=0",
         unableToStartCount: 1,
       }),
     ).toEqual({

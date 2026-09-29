@@ -1,6 +1,7 @@
 import {
   AdditiveBlending,
   BufferGeometry,
+  Color,
   DoubleSide,
   Float32BufferAttribute,
   Vector3,
@@ -16,6 +17,9 @@ export function createRuneFlameMaterials() {
   const rise = uniform(0);
   const dissolve = uniform(0);
   const glyphStrength = uniform(0);
+  // A Frontier chest's tell: how far the runes have turned to its rarity's colour (0 is the authored violet).
+  const rarityTint = uniform(new Color(1, 1, 1));
+  const rarityAmount = uniform(0);
   const phase = positionLocal.x.mul(11).add(positionLocal.z.mul(9));
   const flicker = clock
     .mul(2.13)
@@ -34,7 +38,10 @@ export function createRuneFlameMaterials() {
     .add(0.5)
     .mul(flicker.mul(0.7).add(0.3));
   const glyph = new MeshBasicNodeMaterial();
-  glyph.colorNode = mix(color("#350448"), color("#ab37ef"), flow.mul(glyphStrength)).mul(1.5).add(color("#682a94").rgb);
+  const violetGlyph = mix(color("#350448"), color("#ab37ef"), flow.mul(glyphStrength))
+    .mul(1.5)
+    .add(color("#682a94").rgb);
+  glyph.colorNode = mix(violetGlyph, rarityTint.mul(flow.mul(0.8).add(1.4)), rarityAmount);
   glyph.toneMapped = false;
 
   const flame = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, side: DoubleSide });
@@ -44,7 +51,8 @@ export function createRuneFlameMaterials() {
   const feather = smoothstep(0.25, 1, edge.add(turbulence.mul(0.16))).oneMinus();
   const tip = smoothstep(0.48, 1, height.add(turbulence.mul(0.08))).oneMinus();
   const evaporation = smoothstep(dissolve.sub(0.15), dissolve.add(0.12), height);
-  flame.colorNode = mix(color("#180327"), color("#6710a0"), turbulence.mul(0.25).add(flow.mul(0.4)).add(0.2));
+  const violetFlame = mix(color("#180327"), color("#6710a0"), turbulence.mul(0.25).add(flow.mul(0.4)).add(0.2));
+  flame.colorNode = mix(violetFlame, rarityTint.mul(turbulence.mul(0.2).add(0.8)), rarityAmount);
   flame.opacityNode = feather.mul(tip).mul(density).mul(evaporation);
   // Each foot stays inside its glyph; only the rising part curls and drifts.
   flame.positionNode = positionLocal.add(
@@ -55,7 +63,7 @@ export function createRuneFlameMaterials() {
     ),
   );
   flame.toneMapped = false;
-  return { glyph, flame, clock, density, rise, dissolve, glyphStrength };
+  return { glyph, flame, clock, density, rise, dissolve, glyphStrength, rarityTint, rarityAmount };
 }
 
 /** Sources are exported rune vertices, so flames follow the actual moving inscriptions. */
@@ -104,12 +112,21 @@ export function createArcaneStoneMaterial(
     metalness: 0.02,
   });
   // Energy travels through the carved glyphs, leaving the masonry free of moving bands.
-  material.emissiveNode = color("#39234c").mul(energy.glyphStrength.div(0.8));
+  material.emissiveNode = mix(color("#39234c"), energy.rarityTint.mul(0.9), energy.rarityAmount).mul(
+    energy.glyphStrength.div(0.8),
+  );
   return material;
 }
 
+/** The light that pours from an opening chest; `tint` colours it, as a Frontier chest's rarity does. */
 export function createChestRadiance() {
   const strength = uniform(0);
+  const tint = uniform(new Color(1, 1, 1));
+  // How far the light has turned from its authored lavender to `tint` (0–1).
+  const tinted = uniform(0);
+  // How far the beams reach above the lid (1 is the authored glow) and how bright they burn.
+  const reach = uniform(1);
+  const boost = uniform(1);
   const material = new MeshBasicNodeMaterial({
     transparent: true,
     depthWrite: false,
@@ -118,8 +135,15 @@ export function createChestRadiance() {
     blending: AdditiveBlending,
   });
   const edge = smoothstep(0.05, 0.5, uv().x.sub(0.5).abs()).oneMinus();
-  material.colorNode = mix(color("#edcfff"), color("#913aff"), uv().y);
-  material.opacityNode = edge.mul(uv().y.oneMinus().pow(2)).mul(strength).mul(0.7);
+  const authored = mix(color("#edcfff"), color("#913aff"), uv().y);
+  material.colorNode = mix(authored, tint.mul(uv().y.oneMinus().mul(0.6).add(0.7)), tinted);
+  material.opacityNode = edge.mul(uv().y.oneMinus().pow(2)).mul(strength).mul(0.7).mul(boost);
+  const lidHeight = 0.51;
+  material.positionNode = vec3(
+    positionLocal.x,
+    positionLocal.y.sub(lidHeight).mul(reach).add(lidHeight),
+    positionLocal.z,
+  );
   material.toneMapped = false;
   const geometry = new BufferGeometry();
   geometry.setAttribute(
@@ -128,5 +152,5 @@ export function createChestRadiance() {
   );
   geometry.setAttribute("uv", new Float32BufferAttribute([0, 0, 1, 0, 0, 1, 1, 1], 2));
   geometry.setIndex([0, 1, 2, 1, 3, 2]);
-  return { material, geometry, strength };
+  return { material, geometry, strength, tint, tinted, reach, boost };
 }

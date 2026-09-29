@@ -1,21 +1,20 @@
-import { configManager, getEntityInfo, getStructureName, getStructureTypeName } from "@bibliothecadao/eternum";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
-  BuildingType,
-  type ClientComponents,
-  type ContractAddress,
-  type ID,
-  ResourcesIds,
-  StructureType,
-  getResourceTiers,
-} from "@bibliothecadao/types";
+  configManager,
+  getEntityInfo,
+  getStructureName,
+  getStructureTypeName,
+  nativeGameModeOf,
+} from "@bibliothecadao/eternum";
+import { BuildingType, type ContractAddress, type ID, StructureType, getResourceTiers } from "@bibliothecadao/types";
 import { BUILDINGS_GROUPS, buildingModelPaths, getStructureModelPaths } from "@/three/constants/scene-constants";
-import { resolveGameModeFromBlitzFlag } from "./resolved-mode";
+import { requireActiveGameStore } from "@/sync/active-game-client";
 
-export type GameModeId = "eternum" | "blitz";
+export type GameModeId = "frontier" | "blitz" | "eternum" | "duel";
 
 export type VillageIconKey = "castle" | "tent";
 
-type StructureNameInput = Parameters<typeof getStructureName>[0];
+type StructureNameInput = Parameters<typeof getStructureName>[1];
 
 export interface GameModeConfig {
   id: GameModeId;
@@ -25,8 +24,6 @@ export interface GameModeConfig {
     realms: string;
     village: string;
     villages: string;
-    fragmentMine: string;
-    fragmentMines: string;
     timelineSubject: string;
     shareEventLabel: string;
     endgameCardTitle: string;
@@ -39,47 +36,37 @@ export interface GameModeConfig {
   ui: {
     showAttackTypeSelector: boolean;
     showEndSeasonButton: boolean;
-    showMintCta: boolean;
-    showTransferResourcesToTroops: boolean;
     showExplorerCapacity: boolean;
-    showHyperstructureProgress: boolean;
-    onboardingVariant: "eternum" | "blitz";
     villageIconKey: VillageIconKey;
-    showTradeMenu: boolean;
-    showBridgeMenu: boolean;
-    hyperstructuresMenuVariant: "eternum" | "blitz";
-    showBankToggle: boolean;
-    showQuestToggle: boolean;
     showGuildsTab: boolean;
+    showAutomation: boolean;
+    /**
+     * The build pickers beside a plot's own sheet: the scene's popover on an empty plot and the realm menu's
+     * Construction entry. Frontier builds only from its build sheet on a tapped plot.
+     */
+    showBuildMenus: boolean;
+    /** Shown on the army muster when the mode spends committed troops for good. */
+    musterNotice: string | null;
+    /** Where a player's session opens once through the doorway: the world map, or their realm's board. */
+    entryScene: "map" | "hex";
   };
   resources: {
     getTiers: () => ReturnType<typeof getResourceTiers>;
-    canManageResource: (resourceId: ResourcesIds) => boolean;
-    canShowProductionShortcut: (resourceId: ResourcesIds) => boolean;
   };
   rules: {
     isBuildingTypeAllowed: (key: string) => boolean;
     autoAllocateHyperstructureShares: boolean;
   };
   structure: {
-    getName: (
-      structure: StructureNameInput,
-      parentRealmContractPosition?: { col: number; row: number },
-    ) => ReturnType<typeof getStructureName>;
-    getTypeName: (structureType: StructureType) => string | undefined;
+    getName: (structure: StructureNameInput) => ReturnType<typeof getStructureName>;
+    getTypeName: (structureType: StructureType, mineKind?: number) => string | undefined;
     getEntityInfo: (
       entityId: ID,
-      playerAccount: ContractAddress,
-      components: ClientComponents,
+      playerAccount: ContractAddress | null,
+      store: NativeFactStore,
     ) => ReturnType<typeof getEntityInfo>;
   };
   assets: {
-    minimap: {
-      fragmentMine: string;
-    };
-    labels: {
-      fragmentMine: string;
-    };
     structureModelPaths: ReturnType<typeof getStructureModelPaths>;
     buildingModelPaths: ReturnType<typeof resolveBuildingModelPaths>;
   };
@@ -98,8 +85,6 @@ const BASE_BUILDING_EXCLUSIONS = new Set<string>([
 
 const BLITZ_BUILDING_EXCLUSIONS = new Set<keyof typeof BuildingType>(["ResourceFish", "ResourceResearch"]);
 
-const BLITZ_UNMANAGEABLE_RESOURCES = new Set<ResourcesIds>([ResourcesIds.Labor, ResourcesIds.Wheat]);
-
 function resolveBuildingModelPaths(isBlitz: boolean) {
   const paths = buildingModelPaths(isBlitz);
   const buildings: Partial<Record<BuildingType, string>> = { ...paths[BUILDINGS_GROUPS.BUILDINGS] };
@@ -110,11 +95,11 @@ function resolveBuildingModelPaths(isBlitz: boolean) {
 }
 
 const buildStructureHelpers = (isBlitz: boolean) => ({
-  getName: (structure: StructureNameInput, parentRealmContractPosition?: { col: number; row: number }) =>
-    getStructureName(structure, isBlitz, parentRealmContractPosition),
-  getTypeName: (structureType: StructureType) => getStructureTypeName(structureType, isBlitz),
-  getEntityInfo: (entityId: ID, playerAccount: ContractAddress, components: ClientComponents) =>
-    getEntityInfo(entityId, playerAccount, components, isBlitz),
+  // A mode names the active game's structures, from the active game's facts.
+  getName: (structure: StructureNameInput) => getStructureName(requireActiveGameStore(), structure, isBlitz),
+  getTypeName: getStructureTypeName,
+  getEntityInfo: (entityId: ID, playerAccount: ContractAddress | null, store: NativeFactStore) =>
+    getEntityInfo(entityId, playerAccount, store, isBlitz),
 });
 
 const buildBuildingRule = (extraExclusions: Set<string>) => (key: string) => {
@@ -132,8 +117,6 @@ const blitzConfig: GameModeConfig = {
     realms: "Realms",
     village: "Camp",
     villages: "Camps",
-    fragmentMine: "Essence Rift",
-    fragmentMines: "Essence Rifts",
     timelineSubject: "Game",
     shareEventLabel: "Realms Blitz",
     endgameCardTitle: "Realms Blitz",
@@ -146,23 +129,16 @@ const blitzConfig: GameModeConfig = {
   ui: {
     showAttackTypeSelector: false,
     showEndSeasonButton: false,
-    showMintCta: false,
-    showTransferResourcesToTroops: false,
     showExplorerCapacity: false,
-    showHyperstructureProgress: false,
-    onboardingVariant: "blitz",
     villageIconKey: "tent",
-    showTradeMenu: false,
-    showBridgeMenu: false,
-    hyperstructuresMenuVariant: "blitz",
-    showBankToggle: false,
-    showQuestToggle: false,
     showGuildsTab: false,
+    showAutomation: true,
+    showBuildMenus: true,
+    musterNotice: null,
+    entryScene: "map",
   },
   resources: {
     getTiers: () => getResourceTiers(true),
-    canManageResource: (resourceId) => !BLITZ_UNMANAGEABLE_RESOURCES.has(resourceId),
-    canShowProductionShortcut: (resourceId) => !BLITZ_UNMANAGEABLE_RESOURCES.has(resourceId),
   },
   rules: {
     isBuildingTypeAllowed: buildBuildingRule(BLITZ_BUILDING_EXCLUSIONS),
@@ -170,13 +146,7 @@ const blitzConfig: GameModeConfig = {
   },
   structure: buildStructureHelpers(true),
   assets: {
-    minimap: {
-      fragmentMine: "/images/labels/essence_rift.png",
-    },
-    labels: {
-      fragmentMine: "/images/labels/essence_rift.png",
-    },
-    structureModelPaths: getStructureModelPaths(true),
+    structureModelPaths: getStructureModelPaths(),
     buildingModelPaths: resolveBuildingModelPaths(true),
   },
 };
@@ -189,8 +159,6 @@ const eternumConfig: GameModeConfig = {
     realms: "Realms",
     village: "Village",
     villages: "Villages",
-    fragmentMine: "Fragment Mine",
-    fragmentMines: "Fragment Mines",
     timelineSubject: "Season",
     shareEventLabel: "the Realms leaderboard",
     endgameCardTitle: "Realms",
@@ -203,23 +171,16 @@ const eternumConfig: GameModeConfig = {
   ui: {
     showAttackTypeSelector: true,
     showEndSeasonButton: true,
-    showMintCta: true,
-    showTransferResourcesToTroops: true,
     showExplorerCapacity: true,
-    showHyperstructureProgress: true,
-    onboardingVariant: "eternum",
     villageIconKey: "castle",
-    showTradeMenu: true,
-    showBridgeMenu: true,
-    hyperstructuresMenuVariant: "eternum",
-    showBankToggle: true,
-    showQuestToggle: true,
     showGuildsTab: true,
+    showAutomation: true,
+    showBuildMenus: true,
+    musterNotice: null,
+    entryScene: "map",
   },
   resources: {
     getTiers: () => getResourceTiers(false),
-    canManageResource: () => true,
-    canShowProductionShortcut: () => true,
   },
   rules: {
     isBuildingTypeAllowed: buildBuildingRule(new Set()),
@@ -227,45 +188,56 @@ const eternumConfig: GameModeConfig = {
   },
   structure: buildStructureHelpers(false),
   assets: {
-    minimap: {
-      fragmentMine: "/images/labels/fragment_mine.png",
-    },
-    labels: {
-      fragmentMine: "/images/labels/fragment_mine.png",
-    },
-    structureModelPaths: getStructureModelPaths(false),
+    structureModelPaths: getStructureModelPaths(),
     buildingModelPaths: resolveBuildingModelPaths(false),
   },
 };
 
-const GAME_MODE_BY_ID: Record<GameModeId, GameModeConfig> = {
+const frontierConfig: GameModeConfig = {
+  ...blitzConfig,
+  id: "frontier",
+  displayName: "Frontier",
+  labels: {
+    ...blitzConfig.labels,
+    timelineSubject: "Season",
+    shareEventLabel: "Realms Frontier",
+    endgameCardTitle: "Realms Frontier",
+    endgameCardSubtitle: "Season Results",
+  },
+  ui: {
+    ...blitzConfig.ui,
+    showAutomation: false,
+    showBuildMenus: false,
+    musterNotice: "Committed troops do not return. What you send today is spent today, win or lose.",
+    // A Frontier session opens on the realm, where the day's first build and deploy happen.
+    entryScene: "hex",
+  },
+  resources: {
+    getTiers: blitzConfig.resources.getTiers,
+  },
+  rules: {
+    isBuildingTypeAllowed: (key) =>
+      ["WorkersHut", "Storehouse", "ResourceWheat", "ResourceKnightT1", "ResourceLabor"].includes(key),
+    autoAllocateHyperstructureShares: false,
+  },
+};
+const duelConfig: GameModeConfig = {
+  ...blitzConfig,
+  id: "duel",
+  displayName: "Duel",
+  labels: { ...blitzConfig.labels, shareEventLabel: "Realms Duel", endgameCardTitle: "Realms Duel" },
+};
+const GAME_MODE_CONFIGS: Record<GameModeId, GameModeConfig> = {
+  frontier: frontierConfig,
   blitz: blitzConfig,
   eternum: eternumConfig,
+  duel: duelConfig,
 };
 
-type GameModeConfigOptions = {
-  modeId?: GameModeId;
-  blitzModeOn?: unknown;
-};
+/** A mode's config by its id, for surfaces that know the mode (the directory's row) before the game's config syncs. */
+export const gameModeConfigOf = (id: GameModeId): GameModeConfig => GAME_MODE_CONFIGS[id];
 
-const resolveRuntimeGameModeId = (blitzModeOn: unknown): GameModeId => {
-  const resolvedMode = resolveGameModeFromBlitzFlag(blitzModeOn);
-  if (resolvedMode === "blitz" || resolvedMode === "eternum") {
-    return resolvedMode;
-  }
-  return "eternum";
-};
-
-const resolveGameModeConfig = (options: GameModeConfigOptions = {}): GameModeConfig => {
-  if (options.modeId) {
-    return GAME_MODE_BY_ID[options.modeId];
-  }
-
-  const worldBlitzModeOnFlag = options.blitzModeOn ?? configManager.getBlitzConfig()?.blitz_mode_on;
-  return GAME_MODE_BY_ID[resolveRuntimeGameModeId(worldBlitzModeOnFlag)];
-};
-
-export const getGameModeConfig = (options: GameModeConfigOptions = {}): GameModeConfig =>
-  resolveGameModeConfig(options);
-
-export const getGameModeId = (options: GameModeConfigOptions = {}): GameModeId => getGameModeConfig(options).id;
+export function getGameModeConfig(presetId = configManager.getPresetId()): GameModeConfig {
+  return GAME_MODE_CONFIGS[nativeGameModeOf(presetId)];
+}
+export const getGameModeId = (): GameModeId => getGameModeConfig().id;

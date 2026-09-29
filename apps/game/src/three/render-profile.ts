@@ -26,9 +26,6 @@ export const RENDER_MODE_OPTIONS: ReadonlyArray<{ label: string; mode: RenderMod
   { label: "60 FPS", mode: "capped" },
 ];
 
-export const RENDER_MODE_DESCRIPTION =
-  "Choose display refresh or a 60 FPS limit. Visual detail stays the same. Changing mode reloads the page.";
-
 export const RENDER_MODE_STORAGE_KEY = "RENDER_MODE";
 export const RENDERER_PIXEL_RATIO_CAP = 1.25;
 const LEGACY_TIER_STORAGE_KEY = ["GRAPHICS", "SETTING"].join("_");

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   buildingKey,
+  isTierChange,
   reconcileBuildingUpdate,
   resolveBuildingInstanceAction,
   runOwnedBuildingWorkAfterModelsLoad,
@@ -57,7 +58,7 @@ function createOwnedBuildingWorkHarness() {
 }
 
 function createHarness(initialBuildings: TestBuilding[] = []) {
-  const recsBuildings = new Map(initialBuildings.map((building) => [buildingKey(building), building]));
+  const storedBuildings = new Map(initialBuildings.map((building) => [buildingKey(building), building]));
   let projectedBuildings = [...initialBuildings];
   const applyBuildingInstance = vi.fn();
   const rebuildTerrainMatrices = vi.fn();
@@ -66,7 +67,7 @@ function createHarness(initialBuildings: TestBuilding[] = []) {
   const publish = (innerCol?: number, innerRow?: number) => {
     reconcileBuildingUpdate({
       applyFullFallback: () => {
-        projectedBuildings = [...recsBuildings.values()];
+        projectedBuildings = [...storedBuildings.values()];
         rebuildTerrainMatrices();
       },
       applyTargeted: (reconciliation) => {
@@ -75,36 +76,36 @@ function createHarness(initialBuildings: TestBuilding[] = []) {
       },
       buildings: projectedBuildings,
       reportMissingIdentity,
-      resolveBuilding: (position) => recsBuildings.get(buildingKey(position)),
+      resolveBuilding: (position) => storedBuildings.get(buildingKey(position)),
       update: { innerCol, innerRow },
     });
   };
 
-  const expectProjectionMatchesRecs = () => {
+  const expectProjectionMatchesStore = () => {
     const normalize = (buildings: Iterable<TestBuilding>) =>
       [...buildings].toSorted((left, right) => buildingKey(left).localeCompare(buildingKey(right)));
-    expect(normalize(projectedBuildings)).toEqual(normalize(recsBuildings.values()));
+    expect(normalize(projectedBuildings)).toEqual(normalize(storedBuildings.values()));
   };
 
   return {
     applyBuildingInstance,
     create(building: TestBuilding) {
-      recsBuildings.set(buildingKey(building), building);
+      storedBuildings.set(buildingKey(building), building);
       publish(building.col, building.row);
     },
     echo(building: TestBuilding) {
-      recsBuildings.set(buildingKey(building), building);
+      storedBuildings.set(buildingKey(building), building);
       publish(building.col, building.row);
     },
-    expectProjectionMatchesRecs,
+    expectProjectionMatchesStore,
     publish,
     rebuildTerrainMatrices,
     remove(position: PositionedBuilding) {
-      recsBuildings.delete(buildingKey(position));
+      storedBuildings.delete(buildingKey(position));
       publish(position.col, position.row);
     },
     replace(building: TestBuilding) {
-      recsBuildings.set(buildingKey(building), building);
+      storedBuildings.set(buildingKey(building), building);
       publish(building.col, building.row);
     },
     reportMissingIdentity,
@@ -119,7 +120,7 @@ describe("hexception building reconciliation", () => {
 
     expect(harness.applyBuildingInstance).toHaveBeenCalledOnce();
     expect(harness.rebuildTerrainMatrices).not.toHaveBeenCalled();
-    harness.expectProjectionMatchesRecs();
+    harness.expectProjectionMatchesStore();
   });
 
   it("replaces the building at an occupied key", () => {
@@ -133,7 +134,7 @@ describe("hexception building reconciliation", () => {
       }),
     );
     expect(harness.rebuildTerrainMatrices).not.toHaveBeenCalled();
-    harness.expectProjectionMatchesRecs();
+    harness.expectProjectionMatchesStore();
   });
 
   it("removes only the deleted building", () => {
@@ -150,7 +151,7 @@ describe("hexception building reconciliation", () => {
       }),
     );
     expect(harness.rebuildTerrainMatrices).not.toHaveBeenCalled();
-    harness.expectProjectionMatchesRecs();
+    harness.expectProjectionMatchesStore();
   });
 
   it("keeps a duplicate authoritative echo on the targeted path", () => {
@@ -161,7 +162,7 @@ describe("hexception building reconciliation", () => {
 
     expect(harness.applyBuildingInstance).toHaveBeenCalledOnce();
     expect(harness.rebuildTerrainMatrices).not.toHaveBeenCalled();
-    harness.expectProjectionMatchesRecs();
+    harness.expectProjectionMatchesStore();
   });
 
   it("falls back loudly to a clean full reconciliation when identity is missing", () => {
@@ -174,7 +175,7 @@ describe("hexception building reconciliation", () => {
     expect(harness.reportMissingIdentity).toHaveBeenCalledOnce();
     expect(harness.rebuildTerrainMatrices).toHaveBeenCalledOnce();
     expect(harness.applyBuildingInstance).not.toHaveBeenCalled();
-    harness.expectProjectionMatchesRecs();
+    harness.expectProjectionMatchesStore();
   });
 });
 
@@ -226,5 +227,16 @@ describe("owned building work after model loading", () => {
     await harness.completion;
 
     expect(harness.apply).toHaveBeenCalledOnce();
+  });
+});
+
+describe("a building's tier change", () => {
+  it("is an upgrade when only the tier differs, and a new building otherwise", () => {
+    const farm = (tier: number, pending = "ready") => `buildings:37:35:${pending}:tier${tier}`;
+    expect(isTierChange(farm(1), farm(2))).toBe(true);
+    expect(isTierChange(farm(2), farm(2))).toBe(false);
+    expect(isTierChange(farm(1, "pending"), farm(2))).toBe(false);
+    expect(isTierChange("buildings:28:26:ready:tier1", farm(2))).toBe(false);
+    expect(isTierChange(undefined, farm(1))).toBe(false);
   });
 });

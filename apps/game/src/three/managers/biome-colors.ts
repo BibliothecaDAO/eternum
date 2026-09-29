@@ -1,7 +1,7 @@
 import { BiomeIdToType, BiomeType } from "@bibliothecadao/types";
 import * as THREE from "three";
 
-export const BIOME_COLORS: Record<BiomeType | "Empty", THREE.Color> = {
+const BIOME_COLORS: Record<BiomeType | "Empty", THREE.Color> = {
   Underground: new THREE.Color("#393131"),
   None: new THREE.Color("#000000"),
   DeepOcean: new THREE.Color("#4a6b63"),

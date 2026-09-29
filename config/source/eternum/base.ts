@@ -1,3 +1,4 @@
+import { eternumPreset } from "./native";
 import type { ConfigPatch } from "../common/merge-config";
 import { buildCommonBaseConfig } from "../common/base-config";
 import { mergeConfigPatches } from "../common/merge-config";
@@ -22,18 +23,12 @@ const eternumVillageConfig: ConfigPatch = {
 
 const eternumBlitzModeConfig: ConfigPatch = {
   blitz: {
-    mode: {
-      on: false,
-    },
     exploration: {
-      rewardProfileId: "official-90",
       rewards: [],
     },
     registration: {
       registration_count_max: 0,
       registration_delay_seconds: 0,
-      collectible_cosmetics_max_items: 0,
-      collectible_cosmetics_address: "0x0",
       collectible_timelock_address: "0x0",
       collectibles_lootchest_address: "0x0",
       collectibles_elitenft_address: "0x0",
@@ -53,6 +48,16 @@ const eternumSettlementConfig: ConfigPatch = {
 
 export const eternumBaseConfig: ConfigPatch = mergeConfigPatches(
   buildCommonBaseConfig(),
+  { presetId: eternumPreset.id },
+  {
+    mines: {
+      kinds: { 1: { productionRate: 2.5 } },
+      surfacePool: [
+        { kind: 1, weight: 1 },
+        { kind: 2, weight: 1 },
+      ],
+    },
+  },
   eternumExplorationConfig,
   eternumResourceConfig,
   eternumTroopConfig,

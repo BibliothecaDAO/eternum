@@ -7,7 +7,7 @@ import {
   PROCESS_INTERVAL_MS,
   type RealmProductionPlan,
   type RealmResourceSnapshot,
-} from "@/ui/features/infrastructure/automation/model/automation-processor";
+} from "@bibliothecadao/eternum/automation";
 import { isSignerTransientError } from "@/ui/features/infrastructure/automation/model/automation-runner";
 import { computeAutomationConfigSignature } from "@/utils/automation-signature";
 import { verboseLog } from "@/utils/dev-mode";
@@ -26,16 +26,16 @@ import {
   type ResourceAutomationPercentages,
   type RealmAutomationExecutionSummary,
 } from "./store/use-automation-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { calculatePresetAllocations, getAutomationOverallocation } from "@/utils/automation-presets";
+import { calculatePresetAllocations, getAutomationOverallocation } from "@bibliothecadao/eternum/automation";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { getAutomationProjectionTick, getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { extractReadableErrorMessage, isInsufficientResourceBalanceRevert } from "@/utils/error-message";
+import { accountAddress } from "@/hooks/store/use-account-store";
 
 const resolveResourceLabel = (resourceId: number): string => {
   const label = ResourcesIds[resourceId as ResourcesIds];
@@ -97,10 +97,10 @@ export const useAutomation = () => {
   const {
     setup: {
       systemCalls: { execute_realm_production_plan },
-      components,
+      store,
     },
     account: { account: starknetSignerAccount },
-  } = useDojo();
+  } = useGame();
 
   const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
   const recordExecution = useAutomationStore((state) => state.recordExecution);
@@ -117,7 +117,6 @@ export const useAutomation = () => {
   }));
   const setNextRunTimestampRef = useRef(setNextRunTimestamp);
   const playerStructures = useOwnedProductionStructureInfos();
-  const gameEndAt = useUIStore((state) => state.gameEndAt);
   const mode = useGameModeConfig();
   const realmResourcesSignatureRef = useRef<string>("");
   const initialAutomationTimestampMsRef = useRef<number | null>(null);
@@ -141,35 +140,14 @@ export const useAutomation = () => {
     setNextRunTimestampRef.current(null);
   }, []);
 
-  const isGameOver = useCallback(
-    (blockTimestampSeconds?: number) => {
-      // The registry status flips to Ended/Settled the moment a season-close
-      // or settle tx lands — including EARLY closes (points win before end_at)
-      // — so it must win over the timestamp check, and it also covers unscoped
-      // boots where the UI store's gameEndAt never hydrated. This closes the
-      // "Season is over" revert loop from automation submitting into an ended
-      // game.
-      if (configManager.isGameOver()) {
-        return true;
-      }
-      if (typeof gameEndAt !== "number") {
-        return false;
-      }
-      const timestamp =
-        typeof blockTimestampSeconds === "number" ? blockTimestampSeconds : getBlockTimestamp().currentBlockTimestamp;
-      return timestamp >= gameEndAt;
-    },
-    [gameEndAt],
-  );
-
   useEffect(() => {
-    if (isGameOver()) {
+    if (configManager.isGameOver()) {
       stopAutomation();
     }
-  }, [isGameOver, stopAutomation]);
+  }, [stopAutomation]);
 
   useEffect(() => {
-    if (!components) {
+    if (!store) {
       return;
     }
     const season = configManager.getSeasonConfig();
@@ -185,7 +163,7 @@ export const useAutomation = () => {
     automationEnabledAtRef.current = update.automationEnabledAtMs;
     nextRunTimestampRef.current = update.nextRunMs;
     setNextRunTimestampRef.current(nextRunTimestampRef.current);
-  }, [components, pruneForGame]);
+  }, [store, pruneForGame]);
 
   useEffect(() => {
     if (!hydrated) {
@@ -200,7 +178,7 @@ export const useAutomation = () => {
     }
 
     managedStructures.forEach((structure) => {
-      const entityType = isVillageLikeStructureCategory(structure.structure?.category) ? "village" : "realm";
+      const entityType = isVillageLikeStructureCategory(structure.structure?.base.category) ? "village" : "realm";
       const name = mode.structure.getName(structure.structure).name;
       const realmId = String(structure.entityId);
       syncedRealmIdsRef.current.add(realmId);
@@ -226,18 +204,18 @@ export const useAutomation = () => {
   const processRealms = useCallback(async (): Promise<ProcessRealmsResult> => {
     if (processingRef.current) return { ran: false, anyExecuted: false };
 
-    if (isGameOver()) {
+    if (configManager.isGameOver()) {
       verboseLog("Automation: Game has ended. Skipping automation pass.");
       return { ran: false, anyExecuted: false };
     }
 
-    if (!starknetSignerAccount || !starknetSignerAccount.address || starknetSignerAccount.address === "0x0") {
+    if (!starknetSignerAccount || accountAddress() === null) {
       verboseLog("Automation: Missing Starknet signer. Skipping automation pass.");
       return { ran: false, anyExecuted: false };
     }
 
-    if (!components) {
-      verboseLog("Automation: Missing Dojo components. Skipping automation pass.");
+    if (!store) {
+      verboseLog("Automation: Missing native facts. Skipping automation pass.");
       return { ran: false, anyExecuted: false };
     }
 
@@ -285,7 +263,7 @@ export const useAutomation = () => {
           continue;
         }
 
-        if (isGameOver()) {
+        if (configManager.isGameOver()) {
           skipRemainingRealmsMessage = "Game has ended";
           recordRealmSkippedStatus({
             realmId: realmConfig.realmId,
@@ -294,8 +272,8 @@ export const useAutomation = () => {
           continue;
         }
 
-        const accountAddress = starknetSignerAccount?.address;
-        if (!accountAddress || accountAddress === "0x0") {
+        const signerAddress = starknetSignerAccount?.address;
+        if (!signerAddress || accountAddress() === null) {
           skipRemainingRealmsMessage = "Signer unavailable";
           recordRealmSkippedStatus({
             realmId: realmConfig.realmId,
@@ -310,7 +288,7 @@ export const useAutomation = () => {
         if (
           Number.isFinite(realmIdNum) &&
           realmIdNum > 0 &&
-          !isEntityOwnedByAccount(components, realmIdNum, accountAddress)
+          !isEntityOwnedByAccount(store, realmIdNum, signerAddress)
         ) {
           recordRealmSkippedStatus({
             realmId: activeRealmConfig.realmId,
@@ -325,7 +303,7 @@ export const useAutomation = () => {
         const rawSnapshot: RealmResourceSnapshot =
           Number.isFinite(realmIdNum) && realmIdNum > 0
             ? buildRealmResourceSnapshot({
-                components,
+                store,
                 realmId: realmIdNum,
                 currentTick: conservativeTick,
               })
@@ -448,7 +426,7 @@ export const useAutomation = () => {
           continue;
         }
 
-        if (isGameOver()) {
+        if (configManager.isGameOver()) {
           skipRemainingRealmsMessage = "Game has ended";
           recordRealmSkippedStatus({
             realmId: activeRealmConfig.realmId,
@@ -459,7 +437,7 @@ export const useAutomation = () => {
         if (
           Number.isFinite(realmIdNum) &&
           realmIdNum > 0 &&
-          !isEntityOwnedByAccount(components, realmIdNum, accountAddress)
+          !isEntityOwnedByAccount(store, realmIdNum, signerAddress)
         ) {
           recordRealmSkippedStatus({
             realmId: activeRealmConfig.realmId,
@@ -558,22 +536,14 @@ export const useAutomation = () => {
     }
 
     return { ran: true, anyExecuted };
-  }, [
-    components,
-    execute_realm_production_plan,
-    recordExecution,
-    recordStatus,
-    starknetSignerAccount,
-    getRealmConfig,
-    isGameOver,
-  ]);
+  }, [store, execute_realm_production_plan, recordExecution, recordStatus, starknetSignerAccount, getRealmConfig]);
 
   const runAutomationIfDue = useCallback(async () => {
     const { currentBlockTimestamp } = getBlockTimestamp();
     // Use wall clock time for scheduling so stale chain time cannot freeze automation.
     const nowMs = Date.now();
 
-    if (isGameOver(currentBlockTimestamp)) {
+    if (configManager.isGameOver()) {
       stopAutomation();
       return;
     }
@@ -604,10 +574,10 @@ export const useAutomation = () => {
       pruneDuringProcessingRef.current = false;
       scheduleNextCheckRef.current?.();
     }
-  }, [isGameOver, setNextRunTimestampRef, stopAutomation]);
+  }, [setNextRunTimestampRef, stopAutomation]);
 
   const scheduleNextCheck = useCallback(() => {
-    if (isGameOver()) {
+    if (configManager.isGameOver()) {
       stopAutomation();
       return;
     }
@@ -618,7 +588,7 @@ export const useAutomation = () => {
     automationTimeoutIdRef.current = window.setTimeout(() => {
       void runAutomationIfDue();
     }, delay);
-  }, [isGameOver, runAutomationIfDue, stopAutomation]);
+  }, [runAutomationIfDue, stopAutomation]);
 
   useEffect(() => {
     processRealmsRef.current = processRealms;
@@ -635,7 +605,7 @@ export const useAutomation = () => {
   useEffect(() => {
     const unsub = useAutomationStore.subscribe((state, prevState) => {
       if (state.realms === prevState.realms) return;
-      if (isGameOver()) return;
+      if (configManager.isGameOver()) return;
 
       const newSignature = computeAutomationConfigSignature(state.realms);
       if (newSignature !== realmResourcesSignatureRef.current) {
@@ -658,10 +628,10 @@ export const useAutomation = () => {
       }
     });
     return unsub;
-  }, [isGameOver]);
+  }, []);
 
   useEffect(() => {
-    if (isGameOver()) {
+    if (configManager.isGameOver()) {
       stopAutomation();
       return () => {
         if (automationTimeoutIdRef.current !== null) {
@@ -677,5 +647,5 @@ export const useAutomation = () => {
         window.clearTimeout(automationTimeoutIdRef.current);
       }
     };
-  }, [isGameOver, scheduleNextCheck, stopAutomation]);
+  }, [scheduleNextCheck, stopAutomation]);
 };

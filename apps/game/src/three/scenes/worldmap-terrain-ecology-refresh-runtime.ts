@@ -1,6 +1,7 @@
 import type { WorldSpatialBounds, WorldSpatialHex, WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import type { StructureType } from "@bibliothecadao/types";
-import type { Component } from "@dojoengine/recs";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { configManager } from "@bibliothecadao/eternum";
 
 import { hexCellKey } from "@/three/terrain/hex-cell-key";
 import type { TerrainRoadAnchor, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
@@ -23,29 +24,34 @@ interface CollectWorldmapTerrainEcologyAnchorsInput {
 }
 
 interface BindWorldmapTerrainEcologyRefreshInput {
-  onStructureComponentChanged?: (current: StructureTerrainEcologyFacts | undefined) => void;
+  onStructureChanged?: (current: StructureTerrainEcologyFacts | undefined) => void;
   projection: Pick<WorldSpatialProjection, "subscribeStructures">;
   requestRefresh: () => void;
-  structureComponent: Component;
+  store: NativeFactStore;
 }
 
 export function bindWorldmapTerrainEcologyRefresh(input: BindWorldmapTerrainEcologyRefreshInput): () => void {
   const unsubscribeProjection = input.projection.subscribeStructures(() => {
     input.requestRefresh();
   });
-  const structureSubscription = input.structureComponent.update$.subscribe(({ value }) => {
-    const [current, previous] = value as [
-      StructureTerrainEcologyFacts | undefined,
-      StructureTerrainEcologyFacts | undefined,
-    ];
-    if (!didStructureTerrainEcologyChange(current, previous)) return;
-    input.requestRefresh();
-    input.onStructureComponentChanged?.(current);
+  const unsubscribeFacts = input.store.subscribe((changes) => {
+    let changed = false;
+    for (const change of changes) {
+      if (
+        change.model !== "Structure" ||
+        (change.current ?? change.previous)?.game_id !== configManager.getActiveGameId()
+      )
+        continue;
+      if (!didStructureTerrainEcologyChange(change.current, change.previous)) continue;
+      changed = true;
+      input.onStructureChanged?.(change.current);
+    }
+    if (changed) input.requestRefresh();
   });
 
   return () => {
     unsubscribeProjection();
-    structureSubscription.unsubscribe();
+    unsubscribeFacts();
   };
 }
 

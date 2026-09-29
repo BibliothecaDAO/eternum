@@ -6,6 +6,7 @@ const RATE = 1_000_000n; // one unit per tick at resource precision
 
 const productionInfo = (outputAmountLeft: bigint) => ({
   balance: 0n,
+  support: null,
   production: { building_count: 2, production_rate: RATE, output_amount_left: outputAmountLeft, last_updated_at: 100 },
 });
 
@@ -20,5 +21,13 @@ describe("ResourceManager.calculateResourceProductionData", () => {
     const data = ResourceManager.calculateResourceProductionData(ResourcesIds.Wood, productionInfo(RATE * 60n), 100);
     expect(data.isProducing).toBe(true);
     expect(data.timeRemainingSeconds).toBe(60);
+  });
+
+  it("reads the u128::MAX output budget as unlimited, never as an amount or a duration", () => {
+    const unlimited = (1n << 128n) - 1n;
+    const data = ResourceManager.calculateResourceProductionData(ResourcesIds.Knight, productionInfo(unlimited), 5_000);
+    expect(data.isProducing).toBe(true);
+    expect(data.outputRemaining).toBe(Number.POSITIVE_INFINITY);
+    expect(data.timeRemainingSeconds).toBe(Number.POSITIVE_INFINITY);
   });
 });

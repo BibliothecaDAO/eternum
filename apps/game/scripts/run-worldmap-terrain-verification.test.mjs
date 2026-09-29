@@ -22,7 +22,7 @@ describe("worldmap terrain verification CLI", () => {
       expect(verdict).toMatchObject({
         status: "inconclusive",
         exitCode: 2,
-        game: { expectedGameId: 21, worldName: "verification-fixture" },
+        game: { expectedGameId: 21, chainId: "0x1" },
         navigation: { status: "inconclusive" },
         fullAcceptance: { status: "inconclusive" },
       });
@@ -98,8 +98,8 @@ function runCli(executable, artifacts, options) {
     process.execPath,
     [
       runner,
-      "--world",
-      "verification-fixture",
+      "--chain-id",
+      "0x1",
       "--game-id",
       "21",
       "--artifact-dir",
@@ -153,15 +153,15 @@ if (command === "eval") {
       cameraTargetHex: { col: state.col, row: state.row },
       canvasPresent: true,
       device: { userAgent: "fake-browser", platform: "test", hardwareConcurrency: 8, deviceMemoryGiB: 16 },
-      gameIdentity: { pathname: "/play/madara/verification-fixture/map", gameId: 21, namespace: "s2", worldAddress: "0x123", worldName: "verification-fixture", tileRows: 40, structureRows: 3 },
+      gameIdentity: { pathname: "/g/0x1/21/map", gameId: 21, worldAddress: "0x123", worldName: "verification-fixture", tileRows: 40, structureRows: 3 },
       renderer: { activeMode: "webgl2-fallback" },
       resourceState: { preparedCachePages: 12, presentedPageSlots: 1, geometries: 10, textures: 5 },
       trace: [
         { event: "visual_window_resolved", details: { activePageKeys: ["-12,-12"] } },
         { event: "terrain_composite_rebuilt", details: { proceduralPreparedCachePages: 12 } }
       ],
-      renderDiagnostics: {
-        gauges: { worldBiomeSurfaceInstances: 40 },
+      visibleTerrainCells: 40,
+    renderDiagnostics: {
         terrainPresentation: {
           contractVersion: 2,
           current: {

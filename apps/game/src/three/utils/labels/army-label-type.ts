@@ -1,5 +1,4 @@
-import { getCharacterName } from "@/utils/agent";
-import { TroopTier, TroopType } from "@bibliothecadao/types";
+import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/camera-view";
 import {
   createContentContainer,
@@ -20,7 +19,6 @@ export interface ArmyLabelData extends LabelData {
   category: TroopType;
   tier: TroopTier;
   isMine: boolean;
-  isDaydreamsAgent: boolean;
   owner: {
     address: bigint;
     ownerName: string;
@@ -28,13 +26,25 @@ export interface ArmyLabelData extends LabelData {
   };
   color: string;
   troopCount: number;
-  currentStamina: number;
+  currentStamina: number | undefined;
   maxStamina: number;
-  displayStaminaRatio?: number;
   attackedFromDegrees?: number;
   attackedTowardDegrees?: number;
   battleTimerLeft?: number;
+  /** Its realm cannot pay a step's food: a wheat marker shows the block before the army is selected. */
+  foodBlocked?: boolean;
 }
+
+// The wheat marker uses the resource bars' own wheat art, so it reads as the same resource across the HUD.
+const createFoodBlockedMarker = (): HTMLElement => {
+  const marker = document.createElement("img");
+  marker.src = `/images/resources/${ResourcesIds.Wheat}.png`;
+  marker.alt = "Not enough wheat to march";
+  marker.title = "Not enough wheat to march";
+  marker.setAttribute("data-component", "food-blocked");
+  marker.classList.add("inline-block", "h-3", "w-3", "object-contain");
+  return marker;
+};
 
 export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
   type: "army",
@@ -44,7 +54,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     const cameraView = resolveCameraView(inputView);
     const labelModel = buildArmyEntityLabelViewModel(data);
     // Create base label
-    const labelDiv = createLabelBase(data.isMine, cameraView, data.isDaydreamsAgent);
+    const labelDiv = createLabelBase(data.isMine, cameraView);
     applyEntityLabelViewModelMetadata(labelDiv, labelModel);
     labelDiv.style.transform = "scale(0.5)";
     labelDiv.style.transformOrigin = "center bottom";
@@ -55,9 +65,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 
     // Add army icon
     const img = document.createElement("img");
-    img.src = data.isDaydreamsAgent
-      ? "/images/logos/daydreams.png"
-      : `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
+    img.src = `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
     img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
     img.setAttribute("data-component", "army-icon");
 
@@ -70,16 +78,8 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
       isMine: data.isMine,
       cameraView,
       color: data.color,
-      isDaydreamsAgent: data.isDaydreamsAgent,
     });
     textContainer.appendChild(ownerDisplay);
-
-    // Add troop type information for Daydreams agents
-    if (data.isDaydreamsAgent) {
-      const line2 = document.createElement("strong");
-      line2.textContent = getCharacterName(data.tier, data.category, data.entityId) || "";
-      textContainer.appendChild(line2);
-    }
 
     // Add troop count display
     let troopCountDisplay: HTMLElement | undefined;
@@ -87,6 +87,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
       troopCountDisplay = createTroopCountDisplay(data.troopCount, data.category, data.tier, cameraView);
       textContainer.appendChild(troopCountDisplay);
     }
+    if (data.foodBlocked && troopCountDisplay) troopCountDisplay.appendChild(createFoodBlockedMarker());
 
     let staminaHandledInline = false;
     if (
@@ -105,7 +106,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
       if (data.currentStamina !== undefined && data.maxStamina !== undefined && data.maxStamina > 0) {
         const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
         textContainer.appendChild(staminaBar);
-      } else if (data.currentStamina !== undefined && cameraView !== CameraView.Medium) {
+      } else if (data.currentStamina === undefined || cameraView !== CameraView.Medium) {
         const staminaInfo = document.createElement("div");
         staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-1");
 
@@ -115,7 +116,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
         staminaInfo.appendChild(staminaIcon);
 
         const staminaText = document.createElement("span");
-        staminaText.textContent = `${data.currentStamina}`;
+        staminaText.textContent = `${data.currentStamina ?? "—"}`;
         staminaText.classList.add("font-mono");
         staminaText.style.color = "#f6f1e5";
         staminaInfo.appendChild(staminaText);
@@ -182,7 +183,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     }
 
     // Update container colors based on ownership
-    const styles = getOwnershipStyle(data.isMine, data.isDaydreamsAgent);
+    const styles = getOwnershipStyle(data.isMine);
     element.style.setProperty("background-color", styles.default.backgroundColor!, "important");
     element.style.setProperty("border", `1px solid ${styles.default.borderColor}`, "important");
     element.style.setProperty("color", styles.default.textColor!, "important");
@@ -219,21 +220,15 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
         isMine: data.isMine,
         cameraView,
         color: data.color,
-        isDaydreamsAgent: data.isDaydreamsAgent,
       });
       contentContainer.appendChild(ownerDisplay);
-
-      if (data.isDaydreamsAgent) {
-        const line2 = document.createElement("strong");
-        line2.textContent = getCharacterName(data.tier, data.category, data.entityId) || "";
-        contentContainer.appendChild(line2);
-      }
 
       let troopCountDisplay: HTMLElement | undefined;
       if (data.troopCount !== undefined) {
         troopCountDisplay = createTroopCountDisplay(data.troopCount, data.category, data.tier, cameraView);
         contentContainer.appendChild(troopCountDisplay);
       }
+      if (data.foodBlocked && troopCountDisplay) troopCountDisplay.appendChild(createFoodBlockedMarker());
 
       let staminaHandledInline = false;
       if (
@@ -252,7 +247,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
         if (data.currentStamina !== undefined && data.maxStamina !== undefined && data.maxStamina > 0) {
           const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
           contentContainer.appendChild(staminaBar);
-        } else if (data.currentStamina !== undefined && cameraView !== CameraView.Medium) {
+        } else if (data.currentStamina === undefined || cameraView !== CameraView.Medium) {
           const staminaInfo = document.createElement("div");
           staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-1");
 
@@ -262,7 +257,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
           staminaInfo.appendChild(staminaIcon);
 
           const staminaText = document.createElement("span");
-          staminaText.textContent = `${data.currentStamina}`;
+          staminaText.textContent = `${data.currentStamina ?? "—"}`;
           staminaText.classList.add("font-mono");
           staminaText.style.color = "#f6f1e5";
           staminaInfo.appendChild(staminaText);
@@ -274,9 +269,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 
     const armyIcon = element.querySelector('[data-component="army-icon"]') as HTMLImageElement;
     if (armyIcon) {
-      armyIcon.src = data.isDaydreamsAgent
-        ? "/images/logos/daydreams.png"
-        : `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
+      armyIcon.src = `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
     }
 
     const staminaBar = element.querySelector('[data-component="stamina-bar"]');

@@ -1,40 +1,51 @@
-import type { ClientComponents, Tile, TileOpt } from "@bibliothecadao/types";
-import { getComponentValue, type Entity } from "@dojoengine/recs";
-import { gameEntityKey } from "../managers/config-manager";
-import { tileOptToTile } from "./tile-opt";
+import { BiomeIdToType, type BiomeType, type Tile } from "@bibliothecadao/types";
+import type { NativeFactStore } from "../client/native-fact-store";
+import { configManager } from "../managers/config-manager";
+import { tileFactsToTile } from "./tile-facts";
 
-export { tileOptToTile } from "./tile-opt";
-
-/**
- * Default alt value for standard hex coordinates (non-alt map)
- */
+export { tileFactsToTile } from "./tile-facts";
 export const DEFAULT_COORD_ALT = false;
 
-/**
- * Get a Tile component value and automatically convert from TileOpt to Tile.
- * Use this function instead of `getComponentValue(components.Tile, ...)` to ensure
- * proper conversion from the optimized contract representation to the client representation.
- *
- * @param components - The ClientComponents object
- * @param entity - The entity to query
- * @returns The unpacked Tile or undefined if not found
- */
-export function getTileComponentValue(components: ClientComponents, entity: Entity): Tile | undefined {
-  const tileOpt = getComponentValue(components.TileOpt, entity) as TileOpt | undefined;
-  return tileOpt ? tileOptToTile(tileOpt) : undefined;
+export function getTileAt(
+  store: NativeFactStore,
+  alt: boolean,
+  col: number,
+  row: number,
+  gameId = configManager.getActiveGameId(),
+): Tile | undefined {
+  const key = { game_id: gameId, alt, col, row };
+  return tileFactsToTile(key, store.get("TileOpt", key), store.get("TileOccupancy", key));
 }
 
+/** The canonical tile occupied by a live entity; a missing position is an incomplete fact set. */
+export function entityMapPosition(
+  store: Pick<NativeFactStore, "entityOccupancy">,
+  gameId: number,
+  entityId: number,
+): { x: number; y: number; alt: boolean } {
+  const tile = store.entityOccupancy(gameId, entityId);
+  if (!tile) throw new Error(`Missing native position for entity ${gameId}:${entityId}`);
+  return { x: tile.col, y: tile.row, alt: tile.alt };
+}
+
+/** The biome a tile's stored byte names; an unknown id is a broken fact, never a default. */
+export const biomeTypeOf = (biomeId: number): BiomeType => {
+  const biome = BiomeIdToType[biomeId];
+  if (!biome) throw new Error(`Tile carries unknown biome id ${biomeId}`);
+  return biome;
+};
+
 /**
- * Get a Tile at the specified hex coordinates.
- * This is a convenience function that handles entity key creation and TileOpt conversion.
- *
- * @param components - The ClientComponents object
- * @param alt - Whether this is an alt map coordinate (default: false)
- * @param col - The column coordinate
- * @param row - The row coordinate
- * @returns The unpacked Tile or undefined if not found
+ * A revealed tile's biome as the chain stored it, the one source of a tile's biome; undefined where no command has
+ * revealed the tile yet. Procedural sampling may decorate within this biome but never chooses it.
  */
-export function getTileAt(components: ClientComponents, alt: boolean, col: number, row: number): Tile | undefined {
-  const entity = gameEntityKey([BigInt(alt ? 1 : 0), BigInt(col), BigInt(row)]);
-  return getTileComponentValue(components, entity);
+export function storedBiomeAt(
+  store: NativeFactStore,
+  alt: boolean,
+  col: number,
+  row: number,
+  gameId = configManager.getActiveGameId(),
+): BiomeType | undefined {
+  const tile = getTileAt(store, alt, col, row, gameId);
+  return tile && tile.biome !== 0 ? biomeTypeOf(tile.biome) : undefined;
 }

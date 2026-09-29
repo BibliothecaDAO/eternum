@@ -113,6 +113,8 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
     setIsExpanded((prev) => !prev);
   };
 
+  if (!configManager.hasBiomeCombatEffects()) return null;
+
   return (
     <div className="rounded-xl border border-gold/25 bg-dark/70 backdrop-blur-sm shadow-md">
       <button

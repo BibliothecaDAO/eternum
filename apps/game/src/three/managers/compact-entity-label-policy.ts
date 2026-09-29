@@ -10,7 +10,6 @@ export type CompactEntityLabelVariant = EntityLabelVariant;
 
 interface OwnershipLabelSource {
   isAlly?: boolean;
-  isDaydreamsAgent?: boolean;
   isMine: boolean;
 }
 

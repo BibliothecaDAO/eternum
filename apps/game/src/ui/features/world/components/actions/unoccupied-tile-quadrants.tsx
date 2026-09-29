@@ -156,41 +156,43 @@ export const BiomeSummaryCard = ({
         <span className={`truncate ${HUD_HEADLINE}`} title={biomeLabel}>
           {biomeLabel}
         </span>
-        <div aria-label="Army bonuses" className="flex w-full flex-col gap-1.5" role="list">
-          {orderedBonuses.map(({ troopType, config, tone, displayBonus }) => {
-            const isHighlighted = highlightTroopType !== undefined && troopType === highlightTroopType;
-            return (
-              <div
-                key={troopType}
-                data-bonus-card="true"
-                role="listitem"
-                className={cn(
-                  "flex w-full min-w-0 items-center gap-1.5 rounded-lg border p-1 text-left",
-                  tone.cardClassName,
-                  isHighlighted && "ring-1 ring-gold/70 shadow-[0_0_10px_rgba(223,170,84,0.35)]",
-                )}
-              >
+        {configManager.hasBiomeCombatEffects() && (
+          <div aria-label="Army bonuses" className="flex w-full flex-col gap-1.5" role="list">
+            {orderedBonuses.map(({ troopType, config, tone, displayBonus }) => {
+              const isHighlighted = highlightTroopType !== undefined && troopType === highlightTroopType;
+              return (
                 <div
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md border ${tone.iconWrapClassName}`}
+                  key={troopType}
+                  data-bonus-card="true"
+                  role="listitem"
+                  className={cn(
+                    "flex w-full min-w-0 items-center gap-1.5 rounded-lg border p-1 text-left",
+                    tone.cardClassName,
+                    isHighlighted && "ring-1 ring-gold/70 shadow-[0_0_10px_rgba(223,170,84,0.35)]",
+                  )}
                 >
-                  <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
+                  <div
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md border ${tone.iconWrapClassName}`}
+                  >
+                    <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className={cn("flex items-center gap-1 break-words leading-[1.05]", HUD_LABEL)}>
+                      {config.label}
+                      {isHighlighted && (
+                        <span className="rounded-sm border border-gold/50 bg-gold/15 px-1 text-[8px] uppercase tracking-[0.18em] text-gold">
+                          Your army
+                        </span>
+                      )}
+                    </span>
+                    <span className={`leading-none ${HUD_CUE} ${tone.stateTextClassName}`}>{tone.stateLabel}</span>
+                  </div>
+                  <span className={`shrink-0 leading-none ${HUD_VALUE} ${tone.valueClassName}`}>{displayBonus}</span>
                 </div>
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className={cn("flex items-center gap-1 break-words leading-[1.05]", HUD_LABEL)}>
-                    {config.label}
-                    {isHighlighted && (
-                      <span className="rounded-sm border border-gold/50 bg-gold/15 px-1 text-[8px] uppercase tracking-[0.18em] text-gold">
-                        Your army
-                      </span>
-                    )}
-                  </span>
-                  <span className={`leading-none ${HUD_CUE} ${tone.stateTextClassName}`}>{tone.stateLabel}</span>
-                </div>
-                <span className={`shrink-0 leading-none ${HUD_VALUE} ${tone.valueClassName}`}>{displayBonus}</span>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </InfoBubble>
   );

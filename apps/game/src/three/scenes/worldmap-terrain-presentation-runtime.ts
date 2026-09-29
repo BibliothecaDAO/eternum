@@ -1,3 +1,4 @@
+import { worldHexAt, worldHexBoundsForRect } from "../world-origin";
 import { hexCellKey } from "@/three/terrain/hex-cell-key";
 import type { WorldmapCameraGroundBounds } from "./worldmap-camera-ground-bounds";
 
@@ -98,7 +99,6 @@ interface ResolveWorldmapVisualTerrainWindowInput {
   focusPoint: WorldmapPointLike;
   groundBounds: WorldmapCameraGroundBounds;
   generation: number;
-  hexSize: number;
   paddingHexes: number;
   pageOrigin?: WorldmapTerrainPageOrigin;
   pageSize: WorldmapTerrainSize;
@@ -193,7 +193,7 @@ export function composeWorldmapTerrainPresentations<TBounds = unknown>(
 export function resolveWorldmapVisualTerrainWindow(
   input: ResolveWorldmapVisualTerrainWindowInput,
 ): WorldmapVisualTerrainWindow {
-  const focusHex = worldPointToHex(input.focusPoint, input.hexSize);
+  const focusHex = worldHexAt(input.focusPoint.x, input.focusPoint.z);
   const centerPage = resolveWorldmapVisualTerrainPageKeyForHex(focusHex, input.pageSize, input.pageOrigin);
   const criticalPageKeys = resolveGroundBoundsPages(input, 0);
   const visible = new Set(criticalPageKeys);
@@ -220,23 +220,14 @@ function resolveGroundBoundsPages(
   input: ResolveWorldmapVisualTerrainWindowInput,
   paddingHexes: number,
 ): WorldmapVisualTerrainPageKey[] {
-  const width = Math.sqrt(3) * input.hexSize;
-  const height = 1.5 * input.hexSize;
-  const bounds = input.groundBounds;
-  // Half a column accounts for odd-row hex staggering; one cell covers the ground's outer vertices.
+  const hexes = worldHexBoundsForRect(input.groundBounds);
   const min = resolveWorldmapVisualTerrainPageKeyForHex(
-    {
-      col: Math.floor(bounds.minX / width - 0.5) - paddingHexes - 1,
-      row: Math.floor(bounds.minZ / height) - paddingHexes - 1,
-    },
+    { col: hexes.minCol - paddingHexes, row: hexes.minRow - paddingHexes },
     input.pageSize,
     input.pageOrigin,
   );
   const max = resolveWorldmapVisualTerrainPageKeyForHex(
-    {
-      col: Math.ceil(bounds.maxX / width + 0.5) + paddingHexes + 1,
-      row: Math.ceil(bounds.maxZ / height) + paddingHexes + 1,
-    },
+    { col: hexes.maxCol + paddingHexes, row: hexes.maxRow + paddingHexes },
     input.pageSize,
     input.pageOrigin,
   );
@@ -489,52 +480,6 @@ export function resolveWorldmapVisualTerrainPageKeyForHex(
     startCol,
     startRow,
   };
-}
-
-function worldPointToHex(point: WorldmapPointLike, hexSize: number): { col: number; row: number } {
-  const horizontalDistance = Math.sqrt(3) * hexSize;
-  const verticalDistance = 1.5 * hexSize;
-  const epsilon = 1e-12;
-  const estimatedRow = Math.round(point.z / verticalDistance);
-  const estimatedOffset = getRowOffset(estimatedRow, horizontalDistance);
-  const estimatedCol = Math.round((point.x + estimatedOffset) / horizontalDistance);
-  const originX = estimatedCol * horizontalDistance - estimatedOffset;
-  const originZ = estimatedRow * verticalDistance;
-  const localPointX = point.x - originX;
-  const localPointZ = point.z - originZ;
-
-  let bestRow = estimatedRow;
-  let bestCol = estimatedCol;
-  let bestDistanceSquared = Number.POSITIVE_INFINITY;
-
-  for (let row = estimatedRow - 1; row <= estimatedRow + 1; row += 1) {
-    const rowOffset = getRowOffset(row, horizontalDistance);
-    const nearestColForRow = Math.round((point.x + rowOffset) / horizontalDistance);
-    const localCenterZ = (row - estimatedRow) * verticalDistance;
-
-    for (let col = nearestColForRow - 1; col <= nearestColForRow + 1; col += 1) {
-      const localCenterX = (col - estimatedCol) * horizontalDistance - (rowOffset - estimatedOffset);
-      const dx = localPointX - localCenterX;
-      const dz = localPointZ - localCenterZ;
-      const distanceSquared = dx * dx + dz * dz;
-
-      if (
-        distanceSquared < bestDistanceSquared - epsilon ||
-        (Math.abs(distanceSquared - bestDistanceSquared) <= epsilon &&
-          (row < bestRow || (row === bestRow && col < bestCol)))
-      ) {
-        bestDistanceSquared = distanceSquared;
-        bestRow = row;
-        bestCol = col;
-      }
-    }
-  }
-
-  return { col: bestCol, row: bestRow };
-}
-
-function getRowOffset(row: number, horizontalDistance: number): number {
-  return ((row % 2) * Math.sign(row) * horizontalDistance) / 2;
 }
 
 function compareTerrainPageKeys(leftKey: string, rightKey: string): number {

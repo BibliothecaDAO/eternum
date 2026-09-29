@@ -1,9 +1,15 @@
 import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createFileDirectionSource, createScriptedDirectionSource } from "./directions";
+
+// The watch only wakes the wait early; delivery is guaranteed by the rescan, so the test runs without any watch event.
+vi.mock("node:fs", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("node:fs")>()),
+  watch: () => ({ close: () => undefined }),
+}));
 
 const dirs: string[] = [];
 
@@ -22,7 +28,7 @@ describe("direction sources", () => {
     await expect(pending).resolves.toBeNull();
   });
 
-  it("delivers a markdown file dropped into the directory once and moves it to done/", async () => {
+  it("delivers a markdown file dropped into the directory once and moves it to done/, with no watch event", async () => {
     const directory = path.join(await mkdtemp(path.join(tmpdir(), "agent-directions-")), "directions");
     dirs.push(path.dirname(directory));
     const source = createFileDirectionSource(directory);

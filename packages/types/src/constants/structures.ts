@@ -1,28 +1,31 @@
-import { CairoCustomEnum } from "starknet";
 import { ResourcesIds } from "./resource-ids";
 import { StructureType } from "./structure-type";
 
 export { StructureType } from "./structure-type";
 
-export const EternumStructureTypeToNameMapping: Record<StructureType, string> = {
+export const StructureTypeToNameMapping: Record<StructureType, string> = {
   [StructureType.Realm]: "Realm",
   [StructureType.Hyperstructure]: "Hyperstructure",
   [StructureType.Bank]: "Bank",
-  [StructureType.FragmentMine]: "Fragment Mine",
+  [StructureType.Mine]: "Mine",
   [StructureType.Village]: "Village",
   [StructureType.Camp]: "Camp",
   [StructureType.BitcoinMine]: "Bitcoin Mine",
 };
 
-export const BlitzStructureTypeToNameMapping: Record<StructureType, string> = {
-  [StructureType.Realm]: "Realm",
-  [StructureType.Hyperstructure]: "Hyperstructure",
-  [StructureType.Bank]: "Bank",
-  [StructureType.FragmentMine]: "Essence Rift",
-  [StructureType.Village]: "Village",
-  [StructureType.Camp]: "Camp",
-  [StructureType.BitcoinMine]: "Bitcoin Mine",
-};
+export const MineKinds = {
+  1: { name: "Essence Rift", icon: "/images/labels/essence_rift.png", model: "/models/reward-tiles/rift.glb" },
+  2: { name: "Fragment Mine", icon: "/images/labels/fragment_mine.png", model: "/models/new-buildings-opt/mine.glb" },
+} as const;
+
+/** The kind a Frontier Rift is drawn as: it has no mine kind of its own. */
+export const ESSENCE_RIFT_MINE_KIND = 1;
+
+export function getMinePresentation(kind: number) {
+  const presentation = MineKinds[kind as keyof typeof MineKinds];
+  if (!presentation) throw new Error(`Unknown mine kind ${kind}`);
+  return presentation;
+}
 
 export enum BuildingType {
   None = 0,
@@ -113,10 +116,6 @@ export const BuildingTypeToString: Record<BuildingType, string> = {
   [BuildingType.ResourceEssence]: "Essence Mine",
   [BuildingType.ResourceResearch]: "Research Lab",
 };
-
-export function getBuildingCategory(category: BuildingType): CairoCustomEnum {
-  return new CairoCustomEnum({ [BuildingTypeToString[category].replace(/\s+/g, "")]: {} });
-}
 
 export function getBuildingFromResource(resourceId: ResourcesIds): BuildingType {
   switch (resourceId) {
@@ -293,90 +292,6 @@ export enum CapacityConfig {
   BitcoinMineStructure = 11,
 }
 
-export const CAPACITY_CONFIG_CATEGORY_STRING_MAP: { [key: string]: number } = {
-  None: 0,
-  Structure: 1,
-  Donkey: 2,
-  Army: 3,
-  Storehouse: 4,
-};
-
-export enum EntityState {
-  Traveling,
-  WaitingForDeparture,
-  Idle,
-  WaitingToOffload,
-  NotApplicable, // When the entity should not be rendered
-}
-
-export function determineEntityState(
-  currentBlockTimestamp: number | undefined,
-  blocked: boolean | undefined,
-  arrivalTime: bigint | undefined,
-  hasResources: boolean,
-): EntityState {
-  const isTraveling =
-    !blocked && currentBlockTimestamp !== undefined && arrivalTime !== undefined && arrivalTime > currentBlockTimestamp;
-  const isWaitingForDeparture = blocked;
-  const isIdle = !isTraveling && !isWaitingForDeparture && !hasResources;
-  const isWaitingToOffload = !blocked && !isTraveling && hasResources;
-
-  if (isTraveling) {
-    return EntityState.Traveling;
-  }
-  if (isWaitingForDeparture) {
-    return EntityState.WaitingForDeparture;
-  }
-  if (isIdle) {
-    return EntityState.Idle;
-  }
-  if (isWaitingToOffload) {
-    return EntityState.WaitingToOffload;
-  }
-  return EntityState.Idle; // Default state
-}
-
-export const isMilitaryBuilding = (buildingType: BuildingType) => {
-  return (
-    buildingType === BuildingType.ResourceKnightT1 ||
-    buildingType === BuildingType.ResourceKnightT2 ||
-    buildingType === BuildingType.ResourceKnightT3 ||
-    buildingType === BuildingType.ResourceCrossbowmanT1 ||
-    buildingType === BuildingType.ResourceCrossbowmanT2 ||
-    buildingType === BuildingType.ResourceCrossbowmanT3 ||
-    buildingType === BuildingType.ResourcePaladinT1 ||
-    buildingType === BuildingType.ResourcePaladinT2 ||
-    buildingType === BuildingType.ResourcePaladinT3
-  );
-};
-
-export const isResourceBuilding = (buildingType: BuildingType) => {
-  return (
-    buildingType === BuildingType.ResourceStone ||
-    buildingType === BuildingType.ResourceCoal ||
-    buildingType === BuildingType.ResourceWood ||
-    buildingType === BuildingType.ResourceCopper ||
-    buildingType === BuildingType.ResourceIronwood ||
-    buildingType === BuildingType.ResourceObsidian ||
-    buildingType === BuildingType.ResourceGold ||
-    buildingType === BuildingType.ResourceSilver ||
-    buildingType === BuildingType.ResourceMithral ||
-    buildingType === BuildingType.ResourceAlchemicalSilver ||
-    buildingType === BuildingType.ResourceColdIron ||
-    buildingType === BuildingType.ResourceDeepCrystal ||
-    buildingType === BuildingType.ResourceRuby ||
-    buildingType === BuildingType.ResourceDiamonds ||
-    buildingType === BuildingType.ResourceHartwood ||
-    buildingType === BuildingType.ResourceIgnium ||
-    buildingType === BuildingType.ResourceTwilightQuartz ||
-    buildingType === BuildingType.ResourceTrueIce ||
-    buildingType === BuildingType.ResourceAdamantine ||
-    buildingType === BuildingType.ResourceSapphire ||
-    buildingType === BuildingType.ResourceEtherealSilica ||
-    buildingType === BuildingType.ResourceDragonhide
-  );
-};
-
 export const isEconomyBuilding = (buildingType: BuildingType) => {
   return (
     buildingType === BuildingType.ResourceWheat ||
@@ -386,8 +301,4 @@ export const isEconomyBuilding = (buildingType: BuildingType) => {
     buildingType === BuildingType.Storehouse ||
     buildingType === BuildingType.ResourceResearch
   );
-};
-
-export const isFoodBuilding = (buildingType: BuildingType) => {
-  return buildingType === BuildingType.ResourceWheat || buildingType === BuildingType.ResourceFish;
 };

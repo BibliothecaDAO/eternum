@@ -1,10 +1,22 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import {
+  incomingTroopArrivalsView,
+  playerStructuresView,
+  readFactView,
+  selectableArmiesView,
+  watchFactView,
+} from "@/sync/fact-views";
+import type { Structure } from "@bibliothecadao/types";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 export type WorldmapStoreState = ReturnType<typeof useUIStore.getState>;
 
+type SelectableArmies = ReturnType<typeof selectableArmiesView.read>;
+type IncomingTroopArrivals = ReturnType<typeof incomingTroopArrivalsView.read>;
+
 type WorldmapSliceListener<TSlice> = (nextSlice: TSlice, previousSlice: TSlice) => void;
 
-export interface WorldmapStoreApi {
+interface WorldmapStoreApi {
   getState: () => WorldmapStoreState;
   subscribe: <TSlice>(
     selector: (state: WorldmapStoreState) => TSlice,
@@ -14,11 +26,10 @@ export interface WorldmapStoreApi {
 
 interface RegisterWorldmapStoreBridgeInput {
   store?: WorldmapStoreApi;
-  onSelectableArmiesChanged: (selectableArmies: WorldmapStoreState["selectableArmies"]) => void;
-  onPlayerStructuresChanged: (playerStructures: WorldmapStoreState["playerStructures"]) => void;
-  onIncomingTroopArrivalsChanged: (
-    publicIncomingTroopArrivalsByStructure: WorldmapStoreState["publicIncomingTroopArrivalsByStructure"],
-  ) => void;
+  facts: NativeFactStore;
+  onSelectableArmiesChanged: (selectableArmies: SelectableArmies) => void;
+  onPlayerStructuresChanged: (playerStructures: Structure[]) => void;
+  onIncomingTroopArrivalsChanged: (incomingTroopArrivalsByStructure: IncomingTroopArrivals) => void;
   onEntityActionsChanged: (
     nextEntityActions: WorldmapStoreState["entityActions"],
     previousEntityActions: WorldmapStoreState["entityActions"] | undefined,
@@ -33,13 +44,12 @@ interface DisposeWorldmapStoreBridgeInput {
 
 interface SyncWorldmapStoreBridgeStateInput {
   store?: WorldmapStoreApi;
+  facts: NativeFactStore;
   isInteractionOwner: boolean;
   onSkippedWithoutOwnership: () => void;
-  onSelectableArmiesChanged: (selectableArmies: WorldmapStoreState["selectableArmies"]) => void;
-  onPlayerStructuresChanged: (playerStructures: WorldmapStoreState["playerStructures"]) => void;
-  onIncomingTroopArrivalsChanged: (
-    publicIncomingTroopArrivalsByStructure: WorldmapStoreState["publicIncomingTroopArrivalsByStructure"],
-  ) => void;
+  onSelectableArmiesChanged: (selectableArmies: SelectableArmies) => void;
+  onPlayerStructuresChanged: (playerStructures: Structure[]) => void;
+  onIncomingTroopArrivalsChanged: (incomingTroopArrivalsByStructure: IncomingTroopArrivals) => void;
   onEntityActionStateSynced: (entityActions: WorldmapStoreState["entityActions"]) => void;
   hasMissingActionPathOwnership: () => boolean;
   clearEntitySelection: () => void;
@@ -54,6 +64,7 @@ const defaultWorldmapStoreApi: WorldmapStoreApi = {
 
 export function registerWorldmapStoreBridge({
   store = defaultWorldmapStoreApi,
+  facts,
   onSelectableArmiesChanged,
   onPlayerStructuresChanged,
   onIncomingTroopArrivalsChanged,
@@ -61,9 +72,9 @@ export function registerWorldmapStoreBridge({
   onSelectedHexChanged,
 }: RegisterWorldmapStoreBridgeInput): Array<() => void> {
   return [
-    store.subscribe((state) => state.selectableArmies, onSelectableArmiesChanged),
-    store.subscribe((state) => state.playerStructures, onPlayerStructuresChanged),
-    store.subscribe((state) => state.publicIncomingTroopArrivalsByStructure, onIncomingTroopArrivalsChanged),
+    watchFactView(facts, selectableArmiesView, onSelectableArmiesChanged),
+    watchFactView(facts, playerStructuresView, onPlayerStructuresChanged),
+    watchFactView(facts, incomingTroopArrivalsView, onIncomingTroopArrivalsChanged),
     store.subscribe((state) => state.entityActions, onEntityActionsChanged),
     store.subscribe((state) => state.selectedHex, onSelectedHexChanged),
   ];
@@ -81,6 +92,7 @@ export function disposeWorldmapStoreBridge({ subscriptions, onDisposeError }: Di
 
 export function syncWorldmapStoreBridgeState({
   store = defaultWorldmapStoreApi,
+  facts,
   isInteractionOwner,
   onSkippedWithoutOwnership,
   onSelectableArmiesChanged,
@@ -99,9 +111,9 @@ export function syncWorldmapStoreBridgeState({
 
   const uiState = store.getState();
 
-  onSelectableArmiesChanged(uiState.selectableArmies);
-  onPlayerStructuresChanged(uiState.playerStructures);
-  onIncomingTroopArrivalsChanged(uiState.publicIncomingTroopArrivalsByStructure);
+  onSelectableArmiesChanged(readFactView(facts, selectableArmiesView));
+  onPlayerStructuresChanged(readFactView(facts, playerStructuresView));
+  onIncomingTroopArrivalsChanged(readFactView(facts, incomingTroopArrivalsView));
   onEntityActionStateSynced(uiState.entityActions);
 
   if (hasMissingActionPathOwnership()) {

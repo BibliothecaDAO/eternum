@@ -71,6 +71,8 @@ export class BuildingPreview {
       if (!model || !buildingSelectionsMatch(this.previewBuilding, building)) {
         return;
       }
+      // A ghost that loads after its plot was set stands there at once, not where it last stood.
+      if (this.currentHexHovered) model.position.copy(this.currentHexHovered);
       this.scene.add(model);
     });
   }

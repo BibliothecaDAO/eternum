@@ -1,3 +1,5 @@
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
 
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
@@ -13,25 +15,27 @@ import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import {
-  CombatSimulator,
+  activeCombatRules,
+  COMBAT_DIE_FACES,
   configManager,
-  DEFAULT_COORD_ALT,
+  forecastFight,
+  resolveExchange,
   formatTime,
-  getEntityIdFromKeys,
   getGuardsByStructure,
   getTroopResourceId,
   StaminaManager,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 
 import { X } from "@/ui/design-system/atoms/game-icons";
 import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from "./attack-stamina-state";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/defense-slot-utils";
+import { formatAcross, survivalOf, type SideRange } from "./battle-range";
 import { CombatModal } from "./combat-modal";
+import { describeFight, wholeTroops } from "./fight-forecast";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 import {
   BiomeType,
@@ -43,8 +47,6 @@ import {
   TickIds,
   type ActorType,
   type ID,
-  type RelicEffectWithEndTick,
-  type ResourcesIds,
   type Troops,
   type TroopTier,
   type TroopType,
@@ -54,7 +56,8 @@ interface ActorSummary {
   type: ActorType;
   id: ID;
   hex: { x: number; y: number };
-  alt?: boolean;
+  /** The map layer the actor stands on; every caller knows it, so a preview never guesses the surface. */
+  alt: boolean;
 }
 
 interface QuickAttackPreviewProps {
@@ -82,19 +85,35 @@ const buildTroopSnapshot = (troops: Troops) => ({
     incr_explore_reward_percent_num: 0,
     incr_explore_reward_end_tick: 0,
   },
-  battle_cooldown_end: troops.battle_cooldown_end || 0,
+  battle_cooldown_end: troops.battle_cooldown_end,
 });
 
 const buildProjectedTroopSnapshot = (
   troops: Troops,
-  stamina: { amount: bigint; updated_tick: bigint } = troops.stamina || { amount: 0n, updated_tick: 0n },
+  stamina: { amount: bigint; updated_tick: bigint } = troops.stamina,
 ) => ({
   ...buildTroopSnapshot(troops),
   stamina,
 });
 
-const toRelicResourceIds = (effects: RelicEffectWithEndTick[]): ResourcesIds[] =>
-  effects.map((effect) => Number(effect.id)) as ResourcesIds[];
+/** Each side's losses at both ends of the dice, from this attack's exact exchanges; null when the attack is refused. */
+const exchangeSides = (
+  worst: ReturnType<typeof resolveExchange>,
+  best: ReturnType<typeof resolveExchange>,
+): { attacker: SideRange; defender: SideRange } | null => {
+  if (!worst.ok || !best.ok) return null;
+  const side = (loss: bigint, remaining: bigint) => ({ losses: wholeTroops(loss), remaining: wholeTroops(remaining) });
+  return {
+    attacker: {
+      worst: side(worst.attackerLoss, worst.attacker.count),
+      best: side(best.attackerLoss, best.attacker.count),
+    },
+    defender: {
+      worst: side(worst.defenderLoss, worst.defender.count),
+      best: side(best.defenderLoss, best.defender.count),
+    },
+  };
+};
 
 export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps) => {
   const {
@@ -106,10 +125,10 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         attack_explorer_vs_guard_and_garrison,
         attack_guard_vs_explorer,
       },
-      components,
-      components: { Structure, ExplorerTroops },
+      store,
     },
-  } = useDojo();
+  } = useGame();
+  const revision = useNativeRevision(["ArmySlot", "Structure", "Guard", "ExplorerTroops", "TileOccupancy"]);
 
   const accountName = usePlayerDisplayName(account?.address);
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -124,53 +143,42 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const currentTime = useNowSeconds();
   const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
 
-  const {
-    attackerRelicEffects,
-    targetRelicEffects,
-    target: targetData,
-    targetResources,
-    isLoading,
-  } = useAttackTargetData(attacker.id, target.hex, target.alt ?? DEFAULT_COORD_ALT);
+  const { target: targetData, targetResources, isLoading } = useAttackTargetData(attacker.id, target.hex, target.alt);
 
   const combatConfig = useMemo(() => configManager.getCombatConfig(), []);
-  const ethereal = target.alt ?? false;
-  const biome = useMemo(
-    () => (ethereal ? BiomeType.Underground : configManager.getBiome(target.hex.x, target.hex.y)),
-    [ethereal, target.hex.x, target.hex.y],
-  );
-  const combatSimulator = useMemo(() => new CombatSimulator(combatConfig), [combatConfig]);
-
-  const attackerRelicResourceIds = useMemo(() => toRelicResourceIds(attackerRelicEffects), [attackerRelicEffects]);
-  const targetRelicResourceIds = useMemo(() => toRelicResourceIds(targetRelicEffects), [targetRelicEffects]);
+  const ethereal = target.alt;
+  const surfaceBiome = useStoredBiome(target.hex.x, target.hex.y) ?? BiomeType.None;
+  const biome = ethereal ? BiomeType.Underground : surfaceBiome;
+  const rollsDice = useMemo(() => configManager.rollsCombatDice(ethereal), [ethereal]);
 
   const attackerType = useMemo(() => {
-    const structure = getComponentValue(Structure, gameEntityKey([BigInt(attacker.id)]));
+    const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: attacker.id });
     return structure ? AttackerType.Structure : AttackerType.Army;
-  }, [attacker.id, Structure]);
+  }, [attacker.id, store, revision]);
 
   const structureGuards = useMemo(() => {
     if (attackerType !== AttackerType.Structure) return [];
-    const structure = getComponentValue(Structure, gameEntityKey([BigInt(attacker.id)]));
+    const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: attacker.id });
     return structure
-      ? getGuardsByStructure(structure)
-          .filter((guard) => guard.troops.count > 0n)
+      ? getGuardsByStructure(structure, store)
+          ?.filter((guard) => guard.troops.count > 0n)
           .toSorted((a, b) => a.slot - b.slot)
       : [];
-  }, [attackerType, attacker.id, Structure]);
+  }, [attackerType, attacker.id, store, revision]);
 
   // Hex distance from the attacker to the target. Crossbowmen can poke at range 2; everything else
   // is adjacency-only, so this drives which guards may fire and whether a structure can be claimed.
   const targetDistance = useMemo(() => {
     if (!selectedHex) return Infinity;
     return getLayeredAttackDistance(
-      { ...selectedHex, alt: attacker.alt ?? false },
-      { col: target.hex.x, row: target.hex.y, alt: target.alt ?? false },
+      { ...selectedHex, alt: attacker.alt },
+      { col: target.hex.x, row: target.hex.y, alt: target.alt },
     );
   }, [selectedHex, attacker.alt, target.alt, target.hex.x, target.hex.y]);
 
   // When a structure is the aggressor, only guards whose attack range reaches the target can fire.
   const eligibleStructureGuards = useMemo(
-    () => structureGuards.filter((guard) => getTroopAttackRange(guard.troops.category) >= targetDistance),
+    () => structureGuards?.filter((guard) => getTroopAttackRange(guard.troops.category) >= targetDistance) ?? [],
     [structureGuards, targetDistance],
   );
 
@@ -178,17 +186,18 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const attackerStamina = useMemo(() => {
     if (attackerType === AttackerType.Structure) {
-      if (!activeGuard || !activeGuard.troops.stamina) return 0n;
+      if (!activeGuard || !activeGuard.troops.stamina) return undefined;
       return StaminaManager.getStamina(activeGuard.troops, currentArmiesTick).amount;
     }
 
-    return new StaminaManager(components, attacker.id).getStamina(currentArmiesTick).amount;
-  }, [attackerType, activeGuard, components, attacker.id, currentArmiesTick]);
+    return new StaminaManager(store, attacker.id).getStamina(currentArmiesTick)?.amount;
+  }, [attackerType, activeGuard, store, attacker.id, currentArmiesTick, revision]);
 
-  const attackerStaminaValue = Number(attackerStamina);
+  const attackerStaminaValue = attackerStamina === undefined ? undefined : Number(attackerStamina);
   const requiredAttackStamina = Number(combatConfig.stamina_attack_req);
 
   const staminaWaitSeconds = useMemo(() => {
+    if (attackerStaminaValue === undefined) return null;
     if (attackerStaminaValue >= requiredAttackStamina) return 0;
 
     const deficit = requiredAttackStamina - attackerStaminaValue;
@@ -210,6 +219,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   }, [attackerStaminaValue, requiredAttackStamina, armiesTickTimeRemaining]);
 
   const attackerArmyData: { troops: Troops } | null = useMemo(() => {
+    if (attackerStamina === undefined) return null;
     if (attackerType === AttackerType.Structure) {
       const guard = activeGuard;
       if (!guard) return null;
@@ -221,16 +231,17 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       };
     }
 
-    const army = getComponentValue(ExplorerTroops, gameEntityKey([BigInt(attacker.id)]));
-    return army
+    const army = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: attacker.id });
+    const troops = army ? resolveExplorerTroops(store, army) : undefined;
+    return troops
       ? {
-          troops: buildProjectedTroopSnapshot(army.troops, {
+          troops: buildProjectedTroopSnapshot(troops, {
             amount: attackerStamina,
             updated_tick: BigInt(currentArmiesTick),
           }),
         }
       : null;
-  }, [ExplorerTroops, attacker.id, attackerStamina, attackerType, currentArmiesTick, activeGuard]);
+  }, [store, revision, attacker.id, attackerStamina, attackerType, currentArmiesTick, activeGuard]);
 
   const targetTroopSnapshots = useMemo(() => {
     if (!targetData?.info) return [];
@@ -252,62 +263,44 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const totalGuardCount = isStructureTarget ? targetTroopSnapshots.length : 0;
   const hasQueuedGuards = totalGuardCount > 1;
 
-  // Combat v3 context so the preview reflects ranged reductions, no counter-damage, and the
-  // ranged stamina/cooldown model rather than always simulating an adjacent melee.
-  const combatSimulationContext = useMemo(
-    () => ({
-      defenderAlt: target.alt ?? false,
-      attackDistance: targetDistance,
-      attackerIsStructureGuard: attackerType === AttackerType.Structure,
-      defenderIsStructureGuard: isStructureTarget,
-    }),
-    [target.alt, targetDistance, attackerType, isStructureTarget],
-  );
-
-  const battleSimulation = useMemo(() => {
-    if (!attackerArmyData) return null;
-    if (!targetArmyData) return null;
-
-    const attackerArmy = {
-      entity_id: attacker.id,
-      stamina: Number(attackerStamina),
-      troopCount: Number(attackerArmyData.troops.count) / RESOURCE_PRECISION,
-      troopType: attackerArmyData.troops.category as TroopType,
-      tier: attackerArmyData.troops.tier as TroopTier,
-      battle_cooldown_end: attackerArmyData.troops.battle_cooldown_end,
+  // Every exchange is the contract's own arithmetic on both sides' troops, stamina and boosts at chain time: this
+  // attack and the whole fight as successive attacks now. Where the game rolls dice, both at the attacker's worst roll
+  // against the defender's best and the reverse; without dice the two ends are one exact result.
+  const fight = useMemo(() => {
+    if (!attackerArmyData || !targetArmyData) return null;
+    const rules = activeCombatRules();
+    const at = (attackerRoll: number, defenderRoll: number) => {
+      const context = {
+        timestamp: currentTime,
+        currentTick: currentArmiesTick,
+        attackDistance: targetDistance,
+        attackerBiome: biome,
+        defenderBiome: biome,
+        attackerIsStructureGuard: attackerType === AttackerType.Structure,
+        defenderIsStructureGuard: isStructureTarget,
+        attackerRoll,
+        defenderRoll,
+      };
+      return {
+        exchange: resolveExchange(attackerArmyData.troops, targetArmyData.troops, context, rules),
+        forecast: forecastFight(attackerArmyData.troops, targetArmyData.troops, context, rules),
+      };
     };
-
-    const defenderArmy = {
-      entity_id: targetData?.id || 0,
-      stamina: Number(targetArmyData.troops.stamina.amount),
-      troopCount: Number(targetArmyData.troops.count) / RESOURCE_PRECISION,
-      troopType: targetArmyData.troops.category as TroopType,
-      tier: targetArmyData.troops.tier as TroopTier,
-      battle_cooldown_end: targetArmyData.troops.battle_cooldown_end,
-    };
-
-    const now = Math.floor(Date.now() / 1000);
-
-    return combatSimulator.simulateBattleWithParams(
-      now,
-      attackerArmy,
-      defenderArmy,
-      biome,
-      attackerRelicResourceIds,
-      targetRelicResourceIds,
-      combatSimulationContext,
-    );
+    if (!rollsDice) {
+      const exact = at(0, 0);
+      return { worst: exact, best: exact };
+    }
+    return { worst: at(1, COMBAT_DIE_FACES), best: at(COMBAT_DIE_FACES, 1) };
   }, [
-    attacker,
     attackerArmyData,
-    targetData,
     targetArmyData,
+    currentTime,
+    currentArmiesTick,
+    targetDistance,
     biome,
-    combatSimulator,
-    attackerRelicResourceIds,
-    targetRelicResourceIds,
-    attackerStamina,
-    combatSimulationContext,
+    attackerType,
+    isStructureTarget,
+    rollsDice,
   ]);
 
   const attackerTroopsTotal = useMemo(() => {
@@ -320,11 +313,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return Number(targetArmyData.troops.count) / RESOURCE_PRECISION;
   }, [targetArmyData]);
 
-  const attackerLosses = battleSimulation ? Math.min(battleSimulation.defenderDamage, attackerTroopsTotal) : 0;
-  const defenderLosses = battleSimulation ? Math.min(battleSimulation.attackerDamage, defenderTroopsTotal) : 0;
+  const sides = fight ? exchangeSides(fight.worst.exchange, fight.best.exchange) : null;
+  const attackerSide = sides?.attacker ?? null;
+  const defenderSide = sides?.defender ?? null;
 
-  const attackerRemaining = Math.max(attackerTroopsTotal - attackerLosses, 0);
-  const defenderRemaining = Math.max(defenderTroopsTotal - defenderLosses, 0);
+  // Capture and garrison are judged on the attacker's worst roll, so the atomic claim never counts on luck.
+  const attackerRemaining = attackerSide ? attackerSide.worst.remaining : attackerTroopsTotal;
+  const defenderRemaining = defenderSide ? defenderSide.worst.remaining : defenderTroopsTotal;
 
   // Per-slot defender view: the active guard (slot 0) shows its projected
   // post-fight remainder, queued guards show their untouched troop counts.
@@ -364,13 +359,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // (the guard swap asserts count <= live troops; the buffer also leaves >=1 troop on the explorer),
   // then capped to the structure's max guard army size so the swap never overfills the slot.
   const garrisonTroopCount = useMemo(() => {
-    if (!willCaptureStructure || !attackerArmyData) return 0;
+    // A structure whose level this client does not know takes no garrison: its cap is unknown.
+    const structureLevel = targetData?.structureLevel;
+    if (!willCaptureStructure || !attackerArmyData || structureLevel == null) return 0;
     const survivors = targetArmyData ? attackerRemaining : attackerTroopsTotal;
     const buffered = Math.floor(survivors * 0.99);
-    const maxArmySize = configManager.getMaxArmySize(
-      Number(targetData?.structureLevel ?? 0),
-      attackerArmyData.troops.tier as TroopTier,
-    );
+    const maxArmySize = configManager.getMaxArmySize(structureLevel, attackerArmyData.troops.tier as TroopTier);
     return Math.max(0, Math.min(buffered, maxArmySize));
   }, [willCaptureStructure, attackerArmyData, targetArmyData, attackerRemaining, attackerTroopsTotal, targetData]);
 
@@ -418,17 +412,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   })();
 
   const outcomeLabel = (() => {
-    if (!battleSimulation) {
-      if (targetArmyData) return "Simulating...";
+    if (!fight) {
       if (isStructureTarget && hasQueuedGuards) return `${totalGuardCount} guards defending`;
       return "No defenders";
     }
 
-    let baseLabel: string;
-
-    if (battleSimulation.attackerDamage > battleSimulation.defenderDamage) baseLabel = "Victory";
-    else if (battleSimulation.attackerDamage === battleSimulation.defenderDamage) baseLabel = "Draw";
-    else baseLabel = "Defeat";
+    const [worst, best] = [describeFight(fight.worst.forecast), describeFight(fight.best.forecast)];
+    const baseLabel = worst === best ? (worst ?? "—") : `Worst roll: ${worst ?? "—"} · best: ${best ?? "—"}`;
 
     if (!isStructureTarget || !hasQueuedGuards) {
       return baseLabel;
@@ -478,7 +468,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
         return attack_guard_vs_explorer({
           signer: account,
-          ethereal,
           structure_id: attacker.id,
           structure_guard_slot: guardSlot,
           explorer_id: resolvedTarget.id,
@@ -486,7 +475,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       } else if (resolvedTarget.targetType === TargetType.Army) {
         return attack_explorer_vs_explorer({
           signer: account,
-          ethereal,
           aggressor_id: attacker.id,
           defender_id: resolvedTarget.id,
           steal_resources: targetResources,
@@ -494,7 +482,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       } else {
         return attack_explorer_vs_guard({
           signer: account,
-          ethereal,
           explorer_id: attacker.id,
           structure_id: resolvedTarget.id,
         });
@@ -511,7 +498,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
       return attack_explorer_vs_guard_and_garrison({
         signer: account,
-        ethereal,
         explorer_id: attacker.id,
         structure_id: resolvedTarget.id,
         structure_direction: direction,
@@ -553,26 +539,42 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     </Button>
   );
 
-  const casualtyLine = (label: string, losses: number, remaining: number, isEliminated: boolean) => (
-    <div className="rounded-md border border-gold/20 bg-black/25 px-3 py-2">
-      <div className="flex items-center justify-between">
-        <span className={HUD_LABEL}>{label}</span>
-        <span className={cn(HUD_CUE, isEliminated ? "text-red-300" : "text-emerald-300")}>
-          {isEliminated ? "Eliminated" : "Survives"}
-        </span>
+  const casualtyLine = (label: string, side: SideRange) => {
+    const survival = survivalOf(side);
+    return (
+      <div className="rounded-md border border-gold/20 bg-black/25 px-3 py-2">
+        <div className="flex items-center justify-between">
+          <span className={HUD_LABEL}>{label}</span>
+          <span
+            className={cn(
+              HUD_CUE,
+              survival === "Eliminated"
+                ? "text-red-300"
+                : survival === "Survives"
+                  ? "text-emerald-300"
+                  : "text-amber-300",
+            )}
+          >
+            {survival}
+          </span>
+        </div>
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <span className="flex items-center gap-1">
+            <span className={HUD_CUE}>Losses</span>
+            <span className={HUD_VALUE}>{formatAcross(side.worst.losses, side.best.losses, formatTroopValue)}</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className={HUD_CUE}>Remaining</span>
+            <span className={HUD_VALUE}>
+              {formatAcross(side.worst.remaining, side.best.remaining, formatTroopValue)}
+            </span>
+          </span>
+        </div>
       </div>
-      <div className="mt-1 flex items-center justify-between gap-3">
-        <span className="flex items-center gap-1">
-          <span className={HUD_CUE}>Losses</span>
-          <span className={HUD_VALUE}>{formatTroopValue(losses)}</span>
-        </span>
-        <span className="flex items-center gap-1">
-          <span className={HUD_CUE}>Remaining</span>
-          <span className={HUD_VALUE}>{formatTroopValue(remaining)}</span>
-        </span>
-      </div>
-    </div>
-  );
+    );
+  };
+
+  if (structureGuards === undefined) return <div>Loading guards…</div>;
 
   return (
     <div className="w-[280px] max-w-[85vw] px-3 py-2.5 text-gold">
@@ -597,22 +599,19 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         <div className="py-6 text-center text-sm text-gold/70">No target detected.</div>
       ) : (
         <div className="space-y-1.5">
-          {ethereal && (
+          {rollsDice && (
             <p className="text-xs text-gold/70">
-              Preview assumes +{CombatSimulator.ETHEREAL_PREVIEW_BONUS_PERCENT}% damage for each side. Each side rolls a
-              d20 for +1% to +20% in the fight.
+              Each side rolls a d20 for +1% to +20% damage; ranges run from your worst roll to your best.
             </p>
           )}
           {targetArmyData ? (
-            <>
-              {casualtyLine("Your forces", attackerLosses, attackerRemaining, attackerRemaining <= 0)}
-              {casualtyLine(
-                isStructureTarget ? "Active guard" : "Enemy army",
-                defenderLosses,
-                defenderRemaining,
-                defenderRemaining <= 0,
-              )}
-            </>
+            attackerSide &&
+            defenderSide && (
+              <>
+                {casualtyLine("Your forces", attackerSide)}
+                {casualtyLine(isStructureTarget ? "Active guard" : "Enemy army", defenderSide)}
+              </>
+            )
           ) : (
             <div className="rounded-md border border-emerald-500/40 bg-emerald-900/20 px-3 py-2 text-sm text-emerald-200">
               {rangedClaimBlocked
@@ -666,7 +665,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
               {isLowStamina && (
                 <div className="mt-1 text-[11px] text-gold/70">
                   <div>
-                    Current: {attackerStaminaValue} / Required: {requiredAttackStamina}
+                    Current: {attackerStaminaValue ?? "—"} / Required: {requiredAttackStamina}
                   </div>
                   {staminaWaitSeconds !== null && <div>Ready in: {formatTime(staminaWaitSeconds)}</div>}
                 </div>

@@ -1,5 +1,4 @@
 import type { ID } from "@bibliothecadao/types";
-import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import type { StreamFn } from "@mariozechner/pi-agent-core";
 import {
   createAssistantMessageEventStream,
@@ -58,10 +57,8 @@ export const createOfflineStreamFn =
 export const resolveOfflineScout = (game: RunnerGame, empire: SettledEmpire): OfflineScout | null => {
   const own = empire.explorers[0];
   if (own !== undefined) return { explorerId: own };
-  const { ExplorerTroops } = game.client.setup.components;
-  const explorerIds = [...runQuery([Has(ExplorerTroops)])]
-    .map((entity) => getComponentValue(ExplorerTroops, entity)?.explorer_id)
-    .filter((explorerId): explorerId is ID => explorerId !== undefined)
+  const explorerIds = [...game.client.setup.store.inGame("ExplorerTroops", game.client.gameId)]
+    .map((row) => row.explorer_id)
     .sort((left, right) => left - right);
   return explorerIds.length === 0 ? null : { explorerId: explorerIds[0]! };
 };

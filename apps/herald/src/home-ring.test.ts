@@ -1,0 +1,769 @@
+import { productionOutput } from "@bibliothecadao/eternum";
+import { readFileSync } from "node:fs";
+import { CairoCustomEnum } from "starknet";
+import { absoluteEpoch } from "@bibliothecadao/eternum/expeditions";
+import { GameSubscription } from "./game-subscription";
+import { describe, expect, it, vi } from "vitest";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { rowInGameSyncScope, isClientGameSyncModel } from "@bibliothecadao/eternum/game-sync-models";
+import { GameSyncRuntime, type GameSyncSubscriptionHandlers } from "@bibliothecadao/eternum/game-sync";
+
+import { decodeHomeRing, homeRingTileData, type HomeRingTile, type HomeRingView } from "./home-ring";
+import { LiveWorld } from "./live-world";
+import type { MadaraRpc } from "./madara-rpc";
+import {
+  structureValue,
+  explorerValue,
+  seedDerivedRows,
+  raw,
+  receipt,
+  rowEvent,
+  rulesEvent,
+  schema,
+  setup,
+} from "./native/fixtures";
+import type { HeraldStreamMessage } from "./stream-protocol";
+import type { RpcBlockWithReceipts } from "./types";
+import { WorldFold } from "./world-fold";
+
+const DAY_START = Date.parse("2026-09-22T00:00:00Z") / 1000;
+const MID_DAY = DAY_START + 43_200;
+
+// Realm 1's day-one site with spacing 100 is (50, 50); its ring is the site and the six tiles around it.
+const RING: HomeRingTile[] = [
+  [50, 50],
+  [51, 50],
+  [51, 51],
+  [50, 51],
+  [49, 50],
+  [50, 49],
+  [51, 49],
+].map(([col, row]) => ({ col: col!, row: row!, biome: 5 }));
+
+/** A Frontier game (days of 86,400 s, regions of 100) with realm 1 owned by 0xa and realm 2 by 0xb, and no armies. */
+const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) => {
+  const { native, decoder, fold } = setup();
+  const event = rulesEvent();
+  const rules = decoder.decodeRowSet("SliceRules", ["1"], event.data.slice(3));
+  if (rules.kind !== "set") throw new Error("Expected rules row");
+  rules.value.epoch_seconds = 86_400;
+  fold.apply(rules);
+  const home = (id: number) =>
+    rowEvent("Structure", ["1", String(id)], {
+      ...structureValue,
+      owner: id + 9,
+      base: {
+        ...structureValue.base,
+        troop_max_explorer_count: 2,
+        created_at: 120,
+        category: 1,
+        starting_troops_granted: true,
+      },
+      metadata: { ...structureValue.metadata, realm_id: id },
+    });
+  native.applyReceipt(
+    fold,
+    receipt(
+      seedDerivedRows(fold, decoder, [
+        rowEvent("GameRegistry", ["1"], {
+          name: "7",
+          preset_id: "1",
+          creator: "10",
+          settled: false,
+          ready: true,
+          dev_mode_on: false,
+          start_settling_at: String(DAY_START + 120),
+          start_main_at: String(DAY_START + 120),
+          end_at: String(DAY_START + 864_000),
+          end_grace_seconds: "0",
+          seed: "7",
+        }),
+        rowEvent("SettlementRules", ["1"], {
+          registration_start: 0n,
+          registration_limit: 0n,
+          mode: new CairoCustomEnum({ Single: {} }),
+          spacing: 100n,
+        }),
+        home(1),
+        home(2),
+      ]),
+    ),
+    9,
+    0,
+  );
+  const confirmed: RpcBlockWithReceipts = { block_number: 10, timestamp: MID_DAY, transactions: [] };
+  const pending: RpcBlockWithReceipts = { block_number: 11, timestamp: MID_DAY, transactions: [] };
+  const live = new LiveWorld({
+    native,
+    registry: decoder.registry,
+    chain: "madara",
+    checkpointEveryBlocks: 100,
+    checkpointStore: { save: async () => undefined },
+    confirmedBlock: 9,
+    confirmedFold: fold,
+    homeRingView,
+    rpc: {
+      getPreconfirmedHeader: async () => pending,
+      getBlockWithReceipts: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
+      call,
+    } as unknown as MadaraRpc,
+  });
+  return { live, native, decoder, fold, confirmed, pending };
+};
+
+const connect = (live: LiveWorld, actor: string) => {
+  const messages: HeraldStreamMessage[] = [];
+  const session = live.attach("1", { send: (text) => messages.push(JSON.parse(text)) }, actor);
+  live.resume(session, { type: "resume", epoch: "", seq: 0 });
+  return messages;
+};
+
+const tilesIn = (messages: HeraldStreamMessage[]) =>
+  messages.flatMap((message) => {
+    if (message.type === "snapshot" && message.model === "TileOpt") return message.rows;
+    if (message.type === "diff") return message.set.filter(({ model }) => model === "TileOpt");
+    return [];
+  });
+
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+const applyMessages = (store: NativeFactStore, messages: HeraldStreamMessage[]) => {
+  for (const message of messages) {
+    if (message.type === "snapshot") store.applyFacts(message.rows.map((row) => ({ ...row, model: message.model })));
+    if (message.type === "diff")
+      store.applyFacts([...message.set, ...message.del.map((row) => ({ ...row, value: null }))]);
+  }
+};
+
+describe("home ring", () => {
+  it.each([false, true])(
+    "keeps only the pending position after consecutive moves (muster during stream: %s)",
+    async (musterDuringStream) => {
+      const { live, native, fold, confirmed, pending } = frontierWorld(async () => []);
+      await live.acceptSubscribedHead({ block_number: 10, timestamp: MID_DAY });
+      const occupancy = (col: number) =>
+        rowEvent("TileOccupancy", ["1", "0", String(col), "50"], {
+          entity_id: 20,
+          category: 15,
+          is_structure: false,
+        });
+      const remove = (col: number) => ({
+        ...occupancy(col),
+        keys: [
+          ...schema.games.events.find(({ name }) => name === "RowDeleted")!.prefix,
+          "1",
+          schema.models.find(({ name }) => name === "TileOccupancy")!.identity,
+        ],
+        data: ["4", "1", "0", String(col), "50"],
+      });
+      const army = (stamina: bigint) => rowEvent("ExplorerTroops", ["1", "20"], explorerValue("1", 1000n, stamina, 1n));
+      const balance = (amount: bigint) => rowEvent("ResourceBalance", ["1", "1", "23"], { balance: amount });
+      const muster = receipt([army(30n), occupancy(51), balance(10n)], "0x71");
+      if (!musterDuringStream) native.applyReceipt(fold, muster, 10, 0);
+      const messages = connect(live, "0xa");
+      const store = new NativeFactStore();
+      store.setSnapshot({ gameId: 1, actor: "0xa", complete: true, timestamp: MID_DAY });
+      let consumed = 0;
+      const applyFrames = () => {
+        applyMessages(store, messages.slice(consumed));
+        consumed = messages.length;
+      };
+      if (musterDuringStream) live.acceptReceipt({ ...muster, finality_status: "PRE_CONFIRMED" });
+      const firstMove = receipt([remove(51), occupancy(52), army(20n)], "0x72");
+      const secondMove = receipt([remove(52), occupancy(53), army(10n), balance(5n)], "0x73");
+      live.acceptReceipt({ ...firstMove, finality_status: "PRE_CONFIRMED" });
+      live.acceptReceipt({ ...secondMove, finality_status: "PRE_CONFIRMED" });
+      applyFrames();
+      const assertPendingFacts = (facts = store) => {
+        const positions = [...facts.rows("TileOccupancy")].filter((row) => row.entity_id === 20);
+        expect(positions.map((row) => row.col)).toEqual([53]);
+        expect(facts.require("ResourceBalance", { game_id: 1, entity_id: 1, resource_type: 23 }).balance).toBe(5n);
+        expect(facts.require("ExplorerTroops", { game_id: 1, explorer_id: 20 }).troops.stamina).toEqual({
+          Inline: { amount: 10n, updated_tick: 1n },
+        });
+        expect(facts.subscriptionScope().unknown).toBeUndefined();
+      };
+      const assertSnapshotReplay = () => {
+        const fresh = new NativeFactStore();
+        fresh.setSnapshot({ gameId: 1, actor: "0xa", complete: true, timestamp: MID_DAY });
+        const frames = connect(live, "0xa");
+        const end = frames.findIndex(({ type }) => type === "snapshot_end");
+        expect(end).toBeGreaterThan(0);
+        expect(frames.slice(end + 1).some((frame) => frame.type === "diff" && frame.preconfirmed)).toBe(true);
+        applyMessages(fresh, frames);
+        assertPendingFacts(fresh);
+      };
+      assertPendingFacts();
+      assertSnapshotReplay();
+      confirmed.block_number = 11;
+      confirmed.transactions = (musterDuringStream ? [muster, firstMove] : [firstMove]).map((receipt) => ({
+        receipt,
+        transaction: { type: "INVOKE" },
+      }));
+      pending.block_number = 12;
+      pending.transactions = [{ receipt: secondMove, transaction: { type: "INVOKE" } }];
+      await live.acceptSubscribedHead({ block_number: 11, timestamp: MID_DAY });
+      applyFrames();
+      assertPendingFacts();
+      assertSnapshotReplay();
+      confirmed.block_number = 12;
+      confirmed.transactions = pending.transactions;
+      pending.block_number = 13;
+      pending.transactions = [];
+      await live.acceptSubscribedHead({ block_number: 12, timestamp: MID_DAY });
+      applyFrames();
+      assertPendingFacts();
+    },
+  );
+
+  it("includes a post-start settlement in a watched snapshot without exposing actor-only or unwatched rows", () => {
+    const { live, native, fold } = frontierWorld();
+    const player = "0xbb";
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("PlayerEntry", ["1", "30"], { player: BigInt(player) }),
+        rowEvent("Structure", ["1", "3"], {
+          ...structureValue,
+          owner: "30",
+          base: { ...structureValue.base, category: 1 },
+          metadata: { ...structureValue.metadata, realm_id: 3 },
+        }),
+        rowEvent("Building", ["1", "3", "10", "10"], {
+          category: 28,
+          paused: false,
+          labor_paid: 0n,
+          tier: 1,
+        }),
+        rowEvent("ActionNonce", ["1", "30"], { next_nonce: 1n }),
+      ]),
+      11,
+      0,
+    );
+
+    expect(live.confirmedBlock).toBe(9);
+    const scope = fold.subscriptionScope("1", undefined, MID_DAY, player);
+    const snapshot = fold.subscriptionSnapshot("1", 11, scope, ["PlayerEntry", "Structure", "Building", "ActionNonce"]);
+    const rows = (model: string) => snapshot.models.find((entry) => entry.model === model)!.rows;
+    expect(rows("PlayerEntry").some(({ value }) => value.owner === "0x1e")).toBe(true);
+    expect(rows("Structure").map(({ value }) => value.entity_id)).toEqual(["0x3"]);
+    expect(rows("Building").some(({ value }) => value.structure_id === "0x3")).toBe(true);
+    expect(rows("ActionNonce")).toEqual([]);
+    const emptyScope = fold.subscriptionScope("1", undefined, MID_DAY);
+    const emptySnapshot = fold.subscriptionSnapshot("1", 11, emptyScope, ["Structure"]);
+    expect(emptySnapshot.models[0]!.rows).toEqual([]);
+  });
+
+  it("matches the materialized Cairo ring across three season days", () => {
+    const values = readFileSync(
+      new URL("../../../contracts/l3/world-native/tests/fixtures/frontier-home-ring-v1.txt", import.meta.url),
+      "utf8",
+    )
+      .trim()
+      .split(/\s+/)
+      .map(BigInt);
+    expect(values.slice(0, 2)).toEqual([1n, 21n]);
+    expect(values).toHaveLength(2 + 21 * 5);
+    for (let day = 0; day < 3; day++) {
+      const wire = ["7"];
+      const materialized: bigint[] = [];
+      for (let tile = 0; tile < 7; tile++) {
+        const offset = 2 + (day * 7 + tile) * 5;
+        const [timestamp, col, row, biome, data] = values.slice(offset, offset + 5);
+        expect(timestamp).toBe(350n + BigInt(day) * 100n);
+        wire.push("0", col!.toString(), row!.toString(), biome!.toString());
+        materialized.push(data!);
+      }
+      expect(decodeHomeRing(wire).map(homeRingTileData)).toEqual(materialized);
+    }
+  });
+
+  it("scopes slot and chest rows by absolute epoch on a nonzero launch day", () => {
+    const { fold } = frontierWorld();
+    const absolute = absoluteEpoch({ epochSeconds: 86_400 }, MID_DAY);
+    const scope = fold.subscriptionScope("1", "0xa", MID_DAY);
+    expect(scope.expedition?.absoluteEpoch).toBe(absolute);
+    expect(scope.expedition?.regions).toEqual(new Set(["0:0"]));
+    for (const [model, key] of [
+      ["ArmySlot", { structure_id: "1", slot: "0" }],
+      ["ChestTokens", { player: "10" }],
+      ["ChestReward", { player: "10", explorer_id: "11", index: "0" }],
+    ] as const) {
+      expect(rowInGameSyncScope(model, { ...key, epoch: String(absolute) }, scope)).toBe(true);
+      expect(rowInGameSyncScope(model, { ...key, epoch: "0" }, scope)).toBe(false);
+      const next = fold.subscriptionScope("1", "0xa", MID_DAY + 86_400);
+      expect(rowInGameSyncScope(model, { ...key, epoch: String(absolute) }, next)).toBe(false);
+      expect(rowInGameSyncScope(model, { ...key, epoch: String(absolute + 1) }, next)).toBe(true);
+    }
+    expect(fold.subscriptionScope("1", "0xa", DAY_START).expedition?.absoluteEpoch).toBe(-1);
+  });
+
+  it("retains Support accrual inputs across midnight, visit and refreshed snapshots", () => {
+    const { native, fold } = frontierWorld();
+    const midnight = DAY_START + 86_400;
+    const epoch = absoluteEpoch({ epochSeconds: 86400 }, midnight - 10);
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("RealmSupport", ["1", "1", String(epoch)], { level: 3 }),
+        rowEvent("RealmSupport", ["1", "2", String(epoch)], { level: 2 }),
+        rowEvent("ResourceWeight", ["1", "1"], { capacity: 100000, weight: 0 }),
+        rowEvent("ResourceProduction", ["1", "1", "35"], {
+          building_count: 1,
+          production_rate: 100,
+          output_amount_left: (1n << 128n) - 1n,
+          last_updated_at: midnight - 10,
+        }),
+      ]),
+      11,
+      0,
+    );
+    const visited = fold.subscriptionSnapshot("1", 11, fold.subscriptionScope("1", "0xa", midnight + 10, "0xb"));
+    expect(visited.models.find((m) => m.model === "RealmSupport")!.rows).toHaveLength(2);
+    const snapshot = fold.subscriptionSnapshot("1", 11, fold.subscriptionScope("1", "0xa", midnight + 10));
+    expect(snapshot.models.find((m) => m.model === "RealmSupport")!.rows).toHaveLength(1);
+    for (let refresh = 0; refresh < 2; refresh++) {
+      const store = new NativeFactStore();
+      store.applyFacts(snapshot.models.flatMap(({ model, rows }) => rows.map((row) => ({ model, ...row }))));
+      store.setSnapshot({ gameId: 1, complete: true, actor: "0xa", timestamp: midnight + 10 });
+      const production = store.require("ResourceProduction", { game_id: 1, entity_id: 1, resource_type: 35 });
+      const support = store.requireOrAbsent("RealmSupport", { game_id: 1, structure_id: 1, epoch: BigInt(epoch) });
+      expect(productionOutput(production, midnight + 10, { epochSeconds: 86400, level: support.known!.level })).toBe(
+        2200n,
+      );
+      expect(
+        store.requireOrAbsent("RealmSupport", { game_id: 1, structure_id: 1, epoch: BigInt(epoch + 1) }).known?.level,
+      ).toBe(0);
+    }
+  });
+
+  it("refuses an empty or short view response instead of reading a ring of no tiles", () => {
+    expect(decodeHomeRing(["0x1", "0x0", "0x5", "0x6", "0x2"])).toEqual([{ col: 5, row: 6, biome: 2 }]);
+    expect(() => decodeHomeRing([])).toThrow("expedition_home_ring returned 0 felts");
+    expect(() => decodeHomeRing(["0x2", "0x0", "0x5", "0x6", "0x2"])).toThrow("returned 5 felts");
+  });
+
+  it("keeps spires and reservations in tile scope without treating them as positioned entities", () => {
+    const { native, fold } = frontierWorld();
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("TileOccupancy", ["1", "0", "50", "50"], { entity_id: 999n, category: 35n, is_structure: true }),
+        rowEvent("TileOccupancy", ["1", "1", "50", "50"], { entity_id: 999n, category: 35n, is_structure: true }),
+        rowEvent("TileOccupancy", ["1", "0", "51", "50"], { entity_id: 0n, category: 39n, is_structure: true }),
+      ]),
+      10,
+      0,
+    );
+    const scope = fold.subscriptionScope("1", "0xa", MID_DAY);
+    expect(scope.expedition?.entities.has("999")).toBe(false);
+    expect(scope.expedition?.entities.has("0")).toBe(false);
+  });
+
+  it("reads a watched realm's ring once a day and shows it on connect, on arrival and on reconnect", async () => {
+    const view = vi.fn<HomeRingView>(async () => RING);
+    const { live, decoder } = frontierWorld(view);
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: MID_DAY });
+
+    // A fresh connect mid-day starts the read; the ring arrives as a diff when it lands.
+    const first = connect(live, "0xa");
+    expect(tilesIn(first)).toEqual([]);
+    await settle();
+    expect(view).toHaveBeenCalledTimes(1);
+    expect(view).toHaveBeenCalledWith("1", 1, MID_DAY);
+    // Each row is exactly the row the chain writes when it reveals the tile.
+    const chainRows = RING.map((tile) => {
+      const event = decoder.decode(
+        raw(
+          rowEvent("TileOpt", ["1", "0", String(tile.col), String(tile.row)], {
+            data: homeRingTileData(tile).toString(),
+          }),
+        ),
+      );
+      const { set } = new WorldFold(decoder.registry).apply(event)!;
+      return { key: set!.key, model: set!.model, value: set!.value };
+    });
+    expect(tilesIn(first)).toEqual(chainRows);
+
+    // A connect after the ring is cached, and a reconnect, get it in the snapshot with no second read.
+    for (const messages of [connect(live, "0xa"), connect(live, "0xa")]) {
+      expect(tilesIn(messages)).toEqual(chainRows.map(({ key, value }) => ({ key, value })));
+    }
+    await settle();
+    expect(view).toHaveBeenCalledTimes(1);
+  });
+
+  it("reads the ring through a view the deployed Games contract exposes", async () => {
+    const felts = [
+      String(RING.length),
+      ...RING.flatMap(({ col, row, biome }) => ["0", String(col), String(row), String(biome)]),
+    ];
+    const call = vi.fn<MadaraRpc["call"]>(async () => felts);
+    const { live, decoder } = frontierWorld(undefined, call);
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: MID_DAY });
+    const messages = connect(live, "0xa");
+    await settle();
+    // The shard's own schema names the entrypoint, so a view only a logic class has would be refused before the call.
+    expect(call).toHaveBeenCalledWith(decoder.registry.worldAddress, "expedition_home_ring", ["1", 1, MID_DAY], 10);
+    expect(tilesIn(messages)).toHaveLength(RING.length);
+  });
+
+  it("never reads the ring of a realm nobody is watching", async () => {
+    const view = vi.fn<HomeRingView>(async () => RING);
+    const { live } = frontierWorld(view);
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: MID_DAY });
+    connect(live, "0xa");
+    await settle();
+    expect(view.mock.calls.map(([, realmId]) => realmId)).toEqual([1]);
+  });
+
+  it.each(["confirmed", "clock"])(
+    "retries a failed home-ring read on the next %s head without a scope change",
+    async (head) => {
+      const view = vi.fn<HomeRingView>().mockRejectedValueOnce(new Error("timeout")).mockResolvedValue(RING);
+      const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      try {
+        const { live, confirmed, pending } = frontierWorld(view);
+        await live.acceptSubscribedHead({ block_number: 10, timestamp: MID_DAY });
+        const messages = connect(live, "0xa");
+        await settle();
+        expect(view).toHaveBeenCalledTimes(1);
+        expect(tilesIn(messages)).toEqual([]);
+        const snapshots = messages.filter(({ type }) => type === "snapshot").length;
+        if (head === "confirmed") {
+          confirmed.block_number = 11;
+          pending.block_number = 12;
+          await live.acceptSubscribedHead({ block_number: 11, timestamp: MID_DAY + 1 });
+        } else {
+          pending.timestamp++;
+          await live.publishChainClock();
+        }
+        await settle();
+        expect(view).toHaveBeenCalledTimes(2);
+        expect(tilesIn(messages)).toHaveLength(RING.length);
+        expect(messages.filter(({ type }) => type === "snapshot")).toHaveLength(snapshots);
+        expect(messages.some(({ type }) => type === "head")).toBe(true);
+      } finally {
+        log.mockRestore();
+      }
+    },
+  );
+
+  it("asks again on the next connect after a failed read, without breaking the stream", async () => {
+    const view = vi.fn<HomeRingView>().mockRejectedValueOnce(new Error("node down")).mockResolvedValue(RING);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { live } = frontierWorld(view);
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: MID_DAY });
+    connect(live, "0xa");
+    await settle();
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("herald_home_ring_failed"));
+    const retried = connect(live, "0xa");
+    await settle();
+    expect(view).toHaveBeenCalledTimes(2);
+    expect(tilesIn(retried)).toHaveLength(RING.length);
+    error.mockRestore();
+  });
+});
+
+describe("client and Herald subscription scope parity", () => {
+  it("keeps the actor's home rows when muster rebases the expedition scope", async () => {
+    const { native, fold } = frontierWorld();
+    native.applyReceipt(
+      fold,
+      receipt(
+        [
+          rowEvent("PlayerEntry", ["1", "10"], { player: 10n }),
+          rowEvent("ResourceWeight", ["1", "1"], { capacity: 100_000n, weight: 2_000n }),
+          rowEvent("ResourceBalance", ["1", "1", "23"], { resource_type: 23, balance: 4_000n }),
+          rowEvent("ResourceBalance", ["1", "1", "35"], { resource_type: 35, balance: 8_000n }),
+          rowEvent("StructureBuildings", ["1", "1"], {
+            packed_counts_1: 1n,
+            packed_counts_2: 0n,
+            packed_counts_3: 0n,
+            population: { current: 1, max: 50 },
+          }),
+          rowEvent("Building", ["1", "1", "10", "10"], {
+            category: 28,
+            paused: false,
+            labor_paid: 200_000_000_000n,
+            tier: 1,
+          }),
+        ],
+        "0x56",
+      ),
+      10,
+      0,
+    );
+
+    const overlay = fold.overlay();
+    const subscription = new GameSubscription(
+      "1",
+      "0xa",
+      (preconfirmed) => (preconfirmed ? overlay : fold),
+      () => 10,
+      () => MID_DAY,
+      native.decoder.registry,
+    );
+    const beforeScope = fold.subscriptionScope("1", "0xa", MID_DAY);
+    const beforeMuster = subscription.snapshot();
+    const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 1, actor: "0xa", complete: false, timestamp: MID_DAY });
+    const snapshotModels = beforeMuster.models.map(({ model }) => model);
+    let runtimeHandlers: GameSyncSubscriptionHandlers | undefined;
+    let appliedMuster!: () => void;
+    const musterApplied = new Promise<void>((resolve) => (appliedMuster = resolve));
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession({
+      store,
+      snapshotModels,
+      onTransactionEntitiesApplied: (hash) => {
+        if (hash === "0x57") appliedMuster();
+      },
+      transport: {
+        async subscribe(handlers) {
+          runtimeHandlers = handlers;
+          handlers.onSnapshotState?.({ gameId: 1, actor: "0xa", complete: false, timestamp: MID_DAY });
+          handlers.onSnapshotStart();
+          beforeMuster.models.forEach(({ model, rows }, index) =>
+            handlers.onSnapshotModel(
+              model,
+              rows.map((row) => ({ ...row, model })),
+              { bytesReceived: 0, model, modelsReceived: index + 1, rowsReceived: rows.length },
+            ),
+          );
+          await handlers.onSnapshotEnd();
+          handlers.onSnapshotState?.({ gameId: 1, actor: "0xa", complete: true, timestamp: MID_DAY });
+          handlers.onHead({ block: 10, preconfirmed: false, timestamp: MID_DAY });
+          return { cancel: () => undefined };
+        },
+      },
+    });
+    store.setSnapshot({ gameId: 1, actor: "0xa", complete: true, timestamp: MID_DAY });
+    expect(store.require("Structure", { game_id: 1, entity_id: 1 }).owner).toBe(10n);
+    expect(store.require("ResourceWeight", { game_id: 1, entity_id: 1 }).weight).toBe(2_000n);
+    expect(store.require("ResourceBalance", { game_id: 1, entity_id: 1, resource_type: 23 }).balance).toBe(4_000n);
+    expect(store.require("ResourceBalance", { game_id: 1, entity_id: 1, resource_type: 35 }).balance).toBe(8_000n);
+    expect(store.require("StructureBuildings", { game_id: 1, entity_id: 1 }).packed_counts_1).toBe(1n);
+    expect(store.require("Building", { game_id: 1, structure_id: 1, inner_col: 10, inner_row: 10 }).category).toBe(28);
+
+    const army = explorerValue("1", 10_000_000_000n);
+    const troops = army.troops as Record<string, unknown>;
+    const muster = native.applyReceipt(
+      fold,
+      receipt(
+        [
+          rowEvent("ArmySlot", ["1", "1", String(absoluteEpoch({ epochSeconds: 86_400 }, MID_DAY)), "0"], {
+            epoch: absoluteEpoch({ epochSeconds: 86_400 }, MID_DAY),
+            explorer_id: 20,
+            stamina: { amount: 30, updated_tick: 1 },
+          }),
+          rowEvent("ExplorerTroops", ["1", "20"], {
+            ...army,
+            troops: { ...troops, stamina: new CairoCustomEnum({ Slot: 0 }) },
+          }),
+          rowEvent("TileOccupancy", ["1", "0", "51", "50"], {
+            entity_id: 20,
+            category: 15,
+            is_structure: false,
+          }),
+        ],
+        "0x57",
+      ),
+      11,
+      0,
+    );
+    const rebase = subscription.project({
+      type: "diff",
+      block: 11,
+      preconfirmed: false,
+      transaction_hash: "0x57",
+      set: muster.changes.flatMap(({ change }) => (change?.set ? [change.set] : [])),
+      del: [],
+    });
+    const afterScope = fold.subscriptionScope("1", "0xa", MID_DAY);
+    expect(afterScope.expedition?.entities.has("20")).toBe(true);
+    expect(afterScope.expedition?.entities).not.toEqual(beforeScope.expedition?.entities);
+    expect(rebase).toHaveLength(1);
+    expect(rebase[0]?.type).toBe("diff");
+    if (rebase[0]?.type !== "diff") throw new Error("Muster did not produce a scope rebase");
+    for (const row of rebase[0].set) {
+      expect(rowInGameSyncScope(row.model, row.value, afterScope)).toBe(true);
+    }
+    for (const model of ["Structure", "ResourceWeight", "ResourceBalance", "StructureBuildings", "Building"] as const) {
+      expect(rebase[0].set.some((row) => row.model === model)).toBe(true);
+    }
+
+    if (!runtimeHandlers) throw new Error("Game sync did not subscribe");
+    runtimeHandlers.onFacts({
+      facts: [...rebase[0].set, ...rebase[0].del.map((row) => ({ ...row, value: null }))],
+      preconfirmed: false,
+      transactionHash: "0x57",
+    });
+    await musterApplied;
+
+    expect(await runtimeHandlers.onScope(rebase[0].set, true)).toBe(true);
+
+    expect(store.require("Structure", { game_id: 1, entity_id: 1 }).owner).toBe(10n);
+    expect(store.require("ResourceWeight", { game_id: 1, entity_id: 1 }).weight).toBe(2_000n);
+    expect(store.require("ResourceBalance", { game_id: 1, entity_id: 1, resource_type: 23 }).balance).toBe(4_000n);
+    expect(store.require("ResourceBalance", { game_id: 1, entity_id: 1, resource_type: 35 }).balance).toBe(8_000n);
+    expect(store.require("StructureBuildings", { game_id: 1, entity_id: 1 }).packed_counts_1).toBe(1n);
+    expect(store.require("Building", { game_id: 1, structure_id: 1, inner_col: 10, inner_row: 10 }).category).toBe(28);
+    runtime.dispose();
+  });
+
+  it("keeps Frontier absence unknown across actor, overlay and day boundaries", () => {
+    const { native, fold } = frontierWorld();
+    const overlay = fold.overlay();
+    const store = new NativeFactStore();
+    const guardReads: unknown[] = [];
+    store.subscribe(() => guardReads.push(store.requireOrAbsent("Guard", { game_id: 1, structure_id: 1, slot: 0 })));
+    let actor = "0xa";
+    let timestamp = MID_DAY;
+    let subscription: GameSubscription;
+    const state = (complete: boolean, clock: number | undefined = timestamp) =>
+      store.setSnapshot({ gameId: 1, actor, complete, timestamp: clock });
+    const snapshot = () => {
+      state(false);
+      subscription = new GameSubscription(
+        "1",
+        actor,
+        (preconfirmed) => (preconfirmed ? overlay : fold),
+        () => 10,
+        () => timestamp,
+        native.decoder.registry,
+      );
+      const models = subscription.snapshot().models.filter(({ model }) => isClientGameSyncModel(model));
+      store.applyFacts(
+        models.flatMap(({ model, rows }) => rows.map((row) => ({ ...row, model }))),
+        new Map(models.map(({ model, rows }) => [model, new Set(rows.map(({ key }) => key))])),
+      );
+      expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: BigInt(actor) }).unknown).toContain(
+        "INCOMPLETE_SNAPSHOT",
+      );
+      state(true);
+      expect(store.subscriptionScope().known).toEqual(fold.subscriptionScope("1", actor, timestamp));
+    };
+    snapshot();
+    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xan }).known?.points).toBe(0n);
+    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xbn }).unknown).toContain(
+      "OUTSIDE_SNAPSHOT_SCOPE",
+    );
+    actor = "0xb";
+    snapshot();
+    // Clock invalidation cannot block an applied actor snapshot's first action.
+    store.setSnapshot({ gameId: 1, actor, complete: true, timestamp: undefined });
+    expect(store.requireOrAbsent("ActionNonce", { game_id: 1, actor: 0xbn }).known?.next_nonce).toBe(0n);
+    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xbn }).unknown).toBe("UNKNOWN_SCOPE_CLOCK");
+    state(true);
+
+    const result = native.applyReceipt(
+      overlay,
+      receipt([rowEvent("PlayerEntry", ["1", "0xa"], { player: 11n })]),
+      null,
+      0,
+    );
+    const deliver = (bodies: ReturnType<GameSubscription["project"]>) => {
+      for (const body of bodies) {
+        if (body.type === "diff") {
+          store.setSnapshot({ gameId: 1, actor, complete: true, timestamp: undefined });
+          store.applyFacts([
+            ...body.set.filter(({ model }) => isClientGameSyncModel(model)),
+            ...body.del.filter(({ model }) => isClientGameSyncModel(model)).map((row) => ({ ...row, value: null })),
+          ]);
+          expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xan }).unknown).toBe(
+            "UNKNOWN_SCOPE_CLOCK",
+          );
+        } else if (body.type === "head") state(true, timestamp);
+      }
+    };
+    deliver(
+      subscription!.project({
+        type: "diff",
+        block: null,
+        preconfirmed: true,
+        set: result.changes.flatMap(({ change }) => (change?.set ? [change.set] : [])),
+        del: [],
+      }),
+    );
+    expect(fold.subscriptionScope("1", actor, timestamp).expedition?.owners).toEqual(new Set(["11"]));
+    deliver(subscription!.project({ type: "head", block: 11, preconfirmed: true, timestamp }));
+    expect(store.subscriptionScope().known).toEqual(overlay.subscriptionScope("1", actor, timestamp));
+    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xan }).known?.points).toBe(0n);
+    expect(store.requireOrAbsent("ActionNonce", { game_id: 1, actor: 0xan }).unknown).toContain(
+      "OUTSIDE_SNAPSHOT_SCOPE",
+    );
+
+    timestamp += 86_400;
+    deliver(subscription!.project({ type: "head", block: 12, preconfirmed: true, timestamp }));
+    expect(store.subscriptionScope().known).toEqual(overlay.subscriptionScope("1", actor, timestamp));
+    expect(
+      store.requireOrAbsent("ChestTokens", {
+        game_id: 1,
+        player: 0xbn,
+        epoch: BigInt(absoluteEpoch({ epochSeconds: 86_400 }, DAY_START)),
+      }).unknown,
+    ).toContain("OUTSIDE_SNAPSHOT_SCOPE");
+    expect(
+      store.requireOrAbsent("ChestTokens", {
+        game_id: 1,
+        player: 0xbn,
+        epoch: BigInt(absoluteEpoch({ epochSeconds: 86_400 }, timestamp)),
+      }).known?.count,
+    ).toBe(0);
+    expect(guardReads.some((read) => (read as { unknown?: string }).unknown === "UNKNOWN_SCOPE_CLOCK")).toBe(true);
+  });
+});
+
+describe("visited realm subscription", () => {
+  it("includes buildings and knowledge, excludes the visited army's region, and drops visit rows on leaving", async () => {
+    const { live, fold, native } = frontierWorld(async (_gameId, realmId) =>
+      RING.map((tile) => ({ ...tile, col: tile.col + (realmId - 1) * 100 })),
+    );
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("PlayerEntry", ["1", "11"], { player: "187" }),
+        rowEvent("RealmKnowledge", ["1", "1"], { learned: 0 }),
+        rowEvent("RealmKnowledge", ["1", "2"], { learned: 3 }),
+        rowEvent("Building", ["1", "2", "10", "10"], {
+          category: 37,
+          paused: false,
+          labor_paid: 200000000000n,
+          tier: 2,
+        }),
+        rowEvent("ExplorerTroops", ["1", "20"], explorerValue("2", 1000n, 30n, 1n)),
+        rowEvent("TileOccupancy", ["1", "0", "150", "150"], { entity_id: 20, category: 15, is_structure: false }),
+        rowEvent("TileOpt", ["1", "0", "150", "150"], { data: 5n << 41n }),
+        rowEvent("ActionNonce", ["1", "10"], { next_nonce: 7 }),
+        rowEvent("ActionNonce", ["1", "11"], { next_nonce: 9 }),
+      ]),
+      9,
+      1,
+    );
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: MID_DAY });
+    const messages: HeraldStreamMessage[] = [];
+    const session = live.attach("1", { send: (text) => messages.push(JSON.parse(text)) }, "0xa", "0xbb");
+    live.resume(session, { type: "resume", epoch: "", seq: 0 });
+    await settle();
+    const snapshot = messages
+      .filter((message) => message.type === "snapshot")
+      .flatMap(({ model, rows }) => rows.map((row) => ({ ...row, model })));
+    expect(
+      snapshot.filter((row) => row.model === "RealmKnowledge").map((row) => Number(row.value.structure_id)),
+    ).toEqual([1, 2]);
+    expect(snapshot.filter((row) => row.model === "Building")).toHaveLength(1);
+    expect(snapshot.filter((row) => row.model === "ExplorerTroops")).toHaveLength(1);
+    expect(snapshot.filter((row) => row.model === "ActionNonce").map((row) => Number(row.value.actor))).toEqual([10]);
+    expect(tilesIn(messages).some((row) => Number(row.value.col) >= 100)).toBe(false);
+    expect(fold.subscriptionScope("1", "0xa", MID_DAY, "0xbb").expedition?.regions).toEqual(new Set(["0:0"]));
+    messages.length = 0;
+    live.selectActor(session, "0xa");
+    const scope = messages.find((message) => message.type === "scope")!;
+    expect(scope.visit).toBeUndefined();
+    expect(
+      scope.set.filter((row) => row.model === "RealmKnowledge").map((row) => Number(row.value.structure_id)),
+    ).toEqual([1]);
+    expect(scope.set.some((row) => row.model === "Building" || row.model === "ExplorerTroops")).toBe(false);
+  });
+});

@@ -1,37 +1,31 @@
-import {
-  applyBlitzBalanceProfile,
-  BLITZ_OFFICIAL_DURATION_MINUTES,
-  resolveBlitzBalanceProfileIdFromDurationMinutes,
-  resolveBlitzBalanceProfileIdFromDurationSeconds,
-  type BlitzBalanceProfileId,
-} from "../source/blitz";
+import duelMadaraConfig from "../generated/duel.madara.json";
+import frontierMadaraConfig from "../generated/frontier.madara.json";
+
 import type { GameType } from "../source/common/types";
-import type { GameChain } from "@realms-world/chain";
+import type { ConfigurationNetwork } from "../shared/game-environments";
 export type { GameType };
-import blitzAppchainConfig from "../generated/blitz.appchain.json";
 import blitzMadaraConfig from "../generated/blitz.madara.json";
-import eternumAppchainConfig from "../generated/eternum.appchain.json";
 import eternumMadaraConfig from "../generated/eternum.madara.json";
 
 type NetworkConfigDocument = {
   configuration: any;
 };
 
-const configs: Record<GameType, Partial<Record<GameChain, NetworkConfigDocument>>> = {
+const configs: Record<GameType, Partial<Record<ConfigurationNetwork, NetworkConfigDocument>>> = {
+  duel: { madara: duelMadaraConfig },
+  frontier: { madara: frontierMadaraConfig },
   blitz: {
     madara: blitzMadaraConfig,
-    appchain: blitzAppchainConfig,
   },
   eternum: {
     madara: eternumMadaraConfig,
-    appchain: eternumAppchainConfig,
   },
 };
 
-function resolveConfigDocument(chain: GameChain, gameType: GameType): NetworkConfigDocument {
+function resolveConfigDocument(chain: ConfigurationNetwork, gameType: GameType): NetworkConfigDocument {
   const gameConfigs = configs[gameType];
   if (!gameConfigs) {
-    throw new Error(`Invalid game type: ${gameType}. Must be "blitz" or "eternum".`);
+    throw new Error(`Invalid game type: ${gameType}. Must be "blitz", "eternum", "frontier" or "duel".`);
   }
 
   const configDocument = gameConfigs[chain];
@@ -42,31 +36,12 @@ function resolveConfigDocument(chain: GameChain, gameType: GameType): NetworkCon
   return configDocument;
 }
 
-export function getConfigFromNetwork(chain: GameChain, gameType: GameType) {
+export function getConfigFromNetwork(chain: ConfigurationNetwork, gameType: GameType) {
   return resolveConfigDocument(chain, gameType).configuration as any;
 }
 
-export function resolveBlitzConfigForDuration(chain: GameChain, durationMinutes: number | null | undefined) {
-  const baseConfig = getConfigFromNetwork(chain, "blitz");
-  const profileId = resolveBlitzBalanceProfileIdFromDurationMinutes(durationMinutes);
-
-  if (!profileId) {
-    return structuredClone(baseConfig);
-  }
-
-  return applyBlitzBalanceProfile(baseConfig, profileId);
-}
-
-export {
-  applyBlitzBalanceProfile,
-  BLITZ_OFFICIAL_DURATION_MINUTES,
-  resolveBlitzBalanceProfileIdFromDurationMinutes,
-  resolveBlitzBalanceProfileIdFromDurationSeconds,
-};
-export type { BlitzBalanceProfileId };
 export {
   GAME_ENVIRONMENTS,
-  getGameEnvironmentsForChain,
   isGameEnvironmentId,
   type GameEnvironment,
   type GameEnvironmentId,

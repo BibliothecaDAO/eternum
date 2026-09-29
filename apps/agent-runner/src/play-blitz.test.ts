@@ -39,7 +39,7 @@ function selectGame(name = "") {
         BASH_ENV: "/dev/null",
         PATH: `${directory}:${process.env.PATH}`,
         DIRECTORY_FIXTURE: join(directory, "games.json"),
-        VITE_PUBLIC_HERALD_URL: "http://fixture",
+        SHARD_URL: "http://fixture",
       },
     },
   );

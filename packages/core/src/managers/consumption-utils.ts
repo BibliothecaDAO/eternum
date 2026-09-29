@@ -5,12 +5,12 @@ import { configManager } from "./config-manager";
  * Automation percentage values for a single produced resource. The percentages are raw
  * slider values (0..maxAllocationPercent), not ratios.
  */
-export interface ResourceAutomationPercentagesInput {
+interface ResourceAutomationPercentagesInput {
   resourceToResource: number;
   laborToResource: number;
 }
 
-export interface AggregateConsumptionOptions {
+interface AggregateConsumptionOptions {
   /**
    * The upper bound for a single percentage slider. Percentages are divided by this
    * value to produce a ratio that scales the per-cycle recipe input amount. Defaults to
@@ -62,9 +62,11 @@ export const aggregateConsumptionPerSecond = (
 ): Map<number, number> => {
   const maxAllocationPercent = options?.maxAllocationPercent ?? DEFAULT_MAX_ALLOCATION_PERCENT;
   const cycleSeconds = options?.cycleSeconds ?? DEFAULT_CYCLE_SECONDS;
-  const complexInputsBySource =
-    options?.recipes?.complexSystemResourceInputs ?? configManager.complexSystemResourceInputs;
-  const simpleInputsBySource = options?.recipes?.simpleSystemResourceInputs ?? configManager.simpleSystemResourceInputs;
+  const recipes = options?.recipes;
+  const inputsOf = (resourceId: ResourcesIds, simple: boolean) =>
+    recipes
+      ? (simple ? recipes.simpleSystemResourceInputs : recipes.complexSystemResourceInputs)[resourceId]
+      : configManager.getRecipeInputs(resourceId, simple);
 
   const totals = new Map<number, number>();
 
@@ -87,14 +89,14 @@ export const aggregateConsumptionPerSecond = (
     const laborRatio = clampRatio(percentages.laborToResource / maxAllocationPercent);
 
     if (resourceRatio > 0) {
-      const inputs = complexInputsBySource[resourceId] ?? [];
+      const inputs = inputsOf(resourceId, false) ?? [];
       for (const input of inputs) {
         accumulate(input.resource, resourceRatio * input.amount);
       }
     }
 
     if (laborRatio > 0) {
-      const inputs = simpleInputsBySource[resourceId] ?? [];
+      const inputs = inputsOf(resourceId, true) ?? [];
       for (const input of inputs) {
         accumulate(input.resource, laborRatio * input.amount);
       }

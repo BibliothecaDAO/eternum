@@ -54,7 +54,7 @@ const arrivalRow = (arrival: ResourceArrivalInfo, nowSeconds: number): Extract<F
 /**
  * The feed is a view: transactions from the transaction store, caravans from the arrivals slice, notices from the
  * feed store. A started transfer is a row the moment its transaction is pending; its caravan is a row the moment
- * the arrival reaches RECS; the caravan row flips to arrived when its time passes.
+ * the arrival reaches native store; the caravan row flips to arrived when its time passes.
  */
 export const deriveFeedRows = ({
   transactions,

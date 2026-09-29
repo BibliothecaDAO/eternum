@@ -1,12 +1,11 @@
+import { ArrowRightLeft, ShieldAlert, Sparkles } from "@/ui/design-system/atoms/game-icons";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import Button from "@/ui/design-system/atoms/button";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
-import { getTileAt } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { getTileAt, configManager, entityMapPosition } from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import type { ID } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
-import { ArrowRightLeft, ShieldAlert, Portal } from "@/ui/design-system/atoms/game-icons";
 import { resolveSpireCrossing } from "./spire-crossing";
 
 export const SpireTravelModal = ({
@@ -19,16 +18,18 @@ export const SpireTravelModal = ({
   essenceCost: number;
 }) => {
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
   const closeSurface = usePopoverStore((state) => state.closeSurface);
-  const explorer = getComponentValue(components.ExplorerTroops, gameEntityKey([BigInt(explorerId)]));
-  const explorerLayer = explorer?.coord.alt ?? false;
-  const destination = explorer
-    ? getTileAt(components, !explorerLayer, Number(explorer.coord.x), Number(explorer.coord.y))
-    : undefined;
-  const crossing = resolveSpireCrossing(explorerLayer, destination);
-  const sideName = crossing.toEthereal ? "the Ethereal Layer" : "the surface";
+  const explorer = useNativeRow("ExplorerTroops", {
+    game_id: configManager.getActiveGameId(),
+    explorer_id: explorerId,
+  });
+  useNativeRevision(["TileOpt", "TileOccupancy"]);
+  const position = explorer ? entityMapPosition(store, explorer.game_id, explorerId) : undefined;
+  const destination = position ? getTileAt(store, !position.alt, position.x, position.y) : undefined;
+  const crossing = resolveSpireCrossing(position?.alt, destination);
+  const sideName = crossing.kind !== "unknown" && crossing.toEthereal ? "the Ethereal Layer" : "the surface";
 
   const handleTravel = () => {
     closeSurface();
@@ -36,11 +37,15 @@ export const SpireTravelModal = ({
   };
 
   return (
-    <SurfaceFrame title="Spire" icon={Portal} onClose={closeSurface} className="w-[560px]" bodyClassName="p-5">
+    <SurfaceFrame title="Spire" icon={Sparkles} onClose={closeSurface} className="w-[560px]" bodyClassName="p-5">
       <div className="flex flex-col gap-4 text-gold/90">
-        {crossing.kind === "clear" ? (
+        {crossing.kind === "unknown" ? (
+          <p className="text-sm text-gold/70">
+            This army's position is unknown here, so the crossing cannot be checked.
+          </p>
+        ) : crossing.kind === "clear" ? (
           <div className="flex items-start gap-3 rounded border border-cyan-300/25 bg-cyan-500/10 p-3">
-            <Portal className="mt-0.5 h-4 w-4 text-cyan-200" />
+            <Sparkles className="mt-0.5 h-4 w-4 text-cyan-200" />
             <div className="flex flex-col gap-1">
               <p className="text-sm font-semibold text-cyan-100">Your hex on {sideName} is clear</p>
               <p className="text-xs text-gold/70">
@@ -72,7 +77,11 @@ export const SpireTravelModal = ({
         >
           <span className="inline-flex items-center gap-2">
             <ArrowRightLeft className="h-4 w-4" />
-            {crossing.toEthereal ? "Enter the Ethereal Layer" : "Return to the surface"}
+            {crossing.kind === "unknown"
+              ? "Cross the spire"
+              : crossing.toEthereal
+                ? "Enter the Ethereal Layer"
+                : "Return to the surface"}
           </span>
         </Button>
       </div>

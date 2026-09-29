@@ -14,7 +14,8 @@ describe("resource icon pipeline", () => {
   it("matches every resource enum entry to one semantic definition", async () => {
     const manifest = await loadResourceIconManifest();
 
-    expect(manifest.resources).toHaveLength(57);
+    expect(manifest.resources).toHaveLength(58);
+    expect(manifest.resources.find(({ enumKey }) => enumKey === "SAT")).toMatchObject({ id: 58, family: "currency" });
     expect(selectResourceIcons(manifest, true).map(({ enumKey }) => enumKey)).toEqual([
       "Stone",
       "Wood",

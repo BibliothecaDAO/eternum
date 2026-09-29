@@ -36,8 +36,8 @@ describe("resolveGameRouteView", () => {
   });
 
   it("returns loading while bootstrap/account are still converging", () => {
-    expect(resolveGameRouteView({ phase: "setup_dojo", hasSetupResult: false, hasAccount: false })).toBe("loading");
-    expect(resolveGameRouteView({ phase: "setup_dojo", hasSetupResult: true, hasAccount: false })).toBe("loading");
+    expect(resolveGameRouteView({ phase: "setup_game", hasSetupResult: false, hasAccount: false })).toBe("loading");
+    expect(resolveGameRouteView({ phase: "setup_game", hasSetupResult: true, hasAccount: false })).toBe("loading");
     expect(resolveGameRouteView({ phase: "wait_worldmap_ready", hasSetupResult: false, hasAccount: true })).toBe(
       "loading",
     );

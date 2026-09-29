@@ -10,6 +10,10 @@
     "./chain-guard": {
       "types": "./chain-guard.d.ts",
       "import": "./chain-guard.js"
+    },
+    "./shard-manifest": {
+      "types": "./shard-manifest.d.ts",
+      "import": "./shard-manifest.js"
     }
   },
   "types": "./dist/index.d.ts",
@@ -20,6 +24,8 @@
   "files": [
     "chain-guard.js",
     "chain-guard.d.ts",
+    "shard-manifest.js",
+    "shard-manifest.d.ts",
     "dist/**",
     "src/**"
   ],

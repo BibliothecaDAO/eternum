@@ -14,8 +14,15 @@ const COPY: Record<BattleOutcome, { label: string; className: string }> = {
   },
 };
 
-export const OutcomeBanner = ({ outcome }: { outcome: BattleOutcome }) => {
-  const { label, className } = COPY[outcome];
+/** The battle's result, or both ends of it where the attacker's worst and best rolls land differently. */
+export const OutcomeBanner = ({ outcomes }: { outcomes: { worst: BattleOutcome; best: BattleOutcome } }) => {
+  const { label, className } =
+    outcomes.worst === outcomes.best
+      ? COPY[outcomes.worst]
+      : {
+          label: `The dice decide — ${outcomes.worst} on the worst roll, ${outcomes.best} on the best`,
+          className: COPY.Draw.className,
+        };
   return (
     <div
       className={cn(

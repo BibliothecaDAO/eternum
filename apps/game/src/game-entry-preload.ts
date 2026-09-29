@@ -1,5 +1,4 @@
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
-import { prefetchDashboardPlayAssets } from "@/ui/utils/prefetch-play-assets";
 
 type GameRouteModule = typeof import("./game-route");
 
@@ -16,30 +15,6 @@ const schedule = (cb: () => void, delayMs: number = 0): void => {
   }
 
   globalThis.setTimeout(cb, delayMs);
-};
-
-export const createPlayEntryRoutePrimer = ({
-  preloadGameRouteModule,
-}: {
-  preloadGameRouteModule: () => Promise<GameRouteModule>;
-}) => {
-  return () => {
-    schedule(() => {
-      void preloadGameRouteModule();
-    });
-  };
-};
-
-export const createDashboardPlayAssetPrimer = ({
-  prefetchDashboardPlayAssets,
-}: {
-  prefetchDashboardPlayAssets: () => void;
-}) => {
-  return () => {
-    schedule(() => {
-      prefetchDashboardPlayAssets();
-    });
-  };
 };
 
 const createWebGpuRendererModulePrimer = ({
@@ -64,27 +39,6 @@ const preloadWebGpuRendererBackendModules = async (): Promise<void> => {
 const primeWebGpuRendererModules = createWebGpuRendererModulePrimer({
   preloadWebGpuRendererModules: preloadWebGpuRendererBackendModules,
 });
-
-export const createGameEntryPrimer = ({
-  primeDashboardPlayAssets,
-  primePlayEntryRoute,
-  primeWebGpuRendererModules,
-}: {
-  primeDashboardPlayAssets: () => void;
-  primePlayEntryRoute: () => void;
-  primeWebGpuRendererModules: () => void;
-}) => {
-  return (stage: "dashboard" | "entry") => {
-    primePlayEntryRoute();
-
-    if (stage === "dashboard") {
-      primeDashboardPlayAssets();
-      return;
-    }
-
-    primeWebGpuRendererModules();
-  };
-};
 
 export const createPlayRouteEntryLoader = <Module>({
   markPrefetchScheduled,
@@ -122,22 +76,9 @@ const preloadGameRouteModule = (): Promise<GameRouteModule> => {
   return gameRoutePreloadPromise;
 };
 
-const primePlayEntryRoute = createPlayEntryRoutePrimer({
-  preloadGameRouteModule,
-});
-
-const primeDashboardPlayAssets = createDashboardPlayAssetPrimer({
-  prefetchDashboardPlayAssets,
-});
-
-export const primeGameEntry = createGameEntryPrimer({
-  primeDashboardPlayAssets,
-  primePlayEntryRoute,
-  primeWebGpuRendererModules,
-});
-
+/** The game's module graph and renderer load only once a player enters a game, never from the shell. */
 export const loadGameRouteForPlayEntry = createPlayRouteEntryLoader({
   markPrefetchScheduled: () => markGameEntryMilestone("asset-prefetch-scheduled"),
   preloadGameRouteModule,
-  primeEntry: () => primeGameEntry("entry"),
+  primeEntry: primeWebGpuRendererModules,
 });

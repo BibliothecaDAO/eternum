@@ -1,3 +1,4 @@
+import { worldOrigin } from "../world-origin";
 import type { TerrainFogMask } from "./terrain-fog-mask";
 import type { PreparedTerrainPage, TerrainPageRequest, TerrainShroudInstance } from "./terrain-types";
 
@@ -41,7 +42,8 @@ export class TerrainPageWorkerClient {
     this.nextId += 1;
     return new Promise((resolve, reject) => {
       this.pending.set(id, { reject, resolve });
-      this.worker.postMessage({ id, kind: "terrain-page", request });
+      // The worker's module has its own origin; a page is built around the caller's.
+      this.worker.postMessage({ id, kind: "terrain-page", origin: worldOrigin(), request });
     });
   }
 

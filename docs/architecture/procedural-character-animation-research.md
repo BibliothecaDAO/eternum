@@ -105,7 +105,7 @@ sculpt, modular equipment system, texture stack, or TSL material family describe
 
 ```mermaid
 flowchart TD
-    A[RECS authoritative unit and upgrade facts] --> B[CharacterRecipeCompiler]
+    A[native store authoritative unit and upgrade facts] --> B[CharacterRecipeCompiler]
     C[Stable entity seed + recipe schema version] --> B
     B --> D[ResolvedCharacterRecipe]
     D --> E[Prototype and material caches]
@@ -304,8 +304,8 @@ knees.
 
 Keep root motion owned by Eternum's existing world-position and spline-movement path. The pose pipeline consumes
 distance, velocity, direction, and terrain samples to animate in place; it does not advance the gameplay root. This
-avoids a second movement simulation disagreeing with RECS. Physics gains temporary root authority only after promotion
-to a presentation-only ragdoll, and that result never feeds back into gameplay state.
+avoids a second movement simulation disagreeing with native store. Physics gains temporary root authority only after
+promotion to a presentation-only ragdoll, and that result never feeds back into gameplay state.
 
 Use Three's CCD solver in the gym to validate bone names, targets, limits, and visual direction quickly. For production
 humanoid legs, prefer a small analytic two-bone solver if measurement shows CCD iterations are a meaningful cost or hard
@@ -742,10 +742,10 @@ Keep two determinism goals separate:
    [JoltPhysics.js build options](https://github.com/jrouwe/JoltPhysics.js/)
 
 The normal package is sufficient when the onchain state transition is authoritative and ragdoll outcome is presentation.
-A battle event may enrich the reaction with an impact point and impulse, but the durable RECS result must remain
+A battle event may enrich the reaction with an impact point and impulse, but the durable native store result must remain
 sufficient: tier changes compile the final upgraded recipe, and defeat/removal can trigger a deterministic fallback
 death reaction from the last visible pose if the event stream is unavailable. Never feed a limb landing position back
-into RECS/gameplay unless the entire simulation becomes an explicitly specified gameplay system. For the current
+into native store/gameplay unless the entire simulation becomes an explicitly specified gameplay system. For the current
 cosmetic use case, deterministic scenario inputs and invariant-based outcomes are a better regression contract than
 byte-identical final corpse transforms.
 
@@ -980,10 +980,10 @@ Picking and disposal may be additional narrow methods because production already
 resource teardown. The crowd and articulated renderers are real internal adapters at the representation seam; they are
 not exposed to `ArmyManager`.
 
-No manager should fetch live state. The worldmap adapter reads RECS facts and submits a presentation snapshot. The gym
-adapter builds the same snapshot from controls/scenarios. Appearance caches own GPU resources; articulated instances own
-skeleton/pose state; the physics world owns body/joint handles; the representation controller alone moves an entity
-between them.
+No manager should fetch live state. The worldmap adapter reads native store facts and submits a presentation snapshot.
+The gym adapter builds the same snapshot from controls/scenarios. Appearance caches own GPU resources; articulated
+instances own skeleton/pose state; the physics world owns body/joint handles; the representation controller alone moves
+an entity between them.
 
 ### Delivery phases and proof gates
 
@@ -1068,9 +1068,9 @@ matrices. Mount behavior has its own measured budget and no ambiguous rider-vs-m
 
 #### Phase 6 — production adapter, migration, and deletion
 
-- Add one worldmap adapter from RECS-backed army facts to the character presentation snapshot; route no other live-state
-  reads into the subsystem. Tier/category/cosmetic changes reconcile from state. Battle events may supply richer
-  impulses, while defeat/removal supplies the dead-stream fallback.
+- Add one worldmap adapter from native-store army facts to the character presentation snapshot; route no other
+  live-state reads into the subsystem. Tier/category/cosmetic changes reconcile from state. Battle events may supply
+  richer impulses, while defeat/removal supplies the dead-stream fallback.
 - Integrate one archetype behind a developer-only selector, then migrate in the order Knight → Crossbowman → Paladin
   after live camera, movement, ownership color, cosmetics, selection, fast pan/zoom, battle effects, and teardown
   evidence.
@@ -1095,7 +1095,7 @@ the authoritative game fact; the old path and its bespoke workarounds are delete
 | Shoulder/hip hard limits                       | Jolt swing-twist hard cone/twist limits                                                            | Tune profiles in the gym; add motors only after passive anatomy passes                             |
 | Active ragdoll/get-up in MVP                   | No                                                                                                 | Passive death/impact first; motors/recovery after joint proof                                      |
 | Cloth, hair, wings                             | Render bones, spring-style secondary motion, or shader motion                                      | No soft-body simulation in first system                                                            |
-| Ragdoll affects gameplay truth                 | No                                                                                                 | RECS result is sufficient; an event may enrich the reaction; physics stays cosmetic                |
+| Ragdoll affects gameplay truth                 | No                                                                                                 | native store result is sufficient; an event may enrich the reaction; physics stays cosmetic        |
 | Arbitrary procedural combinations              | No                                                                                                 | Bounded, art-reviewed recipes and topology signatures                                              |
 | Worker/off-main-thread physics                 | Not initially                                                                                      | Instrument main-thread direct WASM; move only if profiler convicts it                              |
 | Exact animated crowd bounds                    | No                                                                                                 | Conservative per-signature bounds; exact CPU bounds only for debug/hero if needed                  |

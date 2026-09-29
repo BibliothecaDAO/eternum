@@ -309,8 +309,8 @@ uses), a duplicate `Chain` in `config/source/common/types.ts:1`, and `NetworkTyp
 all `"sepolia" | "mainnet" | "local" | "appchain"`. After this step there is one: `GameChain = "madara" | "appchain"` in
 `packages/chain`, and the three copies are deleted with every consumer importing it. `local` is not deleted and
 re-added: it is **renamed** to `madara` with its semantics fixed — the RPC comes from `VITE_PUBLIC_NODE_URL`, never a
-hardcoded `http://localhost:5050`; the chain id is `WP_REALMS_MADARA_LAB`. Every site that switches on the kind changes
-in the same commit:
+hardcoded `http://localhost:5050`; the chain id is the shard manifest's chain id. Every site that switches on the kind
+changes in the same commit:
 
 - Client: `env.ts:59` (enum + default `madara`), `runtime/world/store.ts:20` (`CHAIN_VALUES`),
   `hooks/context/starknet-chain-config.ts` (`chainKind` union; the `KATANA_*` constants and the Cartridge RPC builders

@@ -2,6 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { FELT_CENTER } from "@/ui/config";
 import { BaseThreeTooltip, Position } from "@/ui/design-system/molecules/base-three-tooltip";
 import {
+  configManager,
   ActionPath,
   ActionPaths,
   ActionType,
@@ -10,26 +11,25 @@ import {
   getBalance,
   getBlockTimestamp,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { memo, useCallback, useMemo } from "react";
 
 import { TooltipContent, type ActionFoodCosts } from "./tooltip-content";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 export const ActionInfo = memo(() => {
   const hoveredHex = useUIStore(useCallback((state) => state.entityActions.hoveredHex, []));
   const selectedEntityId = useUIStore(useCallback((state) => state.entityActions.selectedEntityId, []));
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
 
-  const selectedEntityTroops = useMemo(() => {
-    if (!selectedEntityId) return undefined;
-    return getComponentValue(components.ExplorerTroops, gameEntityKey([BigInt(selectedEntityId)]));
-  }, [components.ExplorerTroops, selectedEntityId]);
+  useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight"]);
+  const selectedEntityTroops = useNativeRow(
+    "ExplorerTroops",
+    selectedEntityId === null ? undefined : { game_id: configManager.getActiveGameId(), explorer_id: selectedEntityId },
+  );
 
   const actionPath = useMemo<ActionPath[] | undefined>(() => {
     if (!hoveredHex) return undefined;
@@ -73,7 +73,7 @@ export const ActionInfo = memo(() => {
         costsPerStep={costs}
         selectedEntityId={selectedEntityId}
         structureEntityId={selectedEntityTroops?.owner || 0}
-        getBalance={(entityId, resourceId) => getBalance(entityId, resourceId, currentDefaultTick, components)}
+        getBalance={(entityId, resourceId) => getBalance(entityId, resourceId, currentDefaultTick, store)}
       />
     </BaseThreeTooltip>
   );

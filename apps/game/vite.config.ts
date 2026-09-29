@@ -10,9 +10,27 @@ import { VitePWA } from "vite-plugin-pwa";
 import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
 import { resolveRendererViteAliases } from "./src/three/renderer-vite-config";
-import { clientDataPlugin } from "./build/client-data";
 import { PWA_PRECACHE_BUDGET_BYTES, PWA_PRECACHE_FILES } from "./build/pwa-assets.mjs";
 import { createPwaReleasePlugin } from "./build/pwa-release";
+
+/**
+ * The identity RPC is the team's keyed mainnet URL and is never committed: a build without it would ship a public,
+ * rate-limited node that fails sign-in under load. Checked once Vite has resolved its env, so the dev server and the
+ * build fail at once, by name; tools that only read this file for its settings (knip) are not stopped by it.
+ */
+const requireIdentityRpcUrl = (): PluginOption => ({
+  name: "require-identity-rpc-url",
+  configResolved(config) {
+    if (!config.env.VITE_PUBLIC_IDENTITY_RPC_URL?.trim()) {
+      throw new Error(
+        "VITE_PUBLIC_IDENTITY_RPC_URL is required: the team's Alchemy mainnet URL, from .env.local or the CLIENT_IDENTITY_RPC_URL secret",
+      );
+    }
+  },
+});
+
+/** The isolated box stack's app and its identity Worker, which every development build signs in against. */
+const STAGING_ORIGIN = "https://staging.realms.party";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
@@ -33,7 +51,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     process.env.VITE_PUBLIC_GAME_VERSION ||
     undefined;
 
-  const plugins = [clientDataPlugin(), svgr({ dimensions: false, svgo: false, typescript: true }), react()];
+  const plugins = [requireIdentityRpcUrl(), svgr({ dimensions: false, svgo: false, typescript: true }), react()];
 
   if (shouldUseMkcert(isServe)) {
     plugins.unshift(mkcert() as any);
@@ -75,11 +93,10 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
           id: "/",
           name: "Realms",
           short_name: "Realms",
-          description: "Glory awaits for those who rule the Hex",
+          description: "Fully onchain strategy: Frontier expeditions and Blitz battles",
           theme_color: "#F6C297",
           background_color: "#F6C297",
           display: "standalone",
-          orientation: "landscape",
           scope: "/",
           start_url: "/",
           icons: [
@@ -121,12 +138,21 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
 
   return {
     plugins: plugins as unknown as PluginOption[],
-    // The lab fronts the dev server with Caddy on https://play.realms.test (deploy/madara-lab/Caddyfile):
-    // listen beyond loopback so the container reaches us. Let HMR follow the browser URL
+    // Listen beyond loopback for a local TLS proxy. Let HMR follow the browser URL
     // so both the TLS proxy and direct localhost ports work.
     server: {
       host: true,
       allowedHosts: ["play.realms.test"],
+      // Identity is served under this app's own /api. In dev that is the staging Worker, reached through the dev
+      // server so the browser still sees one origin; the Origin header is rewritten because the Worker trusts only its own.
+      proxy: {
+        "/api": {
+          target: STAGING_ORIGIN,
+          changeOrigin: true,
+          headers: { origin: STAGING_ORIGIN },
+          cookieDomainRewrite: "",
+        },
+      },
     },
     resolve: {
       dedupe: ["three"],
@@ -151,17 +177,6 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
         {
           find: "@config-deployer",
           replacement: path.resolve(__dirname, "../../config/deployer"),
-        },
-        {
-          find: "@contracts",
-          replacement: path.resolve(__dirname, "../../contracts/utils/utils"),
-        },
-        // The client is appchain-only: the legacy world manifests (~1.8 MB of
-        // JSON) must not ship in the bundle. getGameManifest's legacy arms are
-        // unreachable here; they resolve to an empty stub.
-        {
-          find: /^.*manifest_(mainnet|sepolia|local)\.json$/,
-          replacement: path.resolve(__dirname, "./src/runtime/empty-manifest.json"),
         },
         {
           find: "@pm",
@@ -197,32 +212,23 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
             react: "React",
             "react-dom": "ReactDOM",
           },
-          manualChunks: {
-            // Three.js ecosystem - Separate chunk for 3D graphics
-            three: ["three/webgpu"],
-
-            // Blockchain/Dojo ecosystem - Separate chunk for crypto functionality
-            blockchain: [
-              "@bibliothecadao/dojo",
-              "@bibliothecadao/eternum",
-              "@bibliothecadao/provider",
-              "@bibliothecadao/types",
-              "@dojoengine/core",
-              "@dojoengine/state",
-              "starknet",
-            ],
-
-            // React ecosystem - Core framework chunk
-            "react-vendor": ["react", "react-dom", "react-beautiful-dnd", "react-draggable"],
-
-            // UI & Animation libraries
-            "ui-libs": ["gsap", "lil-gui", "@tanstack/react-query", "zustand"],
-
-            // Utilities & Misc
-            utils: ["lodash", "uuid", "platform", "buffer", "wouter"],
-
-            // Communication & External APIs
-            external: ["graphql-request"],
+          // The shell's cold load must carry only its own modules. Vendor groups name only the library modules
+          // themselves (never their dependents or Vite's helpers), so no shell import drags a game library along;
+          // everything else splits by usage at the lazy route boundaries.
+          manualChunks: (id) => {
+            // Vite's preload helper is used by every chunk; pin it beside React so the shell never imports it from a
+            // game library chunk.
+            if (id.includes("vite/preload-helper")) return "react-vendor";
+            if (!id.includes("node_modules")) return undefined;
+            if (/node_modules\/three\//.test(id)) return "three";
+            if (/node_modules\/(starknet|@cartridge|@starknet-react|@scure|@noble)\//.test(id)) return "blockchain";
+            if (
+              /node_modules\/(react|react-dom|react-router|react-router-dom|@tanstack\/react-query|zustand|scheduler)\//.test(
+                id,
+              )
+            )
+              return "react-vendor";
+            return undefined;
           },
           inlineDynamicImports: false,
           sourcemapIgnoreList: (relativeSourcePath) => {

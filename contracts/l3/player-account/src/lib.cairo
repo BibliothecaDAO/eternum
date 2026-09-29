@@ -1,5 +1,4 @@
-pub mod player_account;
-pub mod player_registry;
+pub mod realms_account;
 
 #[cfg(test)]
-mod tests;
+mod realms_account_tests;

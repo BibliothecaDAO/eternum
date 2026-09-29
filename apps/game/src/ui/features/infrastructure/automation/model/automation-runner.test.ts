@@ -9,7 +9,7 @@ import {
   isSignerTransientError,
   type ExecutableProductionPlan,
 } from "./automation-runner";
-import type { RealmProductionPlan } from "./automation-processor";
+import type { RealmProductionPlan } from "@bibliothecadao/eternum/automation";
 import type { RealmAutomationConfig } from "@/hooks/store/use-automation-store";
 import type { ExecuteRealmProductionPlanProps } from "@bibliothecadao/types";
 

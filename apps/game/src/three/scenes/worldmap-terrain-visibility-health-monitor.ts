@@ -7,7 +7,7 @@ export type WorldmapTerrainRecoveryReason = "offscreen_chunk" | "terrain_self_he
 
 export interface WorldmapTerrainVisibilityHealthMonitorDeps {
   isBoxVisible: (box: Box3) => boolean;
-  getVisibleCellCount: () => number;
+  getPresentedCellCount: () => number;
   requestChunkRefresh: (force: boolean, reason: WorldmapTerrainRecoveryReason) => number;
   waitForRequestedChunkRefresh: (token: number) => Promise<unknown>;
   emitTelemetry: (event: string, payload: Record<string, unknown>) => void;
@@ -163,7 +163,7 @@ export class WorldmapTerrainVisibilityHealthMonitor {
   }
 
   private evaluateRetainedTerrain(currentChunk: string): void {
-    const totalTerrainInstances = this.deps.getVisibleCellCount();
+    const totalTerrainInstances = this.deps.getPresentedCellCount();
 
     if (this.terrainReferenceChunkKey !== currentChunk) {
       this.terrainReferenceChunkKey = currentChunk;

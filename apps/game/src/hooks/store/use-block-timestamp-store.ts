@@ -7,8 +7,6 @@ interface BlockTimestampState {
   currentDefaultTick: number;
   currentArmiesTick: number;
   armiesTickTimeRemaining: number;
-  /** Wall-clock milliseconds at the last tick: the one clock every countdown and elapsed-time label reads. */
-  nowMs: number;
   tick: () => void;
 }
 
@@ -17,20 +15,31 @@ const computeTimestampState = (): Omit<BlockTimestampState, "tick"> => {
 
   const tickConfigArmies = configManager.getTick(TickIds.Armies);
   const armiesTickDuration = Number(tickConfigArmies);
-  const safeArmiesTickDuration = Number.isFinite(armiesTickDuration) && armiesTickDuration > 0 ? armiesTickDuration : 1;
-  const timePassedInCurrentTick = currentBlockTimestamp % safeArmiesTickDuration;
-  const armiesTickTimeRemaining = safeArmiesTickDuration - timePassedInCurrentTick;
+  if (!Number.isFinite(armiesTickDuration) || armiesTickDuration <= 0) throw new Error("Invalid army tick duration");
+  const timePassedInCurrentTick = currentBlockTimestamp % armiesTickDuration;
+  const armiesTickTimeRemaining = armiesTickDuration - timePassedInCurrentTick;
 
   return {
     currentBlockTimestamp,
     currentDefaultTick,
     currentArmiesTick,
     armiesTickTimeRemaining,
-    nowMs: Date.now(),
   };
 };
 
 export const useBlockTimestampStore = create<BlockTimestampState>((set) => ({
-  ...computeTimestampState(),
+  // Imports precede the game snapshot. Read configuration only when a game consumer requests a tick.
+  get currentBlockTimestamp() {
+    return getBlockTimestamp().currentBlockTimestamp;
+  },
+  get currentDefaultTick() {
+    return computeTimestampState().currentDefaultTick;
+  },
+  get currentArmiesTick() {
+    return computeTimestampState().currentArmiesTick;
+  },
+  get armiesTickTimeRemaining() {
+    return computeTimestampState().armiesTickTimeRemaining;
+  },
   tick: () => set(computeTimestampState()),
 }));

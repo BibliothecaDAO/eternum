@@ -1,7 +1,5 @@
 import { configManager } from "@bibliothecadao/eternum";
-import { GuardSlot, StructureType } from "@bibliothecadao/types";
-
-const GUARD_SLOT_ORDER: GuardSlot[] = [GuardSlot.Delta, GuardSlot.Charlie, GuardSlot.Bravo, GuardSlot.Alpha];
+import { GUARD_SLOT_ORDER, StructureType } from "@bibliothecadao/types";
 
 export const MAX_GUARD_SLOT_COUNT = GUARD_SLOT_ORDER.length;
 
@@ -13,19 +11,19 @@ export const getStructureDefenseSlotLimit = (
     return null;
   }
 
-  const config = configManager.getWorldStructureDefenseSlotsConfig() as Partial<Record<StructureType, number>>;
+  const config = configManager.getWorldStructureDefenseSlotsConfig();
   const level = levelRaw !== null && levelRaw !== undefined ? Number(levelRaw) : undefined;
 
   switch (category) {
-    case StructureType.FragmentMine:
+    case StructureType.Mine:
     case StructureType.Hyperstructure:
     case StructureType.Bank:
     case StructureType.Camp:
     case StructureType.BitcoinMine:
-      return config[category] ?? 0;
+      return config[category];
     case StructureType.Village:
     case StructureType.Realm:
-      return typeof level === "number" && Number.isFinite(level) ? level + 1 : 0;
+      return typeof level === "number" && Number.isFinite(level) ? level + 1 : null;
     default:
       return 0;
   }

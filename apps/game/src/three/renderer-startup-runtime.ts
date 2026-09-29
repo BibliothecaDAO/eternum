@@ -53,6 +53,8 @@ function mountRendererSurface(input: {
   }
 
   input.rendererDomElement.id = "main-canvas";
+  // The map shakes with the HUD in a moment's screen shake.
+  input.rendererDomElement.dataset.screenShake = "";
   input.document.body.appendChild(input.rendererDomElement);
 }
 

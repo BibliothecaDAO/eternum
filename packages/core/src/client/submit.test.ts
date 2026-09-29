@@ -26,7 +26,7 @@ describe("gameplay account submits", () => {
     });
 
     const burst = Array.from({ length: 20 }, () =>
-      executeGameplayAccountTransaction({ account, calls: CALL, chain: "madara" }),
+      executeGameplayAccountTransaction({ account, calls: CALL, chainId: "0x1" }),
     );
     await vi.waitFor(() => expect(account.execute).toHaveBeenCalledTimes(20));
     expect(maximumActive).toBe(20);
@@ -62,7 +62,7 @@ describe("gameplay account submits", () => {
     });
 
     const burst = Array.from({ length: 10 }, () =>
-      executeGameplayAccountTransaction({ account, calls: CALL, chain: "madara" }),
+      executeGameplayAccountTransaction({ account, calls: CALL, chainId: "0x1" }),
     );
     await endOfMacrotask();
 
@@ -85,10 +85,10 @@ describe("gameplay account submits", () => {
       return { transaction_hash: "0x2" };
     });
 
-    await expect(executeGameplayAccountTransaction({ account, calls: CALL, chain: "madara" })).resolves.toEqual({
+    await expect(executeGameplayAccountTransaction({ account, calls: CALL, chainId: "0x1" })).resolves.toEqual({
       transaction_hash: "0x2",
     });
-    await expect(executeGameplayAccountTransaction({ account, calls: CALL, chain: "madara" })).resolves.toEqual({
+    await expect(executeGameplayAccountTransaction({ account, calls: CALL, chainId: "0x1" })).resolves.toEqual({
       transaction_hash: "0x2",
     });
     expect(account.getNonce).toHaveBeenCalledTimes(2);
@@ -102,10 +102,10 @@ describe("gameplay account submits", () => {
       return { transaction_hash: "0x5" };
     });
 
-    await expect(executeGameplayAccountTransaction({ account, calls: CALL, chain: "madara" })).rejects.toThrow(
+    await expect(executeGameplayAccountTransaction({ account, calls: CALL, chainId: "0x1" })).rejects.toThrow(
       "RPC unreachable",
     );
-    await expect(executeGameplayAccountTransaction({ account, calls: CALL, chain: "madara" })).resolves.toEqual({
+    await expect(executeGameplayAccountTransaction({ account, calls: CALL, chainId: "0x1" })).resolves.toEqual({
       transaction_hash: "0x5",
     });
     expect(account.getNonce).toHaveBeenCalledTimes(2);
@@ -116,7 +116,7 @@ describe("gameplay account submits", () => {
   it("installs the same submit policy on generated-system account calls", async () => {
     const account = createAccount("0x123", ["0x9"], async () => ({ transaction_hash: "0x3" }));
     const rawExecute = account.execute;
-    const configured = configureGameplayAccountSubmits(account as unknown as AccountInterface, "madara");
+    const configured = configureGameplayAccountSubmits(account as unknown as AccountInterface, "0x1");
 
     await expect(configured.execute(CALL)).resolves.toEqual({ transaction_hash: "0x3" });
     expect(rawExecute).toHaveBeenCalledWith(
@@ -127,35 +127,11 @@ describe("gameplay account submits", () => {
 
   it("rejects reusing a configured account on another chain", () => {
     const account = createAccount("0x456", ["0x1"], async () => ({ transaction_hash: "0x4" }));
-    configureGameplayAccountSubmits(account as unknown as AccountInterface, "madara");
+    configureGameplayAccountSubmits(account as unknown as AccountInterface, "0x1");
 
-    expect(() => configureGameplayAccountSubmits(account as unknown as AccountInterface, "appchain")).toThrow(
-      "configured for madara, not appchain",
+    expect(() => configureGameplayAccountSubmits(account as unknown as AccountInterface, "0x2")).toThrow(
+      "configured for 0x1, not 0x2",
     );
-  });
-
-  it("recovers the signer once on an invalid signature and retries the same calls", async () => {
-    const account = createAccount("0x654", ["0x2", "0x3"], async () => ({ transaction_hash: "0x6" }));
-    const rawExecute = account.execute.mockRejectedValueOnce(invalidSignature());
-    const recoverSigner = vi.fn().mockResolvedValue(true);
-    const configured = configureGameplayAccountSubmits(account as unknown as AccountInterface, "madara", recoverSigner);
-
-    await expect(configured.execute(CALL)).resolves.toEqual({ transaction_hash: "0x6" });
-    expect(recoverSigner).toHaveBeenCalledOnce();
-    expect(rawExecute.mock.calls.map(([calls]) => calls)).toEqual([CALL, CALL]);
-  });
-
-  it("does not retry an invalid signature the recovery could not fix", async () => {
-    const account = createAccount("0x655", ["0x2"], async () => {
-      throw invalidSignature();
-    });
-    const rawExecute = account.execute;
-    const recoverSigner = vi.fn().mockResolvedValue(false);
-    const configured = configureGameplayAccountSubmits(account as unknown as AccountInterface, "madara", recoverSigner);
-
-    await expect(configured.execute(CALL)).rejects.toThrow("Validate failure");
-    expect(recoverSigner).toHaveBeenCalledOnce();
-    expect(rawExecute).toHaveBeenCalledOnce();
   });
 });
 
@@ -174,9 +150,6 @@ function createAccount(
     }),
   };
 }
-
-const invalidSignature = () =>
-  Object.assign(new Error("Validate failure"), { code: 55, data: { error: "Account: invalid signature" } });
 
 /** Flushes every pending microtask without firing a faked timer. */
 function endOfMacrotask(): Promise<void> {

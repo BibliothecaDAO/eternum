@@ -1,6 +1,6 @@
 import type { Config as EternumConfig } from "@bibliothecadao/types";
 
-export const buildNeutralBiomeClimateConfig = () => ({
+const buildNeutralBiomeClimateConfig = () => ({
   elevationScaleBps: 10_000,
   moistureScaleBps: 10_000,
   elevationBiasBps: 10_000,

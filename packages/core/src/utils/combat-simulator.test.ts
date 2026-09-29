@@ -126,35 +126,35 @@ describe("CombatSimulator Combat v3 context", () => {
   });
 });
 
-describe("ethereal preview", () => {
-  it("assumes +10% outgoing damage independently for both sides", () => {
+describe("combat dice", () => {
+  it("adds each side's d20 roll as a percentage of its damage", () => {
     const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
     const attacker = baseArmy(TroopType.Knight);
     const defender = baseArmy(TroopType.Paladin);
-    const surface = simulator.simulateBattle(0, attacker, defender, BiomeType.Taiga);
-    const ethereal = simulator.simulateBattle(0, attacker, defender, BiomeType.Underground, [], [], {
-      defenderAlt: true,
+    const unrolled = simulator.simulateBattle(0, attacker, defender, BiomeType.Taiga);
+    const rolled = simulator.simulateBattle(0, attacker, defender, BiomeType.Taiga, [], [], {
+      attackerRoll: 20,
+      defenderRoll: 5,
     });
-    expect(ethereal.attackerDamage).toBeCloseTo(surface.attackerDamage * 1.1);
-    expect(ethereal.defenderDamage).toBeCloseTo(surface.defenderDamage * 1.1);
-    const intoSurface = simulator.simulateBattle(0, attacker, defender, BiomeType.Underground, [], [], {
-      defenderBiome: BiomeType.Taiga,
-    });
-    expect(intoSurface.attackerDamage).toBeCloseTo(surface.attackerDamage);
-    expect(intoSurface.defenderDamage).toBeCloseTo(surface.defenderDamage);
+    expect(rolled.attackerDamage).toBeCloseTo(unrolled.attackerDamage * 1.2);
+    expect(rolled.defenderDamage).toBeCloseTo(unrolled.defenderDamage * 1.05);
   });
-});
 
-it("keys ethereal preview dice on the defender layer, independently of the biome", () => {
-  const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
-  const attacker = baseArmy(TroopType.Knight);
-  const defender = baseArmy(TroopType.Paladin);
-  const surface = simulator.simulateBattle(0, attacker, defender, BiomeType.Underground, [], [], {
-    defenderAlt: false,
+  it("runs a dice battle from the attacker's worst roll to its best, and collapses to one outcome without dice", () => {
+    const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
+    const attacker = baseArmy(TroopType.Knight);
+    const defender = baseArmy(TroopType.Paladin);
+    const unrolled = simulator.simulateBattle(0, attacker, defender, BiomeType.Taiga);
+    const range = simulator.simulateBattleRange(0, attacker, defender, BiomeType.Taiga, [], [], {}, true);
+    expect(range.worst.attackerDamage).toBeCloseTo(unrolled.attackerDamage * 1.01);
+    expect(range.worst.defenderDamage).toBeCloseTo(unrolled.defenderDamage * 1.2);
+    expect(range.best.attackerDamage).toBeCloseTo(unrolled.attackerDamage * 1.2);
+    expect(range.best.defenderDamage).toBeCloseTo(unrolled.defenderDamage * 1.01);
+
+    const plain = simulator.simulateBattleRange(0, attacker, defender, BiomeType.Taiga, [], [], {}, false);
+    expect(plain.worst).toEqual(unrolled);
+    expect(plain.best).toEqual(unrolled);
   });
-  const alternate = simulator.simulateBattle(0, attacker, defender, BiomeType.Grassland, [], [], { defenderAlt: true });
-  expect(alternate.attackerDamage).toBeCloseTo(surface.attackerDamage * 1.1);
-  expect(alternate.defenderDamage).toBeCloseTo(surface.defenderDamage * 1.1);
 });
 
 it("keeps ethereal terrain neutral even when the caller supplies a surface biome", () => {
@@ -177,8 +177,8 @@ it("keeps ethereal terrain neutral even when the caller supplies a surface biome
       [],
       { defenderAlt: true },
     );
-    expect(ethereal.attackerDamage).toBeCloseTo((surface.attackerDamage / 1.5) * 1.1);
-    expect(ethereal.defenderDamage).toBeCloseTo((surface.defenderDamage / 1.5) * 1.1);
+    expect(ethereal.attackerDamage).toBeCloseTo(surface.attackerDamage / 1.5);
+    expect(ethereal.defenderDamage).toBeCloseTo(surface.defenderDamage / 1.5);
   } finally {
     bonus.mockReturnValue(1);
   }

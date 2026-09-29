@@ -10,7 +10,7 @@ activity over specified time periods.
 ### Features
 
 - **Contributor Statistics**: Shows active contributors and their commit counts
-- **Package Activity**: Breaks down changes by package (client, core, dojo, etc.)
+- **Package Activity**: Breaks down changes by package (client, core, provider, etc.)
 - **Notable Changes**: Highlights feature additions and major updates
 - **File Activity**: Lists most frequently modified files
 - **Repository Health**: Tracks test and documentation updates

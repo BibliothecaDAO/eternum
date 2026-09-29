@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { TerrainField } from "./terrain-field";
 import { TERRAIN_PROP_ARCHETYPE_IDS, type TerrainPropArchetypeId } from "./terrain-prop-catalog";
-import { TERRAIN_PROP_PAGE_SLOT_CAPACITY } from "./terrain-prop-pools";
+import { TERRAIN_PROP_PAGE_SLOT_CAPACITY } from "./terrain-prop-catalog";
 import { prepareTerrainPropInstances } from "./terrain-props";
 import type { TerrainPageRequest } from "./terrain-types";
 import { createTerrainBenchmarkFixture } from "./verification/terrain-benchmark-fixture";
@@ -61,19 +61,47 @@ describe("terrain prop page slot capacity", () => {
       expect(densest, `${archetype} slot headroom`).toBeGreaterThanOrEqual(capacity * 0.4);
     }
   }, 60_000);
+
+  it("keeps every prop kind within its slot on a page denser than any measured, for every biome", () => {
+    // The realm view draws its whole board as one page, larger than a world page: nine pages of one biome in one.
+    const [elevationSeed, moistureSeed] = CAPACITY_CLIMATE_SEEDS[0];
+    const climate = {
+      ...createTerrainBenchmarkFixture().climate,
+      elevation_seed: elevationSeed,
+      moisture_seed: moistureSeed,
+    };
+    const capped = new Set<TerrainPropArchetypeId>();
+    for (const biome of Object.values(BiomeType)) {
+      if (biome === BiomeType.None) continue;
+      for (const request of pageRequests(homogeneousBlockCells(biome), climate, PAGE_SIZE * 3)) {
+        const placed = new Map<TerrainPropArchetypeId, number>();
+        for (const { archetype } of prepareTerrainPropInstances(request, new TerrainField(request))) {
+          placed.set(archetype, (placed.get(archetype) ?? 0) + 1);
+        }
+        placed.forEach((count, archetype) => {
+          expect(count, `${biome} ${archetype}`).toBeLessThanOrEqual(TERRAIN_PROP_PAGE_SLOT_CAPACITY[archetype]);
+          if (count === TERRAIN_PROP_PAGE_SLOT_CAPACITY[archetype]) capped.add(archetype);
+        });
+      }
+    }
+    // The generator's cap, not the measurement, is what bounds these pages.
+    expect(capped.size).toBeGreaterThan(0);
+  }, 60_000);
 });
 
 function pageRequests(
   cells: ReadonlyArray<{ biomeKey: string; col: number; occupied: boolean; row: number }>,
   climate: ReturnType<typeof createTerrainBenchmarkFixture>["climate"],
+  pageSize = PAGE_SIZE,
 ): TerrainPageRequest[] {
   return buildWorldmapTerrainPageRequests({
     cells,
     climate,
     mapCenter: 0,
-    pageHeight: PAGE_SIZE,
-    pageOrigin: PAGE_ORIGIN,
-    pageWidth: PAGE_SIZE,
+    pageHeight: pageSize,
+    pageOrigin:
+      pageSize === PAGE_SIZE ? PAGE_ORIGIN : { col: PAGE_ORIGIN.col - PAGE_SIZE, row: PAGE_ORIGIN.row - PAGE_SIZE },
+    pageWidth: pageSize,
     subdivisions: 2,
   });
 }

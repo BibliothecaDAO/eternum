@@ -80,7 +80,7 @@ function applyStructureMaterialOverrides(material: MeshStandardMaterial, modelNa
     }
   }
 
-  if (modelName.includes("FragmentMine") && material.emissiveIntensity > 1) {
+  if (modelName === "Mine" && material.emissiveIntensity > 1) {
     material.emissiveIntensity = 15;
   }
 }
@@ -164,7 +164,7 @@ export default class InstancedModel {
           material = material.clone();
         }
         applyStructureMaterialOverrides(material, name);
-        if (name === StructureType[StructureType.FragmentMine] && child.material.name.includes("crystal")) {
+        if (name === StructureType[StructureType.Mine] && child.material.name.includes("crystal")) {
           material = new MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
         }
         material = InstancedModel.materialPool.getStandardMaterial(material);
@@ -179,7 +179,7 @@ export default class InstancedModel {
         if (gltf.animations.length > 0) {
           if (
             gltf.animations[0].tracks.find((track: any) => track.name.split(".")[0] === child.name) &&
-            name !== StructureType[StructureType.FragmentMine] &&
+            name !== StructureType[StructureType.Mine] &&
             name !== "wonder"
           ) {
             tmp.animated = true;

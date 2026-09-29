@@ -298,6 +298,9 @@ export class AudioManager {
       source.loop = options.loop ?? asset.loop;
     }
 
+    // Set on every play: a pooled node keeps whatever pitch its last play had.
+    source.detune.value = options.detuneCents ?? 0;
+
     const categoryGain = this.categoryGainNodes.get(asset.category);
     if (!categoryGain) {
       throw new Error(`Missing gain node for category ${asset.category}`);

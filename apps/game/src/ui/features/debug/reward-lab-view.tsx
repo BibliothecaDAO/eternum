@@ -10,6 +10,47 @@ import {
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { CHEST_PALETTES, type ChestPalette } from "@/three/debug/reward-lab-presentation";
 import "./reward-lab.css";
+import { ChestModelPath, RiftModelPath } from "@/three/constants/scene-constants";
+import { beginChestOpening, readChestBeat, resolveChestOpening } from "@/ui/features/frontier/chest/chest-moment";
+import { ChestMomentView } from "@/ui/features/frontier/chest/chest-moment-view";
+import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
+import { MotionLayer } from "@/ui/motion/motion-layer";
+import { INTENSITY_LABEL, type Intensity } from "@/ui/motion/motion-scale";
+import { type ChestVariant, chestResultFixture } from "./motion-lab/chest-fixtures";
+import { useChestPhaseLog } from "./motion-lab/chest-lab";
+
+/** Herald's pre-confirmed result, simulated. */
+const FRONTIER_RESULT_AFTER_MS = 300;
+let frontierOpenings = 0;
+
+/** A Frontier chest moment on the C2 study: the world's beats with the real overlay, from fixture rows. */
+const FrontierOpening = ({ onOpen }: { onOpen: (variant: ChestVariant, intensity: Intensity) => void }) => {
+  // The overlay reads in Frontier's own type, as in the game.
+  useFrontierType();
+  useChestPhaseLog();
+  const [intensity, setIntensity] = useState<Intensity>(3);
+  return (
+    <>
+      <label>
+        Frontier chest{" "}
+        <select
+          aria-label="Frontier chest rarity"
+          value={intensity}
+          onChange={(event) => setIntensity(Number(event.target.value) as Intensity)}
+        >
+          {([0, 1, 2, 3] as const).map((level) => (
+            <option key={level} value={level}>
+              {INTENSITY_LABEL[level]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button onClick={() => onOpen("lords", intensity)}>Open · LORDS</button>
+      <button onClick={() => onOpen("relic", intensity)}>Open · relic</button>
+      <button onClick={() => onOpen("spent", intensity)}>Open · LORDS spent</button>
+    </>
+  );
+};
 
 export function RewardLabView() {
   const container = useRef<HTMLDivElement>(null);
@@ -59,6 +100,8 @@ export function RewardLabView() {
 
   return (
     <main className="reward-lab" data-ready={ready}>
+      <MotionLayer />
+      <ChestMomentView />
       <header>
         <div>
           <h1>Rewards, brought to life.</h1>
@@ -167,6 +210,17 @@ export function RewardLabView() {
           >
             Open & absorb tile
           </button>
+          <FrontierOpening
+            onOpen={(variant, intensity) => {
+              // Holding the chest reuses the C2 already on stage; changing the study here would rebuild it mid-moment.
+              change({ paused: false });
+              const at = lab.current?.holdChest(readChestBeat);
+              if (!at) return;
+              beginChestOpening(at);
+              const result = chestResultFixture(variant, intensity, (frontierOpenings += 1));
+              window.setTimeout(() => resolveChestOpening(result), FRONTIER_RESULT_AFTER_MS);
+            }}
+          />
           <label>
             <input
               type="checkbox"
@@ -211,7 +265,7 @@ export function RewardLabView() {
         <div className="rl-downloads">
           Download animated GLBs:
           {REWARD_STUDIES.map(({ id, label }) => (
-            <a key={id} href={`/models/reward-tiles/${id === "chest-c2" ? "chest" : "rift"}.glb`} download>
+            <a key={id} href={id === "chest-c2" ? ChestModelPath : RiftModelPath} download>
               {label.split(" · ")[0]}
             </a>
           ))}

@@ -5,12 +5,10 @@ import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
-const DEFAULT_CHAIN = "slot";
 const DEFAULT_ITERATIONS = 5;
 const DEFAULT_RENDERER_MODES = ["webgpu-force-webgl", "webgpu-auto"];
 const DEFAULT_SCENE = "map";
 const DEFAULT_TIMEOUT_MS = 30_000;
-const DEFAULT_WORLD_NAME = "eternum-blitz-slot-4";
 const POLL_INTERVAL_MS = 500;
 const RENDERER_STALL_THRESHOLD_MS = 7_000;
 const METRIC_NAMES = [
@@ -23,15 +21,12 @@ const METRIC_NAMES = [
   "backendTotalMs",
 ];
 
-export function buildRendererLoadBenchmarkUrl({
-  baseUrl,
-  chain = DEFAULT_CHAIN,
-  rendererMode,
-  scene = DEFAULT_SCENE,
-  worldName = DEFAULT_WORLD_NAME,
-}) {
+export function buildRendererLoadBenchmarkUrl({ baseUrl, chainId, gameId, rendererMode, scene = DEFAULT_SCENE }) {
+  if (!chainId || !gameId) {
+    throw new Error("buildRendererLoadBenchmarkUrl requires a chainId and a gameId");
+  }
   const url = new URL(baseUrl);
-  url.pathname = `/play/${chain}/${encodeURIComponent(worldName)}/${scene}`;
+  url.pathname = `/g/${chainId}/${gameId}/${scene}`;
   url.searchParams.set("col", "0");
   url.searchParams.set("row", "0");
   url.searchParams.set("spectate", "true");
@@ -321,16 +316,16 @@ export function collectRendererLoadErrors(browserErrors, consoleOutput) {
 
 async function runRendererLoadIteration({
   baseUrl,
-  chain,
+  chainId,
   headed,
   iteration,
   rendererMode,
   scene,
   timeoutMs,
-  worldName,
+  gameId,
 }) {
   const session = `renderer-load-${rendererMode.replace(/[^a-z0-9-]/gi, "-")}-${iteration}-${Date.now().toString(36)}`;
-  const url = buildRendererLoadBenchmarkUrl({ baseUrl, chain, rendererMode, scene, worldName });
+  const url = buildRendererLoadBenchmarkUrl({ baseUrl, chainId, gameId, rendererMode, scene });
 
   try {
     runAgentBrowser(session, ["open", url, "--ignore-https-errors"], { headed });
@@ -438,7 +433,7 @@ function writeOutputFile(outputPath, summary) {
 
 async function main(argv) {
   const baseUrl = readOption(argv, "--base-url", DEFAULT_BASE_URL);
-  const chain = readOption(argv, "--chain", DEFAULT_CHAIN);
+  const chainId = readOption(argv, "--chain-id", "");
   const comparePath = readOption(argv, "--compare", "");
   const headed = readFlag(argv, "--headed");
   const iterations = readNumberOption(argv, "--iterations", DEFAULT_ITERATIONS);
@@ -446,7 +441,7 @@ async function main(argv) {
   const rendererModes = readRendererModes(argv);
   const scene = readOption(argv, "--scene", DEFAULT_SCENE);
   const timeoutMs = readNumberOption(argv, "--timeout-ms", DEFAULT_TIMEOUT_MS);
-  const worldName = readOption(argv, "--world", DEFAULT_WORLD_NAME);
+  const gameId = Number(readOption(argv, "--game-id", "0"));
 
   const results = [];
   for (const rendererMode of rendererModes) {
@@ -454,13 +449,13 @@ async function main(argv) {
       results.push(
         await runRendererLoadIteration({
           baseUrl,
-          chain,
+          chainId,
           headed,
           iteration,
           rendererMode,
           scene,
           timeoutMs,
-          worldName,
+          gameId,
         }),
       );
     }

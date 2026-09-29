@@ -23,7 +23,7 @@ export type BootstrapTask = {
 const BOOTSTRAP_TASKS: BootstrapTask[] = [
   { id: "world", label: "Selecting world", status: "pending" },
   { id: "manifest", label: "Loading game config", status: "pending" },
-  { id: "dojo", label: "Connecting to world", status: "pending" },
+  { id: "game", label: "Connecting to world", status: "pending" },
   { id: "sync", label: "Syncing game state", status: "pending" },
   { id: "renderer", label: "Preparing graphics", status: "pending" },
 ];
@@ -31,7 +31,7 @@ const BOOTSTRAP_TASKS: BootstrapTask[] = [
 const BOOTSTRAP_PROGRESS_WEIGHTS: Record<string, number> = {
   world: 5,
   manifest: 10,
-  dojo: 25,
+  game: 25,
   sync: 50,
   renderer: 10,
 };
@@ -252,7 +252,7 @@ export const useGameEntryBootstrapController = ({
 
     if (syncProgress > 0 && syncProgress < 100) {
       setTaskStatus("manifest", "complete");
-      setTaskStatus("dojo", "complete");
+      setTaskStatus("game", "complete");
       setTaskStatus("sync", "running");
     } else if (syncProgress >= 100) {
       setTaskStatus("sync", "complete");

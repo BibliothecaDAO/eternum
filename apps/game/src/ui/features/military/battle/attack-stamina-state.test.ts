@@ -20,6 +20,19 @@ describe("attack-stamina-state", () => {
     expect(buildAttackStaminaRequirementLabel(state)).toBe("Need 50 stamina to claim");
   });
 
+  it("keeps unknown stamina unavailable and blocks the action", () => {
+    const state = resolveAttackStaminaState({
+      attackerStamina: undefined,
+      hasAttackerTroops: true,
+      hasDefenders: true,
+      requiredStamina: 30,
+    });
+    expect(state.currentStamina).toBeUndefined();
+    expect(state.hasRequiredStamina).toBe(false);
+    expect(state.isBlocked).toBe(true);
+    expect(buildAttackStaminaWarning(state)).toBe("Stamina — / 30 required to attack");
+  });
+
   it("allows attacks when stamina meets the requirement", () => {
     const state = resolveAttackStaminaState({
       attackerStamina: 50n,

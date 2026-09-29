@@ -1,9 +1,11 @@
+import { structureMapPosition } from "@bibliothecadao/eternum";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ResourceTransferPopover } from "@/ui/features/economy/resources/resource-transfer-popover";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView, RESOURCE_FACTS } from "@/sync/fact-views";
 import { Button } from "@/ui/design-system/atoms";
 import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -13,7 +15,6 @@ import {
   configManager,
   divideByPrecision,
   getBuildingQuantity,
-  getEntityIdFromKeys,
   getRealmNameById,
   getTotalResourceWeightKg,
   isMilitaryResource,
@@ -22,17 +23,18 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useQuery } from "@/hooks/helpers/use-query";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import {
   CapacityConfig,
-  ClientComponents,
   findResourceById,
   getBuildingFromResource,
   ID,
   ResourcesIds,
   StructureType,
 } from "@bibliothecadao/types";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import {
   ArrowDown,
@@ -47,7 +49,6 @@ import {
   Zap,
 } from "@/ui/design-system/atoms/game-icons";
 import React, { useCallback, useMemo, useState } from "react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import {
   ALWAYS_SHOW_RESOURCES,
   formatProductionPerHour,
@@ -56,6 +57,8 @@ import {
   HIDE_TIME_REMAINING_FOR,
   TIER_DISPLAY_NAMES,
 } from "./utils";
+import { knownBalance } from "@/ui/utils/utils";
+import { presentedMineKind } from "@bibliothecadao/eternum";
 
 interface StructureColumn {
   entityId: number;
@@ -156,7 +159,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     () => localStorage.getItem("pinSelectedColumn") === "true",
   );
 
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
   const openSurface = usePopoverStore((state) => state.openSurface);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
@@ -164,11 +167,11 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   const {
     setup,
     setup: {
-      components,
+      store,
       systemCalls: { send_resources_multiple },
     },
     account: { account },
-  } = useDojo();
+  } = useGame();
 
   const mode = useGameModeConfig();
   const goToStructure = useGoToStructure(setup);
@@ -183,7 +186,10 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         const realmId = Number(structure.structure.metadata.realm_id || 0);
         const label = realmId
           ? getRealmNameById(realmId) || `Realm #${realmId}`
-          : mode.structure.getTypeName(structure.structure.base.category as StructureType) || "Structure";
+          : mode.structure.getTypeName(
+              structure.structure.base.category as StructureType,
+              presentedMineKind(store, structure.structure),
+            ) || "Structure";
 
         return {
           entityId: Number(structure.entityId),
@@ -212,8 +218,11 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     const craftableStructureIds = new Set<number>();
 
     structureColumns.forEach((structureColumn) => {
-      const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(structureColumn.entityId)]));
-      const structureCategory = Number(structure?.base?.category ?? structure?.category ?? 0);
+      const structure = store.get("Structure", {
+        game_id: configManager.getActiveGameId(),
+        entity_id: structureColumn.entityId,
+      });
+      const structureCategory = structure?.base.category;
 
       if (structureCategory === StructureType.Realm || structureCategory === StructureType.Village) {
         craftableStructureIds.add(structureColumn.entityId);
@@ -221,38 +230,36 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     });
 
     return craftableStructureIds;
-  }, [components.Structure, structureColumns]);
+  }, [store, structureColumns]);
 
   // The resources revision is the recompute signal; only the columns' own rows are read, never every Resource row.
-  const resourcesRevision = useWorldSlicesStore((state) => state.resourcesRevision);
+  const resourcesRevision = useNativeRevision(RESOURCE_FACTS);
 
   const resourcesByStructure = useMemo(() => {
-    const map = new Map<number, ComponentValue<ClientComponents["Resource"]["schema"]>>();
+    const map = new Map<number, ResourceManager>();
     void resourcesRevision;
     structureIdSet.forEach((structureEntityId) => {
-      const resourceValue = getComponentValue(components.Resource, gameEntityKey([BigInt(structureEntityId)]));
-      if (resourceValue) map.set(structureEntityId, resourceValue);
+      const resourceValue = new ResourceManager(store, structureEntityId);
+      if (resourceValue.hasResources()) map.set(structureEntityId, resourceValue);
     });
 
     return map;
-  }, [resourcesRevision, structureIdSet, components.Resource]);
+  }, [resourcesRevision, structureIdSet, store]);
 
   const resourceSummaries = useMemo(() => {
     const summaries = new Map<ResourcesIds, ResourceSummary>();
 
     resourcesByStructure.forEach((resourceValue, structure) => {
-      const balances = ResourceManager.getResourceBalancesWithProduction(resourceValue, currentDefaultTick || 0);
+      // A structure whose resources this client cannot see adds nothing to the summary.
+      const balances = resourceValue.balances(currentDefaultTick);
+      if (!balances) return;
 
       balances.forEach(({ resourceId, amount }) => {
-        const productionInfo = ResourceManager.balanceAndProduction(resourceValue, resourceId);
-        const { hasReachedMaxCapacity, balance } = ResourceManager.balanceWithProduction(
-          resourceValue,
-          currentDefaultTick || 0,
-          resourceId,
-        );
+        const productionInfo = resourceValue.current(resourceId)!;
+        const { hasReachedMaxCapacity, balance } = resourceValue.balanceWithProduction(currentDefaultTick, resourceId)!;
 
         const { productionPerSecond, isProducing, outputRemaining, timeRemainingSeconds } =
-          ResourceManager.calculateResourceProductionData(resourceId, productionInfo, currentDefaultTick || 0);
+          ResourceManager.calculateResourceProductionData(resourceId, productionInfo, currentDefaultTick);
 
         // Only count production rate if actually producing
         const activeProductionRate = isProducing ? productionPerSecond : 0;
@@ -314,14 +321,16 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       if (selectedStructureId === structureId) return;
 
       // Get structure position and navigate based on current view mode
-      const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(structureId)]));
+      const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structureId });
       if (structure) {
-        const position = new Position({ x: structure.base.coord_x, y: structure.base.coord_y });
+        const site = structureMapPosition(store, structure);
+        if (!site) return;
+        const position = Position.fromContract(site);
         // Use goToStructure which handles both map view and hex view
         void goToStructure(structureId as ID, position, isMapView);
       }
     },
-    [components.Structure, goToStructure, isMapView, selectedStructureId],
+    [store, goToStructure, isMapView, selectedStructureId],
   );
 
   const handleManageProduction = useCallback(
@@ -354,25 +363,31 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   const getResourceBalance = useCallback(
     (structureId: number, resourceId: ResourcesIds) => {
-      const resourceManager = new ResourceManager(components, structureId);
-      return resourceManager.balanceWithProduction(currentDefaultTick || 0, resourceId).balance;
+      const resourceManager = new ResourceManager(store, structureId);
+      return resourceManager.balanceWithProduction(currentDefaultTick, resourceId)?.balance;
     },
-    [components, currentDefaultTick],
+    [store, currentDefaultTick],
   );
 
   const canTransferResource = useCallback(
     (fromStructureId: number, toStructureId: number, resourceId: ResourcesIds) => {
-      const fromStructure = getComponentValue(components.Structure, gameEntityKey([BigInt(fromStructureId)]));
-      const toStructure = getComponentValue(components.Structure, gameEntityKey([BigInt(toStructureId)]));
+      const fromStructure = store.get("Structure", {
+        game_id: configManager.getActiveGameId(),
+        entity_id: fromStructureId,
+      });
+      const toStructure = store.get("Structure", {
+        game_id: configManager.getActiveGameId(),
+        entity_id: toStructureId,
+      });
 
       if (!fromStructure || !toStructure) return false;
 
       return (
         !isMilitaryResource(resourceId) ||
-        (fromStructure.category === StructureType.Realm && toStructure.category === StructureType.Realm)
+        (fromStructure.base.category === StructureType.Realm && toStructure.base.category === StructureType.Realm)
       );
     },
-    [components],
+    [store],
   );
 
   const executeTransferBatch = useCallback(
@@ -412,7 +427,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         }, 2000);
       }
     },
-    [account, components, send_resources_multiple],
+    [account, store, send_resources_multiple],
   );
 
   const executeTransfer = useCallback(
@@ -895,10 +910,10 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                               const actualBuildingCount = getBuildingQuantity(
                                 structure.entityId,
                                 getBuildingFromResource(resourceId),
-                                components,
+                                store,
                               );
                               const hasProductionBuilding = Boolean(
-                                actualBuildingCount > 0 && mode.resources.canManageResource(resourceId),
+                                actualBuildingCount > 0 && configManager.canRefillProduction(resourceId),
                               );
                               const canCraftRelic =
                                 resourceId === ResourcesIds.Research &&
@@ -1446,9 +1461,7 @@ const DragDropAmountDialog = React.memo(
       const defaultAmount = Math.min(dragData.maxAmount * 0.1, 100);
       return Number(defaultAmount.toFixed(2));
     });
-    const {
-      setup: { components },
-    } = useDojo();
+    const resourceManager = useResourceManager(dragData.fromStructureId);
 
     const resourceKey = ResourcesIds[dragData.resourceId];
     const fromStructure = structureColumns.find((s) => s.entityId === dragData.fromStructureId);
@@ -1462,18 +1475,19 @@ const DragDropAmountDialog = React.memo(
     const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);
 
     const availableDonkeys = useMemo(() => {
-      const resourceManager = new ResourceManager(components, dragData.fromStructureId);
       const donkeyBalance = resourceManager.balance(ResourcesIds.Donkey);
       return donkeyBalance ? divideByPrecision(Number(donkeyBalance)) : 0;
-    }, [components, dragData.fromStructureId]);
+    }, [resourceManager]);
 
     const maxTransferableAmount = useMemo(() => {
       if (dragData.maxAmount <= 0) {
         return 0;
       }
 
-      const resourceWeightKg = configManager.getResourceWeightKg(dragData.resourceId) || 0;
-      const donkeyCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Donkey) || 0;
+      // A resource whose weight rule is unknown cannot be loaded onto donkeys.
+      const resourceWeightKg = configManager.getResourceWeightKg(dragData.resourceId);
+      if (resourceWeightKg === undefined) return 0;
+      const donkeyCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Donkey);
 
       if (resourceWeightKg <= 0 || donkeyCapacityKg <= 0) {
         return dragData.maxAmount;
@@ -1494,11 +1508,8 @@ const DragDropAmountDialog = React.memo(
       return Math.min(dragData.maxAmount, Math.max(0, donkeyLimitedAmount));
     }, [availableDonkeys, dragData.maxAmount, dragData.resourceId]);
 
-    const recipientBalance = useMemo(() => {
-      const resourceManager = new ResourceManager(components, dragData.toStructureId);
-      const balance = resourceManager.balance(dragData.resourceId);
-      return balance ? divideByPrecision(Number(balance)) : 0;
-    }, [components, dragData.toStructureId, dragData.resourceId]);
+    const recipientResources = useResourceManager(dragData.toStructureId);
+    const recipientBalance = knownBalance(recipientResources.balance(dragData.resourceId));
 
     const canCarry = availableDonkeys >= neededDonkeys;
     const donkeyTrait = findResourceById(ResourcesIds.Donkey)?.trait as string;
@@ -1598,7 +1609,7 @@ const DragDropAmountDialog = React.memo(
                   <div className="flex justify-between">
                     <span className="text-gold/70">{toStructure?.label}:</span>
                     <span className="text-green">
-                      {recipientBalance} → {recipientBalance + amount}
+                      {recipientBalance === undefined ? "—" : `${recipientBalance} → ${recipientBalance + amount}`}
                     </span>
                   </div>
                 </div>

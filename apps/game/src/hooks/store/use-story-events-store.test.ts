@@ -2,69 +2,95 @@ import { describe, expect, it } from "vitest";
 
 import { toStreamStoryEvent } from "./use-story-events-store";
 
-const scope = { chain: "madara", worldAddress: "0xabc", gameId: 54 };
+const scope = { chainId: "0x1", worldAddress: "0xabc", gameId: 54 };
 
 describe("story event stream", () => {
-  it("adapts a Herald StoryEvent to the existing presentation shape", () => {
+  it("retains the native story payload and action identity", () => {
     const event = toStreamStoryEvent(
       {
-        hashed_keys: "0xstory",
-        models: {
-          StoryEvent: {
-            game_id: "0x36",
-            id: "0x7",
-            owner: "0xabc",
-            entity_id: "0x2a",
-            tx_hash: "0xfeed",
-            story: {
-              BattleStory: {
-                attacker_id: "0x2a",
-                defender_id: "0x2b",
-                winner_id: "0x2a",
-                attacker_owner_address: "0xabc",
-                defender_owner_address: "0xdef",
-              },
-            },
-            timestamp: "0x64",
+        model: "StoryEvent",
+        key: "0xstory",
+        value: {
+          game_id: "0x36",
+          order: "0x7",
+          index: "0x0",
+          owner: "0xabc",
+          entity_id: "0x2a",
+          tx_hash: "0xfeed",
+          story: {
+            BankSwap: { structure_id: "0x2a", bank_id: "0x2b", buy: true },
           },
+          timestamp: "0x64",
         },
       },
       scope,
     );
 
     expect(event).toMatchObject({
-      battle_attacker_id: "0x2a",
-      battle_defender_id: "0x2b",
-      battle_winner_id: "0x2a",
+      storyPayload: { structure_id: "0x2a", bank_id: "0x2b", buy: true },
       entity_id: 42,
-      event_id: "story:v1:madara:0xabc:0x36:0xfeed:0x7",
+      event_id: "story:v2:0x1:0xabc:0x36:0x7:0x0",
       owner: "0xabc",
-      story: "BattleStory",
+      story: "BankSwap",
       timestamp: "0x64",
       tx_hash: "0xfeed",
     });
   });
 
-  it("keeps the points-registered story out of the log; the leaderboard carries it", () => {
-    const event = toStreamStoryEvent(
-      {
-        hashed_keys: "0x2",
-        models: {
-          StoryEvent: {
-            owner: "0xabc",
-            entity_id: "0x1",
-            tx_hash: "0x9",
-            story: { PointsRegisteredStory: { points: "0x64" } },
-            timestamp: "0x64",
-          },
-        },
+  it("keeps two stories distinct across overlay and confirmation with an intervening points fact", () => {
+    const story = (index: number) => ({
+      model: "StoryEvent",
+      key: `0x${index}`,
+      value: {
+        game_id: 54,
+        order: 7,
+        index,
+        tx_hash: "0xfeed",
+        story: { StructureLevelUpStory: { new_level: index + 1 } },
+        timestamp: 100,
       },
-      scope,
-    );
-    expect(event).toBeNull();
+    });
+    const points = { model: "PlayerPoints", key: "0x3", value: { game_id: 54, player: "0xabc", points: 10 } };
+    const overlay = [story(0), points, story(1)];
+    const confirmed = [points, story(0), story(1)];
+    const identities = (events: typeof overlay, preconfirmed: boolean) =>
+      events.flatMap((event, event_index) => {
+        const read = toStreamStoryEvent(
+          { ...event, value: { ...event.value, event_position: { transaction_hash: "0xfeed", event_index } } },
+          scope,
+          { block: 12, preconfirmed },
+        );
+        return read ? [read.event_id] : [];
+      });
+    expect(identities(overlay, true)).toEqual(["story:v2:0x1:0xabc:0x36:0x7:0x0", "story:v2:0x1:0xabc:0x36:0x7:0x1"]);
+    expect(identities(confirmed, false)).toEqual(identities(overlay, true));
   });
 
-  it("ignores non-story event models", () => {
-    expect(toStreamStoryEvent({ hashed_keys: "0x1", models: { BattleEvent: {} } }, scope)).toBeNull();
+  it("leaves persistent rows and point awards out of the activity stream", () => {
+    for (const model of ["PlayerPoints", "PointsAwarded"]) {
+      expect(toStreamStoryEvent({ model, key: "0x1", value: { game_id: 54 } }, scope)).toBeNull();
+    }
+  });
+
+  it.each(["BattleEvent", "RaidEvent"])("keeps %s identity when receipt positions change", (model) => {
+    const value = { game_id: 54, order: 7, index: 2, timestamp: 100 };
+    const event = (event_index: number) => ({
+      model,
+      key: "0x1",
+      value: {
+        ...value,
+        event_position: { transaction_hash: "0xfeed", event_index },
+      },
+    });
+    const overlay = toStreamStoryEvent(event(1), scope, { block: 12, preconfirmed: true });
+    const confirmed = toStreamStoryEvent(event(4), scope, { block: 12, preconfirmed: false });
+    expect(overlay?.event_id).toBe("story:v2:0x1:0xabc:0x36:0x7:0x2");
+    expect(confirmed?.event_id).toBe(overlay?.event_id);
+  });
+
+  it("rejects a combat event without its recorded action identity", () => {
+    expect(() => toStreamStoryEvent({ model: "BattleEvent", key: "0x1", value: { game_id: 54 } }, scope)).toThrow(
+      "order",
+    );
   });
 });

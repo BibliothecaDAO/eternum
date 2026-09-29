@@ -19,6 +19,19 @@ it("compiles only once the grid and ground textures have settled, then resolves"
   expect(order).toEqual(["textures", "grid", "compile"]);
 });
 
+it("fails when the grid failed to build, so the scene's setup fails with it", async () => {
+  const compile = vi.fn(async () => {});
+  await expect(
+    awaitLocalScenePresentable({
+      gridBuilt: Promise.reject(new Error("Integer out of range in TileOpt.row")),
+      groundTextures: Promise.resolve(),
+      compile,
+      setTimeoutFn: never,
+    }),
+  ).rejects.toThrow("Integer out of range in TileOpt.row");
+  expect(compile).not.toHaveBeenCalled();
+});
+
 it("still resolves when the warm-up itself fails", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   await expect(

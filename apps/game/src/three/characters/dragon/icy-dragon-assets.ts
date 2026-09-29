@@ -15,7 +15,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { disposeSkinnedSceneTemplates, instantiateSkinnedScene } from "../skinned-asset-resources";
 import { resolveIcyDragonRequiredBoneNames } from "./icy-dragon-rig-adapter";
 
-export const ICY_DRAGON_ASSET_URL = "/models/characters/icy-dragon/scene.gltf";
+const ICY_DRAGON_ASSET_URL = "/models/characters/icy-dragon/scene.gltf";
 const ICY_DRAGON_TARGET_EXTENT = 4.6;
 const PRIMARY_MESH_MINIMUM_VERTEX_COUNT = 10_000;
 

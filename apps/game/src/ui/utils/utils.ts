@@ -24,7 +24,13 @@ export const formatNumber = (num: number, decimals: number): string => {
   return str;
 };
 
-export const currencyFormat = (num: number, decimals: number): string => {
+/** A raw balance for display: undefined when it is not known here, which shows as "—", never as zero. */
+export const knownBalance = (raw: bigint | number | undefined): number | undefined =>
+  raw === undefined ? undefined : divideByPrecision(Number(raw));
+
+/** A raw amount for display; an amount this client does not know shows as "—", never as zero. */
+export const currencyFormat = (num: number | undefined, decimals: number): string => {
+  if (num === undefined) return "—";
   const formattedDecimals = formatNumber(divideByPrecision(num, false), decimals);
   return Number(formattedDecimals).toLocaleString();
 };

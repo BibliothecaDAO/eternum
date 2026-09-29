@@ -14,16 +14,16 @@ export type ArmyLabelContentFields = Pick<
   | "troopCount"
   | "currentStamina"
   | "maxStamina"
-  | "displayStaminaRatio"
   | "battleTimerLeft"
   | "isMine"
   | "owner"
   | "attackedFromDegrees"
   | "attackedTowardDegrees"
+  | "foodBlocked"
 >;
 
 export function buildArmyLabelLayoutDataKey(army: ArmyLabelContentFields): string {
-  return `${army.troopCount}-${army.battleTimerLeft ?? 0}-${army.isMine}-${army.owner.ownerName}-${army.attackedFromDegrees ?? ""}-${army.attackedTowardDegrees ?? ""}`;
+  return `${army.troopCount}-${army.battleTimerLeft ?? 0}-${army.isMine}-${army.owner.ownerName}-${army.attackedFromDegrees ?? ""}-${army.attackedTowardDegrees ?? ""}-${army.foodBlocked ?? false}`;
 }
 
 export function buildArmyLabelStaminaDataKey(army: ArmyLabelContentFields): string {

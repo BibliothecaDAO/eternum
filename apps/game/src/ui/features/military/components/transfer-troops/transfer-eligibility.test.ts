@@ -2,12 +2,12 @@
 
 import { describe, expect, it } from "vitest";
 import { TransferDirection } from "./transfer-direction";
-import { BALANCE_TRANSFER_SLOT, getSameStructureTransferBlockReason } from "./transfer-eligibility";
+import { BALANCE_TRANSFER_SLOT, getTroopTransferBlockReason } from "./transfer-eligibility";
 
-describe("getSameStructureTransferBlockReason", () => {
+describe("getTroopTransferBlockReason", () => {
   it("allows explorer-to-explorer transfers when both explorers belong to the same structure", () => {
     expect(
-      getSameStructureTransferBlockReason({
+      getTroopTransferBlockReason({
         transferDirection: TransferDirection.ExplorerToExplorer,
         selectedEntityId: 1,
         targetEntityId: 2,
@@ -20,7 +20,7 @@ describe("getSameStructureTransferBlockReason", () => {
 
   it("blocks explorer-to-explorer transfers when explorers belong to different structures", () => {
     expect(
-      getSameStructureTransferBlockReason({
+      getTroopTransferBlockReason({
         transferDirection: TransferDirection.ExplorerToExplorer,
         selectedEntityId: 1,
         targetEntityId: 2,
@@ -31,22 +31,27 @@ describe("getSameStructureTransferBlockReason", () => {
     ).toBe("Cannot transfer troops: Both explorers must belong to the same structure");
   });
 
-  it("allows explorer-to-structure transfers regardless of explorer owner", () => {
+  it.each([
+    ["owner", 1n, null],
+    ["ally", 2n, "Cannot reinforce: Explorer home and target must have the same owner"],
+    ["stranger", 3n, "Cannot reinforce: Explorer home and target must have the same owner"],
+  ])("checks target ownership for a %s reinforcement", (_relation, targetOwner, expected) => {
     expect(
-      getSameStructureTransferBlockReason({
+      getTroopTransferBlockReason({
         transferDirection: TransferDirection.ExplorerToStructure,
         selectedEntityId: 1,
         targetEntityId: 202,
         selectedExplorerOwner: 101,
-        targetExplorerOwner: 0,
+        sourceHomeOwner: 1n,
+        targetOwner: targetOwner as bigint,
         guardSlot: 1,
       }),
-    ).toBeNull();
+    ).toBe(expected);
   });
 
   it("allows structure-to-explorer guard transfers when the explorer belongs to the selected structure", () => {
     expect(
-      getSameStructureTransferBlockReason({
+      getTroopTransferBlockReason({
         transferDirection: TransferDirection.StructureToExplorer,
         selectedEntityId: 303,
         targetEntityId: 2,
@@ -59,7 +64,7 @@ describe("getSameStructureTransferBlockReason", () => {
 
   it("blocks structure-to-explorer guard transfers when the explorer belongs to a different structure", () => {
     expect(
-      getSameStructureTransferBlockReason({
+      getTroopTransferBlockReason({
         transferDirection: TransferDirection.StructureToExplorer,
         selectedEntityId: 303,
         targetEntityId: 2,
@@ -72,7 +77,7 @@ describe("getSameStructureTransferBlockReason", () => {
 
   it("keeps the existing balance-transfer ownership rule", () => {
     expect(
-      getSameStructureTransferBlockReason({
+      getTroopTransferBlockReason({
         transferDirection: TransferDirection.StructureToExplorer,
         selectedEntityId: 303,
         targetEntityId: 2,

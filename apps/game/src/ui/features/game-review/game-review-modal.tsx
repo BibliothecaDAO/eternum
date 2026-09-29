@@ -1,0 +1,629 @@
+import { type GameReviewData } from "@/services/review/game-review-service";
+import { Button } from "@/ui/design-system/atoms";
+import { BlitzAwardsOptionSixCardWithSelector } from "@/ui/shared/components/blitz-awards-variant-cards";
+import { BlitzLeaderboardCardWithSelector } from "@/ui/shared/components/blitz-leaderboard-card";
+import { BlitzMapFingerprintCardWithSelector } from "@/ui/shared/components/blitz-map-fingerprint-card";
+import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
+import { buildGameReviewStepShareMessage } from "@/ui/shared/lib/x-share-messages";
+import { toPng } from "html-to-image";
+import { ArrowLeft, ArrowRight, Copy, Flag, Gift, Loader2, Share2, X } from "@/ui/design-system/atoms/game-icons";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
+import { toast } from "@/ui/features/event-feed/notify";
+
+import { gameKey } from "@/runtime/world/store";
+import type { GameRef } from "@bibliothecadao/eternum/shard";
+import { useGameReviewData } from "./use-game-review-data";
+import { useProfiles } from "@/shell/profiles";
+import { displayPlayerName } from "@bibliothecadao/eternum";
+import { ScoreCardContent } from "./score-card-content";
+
+/** The finished game under review, as the shell names it. */
+export type ReviewedGame = GameRef & { name: string };
+
+type ReviewStepId =
+  | "finished"
+  | "personal"
+  | "awards"
+  | "map-fingerprint"
+  | "leaderboard"
+  | "submit-score"
+  | "result-outcome";
+
+interface GameReviewModalProps {
+  isOpen: boolean;
+  world: ReviewedGame | null;
+  nextGame: { name: string } | null;
+  onClose: () => void;
+}
+
+const numberFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+const SHARE_CARD_DIMENSIONS = BLITZ_CARD_DIMENSIONS;
+const SHARE_PREVIEW_MAX_WIDTH = SHARE_CARD_DIMENSIONS.width;
+const EXPORT_STAGE_PADDING_X = 36;
+const EXPORT_STAGE_PADDING_Y = 24;
+const CARD_PREVIEW_STYLE: CSSProperties = {
+  maxWidth: `${SHARE_PREVIEW_MAX_WIDTH}px`,
+};
+const MAP_FINGERPRINT_ZOOM_LEVELS = [0.2, 0.3, 0.4, 0.6, 0.8, 1, 1.25, 1.5] as const;
+const MAP_FINGERPRINT_DEFAULT_ZOOM = MAP_FINGERPRINT_ZOOM_LEVELS[3];
+const MAP_FINGERPRINT_GOLD_LEVELS = [0.4, 0.65, 0.8, 1] as const;
+const MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL = MAP_FINGERPRINT_GOLD_LEVELS[0];
+
+const formatValue = (value: number): string => numberFormatter.format(Math.max(0, Math.round(value)));
+
+const STEP_LABELS: Record<ReviewStepId, string> = {
+  finished: "Game Finished",
+  personal: "Personal Score Card",
+  awards: "Blitz Awards",
+  "map-fingerprint": "Map Fingerprint",
+  leaderboard: "Global Leaderboard",
+  "submit-score": "Final Results",
+  "result-outcome": "Result Outcome",
+};
+
+const isAwardsStep = (step: ReviewStepId): boolean => {
+  return step === "awards";
+};
+
+const GameFinishedStep = ({ data }: { data: GameReviewData }) => {
+  const winner = data.topPlayers[0];
+  const profileOf = useProfiles(winner ? [winner.address] : []);
+  const winnerLabel = winner
+    ? displayPlayerName(winner.address, profileOf(winner.address)?.name)
+    : "No winner available yet";
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-gold">
+        <Flag className="h-4 w-4" />
+        <h3 className="font-serif text-xl">Game Is Finished</h3>
+      </div>
+      <p className="text-xs uppercase tracking-wider text-gold/60">World: {data.worldName}</p>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
+          <p className="text-[11px] uppercase tracking-wider text-gold/60">Winner</p>
+          <p className="mt-1 text-sm text-white">{winnerLabel}</p>
+        </div>
+        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
+          <p className="text-[11px] uppercase tracking-wider text-gold/60">Registered Players</p>
+          <p className="mt-1 text-sm text-white">{formatValue(data.stats.numberOfPlayers)}</p>
+        </div>
+        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
+          <p className="text-[11px] uppercase tracking-wider text-gold/60">Total Transactions</p>
+          <p className="mt-1 text-sm text-white">{formatValue(data.stats.totalTransactions)}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const FinalResultsStep = ({ data }: { data: GameReviewData }) => (
+  <div className="space-y-4">
+    <h3 className="font-serif text-xl text-gold">Final Results</h3>
+    <p className="text-sm text-white">
+      {data.finalization.rankingFinalized
+        ? "Results are finalized."
+        : "The game operator will finalize results after the game ends. Your earned points are included automatically."}
+    </p>
+  </div>
+);
+
+const ResultOutcomeStep = ({
+  data,
+  captureRef,
+}: {
+  data: GameReviewData;
+  captureRef: MutableRefObject<HTMLDivElement | null>;
+}) => {
+  const finalized = data.finalization.rankingFinalized;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-gold">
+        <Gift className="h-4 w-4" />
+        <h3 className="font-serif text-xl">Result Outcome</h3>
+      </div>
+      <p className="text-xs uppercase tracking-wider text-gold/60">Game: {data.worldName}</p>
+
+      <div ref={captureRef} className="mx-auto grid w-full gap-3 sm:grid-cols-2" style={CARD_PREVIEW_STYLE}>
+        <div className="rounded-xl border border-gold/20 bg-dark/80 p-4">
+          <p className="text-[11px] uppercase tracking-wider text-gold/60">Rank</p>
+          <p className="mt-1 text-2xl text-white">{finalized ? (data.personalScore?.rank ?? "—") : "—"}</p>
+        </div>
+        <div className="rounded-xl border border-gold/20 bg-dark/80 p-4">
+          <p className="text-[11px] uppercase tracking-wider text-gold/60">Victory points</p>
+          <p className="mt-1 text-2xl text-white">
+            {finalized ? (data.personalScore?.points.toLocaleString() ?? "—") : "—"}
+          </p>
+        </div>
+      </div>
+
+      {!finalized && (
+        <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
+          Final results are awaiting the game operator.
+        </div>
+      )}
+
+      {finalized && (
+        <div className="rounded-xl border border-brilliance/40 bg-brilliance/10 p-3 text-sm text-brilliance">
+          Your final rank and victory points are recorded.
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReviewModalProps) => {
+  const worldName = world?.name;
+  const reviewedGameKey = world ? gameKey(world) : null;
+
+  const { data, isLoading, error, refetch } = useGameReviewData({
+    game: world,
+    worldName,
+    enabled: isOpen,
+  });
+
+  const [stepIndex, setStepIndex] = useState(0);
+  const [frozenSnapshot, setFrozenSnapshot] = useState<Pick<
+    GameReviewData,
+    "stats" | "topPlayers" | "mapSnapshot"
+  > | null>(null);
+  const captureRef = useRef<HTMLDivElement | null>(null);
+  const [isCopying, setIsCopying] = useState(false);
+  const [mapFingerprintZoom, setMapFingerprintZoom] = useState<number>(MAP_FINGERPRINT_DEFAULT_ZOOM);
+  const [mapFingerprintGoldLevel, setMapFingerprintGoldLevel] = useState<number>(MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL);
+  const currentMapZoomIndex = useMemo(() => {
+    const exactIndex = MAP_FINGERPRINT_ZOOM_LEVELS.findIndex(
+      (zoomLevel) => Math.abs(mapFingerprintZoom - zoomLevel) < 0.001,
+    );
+    if (exactIndex >= 0) return exactIndex;
+
+    let bestIndex = 0;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    MAP_FINGERPRINT_ZOOM_LEVELS.forEach((zoomLevel, index) => {
+      const distance = Math.abs(mapFingerprintZoom - zoomLevel);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = index;
+      }
+    });
+    return bestIndex;
+  }, [mapFingerprintZoom]);
+  const canZoomIn = currentMapZoomIndex < MAP_FINGERPRINT_ZOOM_LEVELS.length - 1;
+  const canZoomOut = currentMapZoomIndex > 0;
+  const currentGoldLevelIndex = useMemo(() => {
+    const exactIndex = MAP_FINGERPRINT_GOLD_LEVELS.findIndex(
+      (goldLevel) => Math.abs(mapFingerprintGoldLevel - goldLevel) < 0.001,
+    );
+    if (exactIndex >= 0) return exactIndex;
+
+    let bestIndex = 0;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    MAP_FINGERPRINT_GOLD_LEVELS.forEach((goldLevel, index) => {
+      const distance = Math.abs(mapFingerprintGoldLevel - goldLevel);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = index;
+      }
+    });
+    return bestIndex;
+  }, [mapFingerprintGoldLevel]);
+
+  const steps = useMemo<ReviewStepId[]>(() => {
+    const ordered: ReviewStepId[] = [
+      "finished",
+      "personal",
+      "awards",
+      "map-fingerprint",
+      "leaderboard",
+      "submit-score",
+      "result-outcome",
+    ];
+    return ordered;
+  }, []);
+
+  const currentStep = steps[Math.min(stepIndex, steps.length - 1)] ?? "finished";
+  const currentStepLabel = STEP_LABELS[currentStep];
+  const isStepShareable = useMemo(() => {
+    if (isAwardsStep(currentStep) || currentStep === "leaderboard") {
+      return true;
+    }
+
+    if (currentStep === "result-outcome") {
+      return Boolean(data?.personalScore && data.finalization.rankingFinalized);
+    }
+
+    if (currentStep === "map-fingerprint") {
+      return Boolean(data?.mapSnapshot.available);
+    }
+
+    if (currentStep === "personal") {
+      return Boolean(data?.personalScore);
+    }
+
+    return false;
+  }, [currentStep, data?.mapSnapshot.available, data?.personalScore, data?.finalization.rankingFinalized]);
+
+  const reviewData = useMemo<GameReviewData | null>(() => {
+    if (!data) return null;
+    const withFrozenSnapshot = frozenSnapshot
+      ? {
+          ...data,
+          stats: frozenSnapshot.stats,
+          topPlayers: frozenSnapshot.topPlayers,
+          mapSnapshot: frozenSnapshot.mapSnapshot,
+        }
+      : data;
+
+    return withFrozenSnapshot;
+  }, [data, frozenSnapshot]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setStepIndex(0);
+    setFrozenSnapshot(null);
+    setMapFingerprintZoom(MAP_FINGERPRINT_DEFAULT_ZOOM);
+    setMapFingerprintGoldLevel(MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL);
+  }, [isOpen, reviewedGameKey]);
+
+  useEffect(() => {
+    if (!isOpen || !data) return;
+    setFrozenSnapshot(
+      (previous) => previous ?? { stats: data.stats, topPlayers: data.topPlayers, mapSnapshot: data.mapSnapshot },
+    );
+  }, [data, isOpen]);
+
+  useEffect(() => {
+    if (stepIndex < steps.length) return;
+    setStepIndex(Math.max(0, steps.length - 1));
+  }, [stepIndex, steps.length]);
+
+  const handleCopyStep = useCallback(async () => {
+    if (!isStepShareable || !captureRef.current) return;
+
+    if (typeof window === "undefined") {
+      toast.error("Copying images is not supported in this environment.");
+      return;
+    }
+
+    if (!("ClipboardItem" in window) || !navigator.clipboard?.write) {
+      toast.error("Copying images is not supported in this browser.");
+      return;
+    }
+
+    setIsCopying(true);
+
+    try {
+      const fontReady =
+        typeof document !== "undefined" && "fonts" in document ? document.fonts.ready.catch(() => undefined) : null;
+      const waiters = fontReady ? [fontReady] : [];
+      await Promise.all(waiters);
+
+      const captureNode =
+        (captureRef.current.querySelector(".blitz-card-root") as HTMLElement | null) ?? captureRef.current;
+      const captureRect = captureNode.getBoundingClientRect();
+      const captureWidth = Math.max(1, Math.round(captureRect.width));
+      const captureHeight = Math.max(1, Math.round(captureRect.height));
+      const exportWidth = captureWidth + EXPORT_STAGE_PADDING_X * 2;
+      const exportHeight = captureHeight + EXPORT_STAGE_PADDING_Y * 2;
+
+      const pixelRatio = 2;
+      const captureDataUrl = await toPng(captureNode, {
+        cacheBust: true,
+        pixelRatio,
+        backgroundColor: "#010101",
+        canvasWidth: captureWidth,
+        canvasHeight: captureHeight,
+        style: {
+          width: `${captureWidth}px`,
+          height: `${captureHeight}px`,
+          margin: "0",
+        },
+      });
+
+      const capturedImage = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error("Failed to decode captured step image."));
+        image.src = captureDataUrl;
+      });
+
+      const exportCanvas = document.createElement("canvas");
+      exportCanvas.width = exportWidth * pixelRatio;
+      exportCanvas.height = exportHeight * pixelRatio;
+
+      const context = exportCanvas.getContext("2d");
+      if (!context) {
+        throw new Error("Unable to create export canvas.");
+      }
+
+      context.fillStyle = "#010101";
+      context.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+      const offsetX = ((exportWidth - captureWidth) / 2) * pixelRatio;
+      const offsetY = ((exportHeight - captureHeight) / 2) * pixelRatio;
+      context.drawImage(capturedImage, offsetX, offsetY, captureWidth * pixelRatio, captureHeight * pixelRatio);
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        exportCanvas.toBlob((canvasBlob) => {
+          if (!canvasBlob) {
+            reject(new Error("Unable to encode PNG export."));
+            return;
+          }
+
+          resolve(canvasBlob);
+        }, "image/png");
+      });
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      toast.success("Step image copied to clipboard.");
+    } catch (caughtError) {
+      console.error("Failed to copy review step image", caughtError);
+      toast.error("Could not copy the image.");
+    } finally {
+      setIsCopying(false);
+    }
+  }, [isStepShareable]);
+
+  const shareMessage = useMemo(() => {
+    if (!reviewData || !isStepShareable) return "";
+    return buildGameReviewStepShareMessage({
+      step: currentStep,
+      data: reviewData,
+      nextGameName: nextGame?.name,
+    });
+  }, [currentStep, reviewData, isStepShareable, nextGame]);
+
+  const handleShareOnX = useCallback(() => {
+    if (!shareMessage) return;
+
+    const url = new URL("https://twitter.com/intent/tweet");
+    url.searchParams.set("text", shareMessage);
+    window.open(url.toString(), "_blank", "noopener,noreferrer");
+  }, [shareMessage]);
+
+  const handleNextStep = useCallback(() => {
+    if (stepIndex >= steps.length - 1) {
+      onClose();
+      return;
+    }
+
+    setStepIndex((prev) => Math.min(prev + 1, steps.length - 1));
+  }, [onClose, stepIndex, steps.length]);
+
+  const handlePrevStep = useCallback(() => {
+    setStepIndex((prev) => Math.max(0, prev - 1));
+  }, []);
+
+  if (!isOpen || !world) return null;
+  const currentStepNumber = Math.min(stepIndex + 1, steps.length);
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" onClick={onClose} />
+      <div className="pointer-events-none absolute inset-0 endgame-backdrop-cinematic" />
+
+      <div className="endgame-modal-enter endgame-surface endgame-shell-cinematic relative z-10 flex max-h-[84vh] w-full max-w-[1100px] flex-col overflow-hidden rounded-2xl border border-gold/35 shadow-2xl shadow-dark/70">
+        <div className="border-b border-gold/20 px-4 py-3.5 sm:px-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="gold-gradient-text truncate font-serif text-lg sm:text-xl">Game In Review</h2>
+              <p className="mt-0.5 truncate text-sm text-gold/75">{worldName}</p>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="rounded-lg p-1.5 text-white/60 transition-colors hover:bg-white/10"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {steps.map((step, index) => {
+              const isActive = index === stepIndex;
+              const isCompleted = index < stepIndex;
+              const widthClass = isActive || isCompleted ? "w-6" : "w-2";
+              const toneClass = isActive ? "bg-gold endgame-progress-pulse" : isCompleted ? "bg-gold/75" : "bg-gold/25";
+
+              return (
+                <span
+                  key={`${step}-${index}`}
+                  className={`h-2 rounded-full transition-all ${widthClass} ${toneClass}`}
+                />
+              );
+            })}
+            <span className="ml-1 text-[11px] text-gold/70">
+              {currentStepNumber}/{steps.length}
+            </span>
+            <span className="text-[11px] uppercase tracking-wider text-gold/50">{currentStepLabel}</span>
+          </div>
+          <div className="endgame-header-ornament" />
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+          {isLoading ? (
+            <div className="flex min-h-[320px] flex-col items-center justify-center">
+              <Loader2 className="h-10 w-10 animate-spin text-gold" />
+              <p className="mt-3 text-sm text-gold/70">Loading game review...</p>
+            </div>
+          ) : error || !reviewData ? (
+            <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 text-center">
+              <div className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-2 text-sm text-lightest">
+                Failed to load game review data.
+              </div>
+              <Button onClick={() => void refetch()} variant="outline" forceUppercase={false}>
+                Retry
+              </Button>
+            </div>
+          ) : (
+            <div
+              key={currentStep}
+              className="endgame-step-enter rounded-xl border border-gold/20 bg-black/20 p-3 sm:p-4"
+            >
+              {currentStep === "finished" && <GameFinishedStep data={reviewData} />}
+
+              {currentStep === "personal" &&
+                (reviewData.personalScore ? (
+                  <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
+                    <ScoreCardContent
+                      worldName={reviewData.worldName}
+                      playerEntry={reviewData.personalScore}
+                      showActions={false}
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-gold/20 bg-dark/80 p-4 text-sm text-gold/70">
+                    No personal score card is available for this account.
+                  </div>
+                ))}
+
+              {currentStep === "awards" && (
+                <div className="space-y-3">
+                  <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
+                    <BlitzAwardsOptionSixCardWithSelector worldName={reviewData.worldName} stats={reviewData.stats} />
+                  </div>
+                </div>
+              )}
+
+              {currentStep === "map-fingerprint" && (
+                <div className="space-y-3">
+                  {reviewData.mapSnapshot.available ? (
+                    <>
+                      <div className="mx-auto flex w-full max-w-[1060px] items-center justify-center gap-2 sm:gap-3">
+                        <div ref={captureRef} className="min-w-0 flex-1" style={CARD_PREVIEW_STYLE}>
+                          <BlitzMapFingerprintCardWithSelector
+                            worldName={reviewData.worldName}
+                            snapshot={reviewData.mapSnapshot}
+                            mode="biome"
+                            zoom={mapFingerprintZoom}
+                            goldLevel={mapFingerprintGoldLevel}
+                          />
+                        </div>
+                        <div className="inline-flex shrink-0 flex-col overflow-hidden rounded-lg border border-gold/30 bg-black/40">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!canZoomIn) return;
+                              const nextIndex = currentMapZoomIndex + 1;
+                              setMapFingerprintZoom(MAP_FINGERPRINT_ZOOM_LEVELS[nextIndex]);
+                            }}
+                            disabled={!canZoomIn}
+                            className="px-2.5 py-2 text-sm font-semibold uppercase tracking-wider text-gold transition-colors enabled:hover:bg-gold/10 disabled:cursor-not-allowed disabled:text-gold/40 sm:px-3"
+                            aria-label="Zoom in"
+                          >
+                            +
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!canZoomOut) return;
+                              const nextIndex = currentMapZoomIndex - 1;
+                              setMapFingerprintZoom(MAP_FINGERPRINT_ZOOM_LEVELS[nextIndex]);
+                            }}
+                            disabled={!canZoomOut}
+                            className="px-2.5 py-2 text-sm font-semibold uppercase tracking-wider text-gold transition-colors enabled:hover:bg-gold/10 disabled:cursor-not-allowed disabled:text-gold/40 sm:px-3"
+                            aria-label="Zoom out"
+                          >
+                            -
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextIndex = (currentGoldLevelIndex + 1) % MAP_FINGERPRINT_GOLD_LEVELS.length;
+                              setMapFingerprintGoldLevel(MAP_FINGERPRINT_GOLD_LEVELS[nextIndex]);
+                            }}
+                            className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-gold transition-colors enabled:hover:bg-gold/10 sm:px-3"
+                            aria-label={`Gold level ${Math.round(mapFingerprintGoldLevel * 100)} percent`}
+                            title={`Gold ${Math.round(mapFingerprintGoldLevel * 100)}% (click to cycle)`}
+                          >
+                            G
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="rounded-xl border border-gold/20 bg-dark/80 p-4 text-sm text-gold/70">
+                      {reviewData.mapSnapshot.reason || "Map snapshot unavailable."}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {currentStep === "leaderboard" && (
+                <div className="space-y-3">
+                  <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
+                    <BlitzLeaderboardCardWithSelector
+                      worldName={reviewData.worldName}
+                      topPlayers={reviewData.topPlayers}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {currentStep === "submit-score" && <FinalResultsStep data={reviewData} />}
+
+              {currentStep === "result-outcome" && <ResultOutcomeStep data={reviewData} captureRef={captureRef} />}
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-gold/20 p-4">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div className="flex gap-2">
+              <Button
+                onClick={handlePrevStep}
+                variant="outline"
+                className="gap-2 !px-3 !py-2"
+                forceUppercase={false}
+                disabled={stepIndex === 0 || isLoading || Boolean(error)}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
+              <Button
+                onClick={handleNextStep}
+                variant="gold"
+                className="gap-2 !px-3 !py-2 shadow-lg shadow-gold/20"
+                forceUppercase={false}
+                disabled={isLoading || Boolean(error)}
+              >
+                {stepIndex >= steps.length - 1 ? "Close" : "Next"}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {isStepShareable ? (
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleCopyStep}
+                  variant="secondary"
+                  className="gap-2 !px-3 !py-2"
+                  forceUppercase={false}
+                  isLoading={isCopying}
+                  disabled={isLoading || Boolean(error) || isCopying}
+                >
+                  <Copy className="h-4 w-4" />
+                  {isCopying ? "Copying..." : "Copy PNG"}
+                </Button>
+                <Button
+                  onClick={handleShareOnX}
+                  variant="outline"
+                  className="gap-2 !px-3 !py-2"
+                  forceUppercase={false}
+                  disabled={isLoading || Boolean(error) || !shareMessage}
+                >
+                  <Share2 className="h-4 w-4" />
+                  Share on X
+                </Button>
+              </div>
+            ) : (
+              <div />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

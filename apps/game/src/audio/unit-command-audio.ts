@@ -12,11 +12,11 @@ const UNIT_COMMAND_SOUND_IDS: Record<UnitCommandIntent, string> = {
   explore: "unit.command.explore",
 };
 
-export function resolveUnitCommandSoundId(intent: UnitCommandIntent): string {
+function resolveUnitCommandSoundId(intent: UnitCommandIntent): string {
   return UNIT_COMMAND_SOUND_IDS[intent];
 }
 
-export function resolveUnitCommandSoundIdForWorldmapAction(actionType: ActionType | null | undefined): string | null {
+function resolveUnitCommandSoundIdForWorldmapAction(actionType: ActionType | null | undefined): string | null {
   switch (actionType) {
     case ActionType.Move:
     case ActionType.SpireTravel:

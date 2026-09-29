@@ -1,0 +1,10 @@
+[Unit]
+Description=Isolated native candidate resource budget
+
+[Slice]
+CPUWeight=20
+MemoryHigh=44G
+MemoryMax=48G
+MemorySwapMax=0
+IOWeight=20
+TasksMax=4096

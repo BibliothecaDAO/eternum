@@ -1,3 +1,4 @@
+import { latticeToWorld } from "@/three/utils/hex-lattice";
 import { forwardRef, type Ref, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -66,7 +67,6 @@ const MAP_FINGERPRINT_CARD_STYLES = `
 `;
 
 const HEX_SIZE = 8.7;
-const SQRT3 = Math.sqrt(3);
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -149,20 +149,9 @@ const getOccupierColor = (tile: GameReviewMapSnapshotTile, fallbackBiomeColor: s
   return tile.occupierIsStructure ? OCCUPIER_STRUCTURE : OCCUPIER_ARMY;
 };
 
-const getGridMetrics = () => {
-  const hexHeight = HEX_SIZE * 2;
-  const hexWidth = SQRT3 * HEX_SIZE;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
-  return { vertDist, horizDist };
-};
-
 const offsetToPixel = (col: number, row: number) => {
-  const { vertDist, horizDist } = getGridMetrics();
-  const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
-  const x = col * horizDist - rowOffset;
-  const y = row * vertDist;
-  return { x, y };
+  const { x, z } = latticeToWorld(col, row);
+  return { x: x * HEX_SIZE, y: z * HEX_SIZE };
 };
 
 const buildHexPoints = (centerX: number, centerY: number): string => {

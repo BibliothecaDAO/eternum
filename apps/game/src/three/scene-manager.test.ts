@@ -3,6 +3,7 @@ import { TransitionManager } from "./managers/transition-manager";
 import { SceneManager } from "./scene-manager";
 import { HexagonScene, type SceneSetupContext } from "./scenes/hexagon-scene";
 import { SceneName } from "./types";
+import { usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 
 interface Deferred<T> {
   promise: Promise<T>;
@@ -334,6 +335,8 @@ describe("SceneManager transitions", () => {
     expect(hexception.onSwitchOff).toHaveBeenCalledWith(SceneName.WorldMap);
     expect(hexception.moveCameraToURLLocation).not.toHaveBeenCalled();
     expect(errorSpy).toHaveBeenCalledWith("[SceneManager] Failed to set up scene hex: setup failed");
+    // The entry waiting on the realm view learns it did not open, in words a player can read.
+    expect(usePlayRouteReadinessStore.getState().sceneFailure?.message).toBe("The realm view did not open.");
   });
 
   it("cleans a candidate and starts the pending request when fade-out is canceled", async () => {

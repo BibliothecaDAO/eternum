@@ -1,5 +1,6 @@
-import { IncomingCaravans } from "./incoming-caravans";
 import { ArrowLeftRight, Factory, Loader, Shield, Sparkles } from "@/ui/design-system/atoms/game-icons";
+import { IncomingCaravans } from "./incoming-caravans";
+import { StructureOwnershipTransfer } from "./structure-ownership-transfer";
 import { memo, useCallback } from "react";
 
 import Button from "@/ui/design-system/atoms/button";
@@ -9,12 +10,13 @@ import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { InfoBubble } from "../collapsible-bubble";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
+import { HyperstructureConstruction } from "@/ui/features/world/components/hyperstructures/hyperstructure-construction";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
 import { ID, StructureType } from "@bibliothecadao/types";
-import { formatTime, toHexString } from "@bibliothecadao/eternum";
+import { configManager, formatTime, toHexString } from "@bibliothecadao/eternum";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { LeftView } from "@/types";
 
@@ -23,6 +25,7 @@ import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
 import { EntityDetailLayoutVariant } from "../layout";
 import { useStructureProductionSummary } from "../structure-production-summary";
 import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
+import { BitcoinMiningActionPanel } from "../../actions/bitcoin-mining-action-panel";
 import { FaithDevotionActionPanel } from "../../actions/faith-devotion-action-panel";
 
 interface StructureBannerEntityDetailProps {
@@ -155,8 +158,9 @@ const StructureBannerEntityDetailContent = memo(
       [StructureType.Realm, StructureType.Village].includes(Number(rawCategory) as StructureType);
     const canOpenTransferPanel =
       isMine &&
+      configManager.isCommandEnabled("SendResources") &&
       structureCategory !== undefined &&
-      [StructureType.Realm, StructureType.Village, StructureType.Camp, StructureType.FragmentMine].includes(
+      [StructureType.Realm, StructureType.Village, StructureType.Camp, StructureType.Mine].includes(
         structureCategory as StructureType,
       ) &&
       typeof structure.entity_id !== "undefined";
@@ -166,8 +170,13 @@ const StructureBannerEntityDetailContent = memo(
     const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
     const isHyperstructureOwned = structure.owner !== undefined && structure.owner !== null && structure.owner !== 0n;
     const showHyperstructureVP = isHyperstructure && hyperstructurePointsPerSecond !== undefined;
-    const occupiedGuardSlots = guards.filter((guard) => Number(guard.troops?.count ?? 0) > 0).length;
-    const guardCue = guardSlotsMax !== undefined ? `${occupiedGuardSlots}/${guardSlotsMax}` : `${occupiedGuardSlots}`;
+    const occupiedGuardSlots = guards?.filter((guard) => guard.troops.count > 0n).length;
+    const guardCue =
+      occupiedGuardSlots === undefined
+        ? "—"
+        : guardSlotsMax !== undefined
+          ? `${occupiedGuardSlots}/${guardSlotsMax}`
+          : `${occupiedGuardSlots}`;
     const activeRelicIds = relicEffects.map((effect) => Number(effect.id));
 
     return (
@@ -216,6 +225,7 @@ const StructureBannerEntityDetailContent = memo(
                 </Button>
               )}
             </div>
+            <StructureOwnershipTransfer key={structureEntityId} structureId={structureEntityId} />
             {showHyperstructureVP && (
               <div className="mt-2 border-t border-gold/15 pt-2">
                 <HyperstructureVPDisplay
@@ -227,6 +237,10 @@ const StructureBannerEntityDetailContent = memo(
               </div>
             )}
           </InfoBubble>
+        )}
+
+        {isEternumMode && isHyperstructure && (
+          <HyperstructureConstruction key={structureEntityId} entityId={structureEntityId} />
         )}
 
         {relicEffects.length > 0 && (
@@ -255,7 +269,9 @@ const StructureBannerEntityDetailContent = memo(
 
         {/* Guards — always shown for structures that can hold defenders. */}
         <InfoBubble variant="section" title="Guards" icon={Shield} cue={guardCue}>
-          {guards.length > 0 ? (
+          {guards === undefined ? (
+            <p className={HUD_BODY_MUTED}>Loading guards…</p>
+          ) : guards.length > 0 ? (
             <CompactDefenseDisplay
               troops={guards}
               slotsUsed={guardSlotsUsed}
@@ -304,6 +320,8 @@ const StructureBannerEntityDetailContent = memo(
             <p className={HUD_BODY_MUTED}>No resources stored.</p>
           )}
         </InfoBubble>
+
+        <BitcoinMiningActionPanel structureEntityId={structureEntityId} />
 
         {showFaithTab && (
           <InfoBubble variant="section" title="Faith" icon={Sparkles}>

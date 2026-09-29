@@ -10,7 +10,7 @@ interface BuildingUpdateIdentity {
   innerRow?: unknown;
 }
 
-type BuildingInstanceAction = "create" | "keep" | "remove" | "replace";
+export type BuildingInstanceAction = "create" | "keep" | "remove" | "replace";
 
 export interface TargetedBuildingReconciliation<TBuilding extends PositionedBuilding> {
   buildings: TBuilding[];
@@ -80,3 +80,10 @@ export function resolveBuildingInstanceAction(
   if (currentSignature === undefined) return "create";
   return currentSignature === nextSignature ? "keep" : "replace";
 }
+
+/** Two render signatures that differ only in their tier, the last field: an upgrade, not a new building. */
+export const isTierChange = (current: string | undefined, next: string): boolean => {
+  if (current === undefined || current === next) return false;
+  const withoutTier = (signature: string) => signature.slice(0, signature.lastIndexOf(":"));
+  return withoutTier(current) === withoutTier(next);
+};

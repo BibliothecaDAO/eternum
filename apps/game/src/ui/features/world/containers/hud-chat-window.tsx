@@ -1,4 +1,5 @@
-import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useIdentitySession } from "@/hooks/context/identity-session";
+import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
 import { resolveChatSenderName } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY } from "@/ui/design-system/atoms/hud-typography";
@@ -13,7 +14,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 import { MessageSquare } from "@/ui/design-system/atoms/game-icons";
 import { useEffect, useMemo, useRef } from "react";
-import { env } from "../../../../../env";
+import { getActiveGame } from "@/runtime/world";
 import { CHAT_SHORTCUT } from "./chat-shortcut";
 
 const isTypingTarget = (target: EventTarget | null) =>
@@ -21,16 +22,29 @@ const isTypingTarget = (target: EventTarget | null) =>
   target.closest('input,textarea,select,button,a,[contenteditable="true"],[role="textbox"],[role="dialog"]') !== null;
 
 /** The strip at the foot of the right column: last message and unread count. Open, a fixed-height pane rises
- *  above the strip and the details above keep whatever room is left. */
-export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const address = useAccountStore((state) => state.account?.address);
-  const gameZoneId = `game:${configManager.getActiveGameId()}`;
+ *  above the strip and the details above keep whatever room is left. `foldToIcon` shrinks the strip to its icon and
+ *  unread count on a phone held upright, when something else needs the room. */
+export function HudChatWindow({
+  open,
+  onOpenChange,
+  foldToIcon = false,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  foldToIcon?: boolean;
+}) {
+  const { status } = useIdentitySession();
+  const signedIn = status === "signed-in";
+  const requestSignIn = useRequestSignIn();
+  const game = getActiveGame();
+  // A game room is named by its shard's chain and the game: game ids repeat across shards.
+  const gameZoneId = game ? `game:0x${BigInt(game.chainId).toString(16)}:${configManager.getActiveGameId()}` : "";
   const zoneId = useRealtimeChatSelector((state) =>
     state.activeZoneId === gameZoneId ? gameZoneId : GLOBAL_CHAT_CHANNEL_ID,
   );
   const initializer = useMemo<InitializeRealtimeClientParams | null>(
-    () => (address && env.VITE_PUBLIC_CHAT_URL ? { baseUrl: env.VITE_PUBLIC_CHAT_URL, joinZones: [gameZoneId] } : null),
-    [address, gameZoneId],
+    () => (signedIn ? { baseUrl: window.location.origin, joinZones: gameZoneId ? [gameZoneId] : [] } : null),
+    [signedIn, gameZoneId],
   );
   useRealtimeChatInitializer(initializer);
   const connection = useRealtimeChatSelector((state) => state.connectionStatus);
@@ -109,16 +123,18 @@ export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenCha
         type="button"
         aria-label="Chat strip"
         aria-expanded={open}
-        disabled={!initializer}
-        onClick={() => onOpenChange(!open)}
+        disabled={status === "loading"}
+        // A signed-out spectator's strip is their way into the sign-in flow, which brings them back to this game.
+        onClick={() => (initializer ? onOpenChange(!open) : requestSignIn())}
         className={cn(
           "pointer-events-auto flex h-8 w-full shrink-0 items-center gap-2 rounded-xl px-3 text-left font-sans normal-case tracking-normal",
           OVERLAY_SURFACE_BASE,
-          initializer ? "hover:border-gold/50" : "cursor-default",
+          "hover:border-gold/50",
+          foldToIcon && "portrait:w-auto portrait:self-start",
         )}
       >
         <MessageSquare className="h-3.5 w-3.5 shrink-0 text-gold/70" />
-        <span className={cn("min-w-0 flex-1 truncate", HUD_BODY)}>{stripText}</span>
+        <span className={cn("min-w-0 flex-1 truncate", HUD_BODY, foldToIcon && "portrait:sr-only")}>{stripText}</span>
         {initializer && !open && unread > 0 && (
           <span aria-label="Unread chat messages" className="rounded-full bg-gold px-1.5 text-[10px] text-dark-brown">
             {unread}

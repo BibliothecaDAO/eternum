@@ -6,10 +6,12 @@ import {
   ResourceMiningTypes,
   ResourcesIds,
   StructureType,
+  MineKinds,
 } from "@bibliothecadao/types";
 import { Color } from "three";
 import { HyperstructureTypesNames } from "../types";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
+import { FALLEN_REALM_CAMP_MODEL_PATHS } from "../structures/fallen-realm";
 
 export const HEX_SIZE = 1;
 
@@ -41,7 +43,7 @@ enum BuildingFilenames {
   WonderAnimated = "wonder2.glb",
 }
 
-export const ChestModelPath = "/models/reward-tiles/chest.glb";
+export const ChestModelPath = "/models/reward-tiles/chest-c2.glb";
 export const RiftModelPath = "/models/reward-tiles/rift.glb";
 const BITCOIN_MINE_MODEL_PATH = "/models/ethereal/bitcoin-mine.glb";
 
@@ -73,7 +75,7 @@ export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths([
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
   [StructureType.Bank]: BuildingType.ResourceDonkey,
   [StructureType.Realm]: BuildingType.ResourceLabor,
-  [StructureType.FragmentMine]: BuildingType.ResourceAncientFragment,
+  [StructureType.Mine]: BuildingType.ResourceAncientFragment,
   [StructureType.Hyperstructure]: BuildingType.ResourceLabor,
   [StructureType.Village]: BuildingType.ResourceLabor,
   [StructureType.Camp]: BuildingType.ResourceLabor,
@@ -129,9 +131,7 @@ export const buildingModelPaths = (isBlitz: boolean) => {
       [BuildingType.ResourceLabor]: BUILDINGS_MODELS_PATH + BuildingFilenames.Castle,
       [BuildingType.ResourceWheat]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
       [BuildingType.ResourceFish]: BUILDINGS_MODELS_PATH + BuildingFilenames.FishingVillage,
-      [BuildingType.ResourceAncientFragment]: isBlitz
-        ? RiftModelPath
-        : BUILDINGS_MODELS_PATH + BuildingFilenames.FragmentMine,
+      [BuildingType.ResourceAncientFragment]: BUILDINGS_MODELS_PATH + BuildingFilenames.FragmentMine,
       [BuildingType.ResourceEssence]: RiftModelPath,
       [BuildingType.ResourceDonkey]: BUILDINGS_MODELS_PATH + BuildingFilenames.Market,
       [BuildingType.Storehouse]: BUILDINGS_MODELS_PATH + BuildingFilenames.Storehouse,
@@ -164,7 +164,7 @@ export const buildingModelPaths = (isBlitz: boolean) => {
 const PROGRESS_HALF_THRESHOLD = 50;
 const PROGRESS_FINAL_THRESHOLD = 100;
 
-export function getStructureModelPaths(isBlitz: boolean): Record<StructureType, string[]> {
+export function getStructureModelPaths(): Record<StructureType, string[]> {
   return {
     [StructureType.Realm]: [
       REALM_MODEL_PATHS[RealmLevelNames.Settlement],
@@ -175,9 +175,9 @@ export function getStructureModelPaths(isBlitz: boolean): Record<StructureType, 
     ],
     [StructureType.Hyperstructure]: [HYPERSTRUCTURE_MODEL_PATH],
     [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
-    [StructureType.FragmentMine]: isBlitz ? [RiftModelPath] : [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
+    [StructureType.Mine]: Object.values(MineKinds).map((kind) => kind.model),
     [StructureType.Village]: [VILLAGE_MODEL_PATH],
-    [StructureType.Camp]: [VILLAGE_MODEL_PATH],
+    [StructureType.Camp]: [VILLAGE_MODEL_PATH, ...FALLEN_REALM_CAMP_MODEL_PATHS],
     [StructureType.BitcoinMine]: [BITCOIN_MINE_MODEL_PATH],
   };
 }

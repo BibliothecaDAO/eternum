@@ -16,16 +16,16 @@ describe("structure-status", () => {
     expect(formatUsedBuildingTilesLabel(7, 60)).toBe("7/60");
   });
 
-  it("counts occupied building tiles from RECS rows and skips the center keep tile", () => {
+  it("counts occupied building tiles from native store rows and skips the center keep tile", () => {
     expect(
       countOccupiedBuildingTilesByStructure({
         trackedStructureIds: new Set([7, 8]),
         buildings: [
-          { outerEntityId: 7, innerCol: BUILDINGS_CENTER[0], innerRow: BUILDINGS_CENTER[1] },
-          { outerEntityId: 7, innerCol: 1, innerRow: 0 },
-          { outerEntityId: 7, innerCol: 1, innerRow: 1 },
-          { outerEntityId: 8, innerCol: 0, innerRow: 1 },
-          { outerEntityId: 99, innerCol: 2, innerRow: 0 },
+          { structureId: 7, innerCol: BUILDINGS_CENTER[0], innerRow: BUILDINGS_CENTER[1] },
+          { structureId: 7, innerCol: 1, innerRow: 0 },
+          { structureId: 7, innerCol: 1, innerRow: 1 },
+          { structureId: 8, innerCol: 0, innerRow: 1 },
+          { structureId: 99, innerCol: 2, innerRow: 0 },
         ],
       }),
     ).toEqual({

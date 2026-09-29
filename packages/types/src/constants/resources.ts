@@ -1,4 +1,4 @@
-import { Resources } from "../types";
+import type { Resources } from "../types";
 import { ResourcesIds } from "./resource-ids";
 
 export const STEALABLE_RESOURCES = [
@@ -425,6 +425,16 @@ export const resources: Array<Resources> = [
     ticker: "$RCH",
   },
 
+  {
+    trait: "SAT",
+    value: 58,
+    colour: "#f7931a",
+    id: ResourcesIds.SAT,
+    description: "Mining rewards delivered to your nearest owned realm or village.",
+    img: "",
+    ticker: "$SAT",
+  },
+
   // Relics - Army Enhancement Items
   {
     trait: "Stamina Relic 1",
@@ -626,18 +636,6 @@ export const RESOURCE_RARITY: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Research]: 1,
 };
 
-export enum ResourceTier {
-  Lords = 1,
-  Military,
-  Transport,
-  Food,
-  Common,
-  Uncommon,
-  Rare,
-  Unique,
-  Mythic,
-}
-
 export const getResourceTiers = (isBlitz: boolean) => {
   if (isBlitz) {
     return BLITZ_RESOURCE_TIERS;
@@ -645,8 +643,8 @@ export const getResourceTiers = (isBlitz: boolean) => {
   return ETERNUM_RESOURCE_TIERS;
 };
 
-export const BLITZ_RESOURCE_TIERS = {
-  lords: [ResourcesIds.Lords],
+const BLITZ_RESOURCE_TIERS = {
+  lords: [ResourcesIds.Lords, ResourcesIds.SAT],
   relics: [
     // Army Enhancement Relics
     ResourcesIds.StaminaRelic1,
@@ -697,8 +695,8 @@ export const BLITZ_RESOURCE_TIERS = {
   ],
 };
 
-export const ETERNUM_RESOURCE_TIERS = {
-  lords: [ResourcesIds.Lords, ResourcesIds.AncientFragment],
+const ETERNUM_RESOURCE_TIERS = {
+  lords: [ResourcesIds.Lords, ResourcesIds.SAT, ResourcesIds.AncientFragment],
   relics: [
     // Army Enhancement Relics
     ResourcesIds.StaminaRelic1,

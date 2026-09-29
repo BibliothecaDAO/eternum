@@ -1,0 +1,14 @@
+// The guardian Worker: the guardian private key as its only secret, reachable only through the identity Worker's
+// service binding. Only the owner deploys it and sets its key (see README.md); CI never does.
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "realms-guardian",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-15",
+  "workers_dev": false,
+  "preview_urls": false,
+  "env": {
+    "staging": { "name": "realms-guardian-staging", "workers_dev": false, "preview_urls": false },
+    "production": { "name": "realms-guardian", "workers_dev": false, "preview_urls": false },
+  },
+}

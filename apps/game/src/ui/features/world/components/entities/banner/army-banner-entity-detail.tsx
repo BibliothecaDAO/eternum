@@ -1,4 +1,5 @@
 import { Loader, Trash2, Zap as Lightning } from "@/ui/design-system/atoms/game-icons";
+import { configManager } from "@bibliothecadao/eternum";
 import { memo, type ReactNode, useMemo } from "react";
 
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -9,6 +10,7 @@ import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import {
+  describeNextStaminaGain,
   isStaminaRecharging,
   STAMINA_RECHARGING_FILL_CLASS,
   STAMINA_RECHARGING_TEXT_CLASS,
@@ -20,7 +22,11 @@ import { EntityType, ID, RelicRecipientType } from "@bibliothecadao/types";
 import { ActiveRelicEffects } from "../active-relic-effects";
 import { useArmyMovementReadiness } from "../../armies/army-movement-readiness";
 import { ArmyWarning } from "../../armies/army-warning";
-import { formatTravelBlockedSummary, getArmyFoodRequirementLabel } from "../../armies/army-warning-copy";
+import {
+  formatFoodBlock,
+  formatTravelBlockedSummary,
+  getArmyFoodRequirementLabel,
+} from "../../armies/army-warning-copy";
 import { buildDisplayItems, CompactEntityInventory, countDisplayItems } from "../compact-entity-inventory";
 import { useArmyEntityDetail } from "../hooks/use-army-entity-detail";
 import { EntityDetailLayoutVariant } from "../layout";
@@ -86,7 +92,9 @@ const ArmyBannerEntityDetailContent = memo(
     const combatRelicActionLimit = compact ? 4 : undefined;
     // Show every held relic — activatable ones are clickable, the rest render
     // dimmed/disabled so you can still see what the army carries.
-    const showRelicsInline = derivedData.isMine && inventoryCounts.relics > 0;
+    // Relics are only worth listing where the game lets an army apply them.
+    const showRelicsInline =
+      derivedData.isMine && inventoryCounts.relics > 0 && configManager.isCommandEnabled("ApplyRelic");
     const ownerDisplay = derivedData.addressName ?? `Army Owner`;
     const stationedDisplay = derivedData.structureOwnerName ?? "Field deployment";
     const ownerInitial = (ownerDisplay || "?").charAt(0).toUpperCase();
@@ -96,7 +104,8 @@ const ArmyBannerEntityDetailContent = memo(
     const statusClass = derivedData.isMine
       ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200"
       : "border-red-400/40 bg-red-400/15 text-red-200";
-    const currentStamina = derivedData.staminaDisplay?.displayCurrent ?? Number(derivedData.stamina.amount);
+    const currentStamina = derivedData.staminaDisplay?.committedCurrent ?? Number(derivedData.stamina.amount);
+    const nextStaminaGain = derivedData.staminaDisplay ? describeNextStaminaGain(derivedData.staminaDisplay) : null;
     const maxStamina = derivedData.maxStamina;
     const travelBlocked = movementReadiness ? !movementReadiness.canTravel : false;
     const travelBlockedTitle = movementReadiness
@@ -183,6 +192,16 @@ const ArmyBannerEntityDetailContent = memo(
               rightAccessory={hasWarnings && movementReadiness ? <ArmyWarning readiness={movementReadiness} /> : null}
             />
           ) : null}
+          {movementReadiness?.foodBlock ? (
+            <p className="text-[11px] leading-snug text-amber-300" role="status">
+              {formatFoodBlock(movementReadiness.foodBlock, (amount) => formatNumber(amount, 0))}
+            </p>
+          ) : null}
+          {nextStaminaGain && derivedData.staminaDisplay ? (
+            <p className="text-[10px] text-gold/60">
+              {nextStaminaGain} · rested in {formatRestTime(derivedData.staminaDisplay.secondsUntilFull)}
+            </p>
+          ) : null}
           {showRelicsInline && (
             <CompactEntityInventory
               resources={explorerResources}
@@ -254,6 +273,12 @@ export const ArmyBannerEntityDetail = memo(
 
 ArmyBannerEntityDetail.displayName = "ArmyBannerEntityDetail";
 
+const formatRestTime = (seconds: number): string => {
+  const minutes = Math.ceil(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, "0")} min`;
+};
+
 const InlineStaminaBar = ({
   currentStamina,
   maxStamina,
@@ -270,7 +295,7 @@ const InlineStaminaBar = ({
   rightAccessory?: ReactNode;
 }) => {
   if (maxStamina === 0) return null;
-  const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
+  const { committedPercentage, displayedCurrent } = resolveStaminaDisplay({
     current: currentStamina,
     max: maxStamina,
   });
@@ -281,7 +306,7 @@ const InlineStaminaBar = ({
   // blocked signal stays unambiguous. The readiness icons say why.
   const fillClass = travelBlocked
     ? "bg-progress-bar-danger"
-    : displayPercentage > 66
+    : committedPercentage > 66
       ? "bg-progress-bar-good"
       : "bg-progress-bar-medium";
 
@@ -298,16 +323,12 @@ const InlineStaminaBar = ({
         )}
       >
         <div
-          className={cn(fillClass, "h-full rounded-full opacity-45 transition-all duration-300")}
-          style={{ width: `${committedPercentage}%` }}
-        />
-        <div
           className={cn(
             fillClass,
-            "h-full rounded-full transition-all duration-1000 -mt-2",
+            "h-full rounded-full transition-all duration-300",
             recharging && STAMINA_RECHARGING_FILL_CLASS,
           )}
-          style={{ width: `${displayPercentage}%` }}
+          style={{ width: `${committedPercentage}%` }}
         />
       </div>
       <span className={cn("whitespace-nowrap", recharging && STAMINA_RECHARGING_TEXT_CLASS)}>

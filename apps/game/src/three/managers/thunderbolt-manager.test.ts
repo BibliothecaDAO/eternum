@@ -1,10 +1,17 @@
-vi.mock("../utils/utils", () => ({ loadKtx2Texture: vi.fn(() => Promise.resolve(new Texture())) }));
+vi.mock("../utils/utils", async () => {
+  const { latticeHexAt } = await import("../utils/hex-lattice");
+  return {
+    loadKtx2Texture: vi.fn(() => Promise.resolve(new Texture())),
+    // Strikes land where the test names their hex; the camera's hex comes from the real lattice.
+    WORLD_HEX_SPACE: {
+      positionForHex: ({ col, row }: { col: number; row: number }) => new Vector3(col, 0, row),
+      hexForPosition: (point: { x: number; z: number }) => latticeHexAt(point.x, point.z),
+    },
+  };
+});
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { Group, Mesh, MeshBasicMaterial, PerspectiveCamera, Scene, Texture, Vector3 } from "three";
 vi.mock("../constants", () => ({ HEX_SIZE: 1 }));
-vi.mock("../utils", () => ({
-  getWorldPositionForHex: ({ col, row }: { col: number; row: number }) => new Vector3(col, 0, row),
-}));
 import { ThunderBoltManager } from "./thunderbolt-manager";
 beforeEach(() => {
   vi.spyOn(Math, "random").mockReturnValue(0);

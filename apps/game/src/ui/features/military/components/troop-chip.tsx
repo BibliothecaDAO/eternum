@@ -11,7 +11,7 @@ export const TroopChip = ({
   size = "sm",
   negative = false,
 }: {
-  troops: Troops;
+  troops: Pick<Troops, "category" | "tier" | "count">;
   className?: string;
   direction?: "row" | "column";
   size?: "xs" | "sm" | "md" | "lg";

@@ -5,7 +5,7 @@ vi.mock("@bibliothecadao/types", () => ({
     Realm: 1,
     Village: 2,
     Bank: 3,
-    FragmentMine: 4,
+    Mine: 4,
   },
 }));
 
@@ -13,7 +13,7 @@ const StructureType = {
   Realm: 1,
   Village: 2,
   Bank: 3,
-  FragmentMine: 4,
+  Mine: 4,
 } as const;
 
 const { resolveInitialStructureSelection } = await import("./initial-structure-selection");
@@ -27,7 +27,7 @@ interface SyncedStructureRecord {
 
 interface InitialStructureSelectionInput {
   ownedStructures: SyncedStructureRecord[];
-  firstGlobalStructure: SyncedStructureRecord | null;
+  globalStructures: SyncedStructureRecord[];
 }
 
 const structure = (
@@ -45,14 +45,14 @@ const structure = (
 const resolve = (input: Partial<InitialStructureSelectionInput>) =>
   resolveInitialStructureSelection({
     ownedStructures: input.ownedStructures ?? [],
-    firstGlobalStructure: input.firstGlobalStructure ?? null,
+    globalStructures: input.globalStructures ?? [],
   });
 
 describe("resolveInitialStructureSelection", () => {
   it("prefers owned realm structure when available and does not spectate", () => {
     const selected = resolve({
       ownedStructures: [structure(10, 1, 1, StructureType.Village), structure(22, 9, 9, StructureType.Realm)],
-      firstGlobalStructure: structure(99, 5, 5),
+      globalStructures: [structure(99, 5, 5)],
     });
 
     expect(selected).toEqual({
@@ -64,7 +64,7 @@ describe("resolveInitialStructureSelection", () => {
   it("falls back to first owned structure when no owned realm exists", () => {
     const selected = resolve({
       ownedStructures: [structure(33, 3, 4, StructureType.Village), structure(44, 8, 8, StructureType.Bank)],
-      firstGlobalStructure: structure(99, 5, 5),
+      globalStructures: [structure(99, 5, 5)],
     });
 
     expect(selected).toEqual({
@@ -73,10 +73,22 @@ describe("resolveInitialStructureSelection", () => {
     });
   });
 
-  it("uses first global structure in spectator mode when no owned structures are available", () => {
+  it("opens a spectator on the first realm, not on an earlier non-realm structure", () => {
     const selected = resolve({
       ownedStructures: [],
-      firstGlobalStructure: structure(77, 12, 18, StructureType.FragmentMine),
+      globalStructures: [structure(1, 50, 50, StructureType.Mine), structure(77, 12, 18, StructureType.Realm)],
+    });
+
+    expect(selected).toEqual({
+      selectedStructure: { entity_id: 77, coord_x: 12, coord_y: 18 },
+      spectator: true,
+    });
+  });
+
+  it("falls back to the first global structure in spectator mode when the game has no realm", () => {
+    const selected = resolve({
+      ownedStructures: [],
+      globalStructures: [structure(77, 12, 18, StructureType.Mine)],
     });
 
     expect(selected).toEqual({
@@ -88,7 +100,7 @@ describe("resolveInitialStructureSelection", () => {
   it("returns no selection in spectator mode when neither owned nor global structures are available", () => {
     const selected = resolve({
       ownedStructures: [],
-      firstGlobalStructure: null,
+      globalStructures: [],
     });
 
     expect(selected).toEqual({

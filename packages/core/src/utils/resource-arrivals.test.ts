@@ -19,19 +19,21 @@ const makeArrival = (overrides: Partial<ResourceArrivalInfo> = {}): ResourceArri
 describe("resource-arrivals troop summaries", () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it("reads tuple arrays stored by the Herald ingest chokepoint", () => {
+  it("reads native arrival slots with bigint resource amounts", () => {
     vi.spyOn(configManager, "getTick").mockReturnValue(30);
 
     expect(
       formatArrivals([
         {
-          structure_id: 144_614,
+          game_id: 1,
+          entity_id: 144_614,
           day: 206_998n,
-          slot_46: [
-            ["0x17", "0x1955bafc200"],
-            ["0x19", "0x2e90edd000"],
+          slot: 46,
+          resources: [
+            { resource_type: 23, amount: 0x1955bafc200n },
+            { resource_type: 25, amount: 0x2e90edd000n },
           ],
-        } as never,
+        },
       ]),
     ).toEqual([
       {

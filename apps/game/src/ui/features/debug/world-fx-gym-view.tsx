@@ -145,6 +145,7 @@ export const WorldFxGymView = () => {
           <DebugSelect label="Composition" value={scenario} onChange={(value) => setOption("scene", value)}>
             <option value="flame">Flame loop</option>
             <option value="impact">Impact burst</option>
+            <option value="burst">Dust burst</option>
             <option value="mixed">Mixed stress</option>
           </DebugSelect>
 

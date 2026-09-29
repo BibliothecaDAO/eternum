@@ -39,7 +39,6 @@ describe("worldmap visual terrain runtime", () => {
       focusPoint: { x: 0, z: 0 },
       groundBounds: { minX: -10, maxX: 10, minZ: -8, maxZ: 8 },
       generation: 3,
-      hexSize: 1,
       paddingHexes: 4,
       pageOrigin: { col: -12, row: -12 },
       pageSize: { width: 24, height: 24 },

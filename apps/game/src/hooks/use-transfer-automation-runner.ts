@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import {
   configManager,
@@ -10,11 +10,11 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canTransferMilitaryInventoryBetweenStructureIds } from "@/ui/lib/structure-capabilities";
 import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
 import { useTransferAutomationStore } from "./store/use-transfer-automation-store";
 import { assessDonkeyCapacity, buildSendResourcesArgs, planTransferAmounts } from "./transfer-automation-planner";
+import { accountAddress } from "@/hooks/store/use-account-store";
 
 type PlannedDebits = Map<string, number>;
 
@@ -27,7 +27,7 @@ const availableBalance = (
   resourceId: ResourcesIds,
   plannedDebits: PlannedDebits,
 ) => {
-  const balance = Number(resourceManager.balanceWithProduction(tick, resourceId).balance ?? 0n) / RESOURCE_PRECISION;
+  const balance = Number(resourceManager.balanceWithProduction(tick, resourceId)?.balance ?? 0n) / RESOURCE_PRECISION;
   return Math.max(0, balance - (plannedDebits.get(plannedDebitKey(sourceId, resourceId)) ?? 0));
 };
 
@@ -44,17 +44,15 @@ const recordPlannedDebits = (
 
 export const useTransferAutomationRunner = () => {
   const {
-    setup: { components, systemCalls },
+    setup: { store, systemCalls },
     account: { account },
-  } = useDojo();
+  } = useGame();
   const mode = useGameModeConfig();
 
   const entries = useTransferAutomationStore((s) => s.entries);
   const update = useTransferAutomationStore((s) => s.update);
   const scheduleNext = useTransferAutomationStore((s) => s.scheduleNext);
   const pruneForGame = useTransferAutomationStore((s) => s.pruneForGame);
-  const gameEndAt = useUIStore((state) => state.gameEndAt);
-  const gameWinner = useUIStore((state) => state.gameWinner);
 
   const processingRef = useRef(false);
   const processRef = useRef<() => Promise<void>>(async () => {});
@@ -74,30 +72,17 @@ export const useTransferAutomationRunner = () => {
     }
   }, []);
 
-  const isSeasonOver = useCallback(
-    (blockTimestampSeconds?: number) => {
-      if (gameWinner) return true;
-      if (typeof gameEndAt !== "number") {
-        return false;
-      }
-      const timestamp =
-        typeof blockTimestampSeconds === "number" ? blockTimestampSeconds : getBlockTimestamp().currentBlockTimestamp;
-      return timestamp >= gameEndAt;
-    },
-    [gameEndAt, gameWinner],
-  );
-
   useEffect(() => {
-    if (!components) {
+    if (!store) {
       return;
     }
     const season = configManager.getSeasonConfig();
     const gameId = `${season.startSettlingAt}-${season.startMainAt}-${season.endAt}`;
     pruneForGame(gameId);
-  }, [components, pruneForGame]);
+  }, [store, pruneForGame]);
 
   const scheduleNextCheck = useCallback(() => {
-    if (isSeasonOver()) {
+    if (configManager.isGameOver()) {
       stopTransferAutomation();
       return;
     }
@@ -112,11 +97,11 @@ export const useTransferAutomationRunner = () => {
     timeoutIdRef.current = window.setTimeout(() => {
       void processRef.current();
     }, delay);
-  }, [isSeasonOver, stopTransferAutomation]);
+  }, [stopTransferAutomation]);
 
   useEffect(() => {
     processRef.current = async () => {
-      if (isSeasonOver()) {
+      if (configManager.isGameOver()) {
         stopTransferAutomation();
         return;
       }
@@ -124,11 +109,11 @@ export const useTransferAutomationRunner = () => {
         scheduleNextCheck();
         return;
       }
-      if (!components) {
+      if (!store) {
         scheduleNextCheck();
         return;
       }
-      if (!account || !account.address || account.address === "0x0") {
+      if (!account || accountAddress() === null) {
         scheduleNextCheck();
         return;
       }
@@ -136,7 +121,7 @@ export const useTransferAutomationRunner = () => {
       const { currentBlockTimestamp } = getBlockTimestamp();
       // Use conservative tick for resource validation to prevent tx failures from clock desync
       const { currentDefaultTick: conservativeTick } = getAutomationProjectionTick();
-      if (isSeasonOver(currentBlockTimestamp)) {
+      if (configManager.isGameOver()) {
         stopTransferAutomation();
         return;
       }
@@ -162,13 +147,13 @@ export const useTransferAutomationRunner = () => {
               continue;
             }
 
-            if (!isEntityOwnedByAccount(components, sourceId, account.address)) {
+            if (!isEntityOwnedByAccount(store, sourceId, account.address)) {
               toast.warning("Scheduled transfer skipped: source structure is no longer owned.");
               scheduleNext(entry.id, nowMs);
               continue;
             }
 
-            if (!isEntityOwnedByAccount(components, destId, account.address)) {
+            if (!isEntityOwnedByAccount(store, destId, account.address)) {
               toast.warning("Scheduled transfer skipped: destination structure is no longer owned.");
               scheduleNext(entry.id, nowMs);
               continue;
@@ -178,7 +163,7 @@ export const useTransferAutomationRunner = () => {
             const hasMilitary = entry.resourceIds.some((rid) => isMilitaryResource(rid));
             if (hasMilitary) {
               const validTransfer = canTransferMilitaryInventoryBetweenStructureIds({
-                components,
+                store,
                 modeId: mode.id,
                 sourceEntityId: sourceId,
                 destinationEntityId: destId,
@@ -194,7 +179,7 @@ export const useTransferAutomationRunner = () => {
               }
             }
 
-            const rm = new ResourceManager(components, sourceId);
+            const rm = new ResourceManager(store, sourceId);
             const donkeyBalHuman = availableBalance(rm, conservativeTick, sourceId, ResourcesIds.Donkey, plannedDebits);
 
             const transferList = planTransferAmounts(entry, (resourceId) =>
@@ -243,17 +228,7 @@ export const useTransferAutomationRunner = () => {
         scheduleNextCheck();
       }
     };
-  }, [
-    components,
-    account,
-    isSeasonOver,
-    mode.id,
-    scheduleNext,
-    stopTransferAutomation,
-    update,
-    systemCalls,
-    scheduleNextCheck,
-  ]);
+  }, [store, account, mode.id, scheduleNext, stopTransferAutomation, update, systemCalls, scheduleNextCheck]);
 
   useEffect(() => {
     scheduleNextCheck();

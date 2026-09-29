@@ -47,7 +47,7 @@ export const TERRAIN_LAB_BUILDINGS = [
 });
 
 const STRUCTURE_TYPE_BY_PATH = new Map(
-  Object.entries(getStructureModelPaths(false)).flatMap(([type, paths]) =>
+  Object.entries(getStructureModelPaths()).flatMap(([type, paths]) =>
     paths.map((path) => [path, Number(type) as StructureType] as const),
   ),
 );

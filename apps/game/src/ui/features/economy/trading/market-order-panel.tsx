@@ -1,3 +1,4 @@
+import { configManager } from "@bibliothecadao/eternum";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useUISound } from "@/audio";
@@ -9,7 +10,7 @@ import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
 import { REQUIREMENT_CHIP } from "@/ui/design-system/molecules/requirement-chips";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ConfirmationPopup } from "@/ui/features/economy/banking";
-import { currencyFormat, formatNumber } from "@/ui/utils/utils";
+import { currencyFormat, formatNumber, knownBalance } from "@/ui/utils/utils";
 import {
   calculateDonkeysNeeded,
   divideByPrecision,
@@ -17,12 +18,11 @@ import {
   isMilitaryResource,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
-import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { findResourceById, ResourcesIds, StructureType, type ID, type MarketInterface } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { resolveBestPrice } from "./best-prices";
 
 const ONE_MONTH = 2628000;
@@ -273,7 +273,7 @@ export const OrderRow = memo(
     updateBalance: boolean;
     setUpdateBalance: (value: boolean) => void;
   }) => {
-    const dojo = useDojo();
+    const game = useGame();
 
     const playTradeExecuteSound = useUISound("ui.trade_execute");
 
@@ -281,13 +281,13 @@ export const OrderRow = memo(
 
     const resourceManager = useResourceManager(entityId);
 
-    const lordsBalance = useMemo(
-      () => Number(resourceManager.balance(ResourcesIds.Lords)),
-      [resourceManager, updateBalance],
-    );
+    const lordsBalance = useMemo(() => {
+      const balance = resourceManager.balance(ResourcesIds.Lords);
+      return balance === undefined ? undefined : Number(balance);
+    }, [resourceManager, updateBalance]);
 
     const resourceBalance = useMemo(
-      () => Number(resourceManager.balanceWithProduction(currentDefaultTick, offer.makerGets[0].resourceId).balance),
+      () => resourceManager.balanceWithProduction(currentDefaultTick, offer.makerGets[0].resourceId)?.balance,
       [resourceManager, currentDefaultTick, offer.makerGets[0].resourceId, updateBalance],
     );
 
@@ -316,11 +316,17 @@ export const OrderRow = memo(
     }, [isBuy, offer.takerGets[0].amount, offer.makerGets[0].amount]);
 
     const resourceBalanceRatio = useMemo(
-      () => (resourceBalance < getsDisplayNumber ? resourceBalance / getsDisplayNumber : 1),
+      // A balance this client cannot see fills nothing.
+      () =>
+        resourceBalance === undefined
+          ? 0
+          : resourceBalance < getsDisplayNumber
+            ? resourceBalance / getsDisplayNumber
+            : 1,
       [resourceBalance, getsDisplayNumber],
     );
     const lordsBalanceRatio = useMemo(
-      () => (lordsBalance < getTotalLords ? lordsBalance / getTotalLords : 1),
+      () => (lordsBalance === undefined ? 0 : lordsBalance < getTotalLords ? lordsBalance / getTotalLords : 1),
       [lordsBalance, getTotalLords],
     );
     const [inputValue, setInputValue] = useState<number>(() => {
@@ -361,7 +367,7 @@ export const OrderRow = memo(
     }, [orderWeightKg]);
 
     const donkeyBalance = useMemo(() => {
-      return divideByPrecision(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance);
+      return knownBalance(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey)?.balance);
     }, [resourceManager, currentDefaultTick]);
 
     const onAccept = async () => {
@@ -371,8 +377,8 @@ export const OrderRow = memo(
 
         const v = !isBuy ? calculatedResourceAmount : calculatedLords;
         const takerBuysCount = Math.ceil(v / offer.makerGivesMinResourceAmount);
-        await dojo.setup.systemCalls.accept_order({
-          signer: dojo.account.account,
+        await game.setup.systemCalls.accept_order({
+          signer: game.account.account,
           taker_id: entityId,
           trade_id: offer.tradeId,
           taker_buys_count: takerBuysCount,
@@ -389,8 +395,8 @@ export const OrderRow = memo(
     const onCancel = async () => {
       try {
         setLoading(true);
-        await dojo.setup.systemCalls.cancel_order({
-          signer: dojo.account.account,
+        await game.setup.systemCalls.cancel_order({
+          signer: game.account.account,
           trade_id: offer.tradeId,
         });
       } catch (error) {
@@ -447,8 +453,8 @@ export const OrderRow = memo(
             donkeysNeeded={donkeysNeeded}
             donkeyBalance={donkeyBalance}
             isVillageAndMilitaryResource={
-              getComponentValue(dojo.setup.components.Structure, gameEntityKey([BigInt(entityId)]))?.category ===
-                StructureType.Village &&
+              game.setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base
+                .category === StructureType.Village &&
               (isMilitaryResource(offer.makerGets[0].resourceId) || isMilitaryResource(offer.takerGets[0].resourceId))
             }
           />
@@ -485,7 +491,7 @@ const ConfirmOrderPopup = memo(
     getDisplayResource: number;
     calculatedLords: number;
     donkeysNeeded: number;
-    donkeyBalance: number;
+    donkeyBalance: number | undefined;
     isVillageAndMilitaryResource: boolean;
   }) => {
     return (
@@ -495,7 +501,11 @@ const ConfirmOrderPopup = memo(
         onCancel={onCancel}
         isLoading={loading}
         disabled={
-          isSelf ? false : (!isBuy && donkeysNeeded > donkeyBalance) || inputValue === 0 || isVillageAndMilitaryResource
+          isSelf
+            ? false
+            : (!isBuy && (donkeyBalance === undefined || donkeysNeeded > donkeyBalance)) ||
+              inputValue === 0 ||
+              isVillageAndMilitaryResource
         }
       >
         {isSelf ? (
@@ -515,8 +525,8 @@ const ConfirmOrderPopup = memo(
             </p>
             <div className="flex justify-between mt-4">
               <div>Donkeys Required</div>
-              <div className={donkeysNeeded > donkeyBalance ? "text-red" : "text-green"}>
-                {donkeysNeeded} [{donkeyBalance}]
+              <div className={donkeyBalance === undefined || donkeysNeeded > donkeyBalance ? "text-red" : "text-green"}>
+                {donkeysNeeded} [{donkeyBalance ?? "—"}]
               </div>
             </div>
           </div>
@@ -557,10 +567,10 @@ export const OrderCreation = memo(
     const {
       account: { account },
       setup: {
-        components,
+        store,
         systemCalls: { create_order },
       },
-    } = useDojo();
+    } = useGame();
 
     useEffect(() => {
       setBid(String(lords / resource));
@@ -677,29 +687,31 @@ export const OrderCreation = memo(
 
     // divide to get the number of donkeys without precision
     const donkeyBalance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance;
+      return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey)?.balance;
     }, [resourceManager, currentDefaultTick]);
 
     const resourceBalance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance;
+      return resourceManager.balanceWithProduction(currentDefaultTick, resourceId)?.balance;
     }, [resourceManager, currentDefaultTick, resourceId]);
 
     const lordsBalance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Lords).balance;
+      return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Lords)?.balance;
     }, [resourceManager, currentDefaultTick]);
 
     const canBuy = useMemo(() => {
-      return isBuy ? lordsBalance > lords : resourceBalance > resource;
+      // A balance this client cannot see never covers an order.
+      const balance = isBuy ? lordsBalance : resourceBalance;
+      return balance !== undefined && balance > (isBuy ? lords : resource);
     }, [isBuy, resource, lords, lordsBalance, resourceBalance]);
 
     const enoughDonkeys = useMemo(() => {
       if (resourceId === ResourcesIds.Donkey) return true;
-      return donkeyBalance >= donkeysNeeded;
+      return donkeyBalance !== undefined && donkeyBalance >= donkeysNeeded;
     }, [donkeyBalance, donkeysNeeded, resourceId]);
 
     const renderConfirmationPopupCreateOrder = useCallback(() => {
       const isVillageAndMilitaryResource =
-        getComponentValue(components.Structure, gameEntityKey([BigInt(entityId)]))?.category ===
+        store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category ===
           StructureType.Village && isMilitaryResource(resourceId);
 
       return (
@@ -731,12 +743,12 @@ export const OrderCreation = memo(
     const trait = findResourceById(resourceId)?.trait ?? "";
 
     const amountField = (
-      <OrderField label={isBuy ? "Buy" : "Sell"} icon={trait} available={currencyFormat(Number(resourceBalance), 0)}>
+      <OrderField label={isBuy ? "Buy" : "Sell"} icon={trait} available={currencyFormat(resourceBalance, 0)}>
         <NumberInput
           value={resource}
           className={COMPACT_NUMBER_INPUT}
           onChange={(value) => setResource(Number(value))}
-          max={!isBuy ? divideByPrecision(resourceBalance) : Infinity}
+          max={!isBuy ? (knownBalance(resourceBalance) ?? 0) : Infinity}
         />
       </OrderField>
     );
@@ -752,12 +764,12 @@ export const OrderCreation = memo(
       </OrderField>
     );
     const lordsField = (
-      <OrderField label={isBuy ? "Cost" : "Gain"} icon="Lords" available={currencyFormat(Number(lordsBalance), 0)}>
+      <OrderField label={isBuy ? "Cost" : "Gain"} icon="Lords" available={currencyFormat(lordsBalance, 0)}>
         <NumberInput
           value={lords}
           className={COMPACT_NUMBER_INPUT}
           onChange={(value) => setLords(Number(value))}
-          max={isBuy ? divideByPrecision(lordsBalance) : Infinity}
+          max={isBuy ? (knownBalance(lordsBalance) ?? 0) : Infinity}
         />
       </OrderField>
     );
@@ -768,7 +780,7 @@ export const OrderCreation = memo(
           title="Donkeys needed / available"
         >
           <ResourceIcon resource="Donkey" size="xs" withTooltip={false} />
-          {donkeysNeeded.toLocaleString()} / {currencyFormat(Number(donkeyBalance), 0)}
+          {donkeysNeeded.toLocaleString()} / {currencyFormat(donkeyBalance, 0)}
         </span>
         <span className={cn(REQUIREMENT_CHIP, "text-gold/70")} title="Weight">
           {orderWeightKg.toLocaleString()} kg
@@ -800,7 +812,7 @@ export const OrderCreation = memo(
               {priceField}
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <LordsTotal isBuy={isBuy} lords={lords} available={currencyFormat(Number(lordsBalance), 0)} />
+              <LordsTotal isBuy={isBuy} lords={lords} available={currencyFormat(lordsBalance, 0)} />
               {logisticsChips}
             </div>
             {submitButton}

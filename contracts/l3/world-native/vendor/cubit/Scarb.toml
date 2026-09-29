@@ -1,0 +1,14 @@
+[package]
+name = "eternum_cubit"
+version = "1.3.0"
+edition = "2023_10"
+cairo-version = "=2.17.0"
+
+[lib]
+
+[dependencies]
+starknet = "=2.17.0"
+
+[tool.fmt]
+max-line-length = 120
+sort-module-level-items = true

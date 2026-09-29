@@ -3,6 +3,7 @@ import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 
 import { BuildingType, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import type { CosmeticAttachmentTemplate } from "../cosmetics/types";
+import type { fallenRealmBeast } from "../structures/fallen-realm";
 
 export enum SceneName {
   WorldMap = "map",
@@ -26,13 +27,16 @@ export interface StructureInfo {
   isAlly: boolean;
   owner: { address: bigint; ownerName: string; guildName: string };
   structureType: StructureType;
+  mineKind?: number;
   hasWonder: boolean;
+  /** A standing fallen realm's beast: the camp draws as its ruin and this beast instead of its village. */
+  fallenRealm?: ReturnType<typeof fallenRealmBeast>;
   realmOrder?: number;
   cosmeticId?: string;
   cosmeticAssetPaths?: string[];
   usesFallbackCosmeticSkin?: boolean;
   attachments?: CosmeticAttachmentTemplate[];
-  // Live presentation facts derived from RECS
+  // Live presentation facts derived from native store
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
   incomingTroopArrivals?: IncomingTroopArrival[];
@@ -52,20 +56,19 @@ export interface ArmyData {
   color: string;
   category: TroopType;
   tier: TroopTier;
-  isDaydreamsAgent: boolean;
   cosmeticId?: string;
   cosmeticAssetPaths?: string[];
   usesFallbackCosmeticSkin?: boolean;
   attachments?: CosmeticAttachmentTemplate[];
-  // Live presentation facts derived from RECS
+  // Live presentation facts derived from native store
   troopCount: number;
-  currentStamina: number;
+  currentStamina: number | undefined;
   maxStamina: number;
-  displayStaminaRatio?: number;
   attackedFromDegrees?: number; // Degrees from which this army has been attacked
   attackedTowardDegrees?: number; // Degrees in which this army has attacked someone
   battleCooldownEnd?: number; // Unix timestamp when battle cooldown ends
   battleTimerLeft?: number; // Time left in seconds before battle penalty is over
+  foodBlocked?: boolean; // Own army whose realm cannot pay a step's food (see readArmyMovementReadiness)
 }
 
 export interface RenderChunkSize {

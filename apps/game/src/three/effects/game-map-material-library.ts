@@ -7,6 +7,14 @@ import StandardNodeLibrary from "three/src/renderers/webgpu/nodes/StandardNodeLi
 import { applyGameEndFrost } from "./game-end-freeze";
 
 export class FrostedStandardNodeMaterial extends MeshStandardNodeMaterial {
+  override setupObserver(builder: NodeBuilder) {
+    const observer = super.setupObserver(builder);
+    // Shader injection is invisible to the default observer. Stationary meshes sharing a
+    // material still need the changing frost uniform, even when their transforms match.
+    if (!this.transparent || this.alphaTest > 0) observer.hasNode = true;
+    return observer;
+  }
+
   override setupDiffuseColor(builder: NodeBuilder): void {
     super.setupDiffuseColor(builder);
     // Coat solid surfaces and cutout foliage, preserving translucent glow cards.
@@ -17,6 +25,12 @@ export class FrostedStandardNodeMaterial extends MeshStandardNodeMaterial {
 }
 
 class FrostedArmyNodeMaterial extends MeshBasicNodeMaterial {
+  override setupObserver(builder: NodeBuilder) {
+    const observer = super.setupObserver(builder);
+    if (builder.object.userData.gameEndFrost) observer.hasNode = true;
+    return observer;
+  }
+
   override setupDiffuseColor(builder: NodeBuilder): void {
     super.setupDiffuseColor(builder);
     if (builder.object.userData.gameEndFrost) diffuseColor.rgb.assign(applyGameEndFrost(diffuseColor.rgb));

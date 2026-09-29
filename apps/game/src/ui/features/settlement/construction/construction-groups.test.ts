@@ -1,8 +1,12 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
-import { getConstructionBuildingGroups } from "./construction-groups";
+import { getConstructionBuildingGroups, resolveBuildingRequirements } from "./construction-groups";
 import type { GameModeConfig } from "@/config/game-modes";
+
+import { configManager } from "@bibliothecadao/eternum";
+
+afterEach(() => vi.restoreAllMocks());
 
 const mode = { rules: { isBuildingTypeAllowed: (name: string) => name !== "ResourceKnightT3" } } as GameModeConfig;
 describe("construction groups", () => {
@@ -29,4 +33,12 @@ describe("construction groups", () => {
       BuildingType.ResourceCrossbowmanT3,
     ]);
   });
+});
+
+it("keeps an unknown researched construction price unknown for the requirement chips", () => {
+  vi.spyOn(configManager, "getActiveGameId").mockReturnValue(7);
+  vi.spyOn(configManager, "getBuildingCosts").mockReturnValue([{ resource: ResourcesIds.Labor, amount: 100 }]);
+  vi.spyOn(configManager, "getBuildingBaseCostPercentIncrease").mockReturnValue(0);
+  const store = { get: (model: string) => (model === "BoardRules" ? {} : undefined) } as never;
+  expect(resolveBuildingRequirements(9, store, BuildingType.ResourceWheat, true, 0)).toBeUndefined();
 });

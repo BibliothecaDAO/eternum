@@ -1,0 +1,20 @@
+{
+  "name": "@realms-world/guardian",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/guardian.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "starknet": "catalog:web",
+    "@realms-world/identity": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260922.1",
+    "typescript": "catalog:web",
+    "wrangler": "4.136.3"
+  }
+}

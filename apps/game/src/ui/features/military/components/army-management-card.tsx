@@ -1,13 +1,13 @@
 import { ArrowRight, Lock as LockIcon, Pen } from "@/ui/design-system/atoms/game-icons";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
-import { Position as PositionInterface } from "@bibliothecadao/eternum";
+import { Position as PositionInterface, structureMapPosition, openSpawnDirections } from "@bibliothecadao/eternum";
 
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
-import { currencyFormat } from "@/ui/utils/utils";
+import { currencyFormat, knownBalance } from "@/ui/utils/utils";
 import { DeploymentStrengthSummary } from "./deployment-strength-summary";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
@@ -15,11 +15,11 @@ import {
   configManager,
   divideByPrecision,
   getBalance,
-  getEntityIdFromKeys,
   getTroopName,
   getTroopResourceId,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import {
   ArmyInfo,
   Direction,
@@ -30,10 +30,8 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 
 type ArmyManagementCardProps = {
@@ -88,8 +86,8 @@ const DirectionButton: React.FC<DirectionButtonProps> = ({
 
 const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuccess }: ArmyCreateProps) => {
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
@@ -109,8 +107,11 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
   const [activeTab, setActiveTab] = useState<"troops" | "direction">("troops");
 
-  const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(owner_entity)]));
-  const structureLevel = structure?.base?.level ?? 0;
+  const revision = useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight"]);
+  const structure = useNativeRow("Structure", { game_id: configManager.getActiveGameId(), entity_id: owner_entity });
+  // The player's own army card: a missing home structure is a synchronization bug, never a settlement.
+  if (!structure) throw new Error(`Structure ${owner_entity} is not synchronized`);
+  const structureLevel = structure.base.level;
   const troopCapacityLimit = configManager.getMaxArmySize(structureLevel, selectedTier) || null;
   const currentTroopCountValue = Number(army?.troops?.count ?? 0);
   const currentTroopCount = Number.isFinite(currentTroopCountValue) ? currentTroopCountValue : 0;
@@ -123,25 +124,27 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
     setSelectedTier(tier);
   };
 
+  // Spawn hexes surround the structure's map position: for a Frontier realm the day's site, as the contract spawns.
+  const structurePosition = useMemo(
+    () => (structure ? structureMapPosition(store, structure) : undefined),
+    [store, structure],
+  );
   const neighborHexes = useMemo(
-    () => (structure ? getNeighborHexes(structure.base.coord_x, structure.base.coord_y) : []),
-    [structure?.base.coord_x, structure?.base.coord_y],
+    () => (structurePosition ? getNeighborHexes(structurePosition.x, structurePosition.y) : []),
+    [structurePosition],
   );
   const neighborTiles = useWorldSpatialTiles(neighborHexes);
   const freeDirections = useMemo(
     () =>
       structure
-        ? neighborTiles
-            .filter((tile) => Number(tile.occupierId) === 0)
-            .map((tile) =>
-              getDirectionBetweenAdjacentHexes(
-                { col: structure.base.coord_x, row: structure.base.coord_y },
-                tile.hexCoords,
-              ),
-            )
-            .filter((direction): direction is Direction => direction !== null)
+        ? openSpawnDirections(store, structure, (hex) => {
+            const tile = neighborTiles.find(
+              (candidate) => candidate.hexCoords.col === hex.col && candidate.hexCoords.row === hex.row,
+            );
+            return tile ? Number(tile.occupierId) : undefined;
+          })
         : [],
-    [neighborTiles, structure],
+    [neighborTiles, store, structure],
   );
 
   useEffect(() => {
@@ -153,11 +156,12 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
   const handleBuyArmy = async (isExplorer: boolean, troopType: TroopType, troopTier: TroopTier, troopCount: number) => {
     setIsLoading(true);
     try {
+      const home = army?.structure && structureMapPosition(store, army.structure);
       const homeDirection =
-        army?.position && army?.structure
+        army?.position && home
           ? getDirectionBetweenAdjacentHexes(
               { col: army.position.x, row: army.position.y },
-              { col: army.structure.base.coord_x, row: army.structure.base.coord_y },
+              { col: home.x, row: home.y },
             )
           : null;
 
@@ -207,10 +211,10 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
 
   const maxAffordableTroops = useMemo(() => {
     const resourceId = getTroopResourceId(selectedTroopType, selectedTier);
-    const balance = getBalance(owner_entity, resourceId, currentDefaultTick, components).balance;
-    const available = Number(divideByPrecision(balance) || 0);
+    // Troops this client cannot see can't be added to an army.
+    const available = knownBalance(getBalance(owner_entity, resourceId, currentDefaultTick, store).balance) ?? 0;
     return Math.max(0, Math.min(available, remainingTroopCapacity));
-  }, [owner_entity, selectedTroopType, selectedTier, currentDefaultTick, components, remainingTroopCapacity]);
+  }, [owner_entity, selectedTroopType, selectedTier, currentDefaultTick, store, remainingTroopCapacity, revision]);
 
   useEffect(() => {
     setTroopCount((current) => Math.max(0, Math.min(current, maxAffordableTroops)));
@@ -316,7 +320,7 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
                   owner_entity,
                   getTroopResourceId(troop.troopType, selectedTier),
                   currentDefaultTick,
-                  components,
+                  store,
                 ).balance;
                 const isCurrentTroopType =
                   !army || army.troops.count === 0n
@@ -341,7 +345,7 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
                         <h6 className=" font-semibold">{getTroopName(troop.troopType, selectedTier)}</h6>
                       </div>
                       <div className="text-xl font-normal mt-1 mb-2 text-gold/80">
-                        Avail. <span className="text-gold">{currencyFormat(balance ? Number(balance) : 0, 0)}</span>
+                        Avail. <span className="text-gold">{currencyFormat(balance, 0)}</span>
                       </div>
                       <div className="px-2 py-1 bg-white/10 flex justify-between items-center rounded-md">
                         <ResourceIcon
@@ -511,12 +515,11 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
   );
 };
 
-// TODO Unify this. Push all useComponentValues up to the top level
 export const ArmyManagementCard = ({ owner_entity, army }: ArmyManagementCardProps) => {
   const {
     account: { account },
     network: { provider },
-  } = useDojo();
+  } = useGame();
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -538,7 +541,7 @@ export const ArmyManagementCard = ({ owner_entity, army }: ArmyManagementCardPro
             ) : (
               "Unknown"
             )}
-            <ViewOnMapIcon position={new PositionInterface(army.position)} />
+            <ViewOnMapIcon position={PositionInterface.fromContract(army.position)} />
           </div>
         </div>
         <div className="flex flex-col relative my-4">

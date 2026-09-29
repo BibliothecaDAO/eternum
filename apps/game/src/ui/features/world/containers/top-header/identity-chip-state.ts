@@ -14,6 +14,7 @@ export interface OwnedStructureCounts {
 export type IdentityChipState =
   | { kind: "spectating"; name: string | null; canPlay: boolean }
   | { kind: "signed-out" }
+  | { kind: "unnamed" }
   | { kind: "connecting"; name: string | null; error: string | null }
   | { kind: "player"; name: string; realmCount: number; standing: IdentityStanding | null };
 
@@ -38,35 +39,31 @@ const RANK_THRESHOLD = 500;
 const isMeaningfullyRanked = (standing: IdentityStanding): boolean =>
   Number.isFinite(standing.rank) && (standing.rank <= RANK_THRESHOLD || standing.points > 0);
 
-const shortAddress = (address: string): string => `${address.slice(0, 6)}…${address.slice(-4)}`;
-
-/** The session username is the synced name; the chain name only stands in for a session without one. */
-const resolveDisplayName = ({ identity, gameplayAccount, playerName }: IdentityChipInput): string | null =>
-  playerName ?? identity.name ?? (gameplayAccount.address ? shortAddress(gameplayAccount.address) : null);
-
 /**
- * One identity, one output. The session is the only "logged in" fact; the gameplay account only decides between
- * "connecting" and "player" once the session is there. An explicit spectate session wins over everything else.
+ * One identity, one output. The session is the only "logged in" fact: a session without a chosen name is asked for
+ * one, never named by its address; the gameplay account only decides between "connecting" and "player" once a named
+ * session is there. An explicit spectate session wins over the gameplay account.
  */
 export const resolveIdentityChipState = (input: IdentityChipInput): IdentityChipState => {
-  const { identity, gameplayAccount, owned, standing } = input;
-  const isSignedIn = identity.status === "signed-in";
-
-  if (input.isExplicitSpectateSession) {
-    return {
-      kind: "spectating",
-      name: isSignedIn ? resolveDisplayName(input) : null,
-      canPlay: isSignedIn && owned.structures > 0,
-    };
+  const { identity } = input;
+  if (identity.status === "signed-in") {
+    return identity.name === null ? { kind: "unnamed" } : namedState(input, input.playerName ?? identity.name);
   }
+  if (input.isExplicitSpectateSession) return { kind: "spectating", name: null, canPlay: false };
   if (identity.status === "loading") return { kind: "connecting", name: null, error: null };
-  if (!isSignedIn) return { kind: "signed-out" };
-  if (!gameplayAccount.address) {
-    return { kind: "connecting", name: resolveDisplayName(input), error: gameplayAccount.provisioningError };
-  }
+  return { kind: "signed-out" };
+};
+
+/** A named session: spectating, its gameplay account still deploying, or playing under the in-game name. */
+const namedState = (
+  { isExplicitSpectateSession, gameplayAccount, owned, standing }: IdentityChipInput,
+  name: string,
+): IdentityChipState => {
+  if (isExplicitSpectateSession) return { kind: "spectating", name, canPlay: owned.structures > 0 };
+  if (!gameplayAccount.address) return { kind: "connecting", name, error: gameplayAccount.provisioningError };
   return {
     kind: "player",
-    name: resolveDisplayName(input) ?? shortAddress(gameplayAccount.address),
+    name,
     realmCount: owned.realms,
     standing: standing && isMeaningfullyRanked(standing) ? standing : null,
   };

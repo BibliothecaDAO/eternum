@@ -30,7 +30,7 @@ export function createRendererLabelRuntime(input: CreateRendererLabelRuntimeInpu
   return new GameRendererLabelRuntime(input);
 }
 
-export function waitForRendererLabelElement(input: WaitForRendererLabelElementInput): Promise<HTMLDivElement> {
+function waitForRendererLabelElement(input: WaitForRendererLabelElementInput): Promise<HTMLDivElement> {
   return new Promise((resolve, reject) => {
     const warnAfterAttempts = 300;
     let attempts = 0;

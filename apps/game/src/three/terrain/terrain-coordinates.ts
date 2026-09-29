@@ -1,8 +1,10 @@
 import { getNeighborHexes } from "@bibliothecadao/types/terrain";
+import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "../utils/hex-lattice";
+import { worldHexAt, worldHexToWorld } from "../world-origin";
 
 const TERRAIN_HEX_RADIUS = 1;
-export const TERRAIN_HEX_HORIZONTAL_SPACING = Math.sqrt(3) * TERRAIN_HEX_RADIUS;
-export const TERRAIN_HEX_VERTICAL_SPACING = 1.5 * TERRAIN_HEX_RADIUS;
+export const TERRAIN_HEX_HORIZONTAL_SPACING = HEX_HORIZONTAL_SPACING;
+export const TERRAIN_HEX_VERTICAL_SPACING = HEX_VERTICAL_SPACING;
 const TERRAIN_COORDINATE_PRECISION = 1_000_000;
 
 export interface TerrainWorldCoordinate {
@@ -10,12 +12,10 @@ export interface TerrainWorldCoordinate {
   z: number;
 }
 
+/** Where a normalized terrain hex is drawn: the world map's lattice, through its floating origin. */
 export function terrainHexToWorld(col: number, row: number): TerrainWorldCoordinate {
-  const rowOffset = ((row % 2) * Math.sign(row) * TERRAIN_HEX_HORIZONTAL_SPACING) / 2;
-  return {
-    x: snapTerrainCoordinate(col * TERRAIN_HEX_HORIZONTAL_SPACING - rowOffset),
-    z: snapTerrainCoordinate(row * TERRAIN_HEX_VERTICAL_SPACING),
-  };
+  const world = worldHexToWorld(col, row);
+  return { x: snapTerrainCoordinate(world.x), z: snapTerrainCoordinate(world.z) };
 }
 
 export function terrainHexCorners(col: number, row: number): TerrainWorldCoordinate[] {
@@ -42,22 +42,5 @@ export function terrainCellKey(col: number, row: number): string {
 }
 
 export function findNearestTerrainHex(worldX: number, worldZ: number): { col: number; row: number } {
-  const estimatedRow = Math.round(worldZ / TERRAIN_HEX_VERTICAL_SPACING);
-  let nearest = { col: 0, row: estimatedRow };
-  let nearestDistanceSquared = Number.POSITIVE_INFINITY;
-
-  for (let row = estimatedRow - 2; row <= estimatedRow + 2; row += 1) {
-    const centerAtZero = terrainHexToWorld(0, row);
-    const estimatedCol = Math.round((worldX - centerAtZero.x) / TERRAIN_HEX_HORIZONTAL_SPACING);
-    for (let col = estimatedCol - 2; col <= estimatedCol + 2; col += 1) {
-      const center = terrainHexToWorld(col, row);
-      const distanceSquared = (center.x - worldX) ** 2 + (center.z - worldZ) ** 2;
-      if (distanceSquared < nearestDistanceSquared) {
-        nearest = { col, row };
-        nearestDistanceSquared = distanceSquared;
-      }
-    }
-  }
-
-  return nearest;
+  return worldHexAt(worldX, worldZ);
 }

@@ -493,14 +493,14 @@ export const StandardTroopProduction = () => {
 // Component for Labor Production
 export const LaborProduction = () => {
   const config = ETERNUM_CONFIG();
-  const laborOutputPerResource = config.resources?.laborOutputPerResource || {};
-
   const laborOutputPerSecond = config.resources?.productionByComplexRecipeOutputs?.[ResourcesIds.Labor] || 0;
 
   // Get resources that produce labor
-  const laborProducingResources = Object.keys(laborOutputPerResource)
+  const laborProducingResources = Object.keys(config.resources?.productionByComplexRecipe || {})
     .map(Number)
-    .filter((id) => laborOutputPerResource[id] > 0)
+    .filter((id) =>
+      (config.resources?.productionByComplexRecipe?.[id] || []).some((input) => input.resource === ResourcesIds.Labor),
+    )
     .toSorted((a, b) => {
       // Sort by resource rarity (if available)
       const rarityA = RESOURCE_RARITY[a] || 0;
@@ -524,9 +524,10 @@ export const LaborProduction = () => {
           <tbody>
             {laborProducingResources.map((resourceId) => {
               const resourceName = getResourceName(resourceId);
-              const resourceInput = laborOutputPerResource[resourceId]
-                ? laborOutputPerSecond / laborOutputPerResource[resourceId]
-                : 0;
+              const resourceInput =
+                config.resources?.productionByComplexRecipe?.[resourceId]?.find(
+                  (input) => input.resource === ResourcesIds.Labor,
+                )?.amount ?? 0;
 
               return (
                 <tr key={`labor-${resourceId}`}>

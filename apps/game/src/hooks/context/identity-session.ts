@@ -1,83 +1,75 @@
-import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import type { LandingEntryRouteState } from "@/ui/features/landing/lib/landing-entry-state";
-import { resolveEndpoint } from "@realms-world/chain";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { createIdentityClient, profileOfIdentityUser, type Session } from "@realms-world/identity";
 import { useEffect } from "react";
 import { create } from "zustand";
-import { env } from "../../../env";
 
 /**
  * The identity session is the one "logged in" fact. Every surface that used to ask whether the gameplay account
- * had a non-zero address (the landing gate, the sign-in prompts, the HUD banner) reads this store instead; the
+ * had a non-zero address (the shell, the sign-in prompts, the HUD banner) reads this store instead; the
  * gameplay account is derived from the session by `GameplayAccountSync` and may lag it while it deploys.
  */
-export const identityOrigin = resolveEndpoint(env.VITE_PUBLIC_IDENTITY_ORIGIN, {
-  name: "VITE_PUBLIC_IDENTITY_ORIGIN",
-  browserFacing: true,
-});
+/** The identity Worker answers under this app's own /api, so no request crosses origins. */
+export const identityClient = createIdentityClient({ apiUrl: "/api" });
 
-export const identityClient = createIdentityClient({ baseUrl: `${identityOrigin}/api/auth` });
-
-/** The identity chip's popover id: sign-in requests open it wherever the chip is mounted. */
+/** The identity chip's popover id: a signed-in player's account panel opens from it. */
 export const IDENTITY_POPOVER_ID = "identity";
 
 export type IdentitySessionStatus = "loading" | "anonymous" | "signed-in";
 
-/** A surface that needs a signed-in identity asks for one; the landing chip replays the redirect after sign-in. */
-interface SignInRequest {
-  redirectTo: string;
-  redirectState?: LandingEntryRouteState;
-}
-
 interface IdentitySessionStore {
   status: IdentitySessionStatus;
   session: Session | null;
-  signInRequest: SignInRequest | null;
   applySession: (session: Session | null) => void;
   refresh: () => Promise<void>;
-  requestSignIn: (request?: SignInRequest) => void;
-  clearSignInRequest: () => void;
 }
 
 const resolveStatus = (session: Session | null): IdentitySessionStatus => (session ? "signed-in" : "anonymous");
+
+/** Notifications belong to the Realms account, named by its Realms id: every notification surface reads the owner here. */
+export const notificationOwnerOf = (session: Session | null): string | null => session?.user.realmsId ?? null;
 
 /** The signed-in user's chosen username, null before they choose one (the name then still reads as the address). */
 export const identityUsername = (session: Session | null): string | null =>
   session ? profileOfIdentityUser(session.user).name : null;
 
-export const useIdentitySessionStore = create<IdentitySessionStore>()((set) => ({
+let sessionRevision = 0;
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
+let initialLoad: Promise<void> | null = null;
+
+export const useIdentitySessionStore = create<IdentitySessionStore>()((set, get) => ({
   status: "loading",
   session: null,
-  signInRequest: null,
-  applySession: (session) => set({ session, status: resolveStatus(session) }),
+  applySession: (session) => {
+    sessionRevision += 1;
+    if (retryTimer) clearTimeout(retryTimer);
+    retryTimer = null;
+    if (!session) useAccountStore.getState().setGameplayAccount(null, null);
+    set({ session, status: resolveStatus(session) });
+  },
   refresh: async () => {
+    const revision = ++sessionRevision;
     try {
       const session = await identityClient.getSession();
-      set({ session, status: resolveStatus(session) });
+      if (revision === sessionRevision) get().applySession(session);
     } catch (error) {
+      if (revision !== sessionRevision) return;
       console.error("identity_session_load_failed", error);
-      set({ session: null, status: "anonymous" });
+      initialLoad = null;
+      // An unreadable session is unknown, never evidence of sign-out. Keep the last known fact and retry.
+      if (!retryTimer)
+        retryTimer = setTimeout(() => {
+          retryTimer = null;
+          void loadIdentitySessionOnce();
+        }, 5_000);
     }
   },
-  requestSignIn: (request) => {
-    set({ signInRequest: request ?? null });
-    usePopoverStore.getState().open(IDENTITY_POPOVER_ID);
-  },
-  clearSignInRequest: () => set({ signInRequest: null }),
 }));
 
-/** End the identity session before detaching its wallet in every sign-out surface. */
-export async function signOutIdentitySession(disconnect: () => Promise<unknown>): Promise<void> {
+/** Ends the identity session; no wallet stays connected to detach, since a wallet only links from the account page. */
+export async function signOutIdentitySession(): Promise<void> {
   await identityClient.signOut();
   useIdentitySessionStore.getState().applySession(null);
-  try {
-    await disconnect();
-  } catch (error) {
-    console.error("identity_wallet_disconnect_failed", error);
-  }
 }
-
-let initialLoad: Promise<void> | null = null;
 
 const loadIdentitySessionOnce = (): Promise<void> => (initialLoad ??= useIdentitySessionStore.getState().refresh());
 

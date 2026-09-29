@@ -6,9 +6,10 @@ import {
   HexEntityInfo,
   type HexPosition,
 } from "@bibliothecadao/types";
-import { Position } from "../systems";
 import { FELT_CENTER } from "../utils";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
+import { configManager } from "./config-manager";
+import { isViewerOwner } from "../utils/viewer";
 
 export class StructureActionManager {
   private readonly FELT_CENTER: number;
@@ -26,7 +27,7 @@ export class StructureActionManager {
    * @returns ActionPaths object containing possible attack or help actions
    */
   public findActionPaths(
-    rawPosition: HexPosition,
+    contractPosition: HexPosition,
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
     playerAddress: ContractAddress,
@@ -34,8 +35,7 @@ export class StructureActionManager {
   ): ActionPaths {
     const actionPaths = new ActionPaths();
 
-    const contractPos = new Position({ x: rawPosition.col, y: rawPosition.row }).getContract();
-    const position = { col: contractPos.x, row: contractPos.y };
+    const position = { col: contractPosition.col, row: contractPosition.row };
 
     this.addAdjacentSupportActionPaths(actionPaths, position, armyHexes, exploredHexes, playerAddress);
     this.addAttackActionPaths(actionPaths, position, armyHexes, exploredHexes, playerAddress, attackRange);
@@ -58,13 +58,16 @@ export class StructureActionManager {
       if (!isExplored) continue;
 
       const hasArmy = armyHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
-      const isArmyMine =
-        armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER)?.owner === playerAddress || false;
+      const isArmyMine = isViewerOwner(
+        armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER)?.owner,
+        playerAddress,
+      );
 
       if (hasArmy) {
         const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
 
         if (!isArmyMine) continue;
+        if (configManager.helpTransfers(true).length === 0) continue;
 
         const path: ActionPath[] = [
           { hex: { col: position.col, row: position.row }, actionType: ActionType.Move },
@@ -103,7 +106,7 @@ export class StructureActionManager {
       if (!exploredRow?.has(row - this.FELT_CENTER)) continue;
 
       const targetArmy = armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
-      if (!targetArmy || targetArmy.owner === playerAddress) continue;
+      if (!targetArmy || isViewerOwner(targetArmy.owner, playerAddress)) continue;
 
       const biome = exploredRow.get(row - this.FELT_CENTER);
 

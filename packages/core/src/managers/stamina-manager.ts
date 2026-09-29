@@ -1,92 +1,35 @@
-import { ClientComponents, ID, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
-import { configManager, gameEntityKey } from "./config-manager";
+import { ID, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
+import type { NativeFactStore } from "../client/native-fact-store";
+import { configManager } from "./config-manager";
+import { fullAtTick, staminaAt, troopStaminaLimits, resolveExplorerTroops } from "./troop-stamina";
 
 export class StaminaManager {
   constructor(
-    private components: ClientComponents,
+    private store: NativeFactStore,
     private armyEntityId: ID,
   ) {}
 
   public getStamina(currentArmiesTick: number) {
-    let armyOnchainStamina = getComponentValue(
-      this.components.ExplorerTroops,
-      gameEntityKey([BigInt(this.armyEntityId)]),
-    )?.troops.stamina;
+    const explorer = this.store.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: this.armyEntityId,
+    });
+    if (!explorer) return undefined;
 
-    if (!armyOnchainStamina) {
-      return { ...DEFAULT_STAMINA, entity_id: this.armyEntityId };
-    }
-
-    const troops = getComponentValue(
-      this.components.ExplorerTroops,
-      gameEntityKey([BigInt(this.armyEntityId)]),
-    )?.troops;
-
-    if (!troops) return { ...DEFAULT_STAMINA, entity_id: this.armyEntityId };
-
-    return StaminaManager.getStamina(troops, currentArmiesTick);
+    const troops = resolveExplorerTroops(this.store, explorer);
+    return troops ? StaminaManager.getStamina(troops, currentArmiesTick) : undefined;
   }
 
+  /** The active game's stamina, for the client that has one active game. */
   public static getStamina(troops: Troops, currentArmiesTick: number) {
-    const lastRefillTick = troops.stamina.updated_tick;
-    const staminaConfig = configManager.getTroopStaminaConfig(troops.category as TroopType, troops.tier as TroopTier);
-    const maxStamina = staminaConfig.staminaMax;
-
-    if (lastRefillTick >= BigInt(currentArmiesTick)) {
-      return structuredClone(troops.stamina);
-    }
-
-    if (lastRefillTick === 0n) {
-      return {
-        amount: BigInt(Math.min(staminaConfig.staminaInitial, maxStamina)),
-        updated_tick: BigInt(currentArmiesTick),
-      };
-    }
-
-    const staminaPerTick = configManager.getRefillPerTick();
-    const boostPercent = Number(troops.boosts.incr_stamina_regen_percent_num);
-    const boostStaminaPerTick = Math.floor((staminaPerTick * boostPercent) / 10_000);
-    const ticksSinceLastRefill = currentArmiesTick - Number(lastRefillTick);
-    const boostNumTicksPassed = Math.min(ticksSinceLastRefill, Number(troops.boosts.incr_stamina_regen_tick_count));
-    const additionalStaminaBoost = boostNumTicksPassed * boostStaminaPerTick;
-
-    const newStamina = this.refill(
-      currentArmiesTick,
-      lastRefillTick,
-      maxStamina,
-      Number(troops.stamina.amount),
-      additionalStaminaBoost,
-    );
-
-    return newStamina;
+    return staminaAt(troops, currentArmiesTick, configManager.getTroopStaminaRules());
   }
 
-  public static getMaxStamina = (troopCategory: TroopType, troopTier: TroopTier): number => {
-    const staminaConfig = configManager.getTroopStaminaConfig(troopCategory, troopTier);
-    return staminaConfig.staminaMax;
-  };
-
-  private static refill(
-    currentArmiesTick: number,
-    last_refill_tick: bigint,
-    maxStamina: number,
-    amount: number,
-    additionalStaminaBoost?: number,
-  ) {
-    const staminaPerTick = configManager.getRefillPerTick();
-    const numTicksPassed = currentArmiesTick - Number(last_refill_tick);
-    const totalStaminaSinceLastTick = numTicksPassed * staminaPerTick + (additionalStaminaBoost ?? 0);
-
-    const newAmount = Math.min(amount + totalStaminaSinceLastTick, maxStamina);
-    return {
-      amount: BigInt(newAmount),
-      updated_tick: BigInt(currentArmiesTick),
-    };
+  /** The first tick at which the troops are full under the active game's rules; null when stamina never refills. */
+  public static getFullAtTick(troops: Troops, currentArmiesTick: number): number | null {
+    return fullAtTick(troops, currentArmiesTick, configManager.getTroopStaminaRules());
   }
+
+  public static getMaxStamina = (troopCategory: TroopType, troopTier: TroopTier, resolvedMaximum?: number): number =>
+    resolvedMaximum ?? troopStaminaLimits(configManager.getTroopStaminaRules(), troopCategory, troopTier).staminaMax;
 }
-
-const DEFAULT_STAMINA = {
-  amount: 0n,
-  last_refill_tick: 0n,
-};

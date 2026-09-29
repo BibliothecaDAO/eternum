@@ -1,6 +1,10 @@
+import type { NativeWorldBindings } from "@bibliothecadao/types";
+import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
+import { nativeModelDefinition } from "./native-models";
 // @vitest-environment node
 
 import { describe, expect, it, vi } from "vitest";
+import { NativeFactStore } from "./native-fact-store";
 
 import { createManualGameSyncScheduler } from "../sync/scheduler";
 import {
@@ -11,38 +15,44 @@ import {
 
 const createSession = (overrides: Partial<CreateHeraldGameSyncSessionInput> = {}) =>
   createHeraldGameSyncSession({
+    modelDefinition: nativeModelDefinition(bindings as unknown as NativeWorldBindings),
     baseUrl: "https://herald.realms.test",
-    chain: "madara",
+    chainId: "0x1",
     entityModels: [],
     eventModels: [],
     gameId: 54,
     worldAddress: "0x1",
     scheduler: createManualGameSyncScheduler(),
-    setup: { network: { contractComponents: {} } } as never,
+    store: new NativeFactStore(),
     ...overrides,
   });
 
 describe("buildHeraldGameStreamUrl", () => {
-  it("builds the per-chain, per-game WebSocket endpoint", () => {
-    expect(buildHeraldGameStreamUrl("https://herald.realms.test/stream/", "madara", 54)).toBe(
-      "wss://herald.realms.test/stream/madara/games/54",
+  it("builds the per-game WebSocket endpoint under the shard URL", () => {
+    expect(buildHeraldGameStreamUrl("https://herald.realms.test/stream/", 54)).toBe(
+      "wss://herald.realms.test/stream/games/54",
     );
-    expect(buildHeraldGameStreamUrl("ws://127.0.0.1:3003", "appchain", 7)).toBe("ws://127.0.0.1:3003/appchain/games/7");
+    expect(buildHeraldGameStreamUrl("ws://127.0.0.1:3003", 7)).toBe("ws://127.0.0.1:3003/games/7");
   });
 
   it("rejects a missing game scope", () => {
-    expect(() => buildHeraldGameStreamUrl("https://herald.realms.test", "madara", 0)).toThrow("positive game id");
+    expect(() => buildHeraldGameStreamUrl("https://herald.realms.test", 0)).toThrow("positive game id");
   });
 });
 
 describe("createHeraldGameSyncSession", () => {
-  it("reports each snapshot phase once, with its duration, and forwards real progress", () => {
+  it("reports each snapshot phase once, with its duration, the coherent store, and forwards real progress", () => {
     const onSnapshotProgress = vi.fn();
-    const observer = { onSnapshotPhaseStarted: vi.fn(), onSnapshotPhaseCompleted: vi.fn(), onSnapshotProgress };
+    const observer = {
+      onSnapshotPhaseStarted: vi.fn(),
+      onSnapshotPhaseCompleted: vi.fn(),
+      onSnapshotCoherent: vi.fn(),
+      onSnapshotProgress,
+    };
     const session = createSession({ observer });
 
-    session.onSnapshotProgress?.({ completed: 1, phase: "receiving", streaming: true, total: 2 });
-    session.onSnapshotProgress?.({ completed: 2, phase: "receiving", streaming: false, total: 2 });
+    session.onSnapshotProgress?.({ bytesReceived: 400, completed: 1, phase: "receiving", streaming: true, total: 2 });
+    session.onSnapshotProgress?.({ bytesReceived: 900, completed: 2, phase: "receiving", streaming: false, total: 2 });
     session.onSnapshotProgress?.({ completed: 2, phase: "receiving", streaming: false, total: 2 });
     session.onSnapshotProgress?.({ completed: 3, phase: "applying", streaming: false, total: 3 });
 
@@ -52,6 +62,9 @@ describe("createHeraldGameSyncSession", () => {
     observer.onSnapshotPhaseCompleted.mock.calls.forEach(([, durationMs]) => {
       expect(durationMs).toBeGreaterThanOrEqual(0);
     });
+    expect(observer.onSnapshotCoherent.mock.calls).toEqual([
+      [{ bytes: 900, transferMs: expect.any(Number), coherentMs: expect.any(Number) }],
+    ]);
   });
 
   it("resets story events when the session is created and forwards stream facts to the observer", () => {
@@ -59,7 +72,7 @@ describe("createHeraldGameSyncSession", () => {
       onDiffReceived: vi.fn(),
       onHead: vi.fn(),
       onLiveApplyFailed: vi.fn(),
-      onRecsApplied: vi.fn(),
+      onEntitiesApplied: vi.fn(),
       onStoryEvent: vi.fn(),
       onStoryEventsReset: vi.fn(),
     };
@@ -68,7 +81,7 @@ describe("createHeraldGameSyncSession", () => {
     expect(observer.onStoryEventsReset).toHaveBeenCalledTimes(1);
 
     const head = { block: 13, preconfirmed: false, timestamp: 100 };
-    const event = { hashed_keys: "0x1", models: {} };
+    const event = { model: "StoryEvent", key: "0x1", value: {} };
     session.onHead?.(head);
     const confirmation = { block: 13, preconfirmed: false, confirmedAfterAttach: true };
     session.onEvent?.(event, confirmation);
@@ -79,11 +92,11 @@ describe("createHeraldGameSyncSession", () => {
     expect(observer.onHead).toHaveBeenCalledWith(head);
     expect(observer.onStoryEvent).toHaveBeenCalledWith(
       event,
-      { chain: "madara", worldAddress: "0x1", gameId: 54 },
+      { chainId: "0x1", worldAddress: "0x1", gameId: 54 },
       confirmation,
     );
     expect(observer.onDiffReceived).toHaveBeenCalledWith("0xabc");
-    expect(observer.onRecsApplied).toHaveBeenCalledWith("0xabc");
+    expect(observer.onEntitiesApplied).toHaveBeenCalledWith("0xabc");
     expect(observer.onLiveApplyFailed).toHaveBeenCalledWith(expect.objectContaining({ message: "boom" }));
     expect(consoleError).toHaveBeenCalledWith("[GameSync] live entity apply failed: boom");
     consoleError.mockRestore();

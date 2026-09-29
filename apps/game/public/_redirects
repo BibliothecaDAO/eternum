@@ -1,14 +1,15 @@
 # Only application routes use the SPA shell. Missing assets must remain 404s.
-/biome-lab / 200
-/local-lab / 200
+/play / 200
+/results / 200
+/account / 200
 /learn / 200
 /news / 200
+/scroll / 200
+/terms / 200
+/privacy / 200
 /factory / 200
-/profile / 200
-/markets / 200
-/amm / 200
-/leaderboard / 200
-/enter/* / 200
-/play/* / 200
-/factory/* / 200
+/p/* / 200
+/scroll/* / 200
+/g/* / 200
+/lab/* / 200
 /debug/* / 200

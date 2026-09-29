@@ -1,4 +1,3 @@
-import { GAME_CHAIN_NAMES } from "@realms-world/chain";
 export interface LocalNotificationPayload {
   version: 1;
   id: string;
@@ -58,13 +57,12 @@ export function logicalStoryIdentity(
     typeof payload.transfer_type === "string"
       ? payload.transfer_type
       : Object.keys((payload.transfer_type ?? {}) as object)[0];
-  if (story !== "BattleStory" && !(story === "ResourceTransferStory" && transferType === "Delayed")) return sourceId;
-  const firstEntity = story === "BattleStory" ? payload.attacker_id : payload.from_entity_id;
-  const secondEntity = story === "BattleStory" ? payload.defender_id : payload.to_entity_id;
-  const firstOwner = story === "BattleStory" ? payload.attacker_owner_address : payload.from_entity_owner_address;
-  const secondOwner = story === "BattleStory" ? payload.defender_owner_address : payload.to_entity_owner_address;
-  const first = sameFelt(value.entity_id, firstEntity) && sameFelt(value.owner, firstOwner);
-  const second = sameFelt(value.entity_id, secondEntity) && sameFelt(value.owner, secondOwner);
+  // A delayed transfer is written once per side; both perspectives are one logical story.
+  if (!(story === "ResourceTransferStory" && transferType === "Delayed")) return sourceId;
+  const first =
+    sameFelt(value.entity_id, payload.from_entity_id) && sameFelt(value.owner, payload.from_entity_owner_address);
+  const second =
+    sameFelt(value.entity_id, payload.to_entity_id) && sameFelt(value.owner, payload.to_entity_owner_address);
   if (first === second) throw new Error("Ambiguous mirrored story perspective");
   const id = BigInt(sourceId.slice(sourceId.lastIndexOf(":") + 1));
   if (id < (second ? 1n : 0n)) throw new Error("Invalid mirrored story UUID");
@@ -87,16 +85,21 @@ export function isNotificationGameClient(clientUrl: string, origin: string): boo
   return notificationTargetForGameClient(clientUrl, origin) !== null;
 }
 
+/**
+ * A game lives at /g/<chain id>/<game id>; its scenes are one segment deeper. Every game link and every notification
+ * target is built here, so a target can only ever name a route the app serves.
+ */
+export const gamePath = (game: { chainId: string; gameId: number }, scene?: "map" | "hex"): string =>
+  `/g/${game.chainId.toLowerCase()}/${game.gameId}${scene ? `/${scene}` : ""}`;
+
 function notificationTargetForGameClient(clientUrl: string, origin: string): string | null {
   const client = new URL(clientUrl);
   if (client.origin !== origin) return null;
-  const match = /^\/play\/([a-z0-9_-]+)\/([a-zA-Z0-9_-]{1,100})\/(map|hex|travel)\/?$/.exec(client.pathname);
-  if (!match || !Object.hasOwn(GAME_CHAIN_NAMES, match[1])) return null;
-  return `/enter/${match[1]}/${match[2]}`;
+  const match = /^\/g\/(0x[0-9a-f]{1,64})\/([1-9][0-9]{0,15})\/(map|hex)\/?$/.exec(client.pathname);
+  return match ? gamePath({ chainId: match[1], gameId: Number(match[2]) }) : null;
 }
 
 function isNotificationTarget(target: string): boolean {
   if (target === "/") return true;
-  const match = /^\/enter\/([a-z0-9_-]+)\/[a-zA-Z0-9_-]{1,100}$/.exec(target);
-  return match !== null && Object.hasOwn(GAME_CHAIN_NAMES, match[1]);
+  return /^\/g\/0x[0-9a-f]{1,64}\/[1-9][0-9]{0,15}$/.test(target);
 }

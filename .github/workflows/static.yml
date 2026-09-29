@@ -1,0 +1,45 @@
+name: static
+
+on:
+  workflow_call:
+
+jobs:
+  knip:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check for unused files, exports and types
+        run: pnpm run knip
+
+      - name: Check the diff base keeps every unlanded commit in scope
+        run: bash .github/scripts/diff-base.test.sh
+
+      - name: Check that only a landing validation run validates a publish
+        run: bash .github/scripts/landing-run.test.sh
+
+      - name: Check that each validation area covers every file its checks read
+        run: python3 .github/scripts/check_validation_areas.py
+
+      - name: Check committed env files name no third-party RPC
+        run: |
+          node --test scripts/check-committed-env-rpc.test.mjs
+          node scripts/check-committed-env-rpc.mjs
+
+      - name: Check formatting
+        run: pnpm run format:check

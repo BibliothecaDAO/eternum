@@ -14,6 +14,10 @@ export const deployVillagePassContract = async () => {
   ///////   Village Pass Contract  //////////
   ///////////////////////////////////////////
 
+  const minter = requiredAddress("VILLAGE_PASS_MINTER");
+  const gameDistributor = requiredAddress("VILLAGE_PASS_GAME_DISTRIBUTOR");
+  const distributor = requiredAddress("VILLAGE_PASS_DISTRIBUTOR");
+
   // declare contract
   let casualName = "village_pass";
   let projectName = "evp"; // eternum season pass
@@ -22,19 +26,9 @@ export const deployVillagePassContract = async () => {
 
   let VILLAGE_PASS_ADMIN = BigInt(process.env.SEASON_PASS_ADMIN);
   let VILLAGE_PASS_UPGRADER = VILLAGE_PASS_ADMIN;
-  let VILLAGE_PASS_MINTER = await getContractByNameFromManifest("realm_internal_systems");
-  let VILLAGE_PASS_DISTRIBUTORS = [
-    await getContractByNameFromManifest("village_systems"),
-    BigInt(process.env.VILLAGE_PASS_DISTRIBUTOR),
-  ];
+  const distributors = [...new Set([gameDistributor, distributor])];
 
-  let constructorCalldata = [
-    VILLAGE_PASS_ADMIN,
-    VILLAGE_PASS_UPGRADER,
-    VILLAGE_PASS_MINTER,
-    VILLAGE_PASS_DISTRIBUTORS.length,
-    ...VILLAGE_PASS_DISTRIBUTORS,
-  ];
+  let constructorCalldata = [VILLAGE_PASS_ADMIN, VILLAGE_PASS_UPGRADER, minter, distributors.length, ...distributors];
 
   let address = await deploy(casualName, class_hash, constructorCalldata);
   return address;
@@ -83,19 +77,10 @@ export const saveVillagePassAddressToCommonFolder = async (villagePassAddress) =
   }
 };
 
-export const getContractByNameFromManifest = async (systemName) => {
-  const network = process.env.STARKNET_NETWORK;
-  const folderPath = path.join("..", "..", "..", "..", "..", "l3", "game");
-  const fileName = path.join(folderPath, `manifest_${network}.json`);
-
-  // Read file content
-  const fileContent = await fs.promises.readFile(fileName, "utf8");
-  const manifest = JSON.parse(fileContent);
-
-  const contractSystemName = `${process.env.ETERNUM_CONTRACTS_NAMESPACE}-${systemName}`;
-  const contract = manifest.contracts.find((contract) => contract.tag === contractSystemName);
-  if (!contract) {
-    throw new Error(`Contract ${contractSystemName} not found in manifest`);
+const requiredAddress = (name) => {
+  const value = process.env[name];
+  if (!value || !/^0x[0-9a-f]+$/i.test(value) || BigInt(value) === 0n) {
+    throw new Error(`${name} must be a non-zero contract address`);
   }
-  return contract.address;
+  return BigInt(value);
 };

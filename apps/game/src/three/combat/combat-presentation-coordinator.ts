@@ -52,7 +52,7 @@ const WORLD_ARROW_CAPACITY = 512;
 
 /**
  * Owns transient attack visuals for the world map. Combat results never flow
- * back through this class; Cairo/RECS remains the only gameplay authority.
+ * back through this class; Cairo/native store remains the only gameplay authority.
  */
 export class CombatPresentationCoordinator {
   private readonly projectiles: ArrowProjectileSystem;

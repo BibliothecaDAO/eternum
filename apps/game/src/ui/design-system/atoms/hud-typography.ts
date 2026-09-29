@@ -20,15 +20,18 @@
  *   - HEADLINE — larger semibold headline ("djizus", "Tropical Seasonal
  *                Forest", structure names inside bubbles).
  *
+ * The caps, italic and size choices are classes (hud-caps, hud-muted, hud-body, hud-value, index.css) so a mode can
+ * restyle them in one place: Frontier reads in sentence case, never italic, at dyslexia-friendly sizes.
+ *
  * All HUD surfaces drop font-[Cinzel] — that was making some elements
  * read as a different family from the rest of the chrome. The default
  * sans-serif renders smaller sizes more legibly and unifies the look.
  */
 
-export const HUD_LABEL = "text-[10px] font-semibold uppercase tracking-[0.2em] text-gold/70";
-export const HUD_LABEL_BRIGHT = "text-[11px] font-semibold uppercase tracking-[0.16em] text-gold";
-export const HUD_CUE = "text-[10px] font-semibold uppercase tracking-[0.2em] text-gold/55";
-export const HUD_BODY = "text-[11px] text-gold/85";
-export const HUD_BODY_MUTED = "text-[11px] italic text-gold/55";
-export const HUD_VALUE = "text-[12px] font-semibold text-gold";
+export const HUD_LABEL = "hud-caps text-[10px] font-semibold text-gold/70";
+export const HUD_LABEL_BRIGHT = "hud-caps-tight text-[11px] font-semibold text-gold";
+export const HUD_CUE = "hud-caps text-[10px] font-semibold text-gold/55";
+export const HUD_BODY = "hud-body text-[11px] text-gold/85";
+export const HUD_BODY_MUTED = "hud-body hud-muted text-[11px] text-gold/55";
+export const HUD_VALUE = "hud-value text-[12px] font-semibold text-gold";
 export const HUD_HEADLINE = "text-[14px] font-semibold text-gold";

@@ -1,34 +1,34 @@
-import { resolve } from "node:path";
+import { createNativeWorldIngestion } from "./native/world-ingestion";
+import { NativeDecoder } from "./native/decoder";
+import { NativeIngestion } from "./native/ingestion";
+import { readFile } from "node:fs/promises";
 
-import { loadConfirmedWorld } from "./checkpoint-loader";
 import { CheckpointStore } from "./checkpoint-store";
-import type { GameStreamSession } from "./game-stream";
 import { createHeraldRequestHandler } from "./http";
-import { LiveWorld } from "./live-world";
 import { MadaraRpc } from "./madara-rpc";
 import { MadaraSubscriptions } from "./madara-subscriptions";
-import { createModelRegistry, readWorldManifest } from "./model-registry";
-import type { ResumeRequest } from "./stream-protocol";
-import { WorldEventDecodeMonitor } from "./world-event-decoder";
-import { backfillHistory } from "./history-backfill";
+import {
+  acceptGameStream,
+  parseScopeAddress,
+  answerSafely,
+  createStreamSocketHandlers,
+  type HeraldSocketData,
+} from "./request-guards";
 import { HistoryStore } from "./history-store";
+import { assertShardChain, buildShardManifest, readShardDocument } from "./shard-manifest";
 
 const CHECKPOINT_EVERY_BLOCKS = 100;
 /** How often Herald reads the sequencer clock off the pre-confirmed block. */
 const CHAIN_CLOCK_INTERVAL_MS = 500;
 
 interface HeraldConfig {
-  chain: string;
   databaseUrl: string;
   manifestPath: string;
   port: number;
+  publicAdmissionUrl: string;
+  publicRpcUrl: string;
   rpcUrl: string;
   wsUrl: string;
-}
-
-interface HeraldSocketData {
-  gameId: string;
-  session?: GameStreamSession;
 }
 
 const requireEnvironment = (name: string): string => {
@@ -37,8 +37,9 @@ const requireEnvironment = (name: string): string => {
   return value;
 };
 
+/** The shard's runtime files name the port (3003 in the package); a Herald started without one refuses to start. */
 const readPort = (): number => {
-  const port = Number(process.env.PORT ?? 3_003);
+  const port = Number(requireEnvironment("PORT"));
   if (!Number.isSafeInteger(port) || port < 1 || port > 65_535) throw new Error(`Invalid PORT ${process.env.PORT}`);
   return port;
 };
@@ -52,76 +53,52 @@ const websocketUrl = (rpcUrl: string): string => {
 const readConfig = (): HeraldConfig => {
   const rpcUrl = requireEnvironment("HERALD_RPC_URL");
   return {
-    chain: requireEnvironment("HERALD_CHAIN"),
     databaseUrl: requireEnvironment("DATABASE_URL"),
-    manifestPath:
-      process.env.HERALD_MANIFEST_PATH ?? resolve(import.meta.dir, "../../../contracts/l3/game/manifest_madara.json"),
+    manifestPath: requireEnvironment("NATIVE_WORLD_MANIFEST"),
     port: readPort(),
+    publicAdmissionUrl: requireEnvironment("HERALD_PUBLIC_ADMISSION_URL"),
+    publicRpcUrl: requireEnvironment("HERALD_PUBLIC_RPC_URL"),
     rpcUrl,
     wsUrl: websocketUrl(rpcUrl),
   };
 };
 
-const streamGameId = (pathname: string, chain: string): string | undefined => {
-  const escapedChain = chain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`^/${escapedChain}/games/([0-9]+)$`).exec(pathname)?.[1];
-};
-
-const parseResume = (message: string | Buffer): ResumeRequest => {
-  const request = JSON.parse(String(message)) as Partial<ResumeRequest>;
-  const seq = request.seq;
-  if (
-    request.type !== "resume" ||
-    typeof request.epoch !== "string" ||
-    !Number.isSafeInteger(seq) ||
-    seq === undefined ||
-    seq < 0
-  ) {
-    throw new Error("Expected resume{epoch,seq}");
-  }
-  return request as ResumeRequest;
-};
+const streamGameId = (pathname: string): string | undefined => /^\/games\/([0-9]+)$/.exec(pathname)?.[1];
 
 const main = async (): Promise<void> => {
   const config = readConfig();
-  const manifest = await readWorldManifest(config.manifestPath);
-  const registry = createModelRegistry(manifest);
-  const rpc = new MadaraRpc(config.rpcUrl);
-  const checkpointStore = new CheckpointStore(config.databaseUrl);
-  const historyStore = new HistoryStore(config.databaseUrl, config.chain, registry.worldAddress);
-  const decodeMonitor = new WorldEventDecodeMonitor();
-  await historyStore.initialize();
-  const loaded = await loadConfirmedWorld({
-    chain: config.chain,
-    checkpointStore,
-    decodeMonitor,
-    onPage: ({ number, eventCount }) => {
-      if (number % 25 === 0) {
-        console.info(JSON.stringify({ event: "herald_replay_progress", eventCount, page: number }));
-      }
-    },
-    registry,
-    rpc,
+  const manifest = readShardDocument(await readFile(config.manifestPath, "utf8"));
+  const shardManifest = buildShardManifest(manifest, {
+    rpcUrl: config.publicRpcUrl,
+    admissionUrl: config.publicAdmissionUrl,
   });
-  const live = new LiveWorld({
-    chain: config.chain,
+  const native = new NativeIngestion(new NativeDecoder(manifest));
+  const ingestion = createNativeWorldIngestion(native);
+  const registry = ingestion.registry;
+  const rpc = new MadaraRpc(config.rpcUrl);
+  const chain = await rpc.chainId();
+  assertShardChain(manifest, chain);
+  const checkpointStore = new CheckpointStore(config.databaseUrl);
+  const historyStore = new HistoryStore(config.databaseUrl, chain, registry.worldAddress, ingestion.historyCodec);
+  await historyStore.initialize();
+  const loaded = await ingestion.load({ chain, checkpointStore, history: historyStore, rpc });
+  const liveInput = {
+    chain,
     checkpointBlock: loaded.checkpointBlock,
     checkpointEveryBlocks: CHECKPOINT_EVERY_BLOCKS,
     checkpointStore,
     confirmedBlock: loaded.confirmedBlock,
     confirmedFold: loaded.fold,
-    decodeMonitor,
     historyStore,
     registry,
     rpc,
-  });
-  const confirmedHead = await rpc.getBlockWithReceipts(loaded.confirmedBlock);
-  await live.freezeEndedReviewSnapshots(confirmedHead.timestamp);
+  };
+  const live = ingestion.createLive(liveInput);
+  await live.archiveFinalizedGames();
   let server: ReturnType<typeof Bun.serve<HeraldSocketData>> | undefined;
   let shuttingDown = false;
 
-  const subscriptions = new MadaraSubscriptions(config.wsUrl, registry, {
-    onEvent: (event) => live.acceptPreconfirmedEvent(event),
+  const subscriptions = new MadaraSubscriptions(config.wsUrl, {
     onFatal: (error) => {
       console.error(JSON.stringify({ error: error.message, event: "herald_fatal" }));
       void shutdown(1);
@@ -155,50 +132,57 @@ const main = async (): Promise<void> => {
 
   await subscriptions.start();
   const http = createHeraldRequestHandler({
-    chain: config.chain,
+    subscribeConfirmedChanges: (listener) => live.subscribeConfirmedChanges(listener),
+    readModels: ingestion.readModels,
+    chain,
+    manifest: shardManifest,
+    schemas: manifest.native.schemas,
     worldAddress: registry.worldAddress,
     confirmedBlock: () => live.confirmedBlock,
     chainTimestamp: () => live.chainTimestamp,
     decodedModelCount: registry.bySelector.size,
     fold: {
       modelRows: (model) => live.modelRows(model),
-      snapshot: (gameId, _confirmedBlock, models) => live.snapshot(gameId, models),
+      structurePosition: (game, entity) => live.structurePosition(game, entity),
+      directoryRevision: () => live.directoryRevision(),
+      snapshot: (gameId, _confirmedBlock, models, actor, owner) => live.snapshot(gameId, models, actor, owner),
     },
     history: historyStore,
     metrics: loaded.metrics,
-    undecodableEventCount: () => decodeMonitor.failures,
+    undecodableEventCount: () => native.receiptFailures,
+    ingestionFailure: () =>
+      native.halted
+        ? { block: native.halted.block, transactionHash: native.halted.transactionHash, error: native.halted.message }
+        : undefined,
   });
   server = Bun.serve<HeraldSocketData>({
     port: config.port,
-    fetch: (request, bunServer) => {
-      const gameId = streamGameId(new URL(request.url).pathname, config.chain);
-      if (gameId && bunServer.upgrade(request, { data: { gameId } })) return;
-      return http(request);
-    },
-    websocket: {
-      close: (socket) => {
-        if (socket.data.session) live.detach(socket.data.session);
-      },
-      message: (socket, message) => {
+    fetch: (request, bunServer) =>
+      answerSafely(request, () => {
+        const url = new URL(request.url);
+        if (url.pathname === "/games/updates") bunServer.timeout(request, 0);
+        const gameId = streamGameId(url.pathname);
+        let actor: string | undefined;
         try {
-          if (!socket.data.session) throw new Error("Stream session is not attached");
-          live.resume(socket.data.session, parseResume(message));
-        } catch (error) {
-          const reason = error instanceof Error ? error.message : String(error);
-          socket.close(1008, reason);
+          actor = parseScopeAddress(url.searchParams.get("actor"));
+        } catch {
+          return new Response("Invalid gameplay account", { status: 400 });
         }
-      },
-      open: (socket) => {
-        socket.data.session = live.attach(socket.data.gameId, socket);
-      },
-    },
+        if (gameId) {
+          const stream = acceptGameStream(gameId, actor, live, url.searchParams.get("visit") ?? undefined);
+          if (stream instanceof Response) return stream;
+          if (bunServer.upgrade(request, { data: stream })) return;
+        }
+        return http(request);
+      }),
+    websocket: createStreamSocketHandlers(live),
   });
 
   process.once("SIGINT", () => void shutdown(0));
   process.once("SIGTERM", () => void shutdown(0));
   console.info(
     JSON.stringify({
-      chain: config.chain,
+      chain,
       checkpointBlock: loaded.checkpointBlock ?? null,
       confirmedBlock: live.confirmedBlock,
       epoch: live.hub.epoch,
@@ -210,22 +194,6 @@ const main = async (): Promise<void> => {
       wsUrl: config.wsUrl,
     }),
   );
-  void backfillHistory({
-    decodeMonitor,
-    historyStore,
-    registry,
-    rpc,
-    toBlock: loaded.confirmedBlock,
-  })
-    .then(() => historyStore.markLeaderboardReady())
-    .catch((error) => {
-      console.error(
-        JSON.stringify({
-          error: error instanceof Error ? error.message : String(error),
-          event: "herald_history_backfill_failed",
-        }),
-      );
-    });
 };
 
 await main();

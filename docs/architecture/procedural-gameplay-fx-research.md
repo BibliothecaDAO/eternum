@@ -384,7 +384,7 @@ group and every owned GPU resource.
 
 ```text
 provisional/indexed gameplay event ──► emit(cue) ───────┐
-RECS/actor presentation snapshot ───► sync(emitters) ──┤
+native store/actor presentation snapshot ───► sync(emitters) ──┤
 scene frame ─────────────────────────► update(dt) ──────┤
                                                        ▼
                                                 WorldFxRuntime
@@ -399,7 +399,8 @@ scene frame ──────────────────────�
 
 The interface invariants are:
 
-- FX never read or write gameplay authority. Cairo/RECS still decide damage, ownership, death, and persistent state.
+- FX never read or write gameplay authority. Cairo/native store still decide damage, ownership, death, and persistent
+  state.
 - The same cue kind, seed, and logical time produce the same effect timeline.
 - Every transient cue has an internal lifetime; every persistent emitter is ended when it expires from `sync()`.
 - Pool exhaustion drops or degrades effects by an internal semantic priority and increments a visible diagnostic. It
@@ -434,7 +435,7 @@ minimal turbulence. Recipes combine those functions; they do not copy node graph
 - The procedural dragon action supplies its current mouth/target snapshot while the fire phase is active. The FX module
   renders breath but does not own attack timing or damage.
 - Army and structure presentation layers sync authoritative status emitters such as burning, healing, shield, or capture
-  aura. They resolve world anchors before crossing the seam; the FX module never queries RECS.
+  aura. They resolve world anchors before crossing the seam; the FX module never queries native store.
 - Weather supplies bounded regional emitter snapshots. Existing rain and terrain interaction systems migrate only after
   the common pools match their current behavior and diagnostics.
 - Existing icon/resource/text callers may temporarily keep their current facades, but those facades should delegate to

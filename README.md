@@ -20,8 +20,8 @@
 
 <div align="center">
 
-**An open-source, fully onchain strategy game built on [Starknet](https://starknet.io) with the
-[Dojo](https://dojoengine.org) engine.**
+**An open-source, fully onchain strategy game built with native Cairo contracts on a self-hosted
+[Madara](https://github.com/madara-alliance/madara) appchain.**
 
 Conquer hex territories. Harvest resources. Build armies. Forge alliances. Win seasons.
 
@@ -64,11 +64,11 @@ eternum/
 │   ├── web/                   # realms.world website
 │   └── game-docs/             # Player documentation site (Vocs)
 ├── contracts/
-│   ├── l3/                    # Game world and factory (Cairo/Dojo) on the Madara appchain
+│   ├── l3/                    # Native game domains and registry (Cairo) on the Madara appchain
 │   └── l2/                    # Ledger, tokens and collectibles on Starknet
 ├── packages/                  # Shared libraries & SDK (core, provider, react, types, chain, identity)
 ├── config/                    # Balance presets, deployer and launch configs
-├── deploy/madara-lab/         # Self-hosted chain and box infrastructure
+├── deploy/athanor/         # Self-hosted chain and box infrastructure
 └── docs/                      # Architecture notes and implementation briefs
 ```
 
@@ -77,7 +77,7 @@ eternum/
 | Layer           | Tech                                                                             |
 | --------------- | -------------------------------------------------------------------------------- |
 | Blockchain      | [Starknet](https://starknet.io) L2 plus a self-hosted Madara L3 appchain (Cairo) |
-| Game Engine     | [Dojo](https://dojoengine.org) v1.8                                              |
+| Game Engine     | Native Cairo domains with recorded randomness                                    |
 | Frontend        | React, Vite, Three.js                                                            |
 | Chain reads     | Herald (`apps/herald`): folded blocks, snapshots and ordered diffs               |
 | Accounts        | Gameplay accounts on the L3, bound to a Sign-in-with-Starknet identity           |
@@ -87,7 +87,7 @@ eternum/
 
 ### Prerequisites
 
-- [Dojo](https://book.dojoengine.org) v1.8
+- Scarb and Foundry pinned in `contracts/l3/world-native/.tool-versions`
 - [Node.js](https://nodejs.org/) v20.19+
 - [pnpm](https://pnpm.io/) v10.25
 - [Bun](https://bun.sh/)
@@ -95,21 +95,17 @@ eternum/
 ### Setup
 
 ```bash
-# 1. Install Dojo
-curl -L https://install.dojoengine.org | bash
-
-# 2. Install pnpm
-npm install -g pnpm
-
-# 3. Clone and install
+# Clone and install workspace dependencies
 git clone https://github.com/BibliothecaDAO/eternum.git
 cd eternum
-pnpm install
+pnpm install --frozen-lockfile
 
-# 4. Build shared packages
+# Install native tools without changing another workspace's toolchain
+bash deploy/athanor/scripts/install-native-tools.sh "$HOME/.local/share/eternum-native-tools"
+source "$HOME/.local/share/eternum-native-tools/env"
+
 pnpm run build:packages
-
-# 5. Start development server
+# Select the isolated native manifest and admission endpoint before starting the client.
 pnpm dev
 ```
 
@@ -123,12 +119,13 @@ pnpm dev
 
 ### Running Contracts Locally
 
-The game world lives in `contracts/l3/game`. `sozo build` compiles it; running the self-hosted Madara appchain and
-migrating onto it is covered in [`deploy/madara-lab/README.md`](./deploy/madara-lab/README.md).
+The game domains live in `contracts/l3/world-native`. Scarb compiles them; isolated deployment and validation are
+covered in [`deploy/athanor/README.md`](./deploy/athanor/README.md).
 
 ```bash
-cd contracts/l3/game
-sozo build
+cd contracts/l3/world-native
+scarb build
+scarb test
 ```
 
 ## Contributing

@@ -21,7 +21,9 @@ describe("authorizeSiwsNonce", () => {
   });
 });
 
-describe.runIf(Boolean(process.env.DATABASE_URL))("SIWS nonce database consumption", () => {
+if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required for the PostgreSQL nonce suite");
+
+describe("SIWS nonce database consumption", () => {
   it("allows exactly one concurrent DELETE RETURNING to consume a nonce", async () => {
     const [{ db }, { verification }, { consumeSiwsNonce }] = await Promise.all([
       import("@realms-world/db/client"),

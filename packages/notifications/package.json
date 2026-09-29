@@ -19,8 +19,5 @@
     "tsup": "^8.0.2",
     "typescript": "catalog:web",
     "vitest": "^3.2.4"
-  },
-  "dependencies": {
-    "@realms-world/chain": "workspace:*"
   }
 }

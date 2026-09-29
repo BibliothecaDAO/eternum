@@ -11,7 +11,7 @@ export function StoryEventAudioCues() {
   const seen = useRef<Set<string> | null>(null);
   useEffect(() => {
     const previous = seen.current;
-    const battles = events.filter((event) => event.story === "BattleStory");
+    const battles = events.filter((event) => event.story === "BattleEvent");
     seen.current = new Set(battles.map(battleIdentity));
     if (!previous) return;
     const address = useAccountStore.getState().account?.address ?? null;
@@ -21,9 +21,9 @@ export function StoryEventAudioCues() {
       previous.add(key);
       if (Date.now() - event.timestampMs > 20_000 || !involvesPlayer(event, address)) continue;
       const payload = event.storyPayload;
-      const ownerId = feltEquals(payload.attacker_owner_address, address)
-        ? payload.attacker_owner_id
-        : payload.defender_owner_id;
+      const ownerId = feltEquals((payload.attacker as Record<string, unknown>).player, address)
+        ? payload.attacker_owner
+        : payload.defender_owner;
       const won = feltEquals(payload.winner_id, ownerId) && !feltEquals(payload.winner_id, 0);
       AudioManager.getInstance().play(won ? "combat.victory" : "combat.defeat");
     }

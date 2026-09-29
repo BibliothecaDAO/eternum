@@ -1,3 +1,4 @@
+import type { NativeExecutionOutcome } from "@bibliothecadao/provider";
 import type { GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-models";
 
 export type Felt = string;
@@ -12,27 +13,6 @@ export interface ManifestModel {
   tag: string;
   selector: Felt;
   members: ManifestMember[];
-}
-
-export interface StructAbiEntry {
-  type: "struct";
-  name: string;
-  members: Array<{ name: string; type: string }>;
-}
-
-export interface EnumAbiEntry {
-  type: "enum";
-  name: string;
-  variants: Array<{ name: string; type: string }>;
-}
-
-export type ManifestAbiEntry = StructAbiEntry | EnumAbiEntry | Record<string, unknown>;
-
-export interface WorldManifest {
-  world: { address: Felt };
-  models: ManifestModel[];
-  events: ManifestModel[];
-  abis: ManifestAbiEntry[];
 }
 
 export interface RawWorldEvent {
@@ -56,10 +36,12 @@ export interface RpcReceipt {
   finality_status: string;
   execution_status?: string;
   revert_reason?: string;
+  executions?: NativeExecutionOutcome[];
   events: RpcEvent[];
 }
 
 export interface RpcTransaction {
+  calldata?: Felt[];
   transaction_hash?: Felt;
   sender_address?: Felt;
   contract_address?: Felt;
@@ -87,15 +69,7 @@ export interface RpcHead {
   timestamp: number;
 }
 
-export interface RpcSubscribedEvent extends RpcEvent {
-  block_number: number | null;
-  transaction_hash: Felt;
-  transaction_index: number;
-  event_index: number;
-  finality_status: string;
-}
-
-export interface EventPosition {
+interface EventPosition {
   blockNumber: number | null;
   transactionHash: Felt;
   transactionIndex: number;
@@ -109,16 +83,17 @@ export interface DecodedRecord {
 interface DecodedWorldEventBase {
   model: GameSyncModelDefinition;
   entityId: Felt;
+  /** Every native event carries its keys, so a row's game is known even when the fold no longer holds the row. */
+  key: DecodedRecord;
   position: EventPosition;
 }
 
 export type DecodedWorldEvent =
-  | (DecodedWorldEventBase & { kind: "set"; key: DecodedRecord; value: DecodedRecord })
-  // A partial write carries no keys; `writesZero` says every felt it writes is zero.
-  | (DecodedWorldEventBase & { kind: "update"; value: DecodedRecord; writesZero: boolean })
-  | (DecodedWorldEventBase & { kind: "update-member"; member: string; value: unknown; writesZero: boolean })
+  | (DecodedWorldEventBase & { kind: "set"; value: DecodedRecord })
+  | (DecodedWorldEventBase & { kind: "update"; value: DecodedRecord })
+  | (DecodedWorldEventBase & { kind: "update-member"; member: string; value: unknown })
   | (DecodedWorldEventBase & { kind: "delete" })
-  | (DecodedWorldEventBase & { kind: "event"; key: DecodedRecord; value: DecodedRecord });
+  | (DecodedWorldEventBase & { kind: "event"; value: DecodedRecord });
 
 export interface FoldRow {
   key: Felt;
@@ -137,9 +112,11 @@ export interface FoldCheckpointModel {
 }
 
 export interface FoldCheckpoint {
+  native_schema_identity?: string;
   version: 1;
   world_address: Felt;
   models: FoldCheckpointModel[];
+  preset_preimages?: { commitment: string; felts: readonly string[] }[];
 }
 
 export interface FoldSet {
@@ -159,6 +136,8 @@ export interface FoldChange {
   gameId?: string;
   set?: FoldSet;
   del?: FoldDelete;
+  /** Internal routing metadata: the row held before this change, never sent on the wire. */
+  previous?: FoldSet;
 }
 
 export interface SnapshotModel {
@@ -178,9 +157,4 @@ export interface ReplayMetrics {
   store_events: number;
   event_messages: number;
   pages: number;
-}
-
-export interface BuiltGameSnapshot {
-  snapshot: GameSnapshot;
-  metrics: ReplayMetrics;
 }

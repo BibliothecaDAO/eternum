@@ -38,11 +38,6 @@ interface AtlasSlot {
 }
 
 const LABEL_STYLES: Record<CompactEntityLabelVariant, CompactEntityLabelStyle> = {
-  agent: {
-    background: "rgba(41, 28, 68, 0.82)",
-    border: "rgba(216, 180, 254, 0.85)",
-    text: "#f3e8ff",
-  },
   ally: {
     background: "rgba(22, 72, 84, 0.78)",
     border: "rgba(103, 232, 249, 0.78)",

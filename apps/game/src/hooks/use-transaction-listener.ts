@@ -5,12 +5,13 @@ import {
   TransactionLifecycleMeta,
   TransactionType,
 } from "@bibliothecadao/provider";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
 import {
   addClientTransactionBreadcrumb,
   reportClientTransactionFailure,
 } from "@/observability/transaction-failure-reporting";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
+import { recordAdmissionToVisible } from "@/observability/client-action-latency";
 import { getTxMessage } from "@/ui/components/transaction-center/types";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 
@@ -29,6 +30,7 @@ interface TransactionCompletePayload extends TransactionLifecycleMeta {
     transaction_hash: string;
     // Other fields from GetTransactionReceiptResponse
   };
+  admissionToVisibleMs: number;
   type: TransactionType;
 }
 
@@ -37,7 +39,7 @@ export const useTransactionListener = () => {
     setup: {
       network: { provider },
     },
-  } = useDojo();
+  } = useGame();
 
   const addTransaction = useTransactionStore((state) => state.addTransaction);
   const updateTransaction = useTransactionStore((state) => state.updateTransaction);
@@ -49,7 +51,7 @@ export const useTransactionListener = () => {
         stage: "submitted",
         message: payload.type ? getTxMessage(payload.type) : "Transaction submitted",
         context: {
-          surface: "dojo_provider",
+          surface: "game_provider",
           operation: payload.type ?? "transaction_submitted",
           stage: "submit",
           transactionType: payload.type,
@@ -77,7 +79,7 @@ export const useTransactionListener = () => {
         stage: "pending",
         message: payload.type ? getTxMessage(payload.type) : "Transaction pending",
         context: {
-          surface: "dojo_provider",
+          surface: "game_provider",
           operation: payload.type ?? "transaction_pending",
           stage: "background_confirmation",
           transactionType: payload.type,
@@ -103,11 +105,12 @@ export const useTransactionListener = () => {
 
     const handleTransactionComplete = (payload: TransactionCompletePayload) => {
       const hash = payload.details.transaction_hash;
+      recordAdmissionToVisible(payload.admissionToVisibleMs);
       addClientTransactionBreadcrumb({
         stage: "completed",
         message: payload.type ? getTxMessage(payload.type) : "Transaction completed",
         context: {
-          surface: "dojo_provider",
+          surface: "game_provider",
           operation: payload.type ?? "transaction_complete",
           stage: "confirmation",
           transactionType: payload.type,
@@ -151,7 +154,7 @@ export const useTransactionListener = () => {
       void reportClientTransactionFailure({
         error: payload.error ?? new Error(message),
         context: {
-          surface: "dojo_provider",
+          surface: "game_provider",
           operation: payload.type ?? "provider_transaction_failure",
           stage: classified.kind === "user_cancelled" ? "wallet_rejected" : payload.stage,
           transactionType: payload.type,

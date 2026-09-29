@@ -1,11 +1,7 @@
-import type { GameChain } from "@realms-world/chain";
-import appchainSeasonAddresses from "../../contracts/common/addresses/appchain.json";
 import localSeasonAddresses from "../../contracts/common/addresses/local.json";
 import madaraSeasonAddresses from "../../contracts/common/addresses/madara.json";
 import mainnetSeasonAddresses from "../../contracts/common/addresses/mainnet.json";
 import sepoliaSeasonAddresses from "../../contracts/common/addresses/sepolia.json";
-import appchainBlitzGameManifest from "../../contracts/l3/game/manifest_appchain_blitz.json";
-import appchainEternumGameManifest from "../../contracts/l3/game/manifest_appchain_eternum.json";
 
 /**
  * Interface representing season contract addresses and resources
@@ -48,8 +44,6 @@ export interface SeasonAddresses {
   mmrToken: string;
 }
 
-export type AppchainGameType = "blitz" | "eternum";
-
 /**
  * Retrieves the season addresses for a specific chain
  * @param chain - The chain identifier
@@ -72,9 +66,6 @@ export function getSeasonAddresses(chain: string): SeasonAddresses {
       case "madara":
         addresses = madaraSeasonAddresses;
         break;
-      case "appchain":
-        addresses = appchainSeasonAddresses;
-        break;
       default:
         throw new Error(`Invalid chain: ${chain}`);
     }
@@ -85,7 +76,6 @@ export function getSeasonAddresses(chain: string): SeasonAddresses {
 }
 
 const REQUIRED_ADDRESS_KEYS: Record<string, readonly string[]> = {
-  appchain: ["strk", "factoryDeployer"],
   local: ["strk"],
   madara: ["strk", "factoryDeployer"],
   mainnet: ["strk", "lords", "seasonPass", "villagePass", "realms"],
@@ -130,49 +120,4 @@ function requireAddressTable(chain: string, value: unknown): SeasonAddresses {
       return Reflect.get(target, key);
     },
   }) as unknown as SeasonAddresses;
-}
-
-/**
- * Interface representing the game manifest configuration
- * @interface GameManifest
- */
-interface GameManifest {
-  [key: string]: unknown;
-}
-
-/**
- * Retrieves the game manifest for a specific chain
- * @param chain - The chain identifier
- * @returns The game manifest configuration
- * @throws Error if manifest cannot be loaded
- */
-export function getGameManifest(chain: GameChain, appchainGameType: AppchainGameType = "blitz"): GameManifest {
-  try {
-    switch (chain) {
-      case "madara":
-        return loadMadaraGameManifest();
-      case "appchain":
-        return appchainGameType === "blitz" ? appchainBlitzGameManifest : appchainEternumGameManifest;
-      default:
-        throw new Error(`Invalid chain: ${chain}`);
-    }
-  } catch (error) {
-    throw new Error(`Failed to load game manifest for chain ${chain}: ${error}`);
-  }
-}
-
-function loadMadaraGameManifest(): GameManifest {
-  try {
-    const manifests = import.meta.glob<{ default: GameManifest }>("../l3/game/manifest_madara.json", { eager: true });
-    const manifest = manifests["../l3/game/manifest_madara.json"]?.default;
-    if (manifest) return manifest;
-  } catch {
-    // import.meta.glob is supplied by Vite; Bun uses the runtime path below.
-  }
-
-  const runtimeRequire = (import.meta as ImportMeta & { require?: (path: string) => unknown }).require;
-  if (runtimeRequire) {
-    return runtimeRequire("../l3/game/manifest_madara.json") as GameManifest;
-  }
-  throw new Error("contracts/l3/game/manifest_madara.json does not exist; deploy the Madara world first");
 }

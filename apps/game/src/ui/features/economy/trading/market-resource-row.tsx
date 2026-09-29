@@ -3,7 +3,7 @@ import { HUD_CUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
-import { useResourceManager } from "@bibliothecadao/react";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { findResourceById, ID, ResourcesIds } from "@bibliothecadao/types";
 import { memo, useMemo } from "react";
 
@@ -26,7 +26,7 @@ export const MarketResourceRow = memo(
     const currentDefaultTick = useCoarseCurrentDefaultTick();
     const resourceManager = useResourceManager(entityId);
     const balance = useMemo(
-      () => Number(resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance),
+      () => resourceManager.balanceWithProduction(currentDefaultTick, resourceId)?.balance,
       [resourceManager, currentDefaultTick, resourceId],
     );
     const trait = findResourceById(resourceId)?.trait ?? "";

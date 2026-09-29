@@ -1,61 +1,26 @@
-import { ClientComponents, EntityType, ID, StructureType } from "@bibliothecadao/types";
-import { Entity, getComponentValue, getComponentValueStrict, HasValue, runQuery } from "@dojoengine/recs";
-import { configManager } from "../managers";
+import { EntityType, type ID, StructureType } from "@bibliothecadao/types";
+import type { NativeFactStore } from "../client/native-fact-store";
+import { configManager } from "../managers/config-manager";
+import { structureMapPosition } from "./expeditions";
 import { calculateDistance } from "./utils";
-import { gameEntityKey } from "../managers/config-manager";
 
-export type ClosestBank = {
-  bankId: ID;
-  distance: number;
-  travelTime?: number;
-};
+type ClosestBank = { bankId: ID; distance: number; travelTime: number };
 
-export const getClosestBank = (entityId: ID, components: ClientComponents): ClosestBank | undefined => {
-  const banks = runQuery([
-    HasValue(components.Structure, {
-      category: StructureType.Bank,
-    }),
-  ]);
-
-  const playerStructure = getComponentValueStrict(components.Structure, gameEntityKey([BigInt(entityId)]));
-
-  const banksArray = Array.from(banks);
-
-  if (banksArray.length === 0) {
-    return undefined;
-  }
-
-  const secPerKm = configManager.getSpeedConfig(EntityType.DONKEY);
-
-  const closestBank = banksArray.reduce(
-    (closest: { bankId: ID; distance: number; travelTime?: number } | null, entity: Entity) => {
-      const bankStructure = getComponentValue(components.Structure, entity);
-      if (!bankStructure) return closest;
-
-      // back and forth
-      const distance =
-        calculateDistance(
-          { x: Number(bankStructure.base.coord_x), y: Number(bankStructure.base.coord_y) },
-          { x: Number(playerStructure.base.coord_x), y: Number(playerStructure.base.coord_y) },
-        ) * 2;
-
-      // Calculate travel time if secPerKm is provided
-      const travelTime = secPerKm ? Math.floor((distance * secPerKm) / 60) : undefined;
-
-      if (closest === null) {
-        return { bankId: bankStructure.entity_id, distance, travelTime };
-      }
-
-      return distance < closest.distance ? { bankId: bankStructure.entity_id, distance, travelTime } : closest;
-    },
-    null,
+export const getClosestBank = (entityId: ID, store: NativeFactStore): ClosestBank | undefined => {
+  const game = configManager.getActiveGameId();
+  const structure = store.require("Structure", { game_id: game, entity_id: entityId });
+  const position = structureMapPosition(store, structure);
+  if (!position) return undefined;
+  const speed = configManager.getSpeedConfig(EntityType.DONKEY);
+  const banks = [...store.inGame("Structure", game)].filter(
+    (row) => row.base.category === StructureType.Bank && structureMapPosition(store, row)?.alt === position.alt,
   );
-
-  if (!closestBank) return undefined;
-
-  return {
-    bankId: closestBank.bankId,
-    distance: closestBank.distance,
-    travelTime: closestBank.travelTime,
-  };
+  return banks
+    .flatMap((bank) => {
+      const bankPosition = structureMapPosition(store, bank);
+      if (!bankPosition) return [];
+      const distance = calculateDistance(bankPosition, position) * 2;
+      return [{ bankId: bank.entity_id, distance, travelTime: Math.floor((distance * speed) / 60) }];
+    })
+    .toSorted((a, b) => a.distance - b.distance || a.bankId - b.bankId)[0];
 };

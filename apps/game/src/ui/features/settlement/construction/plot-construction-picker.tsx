@@ -17,16 +17,23 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
     <div className="w-[420px] max-w-full space-y-3 p-3">
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-semibold">Build on this plot</span>
-        <label className="flex items-center gap-2 text-xs">
-          Simple cost
-          <input
-            type="checkbox"
-            role="switch"
-            checked={form.useSimpleCost}
-            onChange={(event) => form.setUseSimpleCost(event.target.checked)}
-          />
-        </label>
+        {form.allowSimpleCost && (
+          <label className="flex items-center gap-2 text-xs">
+            Simple cost
+            <input
+              type="checkbox"
+              role="switch"
+              checked={form.useSimpleCost}
+              onChange={(event) => form.setUseSimpleCost(event.target.checked)}
+            />
+          </label>
+        )}
       </div>
+      {form.markedPlot && (
+        <p className="rounded border border-emerald-400/40 bg-emerald-900/20 px-2 py-1.5 text-xs text-emerald-200">
+          Marked plot: a building here gives twice its output, capacity or population.
+        </p>
+      )}
       {form.error && (
         <p role="status" className="text-xs">
           {form.error}
@@ -62,7 +69,8 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
                   />
                   <span className="block font-semibold">{building.label}</span>
                   <span className="flex flex-wrap justify-center gap-x-2 gap-y-1 py-1 text-[10px] tabular-nums">
-                    {building.requirements.map((cost) => (
+                    {building.requirements === undefined && "—"}
+                    {building.requirements?.map((cost) => (
                       <span
                         key={cost.resource}
                         className="inline-flex items-center gap-0.5"

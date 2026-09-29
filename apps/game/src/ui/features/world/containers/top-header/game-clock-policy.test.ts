@@ -2,7 +2,7 @@
 import { expect, it } from "vitest";
 import { resolveGameClock, formatGameClockDuration } from "./game-clock-policy";
 const clock = (now: number, overrides = {}) =>
-  resolveGameClock({ startAt: 120, endAt: 720, now, armyTickSeconds: 60, ...overrides });
+  resolveGameClock({ startAt: 120, endAt: 720, now, armyTickSeconds: 60, gameOver: false, ...overrides });
 it("changes from start countdown to remaining time at the horn", () => {
   expect(clock(60)).toMatchObject({ phase: "before", label: "Starts in 1m 00s", remainingRatio: null });
   expect(clock(120)).toMatchObject({ phase: "live", label: "10m 00s left", remainingRatio: 1 });
@@ -14,7 +14,8 @@ it("moves the bar once per army tick, even when the start is not tick aligned", 
 });
 it("handles final minutes, finished and unbounded games", () => {
   expect(clock(600).label).toBe("2m 00s left");
-  expect(clock(720).phase).toBe("finished");
+  expect(clock(720, { gameOver: true }).phase).toBe("finished");
+  expect(clock(300, { gameOver: true }).phase).toBe("finished");
   expect(clock(121, { endAt: null })).toMatchObject({ label: "No time limit", remainingRatio: null });
 });
 it("does not invent missing clock configuration", () => {

@@ -4,7 +4,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { promisify } from "util";
 import { declare, deploy, getContractPath } from "./common.js";
-import { getAccount, getNetwork } from "./network.js";
+import { getAccount, getNetworkConfig } from "../../../../../../scripts-runtime/js/starknet.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -85,7 +85,7 @@ export const setSeasonPassAddressTestLordsContract = async (lordsContractAddress
   // Set Season Pass Addr in TLords Contract
   ///////////////////////////////////////////
 
-  const account = getAccount();
+  const account = await getAccount();
   console.log(`\n Setting Season Pass Addr in Test Lords Contract ... \n\n`.green);
 
   const contract = await account.execute([
@@ -97,8 +97,8 @@ export const setSeasonPassAddressTestLordsContract = async (lordsContractAddress
   ]);
 
   // Wait for transaction
-  let network = getNetwork(process.env.STARKNET_NETWORK);
-  console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
+  let network = getNetworkConfig();
+  console.log("Tx hash: ".green, `${network.explorerUrl}/tx/${contract.transaction_hash})`);
   await account.waitForTransaction(contract.transaction_hash);
 
   console.log(

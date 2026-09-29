@@ -1,7 +1,7 @@
 import { socials } from "@/site/data/socials";
 import { motion } from "framer-motion";
 import { ExternalLink, Github } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { appUrl } from "@/site/lib/app-links";
 
 export function FooterSection() {
   const quickLinks = [
@@ -144,15 +144,24 @@ export function FooterSection() {
               <span className="hidden md:inline">Onchain since 2021</span>
             </div>
             <div className="flex flex-wrap items-center justify-center md:justify-end gap-5 text-xs text-muted-foreground/50">
-              <Link to="/scroll" className="hover:text-[var(--realm-accent-brass)] transition-colors duration-200">
+              <a
+                href={appUrl("/scroll")}
+                className="hover:text-[var(--realm-accent-brass)] transition-colors duration-200"
+              >
                 Scroll
-              </Link>
-              <Link to="/privacy" className="hover:text-[var(--realm-accent-brass)] transition-colors duration-200">
+              </a>
+              <a
+                href={appUrl("/privacy")}
+                className="hover:text-[var(--realm-accent-brass)] transition-colors duration-200"
+              >
                 Privacy
-              </Link>
-              <Link to="/terms" className="hover:text-[var(--realm-accent-brass)] transition-colors duration-200">
+              </a>
+              <a
+                href={appUrl("/terms")}
+                className="hover:text-[var(--realm-accent-brass)] transition-colors duration-200"
+              >
                 Terms
-              </Link>
+              </a>
               <a
                 href="https://status.realms.world"
                 className="hover:text-[var(--realm-accent-brass)] transition-colors duration-200 flex items-center gap-1.5"

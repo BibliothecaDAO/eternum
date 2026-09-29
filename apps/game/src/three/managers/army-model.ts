@@ -2,9 +2,7 @@ import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { CameraView } from "@/three/scenes/hexagon-scene";
 import { gltfLoader } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
-import { getCharacterModel } from "@/utils/agent";
 import { SHIP_WORLD_SCALE } from "@/three/characters/ships/ship-design";
-import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import {
   AnimationAction,
@@ -27,7 +25,6 @@ import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
 import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
 import { createSlotDirtyRange, flushSlotDirtyRange, markSlotDirty } from "../utils/instance-update-ranges";
-import { BoundedHexCache } from "../utils/bounded-hex-cache";
 import { env } from "../../../env";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import {
@@ -92,11 +89,12 @@ const flushArmyModelSlotUploads = (modelData: ModelData): void => {
   ]);
 };
 
-/** Instanced meshes draw raw geometry, so a hull's world scale is written into its vertices once at load. */
+/** Bake authored -Z bows into the movement system's +Z forward axis and tile scale. */
 function bakeShipWorldScale(scene: Object3D): void {
   const scaled = new Set<BufferGeometry>();
   scene.traverse((child) => {
     if (!(child instanceof Mesh) || scaled.has(child.geometry)) return;
+    child.geometry.rotateY(Math.PI);
     child.geometry.scale(SHIP_WORLD_SCALE, SHIP_WORLD_SCALE, SHIP_WORLD_SCALE);
     scaled.add(child.geometry);
   });
@@ -196,7 +194,6 @@ export class ArmyModel {
   private readonly ROTATION_SPEED = 5.0;
   private readonly zeroScale = new Vector3(0, 0, 0);
   private readonly normalScale = new Vector3(1, 1, 1);
-  private readonly agentScale = new Vector3(2, 2, 2);
   private readonly zeroInstanceMatrix = new Matrix4().makeScale(0, 0, 0);
   private readonly MODEL_ANIMATION_UPDATE_INTERVAL = 1000 / 20; // 20 FPS per model
   // Fixed for the mesh's whole life. The renderer's node pipeline captures
@@ -211,15 +208,10 @@ export class ArmyModel {
   private readonly USE_SPLINE_MOVEMENT = true;
   private readonly splineMovingInstances: Map<number, SplineMovementData> = new Map();
 
-  // Phase 3.1: biome is immutable per hex but the resolution (BigInt/simplex noise)
-  // ran twice per frame per moving army. Memoize it by hex; the resolver is a stable
-  // instance field so the per-frame lookups allocate no closures.
-  private readonly biomeHexCache = new BoundedHexCache<BiomeType>();
-  private readonly resolveBiomeForHex = (col: number, row: number): BiomeType =>
-    configManager.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
+  private groundBiomeForHex(col: number, row: number): BiomeType {
+    return this.groundBiomeAt(col + FELT_CENTER(), row + FELT_CENTER());
+  }
 
-  // agent
-  private isAgent: boolean = false;
   private hasWarnedInstanceCapacityOverflow = false;
   private contactShadowsEnabled = true;
 
@@ -239,6 +231,8 @@ export class ArmyModel {
 
   constructor(
     scene: Scene,
+    /** The biome an army stands on at contract coordinates: its tile's stored biome (see ArmyManager). */
+    private readonly groundBiomeAt: (col: number, row: number) => BiomeType,
     labelsGroup?: Group,
     cameraView?: CameraView,
     private readonly compilePipelines?: PipelineCompiler,
@@ -857,13 +851,6 @@ export class ArmyModel {
     }
   }
 
-  private getScaleForModelType(modelType: ModelType): Vector3 {
-    if (modelType === ModelType.AgentIstarai || modelType === ModelType.AgentElisa) {
-      return this.agentScale;
-    }
-    return this.normalScale;
-  }
-
   public updateInstance(
     entityId: number,
     index: number,
@@ -931,7 +918,7 @@ export class ArmyModel {
     if (activeBaseModel) {
       const modelData = this.models.get(activeBaseModel);
       if (modelData) {
-        this.syncRenderableInstance(modelData, state, index, entityId, this.getScaleForModelType(activeBaseModel));
+        this.syncRenderableInstance(modelData, state, index, entityId, this.normalScale);
       }
     }
 
@@ -1806,7 +1793,7 @@ export class ArmyModel {
 
     // Terrain speed variation — sample biome and lerp multiplier
     const { col, row } = getHexForWorldPosition(instanceData.position);
-    const biome = this.biomeHexCache.get(col, row, this.resolveBiomeForHex);
+    const biome = this.groundBiomeForHex(col, row);
     const targetMultiplier = resolveTerrainSpeedMultiplier(biome);
     splineData.currentSpeedMultiplier +=
       (targetMultiplier - splineData.currentSpeedMultiplier) *
@@ -2034,7 +2021,7 @@ export class ArmyModel {
 
   private updateModelTypeForPosition(entityId: number, position: Vector3, category: TroopType, tier: TroopTier): void {
     const { col, row } = getHexForWorldPosition(position);
-    const biome = this.biomeHexCache.get(col, row, this.resolveBiomeForHex);
+    const biome = this.groundBiomeForHex(col, row);
 
     const modelType = this.getModelTypeForEntity(entityId, category, tier, biome);
     if (shouldSwitchModelForPosition({ currentModel: this.entityModelMap.get(entityId), resolvedModel: modelType })) {
@@ -2058,12 +2045,6 @@ export class ArmyModel {
   ): ModelType {
     if (isWaterBiome(biome)) {
       return resolveTroopModel(TROOP_TO_SHIP_MODEL, troopType, troopTier, entityId);
-    }
-
-    if (this.isAgent) {
-      if (getCharacterModel(troopTier, troopType, entityId) !== undefined) {
-        return getCharacterModel(troopTier, troopType, entityId)!;
-      }
     }
 
     return resolveTroopModel(TROOP_TO_MODEL, troopType, troopTier, entityId);
@@ -2130,14 +2111,6 @@ export class ArmyModel {
       currentRotation: movement.currentRotation,
       targetRotation: movement.currentRotation,
     });
-  }
-
-  /**
-   * Sets the isAgent flag
-   * @param isAgent - Whether the entity is an agent
-   */
-  public setIsAgent(isAgent: boolean): void {
-    this.isAgent = isAgent;
   }
 
   /**

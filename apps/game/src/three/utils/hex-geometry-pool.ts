@@ -237,7 +237,7 @@ ${
   }
 }
 
-export function installHexGeometryPoolDebugHooks(options: DebugHookInstallOptions = {}): void {
+function installHexGeometryPoolDebugHooks(options: DebugHookInstallOptions = {}): void {
   registerDebugHook("logHexGeometrySharing", () => HexGeometryPool.getInstance().logSharingStats(), options);
   registerDebugHook("getHexGeometryTypes", () => HexGeometryPool.getInstance().getAvailableTypes(), options);
 }

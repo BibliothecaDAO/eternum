@@ -20,32 +20,6 @@ export function unpackValue(packedValue: bigint): number[] {
   return unpackedNumbers;
 }
 
-export function packValues(numbers: number[]) {
-  const MAX_BITS = 128;
-  const MAX_BITS_PER_VALUE = 8;
-
-  // Calculate the maximum number of values that can be packed
-  const maxValues = Math.floor(MAX_BITS / MAX_BITS_PER_VALUE);
-
-  if (numbers.length > maxValues) {
-    throw new Error(`Exceeded maximum number of values that can be packed: ${maxValues}`);
-  }
-
-  let packedValue = BigInt(0);
-
-  for (let i = 0; i < numbers.length; i++) {
-    const number = BigInt(numbers[i]);
-
-    if (number >= 1 << MAX_BITS_PER_VALUE) {
-      throw new Error(`Number ${number} exceeds maximum size of ${MAX_BITS_PER_VALUE} bits`);
-    }
-
-    packedValue = (packedValue << BigInt(MAX_BITS_PER_VALUE)) | number;
-  }
-
-  return packedValue.toString();
-}
-
 /**
  * Gets the count of buildings for a specific category from a packed value
  * @param category The building category (1-based index)
@@ -95,7 +69,7 @@ export function unpackBuildingCounts(packedValues: bigint[]): number[] {
   return unpackedValues;
 }
 
-export function packBuildingCounts(buildingCounts: number[]): bigint[] {
+function packBuildingCounts(buildingCounts: number[]): bigint[] {
   const packedValues = [];
   const CATEGORIES_PER_PACKED = 16; // Each packed value can store 16 categories (128 bits / 8 bits per category)
 

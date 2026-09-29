@@ -6,8 +6,9 @@ import {
   recordClientActionPreConfirmed,
   recordClientActionDiffReceived,
   recordClientActionPhase,
-  recordClientActionRecsApplied,
+  recordClientActionStoreApplied,
   recordClientActionRendered,
+  recordAdmissionToVisible,
   recordClientActionSubmitted,
   snapshotClientActionLatency,
   summarizeClientActionLatency,
@@ -26,13 +27,13 @@ describe("client action latency", () => {
       .mockReturnValueOnce(60);
   });
 
-  it("records submit, stream, RECS, and rendered action phases", () => {
+  it("records submit, stream, native store, and rendered action phases", () => {
     const actionId = beginClientActionLatency({ operation: "explore_reveal", surface: "worldmap" });
     recordClientActionPhase(actionId, "calls_built");
     recordClientActionSubmitted(actionId, "0x0abc");
     recordClientActionPreConfirmed("0xabc");
     recordClientActionDiffReceived("0xabc");
-    recordClientActionRecsApplied("0xabc");
+    recordClientActionStoreApplied("0xabc");
     recordClientActionRendered(actionId);
 
     expect(snapshotClientActionLatency()).toEqual([
@@ -46,7 +47,7 @@ describe("client action latency", () => {
           submitted: 30,
           pre_confirmed: 40,
           diff_received: 45,
-          recs_applied: 50,
+          store_applied: 50,
           rendered: 60,
         },
       }),
@@ -58,5 +59,13 @@ describe("client action latency", () => {
       p50PreConfirmedToRenderedMs: 20,
       p95PreConfirmedToRenderedMs: 20,
     });
+  });
+
+  it("publishes every action's admission-to-visible sample for the gates to read", () => {
+    recordAdmissionToVisible(120);
+    recordAdmissionToVisible(148);
+    expect((globalThis as { __admissionToVisibleMs?: number[] }).__admissionToVisibleMs).toEqual([120, 148]);
+    clearClientActionLatency();
+    expect((globalThis as { __admissionToVisibleMs?: number[] }).__admissionToVisibleMs).toEqual([]);
   });
 });

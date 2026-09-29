@@ -1,10 +1,10 @@
-import { ClientComponents, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/types";
-import { getComponentValue, HasValue, runQuery, type ComponentValue } from "@dojoengine/recs";
-import { configManager, gameEntityKey } from "./config-manager";
+import { ContractAddress, ResourcesIds } from "@bibliothecadao/types";
+import type { NativeFactStore } from "../client/native-fact-store";
+import { configManager } from "./config-manager";
 
 export class MarketManager {
   constructor(
-    private readonly components: ClientComponents,
+    private readonly store: NativeFactStore,
     private readonly _player: ContractAddress,
     private readonly _resourceId: ResourcesIds,
   ) {}
@@ -19,7 +19,7 @@ export class MarketManager {
 
   public hasReserves() {
     const market = this.getMarket();
-    return market && market.lords_amount > 0 && market.resource_amount > 0;
+    return market && market.lords > 0 && market.resource > 0;
   }
 
   public canRemoveLiquidity(shares: number) {
@@ -28,12 +28,19 @@ export class MarketManager {
   }
 
   public getPlayerLiquidity() {
-    return getComponentValue(this.components.Liquidity, gameEntityKey([this.player, BigInt(this.resourceId)]));
+    return this.store.get("Liquidity", {
+      game_id: configManager.getActiveGameId(),
+      owner: this.player,
+      resource_type: this.resourceId,
+    });
   }
 
   public getMarket() {
-    const market = getComponentValue(this.components.Market, gameEntityKey([BigInt(this.resourceId)]));
-    return !market || market.lords_amount === 0n || market.resource_amount === 0n ? null : market;
+    const market = this.store.get("Market", {
+      game_id: configManager.getActiveGameId(),
+      resource_type: this.resourceId,
+    });
+    return !market || market.lords === 0n || market.resource === 0n ? null : market;
   }
 
   public getPlayerSharesScaled = () => {
@@ -58,7 +65,7 @@ export class MarketManager {
   public getMarketPrice = () => {
     const market = this.getMarket();
     if (!market) return 0;
-    return Number(market.lords_amount) / Number(market.resource_amount);
+    return Number(market.lords) / Number(market.resource);
   };
 
   public quoteResource = (lordsAmount: number) => {
@@ -131,7 +138,7 @@ export class MarketManager {
 
     let outputAmount = 0n;
     try {
-      outputAmount = this.getOutputAmount(lordsAmount, market.lords_amount, market.resource_amount, feeRateNum);
+      outputAmount = this.getOutputAmount(lordsAmount, market.lords, market.resource, feeRateNum);
     } catch (e) {
       console.error("[MarketManager] output amount calculation failed", e);
     }
@@ -144,8 +151,8 @@ export class MarketManager {
 
     // Calculate the input amount of Lords needed to buy the desired amount of resource
     const feeRateDenom = configManager.getBankConfig().lpFeesDenominator;
-    const inputReserve = market.lords_amount;
-    const outputReserve = market.resource_amount;
+    const inputReserve = market.lords;
+    const outputReserve = market.resource;
 
     // Using the inverse of the constant product formula:
     // x' = x * y / (y - Δy) - x
@@ -168,7 +175,7 @@ export class MarketManager {
     const market = this.getMarket();
     if (!market) return 0;
 
-    let inputPrice = this.getInputPrice(resourceAmount, market.resource_amount, market.lords_amount, feeRateNum);
+    let inputPrice = this.getInputPrice(resourceAmount, market.resource, market.lords, feeRateNum);
     return Number(inputPrice);
   };
 
@@ -178,8 +185,8 @@ export class MarketManager {
 
     // Calculate the input amount of Resource needed to get the desired amount of Lords
     const feeRateDenom = configManager.getBankConfig().lpFeesDenominator;
-    const inputReserve = market.resource_amount;
-    const outputReserve = market.lords_amount;
+    const inputReserve = market.resource;
+    const outputReserve = market.lords;
 
     // Using the inverse of the constant product formula:
     // x' = x * y / (y - Δy) - x
@@ -240,13 +247,13 @@ export class MarketManager {
   public getTotalSharesUnScaled() {
     const market = this.getMarket();
     if (!market) return 0;
-    return market.total_shares;
+    return market.shares;
   }
 
   public getTotalSharesScaled() {
     const market = this.getMarket();
     if (!market) return 0;
-    return Math.floor(Number(market.total_shares));
+    return Math.floor(Number(market.shares));
   }
 
   public playerHasLiquidity() {
@@ -255,28 +262,6 @@ export class MarketManager {
 
   public getReserves() {
     const market = this.getMarket();
-    return [Number(market?.lords_amount || 0n), Number(market?.resource_amount || 0n)];
-  }
-
-  public getLatestLiquidityEvent(playerStructureIds: ID[]) {
-    let mostRecentEvent: ComponentValue<ClientComponents["events"]["LiquidityEvent"]["schema"]> | null = null;
-
-    playerStructureIds.forEach((structureId) => {
-      const liquidityEvents = runQuery([
-        HasValue(this.components.events.LiquidityEvent, {
-          entity_id: structureId,
-          resource_type: this.resourceId,
-        }),
-      ]);
-
-      liquidityEvents.forEach((event) => {
-        const eventInfo = getComponentValue(this.components.events.LiquidityEvent, event);
-        if (eventInfo && (!mostRecentEvent || eventInfo.timestamp > mostRecentEvent.timestamp)) {
-          mostRecentEvent = eventInfo;
-        }
-      });
-    });
-
-    return mostRecentEvent as ComponentValue<ClientComponents["events"]["LiquidityEvent"]["schema"]> | null;
+    return [Number(market?.lords || 0n), Number(market?.resource || 0n)];
   }
 }

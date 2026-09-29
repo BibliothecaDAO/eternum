@@ -41,6 +41,8 @@ export const formatProductionPerHour = (perSecond: number): string =>
 export const formatResourceAmount = (amount: number): string => currencyFormat(amount, 2);
 
 export const formatTimeRemaining = (seconds: number): string => {
+  // Production that never runs out has infinite time remaining: a named state, not a duration.
+  if (seconds === Number.POSITIVE_INFINITY) return "∞";
   if (seconds <= 0) return "0s";
 
   // Single largest unit — past a minute the finer precision is just noise.

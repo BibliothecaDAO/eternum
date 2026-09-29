@@ -1,0 +1,20 @@
+name: landing validated
+
+# The one gate every publish path runs before it publishes: the commit passed a landing validation run.
+on:
+  workflow_call:
+
+jobs:
+  landing-run:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require a green landing validation run of this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: bash .github/scripts/landing-run.sh

@@ -85,17 +85,6 @@ const COLOR_PALETTE = {
     borderColor: "rgba(37, 99, 235, 0.5)",
   },
 
-  // AI Agents - Gold/Amber (special identifier)
-  AGENT: {
-    primary: "#FBBF24", // Amber
-    secondary: "#F59E0B", // Darker amber
-    minimap: "#F59E0B",
-    selection: "#FCD34D",
-    textColor: "#fbbf24",
-    backgroundColor: "rgba(70, 70, 70, 0.8)",
-    borderColor: "rgba(220, 220, 220, 0.5)",
-  },
-
   // Neutral entities
   NEUTRAL: {
     primary: "#9CA3AF", // Gray
@@ -316,32 +305,6 @@ class PlayerColorManager {
   }
 
   /**
-   * Get or create a color profile for an AI agent
-   */
-  getAgentProfile(): PlayerColorProfile {
-    const cacheKey = "__AGENT__";
-    if (this.profileCache.has(cacheKey)) {
-      return this.profileCache.get(cacheKey)!;
-    }
-
-    const profile: PlayerColorProfile = {
-      playerId: cacheKey,
-      primary: new Color(COLOR_PALETTE.AGENT.primary),
-      secondary: new Color(COLOR_PALETTE.AGENT.secondary),
-      minimap: new Color(COLOR_PALETTE.AGENT.minimap),
-      selection: new Color(COLOR_PALETTE.AGENT.selection),
-      textColor: COLOR_PALETTE.AGENT.textColor,
-      backgroundColor: COLOR_PALETTE.AGENT.backgroundColor,
-      borderColor: COLOR_PALETTE.AGENT.borderColor,
-      lightnessVariant: 1,
-      patternIndex: 0,
-    };
-
-    this.profileCache.set(cacheKey, profile);
-    return profile;
-  }
-
-  /**
    * Get or create a color profile for a neutral entity
    */
   getNeutralProfile(): PlayerColorProfile {
@@ -405,18 +368,9 @@ class PlayerColorManager {
    *
    * @param isMine - Is this the current player's unit?
    * @param isAlly - Is this an ally's unit?
-   * @param isDaydreamsAgent - Is this an AI agent?
    * @param ownerAddress - The owner's wallet address (for enemy differentiation)
    */
-  getProfileForUnit(
-    isMine: boolean,
-    isAlly: boolean,
-    isDaydreamsAgent: boolean,
-    ownerAddress?: bigint | string,
-  ): PlayerColorProfile {
-    if (isDaydreamsAgent) {
-      return this.getAgentProfile();
-    }
+  getProfileForUnit(isMine: boolean, isAlly: boolean, ownerAddress?: bigint | string): PlayerColorProfile {
     if (isMine) {
       return this.getSelfProfile();
     }
@@ -482,11 +436,8 @@ const playerColorDebug = {
     // Add ally
     profiles.push(playerColorManager.getAllyProfile());
 
-    // Add agent
-    profiles.push(playerColorManager.getAgentProfile());
-
     // Add enemies
-    for (let i = 0; i < playerCount - 3; i++) {
+    for (let i = 0; i < playerCount - 2; i++) {
       profiles.push(playerColorManager.getEnemyProfile(`test-enemy-${i}`));
     }
 
@@ -497,7 +448,7 @@ const playerColorDebug = {
     `;
 
     profiles.forEach((profile, index) => {
-      const label = index === 0 ? "Self" : index === 1 ? "Ally" : index === 2 ? "AI Agent" : `Enemy ${index - 2}`;
+      const label = index === 0 ? "Self" : index === 1 ? "Ally" : `Enemy ${index - 1}`;
       html += `
         <div style="background: ${profile.backgroundColor}; border: 2px solid ${profile.borderColor}; border-radius: 8px; padding: 12px;">
           <div style="font-weight: bold; color: ${profile.textColor}; margin-bottom: 8px;">${label}</div>

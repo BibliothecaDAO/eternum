@@ -1,4 +1,4 @@
-import type { SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { createGameRendererSession, type GameRendererSession } from "./game-renderer-session";
 
 let activeGameRendererSession: GameRendererSession | null = null;

@@ -193,7 +193,6 @@ interface OwnerDisplayOptions {
   isAlly?: boolean;
   cameraView: CameraView;
   color?: string;
-  isDaydreamsAgent?: boolean;
 }
 
 interface OwnerDisplayOptions {
@@ -206,12 +205,11 @@ interface OwnerDisplayOptions {
   isAlly?: boolean;
   cameraView: CameraView;
   color?: string;
-  isDaydreamsAgent?: boolean;
   structureName?: string;
 }
 
 export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLElement => {
-  const { owner, isMine, isAlly, color, isDaydreamsAgent, cameraView: inputView, structureName } = options;
+  const { owner, isMine, isAlly, color, cameraView: inputView, structureName } = options;
   const cameraView = resolveCameraView(inputView);
 
   const container = document.createElement("div");
@@ -240,9 +238,7 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
 
   // Determine text color
   let finalTextColor: string;
-  if (isDaydreamsAgent) {
-    finalTextColor = "#FFF5EA";
-  } else if (color) {
+  if (color) {
     finalTextColor = color;
   } else {
     // Import from label-config to avoid circular dependency
@@ -294,7 +290,7 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
 export const createStaminaBar = (currentStamina: number, maxStamina: number, inputView: CameraView): HTMLElement => {
   const cameraView = resolveCameraView(inputView);
   const recharging = isStaminaRecharging(currentStamina, maxStamina);
-  const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
+  const { committedPercentage, displayedCurrent } = resolveStaminaDisplay({
     current: currentStamina,
     max: maxStamina,
   });
@@ -351,7 +347,6 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number, inp
   }
 
   const progressFill = document.createElement("div");
-  const projectedFill = document.createElement("div");
   progressFill.style.position = "absolute";
   progressFill.style.top = "0";
   progressFill.style.left = "0";
@@ -359,34 +354,17 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number, inp
   progressFill.style.borderRadius = "9999px";
   progressFill.style.transition = "width 0.3s ease-in-out";
   progressFill.setAttribute("data-role", "progress-fill");
-  progressFill.style.opacity = "0.4";
   progressFill.style.width = `${committedPercentage}%`;
-
-  projectedFill.style.position = "absolute";
-  projectedFill.style.top = "0";
-  projectedFill.style.left = "0";
-  projectedFill.style.height = "100%";
-  projectedFill.style.borderRadius = "9999px";
-  projectedFill.style.transition = "width 1s linear";
-  projectedFill.setAttribute("data-role", "projected-progress-fill");
-  if (recharging) {
-    projectedFill.classList.add(STAMINA_RECHARGING_FILL_CLASS);
-  }
-  projectedFill.style.width = `${displayPercentage}%`;
 
   if (committedPercentage > 66) {
     progressFill.style.backgroundColor = "#10b981";
-    projectedFill.style.backgroundColor = "#34d399";
   } else if (committedPercentage > 33) {
     progressFill.style.backgroundColor = "#f59e0b";
-    projectedFill.style.backgroundColor = "#fbbf24";
   } else {
     progressFill.style.backgroundColor = "#ef4444";
-    projectedFill.style.backgroundColor = "#fb7185";
   }
 
   progressBar.appendChild(progressFill);
-  progressBar.appendChild(projectedFill);
   container.appendChild(progressBar);
 
   const text = document.createElement("span");
@@ -842,10 +820,9 @@ export const updateStaminaBar = (staminaBarElement: HTMLElement, currentStamina:
   const percentElement = staminaBarElement.querySelector("[data-role='stamina-percent']") as HTMLElement | null;
   const progressContainer = staminaBarElement.querySelector("[data-role='progress-container']") as HTMLElement | null;
   const progressFill = staminaBarElement.querySelector("[data-role='progress-fill']") as HTMLElement;
-  const projectedFill = staminaBarElement.querySelector("[data-role='projected-progress-fill']") as HTMLElement | null;
   const textElement = staminaBarElement.querySelector("[data-role='stamina-text']") as HTMLElement;
   const recharging = isStaminaRecharging(currentStamina, maxStamina);
-  const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
+  const { committedPercentage, displayedCurrent } = resolveStaminaDisplay({
     current: currentStamina,
     max: maxStamina,
   });
@@ -872,24 +849,10 @@ export const updateStaminaBar = (staminaBarElement: HTMLElement, currentStamina:
     // Color based on stamina level
     if (committedPercentage > 66) {
       progressFill.style.backgroundColor = "#10b981"; // green-500
-      if (projectedFill) {
-        projectedFill.style.backgroundColor = "#34d399";
-      }
     } else if (committedPercentage > 33) {
       progressFill.style.backgroundColor = "#f59e0b"; // amber-500
-      if (projectedFill) {
-        projectedFill.style.backgroundColor = "#fbbf24";
-      }
     } else {
       progressFill.style.backgroundColor = "#ef4444"; // red-500
-      if (projectedFill) {
-        projectedFill.style.backgroundColor = "#fb7185";
-      }
-    }
-
-    if (projectedFill) {
-      projectedFill.style.width = `${displayPercentage}%`;
-      projectedFill.classList.toggle(STAMINA_RECHARGING_FILL_CLASS, recharging);
     }
   }
 

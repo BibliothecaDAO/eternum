@@ -15,6 +15,7 @@ import {
   getTerrainPropRole,
   getTerrainPropSuccessionAffinity,
   getTerrainPropWetlandAffinity,
+  TERRAIN_PROP_PAGE_SLOT_CAPACITY,
   type TerrainPropArchetypeId,
   type TerrainPropPlacementLayer,
 } from "./terrain-prop-catalog";
@@ -207,9 +208,26 @@ export function prepareTerrainPropInstances(request: TerrainPageRequest, field: 
     ownedByKey,
     pageKey: request.pageKey,
   };
-  return TERRAIN_PROP_PLACEMENT_LAYERS.flatMap((layer) => prepareTerrainPropLayer(layer, context))
+  return capToPageSlots(TERRAIN_PROP_PLACEMENT_LAYERS.flatMap((layer) => prepareTerrainPropLayer(layer, context)))
     .map(toTerrainPropInstance)
     .toSorted(compareTerrainPropInstances);
+}
+
+/**
+ * At most a page slot's worth of each archetype: a page denser than its slot keeps the props with the highest placement
+ * priority, a hash spread evenly over the page, so it thins rather than losing a corner. No page can outgrow its slot.
+ */
+function capToPageSlots(candidates: PreparedTerrainPropCandidate[]): PreparedTerrainPropCandidate[] {
+  const byArchetype = new Map<TerrainPropArchetypeId, PreparedTerrainPropCandidate[]>();
+  for (const candidate of candidates) {
+    const placed = byArchetype.get(candidate.archetype);
+    if (placed) placed.push(candidate);
+    else byArchetype.set(candidate.archetype, [candidate]);
+  }
+  return [...byArchetype].flatMap(([archetype, placed]) => {
+    const capacity = TERRAIN_PROP_PAGE_SLOT_CAPACITY[archetype];
+    return placed.length <= capacity ? placed : placed.toSorted((a, b) => b.priority - a.priority).slice(0, capacity);
+  });
 }
 
 function prepareTerrainPropLayer(

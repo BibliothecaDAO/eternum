@@ -1,9 +1,8 @@
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
 import type { GameModeId } from "@/config/game-modes";
-import { ClientComponents, ID, StructureType } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
+import { ID, StructureType } from "@bibliothecadao/types";
+import { configManager } from "@bibliothecadao/eternum";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 type SlotValue = bigint | number | null | undefined;
 
@@ -22,6 +21,7 @@ export type StructureCapabilityTarget =
   | {
       category?: StructureType | number;
       entity_id?: ID | bigint | number;
+      owner?: bigint;
       base?: StructureBaseLike;
       metadata?: StructureMetadataLike;
     }
@@ -37,7 +37,7 @@ const INVENTORY_STRUCTURE_CATEGORIES = new Set<StructureType>([
   StructureType.Realm,
   StructureType.Village,
   StructureType.Camp,
-  StructureType.FragmentMine,
+  StructureType.Mine,
   StructureType.Hyperstructure,
 ]);
 const POPULATION_STRUCTURE_CATEGORIES = new Set<StructureType>([
@@ -45,20 +45,6 @@ const POPULATION_STRUCTURE_CATEGORIES = new Set<StructureType>([
   StructureType.Village,
   StructureType.Camp,
 ]);
-
-const normalizeEntityId = (value: ID | bigint | number | null | undefined): number | null => {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : null;
-  }
-  if (typeof value === "bigint") {
-    return Number(value);
-  }
-  if (typeof value === "string") {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-};
 
 const normalizeSlotCount = (value: SlotValue): number => {
   if (typeof value === "number") {
@@ -75,48 +61,8 @@ const getStructureCategory = (structure: StructureCapabilityTarget): StructureTy
   return normalizeStructureCategory(category);
 };
 
-const getStructureEntityId = (structure: StructureCapabilityTarget): number | null =>
-  normalizeEntityId(structure?.entity_id);
-
-const getStructureRealmId = (structure: StructureCapabilityTarget): number | null => {
-  const explicitRealmId = normalizeEntityId(structure?.metadata?.realm_id);
-  if (explicitRealmId !== null && explicitRealmId > 0) {
-    return explicitRealmId;
-  }
-
-  const villageRealmId = normalizeEntityId(structure?.metadata?.village_realm);
-  if (villageRealmId !== null && villageRealmId > 0) {
-    return villageRealmId;
-  }
-
-  const category = getStructureCategory(structure);
-  if (category === StructureType.Realm) {
-    return getStructureEntityId(structure);
-  }
-
-  return null;
-};
-
 const isInventoryStructureCategory = (category: StructureType | null) =>
   category !== null && INVENTORY_STRUCTURE_CATEGORIES.has(category);
-
-const canTransferMilitaryInventoryInEternum = (
-  source: StructureCapabilityTarget,
-  destination: StructureCapabilityTarget,
-): boolean => {
-  const sourceCategory = getStructureCategory(source);
-  const destinationCategory = getStructureCategory(destination);
-
-  if (sourceCategory === StructureType.Village) {
-    return getStructureEntityId(destination) === normalizeEntityId(source?.metadata?.village_realm);
-  }
-
-  if (destinationCategory === StructureType.Village) {
-    return getStructureEntityId(source) === normalizeEntityId(destination?.metadata?.village_realm);
-  }
-
-  return true;
-};
 
 export const resolveStructureUiCapabilities = (structure: StructureCapabilityTarget) => {
   const category = getStructureCategory(structure);
@@ -165,64 +111,38 @@ export const canTransferMilitaryInventoryBetweenStructures = ({
   }
 
   if (modeId === "blitz") {
-    return true;
+    return source?.owner !== undefined && source.owner === destination?.owner;
   }
 
-  return canTransferMilitaryInventoryInEternum(source, destination);
-};
-
-export const resolveArmyToArmyTransferRestriction = ({
-  modeId,
-  source,
-  destination,
-}: {
-  modeId: GameModeId;
-  source: StructureCapabilityTarget;
-  destination: StructureCapabilityTarget;
-}) => {
-  if (modeId !== "blitz") {
-    return null;
-  }
-
-  const sourceRealmId = getStructureRealmId(source);
-  const destinationRealmId = getStructureRealmId(destination);
-  if (sourceRealmId === null || destinationRealmId === null) {
-    return null;
-  }
-
-  if (sourceRealmId === destinationRealmId) {
-    return null;
-  }
-
-  return "you can only transfer between armies from the same realm";
+  return true;
 };
 
 const getStructureByEntityId = (
-  components: ClientComponents | null | undefined,
+  store: NativeFactStore | null | undefined,
   entityId: number,
 ): StructureCapabilityTarget => {
-  if (!components || !entityId) return null;
+  if (!store || !entityId) return null;
 
   try {
-    return getComponentValue(components.Structure, gameEntityKey([BigInt(entityId)]));
+    return store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
   } catch {
     return null;
   }
 };
 
 export const canTransferMilitaryInventoryBetweenStructureIds = ({
-  components,
+  store,
   modeId,
   sourceEntityId,
   destinationEntityId,
 }: {
-  components: ClientComponents | null | undefined;
+  store: NativeFactStore | null | undefined;
   modeId: GameModeId;
   sourceEntityId: number;
   destinationEntityId: number;
 }) =>
   canTransferMilitaryInventoryBetweenStructures({
     modeId,
-    source: getStructureByEntityId(components, sourceEntityId),
-    destination: getStructureByEntityId(components, destinationEntityId),
+    source: getStructureByEntityId(store, sourceEntityId),
+    destination: getStructureByEntityId(store, destinationEntityId),
   });

@@ -183,7 +183,7 @@ describe("WorldmapProceduralTerrain", () => {
     await expect(
       terrain.presentAsync({ ...input, cells: [{ ...input.cells[0], occupied: true }] }),
     ).resolves.toMatchObject({ builtPages: 1, reusedPages: 0 });
-    expect(terrain.getVisibleCellCount()).toBe(1);
+    expect(terrain.getPresentedCellCount()).toBe(1);
     const metrics = terrain.getPresentMetrics();
     // 4 + 3 + 4: each coherent changed page is one task; the reused page schedules none.
     expect(metrics.presentTasks).toBe(11);
@@ -215,6 +215,24 @@ describe("WorldmapProceduralTerrain", () => {
     terrain.dispose();
   });
 
+  it("counts an unexplored page as presented terrain, since fog is what an unexplored region shows", async () => {
+    stubPageWorker();
+    const terrain = new WorldmapProceduralTerrain();
+    await terrain.presentAsync({
+      cells: [worldCell(0, 0, "Outline"), worldCell(1, 0, "Outline")],
+      climate: NEUTRAL_BIOME_CLIMATE,
+      mapCenter: 0,
+      pageHeight: 2,
+      pageOrigin: { col: 0, row: 0 },
+      pageWidth: 2,
+      subdivisions: 1,
+    });
+
+    expect(terrain.getPresentedCellCount()).toBe(2);
+    terrain.clear();
+    expect(terrain.getPresentedCellCount()).toBe(0);
+  });
+
   it("shows the first page with its fog before a slow second page is ready", async () => {
     const input = distantPagesInput();
     const requests = buildWorldmapTerrainPageRequests(input);
@@ -230,7 +248,7 @@ describe("WorldmapProceduralTerrain", () => {
     const presentation = terrain.presentAsync(input);
     await flushMicrotasks();
     expect(terrain.getPresentedPageKeys()).toEqual([requests[0].pageKey]);
-    expect(terrain.getVisibleCellCount()).toBe(1);
+    expect(terrain.getPresentedCellCount()).toBe(1);
     expect(fog).toHaveBeenCalledWith([expect.objectContaining({ request: requests[0] })]);
     resolveSecond(prepareTerrainPage(requests[1]));
     await expect(presentation).resolves.toMatchObject({ pages: 2 });
@@ -543,7 +561,7 @@ describe("WorldmapProceduralTerrain", () => {
     const focus = terrainHexToWorld(0, 0);
     expect(coldRequest).toBeDefined();
     expect(terrain.sampleSurface(focus.x, focus.z).biome).toBe(BiomeType.Grassland);
-    expect(terrain.getVisibleCellCount()).toBe(1);
+    expect(terrain.getPresentedCellCount()).toBe(1);
 
     resolveCold(prepareTerrainPage(coldRequest!));
     await expect(presentation).resolves.toMatchObject({ pages: 2 });

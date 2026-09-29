@@ -1,11 +1,13 @@
+import { LOCAL_VIEW_REACH } from "@bibliothecadao/eternum/expeditions";
 import { StructureType, getNeighborHexes } from "@bibliothecadao/types";
 import type { TerrainCellInput, TerrainPageRequest } from "@/three/terrain/terrain-types";
 import { resolveSettlementLandCell } from "@/three/terrain/terrain-settlement-ground";
+import { worldOrigin } from "@/three/world-origin";
 
 /** Tile the local view with the selected world hex and two complete neighboring rings. */
 export function getLocalTerrainRegions(worldCenter: { col: number; row: number }, regionRadius: number) {
   const originQ = worldCenter.col - Math.floor((worldCenter.row + 1) / 2);
-  return getLocalHexDisk(worldCenter, 2).map((targetHex) => {
+  return getLocalHexDisk(worldCenter, LOCAL_VIEW_REACH).map((targetHex) => {
     const q = targetHex.col - Math.floor((targetHex.row + 1) / 2) - originQ;
     const r = targetHex.row - worldCenter.row;
     // Axial basis vectors pack radius-N disks without gaps or overlapping cells.
@@ -38,14 +40,19 @@ export function getLocalHexDisk(center: { col: number; row: number }, radius: nu
   return [...cells.values()];
 }
 
-/** Local buildable cells share one ground and settlement treatment in the game and lab. */
+/**
+ * Local buildable cells share one ground and settlement treatment in the game and lab. The terrain draws world hexes
+ * around the floating origin, so the local disk is handed over as the hexes that land on the local lattice; the origin
+ * keeps an even row, so every cell lands exactly under its building.
+ */
 export function createHexceptionTerrainRequest(
   cells: Iterable<TerrainCellInput>,
   climate: TerrainPageRequest["climate"],
   pageKey: string,
 ): TerrainPageRequest {
+  const origin = worldOrigin();
   const ordered = [...cells]
-    .map(resolveSettlementLandCell)
+    .map((cell) => resolveSettlementLandCell({ ...cell, col: cell.col + origin.col, row: cell.row + origin.row }))
     .sort((left, right) => left.row - right.row || left.col - right.col);
   return {
     cells: ordered,

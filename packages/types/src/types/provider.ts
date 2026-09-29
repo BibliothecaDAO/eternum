@@ -1,36 +1,34 @@
-import { Account, AccountInterface, BigNumberish } from "starknet";
-import { ResourcesIds } from "../constants";
+import { Account, AccountInterface, type BigNumberish } from "starknet";
 import { BuildingType } from "../constants/structures";
-import { Resource } from "./common";
+import type { Resource } from "./common";
+
+export interface NativeTicketIdentity {
+  gameId: string;
+  actor: string;
+  nonce: string;
+  order: string;
+}
+
+export interface NativeExecutionOutcome extends NativeTicketIdentity {
+  nonceConsumed: boolean;
+  status: "SUCCEEDED" | "REVERTED";
+  statusClass: string;
+  reason: string;
+  batchRemaining?: string;
+}
 
 export interface SystemSigner {
   signer: AccountInterface | Account;
-}
-
-export interface CreateVillageProps extends SystemSigner {
-  village_pass_token_id: BigNumberish;
-  connected_realm: BigNumberish;
-  direction: BigNumberish;
 }
 
 export interface ReceiveArmyGrantProps extends SystemSigner {
   village_id: BigNumberish;
 }
 
-export interface MintAndSettleTestRealmProps extends SystemSigner {
-  token_id: BigNumberish;
-  realms_address: string;
-  season_pass_address: string;
-  realm_settlement: {
-    side: BigNumberish;
-    layer: BigNumberish;
-    point: BigNumberish;
-  };
-}
-
 export interface BridgeDepositIntoRealmProps extends SystemSigner {
   resources: {
     tokenAddress: BigNumberish;
+    resource_type: BigNumberish;
     amount: BigNumberish;
   }[];
   recipient_structure_id: BigNumberish;
@@ -40,15 +38,12 @@ export interface BridgeDepositIntoRealmProps extends SystemSigner {
 export interface BridgeWithdrawFromRealmProps extends SystemSigner {
   resources: {
     tokenAddress: BigNumberish;
+    resource_type: BigNumberish;
     amount: BigNumberish;
   }[];
   from_structure_id: BigNumberish;
   recipient_address: BigNumberish;
   client_fee_recipient: BigNumberish;
-}
-
-export interface SetAddressNameProps extends SystemSigner {
-  name: BigNumberish;
 }
 
 export interface SetEntityNameProps extends SystemSigner {
@@ -77,12 +72,6 @@ export interface CancelOrderProps extends SystemSigner {
   trade_id: BigNumberish;
 }
 
-export interface SendResourcesProps extends SystemSigner {
-  sender_entity_id: BigNumberish;
-  recipient_entity_id: BigNumberish;
-  resources: ResourceCosts[];
-}
-
 export interface SendResourcesMultipleProps extends SystemSigner {
   calls: {
     sender_entity_id: BigNumberish;
@@ -91,23 +80,11 @@ export interface SendResourcesMultipleProps extends SystemSigner {
   }[];
 }
 
-export interface PickupResourcesProps extends SystemSigner {
-  recipient_entity_id: BigNumberish;
-  owner_entity_id: BigNumberish;
-  resources: ResourceCosts[];
-}
-
 export interface ArrivalsOffloadProps extends SystemSigner {
   structureId: BigNumberish;
   day: BigNumberish;
   slot: BigNumberish;
   resource_count: BigNumberish;
-}
-
-export interface TransferResourcesProps extends SystemSigner {
-  sending_entity_id: BigNumberish;
-  receiving_entity_id: BigNumberish;
-  resources: BigNumberish[];
 }
 
 export interface ProductionPlanInstruction {
@@ -120,10 +97,6 @@ export interface ExecuteRealmProductionPlanProps extends SystemSigner {
   resource_to_resource?: ProductionPlanInstruction[];
   labor_to_resource?: ProductionPlanInstruction[];
   skipQueue?: boolean;
-}
-
-export interface CreateRealmDevProps extends SystemSigner {
-  realm_id: BigNumberish;
 }
 
 export interface UpgradeRealmProps extends SystemSigner {
@@ -164,12 +137,6 @@ export interface ResumeProductionProps extends SystemSigner {
   };
 }
 
-export interface ChangeBankOwnerFeeProps extends SystemSigner {
-  bank_entity_id: BigNumberish;
-  new_swap_fee_num: BigNumberish;
-  new_swap_fee_denom: BigNumberish;
-}
-
 export interface BuyResourcesProps extends SystemSigner {
   bank_entity_id: BigNumberish;
   entity_id: BigNumberish;
@@ -201,75 +168,6 @@ export interface RemoveLiquidityProps extends SystemSigner {
   shares: BigNumberish;
 }
 
-export interface TroopsLegacy {
-  knight_count: BigNumberish;
-  paladin_count: BigNumberish;
-  crossbowman_count: BigNumberish;
-}
-
-export interface ArmyCreateProps extends SystemSigner {
-  army_owner_id: BigNumberish;
-  is_defensive_army: boolean;
-}
-
-export interface ArmyDeleteProps extends SystemSigner {
-  army_id: BigNumberish;
-}
-
-export interface ArmyBuyTroopsProps extends SystemSigner {
-  army_id: BigNumberish;
-  payer_id: BigNumberish;
-  troops: TroopsLegacy;
-}
-
-export interface ArmyMergeTroopsProps extends SystemSigner {
-  from_army_id: BigNumberish;
-  to_army_id: BigNumberish;
-  troops: TroopsLegacy;
-}
-
-export interface BattleStartProps extends SystemSigner {
-  attacking_army_id: BigNumberish;
-  defending_army_id: BigNumberish;
-}
-
-export interface BattleForceStartProps extends SystemSigner {
-  battle_id: BigNumberish;
-  defending_army_id: BigNumberish;
-}
-
-export interface BattleResolveProps extends SystemSigner {
-  battle_id: BigNumberish;
-  army_id: BigNumberish;
-}
-
-export interface BattleJoinProps extends SystemSigner {
-  battle_id: BigNumberish;
-  battle_side: BigNumberish;
-  army_id: BigNumberish;
-}
-
-export interface BattleLeaveProps extends SystemSigner {
-  battle_id: BigNumberish;
-  army_ids: BigNumberish[];
-}
-
-export interface BattlePillageProps extends SystemSigner {
-  army_id: BigNumberish;
-  structure_id: BigNumberish;
-}
-
-export interface BattleClaimProps extends SystemSigner {
-  army_id: BigNumberish;
-  structure_id: BigNumberish;
-}
-
-type BattleClaimAndLeave = BattleClaimProps & BattleLeaveProps;
-export interface BattleClaimAndLeaveProps extends SystemSigner, Omit<BattleClaimAndLeave, "army_ids"> {}
-
-type BattleLeaveAndRaid = BattlePillageProps & BattleLeaveProps;
-export interface BattleLeaveAndRaidProps extends SystemSigner, Omit<BattleLeaveAndRaid, "army_ids"> {}
-
 export interface CreateGuildProps extends SystemSigner {
   is_public: boolean;
   guild_name: string;
@@ -282,27 +180,12 @@ export interface UpdateWhitelist extends SystemSigner {
   whitelist: boolean;
 }
 
-export interface TransferGuildOwnership extends SystemSigner {
-  guild_entity_id: BigNumberish;
-  to_player_address: BigNumberish;
-}
-
 export interface RemoveGuildMember extends SystemSigner {
   player_address_to_remove: BigNumberish;
 }
 
 export interface DisbandGuild extends SystemSigner {
   calls: { address: BigNumberish }[];
-}
-
-export interface RemovePlayerFromWhitelist extends SystemSigner {
-  player_address_to_remove: BigNumberish;
-  guild_entity_id: BigNumberish;
-}
-
-export interface ClaimWonderProductionBonusProps extends SystemSigner {
-  structure_id: BigNumberish;
-  wonder_structure_id: BigNumberish;
 }
 
 export interface PledgeFaithProps extends SystemSigner {
@@ -322,73 +205,6 @@ export interface UpdateStructureOwnershipProps extends SystemSigner {
   structure_id: BigNumberish;
 }
 
-interface ResourceCosts {
-  resource: ResourcesIds;
-  amount: BigNumberish;
-}
-
-export interface TroopStaminaConfigProps {
-  stamina_gain_per_tick: BigNumberish;
-  stamina_initial: BigNumberish;
-  stamina_bonus_value: BigNumberish;
-  stamina_knight_max: BigNumberish;
-  stamina_paladin_max: BigNumberish;
-  stamina_crossbowman_max: BigNumberish;
-  stamina_attack_req: BigNumberish;
-  stamina_defense_req: BigNumberish;
-  stamina_explore_wheat_cost: BigNumberish;
-  stamina_explore_fish_cost: BigNumberish;
-  stamina_explore_stamina_cost: BigNumberish;
-  stamina_travel_wheat_cost: BigNumberish;
-  stamina_travel_fish_cost: BigNumberish;
-  stamina_travel_stamina_cost: BigNumberish;
-}
-
-export interface TroopLimitConfigProps {
-  guard_resurrection_delay: BigNumberish;
-  mercenaries_troop_lower_bound: BigNumberish;
-  mercenaries_troop_upper_bound: BigNumberish;
-  agent_troop_lower_bound: BigNumberish;
-  agent_troop_upper_bound: BigNumberish;
-  settlement_deployment_cap: BigNumberish;
-  city_deployment_cap: BigNumberish;
-  kingdom_deployment_cap: BigNumberish;
-  empire_deployment_cap: BigNumberish;
-  t1_tier_strength: BigNumberish;
-  t2_tier_strength: BigNumberish;
-  t3_tier_strength: BigNumberish;
-  t1_tier_modifier: BigNumberish;
-  t2_tier_modifier: BigNumberish;
-  t3_tier_modifier: BigNumberish;
-}
-
-export interface TroopDamageConfigProps {
-  damage_raid_percent_num: BigNumberish;
-  damage_biome_bonus_num: BigNumberish;
-  damage_beta_small: BigNumberish;
-  damage_beta_large: BigNumberish;
-  damage_scaling_factor: BigNumberish;
-  damage_c0: BigNumberish;
-  damage_delta: BigNumberish;
-  t1_damage_value: BigNumberish;
-  t2_damage_multiplier: BigNumberish;
-  t3_damage_multiplier: BigNumberish;
-}
-
-export interface BiomeClimateConfigProps {
-  elevation_scale_bps: BigNumberish;
-  moisture_scale_bps: BigNumberish;
-  elevation_bias_bps: BigNumberish;
-  moisture_bias_bps: BigNumberish;
-  elevation_seed: BigNumberish;
-  moisture_seed: BigNumberish;
-}
-
-export interface ResourceWhitelistConfig {
-  token: BigNumberish;
-  resource_type: BigNumberish;
-}
-
 export interface InitializeHyperstructureProps extends SystemSigner {
   hyperstructure_id: BigNumberish;
 }
@@ -396,71 +212,23 @@ export interface InitializeHyperstructureProps extends SystemSigner {
 export interface ContributeToConstructionProps extends SystemSigner {
   hyperstructure_entity_id: BigNumberish;
   contributor_entity_id: BigNumberish;
-  contributions: { resource: number; amount: number }[];
+  contributions: { resource: number; amount: BigNumberish }[];
 }
 
 export interface SetAccessProps extends SystemSigner {
   hyperstructure_entity_id: BigNumberish;
   access: BigNumberish;
 }
-
-export interface GetPointsProps extends SystemSigner {
-  player_address: BigNumberish;
-  hyperstructure_contributed_to: number[];
-  hyperstructure_shareholder_epochs: { hyperstructure_entity_id: number; epoch: number }[];
-}
 export interface EndGameProps extends SystemSigner {}
-
-export interface RegisterToLeaderboardProps extends SystemSigner {
-  hyperstructure_contributed_to: number[];
-  hyperstructure_shareholder_epochs: { hyperstructure_entity_id: number; epoch: number }[];
-}
 
 export interface SetCoOwnersProps extends SystemSigner {
   hyperstructure_entity_id: BigNumberish;
   co_owners: Record<number, BigNumberish>[];
 }
-export interface MintTestRealmProps extends SystemSigner {
-  token_id: BigNumberish;
-  realms_address: BigNumberish;
-}
-export interface MintSeasonPassesProps extends SystemSigner {
-  recipient: BigNumberish;
-  token_ids: BigNumberish[];
-  season_pass_address: BigNumberish;
-}
-
-export interface AttachLordsProps extends SystemSigner {
-  token_id: BigNumberish;
-  amount: BigNumberish;
-  season_pass_address: BigNumberish;
-  lords_address: BigNumberish;
-}
-
-export interface DetachLordsProps extends SystemSigner {
-  token_id: BigNumberish;
-  amount: BigNumberish;
-  season_pass_address: BigNumberish;
-}
-
-export interface MintTestLordsProps extends SystemSigner {
-  lords_address: BigNumberish;
-}
 
 /**
  * Props for burning resources to produce labor
  */
-export interface BurnOtherResourcesForLaborProductionProps {
-  /** ID of the realm entity */
-  entity_id: number;
-  /** Array of resource types to burn */
-  resource_types: number[];
-  /** Array of resource amounts to burn */
-  resource_amounts: number[];
-  /** Account executing the transaction */
-  signer: Account | AccountInterface;
-}
-
 /**
  * Props for burning labor to produce other resources
  */
@@ -492,17 +260,6 @@ export interface BurnOtherPredefinedResourcesForResourcesProps {
 /**
  * Properties for moving an explorer
  */
-export interface ExplorerMoveProps extends SystemSigner {
-  /** ID of the explorer to move */
-  explorer_id: number;
-  /** Array of directions to move in */
-  directions: number[];
-  /** Whether to explore new tiles along the way */
-  explore: boolean;
-  /** Optional VRF source salt (packed tile seed) required when explore=true and VRF is enabled */
-  vrf_source_salt?: BigNumberish;
-}
-
 /**
  * Properties for traveling an explorer (no exploration)
  */
@@ -524,15 +281,13 @@ export interface ToggleAlternateProps extends SystemSigner {
 }
 
 /**
- * Properties for exploring with an explorer (includes VRF and reward extraction)
+ * Properties for exploring and receiving the discovery reward
  */
 export interface ExplorerExploreProps extends SystemSigner {
   /** ID of the explorer to move */
   explorer_id: number;
   /** Array of directions to move in */
   directions: number[];
-  /** VRF source salt (packed tile seed for the destination tile) */
-  vrf_source_salt?: BigNumberish;
 }
 
 /**
@@ -585,8 +340,6 @@ export interface GuardExplorerSwapProps extends SystemSigner {
  * Properties for explorer vs explorer attack
  */
 export interface AttackExplorerVsExplorerProps extends SystemSigner {
-  /** The defending tile is ethereal and needs a combat VRF seed. */
-  ethereal?: boolean;
   /** ID of the attacking explorer */
   aggressor_id: number;
   /** ID of the defending explorer */
@@ -599,8 +352,6 @@ export interface AttackExplorerVsExplorerProps extends SystemSigner {
  * Properties for explorer vs guard attack
  */
 export interface AttackExplorerVsGuardProps extends SystemSigner {
-  /** The defending tile is ethereal and needs a combat VRF seed. */
-  ethereal?: boolean;
   /** ID of the attacking explorer */
   explorer_id: number;
   /** ID of the structure with defending guard */
@@ -611,8 +362,6 @@ export interface AttackExplorerVsGuardProps extends SystemSigner {
  * Properties for an explorer vs guard attack that garrisons surviving troops into the captured structure
  */
 export interface AttackExplorerVsGuardAndGarrisonProps extends SystemSigner {
-  /** The defending tile is ethereal and needs a combat VRF seed. */
-  ethereal?: boolean;
   /** ID of the attacking explorer */
   explorer_id: number;
   /** ID of the structure with defending guard */
@@ -629,8 +378,6 @@ export interface AttackExplorerVsGuardAndGarrisonProps extends SystemSigner {
  * Properties for guard vs explorer attack
  */
 export interface AttackGuardVsExplorerProps extends SystemSigner {
-  /** The defending tile is ethereal and needs a combat VRF seed. */
-  ethereal?: boolean;
   /** ID of the structure with attacking guard */
   structure_id: number;
   /** Guard slot of the attacking troops */
@@ -751,53 +498,10 @@ export interface StructureTroopAdjacentTransferProps extends SystemSigner {
   resources: Resource[];
 }
 
-export interface OpenLootChestProps {
-  signer: AccountInterface;
-  token_id: bigint;
-  loot_chest_address: string;
-  claim_address: string;
-}
-
-export interface CreateMarketplaceOrdersProps {
-  marketplace_address: BigNumberish;
-  tokens: {
-    token_id: number;
-    collection_id: number;
-    price: BigNumberish;
-    expiration: number;
-    cancel_order_id?: BigNumberish | null;
-  }[];
-  signer: AccountInterface;
-}
-
-export interface AcceptMarketplaceOrdersProps {
-  marketplace_address: BigNumberish;
-  order_ids: BigNumberish[];
-  signer: AccountInterface;
-}
-
-export interface CancelMarketplaceOrderProps {
-  marketplace_address: BigNumberish;
-  order_id: BigNumberish;
-  signer: AccountInterface;
-}
-
-export interface EditMarketplaceOrderProps {
-  marketplace_address: BigNumberish;
-  order_id: BigNumberish;
-  new_price: BigNumberish;
-  signer: AccountInterface;
-}
-
 export interface LeaveGuildProps extends SystemSigner {}
 
 export interface TransferStructureOwnershipProps extends SystemSigner {
   structure_id: BigNumberish;
-  new_owner: BigNumberish;
-}
-
-export interface TransferAgentOwnershipProps extends SystemSigner {
-  explorer_id: BigNumberish;
   new_owner: BigNumberish;
 }
 
@@ -806,9 +510,9 @@ export interface StructureBurnProps extends SystemSigner {
   resources: Resource[];
 }
 
-export interface TroopBurnProps extends SystemSigner {
+export interface InteractSiteProps extends SystemSigner {
   explorer_id: BigNumberish;
-  resources: Resource[];
+  coord: { alt: boolean; x: BigNumberish; y: BigNumberish };
 }
 
 export interface OpenChestProps extends SystemSigner {
@@ -831,12 +535,14 @@ export interface ApplyRelicProps extends SystemSigner {
 }
 
 export interface BitcoinMineContributeLaborProps extends SystemSigner {
-  mine_id: BigNumberish;
-  target_phase_id: BigNumberish;
+  structure_id: BigNumberish;
   labor_amount: BigNumberish;
 }
 
-export interface BitcoinMineClaimPhaseRewardProps extends SystemSigner {
+export interface BitcoinMinePhaseProps extends SystemSigner {
   phase_id: BigNumberish;
+}
+
+export interface BitcoinMineClaimPhaseRewardProps extends BitcoinMinePhaseProps {
   mine_ids: BigNumberish[];
 }

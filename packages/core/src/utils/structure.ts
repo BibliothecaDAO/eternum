@@ -1,64 +1,40 @@
+import { structureMapPosition } from "./expeditions";
 import {
-  BlitzStructureTypeToNameMapping,
-  ClientComponents,
+  StructureTypeToNameMapping,
+  getMinePresentation,
+  ESSENCE_RIFT_MINE_KIND,
   ContractAddress,
-  EternumStructureTypeToNameMapping,
   ID,
   BANDITS_NAME,
-  Position,
   Structure,
   StructureType,
   TickIds,
 } from "@bibliothecadao/types";
-import { ComponentValue, Entity, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "../managers/game-entity-keys";
-import { shortString } from "starknet";
-import { getTileAt, DEFAULT_COORD_ALT } from "./tile";
+import type { NativeFactStore } from "../client/native-fact-store";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { displayPlayerName, type PlayerNameResolver } from "./entities";
 import { configManager } from "../managers";
 import { currentTickCount } from "./utils";
-import { gameEntityKey } from "../managers/config-manager";
-
-export const getStructureAtPosition = (
-  { x, y }: Position,
-  playerAddress: ContractAddress,
-  components: ClientComponents,
-): Structure | undefined => {
-  const tile = getTileAt(components, DEFAULT_COORD_ALT, x, y);
-  const structureEntity = gameEntityKey([BigInt(tile?.occupier_id || 0n)]);
-
-  if (!structureEntity) return;
-
-  return getStructureInfo(structureEntity, playerAddress, components);
-};
+import { isViewerOwner } from "./viewer";
 
 export const getStructure = (
-  entityId: Entity | ID,
-  playerAddress: ContractAddress,
-  components: ClientComponents,
+  entityId: ID,
+  playerAddress: ContractAddress | null,
+  store: NativeFactStore,
+  playerName: PlayerNameResolver,
 ): Structure | undefined => {
-  const structureEntity = typeof entityId === "string" ? entityId : gameEntityKey([BigInt(entityId)]);
-  return getStructureInfo(structureEntity, playerAddress, components);
-};
-
-const getStructureInfo = (
-  entity: Entity,
-  playerAddress: ContractAddress,
-  components: ClientComponents,
-): Structure | undefined => {
-  const structure = getComponentValue(components.Structure, entity);
-  if (!structure) return;
-
-  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([structure.owner]));
-  const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : BANDITS_NAME;
-
+  const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
+  if (!structure) return undefined;
+  const position = structureMapPosition(store, structure);
+  if (!position) return undefined;
   return {
-    entityId: structure.entity_id,
+    entityId,
     structure,
     owner: structure.owner,
-    position: { alt: DEFAULT_COORD_ALT, x: structure.base.coord_x, y: structure.base.coord_y },
-    isMine: ContractAddress(structure.owner) === playerAddress,
+    position,
+    isMine: isViewerOwner(structure.owner, playerAddress),
     isMercenary: structure.owner === 0n,
-    ownerName,
+    ownerName: structure.owner === 0n ? BANDITS_NAME : displayPlayerName(structure.owner, playerName(structure.owner)),
     category: structure.base.category,
   };
 };
@@ -75,7 +51,7 @@ export const isStructureImmune = (currentTimestamp: number): boolean => {
 };
 
 export const getStructureImmunityTimer = (
-  structure: ComponentValue<ClientComponents["Structure"]["schema"]> | undefined,
+  structure: NativeRows["Structure"] | undefined,
   currentBlockTimestamp: number,
 ) => {
   const seasonMainGameStartAt = configManager.getSeasonMainGameStartAt();
@@ -87,10 +63,23 @@ export const getStructureImmunityTimer = (
   return immunityEndTimestamp - currentBlockTimestamp!;
 };
 
-export const getStructureTypeName = (structureType: StructureType, isBlitz: boolean) => {
-  const structureTypeName = isBlitz
-    ? BlitzStructureTypeToNameMapping[structureType]
-    : EternumStructureTypeToNameMapping[structureType];
+/**
+ * The mine kind a structure is drawn as. Frontier writes a discovered site as a Mine with no mine kind and records what
+ * it is in its ExpeditionSite row (place_discovery skips the mine draw), so a Rift is drawn as the Essence Rift; a mine
+ * with no site row is drawn by its own kind. Any other structure has no mine kind to draw.
+ */
+export const presentedMineKind = (
+  store: Pick<NativeFactStore, "get">,
+  structure: Pick<NativeRows["Structure"], "game_id" | "entity_id" | "base" | "metadata">,
+): number | undefined => {
+  if (structure.base.category !== StructureType.Mine) return undefined;
+  const site = store.get("ExpeditionSite", { game_id: structure.game_id, entity_id: structure.entity_id });
+  if (!site) return Number(structure.metadata.mine_kind);
+  if (site.kind === "Rift") return ESSENCE_RIFT_MINE_KIND;
+  throw new Error(`Mine ${structure.entity_id} is a ${site.kind} site, which is not drawn as a mine`);
+};
 
-  return structureTypeName ?? "Structure";
+export const getStructureTypeName = (structureType: StructureType, mineKind?: number) => {
+  if (structureType === StructureType.Mine && mineKind !== undefined) return getMinePresentation(mineKind).name;
+  return StructureTypeToNameMapping[structureType] ?? "Structure";
 };

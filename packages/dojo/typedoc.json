@@ -1,7 +1,0 @@
-{
-  "plugin": ["typedoc-plugin-markdown"],
-  "out": "../../../eternum-docs/docs/pages/types",
-  "entryPoints": ["src/index.ts"],
-  "outputFileStrategy": "members",
-  "flattenOutputFiles": true
-}

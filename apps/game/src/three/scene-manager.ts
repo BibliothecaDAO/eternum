@@ -9,6 +9,21 @@ import {
   resolveTransitionFinalizePlan,
 } from "./scene-manager-transition-policy";
 import { SceneName } from "./types";
+import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
+
+/**
+ * A scene that did not set up fails the entry waiting on it rather than leaving it to wait. The player reads which view
+ * did not open; the cause is already in the console.
+ */
+const reportSceneFailure = (sceneName: SceneName): void =>
+  usePlayRouteReadinessStore
+    .getState()
+    .markSceneFailed(getCurrentPlayRouteBootToken(), new Error(SCENE_FAILURE_SENTENCE[sceneName]));
+
+const SCENE_FAILURE_SENTENCE: Record<SceneName, string> = {
+  [SceneName.WorldMap]: "The world map did not open.",
+  [SceneName.Hexception]: "The realm view did not open.",
+};
 
 type SceneSetupResult = { succeeded: true } | { error: unknown; succeeded: false };
 
@@ -170,6 +185,7 @@ export class SceneManager {
         console.error(
           `[SceneManager] Failed to set up scene ${sceneName}: ${formatReadableErrorForConsole(setupResult.error)}`,
         );
+        reportSceneFailure(sceneName);
         return;
       }
 
@@ -178,6 +194,7 @@ export class SceneManager {
       setupSucceeded = true;
     } catch (error) {
       console.error(`[SceneManager] Failed to set up scene ${sceneName}: ${formatReadableErrorForConsole(error)}`);
+      reportSceneFailure(sceneName);
     } finally {
       if (this.preparingScene?.token === transitionToken) this.preparingScene = undefined;
       if (!setupSucceeded) {

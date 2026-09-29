@@ -1,4 +1,4 @@
-import { getGameModeConfig } from "@/config/game-modes";
+import { getMinePresentation } from "@bibliothecadao/types";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { Position } from "@bibliothecadao/eternum";
@@ -32,8 +32,8 @@ const STRUCTURE_ICONS = (fragmentMineIcon: string) => ({
     [StructureType.Realm]: "/images/labels/enemy_realm.png",
     [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
-    [StructureType.FragmentMine]: fragmentMineIcon,
-    [StructureType.BitcoinMine]: fragmentMineIcon,
+    [StructureType.Mine]: fragmentMineIcon,
+    [StructureType.BitcoinMine]: "/images/labels/fragment_mine.png",
   } as Record<StructureType, string>,
   MY_STRUCTURES: {
     [StructureType.Village]: "/images/labels/village.png",
@@ -49,6 +49,7 @@ const STRUCTURE_ICONS = (fragmentMineIcon: string) => ({
 
 interface StructureLabelData extends LabelData {
   structureType: StructureType;
+  mineKind?: number;
   stage: number;
   initialized: boolean;
   level: number;
@@ -73,7 +74,7 @@ interface StructureLabelData extends LabelData {
 export const convertStructureInfo = (structure: StructureInfo): StructureLabelData => {
   return {
     ...structure,
-    hexCoords: new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }),
+    hexCoords: Position.fromNormalized({ x: structure.hexCoords.col, y: structure.hexCoords.row }),
   };
 };
 
@@ -84,8 +85,11 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
   createElement: (data: StructureLabelData, inputView: CameraView): HTMLElement => {
     const cameraView = resolveCameraView(inputView);
     const labelModel = buildStructureEntityLabelViewModel(data);
-    const mode = getGameModeConfig();
-    const structureIcons = STRUCTURE_ICONS(mode.assets.labels.fragmentMine);
+    const structureIcons = STRUCTURE_ICONS(
+      data.structureType === StructureType.Mine
+        ? getMinePresentation(data.mineKind!).icon
+        : "/images/labels/fragment_mine.png",
+    );
 
     // Create base label
     const labelDiv = createLabelBase(data.isMine, cameraView);
@@ -257,8 +261,11 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     const cameraView = resolveCameraView(inputView);
     const labelModel = buildStructureEntityLabelViewModel(data);
     applyEntityLabelViewModelMetadata(element, labelModel);
-    const mode = getGameModeConfig();
-    const structureIcons = STRUCTURE_ICONS(mode.assets.labels.fragmentMine);
+    const structureIcons = STRUCTURE_ICONS(
+      data.structureType === StructureType.Mine
+        ? getMinePresentation(data.mineKind!).icon
+        : "/images/labels/fragment_mine.png",
+    );
 
     const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
     const isExpanded = cameraView !== CameraView.Far;

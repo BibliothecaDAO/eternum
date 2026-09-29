@@ -1,7 +1,11 @@
 import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
-import type { PlayerLeaderboardActivityEntry } from "@/services/leaderboard/player-activity-breakdown-service";
 
-type Standing = Pick<PlayerLeaderboardActivityEntry, "address" | "rank" | "totalPoints">;
+/** A player's place and points as the native store holds them, the same standings the players panel ranks by. */
+interface Standing {
+  address: string;
+  rank: number;
+  totalPoints: number;
+}
 export interface StandingsTick {
   tick: number;
   current: Map<string, number>;

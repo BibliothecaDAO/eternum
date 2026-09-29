@@ -1,3 +1,4 @@
+import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import "dotenv/config";
 import { Account, RpcProvider } from "starknet";
 import { assertExpectedChainId, assertProviderChain, encodeChainName } from "../../../packages/chain/chain-guard.js";
@@ -5,10 +6,6 @@ import { readContractArtifacts } from "./artifacts.js";
 import { printRuntimeAction, printRuntimeSuccess, printRuntimeValue } from "./output.js";
 
 const NETWORKS = {
-  appchain: {
-    explorerUrl: "https://explorer-dev.realms.world",
-    rpcUrl: process.env.STARKNET_RPC,
-  },
   local: {
     explorerUrl: "http://localhost:3001",
     rpcUrl: process.env.STARKNET_RPC,
@@ -81,17 +78,19 @@ export async function getProvider() {
   return provider;
 }
 
+/** The deploying account; a missing address or key is refused before any RPC is contacted. */
 export async function getAccount({ accountAddress, privateKey } = {}) {
-  return new Account({
-    address: resolveAccountAddress(accountAddress),
-    provider: await getProvider(),
-    signer: privateKey ?? requireEnv("STARKNET_ACCOUNT_PRIVATE_KEY"),
-  });
+  const address = resolveAccountAddress(accountAddress);
+  const signer = privateKey ?? requireEnv("STARKNET_ACCOUNT_PRIVATE_KEY");
+  return new Account({ address, provider: await getProvider(), signer });
 }
 
 export async function assertSelectedProviderChain(provider) {
   const network = getSelectedNetworkName();
-  if (["mainnet", "sepolia", "appchain", "madara"].includes(network)) {
+  if (network === "madara") {
+    return assertProviderChain(provider, readShardManifest(process.env.NATIVE_WORLD_MANIFEST), "STARKNET_RPC");
+  }
+  if (["mainnet", "sepolia"].includes(network)) {
     return assertProviderChain(provider, network, "STARKNET_RPC");
   }
   const actualChainId = await provider.getChainId();

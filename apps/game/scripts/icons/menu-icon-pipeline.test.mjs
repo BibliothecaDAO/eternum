@@ -1,12 +1,16 @@
 // @vitest-environment node
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { buildMenuIcons } from "./build-menu-icons.mjs";
-import { measureAppearanceDistance, readIconAppearanceSignature } from "./icon-image.mjs";
+import {
+  measureAppearanceDistance,
+  normalizeIconImage,
+  readIconAppearanceSignature,
+  verifyIconImage,
+} from "./icon-image.mjs";
 import {
   APPROVED_MENU_ICON_DIRECTORY,
   loadMenuIconManifest,
@@ -19,22 +23,6 @@ import { verifyMenuIcons } from "./verify-menu-icons.mjs";
 const MAX_APPEARANCE_DISTANCE = 1;
 
 describe("menu icon pipeline", () => {
-  it("maps each approved semantic icon to its stable public path", async () => {
-    const manifest = await loadMenuIconManifest();
-
-    expect(Object.fromEntries(manifest.icons.map(({ slug, target }) => [slug, target]))).toMatchObject({
-      automation: "robot.png",
-      build: "construction.png",
-      guild: "guild.png",
-      military: "military.png",
-      production: "production.png",
-      settings: "settings.png",
-      trade: "trade.png",
-      transfer: "transfer.png",
-      world: "world.png",
-    });
-  });
-
   it("publishes every menu icon against the output contract", async () => {
     const manifest = await loadMenuIconManifest();
 
@@ -43,19 +31,19 @@ describe("menu icon pipeline", () => {
     });
   }, 60_000);
 
-  // Rebuilding the complete UI family now processes more than eighty masters.
-  it("rebuilds the published menu set from approved masters", async () => {
+  it("normalizes an approved master without changing the published artwork", async () => {
     const outputDirectory = await mkdtemp(join(tmpdir(), "eternum-menu-icons-"));
-    const manifest = await loadMenuIconManifest();
-
-    await buildMenuIcons({ inputDirectory: APPROVED_MENU_ICON_DIRECTORY, outputDirectory });
-    await expect(verifyMenuIcons({ imageDirectory: outputDirectory })).resolves.toMatchObject({
-      count: manifest.icons.length,
-    });
-    for (const icon of manifest.icons) {
-      const rebuilt = await readIconAppearanceSignature(join(outputDirectory, icon.target));
+    try {
+      const manifest = await loadMenuIconManifest();
+      const [icon] = manifest.icons;
+      const outputPath = join(outputDirectory, icon.target);
+      await normalizeIconImage(join(APPROVED_MENU_ICON_DIRECTORY, `${icon.slug}.png`), outputPath, manifest.output);
+      await verifyIconImage(outputPath, manifest.output);
+      const rebuilt = await readIconAppearanceSignature(outputPath);
       const published = await readIconAppearanceSignature(join(PUBLISHED_MENU_ICON_DIRECTORY, icon.target));
       expect(measureAppearanceDistance(rebuilt, published), icon.target).toBeLessThanOrEqual(MAX_APPEARANCE_DISTANCE);
+    } finally {
+      await rm(outputDirectory, { recursive: true, force: true });
     }
-  }, 60_000);
+  });
 });

@@ -7,7 +7,7 @@ import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
 import { ScrollText } from "@/ui/design-system/atoms/game-icons";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import { FeedRowLine } from "./feed-row-line";
 import { type ImportantFeedFilter, selectImportantFeedRows } from "./important-feed-rows";
@@ -16,13 +16,18 @@ import { useFeedRows } from "./use-feed-rows";
 
 const FILTERS: ImportantFeedFilter[] = ["all", "mine", "combat"];
 
-/** The full history: the important rows behind All / Mine / Combat, newest first, then every world story. */
+/**
+ * The full history: a mode's own header (Frontier's day in totals), the important rows behind All / Mine / Combat,
+ * newest first, then every world story.
+ */
 export const EventLogPanel = ({
   onDismiss,
   isInsideAnchor,
+  header,
 }: {
   onDismiss: () => void;
   isInsideAnchor: (target: EventTarget | null) => boolean;
+  header?: ReactNode;
 }) => {
   const [filter, setFilter] = useState<ImportantFeedFilter>("all");
   const tickSeconds = Number(configManager.getTick(TickIds.Armies));
@@ -47,6 +52,7 @@ export const EventLogPanel = ({
       isInsideAnchor={isInsideAnchor}
     >
       <SurfaceFrame title="Log" icon={ScrollText} onClose={onDismiss} className="h-[calc(100vh-7rem)]">
+        {header}
         <div className="flex gap-3 border-b border-gold/15 px-3 py-2" aria-label="Event filters">
           {FILTERS.map((value) => (
             <button

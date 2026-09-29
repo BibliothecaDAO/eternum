@@ -4,15 +4,20 @@ import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import type { PipelineCompiler } from "../pipeline-compiler";
 import { RewardSummoning } from "./reward-summoning";
 import { ChestPresentation } from "./chest-presentation";
+import { type ChestBeat, ChestOpeningBeats } from "./chest-opening-beats";
 
 interface ChestTransition {
   root: Group;
+  object: Group;
   mixer: AnimationMixer;
   effect: RewardSummoning;
   presentation: ChestPresentation;
   relics?: ChestRelicReveal;
   tileKey?: string;
-  kind?: "summon" | "open";
+  kind?: "summon" | "open" | "hold";
+  /** A Frontier chest held for its moment: its beats, and where to read the moment each frame. */
+  beats?: ChestOpeningBeats;
+  readBeat?: () => ChestBeat | null;
 }
 
 /** A bounded, precompiled pool for transient effects; persistent chests stay instanced. */
@@ -34,7 +39,7 @@ export class ChestTransitions {
       const effect = new RewardSummoning(object, root, false);
       root.visible = false;
       this.group.add(root);
-      this.actors.push({ root, mixer, effect, presentation });
+      this.actors.push({ root, object, mixer, effect, presentation });
     }
   }
 
@@ -57,6 +62,8 @@ export class ChestTransitions {
     const actor = this.active.get(tileKey) ?? this.actors.find((candidate) => candidate.tileKey === undefined);
     if (!actor) return false;
     if (actor.tileKey === tileKey && actor.kind === kind) return true;
+    // A chest held for its moment opens on the moment's burst, not when its fact goes.
+    if (actor.tileKey === tileKey && actor.kind === "hold" && kind === "open") return true;
     actor.relics?.dispose();
     actor.relics = undefined;
     placement.decompose(actor.root.position, actor.root.quaternion, actor.root.scale);
@@ -67,6 +74,26 @@ export class ChestTransitions {
     actor.effect.seek(kind === "summon" ? 0 : 1);
     if (kind === "open") actor.effect.open();
     actor.effect.update(0, animationTime);
+    this.active.set(tileKey, actor);
+    return true;
+  }
+
+  /**
+   * Holds a closed chest on its tile for a Frontier chest moment: summoned and shut, it plays the moment's beats read
+   * each frame, opens on the burst and sinks away as an opened chest does. A moment that ends before its burst lets the
+   * chest go back to its tile.
+   */
+  hold(tileKey: string, placement: Matrix4, animationTime: number, readBeat: () => ChestBeat | null): boolean {
+    const actor = this.active.get(tileKey) ?? this.actors.find((candidate) => candidate.tileKey === undefined);
+    if (!actor) return false;
+    placement.decompose(actor.root.position, actor.root.quaternion, actor.root.scale);
+    actor.tileKey = tileKey;
+    actor.kind = "hold";
+    actor.root.visible = true;
+    actor.mixer.setTime(animationTime);
+    actor.effect.seek(1);
+    actor.beats = new ChestOpeningBeats(actor.object, actor.effect);
+    actor.readBeat = readBeat;
     this.active.set(tileKey, actor);
     return true;
   }
@@ -89,19 +116,31 @@ export class ChestTransitions {
 
   revealProgress(tileKey: string): number {
     const actor = this.active.get(tileKey);
-    if (actor?.kind === "open") return 0;
+    if (actor?.kind === "open" || actor?.kind === "hold") return 0;
     return actor?.kind === "summon" ? actor.effect.revealProgress : 1;
   }
 
   update(delta: number, animationTime: number, cameraPosition?: Vector3, nightAmount = 0): boolean {
     if (!this.active.size) return false;
     for (const [tileKey, actor] of this.active) {
+      const beat = actor.readBeat?.() ?? null;
+      if (actor.kind === "hold" && !beat && !actor.beats?.hasOpened) {
+        this.cancel(tileKey);
+        continue;
+      }
       actor.mixer.setTime(animationTime);
       actor.effect.update(delta, animationTime);
+      if (beat) actor.beats?.update(beat, performance.now());
       actor.presentation.setNightAmount(nightAmount);
       if (cameraPosition) actor.presentation.faceCamera(cameraPosition);
       actor.relics?.update(actor.effect.openingElapsed);
-      if (actor.kind === "summon" ? actor.effect.isSummoned : actor.effect.isAbsorbed) this.cancel(tileKey);
+      const finished =
+        actor.kind === "summon"
+          ? actor.effect.isSummoned
+          : actor.kind === "hold"
+            ? Boolean(actor.beats?.hasOpened) && actor.effect.isAbsorbed
+            : actor.effect.isAbsorbed;
+      if (finished) this.cancel(tileKey);
     }
     return true;
   }
@@ -114,6 +153,14 @@ export class ChestTransitions {
     actor.relics = undefined;
     actor.tileKey = undefined;
     actor.kind = undefined;
+    // A pooled actor goes back to the plain chest: no tint, full beams, upright and full size.
+    if (actor.beats) {
+      actor.effect.clearGlow();
+      actor.object.scale.setScalar(1);
+      actor.object.rotation.z = 0;
+    }
+    actor.beats = undefined;
+    actor.readBeat = undefined;
     this.active.delete(tileKey);
   }
 

@@ -20,9 +20,10 @@ function fixture(initialRules = []) {
       if (url.endsWith("/rulesets"))
         ruleset = { id: "ruleset", rules: body.rules.map((rule) => ({ ...rule, id: "managed" })) };
       else {
-        const rule = { ...body, id: "managed" };
+        const id = options.method === "PATCH" ? url.split("/").at(-1) : "managed";
+        const rule = { ...body, id };
         delete rule.position;
-        ruleset.rules = [...ruleset.rules.filter((rule) => rule.id !== "managed"), rule];
+        ruleset.rules = [...ruleset.rules.filter((rule) => rule.id !== id), rule];
       }
       return Response.json({ success: true, result: ruleset });
     },
@@ -40,6 +41,7 @@ test("creates only a scoped PWA rule, preserves existing rules, and is idempoten
     write.body.expression,
     '(http.host eq "play.realms.party" and http.request.uri.path in {"/sw.js" "/manifest.webmanifest" "/offline.html"})',
   );
+  assert.equal(write.body.ref, "realms_pwa_revalidation_play_realms_party");
   assert.equal(write.body.action_parameters.browser_ttl.mode, "respect_origin");
   assert.equal(write.body.action_parameters.edge_ttl.mode, "respect_origin");
   assert.deepEqual(write.body.position, { after: "other" });
@@ -50,11 +52,31 @@ test("creates only a scoped PWA rule, preserves existing rules, and is idempoten
 
 test("repairs and reorders only its own rule after a later override", async () => {
   const other = { id: "other", ref: "assets", action_parameters: { cache: true } };
-  const f = fixture([{ id: "managed", ref: "realms_pwa_revalidation", enabled: false }, other]);
+  const f = fixture([{ id: "managed", ref: "realms_pwa_revalidation_play_realms_party", enabled: false }, other]);
   assert.equal((await ensurePwaCacheRule(f.input)).action, "updated-rule");
   assert.equal(f.calls.at(-1).method, "PATCH");
   assert.deepEqual(f.calls.at(-1).body.position, { after: "other" });
   assert.deepEqual(f.rules()[0], other);
+});
+
+test("keeps each host's rule apart and adopts the zone-wide rule written for the same host", async () => {
+  const production =
+    '(http.host eq "play.realms.party" and http.request.uri.path in {"/sw.js" "/manifest.webmanifest" "/offline.html"})';
+  const legacy = { id: "legacy", ref: "realms_pwa_revalidation", expression: production, enabled: false };
+  const staging = fixture([legacy]);
+  assert.equal(
+    (await ensurePwaCacheRule({ ...staging.input, origin: "https://staging.realms.party" })).action,
+    "created-rule",
+  );
+  assert.deepEqual(staging.rules()[0], legacy);
+  const f = fixture([legacy]);
+  assert.equal((await ensurePwaCacheRule(f.input)).action, "updated-rule");
+  assert.equal(f.calls.at(-1).method, "PATCH");
+  assert.ok(f.calls.at(-1).url.endsWith("/rules/legacy"));
+  assert.deepEqual(
+    f.rules().map((rule) => rule.ref),
+    ["realms_pwa_revalidation_play_realms_party"],
+  );
 });
 
 test("creates an entrypoint only when missing and fails closed on permission errors", async () => {

@@ -1,0 +1,293 @@
+{
+  "heads": {
+    "preA1": "8f98abf8d18",
+    "A3": "619f0d62365",
+    "phase1": "74781730dbe"
+  },
+  "preA1": [
+    {
+      "action": "explore",
+      "transactionHash": "0x4eab12d90807bdb23441107093a8c0376617eb81dc9768e973118d5d7a3bb18",
+      "block": 6639,
+      "receiptResources": {
+        "l1_gas": 0,
+        "l1_data_gas": 1344,
+        "l2_gas": 78452951
+      },
+      "cairoSteps": "unavailable on native execution",
+      "syscallCounts": "unavailable on native execution",
+      "tracedContractCalls": 59,
+      "tracedLibraryCalls": 0,
+      "replayResourcesMatchReceipt": true,
+      "replayEventsMatchReceipt": true
+    },
+    {
+      "action": "travel",
+      "transactionHash": "0x28f1d4a30a43c610c8fe37efde3d98e1966309badce59f368024751ccb67bf8",
+      "block": 8416,
+      "receiptResources": {
+        "l1_gas": 0,
+        "l1_data_gas": 1280,
+        "l2_gas": 47344106
+      },
+      "cairoSteps": "unavailable on native execution",
+      "syscallCounts": "unavailable on native execution",
+      "tracedContractCalls": 28,
+      "tracedLibraryCalls": 0,
+      "replayResourcesMatchReceipt": true,
+      "replayEventsMatchReceipt": true
+    },
+    {
+      "action": "attack",
+      "transactionHash": "0x82b0dfdfe1c55543448f46af538d35de97464a905306167175beecaa4ea70f",
+      "block": 6637,
+      "receiptResources": {
+        "l1_gas": 0,
+        "l1_data_gas": 1632,
+        "l2_gas": 91714664
+      },
+      "cairoSteps": "unavailable on native execution",
+      "syscallCounts": "unavailable on native execution",
+      "tracedContractCalls": 66,
+      "tracedLibraryCalls": 0,
+      "replayResourcesMatchReceipt": true,
+      "replayEventsMatchReceipt": true
+    },
+    {
+      "action": "building",
+      "transactionHash": "0x9154693d14193dc18d53b24d07624646477cd6a1f97af4ba1b45a024490422",
+      "block": 6659,
+      "receiptResources": {
+        "l1_gas": 0,
+        "l1_data_gas": 1216,
+        "l2_gas": 46645798
+      },
+      "cairoSteps": "unavailable on native execution",
+      "syscallCounts": "unavailable on native execution",
+      "tracedContractCalls": 27,
+      "tracedLibraryCalls": 0,
+      "replayResourcesMatchReceipt": true,
+      "replayEventsMatchReceipt": true
+    },
+    {
+      "action": "blitz-roster",
+      "transactionHash": "0x669cde918a8965bc654224c73a74023a89b1c113b5b650dac7eefff6a7d75f3",
+      "block": 576,
+      "receiptResources": {
+        "l1_gas": 0,
+        "l1_data_gas": 11232,
+        "l2_gas": 644905627
+      },
+      "cairoSteps": "unavailable on native execution",
+      "syscallCounts": "unavailable on native execution",
+      "tracedContractCalls": 194,
+      "tracedLibraryCalls": 0,
+      "replayResourcesMatchReceipt": true,
+      "replayEventsMatchReceipt": true
+    }
+  ],
+  "A3": [
+    {
+      "action": "enter-depth",
+      "beforeL2Gas": 29561743,
+      "beforeContractCalls": 3,
+      "beforeLibraryCalls": 3,
+      "beforeEvents": 5,
+      "beforeTransaction": "0x7e3e131734bcd94a593b3885269333afda28910fa56f89a4428f6c1b81fdfad"
+    },
+    {
+      "action": "explore-discovery-7",
+      "beforeL2Gas": 63250334,
+      "beforeContractCalls": 3,
+      "beforeLibraryCalls": 15,
+      "beforeEvents": 18,
+      "beforeTransaction": "0x3777ec96c38f141e06d5df4e693b4c2b819cb8aae2a1d76ebb476027c658897"
+    },
+    {
+      "action": "explore-known",
+      "beforeL2Gas": 39191895,
+      "beforeContractCalls": 3,
+      "beforeLibraryCalls": 6,
+      "beforeEvents": 7,
+      "beforeTransaction": "0x68f10fc3d0f94bd895b66715fc7521ed4b9f8c51a7332c3bf2cce13009dde30"
+    },
+    {
+      "action": "explore-plain",
+      "beforeL2Gas": 56279275,
+      "beforeContractCalls": 3,
+      "beforeLibraryCalls": 13,
+      "beforeEvents": 13,
+      "beforeTransaction": "0x54a04e581995589e9d6b9581bc271fe7cec0287dc8f3a14cd74c11389ad1c73"
+    },
+    {
+      "action": "move",
+      "beforeL2Gas": 34206960,
+      "beforeContractCalls": 3,
+      "beforeLibraryCalls": 5,
+      "beforeEvents": 7,
+      "beforeTransaction": "0x20eeb19402f0af55ffc9ba04ccfe22f6fecbff6fc15355a5b2e4f16870ad3f7"
+    }
+  ],
+  "phase1": [
+    {
+      "action": "building-placement",
+      "command": "CreateBuilding",
+      "transactionHash": "0x47b36c906b22ad7725c287ab603b568905fa73bf31eb88a6d436a0279600926",
+      "block": 261,
+      "receiptResources": {
+        "l1_gas": 0,
+        "l1_data_gas": 960,
+        "l2_gas": 15150081
+      },
+      "eventCount": 10,
+      "tracedContractCalls": 4,
+      "tracedLibraryCalls": 4,
+      "cairoSteps": "unavailable on native execution",
+      "syscallCounts": "unavailable on native execution",
+      "replayResourcesMatchReceipt": true,
+      "replayEventsMatchReceipt": true,
+      "structureEntitiesInReceipt": 0,
+      "builtinCounts": "unavailable on native execution"
+    },
+    {
+      "action": "enter-depth",
+      "command": "EnterDepth",
+      "transactionHash": "0x65da0e9468703906163259053b2f954f5a8529f488bdb724260dc9700ebdab0",
+      "block": 265,
+      "receiptResources": {
+        "l1_gas": 0,
+        "l1_data_gas": 864,
+        "l2_gas": 25162311
+      },
+      "eventCount": 6,
+      "tracedContractCalls": 4,
+      "tracedLibraryCalls": 3,
+      "cairoSteps": "unavailable on native execution",
+      "syscallCounts": "unavailable on native execution",
+      "replayResourcesMatchReceipt": true,
+      "replayEventsMatchReceipt": true,
+      "structureEntitiesInReceipt": 0,
+      "builtinCounts": "unavailable on native execution"
+    },
+    {
+      "action": "frontier-explore",
+      "command": "Explore",
+      "transactionHash": "0x18209be7fcd83d861ed75b5867fb934a8cd0adc77d0387dae64b55454221af7",
+      "block": 266,
+      "receiptResources": {
+        "l1_gas": 0,
+        "l1_data_gas": 1056,
+        "l2_gas": 45374360
+      },
+      "eventCount": 12,
+      "tracedContractCalls": 4,
+      "tracedLibraryCalls": 13,
+      "cairoSteps": "unavailable on native execution",
+      "syscallCounts": "unavailable on native execution",
+      "replayResourcesMatchReceipt": true,
+      "replayEventsMatchReceipt": true,
+      "structureEntitiesInReceipt": 0,
+      "builtinCounts": "unavailable on native execution"
+    },
+    {
+      "action": "move",
+      "command": "Move",
+      "transactionHash": "0x168235cf96e84d9eaff2c06d863e9810903412a77b509fdf2c1fe3f09703a16",
+      "block": 267,
+      "receiptResources": {
+        "l1_gas": 0,
+        "l1_data_gas": 800,
+        "l2_gas": 26431036
+      },
+      "eventCount": 7,
+      "tracedContractCalls": 4,
+      "tracedLibraryCalls": 5,
+      "cairoSteps": "unavailable on native execution",
+      "syscallCounts": "unavailable on native execution",
+      "replayResourcesMatchReceipt": true,
+      "replayEventsMatchReceipt": true,
+      "structureEntitiesInReceipt": 0,
+      "builtinCounts": "unavailable on native execution"
+    },
+    {
+      "action": "six-camp-roster-batch-1",
+      "command": "SettleBlitzRoster",
+      "transactionHash": "0x860dec454a2a8856877870510a6032b8bd9cab64c04b3e43bb6dd084f92d2e",
+      "block": 524,
+      "receiptResources": {
+        "l1_gas": 0,
+        "l1_data_gas": 11968,
+        "l2_gas": 462417747
+      },
+      "eventCount": 102,
+      "tracedContractCalls": 4,
+      "tracedLibraryCalls": 47,
+      "cairoSteps": "unavailable on native execution",
+      "syscallCounts": "unavailable on native execution",
+      "replayResourcesMatchReceipt": true,
+      "replayEventsMatchReceipt": true,
+      "structureEntitiesInReceipt": 3,
+      "builtinCounts": "unavailable on native execution"
+    },
+    {
+      "action": "six-camp-roster-batch-2",
+      "command": "SettleBlitzRoster",
+      "transactionHash": "0x18d44f9d51e19ae0ae8a0df4d5795532811360b211259369beaabd6ec22e560",
+      "block": 525,
+      "receiptResources": {
+        "l1_gas": 0,
+        "l1_data_gas": 11808,
+        "l2_gas": 460539140
+      },
+      "eventCount": 102,
+      "tracedContractCalls": 4,
+      "tracedLibraryCalls": 47,
+      "cairoSteps": "unavailable on native execution",
+      "syscallCounts": "unavailable on native execution",
+      "replayResourcesMatchReceipt": true,
+      "replayEventsMatchReceipt": true,
+      "structureEntitiesInReceipt": 3,
+      "builtinCounts": "unavailable on native execution"
+    },
+    {
+      "action": "attack-explorer",
+      "command": "Battle",
+      "transactionHash": "0x65f74bc73dc8c82bf4553620f47f50cc3f66dafaddd2c8bfa624a644e5e679",
+      "block": 717,
+      "receiptResources": {
+        "l1_gas": 0,
+        "l1_data_gas": 1120,
+        "l2_gas": 35583832
+      },
+      "eventCount": 9,
+      "tracedContractCalls": 4,
+      "tracedLibraryCalls": 8,
+      "cairoSteps": "unavailable on native execution",
+      "syscallCounts": "unavailable on native execution",
+      "replayResourcesMatchReceipt": true,
+      "replayEventsMatchReceipt": true,
+      "structureEntitiesInReceipt": 0,
+      "builtinCounts": "unavailable on native execution"
+    },
+    {
+      "action": "attack-guard",
+      "command": "BattleGuard",
+      "transactionHash": "0x2c875ed922ac27df90d7d04482b4d403962df1b34286839d57de46fa05ef9d8",
+      "block": 747,
+      "receiptResources": {
+        "l1_gas": 0,
+        "l1_data_gas": 864,
+        "l2_gas": 28173743
+      },
+      "eventCount": 6,
+      "tracedContractCalls": 4,
+      "tracedLibraryCalls": 5,
+      "cairoSteps": "unavailable on native execution",
+      "syscallCounts": "unavailable on native execution",
+      "replayResourcesMatchReceipt": true,
+      "replayEventsMatchReceipt": true,
+      "structureEntitiesInReceipt": 0,
+      "builtinCounts": "unavailable on native execution"
+    }
+  ]
+}

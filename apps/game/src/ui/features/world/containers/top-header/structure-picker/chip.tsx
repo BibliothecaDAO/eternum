@@ -36,6 +36,9 @@ export type StructureWithMetadata = Structure & {
   realmLevel: number;
   realmLevelLabel: string | null;
   population: number;
+  guardCount: number | undefined;
+  /** Field armies alive today; an army from an earlier expedition day is dead by rule and never counts. */
+  explorerCount: number;
   populationCapacity: number;
   buildingTilesOccupied: number | null;
   buildingTilesTotal: number | null;
@@ -127,7 +130,7 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
         </div>
         <div className="space-y-1">
           {upgradeInfo.requirements.map((req) => {
-            const isMet = req.current >= req.amount;
+            const isMet = req.current !== undefined && req.current >= req.amount;
             return (
               <div
                 key={`${req.resource}-${req.amount}`}
@@ -140,7 +143,8 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
                   <ResourceIcon resource={ResourcesIds[req.resource]} size="xs" withTooltip={false} />
                   <span className="flex-1 text-xs text-gold/80">{ResourcesIds[req.resource]}</span>
                   <span className={clsx("text-xs font-semibold", isMet ? "text-gold" : "text-red-300")}>
-                    {Math.floor(req.current).toLocaleString()} / {req.amount.toLocaleString()}
+                    {req.current === undefined ? "—" : Math.floor(req.current).toLocaleString()} /{" "}
+                    {req.amount.toLocaleString()}
                   </span>
                 </div>
                 {req.incoming && (

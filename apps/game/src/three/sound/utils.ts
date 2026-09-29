@@ -4,6 +4,7 @@ import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 const DEFAULT_RESOURCE_SOUND_ID = "ui.click";
 
 const RESOURCE_SOUND_MAP: Record<ResourcesIds, string> = {
+  [ResourcesIds.SAT]: "ui.levelup",
   [ResourcesIds.Stone]: "resource.collect.stone",
   [ResourcesIds.Coal]: "resource.collect.coal",
   [ResourcesIds.Wood]: "resource.collect.wood",
@@ -26,7 +27,7 @@ const RESOURCE_SOUND_MAP: Record<ResourcesIds, string> = {
   [ResourcesIds.Sapphire]: "resource.collect.sapphire",
   [ResourcesIds.EtherealSilica]: "resource.collect.ethereal_silica",
   [ResourcesIds.Dragonhide]: "resource.collect.dragonhide",
-  [ResourcesIds.Labor]: "resource.collect.stone",
+  [ResourcesIds.Labor]: "resource.collect.labor",
   [ResourcesIds.AncientFragment]: "resource.collect.diamonds",
   [ResourcesIds.Donkey]: "resource.collect.wood",
   [ResourcesIds.Knight]: "resource.collect.stone",
@@ -42,7 +43,7 @@ const RESOURCE_SOUND_MAP: Record<ResourcesIds, string> = {
   [ResourcesIds.Fish]: "resource.collect.fish",
   [ResourcesIds.Research]: "resource.collect.diamonds",
   [ResourcesIds.Lords]: "resource.collect.lords",
-  [ResourcesIds.Essence]: "resource.collect.diamonds",
+  [ResourcesIds.Essence]: "resource.collect.essence",
   [ResourcesIds.StaminaRelic1]: "relic.chest",
   [ResourcesIds.StaminaRelic2]: "relic.chest",
   [ResourcesIds.DamageRelic1]: "relic.chest",

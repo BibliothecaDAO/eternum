@@ -1,11 +1,9 @@
 import { getPlayerName } from "@/hooks/use-player-profile";
-import { isFallbackPlayerName } from "@bibliothecadao/eternum";
 import { getRealmNameById } from "@bibliothecadao/eternum";
 
 type ReadModelRow = Record<string, unknown>;
 
 export interface FaithReadModels {
-  addressNames: readonly ReadModelRow[];
   faithfulStructures: readonly ReadModelRow[];
   structures: readonly ReadModelRow[];
   wonderFaith: readonly ReadModelRow[];
@@ -98,16 +96,6 @@ const sameFelt = (left: unknown, right: unknown): boolean => {
   return leftValue !== null && rightValue !== null && leftValue === rightValue;
 };
 
-const decodeShortString = (value: unknown): string | null => {
-  if (typeof value === "string" && !value.startsWith("0x")) return value.trim() || null;
-  const parsed = toBigInt(value);
-  if (parsed === null || parsed === 0n) return null;
-  const unpadded = parsed.toString(16);
-  const hex = unpadded.length % 2 === 0 ? unpadded : `0${unpadded}`;
-  const decoded = String.fromCharCode(...(hex.match(/.{2}/g) ?? []).map((byte) => Number.parseInt(byte, 16)));
-  return decoded.trim() || null;
-};
-
 const wonderName = (wonderId: bigint, realmId: number): string => {
   const realmName = realmId > 0 ? getRealmNameById(realmId) : undefined;
   return realmName ? `Wonder - ${realmName}` : `Wonder #${realmId > 0 ? realmId : wonderId.toString()}`;
@@ -131,13 +119,8 @@ const structuresWithWonder = (rows: FaithReadModels): ReadModelRow[] =>
 const wonderFaith = (rows: FaithReadModels, wonderId: bigint): ReadModelRow =>
   rows.wonderFaith.find((row) => sameFelt(row.wonder_id, wonderId)) ?? {};
 
-/** The player resolver first; the read model's chain name only for an address the game has not registered. */
-const ownerName = (rows: FaithReadModels, owner: unknown): string | null => {
-  const resolved = typeof owner === "string" || typeof owner === "bigint" ? getPlayerName(owner) : null;
-  if (resolved) return resolved;
-  const chainName = decodeShortString(rows.addressNames.find((row) => sameFelt(row.address, owner))?.name);
-  return chainName && !isFallbackPlayerName(chainName) ? chainName : null;
-};
+const ownerName = (owner: unknown): string | null =>
+  typeof owner === "string" || typeof owner === "bigint" ? getPlayerName(owner) : null;
 
 const structureTypeLabel = (structureType: number): string => {
   if (structureType === REALM_STRUCTURE_TYPE) return "Realm";
@@ -178,7 +161,7 @@ const followerEntries = (rows: FaithReadModels, wonderId: bigint): WonderFaithFo
         structureTypeLabel: structureTypeLabel(structureType),
         structureLabel: structureLabel(structureId, structureType, realmId),
         ownerAddress: address(structure.owner),
-        ownerName: ownerName(rows, structure.owner),
+        ownerName: ownerName(structure.owner),
         faithfulSince: integer(faithful.faithful_since),
         fpToWonderOwnerPerSec,
         fpToFollowerOwnerPerSec,
@@ -202,7 +185,7 @@ export const buildFaithLeaderboard = (
           wonderId,
           wonderName: wonderName(wonderId, integer(record(structure.metadata).realm_id)),
           ownerAddress: address(structure.owner),
-          ownerName: ownerName(rows, structure.owner),
+          ownerName: ownerName(structure.owner),
           totalFaithPoints: currentFaithPoints(faith, nowInSeconds),
           faithPointsPerSecond: integer(faith.claim_per_sec),
           followerCount: integer(faith.num_structures_pledged),
@@ -256,7 +239,7 @@ export const buildWonderFaithDetail = (
     wonderId,
     wonderName: wonderName(wonderId, integer(record(structure.metadata).realm_id)),
     ownerAddress: address(structure.owner),
-    ownerName: ownerName(rows, structure.owner),
+    ownerName: ownerName(structure.owner),
     totalFaithPoints: currentFaithPoints(faith, nowInSeconds),
     totalFaithPointsPerSec,
     ownBaselinePerSec: Math.max(0, totalFaithPointsPerSec - followersContributionPerSec),

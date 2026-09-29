@@ -2,7 +2,7 @@ import clsx from "clsx";
 
 export type LoaderProgressMode = "indeterminate" | "determinate";
 
-export const resolveDeterminateSegmentCount = (progress: number, segments: number) => {
+const resolveDeterminateSegmentCount = (progress: number, segments: number) => {
   const safeSegments = Number.isFinite(segments) ? Math.max(1, Math.floor(segments)) : 8;
   const safeProgress = Number.isFinite(progress) ? Math.min(100, Math.max(0, progress)) : 0;
 

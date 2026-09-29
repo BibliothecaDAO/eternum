@@ -2,7 +2,8 @@
  * When the local scene may be revealed: after its grid is built and its ground textures have settled, and after
  * the renderer has compiled every pipeline the first frame would otherwise compile on screen. A warm-up that
  * fails, or that outlives its budget (async pipeline creation can take seconds on a software backend), still
- * reveals: an uncompiled first frame is a hitch, a frozen snapshot is a bug.
+ * reveals: an uncompiled first frame is a hitch, a frozen snapshot is a bug. A grid that failed to build fails the
+ * scene instead: there is no board to reveal, and the entry waiting on it must say so.
  */
 const LOCAL_SCENE_WARM_UP_BUDGET_MS = 1_500;
 
@@ -13,7 +14,8 @@ export async function awaitLocalScenePresentable(input: {
   budgetMs?: number;
   setTimeoutFn?: (callback: () => void, delayMs: number) => void;
 }): Promise<void> {
-  await Promise.allSettled([input.gridBuilt, input.groundTextures]);
+  const [grid] = await Promise.allSettled([input.gridBuilt, input.groundTextures]);
+  if (grid.status === "rejected") throw grid.reason;
   const schedule = input.setTimeoutFn ?? ((callback, delayMs) => setTimeout(callback, delayMs));
   const budget = new Promise<"budget">((resolve) =>
     schedule(() => resolve("budget"), input.budgetMs ?? LOCAL_SCENE_WARM_UP_BUDGET_MS),

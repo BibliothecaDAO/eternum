@@ -8,6 +8,8 @@ interface TroopCountSelectorProps {
   onChange: (value: number) => void;
   capacityRemaining?: number | null;
   troopMaxSize?: number | null;
+  /** Why no troop can be chosen; the count controls are disabled exactly when there is one. */
+  unavailableReason: string | null;
   /**
    * Embed mode: drop the "Available troops" line — the MAX TROOPS summary in
    * the parent body already covers that info.
@@ -22,6 +24,7 @@ export const TroopCountSelector = ({
   onChange,
   capacityRemaining,
   troopMaxSize,
+  unavailableReason,
   embedded = false,
   compact = false,
 }: TroopCountSelectorProps) => {
@@ -56,7 +59,7 @@ export const TroopCountSelector = ({
           <Button
             variant="outline"
             onClick={() => handleIncrement(100)}
-            disabled={troopCount >= maxAffordable}
+            disabled={unavailableReason !== null}
             className="flex-1 px-2 py-1.5 text-xs font-bold hover:bg-gold/10"
           >
             +100
@@ -64,7 +67,7 @@ export const TroopCountSelector = ({
           <Button
             variant="outline"
             onClick={() => handleIncrement(500)}
-            disabled={troopCount >= maxAffordable}
+            disabled={unavailableReason !== null}
             className="flex-1 px-2 py-1.5 text-xs font-bold hover:bg-gold/10"
           >
             +500
@@ -72,12 +75,17 @@ export const TroopCountSelector = ({
           <Button
             variant="gold"
             onClick={() => onChange(maxAffordable)}
-            disabled={troopCount >= maxAffordable}
+            disabled={unavailableReason !== null}
             className="flex-1 px-2 py-1.5 text-xs font-extrabold"
           >
             {compact ? "Max" : "MAX"}
           </Button>
         </div>
+        {unavailableReason && (
+          <p className="px-1 text-xs text-gold/70" role="status">
+            {unavailableReason}
+          </p>
+        )}
         <label>
           <span className="sr-only">Troop count</span>
           <NumberInput

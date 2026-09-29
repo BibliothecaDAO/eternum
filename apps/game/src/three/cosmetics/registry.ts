@@ -36,7 +36,7 @@ export function formatArmyCosmeticTarget(troopType: TroopType, tier: TroopTier):
   return `army:${troopType}:${tier}`;
 }
 
-export function formatArmyCosmeticFamily(troopType: TroopType): string {
+function formatArmyCosmeticFamily(troopType: TroopType): string {
   return `army:${troopType}`;
 }
 
@@ -56,7 +56,7 @@ export function formatStructureCosmeticTarget(type: StructureType, stage?: strin
 /**
  * Registers a cosmetic entry while guarding against accidental duplicates.
  */
-export function registerCosmetic(entry: CosmeticRegistryEntry): CosmeticRegistryEntry {
+function registerCosmetic(entry: CosmeticRegistryEntry): CosmeticRegistryEntry {
   if (registryMap.has(entry.id)) {
     return registryMap.get(entry.id)!;
   }
@@ -109,7 +109,7 @@ function buildDefaultArmyEntries(): CosmeticRegistryEntry[] {
 }
 
 function buildDefaultStructureEntries(): CosmeticRegistryEntry[] {
-  const structurePaths = getStructureModelPaths(true);
+  const structurePaths = getStructureModelPaths();
 
   return STRUCTURE_TYPES.map((structureType) => {
     const paths = structurePaths[structureType] ?? [];

@@ -1,5 +1,3 @@
-import type { GameChain } from "./game-chains";
-
 const FORBIDDEN_HOST_SUFFIX = ["cartridge", "gg"].join(".");
 
 export interface ResolveEndpointOptions {

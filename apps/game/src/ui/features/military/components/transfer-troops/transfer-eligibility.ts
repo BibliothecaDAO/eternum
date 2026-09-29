@@ -9,6 +9,8 @@ interface SameStructureTransferParams {
   transferDirection: TransferDirection;
   selectedEntityId: ID;
   targetEntityId: ID;
+  sourceHomeOwner?: bigint;
+  targetOwner?: bigint;
   selectedExplorerOwner?: ID | bigint | null;
   targetExplorerOwner?: ID | bigint | null;
   guardSlot: GuardSelection;
@@ -22,13 +24,20 @@ const idsMatch = (left: ID | bigint | null | undefined, right: ID | bigint | nul
   return String(left) === String(right);
 };
 
-export const getSameStructureTransferBlockReason = ({
+export const getTroopTransferBlockReason = ({
   transferDirection,
   selectedEntityId,
   selectedExplorerOwner,
   targetExplorerOwner,
   guardSlot,
+  sourceHomeOwner,
+  targetOwner,
 }: SameStructureTransferParams): string | null => {
+  if (transferDirection === TransferDirection.ExplorerToStructure) {
+    return sourceHomeOwner !== undefined && sourceHomeOwner === targetOwner
+      ? null
+      : "Cannot reinforce: Explorer home and target must have the same owner";
+  }
   if (transferDirection === TransferDirection.ExplorerToExplorer) {
     return idsMatch(selectedExplorerOwner, targetExplorerOwner)
       ? null

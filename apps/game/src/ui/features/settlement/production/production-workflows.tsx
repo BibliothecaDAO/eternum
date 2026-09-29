@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Tabs } from "@/ui/design-system/atoms";
 import { HUD_BODY_MUTED } from "@/ui/design-system/atoms/hud-typography";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
 import { BuildingsList } from "./buildings-list";
 import { ProductionControls } from "./production-controls";
@@ -29,7 +30,10 @@ export const ProductionWorkflows = ({
   selectedResource,
   onSelectResource,
 }: ProductionWorkflowsProps) => {
-  const [activeTab, setActiveTab] = useState(() => (selectedResource || resolveCompactLane() !== null ? 0 : 1));
+  const showAutomation = useGameModeConfig().ui.showAutomation;
+  const [activeTab, setActiveTab] = useState(() =>
+    selectedResource || resolveCompactLane() !== null || !showAutomation ? 0 : 1,
+  );
   const previousSelectedResourceRef = useRef<ResourcesIds | null>(selectedResource ?? null);
 
   useEffect(() => {
@@ -89,19 +93,23 @@ export const ProductionWorkflows = ({
         </div>
       ),
     },
-    {
-      label: "Automation",
-      description: "Create repeatable production rules",
-      icon: Bot,
-      content: (
-        <RealmAutomationPanel
-          realmEntityId={realm.entityId.toString()}
-          realmName={realmDisplayName}
-          producedResources={producedResources}
-          entityType={isVillageLikeStructureCategory(realm.structure?.category) ? "village" : "realm"}
-        />
-      ),
-    },
+    ...(showAutomation
+      ? [
+          {
+            label: "Automation",
+            description: "Create repeatable production rules",
+            icon: Bot,
+            content: (
+              <RealmAutomationPanel
+                realmEntityId={realm.entityId.toString()}
+                realmName={realmDisplayName}
+                producedResources={producedResources}
+                entityType={isVillageLikeStructureCategory(realm.structure?.base.category) ? "village" : "realm"}
+              />
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (

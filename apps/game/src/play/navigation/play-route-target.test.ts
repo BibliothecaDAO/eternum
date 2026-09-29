@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { configManager } from "@bibliothecadao/eternum";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { resolvePlayRouteTarget } from "./play-route-target";
 
@@ -10,11 +10,11 @@ const createLocation = (pathname: string, search = ""): Pick<Location, "pathname
   search,
 });
 
-configManager.mapCenter = 2010831280;
+vi.spyOn(configManager, "getMapCenter").mockReturnValue(2010831280);
 
 describe("resolvePlayRouteTarget", () => {
   it("resolves canonical map routes with a world-position camera target", () => {
-    expect(resolvePlayRouteTarget(createLocation("/play/appchain/aurora/map", "?col=12&row=34"))).toEqual({
+    expect(resolvePlayRouteTarget(createLocation("/g/0xa1/3/map", "?col=12&row=34"))).toEqual({
       scene: "map",
       requestedScene: "map",
       routeWorldPosition: { col: 12, row: 34 },
@@ -24,8 +24,8 @@ describe("resolvePlayRouteTarget", () => {
       isCanonical: true,
       playRoute: {
         bootMode: "direct",
-        chain: "appchain",
-        worldName: "aurora",
+        chainId: "0xa1",
+        gameId: 3,
         scene: "map",
         col: 12,
         row: 34,
@@ -35,7 +35,7 @@ describe("resolvePlayRouteTarget", () => {
   });
 
   it("resolves canonical hex routes to a realm target while keeping a keep-centered local camera", () => {
-    expect(resolvePlayRouteTarget(createLocation("/play/appchain/aurora/hex", "?col=4&row=9"))).toEqual({
+    expect(resolvePlayRouteTarget(createLocation("/g/0xa1/3/hex", "?col=4&row=9"))).toEqual({
       scene: "hex",
       requestedScene: "hex",
       routeWorldPosition: { col: 4, row: 9 },
@@ -45,8 +45,8 @@ describe("resolvePlayRouteTarget", () => {
       isCanonical: true,
       playRoute: {
         bootMode: "direct",
-        chain: "appchain",
-        worldName: "aurora",
+        chainId: "0xa1",
+        gameId: 3,
         scene: "hex",
         col: 4,
         row: 9,
@@ -56,7 +56,7 @@ describe("resolvePlayRouteTarget", () => {
   });
 
   it("preserves spectate mode while leaving missing coordinates null", () => {
-    expect(resolvePlayRouteTarget(createLocation("/play/appchain/aurora/map", "?spectate=true"))).toEqual({
+    expect(resolvePlayRouteTarget(createLocation("/g/0xa1/3/map", "?spectate=true"))).toEqual({
       scene: "map",
       requestedScene: "map",
       routeWorldPosition: null,
@@ -66,8 +66,8 @@ describe("resolvePlayRouteTarget", () => {
       isCanonical: true,
       playRoute: {
         bootMode: "direct",
-        chain: "appchain",
-        worldName: "aurora",
+        chainId: "0xa1",
+        gameId: 3,
         scene: "map",
         col: null,
         row: null,
@@ -76,12 +76,15 @@ describe("resolvePlayRouteTarget", () => {
     });
   });
 
-  it("normalizes contract-space route coordinates into canonical world-map positions", () => {
-    const routeWorldPosition = resolvePlayRouteTarget(
-      createLocation("/play/appchain/bltz-spark-702/map", "?col=2010831286&row=2010831278"),
-    ).routeWorldPosition;
-
-    expect(routeWorldPosition).toEqual({ col: 6, row: -2 });
+  it("reads a map URL's hex as written, whatever its distance from the map centre", () => {
+    expect(resolvePlayRouteTarget(createLocation("/g/0xa1/702/map", "?col=6&row=-2")).routeWorldPosition).toEqual({
+      col: 6,
+      row: -2,
+    });
+    // A Frontier site lies about 2^31 hexes from the centre; its normalized hex is not mistaken for a contract one.
+    expect(
+      resolvePlayRouteTarget(createLocation("/g/0xa1/1/map", "?col=-2010817430&row=-2010811630")).routeWorldPosition,
+    ).toEqual({ col: -2010817430, row: -2010811630 });
   });
 
   it("returns a non-canonical fallback when the location is not a canonical play route", () => {

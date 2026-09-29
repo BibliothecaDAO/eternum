@@ -3,9 +3,11 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const phase = "http_request_cache_settings";
-const ruleRef = "realms_pwa_revalidation";
+// One zone serves several client hosts (staging and production), so each host owns its own rule. The first deploys
+// wrote one rule per zone under the bare prefix; a host adopts that rule when it is the one it describes.
+const legacyRuleRef = "realms_pwa_revalidation";
 
-/** Owns one rule; never replaces a zone's ruleset or changes another application's caching. */
+/** Owns one rule per host; never replaces a zone's ruleset or changes another host's caching. */
 export async function ensurePwaCacheRule({ origin, zoneName, token, fetch: request = globalThis.fetch }) {
   const hostname = validatePwaOrigin(origin, zoneName);
   if (!token) throw new Error("CLOUDFLARE_API_TOKEN is required with Zone Read and Cache Rules Edit permissions");
@@ -20,7 +22,7 @@ export async function ensurePwaCacheRule({ origin, zoneName, token, fetch: reque
     });
     return { origin, action: "created-ruleset" };
   }
-  const matches = ruleset.rules.filter((rule) => rule.ref === ruleRef);
+  const matches = ruleset.rules.filter((rule) => isHostRule(rule, desired));
   if (matches.length > 1) throw new Error("Duplicate managed PWA cache rules");
   const current = matches[0];
   const last = ruleset.rules.at(-1);
@@ -50,9 +52,13 @@ async function resolveZonePath(api, zoneName) {
   return `/zones/${zones[0].id}`;
 }
 
+function isHostRule(rule, desired) {
+  return rule.ref === desired.ref || (rule.ref === legacyRuleRef && rule.expression === desired.expression);
+}
+
 function buildPwaCacheRule(hostname) {
   return {
-    ref: ruleRef,
+    ref: `${legacyRuleRef}_${hostname.replaceAll(/[.-]/g, "_")}`,
     description: "Respect origin freshness for game install resources",
     enabled: true,
     expression: `(http.host eq "${hostname}" and http.request.uri.path in {"/sw.js" "/manifest.webmanifest" "/offline.html"})`,

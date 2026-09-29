@@ -1,5 +1,4 @@
 export * from "./cairo-tuple";
-export * from "./entity-ingest-queue";
 export * from "./game-sync-runtime";
 export * from "./game-sync-types";
 export * from "./game-lifecycle";

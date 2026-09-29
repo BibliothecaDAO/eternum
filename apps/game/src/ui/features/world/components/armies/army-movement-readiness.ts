@@ -1,5 +1,8 @@
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useMemo } from "react";
 
+import { useGame } from "@/hooks/context/game-context";
 import { useCurrentArmiesTick, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import {
   computeExploreFoodCosts,
@@ -8,13 +11,15 @@ import {
   divideByPrecision,
   ResourceManager,
   StaminaManager,
+  storedBiomeAt,
+  entityMapPosition,
 } from "@bibliothecadao/eternum";
-import { ClientComponents, getNeighborHexes, ResourcesIds, TroopType } from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
+import { getNeighborHexes, ResourcesIds, TroopType } from "@bibliothecadao/types";
+import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { getArmyMovementFoodRequirementWarnings, getArmyStaminaRequirementWarnings } from "./army-warning-copy";
 
-type ExplorerTroopsValue = ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
-type ResourceValue = ComponentValue<ClientComponents["Resource"]["schema"]>;
+type ExplorerTroopsValue = NativeRows["ExplorerTroops"];
+type ResourceValue = ResourceManager;
 
 interface ArmyFoodCosts {
   wheatPayAmount: number;
@@ -26,6 +31,14 @@ interface ArmyFoodCosts {
  * now" — stamina and food together. The stamina bar's color and the
  * readiness icons both render from this; nothing re-derives it locally.
  */
+/** What keeps an army from marching (or, failing that, exploring) for lack of food; see formatFoodBlock. */
+export interface FoodBlock {
+  action: "travel" | "explore";
+  perStep: ArmyFoodCosts;
+  food: { wheat: number; fish: number };
+  trainingTakesWheat: boolean;
+}
+
 export interface ArmyMovementReadiness {
   canTravel: boolean;
   canExplore: boolean;
@@ -34,6 +47,7 @@ export interface ArmyMovementReadiness {
   foodWarnings: ReturnType<typeof getArmyMovementFoodRequirementWarnings>;
   minTravelStamina: number;
   minExploreStamina: number;
+  foodBlock: FoodBlock | null;
 }
 
 export const deriveArmyMovementReadiness = ({
@@ -43,6 +57,7 @@ export const deriveArmyMovementReadiness = ({
   travelFoodCosts,
   exploreFoodCosts,
   food,
+  trainingTakesWheat = false,
 }: {
   currentStamina: number;
   minTravelStamina: number;
@@ -50,6 +65,7 @@ export const deriveArmyMovementReadiness = ({
   travelFoodCosts: ArmyFoodCosts;
   exploreFoodCosts: ArmyFoodCosts;
   food: { wheat: number; fish: number };
+  trainingTakesWheat?: boolean;
 }): ArmyMovementReadiness => {
   const foodWarnings = getArmyMovementFoodRequirementWarnings({ travelFoodCosts, exploreFoodCosts, food });
   const { hasTravelStaminaWarning, hasExploreStaminaWarning } = getArmyStaminaRequirementWarnings({
@@ -66,69 +82,90 @@ export const deriveArmyMovementReadiness = ({
     foodWarnings,
     minTravelStamina,
     minExploreStamina,
+    foodBlock: foodWarnings.travel.hasWarning
+      ? { action: "travel", perStep: travelFoodCosts, food, trainingTakesWheat }
+      : foodWarnings.explore.hasWarning
+        ? { action: "explore", perStep: exploreFoodCosts, food, trainingTakesWheat }
+        : null,
   };
+};
+
+/** An army's movement readiness from the facts, outside React too: the world-map labels read the same answer. */
+export const readArmyMovementReadiness = ({
+  army,
+  structureResources,
+  store,
+  currentArmiesTick,
+  currentDefaultTick,
+}: {
+  army: ExplorerTroopsValue;
+  structureResources: ResourceValue | null | undefined;
+  store: NativeFactStore;
+  currentArmiesTick: number;
+  currentDefaultTick: number;
+}): ArmyMovementReadiness | null => {
+  const troops = resolveExplorerTroops(store, army);
+  if (!troops) return null;
+  const movementFoodCosts = army.owner
+    ? { travel: computeTravelFoodCosts(army.troops), explore: computeExploreFoodCosts(army.troops) }
+    : {
+        travel: { wheatPayAmount: 0, fishPayAmount: 0 },
+        explore: { wheatPayAmount: 0, fishPayAmount: 0 },
+      };
+
+  return deriveArmyMovementReadiness({
+    currentStamina: Number(StaminaManager.getStamina(troops, currentArmiesTick).amount),
+    minTravelStamina: resolveCheapestNeighborTravelStamina(army, store),
+    minExploreStamina: configManager.getExploreStaminaCost(),
+    travelFoodCosts: movementFoodCosts.travel,
+    exploreFoodCosts: movementFoodCosts.explore,
+    food: resolveStructureFoodBalance(structureResources, currentDefaultTick),
+    trainingTakesWheat: structureResources?.hasResources() ? structureResources.trainsFromWheat() : false,
+  });
 };
 
 export const useArmyMovementReadiness = (
   army: ExplorerTroopsValue | null | undefined,
   structureResources: ResourceValue | null | undefined,
 ): ArmyMovementReadiness | null => {
+  const {
+    setup: { store },
+  } = useGame();
+  const slotRevision = useNativeRevision(["ArmySlot"]);
   const currentArmiesTick = useCurrentArmiesTick();
   const currentDefaultTick = useCurrentDefaultTick();
 
-  return useMemo(() => {
-    if (!army) return null;
-
-    const movementFoodCosts = army.owner
-      ? { travel: computeTravelFoodCosts(army.troops), explore: computeExploreFoodCosts(army.troops) }
-      : {
-          travel: { wheatPayAmount: 0, fishPayAmount: 0 },
-          explore: { wheatPayAmount: 0, fishPayAmount: 0 },
-        };
-
-    return deriveArmyMovementReadiness({
-      currentStamina: Number(StaminaManager.getStamina(army.troops, currentArmiesTick).amount),
-      minTravelStamina: resolveCheapestNeighborTravelStamina(army),
-      minExploreStamina: configManager.getExploreStaminaCost(),
-      travelFoodCosts: movementFoodCosts.travel,
-      exploreFoodCosts: movementFoodCosts.explore,
-      food: resolveStructureFoodBalance(structureResources, currentDefaultTick),
-    });
-  }, [army, structureResources, currentArmiesTick, currentDefaultTick]);
+  return useMemo(
+    () =>
+      army
+        ? readArmyMovementReadiness({ army, structureResources, store, currentArmiesTick, currentDefaultTick })
+        : null,
+    [army, structureResources, currentArmiesTick, currentDefaultTick, store, slotRevision],
+  );
 };
 
-// Cannot use an instantiated resource manager here: it reads RECS, which is
-// only synced for the local player's armies. An absent balance is treated as
-// unbounded — an unknown balance must never paint the army blocked.
 const resolveStructureFoodBalance = (
   structureResources: ResourceValue | null | undefined,
   currentDefaultTick: number,
 ): { wheat: number; fish: number } => {
-  if (!structureResources) {
+  if (!structureResources?.hasResources()) {
     return { wheat: Number.POSITIVE_INFINITY, fish: Number.POSITIVE_INFINITY };
   }
 
-  const { balance: wheat } = ResourceManager.balanceWithProduction(
-    structureResources,
-    currentDefaultTick,
-    ResourcesIds.Wheat,
-  );
-  const { balance: fish } = ResourceManager.balanceWithProduction(
-    structureResources,
-    currentDefaultTick,
-    ResourcesIds.Fish,
-  );
+  const { balance: wheat } = structureResources.balanceWithProduction(currentDefaultTick, ResourcesIds.Wheat)!;
+  const { balance: fish } = structureResources.balanceWithProduction(currentDefaultTick, ResourcesIds.Fish)!;
 
   return { wheat: divideByPrecision(wheat), fish: divideByPrecision(fish) };
 };
 
-const resolveCheapestNeighborTravelStamina = (army: ExplorerTroopsValue): number => {
-  const neighbors = getNeighborHexes(army.coord.x, army.coord.y);
+// Travel reaches only revealed tiles, so the cheapest step reads the neighbours' stored biomes and skips the rest.
+const resolveCheapestNeighborTravelStamina = (army: ExplorerTroopsValue, store: NativeFactStore): number => {
+  const position = entityMapPosition(store, army.game_id, army.explorer_id);
+  const neighbors = getNeighborHexes(position.x, position.y);
   return neighbors.reduce((min, neighbor) => {
-    const staminaCost = configManager.getTravelStaminaCost(
-      configManager.getBiome(neighbor.col, neighbor.row),
-      army.troops.category as TroopType,
-    );
+    const biome = storedBiomeAt(store, position.alt, neighbor.col, neighbor.row);
+    if (!biome) return min;
+    const staminaCost = configManager.getTravelStaminaCost(biome, army.troops.category as TroopType);
     return min === 0 ? staminaCost : Math.min(min, staminaCost);
   }, 0);
 };

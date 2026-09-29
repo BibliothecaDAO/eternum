@@ -1,10 +1,13 @@
-import { BuildingType, ClientComponents, ID, ResourceCost, ResourcesIds } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { researchedBuildingTier } from "./realm-research";
+import { BuildingType, ID, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import type { NativeFactStore } from "../client/native-fact-store";
 import { configManager, getBuildingCount } from "..";
-import { gameEntityKey } from "../managers/config-manager";
 
-export const getBuildingQuantity = (entityId: ID, buildingType: BuildingType, components: ClientComponents) => {
-  const structureBuildings = getComponentValue(components.StructureBuildings, gameEntityKey([BigInt(entityId)]));
+export const getBuildingQuantity = (entityId: ID, buildingType: BuildingType, store: NativeFactStore) => {
+  const structureBuildings = store.get("StructureBuildings", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: entityId,
+  });
 
   const buildingCount = getBuildingCount(buildingType, [
     structureBuildings?.packed_counts_1 || 0n,
@@ -14,43 +17,56 @@ export const getBuildingQuantity = (entityId: ID, buildingType: BuildingType, co
   return buildingCount;
 };
 
-export const getConsumedBy = (resourceProduced: ResourcesIds) => {
-  return Object.entries(configManager.complexSystemResourceInputs)
-    .map(([resourceId, inputs]) => {
-      const resource = inputs.find(
-        (input: { resource: number; amount: number }) => input.resource === resourceProduced,
-      );
-      if (resource) {
-        return Number(resourceId);
-      }
-    })
-    .filter(Boolean);
-};
+export const getConsumedBy = (resourceProduced: ResourcesIds) =>
+  configManager
+    .producibleResources()
+    .filter((resourceId) =>
+      configManager.getRecipeInputs(resourceId, false)!.some((input) => input.resource === resourceProduced),
+    );
 
+/**
+ * What the next building of a category costs, as the chain charges it (construction.cairo pay_building_costs): each base
+ * cost grows by the increase percent times the square of the buildings of that category already standing. On a
+ * realm board the realm's own workshop comes with it, so the chain does not count it among the workshops standing.
+ */
 export const getBuildingCosts = (
   realmEntityId: ID,
-  components: ClientComponents,
+  store: NativeFactStore,
   buildingCategory: BuildingType,
   useSimpleCost: boolean,
 ) => {
-  const buildingBaseCostPercentIncrease = configManager.getBuildingBaseCostPercentIncrease() / 10000;
-
-  const buildingQuantity = getBuildingQuantity(realmEntityId, buildingCategory, components);
-
-  let updatedCosts: ResourceCost[] = [];
-
-  let costs = useSimpleCost
-    ? configManager.simpleBuildingCosts[Number(buildingCategory)]
-    : configManager.complexBuildingCosts[Number(buildingCategory)];
-
+  const costs = configManager.getBuildingCosts(buildingCategory, useSimpleCost);
   if (!costs) return undefined;
 
-  costs.forEach((cost) => {
-    const baseCost = cost.amount;
-    const percentageAdditionalCost = baseCost * buildingBaseCostPercentIncrease;
-    const scaleFactor = Math.max(0, buildingQuantity ?? 0 - 1);
-    const totalCost = baseCost + scaleFactor * scaleFactor * percentageAdditionalCost;
-    updatedCosts.push({ resource: cost.resource, amount: totalCost });
-  });
-  return updatedCosts;
+  const increase = configManager.getBuildingBaseCostPercentIncrease() / 10000;
+  const scale = countedBuildingsStanding(realmEntityId, buildingCategory, store);
+  const result = costs.map((cost) => ({
+    resource: cost.resource,
+    amount: cost.amount + scale * scale * cost.amount * increase,
+  }));
+  const gameId = configManager.getActiveGameId();
+  if (store.get("BoardRules", { game_id: gameId })) {
+    const tier = researchedBuildingTier(store, gameId, realmEntityId, buildingCategory);
+    if (tier === undefined) return undefined;
+    let upgrades = 0n;
+    for (let next = 2; next <= tier; next++) {
+      upgrades += store.require("BuildingTierRule", {
+        game_id: gameId,
+        category: buildingCategory,
+        tier: next,
+      }).labor_upgrade_cost;
+    }
+    if (upgrades > 0n) {
+      const labor = result.find((cost) => cost.resource === ResourcesIds.Labor);
+      if (!labor) throw new Error("Research building has no labor base cost");
+      labor.amount += Number(upgrades) / RESOURCE_PRECISION;
+    }
+  }
+  return result;
+};
+
+const countedBuildingsStanding = (realmEntityId: ID, buildingCategory: BuildingType, store: NativeFactStore) => {
+  const standing = getBuildingQuantity(realmEntityId, buildingCategory, store);
+  const hasBoard = store.get("BoardRules", { game_id: configManager.getActiveGameId() }) !== undefined;
+  return hasBoard && buildingCategory === BuildingType.ResourceLabor ? Math.max(0, standing - 1) : standing;
 };

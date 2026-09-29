@@ -1,15 +1,14 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useComponentValue } from "@dojoengine/react";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { Button, NumberInput, Tabs } from "@/ui/design-system/atoms";
 import { HUD_BODY_MUTED, HUD_CUE, HUD_HEADLINE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { configManager, divideByPrecision, formatTime, getBuildingQuantity } from "@bibliothecadao/eternum";
-import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { getBuildingFromResource, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { LaborResourcesPanel } from "./labor-resources-panel";
@@ -17,7 +16,7 @@ import { RawResourcesPanel } from "./raw-resources-panel";
 
 export const ResourceProductionControls = ({
   selectedResource,
-  useRawResources,
+  useRawResources: requestedRawResources,
   setUseRawResources,
   productionAmount,
   setProductionAmount,
@@ -39,32 +38,36 @@ export const ResourceProductionControls = ({
   compact?: boolean;
 }) => {
   const {
+    account: { account },
     setup: {
-      account: { account },
-      components,
+      store,
       systemCalls: { burn_resource_for_resource_production, burn_labor_for_resource_production },
     },
-  } = useDojo();
+  } = useGame();
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const ordersAllowed = useUIStore(canIssueOrders);
   const currentDefaultTick = useCurrentDefaultTick();
-  useComponentValue(components.Resource, gameEntityKey([BigInt(realm.entityId)]));
-  useComponentValue(components.StructureBuildings, gameEntityKey([BigInt(realm.entityId)]));
 
-  const laborConfig = useMemo(() => configManager.getLaborConfig(selectedResource), [selectedResource]);
+  const laborEnabled = configManager.isCommandEnabled("BurnLaborForResourceProduction");
+  const useRawResources = !laborEnabled || requestedRawResources;
+  const laborConfig = useMemo(
+    () => (laborEnabled ? configManager.getLaborConfig(selectedResource) : undefined),
+    [selectedResource, laborEnabled],
+  );
 
-  // take wonder bonus into account
+  // Apply the recorded production bonus.
   const resourceOutputPerInputResourcesWithBonus = useMemo(() => {
     if (!laborConfig) return 0;
     return laborConfig.resourceOutputPerInputResources * bonus;
   }, [laborConfig, bonus]);
 
-  // take wonder bonus into account
-  const outputResourceAmountWithBonus = useMemo(() => {
-    return configManager.complexSystemResourceOutput[selectedResource].amount * bonus;
-  }, [selectedResource, bonus]);
+  // Apply the recorded production bonus.
+  // Undefined when this game defines no recipe for the resource: production is then unavailable.
+  const recipeInputs = configManager.getRecipeInputs(selectedResource, false);
+  const recipeOutput = configManager.getRecipeOutput(selectedResource, false);
+  const outputResourceAmountWithBonus = useMemo(() => (recipeOutput ?? 0) * bonus, [recipeOutput, bonus]);
 
   const handleRawResourcesProduce = async () => {
     if (!canIssueOrders() || isDisabled || isLoading || !ticks) return;
@@ -116,7 +119,7 @@ export const ResourceProductionControls = ({
 
     const balances: Record<number, number> = {};
     const allResources = [
-      ...configManager.complexSystemResourceInputs[selectedResource],
+      ...(recipeInputs ?? []),
       { resource: selectedResource, amount: 1 },
       { resource: ResourcesIds.Labor, amount: 1 },
       { resource: ResourcesIds.Wheat, amount: 1 },
@@ -124,8 +127,9 @@ export const ResourceProductionControls = ({
     ];
 
     allResources.forEach((resource) => {
-      const balance = resourceManager.balanceWithProduction(currentDefaultTick, resource.resource).balance;
-      balances[resource.resource] = divideByPrecision(balance);
+      // An unknown balance is left out, so the amount it would cover reads as over balance.
+      const balance = resourceManager.balanceWithProduction(currentDefaultTick, resource.resource)?.balance;
+      if (balance !== undefined) balances[resource.resource] = divideByPrecision(balance);
     });
     return balances;
   })();
@@ -135,12 +139,15 @@ export const ResourceProductionControls = ({
     setTicks(Math.floor(productionAmount / outputResourceAmountWithBonus));
   }, [productionAmount, outputResourceAmountWithBonus, bonus]);
 
-  const rawCurrentInputs = useMemo(() => {
-    return configManager.complexSystemResourceInputs[selectedResource].map(({ resource, amount }) => ({
-      resource,
-      amount: amount / outputResourceAmountWithBonus,
-    }));
-  }, [selectedResource, outputResourceAmountWithBonus]);
+  // Each input per unit of output; undefined when the recipe is unknown here, which the panel shows as "—".
+  const rawCurrentInputs = useMemo(
+    () =>
+      recipeInputs?.map(({ resource, amount }) => ({
+        resource,
+        amount: amount / outputResourceAmountWithBonus,
+      })),
+    [recipeInputs, outputResourceAmountWithBonus],
+  );
 
   const laborCurrentInputs = useMemo(() => {
     return (
@@ -166,15 +173,17 @@ export const ResourceProductionControls = ({
     return useRawResources ? rawCurrentInputs : laborCurrentInputs;
   }, [useRawResources, rawCurrentInputs, laborCurrentInputs]);
 
+  // An unknown recipe covers nothing, so production stays disabled.
   const isOverBalance = useMemo(() => {
-    return Object.values(currentInputs).some(({ resource, amount }) => {
-      const balance = resourceBalances[Number(resource)] || 0;
-      return amount * productionAmount > balance;
+    if (currentInputs === undefined) return true;
+    return currentInputs.some(({ resource, amount }) => {
+      const balance = resourceBalances[Number(resource)];
+      return balance === undefined || amount * productionAmount > balance;
     });
   }, [resourceBalances, productionAmount, currentInputs]);
 
   const isDisabled = useMemo(() => {
-    if (isOverBalance) return true;
+    if (isOverBalance || !recipeInputs || !recipeOutput) return true;
     if (useRawResources) {
       return !ticks || ticks <= 0;
     } else {
@@ -182,9 +191,9 @@ export const ResourceProductionControls = ({
       const laborNeeded = Math.round(laborConfig.laborBurnPerResourceOutput * productionAmount);
       return productionAmount <= 0 || laborNeeded <= 0;
     }
-  }, [isOverBalance, useRawResources, ticks, laborConfig, productionAmount]);
+  }, [isOverBalance, recipeInputs, recipeOutput, useRawResources, ticks, laborConfig, productionAmount]);
 
-  const buildingCount = getBuildingQuantity(realm.entityId, getBuildingFromResource(selectedResource), components);
+  const buildingCount = getBuildingQuantity(realm.entityId, getBuildingFromResource(selectedResource), store);
 
   // Only show the tabs that the user can actually select
   const selectableTabs = [
@@ -207,13 +216,12 @@ export const ResourceProductionControls = ({
       label: "Resource Production",
       component: (
         <RawResourcesPanel
-          selectedResource={selectedResource}
+          inputs={rawCurrentInputs}
           productionAmount={productionAmount}
           setProductionAmount={setProductionAmount}
           resourceBalances={resourceBalances}
           isSelected={useRawResources}
           onSelect={() => setUseRawResources(true)}
-          outputResourceAmount={outputResourceAmountWithBonus}
         />
       ),
       canSelect: true,
@@ -227,7 +235,7 @@ export const ResourceProductionControls = ({
     selectableTabs.findIndex((tab) => tab.isRaw === useRawResources),
   );
 
-  if (rawCurrentInputs.length === 0 && laborCurrentInputs.length === 0) return null;
+  if (rawCurrentInputs?.length === 0 && laborCurrentInputs.length === 0) return null;
 
   if (compact)
     return (
@@ -257,16 +265,23 @@ export const ResourceProductionControls = ({
           <NumberInput value={Math.round(productionAmount)} onChange={setProductionAmount} min={1} arrows={false} />
         </label>
         <p>
-          {currentInputs
-            .map(
-              (input) =>
-                `${Math.ceil(input.amount * productionAmount).toLocaleString()} ${ResourcesIds[input.resource]}`,
-            )
-            .join(" · ")}
+          {currentInputs === undefined
+            ? "—"
+            : currentInputs
+                .map(
+                  (input) =>
+                    `${Math.ceil(input.amount * productionAmount).toLocaleString()} ${ResourcesIds[input.resource]}`,
+                )
+                .join(" · ")}
         </p>
         {(error || isDisabled) && (
           <p role="status">
-            {error ?? (isOverBalance ? "Not enough resources." : "Enter at least one production cycle.")}
+            {error ??
+              (currentInputs === undefined
+                ? "This recipe is unknown here."
+                : isOverBalance
+                  ? "Not enough resources."
+                  : "Enter at least one production cycle.")}
           </p>
         )}
         <Button
@@ -324,13 +339,12 @@ export const ResourceProductionControls = ({
         ) : (
           <div className="flex flex-col gap-2">
             <RawResourcesPanel
-              selectedResource={selectedResource}
+              inputs={rawCurrentInputs}
               productionAmount={productionAmount}
               setProductionAmount={setProductionAmount}
               resourceBalances={resourceBalances}
               isSelected={true}
               onSelect={() => setUseRawResources(true)}
-              outputResourceAmount={outputResourceAmountWithBonus}
             />
             <p className={HUD_BODY_MUTED}>Only standard production is available for this resource.</p>
           </div>

@@ -1,3 +1,4 @@
+import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
@@ -22,8 +23,10 @@ import {
   RaidSimulator,
   StaminaManager,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import {
+  BiomeType,
   CapacityConfig,
   ContractAddress,
   getDirectionBetweenAdjacentHexes,
@@ -35,13 +38,12 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
 import { AttackTarget, TargetType } from "./types";
 import { formatTypeAndBonuses } from "./combat-utils";
 import { RaidResult } from "./raid-result";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 enum RaidOutcome {
   Success = "Success",
@@ -66,12 +68,18 @@ export const RaidContainer = ({
     account: { account },
     setup: {
       systemCalls: { raid_explorer_vs_guard },
-      components,
+      store,
     },
-  } = useDojo();
+  } = useGame();
+  const revision = useNativeRevision(["ExplorerTroops", "Structure", "TileOccupancy"]);
+  const resourceWeight = useNativeRow("ResourceWeight", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: attackerEntityId,
+  });
 
   const [loading, setLoading] = useState(false);
   const [showRaidResult, setShowRaidResult] = useState(false);
+  const [raidTransactionHash, setRaidTransactionHash] = useState<string | null>(null);
 
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -81,30 +89,28 @@ export const RaidContainer = ({
     return configManager.getCombatConfig();
   }, []);
 
-  const biome = useMemo(() => {
-    return configManager.getBiome(target.hex.x, target.hex.y);
-  }, [target]);
+  const biome = useStoredBiome(target.hex.x, target.hex.y) ?? BiomeType.None;
 
   // Get the current army states for display
   const attackerArmyData = useMemo(() => {
-    const army = getArmy(attackerEntityId, ContractAddress(account.address), components);
-    const projectedStamina = army
-      ? StaminaManager.getStamina(army.troops, currentArmiesTick)
-      : { amount: 0n, updated_tick: 0n };
+    const army = getArmy(attackerEntityId, ContractAddress(account.address), store, getPlayerName);
+    // An army this client cannot see raids nothing: no simulation runs on a phantom attacker.
+    if (!army) return null;
 
     return {
-      capacity: army?.totalCapacity,
+      capacity: army.totalCapacity,
       troops: {
-        count: Number(army?.troops.count || 0),
-        category: army?.troops.category as TroopType,
-        tier: army?.troops.tier as TroopTier,
-        stamina: projectedStamina,
-        battle_cooldown_end: army?.troops.battle_cooldown_end || 0,
+        count: Number(army.troops.count),
+        category: army.troops.category as TroopType,
+        tier: army.troops.tier as TroopTier,
+        stamina: StaminaManager.getStamina(army.troops, currentArmiesTick),
+        battle_cooldown_end: army.troops.battle_cooldown_end,
       },
     };
-  }, [account.address, attackerEntityId, components, currentArmiesTick]);
-  const attackerCurrentStaminaValue = Number(attackerArmyData?.troops.stamina.amount ?? 0n);
-  const attackerRecharging = isStaminaRecharging(attackerCurrentStaminaValue, combatConfig.stamina_attack_req);
+  }, [account.address, attackerEntityId, store, currentArmiesTick, revision]);
+  const attackerRecharging =
+    attackerArmyData !== null &&
+    isStaminaRecharging(Number(attackerArmyData.troops.stamina.amount), combatConfig.stamina_attack_req);
 
   const params = configManager.getCombatConfig();
   const combatSimulator = useMemo(() => new CombatSimulator(params), [params]);
@@ -126,12 +132,12 @@ export const RaidContainer = ({
 
     // Convert all defender troops into simulator armies
     const defenders = target.info.map((troop) => ({
-      entity_id: target?.id || 0,
-      stamina: Number(troop.stamina.amount || 0),
+      entity_id: target.id,
+      stamina: Number(troop.stamina.amount),
       troopCount: divideByPrecision(Number(troop.count)),
       troopType: troop.category as TroopType,
       tier: troop.tier as TroopTier,
-      battle_cooldown_end: troop.battle_cooldown_end || 0,
+      battle_cooldown_end: troop.battle_cooldown_end,
     }));
 
     // Use the raid simulator to predict the outcome
@@ -175,14 +181,12 @@ export const RaidContainer = ({
   ]);
 
   const remainingCapacity = useMemo(() => {
-    // you can use getcomponentvalue because it's your own entity so synced
-    const resource = getComponentValue(components.Resource, gameEntityKey([BigInt(attackerEntityId)]));
-    const remainingCapacity = resource ? getRemainingCapacityInKg(resource) : 0;
+    const remainingCapacity = resourceWeight ? getRemainingCapacityInKg(resourceWeight) : 0;
     const remainingCapacityAfterRaid =
       remainingCapacity -
       (raidSimulation?.raiderDamageTaken || 0) * configManager.getCapacityConfigKg(CapacityConfig.Army);
     return { beforeRaid: remainingCapacity, afterRaid: remainingCapacityAfterRaid };
-  }, [attackerEntityId, components.Resource, raidSimulation]);
+  }, [resourceWeight, raidSimulation]);
 
   const stealableResources = useMemo(() => {
     let capacityAfterRaid = remainingCapacity.afterRaid;
@@ -219,8 +223,6 @@ export const RaidContainer = ({
     if (!selectedHex) return;
     setShowRaidResult(true);
     await onExplorerVsStructureRaid();
-    // Close modal after raid
-    updateSelectedEntityId(null);
   };
 
   const onExplorerVsStructureRaid = async () => {
@@ -234,7 +236,7 @@ export const RaidContainer = ({
       .map((r) => ({ ...r, amount: r.amount * RESOURCE_PRECISION }));
     const calldata = {
       explorer_id: attackerEntityId,
-      structure_id: target?.id || 0,
+      structure_id: target.id,
       structure_direction: direction,
       steal_resources: resources,
     };
@@ -242,21 +244,24 @@ export const RaidContainer = ({
     try {
       setLoading(true);
       // Using the general provider approach since raid_explorer_vs_guard is not defined in systemCalls
-      await raid_explorer_vs_guard({
+      const result = await raid_explorer_vs_guard({
         signer: account,
         ...calldata,
       });
+      if (!("transaction_hash" in result)) throw new Error("Raid receipt has no transaction hash");
+      setRaidTransactionHash(result.transaction_hash);
     } catch (error) {
       console.error(error);
+      setShowRaidResult(false);
     } finally {
       setLoading(false);
     }
   };
 
   const buttonMessage = useMemo(() => {
-    if (attackerArmyData?.troops.stamina.amount < combatConfig.stamina_attack_req)
-      return `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`;
     if (!attackerArmyData) return "No Troops Present";
+    if (attackerArmyData.troops.stamina.amount < combatConfig.stamina_attack_req)
+      return `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`;
     if (target?.targetType !== TargetType.Structure) return "Only structures can be raided";
     if (stealableResources.length === 0) return "No resources raidable";
     return "Raid!";
@@ -264,8 +269,8 @@ export const RaidContainer = ({
 
   const canRaid = useMemo(() => {
     return (
-      attackerArmyData?.troops.stamina.amount >= combatConfig.stamina_attack_req &&
-      attackerArmyData &&
+      attackerArmyData !== null &&
+      attackerArmyData.troops.stamina.amount >= combatConfig.stamina_attack_req &&
       target?.targetType === TargetType.Structure &&
       stealableResources.some((r) => r.resourceId > 0 && r.amount > 0) &&
       (raidSimulation?.successChance ?? 0) > 0
@@ -296,6 +301,7 @@ export const RaidContainer = ({
                 <span className="mr-2">⚔️</span> Raid in Progress
               </h3>
               <RaidResult
+                transactionHash={raidTransactionHash}
                 raiderId={attackerEntityId}
                 target={target}
                 successRate={raidSimulation?.successChance || 50}
@@ -515,7 +521,7 @@ export const RaidContainer = ({
                               <div className="text-xl font-bold text-order-giants bg-order-giants/10 rounded-md px-2 py-1">
                                 {-Math.floor(raidSimulation.defenderDamageTaken)}
                               </div>
-                              <div className="uppercase text-xs text-red-400">total troops lost</div>
+                              <div className="uppercase text-xs text-red-400">Total troops lost</div>
                             </div>
                             <div className="text-sm text-gold/70">
                               (
@@ -544,7 +550,7 @@ export const RaidContainer = ({
               </div>
 
               {/* Raid Results Panel */}
-              {target?.targetType === TargetType.Structure && (
+              {target?.targetType === TargetType.Structure && raidSimulation && attackerArmyData && (
                 <Panel padding="md" blur shadow="lg" className="mt-2 sm:p-6 overflow-hidden">
                   <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gold border-b border-gold/20 pb-4 flex items-center">
                     <span className="mr-2">📜</span> Raid Prediction
@@ -720,7 +726,7 @@ export const RaidContainer = ({
                 {/* Additional feedback based on raid conditions */}
                 {!canRaid && (
                   <div className="mt-2 text-sm text-gold/60 flex items-center gap-2">
-                    {attackerArmyData?.troops.stamina.amount < combatConfig.stamina_attack_req && (
+                    {attackerArmyData && attackerArmyData.troops.stamina.amount < combatConfig.stamina_attack_req && (
                       <span className="flex items-center gap-1">
                         <span>⚡</span> Wait for stamina to recharge ({combatConfig.stamina_attack_req} required)
                       </span>

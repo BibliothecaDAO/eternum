@@ -13,7 +13,17 @@ export interface WorldFxImpactCue {
   tone?: WorldFxTone;
 }
 
-export type TransientWorldFxCue = WorldFxImpactCue;
+/** A radial dust burst on the ground: a building rising, a guard falling. */
+export interface WorldFxBurstCue {
+  kind: "burst";
+  /** Puffs in the burst; the motion scale sets it from the moment's intensity. */
+  count: number;
+  position: Readonly<Vector3>;
+  scale?: number;
+  seed: number;
+}
+
+export type TransientWorldFxCue = WorldFxImpactCue | WorldFxBurstCue;
 
 interface WorldFxFlameEmitter {
   id: string;
@@ -108,11 +118,10 @@ class DefaultWorldFxRuntime implements WorldFxRuntime {
 
   public emit(cue: TransientWorldFxCue): WorldFxHandle {
     this.requireAlive();
-    requireFiniteVector(cue.position, "impact position");
-    const normal = cue.normal ?? WORLD_UP;
-    requireFiniteVector(normal, "impact normal");
+    requireFiniteVector(cue.position, `${cue.kind} position`);
     const effect = this.createEffect();
-    this.spawnImpact(cue, normal, effect.id);
+    if (cue.kind === "burst") this.spawnBurst(cue, effect.id);
+    else this.spawnImpact(cue, effect.id);
     this.refreshPools(0);
     return this.createEffectHandle(effect);
   }
@@ -227,7 +236,9 @@ class DefaultWorldFxRuntime implements WorldFxRuntime {
     effect.resolve();
   }
 
-  private spawnImpact(cue: WorldFxImpactCue, normalInput: Readonly<Vector3>, effectId: number): void {
+  private spawnImpact(cue: WorldFxImpactCue, effectId: number): void {
+    const normalInput = cue.normal ?? WORLD_UP;
+    requireFiniteVector(normalInput, "impact normal");
     const scale = requirePositive(cue.scale ?? 1, "impact scale");
     const tone = resolveTone(cue.tone ?? "physical");
     this.normal.copy(normalInput);
@@ -315,6 +326,32 @@ class DefaultWorldFxRuntime implements WorldFxRuntime {
       velocityY: 0.16 + this.normal.y * 0.12,
       velocityZ: Math.sin(angle) * drift + this.normal.z * 0.12,
     });
+  }
+
+  /** Puffs spread evenly round the point, thrown outward low and settling as they fade. */
+  private spawnBurst(cue: WorldFxBurstCue, effectId: number): void {
+    const scale = requirePositive(cue.scale ?? 1, "burst scale");
+    const count = Math.max(0, Math.floor(cue.count));
+    for (let index = 0; index < count; index += 1) {
+      const angle = ((index + sampleUnit(cue.seed, index, 97) * 0.6) / count) * Math.PI * 2;
+      const speed = scale * (2.2 + sampleUnit(cue.seed, index, 101) * 1.0);
+      this.smoke.spawn({
+        effectId,
+        gravity: -0.8,
+        kind: "smoke",
+        lifetimeSeconds: 0.45 + sampleUnit(cue.seed, index, 103) * 0.25,
+        positionX: cue.position.x,
+        positionY: cue.position.y,
+        positionZ: cue.position.z,
+        rotation: angle,
+        size: scale * (0.16 + sampleUnit(cue.seed, index, 107) * 0.12),
+        spin: (sampleUnit(cue.seed, index, 109) - 0.5) * 2,
+        tone: 0.72 + sampleUnit(cue.seed, index, 113) * 0.28,
+        velocityX: Math.cos(angle) * speed,
+        velocityY: 0.2 + sampleUnit(cue.seed, index, 127) * 0.2,
+        velocityZ: Math.sin(angle) * speed,
+      });
+    }
   }
 
   private resolveImpactBasis(): void {

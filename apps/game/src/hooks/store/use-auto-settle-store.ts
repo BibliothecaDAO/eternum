@@ -1,15 +1,12 @@
-import type { GameChain as Chain } from "@realms-world/chain";
+import type { GameRef } from "@bibliothecadao/eternum/game-client";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 export type AutoSettleStatus = "idle" | "armed" | "opening" | "settling" | "failed" | "completed";
 
-export interface AutoSettleEntryRecord {
+export interface AutoSettleEntryRecord extends GameRef {
   enabled: boolean;
   walletAddress: string;
-  chain: Chain;
-  worldName: string;
-  worldKey: string;
   unlockAtSec: number;
   armedAtMs: number;
   opensOnUnlockEdge: boolean;
@@ -50,15 +47,8 @@ const createLocalStorage = () => {
   };
 };
 
-export const createAutoSettleEntryKey = ({
-  chain,
-  worldName,
-  walletAddress,
-}: {
-  chain: Chain;
-  worldName: string;
-  walletAddress: string;
-}) => `${chain}:${worldName}:${walletAddress.toLowerCase()}`;
+export const createAutoSettleEntryKey = ({ chainId, gameId, walletAddress }: GameRef & { walletAddress: string }) =>
+  `${chainId}:${gameId}:${walletAddress.toLowerCase()}`;
 
 const updateEntry = (
   entries: Record<string, AutoSettleEntryRecord>,

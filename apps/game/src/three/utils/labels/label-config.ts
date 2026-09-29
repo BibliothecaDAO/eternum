@@ -27,11 +27,6 @@ export const LABEL_STYLES: Record<string, LabelStyle> = {
     textColor: "#e5e7eb",
     borderColor: "rgba(156, 163, 175, 0.5)",
   },
-  DAYDREAMS: {
-    backgroundColor: "rgba(70, 70, 70, 0.8)",
-    textColor: "#fbbf24",
-    borderColor: "rgba(220, 220, 220, 0.5)",
-  },
   CHEST: {
     backgroundColor: "rgba(251, 191, 36, 0.3)",
     textColor: "#fbbf24",
@@ -54,9 +49,6 @@ export const HOVER_STYLES: Record<string, LabelStyle> = {
   },
   NEUTRAL: {
     backgroundColor: "rgba(90, 90, 90, 0.4)",
-  },
-  DAYDREAMS: {
-    backgroundColor: "rgba(90, 90, 90, 0.85)",
   },
   CHEST: {
     backgroundColor: "rgba(245, 158, 11, 0.4)",
@@ -143,12 +135,10 @@ const TRANSITION_CLASSES = {
 /**
  * Get the appropriate style based on ownership and state
  */
-export function getOwnershipStyle(isMine: boolean, isDaydreams?: boolean): { default: LabelStyle; hover: LabelStyle } {
+export function getOwnershipStyle(isMine: boolean): { default: LabelStyle; hover: LabelStyle } {
   let styleKey = "ENEMY";
 
-  if (isDaydreams) {
-    styleKey = "DAYDREAMS";
-  } else if (isMine) {
+  if (isMine) {
     styleKey = "MINE";
   }
 
@@ -164,23 +154,19 @@ export function getOwnershipStyle(isMine: boolean, isDaydreams?: boolean): { def
  *
  * @param isMine - Is this the current player's unit/structure?
  * @param isAlly - Is this an ally's unit/structure?
- * @param isDaydreams - Is this an AI agent?
  * @param ownerAddress - Owner's wallet address for enemy color assignment
  */
 function getPlayerOwnershipStyle(
   isMine: boolean,
   isAlly: boolean,
-  isDaydreams: boolean,
   ownerAddress?: bigint | string,
 ): { default: LabelStyle; hover: LabelStyle; profile: PlayerColorProfile } {
-  const profile = playerColorManager.getProfileForUnit(isMine, isAlly, isDaydreams, ownerAddress);
+  const profile = playerColorManager.getProfileForUnit(isMine, isAlly, ownerAddress);
 
-  // For self, ally, and agent - use predefined styles
-  if (isMine || isAlly || isDaydreams) {
+  // Self and allies use predefined styles.
+  if (isMine || isAlly) {
     let styleKey = "ENEMY";
-    if (isDaydreams) {
-      styleKey = "DAYDREAMS";
-    } else if (isMine) {
+    if (isMine) {
       styleKey = "MINE";
     } else if (isAlly) {
       styleKey = "ALLY";

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { deriveArmyMovementReadiness } from "./army-movement-readiness";
-import { formatTravelBlockedSummary } from "./army-warning-copy";
+import { formatFoodBlock, formatTravelBlockedSummary } from "./army-warning-copy";
 
 const READY_INPUTS = {
   currentStamina: 90,
@@ -84,5 +84,36 @@ describe("formatTravelBlockedSummary", () => {
         formatAmount,
       }),
     ).toBeNull();
+  });
+});
+
+describe("food-blocked armies", () => {
+  const march = { wheatPayAmount: 30.81, fishPayAmount: 0 };
+  const whole = (amount: number) => Math.round(amount).toString();
+
+  it("names what one step costs, what the realm holds and that training takes the wheat, below one step's cost", () => {
+    const starved = deriveArmyMovementReadiness({
+      ...READY_INPUTS,
+      travelFoodCosts: march,
+      exploreFoodCosts: march,
+      food: { wheat: 5.5, fish: 0 },
+      trainingTakesWheat: true,
+    });
+    expect(starved.canTravel).toBe(false);
+    expect(formatFoodBlock(starved.foodBlock!, whole)).toBe(
+      "Can't march: each step costs 31 wheat; the realm has 6 wheat. Barracks training takes the wheat first.",
+    );
+  });
+
+  it("clears the reason once the realm holds a step's wheat", () => {
+    const fed = deriveArmyMovementReadiness({
+      ...READY_INPUTS,
+      travelFoodCosts: march,
+      exploreFoodCosts: march,
+      food: { wheat: 40, fish: 0 },
+      trainingTakesWheat: true,
+    });
+    expect(fed.canTravel).toBe(true);
+    expect(fed.foodBlock).toBeNull();
   });
 });

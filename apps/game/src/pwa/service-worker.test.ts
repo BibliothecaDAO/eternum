@@ -16,6 +16,7 @@ beforeEach(async () => {
   vi.stubGlobal("self", {
     location: { origin: "https://game.test" },
     __WB_MANIFEST: [],
+    REALMS_RELEASE: "release-a",
     skipWaiting,
     addEventListener: (type: string, listener: (event: any) => void) => listeners.set(type, listener),
   });
@@ -36,7 +37,7 @@ function navigate(path: string, mode = "navigate") {
 it("fetches current online HTML without caching it", async () => {
   const response = new Response("current shell");
   network.mockResolvedValue(response);
-  expect(await navigate("/play/madara/game/map").mock.calls[0][0]).toBe(response);
+  expect(await navigate("/g/0xa1/1/map").mock.calls[0][0]).toBe(response);
   expect(network).toHaveBeenCalledWith(
     expect.anything(),
     expect.objectContaining({ cache: "no-store", signal: expect.any(AbortSignal) }),
@@ -58,7 +59,7 @@ it("uses only the offline document when navigation fails or the server is unavai
 it("leaves API navigation, game assets and data fetches on the network", () => {
   expect(navigate("/api/session")).not.toHaveBeenCalled();
   expect(navigate("/models/army.glb", "cors")).not.toHaveBeenCalled();
-  expect(navigate("/play/madara/game/map", "cors")).not.toHaveBeenCalled();
+  expect(navigate("/g/0xa1/1/map", "cors")).not.toHaveBeenCalled();
   expect(network).not.toHaveBeenCalled();
 });
 
@@ -78,4 +79,10 @@ it("activates early only for the explicit update message", () => {
   listeners.get("message")!({ data: { type: "SKIP_WAITING" }, waitUntil });
   expect(skipWaiting).toHaveBeenCalledOnce();
   expect(waitUntil).toHaveBeenCalledOnce();
+});
+
+it("tells a page which release it serves", () => {
+  const port = { postMessage: vi.fn() };
+  listeners.get("message")!({ data: { type: "RELEASE" }, ports: [port] });
+  expect(port.postMessage).toHaveBeenCalledWith("release-a");
 });

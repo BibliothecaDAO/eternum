@@ -2,8 +2,8 @@ import { forwardRef, type Ref, useState } from "react";
 import { createPortal } from "react-dom";
 
 import type { LandingLeaderboardEntry } from "@/services/leaderboard/landing-leaderboard-service";
-import { getMMRTier } from "@/ui/utils/mmr-tiers";
-import { displayAddress } from "@/ui/utils/utils";
+import { useProfiles } from "@/shell/profiles";
+import { displayPlayerName } from "@bibliothecadao/eternum";
 import { BLITZ_CARD_DIMENSIONS, truncateText } from "../lib/blitz-highlight";
 import {
   BLITZ_CARD_FONT_IMPORT,
@@ -12,11 +12,6 @@ import {
   formatBlitzValue as formatValue,
   formatBlitzRankParts as formatRankParts,
 } from "../lib/blitz-card-shared";
-
-const getDisplayName = (entry: LandingLeaderboardEntry): string => {
-  const candidate = entry.displayName?.trim();
-  return candidate || displayAddress(entry.address);
-};
 
 const LEADERBOARD_CARD_STYLES = `
   ${BLITZ_CARD_FONT_IMPORT}
@@ -135,24 +130,8 @@ const LEADERBOARD_CARD_STYLES = `
     line-height: 22px;
   }
 
-  .blitz-card-root .podium-address {
-    font-family: "IM Fell English", serif;
-    font-style: italic;
-    color: #ffffff;
-    opacity: 0.6;
-    margin-top: 2px;
-  }
 
-  .blitz-card-root .podium-first .podium-address {
-    font-size: 14px;
-    line-height: 18px;
-  }
 
-  .blitz-card-root .podium-second .podium-address,
-  .blitz-card-root .podium-third .podium-address {
-    font-size: 12px;
-    line-height: 16px;
-  }
 
   .blitz-card-root .podium-points {
     font-family: "Montserrat", sans-serif;
@@ -178,24 +157,8 @@ const LEADERBOARD_CARD_STYLES = `
     color: #925518;
   }
 
-  .blitz-card-root .podium-mmr {
-    font-family: "Montserrat", sans-serif;
-    font-weight: 700;
-    margin-top: 4px;
-    color: #ffffff;
-    opacity: 0.82;
-  }
 
-  .blitz-card-root .podium-first .podium-mmr {
-    font-size: 16px;
-    line-height: 20px;
-  }
 
-  .blitz-card-root .podium-second .podium-mmr,
-  .blitz-card-root .podium-third .podium-mmr {
-    font-size: 12px;
-    line-height: 16px;
-  }
 
   .blitz-card-root .empty-leaderboard {
     position: absolute;
@@ -217,14 +180,10 @@ interface BlitzLeaderboardCardProps {
   player?: { name: string; address: string } | null;
 }
 
-const DEFAULT_MMR_VALUE = 1000;
-
 const PodiumEntry = ({ entry, positionClass }: { entry: LandingLeaderboardEntry; positionClass: string }) => {
   const { value: rankValue, suffix: rankSuffix } = formatRankParts(entry.rank);
-  const name = truncateText(getDisplayName(entry), 20);
-  const effectiveMmr = typeof entry.mmr === "number" && Number.isFinite(entry.mmr) ? entry.mmr : DEFAULT_MMR_VALUE;
-  const effectiveTier = entry.mmrTier || getMMRTier(effectiveMmr).name;
-  const mmrLabel = `MMR ${formatValue(effectiveMmr)} · ${effectiveTier}`;
+  const profileOf = useProfiles([entry.address]);
+  const name = truncateText(displayPlayerName(entry.address, profileOf(entry.address)?.name), 20);
 
   return (
     <div className={`podium-entry ${positionClass}`}>
@@ -233,9 +192,7 @@ const PodiumEntry = ({ entry, positionClass }: { entry: LandingLeaderboardEntry;
         {rankSuffix && <span className="podium-rank-suffix">{rankSuffix}</span>}
       </div>
       <div className="podium-name">{name}</div>
-      <div className="podium-address">{displayAddress(entry.address)}</div>
       <div className="podium-points">{formatValue(entry.points)} pts</div>
-      <div className="podium-mmr">{mmrLabel}</div>
     </div>
   );
 };

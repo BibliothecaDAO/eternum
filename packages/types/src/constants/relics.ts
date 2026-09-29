@@ -269,29 +269,6 @@ export const getRelicInfo = (relicId: ResourcesIds): RelicInfo | undefined => {
   return RELICS.find((relic) => relic.id === relicId);
 };
 
-export const getRelicsByType = (type: RelicInfo["type"]): RelicInfo[] => {
-  return RELICS.filter((relic) => relic.type === type);
-};
-
-export const getRelicsByRecipientType = (recipientType: RelicRecipientType): RelicInfo[] => {
-  return RELICS.filter((relic) => relic.recipientType === recipientType);
-};
-
-export const getRelicsByLevel = (level: RelicInfo["level"]): RelicInfo[] => {
-  return RELICS.filter((relic) => relic.level === level);
-};
-
-export const getCraftableRelics = (): RelicInfo[] => {
-  return RELICS.filter((relic) => relic.craftable);
-};
-
 export const isRelic = (resourceId: ResourcesIds): boolean => {
   return RELICS.some((relic) => relic.id === resourceId);
 };
-
-// Relic resource IDs for easy reference
-export const RELIC_IDS = RELICS.map((relic) => relic.id);
-
-// Relic categories
-export const ARMY_RELICS = getRelicsByRecipientType(RelicRecipientType.Explorer);
-export const STRUCTURE_RELICS = [...getRelicsByRecipientType(RelicRecipientType.Structure)];

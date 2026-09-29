@@ -1,10 +1,12 @@
-vi.mock("../utils/utils", () => ({ loadKtx2Texture: vi.fn(() => Promise.resolve(new Texture())) }));
+vi.mock("../utils/utils", () => ({
+  loadKtx2Texture: vi.fn(() => Promise.resolve(new Texture())),
+  WORLD_HEX_SPACE: { positionForHex: () => new Vector3(), hexForPosition: () => ({ col: 0, row: 0 }) },
+}));
 import { AmbientLight, Color, DirectionalLight, Fog, HemisphereLight, Scene, Texture, Vector3 } from "three";
 import { expect, it, vi } from "vitest";
 import { WORLD_ATMOSPHERE_PRESETS } from "@/three/effects/world-atmosphere-presets";
 import { WorldAtmosphereController } from "../effects/world-atmosphere-controller";
 import { WeatherType } from "../managers/weather-manager";
-vi.mock("../utils", () => ({ getWorldPositionForHex: () => new Vector3() }));
 vi.mock("../constants", () => ({ HEX_SIZE: 1 }));
 import { WeatherLabRuntime } from "./weather-lab-runtime";
 it("modulates day and night lighting through the same weather state while keeping fill readable", () => {

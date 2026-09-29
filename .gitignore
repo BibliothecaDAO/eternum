@@ -2,6 +2,7 @@
 node_modules
 target
 .snfoundry_cache
+.wrangler
 docs/dist
 .DS_Store
 **/.DS_Store
@@ -26,8 +27,8 @@ thoughts/
 .context/
 .playwright-mcp/
 
-# Madara lab generated state (world address, rendered torii config, run manifests)
-deploy/madara-lab/.lab/
+# ATHANOR generated state (world address, rendered configuration, run manifests)
+deploy/athanor/.lab/
 
 # Local lab configuration for apps/web and packages/db (read via `pnpm with-env`); never committed.
 .env

@@ -56,3 +56,12 @@ export const formatWinnerName = (value?: string): string | undefined => {
   if (match?.[1]) return match[1];
   return value;
 };
+
+/** A battle's two d20 rolls as its description records them, or nothing for a battle without dice. */
+export const battleRollsOf = (description?: string): { attacker: string; defender: string } | undefined => {
+  const segments = parsePresentationDescription(description);
+  const roll = (role: "Attacker" | "Defender") =>
+    findSegmentValue(segments, (label) => label === `${role} d20`)?.split(" ")[0];
+  const [attacker, defender] = [roll("Attacker"), roll("Defender")];
+  return attacker && defender ? { attacker, defender } : undefined;
+};

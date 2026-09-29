@@ -137,23 +137,6 @@ export class ResourceFXManager {
     return promise;
   }
 
-  public async playResourceFx(
-    resourceId: number,
-    amount: number,
-    col: number,
-    row: number,
-    text?: string,
-    options: ResourceFXOptions = {},
-  ): Promise<void> {
-    const { getWorldPositionForHex } = await import("../utils/utils");
-    const position = getWorldPositionForHex({ col, row } as HexPosition);
-    placePositionOnTerrain(position, this.terrainSurface);
-    return this.playResourceFxAtCoords(resourceId, amount, position.x, position.y + 2.5, position.z, {
-      ...options,
-      labelText: text ?? options.labelText,
-    });
-  }
-
   /** A crate burst: every relic rises from the hex at once, fanned out sideways and staggered by a beat. */
   public async playRelicBurst(relicIds: number[], col: number, row: number): Promise<void> {
     const { getWorldPositionForHex } = await import("../utils/utils");
@@ -174,23 +157,6 @@ export class ResourceFXManager {
           }),
       ),
     );
-  }
-
-  public async playMultipleResourceFx(
-    resources: Array<{ resourceId: number; amount: number; text?: string }>,
-    col: number,
-    row: number,
-    delay: number = 500,
-    options: ResourceFXOptions = {},
-  ): Promise<void> {
-    for (let index = 0; index < resources.length; index += 1) {
-      const { resourceId, amount, text } = resources[index];
-      await this.playResourceFx(resourceId, amount, col, row, text, options);
-
-      if (index < resources.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
-    }
   }
 
   public destroy(): void {

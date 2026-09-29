@@ -1,3 +1,5 @@
+import { NativeBridgePanel } from "@/ui/features/world/components/actions/native-bridge-panel";
+import Button from "@/ui/design-system/atoms/button";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
@@ -11,22 +13,26 @@ import { extractReadableErrorMessage } from "@/utils/error-message";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { Castle } from "@/ui/modules/entity-details/realm/castle";
+import { describeCastleLevel } from "./castle-level";
 import { copyPlayerAddressToClipboard, displayAddress } from "@/ui/utils/utils";
 import {
   formatTime,
   getStructure,
   getStructureImmunityTimer,
   isStructureImmune,
+  ResourceManager,
   toHexString,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { ContractAddress, type ID, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { formatIncomingEta, useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { ChevronsUp, Crown as CrownIcon } from "@/ui/design-system/atoms/game-icons";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 // One chip style for every requirement / produces row — matches the
 // building-tile inspector so the castle reads with the same vocabulary.
@@ -40,15 +46,18 @@ const SectionRow = ({ label, children }: { label: string; children: React.ReactN
 );
 
 const RealmVillageDetails = () => {
-  const dojo = useDojo();
+  const ordersAllowed = useUIStore(canIssueOrders);
+  const game = useGame();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setTooltip = useTooltipStore((state) => state.setTooltip);
   const mode = useGameModeConfig();
+  const revision = useNativeRevision(["Structure", "Guard", "GuildMember", "TileOccupancy"]);
 
   const structure = useMemo(
-    () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.components),
-    [structureEntityId, dojo.account.account.address, dojo.setup.components],
+    () =>
+      getStructure(structureEntityId, ContractAddress(game.account.account.address), game.setup.store, getPlayerName),
+    [structureEntityId, game.account.account.address, game.setup.store, revision],
   );
 
   const isRealm = useMemo(() => {
@@ -64,12 +73,12 @@ const RealmVillageDetails = () => {
   }, [mode, structure]);
 
   const address = useMemo(() => {
-    return toHexString(structure?.owner || 0n);
+    return structure ? toHexString(structure.owner) : undefined;
   }, [structure]);
 
-  const isImmune = useMemo(() => isStructureImmune(currentBlockTimestamp || 0), [structure, currentBlockTimestamp]);
+  const isImmune = useMemo(() => isStructureImmune(currentBlockTimestamp), [structure, currentBlockTimestamp]);
   const timer = useMemo(
-    () => getStructureImmunityTimer(structure?.structure, currentBlockTimestamp || 0),
+    () => getStructureImmunityTimer(structure?.structure, currentBlockTimestamp),
     [structure, currentBlockTimestamp],
   );
 
@@ -109,20 +118,62 @@ const RealmVillageDetails = () => {
               className="uppercase hover:text-white cursor-pointer transition-colors"
               onClick={() => copyPlayerAddressToClipboard(structure.owner, structure.ownerName || "")}
             >
-              {displayAddress(address)}
+              {address ? displayAddress(address) : "Loading owner"}
             </span>
           </div>
         </div>
 
         {(isRealm || isVillageLike) && <Castle />}
+        {ordersAllowed && isVillageLike && structure.isMine && !structure.structure.base.starting_troops_granted && (
+          <Button
+            onClick={() =>
+              void game.setup.systemCalls
+                .receive_army_grant({ signer: game.account.account, village_id: structureEntityId })
+                .catch((error: unknown) => toast.error(extractReadableErrorMessage(error)))
+            }
+          >
+            Receive village army
+          </Button>
+        )}
+        {(isRealm || isVillageLike) && <NativeBridgePanel structureId={structureEntityId} />}
       </div>
     )
   );
 };
 
+const PRODUCTION_MODELS = ["ResourceProduction", "ResourceWeight", "RealmSupport"] as const;
+
+/** The realm's labor income as the chain produces it, the castle's and every workshop's together, per hour. */
+const LaborRateRow = ({ structureId }: { structureId: ID }) => {
+  const { setup } = useGame();
+  useNativeRevision(PRODUCTION_MODELS);
+  const labor = new ResourceManager(setup.store, structureId).current(ResourcesIds.Labor);
+  const timestamp = useCurrentBlockTimestamp();
+  const perHour =
+    labor && timestamp > 0
+      ? ResourceManager.calculateResourceProductionData(ResourcesIds.Labor, labor, timestamp).productionPerSecond * 3600
+      : undefined;
+  return (
+    <SectionRow label="Labor / h">
+      <span className={CHIP_BASE} title="Labor production">
+        <span className="text-emerald-300">
+          {perHour === undefined ? "—" : `+${Math.round(perHour).toLocaleString()}`}
+        </span>
+        <ResourceIcon withTooltip={false} resource={ResourcesIds[ResourcesIds.Labor]} size="xs" />
+      </span>
+    </SectionRow>
+  );
+};
+
+/** What a castle level gives, from the game's rules. */
+const LevelGains = ({ level }: { level: number }) => (
+  <p className="text-[11px] leading-relaxed text-gold/80">{describeCastleLevel(level)}</p>
+);
+
 export const RealmUpgradeCompact = () => {
   const ordersAllowed = useUIStore(canIssueOrders);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+
   const upgradeInfo = useStructureUpgrade(structureEntityId);
   if (!upgradeInfo) return null;
 
@@ -142,18 +193,14 @@ export const RealmUpgradeCompact = () => {
   if (upgradeInfo.isMaxLevel) {
     return (
       <div className="flex flex-col gap-2.5">
-        <SectionRow label="Labor / sec">
-          <span className={CHIP_BASE} title="Labor Production">
-            <span className="text-emerald-300">+1</span>
-            <ResourceIcon withTooltip={false} resource={ResourcesIds[ResourcesIds.Labor]} size="xs" />
-          </span>
-        </SectionRow>
+        <LaborRateRow structureId={structureEntityId} />
         <SectionRow label="Upgrade">
           <span className={CHIP_BASE} title="Max level reached">
             <CrownIcon className="h-3.5 w-3.5 text-gold" />
             <span className="text-gold">Max</span>
           </span>
         </SectionRow>
+        <LevelGains level={upgradeInfo.currentLevel} />
       </div>
     );
   }
@@ -175,16 +222,12 @@ export const RealmUpgradeCompact = () => {
 
   return (
     <div className="flex flex-col gap-2.5">
-      <SectionRow label="Labor / sec">
-        <span className={CHIP_BASE} title="Labor Production">
-          <span className="text-emerald-300">+1</span>
-          <ResourceIcon withTooltip={false} resource={ResourcesIds[ResourcesIds.Labor]} size="xs" />
-        </span>
-      </SectionRow>
+      <LaborRateRow structureId={structureEntityId} />
 
       <SectionRow label={`Upgrade to ${upgradeTargetLabel}`}>
         <RequirementChips requirements={requirements} />
       </SectionRow>
+      {nextLevel != null && <LevelGains level={nextLevel} />}
 
       {isOwner && (
         <div className="flex items-center justify-center gap-1.5 pt-1">

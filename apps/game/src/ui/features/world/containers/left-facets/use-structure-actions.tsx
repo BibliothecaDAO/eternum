@@ -1,7 +1,9 @@
 import { canIssueOrders } from "@/utils/can-issue-orders";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { configManager } from "@bibliothecadao/eternum";
 import { LeftView } from "@/types";
 import { BuildingThumbs } from "@/ui/config";
 import { MarketModal } from "@/ui/features/economy/trading";
@@ -21,15 +23,35 @@ export interface StructureAction {
   onClick: () => void;
 }
 
+type NativeCommand = Parameters<typeof configManager.isCommandEnabled>[0];
+
 /**
- * The actions of the active owned structure — Build · Production · Military · Transfer, plus Trade where the mode
- * has a market — each with its open state and dispatch. Null for a spectator or while a foreign structure is
- * selected, so the desktop panel and the compact strip appear and disappear together.
+ * The commands each realm action issues. An action is offered only where the game's command mask enables one of
+ * them, so a mode that leaves a command out (Frontier has no transfers, production burns or market) loses the
+ * action with it, whatever the mode.
+ */
+const ACTION_COMMANDS: Record<StructureAction["id"], NativeCommand[]> = {
+  build: ["CreateBuilding"],
+  production: ["BurnResourceForResourceProduction", "BurnLaborForResourceProduction"],
+  military: ["CreateExplorer", "ManageTroops"],
+  transfer: ["SendResources", "OffloadArrival"],
+  trade: ["CreateTradeOrder", "AcceptTradeOrder", "BuyFromBank", "SellToBank"],
+};
+
+export const isStructureActionEnabled = (
+  id: StructureAction["id"],
+  isCommandEnabled: (command: NativeCommand) => boolean,
+): boolean => ACTION_COMMANDS[id].some(isCommandEnabled);
+
+/**
+ * The actions of the active owned structure (Build, Production, Military, Transfer, Trade) that the game's commands
+ * allow, each with its open state and dispatch. Null for a spectator or while a foreign structure is selected, so the
+ * desktop panel and the compact strip appear and disappear together.
  */
 export function useStructureActions(): StructureAction[] | null {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const isOwnStructure = useUIStore((state) =>
-    state.playerStructures.some((structure) => structure.entityId === structureEntityId),
+  const isOwnStructure = useFactView(playerStructuresView).some(
+    (structure) => structure.entityId === structureEntityId,
   );
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
@@ -41,7 +63,6 @@ export function useStructureActions(): StructureAction[] | null {
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
   const ordersAllowed = useUIStore(canIssueOrders);
-  const mode = useGameModeConfig();
 
   if (!ordersAllowed) return null;
   if (!isOwnStructure) return null;
@@ -100,15 +121,15 @@ export function useStructureActions(): StructureAction[] | null {
         { count: pendingArrivalsNumber, tone: "pending" },
       ],
     },
-  ];
-  if (mode.ui.showTradeMenu) {
-    actions.push({
+    {
       id: "trade",
       label: "Trade",
       image: BuildingThumbs.scale,
       active: openId === "market",
       onClick: openMarket,
-    });
-  }
-  return actions;
+    },
+  ];
+  return actions.filter((action) =>
+    isStructureActionEnabled(action.id, (command) => configManager.isCommandEnabled(command)),
+  );
 }

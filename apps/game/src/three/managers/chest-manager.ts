@@ -1,6 +1,7 @@
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
 import { resolveChestTransition } from "../rewards/chest-transition-policy";
+import type { ChestBeat } from "../rewards/chest-opening-beats";
 import { ChestModelPath } from "@/three/constants";
 import { RewardTileModel } from "../rewards/reward-tile-model";
 import { ChestTransitions } from "../rewards/chest-transitions";
@@ -318,6 +319,25 @@ export class ChestManager {
     return true;
   }
 
+  /**
+   * Holds the chest on a hex for its Frontier chest moment (design §3.11 §1): the moment's beats play on it, read each
+   * frame from `readBeat`, until it opens on the burst. Its instance hides while it is held and returns if the moment
+   * ends before the burst.
+   */
+  public holdChest(hex: { col: number; row: number }, readBeat: () => ChestBeat | null): boolean {
+    if (!this.chestModel || !this.chestTransitions) return false;
+    const tile = { hexCoords: { ...hex, alt: activeMapLayer() } };
+    const held = this.chestTransitions.hold(
+      this.transitionKey(tile),
+      this.chestPlacement(tile),
+      this.chestModel.time,
+      readBeat,
+    );
+    if (held) for (const chest of this.visibleChests) this.updateChestInstance(chest);
+    this.updateChestMarkers();
+    return held;
+  }
+
   private transitionKey(chest: Pick<ChestSpatialRenderable, "hexCoords">): string {
     return `${chest.hexCoords.col},${chest.hexCoords.row}`;
   }
@@ -374,7 +394,7 @@ export class ChestManager {
   }
 
   private getChestWorldPosition = (chest: Pick<ChestSpatialRenderable, "hexCoords">) => {
-    const { x: hexCoordsX, y: hexCoordsY } = new Position({
+    const { x: hexCoordsX, y: hexCoordsY } = Position.fromContract({
       x: chest.hexCoords.col,
       y: chest.hexCoords.row,
     }).getNormalized();
@@ -562,7 +582,7 @@ export class ChestManager {
     const labelDiv = createChestLabel(
       {
         entityId: chest.entityId,
-        hexCoords: new Position({ x: chest.hexCoords.col, y: chest.hexCoords.row }),
+        hexCoords: Position.fromContract({ x: chest.hexCoords.col, y: chest.hexCoords.row }),
       },
       this.currentCameraView,
     );

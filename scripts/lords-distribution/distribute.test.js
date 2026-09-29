@@ -10,7 +10,8 @@ const __dirname = path.dirname(__filename);
 
 // Configuration (same as distribute.js)
 const LORDS_CONTRACT_ADDRESS = "0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49";
-const RPC_URL = "https://rpc.starknet.lava.build";
+// The same keyed mainnet RPC distribute.js requires; the chain checks are skipped without it.
+const RPC_URL = process.env.STARKNET_RPC_URL;
 const LORDS_DECIMALS = 18;
 
 // Helper functions (same as distribute.js)
@@ -150,7 +151,7 @@ describe("Transfer Call Building", () => {
   });
 });
 
-describe("Starknet Contract Integration", () => {
+describe.skipIf(!RPC_URL)("Starknet Contract Integration", () => {
   let provider;
 
   beforeAll(() => {

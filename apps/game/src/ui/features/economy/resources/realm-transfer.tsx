@@ -1,4 +1,7 @@
-import { Check, ChevronDown, Flame, Search, ShieldCheck, X } from "@/ui/design-system/atoms/game-icons";
+import { structureMapPosition } from "@bibliothecadao/eternum";
+import { ChevronDown, Flame, Search, ShieldCheck, X } from "@/ui/design-system/atoms/game-icons";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -12,17 +15,17 @@ import { currencyFormat } from "@/ui/utils/utils";
 import {
   calculateDistance,
   calculateDonkeysNeeded,
-  getEntityIdFromKeys,
+  configManager,
   getTotalResourceWeightKg,
   isMilitaryResource,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
+import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { findResourceById, ID, PlayerStructure, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import { Dispatch, memo, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { BigNumberish } from "starknet";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 type transferCall = {
   structureId: ID;
@@ -36,11 +39,11 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const mode = useGameModeConfig();
   const {
     setup: {
-      components,
+      store,
       systemCalls: { send_resources_multiple, structure_burn },
     },
     account: { account },
-  } = useDojo();
+  } = useGame();
 
   const tick = useCurrentDefaultTick();
 
@@ -49,14 +52,16 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const resourceManager = useResourceManager(selectedStructureEntityId);
 
   const balance = useMemo(() => {
-    return resourceManager.balanceWithProduction(tick, resource).balance;
+    return resourceManager.balanceWithProduction(tick, resource)?.balance;
   }, [resourceManager, tick, resource]);
 
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
 
-  const selectedStructure = useMemo(() => {
-    return getComponentValue(components.Structure, gameEntityKey([BigInt(selectedStructureEntityId)]));
-  }, [components.Structure, selectedStructureEntityId]);
+  const selectedStructure = useNativeRow("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: selectedStructureEntityId,
+  });
+  const resourceRevision = useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight"]);
 
   const playerStructuresFiltered = useMemo(() => {
     const playerStructuresWithName = playerStructures.map((structure) => ({
@@ -82,13 +87,12 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     const distances: Record<number, number> = {};
     if (!selectedStructure) return distances;
     playerStructuresFiltered.forEach((structure) => {
-      distances[structure.structure.entity_id] = calculateDistance(
-        { x: structure.structure.base.coord_x, y: structure.structure.base.coord_y },
-        { x: selectedStructure.base.coord_x, y: selectedStructure.base.coord_y },
-      );
+      const from = structureMapPosition(store, structure.structure);
+      const to = structureMapPosition(store, selectedStructure);
+      if (from && to) distances[structure.structure.entity_id] = calculateDistance(from, to);
     });
     return distances;
-  }, [playerStructuresFiltered, selectedStructure]);
+  }, [playerStructuresFiltered, selectedStructure, store]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [burnAmount, setBurnAmount] = useState(0);
@@ -108,8 +112,8 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const resourceData = useMemo(() => findResourceById(resource), [resource]);
   const resourceLabel = (resourceData?.trait as string) || "";
   const donkeyTrait = useMemo(() => findResourceById(ResourcesIds.Donkey)?.trait as string, []);
-  const availableBalance = balance ? Number(balance) : 0;
-  const burnSliderMax = availableBalance / RESOURCE_PRECISION;
+  // A balance this client cannot see burns nothing.
+  const burnSliderMax = (balance ?? 0) / RESOURCE_PRECISION;
   const normalizedSearchTerm = useMemo(() => {
     if (!searchTerm) {
       return "";
@@ -150,14 +154,13 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
         let relevantBalanceValue: number | undefined;
 
         if (type === "send") {
-          relevantBalanceValue = availableBalance;
+          relevantBalanceValue = balance;
         } else {
-          const otherStructureManager = new ResourceManager(components, structure.structure.entity_id);
-          const receivedBalance = otherStructureManager.balanceWithProduction(tick, resource).balance;
-          relevantBalanceValue = receivedBalance ? Number(receivedBalance) : 0;
+          const otherStructureManager = new ResourceManager(store, structure.structure.entity_id);
+          relevantBalanceValue = otherStructureManager.balanceWithProduction(tick, resource)?.balance;
         }
 
-        if (relevantBalanceValue === undefined || relevantBalanceValue === null) {
+        if (relevantBalanceValue === undefined) {
           return false;
         }
 
@@ -172,8 +175,9 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     selectedStructureEntityId,
     normalizedSearchTerm,
     type,
-    availableBalance,
-    components,
+    balance,
+    resourceRevision,
+    store,
     tick,
     resource,
   ]);
@@ -206,7 +210,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     } finally {
       setIsLoading(false);
     }
-  }, [burnAmount, account, components, structure_burn, selectedStructureEntityId, resource]);
+  }, [burnAmount, account, store, structure_burn, selectedStructureEntityId, resource]);
 
   const handleTransfer = useCallback(async () => {
     setIsLoading(true);
@@ -227,7 +231,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     }
 
     setCalls([]);
-  }, [account, calls, components, send_resources_multiple]);
+  }, [account, calls, store, send_resources_multiple]);
 
   const handleBurnAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setBurnAmount(Number(event.target.value));
@@ -256,9 +260,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
             />
             <div className="flex flex-col">
               <span className="text-xxs uppercase tracking-wide text-gold/60">Available</span>
-              <span className="text-2xl font-semibold leading-tight text-gold">
-                {currencyFormat(availableBalance, 2)}
-              </span>
+              <span className="text-2xl font-semibold leading-tight text-gold">{currencyFormat(balance, 2)}</span>
               <span className="text-xs uppercase text-gold/60">{resourceLabel}</span>
             </div>
           </div>
@@ -335,7 +337,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
           >
             <div className="space-y-2 text-xs text-gold/80">
               <div className="flex items-start gap-2">
-                <Check className="h-4 w-4" />
+                <span className="text-green">✓</span>
                 <span>
                   {mode.id === "blitz"
                     ? "Owned structure → owned structure troop transfers allowed"
@@ -343,7 +345,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
                 </span>
               </div>
               <div className="flex items-start gap-2">
-                <X className="h-4 w-4" />
+                <span className="text-red">✗</span>
                 <span>
                   {mode.id === "blitz"
                     ? "Direct structure → army troop transfers are not available in Blitz"
@@ -537,21 +539,19 @@ const RealmTransferBalance = memo(
     const [input, setInput] = useState(0);
     const mode = useGameModeConfig();
     const {
-      setup: { components },
-    } = useDojo();
+      setup: { store },
+    } = useGame();
 
-    const sourceResourceManager = useMemo(
-      () =>
-        new ResourceManager(components, type === "send" ? selectedStructureEntityId : structure.structure.entity_id),
-      [components, structure.structure.entity_id, selectedStructureEntityId, type],
+    const sourceResourceManager = useResourceManager(
+      type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
     );
 
     const getSourceBalance = useCallback(() => {
-      return sourceResourceManager.balanceWithProduction(tick, resource).balance;
+      return sourceResourceManager.balanceWithProduction(tick, resource)?.balance;
     }, [sourceResourceManager, tick, resource]);
 
     const getSourceDonkeyBalance = useCallback(() => {
-      return sourceResourceManager.balanceWithProduction(tick, ResourcesIds.Donkey).balance;
+      return sourceResourceManager.balanceWithProduction(tick, ResourcesIds.Donkey)?.balance;
     }, [sourceResourceManager, tick]);
 
     const currentResourceBalanceBigInt = getSourceBalance();
@@ -579,13 +579,15 @@ const RealmTransferBalance = memo(
     }, [getSourceDonkeyBalance]);
 
     const canCarry = useMemo(() => {
-      return relevantDonkeyBalance >= neededDonkeysForThisTransfer;
+      return relevantDonkeyBalance !== undefined && relevantDonkeyBalance >= neededDonkeysForThisTransfer;
     }, [relevantDonkeyBalance, neededDonkeysForThisTransfer]);
 
     const handleSetMax = () => {
       let maxAmount = maxInputAmount;
       const currentDonkeys = relevantDonkeyBalance;
-      if (currentDonkeys > 0) {
+      if (currentDonkeys === undefined) {
+        maxAmount = 0; // Cannot send without seeing the source's donkeys
+      } else if (currentDonkeys > 0) {
         // Estimate max carriable amount. This is a simplification.
         // A more accurate way would be to iterate or use a formula for max resources per donkey.
         // For now, if donkeys are available, allow full balance. User will be warned by color.

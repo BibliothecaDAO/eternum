@@ -1,26 +1,26 @@
 import { getRealmInfo } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
-import { ClientComponents, RealmInfo } from "@bibliothecadao/types";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { usePlayerStructures } from "@/hooks/helpers/use-structures";
+import { RealmInfo } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
+import { type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
-const buildOwnedStructureInfos = (
-  playerStructures: ReturnType<typeof usePlayerStructures>,
-  components: ClientComponents,
-) =>
+const buildOwnedStructureInfos = (playerStructures: ReturnType<typeof usePlayerStructures>, store: NativeFactStore) =>
   playerStructures
-    .map((structure) => getRealmInfo(gameEntityKey([BigInt(structure.entityId)]), components))
+    .map((structure) => getRealmInfo(structure.entityId, store, getPlayerName))
     .filter((structureInfo): structureInfo is RealmInfo => Boolean(structureInfo));
 
 const useOwnedStructureInfos = () => {
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
   const playerStructures = usePlayerStructures();
+  const revision = useNativeRevision(["StructureBuildings", "ResourceWeight"]);
 
-  return useMemo(() => buildOwnedStructureInfos(playerStructures, components), [playerStructures, components]);
+  return useMemo(() => buildOwnedStructureInfos(playerStructures, store), [playerStructures, store, revision]);
 };
 
 export const useOwnedMilitaryStructureInfos = () => {

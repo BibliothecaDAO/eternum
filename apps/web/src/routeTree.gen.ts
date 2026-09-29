@@ -9,16 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SeasonpassRouteImport } from './routes/seasonpass'
 import { Route as RevenueRouteImport } from './routes/revenue'
-import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as EternumRouteImport } from './routes/eternum'
 import { Route as BlitzRouteImport } from './routes/blitz'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as VelordsIndexRouteImport } from './routes/velords.index'
 import { Route as StatsIndexRouteImport } from './routes/stats.index'
-import { Route as ScrollIndexRouteImport } from './routes/scroll/index'
 import { Route as RewardsIndexRouteImport } from './routes/rewards.index'
 import { Route as RealmsIndexRouteImport } from './routes/realms.index'
 import { Route as GamesIndexRouteImport } from './routes/games/index'
@@ -26,7 +23,6 @@ import { Route as ComingSoonIndexRouteImport } from './routes/coming-soon.index'
 import { Route as AccountIndexRouteImport } from './routes/account.index'
 import { Route as StatsSeasonPassRouteImport } from './routes/stats.season-pass'
 import { Route as StatsRevenueRouteImport } from './routes/stats.revenue'
-import { Route as ScrollSlugRouteImport } from './routes/scroll/$slug'
 import { Route as RewardsTabRouteImport } from './routes/rewards.$tab'
 import { Route as RealmsClaimsRouteImport } from './routes/realms.claims'
 import { Route as RealmsBridgeRouteImport } from './routes/realms.bridge'
@@ -37,14 +33,8 @@ import { Route as DelegateProfileRouteImport } from './routes/delegate.profile'
 import { Route as DelegateListRouteImport } from './routes/delegate.list'
 import { Route as StatsRewardsIndexRouteImport } from './routes/stats.rewards.index'
 import { Route as StatsRewardsTabRouteImport } from './routes/stats.rewards.$tab'
-import { Route as ApiGameplayAccountActionRouteImport } from './routes/api/gameplay-account/$action'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SeasonpassRoute = SeasonpassRouteImport.update({
   id: '/seasonpass',
   path: '/seasonpass',
@@ -53,11 +43,6 @@ const SeasonpassRoute = SeasonpassRouteImport.update({
 const RevenueRoute = RevenueRouteImport.update({
   id: '/revenue',
   path: '/revenue',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EternumRoute = EternumRouteImport.update({
@@ -83,11 +68,6 @@ const VelordsIndexRoute = VelordsIndexRouteImport.update({
 const StatsIndexRoute = StatsIndexRouteImport.update({
   id: '/stats/',
   path: '/stats/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ScrollIndexRoute = ScrollIndexRouteImport.update({
-  id: '/scroll/',
-  path: '/scroll/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RewardsIndexRoute = RewardsIndexRouteImport.update({
@@ -123,11 +103,6 @@ const StatsSeasonPassRoute = StatsSeasonPassRouteImport.update({
 const StatsRevenueRoute = StatsRevenueRouteImport.update({
   id: '/stats/revenue',
   path: '/stats/revenue',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ScrollSlugRoute = ScrollSlugRouteImport.update({
-  id: '/scroll/$slug',
-  path: '/scroll/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RewardsTabRoute = RewardsTabRouteImport.update({
@@ -180,12 +155,6 @@ const StatsRewardsTabRoute = StatsRewardsTabRouteImport.update({
   path: '/stats/rewards/$tab',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiGameplayAccountActionRoute =
-  ApiGameplayAccountActionRouteImport.update({
-    id: '/api/gameplay-account/$action',
-    path: '/api/gameplay-account/$action',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -196,10 +165,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/blitz': typeof BlitzRoute
   '/eternum': typeof EternumRoute
-  '/privacy': typeof PrivacyRoute
   '/revenue': typeof RevenueRoute
   '/seasonpass': typeof SeasonpassRoute
-  '/terms': typeof TermsRoute
   '/delegate/list': typeof DelegateListRoute
   '/delegate/profile': typeof DelegateProfileRoute
   '/games/$slug': typeof GamesSlugRoute
@@ -208,7 +175,6 @@ export interface FileRoutesByFullPath {
   '/realms/bridge': typeof RealmsBridgeRoute
   '/realms/claims': typeof RealmsClaimsRoute
   '/rewards/$tab': typeof RewardsTabRoute
-  '/scroll/$slug': typeof ScrollSlugRoute
   '/stats/revenue': typeof StatsRevenueRoute
   '/stats/season-pass': typeof StatsSeasonPassRoute
   '/account/': typeof AccountIndexRoute
@@ -216,11 +182,9 @@ export interface FileRoutesByFullPath {
   '/games/': typeof GamesIndexRoute
   '/realms/': typeof RealmsIndexRoute
   '/rewards/': typeof RewardsIndexRoute
-  '/scroll/': typeof ScrollIndexRoute
   '/stats/': typeof StatsIndexRoute
   '/velords/': typeof VelordsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/gameplay-account/$action': typeof ApiGameplayAccountActionRoute
   '/stats/rewards/$tab': typeof StatsRewardsTabRoute
   '/stats/rewards/': typeof StatsRewardsIndexRoute
 }
@@ -228,10 +192,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/blitz': typeof BlitzRoute
   '/eternum': typeof EternumRoute
-  '/privacy': typeof PrivacyRoute
   '/revenue': typeof RevenueRoute
   '/seasonpass': typeof SeasonpassRoute
-  '/terms': typeof TermsRoute
   '/delegate/list': typeof DelegateListRoute
   '/delegate/profile': typeof DelegateProfileRoute
   '/games/$slug': typeof GamesSlugRoute
@@ -240,7 +202,6 @@ export interface FileRoutesByTo {
   '/realms/bridge': typeof RealmsBridgeRoute
   '/realms/claims': typeof RealmsClaimsRoute
   '/rewards/$tab': typeof RewardsTabRoute
-  '/scroll/$slug': typeof ScrollSlugRoute
   '/stats/revenue': typeof StatsRevenueRoute
   '/stats/season-pass': typeof StatsSeasonPassRoute
   '/account': typeof AccountIndexRoute
@@ -248,11 +209,9 @@ export interface FileRoutesByTo {
   '/games': typeof GamesIndexRoute
   '/realms': typeof RealmsIndexRoute
   '/rewards': typeof RewardsIndexRoute
-  '/scroll': typeof ScrollIndexRoute
   '/stats': typeof StatsIndexRoute
   '/velords': typeof VelordsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/gameplay-account/$action': typeof ApiGameplayAccountActionRoute
   '/stats/rewards/$tab': typeof StatsRewardsTabRoute
   '/stats/rewards': typeof StatsRewardsIndexRoute
 }
@@ -261,10 +220,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/blitz': typeof BlitzRoute
   '/eternum': typeof EternumRoute
-  '/privacy': typeof PrivacyRoute
   '/revenue': typeof RevenueRoute
   '/seasonpass': typeof SeasonpassRoute
-  '/terms': typeof TermsRoute
   '/delegate/list': typeof DelegateListRoute
   '/delegate/profile': typeof DelegateProfileRoute
   '/games/$slug': typeof GamesSlugRoute
@@ -273,7 +230,6 @@ export interface FileRoutesById {
   '/realms/bridge': typeof RealmsBridgeRoute
   '/realms/claims': typeof RealmsClaimsRoute
   '/rewards/$tab': typeof RewardsTabRoute
-  '/scroll/$slug': typeof ScrollSlugRoute
   '/stats/revenue': typeof StatsRevenueRoute
   '/stats/season-pass': typeof StatsSeasonPassRoute
   '/account/': typeof AccountIndexRoute
@@ -281,11 +237,9 @@ export interface FileRoutesById {
   '/games/': typeof GamesIndexRoute
   '/realms/': typeof RealmsIndexRoute
   '/rewards/': typeof RewardsIndexRoute
-  '/scroll/': typeof ScrollIndexRoute
   '/stats/': typeof StatsIndexRoute
   '/velords/': typeof VelordsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/gameplay-account/$action': typeof ApiGameplayAccountActionRoute
   '/stats/rewards/$tab': typeof StatsRewardsTabRoute
   '/stats/rewards/': typeof StatsRewardsIndexRoute
 }
@@ -295,10 +249,8 @@ export interface FileRouteTypes {
     | '/'
     | '/blitz'
     | '/eternum'
-    | '/privacy'
     | '/revenue'
     | '/seasonpass'
-    | '/terms'
     | '/delegate/list'
     | '/delegate/profile'
     | '/games/$slug'
@@ -307,7 +259,6 @@ export interface FileRouteTypes {
     | '/realms/bridge'
     | '/realms/claims'
     | '/rewards/$tab'
-    | '/scroll/$slug'
     | '/stats/revenue'
     | '/stats/season-pass'
     | '/account/'
@@ -315,11 +266,9 @@ export interface FileRouteTypes {
     | '/games/'
     | '/realms/'
     | '/rewards/'
-    | '/scroll/'
     | '/stats/'
     | '/velords/'
     | '/api/auth/$'
-    | '/api/gameplay-account/$action'
     | '/stats/rewards/$tab'
     | '/stats/rewards/'
   fileRoutesByTo: FileRoutesByTo
@@ -327,10 +276,8 @@ export interface FileRouteTypes {
     | '/'
     | '/blitz'
     | '/eternum'
-    | '/privacy'
     | '/revenue'
     | '/seasonpass'
-    | '/terms'
     | '/delegate/list'
     | '/delegate/profile'
     | '/games/$slug'
@@ -339,7 +286,6 @@ export interface FileRouteTypes {
     | '/realms/bridge'
     | '/realms/claims'
     | '/rewards/$tab'
-    | '/scroll/$slug'
     | '/stats/revenue'
     | '/stats/season-pass'
     | '/account'
@@ -347,11 +293,9 @@ export interface FileRouteTypes {
     | '/games'
     | '/realms'
     | '/rewards'
-    | '/scroll'
     | '/stats'
     | '/velords'
     | '/api/auth/$'
-    | '/api/gameplay-account/$action'
     | '/stats/rewards/$tab'
     | '/stats/rewards'
   id:
@@ -359,10 +303,8 @@ export interface FileRouteTypes {
     | '/'
     | '/blitz'
     | '/eternum'
-    | '/privacy'
     | '/revenue'
     | '/seasonpass'
-    | '/terms'
     | '/delegate/list'
     | '/delegate/profile'
     | '/games/$slug'
@@ -371,7 +313,6 @@ export interface FileRouteTypes {
     | '/realms/bridge'
     | '/realms/claims'
     | '/rewards/$tab'
-    | '/scroll/$slug'
     | '/stats/revenue'
     | '/stats/season-pass'
     | '/account/'
@@ -379,11 +320,9 @@ export interface FileRouteTypes {
     | '/games/'
     | '/realms/'
     | '/rewards/'
-    | '/scroll/'
     | '/stats/'
     | '/velords/'
     | '/api/auth/$'
-    | '/api/gameplay-account/$action'
     | '/stats/rewards/$tab'
     | '/stats/rewards/'
   fileRoutesById: FileRoutesById
@@ -392,10 +331,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BlitzRoute: typeof BlitzRoute
   EternumRoute: typeof EternumRoute
-  PrivacyRoute: typeof PrivacyRoute
   RevenueRoute: typeof RevenueRoute
   SeasonpassRoute: typeof SeasonpassRoute
-  TermsRoute: typeof TermsRoute
   DelegateListRoute: typeof DelegateListRoute
   DelegateProfileRoute: typeof DelegateProfileRoute
   GamesSlugRoute: typeof GamesSlugRoute
@@ -404,7 +341,6 @@ export interface RootRouteChildren {
   RealmsBridgeRoute: typeof RealmsBridgeRoute
   RealmsClaimsRoute: typeof RealmsClaimsRoute
   RewardsTabRoute: typeof RewardsTabRoute
-  ScrollSlugRoute: typeof ScrollSlugRoute
   StatsRevenueRoute: typeof StatsRevenueRoute
   StatsSeasonPassRoute: typeof StatsSeasonPassRoute
   AccountIndexRoute: typeof AccountIndexRoute
@@ -412,24 +348,15 @@ export interface RootRouteChildren {
   GamesIndexRoute: typeof GamesIndexRoute
   RealmsIndexRoute: typeof RealmsIndexRoute
   RewardsIndexRoute: typeof RewardsIndexRoute
-  ScrollIndexRoute: typeof ScrollIndexRoute
   StatsIndexRoute: typeof StatsIndexRoute
   VelordsIndexRoute: typeof VelordsIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiGameplayAccountActionRoute: typeof ApiGameplayAccountActionRoute
   StatsRewardsTabRoute: typeof StatsRewardsTabRoute
   StatsRewardsIndexRoute: typeof StatsRewardsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/seasonpass': {
       id: '/seasonpass'
       path: '/seasonpass'
@@ -442,13 +369,6 @@ declare module '@tanstack/react-router' {
       path: '/revenue'
       fullPath: '/revenue'
       preLoaderRoute: typeof RevenueRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/eternum': {
@@ -484,13 +404,6 @@ declare module '@tanstack/react-router' {
       path: '/stats'
       fullPath: '/stats/'
       preLoaderRoute: typeof StatsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/scroll/': {
-      id: '/scroll/'
-      path: '/scroll'
-      fullPath: '/scroll/'
-      preLoaderRoute: typeof ScrollIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rewards/': {
@@ -540,13 +453,6 @@ declare module '@tanstack/react-router' {
       path: '/stats/revenue'
       fullPath: '/stats/revenue'
       preLoaderRoute: typeof StatsRevenueRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/scroll/$slug': {
-      id: '/scroll/$slug'
-      path: '/scroll/$slug'
-      fullPath: '/scroll/$slug'
-      preLoaderRoute: typeof ScrollSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rewards/$tab': {
@@ -619,13 +525,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StatsRewardsTabRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/gameplay-account/$action': {
-      id: '/api/gameplay-account/$action'
-      path: '/api/gameplay-account/$action'
-      fullPath: '/api/gameplay-account/$action'
-      preLoaderRoute: typeof ApiGameplayAccountActionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -640,10 +539,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BlitzRoute: BlitzRoute,
   EternumRoute: EternumRoute,
-  PrivacyRoute: PrivacyRoute,
   RevenueRoute: RevenueRoute,
   SeasonpassRoute: SeasonpassRoute,
-  TermsRoute: TermsRoute,
   DelegateListRoute: DelegateListRoute,
   DelegateProfileRoute: DelegateProfileRoute,
   GamesSlugRoute: GamesSlugRoute,
@@ -652,7 +549,6 @@ const rootRouteChildren: RootRouteChildren = {
   RealmsBridgeRoute: RealmsBridgeRoute,
   RealmsClaimsRoute: RealmsClaimsRoute,
   RewardsTabRoute: RewardsTabRoute,
-  ScrollSlugRoute: ScrollSlugRoute,
   StatsRevenueRoute: StatsRevenueRoute,
   StatsSeasonPassRoute: StatsSeasonPassRoute,
   AccountIndexRoute: AccountIndexRoute,
@@ -660,11 +556,9 @@ const rootRouteChildren: RootRouteChildren = {
   GamesIndexRoute: GamesIndexRoute,
   RealmsIndexRoute: RealmsIndexRoute,
   RewardsIndexRoute: RewardsIndexRoute,
-  ScrollIndexRoute: ScrollIndexRoute,
   StatsIndexRoute: StatsIndexRoute,
   VelordsIndexRoute: VelordsIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiGameplayAccountActionRoute: ApiGameplayAccountActionRoute,
   StatsRewardsTabRoute: StatsRewardsTabRoute,
   StatsRewardsIndexRoute: StatsRewardsIndexRoute,
 }

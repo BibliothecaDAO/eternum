@@ -11,7 +11,7 @@ type RangeBound<T extends Comparable> =
       inclusive: boolean;
     };
 
-export class Int8Range {
+class Int8Range {
   constructor(public readonly range: Range<number>) {}
 
   get start(): RangeBound<number> | null {

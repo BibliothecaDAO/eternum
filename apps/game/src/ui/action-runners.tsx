@@ -1,13 +1,14 @@
+import { structureMapPosition } from "@bibliothecadao/eternum";
 import { resolveResourceArrivalIndicators } from "@/ui/utils/resource-arrival-indicators";
 
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
-import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
-import { gameCallArgs, gameEntityKey, getGameNamespace } from "@bibliothecadao/eternum/game-client";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView, readFactView, resourceArrivalsView, seasonClockView } from "@/sync/fact-views";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
   createRealmProvisionRunner,
@@ -18,35 +19,35 @@ import { canIssueOrders } from "@/utils/can-issue-orders";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 
-import { getBuildingCount, getIsBlitz, getStructureName, ResourceArrivalManager } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import {
+  configManager,
+  getBuildingCount,
+  getIsBlitz,
+  getStructureName,
+  ResourceArrivalManager,
+} from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
 import { BuildingType, StructureType, type ResourceArrivalInfo } from "@bibliothecadao/types";
-import { getContractByName } from "@dojoengine/core";
-import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { CallData } from "starknet";
-import { dojoConfig } from "../../dojo-config";
-import { env } from "../../env";
+import { accountAddress } from "@/hooks/store/use-account-store";
 
 const getArrivalKey = (arrival: ResourceArrivalInfo) =>
   `${arrival.structureEntityId}-${arrival.day}-${arrival.slot.toString()}`;
 
 /**
  * Claims the player's ready arrivals on the chain clock and keeps the arrived/pending counters current. Arrivals
- * come from the bridge's slice; this runner owns only the claim timer and its retry memory.
+ * are read from the native store; this runner owns only the claim timer and its retry memory.
  */
 const ResourceArrivalAutoClaim = () => {
   const setArrivalIndicators = useUIStore((state) => state.setArrivalIndicators);
-  const playerStructures = useUIStore((state) => state.playerStructures);
-  const gameEndAt = useUIStore((state) => state.gameEndAt);
-  const gameWinner = useUIStore((state) => state.gameWinner);
-  const chainNowMs = useChainTimeStore((state) => state.nowMs);
+  const playerStructures = useFactView(playerStructuresView);
+  const chainNowMs = useNowMs();
   const getChainNowSeconds = useChainTimeStore((state) => state.getNowSeconds);
-  const resourceArrivals = useWorldSlicesStore((state) => state.resourceArrivals);
+  const resourceArrivals = useFactView(resourceArrivalsView);
   const {
     account: { account },
-    setup: { components, systemCalls },
-  } = useDojo();
+    setup: { store, systemCalls },
+  } = useGame();
   const autoClaimedArrivals = useRef<Set<string>>(new Set());
   const lastFailureRef = useRef<Map<string, number>>(new Map());
   const isAutoClaimingRef = useRef(false);
@@ -65,16 +66,6 @@ const ResourceArrivalAutoClaim = () => {
     isAutoClaimingRef.current = false;
   }, []);
 
-  const isSeasonOver = useCallback(
-    (nowSeconds?: number) => {
-      if (gameWinner) return true;
-      if (typeof gameEndAt !== "number") return false;
-      const timestamp = typeof nowSeconds === "number" ? nowSeconds : getChainNowSeconds();
-      return timestamp >= gameEndAt;
-    },
-    [gameEndAt, gameWinner, getChainNowSeconds],
-  );
-
   const updateArrivalIndicators = useCallback(
     (arrivals: ResourceArrivalInfo[], nowOverride?: number) => {
       const now = nowOverride ?? getChainNowSeconds();
@@ -85,7 +76,7 @@ const ResourceArrivalAutoClaim = () => {
   );
 
   const scheduleNextAutoClaim = useCallback(() => {
-    if (isSeasonOver()) {
+    if (configManager.isGameOver()) {
       stopAutoClaim();
       return;
     }
@@ -100,7 +91,7 @@ const ResourceArrivalAutoClaim = () => {
     autoClaimTimeoutIdRef.current = window.setTimeout(() => {
       void processAutoClaimRef.current();
     }, delay);
-  }, [isSeasonOver, stopAutoClaim]);
+  }, [stopAutoClaim]);
 
   useEffect(() => {
     updateArrivalIndicators(playerResourceArrivals, Math.floor(chainNowMs / 1000));
@@ -109,7 +100,7 @@ const ResourceArrivalAutoClaim = () => {
   useEffect(() => {
     processAutoClaimRef.current = async () => {
       const seasonNow = getChainNowSeconds();
-      if (isSeasonOver(seasonNow)) {
+      if (configManager.isGameOver()) {
         stopAutoClaim();
         return;
       }
@@ -119,13 +110,7 @@ const ResourceArrivalAutoClaim = () => {
       }
 
       const arrivals = playerResourceArrivals;
-      if (
-        !account ||
-        !account.address ||
-        account.address === "0x0" ||
-        playerStructures.length === 0 ||
-        arrivals.length === 0
-      ) {
+      if (!account || accountAddress() === null || playerStructures.length === 0 || arrivals.length === 0) {
         autoClaimedArrivals.current.clear();
         lastFailureRef.current.clear();
         updateArrivalIndicators([]);
@@ -166,7 +151,7 @@ const ResourceArrivalAutoClaim = () => {
           if (lastFailure && now - lastFailure < retryDelaySeconds) continue;
 
           try {
-            const resourceArrivalManager = new ResourceArrivalManager(components, systemCalls, arrival);
+            const resourceArrivalManager = new ResourceArrivalManager(systemCalls, arrival);
             await resourceArrivalManager.offload(account, arrival.resources.length);
             autoClaimedArrivals.current.add(arrivalKey);
             lastFailureRef.current.delete(arrivalKey);
@@ -192,9 +177,8 @@ const ResourceArrivalAutoClaim = () => {
     };
   }, [
     account,
-    components,
+    store,
     getChainNowSeconds,
-    isSeasonOver,
     playerResourceArrivals,
     playerStructures,
     scheduleNextAutoClaim,
@@ -211,32 +195,32 @@ type ProvisionableRealm = RealmProvisionCandidate & { location: { x: number; y: 
 const AutoProvisionRealms = () => {
   const {
     account: { account },
-    setup: { components },
-  } = useDojo();
+    setup: { store, systemCalls },
+  } = useGame();
   const isBlitzWorld = useResolvedWorldGameMode() === "blitz";
 
   useEffect(() => {
-    if (!isBlitzWorld || !account?.address || account.address === "0x0") return;
+    if (!isBlitzWorld || !account || accountAddress() === null) return;
 
     const readRealms = (): ProvisionableRealm[] =>
-      useUIStore
-        .getState()
-        .playerStructures.filter((structure) => structure.category === StructureType.Realm)
+      readFactView(store, playerStructuresView)
+        .filter((structure) => structure.category === StructureType.Realm)
         .flatMap((structure) => {
-          const buildings = getComponentValue(
-            components.StructureBuildings,
-            gameEntityKey([BigInt(structure.entityId)]),
-          );
-          if (!buildings) return [];
+          const buildings = store.get("StructureBuildings", {
+            game_id: configManager.getActiveGameId(),
+            entity_id: structure.entityId,
+          });
+          const location = structureMapPosition(store, structure.structure);
+          if (!buildings || !location) return [];
           const packedCounts = [buildings.packed_counts_1, buildings.packed_counts_2, buildings.packed_counts_3].map(
             (count) => BigInt(count ?? 0),
           );
           return [
             {
               entityId: Number(structure.entityId),
-              name: getStructureName(structure.structure, getIsBlitz()).name,
+              name: getStructureName(store, structure.structure, getIsBlitz()).name,
               provisioned: getBuildingCount(BuildingType.ResourceLabor, packedCounts) > 0,
-              location: { x: structure.structure.base.coord_x, y: structure.structure.base.coord_y },
+              location,
             },
           ];
         });
@@ -244,12 +228,14 @@ const AutoProvisionRealms = () => {
     const runner = createRealmProvisionRunner({
       readRealms,
       readPhase: () => {
-        const { gameStartMainAt, gameEndAt, devModeOn } = useUIStore.getState();
-        return { mainStartsAt: gameStartMainAt ?? null, endsAt: gameEndAt ?? null, devModeOn };
+        const { gameStartMainAt, devModeOn } = readFactView(store, seasonClockView);
+        return { mainStartsAt: gameStartMainAt ?? null, over: configManager.isGameOver(), devModeOn };
       },
       nowSeconds: () => useChainTimeStore.getState().getNowSeconds(),
       hasSigner: () => Boolean(useAccountStore.getState().account) && canIssueOrders(),
-      submit: (realmIds) => submitRealmProvisions(account, realmIds),
+      submit: async (realmIds) => {
+        for (const realm_entity_id of realmIds) await systemCalls.provision_realm({ signer: account, realm_entity_id });
+      },
       report: {
         provisioned: (realms) => {
           toast.dismiss(provisionBatchNoticeId(realms));
@@ -267,7 +253,7 @@ const AutoProvisionRealms = () => {
     return useConnectionStore.subscribe((state, previous) => {
       if (state.lastConfirmedBlock !== previous.lastConfirmedBlock) void runner.onConfirmedHead();
     });
-  }, [account, components.StructureBuildings, isBlitzWorld]);
+  }, [account, store, systemCalls, isBlitzWorld]);
 
   return null;
 };
@@ -287,26 +273,6 @@ const describeProvisionFailure = (
       ? "giving up until reload"
       : `retry in ${retry.nextAttemptInHeads} ${retry.nextAttemptInHeads === 1 ? "block" : "blocks"}`;
   return `Provisioning ${names} failed (attempt ${retry.attempt}): ${reason} · ${next}`;
-};
-
-const submitRealmProvisions = async (
-  account: NonNullable<ReturnType<typeof useDojo>["account"]["account"]>,
-  realmIds: number[],
-): Promise<void> => {
-  const contract = getContractByName(dojoConfig.manifest, getGameNamespace(), "blitz_realm_systems");
-  if (!contract?.address) throw new Error("blitz_realm_systems is missing from the active manifest");
-  await executeObservedClientTransaction({
-    account,
-    calls: realmIds.map((realmId) => ({
-      contractAddress: contract.address,
-      entrypoint: "provision_realm",
-      calldata: CallData.compile([...gameCallArgs(), realmId]),
-    })),
-    surface: "settlement",
-    operation: "blitz_realm_systems.provision_realm",
-    chain: env.VITE_PUBLIC_CHAIN,
-    waitForConfirmation: true,
-  });
 };
 
 /** The background actors that submit transactions on their own; every other former store manager is the bridge. */

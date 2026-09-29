@@ -1,4 +1,6 @@
 import { StructureSelect } from "@/ui/design-system/molecules/structure-select";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCompactLane, type CompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useMarketStore } from "@/hooks/store/use-market-store";
@@ -14,7 +16,8 @@ import { REQUIREMENT_CHIP } from "@/ui/design-system/molecules/requirement-chips
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
-import { useMarket, useResourceManager } from "@bibliothecadao/react";
+import { useMarket } from "@/hooks/helpers/use-trade";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { findResourceById, ID, MarketInterface, ResourcesIds } from "@bibliothecadao/types";
 import { Store } from "@/ui/design-system/atoms/game-icons";
 import { lazy, Suspense, useMemo, useState } from "react";
@@ -199,7 +202,7 @@ const useStructureResourceBalance = (structureEntityId: ID, resourceId: number) 
   const { currentDefaultTick } = getBlockTimestamp();
   const resourceManager = useResourceManager(structureEntityId);
   return useMemo(
-    () => Number(resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance),
+    () => resourceManager.balanceWithProduction(currentDefaultTick, resourceId)?.balance,
     [resourceManager, currentDefaultTick, resourceId],
   );
 };
@@ -256,12 +259,12 @@ const TradingStructureHeader = ({
   onSelect: (entityId: ID) => void;
 }) => {
   const mode = useGameModeConfig();
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
   const { currentDefaultTick } = getBlockTimestamp();
   const resourceManager = useResourceManager(structureEntityId);
   const balances = useMemo(() => {
     const balanceOf = (resourceId: ResourcesIds) =>
-      Number(resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance);
+      resourceManager.balanceWithProduction(currentDefaultTick, resourceId)?.balance;
     return { lords: balanceOf(ResourcesIds.Lords), donkeys: balanceOf(ResourcesIds.Donkey) };
   }, [resourceManager, currentDefaultTick]);
 
@@ -280,7 +283,13 @@ const TradingStructureHeader = ({
           <ResourceIcon resource="Lords" size="xs" withTooltip={false} />
           {currencyFormat(balances.lords, 0)}
         </span>
-        <span className={cn(REQUIREMENT_CHIP, balances.donkeys > 0 ? "text-gold" : "text-red")} title="Donkeys">
+        <span
+          className={cn(
+            REQUIREMENT_CHIP,
+            balances.donkeys !== undefined && balances.donkeys > 0 ? "text-gold" : "text-red",
+          )}
+          title="Donkeys"
+        >
           <ResourceIcon resource="Donkey" size="xs" withTooltip={false} />
           {currencyFormat(balances.donkeys, 0)}
         </span>

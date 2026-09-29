@@ -56,4 +56,5 @@ export enum ResourcesIds {
   TroopProductionRelic1 = 55,
   TroopProductionRelic2 = 56,
   Research = 57,
+  SAT = 58,
 }

@@ -1,16 +1,14 @@
 import {
   divideByPrecision,
-  gameEntityKey,
-  getAddressName,
   getBlockTimestamp,
   LeaderboardManager,
+  liveHomeArmies,
   type GameClient,
 } from "@bibliothecadao/eternum";
 import {
   type ArmyInfo,
   type BuildingType,
   BuildingTypeToString,
-  type ClientComponents,
   type ContractAddress,
   findResourceById,
   type ID,
@@ -20,7 +18,6 @@ import {
   type Structure,
   StructureType,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "typebox";
 
@@ -113,8 +110,8 @@ const renderEmpire = (game: RunnerGame): string => {
 
 const renderStructure = (game: RunnerGame, structure: Structure, realm: RealmInfo | undefined): string => {
   const base = structure.structure.base;
-  const head = `#${structure.entityId} ${StructureType[structure.category]} L${base.level} at (${base.coord_x},${base.coord_y})`;
-  const troops = `guards ${base.troop_guard_count}/${base.troop_max_guard_count}, explorers ${base.troop_explorer_count}/${base.troop_max_explorer_count}`;
+  const head = `#${structure.entityId} ${StructureType[structure.category]} L${base.level} at (${structure.position.x},${structure.position.y})`;
+  const troops = `guards ${[...game.client.setup.store.inGame("Guard", game.client.gameId)].filter((row) => row.structure_id === structure.entityId && row.troops.count > 0n).length}/${base.troop_max_guard_count}, explorers ${liveHomeArmies(game.client.setup.store, structure.entityId, game.client.gameId).length}/${base.troop_max_explorer_count}`;
   if (!realm) return `${head}: ${troops}`;
   const produced = realm.resources.map((resource) => resourceName(resource)).join(", ") || "none";
   const balances = renderBalances(game.client, structure.entityId, [...STAPLE_RESOURCES, ...realm.resources]);
@@ -154,10 +151,11 @@ const ownExplorers = (game: RunnerGame): ArmyInfo[] =>
   game.client.views.structures(game.viewer()).flatMap((structure) => game.client.views.explorers(structure.entityId));
 
 const renderArmy = (client: GameClient, army: ArmyInfo, currentArmiesTick: number): string => {
-  const stamina = client.views.stamina(army.entityId).getStamina(currentArmiesTick).amount;
+  const stamina = client.views.stamina(army.entityId).getStamina(currentArmiesTick);
+  if (!stamina) throw new Error(`Explorer ${army.entityId} is not synchronized`);
   const troops = `${formatAmount(army.troops.count)} ${army.troops.category} ${army.troops.tier}`;
   const home = army.isHome ? ", at home" : "";
-  return `#${army.entityId} (home #${army.entity_owner_id}): ${troops}, stamina ${stamina}, at (${army.position.x},${army.position.y})${home}`;
+  return `#${army.entityId} (home #${army.entity_owner_id}): ${troops}, stamina ${stamina.amount}, at (${army.position.x},${army.position.y})${home}`;
 };
 
 // Nearby
@@ -175,7 +173,7 @@ const renderSurroundings = (game: RunnerGame, army: ArmyInfo): string => {
   const { projection } = game.client;
   const center = army.position;
   const bounds = {
-    alt: army.explorer.coord.alt,
+    alt: army.position.alt,
     minCol: center.x - NEARBY_REACH,
     maxCol: center.x + NEARBY_REACH,
     minRow: center.y - NEARBY_REACH,
@@ -206,11 +204,11 @@ const renderSurroundings = (game: RunnerGame, army: ArmyInfo): string => {
 };
 
 const describeOwner = (game: RunnerGame, structureId: ID): string => {
-  const { components } = game.client.setup;
-  const owner = getComponentValue(components.Structure, gameEntityKey([BigInt(structureId)]))?.owner;
+  const { store } = game.client.setup;
+  const owner = store.get("Structure", { game_id: game.client.gameId, entity_id: structureId })?.owner;
   if (owner === undefined) return "(unknown owner)";
   if (owner === game.viewer()) return "(mine)";
-  return `(${getAddressName(owner, components) ?? "unnamed"})`;
+  return `(${playerName(owner)})`;
 };
 
 // Market
@@ -236,9 +234,8 @@ const renderTrade = (trade: MarketInterface): string => {
 // Leaderboard
 
 const renderLeaderboard = (game: RunnerGame): string => {
-  const { components } = game.client.setup;
-  const leaderboard = LeaderboardManager.instance(components);
-  leaderboard.forceRefresh();
+  const { store } = game.client.setup;
+  const leaderboard = LeaderboardManager.instance(store);
   const viewer = game.viewer();
   const ranked = leaderboard.playersByRank;
   if (ranked.length === 0) return "No points registered yet.";
@@ -247,14 +244,14 @@ const renderLeaderboard = (game: RunnerGame): string => {
     .slice(0, 10)
     .map(
       ([address, points], index) =>
-        `${index + 1}. ${playerName(components, address)} ${points} pts${address === viewer ? " (me)" : ""}`,
+        `${index + 1}. ${playerName(address)} ${points} pts${address === viewer ? " (me)" : ""}`,
     );
   const myLine = mine >= 0 ? `My rank: ${mine + 1} of ${ranked.length}` : "I am not ranked yet.";
   return [myLine, ...rows].join("\n");
 };
 
-const playerName = (components: ClientComponents, address: ContractAddress): string =>
-  getAddressName(address, components) ?? `0x${address.toString(16).slice(0, 8)}…`;
+// The runner reads no Realms profiles, so another player is their address.
+const playerName = (address: ContractAddress): string => `0x${address.toString(16).slice(0, 8)}…`;
 
 // Events
 
@@ -274,8 +271,9 @@ const renderEvents = (game: RunnerGame): string => {
 
 const resourceName = (resource: ResourcesIds): string => findResourceById(resource)?.trait ?? `resource ${resource}`;
 
-const formatAmount = (precisionScaled: bigint | number): string =>
-  Math.floor(divideByPrecision(Number(precisionScaled))).toString();
+// An amount this runner cannot see reads as unknown, never as zero.
+const formatAmount = (precisionScaled: bigint | number | undefined): string =>
+  precisionScaled === undefined ? "unknown" : Math.floor(divideByPrecision(Number(precisionScaled))).toString();
 
 const countBy = <T>(items: readonly T[], key: (item: T) => string): string => {
   const counts = new Map<string, number>();

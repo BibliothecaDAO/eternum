@@ -1,25 +1,20 @@
-import { useDojo } from "@bibliothecadao/react";
-import { configManager, getRealmInfo } from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { getRealmInfo } from "@bibliothecadao/eternum";
 import { ResourcesIds, ContractAddress } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { ProductionControls } from "./production-controls";
+import { getPlayerName } from "@/services/identity/player-profiles";
 
 export function InlineProduction({ entityId, resource }: { entityId: number; resource: ResourcesIds }) {
   const {
-    setup: { components },
+    setup: { store },
     account: { account },
-  } = useDojo();
+  } = useGame();
   const ordersAllowed = useUIStore(canIssueOrders);
-  const entity = gameEntityKey([BigInt(entityId)]);
-  useComponentValue(components.Structure, entity);
-  useComponentValue(components.StructureBuildings, entity);
-  const realm = getRealmInfo(entity, components);
+  useNativeRevision(["Structure", "StructureBuildings", "ResourceWeight"]);
+  const realm = getRealmInfo(entityId, store, getPlayerName);
   if (!ordersAllowed || !realm || !account?.address || realm.owner !== ContractAddress(account.address)) return null;
-  if (resource === ResourcesIds.Labor && !configManager.isLaborProductionEnabled()) {
-    return <p className="text-xs">Labor production is not available in this game.</p>;
-  }
   return <ProductionControls key={`${entityId}:${resource}`} realm={realm} selectedResource={resource} compact />;
 }

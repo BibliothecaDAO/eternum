@@ -1,18 +1,13 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useGameEntityComponentValue } from "@/hooks/helpers/use-game-entity-component-value";
 import { MaxButton } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 
-import {
-  configManager,
-  divideByPrecision,
-  getArmyTotalCapacityInKg,
-  gramToKg,
-  ResourceManager,
-} from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { configManager, divideByPrecision, getArmyTotalCapacityInKg, gramToKg } from "@bibliothecadao/eternum";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
+import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ActorType, ID, RelicRecipientType, RELICS, resources, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { getActorTypes, TransferDirection } from "./transfer-troops/transfer-direction";
@@ -31,6 +26,7 @@ const ALL_RELIC_IDS = new Set<number>([...STRUCTURE_RELIC_IDS, ...EXPLORER_RELIC
 interface ResourceTransfer {
   resourceId: number;
   amount: number;
+  weightKg: number;
 }
 
 interface TransferResourcesContainerProps {
@@ -49,34 +45,34 @@ export const TransferResourcesContainer = ({
   const {
     account: { account },
     setup: {
-      components,
       systemCalls: {
         troop_structure_adjacent_transfer,
         structure_troop_adjacent_transfer,
         troop_troop_adjacent_transfer,
       },
     },
-  } = useDojo();
+  } = useGame();
   const mode = useGameModeConfig();
   const currentDefaultTick = useCurrentDefaultTick();
   const actorTypes = useMemo(() => getActorTypes(transferDirection), [transferDirection]);
-  const selectedResourceState = useGameEntityComponentValue(components.Resource, selectedEntityId);
-  const targetResourceState = useGameEntityComponentValue(components.Resource, targetEntityId);
-  const selectedStructure = useGameEntityComponentValue(components.Structure, selectedEntityId);
-  const targetStructure = useGameEntityComponentValue(components.Structure, targetEntityId);
+  const selectedResourceState = useResourceManager(selectedEntityId);
+  const targetResourceState = useNativeRow("ResourceWeight", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: targetEntityId,
+  });
+  const selectedStructure = useNativeRow("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: selectedEntityId,
+  });
+  const targetStructure = useNativeRow("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: targetEntityId,
+  });
 
   const [loading, setLoading] = useState(false);
   const [selectedResources, setSelectedResources] = useState<ResourceTransfer[]>([]);
   const [resourceAmounts, setResourceAmounts] = useState<Record<number, number>>({});
   const [hasAutoSelected, setHasAutoSelected] = useState(false);
-  const selectedResourcesWeightKg = useMemo(
-    () =>
-      selectedResources.reduce((total, { resourceId, amount }) => {
-        const weight = configManager.resourceWeightsKg[resourceId] || 0;
-        return total + amount * weight;
-      }, 0),
-    [selectedResources],
-  );
   useEffect(() => {
     // when transfer context changes, reset the selected resources
     setSelectedResources([]);
@@ -85,21 +81,35 @@ export const TransferResourcesContainer = ({
   }, [transferDirection, selectedEntityId, targetEntityId]);
 
   const availableResources = useMemo(() => {
-    if (!selectedResourceState) return [];
+    if (!selectedResourceState.hasResources()) return [];
     const allowedRelicIds = actorTypes.target === ActorType.Structure ? STRUCTURE_RELIC_IDS : ALL_RELIC_IDS;
-    return resources
-      .filter(({ id }) => allowedRelicIds.has(id))
-      .map(({ id }) => ({
-        resourceId: id,
-        amount: ResourceManager.balanceWithProduction(selectedResourceState, currentDefaultTick, id).balance,
-      }))
-      .filter(({ amount }) => amount > 0);
+    return (
+      resources
+        .filter(({ id }) => allowedRelicIds.has(id))
+        .map(({ id }) => ({
+          resourceId: id,
+          amount: selectedResourceState.balanceWithProduction(currentDefaultTick, id)!.balance,
+          weightKg: configManager.getResourceWeightKg(id),
+        }))
+        // A held resource whose weight rule is unknown cannot be checked against capacity, so it is not offered.
+        .filter(
+          (resource): resource is typeof resource & { weightKg: number } =>
+            resource.amount > 0 && resource.weightKg !== undefined,
+        )
+    );
   }, [actorTypes.target, currentDefaultTick, selectedResourceState]);
+  // A selection no longer available takes no capacity: it is dropped when the transfer is submitted.
+  const weightOf = (resourceId: number) =>
+    availableResources.find((resource) => resource.resourceId === resourceId)?.weightKg ?? 0;
+  const selectedResourcesWeightKg = useMemo(
+    () => selectedResources.reduce((total, { resourceId, amount }) => total + amount * weightOf(resourceId), 0),
+    [selectedResources, availableResources],
+  );
 
   const explorerCapacity = useMemo(() => {
     if (actorTypes.target !== ActorType.Explorer || !mode.ui.showExplorerCapacity || !targetResourceState) return null;
     const maxCapacity = getArmyTotalCapacityInKg(targetResourceState);
-    const currentLoad = gramToKg(divideByPrecision(Number(targetResourceState.weight.weight)));
+    const currentLoad = gramToKg(divideByPrecision(Number(targetResourceState.weight)));
     return {
       maxCapacityKg: maxCapacity,
       currentLoadKg: currentLoad,
@@ -189,7 +199,7 @@ export const TransferResourcesContainer = ({
 
       // If transferring to explorer, limit by available capacity
       if (actorTypes.target === ActorType.Explorer && explorerCapacity) {
-        const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
+        const resourceWeight = resource.weightKg;
         if (resourceWeight > 0) {
           // Only limit if resource has weight
           // Use explorerCapacity.availableCapacity which accounts for other selected resources
@@ -215,14 +225,13 @@ export const TransferResourcesContainer = ({
 
     // If transferring to explorer, limit by remaining capacity when available
     if (actorTypes.target === ActorType.Explorer && explorerCapacity) {
-      const resourceWeight = configManager.resourceWeightsKg[resourceId] || 0;
+      const resourceWeight = resource.weightKg;
 
       // Calculate how much capacity is used by other selected resources
       const otherResourcesWeight = Object.entries(resourceAmounts)
         .filter(([id]) => parseInt(id) !== resourceId)
         .reduce((total, [id, amt]) => {
-          const weight = configManager.resourceWeightsKg[parseInt(id)] || 0;
-          return total + amt * weight;
+          return total + amt * weightOf(parseInt(id));
         }, 0);
 
       const availableForThisResource =
@@ -258,13 +267,11 @@ export const TransferResourcesContainer = ({
 
       // Sort resources by weight (lightest first) to maximize the number of resources we can transfer
       const sortedResources = availableResources.toSorted((a, b) => {
-        const weightA = configManager.resourceWeightsKg[a.resourceId] || 0;
-        const weightB = configManager.resourceWeightsKg[b.resourceId] || 0;
-        return weightA - weightB;
+        return a.weightKg - b.weightKg;
       });
 
       for (const resource of sortedResources) {
-        const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
+        const resourceWeight = resource.weightKg;
         const displayAmount = divideByPrecision(resource.amount);
         // Weightless resources should always transfer in full
         if (resourceWeight <= 0) {
@@ -310,7 +317,7 @@ export const TransferResourcesContainer = ({
     try {
       setLoading(true);
 
-      // Re-check every requested amount against the latest RECS balance at
+      // Re-check every requested amount against the latest native store balance at
       // submit time. A source spend received while this panel is open must not
       // leave stale calldata behind in local selection state.
       let remainingCapacityKg = explorerCapacity
@@ -320,7 +327,7 @@ export const TransferResourcesContainer = ({
         const current = availableResources.find(({ resourceId }) => resourceId === resource.resourceId);
         if (!current) return [];
         const requestedAmount = resourceAmounts[resource.resourceId] ?? resource.amount;
-        const resourceWeightKg = configManager.resourceWeightsKg[resource.resourceId] || 0;
+        const resourceWeightKg = current.weightKg;
         const capacityLimit =
           resourceWeightKg > 0 ? Math.floor(remainingCapacityKg / resourceWeightKg) : Number.POSITIVE_INFINITY;
         const amount = Math.min(requestedAmount, divideByPrecision(current.amount), capacityLimit);
@@ -477,7 +484,7 @@ export const TransferResourcesContainer = ({
 
   const renderResourceCard = (resource: (typeof availableResources)[number]) => {
     const isSelected = selectedResources.some((r) => r.resourceId === resource.resourceId);
-    const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
+    const resourceWeight = resource.weightKg;
     const displayAmount = divideByPrecision(resource.amount);
 
     return (

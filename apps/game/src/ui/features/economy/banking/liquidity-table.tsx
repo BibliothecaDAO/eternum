@@ -1,4 +1,5 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { playerStructuresView } from "@/sync/fact-views";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
 import TextInput from "@/ui/design-system/atoms/text-input";
@@ -34,7 +35,7 @@ export const LiquidityTable = ({ entity_id }: LiquidityTableProps) => {
     );
   });
 
-  const playerStructures = useUIStore((state) => state.playerStructures);
+  const playerStructures = useFactView(playerStructuresView);
 
   const playerStructureIds = playerStructures.map((structure) => structure.structure.entity_id);
 

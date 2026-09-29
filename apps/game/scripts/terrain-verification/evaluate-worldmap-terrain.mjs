@@ -43,7 +43,6 @@ function evaluateGameIdentity(identity, expected, failures, missing) {
   } else if (expected.gameId !== undefined && identity.gameId !== expected.gameId) {
     failures.push(`active game id ${identity.gameId} differs from requested game ${expected.gameId}`);
   }
-  if (!populatedString(identity?.namespace)) missing.push("active game namespace is unavailable");
   if (!populatedString(identity?.worldAddress)) missing.push("active world address is unavailable");
   if (!populatedString(identity?.worldName)) missing.push("active world name is unavailable");
   else if (expected.worldName && identity.worldName !== expected.worldName) {
@@ -76,7 +75,7 @@ function evaluateRenderer(renderer, requestedMode, missing) {
 }
 
 function evaluateTerrainPresentation(observation, expected, backend, failures, missing) {
-  if (!(observation.renderDiagnostics?.gauges?.worldBiomeSurfaceInstances > 0)) {
+  if (!(observation.visibleTerrainCells > 0)) {
     missing.push("no populated authoritative terrain was observed");
   }
   const presentation = observation.renderDiagnostics?.terrainPresentation;

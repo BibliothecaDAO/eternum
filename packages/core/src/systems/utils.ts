@@ -1,5 +1,4 @@
 import {
-  ClientComponents,
   type ID,
   RealmLevels,
   StructureType,
@@ -7,13 +6,14 @@ import {
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
+import type { NativeFactStore } from "../client/native-fact-store";
 import { getHyperstructureProgress } from "../utils";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../utils/constants";
 import { StructureProgress } from "./types";
 
-export const getStructureStage = (structureType: StructureType, entityId: ID, components: ClientComponents): number => {
+export const getStructureStage = (structureType: StructureType, entityId: ID, store: NativeFactStore): number => {
   if (structureType === StructureType.Hyperstructure) {
-    const { initialized, percentage } = getHyperstructureProgress(entityId, components);
+    const { initialized, percentage } = getHyperstructureProgress(entityId, store);
 
     if (!initialized) {
       return StructureProgress.STAGE_1;
@@ -33,52 +33,34 @@ export const getStructureStage = (structureType: StructureType, entityId: ID, co
 
 export const getExplorerInfoFromTileOccupier = (
   occupierType: number,
-): { troopType: TroopType; troopTier: TroopTier; isDaydreamsAgent: boolean } | undefined => {
+): { troopType: TroopType; troopTier: TroopTier } | undefined => {
   switch (occupierType) {
     case TileOccupier.ExplorerKnightT1Regular:
-      return { troopType: "Knight" as TroopType, troopTier: "T1" as TroopTier, isDaydreamsAgent: false };
-    case TileOccupier.ExplorerKnightT1Daydreams:
-      return { troopType: "Knight" as TroopType, troopTier: "T1" as TroopTier, isDaydreamsAgent: true };
+      return { troopType: "Knight" as TroopType, troopTier: "T1" as TroopTier };
 
     case TileOccupier.ExplorerKnightT2Regular:
-      return { troopType: "Knight" as TroopType, troopTier: "T2" as TroopTier, isDaydreamsAgent: false };
-    case TileOccupier.ExplorerKnightT2Daydreams:
-      return { troopType: "Knight" as TroopType, troopTier: "T2" as TroopTier, isDaydreamsAgent: true };
+      return { troopType: "Knight" as TroopType, troopTier: "T2" as TroopTier };
 
     case TileOccupier.ExplorerKnightT3Regular:
-      return { troopType: "Knight" as TroopType, troopTier: "T3" as TroopTier, isDaydreamsAgent: false };
-    case TileOccupier.ExplorerKnightT3Daydreams:
-      return { troopType: "Knight" as TroopType, troopTier: "T3" as TroopTier, isDaydreamsAgent: true };
+      return { troopType: "Knight" as TroopType, troopTier: "T3" as TroopTier };
 
     case TileOccupier.ExplorerPaladinT1Regular:
-      return { troopType: "Paladin" as TroopType, troopTier: "T1" as TroopTier, isDaydreamsAgent: false };
-    case TileOccupier.ExplorerPaladinT1Daydreams:
-      return { troopType: "Paladin" as TroopType, troopTier: "T1" as TroopTier, isDaydreamsAgent: true };
+      return { troopType: "Paladin" as TroopType, troopTier: "T1" as TroopTier };
 
     case TileOccupier.ExplorerPaladinT2Regular:
-      return { troopType: "Paladin" as TroopType, troopTier: "T2" as TroopTier, isDaydreamsAgent: false };
-    case TileOccupier.ExplorerPaladinT2Daydreams:
-      return { troopType: "Paladin" as TroopType, troopTier: "T2" as TroopTier, isDaydreamsAgent: true };
+      return { troopType: "Paladin" as TroopType, troopTier: "T2" as TroopTier };
 
     case TileOccupier.ExplorerPaladinT3Regular:
-      return { troopType: "Paladin" as TroopType, troopTier: "T3" as TroopTier, isDaydreamsAgent: false };
-    case TileOccupier.ExplorerPaladinT3Daydreams:
-      return { troopType: "Paladin" as TroopType, troopTier: "T3" as TroopTier, isDaydreamsAgent: true };
+      return { troopType: "Paladin" as TroopType, troopTier: "T3" as TroopTier };
 
     case TileOccupier.ExplorerCrossbowmanT1Regular:
-      return { troopType: "Crossbowman" as TroopType, troopTier: "T1" as TroopTier, isDaydreamsAgent: false };
-    case TileOccupier.ExplorerCrossbowmanT1Daydreams:
-      return { troopType: "Crossbowman" as TroopType, troopTier: "T1" as TroopTier, isDaydreamsAgent: true };
+      return { troopType: "Crossbowman" as TroopType, troopTier: "T1" as TroopTier };
 
     case TileOccupier.ExplorerCrossbowmanT2Regular:
-      return { troopType: "Crossbowman" as TroopType, troopTier: "T2" as TroopTier, isDaydreamsAgent: false };
-    case TileOccupier.ExplorerCrossbowmanT2Daydreams:
-      return { troopType: "Crossbowman" as TroopType, troopTier: "T2" as TroopTier, isDaydreamsAgent: true };
+      return { troopType: "Crossbowman" as TroopType, troopTier: "T2" as TroopTier };
 
     case TileOccupier.ExplorerCrossbowmanT3Regular:
-      return { troopType: "Crossbowman" as TroopType, troopTier: "T3" as TroopTier, isDaydreamsAgent: false };
-    case TileOccupier.ExplorerCrossbowmanT3Daydreams:
-      return { troopType: "Crossbowman" as TroopType, troopTier: "T3" as TroopTier, isDaydreamsAgent: true };
+      return { troopType: "Crossbowman" as TroopType, troopTier: "T3" as TroopTier };
 
     default:
       return undefined;
@@ -138,12 +120,8 @@ export const getStructureInfoFromTileOccupier = (
         hasWonder: true,
       };
 
-    case TileOccupier.HyperstructureLevel1:
+    case TileOccupier.Hyperstructure:
       return { type: StructureType.Hyperstructure, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
-    case TileOccupier.HyperstructureLevel2:
-      return { type: StructureType.Hyperstructure, stage: StructureProgress.STAGE_2, level: 1, hasWonder: false };
-    case TileOccupier.HyperstructureLevel3:
-      return { type: StructureType.Hyperstructure, stage: StructureProgress.STAGE_3, level: 1, hasWonder: false };
     case TileOccupier.ReservedHyperstructure:
       return {
         type: StructureType.Hyperstructure,
@@ -153,8 +131,8 @@ export const getStructureInfoFromTileOccupier = (
         reserved: true,
       };
 
-    case TileOccupier.FragmentMine:
-      return { type: StructureType.FragmentMine, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
+    case TileOccupier.Mine:
+      return { type: StructureType.Mine, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
 
     case TileOccupier.Village:
       return {

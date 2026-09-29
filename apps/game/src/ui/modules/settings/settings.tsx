@@ -1,4 +1,5 @@
 import { AudioCategory, useAudio } from "@/audio";
+import { GuideSettings } from "@/ui/features/frontier/guide/guide-settings";
 import {
   identityClient,
   signOutIdentitySession,
@@ -24,9 +25,9 @@ import { CHAT_SHORTCUT } from "@/ui/features/world/containers/chat-shortcut";
 import { getShortcutManager } from "@/utils/shortcuts/centralized-shortcut-manager";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useGame } from "@/hooks/context/game-context";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
-import { useDisconnect } from "@starknet-react/core";
 import { Pencil } from "@/ui/design-system/atoms/game-icons";
 import { type ReactNode, useState } from "react";
 import { NotificationSettings } from "./notification-settings";
@@ -35,14 +36,17 @@ import { PwaInstallControl } from "@/pwa/pwa-install-control";
 export const SETTINGS_POPOVER_ID = "settings";
 const effectsCategories = Object.values(AudioCategory).filter((category) => category !== AudioCategory.MUSIC);
 
+/** Player settings first; installing the app and the renderer choice, rarely touched, come last before the session. */
 export const SettingsPanel = () => (
   <div className="flex flex-col gap-4 p-1">
     <ProfileHeader />
-    <VideoSettings />
+    <GuideSettings />
     <AudioSettings />
-    <PwaInstallControl />
+    <VideoSettings />
     <NotificationSettings />
     <ShortcutsSection />
+    <PwaInstallControl />
+    <RendererSettings />
     <SessionActions />
   </div>
 );
@@ -55,14 +59,15 @@ function ProfileHeader() {
   const profile = usePlayerProfile(address);
   const { standingsByAddress } = useInGameLeaderboard();
   const {
-    setup: { components },
-  } = useDojo();
+    setup: { store },
+  } = useGame();
+  useNativeRevision(["Guild", "GuildMember"]);
   const [error, setError] = useState<string | null>(null);
   const owner = address ? ContractAddress(address) : null;
   // The players slice already prefers the session username for the signed-in user.
   const name = profile.name;
   const standing = owner === null ? null : (standingsByAddress.get(normalizeLeaderboardAddress(owner)) ?? null);
-  const guild = owner === null ? null : (getGuildFromPlayerAddress(owner, components)?.name ?? null);
+  const guild = owner === null ? null : (getGuildFromPlayerAddress(owner, store)?.name ?? null);
   const spectating = isExplicitSpectateSession();
   const facts = [
     standing && `#${standing.rank} · ${Math.round(standing.points).toLocaleString()} VP`,
@@ -211,7 +216,7 @@ function SelectedOption({
 function VideoSettings() {
   const preferences = readGraphicsPreferences(localStorage);
   const renderMode = readRenderMode(localStorage);
-  const { reducedMotion, setReducedMotion } = useWorldAppearanceStore();
+  const { reducedMotion, setReducedMotion, haptics, setHaptics } = useWorldAppearanceStore();
   const changeGraphics = (change: Partial<GraphicsPreferences>) => {
     writeGraphicsPreferences(localStorage, { ...preferences, ...change });
     window.location.reload();
@@ -250,8 +255,10 @@ function VideoSettings() {
         <SelectedOption selected={reducedMotion} onClick={() => setReducedMotion(!reducedMotion)}>
           Reduced motion
         </SelectedOption>
+        <SelectedOption selected={haptics} onClick={() => setHaptics(!haptics)}>
+          Haptics
+        </SelectedOption>
       </div>
-      <RendererDebugControl diagnostics={false} className="border-0 bg-transparent px-0 py-0 backdrop-blur-none" />
     </SettingsSection>
   );
 }
@@ -273,6 +280,14 @@ function VolumeSlider({ label, value, onChange }: { label: string; value: number
     </label>
   );
 }
+function RendererSettings() {
+  return (
+    <SettingsSection title="Renderer">
+      <RendererDebugControl diagnostics={false} className="border-0 bg-transparent px-0 py-0 backdrop-blur-none" />
+    </SettingsSection>
+  );
+}
+
 function AudioSettings() {
   const { setCategoryVolume, setMasterVolume, setMuted, audioState } = useAudio();
   return (
@@ -341,7 +356,6 @@ function ShortcutsSection() {
 
 function SessionActions() {
   const { session } = useIdentitySession();
-  const { disconnectAsync } = useDisconnect();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const canSignOut = Boolean(session) && !isExplicitSpectateSession();
@@ -349,7 +363,7 @@ function SessionActions() {
     setPending(true);
     setError(null);
     try {
-      await signOutIdentitySession(disconnectAsync);
+      await signOutIdentitySession();
     } catch (error) {
       setError(error instanceof Error ? error.message : "Sign out failed");
     } finally {

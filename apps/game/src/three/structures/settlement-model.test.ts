@@ -61,8 +61,10 @@ function fixture(kind: "village" | "realm" = "village") {
 
 describe("gameplay villages", () => {
   it.each([false, true])("selects the approved model in world and local views (blitz=%s)", (blitz) => {
+    expect(getStructureModelPaths()[StructureType.Village]).toEqual([VILLAGE_MODEL_PATH]);
+    // A camp's later models are a fallen realm's ruin and beasts (fallen-realm.test.ts); a camp draws as the village.
+    expect(getStructureModelPaths()[StructureType.Camp][0]).toBe(VILLAGE_MODEL_PATH);
     for (const category of [StructureType.Village, StructureType.Camp] as const) {
-      expect(getStructureModelPaths(blitz)[category]).toEqual([VILLAGE_MODEL_PATH]);
       expect(buildingModelPaths(blitz)[BUILDINGS_GROUPS.VILLAGE][category]).toBe(VILLAGE_MODEL_PATH);
     }
   });
@@ -108,7 +110,7 @@ describe("gameplay realms", () => {
       RealmLevelNames.Kingdom,
       RealmLevelNames.Empire,
     ].map((level) => REALM_MODEL_PATHS[level]);
-    expect(getStructureModelPaths(blitz)[StructureType.Realm].slice(0, 4)).toEqual(paths);
+    expect(getStructureModelPaths()[StructureType.Realm].slice(0, 4)).toEqual(paths);
     expect(buildingModelPaths(blitz)[BUILDINGS_GROUPS.REALMS]).toEqual(REALM_MODEL_PATHS);
   });
 
@@ -144,4 +146,11 @@ describe("gameplay realms", () => {
     model.dispose();
     expect(disposeTrim).toHaveBeenCalledOnce();
   });
+});
+
+it("loads both mine models regardless of game mode", () => {
+  expect(getStructureModelPaths()[StructureType.Mine]).toEqual([
+    "/models/reward-tiles/rift.glb",
+    "/models/new-buildings-opt/mine.glb",
+  ]);
 });

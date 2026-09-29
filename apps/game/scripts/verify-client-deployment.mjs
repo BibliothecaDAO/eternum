@@ -17,13 +17,7 @@ export async function verifyClientDeployment(dist, origin) {
   ])
     checks.push(await checkMutableInstallAsset(dist, origin, path, type));
   const entry = await readClientModuleEntries(dist);
-  for (const route of [
-    "/",
-    "/play/madara/deployment-check/map?spectate=true",
-    "/biome-lab",
-    "/local-lab",
-    "/factory/v2",
-  ]) {
+  for (const route of ["/", "/play", "/g/0x1/1/map?spectate=true", "/factory"]) {
     checks.push(await checkPublishedRoute(origin, route, entry));
   }
   checks.push(await checkMissingAsset(origin));

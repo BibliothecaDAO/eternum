@@ -6,6 +6,7 @@ import { TOP_PILL } from "./top-pill";
 interface MapViewControlsProps {
   compact: boolean;
   isLocalView: boolean;
+  canOpenLocal: boolean;
   mapLayer: boolean;
   showLayerSwitch: boolean;
   onNavigate: (world: boolean) => void;
@@ -16,6 +17,7 @@ interface MapViewControlsProps {
 export function MapViewControls({
   compact,
   isLocalView,
+  canOpenLocal,
   mapLayer,
   showLayerSwitch,
   onNavigate,
@@ -23,7 +25,7 @@ export function MapViewControls({
 }: MapViewControlsProps) {
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <MapViewSwitch compact={compact} isLocalView={isLocalView} onNavigate={onNavigate} />
+      <MapViewSwitch compact={compact} isLocalView={isLocalView} canOpenLocal={canOpenLocal} onNavigate={onNavigate} />
       {showLayerSwitch &&
         (compact ? (
           <CompactLayerSwitch mapLayer={mapLayer} onLayerChange={onLayerChange} />
@@ -37,18 +39,22 @@ export function MapViewControls({
 const MapViewSwitch = ({
   compact,
   isLocalView,
+  canOpenLocal,
   onNavigate,
 }: {
   compact: boolean;
   isLocalView: boolean;
+  canOpenLocal: boolean;
   onNavigate: (world: boolean) => void;
 }) => (
   <div role="group" aria-label="Map view" className={cn(TOP_PILL, "gap-0.5 px-1 max-lg:h-auto")}>
     <button
       type="button"
       aria-pressed={isLocalView}
+      disabled={!canOpenLocal}
+      title={canOpenLocal ? undefined : "Select a structure to open its local view"}
       onClick={() => onNavigate(false)}
-      className={viewButtonClasses(isLocalView, compact)}
+      className={cn(viewButtonClasses(isLocalView, compact), "disabled:cursor-not-allowed disabled:opacity-40")}
     >
       Local
     </button>

@@ -135,6 +135,7 @@ export const UnifiedArmyCreationBody = ({
               onChange={form.handleTroopCountChange}
               capacityRemaining={form.capacityRemainingForSelector}
               troopMaxSize={form.troopCapacityLimit ?? undefined}
+              unavailableReason={form.troopAvailabilityReason}
               embedded
             />
             {form.troopCapacityLimit !== null && form.troopCapacityLimit !== undefined && (
@@ -146,6 +147,18 @@ export const UnifiedArmyCreationBody = ({
                     {form.troopCapacityLimit.toLocaleString()}
                   </span>
                 </div>
+              </>
+            )}
+            {form.troopTrainingLine && (
+              <>
+                <div className="border-t border-gold/15" />
+                <p className="px-1 py-1 text-[11px] text-gold/70">{form.troopTrainingLine}</p>
+              </>
+            )}
+            {mode.ui.musterNotice && (
+              <>
+                <div className="border-t border-gold/15" />
+                <p className="px-1 py-1 text-[11px] text-amber-200/90">{mode.ui.musterNotice}</p>
               </>
             )}
           </div>
@@ -199,6 +212,7 @@ export const UnifiedArmyCreationBody = ({
           label={form.actionLabel}
           isLoading={form.isLoading}
           isDisabled={form.isActionDisabled}
+          blockedReason={form.submitBlockedReason}
           onSubmit={form.handleCreate}
           embedded
         />

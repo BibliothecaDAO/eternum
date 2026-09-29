@@ -19,7 +19,12 @@
  * allocate_shares tx spam, ownership chrome shown while spectating,
  * account-modal bypass drift). This module is the only reader of the
  * `spectate` query; route builders may still write it.
+ *
+ * The intent lives only inside a play session: the shell (home, lobby, results, account) is outside every one, so
+ * reaching it ends the intent, and a spectated game never makes the signed-in player a spectator outside it.
  */
+
+import { useEffect } from "react";
 
 /** The one parse of the `spectate` query. Route rewrites use it to carry the flag through a legacy URL. */
 export const hasSpectateQuery = (search: string): boolean => new URLSearchParams(search).get("spectate") === "true";
@@ -35,6 +40,13 @@ export const resolveSpectateIntent = (location: Pick<Location, "search">): boole
 /** A deliberate user action (exit-spectator flow) may override the intent. */
 export const overrideSpectateIntent = (spectating: boolean): void => {
   sessionSpectateIntent = spectating;
+};
+
+/** The shell is outside every play session: mounting it ends any spectate intent a game latched. */
+export const useOutsidePlaySession = (): void => {
+  useEffect(() => {
+    sessionSpectateIntent = null;
+  }, []);
 };
 
 export const isExplicitSpectateSession = (): boolean =>

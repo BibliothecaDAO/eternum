@@ -7,6 +7,8 @@ interface ActionFooterProps {
   label: string;
   isLoading: boolean;
   isDisabled: boolean;
+  /** Why the button is disabled, when the form does not already say it next to the control that caused it. */
+  blockedReason: string | null;
   onSubmit: () => void;
   /** Embed mode: render just the button, no surrounding card chrome. */
   embedded?: boolean;
@@ -17,6 +19,7 @@ export const ActionFooter = ({
   label,
   isLoading,
   isDisabled,
+  blockedReason,
   onSubmit,
   embedded = false,
 }: ActionFooterProps) => {
@@ -42,9 +45,20 @@ export const ActionFooter = ({
     </Button>
   );
 
-  if (embedded) return button;
+  const action = (
+    <>
+      {button}
+      {isDisabled && blockedReason && (
+        <p className="mt-1 px-1 text-xs text-gold/70" role="status">
+          {blockedReason}
+        </p>
+      )}
+    </>
+  );
+
+  if (embedded) return action;
 
   return (
-    <div className="p-1.5 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20">{button}</div>
+    <div className="p-1.5 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20">{action}</div>
   );
 };

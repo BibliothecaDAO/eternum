@@ -25,6 +25,13 @@ async function buildWorker(release: string): Promise<string> {
   return worker.code;
 }
 
+/** Runs the worker's first line, the release stamp, against a stand-in worker scope. */
+function stampedRelease(code: string): unknown {
+  const self: { REALMS_RELEASE?: unknown } = {};
+  new Function("self", code.split("\n")[0])(self);
+  return self.REALMS_RELEASE;
+}
+
 it("keeps minified worker releases distinct without production logging", async () => {
   const first = await buildWorker("release-a");
   const repeat = await buildWorker("release-a");
@@ -32,7 +39,6 @@ it("keeps minified worker releases distinct without production logging", async (
   expect(first).toBe(repeat);
   expect(first).not.toBe(next);
   expect(first.split("\n").slice(1).join("\n")).toBe(next.split("\n").slice(1).join("\n"));
-  expect(next).toMatch(/^\/\* Realms PWA release: [a-f0-9]{64} \*\//);
-  expect(next).not.toContain("arbitrary label");
+  expect(stampedRelease(next)).toBe("release-b */ arbitrary label");
   expect(next).not.toContain("pwa_worker_installed");
 });

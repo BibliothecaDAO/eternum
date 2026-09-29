@@ -34,25 +34,364 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
-    date: "2026-09-20",
-    title: "Ethereal Basalt and Neon Borders",
+    date: "2026-09-28",
+    title: "Games stay visible during outages",
+    description:
+      "Games remain listed when launch records cannot be read, with an unavailable label until entry recovers.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
+    title: "Clear Blitz watch entry",
+    description:
+      "The doorway explains when you are outside the roster or a game has ended, and offers Review for finished games.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
+    title: "Castle visible during entry",
+    description:
+      "The doorway shows your realm's castle from the start, using the level already known in the game directory.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
+    title: "Consistent player portraits",
+    description:
+      "Players without a chosen portrait show the same stock portrait in the game, profiles, standings, and podium.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
+    title: "One entry after founding",
+    description: "Founding a realm enters the game once, keeping Back navigation and the doorway handoff consistent.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
+    title: "Realm visits return home",
+    description:
+      "Returning to your realm clears the visit banner and army dock together. Account changes also leave the visited view.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
+    title: "Chest opening recovery",
+    description:
+      "Confirmed chest openings recover pending relic choices after a reconnect, and clear the opening effect when its result is unavailable.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
+    title: "Blitz attack preview accuracy",
+    description:
+      "Attack previews stop at the battle cooldown, showing what this attack can do before another order is allowed.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
+    title: "Frontier starts on time",
+    description:
+      "Upcoming seasons count down to their start. Resume prefers a live season, and expedition sites appear only once play begins.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
+    title: "Enter Frontier depths",
+    description: "Select your army beside its spire to enter an unlocked Ethereal depth and see its stamina cost.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
+    title: "Wallet Deployment Guidance",
+    description: "Linking an undeployed wallet explains how to deploy it on Starknet mainnet before trying again.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
+    title: "Blitz Stays In View",
+    description:
+      "Your registered slot stays visible while its game launches. Ended games remain available to watch until their results are recorded.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
+    title: "Retry Device List Errors",
+    description: "The Devices panel shows account lookup errors and offers a retry when it cannot load your devices.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-27",
+    title: "Clear Account Recovery Steps",
+    description: "Removed devices and account sign-in problems now explain the steps needed to play again.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-26",
+    title: "Support feeds your realm",
+    description:
+      "Your best Support army boosts realm production until midnight. The bonus survives its death, and income displays include it.",
+    type: "feature",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-09-26",
+    title: "Explored Daily Realm Ring",
+    description: "Your realm's six neighbours start explored each day. Deployment waits for explored, free ground.",
+    type: "improvement",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-09-26",
+    title: "Research and building tiers",
+    description:
+      "Research unlocks building tiers and depths. Existing buildings upgrade individually for labor; new buildings include their researched tier in the price.",
+    type: "feature",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-09-25",
+    title: "Frontier LORDS chests",
+    description:
+      "Frontier chests award relics or LORDS. When the released LORDS budget is exhausted, a chest grants a relic of the same rarity and explains why.",
+    type: "feature",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-09-25",
+    title: "Army attributes and relics",
+    description:
+      "Your Frontier armies earn attribute choices from exploration, victories and relics. Battle increases damage, and Logistics expands the stamina bar.",
+    type: "feature",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-09-25",
+    title: "Stamina while loading",
+    description: "Army stamina shows — while its daily slot is loading, and actions wait until the bar is known.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-25",
+    title: "Ysolde's guide",
+    description:
+      "Ysolde of the Fox walks new Lords through their first Frontier day, one line at a time. Skip her any time, or replay her from settings.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-25",
+    title: "Frontier chat",
+    description: "Game chat now has a strip above your Frontier armies; it folds away while you command one.",
+    type: "feature",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-09-25",
+    title: "Only the actions a game allows",
+    description:
+      "Panels no longer offer actions the game turns off: no transfer shortcut, pause switch, production refill, relic list or defense army where the game has none.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-25",
+    title: "One marked plot per ring",
+    description:
+      "Each ring of your Frontier realm board has one marked plot, lit and set on greener ground, where a building gives twice its output, capacity or population. Neighbour bonuses are gone.",
+    type: "feature",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-09-25",
+    title: "Exact fight forecasts",
+    description:
+      'The attack preview now computes each exchange with the game\'s own arithmetic, so it shows exactly what a fight costs: "Wins in 2 exchanges · loses 420 · 60 stamina". Where a game rolls dice, it shows the worst and best rolls.',
+    type: "improvement",
+  },
+  {
+    date: "2026-09-25",
+    title: "Frontier's own screen",
+    description:
+      "Frontier now has a HUD built for it, phone first: today's day and time left, your Essence, labor, wheat and troops at home, one card per army slot with strength and stamina, and one switch between the expedition map and your realm.",
+    type: "feature",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-09-25",
+    title: "Scores respect your view",
+    description:
+      "Scores outside your Frontier view show a dash until known. Realm captures now record both owners in the game story.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-22",
+    title: "One app for every game",
+    description:
+      "The lobby, results and your account now live in the game app at play.realms.party, and a game opens at its own address. The lobby loads without the 3D client, so it opens fast on a phone.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-22",
+    title: "Frontier Mode Configuration",
+    description: "Frontier uses its own building choices and season labels.",
+    type: "fix",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-09-19",
+    title: "Transfer Eternum Structure Ownership",
+    description:
+      "Transfer an owned Eternum structure from its owner panel, with recipient validation and confirmation. Villages cannot be transferred.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-19",
+    title: "Dismiss Structure Guards",
+    description: "Dismiss an occupied guard from its deployment picker, with confirmation before its troops are lost.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-19",
+    title: "Eternum Hyperstructure Construction",
+    description:
+      "Start construction, contribute resources from your structures, and choose who can contribute from the hyperstructure's tile panel.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-19",
+    title: "Free Blitz Slots and Results",
+    description:
+      "Register for a free slot, join your assigned game with prepared realms, and see final ranks and victory points after the whole roster is scored.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-18",
+    title: "Automatic Blitz settlement",
+    description:
+      "Assigned players receive three prepared realms and starting guards automatically. Play opens when the whole roster is ready.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-18",
+    title: "Complete claims and season closure",
+    description: "Mining claims and season closure continue through all required batches before reporting completion.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-18",
+    title: "Guard slots match the battlefield",
+    description:
+      "Starting guards now appear in the first defense slot. Recruitment, slot icons and battle stories use the same numbering.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-18",
+    title: "Faith, Armies and Resource Bridge",
     type: "feature",
     description:
-      "Explore dark basalt slabs framed by flowing neon hex borders. Spires rise from a stepped rock outcrop to a single tip, and surface spire tiles dissolve into the neighbouring terrain.",
+      "Claim faith points and prizes, receive your village army, and rename explorers. Eternum settlements can deposit and withdraw supported resources.",
   },
   {
-    date: "2026-09-20",
-    title: "Bitcoin Block Excavations",
+    date: "2026-09-18",
+    title: "Synchronized Player Actions",
     description:
-      "Bitcoin mines reveal golden digital blocks in ethereal basalt, with medieval mining equipment marking their working faces.",
+      "Actions wait for your player state to synchronize. Structures no longer appear unclaimed while their ownership is loading.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Complete Troop History",
+    description:
+      "Recruitment, disbanding and troop transfers appear in your game history, with the correct guard slot.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Mining Claims Catch Up",
+    description:
+      "Claim ready mining phases together. Winner rewards return to the first contributing structure; the owner's share stays in the mine.",
     type: "improvement",
   },
   {
-    date: "2026-09-20",
-    title: "Illustrated Icons Across The UI",
+    date: "2026-09-17",
+    title: "Simpler Army and Structure Display",
     description:
-      "Updated menus, game actions, and utility controls with detailed fantasy icons for a consistent visual style.",
+      "Removed autonomous map agents and hyperstructure level variants. Player armies keep their normal ownership colors and troop models.",
     type: "improvement",
+  },
+  {
+    date: "2026-09-17",
+    title: "Command sync recovery",
+    description:
+      "A stalled game update now reports an error and releases queued controls instead of blocking play until reload.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Production and exploration fixes",
+    description:
+      "Blitz uses Resource production only. Build orders leave your map selection alone, ships sail bow-first, and surface exploration grants its reward in the same action.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Clear game creation feedback",
+    description:
+      "Creating a game shows its progress and keeps any launch error beside the button, so you can fix it and retry without losing the form.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Reliable game end effects",
+    description:
+      "Frozen terrain updates without a reload. A game-end banner announces the clock ending and names the winner or tied winners when the final result arrives.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Wallet choice and live lobby",
+    description:
+      "Pick a wallet to connect and sign in in one flow, with wallet choices available after an error. Lobby countdowns advance every second and player counts refresh while the lobby is open.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Settlement surroundings revealed",
+    description:
+      "New realms and villages reveal the six neighbouring terrain tiles when settled, without discoveries or exploration rewards.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-17",
+    title: "Responsive army selection",
+    description: "Army range checks stay responsive as more players and structures fill the map.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Confirmed settlement before entry",
+    description: "Game entry waits for your settlement to appear and reports a rejected settlement before proceeding.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Reliable game entry and updates",
+    description:
+      "The lobby opens before game rules load, and exploration rewards keep your next action ready without reconnecting.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-17",
+    title: "Independent village placement",
+    description:
+      "Villages use the settlement planner. Choose a connected realm for the army grant and bridge fee; villages no longer use one of six surrounding tiles.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-17",
+    title: "Consistent reinforcement and production",
+    description:
+      "Reinforcement checks the target owner in every game mode. Production controls show the recorded resource, labor, and troop bonuses through their end ticks.",
+    type: "fix",
   },
   {
     date: "2026-09-18",

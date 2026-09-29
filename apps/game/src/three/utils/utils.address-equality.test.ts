@@ -1,12 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const getStateMock = vi.fn();
+const viewerMock = vi.fn<() => bigint | null>();
 
-vi.mock("@/hooks/store/use-account-store", () => ({
-  useAccountStore: {
-    getState: () => getStateMock(),
-  },
-}));
+vi.mock("@/hooks/store/use-account-store", () => ({ accountAddress: () => viewerMock() }));
 
 vi.mock("three/addons/loaders/DRACOLoader.js", () => ({
   DRACOLoader: class {
@@ -37,12 +33,9 @@ vi.mock("three/addons/loaders/KTX2Loader.js", () => ({
 
 vi.mock("three/addons/libs/meshopt_decoder.module.js", () => ({ MeshoptDecoder: {} }));
 
-vi.mock("@bibliothecadao/eternum", () => ({
+vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
+  isViewerOwner: (await importOriginal<typeof import("@bibliothecadao/eternum")>()).isViewerOwner,
   calculateDistance: () => 0,
-}));
-
-vi.mock("@bibliothecadao/types", () => ({
-  ContractAddress: (value: string) => value,
 }));
 
 vi.mock("../constants", () => ({
@@ -53,10 +46,8 @@ import { isAddressEqualToAccount } from "./utils";
 
 describe("isAddressEqualToAccount", () => {
   beforeEach(() => {
-    getStateMock.mockReset();
-    getStateMock.mockReturnValue({
-      account: { address: "123" },
-    });
+    viewerMock.mockReset();
+    viewerMock.mockReturnValue(123n);
   });
 
   it("matches bigint and string addresses", () => {
@@ -75,6 +66,12 @@ describe("isAddressEqualToAccount", () => {
   it("returns false for nullish values", () => {
     expect(isAddressEqualToAccount(null)).toBe(false);
     expect(isAddressEqualToAccount(undefined)).toBe(false);
+  });
+
+  it("matches nothing without a viewer, the zero address included", () => {
+    viewerMock.mockReturnValue(null);
+    expect(isAddressEqualToAccount(0n)).toBe(false);
+    expect(isAddressEqualToAccount("0x0")).toBe(false);
   });
 
   it("returns false if a numeric value is passed at runtime", () => {

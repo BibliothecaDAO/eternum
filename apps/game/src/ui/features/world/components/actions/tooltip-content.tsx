@@ -27,7 +27,7 @@ type BalanceGetter = (
   entityId: ID,
   resourceId: ResourcesIds,
 ) => {
-  balance: number;
+  balance: number | undefined;
   resourceId: ResourcesIds;
 };
 
@@ -72,9 +72,14 @@ export const TooltipContent = memo(
         : Math.abs(costsPerStep.travelFoodCosts.wheatPayAmount * (actionPath.length - 1))
       : 0;
 
-    const wheatRawBalance = getBalance(structureEntityId, ResourcesIds.Wheat)?.balance ?? 0;
-    const wheatAvailable = divideByPrecision(Number(wheatRawBalance));
-    const wheatRatio = wheatCost === 0 ? Number.POSITIVE_INFINITY : wheatAvailable / wheatCost;
+    // Wheat this client cannot see never covers the march: the cost shows as short.
+    const wheatRawBalance = getBalance(structureEntityId, ResourcesIds.Wheat).balance;
+    const wheatRatio =
+      wheatCost === 0
+        ? Number.POSITIVE_INFINITY
+        : wheatRawBalance === undefined
+          ? 0
+          : divideByPrecision(wheatRawBalance) / wheatCost;
     const wheatStatusColor =
       wheatRatio >= 1 ? "text-order-brilliance" : wheatRatio >= 0.5 ? "text-gold" : "text-order-giants";
     const roundedWheatCost = Math.round(wheatCost);

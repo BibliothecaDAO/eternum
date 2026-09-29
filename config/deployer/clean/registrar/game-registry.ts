@@ -5,16 +5,15 @@ export interface GameRegistryRow extends Record<string, unknown> {
 }
 
 interface HeraldDirectoryTarget {
-  chain: string;
   heraldUrl?: string;
 }
 
 function resolveHeraldDirectoryUrl(target: HeraldDirectoryTarget): string {
-  const baseUrl = target.heraldUrl || process.env.HERALD_URL || process.env.VITE_PUBLIC_HERALD_URL;
+  const baseUrl = target.heraldUrl || process.env.HERALD_URL;
   if (!baseUrl) throw new Error("HERALD_URL is required for GameRegistry checks");
   const url = new URL(baseUrl);
   const prefix = url.pathname.replace(/\/+$/, "");
-  url.pathname = `${prefix}/${target.chain}/games`;
+  url.pathname = `${prefix}/games`;
   url.search = "";
   return url.toString();
 }
@@ -76,7 +75,6 @@ export const findGameRegistryByName = async (
 
 export async function waitForGameRegistryById(params: {
   gameId: number;
-  chain: string;
   heraldUrl?: string;
   timeoutMs?: number;
   pollIntervalMs?: number;

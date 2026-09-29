@@ -1,5 +1,4 @@
 import { extractErrorMessage } from "@bibliothecadao/provider/errors";
-import type { GameChain } from "@realms-world/chain";
 import {
   BlockTag,
   type AccountInterface,
@@ -15,11 +14,8 @@ type GameplaySubmitAccount = Pick<AccountInterface, "address" | "execute" | "get
 type RawExecute = (calls: AllowArray<Call>, details?: UniversalDetails) => Promise<InvokeFunctionResponse>;
 
 interface ConfiguredGameplaySubmit {
-  chain: GameChain;
+  chainId: string;
   execute: RawExecute;
-  recoverSigner?: () => Promise<boolean>;
-  signerRecovery?: Promise<boolean>;
-  signerRevision: number;
 }
 
 /**
@@ -38,7 +34,7 @@ interface AccountNonceDispenser {
 interface ExecuteGameplayAccountTransactionOptions {
   account: GameplaySubmitAccount;
   calls: AllowArray<Call>;
-  chain: GameChain;
+  chainId: string;
   details?: UniversalDetails;
 }
 
@@ -52,41 +48,35 @@ const accountNonceDispensers = new Map<string, AccountNonceDispenser>();
 
 export function configureGameplayAccountSubmits<TAccount extends AccountInterface>(
   account: TAccount,
-  chain: GameChain,
-  recoverSigner?: () => Promise<boolean>,
+  chainId: string,
 ): TAccount {
   const configured = configuredGameplaySubmits.get(account);
   if (configured) {
-    assertConfiguredChain(account.address, configured.chain, chain);
+    assertConfiguredChain(account.address, configured.chainId, chainId);
     return account;
   }
 
-  configuredGameplaySubmits.set(account, {
-    chain,
-    execute: account.execute.bind(account),
-    recoverSigner,
-    signerRevision: 0,
-  });
+  configuredGameplaySubmits.set(account, { chainId, execute: account.execute.bind(account) });
   account.execute = ((calls: AllowArray<Call>, details?: UniversalDetails) =>
-    executeGameplayAccountTransaction({ account, calls, chain, details })) as AccountInterface["execute"];
+    executeGameplayAccountTransaction({ account, calls, chainId, details })) as AccountInterface["execute"];
   return account;
 }
 
 export function executeGameplayAccountTransaction({
   account,
   calls,
-  chain,
+  chainId,
   details,
 }: ExecuteGameplayAccountTransactionOptions): Promise<InvokeFunctionResponse> {
   const configured = configuredGameplaySubmits.get(account);
-  if (configured) assertConfiguredChain(account.address, configured.chain, chain);
+  if (configured) assertConfiguredChain(account.address, configured.chainId, chainId);
 
   const execute = configured?.execute ?? account.execute.bind(account);
-  const dispenser = resolveNonceDispenser(`${chain}:${account.address.toLowerCase()}`);
-  return submitWithLocalNonce({ account, calls, chain, details, dispenser, execute }, configured);
+  const dispenser = resolveNonceDispenser(`${chainId}:${account.address.toLowerCase()}`);
+  return submitWithLocalNonce({ account, calls, chainId, details, dispenser, execute });
 }
 
-function assertConfiguredChain(address: string, configuredChain: GameChain, requestedChain: GameChain): void {
+function assertConfiguredChain(address: string, configuredChain: string, requestedChain: string): void {
   if (configuredChain !== requestedChain) {
     throw new Error(`Gameplay account ${address} is configured for ${configuredChain}, not ${requestedChain}`);
   }
@@ -98,60 +88,25 @@ function resolveNonceDispenser(key: string): AccountNonceDispenser {
   return dispenser;
 }
 
-async function submitWithLocalNonce(
-  submit: GameplaySubmit,
-  configured?: ConfiguredGameplaySubmit,
-): Promise<InvokeFunctionResponse> {
-  const signerRevision = configured?.signerRevision;
+async function submitWithLocalNonce(submit: GameplaySubmit): Promise<InvokeFunctionResponse> {
   try {
     return await submitOnce(submit);
   } catch (error) {
     if (isNonceRejection(error)) return submitOnce(submit);
-    if (!configured || !isSignerValidationFailure(error)) throw error;
-    const recovered = configured.signerRevision !== signerRevision || (await recoverConfiguredSigner(configured));
-    if (!recovered) throw error;
-    return submitOnce(submit);
+    throw error;
   }
-}
-
-function isSignerValidationFailure(error: unknown): boolean {
-  const validationData = error && typeof error === "object" && "data" in error ? error.data : undefined;
-  return [error, validationData].some((part) =>
-    /\bAccount:\s*invalid signature\b/i.test(extractErrorMessage(part, "")),
-  );
-}
-
-function recoverConfiguredSigner(configured: ConfiguredGameplaySubmit): Promise<boolean> {
-  if (!configured.recoverSigner) return Promise.resolve(false);
-  configured.signerRecovery ??= configured
-    .recoverSigner()
-    .then((recovered) => {
-      if (recovered) configured.signerRevision += 1;
-      return recovered;
-    })
-    .finally(() => {
-      configured.signerRecovery = undefined;
-    });
-  return configured.signerRecovery;
 }
 
 async function submitOnce({
   account,
   calls,
-  chain,
   details,
   dispenser,
   execute,
 }: GameplaySubmit): Promise<InvokeFunctionResponse> {
   const nonce = await takeNonce(account, dispenser);
-  const resourceBounds = resolveGameTransactionResourceBounds(chain);
   try {
-    return await execute(calls, {
-      ...details,
-      nonce,
-      tip: 0,
-      ...(resourceBounds ? { resourceBounds } : {}),
-    });
+    return await execute(calls, { ...details, nonce, tip: 0, resourceBounds: resolveGameTransactionResourceBounds() });
   } catch (error) {
     dispenser.nextNonce = undefined;
     throw error;

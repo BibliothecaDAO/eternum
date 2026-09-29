@@ -1,10 +1,17 @@
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
 import { followArmyLayerChange } from "./worldmap-layer-follow";
 import { TileOccupier } from "@bibliothecadao/types";
-import { SpireManager } from "../managers/spire-manager";
+import { SpireManager, type RuleSpires } from "../managers/spire-manager";
+import { MapSiteManager } from "../managers/map-site-manager";
 import { activeMapLayer } from "@/three/map-layer";
 import type { ReactNode } from "react";
 import { isMapPreviewAction } from "./worldmap-action-preview-policy";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
+import { playRevealYield } from "@/ui/motion/moments/reveal-yield";
+import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
+import { type ArmyProgressFacts, progressChange } from "@/ui/features/frontier/attributes/attributes";
+import { playArmyProgress } from "@/ui/features/frontier/attributes/progress-moment";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { openArmyDeploymentPicker } from "@/ui/features/military/utils/open-army-deployment-picker";
 import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
@@ -17,13 +24,13 @@ import { formatReadableErrorForConsole } from "@/utils/error-message";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
-import { useAccountStore } from "@/hooks/store/use-account-store";
+import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveMovementStamina, type MovementStaminaResolution } from "@/lib/army-stamina/movement-affordability";
 import { resolveStoredWorldmapCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
-import { parsePlayRoute } from "@/play/navigation/play-route";
+import { buildPlayHref, mapRouteHex, parsePlayRoute } from "@/play/navigation/play-route";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
 import {
   clearPendingReservedHyperstructureCreation,
@@ -49,9 +56,15 @@ import { CAMERA_CONFIG } from "@/three/constants";
 import { type SceneSetupContext } from "@/three/scenes/hexagon-scene";
 import { type RenderVisualProfile } from "@/three/render-profile";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
-import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
-import { configManager, NEUTRAL_BIOME_CLIMATE, Position } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  expeditionSpires,
+  NEUTRAL_BIOME_CLIMATE,
+  Position,
+  isOpenSpawnHex,
+  isViewerOwner,
+} from "@bibliothecadao/eternum";
 import {
   requireActiveGameSyncRuntime,
   getActiveGameSyncRuntime,
@@ -88,7 +101,7 @@ import {
   recordClientActionRendered,
   recordClientActionSubmitted,
 } from "@/observability/client-action-latency";
-import { SetupResult } from "@bibliothecadao/dojo";
+import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {
   ActionPath,
   ActionPaths,
@@ -96,7 +109,6 @@ import {
   BattleEventSystemUpdate,
   ExplorerRewardSystemUpdate,
   getBlockTimestamp,
-  getGuardsByStructure,
   getTileAt,
   recordArmyMovementLatencyPhase,
   SelectableArmy,
@@ -107,17 +119,13 @@ import {
   BiomeType,
   ContractAddress,
   Direction,
-  findResourceById,
   getDirectionBetweenAdjacentHexes,
-  getTroopAttackRange,
   HexEntityInfo,
   HexPosition,
   ID,
-  ResourcesIds,
   Structure,
   StructureType,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import throttle from "lodash/throttle";
 import { Box3, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
@@ -147,7 +155,6 @@ import type { TerrainRoadAnchor, TerrainSettlementAnchor } from "@/three/terrain
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
 import { env } from "../../../env";
-import { playerCosmeticsStore } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager, type HoverLabelReconcileResult } from "../managers/hover-label-manager";
 import { resolveWorldmapHoverLabelEntity } from "./worldmap-hover-label-entities";
@@ -241,6 +248,15 @@ import {
   recordWorldmapTerrainReadyDuration,
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
+import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-army-select-request";
+import { onChestOpenRequest } from "./worldmap-chest-open-request";
+import {
+  beginChestOpening,
+  cancelChestOpening,
+  confirmChestOpening,
+  type ChestOpening,
+  readChestBeat,
+} from "@/ui/features/frontier/chest/chest-moment";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
 import {
@@ -387,7 +403,6 @@ import {
   collectWorldmapTerrainEcologyAnchors,
 } from "./worldmap-terrain-ecology-refresh-runtime";
 import { WorldmapTerrainContent } from "./worldmap-terrain-content";
-import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import {
   WORLDMAP_CAMERA_ZOOM,
   resolveWorldmapCameraFieldOfViewDegrees,
@@ -544,6 +559,13 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
   getWorldmapChunkTrace?: () => WorldmapChunkTraceEntry[];
 };
 
+/** The explorer or structure an action targets on a hex; null when the hex holds neither. */
+const actorOnHex = (entity: { army?: { id: ID }; structure?: { id: ID } }) => {
+  if (entity.army) return { type: ActorType.Explorer, id: entity.army.id };
+  if (entity.structure) return { type: ActorType.Structure, id: entity.structure.id };
+  return null;
+};
+
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
 const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
@@ -565,7 +587,7 @@ function resolveStructureMarkerKind(structureType: StructureType): StrategicStru
   if (structureType === StructureType.Realm) return "realm";
   if (structureType === StructureType.Hyperstructure) return "hyperstructure";
   if (structureType === StructureType.Bank) return "bank";
-  if (structureType === StructureType.FragmentMine || structureType === StructureType.BitcoinMine) return "mine";
+  if (structureType === StructureType.Mine || structureType === StructureType.BitcoinMine) return "mine";
   return isVillageLikeStructureCategory(structureType) ? "village" : "realm";
 }
 
@@ -604,10 +626,23 @@ function resolveExploreClientLatencyPhase(stage: string | undefined): ClientActi
   if (stage === "explore_calls_built") return "calls_built";
   if (stage === "explore_submit_guard_released") return "submit_guard_released";
   if (stage === "explore_provider_lock_acquired") return "provider_lock_acquired";
-  if (stage === "explore_execution_details_ready") return "execution_details_ready";
   if (stage === "explore_sign_send_started") return "sign_send_started";
   return undefined;
 }
+
+/** Re-opens the world map on a hex, so the page draws around a floating origin there; the URL's hex is origin-free. */
+function reopenWorldMapAt(hex: HexPosition): void {
+  const route = parsePlayRoute(window.location);
+  if (!route) throw new Error(`Cannot re-open the world map outside a game route: ${window.location.pathname}`);
+  const position = Position.fromNormalized({ x: hex.col, y: hex.row });
+  window.location.replace(buildPlayHref({ ...route, scene: "map", ...mapRouteHex(position) }));
+}
+
+/** An action path's contract hex, as the scene hex its helpers work in. */
+const sceneHexOf = (contractHex: HexPosition): HexPosition => {
+  const normalized = Position.fromContract({ x: contractHex.col, y: contractHex.row }).getNormalized();
+  return { col: normalized.x, row: normalized.y };
+};
 
 export default class WorldmapScene extends WarpTravel {
   private readonly interactionDebugInstanceId = allocateWorldmapInteractionDebugInstanceId();
@@ -838,7 +873,7 @@ export default class WorldmapScene extends WarpTravel {
   private refreshVisualTerrainWindowThrottled?: ReturnType<typeof throttle>;
   private updateCameraTargetHex = () => {
     const normalizedHex = this.getCameraTargetHex();
-    const contractHex = new Position({ x: normalizedHex.col, y: normalizedHex.row }).getContract();
+    const contractHex = Position.fromNormalized({ x: normalizedHex.col, y: normalizedHex.row }).getContract();
     const nextHex = { col: Number(contractHex.x), row: Number(contractHex.y) };
     const state = useUIStore.getState();
     const currentHex = state.cameraTargetHex;
@@ -863,6 +898,13 @@ export default class WorldmapScene extends WarpTravel {
     if (!detail) return;
     this.minimapCameraMoveTarget = detail;
     this.minimapCameraMoveThrottled?.();
+  };
+  private stopChestOpenRequests?: () => void;
+  private armySelectRequestHandler = (event: Event) => {
+    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    const entityId = readArmySelectRequest(event);
+    if (entityId === null) return;
+    void this.selectRequestedArmy(entityId);
   };
   private minimapZoomHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
@@ -956,13 +998,14 @@ export default class WorldmapScene extends WarpTravel {
   private chestLabelsGroup!: Group;
   private reservedHyperstructureManager!: ReservedHyperstructureManager;
   private spireManager!: SpireManager;
+  private mapSiteManager!: MapSiteManager;
   private spireLabelsGroup!: Group;
 
   private renderedMapLayer?: boolean;
   private layerRevision = 0;
   private storeSubscriptions: Array<() => void> = [];
 
-  dojo: SetupResult;
+  game: SetupResult;
 
   private pinnedRenderAreas: Set<string> = new Set();
 
@@ -973,6 +1016,8 @@ export default class WorldmapScene extends WarpTravel {
   private armyIndex: number = 0;
   private selectableArmies: SelectableArmy[] = [];
   private structureIndex: number = 0;
+  /** Set once the first world-map pass is drawn: from then on drawn positions depend on the floating origin. */
+  private worldOriginLocked = false;
   private playerStructures: Structure[] = [];
 
   // Hover-based label expansion manager
@@ -980,14 +1025,13 @@ export default class WorldmapScene extends WarpTravel {
 
   private worldUpdateUnsubscribes: Array<() => void> = [];
   private visibilityChangeHandler?: () => void;
-  private cosmeticsSubscriptionCleanup?: () => void;
   private unregisterWorldmapRecoveryHandle: (() => void) | null = null;
   private readonly hoverLabelRaycaster: Raycaster;
   private currentHoverLabelHex: HexPosition | null = null;
   private hoverLabelRecovery!: WorldmapHoverLabelRecovery;
 
   constructor(
-    dojoContext: SetupResult,
+    gameContext: SetupResult,
     raycaster: Raycaster,
     controls: MapControls,
     mouse: Vector2,
@@ -995,14 +1039,14 @@ export default class WorldmapScene extends WarpTravel {
     private readonly markLabelsDirty: () => void = () => {},
     private readonly compilePipelines: PipelineCompiler = async () => {},
   ) {
-    super(SceneName.WorldMap, controls, dojoContext, mouse, raycaster, sceneManager);
+    super(SceneName.WorldMap, controls, gameContext, mouse, raycaster, sceneManager);
 
-    this.dojo = dojoContext;
+    this.game = gameContext;
     this.hoverLabelRaycaster = raycaster;
     this.logWorldmapSceneConstruction();
     this.registerWorldmapRecoveryHandle();
-    this.initializeWorldmapSceneServices(dojoContext);
-    this.bindTransactionFailureLifecycle(dojoContext);
+    this.initializeWorldmapSceneServices(gameContext);
+    this.bindTransactionFailureLifecycle(gameContext);
     this.initializeWorldmapManagers();
     this.configureWorldmapRecoveryLifecycle();
     this.initializeWorldmapSupportManagers();
@@ -1047,7 +1091,7 @@ export default class WorldmapScene extends WarpTravel {
     return false;
   }
 
-  private initializeWorldmapSceneServices(dojoContext: SetupResult): void {
+  private initializeWorldmapSceneServices(gameContext: SetupResult): void {
     this.fxManager = new FXManager(this.scene, 1);
     this.proceduralTerrain = new WorldmapProceduralTerrain();
     this.refreshTerrainPropOccupancy();
@@ -1091,7 +1135,7 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private bindTransactionFailureLifecycle(dojoContext: SetupResult): void {
+  private bindTransactionFailureLifecycle(gameContext: SetupResult): void {
     this.handleTransactionProgress = (payload: { stage?: string; type?: string; explorerId?: number | string }) => {
       if (payload?.type !== "explore") return;
 
@@ -1111,7 +1155,7 @@ export default class WorldmapScene extends WarpTravel {
       }
     };
 
-    dojoContext.network?.provider?.on("transactionProgress", this.handleTransactionProgress);
+    gameContext.network?.provider?.on("transactionProgress", this.handleTransactionProgress);
   }
 
   override applyRenderVisualProfile(features: RenderVisualProfile): void {
@@ -1146,7 +1190,7 @@ export default class WorldmapScene extends WarpTravel {
       this.compactEntityLabelRenderer.createScope("army"),
       this.armyLabelsGroup,
       this,
-      this.dojo,
+      this.game,
       this.visibilityManager,
       this.chunkSize,
       this.chunkWorkQueue,
@@ -1187,7 +1231,7 @@ export default class WorldmapScene extends WarpTravel {
       this.structureLabelsGroup,
       this,
       this.fxManager,
-      this.dojo,
+      this.game,
       this.visibilityManager,
       this.chunkSize,
       this.chunkWorkQueue,
@@ -1204,7 +1248,9 @@ export default class WorldmapScene extends WarpTravel {
       this.spireLabelsGroup,
       this.getTerrainSurface(),
       this.markLabelsDirty,
+      this.createRuleSpires(),
     );
+    this.mapSiteManager = new MapSiteManager(this.scene, this.worldSpatialProjection, this.getTerrainSurface());
     this.chestManager = new ChestManager(
       this.scene,
       this.renderChunkSize,
@@ -1237,15 +1283,6 @@ export default class WorldmapScene extends WarpTravel {
       this.requestChunkRefresh(true, "visibility_recovery");
     };
     document.addEventListener("visibilitychange", this.visibilityChangeHandler);
-
-    this.cosmeticsSubscriptionCleanup = playerCosmeticsStore.subscribe((owner) => {
-      if (!owner) {
-        return;
-      }
-
-      this.armyManager.refreshCosmeticsForOwner(owner);
-      this.structureManager.refreshCosmeticsForOwner(owner);
-    });
   }
 
   private initializeWorldmapSupportManagers(): void {
@@ -1284,7 +1321,7 @@ export default class WorldmapScene extends WarpTravel {
       { selfHealEnabled: WORLDMAP_ZOOM_HARDENING.terrainSelfHeal },
       {
         isBoxVisible: (box) => this.visibilityManager.isBoxVisible(box),
-        getVisibleCellCount: () => this.proceduralTerrain.getVisibleCellCount(),
+        getPresentedCellCount: () => this.proceduralTerrain.getPresentedCellCount(),
         requestChunkRefresh: (force, reason) => this.requestChunkRefresh(force, reason),
         waitForRequestedChunkRefresh: (token) => this.waitForRequestedChunkRefresh(token),
         emitTelemetry: (event, payload) => this.emitZoomHardeningTelemetry(event, payload),
@@ -1297,6 +1334,27 @@ export default class WorldmapScene extends WarpTravel {
       isSwitchedOff: () => this.isSwitchedOff,
       reconcileHexHover: (hex) => this.hoverLabelManager.reconcileHexHover(hex),
     });
+  }
+
+  /** Frontier's spires stand by rule on each researched realm's ring; they move when knowledge or the day changes. */
+  private createRuleSpires(): RuleSpires {
+    const store = this.game.store;
+    const projection = this.worldSpatialProjection;
+    return {
+      hexes: () => expeditionSpires(store, configManager.getActiveGameId(), getBlockTimestamp().currentBlockTimestamp),
+      subscribe: (onChange) => {
+        const unsubscribeFacts = store.subscribe((changes) => {
+          if (changes.some((change) => ["Structure", "RealmKnowledge", "ResearchNode"].includes(change.model)))
+            onChange();
+        });
+        // The day turning over re-projects every realm onto its new site.
+        const unsubscribeStructures = projection.subscribeStructures(() => onChange());
+        return () => {
+          unsubscribeFacts();
+          unsubscribeStructures();
+        };
+      },
+    };
   }
 
   private bindWorldSpatialProjectionLifecycle(): void {
@@ -1323,12 +1381,12 @@ export default class WorldmapScene extends WarpTravel {
       this.showSuggestedArmyDeployment();
     });
     const unsubscribeTerrainEcology = bindWorldmapTerrainEcologyRefresh({
-      onStructureComponentChanged: (current) => {
+      onStructureChanged: (current) => {
         if (current?.entity_id !== undefined) this.refreshStructureMarkersForEntity(current.entity_id);
       },
       projection: this.worldSpatialProjection,
       requestRefresh: () => this.scheduleTerrainEcologyRefresh(),
-      structureComponent: this.dojo.components.Structure,
+      store: this.game.store,
     });
     const unsubscribeArmies = this.worldSpatialProjection.subscribeArmies((published) => {
       this.followSelectedArmyLayer(published);
@@ -1402,7 +1460,7 @@ export default class WorldmapScene extends WarpTravel {
     const facts = this.structureManager.getStructureMarkerFacts(structure.entityId);
     if (!facts) return;
     const position = this.resolveMarkerWorldPosition(structure.hexCoords);
-    const color = playerColorManager.getProfileForUnit(facts.isMine, facts.isAlly, false, facts.ownerAddress).primary;
+    const color = playerColorManager.getProfileForUnit(facts.isMine, facts.isAlly, facts.ownerAddress).primary;
     this.strategicMarkers.setStructure(
       structure.entityId,
       resolveStructureMarkerKind(facts.structureType),
@@ -1416,7 +1474,7 @@ export default class WorldmapScene extends WarpTravel {
     const ownerAddress = this.getArmyOwnerAddress(army.entityId);
     const position = this.resolveMarkerWorldPosition(army.hexCoords);
     const isMine = ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress);
-    const color = playerColorManager.getProfileForUnit(isMine, false, false, ownerAddress).primary;
+    const color = playerColorManager.getProfileForUnit(isMine, false, ownerAddress).primary;
     this.strategicMarkers.setArmy(
       army.entityId,
       army.troopTier as StrategicArmyMarkerTier,
@@ -1427,7 +1485,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private resolveMarkerWorldPosition(hexCoords: WorldSpatialHex): Vector3 {
-    const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
+    const normalized = Position.fromContract({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
     return getWorldPositionForHex({ col: normalized.x, row: normalized.y });
   }
 
@@ -1445,13 +1503,13 @@ export default class WorldmapScene extends WarpTravel {
 
     if (current) this.completePendingExploreEffects(current.hexCoords);
 
-    const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
+    const normalized = Position.fromContract({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
     if (!this.isHexInRetainedRenderArea(normalized.x, normalized.y)) {
       return;
     }
 
     if (!previous && current) {
-      const origin = source ? new Position({ x: source.col, y: source.row }).getNormalized() : undefined;
+      const origin = source ? Position.fromContract({ x: source.col, y: source.row }).getNormalized() : undefined;
       this.proceduralTerrain.queueShroudReveal(
         normalized.x,
         normalized.y,
@@ -1485,7 +1543,10 @@ export default class WorldmapScene extends WarpTravel {
   private syncProjectedArmyPathfinding(changes: readonly ArmySpatialProjectionChange[]): void {
     changes.forEach(({ previous, current }) => {
       if (previous) {
-        const previousHex = new Position({ x: previous.hexCoords.col, y: previous.hexCoords.row }).getNormalized();
+        const previousHex = Position.fromContract({
+          x: previous.hexCoords.col,
+          y: previous.hexCoords.row,
+        }).getNormalized();
         const stayedAtPreviousHex =
           current?.hexCoords.col === previous.hexCoords.col && current.hexCoords.row === previous.hexCoords.row;
         if (!stayedAtPreviousHex && this.isHexInRetainedRenderArea(previousHex.x, previousHex.y)) {
@@ -1494,11 +1555,14 @@ export default class WorldmapScene extends WarpTravel {
       }
 
       if (current) {
-        const currentHex = new Position({ x: current.hexCoords.col, y: current.hexCoords.row }).getNormalized();
+        const currentHex = Position.fromContract({
+          x: current.hexCoords.col,
+          y: current.hexCoords.row,
+        }).getNormalized();
         if (this.isHexInRetainedRenderArea(currentHex.x, currentHex.y)) {
           gameWorkerManager.updateArmyHex(currentHex.x, currentHex.y, {
             id: current.entityId,
-            owner: this.getArmyOwnerAddress(current.entityId) ?? 0n,
+            owner: this.getArmyOwnerAddress(current.entityId),
           });
         }
       }
@@ -1517,7 +1581,7 @@ export default class WorldmapScene extends WarpTravel {
         this.disposePendingMovementVisualLifecycle(entityId);
       },
       refresh: () => this.updateVisibleChunks(true, { reason: "default", triggerReason: "spire_crossing" }),
-      select: (entityId) => this.onArmySelection(entityId, this.getArmyOwnerAddress(entityId) ?? 0n),
+      select: (entityId) => this.onArmySelection(entityId, this.getArmyOwnerAddress(entityId)),
     }).catch((error) => console.error("[WorldmapScene] Failed to follow army crossing", error));
   }
 
@@ -1541,7 +1605,7 @@ export default class WorldmapScene extends WarpTravel {
   ): void {
     const hovered = this.currentHoverLabelHex;
     if (!hovered) return;
-    const contract = new Position({ x: hovered.col, y: hovered.row }).getContract();
+    const contract = Position.fromNormalized({ x: hovered.col, y: hovered.row }).getContract();
     const touchesHoveredHex = changes.some(
       ({ previous, current }) =>
         isSameWorldSpatialHex(previous?.hexCoords, contract) || isSameWorldSpatialHex(current?.hexCoords, contract),
@@ -1552,7 +1616,10 @@ export default class WorldmapScene extends WarpTravel {
   private syncProjectedStructurePathfinding(changes: readonly StructureSpatialProjectionChange[]): void {
     changes.forEach(({ previous, current }) => {
       if (previous && !previous.reserved) {
-        const previousHex = new Position({ x: previous.hexCoords.col, y: previous.hexCoords.row }).getNormalized();
+        const previousHex = Position.fromContract({
+          x: previous.hexCoords.col,
+          y: previous.hexCoords.row,
+        }).getNormalized();
         const currentStayedAtPreviousHex =
           current?.hexCoords.col === previous.hexCoords.col && current.hexCoords.row === previous.hexCoords.row;
         if (!currentStayedAtPreviousHex && this.isHexInRetainedRenderArea(previousHex.x, previousHex.y)) {
@@ -1561,11 +1628,14 @@ export default class WorldmapScene extends WarpTravel {
       }
 
       if (current && !current.reserved) {
-        const currentHex = new Position({ x: current.hexCoords.col, y: current.hexCoords.row }).getNormalized();
+        const currentHex = Position.fromContract({
+          x: current.hexCoords.col,
+          y: current.hexCoords.row,
+        }).getNormalized();
         if (this.isHexInRetainedRenderArea(currentHex.x, currentHex.y)) {
           gameWorkerManager.updateStructureHex(currentHex.x, currentHex.y, {
             id: current.entityId,
-            owner: this.getStructureOwnerAddress(current.entityId) ?? 0n,
+            owner: this.getStructureOwnerAddress(current.entityId),
           });
         }
       }
@@ -1596,6 +1666,7 @@ export default class WorldmapScene extends WarpTravel {
     this.combatPresentation?.setVisible(ladder.fx);
     this.reservedHyperstructureManager.setModelVisible(ladder.structureModels);
     this.spireManager.setModelVisible(ladder.structureModels);
+    this.mapSiteManager.setModelVisible(ladder.structureModels);
     this.strategicMarkers.setVisible(ladder.band === CameraView.Far);
     this.commitStrategicMarkers();
     this.refreshLabelPriorityContext();
@@ -1621,8 +1692,7 @@ export default class WorldmapScene extends WarpTravel {
 
   /** Top-10 by the live leaderboard; recomputed only when a label-priority refresh asks for it. */
   private resolveTopOwnerAddresses(): ReadonlySet<string> {
-    const leaderboard = LeaderboardManager.instance(this.dojo.components);
-    leaderboard.updatePoints();
+    const leaderboard = LeaderboardManager.instance(this.game.store);
     const top = new Set<string>();
     leaderboard.playersByRank.slice(0, TOP_OWNER_LABEL_COUNT).forEach(([address]: [bigint, number]) => {
       const key = normalizeOwnerAddress(address);
@@ -1640,15 +1710,80 @@ export default class WorldmapScene extends WarpTravel {
     this.registerBattleWorldUpdateSubscriptions();
     this.registerExplorerRewardWorldUpdateSubscriptions();
     this.registerRelicChestWorldUpdateSubscriptions();
+    this.registerSitePayoutWorldUpdateSubscriptions();
+    this.registerArmyProgressWorldUpdateSubscriptions();
   }
 
-  // A flourish only, for crates inside the loaded chunk: the relics themselves land in RECS on the explorer,
+  /**
+   * The player's own army progressing (design §3.11 §2): an XP gain floats "+N XP" from the army and each level gained
+   * plays its beat with a ring burst there. A progress row arriving with the snapshot is history, not a gain; the
+   * army's card renders the fact, and this is only the flourish.
+   */
+  private registerArmyProgressWorldUpdateSubscriptions(): void {
+    this.addWorldUpdateSubscription(
+      this.game.store.subscribe((changes) => {
+        for (const change of changes) {
+          if (change.model !== "ArmyProgress" || !change.previous || !change.current) continue;
+          if (change.current.game_id !== configManager.getActiveGameId()) continue;
+          const owner = this.getEntityOwnerAddress(change.current.explorer_id);
+          if (owner === undefined || !isAddressEqualToAccount(owner)) continue;
+          this.playOwnArmyProgress(change.previous, change.current);
+        }
+      }),
+    );
+  }
+
+  private playOwnArmyProgress(before: ArmyProgressFacts, after: ArmyProgressFacts): void {
+    const rules = this.game.store.require("ArmyProgressionRules", { game_id: after.game_id });
+    const { xp, levels } = progressChange(before, after, rules);
+    if (xp <= 0 && levels <= 0) return;
+    const hex = this.getArmyDisplayPosition(after.explorer_id);
+    playArmyProgress({
+      xp,
+      levels,
+      at: hex ? projectHexToScreen(hex, this.camera) : null,
+      burst: () => {
+        if (!hex) return;
+        const world = getWorldPositionForHex(hex);
+        this.playBurst(new Vector3(world.x, 0.1, world.z), "level-up", 1);
+      },
+    });
+  }
+
+  /**
+   * The player's own site cleared (design §3.11 §3): the guard falls with a dust burst on its tile, the card slides up
+   * and the payout flies home. The story only starts the flourish; the balance and the tile render from their facts.
+   */
+  private registerSitePayoutWorldUpdateSubscriptions(): void {
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.SitePayouts.onSitePayout((payout) => {
+        if (getActiveGameSyncRuntime()?.getStatus() !== "running") return;
+        if (payout.ownerAddress === null || !isAddressEqualToAccount(payout.ownerAddress)) return;
+        const tile = Position.fromContract(payout.coord).getNormalized();
+        const hex = { col: tile.x, row: tile.y };
+        // The fallen site's tile card goes with it; the card of what it paid takes its place.
+        const selectedHex = useUIStore.getState().selectedHex;
+        if (selectedHex?.col === payout.coord.x && selectedHex.row === payout.coord.y) this.state.setSelectedHex(null);
+        playSiteClear({
+          clear: payout,
+          troopsLost: payout.troopsLost,
+          at: projectHexToScreen(hex, this.camera),
+          burst: () => {
+            const world = getWorldPositionForHex(hex);
+            this.playBurst(new Vector3(world.x, 0.1, world.z), "site.clear", 1);
+          },
+        });
+      }),
+    );
+  }
+
+  // A flourish only, for crates inside the loaded chunk: the relics themselves land in native store on the explorer,
   // and the feed row (the UI's) covers every opening in the world.
   private registerRelicChestWorldUpdateSubscriptions(): void {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.RelicChest.onRelicChestOpened((opening) => {
         if (this.currentChunk === "null" || getActiveGameSyncRuntime()?.getStatus() !== "running") return;
-        const hex = new Position({ x: opening.hex.x, y: opening.hex.y }).getNormalized();
+        const hex = Position.fromContract({ x: opening.hex.x, y: opening.hex.y }).getNormalized();
         if (!this.isColRowInCurrentRenderBounds(hex.x, hex.y)) return;
         const revealed = this.chestManager.revealRelics({ col: opening.hex.x, row: opening.hex.y }, opening.relics);
         if (!revealed) void this.resourceFXManager.playRelicBurst(opening.relics, hex.x, hex.y);
@@ -1685,7 +1820,7 @@ export default class WorldmapScene extends WarpTravel {
     this.interactionAdapter = createWorldmapInteractionAdapter({
       state: this.state,
       selectedHexManager: this.selectedHexManager,
-      dojoComponents: this.dojo.components,
+      store: this.game.store,
     });
     this.interactiveHexManager.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: false }));
     this.interactiveHexManager.setSurfaceVisibility(false);
@@ -1709,6 +1844,10 @@ export default class WorldmapScene extends WarpTravel {
 
     window.addEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.addEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
+    window.addEventListener(ARMY_SELECT_REQUEST_EVENT, this.armySelectRequestHandler);
+    this.stopChestOpenRequests = onChestOpenRequest(({ explorerId, hex }) => {
+      if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) void this.openChest(explorerId, hex);
+    });
     this.controls.addEventListener("change", this.handleWorldmapControlsChange);
     window.addEventListener("resize", this.handleTerrainViewportResize);
     this.updateCameraTargetHexThrottled();
@@ -1933,6 +2072,25 @@ export default class WorldmapScene extends WarpTravel {
     useCameraZoomStore.getState().setWorldmapDistance(settled);
   }
 
+  public override moveCameraToColRow(col: number, row: number, duration: number = 2) {
+    if (!this.reachWorldOrigin({ col, row })) return;
+    super.moveCameraToColRow(col, row, duration);
+  }
+
+  /**
+   * Keeps a camera target within reach of the floating world origin. Until the first pass is drawn the origin simply
+   * moves to the target; after that everything drawn is placed relative to it, so a far target re-opens the map there.
+   */
+  private reachWorldOrigin(target: HexPosition): boolean {
+    if (isWithinWorldOriginReach(target)) return true;
+    if (!this.worldOriginLocked) {
+      setWorldOrigin(target);
+      return true;
+    }
+    reopenWorldMapAt(target);
+    return false;
+  }
+
   public moveCameraToURLLocation(options: WorldmapUrlLocationMoveOptions = {}): void {
     const shouldRequestRefresh = this.resolveURLLocationRefreshRequest(options);
     const routeWorldPosition = resolvePlayRouteWorldPosition(window.location);
@@ -2030,78 +2188,78 @@ export default class WorldmapScene extends WarpTravel {
   private getEntityOwnerAddress(entityId: ID): ContractAddress | undefined {
     if (this.worldSpatialProjection.getArmy(entityId)) return this.getArmyOwnerAddress(entityId);
 
-    return this.getStructureOwnerAddress(entityId);
+    return this.game.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.owner;
   }
 
-  private getArmyOwnerAddress(entityId: ID): ContractAddress | undefined {
-    const explorer = getComponentValue(this.dojo.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
-    if (!explorer || explorer.owner === 0) return undefined;
+  private getArmyOwnerAddress(entityId: ID): ContractAddress {
+    const explorer = this.game.store.require("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: entityId,
+    });
+    if (explorer.owner === 0) return ContractAddress(0n);
     return this.getStructureOwnerAddress(explorer.owner);
   }
 
   private getArmyOwnerStructureId(entityId: ID): ID | null {
-    const explorer = getComponentValue(this.dojo.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
+    const explorer = this.game.store.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: entityId,
+    });
     return explorer?.owner && explorer.owner !== 0 ? explorer.owner : null;
   }
 
   private getArmyDisplayPosition(entityId: ID): HexPosition | undefined {
     const army = this.worldSpatialProjection.getArmy(entityId);
     if (!army) return undefined;
-    const normalized = new Position({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
+    const normalized = Position.fromContract({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
     return { col: normalized.x, row: normalized.y };
   }
 
   private getArmyAtHex(hexCoords: HexPosition): HexEntityInfo | undefined {
-    const contract = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const renderable = this.worldSpatialProjection
       .getArmiesAtHex({ alt: activeMapLayer(), col: contract.x, row: contract.y })
       .find(({ entityId }) => {
         const pendingPosition = this.getArmyDisplayPosition(entityId);
         return pendingPosition?.col === hexCoords.col && pendingPosition.row === hexCoords.row;
       });
-    return renderable
-      ? { id: renderable.entityId, owner: this.getArmyOwnerAddress(renderable.entityId) ?? 0n }
-      : undefined;
+    return renderable ? { id: renderable.entityId, owner: this.getArmyOwnerAddress(renderable.entityId) } : undefined;
   }
 
   private resolveContractHexKey(hexCoords: HexPosition): string {
-    const contract = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const contract = Position.fromContract({ x: hexCoords.col, y: hexCoords.row }).getContract();
     return `${contract.x},${contract.y}`;
   }
 
-  private getStructureOwnerAddress(entityId: ID): ContractAddress | undefined {
-    const structure = getComponentValue(this.dojo.components.Structure, gameEntityKey([BigInt(entityId)]));
-    return structure ? ContractAddress(structure.owner) : undefined;
+  private getStructureOwnerAddress(entityId: ID): ContractAddress {
+    return ContractAddress(
+      this.game.store.require("Structure", {
+        game_id: configManager.getActiveGameId(),
+        entity_id: entityId,
+      }).owner,
+    );
   }
 
+  /**
+   * A paid reveal shows its yield on the revealed tile (design §3.11 §4): the player's own flies home to its banked
+   * counter, anyone else's pops and rises with its amount. The event only starts the flourish; counters roll to the
+   * balance fact.
+   */
   private handleExplorerRewardEvent(update: ExplorerRewardSystemUpdate): void {
     if (this.isRewardDebugEnabled()) {
       console.debug("[ExplorerRewardEvent] update", update);
     }
 
-    const { explorerId, resourceId, amount } = update;
-    if (!resourceId) {
-      return;
-    }
-
-    setTimeout(() => {
-      const armyPosition = this.getArmyDisplayPosition(explorerId);
-      if (!armyPosition) {
-        console.warn("ExplorerRewardEvent missing position for reward display", { explorerId, update });
-        return;
-      }
-
-      const resource = findResourceById(resourceId);
-      const text = resource?.trait ? `${resource.trait} found` : undefined;
-      const ownerAddress = this.getEntityOwnerAddress(explorerId);
-      const isOwnArmy = ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress);
-
-      if (isOwnArmy) {
-        playResourceSound(resourceId as ResourcesIds);
-      }
-
-      void this.displayResourceGain(resourceId, amount, armyPosition.col, armyPosition.row, text);
-    }, 500);
+    const { explorerId, resourceId, amount, coord } = update;
+    if (!resourceId) return;
+    const ownerAddress = this.getEntityOwnerAddress(explorerId);
+    const tile = Position.fromContract(coord).getNormalized();
+    playRevealYield({
+      resourceId,
+      amount,
+      from: projectHexToScreen({ col: tile.x, row: tile.y }, this.camera),
+      own: ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress),
+    });
   }
 
   private isRewardDebugEnabled(): boolean {
@@ -2278,13 +2436,16 @@ export default class WorldmapScene extends WarpTravel {
       const didSubmit = await submitActiveWorldBlitzHyperstructureCreation({
         account,
         hexCoords,
+        systemCalls: this.game.systemCalls,
       });
 
       if (!didSubmit) {
         return;
       }
 
-      toast.success("Creating Hyperstructure...", { location: { x: hexCoords.col, y: hexCoords.row } });
+      toast.success("Creating Hyperstructure...", {
+        location: Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract(),
+      });
     } catch (error) {
       console.error("[Worldmap] Failed to create reserved hyperstructure", error);
       toast.error("Unable to create this Hyperstructure right now.");
@@ -2292,21 +2453,16 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private isReservedHyperstructureHex(hexCoords: HexPosition): boolean {
-    const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const contractPosition = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
     return this.worldSpatialProjection
       .getStructuresAtHex({ alt: activeMapLayer(), col: contractPosition.x, row: contractPosition.y })
       .some((structure) => structure.reserved);
   }
 
   private async enterStructureFromWorldmap(structure: HexEntityInfo, hexCoords: HexPosition) {
-    const accountAddress = ContractAddress(useAccountStore.getState().account?.address || "");
-    const isMine = structure.owner === accountAddress;
+    const isMine = isViewerOwner(structure.owner, accountAddress());
 
-    const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    const worldMapPosition =
-      Number.isFinite(Number(contractPosition?.x)) && Number.isFinite(Number(contractPosition?.y))
-        ? { col: Number(contractPosition?.x), row: Number(contractPosition?.y) }
-        : undefined;
+    const worldMapPosition = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row });
 
     const shouldSpectate = this.state.isSpectating || !isMine;
 
@@ -2318,8 +2474,9 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
+  /** What stands on a scene hex (normalized); action paths carry contract hexes and convert with sceneHexOf first. */
   protected getHexagonEntity(hexCoords: HexPosition) {
-    const position = new Position({ x: hexCoords.col, y: hexCoords.row });
+    const position = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row });
     const hex = position.getNormalized();
     const contractHex = position.getContract();
     const army = this.getArmyAtHex({ col: hex.x, row: hex.y });
@@ -2327,7 +2484,7 @@ export default class WorldmapScene extends WarpTravel {
       .getStructuresAtHex({ alt: activeMapLayer(), col: contractHex.x, row: contractHex.y })
       .find((candidate) => !candidate.reserved);
     const structure = projectedStructure
-      ? { id: projectedStructure.entityId, owner: this.getStructureOwnerAddress(projectedStructure.entityId) ?? 0n }
+      ? { id: projectedStructure.entityId, owner: this.getStructureOwnerAddress(projectedStructure.entityId) }
       : undefined;
     const projectedChest = this.worldSpatialProjection.getChestsAtHex({
       alt: activeMapLayer(),
@@ -2429,13 +2586,13 @@ export default class WorldmapScene extends WarpTravel {
       resolveSpawnActionPath(hexCoords, getLiveWorldmapEntityActions().actionPaths)
     )
       return;
-    const accountAddress = ContractAddress(useAccountStore.getState().account?.address || "");
+    const viewer = accountAddress();
     const { army, structure, chest } = hexCoords
       ? this.getHexagonEntity(hexCoords)
       : { army: undefined, structure: undefined, chest: undefined };
     const clickPlan = resolveWorldmapHexClickPlan({
       hexCoords,
-      accountAddress,
+      accountAddress: viewer,
       army: army ? { id: army.id, owner: army.owner } : undefined,
       structure: structure ? { id: structure.id, owner: structure.owner } : undefined,
       chest: chest ? { id: chest.id } : undefined,
@@ -2458,7 +2615,8 @@ export default class WorldmapScene extends WarpTravel {
     if (clickPlan.selection.type === "army") {
       // The pulse marks a selected army; the selected-hex fill under it would only tint the unit.
       this.selectedHexManager.resetPosition();
-      this.onArmySelection(clickPlan.selection.entityId, accountAddress);
+      // The plan selects an army only for the viewer who owns it, so a viewer is present here.
+      this.onArmySelection(clickPlan.selection.entityId, viewer!);
       this.logInteractionDebug("army_selected_via_left_click", {
         entityId: clickPlan.selection.entityId,
         hexCoords,
@@ -2486,7 +2644,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   protected handleHexSelection(hexCoords: HexPosition, isMine: boolean) {
-    const contractHexPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const contractHexPosition = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const position = getWorldPositionForHex(hexCoords);
     this.interactionAdapter.selectHex({
       contractHexPosition,
@@ -2847,18 +3005,25 @@ export default class WorldmapScene extends WarpTravel {
     const selectedPath = actionPath.map((path) => path.hex);
 
     const targetHex = selectedPath[selectedPath.length - 1];
-    const target = this.getHexagonEntity(targetHex);
-    const selected = this.getHexagonEntity(selectedPath[0]);
+    const target = actorOnHex(this.getHexagonEntity(sceneHexOf(targetHex)));
+    if (!target) return;
+    // A standing expedition site confirms its attack on its tile card, the HUD's sheet for the selected tile.
+    if (this.isStandingExpeditionSite(target.id)) {
+      this.selectContractHexWithoutFeedback(targetHex);
+      this.state.updateEntityActionHoveredHex(null);
+      return;
+    }
+    const selected = this.getHexagonEntity(sceneHexOf(selectedPath[0]));
 
     const attackerSummary = {
       type: selected.army ? ActorType.Explorer : ActorType.Structure,
       id: selectedEntityId,
-      hex: new Position({ x: selectedPath[0].col, y: selectedPath[0].row }).getContract(),
+      hex: Position.fromContract({ x: selectedPath[0].col, y: selectedPath[0].row }).getContract(),
+      alt: activeMapLayer(),
     };
     const targetSummary = {
-      type: target.army ? ActorType.Explorer : ActorType.Structure,
-      id: target.army?.id || target.structure?.id || 0,
-      hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
+      ...target,
+      hex: Position.fromContract({ x: targetHex.col, y: targetHex.row }).getContract(),
       alt: activeMapLayer(),
     };
 
@@ -2874,6 +3039,14 @@ export default class WorldmapScene extends WarpTravel {
     this.state.updateEntityActionHoveredHex(null);
   }
 
+  private isStandingExpeditionSite(entityId: ID): boolean {
+    const site = this.game.store.get("ExpeditionSite", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: Number(entityId),
+    });
+    return site !== undefined && !site.cleared;
+  }
+
   private onArmySpireTravel(actionPath: ActionPath[], selectedEntityId: ID) {
     const selectedPath = actionPath.map((path) => path.hex);
     const selectedHex = selectedPath[0];
@@ -2882,20 +3055,21 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    const selected = this.getHexagonEntity(selectedHex);
+    const selected = this.getHexagonEntity(sceneHexOf(selectedHex));
     const attacker = this.worldSpatialProjection.getArmy(selectedEntityId);
     if (!attacker) return;
     const traversalAction = resolveSpireTraversalAction({
       attackerHex: { col: attacker.hexCoords.col, row: attacker.hexCoords.row },
       attackerAlt: attacker.hexCoords.alt,
-      getTile: (alt, col, row) => getTileAt(this.dojo.components, alt, col, row),
+      getTile: (alt, col, row) => getTileAt(this.game.store, alt, col, row),
     });
 
     if (traversalAction.kind === "attack") {
       const attackerSummary = {
         type: selected.army ? ActorType.Explorer : ActorType.Structure,
         id: selectedEntityId,
-        hex: new Position({ x: selectedHex.col, y: selectedHex.row }).getContract(),
+        hex: Position.fromContract({ x: selectedHex.col, y: selectedHex.row }).getContract(),
+        alt: activeMapLayer(),
       };
       const targetSummary = {
         type: ActorType.Explorer,
@@ -2939,7 +3113,7 @@ export default class WorldmapScene extends WarpTravel {
 
     if (direction === undefined || direction === null) return;
 
-    const normalized = new Position({ x: targetHex.col, y: targetHex.row }).getNormalized();
+    const normalized = Position.fromContract({ x: targetHex.col, y: targetHex.row }).getNormalized();
     const point = projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera);
     openArmyDeploymentPicker(
       { direction, structureId: selectedEntityId, isExplorer: true },
@@ -2952,7 +3126,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private openTargetActionSurface(targetHex: HexPosition, surface: { id: string; content: ReactNode }): void {
     if (!canIssueOrders()) return;
-    const normalized = new Position({ x: targetHex.col, y: targetHex.row }).getNormalized();
+    const normalized = Position.fromContract({ x: targetHex.col, y: targetHex.row }).getNormalized();
     const point = projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera);
     usePopoverStore.getState().openSurface({
       ...surface,
@@ -3012,13 +3186,16 @@ export default class WorldmapScene extends WarpTravel {
     if (!structure) return;
     intent.setSuggestedArmyDeploymentStructureId(null);
     if (!canIssueOrders()) return;
-    const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
+    const normalized = Position.fromContract({
+      x: structure.hexCoords.col,
+      y: structure.hexCoords.row,
+    }).getNormalized();
     this.onStructureSelection(structure.entityId, { col: normalized.x, row: normalized.y });
     const points = [...getLiveWorldmapEntityActions().actionPaths.values()]
       .filter((path) => ActionPaths.getActionType(path) === ActionType.CreateArmy)
       .map((path) => {
         const target = path[path.length - 1].hex;
-        const hex = new Position({ x: target.col, y: target.row }).getNormalized();
+        const hex = Position.fromContract({ x: target.col, y: target.row }).getNormalized();
         return projectHexToScreen({ col: hex.x, row: hex.y }, this.camera);
       });
     points.sort(
@@ -3034,11 +3211,14 @@ export default class WorldmapScene extends WarpTravel {
     const selectedPath = actionPath.map((path) => path.hex);
     const targetHex = selectedPath[selectedPath.length - 1];
     const selectedHex = selectedPath[0];
-    const selected = this.getHexagonEntity(selectedHex);
-    const target = this.getHexagonEntity(targetHex);
-    const account = ContractAddress(useAccountStore.getState().account?.address || "");
-    const isTargetMine = target.army?.owner === account || target.structure?.owner === account;
-    const isSelectedMine = selected.army?.owner === account || selected.structure?.owner === account;
+    const selected = this.getHexagonEntity(sceneHexOf(selectedHex));
+    const target = this.getHexagonEntity(sceneHexOf(targetHex));
+    const targetActor = actorOnHex(target);
+    if (!targetActor) return;
+    const viewer = accountAddress();
+    const isTargetMine = isViewerOwner(target.army?.owner, viewer) || isViewerOwner(target.structure?.owner, viewer);
+    const isSelectedMine =
+      isViewerOwner(selected.army?.owner, viewer) || isViewerOwner(selected.structure?.owner, viewer);
 
     this.openTargetActionSurface(targetHex, {
       id: "help",
@@ -3047,12 +3227,11 @@ export default class WorldmapScene extends WarpTravel {
           selected={{
             type: selected.army ? ActorType.Explorer : ActorType.Structure,
             id: selectedEntityId,
-            hex: new Position({ x: selectedHex.col, y: selectedHex.row }).getContract(),
+            hex: Position.fromContract({ x: selectedHex.col, y: selectedHex.row }).getContract(),
           }}
           target={{
-            type: target.army ? ActorType.Explorer : ActorType.Structure,
-            id: target.army?.id || target.structure?.id || 0,
-            hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
+            ...targetActor,
+            hex: Position.fromContract({ x: targetHex.col, y: targetHex.row }).getContract(),
           }}
           allowBothDirections={isTargetMine && isSelectedMine}
         />
@@ -3067,21 +3246,15 @@ export default class WorldmapScene extends WarpTravel {
 
     this.showSelectedStructure(selectedEntityId, hexCoords);
 
-    const structureData = getComponentValue(this.dojo.components.Structure, gameEntityKey([BigInt(selectedEntityId)]));
-    const attackRange = structureData
-      ? Math.max(
-          0,
-          ...getGuardsByStructure(structureData)
-            .filter((guard) => Number(guard.troops.count) > 0)
-            .map((guard) => getTroopAttackRange(guard.troops.category)),
-        )
-      : 0;
-
-    const playerAddress = useAccountStore.getState().account?.address;
+    const structureData = this.game.store.get("Structure", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: selectedEntityId,
+    });
+    const viewer = accountAddress();
 
     const canIssueStructureOrders =
       canIssueOrders() && Boolean(structureData && isAddressEqualToAccount(structureData.owner));
-    if (!playerAddress || !canIssueStructureOrders) {
+    if (viewer === null || !canIssueStructureOrders) {
       this.updateEntityActionPaths(new Map());
       this.highlightHexManager.highlightHexes([]);
       showArmyDeploymentTooltip(null);
@@ -3089,17 +3262,17 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const actionPaths = requireActiveGameClient().actions.structurePaths({
-      hex: hexCoords,
+      structureId: selectedEntityId,
       armyHexes: this.buildProjectedArmyActionIndex(),
       exploredHexes: this.buildProjectedExploredTileIndex(),
-      playerAddress: ContractAddress(playerAddress),
-      attackRange,
+      playerAddress: viewer,
     });
 
     for (const [key, path] of actionPaths.getPaths()) {
       const destination = path[path.length - 1].hex;
       const tile = this.worldSpatialProjection.getTileAtHex({ ...destination, alt: activeMapLayer() });
-      if (ActionPaths.getActionType(path) === ActionType.CreateArmy && (!tile || Number(tile.occupierId) !== 0)) {
+      const occupierId = tile ? Number(tile.occupierId) : undefined;
+      if (ActionPaths.getActionType(path) === ActionType.CreateArmy && !isOpenSpawnHex(occupierId)) {
         actionPaths.getPaths().delete(key);
       }
     }
@@ -3110,9 +3283,8 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private showSelectedStructure(structureId: ID, hex: HexPosition): void {
-    const contract = new Position({ x: hex.col, y: hex.row }).getContract();
     this.state.setStructureEntityId(structureId, {
-      worldMapPosition: { col: contract.x, row: contract.y },
+      worldMapPosition: Position.fromNormalized({ x: hex.col, y: hex.row }),
       spectator: !canIssueOrders(),
     });
     const position = getWorldPositionForHex(hex);
@@ -3223,7 +3395,11 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private resolveLiveExplorerTroopsForMovementStamina(entityId: ID) {
-    return getComponentValue(this.dojo.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]))?.troops ?? null;
+    const explorer = this.game.store.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: entityId,
+    });
+    return explorer ? resolveExplorerTroops(this.game.store, explorer) : null;
   }
 
   private logBlockedMovementStamina(input: {
@@ -3361,16 +3537,11 @@ export default class WorldmapScene extends WarpTravel {
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
     const armyPosition = this.getArmyDisplayPosition(selectedEntityId);
-    // Action paths plan from RECS ExplorerTroops — the same coord the submit
-    // freshness guard checks. The visual display position may lag it mid-tween
-    // and is presentation only, never planning input.
-    const explorerTroopsCoord = getComponentValue(
-      this.dojo.components.ExplorerTroops,
-      gameEntityKey([BigInt(selectedEntityId)]),
-    )?.coord;
-    if (!explorerTroopsCoord) {
+    // Paths and the submission freshness guard read the same canonical occupancy.
+    const occupancy = this.game.store.entityOccupancy(configManager.getActiveGameId(), selectedEntityId);
+    if (!occupancy) {
       if (import.meta.env.DEV) {
-        console.error(`[Worldmap] Army ${selectedEntityId} has no ExplorerTroops coord; suppressing action paths`);
+        console.error(`[Worldmap] Army ${selectedEntityId} has no TileOccupancy; suppressing action paths`);
       }
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
       this.showSelectedArmyTile(selectedEntityId);
@@ -3402,7 +3573,7 @@ export default class WorldmapScene extends WarpTravel {
   private buildProjectedChestActionIndex(): Map<number, Map<number, HexEntityInfo>> {
     const index = new Map<number, Map<number, HexEntityInfo>>();
     this.worldSpatialProjection.getChests(activeMapLayer()).forEach((chest) => {
-      const normalized = new Position({ x: chest.hexCoords.col, y: chest.hexCoords.row }).getNormalized();
+      const normalized = Position.fromContract({ x: chest.hexCoords.col, y: chest.hexCoords.row }).getNormalized();
       const row = index.get(normalized.x) ?? new Map<number, HexEntityInfo>();
       row.set(normalized.y, { id: chest.entityId, owner: 0n });
       index.set(normalized.x, row);
@@ -3413,7 +3584,7 @@ export default class WorldmapScene extends WarpTravel {
   private buildProjectedExploredTileIndex(): Map<number, Map<number, BiomeType>> {
     const index = new Map<number, Map<number, BiomeType>>();
     this.worldSpatialProjection.getTiles(activeMapLayer()).forEach((tile) => {
-      const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
+      const normalized = Position.fromContract({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
       const row = index.get(normalized.x) ?? new Map<number, BiomeType>();
       row.set(normalized.y, requireBiomeTypeFromId(tile.biome));
       index.set(normalized.x, row);
@@ -3427,7 +3598,7 @@ export default class WorldmapScene extends WarpTravel {
       const position = this.getArmyDisplayPosition(entityId);
       if (!position) return;
       const row = index.get(position.col) ?? new Map<number, HexEntityInfo>();
-      row.set(position.row, { id: entityId, owner: this.getArmyOwnerAddress(entityId) ?? 0n });
+      row.set(position.row, { id: entityId, owner: this.getArmyOwnerAddress(entityId) });
       index.set(position.col, row);
     });
     return index;
@@ -3438,11 +3609,14 @@ export default class WorldmapScene extends WarpTravel {
     this.worldSpatialProjection.getStructures(activeMapLayer()).forEach((structure) => {
       if (structure.reserved) return;
 
-      const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
+      const normalized = Position.fromContract({
+        x: structure.hexCoords.col,
+        y: structure.hexCoords.row,
+      }).getNormalized();
       const row = index.get(normalized.x) ?? new Map<number, HexEntityInfo>();
       row.set(normalized.y, {
         id: structure.entityId,
-        owner: this.getStructureOwnerAddress(structure.entityId) ?? 0n,
+        owner: this.getStructureOwnerAddress(structure.entityId),
       });
       index.set(normalized.x, row);
     });
@@ -3521,12 +3695,42 @@ export default class WorldmapScene extends WarpTravel {
     })();
   }
 
-  /** Right-click on a crate with the adjacent army selected opens it; the reveal comes back as an event. */
+  /** Right-click on a chest with the adjacent army selected opens it. */
   private onChestSelection(actionPath: ActionPath[], selectedEntityId: ID) {
+    void this.openChest(selectedEntityId, actionPath[actionPath.length - 1].hex);
+  }
+
+  /**
+   * The one chest opener, for a tap here or the HUD's request: in a game of expedition chests (it has ChestRules) the
+   * chest's moment holds on the tile while the command goes out, and ends if it is refused; a relic crate only sends it.
+   * The result comes back as its story.
+   */
+  private async openChest(explorerId: ID, hex: HexPosition): Promise<void> {
     const account = useAccountStore.getState().account;
     if (!account) return;
-    const targetHex = actionPath[actionPath.length - 1].hex;
-    void openRelicCrate({ systemCalls: this.dojo.systemCalls, account, explorerId: selectedEntityId, hex: targetHex });
+    const expedition = this.game.store.get("ChestRules", { game_id: configManager.getActiveGameId() }) !== undefined;
+    const opening = {
+      gameId: configManager.getActiveGameId(),
+      explorerId,
+      hex: { ...hex, alt: useUIStore.getState().mapLayer },
+    };
+    if (expedition) this.holdExpeditionChest(opening);
+    const sent = await openRelicCrate({ systemCalls: this.game.systemCalls, account, explorerId, hex });
+    if (expedition) {
+      if (sent) confirmChestOpening(opening);
+      else cancelChestOpening(opening);
+    }
+  }
+
+  /** The chest's hold: the moment starts from the chest on screen and the world's chest plays its beats. */
+  private holdExpeditionChest(opening: ChestOpening): void {
+    const { hex } = opening;
+    const tile = { col: hex.col - FELT_CENTER(), row: hex.row - FELT_CENTER() };
+    beginChestOpening(projectHexToScreen(tile, this.camera), {
+      opening,
+      focus: () => this.moveCameraToColRow(tile.col, tile.row, 0.4),
+    });
+    this.chestManager.holdChest(hex, readChestBeat);
   }
 
   private keepMovementDestinationSelected(targetHex: HexPosition): void {
@@ -3621,13 +3825,16 @@ export default class WorldmapScene extends WarpTravel {
   private getStructureHexPosition(structureId: ID): HexPosition | undefined {
     const structure = this.worldSpatialProjection.getStructure(structureId);
     if (!structure) return undefined;
-    const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
+    const normalized = Position.fromContract({
+      x: structure.hexCoords.col,
+      y: structure.hexCoords.row,
+    }).getNormalized();
     return { col: normalized.x, row: normalized.y };
   }
 
   private refreshTerrainPropOccupancy(): void {
     this.proceduralTerrain.refreshPropOccupancy((col, row) => {
-      const contract = new Position({ x: col, y: row }).getContract();
+      const contract = Position.fromNormalized({ x: col, y: row }).getContract();
       const hex = { col: contract.x, row: contract.y };
       return (
         this.worldSpatialProjection.getStructuresAtHex({ ...hex, alt: activeMapLayer() }).length > 0 ||
@@ -3644,7 +3851,7 @@ export default class WorldmapScene extends WarpTravel {
     surfacePresentation = this.getTerrainCellSurfacePresentation(col, row),
   ): boolean {
     if (surfacePresentation === "ethereal") return true;
-    const contract = new Position({ x: col, y: row }).getContract();
+    const contract = Position.fromNormalized({ x: col, y: row }).getContract();
     return (
       this.worldSpatialProjection.getStructuresAtHex({ alt: activeMapLayer(), col: contract.x, row: contract.y })
         .length > 0
@@ -3652,7 +3859,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getTerrainCellSurfacePresentation(col: number, row: number): "ethereal" | undefined {
-    const contract = new Position({ x: col, y: row }).getContract();
+    const contract = Position.fromNormalized({ x: col, y: row }).getContract();
     const tile = this.worldSpatialProjection.getTileAtHex({
       alt: activeMapLayer(),
       col: contract.x,
@@ -3673,10 +3880,10 @@ export default class WorldmapScene extends WarpTravel {
       attachManagerLabels: () => this.attachWorldmapManagerLabels(),
       registerStoreSubscriptions: () => {
         this.registerStoreSubscriptions();
-        // World-update (RECS→scene) listeners are disposed on every switch-off but were
+        // World-update (native store→scene) listeners are disposed on every switch-off but were
         // only registered in the constructor, leaving the map permanently deaf after any
         // scene switch (armies never re-appear: unlike tiles/structures they have no
-        // scene-local repair path). Re-arming here also replays existing RECS entities
+        // scene-local repair path). Re-arming here also replays existing native store entities
         // (runOnInit), so re-entry re-adds anything missed while the listeners were dead.
         this.registerWorldUpdateSubscriptions();
       },
@@ -3772,6 +3979,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async commitCriticalWorldmapPass(phase: WorldmapWarpTravelPhase): Promise<void> {
+    this.worldOriginLocked = true;
     const startedAt = performance.now();
     await completeWorldmapInteractiveRefresh({
       phase,
@@ -4542,7 +4750,6 @@ export default class WorldmapScene extends WarpTravel {
         z: focusPoint.z,
       },
       generation: nextGeneration,
-      hexSize: HEX_SIZE,
       paddingHexes: WORLDMAP_CHUNK_POLICY.visualPresentation.viewportPaddingHexes,
       pageOrigin: this.getVisualTerrainPageOrigin(),
       pageSize: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize,
@@ -5665,6 +5872,7 @@ export default class WorldmapScene extends WarpTravel {
   private regroundTerrainPlacements(): void {
     this.structureManager.refreshTerrainPlacement();
     this.spireManager.refreshTerrainPlacement();
+    this.mapSiteManager.refreshTerrainPlacement();
     this.reservedHyperstructureManager.refreshTerrainPlacement();
     this.chestManager.refreshTerrainPlacement();
     this.armyManager.refreshTerrainPlacement();
@@ -5748,7 +5956,10 @@ export default class WorldmapScene extends WarpTravel {
     return collectWorldmapTerrainEcologyAnchors({
       cells,
       getStructureFacts: (entityId) => {
-        const component = getComponentValue(this.dojo.components.Structure, gameEntityKey([BigInt(entityId)]));
+        const component = this.game.store.get("Structure", {
+          game_id: configManager.getActiveGameId(),
+          entity_id: entityId,
+        });
         return component
           ? {
               base: {
@@ -5761,7 +5972,7 @@ export default class WorldmapScene extends WarpTravel {
           : undefined;
       },
       normalizeStructureHex: (hex) => {
-        const normalized = new Position({ x: hex.col, y: hex.row }).getNormalized();
+        const normalized = Position.fromContract({ x: hex.col, y: hex.row }).getNormalized();
         return { col: normalized.x, row: normalized.y };
       },
       projection: this.worldSpatialProjection,
@@ -5956,7 +6167,7 @@ export default class WorldmapScene extends WarpTravel {
       this.worldSpatialProjection.getTilesInBounds(this.toContractBounds(bounds)).forEach((tile) => {
         if (retainedTileIds.has(tile.spatialId)) return;
         retainedTileIds.add(tile.spatialId);
-        const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
+        const normalized = Position.fromContract({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
         exploredTiles.push({
           biome: requireBiomeTypeFromId(tile.biome),
           col: normalized.x,
@@ -5977,12 +6188,15 @@ export default class WorldmapScene extends WarpTravel {
           return;
         }
         retainedStructureIds.add(structure.entityId);
-        const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
+        const normalized = Position.fromContract({
+          x: structure.hexCoords.col,
+          y: structure.hexCoords.row,
+        }).getNormalized();
         structures.push({
           col: normalized.x,
           info: {
             id: structure.entityId,
-            owner: this.getStructureOwnerAddress(structure.entityId) ?? 0n,
+            owner: this.getStructureOwnerAddress(structure.entityId),
           },
           row: normalized.y,
         });
@@ -6001,12 +6215,12 @@ export default class WorldmapScene extends WarpTravel {
           return;
         }
         retainedArmyIds.add(army.entityId);
-        const normalized = new Position({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
+        const normalized = Position.fromContract({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
         armies.push({
           col: normalized.x,
           info: {
             id: army.entityId,
-            owner: this.getArmyOwnerAddress(army.entityId) ?? 0n,
+            owner: this.getArmyOwnerAddress(army.entityId),
           },
           row: normalized.y,
         });
@@ -6312,7 +6526,7 @@ export default class WorldmapScene extends WarpTravel {
   private syncExploredTilesFromProjection(tiles: readonly TileSpatialRenderable[]): number {
     let syncedTileCount = 0;
     for (const tile of tiles) {
-      const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
+      const normalized = Position.fromContract({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
       const biome = requireBiomeTypeFromId(tile.biome);
       const existingBiome = this.exploredTiles.get(normalized.x)?.get(normalized.y);
       if (existingBiome === biome) {
@@ -6745,6 +6959,9 @@ export default class WorldmapScene extends WarpTravel {
 
   async updateVisibleChunks(force: boolean, options: WorldmapVisibleChunkUpdateOptions): Promise<boolean> {
     if (this.isSwitchedOff) {
+      return false;
+    }
+    if (!this.reachWorldOrigin(this.getCameraTargetHex())) {
       return false;
     }
     incrementWorldmapRenderCounter("updateVisibleChunksCalls");
@@ -7882,7 +8099,7 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
     this.pendingExploreLatencyActions.clear();
     if (this.handleTransactionProgress) {
-      this.dojo.network?.provider?.off("transactionProgress", this.handleTransactionProgress);
+      this.game.network?.provider?.off("transactionProgress", this.handleTransactionProgress);
     }
     this.unregisterWorldmapRecoveryHandle?.();
     this.unregisterWorldmapRecoveryHandle = null;
@@ -7892,6 +8109,7 @@ export default class WorldmapScene extends WarpTravel {
       structureManager: this.structureManager,
       reservedHyperstructureManager: this.reservedHyperstructureManager,
       spireManager: this.spireManager,
+      mapSiteManager: this.mapSiteManager,
       chestManager: this.chestManager,
       fxManager: this.fxManager,
       resourceFXManager: this.resourceFXManager,
@@ -7904,6 +8122,8 @@ export default class WorldmapScene extends WarpTravel {
     window.removeEventListener("resize", this.handleTerrainViewportResize);
     window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
+    window.removeEventListener(ARMY_SELECT_REQUEST_EVENT, this.armySelectRequestHandler);
+    this.stopChestOpenRequests?.();
     this.clearCache();
 
     // Dispose hover label and selected hex managers to release Three.js resources
@@ -7914,8 +8134,6 @@ export default class WorldmapScene extends WarpTravel {
       document.removeEventListener("visibilitychange", this.visibilityChangeHandler);
       this.visibilityChangeHandler = undefined;
     }
-    this.cosmeticsSubscriptionCleanup?.();
-    this.cosmeticsSubscriptionCleanup = undefined;
     this.chunkWorkQueue.dispose();
     this.proceduralTerrain.dispose();
     this.strategicMarkers.dispose();
@@ -7940,50 +8158,10 @@ export default class WorldmapScene extends WarpTravel {
     this.isUrlChangedListenerAttached = listenerDecision.nextIsUrlChangedListenerAttached;
   }
 
-  /**
-   * Display a resource gain/loss effect at a hex position
-   * @param resourceId The resource ID from ResourcesIds
-   * @param amount Amount of resource (positive for gain, negative for loss)
-   * @param col Hex column
-   * @param row Hex row
-   * @param text Optional text to display below the resource
-   */
-  public displayResourceGain(
-    resourceId: number,
-    amount: number,
-    col: number,
-    row: number,
-    text?: string,
-  ): Promise<void> {
-    return this.resourceFXManager.playResourceFx(resourceId, amount, col, row, text, { duration: 3.0 });
-  }
-
-  /**
-   * Display multiple resource changes in sequence
-   * @param resources Array of resource changes to display
-   * @param col Hex column
-   * @param row Hex row
-   */
-  public displayMultipleResources(
-    resources: Array<{ resourceId: number; amount: number; text?: string }>,
-    col: number,
-    row: number,
-  ): Promise<void> {
-    return this.resourceFXManager.playMultipleResourceFx(resources, col, row);
-  }
-
   private async selectNextArmy(): Promise<void> {
-    if (this.selectableArmies.length === 0) return;
-    const account = ContractAddress(useAccountStore.getState().account?.address || "");
-    this.isShortcutArmySelectionInFlight = true;
-    if (this.chunkRefreshTimeout !== null || this.chunkRefreshRunning) {
-      this.pendingChunkRefreshUiReason = resolvePendingChunkRefreshUiReason({
-        currentReason: this.pendingChunkRefreshUiReason,
-        isShortcutArmySelectionInFlight: true,
-      });
-    }
-
-    try {
+    const account = accountAddress();
+    if (this.selectableArmies.length === 0 || account === null) return;
+    await this.runShortcutArmySelection(async () => {
       // Find the next army that can actually be selected.
       let attempts = 0;
       while (attempts < this.selectableArmies.length) {
@@ -8013,57 +8191,82 @@ export default class WorldmapScene extends WarpTravel {
           attempts++;
           continue;
         }
-        this.moveCameraToColRow(resolvedPosition.col, resolvedPosition.row, SHORTCUT_NAVIGATION_DURATION_SECONDS);
-
-        try {
-          await this.refreshChunksAfterShortcutNavigation(resolvedPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
-        } catch (error) {
-          if (import.meta.env.DEV) {
-            console.error(
-              `[WorldMap] Failed to update visible chunks while cycling armies (entityId=${army.entityId}):`,
-              error,
-            );
-          }
-        }
-
-        this.handleHexSelection(resolvedPosition, true);
-        let selectionSucceeded = this.onArmySelection(army.entityId, account, {
-          deferDuringChunkTransition: false,
-        });
-
-        if (!selectionSucceeded) {
-          try {
-            await this.updateVisibleChunks(true, {
-              reason: "shortcut",
-              triggerReason: "army_shortcut_selection_fallback",
-            });
-          } catch (error) {
-            if (import.meta.env.DEV) {
-              console.warn(
-                `[WorldMap] Forced chunk refresh failed while selecting army (entityId=${army.entityId}):`,
-                error,
-              );
-            }
-          }
-
-          selectionSucceeded = this.onArmySelection(army.entityId, account, {
-            deferDuringChunkTransition: false,
-          });
-        }
-
-        if (selectionSucceeded) {
-          this.state.setLeftNavigationView(LeftView.EntityView);
-        } else {
-          // Army not yet rendered in this chunk — queue recovery so it gets
-          // selected once the chunk finishes loading instead of skipping it.
-          this.queueArmySelectionRecovery(army.entityId, account);
-          this.state.setLeftNavigationView(LeftView.EntityView);
-        }
+        await this.focusAndSelectArmy(army.entityId, resolvedPosition, account);
         // Always stop on this army — don't skip to the next one,
         // which would cause the camera to flicker between positions.
         break;
       }
       // If all armies have pending movements, do nothing
+    });
+  }
+
+  /** The HUD's army dock picked this army: frame it and select it the way the Tab shortcut does. */
+  private async selectRequestedArmy(entityId: number): Promise<void> {
+    const account = accountAddress();
+    const position = this.getArmyDisplayPosition(entityId);
+    if (account === null || !position) return;
+    await this.runShortcutArmySelection(() => this.focusAndSelectArmy(entityId, position, account));
+  }
+
+  private async focusAndSelectArmy(
+    entityId: number,
+    resolvedPosition: { col: number; row: number },
+    account: ContractAddress,
+  ): Promise<void> {
+    this.moveCameraToColRow(resolvedPosition.col, resolvedPosition.row, SHORTCUT_NAVIGATION_DURATION_SECONDS);
+
+    try {
+      await this.refreshChunksAfterShortcutNavigation(resolvedPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error(`[WorldMap] Failed to update visible chunks while cycling armies (entityId=${entityId}):`, error);
+      }
+    }
+
+    this.handleHexSelection(resolvedPosition, true);
+    let selectionSucceeded = this.onArmySelection(entityId, account, {
+      deferDuringChunkTransition: false,
+    });
+
+    if (!selectionSucceeded) {
+      try {
+        await this.updateVisibleChunks(true, {
+          reason: "shortcut",
+          triggerReason: "army_shortcut_selection_fallback",
+        });
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn(`[WorldMap] Forced chunk refresh failed while selecting army (entityId=${entityId}):`, error);
+        }
+      }
+
+      selectionSucceeded = this.onArmySelection(entityId, account, {
+        deferDuringChunkTransition: false,
+      });
+    }
+
+    if (selectionSucceeded) {
+      this.state.setLeftNavigationView(LeftView.EntityView);
+    } else {
+      // Army not yet rendered in this chunk — queue recovery so it gets
+      // selected once the chunk finishes loading instead of skipping it.
+      this.queueArmySelectionRecovery(entityId, account);
+      this.state.setLeftNavigationView(LeftView.EntityView);
+    }
+  }
+
+  /** Shortcut selections hold chunk refreshes on the shortcut's reason until the camera and chunks settle. */
+  private async runShortcutArmySelection(select: () => Promise<void>): Promise<void> {
+    this.isShortcutArmySelectionInFlight = true;
+    if (this.chunkRefreshTimeout !== null || this.chunkRefreshRunning) {
+      this.pendingChunkRefreshUiReason = resolvePendingChunkRefreshUiReason({
+        currentReason: this.pendingChunkRefreshUiReason,
+        isShortcutArmySelectionInFlight: true,
+      });
+    }
+
+    try {
+      await select();
     } finally {
       await settleWorldmapShortcutSelectionProtection({
         awaitActiveChunkSwitch: this.globalChunkSwitchPromise
@@ -8253,6 +8456,7 @@ export default class WorldmapScene extends WarpTravel {
     this.structureManager.resetLayer();
     this.chestManager.resetLayer();
     this.reservedHyperstructureManager.resetLayer();
+    this.mapSiteManager.resetLayer();
     this.strategicMarkers.clear();
   }
 
@@ -8266,6 +8470,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     this.storeSubscriptions = registerWorldmapStoreBridge({
+      facts: this.game.store,
       onSelectableArmiesChanged: (selectableArmies) => this.updateSelectableArmies(selectableArmies),
       onPlayerStructuresChanged: (playerStructures) => this.updatePlayerStructures(playerStructures),
       onIncomingTroopArrivalsChanged: (publicIncomingTroopArrivalsByStructure) => {
@@ -8390,6 +8595,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private syncStateFromStore() {
     syncWorldmapStoreBridgeState({
+      facts: this.game.store,
       isInteractionOwner: this.isInteractionOwner(),
       onSkippedWithoutOwnership: () => {
         this.logInteractionDebug("sync_state_from_store_skipped_without_ownership", {
@@ -8537,17 +8743,21 @@ export default class WorldmapScene extends WarpTravel {
       this.structureIndex = fullIndex;
     }
 
-    navigateToStructure(structure.position.x, structure.position.y, "map");
-    this.handleHexSelection({ col: structure.position.x, row: structure.position.y }, true);
-    this.onStructureSelection(structure.entityId, { col: structure.position.x, row: structure.position.y });
+    const normalizedPosition = Position.fromContract({
+      x: structure.position.x,
+      y: structure.position.y,
+    }).getNormalized();
+    const sceneHex = { col: normalizedPosition.x, row: normalizedPosition.y };
+    navigateToStructure(Position.fromContract(structure.position), "map");
+    this.handleHexSelection(sceneHex, true);
+    this.onStructureSelection(structure.entityId, sceneHex);
 
-    const worldMapPosition = { col: Number(structure.position.x), row: Number(structure.position.y) };
+    const worldMapPosition = Position.fromContract(structure.position);
     this.state.setStructureEntityId(structure.entityId, {
       worldMapPosition,
       spectator: this.state.isSpectating,
     });
 
-    const normalizedPosition = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
     this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, SHORTCUT_NAVIGATION_DURATION_SECONDS);
     void this.refreshChunksAfterShortcutNavigation(
       { col: normalizedPosition.x, row: normalizedPosition.y },
@@ -8566,17 +8776,18 @@ export default class WorldmapScene extends WarpTravel {
     this.structureIndex = utilSelectNextStructure(this.playerStructures, this.structureIndex, "map");
     if (this.playerStructures.length > 0) {
       const structure = this.playerStructures[this.structureIndex];
-      // structure.position is in contract coordinates, pass it directly
-      // handleHexSelection will normalize it internally when calling getHexagonEntity
-      this.handleHexSelection({ col: structure.position.x, row: structure.position.y }, true);
-      this.onStructureSelection(structure.entityId, { col: structure.position.x, row: structure.position.y });
-      // Set the structure entity ID in the UI store
-      const worldMapPosition = { col: Number(structure.position.x), row: Number(structure.position.y) };
+      const normalizedPosition = Position.fromContract({
+        x: structure.position.x,
+        y: structure.position.y,
+      }).getNormalized();
+      const sceneHex = { col: normalizedPosition.x, row: normalizedPosition.y };
+      this.handleHexSelection(sceneHex, true);
+      this.onStructureSelection(structure.entityId, sceneHex);
+      const worldMapPosition = Position.fromContract(structure.position);
       this.state.setStructureEntityId(structure.entityId, {
         worldMapPosition,
         spectator: this.state.isSpectating,
       });
-      const normalizedPosition = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
       this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, SHORTCUT_NAVIGATION_DURATION_SECONDS);
       void this.refreshChunksAfterShortcutNavigation(
         { col: normalizedPosition.x, row: normalizedPosition.y },

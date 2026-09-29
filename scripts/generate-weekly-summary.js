@@ -89,12 +89,11 @@ function getChangedFiles(since) {
 
 function getPackageChanges(since) {
   const packages = [
-    "client",
+    "apps/game",
     "packages/core",
-    "packages/dojo",
     "packages/provider",
     "packages/react",
-    "packages/torii",
+    "apps/herald",
     "packages/types",
     "contracts",
   ];

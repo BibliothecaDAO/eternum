@@ -208,7 +208,7 @@ function createLights(): Group {
 
 function primeScenario(runtime: WorldFxGymRuntime): void {
   runtime.worldFx.sync(runtime.fixture.flameEmitters);
-  emitImpactBurst(runtime);
+  emitCues(runtime);
   runtime.worldFx.update(0);
 }
 
@@ -241,15 +241,15 @@ function startAnimation(runtime: WorldFxGymRuntime): () => void {
 
 function advanceRuntime(runtime: WorldFxGymRuntime, deltaSeconds: number): void {
   runtime.worldFx.update(deltaSeconds);
-  if (runtime.fixture.impactCues.length === 0) return;
+  if (runtime.fixture.cues.length === 0) return;
   runtime.elapsedImpactSeconds += Math.min(0.05, Math.max(0, deltaSeconds));
   if (runtime.elapsedImpactSeconds < IMPACT_REPLAY_SECONDS) return;
   runtime.elapsedImpactSeconds %= IMPACT_REPLAY_SECONDS;
-  emitImpactBurst(runtime);
+  emitCues(runtime);
 }
 
-function emitImpactBurst(runtime: WorldFxGymRuntime): void {
-  for (const cue of runtime.fixture.impactCues) runtime.worldFx.emit(cue);
+function emitCues(runtime: WorldFxGymRuntime): void {
+  for (const cue of runtime.fixture.cues) runtime.worldFx.emit(cue);
 }
 
 function renderFrame(runtime: WorldFxGymRuntime): void {
@@ -279,7 +279,7 @@ function createHandle(
     },
     emitBurst: () => {
       if (disposed) return;
-      emitImpactBurst(runtime);
+      emitCues(runtime);
       runtime.worldFx.update(0);
       renderFrame(runtime);
     },

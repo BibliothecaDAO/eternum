@@ -1,0 +1,164 @@
+name: validation
+
+on:
+  pull_request:
+  push:
+    branches: [next, "native-*"]
+
+permissions:
+  contents: read
+
+# A push run scopes itself from the previous push, so it must never be cancelled or replaced: each push is its own
+# group. A pull request scopes from its base, so its newest run covers everything and older ones cancel.
+concurrency:
+  group: validation-${{ github.event.pull_request.number || format('{0}@{1}', github.ref, github.sha) }}
+  cancel-in-progress: true
+
+jobs:
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      client: ${{ steps.paths.outputs.client }}
+      herald: ${{ steps.paths.outputs.herald }}
+      services: ${{ steps.paths.outputs.services }}
+      native: ${{ steps.paths.outputs.native }}
+      native_world: ${{ steps.paths.outputs.native_world }}
+      runtime: ${{ steps.paths.outputs.runtime }}
+      terrain: ${{ steps.paths.outputs.terrain }}
+      amm: ${{ steps.paths.outputs.amm }}
+      collectibles: ${{ steps.paths.outputs.collectibles }}
+      mmr: ${{ steps.paths.outputs.mmr }}
+      season_pass: ${{ steps.paths.outputs.season_pass }}
+      contract_scripts: ${{ steps.paths.outputs.contract_scripts }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Select validation areas
+        id: paths
+        env:
+          EVENT: ${{ github.event_name }}
+          BRANCH: ${{ github.ref_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          BASE_SHA=$(bash .github/scripts/diff-base.sh)
+          export BASE_SHA
+          echo "Measuring $HEAD_SHA from $BASE_SHA"
+          python3 - <<'PYTHON'
+          import json, os, subprocess, sys
+          sys.path.insert(0, ".github/scripts")
+          from validation_areas import selected_areas
+          # The integration branch and next run every area: a hand-kept path map can miss an import, and a push
+          # measured from its predecessor would let a red area turn green on a later push that never touched it.
+          # .github/scripts/landing-run.sh lets a publish path trust only these runs.
+          landing = os.environ["EVENT"] == "push" and os.environ["BRANCH"] in ("native-world-foundation", "next")
+          files = subprocess.check_output(["git", "diff", "--name-only", "-z", os.environ["BASE_SHA"], os.environ["HEAD_SHA"]]).decode().split("\0")
+          selected = selected_areas(files, landing)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              for area, enabled in selected.items():
+                  print(f"{area}={str(enabled).lower()}", file=output)
+          print(json.dumps(selected, sort_keys=True))
+          PYTHON
+
+  static:
+    uses: ./.github/workflows/static.yml
+
+  client:
+    needs: scope
+    if: needs.scope.outputs.client == 'true'
+    uses: ./.github/workflows/test-client.yml
+
+  herald:
+    needs: scope
+    if: needs.scope.outputs.herald == 'true'
+    uses: ./.github/workflows/test-herald.yml
+
+  services:
+    needs: scope
+    if: needs.scope.outputs.services == 'true'
+    uses: ./.github/workflows/test-services.yml
+
+  native:
+    needs: scope
+    if: needs.scope.outputs.native == 'true'
+    uses: ./.github/workflows/native-world.yml
+    # Only the called workflow's publish-snforge job uses write, and it runs on push events alone.
+    permissions:
+      contents: write
+    with:
+      world: ${{ needs.scope.outputs.native_world == 'true' }}
+
+  runtime:
+    needs: scope
+    if: needs.scope.outputs.runtime == 'true'
+    uses: ./.github/workflows/test-agent-runtime.yml
+
+  terrain:
+    needs: scope
+    if: needs.scope.outputs.terrain == 'true'
+    uses: ./.github/workflows/verify-terrain.yml
+
+  amm:
+    needs: scope
+    if: needs.scope.outputs.amm == 'true'
+    uses: ./.github/workflows/test-ammv2.yml
+
+  collectibles:
+    needs: scope
+    if: needs.scope.outputs.collectibles == 'true'
+    uses: ./.github/workflows/test-collectibles.yml
+
+  mmr:
+    needs: scope
+    if: needs.scope.outputs.mmr == 'true'
+    uses: ./.github/workflows/test-mmr.yml
+
+  season_pass:
+    needs: scope
+    if: needs.scope.outputs.season_pass == 'true'
+    uses: ./.github/workflows/test-season-pass.yml
+
+  contract_scripts:
+    needs: scope
+    if: needs.scope.outputs.contract_scripts == 'true'
+    uses: ./.github/workflows/test-contract-scripts.yml
+
+  validation:
+    name: validation
+    if: always()
+    needs:
+      [
+        scope,
+        static,
+        client,
+        herald,
+        services,
+        native,
+        runtime,
+        terrain,
+        amm,
+        collectibles,
+        mmr,
+        season_pass,
+        contract_scripts,
+      ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every selected area
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PYTHON'
+          import json, os
+          results = json.loads(os.environ["RESULTS"])
+          scope = results["scope"]
+          passed = scope["result"] == "success" and results["static"]["result"] == "success"
+          for area, job in results.items():
+              if area in ("scope", "static"):
+                  continue
+              expected = "success" if scope["outputs"].get(area) == "true" else "skipped"
+              passed = passed and job["result"] == expected
+          print(json.dumps({"passed": passed, "areas": results}, sort_keys=True))
+          raise SystemExit(0 if passed else 1)
+          PYTHON

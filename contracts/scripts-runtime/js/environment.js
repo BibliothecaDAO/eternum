@@ -44,4 +44,10 @@ export function loadNetworkEnvironment(envFilePath, networkName, secretEnvFilePa
     applyEnvironmentVariablesFromFile(secretEnvFilePath);
   }
   process.env.STARKNET_NETWORK = networkName;
+  // The committed network files carry no RPC: a public node as a default is rate-limited, a keyed one is a secret.
+  if (!process.env.STARKNET_RPC) {
+    throw new Error(
+      `STARKNET_RPC is required for ${networkName}: a keyed RPC URL, from the repo-root .env or your shell`,
+    );
+  }
 }

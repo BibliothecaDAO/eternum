@@ -3,13 +3,13 @@ import { resolveSpectateIntent } from "@/utils/spectator-session";
 
 export interface ResolvedPlayBootRequest {
   bootScene: PlayScene;
-  chain: string;
+  chainId: string;
   entryMode: "player" | "spectator";
   fallbackPolicy: "route" | "synced-structure";
   requestedScene: PlayScene;
   resumeScene: PlayScene | null;
   routeWorldPosition: { col: number; row: number } | null;
-  worldName: string;
+  gameId: number;
 }
 
 type LocationLike = Pick<Location, "pathname" | "search">;
@@ -28,12 +28,12 @@ export const resolvePlayBootRequest = (location: LocationLike): ResolvedPlayBoot
 
   return {
     bootScene: route.bootMode === "map-first" ? "map" : resolvedScene,
-    chain: route.chain,
+    chainId: route.chainId,
     entryMode: resolveSpectateIntent(location) ? "spectator" : "player",
     fallbackPolicy: routeWorldPosition ? "route" : "synced-structure",
     requestedScene,
     resumeScene,
     routeWorldPosition,
-    worldName: route.worldName,
+    gameId: route.gameId,
   };
 };

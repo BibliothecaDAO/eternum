@@ -1,4 +1,3 @@
-import { LeaderboardActivitySync } from "./leaderboard-activity-sync";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { SentryUserSync } from "@/observability/sentry-user-sync";
 import { Leva } from "leva";
@@ -21,12 +20,17 @@ import { TopHeader } from "../features/world/containers/top-header/top-header";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { GameCycleEffects } from "../shared/components/game-cycle-effects";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
-import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { ActionRunners } from "../action-runners";
 import { RelicCrateOpenings } from "../features/military/chest/relic-crate-openings";
-import { RecsStoreBridge } from "./recs-store-bridge";
+import { ChestOpenings } from "../features/military/chest/chest-openings";
+import { ExpeditionRollover } from "../features/world/components/expeditions/expedition-rollover";
+import { FrontierHud } from "../features/frontier/frontier-hud";
+import { useExpeditionRules } from "../features/frontier/frontier-home";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { hudFor } from "./hud-for";
 import { FLIGHT_TRACE_ENABLED, traceFlightCommit } from "@/three/flight-trace";
 import { Profiler } from "react";
+import { MotionLayer } from "@/ui/motion/motion-layer";
 import { PlayOverlayManager } from "./play-overlay-manager";
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
@@ -41,6 +45,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         onDoubleClick={(e) => e.stopPropagation()}
         onMouseMove={(e) => e.stopPropagation()}
         id="world"
+        data-screen-shake
         className="world-selector fixed antialiased top-0 left-0 z-0 w-screen h-dvh overflow-hidden ornate-borders pointer-events-none"
       >
         {/* Game systems */}
@@ -76,20 +81,29 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
  */
 const BackgroundSystems = () => (
   <>
-    <RecsStoreBridge />
-    <LeaderboardActivitySync />
     <ActionRunners />
     <RelicCrateOpenings />
     <BlockTimestampPoller />
     <GameCycleEffects />
-    <ChainTimePoller />
     <BlitzSetHyperstructureShareholdersTo100 />
-    <AutomationManager />
-    <TransferAutomationManager />
-    <ExplorationAutomationManager />
+    <AutomationSystems />
+    <ChestOpenings />
+    <ExpeditionRollover />
     <SentryUserSync />
   </>
 );
+
+/** Automation exists only where the mode sells it; Frontier hides every automated surface. */
+const AutomationSystems = () => {
+  if (!useGameModeConfig().ui.showAutomation) return null;
+  return (
+    <>
+      <AutomationManager />
+      <TransferAutomationManager />
+      <ExplorationAutomationManager />
+    </>
+  );
+};
 
 /**
  * Core game systems that render interactive content.
@@ -109,14 +123,34 @@ const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
  * - Bottom: BottomRightPanel (minimap, feed, tile inspector, chat)
  * Below `lg` the columns collapse into CompactHud: one tab bar and one sheet, laid out for the phone's orientation.
  * The Build / Logistics / Military surfaces and every other popover hang off their own trigger on both layouts.
+ * A Frontier game has its own HUD instead of these regions.
  */
 const HUD = () => {
+  const expeditionRules = useExpeditionRules();
+  const hud = hudFor(useGameModeConfig().id, expeditionRules !== null);
+  return (
+    <>
+      {/* A Frontier game opens its own surfaces (deploy, build) from its HUD; the other modes share these. */}
+      {hud === "frontier" && expeditionRules ? (
+        <FrontierHud rules={expeditionRules} />
+      ) : hud === "shared" ? (
+        <>
+          <ArenaHud />
+          <LeftViewSurfaces />
+        </>
+      ) : null}
+      {/* Every mode's moments fly their sprites on this one layer. */}
+      <MotionLayer />
+      <ContextMenu />
+    </>
+  );
+};
+
+const ArenaHud = () => {
   const lane = useCompactLane();
   return (
     <>
       <TopHeader />
-      <ContextMenu />
-      <LeftViewSurfaces />
       {lane ? (
         <CompactHud lane={lane} />
       ) : (

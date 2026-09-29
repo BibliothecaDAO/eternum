@@ -5,7 +5,6 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
-const DEFAULT_CHAIN = "appchain";
 const DEFAULT_SCENES = ["map", "hex"];
 const REQUIRED_RENDERER_PARITY_FEATURES = new Set(["environmentIbl", "toneMappingControl", "bloom"]);
 const VALID_SCENES = new Set(["map", "hex", "travel"]);
@@ -45,13 +44,13 @@ export function normalizeSceneList(value) {
   return scenes;
 }
 
-export function buildSceneSmokeUrl({ baseUrl, chain = DEFAULT_CHAIN, rendererMode, scene, worldName }) {
-  if (!worldName) {
-    throw new Error("buildSceneSmokeUrl requires a worldName");
+export function buildSceneSmokeUrl({ baseUrl, chainId, gameId, rendererMode, scene }) {
+  if (!chainId || !gameId) {
+    throw new Error("buildSceneSmokeUrl requires a chainId and a gameId");
   }
 
   const url = new URL(baseUrl);
-  url.pathname = `/play/${chain}/${encodeURIComponent(worldName)}/${scene}`;
+  url.pathname = `/g/${chainId}/${gameId}/${scene}`;
   url.searchParams.set("col", "0");
   url.searchParams.set("row", "0");
   url.searchParams.set("spectate", "true");
@@ -83,12 +82,13 @@ export function decodePaddedWorldName(hex) {
   return output;
 }
 
-function resolveHeraldBaseUrl(env = process.env) {
-  return String(env.HERALD_URL || env.VITE_PUBLIC_HERALD_URL || "").replace(/\/+$/, "");
+function resolveShardUrl(env = process.env) {
+  return String(env.SHARD_URL || "").replace(/\/+$/, "");
 }
 
-async function fetchGameNames(heraldBaseUrl, chain) {
-  const response = await fetch(`${heraldBaseUrl}/${chain}/games`, {
+/** The newest game on the shard's directory, named by the shard's chain id and the game's id. */
+async function fetchNewestGame(shardUrl) {
+  const response = await fetch(`${shardUrl}/games`, {
     signal: AbortSignal.timeout(WORLD_DISCOVERY_TIMEOUT_MS),
   });
 
@@ -97,38 +97,28 @@ async function fetchGameNames(heraldBaseUrl, chain) {
   }
 
   const directory = await response.json();
-  if (!Array.isArray(directory?.games)) {
-    return [];
-  }
-
-  return directory.games
-    .toSorted((left, right) => Number(right.game_id) - Number(left.game_id))
-    .map((game) => String(game.name ?? ""))
-    .filter(Boolean);
+  const [newest] = (Array.isArray(directory?.games) ? directory.games : []).toSorted(
+    (left, right) => Number(right.game_id) - Number(left.game_id),
+  );
+  return newest ? { chainId: directory.chain, gameId: Number(newest.game_id) } : null;
 }
 
-async function resolvePersistentWorldGameName(chain) {
-  const heraldBaseUrl = resolveHeraldBaseUrl();
-  if (!heraldBaseUrl) {
-    throw new Error(
-      "No Herald configured for game discovery: set HERALD_URL or VITE_PUBLIC_HERALD_URL, or pass --world.",
-    );
+export async function resolveSceneSmokeGame({ requestedChainId, requestedGameId }) {
+  if (requestedChainId && requestedGameId) {
+    return { chainId: requestedChainId, gameId: requestedGameId };
   }
 
-  const [latestConfiguredGame] = await fetchGameNames(heraldBaseUrl, chain);
-  if (latestConfiguredGame) {
-    return latestConfiguredGame;
+  const shardUrl = resolveShardUrl();
+  if (!shardUrl) {
+    throw new Error("No shard configured for game discovery: set SHARD_URL, or pass --chain-id and --game-id.");
   }
 
-  throw new Error("No indexed game found: pass --world to target one explicitly.");
-}
-
-export async function resolveSceneSmokeWorldName({ chain, requestedWorldName }) {
-  if (requestedWorldName) {
-    return requestedWorldName;
+  const newest = await fetchNewestGame(shardUrl);
+  if (newest) {
+    return newest;
   }
 
-  return resolvePersistentWorldGameName(chain);
+  throw new Error("No indexed game found: pass --chain-id and --game-id to target one explicitly.");
 }
 
 export function evaluateSceneSmokeResult({ canvasExists, errors, expectedPathname, openedUrl, unableToStartCount }) {
@@ -364,19 +354,9 @@ function dumpSceneSmokeFailureDiagnostics({ artifactDir, headed, rendererMode, s
   }
 }
 
-async function runSceneSmoke({
-  artifactDir,
-  baseUrl,
-  chain,
-  headed,
-  rendererMode,
-  scene,
-  sessionToken,
-  waitMs,
-  worldName,
-}) {
+async function runSceneSmoke({ artifactDir, baseUrl, game, headed, rendererMode, scene, sessionToken, waitMs }) {
   const session = `renderer-smoke-${scene}-${rendererMode.replace(/[^a-z0-9-]/gi, "-")}-${sessionToken}`;
-  const url = buildSceneSmokeUrl({ baseUrl, chain, rendererMode, scene, worldName });
+  const url = buildSceneSmokeUrl({ baseUrl, ...game, rendererMode, scene });
 
   runAgentBrowser(session, ["open", url, "--ignore-https-errors"], { headed });
   await sleep(waitMs);
@@ -402,7 +382,7 @@ async function runSceneSmoke({
   const evaluation = evaluateSceneSmokeResult({
     canvasExists,
     errors,
-    expectedPathname: `/play/${chain}/${encodeURIComponent(worldName)}/${scene}`,
+    expectedPathname: `/g/${game.chainId}/${game.gameId}/${scene}`,
     openedUrl,
     unableToStartCount,
   });
@@ -428,14 +408,14 @@ async function runSceneSmoke({
 
 async function main(argv) {
   const baseUrl = readOption(argv, "--base-url", DEFAULT_BASE_URL);
-  const chain = readOption(argv, "--chain", DEFAULT_CHAIN);
   const rendererMode = readOption(argv, "--renderer-mode", "webgpu-auto");
   const scenes = normalizeSceneList(readOption(argv, "--scenes", ""));
   const waitMs = Number(readOption(argv, "--wait-ms", String(DEFAULT_WAIT_MS)));
-  const requestedWorldName = readOption(argv, "--world", "");
+  const requestedChainId = readOption(argv, "--chain-id", "");
+  const requestedGameId = Number(readOption(argv, "--game-id", "0"));
   const headed = readFlag(argv, "--headed");
   const artifactDir = ensureArtifactDir(readOption(argv, "--artifact-dir", ""));
-  const worldName = await resolveSceneSmokeWorldName({ chain, requestedWorldName });
+  const game = await resolveSceneSmokeGame({ requestedChainId, requestedGameId });
   const sessionToken = Date.now().toString(36);
 
   const results = [];
@@ -444,13 +424,12 @@ async function main(argv) {
       await runSceneSmoke({
         artifactDir,
         baseUrl,
-        chain,
+        game,
         headed,
         rendererMode,
         scene,
         sessionToken,
         waitMs,
-        worldName,
       }),
     );
   }

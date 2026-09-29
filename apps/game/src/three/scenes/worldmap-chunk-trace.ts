@@ -37,9 +37,7 @@ export type WorldmapChunkTraceEvent =
   | "reconnect_refresh_queued"
   | "reconnect_refresh_drained"
   | "army_authoritative_sweep"
-  | "army_authoritative_sweep_slow"
-  | "army_recs_sweep_heal"
-  | "army_recs_sweep_slow_pass";
+  | "army_authoritative_sweep_slow";
 
 export interface WorldmapChunkTraceEntry {
   id: number;

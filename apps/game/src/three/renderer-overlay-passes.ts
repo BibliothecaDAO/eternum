@@ -6,9 +6,7 @@ interface OverlayPassRenderer {
   render(scene: Object3D, camera: Camera): void;
 }
 
-export function getRendererOverlayPasses(
-  pipeline: Pick<RendererFramePipeline, "overlayPasses">,
-): RendererOverlayPass[] {
+function getRendererOverlayPasses(pipeline: Pick<RendererFramePipeline, "overlayPasses">): RendererOverlayPass[] {
   return [...(pipeline.overlayPasses ?? [])];
 }
 

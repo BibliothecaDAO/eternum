@@ -41,7 +41,9 @@ export const collapseChanges = (changes: readonly FoldChange[]): FoldChange[] =>
   const byIdentity = new Map<string, FoldChange>();
   for (const change of changes) {
     const entry = ledgerEntry(change);
-    byIdentity.set(rowIdentity(entry.model, entry.key), change);
+    const identity = rowIdentity(entry.model, entry.key);
+    const first = byIdentity.get(identity);
+    byIdentity.set(identity, first ? { ...change, previous: first.previous ?? change.previous } : change);
   }
   return [...byIdentity.values()];
 };
@@ -69,7 +71,8 @@ export class OverlayLedger {
       const held = this.held.get(identity) ?? this.heldBeforeReset.get(identity);
       // A pending write that repeats the confirmed row changes nothing for anyone and stays out of the ledger.
       if (!held && isSameHeldRow(confirmedRow(entry.model, entry.key) ?? null, entry.row)) continue;
-      if (!held || !isSameHeldRow(held.row, entry.row)) delta.push(change);
+      if (!held || !isSameHeldRow(held.row, entry.row))
+        delta.push(change.del ? { ...change, previous: held?.row ?? change.previous } : change);
       this.held.set(identity, entry);
     }
     return delta;
@@ -82,7 +85,8 @@ export class OverlayLedger {
       const entry = ledgerEntry(change);
       const identity = rowIdentity(entry.model, entry.key);
       const held = this.held.get(identity);
-      if (change.event || !held || !isSameHeldRow(held.row, entry.row)) published.push(change);
+      if (change.event || !held || !isSameHeldRow(held.row, entry.row))
+        published.push(change.del ? { ...change, previous: held?.row ?? change.previous } : change);
       this.held.delete(identity);
     }
     return published;
@@ -104,7 +108,9 @@ export class OverlayLedger {
       if (this.held.has(identity)) continue;
       const confirmed = confirmedRow(model, key);
       if (isSameHeldRow(confirmed ?? null, row)) continue;
-      reverts.push(confirmed ? { gameId, set: confirmed } : { del: { key, model }, gameId });
+      reverts.push(
+        confirmed ? { gameId, set: confirmed } : { del: { key, model }, gameId, previous: row ?? undefined },
+      );
     }
     this.heldBeforeReset = new Map();
     return reverts;

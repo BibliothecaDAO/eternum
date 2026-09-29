@@ -1,5 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useBuildings } from "@bibliothecadao/react";
+import { useBuildings } from "@/hooks/helpers/use-buildings";
 import { getProducedResource, RealmInfo as RealmInfoType, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { ProductionWorkflows } from "./production-workflows";
@@ -14,7 +14,7 @@ export const ProductionBody = ({
   onSelectResource: (resource: ResourcesIds | null) => void;
 }) => {
   const mode = useGameModeConfig();
-  const buildings = useBuildings(realm.position.x, realm.position.y);
+  const buildings = useBuildings(realm.structure.entity_id);
   const productionBuildings = buildings.filter((building) => building && getProducedResource(building.category));
   const producedResources = useMemo(
     () =>

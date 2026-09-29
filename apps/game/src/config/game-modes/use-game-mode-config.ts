@@ -1,32 +1,17 @@
-import { useDojo } from "@bibliothecadao/react";
-import { useComponentValue } from "@dojoengine/react";
+import { configManager } from "@bibliothecadao/eternum";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { useMemo } from "react";
 import { getGameModeConfig } from "./index";
-import { resolveGameModeFromBlitzFlag, type ResolvedGameMode } from "./resolved-mode";
-import { worldConfigKey } from "@bibliothecadao/eternum/game-client";
+import { type ResolvedGameMode } from "./resolved-mode";
 
-// Resolved per hook call, not at module level: on the s2 single world the row
-// is keyed by the active game id, which bootstrap sets after modules load.
-const useWorldConfigEntityId = () => useMemo(() => worldConfigKey(), []);
-
-export const useResolvedWorldGameMode = (): ResolvedGameMode => {
-  const {
-    setup: { components },
-  } = useDojo();
-
-  const worldConfig = useComponentValue(components.WorldConfig, useWorldConfigEntityId());
-  const worldBlitzModeOnFlag = worldConfig?.blitz_mode_on;
-
-  return useMemo(() => resolveGameModeFromBlitzFlag(worldBlitzModeOnFlag), [worldBlitzModeOnFlag]);
+const usePresetId = () => {
+  const game = useNativeRow("GameRegistry", { game_id: configManager.getActiveGameId() });
+  if (!game) throw new Error("Native game rules are not synchronized");
+  return game.preset_id;
 };
+export const useResolvedWorldGameMode = (): ResolvedGameMode => useGameModeConfig().id;
 
 export const useGameModeConfig = () => {
-  const {
-    setup: { components },
-  } = useDojo();
-
-  const worldConfig = useComponentValue(components.WorldConfig, useWorldConfigEntityId());
-  const worldBlitzModeOnFlag = worldConfig?.blitz_mode_on;
-
-  return useMemo(() => getGameModeConfig({ blitzModeOn: worldBlitzModeOnFlag }), [worldBlitzModeOnFlag]);
+  const presetId = usePresetId();
+  return useMemo(() => getGameModeConfig(presetId), [presetId]);
 };

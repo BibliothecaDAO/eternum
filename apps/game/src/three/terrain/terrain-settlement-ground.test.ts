@@ -62,7 +62,7 @@ describe("settlement ground", () => {
       const source = request([cell(0, 0, biome)], StructureType.Village);
       expect(prepareTerrainPage(source).request.cells).toEqual(source.cells);
     }
-    const mine = request([cell(0, 0, BiomeType.Ocean)], StructureType.FragmentMine);
+    const mine = request([cell(0, 0, BiomeType.Ocean)], StructureType.Mine);
     expect(prepareTerrainPage(mine).request.cells[0].biome).toBe(BiomeType.Ocean);
     const hidden = request([{ ...cell(0, 0, BiomeType.Ocean), biome: null, explored: false }], StructureType.Camp);
     const page = prepareTerrainPage(hidden);

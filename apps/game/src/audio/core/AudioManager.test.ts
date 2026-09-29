@@ -30,6 +30,7 @@ class FakeGainNode {
 class FakeAudioBufferSourceNode {
   buffer: AudioBuffer | null = null;
   loop = false;
+  detune = { value: 0 };
   onended: (() => void) | null = null;
   private listeners = new Map<string, Set<() => void>>();
 
@@ -130,6 +131,22 @@ describe("AudioManager mixing", () => {
 
     expect(sourceGainNode.gain.value).toBe(TEST_ASSET.volume);
     expect(categoryGainNode.gain.value).toBe(manager.getState().categoryVolumes[AudioCategory.UI]);
+  });
+
+  it("pitches a play by its cents and plays the next one at the asset's own pitch", async () => {
+    const manager = AudioManager.getInstance();
+    await manager.initialize();
+    manager.registerAsset(TEST_ASSET);
+
+    // Each asset has a repeat cooldown, so the second play comes a second later.
+    const now = vi.spyOn(performance, "now").mockReturnValue(10_000);
+    const pitched = await manager.play(TEST_ASSET.id, { detuneCents: 300 });
+    now.mockReturnValue(11_000);
+    const plain = await manager.play(TEST_ASSET.id);
+    now.mockRestore();
+
+    expect(pitched?.detune.value).toBe(300);
+    expect(plain?.detune.value).toBe(0);
   });
 
   it("starts from the rebalanced category defaults", () => {

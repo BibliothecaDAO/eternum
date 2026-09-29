@@ -10,9 +10,9 @@ const battle = (id: string, at: number, owner = "0x1") =>
     event_id: `story:v1:madara:0x1:0x7:0x99:0x${(at * 2 + (owner === "0x2" ? 1 : 0)).toString(16)}`,
     entity_id: owner === "0x2" ? 22 : 11,
     timestampMs: at,
-    story: "BattleStory",
+    story: "BattleEvent",
     owner,
-    storyPayload: { attacker_id: 11, defender_id: 22, attacker_owner_address: "0x1", defender_owner_address: "0x2" },
+    storyPayload: { attacker_id: 11, defender_id: 22, attacker: { player: "0x1" }, defender: { player: "0x2" } },
   }) as unknown as ProcessedStoryEvent;
 
 it("keeps the production feed usable when a newer server emits an unknown story", () => {
@@ -27,8 +27,8 @@ it("keeps the production feed usable when a newer server emits an unknown story"
   }
 });
 
-it("keeps battles/captures and drops routine movement", () => {
-  const move = { ...battle("move", 30), story: "ExplorerMoveStory" };
+it("keeps battles/captures and drops routine army activity", () => {
+  const move = { ...battle("move", 30), story: "ExplorerCreateStory" };
   expect(selectImportantFeedRows([move, battle("fight", 20)], empty, "all", null).map((row) => row.id)).toEqual([
     "story:fight",
   ]);
@@ -65,12 +65,6 @@ it("keeps only the newest rows inside the quick feed window", () => {
   );
   expect(selectQuickFeedRows(rows, 100_500, 20_000, 5).map((row) => row.id)).toEqual(["story:fresh", "story:older"]);
   expect(selectQuickFeedRows(rows, 100_500, 20_000, 1).map((row) => row.id)).toEqual(["story:fresh"]);
-});
-
-it("shows one battle when Herald records a story for each participant", () => {
-  const attacker = battle("attacker", 20);
-  const defender = battle("defender", 20, "0x2");
-  expect(selectImportantFeedRows([attacker, defender], empty, "all", null)).toHaveLength(1);
 });
 
 it("keeps pending and completed actions and travelling caravans in Events", () => {

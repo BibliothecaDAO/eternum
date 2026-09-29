@@ -1,6 +1,4 @@
 import {
-  notificationMatchesSource,
-  automaticPushSourceKey,
   notificationMatchesGame,
   isNotificationGameClient,
   parseNotificationPayload,
@@ -81,7 +79,7 @@ async function handleNotificationMessage(
 async function runNotificationCommand(
   worker: ServiceWorkerGlobalScope,
   source: Client,
-  input: { owner: string; action: string; payload?: unknown; token?: string; id?: string; source?: unknown },
+  input: { owner: string; action: string; payload?: unknown; token?: string; id?: string },
 ) {
   if (input.action === "push-capabilities")
     return { automaticGameAlerts: true, directMessageAlerts: true, gameForegroundLease: true };
@@ -98,7 +96,7 @@ async function runNotificationCommand(
   }
   if (input.action === "prepare-automatic" || input.action === "acknowledge-automatic") {
     if (!isPushDeviceId(input.id)) throw new Error("Invalid automatic registration");
-    await configureAutomaticPush(input.owner, input.id, input.source, input.action === "acknowledge-automatic");
+    await configureAutomaticPush(input.owner, input.id, input.action === "acknowledge-automatic");
     return null;
   }
   if (input.action === "activate-push" || input.action === "forget-push") {
@@ -126,16 +124,7 @@ async function runNotificationCommand(
   if (input.action !== "deliver" && input.action !== "test") throw new Error("Unknown notification command");
   const payload = parseNotificationPayload(input.payload, Date.now());
   if (payload.owner !== input.owner || typeof input.token !== "string") throw new Error("Notification account changed");
-  // Automatic push owns OS delivery on opted-in devices; the live page still renders its activity feed.
-  const automatic = await readPushNotificationDevice();
-  if (
-    input.action === "deliver" &&
-    automatic?.owner === input.owner &&
-    automatic.state === "active" &&
-    automatic.automatic?.acknowledged &&
-    notificationMatchesSource(payload, automatic.automatic)
-  )
-    return "push-owned";
+  // A game alert that also arrives by push claims the same id, so whichever comes second is suppressed.
   if (!notificationMatchesGame(source.url, payload.target, worker.location.origin)) return "game-changed";
   if (!(await claimNotification({ ...payload, id: `${input.owner}:${payload.id}`, token: input.token }, Date.now())))
     return "suppressed";
@@ -175,13 +164,7 @@ async function openNotificationGame(worker: ServiceWorkerGlobalScope, value: unk
     const device = push ? pushDevice : await readNotificationDevice();
     if (device?.owner !== payload.owner) return;
     if (push && (!pushDevice || pushDevice.state !== "active" || pushDevice.id !== push.subscriptionId)) return;
-    if (
-      push?.kind === "game" &&
-      (!pushDevice?.automatic ||
-        !push.source ||
-        automaticPushSourceKey(pushDevice.automatic) !== automaticPushSourceKey(push.source))
-    )
-      return;
+    if (push?.kind === "game" && !pushDevice?.automatic) return;
     const clients = await worker.clients.matchAll({ type: "window", includeUncontrolled: true });
     const matching = clients.find((client) =>
       push?.kind === "direct-message"
@@ -216,13 +199,7 @@ async function receivePushNotification(worker: ServiceWorkerGlobalScope, event: 
     device.state !== "active"
   )
     return;
-  if (
-    envelope.kind === "game" &&
-    (!device.automatic ||
-      !envelope.source ||
-      automaticPushSourceKey(device.automatic) !== automaticPushSourceKey(envelope.source))
-  )
-    return;
+  if (envelope.kind === "game" && !device.automatic) return;
   const payload = envelope.notification;
   if (
     !(await claimNotification(
@@ -231,7 +208,7 @@ async function receivePushNotification(worker: ServiceWorkerGlobalScope, event: 
         id: `${payload.owner}:${payload.id}`,
         token: device.token,
         subscriptionId: device.id,
-        automatic: envelope.kind === "game" ? envelope.source : undefined,
+        gameAlert: envelope.kind === "game",
       },
       Date.now(),
     ))

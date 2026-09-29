@@ -493,7 +493,7 @@ async function createSettlementRealmModel(
   terrain: ProceduralTerrain,
 ): Promise<InstancedModel | null> {
   if (sceneId !== "settlement-regrowth") return null;
-  const realmPath = getStructureModelPaths(false)[StructureType.Realm][0];
+  const realmPath = getStructureModelPaths()[StructureType.Realm][0];
   const gltf = await gltfLoader.loadAsync(realmPath);
   const model = new InstancedModel(gltf, TERRAIN_SETTLEMENT_REGROWTH_SITES.length, false, "Realm");
   const matrix = new Matrix4();

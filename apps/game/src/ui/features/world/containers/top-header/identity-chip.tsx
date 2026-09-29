@@ -1,11 +1,16 @@
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { identityUsername, IDENTITY_POPOVER_ID, useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
+import { AccountStatePrompt } from "@/shell/account-state";
+import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { usePlayers } from "@/hooks/use-player-profile";
+import { gameStructuresView } from "@/sync/fact-views";
 import { resetBootstrap } from "@/init/bootstrap";
 import { buildEntryHref } from "@/play/navigation/play-route";
-import { getActiveWorld } from "@/runtime/world";
+import { getActiveGame } from "@/runtime/world";
 import { BuildingThumbs } from "@/ui/config";
 import Button from "@/ui/design-system/atoms/button";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
@@ -13,7 +18,6 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Popover, SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
-import { IdentityLogin } from "@/ui/modules/identity/identity-login";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { ContractAddress } from "@bibliothecadao/types";
 import { Eye as EyeIcon, Trophy, Loader2 as LoaderIcon } from "@/ui/design-system/atoms/game-icons";
@@ -35,8 +39,8 @@ const useIdentityChipState = (): IdentityChipState => {
   const { status, session } = useIdentitySession();
   const gameplayAddress = useAccountStore((state) => state.account?.address ?? null);
   const provisioningError = useAccountStore((state) => state.provisioningError);
-  const players = useWorldSlicesStore((state) => state.players);
-  const structures = useWorldSlicesStore((state) => state.structures);
+  const players = usePlayers();
+  const structures = useFactView(gameStructuresView);
   const { standingsByAddress } = useInGameLeaderboard();
 
   return useMemo(() => {
@@ -52,13 +56,15 @@ const useIdentityChipState = (): IdentityChipState => {
   }, [gameplayAddress, players, provisioningError, session, standingsByAddress, status, structures]);
 };
 
-/** Player identity opens the leaderboard; other states keep their sign-in surface. */
+/** Player identity opens the leaderboard, a session without a name opens the sign-in flow's name step; other states keep their sign-in surface. */
 export const IdentityChip = ({ compact = false }: { compact?: boolean }) => {
   const state = useIdentityChipState();
   const popoverId = state.kind === "player" ? LEADERBOARD_POPOVER_ID : IDENTITY_POPOVER_ID;
   const isOpen = usePopoverStore((popovers) => popovers.openId === popoverId);
 
-  if (state.kind === "player") return <IdentityChipTrigger state={state} isOpen={isOpen} compact={compact} />;
+  if (state.kind === "player" || state.kind === "unnamed") {
+    return <IdentityChipTrigger state={state} isOpen={isOpen} compact={compact} />;
+  }
   return (
     <Popover
       id={popoverId}
@@ -92,6 +98,7 @@ const IdentityChipTrigger = ({
   compact: boolean;
 }) => {
   const togglePopover = usePopoverStore((popovers) => popovers.toggle);
+  const requestSignIn = useRequestSignIn();
 
   return (
     <button
@@ -99,7 +106,9 @@ const IdentityChipTrigger = ({
       aria-expanded={isOpen}
       aria-label="Identity"
       onClick={() => {
-        if (state.kind === "player") {
+        if (state.kind === "unnamed") {
+          requestSignIn();
+        } else if (state.kind === "player") {
           useSocialStore.setState({ selectedTab: 0, isExpanded: false });
           if (isOpen) usePopoverStore.getState().close(LEADERBOARD_POPOVER_ID);
           else usePopoverStore.getState().openSurface({ id: LEADERBOARD_POPOVER_ID, content: <LeaderboardSurface /> });
@@ -130,7 +139,7 @@ const CompactIdentityLabel = ({ state }: { state: IdentityChipState }) => {
     );
   }
   const Icon = state.kind === "connecting" ? LoaderIcon : EyeIcon;
-  const label = state.kind === "spectating" ? "Spectating" : state.kind === "connecting" ? "Connecting" : "Sign in";
+  const label = compactLabel(state.kind);
   return (
     <>
       <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
@@ -150,6 +159,8 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
           {state.name && <span className="max-w-[140px] truncate">as {state.name}</span>}
         </>
       );
+    case "unnamed":
+      return <span>Choose a name</span>;
     case "signed-out":
       return (
         <>
@@ -182,14 +193,27 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
   }
 };
 
+const compactLabel = (kind: Exclude<IdentityChipState["kind"], "player">): string => {
+  switch (kind) {
+    case "spectating":
+      return "Spectating";
+    case "connecting":
+      return "Connecting";
+    case "unnamed":
+      return "Choose a name";
+    case "signed-out":
+      return "Sign in";
+  }
+};
+
 const Separator = () => <span className="text-gold/50">·</span>;
 
-const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { kind: "player" }> }) => {
+const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { kind: "player" | "unnamed" }> }) => {
   switch (state.kind) {
     case "signed-out":
       return (
         <SignInSurface>
-          You are not signed in, so this game is view only. Sign in with your Starknet identity wallet to play.
+          You are not signed in, so this game is view only. Sign in with your Realms account to play.
         </SignInSurface>
       );
     case "connecting":
@@ -197,7 +221,11 @@ const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { 
         <div className="flex flex-col gap-1">
           <span className={HUD_HEADLINE}>{state.name ?? "Signing in"}</span>
           <span className={HUD_BODY}>Preparing your gameplay account…</span>
-          {state.error && <span className="text-xs text-danger">{state.error}</span>}
+          {isAccountStatePrompt(state.error) ? (
+            <AccountStatePrompt />
+          ) : (
+            state.error && <span className="text-xs text-danger">{state.error}</span>
+          )}
         </div>
       );
     case "spectating":
@@ -205,12 +233,18 @@ const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { 
   }
 };
 
-const SignInSurface = ({ children }: { children: React.ReactNode }) => (
-  <div className="flex flex-col gap-3">
-    <span className={HUD_BODY}>{children}</span>
-    <IdentityLogin className="items-start" />
-  </div>
-);
+/** Signing in leaves the game for the one sign-in flow, which brings the player back to this game and view. */
+const SignInSurface = ({ children }: { children: React.ReactNode }) => {
+  const requestSignIn = useRequestSignIn();
+  return (
+    <div className="flex flex-col gap-3">
+      <span className={HUD_BODY}>{children}</span>
+      <Button className="w-full px-4 py-2" onClick={() => requestSignIn()}>
+        Sign in
+      </Button>
+    </div>
+  );
+};
 
 const SpectatingPanel = ({ state }: { state: Extract<IdentityChipState, { kind: "spectating" }> }) => {
   const enterAsPlayer = useEnterActiveGameAsPlayer();
@@ -238,9 +272,9 @@ const useEnterActiveGameAsPlayer = () => {
   const navigate = useNavigate();
 
   return useCallback(() => {
-    const world = getActiveWorld();
+    const world = getActiveGame();
     if (!world) return;
     resetBootstrap();
-    navigate(buildEntryHref({ chain: world.chain, worldName: world.name, intent: "play", autoSettle: false }));
+    navigate(buildEntryHref({ chainId: world.chainId, gameId: world.gameId, intent: "play", autoSettle: false }));
   }, [navigate]);
 };

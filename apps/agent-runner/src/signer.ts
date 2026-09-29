@@ -1,22 +1,19 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
-  bindGameplayAccounts,
-  connectGameplayAccount,
-  ensureGameplayAccount,
+  DeviceSigner,
+  deviceKeyOf,
+  joinBotAccount,
+  signGameplayIntent,
+  type DeviceKey,
   type GameClient,
 } from "@bibliothecadao/eternum";
-import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
-import { Account, BlockTag, ec, RpcProvider, stark, type AccountInterface } from "starknet";
+import { configureGameplayAccountSubmits, type Shard } from "@bibliothecadao/eternum/game-client";
+import { Account, BlockTag, RpcProvider, stark, type AccountInterface } from "starknet";
 
-import type { RunnerConfig, RunnerSigner } from "./config";
+import { resolveDataDir, type RunnerConfig, type RunnerSigner } from "./config";
 
-interface GameplayKey {
-  privateKey: string;
-  publicKey: string;
-}
-
-const GUEST_KEY_FILE = "guest-key.json";
+const BOT_KEY_FILE = "bot-key.json";
 
 /** The account the runner plays as, connected to the client; null in spectate mode. */
 export async function resolveRunnerSigner(
@@ -25,73 +22,57 @@ export async function resolveRunnerSigner(
   dataDir: string,
 ): Promise<AccountInterface | null> {
   if (config.signer.mode === "none") return null;
-  const provider = new RpcProvider({ nodeUrl: config.rpcUrl, blockIdentifier: BlockTag.PRE_CONFIRMED });
+  const { shard } = client;
+  const provider = new RpcProvider({ nodeUrl: shard.rpcUrl, blockIdentifier: BlockTag.PRE_CONFIRMED });
   const account =
-    config.signer.mode === "guest"
-      ? await connectGuestAccount(config, config.signer, provider, dataDir)
-      : await connectKeyAccount(config, config.signer, provider);
+    config.signer.mode === "bot"
+      ? await connectBotAccount(config.signer, shard, provider, dataDir)
+      : connectKeyAccount(config.signer, provider);
   // Every send, raw or through the client's provider, takes the gameplay nonce and fee path.
-  const signer = configureGameplayAccountSubmits(account, config.chain);
+  const signer = configureGameplayAccountSubmits(account, shard.chainId);
   client.connect(signer);
   return signer;
 }
 
 /**
- * A guest owns itself: the account deploys with no owner and is bound to its own address, which is what settlement
- * keys on. The key persists under the data dir so a restarted runner is the same player.
+ * A bot is a Realms account under the shard's guardian, named by its device key and approved through the identity
+ * Worker's operator route. The key persists under the data dir so a restarted runner is the same player.
  */
-const connectGuestAccount = async (
-  config: RunnerConfig,
-  signer: Extract<RunnerSigner, { mode: "guest" }>,
+const connectBotAccount = async (
+  signer: Extract<RunnerSigner, { mode: "bot" }>,
+  shard: Shard,
   provider: RpcProvider,
   dataDir: string,
 ): Promise<Account> => {
-  const key = await loadOrMintGuestKey(dataDir);
-  const account = await ensureGameplayAccount({
-    authority: config.bindingAuthorityAddress,
-    classHash: config.playerAccountClassHash,
-    owner: "0x0",
-    privateKey: key.privateKey,
+  const key = await loadOrMintBotKey(dataDir);
+  return joinBotAccount({
     provider,
-    publicKey: key.publicKey,
+    shard,
+    label: key.publicKey,
+    device: key,
+    identity: { url: signer.identityUrl, operatorToken: signer.operatorToken },
   });
-  await bindGameplayAccounts({
-    accounts: [{ owner: account.address, address: account.address }],
-    authority: new Account({
-      provider,
-      address: config.bindingAuthorityAddress,
-      signer: signer.bindingAuthorityPrivateKey,
-    }),
-    chain: config.chain,
-    playerRegistryAddress: config.playerRegistryAddress,
-    provider,
-  });
-  return account;
 };
 
-const connectKeyAccount = (
-  config: RunnerConfig,
-  signer: Extract<RunnerSigner, { mode: "key" }>,
-  provider: RpcProvider,
-): Promise<Account> =>
-  connectGameplayAccount({
-    address: signer.gameplayAccountAddress,
-    classHash: config.playerAccountClassHash,
-    privateKey: signer.gameplayPrivateKey,
+const connectKeyAccount = (signer: Extract<RunnerSigner, { mode: "key" }>, provider: RpcProvider): Account =>
+  new Account({
     provider,
+    address: signer.gameplayAccountAddress,
+    signer: new DeviceSigner(deviceKeyOf(signer.gameplayPrivateKey)),
+    cairoVersion: "1",
   });
 
-const loadOrMintGuestKey = async (dataDir: string): Promise<GameplayKey> => {
-  const file = path.join(dataDir, GUEST_KEY_FILE);
+const loadOrMintBotKey = async (dataDir: string): Promise<DeviceKey> => {
+  const file = path.join(dataDir, BOT_KEY_FILE);
   const stored = await readStoredKey(file);
   if (stored) return stored;
-  const key = gameplayKey(stark.randomAddress());
+  const key = deviceKeyOf(stark.randomAddress());
   await mkdir(dataDir, { recursive: true });
   await writeFile(file, JSON.stringify({ privateKey: key.privateKey }), { mode: 0o600 });
   return key;
 };
 
-const readStoredKey = async (file: string): Promise<GameplayKey | null> => {
+const readStoredKey = async (file: string): Promise<DeviceKey | null> => {
   let raw: string;
   try {
     raw = await readFile(file, "utf8");
@@ -99,11 +80,24 @@ const readStoredKey = async (file: string): Promise<GameplayKey | null> => {
     return null;
   }
   const record = JSON.parse(raw) as { privateKey?: unknown };
-  if (typeof record.privateKey !== "string") throw new Error(`Guest key file ${file} has no privateKey`);
-  return gameplayKey(record.privateKey);
+  if (typeof record.privateKey !== "string") throw new Error(`Bot key file ${file} has no privateKey`);
+  return deviceKeyOf(record.privateKey);
 };
 
-const gameplayKey = (privateKey: string): GameplayKey => ({
-  privateKey,
-  publicKey: ec.starkCurve.getStarkKey(privateKey),
-});
+/** The same persisted gameplay key signs action commitments; no separate action key is created. */
+export async function signRunnerIntent(
+  config: RunnerConfig,
+  gameId: number,
+  actor: AccountInterface,
+  digest: string,
+): Promise<string[]> {
+  if (config.signer.mode === "none") throw new Error("A spectator cannot sign an action");
+  if (config.signer.mode === "key") {
+    if (BigInt(actor.address) !== BigInt(config.signer.gameplayAccountAddress))
+      throw new Error("Gameplay identity changed before signing");
+    return signGameplayIntent(digest, config.signer.gameplayPrivateKey);
+  }
+  const key = await readStoredKey(path.join(resolveDataDir(config, gameId), BOT_KEY_FILE));
+  if (!key) throw new Error("The bot gameplay key is missing");
+  return signGameplayIntent(digest, key.privateKey);
+}

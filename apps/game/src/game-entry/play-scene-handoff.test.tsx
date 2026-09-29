@@ -1,211 +1,95 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createRoot } from "react-dom/client";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import { afterEach, expect, it, vi } from "vitest";
 
-const navigateMock = vi.fn();
-const setShowBlankOverlayMock = vi.fn();
-const usePlayerStructuresMock = vi.fn();
-const useLocationMock = vi.fn();
+const boot = vi.hoisted(() => ({
+  snapshot: {
+    phase: "handoff_scene",
+    resolvedRequest: { entryMode: "player", resumeScene: "hex" },
+  } as Record<string, unknown>,
+}));
+vi.mock("@/game-entry/play-route-boot", () => ({ usePlayRouteBootSnapshot: () => boot.snapshot }));
+const facts = vi.hoisted(() => ({ own: [] as unknown[], all: [] as unknown[] }));
+vi.mock("@/hooks/helpers/use-structures", () => ({ usePlayerStructures: () => facts.own }));
+vi.mock("@/hooks/use-fact-view", () => ({ useFactView: () => facts.all }));
+vi.mock("@/ui/layouts/game-entry-timeline", () => ({ markGameEntryMilestone: () => {} }));
 
-const uiStoreState = {
-  loadingStates: {
-    map: false,
-  },
-  setShowBlankOverlay: setShowBlankOverlayMock,
+import { usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { overrideSpectateIntent } from "@/utils/spectator-session";
+import { PlaySceneHandoff } from "./play-scene-handoff";
+
+const GAME = "/g/0x5245414c4d53/1";
+const ENTRY = `${GAME}/map?col=-1882578126&row=-1882626526&boot=map-first&resumeScene=hex`;
+
+const Where = () => {
+  const { pathname, search } = useLocation();
+  return <p data-testid="where">{`${pathname}${search}`}</p>;
 };
 
-const snapshotState: any = {
-  account: null,
-  bootToken: 1,
-  currentTask: null,
-  error: null,
-  phase: "wait_worldmap_ready" as const,
-  progress: 92,
-  resolvedRequest: {
-    bootScene: "map" as const,
-    chain: "sepolia",
-    entryMode: "player" as const,
-    fallbackPolicy: "route" as const,
-    requestedScene: "map" as const,
-    resumeScene: null,
-    routeWorldPosition: { col: 12, row: 34 },
-    worldName: "aurora-blitz",
-  },
-  setupResult: null,
-  tasks: [],
+afterEach(() => {
+  useUIStore.setState({ structureEntityId: 0, isSpectating: false, worldMapReturnPosition: null });
+  facts.own = [];
+  facts.all = [];
+});
+
+const convergedMap = () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  overrideSpectateIntent(false);
+  usePlayRouteReadinessStore.getState().reset(1);
+  usePlayRouteReadinessStore.getState().markWorldmapReady(1);
+  usePlayRouteReadinessStore.getState().markWorldmapConverged(1);
 };
 
-const readinessState: any = {
-  bootToken: 1,
-  hexCoordinates: null,
-  hexReady: false,
-  markHexReady: vi.fn(),
-  markWorldmapConverged: vi.fn(),
-  markWorldmapReady: vi.fn(),
-  reset: vi.fn(),
-  worldmapConverged: false,
-  worldmapReady: false,
+const mountHandoff = async () => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  await act(async () =>
+    root.render(
+      <MemoryRouter initialEntries={[ENTRY]}>
+        <PlaySceneHandoff />
+        <Routes>
+          <Route path="*" element={<Where />} />
+        </Routes>
+      </MemoryRouter>,
+    ),
+  );
+  return {
+    where: () => new URL(container.querySelector("[data-testid='where']")!.textContent!, "https://realms.invalid"),
+    unmount: () => act(async () => root.unmount()),
+  };
 };
 
-vi.mock("@/game-entry/play-route-boot", () => ({
-  usePlayRouteBootSnapshot: () => snapshotState,
-}));
+it("hands a Frontier player off to their own realm's hex, and not before their realm is selected", async () => {
+  convergedMap();
+  facts.own = [{ entityId: 1, position: { x: 1, y: 1 } }];
+  // The map converged while the entry still shows the spectator fallback, before the player's realm arrived.
+  useUIStore.setState({ structureEntityId: 7, isSpectating: true, worldMapReturnPosition: { col: 5, row: 6 } });
+  const ui = await mountHandoff();
+  try {
+    expect(`${ui.where().pathname}${ui.where().search}`).toBe(ENTRY);
 
-vi.mock("@/game-entry/play-route-readiness-store", () => ({
-  usePlayRouteReadinessStore: () => readinessState,
-}));
-
-vi.mock("@/hooks/store/use-ui-store", () => ({
-  useUIStore: (selector: (state: typeof uiStoreState) => unknown) => selector(uiStoreState),
-}));
-
-vi.mock("@bibliothecadao/react", () => ({
-  usePlayerStructures: () => usePlayerStructuresMock(),
-}));
-
-vi.mock("@bibliothecadao/eternum", () => ({
-  Position: class MockPosition {
-    constructor(private readonly input: { x: number; y: number }) {}
-
-    getNormalized() {
-      return { x: this.input.x, y: this.input.y };
-    }
-  },
-}));
-
-vi.mock("react-router-dom", () => ({
-  useNavigate: () => navigateMock,
-  useLocation: () => useLocationMock(),
-}));
-
-const { PlaySceneHandoff } = await import("./play-scene-handoff");
-
-const flushTimers = async () => {
-  await act(async () => {
-    await new Promise((resolve) => {
-      window.setTimeout(resolve, 0);
-    });
-  });
-};
-
-describe("PlaySceneHandoff", () => {
-  let container: HTMLDivElement;
-  let root: Root;
-
-  beforeEach(() => {
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    container = document.createElement("div");
-    document.body.appendChild(container);
-    root = createRoot(container);
-    navigateMock.mockReset();
-    setShowBlankOverlayMock.mockReset();
-    usePlayerStructuresMock.mockReset();
-    readinessState.hexReady = false;
-    readinessState.worldmapConverged = false;
-    readinessState.worldmapReady = false;
-    snapshotState.phase = "wait_worldmap_ready";
-    snapshotState.resolvedRequest = {
-      bootScene: "map",
-      chain: "sepolia",
-      entryMode: "player",
-      fallbackPolicy: "route",
-      requestedScene: "map",
-      resumeScene: null,
-      routeWorldPosition: { col: 12, row: 34 },
-      worldName: "aurora-blitz",
-    };
-    usePlayerStructuresMock.mockReturnValue([]);
-    useLocationMock.mockReturnValue({
-      pathname: "/play/appchain/aurora-blitz/map",
-      search: "?col=12&row=34",
-      hash: "",
-      state: null,
-      key: "test",
-    });
-  });
-
-  afterEach(async () => {
-    await act(async () => {
-      root.unmount();
-    });
-    container.remove();
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  it("completes entry only when the canonical boot phase is ready", async () => {
-    readinessState.worldmapReady = true;
-    snapshotState.phase = "ready";
-
-    await act(async () => {
-      root.render(<PlaySceneHandoff />);
-    });
-    await flushTimers();
-
-    expect(setShowBlankOverlayMock).toHaveBeenCalledWith(false);
-  });
-
-  it("keeps map-first handoff behind ambient worldmap convergence", async () => {
-    readinessState.worldmapReady = true;
-    snapshotState.phase = "handoff_scene";
-    snapshotState.resolvedRequest = {
-      ...snapshotState.resolvedRequest,
-      requestedScene: "hex",
-      resumeScene: "hex",
-    };
-    useLocationMock.mockReturnValue({
-      pathname: "/play/appchain/aurora-blitz/map",
-      search: "?col=12&row=34&boot=map-first&resumeScene=hex",
-      hash: "",
-      state: null,
-      key: "test",
-    });
-
-    await act(async () => {
-      root.render(<PlaySceneHandoff />);
-    });
-
-    expect(navigateMock).not.toHaveBeenCalled();
-    expect(setShowBlankOverlayMock).not.toHaveBeenCalledWith(false);
-
-    readinessState.worldmapConverged = true;
-    await act(async () => {
-      root.render(<PlaySceneHandoff />);
-    });
-
-    expect(navigateMock).toHaveBeenCalledWith(
-      "/play/appchain/aurora-blitz/hex?col=12&row=34&boot=map-first&resumeScene=hex",
-      { replace: true },
+    // The player's own realm is selected at today's site: the handoff opens it there.
+    await act(async () =>
+      useUIStore.setState({ structureEntityId: 1, isSpectating: false, worldMapReturnPosition: { col: 12, row: -3 } }),
     );
-    expect(setShowBlankOverlayMock).not.toHaveBeenCalledWith(false);
-  });
+    expect(ui.where().pathname).toBe(`${GAME}/hex`);
+    expect([ui.where().searchParams.get("col"), ui.where().searchParams.get("row")]).toEqual(["12", "-3"]);
+    expect(ui.where().searchParams.get("resumeScene")).toBe("hex");
+  } finally {
+    await ui.unmount();
+  }
+});
 
-  it("repairs map-first routes without coordinates from synced player structures", async () => {
-    usePlayerStructuresMock.mockReturnValue([
-      {
-        entityId: 77,
-        position: { x: 4, y: 9 },
-      },
-    ]);
-    snapshotState.resolvedRequest = {
-      ...snapshotState.resolvedRequest,
-      fallbackPolicy: "synced-structure",
-      routeWorldPosition: null,
-    };
-    useLocationMock.mockReturnValue({
-      pathname: "/play/appchain/aurora-blitz/map",
-      search: "?boot=map-first&resumeScene=hex",
-      hash: "",
-      state: null,
-      key: "test",
-    });
-
-    await act(async () => {
-      root.render(<PlaySceneHandoff />);
-    });
-
-    expect(navigateMock).toHaveBeenCalledWith(
-      "/play/appchain/aurora-blitz/map?col=4&row=9&boot=map-first&resumeScene=hex",
-      { replace: true },
-    );
-  });
+it("keeps a player with no realm to open on the map, dropping the resume instead of waiting", async () => {
+  convergedMap();
+  const ui = await mountHandoff();
+  try {
+    expect(ui.where().pathname).toBe(`${GAME}/map`);
+    expect(ui.where().searchParams.get("boot")).toBeNull();
+    expect(ui.where().searchParams.get("resumeScene")).toBeNull();
+  } finally {
+    await ui.unmount();
+  }
 });

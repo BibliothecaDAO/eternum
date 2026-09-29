@@ -1,0 +1,260 @@
+import { describe, expect, it } from "vitest";
+import { CairoCustomEnum, hash } from "starknet";
+import setFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+import memberFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-member-set.json";
+import deleteFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-deleted.json";
+import foreignFixture from "../../../../contracts/l3/world-native/schema/fixtures/foreign-emitter.json";
+import malformedFixture from "../../../../contracts/l3/world-native/schema/fixtures/malformed-row.json";
+import { WorldFold } from "../world-fold";
+import { NativeDecoder, NativeReleaseSchemaUnavailable } from "./decoder";
+import { NativeIngestion } from "./ingestion";
+
+import { pointsAward, schema, manifest, receipt, raw, setup, battleEvent, rowEvent } from "./fixtures";
+
+describe("native row decoder", () => {
+  it("refuses reserved chest wire tag 1 and retains Token at tag 2", () => {
+    const decoder = new NativeDecoder(manifest);
+    const reward = (kind: "Reserved" | "Token") =>
+      rowEvent("ChestReward", ["1", "2", "0"], {
+        player: 17,
+        explorer_id: 7,
+        epoch: 3,
+        depth: 0,
+        kind: new CairoCustomEnum({ [kind]: {} }),
+        quality: 0,
+        lords_exhausted: false,
+      });
+    expect(() => decoder.decode(raw(reward("Reserved")))).toThrow("Invalid native enum");
+    expect(decoder.decode(raw(reward("Token"))).kind).toBe("set");
+    const model = schema.models.find(({ name }) => name === "ChestReward")!;
+    const kind = schema.types[model.members.find(({ name }) => name === "kind")!.type];
+    if (kind.type !== "enum") throw new Error("Expected chest kind enum");
+    expect(kind.variants.map(({ name }) => name)).toEqual(["Relic", "Reserved", "Token"]);
+  });
+
+  it("folds a known same-schema hotfix and refuses an unavailable decoder before its migration rows", () => {
+    const released = structuredClone(manifest);
+    released.native.releaseSchemas["2"] = schema.identity;
+    const decoder = new NativeDecoder(released);
+    const ingestion = new NativeIngestion(decoder);
+    const fold = new WorldFold(decoder.registry);
+    ingestion.applyReceipt(
+      fold,
+      receipt([rowEvent("GameRelease", ["1"], { release_id: 1n, preset_commitment: 42n }), setFixture.raw]),
+      10,
+      0,
+    );
+    ingestion.applyReceipt(
+      fold,
+      receipt([rowEvent("GameRelease", ["1"], { release_id: 2n, preset_commitment: 42n }), memberFixture.raw]),
+      11,
+      0,
+    );
+    expect(BigInt(fold.modelRows("GameRelease")[0].value.release_id as string)).toBe(2n);
+    const before = fold.checkpoint();
+    expect(() =>
+      ingestion.applyReceipt(
+        fold,
+        receipt([rowEvent("GameRelease", ["1"], { release_id: 3n, preset_commitment: 42n }), deleteFixture.raw]),
+        12,
+        0,
+      ),
+    ).toThrow(NativeReleaseSchemaUnavailable);
+    expect(fold.checkpoint()).toEqual(before);
+    released.native.releaseSchemas["3"] = "unavailable-schema";
+    expect(() =>
+      ingestion.applyReceipt(
+        fold,
+        receipt([rowEvent("GameRelease", ["1"], { release_id: 3n, preset_commitment: 42n }), deleteFixture.raw]),
+        12,
+        0,
+      ),
+    ).toThrow("unavailable-schema");
+  });
+  it("keys chest results by game, recorded action and story index in both overlays", () => {
+    const { native, fold } = setup();
+    const rewards = [0, 1].map((index) =>
+      rowEvent("ChestReward", ["1", "9007199254740993", String(index)], {
+        player: "0x111",
+        explorer_id: 7,
+        epoch: 3,
+        depth: 2,
+        kind: new CairoCustomEnum({ Token: {} }),
+        quality: 0,
+        lords_exhausted: false,
+      }),
+    );
+    const overlay = fold.overlay();
+    native.applyReceipt(overlay, receipt(rewards), null, 0);
+    native.applyReceipt(fold, receipt(rewards), 10, 0);
+    const rows = fold.modelRows("ChestReward");
+    expect(rows).toEqual(overlay.modelRows("ChestReward"));
+    expect(rows.map(({ value }) => [value.game_id, value.order, value.index])).toEqual([
+      ["0x1", "0x20000000000001", "0x0"],
+      ["0x1", "0x20000000000001", "0x1"],
+    ]);
+    expect(new Set(rows.map(({ key }) => key)).size).toBe(2);
+  });
+
+  it("consumes the generated fixtures for set, member, deletion and recreation", () => {
+    const { native, fold } = setup();
+    for (const fixture of [setFixture, memberFixture]) {
+      native.applyReceipt(fold, receipt([fixture.raw]), 10, 0);
+      const row = fold.modelRows("ExplorerTroops")[0];
+      expect(row.value).toEqual({ ...fixture.expected.key, ...fixture.expected.value });
+      expect(BigInt(row.key)).toBe(BigInt(hash.computePoseidonHashOnElements([1, 7])));
+    }
+    native.applyReceipt(fold, receipt([deleteFixture.raw]), 10, 1);
+    expect(fold.modelRows("ExplorerTroops")).toEqual([]);
+    native.applyReceipt(fold, receipt([setFixture.raw]), 10, 2);
+    expect(fold.modelRows("ExplorerTroops")).toHaveLength(1);
+  });
+  it("rejects foreign emitters and malformed fixtures", () => {
+    const { decoder } = setup();
+    expect(() => decoder.decode(raw(foreignFixture.raw))).toThrow();
+    expect(() => decoder.decode(raw(malformedFixture.raw))).toThrow();
+    expect(() => decoder.decode(raw({ ...setFixture.raw, from_address: "0x999" }))).toThrow("Foreign native emitter");
+  });
+  it("rejects out-of-range values, trailing data and unknown versions", () => {
+    const { decoder } = setup();
+    const invalid = structuredClone(setFixture.raw);
+    invalid.data[4] = String(1n << 32n);
+    expect(() => decoder.decode(raw(invalid))).toThrow("exceeds");
+    expect(() => decoder.decode(raw({ ...setFixture.raw, data: [...setFixture.raw.data, "0x0"] }))).toThrow("trailing");
+    const version = structuredClone(setFixture.raw);
+    version.keys[2] = "0x2";
+    expect(() => decoder.decode(raw(version))).toThrow("version");
+  });
+  it("rejects an entire receipt without retaining an earlier valid mutation", () => {
+    const { native, fold } = setup();
+    expect(() => native.applyReceipt(fold, receipt([setFixture.raw, malformedFixture.raw]), 10, 0)).toThrow();
+    expect(fold.modelRows("ExplorerTroops")).toEqual([]);
+    native.applyReceipt(fold, { ...receipt([setFixture.raw]), execution_status: "REVERTED" }, 10, 0);
+    expect(fold.modelRows("ExplorerTroops")).toEqual([]);
+  });
+  it("retains complete combat history when the participating explorer is deleted", () => {
+    const { native, fold } = setup();
+    const result = native.applyReceipt(fold, receipt([setFixture.raw, deleteFixture.raw, battleEvent()]), 10, 0);
+    const battle = result.changes.find(({ change }) => change?.event)!.change!.set!;
+    expect(battle.value).toMatchObject({
+      attacker_id: "0x7",
+      defender_id: "0x8",
+      attacker: { player: "0x111", before: "0x64", after: "0x5a" },
+      defender: { player: "0x222", after: "0x0" },
+    });
+    expect(fold.modelRows("ExplorerTroops")).toEqual([]);
+    expect(fold.checkpoint().models.map(({ model }) => model)).not.toContain("LastBattle");
+    expect(() => fold.modelRows("LastBattle")).toThrow("no row collection");
+  });
+  it("publishes combat as ephemera without mutating persistent rows in either overlay", () => {
+    const { native, fold } = setup();
+    native.applyReceipt(fold, receipt([setFixture.raw]), 10, 0);
+    const before = fold.checkpoint();
+    const overlay = fold.overlay();
+    const result = native.applyReceipt(overlay, receipt([battleEvent()]), null, 0);
+    expect(result.changes.map(({ change }) => change?.set?.model)).toEqual(["BattleEvent"]);
+    expect(overlay.checkpoint()).toEqual(before);
+    native.applyReceipt(fold, receipt([battleEvent()]), 11, 0);
+    expect(fold.checkpoint()).toEqual(before);
+  });
+  it("keeps repeated native events distinct and their identity stable at confirmation", () => {
+    const { native, fold } = setup();
+    const battles = [battleEvent(), battleEvent("7", "8", "1920", "42", "1")];
+    const changes = native.applyReceipt(fold, receipt(battles), null, 0).changes;
+    expect(changes[0].change!.set!.key).not.toBe(changes[1].change!.set!.key);
+    expect(changes[0].change!.set!.value.event_position).toEqual({ transaction_hash: "0x55", event_index: 0 });
+    const confirmed = native
+      .applyReceipt(fold, receipt([pointsAward("1", "0x111", "5", "5", "5"), ...battles]), 10, 0)
+      .changes.filter(({ change }) => change?.event && change.set?.model === "BattleEvent");
+    expect(confirmed.map(({ change }) => change!.set!.key)).toEqual(changes.map(({ change }) => change!.set!.key));
+    expect(confirmed[0].change!.set!.value.event_position).toEqual({ transaction_hash: "0x55", event_index: 1 });
+    const later = native.applyReceipt(fold, receipt([battleEvent("7", "8", "1920", "43")], "0x56"), 11, 0).changes;
+    expect(later[0].change!.set!.key).not.toBe(changes[0].change!.set!.key);
+  });
+  it("binds checkpoints to the schema and deployment identity", () => {
+    const { native, fold, decoder } = setup();
+    native.applyReceipt(fold, receipt([setFixture.raw]), 10, 0);
+    const checkpoint = fold.checkpoint();
+    expect(checkpoint.native_schema_identity).toBe(schema.identity);
+    expect(WorldFold.restore(decoder.registry, checkpoint).snapshot(1, 10)).toEqual(fold.snapshot(1, 10));
+    expect(() => WorldFold.restore(decoder.registry, { ...checkpoint, native_schema_identity: "wrong" })).toThrow(
+      "schema identity",
+    );
+    expect(() => WorldFold.restore(decoder.registry, { ...checkpoint, world_address: "0x999" })).toThrow(
+      "does not match",
+    );
+  });
+  it("folds facts from different logic classes at the Games address", () => {
+    const { native, fold } = setup();
+    const points = pointsAward("1", "0x111", "42", "42", "42");
+    expect(points.from_address).toBe(setFixture.raw.from_address);
+    const foreign = { ...pointsAward("1", "0x111", "999", "999", "999"), from_address: "0x999" };
+    native.applyReceipt(fold, receipt([setFixture.raw, points, memberFixture.raw, battleEvent(), foreign]), 10, 0);
+    expect(fold.modelRows("ExplorerTroops")[0].value).toEqual({
+      ...memberFixture.expected.key,
+      ...memberFixture.expected.value,
+    });
+    expect(fold.modelRows("PlayerPoints")[0].value.points).toBe("0x2a");
+    const incompatible = structuredClone(memberFixture.raw);
+    incompatible.keys[0] = "0x987";
+    expect(() => native.applyReceipt(fold, receipt([incompatible]), 11, 0)).toThrow("Unknown native event prefix");
+  });
+});
+
+it("decodes every declared row and member shape from Games", () => {
+  const { decoder } = setup();
+  const value = (type: string): string[] => {
+    if (type === "()") return [];
+    if (/^core::array::(?:Span|Array)::</.test(type)) return ["0"];
+    const definition = schema.types[type];
+    if (definition?.type === "struct") return definition.members.flatMap((member) => value(member.type));
+    if (definition?.type === "enum") return ["0", ...value(definition.variants[0].type)];
+    return ["1"];
+  };
+  for (const model of schema.models) {
+    const from_address = manifest.world.address;
+    const keys = model.keys.flatMap((member) =>
+      member.name === model.emitterKey ? [from_address] : value(member.type),
+    );
+    const frame = (kind: string, values: string[], member?: string) => {
+      const layout = schema.games.events.find((event) => event.name === kind)!;
+      return raw({
+        from_address,
+        keys: [...layout.prefix, "1", model.identity, ...(member ? [member] : [])],
+        data: [String(keys.length), ...keys, ...(kind === "RowDeleted" ? [] : [String(values.length), ...values])],
+      });
+    };
+    if (model.derivedFrom) {
+      for (const layout of ["RowSet", "RowDeleted", "RowMemberSet"])
+        expect(() => decoder.decode(frame(layout, [], model.members[0]?.id))).toThrow(
+          `Native model ${model.name} is derived-only from preset; row events are forbidden`,
+        );
+      continue;
+    }
+    if (model.eventProjection) {
+      for (const kind of ["RowSet", "RowMemberSet", "RowDeleted"]) {
+        expect(() =>
+          decoder.decode(frame(kind, [], kind === "RowMemberSet" ? model.members[0].id : undefined)),
+        ).toThrow(`projected from ${model.eventProjection}`);
+      }
+      continue;
+    }
+    expect(
+      decoder.decode(
+        frame(
+          "RowSet",
+          model.members.flatMap((member) => value(member.type)),
+        ),
+      ),
+    ).toMatchObject({ kind: "set", model: { name: model.name } });
+    if (schema.games.events.some(({ name }) => name === "RowDeleted"))
+      expect(decoder.decode(frame("RowDeleted", []))).toMatchObject({ kind: "delete", model: { name: model.name } });
+    for (const member of schema.games.events.some(({ name }) => name === "RowMemberSet") ? model.members : []) {
+      expect(decoder.decode(frame("RowMemberSet", value(member.type), member.id))).toMatchObject({
+        kind: "update-member",
+        member: member.name,
+        model: { name: model.name },
+      });
+    }
+  }
+});

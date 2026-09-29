@@ -8,6 +8,8 @@ import {
   Object3D,
   PointLight,
   Vector3,
+  Color,
+  type ColorRepresentation,
   type Material,
 } from "three";
 import {
@@ -36,6 +38,7 @@ export class RewardSummoning {
   private readonly shadows: Mesh[] = [];
   private readonly interior = new Group();
   private readonly light = new PointLight(0xd99aff, 0, 3, 2);
+
   private readonly interiorMaterials: MeshStandardMaterial[] = [];
   private readonly stoneMaterials: Material[] = [];
   private readonly replacedMaterials = new Map<Mesh, Material | Material[]>();
@@ -45,6 +48,16 @@ export class RewardSummoning {
     24,
   );
   private readonly fragment = new Object3D();
+  /** Light leaking from a shut lid while a Frontier chest's result is pending (0–1). */
+  private seam = 0;
+  /** How far the beams may rise: full only at rare and above. */
+  private beamLimit = 1;
+  /** The authored interior glow colours, so a tinted chest can return to the plain one. */
+  private readonly interiorEmissive = new Map<MeshStandardMaterial, Color>();
+  /** This chest's own crystals, with their authored glow, so a rarity can light them. */
+  private readonly gems = new Map<MeshStandardMaterial, { emissive: Color; intensity: number }>();
+  private readonly rarityGlow = new Color();
+  private readonly lightColour = new Color(0xd99aff);
 
   constructor(
     private readonly object: Group,
@@ -63,6 +76,7 @@ export class RewardSummoning {
     this.createTurningRings();
     this.illuminateRitualStone();
     this.configureInteriorLight(illuminateScene);
+    this.ownCrystals();
     this.debris.frustumCulled = false;
     object.add(this.debris);
     this.sample();
@@ -99,6 +113,77 @@ export class RewardSummoning {
     this.sample();
   }
 
+  /**
+   * A Frontier chest's moment: light leaks from the seams of the shut lid in `tint`; `runes` (0–1) turns the rune rings
+   * and crystals, the chest's largest lit surfaces, from their authored violet and cyan to the tint; and the beams it
+   * opens with burn to `beam.limit`, reaching `beam.reach` times their authored height at `beam.boost` brightness.
+   */
+  setGlow({
+    seam,
+    tint,
+    runes = 0,
+    beam = { limit: 1, reach: 1, boost: 1 },
+  }: {
+    seam: number;
+    tint: ColorRepresentation;
+    runes?: number;
+    beam?: { limit: number; reach: number; boost: number };
+  }): void {
+    this.seam = MathUtils.clamp(seam, 0, 1);
+    this.beamLimit = MathUtils.clamp(beam.limit, 0, 1);
+    this.radiance.tint.value.set(tint);
+    this.radiance.tinted.value = MathUtils.clamp(runes, 0, 1);
+    this.radiance.reach.value = beam.reach;
+    this.radiance.boost.value = beam.boost;
+    this.light.color.set(tint);
+    // The inside shows through the crack: its glow takes the tint too.
+    for (const material of this.interiorMaterials) material.emissive.set(tint);
+    const amount = MathUtils.clamp(runes, 0, 1);
+    this.flameMaterials.rarityTint.value.set(tint);
+    this.flameMaterials.rarityAmount.value = amount;
+    this.rarityGlow.set(tint);
+    for (const [material, authored] of this.gems) {
+      material.emissive.copy(authored.emissive).lerp(this.rarityGlow, amount);
+      material.emissiveIntensity = authored.intensity + amount * 2.5;
+    }
+    this.sample();
+  }
+
+  /** Back to the plain chest: no seam, full beams and the authored colours. */
+  clearGlow(): void {
+    this.seam = 0;
+    this.beamLimit = 1;
+    this.radiance.tinted.value = 0;
+    this.radiance.reach.value = 1;
+    this.radiance.boost.value = 1;
+    this.light.color.copy(this.lightColour);
+    for (const [material, colour] of this.interiorEmissive) material.emissive.copy(colour);
+    this.flameMaterials.rarityAmount.value = 0;
+    for (const [material, authored] of this.gems) {
+      material.emissive.copy(authored.emissive);
+      material.emissiveIntensity = authored.intensity;
+    }
+    this.sample();
+  }
+
+  /** Gives this chest its own crystal materials: the model's are shared by every chest on the map. */
+  private ownCrystals(): void {
+    this.object.traverse((part) => {
+      if (!(part instanceof Mesh)) return;
+      const materials: Material[] = Array.isArray(part.material) ? part.material : [part.material];
+      if (!materials.some((material) => /^(Cyan crystal|Crystal highlight)/.test(material.name))) return;
+      if (!this.replacedMaterials.has(part)) this.replacedMaterials.set(part, part.material);
+      const replacements = materials.map((material) => {
+        if (!(material instanceof MeshStandardMaterial) || !/^(Cyan crystal|Crystal highlight)/.test(material.name))
+          return material;
+        const gem = material.clone();
+        this.gems.set(gem, { emissive: gem.emissive.clone(), intensity: gem.emissiveIntensity });
+        return gem;
+      });
+      part.material = Array.isArray(part.material) ? replacements : replacements[0];
+    });
+  }
+
   get revealProgress(): number {
     return smooth(0.575, 0.85, this.elapsed);
   }
@@ -124,6 +209,7 @@ export class RewardSummoning {
   dispose(): void {
     for (const [mesh, material] of this.replacedMaterials) mesh.material = material;
     for (const material of this.interiorMaterials) material.dispose();
+    for (const material of this.gems.keys()) material.dispose();
     for (const material of this.stoneMaterials) material.dispose();
     this.flameMaterials.flame.dispose();
     this.flameMaterials.glyph.dispose();
@@ -189,6 +275,7 @@ export class RewardSummoning {
         if (!(material instanceof MeshStandardMaterial) || !material.name.startsWith("Essence violet")) return material;
         const interior = material.clone();
         this.interiorMaterials.push(interior);
+        this.interiorEmissive.set(interior, interior.emissive.clone());
         return interior;
       });
       part.material = Array.isArray(part.material) ? replacements : replacements[0];
@@ -238,22 +325,24 @@ export class RewardSummoning {
 
   private sampleChest(departure: number): void {
     const opening = smooth(0, 0.4, departure) * (1 - smooth(1.15, 1.65, departure));
+    // A pending chest's lid sits a crack open, and its glow is the larger of that leak and the opening.
+    const glow = Math.max(opening, this.seam * (this.openedAt === null ? 1 : 0));
     for (const content of this.contents) content.visible = this.elapsed >= SUMMONING_DURATION * 0.5;
-    this.lid.rotation.set(-opening * 1.65, 0, 0);
+    this.lid.rotation.set(-(opening * 1.65 + (this.openedAt === null ? this.seam * 0.15 : 0)), 0, 0);
     this.lid.position.copy(this.hinge).applyQuaternion(this.lid.quaternion).negate().add(this.hinge);
     const settle = smooth(1.4, 1.85, departure);
     this.body.position.y = MathUtils.lerp(this.body.position.y, 0.073, settle);
     this.body.rotation.x *= 1 - settle;
     this.body.rotation.y *= 1 - settle;
     this.body.rotation.z *= 1 - settle;
-    this.interior.visible = opening > 0;
-    this.light.intensity = opening * 4.5;
+    this.interior.visible = glow > 0;
+    this.light.intensity = glow * 4.5;
     this.body.updateWorldMatrix(true, false);
     this.light.position.set(0, 0.42, 0);
     this.body.localToWorld(this.light.position);
     this.lightingRoot.worldToLocal(this.light.position);
-    this.radiance.strength.value = opening;
-    for (const material of this.interiorMaterials) material.emissiveIntensity = 0.8 + opening * 5;
+    this.radiance.strength.value = Math.min(glow, this.beamLimit);
+    for (const material of this.interiorMaterials) material.emissiveIntensity = 0.8 + glow * 5;
   }
 
   private sampleFlames(departure: number): void {

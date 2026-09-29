@@ -1,76 +1,89 @@
 import { describe, expect, it } from "vitest";
-import { GAME_SYNC_MODEL_MANIFEST, getGameSyncModel, getGameSyncModelsForChannel } from "./model-manifest";
+import { nativeSyncScopes } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { gameSyncRegion, rowInGameSyncScope, syncScalar, type GameSyncScope } from "./model-manifest";
 
-describe("GAME_SYNC_MODEL_MANIFEST", () => {
-  it("classifies each model exactly once", () => {
-    const names = GAME_SYNC_MODEL_MANIFEST.map(({ name }) => name);
-    expect(new Set(names).size).toBe(names.length);
+const SPACING = 21;
+const SETS = ["owners", "entities", "realms", "realmTraits"] as const;
+
+type Rule = Partial<Record<(typeof SETS)[number], readonly string[]>> & {
+  regions?: readonly { alt: string; x: string; y: string }[];
+  epoch?: string;
+};
+
+/**
+ * The membership rule as the schema declares it, written out: an actor row belongs to its actor, a shared row to
+ * everyone, and a scoped row to a scope with no expedition or to the expedition naming one of its sets or regions on
+ * its day. The key encoding must admit exactly these.
+ */
+const declaredMembership = (model: string, row: Record<string, unknown>, scope: GameSyncScope): boolean => {
+  const rule = nativeSyncScopes[model as keyof typeof nativeSyncScopes] as "shared" | "actor" | "internal" | Rule;
+  if (rule === "internal") return false;
+  if (rule === "actor") return scope.actor !== undefined && syncScalar(row.actor) === syncScalar(scope.actor);
+  const expedition = scope.expedition;
+  if (!expedition || rule === "shared") return true;
+  if (rule.epoch !== undefined && Number(row[rule.epoch]) !== expedition.absoluteEpoch) return false;
+  const named = SETS.some((set) => (rule[set] ?? []).some((field) => expedition[set].has(syncScalar(row[field]))));
+  const inRegion = (rule.regions ?? []).some((region) => {
+    const key = gameSyncRegion({ alt: row[region.alt], x: row[region.x], y: row[region.y] }, expedition.spacing);
+    return key !== undefined && expedition.regions.has(key);
   });
+  return named || inRegion;
+};
 
-  it("puts all current entity truth in the gamewide channel", () => {
-    const names = getGameSyncModelsForChannel("gamewide-entity", { includeS2Only: true }).map(({ name }) => name);
+/** A small deterministic generator, so a failure names a reproducible trial. */
+const random = (seed: number) => () => {
+  seed = (seed * 1_103_515_245 + 12_345) % 2 ** 31;
+  return seed / 2 ** 31;
+};
 
-    expect(names).toEqual(
-      expect.arrayContaining([
-        "GameRegistry",
-        "BitcoinMinePhaseLabor",
-        "BitcoinPhaseLabor",
-        "Structure",
-        "StructureVillageSlots",
-        "Resource",
-        "ExplorerTroops",
-        "GameChestReward",
-        "LedgerRegistration",
-        "WonderFaith",
-        "FaithfulStructure",
-        "WonderFaithBlacklist",
-        "WonderFaithPrize",
-        "WonderFaithWinners",
-      ]),
-    );
-    expect(names).not.toEqual(expect.arrayContaining(["OpenRelicChestEvent", "ExplorerRewardEvent", "BattleEvent"]));
-  });
+describe("rowInGameSyncScope", () => {
+  it("admits exactly the rows the declared rule gives a scope, for every model in the schema", () => {
+    const next = random(7);
+    const pick = <T>(values: readonly T[]): T => values[Math.floor(next() * values.length)]!;
+    // Identities arrive as decimal, hex and bigint forms; the scope holds normalized decimals.
+    const identity = () => pick<unknown>(["1", "2", "3", "0x2", 3n, 1]);
+    const subset = () => new Set(["1", "2", "3"].filter(() => next() < 0.4));
+    const scope = (): GameSyncScope => {
+      const actor = pick([undefined, "0x1", "0x2"]);
+      if (next() < 0.2) return { actor };
+      return {
+        actor,
+        expedition: {
+          absoluteEpoch: pick([0, 1, 2]),
+          spacing: SPACING,
+          owners: subset(),
+          realms: subset(),
+          entities: subset(),
+          realmTraits: subset(),
+          regions: new Set(["0:0", "1:0", "0:1", "2:2"].filter(() => next() < 0.4)),
+        },
+      };
+    };
+    const row = (model: string): Record<string, unknown> => {
+      const rule = nativeSyncScopes[model as keyof typeof nativeSyncScopes] as unknown;
+      const value: Record<string, unknown> = { actor: pick(["0x1", "0x2", 2n]) };
+      if (typeof rule === "string") return value;
+      const fields = rule as Partial<Record<string, readonly string[]>> & {
+        regions?: readonly { alt: string; x: string; y: string }[];
+        epoch?: string;
+      };
+      for (const set of SETS) for (const field of fields[set] ?? []) value[field] = identity();
+      for (const region of fields.regions ?? []) {
+        value[region.alt] = next() < 0.2;
+        value[region.x] = Math.floor(next() * SPACING * 3);
+        value[region.y] = pick([Math.floor(next() * SPACING * 3), `0x${Math.floor(next() * 63).toString(16)}`]);
+      }
+      if (fields.epoch) value[fields.epoch] = pick([0, 1, 2, "0x1"]);
+      return value;
+    };
 
-  it("has one current-entity channel", () => {
-    ["Structure", "Building", "Resource", "ExplorerTroops"].forEach((name) => {
-      expect(getGameSyncModel(name).channels).toEqual(["gamewide-entity"]);
-    });
-  });
-
-  it("owns game scoping for every sync model", () => {
-    expect(getGameSyncModel("AddressName").s2Scope).toBe("chain");
-    expect(getGameSyncModel("WorldConfig").s2Scope).toBe("game");
-    expect(getGameSyncModel("TileOpt").s2Scope).toBe("game");
-  });
-
-  it("adjudicates manifest event messages as events only", () => {
-    ["SeasonEnded", "OpenRelicChestEvent", "BattleEvent", "ExplorerRewardEvent", "StoryEvent", "SwapEvent"].forEach(
-      (name) => {
-        const event = getGameSyncModel(name);
-        expect(event.channels).toEqual(["global-event"]);
-        expect(event.recovery).toBe("event-deduped");
-        expect(event.deletion).toBe("event-ephemeral");
-      },
-    );
-    expect(getGameSyncModelsForChannel("gamewide-entity").map(({ name }) => name)).not.toEqual(
-      expect.arrayContaining([
-        "SeasonEnded",
-        "OpenRelicChestEvent",
-        "BattleEvent",
-        "ExplorerRewardEvent",
-        "StoryEvent",
-        "SwapEvent",
-      ]),
-    );
-  });
-
-  it("enforces bounded event identities without retaining event rows", () => {
-    getGameSyncModelsForChannel("global-event").forEach((event) => {
-      expect(event.eventRetention).toEqual({
-        retainRecsRows: false,
-        dedupeIdentityLimit: 512,
-        replayEffectsOnRecovery: true,
-      });
-    });
+    for (const model of Object.keys(nativeSyncScopes)) {
+      for (let trial = 0; trial < 300; trial++) {
+        const [facts, held] = [row(model), scope()];
+        expect(rowInGameSyncScope(model, facts, held), `${model} trial ${trial}`).toBe(
+          declaredMembership(model, facts, held),
+        );
+      }
+    }
   });
 });

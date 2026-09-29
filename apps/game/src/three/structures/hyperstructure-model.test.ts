@@ -219,7 +219,7 @@ describe("procedural hyperstructures", () => {
     const paused = poses();
     model.updateAnimations(0);
     expect(poses()).toEqual(paused);
-    // A RECS refresh and manager slot rebind must preserve the build, not restart or skip it.
+    // A native store refresh and manager slot rebind must preserve the build, not restart or skip it.
     model.removeInstance(0);
     model.setMatrixAt(1, new Matrix4());
     model.setConstructionAt(1, { entityId: 4, progress: 100, completed: true });

@@ -1299,7 +1299,7 @@ def export_asset(root, name):
         "bytes": (OUTPUT / f"{name}.glb").stat().st_size,
         "hexCircumradius": 1,
         "animationSeconds": 8,
-        "source": "Blender MCP construction + generated surface textures",
+        "source": "Procedural construction and surface texture sources",
     }
 
 

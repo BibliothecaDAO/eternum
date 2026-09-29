@@ -1,6 +1,7 @@
 import { Headline, ResourceCost } from "@/ui/design-system/molecules";
 import { configManager } from "@bibliothecadao/eternum";
-import { LEVEL_DESCRIPTIONS, RealmLevelNames, RealmLevels } from "@bibliothecadao/types";
+import { RealmLevelNames, RealmLevels } from "@bibliothecadao/types";
+import { describeCastleLevel } from "@/ui/modules/entity-details/realm/castle-level";
 import { useMemo } from "react";
 
 const CASTLE_IMAGES: Partial<Record<RealmLevelNames, string>> = {
@@ -51,8 +52,8 @@ export const Realm = () => {
 
 const LevelTable = () => {
   const levelTable = useMemo(() => {
-    return Object.entries(configManager.realmUpgradeCosts).map(([level, costs]) => ({
-      level: RealmLevels[level as keyof typeof RealmLevels],
+    return configManager.realmUpgradeRecipes().map(({ level, costs }) => ({
+      level: RealmLevels[level],
       cost: costs.map((cost) => ({
         ...cost,
         amount: cost.amount,
@@ -88,13 +89,7 @@ const LevelTable = () => {
                   <div className="space-y-2 text-center">
                     <span className="text-2xl font-medium text-light-pink block">{resource.level}</span>
                     <span className=" block leading-relaxed">
-                      {
-                        LEVEL_DESCRIPTIONS[
-                          RealmLevels[
-                            resource.level as unknown as keyof typeof RealmLevels
-                          ] as keyof typeof LEVEL_DESCRIPTIONS
-                        ]
-                      }
+                      {describeCastleLevel(RealmLevels[resource.level as unknown as keyof typeof RealmLevels])}
                     </span>
                   </div>
                 </div>
