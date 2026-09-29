@@ -956,8 +956,12 @@ function planExplorerAction(
 ): ExplorerActionPlan | undefined {
   const indexes = game.armyPathIndexes();
   const wantedActionType = kind === "explore" ? ActionType.Explore : ActionType.Move;
-  const remaining = [...bot.explorers];
-  let staminaShort = false;
+  const minimumStamina = game.minimumStaminaFor(kind);
+  const remaining = bot.explorers.filter(
+    (explorer) => game.explorerStamina(explorer.explorerId, chainTicks.armies) >= minimumStamina,
+  );
+  // No explorer can pay for the step, as after a battle: the bot has nothing to send this tick, and nothing failed.
+  if (remaining.length === 0) return undefined;
   while (remaining.length > 0) {
     const explorer = prioritizeExplorer(remaining)!;
     remaining.splice(remaining.indexOf(explorer), 1);
@@ -977,12 +981,9 @@ function planExplorerAction(
       if (path && ActionPaths.getActionType(path) === wantedActionType) {
         return { direction, explorer, from, path, target };
       }
-      staminaShort ||= game.explorerStamina(explorer.explorerId, chainTicks.armies) < game.minimumStaminaFor(kind);
     }
   }
 
-  // No explorer can pay for the step, as after a battle: the bot has nothing to send this tick, and nothing failed.
-  if (staminaShort) return undefined;
   const routeState = bot.explorers
     .map((explorer) => {
       const at = coordKey(requireExplorer(game, explorer.explorerId).coord);

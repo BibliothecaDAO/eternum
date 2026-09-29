@@ -460,20 +460,48 @@ describe("Madara harness workload", () => {
 
   it("skips an explorer tick no explorer can afford instead of recording a failure", async () => {
     spyOn(configManager, "getMapCenter").mockReturnValue(0);
-    const world = fakeWorld();
+    const world = fakeWorld([2, { coord: { x: 10, y: 10 }, staminaAmount: 120n, staminaUpdatedTick: 1n }]);
     const bot = readyHarnessBot(world);
-    let reads = 0;
-    // Full for the readiness wait, then spent below both an explore (30) and a move (10), as after a battle.
-    world.game.explorerStamina = () => (++reads === 1 ? 120 : 5);
+    bot.explorers.push({ ...bot.explorers[0]!, explorerId: 2 });
     world.actions.armyPaths = () => new ActionPaths();
     const workload = await runWorkload({
       bots: [bot],
       game: world.game,
       intervalSeconds: 0.01,
       minutes: 0.001,
+      onReady: async () => {
+        world.game.explorerStamina = () => 0;
+      },
       provider: confirmingProvider(),
     });
     expect(workload.actions.map(({ kind, outcome }) => `${kind}:${outcome}`)).toEqual(["produce:completed"]);
+  });
+
+  it("reports a pathing failure for an affordable explorer even when its sibling is exhausted", async () => {
+    spyOn(configManager, "getMapCenter").mockReturnValue(0);
+    const world = fakeWorld([2, { coord: { x: 10, y: 10 }, staminaAmount: 120n, staminaUpdatedTick: 1n }]);
+    const bot = readyHarnessBot(world);
+    bot.explorers.push({ ...bot.explorers[0]!, explorerId: 2 });
+    world.actions.armyPaths = () => new ActionPaths();
+
+    const workload = await runWorkload({
+      bots: [bot],
+      game: world.game,
+      intervalSeconds: 0.01,
+      minutes: 0.001,
+      onReady: async () => {
+        world.game.explorerStamina = (id) => (id === 1 ? 0 : 120);
+      },
+      provider: confirmingProvider(),
+    });
+
+    const steps = workload.actions.filter(({ kind }) => kind !== "produce");
+    expect(steps).toHaveLength(5);
+    for (const step of steps) {
+      expect(step.outcome).toBe("driver_failed");
+      expect(step.failureClass).toBe("harness_pathing");
+      expect(step.error).toContain("No collision-free");
+    }
   });
 
   it("plays every explorer step through the bot's client actions and reads the result from the shared store", async () => {
