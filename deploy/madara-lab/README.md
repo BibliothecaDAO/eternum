@@ -646,6 +646,9 @@ curl -s https://launch.<LAB_DOMAIN>/health
 ```
 
 Redeploys of every host service go through `scripts/deploy-box.sh` (as root on the box), which `.github/workflows/deploy-box.yml` runs on each push to `live-dojo` that touches a service or its inputs. The workflow lets the active deployment finish and keeps the newest pending update. The recipe compares against the last healthy deployment recorded at `refs/deployments/box`, checks out the latest `live-dojo`, and selects services using changed workspace files and their transitive lockfile dependencies. Game-only dependency changes do not restart host services. Selected services get a dependency install, a shared-package build when needed, and their own preparation steps (the identity SPA build and schema push), then restart and `/health` checks. Only success advances the deployment checkpoint, so a failed install or restart remains retryable. The first run without a checkpoint deploys all four services to establish one. A box left on an old branch is carried onto `live-dojo` by the same run, provided its worktree is clean. Logs include the deployment plan and step failures; the final line is a `box_deploy` JSON result.
+
+The live game client is not redeployed by pushes to `live-dojo`: `.github/workflows/deploy-client.yml` still triggers on `next`, so a live client fix ships with `gh workflow run deploy-client.yml --ref live-dojo`.
+
 On a box provisioned before `realms-identity.service` replaced `web.service`, switch the units once:
 
 ```bash
