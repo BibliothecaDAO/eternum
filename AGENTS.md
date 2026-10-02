@@ -1,7 +1,7 @@
 # Repository Agent Instructions
 
-This file defines the default coding and review standard for the entire repository. `CLAUDE.md` is a symlink to it, so
-every agent harness reads the same standard.
+This file defines the default coding and review standard for the entire repository. Instructions live in `AGENTS.md`
+files only; each has a `CLAUDE.md` symlink beside it, so every agent harness reads the same standard.
 
 On startup, read this file first. Then read any more specific `AGENTS.md` file in the subdirectory you are working in.
 More specific files may add local rules, but they should not lower the quality bar defined here.
@@ -226,8 +226,15 @@ branch so every lane reads this file as it stands there. Coordinate lanes throug
 terminals or workspaces:
 
 - `herdr agent list` shows every lane, its pane and whether it is idle, working or blocked.
-- Start a lane beside yours with `herdr pane split --current --direction right --cwd <checkout> --no-focus`, then
-  `herdr agent start <lane> --kind <kind> --pane <new pane>`.
+- The reviewer keeps its own tab, alone and full height; never split the reviewer's pane. Lanes go in other tabs,
+  grouped by kind of work (for example build, art, audit). Reuse a group tab from
+  `herdr tab list --workspace "$HERDR_WORKSPACE_ID"`, or create one with
+  `herdr tab create --label <group> --cwd <checkout> --no-focus` and start the first lane in its
+  `.result.root_pane.pane_id`. Further lanes of the group split that pane with
+  `herdr pane split <pane> --direction right|down --cwd <checkout> --no-focus`. Start each with
+  `herdr agent start <lane> --kind <kind> --pane <pane>`.
+- A lane already split beside the reviewer moves to its group with `herdr pane move <pane> --tab <tab> --split right`
+  (or `--new-tab --label <group>`); keep addressing it by its lane name.
 - Hand an idle lane its brief with `herdr agent prompt <lane> "<brief>" --wait`, and read its answer with
   `herdr agent read <lane> --source recent-unwrapped`. Never type into a lane that is working.
 - A lane shown as `blocked` is waiting for the owner's approval in its own pane. Tell the owner; never answer it for
