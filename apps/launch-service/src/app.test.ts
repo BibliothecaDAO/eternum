@@ -7,6 +7,7 @@ import { D1CalendarStore } from "./calendar-store";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
 import { createLaunchTestDatabase, testChain } from "./test-database";
+import { day } from "./test-dates";
 
 const ALLOWED_ORIGIN = "https://play.realms.party";
 const ALLOWED_ADDRESS = "0x123";
@@ -73,7 +74,7 @@ describe("free slot registration", () => {
 
   test("registers the signed-in Realms account and its shard account, with no wallet or launcher privileges", async () => {
     const { app, slots, playerAccount } = createApp(signedIn());
-    await slots.create("friday", "2099-01-01T00:00:00.000Z");
+    await slots.create("friday", day(0).toISOString());
     const response = await app.request(registerRequest());
     expect(response.status).toBe(200);
     expect((await slots.list())[0]!.registrations).toMatchObject([{ realmsId: PLAYER, account: PLAYER_ACCOUNT }]);
@@ -155,7 +156,7 @@ describe("launcher rosters and off-timetable slots", () => {
         },
         body: JSON.stringify(body),
       });
-    const season = { startsAt: "2099-01-01T00:00:00.000Z", endsAt: "2099-05-01T00:00:00.000Z" };
+    const season = { startsAt: day(0).toISOString(), endsAt: day(120).toISOString() };
     expect((await operator.app.request(put(season, { token: OPERATOR_TOKEN }))).status).toBe(200);
     const backwards = { startsAt: season.endsAt, endsAt: season.startsAt };
     expect((await operator.app.request(put(backwards, { token: OPERATOR_TOKEN }))).status).toBe(409);
