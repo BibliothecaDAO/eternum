@@ -11,6 +11,17 @@ pinned images, an explicit chain identity and the published guardian identity, t
 directory, launches and the other central services are the environment's Workers. The
 [public shard package](../shard/README.md) runs with Docker alone; the runner renders that same Compose file.
 
+## Host
+
+`host/bootstrap.sh` prepares a fresh Ubuntu 24.04 box, as root with `OPERATOR` naming the account that runs shards:
+Docker and Compose, cloudflared, Node 22 with corepack and bun for the runner, a firewall that admits only SSH, time
+sync, the `/backup` disk (formatted once by hand with the label `backup`), `athanor.slice` with every CPU of the box,
+and `/opt/athanor` for the isolated-stack lock and run directories. It is safe to run again. The tunnel is remotely
+managed: the owner creates it in Cloudflare, its public hostnames map to the package's loopback ports (RPC 8080, Herald
+8081, admission 8082), and its token goes into the root-only `/etc/cloudflared/tunnel-token` that
+`host/cloudflared.service` reads. The runner's trials run inside `athanor.slice`; a package started by `deploy.py` runs
+beside it under its own per-container limits.
+
 ## Publishing the shard package
 
 Push a reviewed `shard-v*` tag to build the init, Herald and gateway images and the downloadable Compose package. Tag
@@ -144,26 +155,28 @@ derives that environment's identity API from `guardian_url` (which must end in `
 The harness requires explicit `DEPLOYER_ACCOUNT_ADDRESS` and `DEPLOYER_PRIVATE_KEY`, including for resumed runs.
 
 For ordered trials, use `scripts/shard.py --matrix MATRIX_JSON RUN_DIRECTORY`. The matrix contains `configurations` (an
-ordered list of shard configurations), `workload` (harness options, underscores for dashes and `true` for a bare flag:
+ordered list of shard configurations), optional `defaults` merged under each, and `workload` (harness options,
+underscores for dashes and `true` for a bare flag:
 `{"game_type": "frontier", "bots": 2000, "frontier_burst": "booth", "preset": 101, "minutes": 30}` or Blitz `games` and
-`accounts_per_game`, or a launch `slot`; the harness refuses what it does not accept) and `live` (`container`,
-`chain_config`). The live container and chain configuration are read only for host snapshots. Each trial stores its
-configuration, deployment, workload reports, live-health samples and start/end host snapshots under the run directory. A
-failed workload aborts the matrix; the live budget never does. Each completed or failed candidate is stopped with its
-volumes retained; the next configuration starts fresh.
+`accounts_per_game`, or a launch `slot`; the harness refuses what it does not accept), which a configuration's own
+`workload` overrides key by key. A configuration may name a `package` (a `shard-v*` release, whose image digests it
+runs) and a `gateway_revision` (a commit whose `apps/gateway` the runner builds and runs instead of the package's
+gateway, for a lever trial). Each trial stores its configuration with the resolved digests, deployment, workload
+reports, start/end host snapshots and `matrix-result.json`: pass/fail, the node's anonymous memory and kept RocksDB
+snapshots every 15 s, and admission-to-visible latency split into its gateway part and the rest, overall, in bursts and
+in calm. A failed workload aborts the matrix. Each completed or failed candidate is stopped with its volumes retained;
+the next configuration starts fresh.
 
-The checked-in live budget replaces the box-only budget file. Its 2026-09-22 baseline used 130 confirmed-diff windows
-from 13:20–15:30 UTC while the candidate was frozen: window p95 ranged from 225 to 237 ms. The 300 ms confirmed budget
-gives that maximum roughly 25% headroom. The preceding 24 hours contained 64 non-empty preconfirmed windows (1,728
-observations), with window p95 from 2 to 41 ms; their budget is 60 ms. Twelve live-health samples had zero lag and
-responses from 2.3 to 13.8 ms; the health budget is 50 ms and lag allowance remains three blocks. Disk reserves remain
-10 GiB for the candidate and 100 GiB for the host. Raw measurements stay with the run artifacts.
+Recovery drills run against a shard the runner started: `scripts/drill.py RUN_DIRECTORY`. Four drills run in turn, each
+under its own burst of four Blitz games of 24: SIGTERM and SIGKILL of the node, then of the gateway, sent once the burst
+has recorded executions and followed by a restart. `drills.json` records each drill's recovery height and time, the
+tickets in flight at the signal and how many of them were recorded after the restart, chain failures, and every
+duplicate or gap among the chain's recorded executions. Any duplicate, gap, chain failure or failed workload fails the
+drill run. The command takes the isolated-stack lock itself before starting any workload or restart.
 
-The live budget is a measurement, not a rule. `athanor-live-guard` samples live every five seconds into
-`/opt/athanor/logs/live-guard.jsonl`, and each timed workload records the same samples in its `live-health.jsonl`. A
-sample lists the budgets it exceeded (`over_budget`), the budgets it could not measure, and what the slice was doing:
-the isolated-stack lock holder and the cores it used since the previous sample. Nothing is paused; the slice's core pin
-and these budgets are tuned from that log.
+Campaign plans live in `plans/`. `plans/latency-window.json` is the latency pair and snapshot A/B window: base, the two
+gateway levers (branch `native-gateway-levers-2`, each the current next gateway plus the lever; lever3 includes lever2),
+and 30-minute runs without and with `--db-max-kept-snapshots=0` for the memory curve.
 
 The runner starts the gateway after deployment with the new world's sequencing account and address. The gateway persists
 its epoch secret in its own volume. Pending assignments are volatile across restart; recorded nonces prevent duplicate
@@ -204,11 +217,11 @@ service and every public manifest before handing staging to the other streams.
 ### Isolated-stack lock
 
 Anything that deploys to or loads the box holds `/opt/athanor/isolated-stack.lock` while it runs. `deploy.py`,
-`shard.py` and `backup.py` take it themselves through one helper (`deploy/shard/stack_lock.py`), so never hold it around
-them. The lock is taken in one atomic step: the holder and UTC time are written to a private file beside it and
-hard-linked into place, which fails when the lock exists, so it is never seen empty and a held lock is refused, never
-waited on or overwritten. It is removed when the work ends. To hold it by hand, for a check between commands, use the
-same step and remove it yourself afterwards:
+`shard.py`, `drill.py` and `backup.py` take it themselves through one helper (`deploy/shard/stack_lock.py`), so never
+hold it around them. The lock is taken in one atomic step: the holder and UTC time are written to a private file beside
+it and hard-linked into place, which fails when the lock exists, so it is never seen empty and a held lock is refused,
+never waited on or overwritten. It is removed when the work ends. To hold it by hand, for a check between commands, use
+the same step and remove it yourself afterwards:
 
 ```sh
 printf '%s %s\n' "<holder>" "$(date -u +%FT%TZ)" > /opt/athanor/.lock.$$ &&

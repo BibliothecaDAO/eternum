@@ -1,8 +1,0 @@
-[Unit]
-Description=Bounded native candidate workspace
-
-[Mount]
-What=/var/lib/athanor-work.img
-Where=/opt/athanor
-Type=ext4
-Options=loop,nodev,nosuid

@@ -36,6 +36,11 @@ jobs:
       - name: Check that each validation area covers every file its checks read
         run: python3 .github/scripts/check_validation_areas.py
 
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Check staging Worker deployment follows next without path gaps
+        run: bun test ./.github/scripts/deploy-workers.test.ts
+
       - name: Check committed env files name no third-party RPC
         run: |
           node --test scripts/check-committed-env-rpc.test.mjs

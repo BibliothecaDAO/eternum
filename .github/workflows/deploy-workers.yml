@@ -1,9 +1,9 @@
 name: Deploy Workers
 
-# Deploys the central-service Workers to Cloudflare. Staging deploys on every push to native-staging, the branch its
-# chains and client are built from, so its Workers always speak the contracts its shards run; the integration branch
-# may run ahead of them. No path filter: the Workers build from most of the workspace and the native schema, and a
-# hand-kept list of those paths missed a schema change. Production deploys only by dispatch, at the cutover. Each environment has its own D1 databases
+# Deploys the central-service Workers to Cloudflare. Staging deploys on every push to next, the branch its shards and
+# client are built from, so its Workers always speak the contracts its shards run. No path filter: the Workers build
+# from most of the workspace and the native schema, and a hand-kept list of those paths missed a schema change.
+# Production deploys only by dispatch, at the cutover. Each environment has its own D1 databases
 # and secrets. The guardian Worker is deployed by the owner alone and is not listed here. The launch Worker targets the
 # shard its environment's LAUNCH_SHARD_URL names (the shard's Herald, whose /manifest says the rest), with
 # LAUNCH_DEPLOYER_ACCOUNT_ADDRESS and LAUNCHER_ALLOWLIST, and signs with its
@@ -13,7 +13,7 @@ name: Deploy Workers
 # --ref at the branch it releases.
 on:
   push:
-    branches: [native-staging]
+    branches: [next]
   workflow_dispatch:
     inputs:
       environment:
@@ -31,7 +31,7 @@ concurrency:
 
 jobs:
   # Production migrates its databases and serves players, so it publishes only a commit whose landing validation run
-  # is green. Staging follows native-staging as it is pushed.
+  # is green. Staging follows next as it is pushed.
   validated:
     if: inputs.environment == 'production'
     uses: ./.github/workflows/landing-validated.yml

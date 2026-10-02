@@ -3,6 +3,7 @@
 
 import argparse
 import hashlib
+import io
 import ipaddress
 import json
 import os
@@ -13,11 +14,14 @@ import signal
 import socket
 import subprocess
 import sys
+import tarfile
+import threading
 import time
 from urllib.request import Request, urlopen
 from urllib.parse import urlparse
 
-import candidate_guard
+import measures
+
 
 ROOT = Path(__file__).resolve().parents[3]
 # The box lock ships with the shard package, beside backup.py, which takes it too.
@@ -28,6 +32,7 @@ from stack_lock import isolated_stack_lock
 METRICS_CONTEXT = ROOT / "deploy/athanor/metrics"
 # sudo resets the environment; the operator token passes through to initialization only when it is kept.
 DOCKER = ["sudo", "-n", "--preserve-env=OPERATOR_TOKEN", "docker"]
+RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 # Gateway connections: each player holds about two (a 100-connection server refused a 96-player slot at its 48th
 # player), plus a fixed allowance for the sequencing authority, Herald and tooling. The node's own limit is the
 # package's: players never reach the node directly.
@@ -172,7 +177,7 @@ def compose_configuration(config, directory):
         # shard passes it through from the same shell again.
         service["environment"]["OPERATOR_TOKEN"] = None
         service["environment"]["CHAIN_CONFIG"] = "/template/chain-config.yaml"
-        service["volumes"].append({"type": "bind", "source": str(Path(config["chain_config"]).resolve()),
+        service["volumes"].append({"type": "bind", "source": str((ROOT / config["chain_config"]).resolve()),
                                    "target": "/template/chain-config.yaml", "read_only": True})
     node = compose["services"]["madara"]
     replaced = ("--enable-native-execution=", "--native-compilation-mode=")
@@ -400,7 +405,7 @@ def initialize_shard_identity(config, directory, deployer_address):
     identity = read_guardian_identity(config["guardian_url"])
     chain_id = "0x" + config["chain_id"].encode("ascii").hex()
     write_json(directory / "native-world.json", {"shard": {"chainId": chain_id, **identity}})
-    template = Path(config["chain_config"]).read_text()
+    template = (ROOT / config["chain_config"]).read_text()
     # Identity belongs to the initialized shard, not to a benchmark template.
     template = re.sub(r"^(chain_id|sequencer_address):.*\n?", "", template, flags=re.MULTILINE)
     (directory / "chain-config.yaml").write_text(
@@ -408,8 +413,36 @@ def initialize_shard_identity(config, directory, deployer_address):
     )
 
 
+def release_images(tag):
+    """The init, Herald and gateway digests a shard-v* release pins in its package."""
+    with urlopen(f"{RELEASES}/{tag}/shard.tar.gz", timeout=60) as response:
+        archive = tarfile.open(fileobj=io.BytesIO(response.read()), mode="r:gz")
+    lines = archive.extractfile("shard/images.env").read().decode().splitlines()
+    images = dict(line.split("=", 1) for line in lines if line)
+    return {"init_image": images["SHARD_INIT_IMAGE"], "herald_image": images["SHARD_HERALD_IMAGE"],
+            "gateway_image": images["SHARD_GATEWAY_IMAGE"]}
+
+
+def gateway_image_at(revision):
+    """Builds the gateway at a revision of this repository, for a lever trial, and returns the image's digest."""
+    tag = f"realms-gateway:{revision}"
+    context = subprocess.run(["git", "archive", "--format=tar", f"{revision}:apps/gateway"], cwd=ROOT,
+                             capture_output=True, check=True).stdout
+    subprocess.run([*DOCKER, "build", "-t", tag, "-"], input=context, capture_output=True, check=True)
+    return read([*DOCKER, "image", "inspect", "--format", "{{.Id}}", tag])
+
+
+def resolve_images(config):
+    """A configuration names a shard-v* package and, for a lever trial, a gateway revision built beside it; images a
+    configuration pins by digest win over the package's."""
+    resolved = {**(release_images(config["package"]) if "package" in config else {}), **config}
+    if "gateway_revision" in config:
+        resolved["gateway_image"] = gateway_image_at(config["gateway_revision"])
+    return resolved
+
+
 def start_shard(config, directory):
-    config = {"node_memory_mib": DEFAULT_NODE_MEMORY_MIB, **config}
+    config = {"node_memory_mib": DEFAULT_NODE_MEMORY_MIB, **resolve_images(config)}
     allowed = cpu_numbers(Path("/sys/fs/cgroup/athanor.slice/cpuset.cpus.effective").read_text().strip())
     validate_configuration(config, allowed)
     ensure_fresh_project(config)
@@ -454,32 +487,15 @@ def workload_command(workload):
     return ["bun", "deploy/athanor/harness/run.ts", *options]
 
 
-def record_live_health(budget, since, until):
-    try:
-        return candidate_guard.sample_live(budget, since, until)
-    except Exception as error:
-        return {"event": "live_health_unavailable", "error": type(error).__name__}
-
-
-def run_workload(command, directory, environment, budget):
-    """Runs the workload to its end, recording live health beside it; the live budget never stops it."""
-    since = time.time()
-    with (directory / "harness.log").open("w") as output, (directory / "live-health.jsonl").open("w") as health:
+def run_workload(command, directory, environment):
+    """Runs the workload to its end; an interrupted run stops the workload's whole process group."""
+    with (directory / "harness.log").open("w") as output:
         process = subprocess.Popen(command, cwd=ROOT, env=environment, stdout=output,
                                    stderr=subprocess.STDOUT, start_new_session=True)
         try:
-            while True:
-                now = time.time()
-                health.write(json.dumps({"at": now, **record_live_health(budget, since, now)}) + "\n")
-                health.flush()
-                since = now
-                try:
-                    code = process.wait(timeout=5)
-                    if code:
-                        raise subprocess.CalledProcessError(code, command)
-                    return
-                except subprocess.TimeoutExpired:
-                    pass
+            code = process.wait()
+            if code:
+                raise subprocess.CalledProcessError(code, command)
         finally:
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGTERM)
@@ -490,20 +506,31 @@ def run_workload(command, directory, environment, budget):
                     process.wait()
 
 
-def capture_hosts(directory, environment, live, phase):
-    script = ["bash", "deploy/athanor/scripts/host-state.sh"]
-    for label, target in (("candidate", {}), ("live", {
-        "MADARA_CONTAINER": live["container"], "CHAIN_CONFIG_PATH": live["chain_config"],
-    })):
-        run(script, directory, f"host-{label}-{phase}", {**environment, **target})
+def capture_host(directory, environment, phase):
+    run(["bash", "deploy/athanor/scripts/host-state.sh"], directory, f"host-{phase}", environment)
+
+
+def run_measured_workload(command, target, environment, config, result):
+    """Runs the trial's workload while sampling its node, then splits the admission latency the harness reported."""
+    stop, samples = threading.Event(), []
+    sampler = threading.Thread(target=measures.sample_node, daemon=True, args=(
+        DOCKER, f"athanor-{config['shard']}-madara-1", SLICE, target / "metrics" / "metrics.jsonl", stop, samples))
+    sampler.start()
+    try:
+        run_workload(command, target, environment)
+    finally:
+        stop.set()
+        sampler.join()
+        result["nodeSamples"] = samples
+    result["admission"] = measures.admission_split(target / "workload")
 
 
 def run_matrix(matrix, directory):
-    command = workload_command(matrix["workload"])
-    budget = json.loads(candidate_guard.LIVE_BUDGET_PATH.read_text())
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
     write_json(directory / "matrix.json", matrix)
-    for config in matrix["configurations"]:
+    for entry in matrix["configurations"]:
+        config = {**matrix.get("defaults", {}), **entry}
+        command = workload_command({**matrix["workload"], **config.pop("workload", {})})
         target = directory / config["shard"]
         if target.exists():
             raise ValueError(f"duplicate run directory: {target}")
@@ -513,8 +540,8 @@ def run_matrix(matrix, directory):
             start_shard(config, target)
             private = read_private_environment(target / "harness.env")
             environment = {**os.environ, **private, "HARNESS_OUTPUT_DIRECTORY": str(target / "workload")}
-            capture_hosts(target, environment, matrix["live"], "start")
-            run_workload(command, target, environment, budget)
+            capture_host(target, environment, "start")
+            run_measured_workload(command, target, environment, config, result)
             result["passed"] = True
         except Exception as error:
             result["error"] = str(error)
@@ -522,7 +549,7 @@ def run_matrix(matrix, directory):
         finally:
             try:
                 if environment:
-                    capture_hosts(target, environment, matrix["live"], "end")
+                    capture_host(target, environment, "end")
             except Exception as error:
                 result.update(passed=False, error=str(error))
                 raise
