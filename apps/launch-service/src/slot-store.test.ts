@@ -4,6 +4,7 @@ import { nextBlitzSlot, runLaunchSchedule } from "./schedule";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
 import { createLaunchTestDatabase, testChain } from "./test-database";
+import { blitzSlotName, day } from "./test-dates";
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
@@ -88,35 +89,32 @@ test("every tick names the same next slot and a frozen slot is pruned when the n
   const slots = new D1SlotStore(database.db, launches);
   const blitzWindow = {
     phase: "blitz" as const,
-    startsAt: "2026-10-01T00:00:00.000Z",
-    endsAt: "2026-10-10T00:00:00.000Z",
+    startsAt: day(0).toISOString(),
+    endsAt: day(9).toISOString(),
   };
   const calendar = { list: async () => [blitzWindow], set: async () => blitzWindow };
   const tick = (now: Date) => Effect.runPromise(runLaunchSchedule(launches, slots, calendar, now));
-  const now = new Date("2026-10-01T11:30:00Z");
+  const evening = { name: blitzSlotName(day(0, 20)), closesAt: day(0, 20).toISOString() };
+  const nextMorning = { name: blitzSlotName(day(1, 11)), closesAt: day(1, 11).toISOString() };
+  const now = day(0, 11, 30);
   await Promise.all([tick(now), tick(now), tick(now)]);
-  expect((await slots.list()).map(({ name, closesAt }) => ({ name, closesAt }))).toEqual([
-    { name: "blitz-20261001-2000", closesAt: "2026-10-01T20:00:00.000Z" },
-  ]);
-  expect(nextBlitzSlot(new Date("2026-10-01T20:00:00Z"))).toEqual({
-    name: "blitz-20261002-1100",
-    closesAt: "2026-10-02T11:00:00.000Z",
-  });
+  expect((await slots.list()).map(({ name, closesAt }) => ({ name, closesAt }))).toEqual([evening]);
+  expect(nextBlitzSlot(day(0, 20))).toEqual(nextMorning);
 
   await database.db
     .prepare("UPDATE playtest_slots SET closes_at = ?")
     .bind(Date.now() + 60_000)
     .run();
-  await slots.register("blitz-20261001-2000", [player(1)]);
+  await slots.register(evening.name, [player(1)]);
   await closeSlots();
   await slots.freezeNextDue();
-  await tick(new Date("2026-10-01T20:00:01Z"));
+  await tick(day(0, 20, 0, 1));
   await closeSlots();
   await slots.freezeNextDue();
   expect((await slots.list()).map(({ name, frozenAt }) => ({ name, frozen: frozenAt !== null }))).toEqual([
-    { name: "blitz-20261002-1100", frozen: true },
+    { name: nextMorning.name, frozen: true },
   ]);
-  expect((await launches.list("madara.blitz", "game")).map(({ name }) => name)).toEqual(["blitz-20261001-2000-1"]);
+  expect((await launches.list("madara.blitz", "game")).map(({ name }) => name)).toEqual([`${evening.name}-1`]);
 });
 
 test("the schedule freezes zero and single-player slots without inventing players", async () => {
