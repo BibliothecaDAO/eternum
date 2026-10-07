@@ -1564,7 +1564,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
         .discovery =
             Some(
                 crate::expeditions::FrontierDiscoveryRules {
-                    camp_bps: 8000,
+                    camp_bps: 4000,
                     rift_bps: 1,
                     ruin_bps: 1,
                     stragglers_bps: 0,
@@ -2134,7 +2134,7 @@ fn setup_frontier_chests_with_rules(
                     camp_bps: 1,
                     rift_bps: 0,
                     ruin_bps: 0,
-                    stragglers_bps: 8000,
+                    stragglers_bps: 4000,
                     shrine_bps: 0,
                     well_bps: 0,
                     empty_reveal_limit: 7,
