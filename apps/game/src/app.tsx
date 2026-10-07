@@ -67,6 +67,7 @@ const GraphicsLabView = lazy(() =>
   import("./ui/features/debug/graphics-lab-view").then((module) => ({ default: module.GraphicsLabView })),
 );
 // Reading matter loads on demand, so the cold path carries no post or legal text.
+const AppLabView = lazy(() => import("./shell/lab/app-lab").then((module) => ({ default: module.AppLabView })));
 const TermsPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.TermsPage })));
 const PrivacyPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.PrivacyPage })));
 const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({ default: module.GameClientApp })));
@@ -149,6 +150,14 @@ export const appRoutes = (
           element={
             <LazyRoute>
               <FrontierHudLabView />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="/lab/app/:screen/*"
+          element={
+            <LazyRoute>
+              <AppLabView />
             </LazyRoute>
           }
         />

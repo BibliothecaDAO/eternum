@@ -90,7 +90,7 @@ const DesktopPlay = ({ facts }: { facts: PlayFacts }) => {
       </div>
       <div className="grid grid-cols-3 gap-2">
         {otherAges(facts.step).map((age) => (
-          <AgeCard key={age.mode} age={age} {...ageState(age.mode, facts, "full")} size="tall" />
+          <AgeCard key={age.mode} age={age} {...ageState(age.mode, facts, "full")} size="landscape" />
         ))}
       </div>
     </div>

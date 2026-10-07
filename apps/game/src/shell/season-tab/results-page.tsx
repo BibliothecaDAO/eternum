@@ -57,19 +57,48 @@ export const ResultsPage = () => {
   useEffect(() => {
     if (ref) markResultsSeen(gameKey({ chainId: ref.chainId, game_id: ref.gameId }));
   }, [ref?.chainId, ref?.gameId]);
-  return (
-    <PageFrame back={fromList ? "/season" : undefined} title={WORDS.results}>
-      {ref ? <Result gameRef={ref} fromList={fromList} /> : <NothingHere />}
-    </PageFrame>
+  return ref ? (
+    <Result gameRef={ref} fromList={fromList} />
+  ) : (
+    <ResultsFrame fromList={fromList}>
+      <NothingHere />
+    </ResultsFrame>
   );
 };
+
+/** Back to the list when opened from one; after a match, none. The painting is the page's ground on desktop. */
+const ResultsFrame = ({
+  fromList,
+  painting,
+  foot,
+  children,
+}: {
+  fromList: boolean;
+  painting?: string;
+  foot?: ReactNode;
+  children: ReactNode;
+}) => (
+  <PageFrame back={fromList ? "/season" : undefined} title={WORDS.results} painting={painting} foot={foot}>
+    {children}
+  </PageFrame>
+);
 
 const Result = ({ gameRef, fromList }: { gameRef: GameRef; fromList: boolean }) => {
   const board = useLeaderboard(gameRef);
   const game = useFinishedGame(gameRef);
   const { data: player } = useRealmsPlayer();
-  if (board.isError) return <StateCard service="results" error={board.error} retry={() => void board.refetch()} />;
-  if (board.isPending) return <Loading />;
+  if (board.isError)
+    return (
+      <ResultsFrame fromList={fromList}>
+        <StateCard service="results" error={board.error} retry={() => void board.refetch()} />
+      </ResultsFrame>
+    );
+  if (board.isPending)
+    return (
+      <ResultsFrame fromList={fromList}>
+        <Loading />
+      </ResultsFrame>
+    );
   return board.data.mode === "frontier" ? (
     <FrontierResult entries={board.data.entries} player={player} fromList={fromList} />
   ) : (
@@ -77,36 +106,60 @@ const Result = ({ gameRef, fromList }: { gameRef: GameRef; fromList: boolean }) 
   );
 };
 
-/** Painting first on a phone; on desktop the painting with the outcome at the left, the rows at the right. */
-const ResultLayout = ({ hero, rows, buttons }: { hero: ReactNode; rows: ReactNode; buttons: ReactNode }) =>
+/**
+ * The outcome over its painting with the board's rows: on a phone the painting runs edge to edge above the rows; on
+ * desktop it is the page's ground, the outcome at its lower left and the rows at the right (painted 04).
+ */
+const ResultLayout = ({
+  painting,
+  outcome,
+  rows,
+  buttons,
+  fromList,
+}: {
+  painting: string;
+  outcome: ReactNode;
+  rows: ReactNode;
+  buttons: ReactNode;
+  fromList: boolean;
+}) =>
   useLayout() === "phone" ? (
-    <div className="flex flex-col gap-4">
-      {hero}
-      {rows}
-      {buttons}
-    </div>
-  ) : (
-    <div className="grid grid-cols-[1fr_28rem] items-start gap-8">
-      {hero}
+    <ResultsFrame fromList={fromList} foot={buttons}>
       <div className="flex flex-col gap-4">
+        <section className="relative isolate -mx-4 flex min-h-[22rem] flex-col justify-end gap-1 px-4">
+          <img
+            {...paintingSources(painting)}
+            sizes="100vw"
+            alt=""
+            className="absolute inset-0 -z-10 size-full object-cover"
+          />
+          <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-kit-ground/25 to-kit-ground" />
+          {outcome}
+        </section>
         {rows}
-        {buttons}
       </div>
-    </div>
+    </ResultsFrame>
+  ) : (
+    <ResultsFrame fromList={fromList} painting={painting}>
+      <div className="grid grid-cols-[1fr_28rem] items-start gap-8">
+        <section className="flex min-h-[28rem] flex-col justify-end gap-1">
+          {outcome}
+          <div className="pt-4">{buttons}</div>
+        </section>
+        {rows}
+      </div>
+    </ResultsFrame>
   );
 
-/** The outcome on its painting: a place, or the season's ending. */
-const ResultHero = ({ painting, children }: { painting: string; children: ReactNode }) => (
-  <section className="relative isolate flex h-56 flex-col justify-end gap-1 overflow-hidden rounded-2xl border border-kit-line p-4 lg:h-[28rem]">
-    <img
-      {...paintingSources(painting)}
-      sizes="(min-width: 1024px) 50vw, 100vw"
-      alt=""
-      className="absolute inset-0 -z-10 size-full object-cover"
-    />
-    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-kit-ground/20 to-kit-ground/95" />
-    {children}
-  </section>
+/** The place, large in gold: "You placed #12 of 1,240", or a Blitz's "3rd of 24". */
+const Placed = ({ lead, place, field }: { lead?: string; place: string; field: number }) => (
+  <p className="flex items-baseline gap-2 font-ui text-[17px] font-semibold text-kit-cream">
+    {lead}
+    <b className="text-[64px] font-extrabold leading-none text-kit-gold">{place}</b>
+    <span className="text-kit-muted">
+      {SEASON_WORDS.of} {formatAmount(field)}
+    </span>
+  </p>
 );
 
 const Buttons = ({ fromList, children }: { fromList: boolean; children: ReactNode }) => {
@@ -147,20 +200,15 @@ const BlitzResult = ({
   const rows = own && !top.includes(own) ? [...top, own] : top;
   return (
     <ResultLayout
-      hero={
-        <ResultHero painting={ageOf("blitz").painting}>
-          {own && (
-            <p className="font-ui text-[40px] font-extrabold leading-none text-kit-gold">
-              {ordinal(own.rank)}{" "}
-              <span className="text-[17px] font-semibold text-kit-cream">
-                {SEASON_WORDS.of} {formatAmount(entries.length)}
-              </span>
-            </p>
-          )}
+      painting={ageOf("blitz").painting}
+      fromList={fromList}
+      outcome={
+        <>
+          {own && <Placed place={ordinal(own.rank)} field={entries.length} />}
           <p className="text-[15px] text-kit-muted">
             {game ? `${gameTitle(game)} · ${clockLine(null, game.clock.end_at, now)}` : "—"}
           </p>
-        </ResultHero>
+        </>
       }
       rows={
         <ol className="rounded-2xl border border-kit-line bg-kit-plate px-2">
@@ -222,17 +270,14 @@ const FrontierResult = ({
   const rows = boardRows(entries, player, ROWS[useLayout()]);
   return (
     <ResultLayout
-      hero={
-        // The season's ending is not yet a recorded fact: the mist lifted stands until Herald names it.
-        <ResultHero painting={ageOf("eternum").painting}>
-          <p className="font-ui text-[15px] font-bold text-kit-gold2">{WORDS.seasonOver}</p>
-          <p className="font-display text-[30px] leading-tight text-kit-cream">{SEASON_WORDS.mistLifted}</p>
-          {own && (
-            <p className="font-ui text-[17px] text-kit-cream">
-              {SEASON_WORDS.youPlaced} <b className="text-[24px] text-kit-gold">#{own.rank}</b> {SEASON_WORDS.of}{" "}
-              {formatAmount(entries.length)}
-            </p>
-          )}
+      // The season's ending is not yet a recorded fact: the mist lifted stands until Herald names it.
+      painting={ageOf("eternum").painting}
+      fromList={fromList}
+      outcome={
+        <>
+          <p className="font-display text-[44px] leading-tight text-kit-cream lg:text-[56px]">{WORDS.seasonOver}</p>
+          <p className="font-ui text-[17px] font-bold text-kit-gold2">{SEASON_WORDS.mistLifted}</p>
+          {own && <Placed lead={SEASON_WORDS.youPlaced} place={`#${own.rank}`} field={entries.length} />}
           {own && (
             <div className="flex flex-wrap gap-2 pt-1">
               <Chip icons={["Fl"]} value={formatAmount(own.sites_cleared.total)} label="Sites cleared" />
@@ -241,7 +286,7 @@ const FrontierResult = ({
               <Chip icons={["Dp"]} value={formatAmount(own.deepest_depth)} label="Deepest" />
             </div>
           )}
-        </ResultHero>
+        </>
       }
       rows={
         <section className="rounded-2xl border border-kit-line bg-kit-plate px-2">

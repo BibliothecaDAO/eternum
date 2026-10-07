@@ -11,13 +11,13 @@ import { GoButton } from "./go-button";
 
 type Age = (typeof AGES)[number];
 
-/** A tile beside the home card, a band on the phone's ages, a tall card on the desktop's horizon. */
-type AgeCardSize = "tile" | "band" | "tall";
+/** A tile beside the home card, a band on the phone's ages, a landscape card on the desktop's row (painted 01, 02). */
+type AgeCardSize = "tile" | "band" | "landscape";
 
-const HEIGHT: Record<AgeCardSize, string> = { tile: "h-[118px]", band: "h-[168px]", tall: "h-[460px]" };
+const HEIGHT: Record<AgeCardSize, string> = { tile: "h-[118px]", band: "h-[168px]", landscape: "h-[288px]" };
 
 /** The image widths each size draws at, for the painting's srcset. */
-const SIZES: Record<AgeCardSize, string> = { tile: "130px", band: "100vw", tall: "25vw" };
+const SIZES: Record<AgeCardSize, string> = { tile: "130px", band: "100vw", landscape: "33vw" };
 
 /**
  * One age (spec 04): its kit painting faded into the ground, its numeral and mode, its lore line, its live state and
@@ -52,7 +52,7 @@ export const AgeCard = ({
     {size === "band" ? (
       <BandFace age={age} chip={chip} action={action} />
     ) : (
-      <StackFace age={age} chip={chip} action={size === "tall" ? action : null} lore={size === "tall"} />
+      <StackFace age={age} chip={chip} action={size === "landscape" ? action : null} lore={size === "landscape"} />
     )}
   </article>
 );
@@ -67,7 +67,7 @@ export const AgeLabel = ({ numeral }: { numeral: string }) => (
   </span>
 );
 
-/** A tile or a tall card: everything stacked at the foot of the painting. */
+/** A tile or a landscape card: everything stacked at the foot of the painting. */
 const StackFace = ({
   age,
   chip,
