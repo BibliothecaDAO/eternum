@@ -43,15 +43,16 @@ describe("native deployment target is explicit", () => {
     expect(error).toContain("enrol-operator.ts");
   });
 
-  test("the shard package passes the operator token to initialization only from the shell that starts it", async () => {
+  test("the shard package passes the operator token to initialization and the harness only from the shell that starts it", async () => {
     // A key with no value is Compose's pass-through: the container gets the starting shell's value, or none when the
-    // shell has none. Read from the file itself, since what this proves is the package's wiring, not Compose.
+    // shell has none. Read from the file itself, since what this proves is the package's wiring, not Compose. The
+    // harness approves its bots with the token, so it takes it the same way; no other service sees it.
     const compose = Bun.YAML.parse(await Bun.file(resolve(root, "deploy/shard/compose.yml")).text()) as {
       services: Record<string, { environment?: Record<string, unknown> }>;
     };
     for (const [name, service] of Object.entries(compose.services)) {
       const environment = service.environment ?? {};
-      if (name === "prepare" || name === "init") {
+      if (name === "prepare" || name === "init" || name === "harness") {
         expect(Object.hasOwn(environment, "OPERATOR_TOKEN")).toBe(true);
         expect(environment.OPERATOR_TOKEN).toBeNull();
       } else expect(Object.hasOwn(environment, "OPERATOR_TOKEN")).toBe(false);

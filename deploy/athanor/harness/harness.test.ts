@@ -28,9 +28,7 @@ import {
   assessRosterRun,
   isThresholdBlockingFailure,
   analyzeHarnessResult,
-  collectHarnessEvidenceBeforeRun,
   latencyAgainstTargets,
-  pinnedNodeImage,
   percentile,
   summarizeCompletedMix,
   summarizeFailureClasses,
@@ -642,36 +640,12 @@ describe("Madara harness workload", () => {
 });
 
 describe("Madara harness reporting", () => {
-  it("reads the node image from the shard's pin, and a functional run reads none", async () => {
-    const digest = `sha256:${"a".repeat(64)}`;
-    expect(pinnedNodeImage(`ghcr.io/madara-alliance/madara@${digest}`)).toEqual({
-      tag: "ghcr.io/madara-alliance/madara",
-      digest,
-    });
-    expect(pinnedNodeImage(digest)).toEqual({ tag: null, digest });
-    expect(() => pinnedNodeImage("ghcr.io/madara-alliance/madara:latest")).toThrow("not pinned by digest");
-    expect(() => pinnedNodeImage(undefined)).toThrow("MADARA_IMAGE is required");
-
-    const saved = process.env.MADARA_IMAGE;
-    delete process.env.MADARA_IMAGE;
-    try {
-      expect((await collectHarnessEvidenceBeforeRun(true)).madaraImage).toBeNull();
-      await expect(collectHarnessEvidenceBeforeRun(false)).rejects.toThrow("MADARA_IMAGE is required");
-    } finally {
-      if (saved !== undefined) process.env.MADARA_IMAGE = saved;
-    }
-  });
-
   it("records the init image's commit where no repository exists, and refuses without one", async () => {
     // The shard package's init image has no .git; a child process sees the environment it would.
     const evidence = async (revision?: string) => {
       const report = join(import.meta.dir, "report.ts");
       const child = Bun.spawn(
-        [
-          "bun",
-          "-e",
-          `console.log(JSON.stringify(await (await import(${JSON.stringify(report)})).collectHarnessEvidenceBeforeRun(true)))`,
-        ],
+        ["bun", "-e", `console.log(JSON.stringify(await (await import(${JSON.stringify(report)})).runRevision()))`],
         {
           env: { ...process.env, GIT_DIR: "/nonexistent", ...(revision ? { SHARD_REVISION: revision } : {}) },
           stdout: "pipe",

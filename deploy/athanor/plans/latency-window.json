@@ -1,6 +1,6 @@
 {
   "defaults": {
-    "package": "shard-v0.3.0",
+    "package": "shard-v0.5.0",
     "cpuset": "0-23",
     "player_capacity": 96,
     "presets": [2],

@@ -15,7 +15,6 @@ import socket
 import subprocess
 import sys
 import tarfile
-import threading
 import time
 from urllib.request import Request, urlopen
 from urllib.parse import urlparse
@@ -29,9 +28,9 @@ sys.path.insert(0, str(ROOT / "deploy/shard"))
 from stack_lock import isolated_stack_lock
 
 
-METRICS_CONTEXT = ROOT / "deploy/athanor/metrics"
-# sudo resets the environment; the operator token passes through to initialization only when it is kept.
-DOCKER = ["sudo", "-n", "--preserve-env=OPERATOR_TOKEN", "docker"]
+# sudo resets the environment; the operator token passes through to initialization, and a measured driver's CPUs to
+# the harness service, only when they are kept.
+DOCKER = ["sudo", "-n", "--preserve-env=OPERATOR_TOKEN,HARNESS_CPUSET", "docker"]
 RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 # Gateway connections: each player holds about two (a 100-connection server refused a 96-player slot at its 48th
 # player), plus a fixed allowance for the sequencing authority, Herald and tooling. The node's own limit is the
@@ -81,7 +80,7 @@ def validate_configuration(config, allowed_cpus):
         raise ValueError("presets must list the preset ids the shard registers")
     if "madara_image" in config:
         raise ValueError("the node image is the package's pin in deploy/shard/compose.yml")
-    for key in ("herald_image", "gateway_image", "init_image"):
+    for key in ("herald_image", "gateway_image", "init_image", "metrics_image"):
         if not re.fullmatch(r"(?:[^\s]+@)?sha256:[a-f0-9]{64}", config[key]):
             raise ValueError(f"{key} must be pinned by digest")
     port = config["port_base"]
@@ -160,6 +159,7 @@ def compose_configuration(config, directory):
     environment = {
         **os.environ, "SHARD_NAME": f"athanor-{config['shard']}", "CHAIN_ID": config["chain_id"],
         "SHARD_DATA": str(directory), "SHARD_INIT_IMAGE": config["init_image"],
+        "SHARD_METRICS_IMAGE": config["metrics_image"],
         "SHARD_HERALD_IMAGE": config["herald_image"], "SHARD_GATEWAY_IMAGE": config["gateway_image"],
         "GUARDIAN_URL": config["guardian_url"], "PUBLIC_RPC_URL": config["public_rpc_url"],
         "PUBLIC_ADMISSION_URL": config["public_admission_url"], "PLAYER_CAPACITY": str(config["player_capacity"]),
@@ -171,39 +171,33 @@ def compose_configuration(config, directory):
         "PRESETS": ",".join(str(preset) for preset in config["presets"]),
     }
     compose = json.loads(subprocess.check_output([
-        "docker", "compose", "-f", str(ROOT / "deploy/shard/compose.yml"), "config", "--format", "json",
+        "docker", "compose", "-f", str(ROOT / "deploy/shard/compose.yml"), "--profile", "harness", "config",
+        "--format", "json",
     ], env=environment, text=True))
     budget = {
         "cgroup_parent": "athanor.slice", "cpuset": config["cpuset"], "pids_limit": 2048,
         "logging": {"driver": "json-file", "options": {"max-size": "20m", "max-file": "3"}},
     }
+    # The harness is the driver, not the shard: it keeps the CPUs HARNESS_CPUSET gives it.
+    for name, service in compose["services"].items():
+        if name != "harness":
+            service.update(budget)
+    # Rendering resolved the operator secret from this shell into every service that passes it through (initialization
+    # and the harness); compose.json keeps only its name, and starting a service passes it from the same shell again.
     for service in compose["services"].values():
-        service.update(budget)
+        if "OPERATOR_TOKEN" in service.get("environment", {}):
+            service["environment"]["OPERATOR_TOKEN"] = None
     for name in ("prepare", "init"):
         service = compose["services"][name]
         service.update({"mem_limit": "8g", "memswap_limit": "8g"})
-        # Rendering resolved the operator secret from this shell; compose.json keeps only its name, and starting the
-        # shard passes it through from the same shell again.
-        service["environment"]["OPERATOR_TOKEN"] = None
         service["environment"]["CHAIN_CONFIG"] = "/template/chain-config.yaml"
         service["volumes"].append({"type": "bind", "source": str((ROOT / config["chain_config"]).resolve()),
                                    "target": "/template/chain-config.yaml", "read_only": True})
     node = compose["services"]["madara"]
     replaced = ("--enable-native-execution=", "--native-compilation-mode=")
-    node["command"] = [flag for flag in node["command"] if not flag.startswith(replaced)] + [
-        "--otel-collector-endpoint=http://metrics:4317", "--otel-export-metrics=true", *config["node_flags"],
-    ]
+    node["command"] = [flag for flag in node["command"] if not flag.startswith(replaced)] + config["node_flags"]
     node["ports"] = [f"127.0.0.1:{config['port_base']}:9944"]
     compose["services"]["postgres"]["ports"] = [f"127.0.0.1:{config['port_base'] + 2}:5432"]
-    compose["services"]["metrics"] = {
-        **budget, "image": collector_image(), "build": {"context": str(METRICS_CONTEXT)},
-        "mem_limit": "256m", "memswap_limit": "256m",
-        "user": f"{os.getuid()}:{os.getgid()}", "command": ["--config=/config/collector.json"],
-        "volumes": ["public-config:/config:ro", f"{directory / 'metrics'}:/data",
-                    "/sys/fs/cgroup:/host-cgroup:ro"],
-        "read_only": True, "cap_drop": ["ALL"], "security_opt": ["no-new-privileges:true"],
-        "depends_on": {"prepare": {"condition": "service_completed_successfully"}},
-    }
     return compose
 
 
@@ -296,23 +290,13 @@ def deployment_environment(config, directory):
         "HERALD_PUBLIC_RPC_URL": config["public_rpc_url"],
         "HERALD_PUBLIC_ADMISSION_URL": config["public_admission_url"],
         "COMPOSE_PROJECT_NAME": f"athanor-{config['shard']}",
-        "CHAIN_CONFIG_PATH": str(directory / "chain-config.yaml"),
         "RANDOMNESS_PRIVATE_KEY": keys["sequencingPrivateKey"],
         "SHARD_HOST_ACCOUNTS": str(directory / "host-accounts.json"),
         "NATIVE_AUTHORITY_FILE": str(directory / "authority.json"),
         "NATIVE_WORLD_MANIFEST": str(directory / "native-world.json"),
         "GAMEPLAY_CONTRACTS_PATH": str(directory / "gameplay-contracts.json"),
         "OPERATOR_ENROLMENT_PATH": str(directory / "operator-enrolment.json"),
-        "MADARA_METRICS_FILE": str(directory / "metrics" / "metrics.jsonl"),
-        # The node image and container as this shard runs them: a measured harness run records both as evidence.
-        "MADARA_IMAGE": config["madara_image"],
-        "MADARA_CONTAINER": config.get("madara_container", f"athanor-{config['shard']}-madara-1"),
     }
-
-
-def collector_image():
-    source = b"".join((METRICS_CONTEXT / name).read_bytes() for name in ("Dockerfile", "collect_cpu.py"))
-    return f"athanor-metrics:{hashlib.sha256(source).hexdigest()}"
 
 
 def collector_configuration():
@@ -374,9 +358,7 @@ def save_harness_environment(directory, environment):
     keys = (
         "DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY", "RPC_URL", "ADMISSION_URL", "HERALD_URL", "IDENTITY_URL",
         "SHARD_HOST_ACCOUNTS",
-        "NATIVE_AUTHORITY_FILE", "NATIVE_WORLD_MANIFEST", "GAMEPLAY_CONTRACTS_PATH",
-        "MADARA_METRICS_FILE", "MADARA_IMAGE", "MADARA_CONTAINER",
-        "COMPOSE_PROJECT_NAME", "CHAIN_CONFIG_PATH",
+        "NATIVE_AUTHORITY_FILE", "NATIVE_WORLD_MANIFEST", "GAMEPLAY_CONTRACTS_PATH", "COMPOSE_PROJECT_NAME",
     )
     write_private_environment(directory / "harness.env", {key: environment[key] for key in keys})
 
@@ -384,7 +366,7 @@ def save_harness_environment(directory, environment):
 def deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rtt):
     return {
         **config, "project": compose["name"], "revision": read(["git", "rev-parse", "HEAD"]),
-        "chainId": manifest["shard"]["chainId"], "metrics_image": compose["services"]["metrics"]["image"],
+        "chainId": manifest["shard"]["chainId"],
         "slice_limits": {name: Path(f"/sys/fs/cgroup/athanor.slice/{name}").read_text().strip()
                          for name in ("cpu.max", "cpuset.cpus.effective", "memory.max", "memory.high",
                                       "memory.swap.max")},
@@ -423,13 +405,13 @@ def initialize_shard_identity(config, directory, deployer_address):
 
 
 def release_images(tag):
-    """The init, Herald and gateway digests a shard-v* release pins in its package."""
+    """The image digests a shard-v* release pins in its package."""
     with urlopen(f"{RELEASES}/{tag}/shard.tar.gz", timeout=60) as response:
         archive = tarfile.open(fileobj=io.BytesIO(response.read()), mode="r:gz")
     lines = archive.extractfile("shard/images.env").read().decode().splitlines()
     images = dict(line.split("=", 1) for line in lines if line)
     return {"init_image": images["SHARD_INIT_IMAGE"], "herald_image": images["SHARD_HERALD_IMAGE"],
-            "gateway_image": images["SHARD_GATEWAY_IMAGE"]}
+            "gateway_image": images["SHARD_GATEWAY_IMAGE"], "metrics_image": images["SHARD_METRICS_IMAGE"]}
 
 
 def gateway_image_at(revision):
@@ -505,6 +487,7 @@ def run_workload(command, directory, environment):
             code = process.wait()
             if code:
                 raise subprocess.CalledProcessError(code, command)
+            return True
         finally:
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGTERM)
@@ -513,25 +496,6 @@ def run_workload(command, directory, environment):
                 except subprocess.TimeoutExpired:
                     os.killpg(process.pid, signal.SIGKILL)
                     process.wait()
-
-
-def capture_host(directory, environment, phase):
-    run(["bash", "deploy/athanor/scripts/host-state.sh"], directory, f"host-{phase}", environment)
-
-
-def run_measured_workload(command, target, environment, config, result):
-    """Runs the trial's workload while sampling its node, then splits the admission latency the harness reported."""
-    stop, samples = threading.Event(), []
-    sampler = threading.Thread(target=measures.sample_node, daemon=True, args=(
-        DOCKER, f"athanor-{config['shard']}-madara-1", SLICE, target / "metrics" / "metrics.jsonl", stop, samples))
-    sampler.start()
-    try:
-        run_workload(command, target, environment)
-    finally:
-        stop.set()
-        sampler.join()
-        result["nodeSamples"] = samples
-    result["admission"] = measures.admission_split(target / "workload")
 
 
 def run_matrix(matrix, directory):
@@ -543,29 +507,22 @@ def run_matrix(matrix, directory):
         target = directory / config["shard"]
         if target.exists():
             raise ValueError(f"duplicate run directory: {target}")
-        environment = None
         result = {"passed": False}
         try:
             start_shard(config, target)
             private = read_private_environment(target / "harness.env")
             environment = {**os.environ, **private, "HARNESS_OUTPUT_DIRECTORY": str(target / "workload")}
-            capture_host(target, environment, "start")
-            run_measured_workload(command, target, environment, config, result)
+            result.update(measures.measure_workload(
+                DOCKER, lambda: run_workload(command, target, environment), f"athanor-{config['shard']}-madara-1",
+                target / "metrics" / "metrics.jsonl", target / "chain-config.yaml", target / "workload"))
             result["passed"] = True
         except Exception as error:
             result["error"] = str(error)
             raise
         finally:
-            try:
-                if environment:
-                    capture_host(target, environment, "end")
-            except Exception as error:
-                result.update(passed=False, error=str(error))
-                raise
-            finally:
-                if (target / "compose.json").exists():
-                    write_json(target / "matrix-result.json", result)
-                    run([*DOCKER, "compose", "-f", str(target / "compose.json"), "stop"], target, "shard-stop")
+            if (target / "compose.json").exists():
+                write_json(target / "matrix-result.json", result)
+                run([*DOCKER, "compose", "-f", str(target / "compose.json"), "stop"], target, "shard-stop")
     return {"passed": True, "directory": str(directory)}
 
 

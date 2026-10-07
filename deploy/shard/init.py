@@ -8,6 +8,7 @@ import shutil
 import socket
 import struct
 import sys
+import time
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "deploy/athanor/scripts"))
@@ -28,7 +29,6 @@ RELEASE_FACTS = Path("/release/release-facts.json")
 def configuration():
     chain_id = os.environ["CHAIN_ID"]
     config = {
-        "madara_image": os.environ["MADARA_IMAGE"], "madara_container": os.environ["MADARA_CONTAINER"],
         "shard": chain_id.lower().replace("_", "-"), "chain_id": chain_id, "port_base": 0,
         "guardian_url": os.environ["GUARDIAN_URL"], "public_rpc_url": os.environ["PUBLIC_RPC_URL"],
         "public_admission_url": os.environ["PUBLIC_ADMISSION_URL"], "player_capacity": int(os.environ["PLAYER_CAPACITY"]),
@@ -179,9 +179,22 @@ def chain_commitment(preset, on_chain, released):
     return on_chain
 
 
+def harness_invocation(args, environ, data=DATA, started=None):
+    """The harness command against this shard: its private settings from harness.env, its reports under
+    data/harness/<start time> unless the caller names a directory."""
+    environment = {**environ, **shard.read_private_environment(data / "harness.env")}
+    stamp = time.strftime("%Y%m%dT%H%M%SZ", started or time.gmtime())
+    environment.setdefault("HARNESS_OUTPUT_DIRECTORY", str(data / "harness" / stamp))
+    return ["bun", "deploy/athanor/harness/run.ts", *args], environment
+
+
 if __name__ == "__main__":
     os.umask(0o077)
     action = sys.argv[1]
+    if action == "harness":
+        # The harness runs as the host user, so what it writes is already the user's: it execs before any chown.
+        argv, environment = harness_invocation(sys.argv[2:], os.environ)
+        os.execvpe(argv[0], argv, environment)
     config = configuration()
     presets = requested_presets(os.environ, json.loads(RELEASE_FACTS.read_text()))
     try:
