@@ -919,3 +919,21 @@ fn the_marked_plot_changes_nothing_and_board_buildings_never_pause() {
     assert_eq!(rate(d, home, wheat), 2 * plain);
     assert_terminal_rejection(d, Command::PauseBuildingProduction(change(home)), 40);
 }
+
+#[test]
+fn granary_settles_overflow_under_the_old_limit_before_enlarging_it() {
+    let (d, home, _) = research_world();
+    assert!(execute(d, build_toward(home, crate::research::FARM, 0), 40));
+    let base = snforge_std::interact_with_state(d.games, ||
+        crate::logic::resources::store_limit(home, crate::resources::WHEAT).unwrap());
+    super::resource_commands::grant(d, home, crate::resources::WHEAT, base);
+    assert!(execute(d, research(home, crate::research::ROW_FARM, crate::research::CHOICE_STORE), 100));
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let wheat = ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::WHEAT };
+    // The old store was full: enlarging it cannot recover any of the earlier overflow.
+    assert_eq!(resources.resource_balance(wheat), base);
+    assert_eq!(snforge_std::interact_with_state(d.games, ||
+        crate::logic::resources::store_limit(home, crate::resources::WHEAT).unwrap()), base * 3 / 2);
+    assert_eq!(snforge_std::interact_with_state(d.games, ||
+        crate::logic::resources::store_limit(home, 26).unwrap()), base);
+}
