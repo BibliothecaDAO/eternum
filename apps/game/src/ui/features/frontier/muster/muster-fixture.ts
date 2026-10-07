@@ -27,7 +27,10 @@ const realm = {
   },
 };
 
-/** A Frontier day at epoch 3: the realm owns 420 T1 knights and one of its three slots holds an army. */
+/**
+ * A Frontier day at epoch 3 on the realm board: the realm owns 420 T1 knights and 1,000 wheat, each knight takes two
+ * wheat to deploy, and one of its three slots holds an army.
+ */
 export const frontierDay = () => {
   const store = new NativeFactStore();
   store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 100 })] as never);
@@ -62,6 +65,21 @@ export const frontierDay = () => {
       entity_id: 7,
       resource_type: 26,
       balance: String(420n * BigInt(RESOURCE_PRECISION)),
+    }),
+    set("0xa", "BoardRules", { game_id: 1, demolition_refund_bps: 5000, workshop_rate: "0" }),
+    set("0xb", "ProductionRecipe", {
+      game_id: 1,
+      resource_type: 26,
+      simple_output: String(RESOURCE_PRECISION),
+      simple_inputs: [{ resource_type: 35, amount: String(2n * BigInt(RESOURCE_PRECISION)) }],
+      complex_output: "0",
+      complex_inputs: [],
+    }),
+    set("0xc", "ResourceBalance", {
+      game_id: 1,
+      entity_id: 7,
+      resource_type: 35,
+      balance: String(1000n * BigInt(RESOURCE_PRECISION)),
     }),
     set("0x9", "ArmySlot", {
       game_id: 1,

@@ -4,7 +4,7 @@ import { isModeRuleEnabled } from "../utils/mode-rules";
 import { BuildingType, ID, ResourcesIds, RESOURCE_PRECISION, type Resource } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { divideByPrecision, getBuildingCount, gramToKg, multiplyByPrecision } from "../utils";
+import { divideByPrecision, getBuildingCount, gramToKg } from "../utils";
 import { configManager } from "./config-manager";
 
 type Production = Pick<
@@ -169,9 +169,6 @@ export class ResourceManager {
     const { balance, production } = resource;
     if (!production)
       return { balance: Number(balance), hasReachedMaxCapacity: false, amountProduced: 0n, amountProducedLimited: 0n };
-    const training = this.projectTraining(currentTick, resourceId);
-    if (training === undefined) return undefined;
-    if (training !== null) return training;
     const amountProduced = ResourceManager._amountProducedStatic(production, currentTick, resourceId, resource.support);
     const amountProducedLimited = this._limitProductionByStoreCapacity(amountProduced, resourceId);
     return {
@@ -182,109 +179,17 @@ export class ResourceManager {
     };
   }
 
-  /** Whether barracks here train troops from wheat, which they take before anything else can spend it. */
-  public trainsFromWheat(): boolean {
-    return (this.trainers()?.length ?? 0) > 0;
-  }
-
   /**
-   * The realm's wheat each hour at the rates running at `currentTick`, in whole units: what its farms grow, and what its
-   * barracks eat to train from wheat (a troop's rate times its recipe's wheat per troop). Rates come from the one
-   * production integral, so a day's Support boost counts until its midnight. Undefined where the entity holds no wheat
-   * or its barracks roster is unknown.
+   * What the realm's farms grow each hour at the rates running at `currentTick`, in whole units. Rates come from the one
+   * production integral, so a day's Support boost counts until its midnight. Nothing produced consumes wheat: only
+   * raising and marching armies spend it. Undefined where the entity holds no wheat.
    */
-  public wheatPerHour(currentTick: number): { produced: number; consumed: number } | undefined {
+  public wheatPerHour(currentTick: number): number | undefined {
     const wheat = this.current(ResourcesIds.Wheat);
     if (!wheat) return undefined;
-    const trainers = this.trainers();
-    if (!trainers) return undefined;
-    const perHour = (resourceId: ResourcesIds, state: ResourceState) =>
-      ResourceManager.calculateResourceProductionData(resourceId, state, currentTick).productionPerSecond * 3600;
-    const consumed = trainers.reduce((total, { id, state }) => {
-      const recipe = this.store.require("ProductionRecipe", { game_id: this.gameId, resource_type: id });
-      const input = recipe.simple_inputs[0];
-      if (recipe.simple_output === 0n || input?.resource_type !== ResourcesIds.Wheat)
-        throw new Error("Unlimited training requires a wheat recipe");
-      return total + (perHour(id, state) * Number(input.amount)) / Number(recipe.simple_output);
-    }, 0);
-    return { produced: perHour(ResourcesIds.Wheat, wheat), consumed };
-  }
-
-  /** The troop productions that train from wheat without end: a barracks with no output cap. */
-  private trainers() {
-    // An entity without a resource store has no barracks to train from.
-    if (!this.hasResources()) return [];
-    const trainers: { id: ResourcesIds; state: ResourceState }[] = [];
-    for (let id = 26; id <= 34; id++) {
-      const state = this.current(id);
-      if (!state) return undefined;
-      if (state.production.building_count > 0 && state.production.output_amount_left === UNLIMITED_U128)
-        trainers.push({ id, state });
-    }
-    return trainers;
-  }
-
-  private projectTraining(currentTick: number, resourceId: ResourcesIds) {
-    if (resourceId !== 35 && (resourceId < 26 || resourceId > 34)) return null;
-    const knownTrainers = this.trainers();
-    if (!knownTrainers) return undefined;
-    const trainers = knownTrainers.filter(({ state }) => state.production.last_updated_at < currentTick);
-    if (!trainers.length) return null;
-    const wheat = this.current(ResourcesIds.Wheat);
-    if (!wheat) return;
-    const farmOutput = ResourceManager._amountProducedStatic(
-      wheat.production,
-      currentTick,
-      ResourcesIds.Wheat,
-      wheat.support,
+    return (
+      ResourceManager.calculateResourceProductionData(ResourcesIds.Wheat, wheat, currentTick).productionPerSecond * 3600
     );
-    let available = wheat.balance + farmOutput;
-    const outputs = trainers.map(({ id, state }) => {
-      const recipe = this.store.require("ProductionRecipe", { game_id: this.gameId, resource_type: id });
-      const input = recipe.simple_inputs[0];
-      if (
-        recipe.simple_output === 0n ||
-        recipe.simple_inputs.length !== 1 ||
-        input.resource_type !== 35 ||
-        input.amount === 0n
-      )
-        throw new Error("Unlimited training requires a wheat recipe");
-      const expected = ResourceManager._amountProducedStatic(state.production, currentTick, id, state.support);
-      const funded = (available * recipe.simple_output) / input.amount;
-      const trained = expected < funded ? expected : funded;
-      available -= (trained * input.amount + recipe.simple_output - 1n) / recipe.simple_output;
-      return { id, state, trained };
-    });
-    const weight = this.weight()!;
-    const wheatWeight = this.store.require("ResourceRule", { game_id: this.gameId, resource_type: 35 }).unit_weight;
-    let used = weight.weight - wheat.balance * wheatWeight;
-    const storeOutput = (amount: bigint, unitWeight: bigint) => {
-      const remaining =
-        weight.capacity === UNLIMITED_U128 ? UNLIMITED_U128 : weight.capacity > used ? weight.capacity - used : 0n;
-      const stored = amount * unitWeight > remaining ? remaining / unitWeight : amount;
-      if (weight.capacity !== UNLIMITED_U128) used += stored * unitWeight;
-      return stored;
-    };
-    const storedWheat = storeOutput(available, wheatWeight);
-    if (resourceId === 35)
-      return {
-        balance: Number(storedWheat),
-        amountProduced: available - wheat.balance,
-        amountProducedLimited: storedWheat - wheat.balance,
-        hasReachedMaxCapacity: storedWheat < available,
-      };
-    for (const { id, state, trained } of outputs) {
-      const unitWeight = this.store.require("ResourceRule", { game_id: this.gameId, resource_type: id }).unit_weight;
-      const stored = storeOutput(trained, unitWeight);
-      if (id === resourceId)
-        return {
-          balance: Number(state.balance + stored),
-          amountProduced: trained,
-          amountProducedLimited: stored,
-          hasReachedMaxCapacity: stored < trained,
-        };
-    }
-    return null;
   }
 
   public timeUntilValueReached(currentTick: number, resourceId: ResourcesIds): number {
@@ -351,16 +256,20 @@ export class ResourceManager {
     return this.current(resourceId)?.balance;
   }
 
-  // Only reached for an entity whose resource owner is held, so its store capacity is known.
+  /**
+   * What of `amountProduced` the store keeps, as the contract's settlement adds it: whole units into the room left, the
+   * rest lost. Only reached for an entity whose resource owner is held, so its weight is known.
+   */
   private _limitProductionByStoreCapacity(amountProduced: bigint, resourceId: ResourcesIds): bigint {
-    const { capacityKg, capacityUsedKg } = this.getStoreCapacityKg()!;
-    return ResourceManager._limitProductionByStoreCapacityStatic(
-      amountProduced,
-      // A resource with production has its rule; a zero weight means it takes no store space.
-      configManager.getResourceWeightKg(resourceId)!,
-      capacityKg,
-      capacityUsedKg,
-    );
+    const { capacity, weight } = this.weight()!;
+    if (capacity === UNLIMITED_U128) return amountProduced;
+    const unitWeight = this.store.require("ResourceRule", {
+      game_id: this.gameId,
+      resource_type: resourceId,
+    }).unit_weight;
+    if (unitWeight === 0n) return amountProduced;
+    const room = capacity > weight ? capacity - weight : 0n;
+    return amountProduced * unitWeight > room ? room / unitWeight : amountProduced;
   }
 
   private static _amountProducedStatic(
@@ -385,22 +294,6 @@ export class ResourceManager {
     }
 
     return totalAmountProduced;
-  }
-
-  private static _limitProductionByStoreCapacityStatic(
-    amountProduced: bigint,
-    resourceWeightKg: number,
-    storeCapacityKg: number,
-    storeUsedKg: number,
-  ): bigint {
-    if (resourceWeightKg === 0) return amountProduced;
-    const capacityLeft = Math.max(0, storeCapacityKg - storeUsedKg);
-    const maxAmountStorable = Math.floor(multiplyByPrecision(capacityLeft / resourceWeightKg));
-
-    if (amountProduced > maxAmountStorable) {
-      return BigInt(maxAmountStorable);
-    }
-    return amountProduced;
   }
 
   public getActiveProductions(): Array<{

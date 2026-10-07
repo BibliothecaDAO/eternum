@@ -4,6 +4,7 @@ import type { Account } from "starknet";
 import { createOperatorAccount } from "../../../config/deployer/clean/shared/madara-account";
 import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
 import {
+  canPayTroopRaise,
   researchedBuildingTier,
   researchedDepths,
   createGameActions,
@@ -13,6 +14,7 @@ import {
   getTileAt,
   entityMapPosition,
   liveHomeArmies,
+  readTroopRaiseCost,
   ResourceManager,
   type GameClient,
   waitForWorldState,
@@ -742,6 +744,16 @@ function planMuster(client: GameClient, player: Player): Action | undefined {
     if (troops >= 1000n) break;
   }
   if (tier < 0) return;
+  // The realm pays its troops' recipe wheat to deploy them: hold it first, as a player's deploy sheet does.
+  const cost = readTroopRaiseCost(
+    client.setup.store,
+    client.gameId,
+    player.realmId,
+    (26 + tier) as ResourcesIds,
+    Number(troops),
+    getBlockTimestamp().currentDefaultTick,
+  );
+  if (!canPayTroopRaise(cost)) return;
   const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
   const x = (realm.metadata.realm_id - 1) * spacing + spacing / 2;
   const y = currentDay(player).epoch * 4 * spacing + spacing / 2;

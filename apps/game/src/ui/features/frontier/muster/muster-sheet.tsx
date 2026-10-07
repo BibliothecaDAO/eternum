@@ -6,9 +6,16 @@ import { requireActiveGameClient } from "@/sync/active-game-client";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import { spawnRing, structureMapPosition } from "@bibliothecadao/eternum";
+import {
+  canPayTroopRaise,
+  getTroopResourceId,
+  readTroopRaiseCost,
+  spawnRing,
+  structureMapPosition,
+  TROOP_RAISE_SHORT_REASON,
+} from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { type Direction, getNeighborHexes } from "@bibliothecadao/types";
+import { type Direction, getNeighborHexes, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { formatAmount } from "../frontier-format";
 import { Chip, TierBanner, TroopChip, YieldChip } from "../frontier-chips";
@@ -30,6 +37,7 @@ const MUSTER_MODELS = [
   "RealmSupport",
   "ResourceBalance",
   "ResourceProduction",
+  "ResourceWeight",
   "Structure",
   "TileOccupancy",
 ] as const;
@@ -67,7 +75,20 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
 
   const maximum = stack ? musterMaximum(stack) : 0;
   const preview = plan && stack ? previewMuster(setup.store, realm.game_id, plan, stack, count, armiesTick) : null;
-  const canMuster = !pending && plan?.next != null && direction !== null && preview !== null && preview.count > 0;
+  const raiseCost =
+    stack && preview
+      ? readTroopRaiseCost(
+          setup.store,
+          realm.game_id,
+          realm.entity_id,
+          getTroopResourceId(stack.type, stack.tier),
+          preview.count,
+          defaultTick,
+        )
+      : undefined;
+  const canPay = canPayTroopRaise(raiseCost);
+  const canMuster =
+    !pending && plan?.next != null && direction !== null && preview !== null && preview.count > 0 && canPay;
 
   const muster = async () => {
     if (!stack || direction === null || !preview) return;
@@ -136,7 +157,17 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
               icon={<BoltGlyph />}
               value={preview?.stamina ? formatAmount(preview.stamina.amount) : "—"}
             />
+            {raiseCost?.map(({ resource, amount }) => (
+              <Chip
+                key={resource}
+                label="Deploy cost"
+                icon={<img src={`/images/resources/${resource}.png`} alt="" />}
+                value={formatAmount(Math.ceil(Number(amount) / RESOURCE_PRECISION))}
+                tone={canPay ? "price" : "loss"}
+              />
+            ))}
           </div>
+          {raiseCost && !canPay && <p className="frontier-scale-end text-center">{TROOP_RAISE_SHORT_REASON}</p>}
         </div>
       </div>
       <button type="button" disabled={!canMuster} onClick={() => void muster()} className="frontier-primary">

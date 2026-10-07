@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-07",
+    title: "Wheat pays to Deploy",
+    description:
+      "In Frontier, barracks train for free and each troop costs its wheat when you Deploy it; the Deploy screens show the cost and wait until your realm holds it.",
+    type: "balance",
+  },
+  {
     date: "2026-09-28",
     title: "Games stay visible during outages",
     description:

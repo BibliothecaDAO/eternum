@@ -17,8 +17,6 @@ const FRONTIER_BUILDINGS = [
 ] as const;
 
 const TROOP_RESOURCES = new Set<number>([ResourcesIds.Knight, ResourcesIds.Crossbowman, ResourcesIds.Paladin]);
-/** Every troop a barracks can train, T1 to T3 of each kind. */
-const TRAINED_TROOPS = new Set<number>(Array.from({ length: 9 }, (_, index) => ResourcesIds.Knight + index));
 
 export type BuildEffect =
   | { kind: "produces"; resource: ResourcesIds; perHour: number }
@@ -34,7 +32,7 @@ export interface BuildOption {
   populationCost: number;
   /** The ring's marked plot doubles what the building gives. */
   doubled: boolean;
-  /** What it does to the realm's wheat an hour, and the realm's net wheat once it stands (unknown while that is). */
+  /** What it adds to the realm's wheat an hour, and the realm's wheat an hour once it stands (unknown while that is). */
   wheat: { change: number; after: number | undefined };
 }
 
@@ -54,7 +52,7 @@ export const readBuildOptions = (
     if (tier === undefined || cost === undefined) return undefined;
     const rule = store.require("BuildingRule", { game_id: realm.game_id, category });
     const effect = readBuildingEffect(store, realm, category, tier as BuildOption["tier"], doubled ? 2 : 1);
-    const change = wheatChange(store, realm, effect);
+    const change = wheatChange(effect);
     options.push({
       category,
       tier: tier as BuildOption["tier"],
@@ -62,7 +60,7 @@ export const readBuildOptions = (
       effect,
       populationCost: rule.population_cost,
       doubled,
-      wheat: { change, after: wheat === undefined ? undefined : wheat.produced - wheat.consumed + change },
+      wheat: { change, after: wheat === undefined ? undefined : wheat + change },
     });
   }
   return options;
@@ -107,14 +105,6 @@ export const readBuildingEffect = (
   };
 };
 
-/** A farm adds its wheat; a barracks eats its troops' recipe wheat; nothing else touches the wheat. */
-const wheatChange = (store: NativeFactStore, realm: NativeRows["Structure"], effect: BuildEffect): number => {
-  if (effect.kind !== "produces") return 0;
-  if (effect.resource === ResourcesIds.Wheat) return effect.perHour;
-  if (!TRAINED_TROOPS.has(effect.resource)) return 0;
-  const recipe = store.require("ProductionRecipe", { game_id: realm.game_id, resource_type: effect.resource });
-  const input = recipe.simple_inputs[0];
-  if (recipe.simple_output === 0n || input?.resource_type !== ResourcesIds.Wheat)
-    throw new Error("A barracks trains from a wheat recipe");
-  return -(effect.perHour * Number(input.amount)) / Number(recipe.simple_output);
-};
+/** A farm adds its wheat; nothing a building produces consumes any (armies pay theirs when they deploy). */
+const wheatChange = (effect: BuildEffect): number =>
+  effect.kind === "produces" && effect.resource === ResourcesIds.Wheat ? effect.perHour : 0;

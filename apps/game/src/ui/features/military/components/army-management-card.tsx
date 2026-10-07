@@ -9,14 +9,18 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { currencyFormat, knownBalance } from "@/ui/utils/utils";
 import { DeploymentStrengthSummary } from "./deployment-strength-summary";
+import { describeTroopRaiseCost } from "./unified-army-creation-modal/army-creation-policy";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
+  canPayTroopRaise,
   configManager,
   divideByPrecision,
   getBalance,
   getTroopName,
   getTroopResourceId,
+  readTroopRaiseCost,
+  TROOP_RAISE_SHORT_REASON,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -220,14 +224,29 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
     setTroopCount((current) => Math.max(0, Math.min(current, maxAffordableTroops)));
   }, [maxAffordableTroops]);
 
+  const raiseCost = useMemo(
+    () =>
+      readTroopRaiseCost(
+        store,
+        configManager.getActiveGameId(),
+        owner_entity,
+        getTroopResourceId(selectedTroopType, selectedTier),
+        troopCount,
+        currentDefaultTick,
+      ),
+    [store, owner_entity, selectedTroopType, selectedTier, troopCount, currentDefaultTick, revision],
+  );
+  const canPayRaise = canPayTroopRaise(raiseCost);
+
   useEffect(() => {
     const hasTroopsSelected = troopCount > 0;
     const withinCapacity = troopCount <= maxAffordableTroops;
     const isExplorerAtBase = !(isExplorer && army && !army.isHome);
     const hasSpawnSpace = !isExplorer || freeDirections.length > 0;
 
-    setCanCreate(hasTroopsSelected && withinCapacity && isExplorerAtBase && hasSpawnSpace);
-  }, [troopCount, maxAffordableTroops, isExplorer, army?.isHome, freeDirections.length]);
+    setCanCreate(hasTroopsSelected && withinCapacity && isExplorerAtBase && hasSpawnSpace && canPayRaise);
+  }, [troopCount, maxAffordableTroops, isExplorer, army?.isHome, freeDirections.length, canPayRaise]);
+  const raiseCostLine = describeTroopRaiseCost(raiseCost);
 
   const handleTroopCountChange = (count: number) => {
     const clampedValue = Math.max(0, Math.min(count, maxAffordableTroops));
@@ -470,6 +489,11 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
             </div>
           ) : null}
         </div>
+      )}
+
+      {raiseCostLine && <p className="mt-4 text-center text-xs text-gold/70">{raiseCostLine}</p>}
+      {troopCount > 0 && raiseCost !== undefined && !canPayRaise && (
+        <p className="mt-1 text-center text-xs text-red-500">{TROOP_RAISE_SHORT_REASON}</p>
       )}
 
       <div className="flex justify-center gap-2 w-full mt-6">

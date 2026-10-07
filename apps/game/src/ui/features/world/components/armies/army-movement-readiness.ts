@@ -36,7 +36,6 @@ export interface FoodBlock {
   action: "travel" | "explore";
   perStep: ArmyFoodCosts;
   food: { wheat: number; fish: number };
-  trainingTakesWheat: boolean;
 }
 
 export interface ArmyMovementReadiness {
@@ -57,7 +56,6 @@ export const deriveArmyMovementReadiness = ({
   travelFoodCosts,
   exploreFoodCosts,
   food,
-  trainingTakesWheat = false,
 }: {
   currentStamina: number;
   minTravelStamina: number;
@@ -65,7 +63,6 @@ export const deriveArmyMovementReadiness = ({
   travelFoodCosts: ArmyFoodCosts;
   exploreFoodCosts: ArmyFoodCosts;
   food: { wheat: number; fish: number };
-  trainingTakesWheat?: boolean;
 }): ArmyMovementReadiness => {
   const foodWarnings = getArmyMovementFoodRequirementWarnings({ travelFoodCosts, exploreFoodCosts, food });
   const { hasTravelStaminaWarning, hasExploreStaminaWarning } = getArmyStaminaRequirementWarnings({
@@ -83,9 +80,9 @@ export const deriveArmyMovementReadiness = ({
     minTravelStamina,
     minExploreStamina,
     foodBlock: foodWarnings.travel.hasWarning
-      ? { action: "travel", perStep: travelFoodCosts, food, trainingTakesWheat }
+      ? { action: "travel", perStep: travelFoodCosts, food }
       : foodWarnings.explore.hasWarning
-        ? { action: "explore", perStep: exploreFoodCosts, food, trainingTakesWheat }
+        ? { action: "explore", perStep: exploreFoodCosts, food }
         : null,
   };
 };
@@ -120,7 +117,6 @@ export const readArmyMovementReadiness = ({
     travelFoodCosts: movementFoodCosts.travel,
     exploreFoodCosts: movementFoodCosts.explore,
     food: resolveStructureFoodBalance(structureResources, currentDefaultTick),
-    trainingTakesWheat: structureResources?.hasResources() ? structureResources.trainsFromWheat() : false,
   });
 };
 

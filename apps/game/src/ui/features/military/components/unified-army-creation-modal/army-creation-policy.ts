@@ -1,4 +1,5 @@
-import { formatTime } from "@bibliothecadao/eternum";
+import { formatTime, TROOP_RAISE_SHORT_REASON, type TroopRaiseCost } from "@bibliothecadao/eternum";
+import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 import type { SelectedTroopCombo, TroopSelectionOption } from "./types";
 
@@ -31,6 +32,8 @@ interface ArmyCreationStatus extends TroopAvailabilityStatus {
   hasFreeDirection: boolean;
   hasGuardSlot: boolean;
   troopCount: number;
+  /** The structure holds what deploying these troops costs it (readTroopRaiseCost). */
+  canPayRaise: boolean;
   isLoading: boolean;
 }
 
@@ -54,7 +57,18 @@ export function resolveArmyCreationBlockedReason(status: ArmyCreationStatus): st
   if (status.capacityRemaining !== null && status.troopCount > status.capacityRemaining) return "Troop cap reached.";
   if (status.troopCount > status.available) return "Not enough of this troop.";
   if (status.troopCount <= 0) return "Choose a troop count.";
+  if (!status.canPayRaise) return TROOP_RAISE_SHORT_REASON;
   return null;
+}
+
+/** What deploying the chosen troops costs beyond the troops, such as "Deploying costs 20 wheat."; null when nothing. */
+export function describeTroopRaiseCost(costs: TroopRaiseCost[] | undefined): string | null {
+  if (!costs?.length) return null;
+  const amounts = costs.map(
+    ({ resource, amount }) =>
+      `${Math.ceil(Number(amount) / RESOURCE_PRECISION).toLocaleString()} ${ResourcesIds[resource].toLowerCase()}`,
+  );
+  return `Deploying costs ${amounts.join(" and ")}.`;
 }
 
 /** The training line while a barracks fills the next army; null when nothing trains the troop. */

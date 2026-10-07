@@ -17,6 +17,7 @@ export * from "./entities";
 export * from "./mode-rules";
 export * from "./native-preset-mode";
 export * from "./production-path";
+export * from "./troop-raise-cost";
 export * from "./expeditions";
 export * from "./guild";
 export * from "./hyperstructure";

@@ -74,6 +74,44 @@ describe("the muster sheet", () => {
     host.remove();
   });
 
+  it("shows what the troops cost in wheat to deploy and refuses while the realm cannot pay", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, row } = frontierDay();
+    store.applyFacts([
+      {
+        model: "ResourceBalance",
+        key: "0xc",
+        value: { game_id: 1, entity_id: 7, resource_type: 35, balance: String(100n * 1_000_000_000n) },
+      },
+    ] as never);
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <MusterSheet realm={row} onClose={() => {}} />
+        </GameProvider>,
+      ),
+    );
+    const deploy = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Deploy")!;
+    // All 420 knights take 840 wheat; the realm holds 100.
+    expect(host.querySelector('[aria-label="Deploy cost 840"]')?.getAttribute("data-tone")).toBe("loss");
+    expect(deploy().disabled).toBe(true);
+    expect(host.textContent).toContain("Realm cannot pay to raise troops.");
+
+    const slider = host.querySelector<HTMLInputElement>("input[type=range]")!;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(slider, "50");
+      slider.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(host.querySelector('[aria-label="Deploy cost 100"]')?.getAttribute("data-tone")).toBe("price");
+    expect(deploy().disabled).toBe(false);
+    expect(host.textContent).not.toContain("Realm cannot pay to raise troops.");
+    act(() => root.unmount());
+    host.remove();
+  });
+
   it("cannot muster while the realm's ring is unknown", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     ring.explored = false;

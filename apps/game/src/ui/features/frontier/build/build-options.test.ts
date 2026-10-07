@@ -45,7 +45,7 @@ describe("Frontier's build options", () => {
     );
   });
 
-  it("forecasts the realm's wheat once a building stands: a farm adds, a barracks eats its troops' recipe wheat", () => {
+  it("forecasts the realm's wheat once a building stands: a farm adds, a barracks takes none", () => {
     const { store, realm } = realmBoard();
     const options = new Map(
       readBuildOptions(store, realm, { col: 11, row: 11 }, true, 350)!.map((option) => [option.category, option]),
@@ -54,8 +54,8 @@ describe("Frontier's build options", () => {
     const barracks = options.get(BuildingType.ResourceKnightT1)!;
     expect(farm.wheat.change).toBeCloseTo((farm.effect as { perHour: number }).perHour, 3);
     expect(farm.wheat.after).toBeCloseTo(300 + farm.wheat.change, 3);
-    expect(barracks.wheat.change).toBeCloseTo(-2 * (barracks.effect as { perHour: number }).perHour, 3);
-    expect(barracks.wheat.after).toBeCloseTo(300 + barracks.wheat.change, 3);
+    expect(barracks.wheat.change).toBe(0);
+    expect(barracks.wheat.after).toBeCloseTo(300, 3);
     expect(options.get(BuildingType.Storehouse)!.wheat.change).toBe(0);
     expect(options.get(BuildingType.Storehouse)!.wheat.after).toBeCloseTo(300, 3);
   });
