@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod ResourcesLogic {
     use starknet::ContractAddress;
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+    use starknet::storage::StoragePointerReadAccess;
     use crate::arrivals::{ArrivalKey, OffloadArrival, has_arrived};
     use crate::events::RowSet;
     use crate::logic::arrivals::ArrivalState;
