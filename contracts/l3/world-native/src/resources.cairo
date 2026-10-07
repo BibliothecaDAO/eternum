@@ -210,6 +210,15 @@ pub trait IResourceOperations<T> {
         timestamp: u64,
         game_context: crate::commands::ResourceContext,
     );
+    // Takes troops out of a structure's stock for an army; on a board the structure also pays their recipe.
+    fn raise_troops(
+        ref self: T,
+        key: ResourceKey,
+        resource_type: u8,
+        amount: u128,
+        timestamp: u64,
+        game_context: crate::commands::ResourceContext,
+    );
     fn start_production(
         ref self: T,
         key: ResourceKey,

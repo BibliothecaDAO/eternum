@@ -3,11 +3,8 @@ use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::buildings::{BuildingKey, BuildingRule, BuildingRuleConfig, ChangeBuilding, CreateBuilding};
 use crate::commands::Command;
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
-use crate::production::{ProductionRecipe, RecipeConfig};
 use crate::registrar::IRegistrarSafeDispatcherTrait;
-use crate::resources::{
-    IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceAmount, ResourceKey, ResourceSlot,
-};
+use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::structures::IStructureOperationsDispatcher;
 use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 use crate::troops::Coord;
@@ -42,7 +39,7 @@ pub fn rules() -> Span<BuildingRuleConfig> {
     }
     values.span()
 }
-fn building_preset(board: Option<crate::buildings::BoardRules>) -> crate::presets::PresetDefinition {
+pub fn building_preset(board: Option<crate::buildings::BoardRules>) -> crate::presets::PresetDefinition {
     let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
     let mut configured = array![];
     for rule in rules() {
@@ -78,7 +75,7 @@ fn building_preset(board: Option<crate::buildings::BoardRules>) -> crate::preset
     preset.structures.upgrades = array![recipe, recipe, recipe].span();
     preset
 }
-fn building_world_with_preset(preset: crate::presets::PresetDefinition) -> (super::Deployment, ResourceKey) {
+pub fn building_world_with_preset(preset: crate::presets::PresetDefinition) -> (super::Deployment, ResourceKey) {
     let (deployment, home, _) = super::resource_commands::setup_with_preset(preset);
     if preset.structures.board.is_some() {
         snforge_std::interact_with_state(
@@ -581,96 +578,6 @@ fn castle_ring_limit_accepts_four_and_rejects_five() {
     );
 }
 
-
-#[test]
-fn unlimited_training_consumes_its_simple_recipe_and_waits_for_farm_wheat_without_refills() {
-    use crate::buildings::BoardRules;
-    let mut preset = building_preset(Some(BoardRules { demolition_refund_bps: 5000, workshop_rate: 20 }));
-    let mut recipes = array![];
-    for recipe in super::production::recipes() {
-        recipes
-            .append(
-                RecipeConfig {
-                    resource_type: *recipe.resource_type,
-                    recipe: ProductionRecipe {
-                        simple_output: 1,
-                        simple_inputs: array![ResourceAmount { resource_type: 35, amount: 2 }].span(),
-                        ..*recipe.recipe,
-                    },
-                },
-            );
-    }
-    preset.resources.production = recipes.span();
-    let (deployment, home) = building_world_with_preset(preset);
-    super::resource_commands::grant(deployment, home, 23, 1000);
-    super::resource_commands::grant(deployment, home, 35, 4);
-    assert!(execute(deployment, create(home, 28), 40));
-    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-    let troop = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 26 };
-    let wheat = ResourceSlot { resource_type: 35, ..troop };
-    start_cheat_caller_address(deployment.games, deployment.games);
-    resources
-        .spend_resource(
-            home, 26, 0, 50, crate::commands::resource_context(super::context(deployment.games, home.game_id)),
-        );
-    assert_eq!(resources.resource_balance(troop), 2);
-    assert_eq!(resources.resource_balance(wheat), 0);
-    resources
-        .spend_resource(
-            home, 26, 0, 60, crate::commands::resource_context(super::context(deployment.games, home.game_id)),
-        );
-    assert_eq!(resources.resource_balance(troop), 2);
-    assert_eq!(resources.resource_production(troop).production_rate, 2);
-    assert_eq!(resources.resource_production(troop).output_amount_left, crate::resources::UNLIMITED_OUTPUT);
-    stop_cheat_caller_address(deployment.games);
-
-    assert!(
-        execute(
-            deployment,
-            Command::CreateBuilding(
-                CreateBuilding {
-                    structure_id: home.entity_id, category: 37, directions: array![3_u8].span(), use_simple: true,
-                },
-            ),
-            70,
-        ),
-    );
-    start_cheat_caller_address(deployment.games, deployment.games);
-    resources
-        .spend_resource(
-            home, 26, 0, 75, crate::commands::resource_context(super::context(deployment.games, home.game_id)),
-        );
-    assert_eq!(resources.resource_balance(troop), 7);
-    assert_eq!(resources.resource_balance(wheat), 0);
-    // A new wheat grant cannot pay for training during the preceding starvation interval.
-    resources
-        .grant_resource(
-            home,
-            35,
-            10,
-            80,
-            crate::commands::resource_context(
-                crate::commands::ExecutionContext {
-                    timestamp: 80, ..crate::tests::context(deployment.games, (home).game_id),
-                },
-            ),
-        );
-    assert_eq!(resources.resource_balance(troop), 12);
-    assert_eq!(resources.resource_balance(wheat), 10);
-    resources
-        .spend_resource(
-            home, 26, 0, 80, crate::commands::resource_context(super::context(deployment.games, home.game_id)),
-        );
-    assert_eq!(resources.resource_balance(troop), 12);
-    resources
-        .spend_resource(
-            home, 26, 0, 81, crate::commands::resource_context(super::context(deployment.games, home.game_id)),
-        );
-    assert_eq!(resources.resource_balance(troop), 14);
-    assert_eq!(resources.resource_balance(wheat), 8);
-    assert_eq!(resources.resource_production(troop).output_amount_left, crate::resources::UNLIMITED_OUTPUT);
-    stop_cheat_caller_address(deployment.games);
-}
 
 #[test]
 fn research_and_individual_barracks_tiers_keep_existing_troops_and_other_buildings() {

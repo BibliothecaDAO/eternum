@@ -504,26 +504,6 @@ pub mod GamesFixture {
                 grants,
             )
         }
-        fn pay_for_explorer(
-            ref self: TContractState,
-            key: crate::resources::ResourceKey,
-            actor: starknet::ContractAddress,
-            resource_type: u8,
-            amount: u128,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(key.game_id);
-            crate::structures::IStructureOperationsDispatcherTrait::pay_for_explorer(
-                crate::structures::IStructureOperationsLibraryDispatcher { class_hash: classes.structures.read() },
-                key,
-                actor,
-                resource_type,
-                amount,
-                timestamp,
-                game_context,
-            )
-        }
     }
     #[starknet::embeddable]
     pub impl SettlementCreationFixture<
@@ -1030,6 +1010,24 @@ pub mod GamesFixture {
                 key,
                 resource_type,
                 rate,
+                timestamp,
+                game_context,
+            )
+        }
+        fn raise_troops(
+            ref self: TContractState,
+            key: crate::resources::ResourceKey,
+            resource_type: u8,
+            amount: u128,
+            timestamp: u64,
+            game_context: crate::commands::ResourceContext,
+        ) {
+            let classes = fixture_classes(key.game_id);
+            crate::resources::IResourceOperationsDispatcherTrait::raise_troops(
+                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                key,
+                resource_type,
+                amount,
                 timestamp,
                 game_context,
             )

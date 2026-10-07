@@ -311,23 +311,6 @@ pub mod StructuresLogic {
             }
             key.entity_id
         }
-        fn pay_for_explorer(
-            ref self: ContractState,
-            key: ResourceKey,
-            actor: ContractAddress,
-            resource_type: u8,
-            amount: u128,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
-            let game_context = crate::commands::load_context(key.game_id, game_context);
-
-            assert_playing(game_context.game.unbox(), timestamp);
-            assert!(crate::logic::structures::record(key).owner == actor, "actor does not own structure");
-            assert!(resource_type >= 26 && resource_type <= 34, "invalid troop resource");
-            assert!(amount > 0 && amount % RESOURCE_PRECISION == 0, "invalid troop amount");
-            self.spend(key, resource_type, amount, timestamp, crate::commands::resource_context(game_context));
-        }
     }
     #[abi(embed_v0)]
     impl BlitzHyperstructures of crate::settlement::IBlitzHyperstructures<ContractState> {

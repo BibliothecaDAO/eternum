@@ -17,7 +17,8 @@ const rates: Record<number, number> = {
 const buildingCosts = Object.fromEntries(
   buildingIds.map((id) => [id, laborCosts[id] === undefined ? [] : [{ resource: 23, amount: laborCosts[id] }]]),
 );
-const trainingRecipes = Object.fromEntries(
+// Barracks train from nothing. A troop's recipe is what its realm pays, per troop, to raise it into an army.
+const troopRaiseCosts = Object.fromEntries(
   resourceIds.map((id) => [id, id >= 26 && id <= 34 ? [{ resource: 35, amount: 2 }] : []]),
 );
 
@@ -46,7 +47,7 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
   campStartingResources: [],
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
-    productionBySimpleRecipe: trainingRecipes,
+    productionBySimpleRecipe: troopRaiseCosts,
     productionBySimpleRecipeOutputs: Object.fromEntries(resourceIds.map((id) => [id, id >= 26 && id <= 34 ? 1 : 0])),
     productionByComplexRecipe: Object.fromEntries(resourceIds.map((id) => [id, []])),
     productionByComplexRecipeOutputs: Object.fromEntries(resourceIds.map((id) => [id, rates[id] ?? 0])),

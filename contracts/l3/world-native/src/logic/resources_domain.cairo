@@ -272,6 +272,19 @@ pub mod ResourcesLogic {
         ) {
             self.resources.spend(key, resource_type, amount, timestamp, game_context);
         }
+        fn raise_troops(
+            ref self: ContractState,
+            key: ResourceKey,
+            resource_type: u8,
+            amount: u128,
+            timestamp: u64,
+            game_context: crate::commands::ResourceContext,
+        ) {
+            self.resources.spend(key, resource_type, amount, timestamp, game_context);
+            if produces_without_inputs(key.game_id) {
+                self.pay_troop_recipe(key, resource_type, amount, timestamp, game_context);
+            }
+        }
         fn stop_production(
             ref self: ContractState,
             key: ResourceKey,
@@ -545,8 +558,37 @@ pub mod ResourcesLogic {
             ((), story_cursor)
         }
     }
+    // A board's buildings produce for ever from nothing, so its troops are paid for when they are raised.
+    fn produces_without_inputs(game_id: u32) -> bool {
+        crate::logic::preset_record::for_game(game_id).board_terms.read().is_some()
+    }
+
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn pay_troop_recipe(
+            ref self: ContractState,
+            key: ResourceKey,
+            resource_type: u8,
+            troops: u128,
+            timestamp: u64,
+            game_context: crate::commands::ResourceContext,
+        ) {
+            let recipe = self.production.recipe(crate::production::RecipeKey { game_id: key.game_id, resource_type });
+            let per_troops: u128 = recipe.simple_output.into();
+            let now: u32 = timestamp.try_into().unwrap();
+            for input in recipe.simple_inputs {
+                let unit_weight = crate::logic::resources::rule(key.game_id, *input.resource_type).unit_weight;
+                // A realm never underpays a fraction of a recipe.
+                let cost = (*input.amount * troops + per_troops - 1) / per_troops;
+                let mut stock = self
+                    .resources
+                    .load_settled(key, *input.resource_type, unit_weight, now, game_context.production_start);
+                assert!(stock.balance >= cost, "realm cannot pay to raise troops");
+                crate::resources::spend(*input.resource_type, ref stock.balance, ref stock.weight, cost, unit_weight);
+                self.resources.commit_resource(key, *input.resource_type, stock);
+            }
+        }
+
         fn assert_resource_command(
             self: @ContractState, game_id: u32, timestamp: u64, game_context: crate::commands::ExecutionContext,
         ) {

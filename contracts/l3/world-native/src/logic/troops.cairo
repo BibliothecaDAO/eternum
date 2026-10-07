@@ -199,7 +199,7 @@ pub mod TroopsLogic {
     use crate::resources::{IResourceOperationsDispatcherTrait, ResourceKey};
     use crate::rules::{RESOURCE_PRECISION, SliceRules};
     use crate::stamina::StaminaSourceTrait;
-    use crate::structures::{IStructureOperationsDispatcherTrait, Structure};
+    use crate::structures::Structure;
     use crate::troops::{Coord, ExplorerKey, ExplorerTroops, TroopTier, TroopType, Troops};
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
@@ -435,7 +435,7 @@ pub mod TroopsLogic {
             };
             self
                 .resources_dispatcher(game_id)
-                .spend_resource(
+                .raise_troops(
                     ResourceKey { game_id, entity_id: home },
                     crate::troops::troop_resource(category, tier),
                     amount,
@@ -721,17 +721,7 @@ pub mod TroopsLogic {
             let category = troop_type(command.category);
             let tier = troop_tier(command.tier);
             let id = crate::logic::game::allocate_entity(game_id);
-            let resource_type = crate::troops::troop_resource(category, command.tier);
-            self
-                .structures_dispatcher(game_id)
-                .pay_for_explorer(
-                    ResourceKey { game_id, entity_id: command.structure_id },
-                    actor,
-                    resource_type,
-                    command.amount,
-                    context.timestamp,
-                    crate::commands::action_context(context),
-                );
+            self.pay_troops(game_id, command.structure_id, category, tier, command.amount, context.timestamp, context);
             let origin = if rules.epoch_seconds == 0 {
                 crate::structures::structure_coord(ResourceKey { game_id, entity_id: command.structure_id })
             } else {
