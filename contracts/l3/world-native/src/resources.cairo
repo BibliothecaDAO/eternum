@@ -4,9 +4,16 @@ pub const LABOR: u8 = 23;
 pub const LORDS: u8 = 37;
 pub const ESSENCE: u8 = 38;
 pub const UNLIMITED_OUTPUT: u128 = 0xffffffffffffffffffffffffffffffff;
+// Settlements before this rule wore markers down by what they produced; a season never produces this much.
+const UNLIMITED_MARGIN: u128 = 0x10000000000000000;
 pub const RESOURCE_RATE_SCALE: u128 = 0x10000000000000000;
 pub(crate) const FIRST_TROOP_RESOURCE: u8 = 26;
 pub(crate) const LAST_TROOP_RESOURCE: u8 = 34;
+
+/// Whether a producer's output budget is the unlimited marker, the one comparison every reader makes.
+pub fn is_unlimited(output_amount_left: u128) -> bool {
+    output_amount_left >= UNLIMITED_OUTPUT - UNLIMITED_MARGIN
+}
 
 pub fn is_troop_resource(resource_type: u8) -> bool {
     resource_type >= FIRST_TROOP_RESOURCE && resource_type <= LAST_TROOP_RESOURCE
@@ -123,7 +130,7 @@ pub fn settle(
         return;
     }
     let mut produced = (now - start_at).into() * production.production_rate.into() + support_bonus;
-    if resource_type != 35 && resource_type != 36 {
+    if resource_type != 35 && resource_type != 36 && !is_unlimited(production.output_amount_left) {
         produced = core::cmp::min(produced, production.output_amount_left);
         production.output_amount_left -= produced;
     }

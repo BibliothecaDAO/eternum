@@ -29,6 +29,8 @@ export interface ResourceProductionData {
  * buildings) or a store's capacity. It is a sentinel, not an amount, and is never formatted as a number or duration.
  */
 const UNLIMITED_U128 = (1n << 128n) - 1n;
+/** The contract's is_unlimited: the marker, or one settlements wore below it before they stopped wearing it. */
+const isUnlimitedOutput = (outputAmountLeft: bigint) => outputAmountLeft >= UNLIMITED_U128 - (1n << 64n);
 
 export class ResourceManager {
   entityId: ID;
@@ -143,7 +145,7 @@ export class ResourceManager {
   /** Production that never runs out: continuous food, or a producer written with the unlimited output sentinel. */
   private static neverRunsOut(production: Production, resourceId: ResourcesIds): boolean {
     return (
-      ResourceManager.isContinuousProductionResource(resourceId) || production.output_amount_left === UNLIMITED_U128
+      ResourceManager.isContinuousProductionResource(resourceId) || isUnlimitedOutput(production.output_amount_left)
     );
   }
 

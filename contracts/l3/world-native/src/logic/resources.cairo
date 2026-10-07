@@ -227,7 +227,9 @@ pub mod ResourceState {
         ) {
             assert_production(resource_type);
             let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
-            resource.production.output_amount_left += output;
+            if !crate::resources::is_unlimited(resource.production.output_amount_left) {
+                resource.production.output_amount_left += output;
+            }
             self.commit_resource(key, resource_type, resource);
         }
         fn start_production(
@@ -244,14 +246,11 @@ pub mod ResourceState {
             let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
             resource.production.building_count += 1;
             resource.production.production_rate += rate;
-            resource
-                .production
-                .output_amount_left =
-                    if output == crate::resources::UNLIMITED_OUTPUT {
-                        output
-                    } else {
-                        resource.production.output_amount_left + output
-                    };
+            if crate::resources::is_unlimited(output) {
+                resource.production.output_amount_left = output;
+            } else if !crate::resources::is_unlimited(resource.production.output_amount_left) {
+                resource.production.output_amount_left += output;
+            }
             self.commit_resource(key, resource_type, resource);
         }
         fn stop_production(

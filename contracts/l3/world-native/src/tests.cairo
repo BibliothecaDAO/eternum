@@ -39,6 +39,7 @@ mod state;
 mod structure_storage;
 mod trade;
 mod troop_management;
+mod unlimited_production;
 mod village;
 use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use fixtures::{

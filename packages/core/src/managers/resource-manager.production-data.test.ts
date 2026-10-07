@@ -25,9 +25,18 @@ describe("ResourceManager.calculateResourceProductionData", () => {
 
   it("reads the u128::MAX output budget as unlimited, never as an amount or a duration", () => {
     const unlimited = (1n << 128n) - 1n;
-    const data = ResourceManager.calculateResourceProductionData(ResourcesIds.Knight, productionInfo(unlimited), 5_000);
-    expect(data.isProducing).toBe(true);
-    expect(data.outputRemaining).toBe(Number.POSITIVE_INFINITY);
-    expect(data.timeRemainingSeconds).toBe(Number.POSITIVE_INFINITY);
+    // A marker settlements wore down before the contract stopped wearing it reads as unlimited too, as it does there.
+    for (const budget of [unlimited, unlimited - 1_000_000n, unlimited - (1n << 64n)]) {
+      const data = ResourceManager.calculateResourceProductionData(ResourcesIds.Knight, productionInfo(budget), 5_000);
+      expect(data.isProducing).toBe(true);
+      expect(data.outputRemaining).toBe(Number.POSITIVE_INFINITY);
+      expect(data.timeRemainingSeconds).toBe(Number.POSITIVE_INFINITY);
+    }
+    const limited = ResourceManager.calculateResourceProductionData(
+      ResourcesIds.Knight,
+      productionInfo(unlimited - (1n << 64n) - 1n),
+      5_000,
+    );
+    expect(limited.outputRemaining).toBeLessThan(Number.POSITIVE_INFINITY);
   });
 });
