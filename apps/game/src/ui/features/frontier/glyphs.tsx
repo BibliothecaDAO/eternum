@@ -5,7 +5,6 @@
 const INK = "#1b1207";
 const GOLD = "#dfaa54";
 const PARCHMENT = "#eadfc8";
-const STAMINA = "#9fd06a";
 
 /** The realm: a castle's two towers and gate. */
 export const CastleGlyph = ({ className }: { className?: string }) => (
@@ -55,41 +54,3 @@ export const PersonGlyph = ({ className }: { className?: string }) => (
     <path d="M5.5 23.5a8.5 7 0 0 1 17 0z" fill={PARCHMENT} stroke={INK} strokeWidth="1.5" strokeLinejoin="round" />
   </svg>
 );
-
-/** A site taken: a pennant in the stamina green, on its art and beside the exchanges a win takes. */
-export const FlagGlyph = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 28 28" className={className} aria-hidden>
-    <path d="M7 4v21" stroke={INK} strokeWidth="3" strokeLinecap="round" />
-    <path d="M7 4v21" stroke={PARCHMENT} strokeWidth="1.4" strokeLinecap="round" />
-    <path d="M8 5h14l-3.5 4.5L22 14H8z" fill={STAMINA} stroke={INK} strokeWidth="1.5" strokeLinejoin="round" />
-  </svg>
-);
-
-const MEDAL_METALS = {
-  1: { face: "#f6c54a", rim: "#a86e00" },
-  2: { face: "#dcdfe4", rim: "#7c828c" },
-  3: { face: "#d8905a", rim: "#86481f" },
-} as const;
-
-/** A top-three place as its medal, gold, silver or bronze on a ribbon, the place's numeral struck on its face. */
-export const MedalGlyph = ({ place, className }: { place: 1 | 2 | 3; className?: string }) => {
-  const { face, rim } = MEDAL_METALS[place];
-  return (
-    <svg viewBox="0 0 28 28" className={className} aria-hidden>
-      <path d="M8 2h5l2 8h-5zM20 2h-5l-2 8h5z" fill="#b8322a" stroke={INK} strokeWidth="1.2" strokeLinejoin="round" />
-      <circle cx="14" cy="17" r="8.5" fill={face} stroke={INK} strokeWidth="1.5" />
-      <circle cx="14" cy="17" r="6" fill="none" stroke={rim} strokeWidth="1.2" />
-      <text
-        x="14"
-        y="21"
-        textAnchor="middle"
-        fontFamily="Lexend, system-ui, sans-serif"
-        fontWeight="800"
-        fontSize="10.5"
-        fill={INK}
-      >
-        {place}
-      </text>
-    </svg>
-  );
-};

@@ -4,14 +4,13 @@ import { useRealmVisit } from "@/sync/active-game-client";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { SETTINGS } from "@/ui/design-system/kit/words";
-import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
 import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { configManager } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useNavigate } from "react-router-dom";
-import { RealmVisitBanner, useVisitedRealm } from "./board/realm-visit-banner";
-import { SeasonBoardHost, SeasonBoardPeek, useOpenSeasonBoard, useSeasonRank } from "./board/season-board";
+import { RealmVisitFoot, useVisitedRealm } from "./board/realm-visit";
+import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatchesTheLeader } from "./board/spectator-watch";
 import { ChestMomentView } from "./chest/chest-moment-view";
 import { useChestResults } from "./chest/chest-results";
@@ -31,7 +30,7 @@ import { HudBands } from "./hud/hud-bands";
 import { MenuSheet } from "./hud/menu-sheet";
 import { OfflineNotice } from "./hud/offline-notice";
 import { OrderBar } from "./hud/order-bar";
-import { TodayCard } from "./log/today-card";
+import { FrontierToday } from "./log/frontier-today";
 import { FrontierProduction } from "./production/frontier-production";
 import { FrontierResearch } from "./research/frontier-research";
 import { SiteClearCardView } from "./sites/site-clear-card";
@@ -80,6 +79,8 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           <ChatPage gameZoneId={chat.gameZoneId} signedIn={chat.initializer !== null} onSignIn={chat.requestSignIn} />
         ) : surface === "research" && realm ? (
           <FrontierResearch realm={realm} />
+        ) : surface === "season" ? (
+          <FrontierSeason onBack={close} />
         ) : (
           <div className="relative min-h-0 flex-1">
             {dockRealm && !visit && <LastHour rules={rules} realm={dockRealm} />}
@@ -92,17 +93,14 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           <SiteClearCardView />
           <OfflineNotice />
           {dockRealm && <Foot realm={dockRealm} />}
-          <FrontierNav realm={realm} surface={surface} onSurface={setSurface} unread={chat.unread} />
+          <RealmVisitFoot home={realm} />
+          {!visit && <FrontierNav realm={realm} surface={surface} onSurface={setSurface} unread={chat.unread} />}
         </>
       }
     >
       {/* A chest's opening owns the screen while it plays, over the world where the chest opens. */}
       <ChestMomentView />
       <FrontierSurfaces realm={realm} />
-      <RealmVisitBanner home={realm} />
-      <div className="pointer-events-auto fixed right-2 top-24 hidden lg:block">
-        <SeasonBoardPeek />
-      </div>
       <FrontierSelectionSheet realm={realm} />
       {surface === "menu" && <HudMenu onOpen={setSurface} onClose={close} />}
       {surface === "production" && realm && <FrontierProduction realm={realm} onClose={close} />}
@@ -111,10 +109,8 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           <SettingsPanel />
         </Sheet>
       )}
-      {surface === "today" && (
-        <EventLogPanel header={<TodayCard rules={rules} />} onDismiss={close} isInsideAnchor={() => false} />
-      )}
-      <SeasonBoardHost />
+      {surface === "today" && <FrontierToday rules={rules} onClose={close} />}
+      {surface !== "season" && <SeasonOver onSeason={() => setSurface("season")} />}
       {realm && !visit && <DayDone rules={rules} realm={realm} />}
     </HudBands>
   );
@@ -164,17 +160,13 @@ const LastHour = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows[
 const HudMenu = ({ onOpen, onClose }: { onOpen: (surface: HudSurface | null) => void; onClose: () => void }) => {
   const navigate = useNavigate();
   const player = useAccountStore((state) => state.account?.address ?? null);
-  const openSeasonBoard = useOpenSeasonBoard();
   const rank = useSeasonRank();
   return (
     <MenuSheet
       rank={rank}
       onToday={() => onOpen("today")}
       onProduction={() => onOpen("production")}
-      onSeason={() => {
-        onClose();
-        openSeasonBoard();
-      }}
+      onSeason={() => onOpen("season")}
       onGuide={() => {
         onClose();
         if (player) replayGuide(configManager.getActiveGameId(), player);

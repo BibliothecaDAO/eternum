@@ -27,7 +27,7 @@ describe("the player's day in totals", () => {
     ];
     expect(totalToday(stories, "0x0111", { startMs: 1_000, endMs: 9_000 })).toEqual({
       reveals: 2,
-      sitesCleared: 2,
+      cleared: 2,
       chests: 1,
       essence: 150,
       labor: 699,

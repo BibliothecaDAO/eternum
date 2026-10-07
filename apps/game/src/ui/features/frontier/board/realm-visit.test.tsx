@@ -4,7 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { goTo } = vi.hoisted(() => ({ goTo: vi.fn() }));
 vi.mock("@/hooks/helpers/use-navigate", () => ({ useGoToStructure: () => goTo }));
-vi.mock("@/hooks/use-player-profile", () => ({ usePlayerDisplayName: () => "Rival" }));
+vi.mock("@/hooks/use-player-profile", () => ({
+  usePlayerDisplayName: () => "Rival",
+  usePlayerProfile: () => ({ name: "Rival", portrait: null }),
+}));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
   structureMapPosition: () => ({ x: 4, y: 5, alt: false }),
@@ -16,7 +19,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { disposeGameSyncSession, installActiveGameClient, startRealmVisit } from "@/sync/active-game-client";
 import { configManager, type GameClient } from "@bibliothecadao/eternum";
 import { type GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { RealmVisitBanner } from "./realm-visit-banner";
+import { RealmVisitFoot } from "./realm-visit";
 
 const realmRow = (entityId: number, owner: string) => ({
   model: "Structure",
@@ -73,35 +76,35 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const renderBanner = (
-  home: Parameters<typeof RealmVisitBanner>[0]["home"] = store.require("Structure", { game_id: 1, entity_id: 7 }),
+const renderFoot = (
+  home: Parameters<typeof RealmVisitFoot>[0]["home"] = store.require("Structure", { game_id: 1, entity_id: 7 }),
 ) =>
   act(() =>
     root.render(
       <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-        <RealmVisitBanner home={home} />
+        <RealmVisitFoot home={home} />
       </GameProvider>,
     ),
   );
 
 describe("a realm visit", () => {
   it("streams the visited realm, opens it as a spectator once it arrives, and leaves for home whole", () => {
-    renderBanner();
+    renderFoot();
     expect(host.textContent).toBe("");
 
     act(() => startRealmVisit({ player: "0x222", structureId: 8 }));
     expect(visit).toHaveBeenLastCalledWith("0x222");
-    const banner = () => host.querySelector('[role="status"]')!;
-    expect(banner().getAttribute("aria-label")).toBe("Visiting Rival's realm");
+    const foot = () => host.querySelector('[role="status"]')!;
+    expect(foot().getAttribute("aria-label")).toBe("Visit Rival");
     // Until its rows arrive the name pulses and the realm stays closed.
-    expect(banner().querySelector(".animate-pulse")?.textContent).toBe("Rival");
+    expect(foot().querySelector(".animate-pulse")?.textContent).toBe("Rival");
     expect(goTo).not.toHaveBeenCalled();
 
     // Herald's visit scope brings the realm in: it opens once, read-only.
     act(() => store.applyFacts([realmRow(8, "0x222")] as never));
     expect(goTo).toHaveBeenCalledOnce();
     expect(goTo).toHaveBeenLastCalledWith(8, expect.anything(), false, { spectator: true });
-    expect(banner().querySelector(".animate-pulse")).toBeNull();
+    expect(foot().querySelector(".animate-pulse")).toBeNull();
 
     act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Leave")!.click());
     expect(visit).toHaveBeenLastCalledWith(null);
@@ -110,7 +113,7 @@ describe("a realm visit", () => {
   });
 
   it("ends with the account that started it", () => {
-    renderBanner();
+    renderFoot();
     act(() => startRealmVisit({ player: "0x222", structureId: 8 }));
     act(() => useAccountStore.setState({ account: { address: "0x333" } as never }));
     expect(host.textContent).toBe("");
@@ -118,7 +121,7 @@ describe("a realm visit", () => {
 });
 
 it("returns the viewing selection home when replacing the gameplay account clears a visit", () => {
-  renderBanner();
+  renderFoot();
   act(() => store.applyFacts([realmRow(8, "0x222")] as never));
   act(() => startRealmVisit({ player: "0x222", structureId: 8 }));
   useUIStore.setState({ isSpectating: true, structureEntityId: 8 });
@@ -129,12 +132,12 @@ it("returns the viewing selection home when replacing the gameplay account clear
 });
 
 it("returns home when the replacement account's realm arrives after the visit clears", () => {
-  renderBanner(null);
+  renderFoot(null);
   act(() => store.applyFacts([realmRow(8, "0x222")] as never));
   act(() => startRealmVisit({ player: "0x222", structureId: 8 }));
   goTo.mockClear();
   act(() => useAccountStore.setState({ account: { address: "0x111" } as never }));
   expect(goTo).not.toHaveBeenCalled();
-  renderBanner();
+  renderFoot();
   expect(goTo).toHaveBeenCalledWith(7, expect.anything(), false, { spectator: false });
 });

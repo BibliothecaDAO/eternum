@@ -38,20 +38,13 @@ export const DayDone = ({ rules, realm }: { rules: ExpeditionRules; realm: Nativ
   if (!ended || !player || (seen !== null && seen >= ended.day)) return null;
   const totals = totalToday(stories, player, { startMs: ended.start * 1_000, endMs: ended.end * 1_000 });
   const gone = endedArmies(setup.store, realm, rules, now);
-  if (gone.length === 0 && totals.reveals === 0 && totals.sitesCleared === 0) return null;
+  if (gone.length === 0 && totals.reveals === 0 && totals.cleared === 0) return null;
   return (
     <DayDoneCard
       endedDay={ended.day}
       realmArt={`/images/realm-card/${REALM_ART[Math.min(realm.base.level, REALM_ART.length - 1)]}.webp`}
       clock={dayClock(rules, now)}
-      totals={{
-        reveals: totals.reveals,
-        cleared: totals.sitesCleared,
-        chests: totals.chests,
-        essence: totals.essence,
-        labor: totals.labor,
-        lords: undefined,
-      }}
+      totals={{ ...totals, lords: undefined }}
       armies={gone.length}
       troopsLost={gone.reduce((sum, army) => sum + Number(army.troops.count / BigInt(RESOURCE_PRECISION)), 0)}
       onContinue={() => markSeen(ended.day)}

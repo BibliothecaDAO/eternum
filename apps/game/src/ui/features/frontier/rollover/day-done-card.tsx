@@ -1,22 +1,13 @@
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
+import { formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { DayEnds } from "@/ui/design-system/kit/clock-line";
-import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
+import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { formatDuration } from "@/ui/design-system/kit/time";
 import { CONTINUE, DAY, DAY_DONE, DAY_OPEN, REALM_KEPT, TOMORROW_LASTS, TROOPS } from "@/ui/design-system/kit/words";
 
 import type { DayClock } from "../hud/day-clock";
-
-/** The ended day's totals, as the log counts them; LORDS arrive with the contracts' ruin chests. */
-type DayDoneTotals = {
-  reveals: number | undefined;
-  cleared: number | undefined;
-  chests: number | undefined;
-  essence: number | undefined;
-  labor: number | undefined;
-  lords: number | undefined;
-};
+import { type DayTotals, DayTotalsGrid } from "../log/day-totals";
 
 /**
  * The day-done card (wireframe 11), once, at the first open after the day ends: the day done and the realm kept, the
@@ -38,7 +29,7 @@ export const DayDoneCard = ({
   realmArt: string;
   /** The new day: when it ends, the time left, and how long the day after lasts. */
   clock: Pick<DayClock, "endsAt" | "secondsLeft" | "tomorrowSeconds" | "tone">;
-  totals: DayDoneTotals;
+  totals: DayTotals;
   /** The closing rank change, from Herald's record of the ended day. */
   rank?: { from: number; to: number };
   /** How many armies ended with the day. */
@@ -65,14 +56,9 @@ export const DayDoneCard = ({
       <span>{TOMORROW_LASTS}</span>
       <b className="text-[15px] tabular-nums">{formatDuration(clock.tomorrowSeconds)}</b>
     </p>
-    <dl className="frontier-card grid w-full max-w-[360px] grid-cols-3 gap-y-1 !rounded-xl px-1.5 py-2">
-      <Total icon="Ey" value={formatAmount(totals.reveals)} />
-      <Total icon="Fl" value={formatAmount(totals.cleared)} />
-      <Total icon="Ch" value={formatAmount(totals.chests)} />
-      <Total icon="Es" value={gained(totals.essence)} />
-      <Total icon="La" value={gained(totals.labor)} />
-      <Total icon="Lo" value={gained(totals.lords)} />
-    </dl>
+    <div className="w-full max-w-[360px]">
+      <DayTotalsGrid totals={totals} />
+    </div>
     {rank && (
       <p className="flex items-center gap-1.5 text-[20px] tabular-nums">
         <KitIcon code="Tp" size={24} />#{rank.from} → #{rank.to}
@@ -82,15 +68,6 @@ export const DayDoneCard = ({
     <div className="min-h-2 flex-1" />
     <Button role="primary" word={CONTINUE} onClick={onContinue} className="w-full max-w-[360px]" />
   </section>
-);
-
-const gained = (amount: number | undefined) => (amount === undefined ? "—" : `+${formatAmount(amount)}`);
-
-const Total = ({ icon, value }: { icon: IconCode; value: string }) => (
-  <span className="flex h-[34px] items-center justify-center gap-1.5">
-    <KitIcon code={icon} size={22} />
-    <span className="text-[17px] tabular-nums">{value}</span>
-  </span>
 );
 
 /** The ended armies, gone, the troops they took, and the troops returned beside it: what fitted, by a full bar. */

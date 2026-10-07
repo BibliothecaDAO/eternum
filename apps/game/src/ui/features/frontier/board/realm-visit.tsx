@@ -3,12 +3,13 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { leaveRealmVisit, type RealmVisit, useRealmVisit } from "@/sync/active-game-client";
-import { Eye } from "@/ui/design-system/atoms/game-icons";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { configManager, Position, structureMapPosition } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useEffect, useRef } from "react";
+
+import { VisitFoot } from "./visit-foot";
 
 /** The visited realm's row, once the visit's scope has brought it into the store. */
 export const useVisitedRealm = (visit: RealmVisit | null): NativeRows["Structure"] | null => {
@@ -21,11 +22,11 @@ export const useVisitedRealm = (visit: RealmVisit | null): NativeRows["Structure
 };
 
 /**
- * While visiting another realm: an eye and whose it is, then Leave. The realm opens once its rows arrive with the
- * visit's scope, as a realm the player does not own, so every order stays off; the name pulses until then. Leaving
- * returns to the player's own realm.
+ * While visiting another realm, the foot that names it, with Leave. The realm opens once its rows arrive with the
+ * visit's scope, as a realm the player does not own, so every order stays off. Leaving returns to the player's own
+ * realm. Stays mounted between visits, so the way home runs after one ends.
  */
-export const RealmVisitBanner = ({ home }: { home: NativeRows["Structure"] | null }) => {
+export const RealmVisitFoot = ({ home }: { home: NativeRows["Structure"] | null }) => {
   const { setup } = useGame();
   const visit = useRealmVisit();
   const previousVisit = useRef(visit);
@@ -61,26 +62,12 @@ export const RealmVisitBanner = ({ home }: { home: NativeRows["Structure"] | nul
   if (!visit) return null;
 
   return (
-    <div
-      role="status"
-      aria-label={`Visiting ${name}'s realm`}
-      className="frontier-card pointer-events-auto flex items-center gap-3 self-center py-1.5 pl-3 pr-1.5 font-sans"
-    >
-      <Eye className="size-6" />
-      <span
-        className={cn(
-          "max-w-[40vw] truncate font-[Lexend] text-[15px] font-extrabold text-[#eadfc8]",
-          !visited && "animate-pulse",
-        )}
-      >
-        {name}
-      </span>
-      {/* A spectator has no realm to return to; they switch whom they watch from the season board. */}
-      {home && (
-        <button type="button" onClick={leaveRealmVisit} className="frontier-primary !h-10 !rounded-xl px-4 !text-base">
-          Leave
-        </button>
-      )}
-    </div>
+    <VisitFoot
+      label={name}
+      order={visited && visited.metadata.order > 0 ? visited.metadata.order : undefined}
+      name={<PlayerName account={visit.player} />}
+      arriving={!visited}
+      onLeave={home ? leaveRealmVisit : undefined}
+    />
   );
 };

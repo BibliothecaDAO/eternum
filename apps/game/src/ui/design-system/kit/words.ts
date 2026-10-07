@@ -64,6 +64,9 @@ export const FIND_KINDS = ["Find camps", "Find rifts", "Find stragglers"] as con
 export const CAMP = "Camp";
 export const RIFT = "Rift";
 export const RUIN = "Ruin";
+/** A done site, and the chests the clears paid (screen-reader words; the screen shows Fl and Ch). */
+export const CLEARED = "Cleared";
+export const CHESTS = "Chests";
 export const STRAGGLERS = "Stragglers";
 export const SHRINE = "Shrine";
 export const WELL = "Well";
@@ -101,3 +104,15 @@ export const ARMY = "Army";
 
 /** The player on any list. */
 export const YOU = "You";
+
+/** The season list and its end, told one of two ways (story): the mist lifted, or it grew too strong. */
+export const SEASON_OVER = "Season over";
+export const YOU_PLACED = "You placed";
+export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
+export const SEASON_ERROR = "Season did not answer.";
+export const TODAY_ERROR = "Today did not answer.";
+export const BACK = "Back";
+
+/** Looking at another realm, and stopping. */
+export const VISIT = "Visit";
+export const LEAVE = "Leave";

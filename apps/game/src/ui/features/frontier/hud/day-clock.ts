@@ -46,13 +46,20 @@ export const dayClock = (rules: ExpeditionRules, now: number): DayClock => {
   };
 };
 
+/** A season day's bounds in unix seconds, counted back from today's end; null before the season's first day. */
+export const dayBounds = (rules: ExpeditionRules, now: number, day: number): { start: number; end: number } | null => {
+  const today = seasonDay(rules, now);
+  if (today === null || day < 1 || day > today + 1) return null;
+  const end = expeditionDayEndsAt(rules, now) - (today + 1 - day) * rules.epochSeconds;
+  return { start: end - rules.epochSeconds, end };
+};
+
 /**
  * The day that ended last: its number and its bounds in unix seconds, for the day-done card's totals. Null on the
  * season's first day, which follows no day.
  */
 export const endedDay = (rules: ExpeditionRules, now: number): { day: number; start: number; end: number } | null => {
   const today = seasonDay(rules, now);
-  if (today === null || today === 0) return null;
-  const end = expeditionDayEndsAt(rules, now) - rules.epochSeconds;
-  return { day: today, start: end - rules.epochSeconds, end };
+  const bounds = today ? dayBounds(rules, now, today) : null;
+  return today && bounds ? { day: today, ...bounds } : null;
 };

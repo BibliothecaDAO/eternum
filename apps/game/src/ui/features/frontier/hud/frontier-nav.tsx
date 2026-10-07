@@ -9,7 +9,7 @@ import { useResearchPlan } from "../research/research-reader";
 import { type Place, PlaceNav } from "./place-nav";
 
 /** What the HUD has open over the map: a nav page, the Menu, or a way the Menu opens. */
-export type HudSurface = "research" | "chat" | "menu" | "today" | "settings" | "production";
+export type HudSurface = "research" | "chat" | "menu" | "today" | "settings" | "production" | "season";
 
 /**
  * What the HUD has open. Opening a surface lets go of the tile, plot or building the player had tapped, so one sheet
@@ -46,7 +46,13 @@ export const FrontierNav = ({
 }) => {
   const { isMapView } = useQuery();
   const place: Place =
-    surface === "research" || surface === "chat" || surface === "menu" ? surface : isMapView ? "map" : "realm";
+    surface === "research" || surface === "chat" || surface === "menu"
+      ? surface
+      : surface === "season"
+        ? "menu"
+        : isMapView
+          ? "map"
+          : "realm";
   const goToPlace = useGoToFrontierPlace(realm);
   const researchDot = canResearchNow(useResearchPlan(realm));
   const go = (to: Place) => {

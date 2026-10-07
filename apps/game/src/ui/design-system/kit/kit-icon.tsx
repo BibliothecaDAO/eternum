@@ -66,6 +66,8 @@ const ICONS = {
   Gd: "/image-icons/question.png",
   Of: "/image-icons/ui-network-off.png",
   Cv: "/image-icons/ui-chevron-down.png",
+  // The kit's back waits for the art pass; the chevron, turned to point back, stands in.
+  Bk: "/image-icons/ui-chevron-down.png",
   Sp: "/image-icons/ui-refresh.png",
   // The app's own codes (app handoff, Icons): play, and watch (a spyglass, never the explore eye).
   Pl: "/image-icons/ui-play.png",
@@ -89,8 +91,8 @@ const ICONS = {
 
 export type IconCode = keyof typeof ICONS;
 
-/** Codes drawn turned: the chevron that says a row opens points right. */
-const TURNS: Partial<Record<IconCode, number>> = { Cv: -90 };
+/** Codes drawn turned: the chevron that says a row opens points right, the one that says back points left. */
+const TURNS: Partial<Record<IconCode, number>> = { Cv: -90, Bk: 90 };
 
 /** An icon by its code; decorative, since the control around it carries the word. */
 export const KitIcon = ({ code, size = 20, className }: { code: IconCode; size?: number; className?: string }) => (

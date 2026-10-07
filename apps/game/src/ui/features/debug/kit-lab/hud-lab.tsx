@@ -9,6 +9,7 @@ import {
   TRAINING_BUILDINGS,
   TRY_AGAIN,
   WORKSHOP,
+  YOU,
 } from "@/ui/design-system/kit/words";
 import { ArmyStatusBar } from "@/ui/features/frontier/hud/action-bar";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
@@ -37,6 +38,11 @@ import { BuildingType, Direction } from "@bibliothecadao/types";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
+import { TodaySheet } from "@/ui/features/frontier/log/today-sheet";
+import { SeasonList, type SeasonListRow } from "@/ui/features/frontier/board/season-list";
+import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
+import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
+import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
 
 const HOUR = 3_600;
 const NOW = new Date(2026, 9, 7, 14, 26).getTime() / 1000;
@@ -300,6 +306,38 @@ const CASTLE_NODES = [
   { key: "d3", icon: "Dp" as const, label: "III", essence: 900_000, state: "locked" as const },
 ];
 
+const TODAY_LOG = [
+  { id: "a", at: NOW - 24 * 60, text: "Army 1 cleared a camp" },
+  { id: "b", at: NOW - 46 * 60, text: "Army 2 cleared stragglers" },
+  { id: "c", at: NOW - 55 * 60, text: "Army 1 cleared a rift" },
+];
+
+const SEASON_NAMES = [
+  "Ysabeau",
+  "Aldric",
+  "Corwin",
+  "Maelis",
+  "Tybalt",
+  "Oriane",
+  "Garrick",
+  "Linnea",
+  "Bertrand",
+  "Sylvaine",
+  "Osric",
+];
+const SEASON_SITES = [148, 132, 127, 121, 116, 110, 104, 99, 95, 92, 90];
+const SEASON_LORDS = [704, 640, 576, 512, 448, 416, 384, 352, 320, 288, 256];
+const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
+  key: name,
+  rank: index + 1,
+  order: index + 1,
+  name,
+  sitesCleared: SEASON_SITES[index],
+  lords: SEASON_LORDS[index],
+  own: false,
+}));
+const OWN_ROW: SeasonListRow = { key: "you", rank: 12, order: 12, name: YOU, sitesCleared: 88, lords: 192, own: true };
+
 const STATES = {
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
   selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0 },
@@ -515,9 +553,22 @@ const STATES = {
   "train-hearth": { clock: CLOCK, stores: STORES, armies: ARMIES, training: "hearth" },
   "train-scouts": { clock: CLOCK, stores: STORES, armies: ARMIES, training: "scouts" },
   "train-short": { clock: CLOCK, stores: STORES, armies: ARMIES, training: "short" },
+  today: { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today" },
+  "today-earlier": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-earlier" },
+  "today-failed": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-failed" },
+  "season-over": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over" },
+  "season-over-strong": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over-strong" },
+  season: { clock: CLOCK, stores: STORES, armies: ARMIES, season: "list" },
+  "season-detail": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "detail" },
+  "season-loading": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "loading" },
+  "season-failed": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "failed" },
+  visiting: { clock: CLOCK, stores: STORES, armies: ARMIES, visiting: true },
 } as const;
 
 type LabState = {
+  results?: "today" | "today-earlier" | "today-failed" | "over" | "over-strong";
+  season?: "list" | "detail" | "loading" | "failed";
+  visiting?: boolean;
   training?: "battle" | "hearth" | "scouts" | "short";
   tree?: "page" | "farm" | "barracks" | "hut" | "shrine";
   production?: readonly ProductionLine[];
@@ -569,6 +620,17 @@ export const HudLab = () => {
               onRow={noop}
               onCastle={noop}
             />
+          ) : lab.season ? (
+            <SeasonList
+              rank={12}
+              chest={{ tier: 1, lords: 32 }}
+              rows={SEASON_ROWS}
+              pinned={OWN_ROW}
+              state={lab.season === "loading" || lab.season === "failed" ? lab.season : "ready"}
+              onRetry={noop}
+              onOpen={noop}
+              onBack={noop}
+            />
           ) : (
             <div className="relative min-h-0 flex-1">
               {lab.lastHour && <LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />}
@@ -609,22 +671,44 @@ export const HudLab = () => {
                     onPick={noop}
                   />
                 ))}
-                {Array.from({ length: SLOTS - lab.armies.length }, (_, index) => (
+                {Array.from({ length: lab.visiting ? 0 : SLOTS - lab.armies.length }, (_, index) => (
                   <OpenSlot key={index} label="Deploy" pulse={index === 0 && lab.armies.length === 0} onDeploy={noop} />
                 ))}
               </nav>
             )}
-            <PlaceNav
-              place={lab.menu ? "menu" : lab.tree ? "research" : lab.realmView ? "realm" : "map"}
-              onGo={noop}
-              realmDot={lab.realmDot}
-              researchDot={!lab.offline}
-              unread={lab.offline ? 0 : 3}
-            />
+            {lab.visiting && <VisitFoot label="Aldric" order={2} name="Aldric" arriving={false} onLeave={noop} />}
+            {!lab.visiting && (
+              <PlaceNav
+                place={lab.menu || lab.season ? "menu" : lab.tree ? "research" : lab.realmView ? "realm" : "map"}
+                onGo={noop}
+                realmDot={lab.realmDot}
+                researchDot={!lab.offline}
+                unread={lab.offline ? 0 : 3}
+              />
+            )}
           </>
         }
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
+        {lab.results && <LabResults results={lab.results} />}
+        {lab.season === "detail" && (
+          <SeasonDetailSheet
+            label="Aldric"
+            detail={{
+              rank: 2,
+              order: 2,
+              name: "Aldric",
+              sites: { total: 132, camps: 80, rifts: 43, ruins: 9 },
+              chests: 9,
+              lords: 640,
+              reach: 0,
+              essence: 212_000,
+              labor: 96_000,
+            }}
+            onVisit={noop}
+            onClose={noop}
+          />
+        )}
         {lab.dayDone && <DayDoneCard {...lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
         {lab.tree && lab.tree !== "page" && <LabTreeSheet tree={lab.tree} />}
@@ -874,3 +958,34 @@ const LabTraining = ({ training }: { training: "battle" | "hearth" | "scouts" | 
     />
   );
 };
+
+const LabResults = ({ results }: { results: NonNullable<LabState["results"]> }) =>
+  results === "over" || results === "over-strong" ? (
+    <SeasonOverCard
+      ending={results === "over" ? "lifted" : "strong"}
+      place={12}
+      field={1_000}
+      podium={[
+        { key: "1", rank: 1, name: "Ysabeau", sitesCleared: 448 },
+        { key: "2", rank: 2, name: "Aldric", sitesCleared: 412 },
+        { key: "3", rank: 3, name: "Corwin", sitesCleared: 397 },
+      ]}
+      totals={{ sitesCleared: 288, chests: 61, lords: 2_003, reach: 2, essence: 2_100_000, labor: 1_400_000 }}
+      onSeason={noop}
+      onExit={noop}
+    />
+  ) : (
+    <TodaySheet
+      day={results === "today-earlier" ? 11 : 12}
+      today={results !== "today-earlier"}
+      totals={{ reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: 0 }}
+      armiesToUpgrade={2}
+      lines={TODAY_LOG}
+      failed={results === "today-failed"}
+      onRetry={noop}
+      onEarlier={noop}
+      onLater={results === "today-earlier" ? noop : undefined}
+      onArmies={noop}
+      onClose={noop}
+    />
+  );
