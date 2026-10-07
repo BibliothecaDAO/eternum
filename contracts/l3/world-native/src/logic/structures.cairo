@@ -752,9 +752,8 @@ pub mod StructuresLogic {
                             );
                     }
                 },
-                Discovery::Rift | Discovery::Stragglers => {
-                    assert!(rules.day_unit_seconds != 0, "site requires expeditions");
-                },
+                Discovery::Rift |
+                Discovery::Stragglers => { assert!(rules.day_unit_seconds != 0, "site requires expeditions"); },
                 Discovery::Ruin(chest) => {
                     assert!(rules.day_unit_seconds != 0, "site requires expeditions");
                     crate::logic::lords_budget::store_site_chest(key, chest);

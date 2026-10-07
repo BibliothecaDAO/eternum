@@ -76,7 +76,10 @@ pub fn validate(preset: PresetDefinition) {
             "empty progression rules",
         );
     }
-    assert!(rules.day_unit_seconds == 0 || rules.troop_limit_config.t1_tier_strength == 1, "expedition troops must have strength one");
+    assert!(
+        rules.day_unit_seconds == 0 || rules.troop_limit_config.t1_tier_strength == 1,
+        "expedition troops must have strength one",
+    );
     assert!(rules.tick_config.armies_tick_in_seconds != 0, "zero army tick");
     assert!(
         Into::<u32, u64>::into(rules.day_unit_seconds) % rules.tick_config.armies_tick_in_seconds == 0,

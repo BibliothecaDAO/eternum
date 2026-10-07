@@ -1,7 +1,7 @@
 use core::dict::{Felt252Dict, Felt252DictTrait};
-use crate::taxonomy::{RIFT_CATEGORY, RUIN_CATEGORY, STRAGGLERS_CATEGORY};
 use crate::registrar::{IRegistrarSafeDispatcher, IRegistrarSafeDispatcherTrait};
 use crate::rules::RESOURCE_PRECISION;
+use crate::taxonomy::{RIFT_CATEGORY, RUIN_CATEGORY, STRAGGLERS_CATEGORY};
 use crate::troops::{TroopTier, TroopType, frontier_guard};
 
 #[test]
@@ -35,7 +35,6 @@ fn seeded_beasts_are_knights_on_the_inclusive_preset_grid() {
                 assert_eq!(guard.category, TroopType::Knight);
             }
             assert!(saw_lower && saw_upper, "inclusive endpoint never drawn");
-
         }
     }
 }

@@ -689,12 +689,15 @@ fn research_world() -> (super::Deployment, ResourceKey, crate::presets::PresetDe
     seed_board_castle(d, home);
     let limits = preset.rules.troop_limit_config;
     // Research needs the empire's ruled labor limit; a grant cannot bypass the level-0 store's cap.
-    snforge_std::interact_with_state(d.games, || {
-        for _ in 0_u8..3 {
-            let base = crate::logic::structures::structure(home).unwrap().base;
-            crate::logic::structures::StructureState::upgrade(home, base, limits);
-        }
-    });
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            for _ in 0_u8..3 {
+                let base = crate::logic::structures::structure(home).unwrap().base;
+                crate::logic::structures::StructureState::upgrade(home, base, limits);
+            }
+        },
+    );
     super::resource_commands::grant(d, home, crate::resources::LABOR, 10000000 * crate::rules::RESOURCE_PRECISION);
     super::resource_commands::grant(d, home, crate::resources::ESSENCE, 10000000 * crate::rules::RESOURCE_PRECISION);
     (d, home, preset)
@@ -706,7 +709,9 @@ fn research(home: ResourceKey, row: u8, choice: u8) -> Command {
 
 fn build_toward(home: ResourceKey, category: u8, direction: u8) -> Command {
     Command::CreateBuilding(
-        CreateBuilding { structure_id: home.entity_id, directions: array![direction].span(), category, use_simple: true },
+        CreateBuilding {
+            structure_id: home.entity_id, directions: array![direction].span(), category, use_simple: true,
+        },
     )
 }
 
@@ -735,7 +740,9 @@ fn realm_knowledge_packs_each_row_tier_and_choice_where_the_client_reads_them() 
     learned = crate::research::learn(learned, crate::research::ROW_DEPTH, 0);
     assert_eq!(learned, 160600638357650);
     assert_eq!(crate::research::picks(learned, crate::research::ROW_FARM, crate::research::CHOICE_STORE), 1);
-    assert_eq!(crate::research::choice(learned, crate::research::ROW_SCOUTS_LODGE, 3), crate::research::KIND_STRAGGLERS);
+    assert_eq!(
+        crate::research::choice(learned, crate::research::ROW_SCOUTS_LODGE, 3), crate::research::KIND_STRAGGLERS,
+    );
     // Every row, filled to its last tier on its last side, stays inside its own field.
     let mut full = 0;
     for row in 0..crate::research::ROW_COUNT {
@@ -876,7 +883,9 @@ fn a_tier_the_realm_cannot_pay_in_labor_is_refused_and_changes_nothing() {
         assert!(execute(d, research(home, crate::research::ROW_FARM, crate::research::CHOICE_MAKE), 40));
     }
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
-    let labor = ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::LABOR };
+    let labor = ResourceSlot {
+        game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::LABOR,
+    };
     let legendary = research_price(preset.structures.research, crate::research::ROW_FARM, 4).labor;
     let held = resources.resource_balance(labor);
     start_cheat_caller_address(d.games, d.games);
@@ -907,7 +916,9 @@ fn a_copy_costs_its_base_times_one_plus_the_square_of_the_copies_before_it() {
     seed_board_castle(d, home);
     super::resource_commands::grant(d, home, crate::resources::LABOR, 10000);
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
-    let labor = ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::LABOR };
+    let labor = ResourceSlot {
+        game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::LABOR,
+    };
     for (direction, multiple) in array![(0_u8, 1_u128), (1, 2), (2, 5), (3, 10)] {
         let before = resources.resource_balance(labor);
         assert!(execute(d, build_toward(home, crate::research::FARM, direction), 40));
@@ -932,16 +943,24 @@ fn the_marked_plot_changes_nothing_and_board_buildings_never_pause() {
 fn granary_settles_overflow_under_the_old_limit_before_enlarging_it() {
     let (d, home, _) = research_world();
     assert!(execute(d, build_toward(home, crate::research::FARM, 0), 40));
-    let base = snforge_std::interact_with_state(d.games, ||
-        crate::logic::resources::store_limit(home, crate::resources::WHEAT).unwrap());
+    let base = snforge_std::interact_with_state(
+        d.games, || crate::logic::resources::store_limit(home, crate::resources::WHEAT).unwrap(),
+    );
     super::resource_commands::grant(d, home, crate::resources::WHEAT, base);
     assert!(execute(d, research(home, crate::research::ROW_FARM, crate::research::CHOICE_STORE), 100));
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
-    let wheat = ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::WHEAT };
+    let wheat = ResourceSlot {
+        game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::WHEAT,
+    };
     // The old store was full: enlarging it cannot recover any of the earlier overflow.
     assert_eq!(resources.resource_balance(wheat), base);
-    assert_eq!(snforge_std::interact_with_state(d.games, ||
-        crate::logic::resources::store_limit(home, crate::resources::WHEAT).unwrap()), base * 3 / 2);
-    assert_eq!(snforge_std::interact_with_state(d.games, ||
-        crate::logic::resources::store_limit(home, 26).unwrap()), base);
+    assert_eq!(
+        snforge_std::interact_with_state(
+            d.games, || crate::logic::resources::store_limit(home, crate::resources::WHEAT).unwrap(),
+        ),
+        base * 3 / 2,
+    );
+    assert_eq!(
+        snforge_std::interact_with_state(d.games, || crate::logic::resources::store_limit(home, 26).unwrap()), base,
+    );
 }

@@ -211,7 +211,9 @@ pub mod ConstructionLogic {
             let key = ResourceKey { game_id, entity_id: command.structure_id };
             let base = self.assert_building_command(key, actor, context.timestamp, context);
             let board = self.buildings.board(game_id);
-            assert!(base.category == crate::taxonomy::REALM_CATEGORY && board.is_some(), "research requires a realm board");
+            assert!(
+                base.category == crate::taxonomy::REALM_CATEGORY && board.is_some(), "research requires a realm board",
+            );
             let before = crate::logic::research::require(key).learned;
             let learned = crate::research::learn(before, command.row, command.choice);
             self.assert_row_open(key, command.row);
@@ -418,9 +420,8 @@ pub mod ConstructionLogic {
             }
             assert!(self.standing(key, category) == 0, "training building is unique");
             assert!(
-                crate::research::tier(
-                    crate::logic::research::learned(key), crate::research::ROW_BARRACKS,
-                ) >= board.training_gate_tier,
+                crate::research::tier(crate::logic::research::learned(key), crate::research::ROW_BARRACKS) >= board
+                    .training_gate_tier,
                 "training building needs barracks tier",
             );
         }
@@ -456,9 +457,9 @@ pub mod ConstructionLogic {
             } else {
                 return;
             };
-            self.resources_dispatcher(key.game_id).spend_resource(
-                key, resource, 0, context.timestamp, crate::commands::resource_context(context),
-            );
+            self
+                .resources_dispatcher(key.game_id)
+                .spend_resource(key, resource, 0, context.timestamp, crate::commands::resource_context(context));
         }
         fn pay_research(
             ref self: ContractState,

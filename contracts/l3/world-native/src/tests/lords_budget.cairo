@@ -13,28 +13,33 @@ fn rules() -> ChestRules {
 fn clock() -> SeasonClock {
     SeasonClock {
         game: crate::game::GameRegistry {
-            name: 'frontier', preset_id: 5, creator: 1.try_into().unwrap(), settled: false, ready: true,
-            dev_mode_on: false, start_settling_at: 0, start_main_at: 0, end_at: 21 * 20 * DAY_UNIT.into(),
-            end_grace_seconds: 0, seed: 1,
+            name: 'frontier',
+            preset_id: 5,
+            creator: 1.try_into().unwrap(),
+            settled: false,
+            ready: true,
+            dev_mode_on: false,
+            start_settling_at: 0,
+            start_main_at: 0,
+            end_at: 21 * 20 * DAY_UNIT.into(),
+            end_grace_seconds: 0,
+            seed: 1,
         },
-        day_unit_seconds: DAY_UNIT, tick: 120,
+        day_unit_seconds: DAY_UNIT,
+        tick: 120,
     }
 }
 
 // A budget as it stood at the end of `day`, before anything was found that day.
 fn closed_day(rules: ChestRules, day: u64) -> LordsBudget {
-    LordsBudget {
-        pool_left: rules.pool, open: 0, spent: 0, day, price: 0, ceiling: 0, estimate: 0, paid_shares: 0,
-    }
+    LordsBudget { pool_left: rules.pool, open: 0, spent: 0, day, price: 0, ceiling: 0, estimate: 0, paid_shares: 0 }
 }
 
 #[test]
 fn the_preset_holds_the_ruled_shares_ceiling_and_pool() {
     let rules = rules();
     let shares = rules.shares;
-    assert_eq!(
-        (shares.common, shares.uncommon, shares.rare, shares.epic, shares.legendary), (1, 2, 4, 10, 20),
-    );
+    assert_eq!((shares.common, shares.uncommon, shares.rare, shares.epic, shares.legendary), (1, 2, 4, 10, 20));
     assert_eq!((rules.pool, rules.price_ceiling), (1000000, 50));
     assert_eq!((rules.surge_factor, rules.surge_minimum_shares), (3, 60));
     let (_, preset) = super::preset_projection::current_definition("frontier");
@@ -144,8 +149,8 @@ fn chest_tiers_follow_each_depths_odds_over_10k_rolls() {
     }
 }
 
-// Seasons of 105 seeded days with a fixed number of ruins a day, each chest found and cleared while it fits. The pool never
-// pays past its size, a small season pays the ceiling throughout, and a full one spends most of its pool.
+// Seasons of 105 seeded days with a fixed number of ruins a day, each chest found and cleared while it fits. The pool
+// never pays past its size, a small season pays the ceiling throughout, and a full one spends most of its pool.
 fn simulate(ruins_per_day: u32, seed: u256) -> (u128, u128, bool) {
     let rules = rules();
     let (_, preset) = super::preset_projection::current_definition("frontier");

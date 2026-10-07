@@ -96,14 +96,7 @@ fn today(game_id: u32, rules: ChestRules, context: ExecutionContext) -> LordsBud
         None => open_day(
             rules,
             LordsBudget {
-                pool_left: rules.pool,
-                open: 0,
-                spent: 0,
-                day,
-                price: 0,
-                ceiling: 0,
-                estimate: 0,
-                paid_shares: 0,
+                pool_left: rules.pool, open: 0, spent: 0, day, price: 0, ceiling: 0, estimate: 0, paid_shares: 0,
             },
             clock,
         ),
@@ -145,7 +138,9 @@ pub fn roll(rules: ChestRules, previous: LordsBudget, clock: SeasonClock, day: u
     let window: u256 = rules.estimate_days.into();
     let ticks = core::cmp::max(day_ticks(clock, previous.day), 1);
     let sample = previous.paid_shares * LORDS_ESTIMATE_SCALE / ticks;
-    let mut estimate: u128 = ((Into::<u128, u256>::into(previous.estimate) * (window - 1) + sample.into()) / window).try_into().unwrap();
+    let mut estimate: u128 = ((Into::<u128, u256>::into(previous.estimate) * (window - 1) + sample.into()) / window)
+        .try_into()
+        .unwrap();
     let mut skipped = day - previous.day - 1;
     // For a nonzero estimate and window >= 1, floor(estimate * (window - 1) / window) is strictly smaller.
     // The loop takes at most the skipped days or the initial estimate, and stops as soon as zero stays zero.

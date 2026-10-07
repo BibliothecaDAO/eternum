@@ -2403,9 +2403,7 @@ pub mod GamesFixture {
                 crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() }, game_id,
             )
         }
-        fn site_chest(
-            self: @TContractState, key: crate::resources::ResourceKey,
-        ) -> Option<crate::relics::SiteChest> {
+        fn site_chest(self: @TContractState, key: crate::resources::ResourceKey) -> Option<crate::relics::SiteChest> {
             let classes = fixture_classes(key.game_id);
             crate::relics::IRelicsDispatcherTrait::site_chest(
                 crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() }, key,

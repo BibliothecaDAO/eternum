@@ -148,7 +148,11 @@ fn level_up_once(mut preset: crate::presets::PresetDefinition) -> crate::presets
     preset
         .structures
         .upgrades =
-            array![UpgradeRecipe { costs: array![ResourceAmount { resource_type: crate::resources::LABOR, amount: 17 }].span() }]
+            array![
+                UpgradeRecipe {
+                    costs: array![ResourceAmount { resource_type: crate::resources::LABOR, amount: 17 }].span(),
+                },
+            ]
         .span();
     preset
 }

@@ -1,8 +1,8 @@
 use crate::expeditions::{ExpeditionSite, site_reward};
-use crate::taxonomy::{RIFT_CATEGORY, RUIN_CATEGORY, STRAGGLERS_CATEGORY};
 use crate::exploration_rewards::reveal_reward;
 use crate::resources::{ESSENCE, LABOR};
 use crate::rules::RESOURCE_PRECISION;
+use crate::taxonomy::{RIFT_CATEGORY, RUIN_CATEGORY, STRAGGLERS_CATEGORY};
 use crate::troops::{TroopTier, Troops};
 
 #[test]
@@ -54,9 +54,7 @@ fn site_payout_keeps_initial_scaled_guard_count_and_has_no_clock_factor() {
         site_reward(camp_category, site).unwrap(),
         crate::resources::ResourceAmount { resource_type: LABOR, amount: initial / 2 },
     );
-    assert_eq!(
-        site_reward(camp_category, ExpeditionSite { cleared: true, ..site }), site_reward(camp_category, site),
-    );
+    assert_eq!(site_reward(camp_category, ExpeditionSite { cleared: true, ..site }), site_reward(camp_category, site));
     assert_eq!(
         site_reward(RIFT_CATEGORY, site).unwrap(),
         crate::resources::ResourceAmount { resource_type: ESSENCE, amount: initial * 3 },

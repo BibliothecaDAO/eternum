@@ -380,11 +380,7 @@ pub(crate) fn discovery_guard(
 // Camps, rifts and ruins are guarded by Knight beasts. Only stragglers draw among the three troop categories and
 // keep a third of the site grid draw.
 pub(crate) fn frontier_guard(
-    category: u8,
-    depth: crate::expeditions::DepthRules,
-    seed: u256,
-    rules: crate::rules::SliceRules,
-    timestamp: u64,
+    category: u8, depth: crate::expeditions::DepthRules, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
 ) -> Troops {
     let (troop, lower, upper) = if category == crate::taxonomy::RUIN_CATEGORY {
         (TroopType::Knight, depth.ruin_guard_lower, depth.ruin_guard_upper)

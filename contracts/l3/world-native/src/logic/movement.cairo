@@ -216,7 +216,8 @@ pub mod MovementLogic {
             assert!(
                 crate::research::tier(
                     crate::logic::research::require(home_key).learned, crate::research::ROW_DEPTH,
-                ) >= command.depth,
+                ) >= command
+                    .depth,
                 "depth is not unlocked",
             );
             let spacing = self.expedition_spacing(game_id);

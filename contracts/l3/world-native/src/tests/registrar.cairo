@@ -894,7 +894,9 @@ fn a_day_is_whole_armies_ticks_and_a_season_starts_on_one() {
     uneven.rules.tick_config.armies_tick_in_seconds = 50;
     assert!(safe(d, super::authority()).register_preset(1, uneven).is_err());
     registry(d).register_preset(1, expedition_preset());
-    let season = CreateGameParams { dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 2 * BAG_SECONDS, ..params(false) };
+    let season = CreateGameParams {
+        dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 2 * BAG_SECONDS, ..params(false),
+    };
     assert!(safe(d, super::authority()).create_game(CreateGameParams { start_main_at: 310, ..season }).is_err());
     assert_eq!(registry(d).next_game_id(), 1);
     assert_eq!(registry(d).create_game(CreateGameParams { start_main_at: 360, ..season }), 1);
@@ -1784,7 +1786,10 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
             crate::logic::expeditions::expedition_site(ResourceKey { game_id, entity_id: mine_id }).unwrap()
         },
     );
-    assert_eq!(structures.structure(ResourceKey { game_id, entity_id: mine_id }).unwrap().base.category, crate::taxonomy::RIFT_CATEGORY);
+    assert_eq!(
+        structures.structure(ResourceKey { game_id, entity_id: mine_id }).unwrap().base.category,
+        crate::taxonomy::RIFT_CATEGORY,
+    );
     assert!(
         execute_in_game(
             d,
@@ -2082,9 +2087,7 @@ fn an_army_enters_a_depth_only_from_its_realms_spire_which_turns_each_day() {
         || {
             crate::logic::research::write(
                 home,
-                crate::research::RealmKnowledge {
-                    learned: crate::research::learn(0, crate::research::ROW_DEPTH, 0),
-                },
+                crate::research::RealmKnowledge { learned: crate::research::learn(0, crate::research::ROW_DEPTH, 0) },
             );
         },
     );
@@ -2261,7 +2264,12 @@ fn place_ruin(d: super::Deployment, game_id: u32, coord: crate::troops::Coord, c
     start_cheat_caller_address(d.games, d.games);
     let site = IStructureOperationsDispatcher { contract_address: d.games }
         .create_discovery(
-            game_id, coord, crate::discovery::Discovery::Ruin(chest), 123, 360, crate::commands::action_context(context),
+            game_id,
+            coord,
+            crate::discovery::Discovery::Ruin(chest),
+            123,
+            360,
+            crate::commands::action_context(context),
         );
     stop_cheat_caller_address(d.games);
     ResourceKey { game_id, entity_id: site }
@@ -2345,8 +2353,9 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
     let mut root = context.raw_root;
     let seed = crate::random::game_root(ref root, game_id, context.game.unbox().seed);
     let mut time = 360_u64;
-    while crate::discovery::frontier(ruins_only, 0, 0, 0, 0, Some(any_chest()), seed, time)
-        != crate::discovery::Discovery::Ruin(any_chest()) {
+    while crate::discovery::frontier(
+        ruins_only, 0, 0, 0, 0, Some(any_chest()), seed, time,
+    ) != crate::discovery::Discovery::Ruin(any_chest()) {
         time += 1;
     }
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
@@ -2363,7 +2372,10 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
     let budget = relics.lords_budget(game_id).unwrap();
     // A quiet first day prices at the ceiling, and the chest's LORDS are held open until its clear.
     assert_eq!(budget.price, 50);
-    assert_eq!(chest.amount, budget.price * crate::relics::tier_value(relics.chest_rules(game_id).unwrap().shares, chest.tier).into());
+    assert_eq!(
+        chest.amount,
+        budget.price * crate::relics::tier_value(relics.chest_rules(game_id).unwrap().shares, chest.tier).into(),
+    );
     assert_eq!((budget.open, budget.spent), (chest.amount, chest.amount));
     let counter = crate::expeditions::ExpeditionDiscoveryKey { game_id, structure_id: army.owner, epoch: 3 };
     assert!(
@@ -2428,14 +2440,17 @@ fn a_full_refill_costs_one_lords_a_point_returns_to_the_pool_and_is_allowed_besi
         );
     stop_cheat_caller_address(d.games);
     let relics = IRelicsDispatcher { contract_address: d.games };
-    let pool_before = relics.lords_budget(game_id).map(|budget| budget.pool_left).unwrap_or(
-        relics.chest_rules(game_id).unwrap().pool,
-    );
+    let pool_before = relics
+        .lords_budget(game_id)
+        .map(|budget| budget.pool_left)
+        .unwrap_or(relics.chest_rules(game_id).unwrap().pool);
     assert!(execute_in_game(d, game_id, refill, 362, 362));
     let filled = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     assert_eq!(Into::<u64, u128>::into(filled.troops.stamina.inline().amount), maximum);
     let lords = ResourceSlot { game_id, entity_id: army.owner, resource_type: crate::resources::LORDS };
-    assert_eq!(IResourceOperationsDispatcher { contract_address: d.games }.resource_balance(lords), 7 * RESOURCE_PRECISION);
+    assert_eq!(
+        IResourceOperationsDispatcher { contract_address: d.games }.resource_balance(lords), 7 * RESOURCE_PRECISION,
+    );
     assert_eq!(relics.lords_budget(game_id).unwrap().pool_left, pool_before + missing);
     // A full bar has nothing to refill.
     assert!(!execute_in_game(d, game_id, refill, 363, 363));
@@ -2464,7 +2479,9 @@ fn a_lords_withdrawal_after_season_end_spends_the_realm_and_is_recorded_once() {
     assert!(execute_in_game(d, game_id, withdraw, after_end, after_end));
     assert!(!execute_in_game(d, game_id, withdraw, after_end + 1, after_end + 1));
     let lords = ResourceSlot { game_id, entity_id: home.entity_id, resource_type: crate::resources::LORDS };
-    assert_eq!(IResourceOperationsDispatcher { contract_address: d.games }.resource_balance(lords), 100 * RESOURCE_PRECISION);
+    assert_eq!(
+        IResourceOperationsDispatcher { contract_address: d.games }.resource_balance(lords), 100 * RESOURCE_PRECISION,
+    );
     let mut withdrawals = 0;
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if event.keys.len() > 1 && *event.keys.at(1) == selector!("StoryEvent") {
@@ -2473,7 +2490,10 @@ fn a_lords_withdrawal_after_season_end_spends_the_realm_and_is_recorded_once() {
             let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
             if let crate::ownership::Story::LordsWithdrawn(withdrawal) = story.story {
                 withdrawals += 1;
-                assert_eq!(withdrawal, crate::relics::LordsWithdrawal { player: d.actor, structure_id: home.entity_id, amount: 200 });
+                assert_eq!(
+                    withdrawal,
+                    crate::relics::LordsWithdrawal { player: d.actor, structure_id: home.entity_id, amount: 200 },
+                );
                 let stored = snforge_std::interact_with_state(
                     d.games, || crate::state::read().relics.lords_withdrawals.read((game_id, story.order, story.index)),
                 );
@@ -2601,8 +2621,7 @@ fn frontier_refuses_off_map_economy_commands_before_reading_positions() {
         .try_into()
         .unwrap();
     registry(d).register_preset(1, preset);
-    let game_id = registry(d)
-        .create_game(CreateGameParams { duration_seconds: FRONTIER_BAG_SECONDS, ..params(false) });
+    let game_id = registry(d).create_game(CreateGameParams { duration_seconds: FRONTIER_BAG_SECONDS, ..params(false) });
     let transfer = crate::resources::ResourceTransfer {
         from_entity_id: 1, to_entity_id: 2, resources: array![].span(),
     };
@@ -2773,7 +2792,9 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
             index,
         );
         while index < 7
-            && crate::discovery::frontier(discovery, 0, 0, 0, index, Some(any_chest()), seed, time) != crate::discovery::Discovery::None {
+            && crate::discovery::frontier(
+                discovery, 0, 0, 0, index, Some(any_chest()), seed, time,
+            ) != crate::discovery::Discovery::None {
             time += 1;
         }
         assert!(time < tomorrow);
@@ -2826,7 +2847,9 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
     );
     let third = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let mut time = tomorrow + 1;
-    while crate::discovery::frontier(discovery, 0, 0, 0, 0, Some(any_chest()), seed, time) != crate::discovery::Discovery::None {
+    while crate::discovery::frontier(
+        discovery, 0, 0, 0, 0, Some(any_chest()), seed, time,
+    ) != crate::discovery::Discovery::None {
         time += 1;
     }
     assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: third, direction: 0 }), time, time));
