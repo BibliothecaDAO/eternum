@@ -23,7 +23,6 @@ jobs:
       herald: ${{ steps.paths.outputs.herald }}
       services: ${{ steps.paths.outputs.services }}
       native: ${{ steps.paths.outputs.native }}
-      native_world: ${{ steps.paths.outputs.native_world }}
       runtime: ${{ steps.paths.outputs.runtime }}
       terrain: ${{ steps.paths.outputs.terrain }}
       amm: ${{ steps.paths.outputs.amm }}
@@ -92,12 +91,7 @@ jobs:
   native:
     needs: scope
     if: needs.scope.outputs.native == 'true'
-    uses: ./.github/workflows/native-world.yml
-    # Only the called workflow's publish-snforge job uses write, and it runs on push events alone.
-    permissions:
-      contents: write
-    with:
-      world: ${{ needs.scope.outputs.native_world == 'true' }}
+    uses: ./.github/workflows/test-native.yml
 
   runtime:
     needs: scope
