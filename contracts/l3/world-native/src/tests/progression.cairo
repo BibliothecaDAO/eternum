@@ -332,9 +332,10 @@ fn homecoming_returns_each_expired_armys_own_share_of_its_survivors() {
     let resources = crate::resources::IResourceOperationsDispatcher { contract_address: d.games };
     let slot = crate::resources::ResourceSlot { game_id, entity_id: 1, resource_type: stock };
     let before = resources.resource_balance(slot);
+    let tomorrow = super::registrar::day_start(d, game_id, 1);
     // The next day's first deploy removes yesterday's armies: 18% of 10,000 and 9% of 1,000 come home.
     assert!(
-        super::resource_commands::execute_in_game(d, game_id, super::registrar::muster_command(category, 0), 401, 401),
+        super::resource_commands::execute_in_game(d, game_id, super::registrar::muster_command(category, 0), tomorrow, tomorrow),
     );
     let troops = super::state::GameState { contract_address: d.games };
     assert!(troops.explorer(first).is_none() && troops.explorer(second).is_none());
