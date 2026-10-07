@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const phase = "http_request_cache_settings";
-// One zone serves several client hosts (staging and production), so each host owns its own rule. The first deploys
+// A zone may serve more than one client host, so each host owns its own rule. The first deploys
 // wrote one rule per zone under the bare prefix; a host adopts that rule when it is the one it describes.
 const legacyRuleRef = "realms_pwa_revalidation";
 

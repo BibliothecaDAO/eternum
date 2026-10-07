@@ -63,12 +63,12 @@ test("keeps each host's rule apart and adopts the zone-wide rule written for the
   const production =
     '(http.host eq "play.realms.party" and http.request.uri.path in {"/sw.js" "/manifest.webmanifest" "/offline.html"})';
   const legacy = { id: "legacy", ref: "realms_pwa_revalidation", expression: production, enabled: false };
-  const staging = fixture([legacy]);
+  const sibling = fixture([legacy]);
   assert.equal(
-    (await ensurePwaCacheRule({ ...staging.input, origin: "https://staging.realms.party" })).action,
+    (await ensurePwaCacheRule({ ...sibling.input, origin: "https://app.realms.party" })).action,
     "created-rule",
   );
-  assert.deepEqual(staging.rules()[0], legacy);
+  assert.deepEqual(sibling.rules()[0], legacy);
   const f = fixture([legacy]);
   assert.equal((await ensurePwaCacheRule(f.input)).action, "updated-rule");
   assert.equal(f.calls.at(-1).method, "PATCH");
