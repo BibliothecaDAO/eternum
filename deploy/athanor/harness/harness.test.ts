@@ -662,6 +662,39 @@ describe("Madara harness reporting", () => {
     }
   });
 
+  it("records the init image's commit where no repository exists, and refuses without one", async () => {
+    // The shard package's init image has no .git; a child process sees the environment it would.
+    const evidence = async (revision?: string) => {
+      const report = join(import.meta.dir, "report.ts");
+      const child = Bun.spawn(
+        [
+          "bun",
+          "-e",
+          `console.log(JSON.stringify(await (await import(${JSON.stringify(report)})).collectHarnessEvidenceBeforeRun(true)))`,
+        ],
+        {
+          env: { ...process.env, GIT_DIR: "/nonexistent", ...(revision ? { SHARD_REVISION: revision } : {}) },
+          stdout: "pipe",
+          stderr: "pipe",
+        },
+      );
+      const [stdout, stderr, exitCode] = await Promise.all([
+        new Response(child.stdout).text(),
+        new Response(child.stderr).text(),
+        child.exited,
+      ]);
+      return { exitCode, stderr, recorded: exitCode === 0 ? JSON.parse(stdout) : null };
+    };
+    const withoutRepository = await evidence();
+    expect(withoutRepository.exitCode).not.toBe(0);
+    expect(withoutRepository.stderr).toContain("git rev-parse HEAD failed");
+    const fromImage = await evidence("a8aed57d23bd4b1de7b47c5a5bf1c119f007369a");
+    expect(fromImage.recorded).toMatchObject({
+      gitRevision: "a8aed57d23bd4b1de7b47c5a5bf1c119f007369a",
+      gitDirty: false,
+    });
+  });
+
   it("flags a latency with no samples as over target", () => {
     expect(latencyAgainstTargets(40, null, 0).overTarget).toEqual({
       admissionToVisibleP95: false,

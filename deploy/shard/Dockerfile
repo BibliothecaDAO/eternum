@@ -36,5 +36,8 @@ USER bun
 ENTRYPOINT ["bun", "/app/herald.js"]
 
 FROM build AS init
+# The image carries no repository, so commands run from it record this commit as the code they ran.
+ARG SHARD_REVISION
+ENV SHARD_REVISION=${SHARD_REVISION}
 # Initialization consumes the compiled artifacts; it never downloads or compiles contracts on the host.
 ENTRYPOINT ["python3", "/app/deploy/shard/init.py"]

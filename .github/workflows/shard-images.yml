@@ -52,6 +52,7 @@ jobs:
           push: true
           tags: ${{ steps.target.outputs.name }}:${{ github.ref_name }}
           labels: org.opencontainers.image.revision=${{ github.sha }}
+          build-args: SHARD_REVISION=${{ github.sha }}
           cache-from: type=gha,scope=shard-${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=shard-${{ matrix.image }}
       - name: Record the immutable image
