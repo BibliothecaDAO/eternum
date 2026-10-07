@@ -32,13 +32,13 @@ const LegalPage = ({ title, updated, sections }: { title: string; updated: strin
   <article className="mx-auto max-w-[880px] space-y-4">
     <div>
       <PanelTitle>Legal</PanelTitle>
-      <h1 className="font-cinzel text-2xl font-semibold text-gold sm:text-4xl">{title}</h1>
+      <h1 className="font-ui text-2xl font-semibold text-gold sm:text-4xl">{title}</h1>
       <p className="mt-2 text-[12px] text-gold/60">Last updated: {updated}</p>
     </div>
     <Panel className="space-y-6">
       {sections.map((section, index) => (
         <section key={section.title}>
-          <h2 className="mb-2 font-cinzel text-[15px] font-semibold text-gold">
+          <h2 className="mb-2 font-ui text-[15px] font-semibold text-gold">
             {index + 1}. {section.title}
           </h2>
           <div className="space-y-3 text-[13px] leading-relaxed text-gold/75 [&_li]:mb-1 [&_strong]:text-gold/90 [&_ul]:list-disc [&_ul]:pl-5">

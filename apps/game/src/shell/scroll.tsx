@@ -63,7 +63,7 @@ const PostCard = ({ post, featured = false }: { post: ScrollPost; featured?: boo
   <Link to={`/scroll/${post.slug}`} className="block">
     <Panel className="h-full transition-colors hover:border-gold/50">
       <PostMeta post={post} />
-      <h2 className={`mt-2 font-cinzel font-semibold text-gold ${featured ? "text-2xl sm:text-3xl" : "text-lg"}`}>
+      <h2 className={`mt-2 font-ui font-semibold text-gold ${featured ? "text-2xl sm:text-3xl" : "text-lg"}`}>
         {post.title}
       </h2>
       <p className="mt-2 text-[13px] leading-relaxed text-gold/70">{post.excerpt}</p>
@@ -143,14 +143,14 @@ export const ScrollPostPage = () => {
       </Link>
       <header>
         <PostMeta post={post} />
-        <h1 className="mt-2 font-cinzel text-2xl font-semibold text-gold sm:text-4xl">{post.title}</h1>
+        <h1 className="mt-2 font-ui text-2xl font-semibold text-gold sm:text-4xl">{post.title}</h1>
         <p className="mt-3 text-[15px] leading-relaxed text-gold/80">{post.excerpt}</p>
         <p className="mt-2 text-[12px] text-gold/60">By {post.author}</p>
         <Tags tags={post.tags} />
       </header>
       <Panel>
         <div
-          className="prose prose-invert max-w-none prose-headings:font-cinzel prose-headings:text-gold prose-p:text-gold/80 prose-a:text-gold prose-strong:text-gold prose-li:text-gold/80 prose-blockquote:border-gold/50 prose-blockquote:text-gold/70 prose-code:text-gold"
+          className="prose prose-invert max-w-none prose-headings:font-ui prose-headings:text-gold prose-p:text-gold/80 prose-a:text-gold prose-strong:text-gold prose-li:text-gold/80 prose-blockquote:border-gold/50 prose-blockquote:text-gold/70 prose-code:text-gold"
           dangerouslySetInnerHTML={{ __html: post.html }}
         />
       </Panel>

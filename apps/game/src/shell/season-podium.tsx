@@ -12,9 +12,9 @@ import { useProfiles } from "./profiles";
 
 /** The podium's plinths left to right, second, first, third, as a podium stands. */
 const PODIUM = [
-  { place: 2, height: "h-14", plinth: "from-[#dcdfe4] to-[#7c828c]" },
-  { place: 1, height: "h-20", plinth: "from-[#f6c54a] to-[#a86e00]" },
-  { place: 3, height: "h-10", plinth: "from-[#d8905a] to-[#86481f]" },
+  { place: 2, height: "h-14", plinth: "from-kit-cream to-kit-muted" },
+  { place: 1, height: "h-20", plinth: "from-kit-gold2 to-kit-amber" },
+  { place: 3, height: "h-10", plinth: "from-kit-peach to-kit-line2" },
 ] as const;
 
 /**
@@ -27,7 +27,7 @@ export const SeasonPodium = ({ season, className }: { season: DirectoryGame; cla
   const profiles = useProfiles((entries ?? []).slice(0, 3).map((entry) => entry.address));
   return (
     <section aria-label="Season" className={cn("frontier-card flex flex-col gap-2 p-3 lg:p-4", className)}>
-      <h2 className="font-[Lexend] text-[17px] font-extrabold text-[#eadfc8]">Season</h2>
+      <h2 className="font-ui text-[17px] font-extrabold text-kit-cream">Season</h2>
       <ol className="grid grid-cols-3 items-end gap-2">
         {PODIUM.map(({ place, height, plinth }) => (
           <Leader
@@ -66,11 +66,11 @@ const Leader = ({
           alt=""
           className={cn(
             "size-12 rounded-full border-2 object-cover",
-            place === 1 ? "border-[#f6ac1d]" : "border-[#6b5230]",
+            place === 1 ? "border-kit-peach" : "border-kit-line2",
           )}
         />
       ) : (
-        <span className="size-12 rounded-full border-2 border-dashed border-[#46351c]" />
+        <span className="size-12 rounded-full border-2 border-dashed border-kit-line" />
       )}
       {emblem ? (
         <img src={emblem.art} alt={emblem.name} className="size-7 object-contain" />
@@ -79,9 +79,9 @@ const Leader = ({
       )}
       <span
         className={cn(
-          "flex w-full items-start justify-center rounded-t-lg bg-gradient-to-b pt-1 font-[Lexend] text-[20px] font-extrabold text-[#1b1207]",
+          "flex w-full items-start justify-center rounded-t-lg bg-gradient-to-b pt-1 font-ui text-[20px] font-extrabold text-kit-ink",
           height,
-          entry ? plinth : "from-[#2a2013] to-[#15100a] text-[#6e6148]",
+          entry ? plinth : "from-kit-plate2 to-kit-plate text-kit-muted",
         )}
       >
         {place}

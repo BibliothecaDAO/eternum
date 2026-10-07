@@ -40,15 +40,15 @@ export const RealmCard = ({ season, className }: { season: DirectoryGame; classN
       aria-label={getRealmNameById(realm.realm_id)}
       className={cn(
         "relative isolate flex min-h-60 flex-col justify-between gap-3 overflow-hidden rounded-2xl border",
-        "border-[#46351c] p-3 lg:min-h-64 lg:p-4",
+        "border-kit-line p-3 lg:min-h-64 lg:p-4",
         className,
       )}
     >
       {still && <img src={still} alt="" className="absolute inset-0 -z-10 size-full object-cover object-[45%_55%]" />}
-      <span className="absolute inset-0 -z-10 bg-gradient-to-t from-[#0c0a08] via-[#0c0a08]/50 to-transparent" />
+      <span className="absolute inset-0 -z-10 bg-gradient-to-t from-kit-ground via-kit-ground/50 to-transparent" />
       <header className="flex items-center gap-2">
         {emblem ? <img src={emblem.art} alt={emblem.name} className="size-8 object-contain" /> : null}
-        <h2 className="font-[Lexend] text-[22px] font-extrabold text-[#fff3c4] drop-shadow-[0_2px_0_#1b1207]">
+        <h2 className="font-ui text-[22px] font-extrabold text-kit-cream drop-shadow-[0_2px_0_theme(colors.kit.ink)]">
           {getRealmNameById(realm.realm_id)}
         </h2>
         {season.expedition && (

@@ -50,10 +50,10 @@ export const CodeStep = ({
       ) : (
         <button type="button" onClick={onNewCode} disabled={pending} className="frontier-chip gap-2 px-4 py-1.5">
           <Mail className="size-6" />
-          <span className="font-[Lexend] font-extrabold text-[#eadfc8]">New code</span>
+          <span className="font-ui font-extrabold text-kit-cream">New code</span>
         </button>
       )}
-      {error && <p className="text-center text-[15px] text-[#f08a6a]">{error}</p>}
+      {error && <p className="text-center text-[15px] text-kit-red">{error}</p>}
     </div>
   );
 };
@@ -89,10 +89,10 @@ const CodeBoxes = ({
         key={index}
         aria-hidden
         className={cn(
-          "flex h-16 w-12 items-center justify-center rounded-xl border-2 bg-[#15100a] font-[Lexend] text-[30px] font-extrabold text-[#fff3c4]",
+          "flex h-16 w-12 items-center justify-center rounded-xl border-2 bg-kit-plate font-ui text-[30px] font-extrabold text-kit-cream",
           index === code.length
-            ? "border-[#f6ac1d] peer-focus:shadow-[0_0_14px_rgba(246,172,29,0.45)]"
-            : "border-[#46351c]",
+            ? "border-kit-peach peer-focus:shadow-[0_0_14px_theme(colors.kit.peach/45%)]"
+            : "border-kit-line",
           disabled && "opacity-50",
         )}
       >

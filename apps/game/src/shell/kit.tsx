@@ -11,11 +11,11 @@ export function Panel({ children, className = "" }: { children: ReactNode; class
 }
 
 export function PanelTitle({ children }: { children: ReactNode }) {
-  return <h2 className="mb-3 font-cinzel text-xs font-semibold uppercase tracking-[0.18em] text-gold">{children}</h2>;
+  return <h2 className="mb-3 font-ui text-xs font-semibold uppercase tracking-[0.18em] text-gold">{children}</h2>;
 }
 
 const BUTTON_BASE =
-  "inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 font-cinzel text-[13px] font-semibold uppercase tracking-[0.1em] transition-colors disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 font-ui text-[13px] font-semibold uppercase tracking-[0.1em] transition-colors disabled:cursor-not-allowed disabled:opacity-50";
 
 export function GoldButton({
   children,

@@ -55,7 +55,7 @@ export const IdentityChip = () => {
           aria-haspopup="dialog"
           aria-label={name}
           onClick={togglePanel}
-          className="block size-11 overflow-hidden rounded-full border-2 border-[#dfaa54] shadow-[0_0_12px_rgba(246,172,29,0.35)]"
+          className="block size-11 overflow-hidden rounded-full border-2 border-kit-gold shadow-[0_0_12px_theme(colors.kit.peach/35%)]"
         >
           <img src={playerPortraitUrl(address, signedIn.user.image)} alt="" className="size-full object-cover" />
         </button>
@@ -64,7 +64,7 @@ export const IdentityChip = () => {
           type="button"
           onClick={() => requestSignIn()}
           disabled={status === "loading"}
-          className="frontier-chip h-11 px-5 font-[Lexend] text-[17px] font-extrabold text-[#eadfc8] disabled:opacity-50"
+          className="frontier-chip h-11 px-5 font-ui text-[17px] font-extrabold text-kit-cream disabled:opacity-50"
         >
           {chipLabel(status, signedIn)}
         </button>

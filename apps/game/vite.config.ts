@@ -12,6 +12,7 @@ import wasm from "vite-plugin-wasm";
 import { resolveRendererViteAliases } from "./src/three/renderer-vite-config";
 import { PWA_PRECACHE_BUDGET_BYTES, PWA_PRECACHE_FILES } from "./build/pwa-assets.mjs";
 import { createPwaReleasePlugin } from "./build/pwa-release";
+import { COLORS } from "./src/tokens";
 
 /**
  * The identity RPC is the team's keyed mainnet URL and is never committed: a build without it would ship a public,
@@ -94,8 +95,8 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
           name: "Realms",
           short_name: "Realms",
           description: "Fully onchain strategy: Frontier expeditions and Blitz battles",
-          theme_color: "#F6C297",
-          background_color: "#F6C297",
+          theme_color: COLORS.ground,
+          background_color: COLORS.ground,
           display: "standalone",
           scope: "/",
           start_url: "/",

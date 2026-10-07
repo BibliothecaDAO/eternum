@@ -33,7 +33,7 @@ const ModeCard = ({
   to?: string;
   className?: string;
 }) => (
-  <article className={cn("relative isolate overflow-hidden rounded-2xl border border-[#46351c]", className)}>
+  <article className={cn("relative isolate overflow-hidden rounded-2xl border border-kit-line", className)}>
     <ModeArt art={art} name={name} locked={locked} to={to} />
     <div className="pointer-events-none flex h-full flex-col justify-end gap-2 p-3 lg:p-4">
       <ModeName name={name} locked={locked} />
@@ -50,7 +50,7 @@ const ModeArt = ({ art, name, locked, to }: { art: string; name: string; locked:
   const painting = (
     <>
       <img src={art} alt="" className={cn("size-full object-cover", locked && "opacity-45 grayscale")} />
-      <span className="absolute inset-0 bg-gradient-to-t from-[#0c0a08] via-[#0c0a08]/50 to-transparent" />
+      <span className="absolute inset-0 bg-gradient-to-t from-kit-ground via-kit-ground/50 to-transparent" />
     </>
   );
   return to ? (
@@ -67,8 +67,8 @@ const ModeArt = ({ art, name, locked, to }: { art: string; name: string; locked:
 const ModeName = ({ name, locked = false }: { name: string; locked?: boolean }) => (
   <h3
     className={cn(
-      "font-[Lexend] text-[20px] font-extrabold drop-shadow-[0_2px_0_#1b1207] lg:text-[22px]",
-      locked ? "text-[#a2926f]" : "text-[#fff3c4]",
+      "font-ui text-[20px] font-extrabold drop-shadow-[0_2px_0_theme(colors.kit.ink)] lg:text-[22px]",
+      locked ? "text-kit-muted" : "text-kit-cream",
     )}
   >
     {name}
@@ -140,7 +140,7 @@ export const BlitzLobbyCard = ({
     return <ModeCard art={MODE_ART.blitz} name="Blitz" locked state={null} className={cn("h-32 lg:h-40", className)} />;
   }
   return (
-    <article className={cn("overflow-hidden rounded-2xl border border-[#46351c] bg-[#15100a]", className)}>
+    <article className={cn("overflow-hidden rounded-2xl border border-kit-line bg-kit-plate", className)}>
       <div className="relative isolate flex h-32 items-end p-3 lg:h-44 lg:p-4">
         <ModeArt art={MODE_ART.blitz} name="Blitz" locked={false} />
         <ModeName name="Blitz" />
@@ -159,7 +159,7 @@ export const BlitzLobbyCard = ({
           retry={() => join.register.reset()}
         />
       )}
-      <ul className="divide-y divide-[#2a2013]">
+      <ul className="divide-y divide-kit-plate2">
         {rows.map((row) => (
           <li key={row.key} className="flex items-center gap-3 px-3 py-2.5 lg:px-4">
             <BlitzRowState row={row} />
@@ -179,10 +179,10 @@ const BlitzRowState = ({ row }: { row: BlitzRow }) => (
     {row.kind === "game" && row.game.error ? (
       <UnavailableChip />
     ) : row.kind === "game" && row.game.status === "Ended" ? (
-      <span className="font-[Lexend] text-[15px] font-extrabold text-[#eadfc8]">Ended</span>
+      <span className="font-ui text-[15px] font-extrabold text-kit-cream">Ended</span>
     ) : row.secondsLeft === null ? (
-      <span className="flex items-center gap-2 font-[Lexend] text-[15px] font-extrabold text-[#eadfc8]">
-        <span aria-hidden className="size-2.5 rounded-full bg-[#9fd06a] shadow-[0_0_8px_#9fd06a]" />
+      <span className="flex items-center gap-2 font-ui text-[15px] font-extrabold text-kit-cream">
+        <span aria-hidden className="size-2.5 rounded-full bg-kit-sage shadow-[0_0_8px_theme(colors.kit.sage)]" />
         Live
       </span>
     ) : (

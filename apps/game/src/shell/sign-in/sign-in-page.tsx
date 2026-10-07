@@ -134,14 +134,14 @@ const useIdentityAction = (initialError: () => string | null) => {
  * wide screen that column as a panel over the hero painting, dimmed.
  */
 const SignInFrame = ({ step, children }: { step?: Step; children?: ReactNode }) => (
-  <div className="relative isolate min-h-dvh bg-[#0c0a08] font-sans text-[#eadfc8] lg:py-12">
+  <div className="relative isolate min-h-dvh bg-kit-ground font-sans text-kit-cream lg:py-12">
     <img
       src={HERO_ART}
       alt=""
       aria-hidden
       className="absolute inset-0 -z-10 hidden size-full object-cover opacity-25 blur-sm lg:block"
     />
-    <main className="mx-auto flex min-h-dvh w-full max-w-[420px] flex-col px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:min-h-0 lg:rounded-3xl lg:border lg:border-[#46351c] lg:bg-[#0c0a08]/90 lg:p-6">
+    <main className="mx-auto flex min-h-dvh w-full max-w-[420px] flex-col px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:min-h-0 lg:rounded-3xl lg:border lg:border-kit-line lg:bg-kit-ground/90 lg:p-6">
       {(step === "code" || step === "profile") && <ProgressDots step={step} />}
       {children}
     </main>
@@ -155,8 +155,8 @@ const ProgressDots = ({ step }: { step: Step }) => (
         key={dot}
         className={cn(
           "h-2 rounded-full",
-          dot === step ? "w-6 bg-[#f6ac1d]" : "w-2",
-          dot !== step && (STEPS.indexOf(dot) < STEPS.indexOf(step) ? "bg-[#f6ac1d]" : "bg-[#46351c]"),
+          dot === step ? "w-6 bg-kit-peach" : "w-2",
+          dot !== step && (STEPS.indexOf(dot) < STEPS.indexOf(step) ? "bg-kit-peach" : "bg-kit-line"),
         )}
       />
     ))}

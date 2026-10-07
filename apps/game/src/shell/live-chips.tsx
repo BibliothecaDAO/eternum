@@ -11,7 +11,7 @@ import { Link } from "react-router-dom";
 export const SeatBar = ({ filled, total }: { filled: number; total: number }) => (
   <span role="meter" aria-label={`Seats ${filled} of ${total}`} className="flex h-4 items-stretch gap-[2px]">
     {Array.from({ length: total }, (_, seat) => (
-      <span key={seat} className={cn("w-[3px] rounded-sm", seat < filled ? "bg-[#f3d08a]" : "bg-[#46351c]")} />
+      <span key={seat} className={cn("w-[3px] rounded-sm", seat < filled ? "bg-kit-gold2" : "bg-kit-line")} />
     ))}
   </span>
 );

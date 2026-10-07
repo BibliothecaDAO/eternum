@@ -51,8 +51,8 @@ export const ProfileStep = ({
     <form onSubmit={(event) => void save(event)} className="flex flex-col gap-5 pt-10">
       <label
         className={cn(
-          "flex h-[60px] items-center gap-2 rounded-[18px] border-2 bg-[#15100a] px-4",
-          violation ? "border-[#b4533a]" : "border-[#f6ac1d]",
+          "flex h-[60px] items-center gap-2 rounded-[18px] border-2 bg-kit-plate px-4",
+          violation ? "border-kit-red" : "border-kit-peach",
         )}
       >
         <span className="sr-only">Your name</span>
@@ -64,15 +64,15 @@ export const ProfileStep = ({
           onChange={(event) => setName(event.target.value)}
           placeholder="Your name"
           aria-invalid={violation !== null}
-          className="min-w-0 flex-1 bg-transparent font-[Lexend] text-[22px] font-extrabold text-[#fff3c4] outline-none placeholder:text-[#6e6148]"
+          className="min-w-0 flex-1 bg-transparent font-ui text-[22px] font-extrabold text-kit-cream outline-none placeholder:text-kit-muted"
         />
         {violation === null && (
-          <span aria-hidden className="flex size-7 items-center justify-center rounded-full bg-[#9fd06a]">
+          <span aria-hidden className="flex size-7 items-center justify-center rounded-full bg-kit-sage">
             <Check className="size-5" />
           </span>
         )}
       </label>
-      {violation && chosenName.length > 0 && <p className="-mt-3 text-[14px] text-[#f08a6a]">Names use {violation}.</p>}
+      {violation && chosenName.length > 0 && <p className="-mt-3 text-[14px] text-kit-red">Names use {violation}.</p>}
       <div role="radiogroup" aria-label="Portrait" className="grid grid-cols-3 gap-3">
         {IDENTITY_PORTRAITS.map((id) => (
           <button
@@ -85,8 +85,8 @@ export const ProfileStep = ({
             className={cn(
               "overflow-hidden rounded-2xl border-2",
               portrait === id
-                ? "border-[#f6ac1d] shadow-[0_0_16px_rgba(246,172,29,0.55)]"
-                : "border-[#46351c] opacity-80",
+                ? "border-kit-peach shadow-[0_0_16px_theme(colors.kit.peach/55%)]"
+                : "border-kit-line opacity-80",
             )}
           >
             <img src={portraitUrl(id)} alt="" className="aspect-square w-full object-cover" />
@@ -96,7 +96,7 @@ export const ProfileStep = ({
       <button type="submit" disabled={pending || violation !== null} className="frontier-primary">
         Continue
       </button>
-      {error && <p className="text-center text-[15px] text-[#f08a6a]">{error}</p>}
+      {error && <p className="text-center text-[15px] text-kit-red">{error}</p>}
     </form>
   );
 };

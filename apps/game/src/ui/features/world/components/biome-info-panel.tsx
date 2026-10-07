@@ -154,7 +154,7 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
 
           <div className="relative z-10 flex flex-col gap-3">
             <div className="flex items-center gap-2">
-              <h2 className="font-cinzel text-lg font-bold text-gold">{formatBiomeLabel(biome)}</h2>
+              <h2 className="text-lg font-bold text-gold">{formatBiomeLabel(biome)}</h2>
               <div className="group relative">
                 <Info className="h-4 w-4 text-gold/60 transition-colors group-hover:text-gold" />
                 <div className="absolute left-6 top-0 hidden whitespace-nowrap rounded-lg border border-gold/30 bg-brown-900/95 p-3 text-sm text-gold/90 shadow-xl group-hover:block">

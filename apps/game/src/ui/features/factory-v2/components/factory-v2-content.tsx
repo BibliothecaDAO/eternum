@@ -57,7 +57,7 @@ export const FactoryV2Content = () => {
   const needsAttention = allRuns.filter((run) => run.status === "attention");
   return (
     <section className="space-y-5 rounded-2xl border border-gold/20 bg-black/60 p-5 text-gold">
-      <h2 className="font-cinzel text-xl">Schedule play</h2>
+      <h2 className="text-xl">Schedule play</h2>
       <p className="text-sm text-gold/70">
         The season calendar decides when Frontier runs and when free Blitz slots open: slots follow the daily timetable
         inside the Blitz window and form games of up to 24 players on their own. Eternum games are scheduled here.
@@ -110,7 +110,7 @@ export const FactoryV2Content = () => {
         ))}
       {needsAttention.length > 0 && (
         <div role="alert" className="space-y-2 rounded border border-red-400/60 p-3">
-          <h3 className="font-cinzel text-lg text-red-300">Needs attention</h3>
+          <h3 className="text-lg text-red-300">Needs attention</h3>
           {needsAttention.map((run) => (
             <p key={run.runId}>
               {run.gameName} ({run.environment}) failed:{" "}
@@ -119,7 +119,7 @@ export const FactoryV2Content = () => {
           ))}
         </div>
       )}
-      <h3 className="font-cinzel text-lg">Progress</h3>
+      <h3 className="text-lg">Progress</h3>
       {runs.some((query) => query.isPending) && <p>Loading launches…</p>}
       {allRuns.map((run) => (
         <article key={run.runId} className="space-y-2 rounded border border-gold/20 p-3">
@@ -164,7 +164,7 @@ const SeasonCalendar = ({ canEdit }: { canEdit: boolean }) => {
   });
   return (
     <div className="space-y-3 border-t border-gold/20 pt-3">
-      <h3 className="font-cinzel text-lg">Season calendar</h3>
+      <h3 className="text-lg">Season calendar</h3>
       {CALENDAR_PHASES.map(({ phase, title }) => (
         <CalendarPhase
           key={`${phase}:${calendar.dataUpdatedAt}`}

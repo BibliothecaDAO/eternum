@@ -68,7 +68,7 @@ function SignedInPanel({ session }: { session: Session }) {
         type="button"
         disabled={signingOut}
         onClick={() => void signOut()}
-        className="rounded-lg border border-gold/40 px-3 py-2 font-cinzel text-[12px] uppercase tracking-[0.1em] text-gold hover:bg-gold/10 disabled:opacity-50"
+        className="rounded-lg border border-gold/40 px-3 py-2 font-ui text-[12px] uppercase tracking-[0.1em] text-gold hover:bg-gold/10 disabled:opacity-50"
       >
         {signingOut ? "Signing out…" : "Sign out"}
       </button>

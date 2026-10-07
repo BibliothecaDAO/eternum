@@ -66,7 +66,7 @@ const HeroBackdrop = () => (
     className="pointer-events-none absolute left-1/2 top-[-4.5rem] -z-10 hidden h-[44rem] w-screen -translate-x-1/2 lg:block"
   >
     <img src={HERO_ART} alt="" className="size-full object-cover object-[50%_30%]" />
-    <span className="absolute inset-0 bg-gradient-to-b from-[#0c0a08]/20 via-[#0c0a08]/40 to-[#0c0a08]" />
+    <span className="absolute inset-0 bg-gradient-to-b from-kit-ground/20 via-kit-ground/40 to-kit-ground" />
   </div>
 );
 
@@ -74,11 +74,11 @@ const HeroBackdrop = () => (
 const Pitch = ({ season }: { season: DirectoryGame | undefined }) => (
   <section className="relative isolate -mx-3 -mt-[4.5rem] flex min-h-[27rem] flex-col justify-end gap-3 overflow-hidden px-4 pb-5 lg:mx-0 lg:mt-0 lg:min-h-0 lg:p-0">
     <img src={HERO_ART} alt="" className="absolute inset-0 -z-10 size-full object-cover object-[50%_20%] lg:hidden" />
-    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-[#0c0a08]/30 to-[#0c0a08] lg:hidden" />
-    <h1 className="font-[Lexend] text-[34px] font-extrabold leading-[1.1] text-[#fff3c4] drop-shadow-[0_3px_0_#1b1207] lg:text-[52px]">
+    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-kit-ground/30 to-kit-ground lg:hidden" />
+    <h1 className="font-ui text-[34px] font-extrabold leading-[1.1] text-kit-cream drop-shadow-[0_3px_0_theme(colors.kit.ink)] lg:text-[52px]">
       Found a realm. Explore the Mist.
     </h1>
-    <p className="text-[17px] text-[#eadfc8] lg:text-[19px]">A new map every day. Your realm keeps what it earns.</p>
+    <p className="text-[17px] text-kit-cream lg:text-[19px]">A new map every day. Your realm keeps what it earns.</p>
     <div className="lg:w-80">
       {season?.error ? (
         <UnavailableChip />

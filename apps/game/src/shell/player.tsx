@@ -61,7 +61,7 @@ export const PlayerPage = () => {
             alt=""
             className="h-16 w-16 rounded-lg border border-gold/40 object-cover"
           />
-          <div className="font-cinzel text-[20px] font-bold tracking-wide text-gold">
+          <div className="font-ui text-[20px] font-bold tracking-wide text-gold">
             {profile?.name ?? shortAddress(address)}
           </div>
         </div>

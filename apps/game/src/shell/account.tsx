@@ -153,7 +153,7 @@ const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () =
             className="h-[72px] w-[72px] rounded-lg border border-gold/40 object-cover"
           />
           <div>
-            <div className="font-cinzel text-[22px] font-bold tracking-wide text-gold">{name ?? "Unnamed lord"}</div>
+            <div className="font-ui text-[22px] font-bold tracking-wide text-gold">{name ?? "Unnamed lord"}</div>
             <button
               type="button"
               onClick={() => setEditingPortrait((value) => !value)}
