@@ -687,6 +687,13 @@ fn research_world() -> (super::Deployment, ResourceKey, crate::presets::PresetDe
     preset.resources.resources = resources.span();
     let (d, home) = building_world_with_preset(preset);
     seed_board_castle(d, home);
+    // Research needs the empire's ruled labor limit; a grant cannot bypass the level-0 store's cap.
+    snforge_std::interact_with_state(d.games, || {
+        for _ in 0_u8..3 {
+            let base = crate::logic::structures::structure(home).unwrap().base;
+            crate::logic::structures::StructureState::upgrade(home, base, preset.rules.troop_limit_config);
+        }
+    });
     super::resource_commands::grant(d, home, crate::resources::LABOR, 10000000 * crate::rules::RESOURCE_PRECISION);
     super::resource_commands::grant(d, home, crate::resources::ESSENCE, 10000000 * crate::rules::RESOURCE_PRECISION);
     (d, home, preset)
