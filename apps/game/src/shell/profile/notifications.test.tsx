@@ -19,7 +19,7 @@ vi.mock("@/hooks/use-notification-preferences", () => ({
 
 import { NotificationsCard } from "./notifications";
 
-it("offers three levels, reads a stored Standard as All, and saves the level tapped", async () => {
+it("offers three levels, lights none for a stored Standard, and saves the level tapped", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement("div");
   const root = createRoot(container);
@@ -27,8 +27,7 @@ it("offers three levels, reads a stored Standard as All, and saves the level tap
   try {
     const levels = [...container.querySelectorAll('[role="radio"]')];
     expect(levels.map((level) => level.textContent)).toEqual(["Off", "Important", "All"]);
-    expect(levels.find((level) => level.getAttribute("aria-checked") === "true")?.textContent).toBe("All");
-    expect(container.textContent).toContain("Plus every clear, fight and build");
+    expect(levels.filter((level) => level.getAttribute("aria-checked") === "true")).toEqual([]);
     await act(async () => (levels[1] as HTMLButtonElement).click());
     expect(save).toHaveBeenCalledWith("important");
     expect(container.textContent).toContain("This device");

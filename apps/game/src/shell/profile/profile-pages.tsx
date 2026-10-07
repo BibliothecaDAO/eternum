@@ -18,7 +18,7 @@ import { useRequestSignIn } from "../sign-in/sign-in-route";
 import { LEVEL_WORDS, PROFILE_WORDS, WORDS } from "../words";
 import { AccountCard } from "./account-card";
 import { DevicesCard } from "./devices-page";
-import { NotificationsCard } from "./notifications";
+import { NotificationsCard, shownLevel } from "./notifications";
 import { ProfileView } from "./profile-view";
 import { SettingRow, SettingRows } from "./setting-row";
 
@@ -125,8 +125,7 @@ const Rows = () => {
   const navigate = useNavigate();
   const { session } = useIdentitySession();
   const preferences = useNotificationPreferences(notificationOwnerOf(session));
-  const saved = preferences.saved?.level;
-  const level = saved === "standard" ? "all" : saved;
+  const level = shownLevel(preferences.saved?.level);
   return (
     <SettingRows>
       <SettingRow icon="Pf" name={PROFILE_WORDS.account} onOpen={() => navigate(ROW_PATH.account)} />

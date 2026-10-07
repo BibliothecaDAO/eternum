@@ -11,10 +11,15 @@ import { LEVEL_WORDS, PROFILE_WORDS } from "../words";
 import { SettingRow, SettingRows } from "./setting-row";
 import { type ThisDeviceState, useThisDevice } from "./this-device";
 
-/** The three levels the app offers (ruled); the Worker folds a stored Standard into All. */
+/**
+ * The three levels the app offers (ruled), stored as the Worker's own off, important and all. The Worker also keeps
+ * an older Standard between Important and All; the app offers no such level, so a stored Standard lights none of the
+ * three until the player picks one, rather than claiming a level the player does not get.
+ */
 type Level = keyof typeof LEVEL_WORDS;
 const LEVELS: Level[] = ["off", "important", "all"];
-const shownLevel = (saved: NotificationLevel | undefined): Level | undefined => (saved === "standard" ? "all" : saved);
+export const shownLevel = (saved: NotificationLevel | undefined): Level | undefined =>
+  saved === "standard" ? undefined : saved;
 
 /**
  * Notifications (spec 12): one bell, three levels with the chosen one's meaning in one line (Important carries the
@@ -37,7 +42,7 @@ export const NotificationsCard = () => {
         <ViewSwitch
           label={PROFILE_WORDS.notifications}
           views={LEVELS.map((id) => ({ id, word: LEVEL_WORDS[id].word }))}
-          lit={level ?? "off"}
+          lit={level}
           onChange={(next) => void preferences.save(next)}
         />
       </div>

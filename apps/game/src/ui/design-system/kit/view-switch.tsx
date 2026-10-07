@@ -13,7 +13,8 @@ export const ViewSwitch = <Id extends string>({
 }: {
   label: string;
   views: View<Id>[];
-  lit: Id;
+  /** The view shown; none is lit while the value is unknown or is none of the views. */
+  lit: Id | undefined;
   onChange: (id: Id) => void;
 }) => (
   <div
