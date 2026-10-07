@@ -44,15 +44,13 @@ export const RuinChestMoment = ({
       >
         <span
           className="rounded-3xl"
-          style={{ boxShadow: GLOW_PX[tier] ? `0 0 ${GLOW_PX[tier]}px var(--frontier-hot)` : undefined }}
+          style={{ boxShadow: GLOW_PX[tier] ? `0 0 ${GLOW_PX[tier]}px theme(colors.kit.hot)` : undefined }}
         >
           <KitIcon code="Ch" size={132} />
         </span>
         <span className="flex items-center gap-2" aria-label={`${formatExact(lords)} ${LORDS}`}>
           <KitIcon code="Lo" size={34} />
-          <span className="text-[44px] leading-none tabular-nums text-[color:var(--frontier-gold2)]">
-            +{formatExact(lords)}
-          </span>
+          <span className="text-[44px] leading-none tabular-nums text-kit-gold2">+{formatExact(lords)}</span>
         </span>
         <TierChip tier={tier} showWord />
         <span className="flex items-center gap-2">

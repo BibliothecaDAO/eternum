@@ -122,7 +122,7 @@ const Equation = ({
 }) => (
   <div className="flex items-center justify-center gap-1.5">
     <Chip icons={["Wh"]} label={WHEAT} value={`−${formatExact(equation?.wheatCost)}`} />
-    <span aria-hidden className="text-[16px] text-[color:var(--frontier-muted)]">
+    <span aria-hidden className="text-[16px] text-kit-muted">
       →
     </span>
     <Chip icons={["Wh"]} label={WHEAT} value={formatExact(equation?.wheatLeft)} ember={equation?.wheatLeft === 0} />
@@ -133,7 +133,7 @@ const Equation = ({
 /** The troops as their portrait, and the count large beside it. */
 const Hero = ({ art, count }: { art: string | undefined; count: number | undefined }) => (
   <div className="flex items-center justify-center gap-3.5">
-    <span className="size-16 overflow-hidden rounded-full border border-[color:var(--frontier-line2)] bg-[color:var(--frontier-void)]">
+    <span className="size-16 overflow-hidden rounded-full border border-kit-line2 bg-kit-ground">
       {art && <img src={art} alt="" className="size-full object-cover" />}
     </span>
     <span aria-label={TROOPS} className="frontier-hero tabular-nums">
@@ -164,7 +164,7 @@ const TroopSlider = ({
     <div className={cn("flex h-12 items-center gap-2.5", disabled && "opacity-40")}>
       <span className="flex w-14 shrink-0 items-center gap-1">
         <KitIcon code="Ey" size={18} />
-        <span className="text-[15px] tabular-nums text-[color:var(--frontier-parchment)]">1</span>
+        <span className="text-[15px] tabular-nums text-kit-cream">1</span>
       </span>
       <span className="relative flex h-12 flex-1 items-center">
         <input
@@ -175,7 +175,7 @@ const TroopSlider = ({
           value={value}
           disabled={disabled}
           onChange={(event) => onChange(Math.min(Number(event.target.value), stop ?? max))}
-          className="h-2 w-full cursor-pointer appearance-none rounded bg-[color:var(--frontier-line)] accent-[color:var(--frontier-amber)]"
+          className="h-2 w-full cursor-pointer appearance-none rounded bg-kit-line accent-kit-amber"
         />
         {stop !== undefined && (
           <u
@@ -185,9 +185,7 @@ const TroopSlider = ({
           />
         )}
       </span>
-      <span className="w-[60px] shrink-0 text-right text-[15px] tabular-nums text-[color:var(--frontier-parchment)]">
-        {formatExact(max)}
-      </span>
+      <span className="w-[60px] shrink-0 text-right text-[15px] tabular-nums text-kit-cream">{formatExact(max)}</span>
     </div>
   );
 };
@@ -198,10 +196,7 @@ const SlotMarks = ({ used, allowed }: { used: number; allowed: number }) => (
     {Array.from({ length: allowed }, (_, index) => (
       <i
         key={index}
-        className={cn(
-          "h-[18px] w-3 rounded-b-md rounded-t-sm border-2 border-[color:var(--frontier-gold)]",
-          index < used && "bg-[color:var(--frontier-gold)]",
-        )}
+        className={cn("h-[18px] w-3 rounded-b-md rounded-t-sm border-2 border-kit-gold", index < used && "bg-kit-gold")}
       />
     ))}
   </span>

@@ -61,12 +61,12 @@ const Row = ({
 }) => {
   const full = line.limit !== undefined && line.held !== undefined && line.held >= line.limit;
   return (
-    <div className="flex h-14 items-center gap-2 border-b border-[color:var(--frontier-line)]">
+    <div className="flex h-14 items-center gap-2 border-b border-kit-line">
       <KitIcon code={line.icon} size={28} />
       <span
         className={cn(
           "flex w-[92px] shrink-0 items-center gap-[3px] text-[15px] tabular-nums",
-          full ? "text-light-red" : "text-[color:var(--frontier-parchment)]",
+          full ? "text-light-red" : "text-kit-cream",
         )}
       >
         {full ? "+0/h" : line.perHour === undefined ? "—" : `+${formatAmount(line.perHour)}/h`}
@@ -75,7 +75,7 @@ const Row = ({
         ))}
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="truncate whitespace-nowrap text-[14px] tabular-nums text-[color:var(--frontier-parchment)]">
+        <span className="truncate whitespace-nowrap text-[14px] tabular-nums text-kit-cream">
           {formatExact(line.held)}
           {line.limit !== undefined && ` / ${formatExact(line.limit)}`}
         </span>

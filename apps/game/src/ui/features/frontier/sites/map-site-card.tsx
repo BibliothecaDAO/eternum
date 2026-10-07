@@ -83,7 +83,7 @@ export const MapSiteCard = ({
   return (
     <Sheet label={word} onClose={onClose}>
       <header className="flex items-center gap-3">
-        <span className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-[color:var(--frontier-line2)] bg-[color:var(--frontier-void)]">
+        <span className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-kit-line2 bg-kit-ground">
           <KitIcon code={plan.kind === "Shrine" ? "Sh" : "Wl"} size={40} />
         </span>
         <h2 className="frontier-title flex-1">{word}</h2>

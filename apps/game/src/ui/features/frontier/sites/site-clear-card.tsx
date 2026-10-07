@@ -79,9 +79,9 @@ export const SiteClearCard = ({
         reduced ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, y: 20, transition: { duration: 0.15 } }
       }
       transition={{ duration: 0.25, ease: EASE.outQuart }}
-      className="frontier-card pointer-events-auto flex h-[120px] w-full items-center gap-3 !rounded-xl !border-2 !border-[color:var(--frontier-gold)] p-2.5 text-left"
+      className="frontier-card pointer-events-auto flex h-[120px] w-full items-center gap-3 !rounded-xl !border-2 !border-kit-gold p-2.5 text-left"
     >
-      <span className="relative flex size-24 shrink-0 items-center justify-center rounded-xl border border-[color:var(--frontier-line2)] bg-[color:var(--frontier-void)]">
+      <span className="relative flex size-24 shrink-0 items-center justify-center rounded-xl border border-kit-line2 bg-kit-ground">
         <KitIcon code={icon} size={52} />
         <KitIcon code="Fl" size={26} className="absolute bottom-1 right-1" />
       </span>
@@ -89,18 +89,14 @@ export const SiteClearCard = ({
         {paid ? (
           <span className="flex items-center gap-1.5">
             <KitIcon code={paid.icon} size={30} />
-            <span className="text-[36px] leading-none tabular-nums text-[color:var(--frontier-gold2)]">
-              +{formatExact(paid.amount)}
-            </span>
+            <span className="text-[36px] leading-none tabular-nums text-kit-gold2">+{formatExact(paid.amount)}</span>
           </span>
         ) : (
           <KitIcon code="Ch" size={40} />
         )}
         {paid?.full !== undefined && (
           <span className="flex w-[150px] items-center gap-1.5">
-            <span className="text-[14px] tabular-nums text-[color:var(--frontier-muted)]">
-              {formatExact(paid.full)}
-            </span>
+            <span className="text-[14px] tabular-nums text-kit-muted">{formatExact(paid.full)}</span>
             <StoreBar amount={1} limit={1} tone="ember" />
           </span>
         )}

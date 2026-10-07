@@ -51,7 +51,7 @@ export const CastleView = ({
       <Side side={now} />
       {next && (
         <>
-          <span aria-hidden className="text-[22px] text-[color:var(--frontier-hot)]">
+          <span aria-hidden className="text-[22px] text-kit-hot">
             →
           </span>
           <Side side={next} lit />
@@ -80,11 +80,11 @@ const Side = ({ side, lit = false }: { side: CastleSide; lit?: boolean }) => (
   <div
     className={cn(
       "frontier-card flex flex-1 flex-col items-center gap-1 !rounded-xl py-2",
-      lit && "!border-2 !border-[color:var(--frontier-hot)]",
+      lit && "!border-2 !border-kit-hot",
     )}
   >
     <img src={side.art} alt="" className="h-[52px] w-14 object-contain" />
-    <span className="text-[13px] font-semibold text-[color:var(--frontier-parchment)]">{REALM_LEVELS[side.level]}</span>
+    <span className="text-[13px] font-semibold text-kit-cream">{REALM_LEVELS[side.level]}</span>
     <Chip icons={["Hx"]} label="plots" value={formatAmount(side.plots)} />
     <Chip icons={["Sl"]} label="army slots" value={formatAmount(side.slots)} />
     {side.limit !== undefined && <Chip icons={["Sg"]} label="limit" value={formatAmount(side.limit)} />}

@@ -83,12 +83,12 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
       onClick={onChoose}
       className={cn(
         "frontier-card flex h-[86px] min-w-0 flex-col items-center justify-center gap-[3px] !rounded-xl",
-        chosen && "!border-[3px] !border-[color:var(--frontier-hot)]",
+        chosen && "!border-[3px] !border-kit-hot",
         dim && "opacity-50",
       )}
     >
       <KitIcon code={tile.icon} size={26} />
-      <span className="text-[11px] font-semibold text-[color:var(--frontier-parchment)]">{tile.name}</span>
+      <span className="text-[11px] font-semibold text-kit-cream">{tile.name}</span>
       <Foot foot={tile.foot} />
     </button>
   );
@@ -107,12 +107,7 @@ const Foot = ({ foot }: { foot: BuildTile["foot"] }) => {
   return (
     <span className="flex items-center gap-[3px]">
       <KitIcon code="La" size={14} />
-      <span
-        className={cn(
-          "text-[14px] tabular-nums",
-          foot.short ? "text-light-red" : "text-[color:var(--frontier-parchment)]",
-        )}
-      >
+      <span className={cn("text-[14px] tabular-nums", foot.short ? "text-light-red" : "text-kit-cream")}>
         {formatExact(foot.labor)}
       </span>
     </span>

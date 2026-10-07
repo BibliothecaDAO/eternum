@@ -478,7 +478,7 @@ export const HudLab = () => {
     <>
       <div
         aria-hidden
-        className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,var(--frontier-line),var(--frontier-void))]"
+        className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,theme(colors.kit.line),theme(colors.kit.ground))]"
       />
       <HudBands
         top={<StatusStrip clock={lab.clock} stores={[...lab.stores]} />}

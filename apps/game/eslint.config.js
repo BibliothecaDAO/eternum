@@ -9,6 +9,12 @@ const NO_MUTATING_SORT = {
   message: "Use .toSorted() instead of .sort() to avoid array mutation. See issue #4076.",
 };
 
+// The token file (src/tokens.ts) names every colour; the HUD's retired --frontier-* variables no longer exist.
+const NO_RETIRED_TOKENS = {
+  selector: "Literal[value=/--frontier-/], TemplateElement[value.raw=/--frontier-/]",
+  message: "The --frontier-* variables are retired: use the token file's kit-* classes or theme(colors.kit.*).",
+};
+
 // A colour written into a shell component is a second palette; the shell's colours come from src/tokens.ts.
 const COLOUR_LITERAL = "/#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z])|rgba?\\(/";
 const COLOUR_MESSAGE =
@@ -47,7 +53,7 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
-      "no-restricted-syntax": ["error", NO_MUTATING_SORT],
+      "no-restricted-syntax": ["error", NO_MUTATING_SORT, NO_RETIRED_TOKENS],
     },
   },
   {
@@ -58,6 +64,7 @@ export default tseslint.config(
       "no-restricted-syntax": [
         "error",
         NO_MUTATING_SORT,
+        NO_RETIRED_TOKENS,
         { selector: `Literal[value=${COLOUR_LITERAL}]`, message: COLOUR_MESSAGE },
         { selector: `TemplateElement[value.raw=${COLOUR_LITERAL}]`, message: COLOUR_MESSAGE },
         ...OWNED_FORMATS,
@@ -71,6 +78,7 @@ export default tseslint.config(
       "no-restricted-syntax": [
         "error",
         NO_MUTATING_SORT,
+        NO_RETIRED_TOKENS,
         { selector: `Literal[value=${COLOUR_LITERAL}]`, message: COLOUR_MESSAGE },
         { selector: `TemplateElement[value.raw=${COLOUR_LITERAL}]`, message: COLOUR_MESSAGE },
         ...OWNED_FORMATS.slice(0, 2),

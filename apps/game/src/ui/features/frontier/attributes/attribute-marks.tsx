@@ -25,8 +25,8 @@ export const AttributeMarks = ({ tiers }: { tiers: readonly [Tier, Tier, Tier, T
               key={word}
               className={
                 pip < tiers[index]
-                  ? "size-[5px] rounded-full bg-[color:var(--frontier-gold)]"
-                  : "size-[5px] rounded-full border border-[color:var(--frontier-line2)]"
+                  ? "size-[5px] rounded-full bg-kit-gold"
+                  : "size-[5px] rounded-full border border-kit-line2"
               }
             />
           ))}

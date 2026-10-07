@@ -86,7 +86,7 @@ export const SiteCardView = ({
   return (
     <Sheet label={word} onClose={onClose}>
       <header className="flex items-center gap-3">
-        <span className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-[color:var(--frontier-line2)] bg-[color:var(--frontier-void)]">
+        <span className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-kit-line2 bg-kit-ground">
           <KitIcon code={icon} size={36} />
         </span>
         <h2 className="frontier-title flex-1">{word}</h2>
@@ -97,7 +97,7 @@ export const SiteCardView = ({
         <FightPlate fight={fight} />
         <div
           className={cn(
-            "frontier-card flex h-[92px] flex-1 flex-col items-center justify-center gap-1 !rounded-xl !border-2 !border-[color:var(--frontier-gold)]",
+            "frontier-card flex h-[92px] flex-1 flex-col items-center justify-center gap-1 !rounded-xl !border-2 !border-kit-gold",
             lost && "opacity-50",
           )}
         >
@@ -131,7 +131,7 @@ const Matchup = ({
       </span>
     )}
     <KitIcon code="At" size={22} />
-    {beast && <span className="text-[13px] font-semibold text-[color:var(--frontier-parchment)]">{beast}</span>}
+    {beast && <span className="text-[13px] font-semibold text-kit-cream">{beast}</span>}
     {guard !== null && <Chip icons={["Tr"]} label={TROOPS} value={formatExact(guard)} />}
   </div>
 );
@@ -148,9 +148,7 @@ const Choices = ({ choices }: { choices: readonly SiteChoice[] }) => (
         className="frontier-card flex h-16 min-w-0 flex-1 items-center justify-center gap-1.5 !rounded-xl"
       >
         <img src={choice.art} alt="" className="size-8 rounded-full object-cover" />
-        <span className="text-[15px] tabular-nums text-[color:var(--frontier-parchment)]">
-          {formatExact(choice.troops)}
-        </span>
+        <span className="text-[15px] tabular-nums text-kit-cream">{formatExact(choice.troops)}</span>
         {choice.wins !== undefined && <KitIcon code={choice.wins ? "Fl" : "Sk"} size={20} />}
       </button>
     ))}
@@ -175,11 +173,11 @@ const FightPlate = ({ fight }: { fight: SiteFight | undefined }) => {
             {known ? (
               <span aria-hidden className="flex gap-[3px]">
                 {Array.from({ length: known.exchanges }, (_, index) => (
-                  <i key={index} className="size-[9px] rounded-full border border-[color:var(--frontier-gold)]" />
+                  <i key={index} className="size-[9px] rounded-full border border-kit-gold" />
                 ))}
               </span>
             ) : (
-              <span className="text-[18px] tabular-nums text-[color:var(--frontier-parchment)]">—</span>
+              <span className="text-[18px] tabular-nums text-kit-cream">—</span>
             )}
           </span>
           <Line icon="Sk" value={known ? `−${formatExact(known.troopsLost)}` : "—"} />
@@ -192,12 +190,7 @@ const FightPlate = ({ fight }: { fight: SiteFight | undefined }) => {
 const Line = ({ icon, value, hot = false }: { icon: IconCode; value: string; hot?: boolean }) => (
   <span className="flex items-center gap-1.5">
     <KitIcon code={icon} size={22} />
-    <span
-      className={cn(
-        "text-[20px] leading-none tabular-nums",
-        hot ? "text-[color:var(--frontier-hot)]" : "text-[color:var(--frontier-parchment)]",
-      )}
-    >
+    <span className={cn("text-[20px] leading-none tabular-nums", hot ? "text-kit-hot" : "text-kit-cream")}>
       {value}
     </span>
   </span>
@@ -210,13 +203,13 @@ const Pay = ({ pay }: { pay: { icon: IconCode; amount: number; fits?: number } }
     <>
       <span className="flex items-center gap-1.5">
         <KitIcon code={pay.icon} size={28} />
-        <span className="text-[26px] leading-none tabular-nums text-[color:var(--frontier-gold2)]">
+        <span className="text-[26px] leading-none tabular-nums text-kit-gold2">
           +{formatExact(short ? pay.fits : pay.amount)}
         </span>
       </span>
       {short && (
         <span className="flex w-4/5 items-center gap-1.5">
-          <span className="text-[14px] tabular-nums text-[color:var(--frontier-muted)]">{formatExact(pay.amount)}</span>
+          <span className="text-[14px] tabular-nums text-kit-muted">{formatExact(pay.amount)}</span>
           <StoreBar amount={1} limit={1} tone="ember" />
         </span>
       )}
@@ -230,9 +223,7 @@ const ChestPay = ({ chest }: { chest: { tier: Tier; lords: number } }) => (
     <span className="flex items-center gap-1.5" aria-label={`${formatExact(chest.lords)} ${LORDS}`}>
       <KitIcon code="Ch" size={26} />
       <KitIcon code="Lo" size={22} />
-      <span className="text-[24px] leading-none tabular-nums text-[color:var(--frontier-gold2)]">
-        +{formatExact(chest.lords)}
-      </span>
+      <span className="text-[24px] leading-none tabular-nums text-kit-gold2">+{formatExact(chest.lords)}</span>
     </span>
     <TierChip tier={chest.tier} showWord />
   </>

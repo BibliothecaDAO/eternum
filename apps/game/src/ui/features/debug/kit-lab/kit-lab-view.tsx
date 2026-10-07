@@ -38,7 +38,7 @@ export const KitLabView = () => {
 
 const Components = () => {
   return (
-    <main className="min-h-dvh bg-[color:var(--frontier-void)] px-4 py-6 font-sans text-[color:var(--frontier-parchment)]">
+    <main className="min-h-dvh bg-kit-ground px-4 py-6 font-sans text-kit-cream">
       <div className="mx-auto flex max-w-[390px] flex-col gap-8 lg:max-w-5xl lg:flex-row lg:flex-wrap">
         <ClockSection />
         <StoresSection />

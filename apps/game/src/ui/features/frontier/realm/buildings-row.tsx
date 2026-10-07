@@ -32,7 +32,7 @@ export const BuildingsRow = ({
   onOpen: (category: BuildingType) => void;
 }) => (
   <nav aria-label={BUILDINGS} className="pointer-events-auto flex items-center justify-center gap-1.5">
-    <span className="text-[12px] font-semibold text-[color:var(--frontier-parchment)]">{BUILDINGS}</span>
+    <span className="text-[12px] font-semibold text-kit-cream">{BUILDINGS}</span>
     {TYPES.map(({ category, icon, word }) => (
       <button
         key={category}

@@ -38,10 +38,10 @@ export const ArmyToken = ({
   const body = (
     <>
       <span data-fly-target={flyTarget} className="relative size-10 shrink-0">
-        <span className="block size-full overflow-hidden rounded-full border border-[color:var(--frontier-line2)] bg-[color:var(--frontier-void)]">
+        <span className="block size-full overflow-hidden rounded-full border border-kit-line2 bg-kit-ground">
           {art && <img src={art} alt="" className="size-full object-cover" />}
         </span>
-        <span className="absolute -bottom-1 -right-2.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-[color:var(--frontier-line2)] bg-[color:var(--frontier-ink)] px-1 text-[12px] leading-none text-[color:var(--frontier-gold2)] tabular-nums">
+        <span className="absolute -bottom-1 -right-2.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-kit-line2 bg-kit-ink px-1 text-[12px] leading-none text-kit-gold2 tabular-nums">
           {formatAmount(xp)}
         </span>
         {canBuyTier && (
@@ -51,16 +51,10 @@ export const ArmyToken = ({
         )}
       </span>
       <StaminaSegments stamina={stamina} />
-      <span className="text-[14px] leading-none text-[color:var(--frontier-parchment)] tabular-nums">
-        {formatAmount(troops)}
-      </span>
+      <span className="text-[14px] leading-none text-kit-cream tabular-nums">{formatAmount(troops)}</span>
     </>
   );
-  const look = cn(
-    TOKEN,
-    "border bg-[color:var(--frontier-void)]",
-    selected ? "border-[3px] border-[color:var(--frontier-hot)]" : "border-[color:var(--frontier-line)]",
-  );
+  const look = cn(TOKEN, "border bg-kit-ground", selected ? "border-[3px] border-kit-hot" : "border-kit-line");
   return onPick ? (
     <button type="button" aria-label={label} aria-pressed={selected} onClick={onPick} className={look}>
       {body}
@@ -78,12 +72,12 @@ export const OpenSlot = ({ label, pulse, onDeploy }: { label: string; pulse: boo
     type="button"
     aria-label={label}
     onClick={onDeploy}
-    className={cn(TOKEN, "border border-[color:var(--frontier-line)] bg-[color:var(--frontier-void)]")}
+    className={cn(TOKEN, "border border-kit-line bg-kit-ground")}
   >
     <span
       className={cn(
-        "flex size-10 items-center justify-center rounded-full border-2 border-dashed border-[color:var(--frontier-line2)] text-[18px] text-[color:var(--frontier-gold)]",
-        pulse && "animate-pulse border-[color:var(--frontier-hot)]",
+        "flex size-10 items-center justify-center rounded-full border-2 border-dashed border-kit-line2 text-[18px] text-kit-gold",
+        pulse && "animate-pulse border-kit-hot",
       )}
     >
       +
@@ -101,9 +95,9 @@ const StaminaSegments = ({ stamina }: { stamina: { current: number; max: number 
       className="flex w-full gap-0.5 px-1.5"
     >
       {Array.from({ length: SEGMENTS }, (_, index) => (
-        <i key={index} className="h-[5px] flex-1 overflow-hidden rounded-sm bg-[color:var(--frontier-line)]">
+        <i key={index} className="h-[5px] flex-1 overflow-hidden rounded-sm bg-kit-line">
           <b
-            className="block h-full bg-[color:var(--frontier-stamina)]"
+            className="block h-full bg-kit-sage"
             style={{ width: `${Math.min(1, Math.max(0, filled - index)) * 100}%` }}
           />
         </i>

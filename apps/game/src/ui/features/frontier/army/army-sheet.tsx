@@ -74,19 +74,17 @@ export const ArmySheet = ({
 }) => (
   <Sheet label={name} onClose={onClose}>
     <header className="flex h-11 items-center gap-2">
-      <img src={art} alt="" className="size-10 rounded-full border border-[color:var(--frontier-line2)] object-cover" />
-      <span className="truncate text-[16px] text-[color:var(--frontier-parchment)]">{name}</span>
+      <img src={art} alt="" className="size-10 rounded-full border border-kit-line2 object-cover" />
+      <span className="truncate text-[16px] text-kit-cream">{name}</span>
       <Chip icons={["Tr"]} label={TROOPS} value={formatExact(troops)} />
       <span className="flex-1" />
-      <span className="text-[24px] leading-none tabular-nums text-[color:var(--frontier-gold2)]">
-        {formatExact(xp)}
-      </span>
-      <span className="text-[14px] font-semibold text-[color:var(--frontier-parchment)]">{XP}</span>
+      <span className="text-[24px] leading-none tabular-nums text-kit-gold2">{formatExact(xp)}</span>
+      <span className="text-[14px] font-semibold text-kit-cream">{XP}</span>
     </header>
     <div className="flex h-12 items-center gap-2">
       <KitIcon code="St" size={22} />
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="text-[15px] tabular-nums text-[color:var(--frontier-parchment)]">
+        <span className="text-[15px] tabular-nums text-kit-cream">
           {formatExact(stamina.current)} / {formatExact(stamina.max)}
         </span>
         <StoreBar amount={stamina.current} limit={stamina.max} tone="calm" />
@@ -150,11 +148,11 @@ const AttributeRow = ({
     onClick={onChoose}
     className={cn(
       "frontier-card flex h-[52px] shrink-0 items-center gap-2 !rounded-xl px-2 text-left",
-      chosen && "!border-2 !border-[color:var(--frontier-hot)]",
+      chosen && "!border-2 !border-kit-hot",
     )}
   >
     <KitIcon code={mark} size={26} />
-    <span className="text-[13px] font-semibold text-[color:var(--frontier-parchment)]">{word}</span>
+    <span className="text-[13px] font-semibold text-kit-cream">{word}</span>
     <span className="flex gap-0.5">
       {state.kinds?.map((kind, index) => (
         <KitIcon key={index} code={KIND_ICONS[kind]} size={16} />
@@ -168,7 +166,7 @@ const AttributeRow = ({
       <span data-tone="price" className="frontier-chip h-7 !py-0 !pl-2.5">
         <span className="contents">
           <span className="frontier-chip-number tabular-nums !text-[15px]">{formatExact(price)}</span>
-          <span className="text-[13px] font-semibold text-[color:var(--frontier-ink)]">{XP}</span>
+          <span className="text-[13px] font-semibold text-kit-ink">{XP}</span>
         </span>
       </span>
     ) : (
@@ -224,7 +222,7 @@ const ChosenTier = ({
       ) : (
         <div className="flex items-center justify-center gap-2">
           <TierChip tier={state.tier} showWord />
-          <span aria-hidden className="text-[18px] text-[color:var(--frontier-muted)]">
+          <span aria-hidden className="text-[18px] text-kit-muted">
             →
           </span>
           <TierChip tier={next} showWord />
@@ -290,14 +288,14 @@ const KindChoice = ({
         onClick={() => onKind(kind)}
         className={cn(
           "frontier-card flex h-[76px] flex-1 flex-col items-center justify-center gap-1 !rounded-xl",
-          kind === lifted && "!border-[3px] !border-[color:var(--frontier-hot)]",
+          kind === lifted && "!border-[3px] !border-kit-hot",
         )}
       >
         <KitIcon code={KIND_ICONS[kind]} size={28} />
-        <span className="flex items-baseline gap-[3px] tabular-nums text-[color:var(--frontier-parchment)]">
+        <span className="flex items-baseline gap-[3px] tabular-nums text-kit-cream">
           <span className="text-[14px]">{rates[kind][0]}</span>
           <span className="text-[14px]">→</span>
-          <span className="text-[15px] text-[color:var(--frontier-gold2)]">{rates[kind][1]}</span>
+          <span className="text-[15px] text-kit-gold2">{rates[kind][1]}</span>
         </span>
       </button>
     ))}

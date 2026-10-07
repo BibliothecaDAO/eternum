@@ -33,7 +33,7 @@ export const Chip = ({
         ))}
       </span>
       <span className="frontier-chip-number tabular-nums !text-[15px]">{value}</span>
-      {unit && <span className="text-[13px] font-semibold text-[color:var(--frontier-parchment)]">{unit}</span>}
+      {unit && <span className="text-[13px] font-semibold text-kit-cream">{unit}</span>}
     </span>
   </span>
 );
@@ -42,7 +42,7 @@ export const Chip = ({
 export const FullIn = ({ seconds }: { seconds: number | undefined }) => (
   <span className="frontier-chip h-7 shrink-0 !gap-1 !px-2.5 !py-0">
     <span className="contents">
-      <span className="text-[12px] font-semibold text-[color:var(--frontier-parchment)]">{FULL_IN}</span>
+      <span className="text-[12px] font-semibold text-kit-cream">{FULL_IN}</span>
       <span className="frontier-chip-number tabular-nums !text-[14px]">{formatDuration(seconds)}</span>
     </span>
   </span>

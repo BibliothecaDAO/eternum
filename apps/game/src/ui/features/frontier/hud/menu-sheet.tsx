@@ -62,7 +62,7 @@ const MenuRow = ({
   <button
     type="button"
     onClick={onClick}
-    className="flex h-12 items-center gap-2 border-b border-[color:var(--frontier-line)] px-1 text-left text-[15px] text-[color:var(--frontier-parchment)]"
+    className="flex h-12 items-center gap-2 border-b border-kit-line px-1 text-left text-[15px] text-kit-cream"
   >
     <KitIcon code={icon} size={22} />
     <span className="flex-1 font-semibold">{word}</span>

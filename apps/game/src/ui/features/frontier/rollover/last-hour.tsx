@@ -21,7 +21,7 @@ export const LastHourBubble = ({
 }) => (
   <div
     role="status"
-    className="pointer-events-auto absolute left-1.5 top-5 flex max-w-[250px] flex-wrap gap-1.5 rounded-xl border-2 border-[color:var(--frontier-hot)] bg-[color:var(--frontier-void)] p-1.5"
+    className="pointer-events-auto absolute left-1.5 top-5 flex max-w-[250px] flex-wrap gap-1.5 rounded-xl border-2 border-kit-hot bg-kit-ground p-1.5"
   >
     <Bubble label={TROOPS} value={formatExact(troopsOut)} hot>
       <KitIcon code="Tr" size={18} />
@@ -57,7 +57,7 @@ const Bubble = ({
       <span
         className={
           hot
-            ? "frontier-chip-number tabular-nums !text-[15px] !text-[color:var(--frontier-hot)]"
+            ? "frontier-chip-number tabular-nums !text-[15px] !text-kit-hot"
             : "frontier-chip-number tabular-nums !text-[15px]"
         }
       >

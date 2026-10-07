@@ -10,8 +10,8 @@ export type Place = "map" | "realm" | "research" | "chat" | "menu";
 type Dot = "lit" | "amber" | "ember";
 
 const DOTS: Record<Dot, string> = {
-  lit: "bg-[color:var(--frontier-gold2)]",
-  amber: "bg-[color:var(--frontier-hot)]",
+  lit: "bg-kit-gold2",
+  amber: "bg-kit-hot",
   ember: "bg-light-red",
 };
 
@@ -41,7 +41,7 @@ export const PlaceNav = ({
       aria-label="Places"
       className="frontier-card pointer-events-auto flex h-14 items-stretch justify-between gap-0.5 !rounded-2xl"
     >
-      <span className="flex flex-[2] border-r border-[color:var(--frontier-line)]">
+      <span className="flex flex-[2] border-r border-kit-line">
         {slot("map", "Mp", MAP)}
         {slot("realm", "Cs", REALM, realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />)}
       </span>
@@ -76,12 +76,10 @@ const Slot = ({
     onClick={onClick}
     className={cn(
       "flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold",
-      lit
-        ? "bg-[color:var(--frontier-line)] text-[color:var(--frontier-gold2)] shadow-[inset_0_-3px_0_var(--frontier-gold)]"
-        : "text-[color:var(--frontier-muted)]",
+      lit ? "bg-kit-line text-kit-gold2 shadow-[inset_0_-3px_0_theme(colors.kit.gold)]" : "text-kit-muted",
     )}
   >
-    <span className="flex items-center gap-0.5 text-[color:var(--frontier-gold2)]">
+    <span className="flex items-center gap-0.5 text-kit-gold2">
       <KitIcon code={icon} size={22} />
       {badge}
     </span>

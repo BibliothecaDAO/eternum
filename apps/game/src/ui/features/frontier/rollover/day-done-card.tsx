@@ -50,7 +50,7 @@ export const DayDoneCard = ({
 }) => (
   <section
     aria-label={`${DAY} ${endedDay} ${DAY_DONE}`}
-    className="pointer-events-auto fixed inset-0 z-50 flex flex-col items-center gap-2 overflow-y-auto bg-[color:var(--frontier-void)] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] font-sans text-[color:var(--frontier-parchment)]"
+    className="pointer-events-auto fixed inset-0 z-50 flex flex-col items-center gap-2 overflow-y-auto bg-kit-ground px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] font-sans text-kit-cream"
   >
     <h2 className="frontier-title !text-[26px]">
       {DAY} {endedDay} {DAY_DONE}
@@ -105,7 +105,7 @@ const ArmiesLine = ({
 }) => (
   <div className="flex items-center justify-center gap-1.5" aria-label={TROOPS}>
     {Array.from({ length: armies }, (_, index) => (
-      <span key={index} className="size-[30px] rounded-full border border-[color:var(--frontier-line2)] opacity-40" />
+      <span key={index} className="size-[30px] rounded-full border border-kit-line2 opacity-40" />
     ))}
     <span className="text-[15px] tabular-nums">−{formatExact(troopsLost)}</span>
     {returned && (
@@ -121,9 +121,7 @@ const ArmiesLine = ({
         </span>
         {returned.fitted < returned.sent && (
           <>
-            <span className="text-[14px] tabular-nums text-[color:var(--frontier-muted)]">
-              {formatExact(returned.sent)}
-            </span>
+            <span className="text-[14px] tabular-nums text-kit-muted">{formatExact(returned.sent)}</span>
             <span className="w-[60px]">
               <StoreBar amount={1} limit={1} tone="ember" />
             </span>
