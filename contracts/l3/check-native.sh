@@ -19,7 +19,7 @@ python3 "$protocol/check-entrypoint.py" "$world/target/dev/world_native_Games.co
 node "$world/scripts/check-fact-wire.mjs"
 
 # A regenerated schema or a reformatted source that differs from what is committed fails here, with the diff shown.
-bun "$world/scripts/generate-schema.mjs"
+pnpm run schema:native
 (cd "$world" && scarb fmt)
 git diff --exit-code -- "$world/schema" "$world/src" "$world/storage"
 
