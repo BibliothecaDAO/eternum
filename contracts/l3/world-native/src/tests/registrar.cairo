@@ -4,7 +4,7 @@ use snforge_std::{
     EventSpyTrait, EventsFilterTrait, start_cheat_block_timestamp_global, start_cheat_caller_address,
     stop_cheat_caller_address,
 };
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::combat::TroopsTrait;
 use crate::commands::{Command, CreateExplorer, Explore};
 use crate::game::{GameStatus, IGameDispatcher, IGameDispatcherTrait, status_at};

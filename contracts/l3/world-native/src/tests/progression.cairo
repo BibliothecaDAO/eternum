@@ -1,6 +1,7 @@
 use starknet::storage::StorageMapWriteAccess;
 use crate::progression::{ArmyProgress, ArmyProgressionRules, Attribute, BuyTier, ProgressPacking, ScoutingKind};
-use crate::stamina::StaminaSourceTrait;
+use crate::stamina::{StaminaSourceTrait, StaminaTrait};
+use crate::resources::IResourceOperationsDispatcherTrait;
 use crate::tests::state::{ResourceObservationTrait, TroopObservationTrait};
 
 fn rules() -> ArmyProgressionRules {
@@ -264,7 +265,6 @@ fn logistics_tiers_set_the_maximum_stamina_by_the_ruled_table() {
 
 #[test]
 fn added_stamina_stops_at_the_armys_own_maximum() {
-    use crate::stamina::StaminaTrait;
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     let rules = frontier.rules.troop_stamina_config;
     let maximum = crate::progression::stamina_max(
@@ -308,7 +308,6 @@ fn homecoming_returns_each_expired_armys_own_share_of_its_survivors() {
     let d = super::registrar::setup();
     let (game_id, _, category) = super::registrar::expedition_home(d);
     let (first, second) = super::registrar::expedition_armies(d, game_id, category);
-    let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
     let troop = crate::rules::RESOURCE_PRECISION;
     let stock = snforge_std::interact_with_state(
         d.games,
