@@ -29,12 +29,12 @@ export const Notice = ({
   <div
     role={ember ? "alert" : "status"}
     className={cn(
-      "pointer-events-auto flex min-h-12 items-center gap-2 rounded-xl border-2 bg-[color:var(--frontier-void)] pl-2.5",
-      ember ? "border-light-red" : "border-[color:var(--frontier-line2)]",
+      "pointer-events-auto flex min-h-12 items-center gap-2 rounded-xl border-2 bg-kit-ground pl-2.5",
+      ember ? "border-light-red" : "border-kit-line2",
     )}
   >
     <KitIcon code={icon} size={22} />
-    <span className="min-w-0 flex-1 text-[15px] text-[color:var(--frontier-parchment)]">{line}</span>
+    <span className="min-w-0 flex-1 text-[15px] text-kit-cream">{line}</span>
     {onLater && <Button role="outline" word={LATER} onClick={onLater} className="!px-3" />}
     <Button role="outline" word={verb} loading={loading} onClick={onVerb} className="!px-3" />
   </div>

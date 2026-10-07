@@ -5,19 +5,19 @@
 export type Tone = "calm" | "amber" | "ember";
 
 export const TONE_TEXT: Record<Tone, string> = {
-  calm: "text-[color:var(--frontier-parchment)]",
-  amber: "text-[color:var(--frontier-hot)]",
+  calm: "text-kit-cream",
+  amber: "text-kit-hot",
   ember: "text-light-red",
 };
 
 export const TONE_FILL: Record<Tone, string> = {
-  calm: "bg-[color:var(--frontier-gold)]",
-  amber: "bg-[color:var(--frontier-hot)]",
+  calm: "bg-kit-gold",
+  amber: "bg-kit-hot",
   ember: "bg-light-red",
 };
 
 export const TONE_STROKE: Record<Tone, string> = {
-  calm: "stroke-[color:var(--frontier-amber)]",
-  amber: "stroke-[color:var(--frontier-hot)]",
+  calm: "stroke-kit-amber",
+  amber: "stroke-kit-hot",
   ember: "stroke-light-red",
 };

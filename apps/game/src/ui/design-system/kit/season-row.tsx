@@ -31,10 +31,8 @@ export const SeasonRow = ({
     onClick={onOpen}
     aria-current={own || undefined}
     className={cn(
-      "flex h-[52px] w-full shrink-0 items-center gap-2 px-1 text-left text-[color:var(--frontier-parchment)]",
-      own
-        ? "rounded-xl border-2 border-[color:var(--frontier-gold)] bg-[color:var(--frontier-void)]"
-        : "border-b border-[color:var(--frontier-line)]",
+      "flex h-[52px] w-full shrink-0 items-center gap-2 px-1 text-left text-kit-cream",
+      own ? "rounded-xl border-2 border-kit-gold bg-kit-ground" : "border-b border-kit-line",
     )}
   >
     <span className="w-[34px] shrink-0 text-center text-[15px] tabular-nums">{formatAmount(rank)}</span>

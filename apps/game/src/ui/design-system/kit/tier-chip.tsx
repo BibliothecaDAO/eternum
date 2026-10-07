@@ -9,11 +9,11 @@ export type Tier = 1 | 2 | 3 | 4 | 5;
  * warms with the tier; the art pass's five frames replace these borders.
  */
 const FRAMES: Record<Tier, string> = {
-  1: "border border-[color:var(--frontier-line2)]",
-  2: "border-2 border-[color:var(--frontier-muted)]",
-  3: "border-[3px] border-double border-[color:var(--frontier-gold)]",
-  4: "border-4 border-double border-[color:var(--frontier-gold2)]",
-  5: "border-[5px] border-double border-[color:var(--frontier-hot)] shadow-[0_0_10px_var(--frontier-hot)]",
+  1: "border border-kit-line2",
+  2: "border-2 border-kit-muted",
+  3: "border-[3px] border-double border-kit-gold",
+  4: "border-4 border-double border-kit-gold2",
+  5: "border-[5px] border-double border-kit-hot shadow-[0_0_10px_theme(colors.kit.hot)]",
 };
 
 /**
@@ -25,13 +25,13 @@ export const TierChip = ({ tier, showWord }: { tier: Tier; showWord: boolean }) 
     role="img"
     aria-label={TIER_WORDS[tier - 1]}
     className={cn(
-      "inline-flex h-[26px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md bg-[color:var(--frontier-void)] px-2",
+      "inline-flex h-[26px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md bg-kit-ground px-2",
       FRAMES[tier],
     )}
   >
     <Pips tier={tier} />
     {showWord && (
-      <span aria-hidden className="text-[12px] font-semibold text-[color:var(--frontier-parchment)]">
+      <span aria-hidden className="text-[12px] font-semibold text-kit-cream">
         {TIER_WORDS[tier - 1]}
       </span>
     )}
@@ -41,13 +41,7 @@ export const TierChip = ({ tier, showWord }: { tier: Tier; showWord: boolean }) 
 const Pips = ({ tier }: { tier: Tier }) => (
   <span aria-hidden className="inline-flex gap-[3px]">
     {TIER_WORDS.map((word, index) => (
-      <i
-        key={word}
-        className={cn(
-          "size-[7px] rounded-full border border-[color:var(--frontier-gold)]",
-          index < tier && "bg-[color:var(--frontier-gold)]",
-        )}
-      />
+      <i key={word} className={cn("size-[7px] rounded-full border border-kit-gold", index < tier && "bg-kit-gold")} />
     ))}
   </span>
 );

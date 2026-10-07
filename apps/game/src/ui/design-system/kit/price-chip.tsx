@@ -31,7 +31,7 @@ export const PriceChip = ({ of, amount }: { of: PriceKind; amount: number | unde
       <span className="contents">
         {icon && <KitIcon code={icon} size={22} />}
         <span className="frontier-chip-number tabular-nums !text-[15px]">{shown}</span>
-        {!icon && <span className="text-[13px] font-semibold text-[color:var(--frontier-ink)]">{word}</span>}
+        {!icon && <span className="text-[13px] font-semibold text-kit-ink">{word}</span>}
       </span>
     </span>
   );

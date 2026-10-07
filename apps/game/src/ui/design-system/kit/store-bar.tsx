@@ -15,7 +15,7 @@ export const StoreBar = ({ amount, limit, tone }: { amount: number | undefined; 
       aria-valuemin={0}
       aria-valuemax={limit}
       aria-valuenow={amount}
-      className="block h-1 w-full overflow-hidden rounded-sm bg-[color:var(--frontier-line)]"
+      className="block h-1 w-full overflow-hidden rounded-sm bg-kit-line"
     >
       <i className={cn("block h-full", TONE_FILL[tone])} style={{ width: `${share * 100}%` }} />
     </span>

@@ -18,7 +18,7 @@ export const ReasonPlate = ({ reason, step }: { reason: Reason; step?: ReactNode
   <div className="flex min-h-14 items-center gap-2">
     <div
       role="status"
-      className="frontier-card flex min-h-14 min-w-0 flex-1 items-center gap-2.5 !rounded-xl px-3 text-[color:var(--frontier-parchment)]"
+      className="frontier-card flex min-h-14 min-w-0 flex-1 items-center gap-2.5 !rounded-xl px-3 text-kit-cream"
     >
       {reason.kind === "short" ? <Shortfall {...reason} /> : <span className="text-[15px]">{reason.line}</span>}
     </div>

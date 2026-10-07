@@ -28,14 +28,7 @@ export const DayDial = ({
       className={cn("relative inline-flex size-10 shrink-0 items-center justify-center", TONE_TEXT[tone])}
     >
       <svg viewBox="0 0 40 40" className="absolute inset-0 -rotate-90" aria-hidden>
-        <circle
-          cx="20"
-          cy="20"
-          r={RADIUS}
-          fill="none"
-          strokeWidth="4"
-          className="stroke-[color:var(--frontier-line)]"
-        />
+        <circle cx="20" cy="20" r={RADIUS} fill="none" strokeWidth="4" className="stroke-kit-line" />
         <circle
           cx="20"
           cy="20"

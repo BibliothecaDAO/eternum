@@ -12,9 +12,9 @@ type ButtonRole = "primary" | "secondary" | "outline";
 const ROLES: Record<ButtonRole, string> = {
   primary: "frontier-primary !h-14 !text-[17px]",
   secondary:
-    "h-14 rounded-2xl border-2 border-[color:var(--frontier-line2)] bg-[color:var(--frontier-ink)] text-[17px] font-semibold text-[color:var(--frontier-parchment)] hover:border-[color:var(--frontier-gold)]",
+    "h-14 rounded-2xl border-2 border-kit-line2 bg-kit-ink text-[17px] font-semibold text-kit-cream hover:border-kit-gold",
   outline:
-    "h-12 rounded-2xl border-2 border-[color:var(--frontier-line2)] bg-transparent text-[15px] font-semibold text-[color:var(--frontier-parchment)] hover:border-[color:var(--frontier-gold)]",
+    "h-12 rounded-2xl border-2 border-kit-line2 bg-transparent text-[15px] font-semibold text-kit-cream hover:border-kit-gold",
 };
 
 export type Price = { of: PriceKind; amount: number | undefined };

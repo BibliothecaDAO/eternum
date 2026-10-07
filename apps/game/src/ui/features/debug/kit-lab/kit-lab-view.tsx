@@ -55,7 +55,7 @@ const Components = () => {
 
 const Section = ({ title, children }: { title: string; children: ReactNode }) => (
   <section data-kit-section={title} className="flex w-full flex-col gap-3 lg:w-[390px]">
-    <h2 data-lab-chrome className="text-[13px] text-[color:var(--frontier-faint)]">
+    <h2 data-lab-chrome className="text-[13px] text-kit-muted">
       {title}
     </h2>
     {children}
