@@ -361,7 +361,7 @@ fn deploy(d: super::Deployment, game_id: u32, category: u8, direction: u8) -> cr
         },
     );
     assert!(super::resource_commands::execute_in_game(d, game_id, command, 351, 351));
-    let armies = crate::structures::IStructureOperationsDispatcherTrait::home_armies(
+    let armies = crate::tests::state::StructureObservationTrait::home_armies(
         crate::structures::IStructureOperationsDispatcher { contract_address: d.games }, home,
     );
     crate::troops::ExplorerKey { game_id, explorer_id: *armies.at(armies.len() - 1) }
