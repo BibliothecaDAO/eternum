@@ -13,9 +13,7 @@
 /profile/devices / 200
 /sign-in / 200
 /learn / 200
-/news / 200
-/scroll / 200
-/scroll/:slug / 200
+/learn/:post / 200
 /terms / 200
 /privacy / 200
 /factory / 200

@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 
-import { Panel, PanelTitle } from "./kit";
+import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+
 import { PageFrame } from "./frame/page-frame";
+import { LEARN_WORDS } from "./words";
 
 /** The terms and the privacy policy: static text, so the shell serves it with no game module. */
 
@@ -11,7 +13,7 @@ interface LegalSection {
 }
 
 const ExternalLink = ({ href, children }: { href: string; children: ReactNode }) => (
-  <a href={href} target="_blank" rel="noopener noreferrer" className="text-gold underline hover:brightness-110">
+  <a href={href} target="_blank" rel="noopener noreferrer" className="text-kit-peach underline">
     {children}
   </a>
 );
@@ -29,26 +31,26 @@ const CONTACT = (
   </>
 );
 
+/** A legal page (spec 13): plain reading with Back, its date, and numbered sections; no art. */
 const LegalPage = ({ title, updated, sections }: { title: string; updated: string; sections: LegalSection[] }) => (
-  <article className="mx-auto max-w-[880px] space-y-4">
-    <div>
-      <PanelTitle>Legal</PanelTitle>
-      <h1 className="font-ui text-2xl font-semibold text-gold sm:text-4xl">{title}</h1>
-      <p className="mt-2 text-[12px] text-gold/60">Last updated: {updated}</p>
-    </div>
-    <Panel className="space-y-6">
+  <PageFrame back="/learn" title={title}>
+    <article className="mx-auto flex max-w-[760px] flex-col gap-5">
+      <p className="flex items-center gap-2 text-[13px] text-kit-muted">
+        <KitIcon code="Cl" size={18} />
+        {LEARN_WORDS.updated} {updated}
+      </p>
       {sections.map((section, index) => (
         <section key={section.title}>
-          <h2 className="mb-2 font-ui text-[15px] font-semibold text-gold">
+          <h2 className="mb-2 font-ui text-[17px] font-bold text-kit-cream">
             {index + 1}. {section.title}
           </h2>
-          <div className="space-y-3 text-[13px] leading-relaxed text-gold/75 [&_li]:mb-1 [&_strong]:text-gold/90 [&_ul]:list-disc [&_ul]:pl-5">
+          <div className="space-y-3 text-[17px] leading-[26px] text-kit-cream [&_li]:mb-1 [&_ul]:list-disc [&_ul]:pl-5">
             {section.body}
           </div>
         </section>
       ))}
-    </Panel>
-  </article>
+    </article>
+  </PageFrame>
 );
 
 const TERMS: LegalSection[] = [
@@ -452,14 +454,6 @@ const PRIVACY: LegalSection[] = [
   },
 ];
 
-export const TermsPage = () => (
-  <PageFrame back="/learn">
-    <LegalPage title="Terms of Service" updated="February 2025" sections={TERMS} />
-  </PageFrame>
-);
+export const TermsPage = () => <LegalPage title="Terms of Service" updated="Feb 2025" sections={TERMS} />;
 
-export const PrivacyPage = () => (
-  <PageFrame back="/learn">
-    <LegalPage title="Privacy Policy" updated="February 2025" sections={PRIVACY} />
-  </PageFrame>
-);
+export const PrivacyPage = () => <LegalPage title="Privacy Policy" updated="Feb 2025" sections={PRIVACY} />;

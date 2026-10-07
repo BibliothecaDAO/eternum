@@ -9,8 +9,8 @@ import { PwaInstallRuntime } from "./pwa/pwa-install-control";
 import { appQueryClient } from "./runtime/query-client";
 import { AppShell } from "./shell/app-shell";
 import { FactoryPage } from "./shell/factory";
-import { LearnPage } from "./shell/learn";
-import { NewsPage } from "./shell/news";
+import { LearnPage } from "./shell/learn/learn-page";
+import { PostPage } from "./shell/learn/post-page";
 import { IS_DEV_ENVIRONMENT } from "./shell/frame/environment";
 import { NotFoundPage } from "./shell/not-found";
 import { BlitzListPage, BlitzLobbyPage } from "./shell/blitz/blitz-pages";
@@ -66,8 +66,6 @@ const GraphicsLabView = lazy(() =>
   import("./ui/features/debug/graphics-lab-view").then((module) => ({ default: module.GraphicsLabView })),
 );
 // Reading matter loads on demand, so the cold path carries no post or legal text.
-const ScrollIndexPage = lazy(() => import("./shell/scroll").then((module) => ({ default: module.ScrollIndexPage })));
-const ScrollPostPage = lazy(() => import("./shell/scroll").then((module) => ({ default: module.ScrollPostPage })));
 const TermsPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.TermsPage })));
 const PrivacyPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.PrivacyPage })));
 const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({ default: module.GameClientApp })));
@@ -97,23 +95,7 @@ export const appRoutes = (
       <Route path="profile/devices" element={<ProfileRowPage row="devices" />} />
       <Route path="p/:address" element={<PlayerPage />} />
       <Route path="learn" element={<LearnPage />} />
-      <Route path="news" element={<NewsPage />} />
-      <Route
-        path="scroll"
-        element={
-          <LazyRoute>
-            <ScrollIndexPage />
-          </LazyRoute>
-        }
-      />
-      <Route
-        path="scroll/:slug"
-        element={
-          <LazyRoute>
-            <ScrollPostPage />
-          </LazyRoute>
-        }
-      />
+      <Route path="learn/:post" element={<PostPage />} />
       <Route
         path="terms"
         element={

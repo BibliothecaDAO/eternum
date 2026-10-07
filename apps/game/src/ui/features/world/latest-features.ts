@@ -1,4 +1,4 @@
-export type FeatureType = "feature" | "improvement" | "balance" | "fix";
+type FeatureType = "feature" | "improvement" | "balance" | "fix";
 
 interface LatestFeature {
   date: string;

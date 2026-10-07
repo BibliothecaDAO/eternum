@@ -146,3 +146,20 @@ export const LEVEL_WORDS = {
   important: { word: "Important", line: "Your day ends in an hour, your Blitz starts, a message to you" },
   all: { word: "All", line: "Plus every clear, fight and build" },
 } as const;
+
+/** Learn: its two views, the guides, a post's stepper and the legal links. */
+export const LEARN_WORDS = {
+  guides: "Guides",
+  news: "News",
+  howFrontier: "How Frontier plays",
+  howBlitz: "How Blitz plays",
+  howEternum: "How Eternum plays",
+  byPlayers: "Guides by players",
+  newer: "Newer",
+  older: "Older",
+  terms: "Terms",
+  privacy: "Privacy",
+  updated: "Updated",
+  /** A post's reading time: "4min". */
+  minutes: (count: number) => `${count}min`,
+} as const;
